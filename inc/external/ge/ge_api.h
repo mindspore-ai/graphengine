@@ -1,0 +1,102 @@
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef INC_EXTERNAL_GE_GE_API_H_
+#define INC_EXTERNAL_GE_GE_API_H_
+
+#include <map>
+#include <string>
+#include <vector>
+
+#include "ge/ge_api_error_codes.h"
+#include "ge/ge_api_types.h"
+#include "graph/graph.h"
+#include "graph/tensor.h"
+
+namespace ge {
+typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
+
+// Initialize GE
+Status GEInitialize(const std::map<std::string, std::string> &options);
+
+// Finalize GE, release all resources
+Status GEFinalize();
+
+class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
+ public:
+  explicit Session(const std::map<std::string, std::string> &options);
+
+  ~Session();
+
+  ///
+  /// @ingroup client
+  /// @brief add a graph with a specific graphId
+  /// @param [in] graphId graph id
+  /// @return Status result of function
+  ///
+  Status AddGraph(uint32_t graphId, const Graph &graph);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief remove a graph of the session with specific session id
+  /// @param [in] graphId graph id
+  /// @return Status result of function
+  ///
+  Status RemoveGraph(uint32_t graphId);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief run a graph of the session with specific session id
+  /// @param [in] graphId graph id
+  /// @param [in] inputs input data
+  /// @param [out] outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraph(uint32_t graphId, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief run graph in the session with specific session id asynchronously
+  /// @param [in] graphId: graph id
+  /// @param [in] inputs: input data
+  /// @param [out] outputs: output data
+  /// @param [out] callback: callback while runing graph has been finished.
+  ///                        The callback function will not be checked.
+  ///                        Please ensure that the implementation of the function is trusted.
+  /// @return Status result of function
+  ///
+  Status RunGraphAsync(uint32_t graphId, const std::vector<ge::TensorInfo> &inputs,
+                       std::vector<ge::TensorInfo> &outputs, std::function<void(Status)> callback);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief register callback func with specific summary or checkpoint by users
+  /// @param [in] key: func key
+  /// @param [in] callback: callback  specific summary or checkpoint.
+  ///                       The callback function will not be checked.
+  ///                       Please ensure that the implementation of the function is trusted.
+  /// @return Status result of function
+  ///
+  Status RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback);
+
+  bool IsGraphNeedRebuild(uint32_t graphId);
+
+ private:
+  uint64_t sessionId_;
+};
+}  // namespace ge
+
+#endif  // INC_EXTERNAL_GE_GE_API_H_

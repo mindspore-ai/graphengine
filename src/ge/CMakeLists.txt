@@ -1,0 +1,474 @@
+# Copyright 2019-2020 Huawei Technologies Co., Ltd
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ============================================================================
+
+# libge.so & libge_train.so
+# will later be integrated into libgraph_runner.so, works for both training and inference
+# compiling proto files generates some warnings, use no-unused-variable to suppress them
+set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
+file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "../proto/fusion_model.proto"
+        )
+
+file(GLOB_RECURSE PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "../proto/om.proto"
+        "../proto/task.proto"
+        "../proto/insert_op.proto"
+        "../proto/ge_ir.proto"
+        "../proto/fwk_adapter.proto"
+        "../proto/op_mapping_info.proto"
+        )
+ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+ge_protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
+# include directories
+include_directories(${CMAKE_CURRENT_LIST_DIR})
+include_directories(${GE_SOURCE_DIR})
+include_directories(${GE_SOURCE_DIR}/src)
+include_directories(${GE_SOURCE_DIR}/inc)
+include_directories(${GE_SOURCE_DIR}/inc/external)
+include_directories(${GE_SOURCE_DIR}/inc/external/graph)
+include_directories(${GE_SOURCE_DIR}/inc/framework)
+include_directories(${GE_SOURCE_DIR}/inc/framework/common)
+include_directories(${GE_SOURCE_DIR}/inc/runtime)
+include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
+include_directories(${GE_SOURCE_DIR}/third_party/protobuf/src)
+include_directories(${GE_SOURCE_DIR}/third_party/json/include)
+include_directories(${GE_SOURCE_DIR}/third_party/eigen)
+include_directories(${CMAKE_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}/proto/ge)
+
+######### libge_train.so #############
+# need to remove dependencies on pb files later
+file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "common/formats/format_transfers/*.cc"
+        "common/formats/formats.cc"
+        "common/formats/utils/formats_trans_utils.cc"
+        "common/fp16_t.cc"
+        "common/ge/plugin_manager.cc"
+        "common/profiling/profiling_manager.cc"
+        "engine_manager/dnnengine_manager.cc"
+        "generator/ge_generator.cc"
+        "generator/generator_api.cc"
+        "graph/build/graph_build.cc"
+        "graph/build/logical_stream_allocator.cc"
+        "graph/build/model_builder.cc"
+        "graph/build/optimize_stream_graph.cc"
+        "graph/build/run_context.cc"
+        "graph/build/stream_allocator.cc"
+        "graph/build/task_generator.cc"
+        "graph/common/bcast.cc"
+        "graph/common/omg_util.cc"
+        "graph/common/transop_util.cc"
+        "graph/execute/graph_execute.cc"
+        "graph/load/graph_loader.cc"
+        "graph/load/new_model_manager/data_dumper.cc"
+        "graph/load/new_model_manager/data_inputer.cc"
+        "graph/load/new_model_manager/davinci_model.cc"
+        "graph/load/new_model_manager/davinci_model_parser.cc"
+        "graph/load/new_model_manager/model_manager.cc"
+        "graph/load/new_model_manager/model_output.cc"
+        "graph/load/new_model_manager/model_utils.cc"
+        "graph/load/new_model_manager/task_info/end_graph_task_info.cc"
+        "graph/load/new_model_manager/task_info/event_record_task_info.cc"
+        "graph/load/new_model_manager/task_info/event_wait_task_info.cc"
+        "graph/load/new_model_manager/task_info/fusion_start_task_info.cc"
+        "graph/load/new_model_manager/task_info/fusion_stop_task_info.cc"
+        "graph/load/new_model_manager/task_info/hccl_task_info.cc"
+        "graph/load/new_model_manager/task_info/kernel_ex_task_info.cc"
+        "graph/load/new_model_manager/task_info/kernel_task_info.cc"
+        "graph/load/new_model_manager/task_info/label_goto_task_info.cc"
+        "graph/load/new_model_manager/task_info/label_set_task_info.cc"
+        "graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
+        "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
+        "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
+        "graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
+        "graph/load/new_model_manager/task_info/task_info.cc"
+        "graph/load/new_model_manager/tbe_handle_store.cc"
+        "graph/load/output/output.cc"
+        "graph/manager/custom/custom_op.cc"
+        "graph/manager/graph_context.cc"
+        "graph/manager/graph_manager.cc"
+        "graph/manager/graph_manager_utils.cc"
+        "graph/manager/graph_mem_allocator.cc"
+        "graph/manager/graph_var_manager.cc"
+        "graph/manager/model_manager/event_manager.cc"
+        "graph/manager/trans_var_data_utils.cc"
+        "graph/manager/util/debug.cc"
+        "graph/manager/util/hcom_util.cc"
+        "graph/manager/util/node_searcher/need_rebuild_node_searcher.cc"
+        "graph/manager/util/rt_context_util.cc"
+        "graph/manager/util/variable_accelerate_ctrl.cc"
+        "graph/optimize/graph_functiondef.cc"
+        "graph/optimize/graph_optimize.cc"
+        "graph/optimize/graph_optimizer.cc"
+        "graph/optimize/optimizer/allreduce_fusion_pass.cc"
+        "graph/optimize/summary_optimize.cc"
+        "graph/partition/engine_place.cc"
+        "graph/partition/graph_partition.cc"
+        "graph/passes/addn_pass.cc"
+        "graph/passes/aicpu_constant_folding_pass.cc"
+        "graph/passes/assert_pass.cc"
+        "graph/passes/atomic_addr_clean_pass.cc"
+        "graph/passes/base_pass.cc"
+        "graph/passes/cast_translate_pass.cc"
+        "graph/passes/compile_nodes_pass.cc"
+        "graph/passes/constant_folding_pass.cc"
+        "graph/passes/constant_fuse_same_pass.cc"
+        "graph/passes/control_op_attr_pass.cc"
+        "graph/passes/control_trigger_pass.cc"
+        "graph/passes/dimension_adjust_pass.cc"
+        "graph/passes/dimension_compute_pass.cc"
+        "graph/passes/dropout_pass.cc"
+        "graph/passes/end_graph_pass.cc"
+        "graph/passes/enter_pass.cc"
+        "graph/passes/flow_ctrl_pass.cc"
+        "graph/passes/folding_kernel/add_kernel.cc"
+        "graph/passes/folding_kernel/broadcast_args_kernel.cc"
+        "graph/passes/folding_kernel/broadcast_gradient_args_kernel.cc"
+        "graph/passes/folding_kernel/cast_kernel.cc"
+        "graph/passes/folding_kernel/concat_offset_kernel.cc"
+        "graph/passes/folding_kernel/concat_v2_kernel.cc"
+        "graph/passes/folding_kernel/dynamic_stitch_kernel.cc"
+        "graph/passes/folding_kernel/empty_kernel.cc"
+        "graph/passes/folding_kernel/expanddims_kernel.cc"
+        "graph/passes/folding_kernel/fill_kernel.cc"
+        "graph/passes/folding_kernel/floordiv_kernel.cc"
+        "graph/passes/folding_kernel/floormod_kernel.cc"
+        "graph/passes/folding_kernel/gather_v2_kernel.cc"
+        "graph/passes/folding_kernel/greater_kernel.cc"
+        "graph/passes/folding_kernel/kernel_utils.cc"
+        "graph/passes/folding_kernel/maximum_kernel.cc"
+        "graph/passes/folding_kernel/mul_kernel.cc"
+        "graph/passes/folding_kernel/pack_kernel.cc"
+        "graph/passes/folding_kernel/permute_kernel.cc"
+        "graph/passes/folding_kernel/range_kernel.cc"
+        "graph/passes/folding_kernel/rank_kernel.cc"
+        "graph/passes/folding_kernel/reduce_prod_kernel.cc"
+        "graph/passes/folding_kernel/reshape_kernel.cc"
+        "graph/passes/folding_kernel/rsqrt_kernel.cc"
+        "graph/passes/folding_kernel/shape_kernel.cc"
+        "graph/passes/folding_kernel/shape_n_kernel.cc"
+        "graph/passes/folding_kernel/size_kernel.cc"
+        "graph/passes/folding_kernel/slice_kernel.cc"
+        "graph/passes/folding_kernel/squeeze_kernel.cc"
+        "graph/passes/folding_kernel/ssd_prior_box_kernel.cc"
+        "graph/passes/folding_kernel/strided_slice_kernel.cc"
+        "graph/passes/folding_kernel/sub_kernel.cc"
+        "graph/passes/folding_kernel/transdata_kernel.cc"
+        "graph/passes/folding_pass.cc"
+        "graph/passes/get_original_format_pass.cc"
+        "graph/passes/guarantee_const_pass.cc"
+        "graph/passes/hccl_memcpy_pass.cc"
+        "graph/passes/identify_reference_pass.cc"
+        "graph/passes/identity_pass.cc"
+        "graph/passes/infershape_pass.cc"
+        "graph/passes/isolated_op_remove_pass.cc"
+        "graph/passes/iterator_op_pass.cc"
+        "graph/passes/link_gen_mask_nodes_pass.cc"
+        "graph/passes/merge_pass.cc"
+        "graph/passes/multi_batch_pass.cc"
+        "graph/passes/net_output_pass.cc"
+        "graph/passes/next_iteration_pass.cc"
+        "graph/passes/no_reshape_op_remove_pass.cc"
+        "graph/passes/no_use_reshape_remove_pass.cc"
+        "graph/passes/pass_manager.cc"
+        "graph/passes/pass_utils.cc"
+        "graph/passes/permute_pass.cc"
+        "graph/passes/placeholder_with_default_pass.cc"
+        "graph/passes/prevent_gradient_pass.cc"
+        "graph/passes/print_op_pass.cc"
+        "graph/passes/prune_pass.cc"
+        "graph/passes/reshape_remove_pass.cc"
+        "graph/passes/resource_pair_add_control_pass.cc"
+        "graph/passes/resource_pair_remove_control_pass.cc"
+        "graph/passes/same_transdata_breadth_fusion_pass.cc"
+        "graph/passes/save_pass.cc"
+        "graph/passes/shape_operate_op_remove_pass.cc"
+        "graph/passes/snapshot_pass.cc"
+        "graph/passes/stop_gradient_pass.cc"
+        "graph/passes/switch_logic_remove_pass.cc"
+        "graph/passes/switch_op_pass.cc"
+        "graph/passes/switch_pass.cc"
+        "graph/passes/transop_breadth_fusion_pass.cc"
+        "graph/passes/transop_depth_fusion_pass.cc"
+        "graph/passes/transop_nearby_allreduce_fusion_pass.cc"
+        "graph/passes/transop_without_reshape_fusion_pass.cc"
+        "graph/passes/transpose_transdata_pass.cc"
+        "graph/passes/unused_const_pass.cc"
+        "graph/passes/unused_op_remove_pass.cc"
+        "graph/passes/update_net_output_pass.cc"
+        "graph/passes/var_is_initialized_op_pass.cc"
+        "graph/passes/variable_format_pass.cc"
+        "graph/passes/variable_op_pass.cc"
+        "graph/passes/variable_prepare_op_pass.cc"
+        "graph/passes/variable_ref_delete_op_pass.cc"
+        "graph/preprocess/graph_preprocess.cc"
+        "graph/preprocess/insert_op/base_insert_op.cc"
+        "graph/preprocess/insert_op/ge_aipp_op.cc"
+        "graph/preprocess/insert_op/util_insert_aipp_op.cc"
+        "graph/preprocess/multi_batch_copy_graph.cc"
+        "init/gelib.cc"
+        "model/ge_model.cc"
+        "omm/csa_interact.cc"
+        "opskernel_manager/ops_kernel_manager.cc"
+        "session/inner_session.cc"
+        "session/session_manager.cc"
+        "single_op/single_op.cc"
+        "single_op/single_op_manager.cc"
+        "single_op/single_op_model.cc"
+        "single_op/stream_resource.cc"
+        "single_op/task/build_task_utils.cc"
+        "single_op/task/op_task.cc"
+        "single_op/task/tbe_task_builder.cc"
+        )
+
+
+######### libge_train.so #############
+add_library(ge_train SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HDRS})
+target_compile_definitions(ge_train PRIVATE
+        PROTOBUF_INLINE_NOT_IN_HEADERS=0
+        DAVINCI_SUPPORT_PROFILING
+        REUSE_MEMORY=1
+        DAVINCI_TRAIN
+        DAVINCI_CLOUD
+        FMK_SUPPORT_DEBUG
+        PLATFORM_CLOUD)
+target_link_libraries(ge_train
+        graph
+        ge_common
+        "-Wl,--whole-archive"
+        ge_memory
+        "-Wl,--no-whole-archive"
+        ${PROTOBUF_LIBRARY}
+        ${register}
+        ${c_sec}
+        ${slog}
+        ${mmpa}
+        ${hccl}
+        ${msprof}
+        ${runtime}
+        ${cce}
+        ${resouce}
+        rt
+        dl)
+
+######### libge.so #############
+# need to remove dependencies on pb files later
+file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "common/formats/format_transfers/*.cc"
+        "common/formats/formats.cc"
+        "common/formats/utils/formats_trans_utils.cc"
+        "common/fp16_t.cc"
+        "common/ge/plugin_manager.cc"
+        "common/profiling/profiling_manager.cc"
+        "engine_manager/dnnengine_manager.cc"
+        "generator/ge_generator.cc"
+        "generator/generator_api.cc"
+        "graph/build/graph_build.cc"
+        "graph/build/logical_stream_allocator.cc"
+        "graph/build/model_builder.cc"
+        "graph/build/optimize_stream_graph.cc"
+        "graph/build/run_context.cc"
+        "graph/build/stream_allocator.cc"
+        "graph/build/task_generator.cc"
+        "graph/common/bcast.cc"
+        "graph/common/omg_util.cc"
+        "graph/common/transop_util.cc"
+        "graph/execute/graph_execute.cc"
+        "graph/load/graph_loader.cc"
+        "graph/load/new_model_manager/data_dumper.cc"
+        "graph/load/new_model_manager/data_inputer.cc"
+        "graph/load/new_model_manager/davinci_model.cc"
+        "graph/load/new_model_manager/davinci_model_parser.cc"
+        "graph/load/new_model_manager/model_manager.cc"
+        "graph/load/new_model_manager/model_output.cc"
+        "graph/load/new_model_manager/model_utils.cc"
+        "graph/load/new_model_manager/task_info/end_graph_task_info.cc"
+        "graph/load/new_model_manager/task_info/event_record_task_info.cc"
+        "graph/load/new_model_manager/task_info/event_wait_task_info.cc"
+        "graph/load/new_model_manager/task_info/fusion_start_task_info.cc"
+        "graph/load/new_model_manager/task_info/fusion_stop_task_info.cc"
+        "graph/load/new_model_manager/task_info/kernel_ex_task_info.cc"
+        "graph/load/new_model_manager/task_info/kernel_task_info.cc"
+        "graph/load/new_model_manager/task_info/label_goto_task_info.cc"
+        "graph/load/new_model_manager/task_info/label_set_task_info.cc"
+        "graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
+        "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
+        "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
+        "graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
+        "graph/load/new_model_manager/task_info/task_info.cc"
+        "graph/load/new_model_manager/tbe_handle_store.cc"
+        "graph/load/output/output.cc"
+        "graph/manager/custom/custom_op.cc"
+        "graph/manager/graph_context.cc"
+        "graph/manager/graph_manager.cc"
+        "graph/manager/graph_manager_utils.cc"
+        "graph/manager/graph_mem_allocator.cc"
+        "graph/manager/graph_var_manager.cc"
+        "graph/manager/model_manager/event_manager.cc"
+        "graph/manager/trans_var_data_utils.cc"
+        "graph/manager/util/debug.cc"
+        "graph/manager/util/node_searcher/need_rebuild_node_searcher.cc"
+        "graph/manager/util/rt_context_util.cc"
+        "graph/manager/util/variable_accelerate_ctrl.cc"
+        "graph/optimize/graph_functiondef.cc"
+        "graph/optimize/graph_optimize.cc"
+        "graph/optimize/graph_optimizer.cc"
+        "graph/optimize/optimizer/allreduce_fusion_inference_pass.cc"
+        "graph/optimize/summary_optimize.cc"
+        "graph/partition/engine_place.cc"
+        "graph/partition/graph_partition.cc"
+        "graph/passes/addn_pass.cc"
+        "graph/passes/aicpu_constant_folding_pass.cc"
+        "graph/passes/assert_pass.cc"
+        "graph/passes/atomic_addr_clean_pass.cc"
+        "graph/passes/base_pass.cc"
+        "graph/passes/cast_translate_pass.cc"
+        "graph/passes/compile_nodes_pass.cc"
+        "graph/passes/constant_folding_pass.cc"
+        "graph/passes/constant_fuse_same_pass.cc"
+        "graph/passes/control_op_attr_pass.cc"
+        "graph/passes/control_trigger_pass.cc"
+        "graph/passes/dimension_adjust_pass.cc"
+        "graph/passes/dimension_compute_pass.cc"
+        "graph/passes/dropout_pass.cc"
+        "graph/passes/end_graph_pass.cc"
+        "graph/passes/enter_pass.cc"
+        "graph/passes/flow_ctrl_pass.cc"
+        "graph/passes/folding_kernel/add_kernel.cc"
+        "graph/passes/folding_kernel/broadcast_args_kernel.cc"
+        "graph/passes/folding_kernel/broadcast_gradient_args_kernel.cc"
+        "graph/passes/folding_kernel/cast_kernel.cc"
+        "graph/passes/folding_kernel/concat_offset_kernel.cc"
+        "graph/passes/folding_kernel/concat_v2_kernel.cc"
+        "graph/passes/folding_kernel/dynamic_stitch_kernel.cc"
+        "graph/passes/folding_kernel/empty_kernel.cc"
+        "graph/passes/folding_kernel/expanddims_kernel.cc"
+        "graph/passes/folding_kernel/fill_kernel.cc"
+        "graph/passes/folding_kernel/floordiv_kernel.cc"
+        "graph/passes/folding_kernel/floormod_kernel.cc"
+        "graph/passes/folding_kernel/gather_v2_kernel.cc"
+        "graph/passes/folding_kernel/greater_kernel.cc"
+        "graph/passes/folding_kernel/kernel_utils.cc"
+        "graph/passes/folding_kernel/maximum_kernel.cc"
+        "graph/passes/folding_kernel/mul_kernel.cc"
+        "graph/passes/folding_kernel/pack_kernel.cc"
+        "graph/passes/folding_kernel/permute_kernel.cc"
+        "graph/passes/folding_kernel/range_kernel.cc"
+        "graph/passes/folding_kernel/rank_kernel.cc"
+        "graph/passes/folding_kernel/reduce_prod_kernel.cc"
+        "graph/passes/folding_kernel/reshape_kernel.cc"
+        "graph/passes/folding_kernel/rsqrt_kernel.cc"
+        "graph/passes/folding_kernel/shape_kernel.cc"
+        "graph/passes/folding_kernel/shape_n_kernel.cc"
+        "graph/passes/folding_kernel/size_kernel.cc"
+        "graph/passes/folding_kernel/slice_kernel.cc"
+        "graph/passes/folding_kernel/squeeze_kernel.cc"
+        "graph/passes/folding_kernel/ssd_prior_box_kernel.cc"
+        "graph/passes/folding_kernel/strided_slice_kernel.cc"
+        "graph/passes/folding_kernel/sub_kernel.cc"
+        "graph/passes/folding_kernel/transdata_kernel.cc"
+        "graph/passes/folding_pass.cc"
+        "graph/passes/get_original_format_pass.cc"
+        "graph/passes/guarantee_const_pass.cc"
+        "graph/passes/hccl_memcpy_pass.cc"
+        "graph/passes/identify_reference_pass.cc"
+        "graph/passes/identity_pass.cc"
+        "graph/passes/infershape_pass.cc"
+        "graph/passes/isolated_op_remove_pass.cc"
+        "graph/passes/iterator_op_pass.cc"
+        "graph/passes/link_gen_mask_nodes_pass.cc"
+        "graph/passes/merge_pass.cc"
+        "graph/passes/multi_batch_pass.cc"
+        "graph/passes/net_output_pass.cc"
+        "graph/passes/next_iteration_pass.cc"
+        "graph/passes/no_reshape_op_remove_pass.cc"
+        "graph/passes/no_use_reshape_remove_pass.cc"
+        "graph/passes/pass_manager.cc"
+        "graph/passes/pass_utils.cc"
+        "graph/passes/permute_pass.cc"
+        "graph/passes/placeholder_with_default_pass.cc"
+        "graph/passes/prevent_gradient_pass.cc"
+        "graph/passes/print_op_pass.cc"
+        "graph/passes/prune_pass.cc"
+        "graph/passes/reshape_remove_pass.cc"
+        "graph/passes/resource_pair_add_control_pass.cc"
+        "graph/passes/resource_pair_remove_control_pass.cc"
+        "graph/passes/same_transdata_breadth_fusion_pass.cc"
+        "graph/passes/save_pass.cc"
+        "graph/passes/shape_operate_op_remove_pass.cc"
+        "graph/passes/snapshot_pass.cc"
+        "graph/passes/stop_gradient_pass.cc"
+        "graph/passes/switch_logic_remove_pass.cc"
+        "graph/passes/switch_op_pass.cc"
+        "graph/passes/switch_pass.cc"
+        "graph/passes/transop_breadth_fusion_pass.cc"
+        "graph/passes/transop_depth_fusion_pass.cc"
+        "graph/passes/transop_nearby_allreduce_fusion_pass.cc"
+        "graph/passes/transop_without_reshape_fusion_pass.cc"
+        "graph/passes/transpose_transdata_pass.cc"
+        "graph/passes/unused_const_pass.cc"
+        "graph/passes/unused_op_remove_pass.cc"
+        "graph/passes/update_net_output_pass.cc"
+        "graph/passes/var_is_initialized_op_pass.cc"
+        "graph/passes/variable_format_pass.cc"
+        "graph/passes/variable_op_pass.cc"
+        "graph/passes/variable_prepare_op_pass.cc"
+        "graph/passes/variable_ref_delete_op_pass.cc"
+        "graph/preprocess/graph_preprocess.cc"
+        "graph/preprocess/insert_op/base_insert_op.cc"
+        "graph/preprocess/insert_op/ge_aipp_op.cc"
+        "graph/preprocess/insert_op/util_insert_aipp_op.cc"
+        "graph/preprocess/multi_batch_copy_graph.cc"
+        "init/gelib.cc"
+        "model/ge_model.cc"
+        "omm/csa_interact.cc"
+        "opskernel_manager/ops_kernel_manager.cc"
+        "session/inner_session.cc"
+        "session/session_manager.cc"
+        "single_op/single_op.cc"
+        "single_op/single_op_manager.cc"
+        "single_op/single_op_model.cc"
+        "single_op/stream_resource.cc"
+        "single_op/task/build_task_utils.cc"
+        "single_op/task/op_task.cc"
+        "single_op/task/tbe_task_builder.cc"
+        )
+
+add_library(ge SHARED ${INFER_SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HDRS})
+target_compile_definitions(ge PRIVATE
+        PROTOBUF_INLINE_NOT_IN_HEADERS=0
+        DAVINCI_SUPPORT_PROFILING
+        REUSE_MEMORY=1
+        FMK_HOST_INFER
+        PLATFORM_CLOUD)
+target_link_libraries(ge
+        graph
+        ge_common
+        "-Wl,--whole-archive"
+        ge_memory
+        "-Wl,--no-whole-archive"
+        ${PROTOBUF_LIBRARY}
+        ${register}
+        ${c_sec}
+        ${slog}
+        ${mmpa}
+        ${msprof}
+        ${runtime}
+        ${cce}
+        ${resouce}
+        rt
+        dl)

@@ -23,7 +23,7 @@ export BUILD_PATH="${BASEPATH}/build/"
 usage()
 {
   echo "Usage:"
-  echo "sh build.sh [-j[n]] [-A] [-h] [-v] [-s] [-t] [-u] [-c]"
+  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c]"
   echo ""
   echo "Options:"
   echo "    -h Print usage"
@@ -47,22 +47,25 @@ checkopts()
   ENABLE_GE_COV="off"
   GE_ONLY="on"
   # Process the options
-  while getopts 'ustchj:vA' opt
+  while getopts 'ustchj:v' opt
   do
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
       u)
         ENABLE_GE_UT_ONLY_COMPILE="on"
         ENABLE_GE_UT="on"
+        GE_ONLY="off"
         ;;
       s)
         ENABLE_GE_ST="on"
         ;;
       t)
 	      ENABLE_GE_UT="on"
+	      GE_ONLY="off"
 	      ;;
       c)
         ENABLE_GE_COV="on"
+        GE_ONLY="off"
         ;;
       h)
         usage
@@ -73,9 +76,6 @@ checkopts()
         ;;
       v)
         VERBOSE="VERBOSE=1"
-        ;;
-      A)
-        usage
         ;;
       *)
         echo "Undefined option: ${opt}"
@@ -149,7 +149,7 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
     cp ${BUILD_PATH}/graphengine/tests/ut/ge/ut_libge_kernel_utest ${OUTPUT_PATH}
 
     if [[ "X${ENABLE_GE_UT_ONLY_COMPILE}" != "Xon" ]]; then
-        export LD_LIBRARY_PATH=${D_LINK_PATH}/x86_64/:${BUILD_PATH}/graphengine/:/usr/local/HiAI/driver/lib64:/usr/local/HiAI/runtime/lib64:${LD_LIBRARY_PATH}
+        export LD_LIBRARY_PATH=${D_LINK_PATH}/x86_64/:${BUILD_PATH}../third_party/prebuild/x86_64/:${BUILD_PATH}/graphengine/:/usr/local/HiAI/driver/lib64:/usr/local/HiAI/runtime/lib64:${LD_LIBRARY_PATH}
         echo ${LD_LIBRARY_PATH}
         ${OUTPUT_PATH}/ut_libgraph &&
         ${OUTPUT_PATH}/ut_libge_multiparts_utest &&

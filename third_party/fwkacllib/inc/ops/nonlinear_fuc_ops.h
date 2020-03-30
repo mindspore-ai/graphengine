@@ -124,9 +124,9 @@ REG_OP(Relu6)
 * z: A Tensor of type RealNumberType.
 */
 REG_OP(Relu6Grad)
-    .INPUT(y, TensorType::RealNumberType())
-    .INPUT(dy, TensorType::RealNumberType())
-    .OUTPUT(z, TensorType::RealNumberType())
+    .INPUT(gradients, TensorType::RealNumberType())
+    .INPUT(features, TensorType::RealNumberType())
+    .OUTPUT(backprops, TensorType::RealNumberType())
     .OP_END_FACTORY_REG(Relu6Grad)
 
 /**

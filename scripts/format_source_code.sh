@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2019 Huawei Technologies Co., Ltd
+# Copyright 2019-2020 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -89,11 +89,10 @@ if [[ "X${mode}" == "Xall" ]]; then
   find src -type f -name "*" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
   find inc -type f -name "*" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
 elif [[ "X${mode}" == "Xchanged" ]]; then
-  git diff --name-only | grep "src" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
-  git diff --name-only | grep "inc" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
+  # --diff-filter=ACMRTUXB will ignore deleted files in commit
+  git diff --diff-filter=ACMRTUXB --name-only | grep "^inc\|^src" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
 else  # "X${mode}" == "Xlastcommit"
-  git diff --name-only HEAD~ HEAD | grep "src" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
-  git diff --name-only HEAD~ HEAD | grep "inc" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
+  git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
 fi
 
 while read line; do

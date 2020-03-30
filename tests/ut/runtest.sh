@@ -16,12 +16,12 @@
 
 set -e
 BASEPATH=$(cd "$(dirname $0)"; pwd)
-BUILD_PATH=$BASEPATH/../../build
-OUTPUT_PATH=$BASEPATH/../../output
+BUILD_PATH=$BASEPATH/../../build/
+OUTPUT_PATH=$BASEPATH/../../output/
 
 echo $BUILD_PATH
 
-export LD_LIBRARY_PATH=/usr/local/HiAI/driver/lib64:/usr/local/HiAI/runtime/lib64:${BUILD_PATH}/graphengine/:${D_LINK_PATH}/x86_64/:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=/usr/local/HiAI/driver/lib64:${BUILD_PATH}../third_party/prebuild/x86_64/:/usr/local/HiAI/runtime/lib64:${BUILD_PATH}/graphengine/:${D_LINK_PATH}/x86_64/:${LD_LIBRARY_PATH}
 echo ${LD_LIBRARY_PATH}
 ${OUTPUT_PATH}/ut_libgraph &&
 ${OUTPUT_PATH}/ut_libge_multiparts_utest &&

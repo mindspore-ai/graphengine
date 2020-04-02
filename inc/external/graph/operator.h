@@ -24,9 +24,8 @@
 #include <vector>
 
 #include "external/graph/ge_error_codes.h"
-#include "external/graph//inference_context.h"
-#include "external/graph//tensor.h"
-#include "external/graph//usr_types.h"
+#include "external/graph/inference_context.h"
+#include "external/graph/tensor.h"
 
 #ifndef USER_GE_LOGI
 #define USER_GE_LOGI(...)
@@ -182,9 +181,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   // Bytes type
   graphStatus GetAttr(const string &name, OpBytes &attr_value) const;
 
-  Operator &SetAttr(const string &name, const UsrQuantizeFactorParams &attr_value);
-  graphStatus GetAttr(const string &name, UsrQuantizeFactorParams &attr_value) const;
-
   Operator &SetAttr(const string &name, const std::vector<std::vector<int64_t>> &attr_value);
   graphStatus GetAttr(const string &name, std::vector<std::vector<int64_t>> &attr_value) const;
 
@@ -235,11 +231,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   graphStatus VerifyAll();
 
   // Only has one output index = 0
-  Operator &SetInput(const string &dst_name, uint32_t dst_index,
-                     const Operator &src_oprt);
+  Operator &SetInput(const string &dst_name, uint32_t dst_index, const Operator &src_oprt);
 
-  Operator &SetInput(const string &dst_name, uint32_t dst_index, const Operator &src_oprt,
-                     const string &name);
+  Operator &SetInput(const string &dst_name, uint32_t dst_index, const Operator &src_oprt, const string &name);
 
  private:
   Operator &SetInput(const string &dst_name, const OutHandler &out_handler);

@@ -19,8 +19,6 @@
 
 #include <vector>
 
-#include "cce/dnn.h"
-#include "cce/taskdown_api.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "graph/load/new_model_manager/task_info/task_info.h"

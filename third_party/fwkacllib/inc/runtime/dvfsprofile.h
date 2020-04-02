@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  // __cplusplus
 
 typedef enum dvfsProfileMode {
   DVFS_PROFILE_PERFORMANCE_PRIORITY,

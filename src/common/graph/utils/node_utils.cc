@@ -15,7 +15,6 @@
  */
 
 #include "utils/node_utils.h"
-
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
@@ -86,6 +85,7 @@ graphStatus NodeUtils::GetSingleOutputNodeOfNthLayer(const NodePtr &src, int dep
       return GRAPH_FAILED;
     }
     cur_ptr = src->GetOutDataNodes().at(0);
+    GE_CHECK_NOTNULL(cur_ptr);
   }
   dst = cur_ptr;
   return GRAPH_SUCCESS;
@@ -289,8 +289,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
       auto peer_op_desc = peer_anchor->GetOwnerNode()->GetOpDesc();
       GE_IF_BOOL_EXEC(peer_op_desc == nullptr, GELOGE(GRAPH_FAILED, "peer opdesc is null"); continue);
       GE_IF_BOOL_EXEC(peer_op_desc->UpdateInputDesc(peer_anchor->GetIdx(), output_tensor) != GRAPH_SUCCESS,
-      GELOGE(GRAPH_FAILED, "peer opdesc is null");
-      continue);
+                      GELOGE(GRAPH_FAILED, "peer opdesc is null");
+                      continue);
     }
   }
   return GRAPH_SUCCESS;
@@ -309,7 +309,7 @@ bool NodeUtils::IsInNodesEmpty(const Node &node) {
 
   if ((node.in_control_anchor_ != nullptr) && (!node.in_control_anchor_->IsPeerOutAnchorsEmpty())) {
     auto peer_out_control_anchors = node.in_control_anchor_->GetPeerOutControlAnchors();
-    for (auto &out_control_anchor : peer_out_control_anchors) {
+    for (const auto &out_control_anchor : peer_out_control_anchors) {
       if (out_control_anchor != nullptr) {
         if (out_control_anchor->GetOwnerNode() != nullptr) {
           return false;

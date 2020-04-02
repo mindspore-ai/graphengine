@@ -27,9 +27,8 @@
 #include "graph/common/omg_util.h"
 #include "graph/graph.h"
 #include "graph/node.h"
-#include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"
-
+#include "graph/passes/pass_utils.h"
 
 namespace ge {
 const char *const kGetNext = "GetNext";
@@ -105,18 +104,19 @@ ge::NodePtr IteratorOpPass::InsertMemcpyAsyncNode(const ge::NodePtr &pre_node, c
   }
   // Control out
   OutControlAnchorPtr out_ctrl_anchor = pre_node->GetOutControlAnchor();
-  GE_IF_BOOL_EXEC(out_ctrl_anchor != nullptr, for (auto &peer_in_ctrl_anchor
-                                                   : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    ge::graphStatus status = GraphUtils::RemoveEdge(out_ctrl_anchor, peer_in_ctrl_anchor);
-    GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr, "Remove edge failed, dst node: %s.",
-                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
-    status = GraphUtils::AddEdge(memcpy_async_node->GetOutControlAnchor(), peer_in_ctrl_anchor);
-    GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
-                     "Graph add memcpyAsync op out ctrl edge fail, dst node: %s.",
-                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
-    GELOGI("Graph add memcpyAsync op out ctrl edge, dst node: %s.",
-           peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
-  });
+  GE_IF_BOOL_EXEC(
+    out_ctrl_anchor != nullptr, for (auto &peer_in_ctrl_anchor
+                                     : out_ctrl_anchor->GetPeerInControlAnchors()) {
+      ge::graphStatus status = GraphUtils::RemoveEdge(out_ctrl_anchor, peer_in_ctrl_anchor);
+      GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr, "Remove edge failed, dst node: %s.",
+                       peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+      status = GraphUtils::AddEdge(memcpy_async_node->GetOutControlAnchor(), peer_in_ctrl_anchor);
+      GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
+                       "Graph add memcpyAsync op out ctrl edge fail, dst node: %s.",
+                       peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+      GELOGI("Graph add memcpyAsync op out ctrl edge, dst node: %s.",
+             peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+    });
   GELOGI("Insert memcpyAsync op success.");
 
   return memcpy_async_node;
@@ -142,9 +142,9 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
   ge::OpDescPtr pre_node_op_desc = pre_node->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_node_op_desc != nullptr, return nullptr, "OpDesc of pre_node is invalid.");
 
-  auto out_size = static_cast<uint32_t>(pre_node_op_desc->GetOutputsSize());
-  GELOGI("Create memcpyAsync op, pre_node out_size: %u.", out_size);
-  for (uint32_t i = 0; i < out_size; i++) {
+  size_t out_size = pre_node_op_desc->GetOutputsSize();
+  GELOGI("Create memcpyAsync op, pre_node out_size: %zu.", out_size);
+  for (size_t i = 0; i < out_size; i++) {
     GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(pre_node_op_desc->GetOutputDesc(i)) == GRAPH_SUCCESS, return nullptr,
                      "Create memcpyAsync op:add input desc fail.");
     GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(pre_node_op_desc->GetOutputDesc(i)) == GRAPH_SUCCESS, return nullptr,

@@ -157,6 +157,8 @@ class GraphNode {
   void SetLoadFlag(bool load_flag) { load_flag_ = load_flag; }
   void SetGeModel(const GeModelPtr &ge_model) { ge_model_ = ge_model; }
   GeModelPtr GetGeModel() const { return ge_model_; }
+  const std::map<std::string, std::string> &GetOptions() const { return options_; }
+  void SetOptions(const std::map<std::string, std::string> &options) { options_ = options; }
   void Lock();
   void Unlock();
 
@@ -165,6 +167,7 @@ class GraphNode {
 
  private:
   GraphId graph_id_;
+  std::map<std::string, std::string> options_;
   bool run_flag_;
   std::vector<SubGraphInfoPtr> subgraph_ptr_list_;
 
@@ -207,8 +210,6 @@ class GraphModelListener : public ge::ModelListener {
   std::condition_variable *condition_;
 };
 
-Status CheckTinyCalc(const char *cal_conf, const ComputeGraphPtr &graph);
-
 Status ParseOutNodes(const string &out_nodes);
 
 struct GraphManagerOptions {
@@ -231,6 +232,7 @@ struct GraphManagerOptions {
   bool train_graph_flag;
   bool local_fmk_op_flag;
   bool hcom_parallel;
+  bool enable_print_op_pass;
   std::map<std::string, int> stream_max_parallel_num;
   std::string output_datatype;
   std::string original_model_file;
@@ -254,6 +256,7 @@ struct GraphManagerOptions {
         train_graph_flag(false),
         local_fmk_op_flag(false),
         hcom_parallel(false),
+        enable_print_op_pass(true),
         save_original_model(false) {}
 };
 }  // namespace ge

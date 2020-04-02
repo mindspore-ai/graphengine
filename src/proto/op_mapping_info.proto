@@ -52,6 +52,15 @@ message OpMappingInfo {
     oneof model_id_param {
         uint32 model_id = 3;
     }
-    uint32 flag = 4; // 0x01 load, 0x00 unload
-    repeated Task task = 5;
+    oneof step_id {
+        uint64 step_id_addr = 4;
+    }
+    oneof iterations_per_loop {
+        uint64 iterations_per_loop_addr = 5;
+    }
+    oneof loop_cond {
+        uint64 loop_cond_addr = 6;
+    }
+    uint32 flag = 7; // 0x01 load, 0x00 unload
+    repeated Task task = 8;
 };

@@ -16,11 +16,11 @@
 
 #include "common/profiling/profiling_manager.h"
 
-#include "nlohmann/json.hpp"
-
+#include <nlohmann/json.hpp>
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/string_util.h"
+#include "graph/ge_context.h"
 #include "runtime/base.h"
 
 using Json = nlohmann::json;
@@ -34,6 +34,7 @@ const char *const kConf = "conf";
 const char *const kEvents = "events";
 const char *const kAiCoreEvents = "ai_core_events";
 const char *const kName = "name";
+const char *const kTraceID = "traceId";
 }  // namespace
 
 namespace ge {
@@ -49,7 +50,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager &ProfilingMana
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::Init(const Options &options) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   device_id_ = options.device_id;
-  job_id_ = std::to_string(options.job_id);
+  job_id_ = options.job_id;
 
   Status ret;
   if (!recv_profiling_config_.empty()) {
@@ -84,7 +85,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::InitFromAclCfg(
-    const std::string &config) {
+  const std::string &config) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   try {
     is_profiling_ = false;
@@ -185,6 +186,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
       // profiling need physical_device_id
       p_device[kDeviceID] = std::to_string(device_id_);
       p_device[kJobID] = job_id_;
+      p_device[kTraceID] = std::to_string(GetContext().TraceId());
 
       Json features;
       if (is_op_trace_) {
@@ -269,7 +271,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportProfilingData(
-    const std::map<uint32_t, std::string> &op_task_id_map) {
+  const std::map<uint32_t, std::string> &op_task_id_map) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
   if (reporter == nullptr) {
@@ -299,13 +301,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::SetProfilingConfig(
-    const std::string &profiling_cfg) {
+  const std::string &profiling_cfg) {
   recv_profiling_config_ = profiling_cfg;
 }
 
 /**
  * @brief Profiling PluginImpl
-*/
+ */
 // PluginImpl static variable init
 Msprof::Engine::Reporter *PluginImpl::reporter_ = nullptr;
 

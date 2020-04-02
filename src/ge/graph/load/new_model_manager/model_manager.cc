@@ -19,7 +19,6 @@
 #include <string>
 
 #include "cce/aicpu_engine_struct.h"
-#include "cce/compiler_stub.h"
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
@@ -31,10 +30,12 @@ namespace ge {
 thread_local uint32_t device_count = 0;
 namespace {
 const int kCmdParSize = 2;
+const int kDumpCmdPairSize = 2;
 }  // namespace
+
 std::shared_ptr<ModelManager> ModelManager::GetInstance() {
   static const std::shared_ptr<ModelManager> instance_ptr =
-      shared_ptr<ModelManager>(new (std::nothrow) ModelManager(), ModelManager::FinalizeForPtr);
+    shared_ptr<ModelManager>(new (std::nothrow) ModelManager(), ModelManager::FinalizeForPtr);
   return instance_ptr;
 }
 
@@ -55,7 +56,7 @@ static Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType opType, uint64_t 
   }
 
   rt_ret =
-      rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
+    rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "memory copy to device failed.");
     GE_CHK_RT(rtFree(devicebase));
@@ -146,7 +147,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &
   GenModelId(&model_id);
 
   GE_CHK_STATUS_RET(SetDevice(static_cast<int32_t>(GetContext().DeviceId())), "Set device failed, model id:%u.",
-                      model_id);
+                    model_id);
 
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, listener);
   if (davinci_model == nullptr) {
@@ -160,12 +161,11 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &
   Status ret = SUCCESS;
   do {
     GeModelPtr ge_model;
-    GE_IF_BOOL_EXEC(ModelHelper::TransModelToGeModel(model, ge_model) != SUCCESS,
-                      GELOGW("trans model to ge_model failed.");
-                      break;);
+    GE_IF_BOOL_EXEC(
+      ModelHelper::TransModelToGeModel(model, ge_model) != SUCCESS, GELOGW("trans model to ge_model failed."); break;);
     GE_TIMESTAMP_START(Assign);
     GE_IF_BOOL_EXEC(SUCCESS != (ret = davinci_model->Assign(ge_model)), GELOGW("assign model to modeldef failed.");
-                      break;);
+                    break;);
     GE_TIMESTAMP_END(Assign, "GraphLoader::ModelAssign");
 
     GE_TIMESTAMP_START(Init);
@@ -199,23 +199,6 @@ Status ModelManager::DeleteModel(uint32_t id) {
 
   (void)model_map_.erase(it);
   free_model_id_.push_back(id);
-  return SUCCESS;
-}
-
-Status ModelManager::UnLoadAllModel(int32_t DeviceId) {
-  vector<uint32_t> id_list;
-
-  for (const auto &it : model_map_) {
-    uint32_t model_id = it.first;
-    GELOGI("Unload All model : model id : %u", model_id);
-    id_list.push_back(model_id);
-    GE_CHK_STATUS_RET(Stop(model_id), "UnLoadAllModel: Stop model : %u failed.", model_id);
-  }
-
-  for (const auto &id : id_list) {
-    GE_CHK_STATUS_RET(UnloadModeldef(id), "UnLoadAllModel: Unload model : %u failed.", id);
-  }
-
   return SUCCESS;
 }
 
@@ -323,6 +306,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<Tensor
 
   OutputData output_data;
   output_data.model_id = model_id;
+  output_data.index = 0;
   for (size_t i = 0; i < outputs.size(); i++) {
     DataBuffer data;
     data.data = outputs[i].data.data;
@@ -399,7 +383,7 @@ Status ModelManager::Stop(uint32_t model_id) {
 ///
 Status ModelManager::HandleCommand(const Command &command) {
   static const std::map<std::string, std::function<uint32_t(const Command &)>> cmds = {
-      {"profile", HandleProfileCommand}, {"dump", HandleDumpCommand}, {"profiling", HandleAclProfilingCommand}};
+    {"profile", HandleProfileCommand}, {"dump", HandleDumpCommand}, {"profiling", HandleAclProfilingCommand}};
 
   auto iter = cmds.find(command.cmd_type);
   if (iter == cmds.end()) {
@@ -442,8 +426,7 @@ Status ModelManager::HandleProfileCommand(const Command &command) {
     PropertiesManager::Instance().SetPropertyValue(iter->second, property_value);
   }
 
-  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH ||
-       map_key == RTS_PROFILE_PATH)) {
+  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
     PropertiesManager::Instance().SetPropertyValue(map_key, value);
   }
 
@@ -459,7 +442,7 @@ Status ModelManager::HandleProfileCommand(const Command &command) {
 }
 
 Status ModelManager::HandleDumpCommand(const Command &command) {
-  if (command.cmd_params.size() % kCmdParSize != 0) {
+  if (command.cmd_params.size() % kDumpCmdPairSize != 0) {
     GELOGE(PARAM_INVALID, "When the cmd_type is 'dump', the size of cmd_params must be a even number.");
     return PARAM_INVALID;
   }
@@ -468,6 +451,7 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
   std::string dump_model(DUMP_ALL_MODEL);
   std::string dump_path("/");
   std::set<std::string> dump_layers;
+  std::string dump_layer_count;
 
   auto iter_dump_status = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_STATUS);
   if (iter_dump_status != command.cmd_params.end()) {
@@ -498,10 +482,10 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
     return SUCCESS;
   }
 
-  for (size_t i = 0; i < command.cmd_params.size() / 2; ++i) {
-    if (command.cmd_params.at(i * kCmdParSize).find(DUMP_LAYER) != std::string::npos) {
-      GELOGI("dump layer: %s.", command.cmd_params.at(i * kCmdParSize + 1).c_str());
-        (void)dump_layers.insert(command.cmd_params.at(i * kCmdParSize + 1));
+  for (size_t i = 0; i < command.cmd_params.size() / kDumpCmdPairSize; ++i) {
+    if (command.cmd_params.at(i * kDumpCmdPairSize).find(DUMP_LAYER) != std::string::npos) {
+      GELOGI("dump layer: %s.", command.cmd_params.at(i * kDumpCmdPairSize + 1).c_str());
+      dump_layers.insert(command.cmd_params.at(i * kDumpCmdPairSize + 1));
     }
   }
 
@@ -529,7 +513,7 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
 Status ModelManager::GetMaxUsedMemory(const uint32_t model_id, uint64_t &max_size) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetMaxUsedMemory Failed, Invalid Model ID %u !",
-                           model_id);
+                         model_id);
 
   max_size = davinci_model->TotalMemSize();
   return SUCCESS;
@@ -539,7 +523,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
                                             vector<InputOutputDescInfo> &output_desc) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                           "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
 
   return davinci_model->GetInputOutputDescInfo(input_desc, output_desc);
 }
@@ -548,7 +532,7 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
                                                        vector<InputOutputDescInfo> &output_desc) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                           "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
 
   return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc);
 }
@@ -558,7 +542,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
                                             std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                           "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
 
   return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
 }
@@ -569,7 +553,7 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
                                                        std::vector<uint32_t> &outputFormats) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                           "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
 
   return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
 }
@@ -577,7 +561,7 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0, PARAM_INVALID,
-                           "input key file path is not valid!");
+                         "input key file path is not valid!");
   GenModelId(&model_id);
 
   shared_ptr<DavinciModel> davinci_model = nullptr;
@@ -634,7 +618,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
                                     const std::vector<uint32_t> &input_queue_ids,
                                     const std::vector<uint32_t> &output_queue_ids) {
   GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0, PARAM_INVALID,
-                           "input key file path is not valid!");
+                         "input key file path is not valid!");
 
   ModelHelper model_helper;
   Status ret = model_helper.LoadModel(model_data);

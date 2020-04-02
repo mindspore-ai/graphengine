@@ -18,7 +18,6 @@
 #define GE_GRAPH_BUILD_OPTIMIZE_STREAM_GRAPH_H_
 
 #include <vector>
-
 #include "common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_types.h"
 #include "framework/common/types.h"

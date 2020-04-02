@@ -15,22 +15,19 @@
  */
 
 #include "ge/ge_api.h"
-
 #include <iostream>
-
 #include "common/debug/log.h"
-#include "common/ge/datatype_util.h"
-#include "common/ge/tbe_plugin_manager.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/detail/model_serialize_imp.h"
-#include "graph/model_serialize.h"
-#include "graph/opsproto_manager.h"
-#include "graph/utils/tensor_adapter.h"
-#include "graph/utils/type_utils.h"
-#include "init/gelib.h"
+#include "common/ge/datatype_util.h"
 #include "proto/ge_api.pb.h"
-#include "register/op_registry.h"
+#include "graph/model_serialize.h"
+#include "graph/detail/model_serialize_imp.h"
+#include "graph/utils/tensor_adapter.h"
+#include "init/gelib.h"
 #include "session/session_manager.h"
+#include "graph/opsproto_manager.h"
+#include "graph/utils/type_utils.h"
+#include "register/op_registry.h"
 
 using domi::GetContext;
 using domi::OpRegistry;
@@ -102,6 +99,20 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
   return SUCCESS;
 }
 
+void SaveDdkVersion(const std::map<string, string> &options) {
+  auto ddk_option = options.find(DDK_VERSION_FLAG);
+  if (ddk_option != options.end()) {
+    auto ddk_version = ddk_option->second;
+    if (!ddk_version.empty()) {
+      GELOGI("Input ddk version : %s.", ddk_version.c_str());
+      domi::GetContext().ddk_version = ddk_version;
+    }
+  } else {
+    GELOGW("No ddkVersion!");
+    return;
+  }
+}
+
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
   GELOGT(TRACE_INIT, "GEInitialize start");
@@ -127,7 +138,8 @@ Status GEInitialize(const std::map<string, string> &options) {
     return FAILED;
   }
 
-  TBEPluginManager::Instance().InitPreparation(options);
+  SaveDdkVersion(options);
+
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
   Status ret = ge::GELib::Initialize(options);
@@ -169,7 +181,7 @@ Status GEFinalize() {
     GELOGE(ret, "GEFinalize Failed");
     return FAILED;
   }
-  TBEPluginManager::Instance().Finalize();
+
   if (kGeInitialized && ret == SUCCESS) {
     kGeInitialized = false;
   }
@@ -246,20 +258,24 @@ Session::~Session() {
 }
 
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
-  GELOGT(TRACE_INIT, "Session AddGraph start");
-  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
-  if (!instance_ptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Session AddGraph failed");
-    return FAILED;
-  }
+  std::map<std::string, std::string> options;
+  return AddGraph(graph_id, graph, options);
+}
 
-  GELOGT(TRACE_RUNNING, "Adding Graph to session");
-  Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Session AddGraph failed");
+Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options) {
+  GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, sessinon_id: %lu.", graph_id, sessionId_);
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Sesson.");
     return FAILED;
   }
-  GELOGT(TRACE_STOP, "Session AddGraph finished");
+  GELOGD("Adding graph to session");
+  Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph, options);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "AddGraph failed in Session.");
+    return FAILED;
+  }
+  GELOGD("AddGraph finished in Session.");
   return ret;
 }
 

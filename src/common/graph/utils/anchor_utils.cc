@@ -15,9 +15,7 @@
  */
 
 #include "utils/anchor_utils.h"
-
 #include <algorithm>
-
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 

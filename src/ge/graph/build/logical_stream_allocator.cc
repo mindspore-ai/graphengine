@@ -19,12 +19,13 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/types.h"
+#include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
-using std::string;
-using std::vector;
 using std::map;
 using std::set;
+using std::string;
+using std::vector;
 
 namespace ge {
 LogicalStreamPass::LogicalStreamPass(const string &name) : name_(name) {}
@@ -207,8 +208,8 @@ bool AssignByDependencyPass::CouldReuse(const SubgraphPtr &subgraph, const Subgr
 }
 
 LogicalStreamPass::SubgraphPtr AssignByDependencyPass::GetReusableSubgraph(
-    const SubgraphPtr &subgraph, const map<NodePtr, SubgraphPtr> &end_subgraph_map,
-    const map<NodePtr, SubgraphPtr> &pld_subgraph_map) {
+  const SubgraphPtr &subgraph, const map<NodePtr, SubgraphPtr> &end_subgraph_map,
+  const map<NodePtr, SubgraphPtr> &pld_subgraph_map) {
   const SubGraphInfo &subgraph_info = subgraph->subgraph_info;
   for (const auto &pld_2_end : subgraph_info.GetPld2EndMap()) {
     const NodePtr &peer_end = pld_2_end.second;
@@ -265,7 +266,6 @@ void AssignByDependencyPass::UpdateAssignedSubgraphs(Context &context) {
   // Update the subgraphs assigned by the engine.
   for (auto &subgraph : assigned_subgraphs_) {
     subgraph->stream_id += engine_start_streams[subgraph->engine_conf.id];
-    GELOGI("Stream of subgraph %s has been updated to %ld.", subgraph->name.c_str(), subgraph->stream_id);
   }
 }
 
@@ -308,7 +308,7 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr whole_graph, const vector<Subgr
     for (NodePtr &node : compute_graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node->GetOpDesc());
       if (IsEngineSkip(*subgraph) && node->GetInNodes().empty()) {
-        GELOGI("Node %s of type %s in subgraph %s doesn't need to assign a stream (engine: %s).",
+        GELOGD("Node %s of type %s in subgraph %s doesn't need to assign a stream (engine: %s).",
                node->GetName().c_str(), node->GetType().c_str(), subgraph->name.c_str(), engine_name.c_str());
       } else {
         node->GetOpDesc()->SetStreamId(stream_id);
@@ -328,12 +328,13 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr whole_graph, const vector<Subg
   }
 
   GELOGI("AllReduceParallelPass is enabled.");
+  GraphUtils::DumpGEGraph(whole_graph, "BeforeAllReduceParallel");
 
   // All successors of HcomAllReduce.
   set<NodePtr> all_reduce_succs;
 
   for (const NodePtr &node : whole_graph->GetDirectNode()) {
-    if (node->GetType() != HCOMALLREDUCE) {
+    if (node->GetType() != HCOMALLREDUCE || node->GetInDataNodes().size() <= 1) {
       continue;
     }
 

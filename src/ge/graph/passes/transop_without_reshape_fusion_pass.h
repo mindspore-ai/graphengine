@@ -65,8 +65,8 @@ class TransOpWithoutReshapeFusionPass : public GraphPass {
   bool OpAccuracyAbilityCheck(const OpDescPtr &op_desc);
 
   graphStatus GetSubGraphsBetweenNormalNode(
-      const OutDataAnchorPtr &out_anchor, vector<vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
-      vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list);
+    const OutDataAnchorPtr &out_anchor, vector<vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
+    vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list);
 
   graphStatus GetSubGraphNodesInfo();
 

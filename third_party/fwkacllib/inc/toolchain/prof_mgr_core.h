@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef _MSPROF_ENGINE_PROF_MGR_CORE_H_
-#define _MSPROF_ENGINE_PROF_MGR_CORE_H_
+#ifndef MSPROF_ENGINE_PROF_MGR_CORE_H_
+#define MSPROF_ENGINE_PROF_MGR_CORE_H_
 #define MSVP_PROF_API __attribute__((visibility("default")))
 
 #include <string>
 #include <vector>
 
 /**
+ * @file prof_mgr_core.h
  * @brief : struct ProfMgrCfg
  */
 struct ProfMgrCfg {
@@ -79,11 +80,5 @@ MSVP_PROF_API int ProfMgrStop(void *handle);
  * @see ProfMgrStartUp
  */
 MSVP_PROF_API int ProfMgrGetConf(const std::string &aicoreMetricsType, ProfMgrConf *conf);
-#endif
-/*
- * History: \n
- * 2019-04-10, huawei, Create file.     \n
- * 2020-02-10, huawei, Add Api Comment. \n
- *
- * vi: set expandtab ts=4 sw=4 tw=120:
- */
+
+#endif  // MSPROF_ENGINE_PROF_MGR_CORE_H_

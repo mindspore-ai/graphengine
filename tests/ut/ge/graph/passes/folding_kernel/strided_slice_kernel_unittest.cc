@@ -355,6 +355,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test10) {
   vector<GeTensorPtr> outputs;
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
+
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
   // EXPECT_EQ(PARAM_INVALID, status);
 }

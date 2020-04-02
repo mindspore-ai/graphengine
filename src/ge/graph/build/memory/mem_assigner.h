@@ -19,7 +19,6 @@
 
 #include "common/ge_inner_error_codes.h"
 #include "memory/memory_assigner.h"
-
 namespace ge {
 static const int64_t kInvalidOffset = -1;
 

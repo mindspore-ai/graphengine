@@ -15,10 +15,8 @@
  */
 
 #include "session/session_manager.h"
-
 #include <memory>
 #include <utility>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "graph/manager/util/rt_context_util.h"
@@ -138,6 +136,12 @@ Status SessionManager::GetVariable(SessionId session_id, const std::string &name
 }
 
 Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const Graph &graph) {
+  std::map<std::string, std::string> options;
+  return AddGraph(session_id, graph_id, graph, options);
+}
+
+Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const Graph &graph,
+                                const std::map<std::string, std::string> &options) {
   if (!init_flag_) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
@@ -207,7 +211,7 @@ bool SessionManager::HasSession(SessionId session_id) {
   return session_manager_map_.find(session_id) != session_manager_map_.end();
 }
 
-Status SessionManager::GetNextSessionId(SessionId &next_session_id) const {
+Status SessionManager::GetNextSessionId(SessionId &next_session_id) {
   if (!init_flag_) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;

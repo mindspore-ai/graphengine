@@ -26,7 +26,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/operator_reg.h"
@@ -40,7 +39,7 @@ using EdgeMap = std::set<std::pair<AnchorPtr, AnchorPtr>>;
 using ClusterSet = std::unordered_set<size_t>;
 class Cluster {
  public:
-  size_t index_;            // corresponding to rank of node
+  size_t index_;              // corresponding to rank of node
   ClusterSet in_clu_;         // inClusters index
   ClusterSet out_clu_;        // outClusters index
   std::list<NodePtr> nodes_;  // including node of this cluster
@@ -92,7 +91,7 @@ class GraphPartitioner {
   // add place holder and end node in src and dst graph
   graphStatus AddPlaceHolderEndInSrcDstGraph(const AnchorPtr &out_data_anchor, const AnchorPtr &peer_in_anchor,
                                              const ComputeGraphPtr &pld_graph, const ComputeGraphPtr &end_graph);
-  Status LinkInput2EndRemoveOriginalLink(NodePtr input_node, ComputeGraphPtr src_graph, ComputeGraphPtr dst_graph);
+  Status LinkInput2EndRemoveOrginalLink(NodePtr input_node, ComputeGraphPtr src_graph, ComputeGraphPtr dst_graph);
 
   /// After partition, put input nodes in srcGraph to dstGraph. Data will be linked to 'end';
   /// the other end will be linked to 'placeholder'
@@ -146,7 +145,7 @@ class GraphPartitioner {
   Mode mode_ = kPartitioning;
   uint32_t partition_times_ = 0;                                          // times of call partition
   std::vector<ComputeGraphPtr> transfer_graph_;                           // contains all transfer graphs
-  std::unordered_map<size_t, ClusterPtr> clusters_;                     // index to cluster ptr, contains all nodes
+  std::unordered_map<size_t, ClusterPtr> clusters_;                       // index to cluster ptr, contains all nodes
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // node map to cluster
   std::unordered_map<std::shared_ptr<Cluster>, ComputeGraphPtr> cluster_2_partition_;  // cluster map to subgraph
 };

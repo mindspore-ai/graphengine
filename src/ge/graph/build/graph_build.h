@@ -16,14 +16,12 @@
 
 #ifndef GE_GRAPH_BUILD_GRAPH_BUILD_H_
 #define GE_GRAPH_BUILD_GRAPH_BUILD_H_
-
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/properties_manager.h"
@@ -48,15 +46,14 @@ class GraphBuilder {
   GraphBuilder(const GraphBuilder &in) = delete;
   GraphBuilder &operator=(const GraphBuilder &in) = delete;
   virtual ~GraphBuilder() = default;
-  Status Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
-               GeModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
+  Status Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list, GeModelPtr &ge_model_ptr,
+               uint64_t session_id = INVALID_SESSION_ID);
   void SetOptions(const GraphManagerOptions &options);
 
  private:
   Status CalcOpParam(const ge::ComputeGraphPtr &graph);
-  Status GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr &model_ptr,
-                     ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
-                     uint64_t session_id = INVALID_SESSION_ID);
+  Status GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr &model_ptr, ComputeGraphPtr &comp_graph,
+                     std::vector<SubGraphInfoPtr> &subgraph_ptr_list, uint64_t session_id = INVALID_SESSION_ID);
   Status SetInputSize(const ge::NodePtr &node_ptr);
   Status SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list);
 

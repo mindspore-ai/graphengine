@@ -15,28 +15,25 @@
  */
 
 #include "graph/preprocess/insert_op/ge_aipp_op.h"
-
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "common/util.h"
 #include "graph/optimize/common/params.h"
 
-
-#define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                 \
-  do {                                                                                 \
+#define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                       \
+  do {                                                                                       \
     (void)aipp_attrs.SetAttr(#KEY, GeAttrValue::CreateFrom<SAVE_TYPE>(aipp_params_->KEY())); \
   } while (0)
 
-#define SAVE_AIPP_ATTR_LIST(KEY, SAVE_TYPE)                                               \
-  do {                                                                                    \
-    if (aipp_params_->KEY##_size() > 0) {                                                 \
+#define SAVE_AIPP_ATTR_LIST(KEY, SAVE_TYPE)                                                     \
+  do {                                                                                          \
+    if (aipp_params_->KEY##_size() > 0) {                                                       \
       (void)aipp_attrs.SetAttr(#KEY, GeAttrValue::CreateFrom<SAVE_TYPE>(aipp_params_->KEY(0))); \
-    }                                                                                     \
+    }                                                                                           \
   } while (0)
 
 namespace {
@@ -107,10 +104,9 @@ Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
 
   const bool is_edge_configed = aipp_params_->input_edge_idx_size() > 0;
 
-  GE_CHK_BOOL_RET_STATUS(
-      !is_edge_configed || aipp_params_->input_edge_idx(0) < target_input->GetOutDataNodes().size(), PARAM_INVALID,
-      "input_edge_idx %u should smaller than out edge size of target input %zu ", aipp_params_->input_edge_idx(0),
-      target_input->GetOutDataNodes().size());
+  GE_CHK_BOOL_RET_STATUS(!is_edge_configed || aipp_params_->input_edge_idx(0) < target_input->GetOutDataNodes().size(),
+                         PARAM_INVALID, "input_edge_idx %u should smaller than out edge size of target input %zu ",
+                         aipp_params_->input_edge_idx(0), target_input->GetOutDataNodes().size());
 
   uint32_t i = 0;
   for (OutDataAnchorPtr &src_out : target_input->GetAllOutDataAnchors()) {
@@ -158,16 +154,15 @@ Status AippOp::SetDefaultParams() {
     GELOGI("parse aipp params:min_chn_0:%f, min_chn_1:%f, min_chn_2:%f.", aipp_params_->min_chn_0(),
            aipp_params_->min_chn_1(), aipp_params_->min_chn_2());
 
-    GE_IF_BOOL_EXEC(!aipp_params_->crop(), aipp_params_->set_load_start_pos_h(0);
-        aipp_params_->set_load_start_pos_w(0); aipp_params_->set_crop_size_h(0);
-        aipp_params_->set_crop_size_w(0););
+    GE_IF_BOOL_EXEC(!aipp_params_->crop(), aipp_params_->set_load_start_pos_h(0); aipp_params_->set_load_start_pos_w(0);
+                    aipp_params_->set_crop_size_h(0); aipp_params_->set_crop_size_w(0););
 
     GE_IF_BOOL_EXEC(!aipp_params_->resize(), aipp_params_->set_resize_output_h(0);
-        aipp_params_->set_resize_output_w(0););
+                    aipp_params_->set_resize_output_w(0););
 
     GE_IF_BOOL_EXEC(!aipp_params_->padding(), aipp_params_->set_left_padding_size(0);
-        aipp_params_->set_right_padding_size(0); aipp_params_->set_top_padding_size(0);
-        aipp_params_->set_bottom_padding_size(0););
+                    aipp_params_->set_right_padding_size(0); aipp_params_->set_top_padding_size(0);
+                    aipp_params_->set_bottom_padding_size(0););
   }
 
   return SUCCESS;
@@ -318,7 +313,8 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
   ConvertParamToAttr(aipp_attrs);
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attrs),
-                  GELOGE(FAILED, "failed to set ATTR_NAME_AIPP"); return FAILED);
+                  GELOGE(FAILED, "failed to set ATTR_NAME_AIPP");
+                  return FAILED);
 
   return SUCCESS;
 }

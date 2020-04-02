@@ -18,7 +18,6 @@
 #define GE_GE_RUNTIME_TASK_STREAM_ACTIVE_TASK_H_
 
 #include <memory>
-
 #include "ge_runtime/task/task.h"
 
 namespace ge {

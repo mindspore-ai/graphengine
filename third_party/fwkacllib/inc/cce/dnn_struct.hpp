@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef __DNN_STRUCT_HPP__
-#define __DNN_STRUCT_HPP__
+#ifndef DNN_STRUCT_HPP__
+#define DNN_STRUCT_HPP__
 
 #include "dnn.h"
 #include "dnn_struct_base.hpp"
 
-#endif /* __DNN_STRUCT_HPP__ */
+#endif  // DNN_STRUCT_HPP__

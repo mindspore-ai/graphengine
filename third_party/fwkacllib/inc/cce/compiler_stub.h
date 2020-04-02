@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __COMPILER_STUB_H__
-#define __COMPILER_STUB_H__
+#ifndef COMPILER_STUB_H__
+#define COMPILER_STUB_H__
 
 namespace cce {
 
@@ -33,4 +33,4 @@ bool compilerStubFree();
 
 };  // namespace cce
 
-#endif /* __COMPILER_STUB_H__ */
+#endif  // COMPILER_STUB_H__

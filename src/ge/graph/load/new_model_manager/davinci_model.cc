@@ -16,19 +16,14 @@
 
 #include "graph/load/new_model_manager/davinci_model.h"
 
+#include <cce/dnn.h>
 #include <dlfcn.h>
+#include <graph/utils/node_utils.h>
 #include <pthread.h>
 #include <sched.h>
 #include <securec.h>
 #include <sys/prctl.h>
-
-#include <algorithm>
 #include <map>
-#include <utility>
-
-#include "cce/cce.h"
-#include "cce/dnn.h"
-#include "cce/optimizer/fusion_engine.h"
 #include "common/debug/log.h"
 #include "common/formats/formats.h"
 #include "common/formats/utils/formats_trans_utils.h"
@@ -43,15 +38,14 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/graph.h"
-#include "graph/load/new_model_manager/tbe_handle_store.h"
 #include "graph/load/output/output.h"
+#include "graph/load/new_model_manager/tbe_handle_store.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/util/debug.h"
 #include "graph/model_serialize.h"
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "mmpa/mmpa_api.h"
@@ -380,7 +374,8 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       device_id_(0),
       is_train_mode_(false),
       model_task_def_(nullptr),
-      maxDumpOpNum_(0) {
+      maxDumpOpNum_(0),
+      iterator_count_(0) {
   op_list_.clear();
 }
 
@@ -548,7 +543,7 @@ void DavinciModel::InitRuntimeParams() {
   runtime_param_.logic_mem_base = ret ? (uint64_t)value : 0;
   ret = ge::AttrUtils::GetInt(ge_model_, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, value);
   runtime_param_.logic_weight_base = ret ? (uint64_t)value : 0;
-  ret = ge::AttrUtils::GetInt(ge_model_, ge::MODEL_ATTR_SESSION_ID, value);
+  ret = ge::AttrUtils::GetInt(ge_model_, MODEL_ATTR_SESSION_ID, value);
   runtime_param_.session_id = ret ? (uint64_t)value : 0;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_TASK_GEN_VAR_ADDR, value);
   runtime_param_.logic_var_base = ret ? (uint64_t)value : 0;
@@ -667,7 +662,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t memsize, void *weight_ptr, size_
   GE_CHK_STATUS_RET_NOLOG(InitModelMem(dev_ptr, memsize, weight_ptr, weight_size));
   GE_TIMESTAMP_END(InitModelMem, "GraphLoader::InitModelMem");
 
-  InitDataDumper();
   data_inputer_ = new (std::nothrow) DataInputer();
   GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, INTERNAL_ERROR, "data_inputer_ is nullptr!");
 
@@ -711,11 +705,11 @@ Status DavinciModel::Init(void *dev_ptr, size_t memsize, void *weight_ptr, size_
         op_desc->GetType() == ANN_DATA_TYPE) {
       data_op_list_.push_back(op_desc);
       GE_IF_BOOL_EXEC(
-          (op_desc->GetInputDescPtr(0) != nullptr && op_desc->GetInputDescPtr(0)->GetFormat() != FORMAT_FILTER_HWCK),
-          data_op_input_tensor_desc_map_[op_desc->GetName()] = op_desc->GetInputDescPtr(0));
+        (op_desc->GetInputDescPtr(0) != nullptr && op_desc->GetInputDescPtr(0)->GetFormat() != FORMAT_FILTER_HWCK),
+        data_op_input_tensor_desc_map_[op_desc->GetName()] = op_desc->GetInputDescPtr(0));
       GE_IF_BOOL_EXEC(
-          (op_desc->GetOutputDescPtr(0) != nullptr && op_desc->GetOutputDescPtr(0)->GetFormat() != FORMAT_FRACTAL_Z),
-          data_op_output_tensor_desc_map_[op_desc->GetName()] = op_desc->GetOutputDescPtr(0));
+        (op_desc->GetOutputDescPtr(0) != nullptr && op_desc->GetOutputDescPtr(0)->GetFormat() != FORMAT_FRACTAL_Z),
+        data_op_output_tensor_desc_map_[op_desc->GetName()] = op_desc->GetOutputDescPtr(0));
       SetOutsideAddr(ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc));
       data_dumper_.SaveDumpInput(node);
     }
@@ -743,6 +737,8 @@ Status DavinciModel::Init(void *dev_ptr, size_t memsize, void *weight_ptr, size_
   }
   GE_TIMESTAMP_CALLNUM_END(LoadTBEKernelBinToOpDesc, "GraphLoader::LoadTBEKernelBinToOpDesc");
   GE_TIMESTAMP_CALLNUM_END(InitTbeHandle, "GraphLoader::InitTbeHandle");
+
+  SetDataDumperArgs();
 
   GE_TIMESTAMP_START(DoTaskSink);
   auto ret = DoTaskSink();
@@ -901,7 +897,8 @@ Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, s
     h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
     w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
 
-    if (data_op_list_[index]->GetInputDescPtr(0)->GetShape().GetDimNum() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+    if (data_op_list_[index]->GetInputDescPtr(0)->GetShape().GetDimNum() ==
+        static_cast<size_t>(domi::NORMAL_TENSOR_SIZE)) {
       input.shape_info.num = data_op_list_[index]->GetInputDescPtr(0)->GetShape().GetDim(n);
       input.shape_info.height = data_op_list_[index]->GetInputDescPtr(0)->GetShape().GetDim(h);
       input.shape_info.width = data_op_list_[index]->GetInputDescPtr(0)->GetShape().GetDim(w);
@@ -927,7 +924,7 @@ void DavinciModel::CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputD
                                 uint32_t &format_result) {
   /// netoutput input tensor desc
   GE_IF_BOOL_EXEC(op_desc->GetInputDescPtr(index) == nullptr, GELOGE(FAILED, "OpDesc GetInputDescPtr is nullptr");
-                  return);
+                  return );
   Format format = op_desc->GetInputDescPtr(index)->GetFormat();
   GeShape shape = op_desc->GetInputDescPtr(index)->GetShape();
   DataType data_type = op_desc->GetInputDescPtr(index)->GetDataType();
@@ -996,8 +993,8 @@ Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc,
       std::vector<int64_t> src_index = op_desc->GetSrcIndex();
       GE_CHK_BOOL_RET_STATUS(src_name.size() > index && src_index.size() > index, INTERNAL_ERROR,
                              "construct output_name failed.");
-      output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" +
-                    std::to_string(src_index[index]);
+      output_name =
+        std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" + std::to_string(src_index[index]);
       output.name = output_name;
 
       output_desc.push_back(output);
@@ -1031,12 +1028,26 @@ Status DavinciModel::CopyInputData(const InputData &current_data, bool device_da
 }
 
 Status DavinciModel::SyncVarData() {
-  GELOGI("SyncBroadCastData2Var model id:%u", model_id_);
+  GELOGI("Sync var data, model id:%u", model_id_);
   Status ret = SUCCESS;
+
+  OpDescPtr global_step = GetVariableOp(NODE_NAME_GLOBAL_STEP);
+  if (global_step != nullptr) {
+    auto v_output_size = ModelUtils::GetOutputSize(global_step);
+    auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param_, global_step);
+    if (v_output_size.empty() || v_output_addr.empty()) {
+      GELOGE(PARAM_INVALID, "global step op:%s not set output", global_step->GetName().c_str());
+      return PARAM_INVALID;
+    }
+    std::vector<uint64_t> v_step;
+    v_step.push_back(iterator_count_);
+    GE_CHK_RT_RET(rtMemcpy(v_output_addr[0], v_output_size[0], v_step.data(), v_step.size() * sizeof(uint64_t),
+                           RT_MEMCPY_HOST_TO_DEVICE));
+  }
 
   for (auto op_desc : variable_op_list_) {
     ret =
-        VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+      VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
     GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret fail, model id:%u, op name:%s", model_id_,
                      op_desc->GetName().c_str());
   }
@@ -1132,7 +1143,7 @@ Status DavinciModel::CopyTransData(const std::vector<DataBuffer> &data, uint32_t
          TypeUtils::DataTypeToSerialString(dst_data_type).c_str(), formats::ShapeToString(input_shape).c_str(),
          src_data_size);
   auto ret =
-      formats::TransDataType({src_data, static_cast<size_t>(src_data_size), src_data_type, dst_data_type}, tmp_result);
+    formats::TransDataType({src_data, static_cast<size_t>(src_data_size), src_data_type, dst_data_type}, tmp_result);
   if (ret != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to trans data type from %s to %s, input shape %s, data size %zu, error code %d",
            TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
@@ -1319,7 +1330,7 @@ Status DavinciModel::ReturnNoOutput(uint32_t model_id, uint32_t data_id) {
   GELOGI("ReturnNoOutput model id:%u", model_id);
   for (const auto &op_desc : variable_op_list_) {
     Status ret = VarManager::Instance(session_id_)
-                     ->SyncBroadCastData2Var(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+                   ->SyncBroadCastData2Var(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
     GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret fail, model id:%u, op name:%s", model_id,
                      op_desc->GetName().c_str());
   }
@@ -1426,7 +1437,6 @@ void *DavinciModel::Run(DavinciModel *model) {
                    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
                    return nullptr, "model_pointer is null!")
   bool seq_end_flag = false;
-  uint32_t interator_count = 0;
   uint32_t model_id = model->Id();
   uint32_t device_id = model->GetDeviceId();
 
@@ -1463,19 +1473,19 @@ void *DavinciModel::Run(DavinciModel *model) {
     GE_TIMESTAMP_START(Model_SyncVarData);
     ret = model->SyncVarData();
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-        ret != SUCCESS,
-        (void)model->ReturnResult(model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
-        CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
-        continue, "Copy input data to model failed.");  // [No need to check value]
+      ret != SUCCESS,
+      (void)model->ReturnResult(model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
+      CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
+      continue, "Copy input data to model failed.");  // [No need to check value]
     GE_TIMESTAMP_END(Model_SyncVarData, "Model Run SyncVarData");
 
     GELOGI("Copy input data, model id:%u", model_id);
     ret = model->CopyInputData(current_data, false);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-        ret != SUCCESS,
-        (void)model->ReturnResult(model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
-        CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
-        continue, "Copy input data to model failed.");  // [No need to check value]
+      ret != SUCCESS,
+      (void)model->ReturnResult(model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
+      CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
+      continue, "Copy input data to model failed.");  // [No need to check value]
 
     if (ProfilingManager::Instance().ProfilingOpTraceOn()) {
       GELOGI("GetOpTraceIterNum:%d", ProfilingManager::Instance().GetOpTraceIterNum());
@@ -1486,44 +1496,43 @@ void *DavinciModel::Run(DavinciModel *model) {
         // collect profiling for ge
         ProfilingManager::Instance().ReportProfilingData(model->GetTaskIdOpName());
         GELOGI("rtModelExecute start.");
-        rtError_t rt_ret_prof_on = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
-        GE_IF_BOOL_EXEC(rt_ret_prof_on != RT_ERROR_NONE, rslt_flg = false; (void)model->ReturnResult(
-            model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
+        rtError_t rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
+        GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false; (void)model->ReturnResult(
+          model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
                         continue);  // [No need to check value]
         GELOGI("rtModelExecute end");
 
         GELOGI("rtStreamSynchronize start.");
-        rt_ret_prof_on = rtStreamSynchronize(model->rt_model_stream_);
-        GE_IF_BOOL_EXEC(rt_ret_prof_on != RT_ERROR_NONE, rslt_flg = false; (void)model->ReturnResult(
-            model->model_id_, current_data.index, false, seq_end_flag, data_wrapper->GetOutput());
+        rt_ret = rtStreamSynchronize(model->rt_model_stream_);
+        GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false; (void)model->ReturnResult(
+          model->model_id_, current_data.index, false, seq_end_flag, data_wrapper->GetOutput());
                         continue);  // [No need to check value]
         GELOGI("rtStreamSynchronize end.");
-        ProfilingManager::Instance().StopProfiling();  // just profiling, no need to check value
+        (void)ProfilingManager::Instance().StopProfiling();  // just profiling, no need to check value
       }
     } else {
       GE_TIMESTAMP_START(rtModelExecute);
       GELOGI("rtModelExecute start.");
-      rtError_t rt_ret_prof_off = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
+      rtError_t rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
       GE_IF_BOOL_EXEC(
-          rt_ret_prof_off != RT_ERROR_NONE, rslt_flg = false;
-          (void)model->ReturnResult(model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
-          CsaInteract::GetInstance().WriteErrorCode(rt_ret_prof_off, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
-          continue);
+        rt_ret != RT_ERROR_NONE, rslt_flg = false;
+        (void)model->ReturnResult(model->model_id_, current_data.index, false, false, data_wrapper->GetOutput());
+        CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC); continue);
       GELOGI("rtModelExecute end");
       GE_TIMESTAMP_END(rtModelExecute, "GraphExcute::rtModelExecute");
 
       GE_TIMESTAMP_START(rtStreamSynchronize);
       GELOGI("rtStreamSynchronize start.");
-      rt_ret_prof_off = rtStreamSynchronize(model->rt_model_stream_);
-      if (rt_ret_prof_off == RT_ERROR_END_OF_SEQUENCE) {
+      rt_ret = rtStreamSynchronize(model->rt_model_stream_);
+      if (rt_ret == RT_ERROR_END_OF_SEQUENCE) {
         seq_end_flag = true;
       }
-      GE_IF_BOOL_EXEC(rt_ret_prof_off != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
-                      (void)model->ReturnResult(model->model_id_, current_data.index, false, seq_end_flag,
-                                                data_wrapper->GetOutput());  // [No need to check value]
-                      CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret_prof_off, ERROR_MODULE_RUNTIME,
-                                                                        JOBSUBSTATE_GRAPH_EXEC);
-                      continue);
+      GE_IF_BOOL_EXEC(
+        rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
+        (void)model->ReturnResult(model->model_id_, current_data.index, false, seq_end_flag,
+                                  data_wrapper->GetOutput());  // [No need to check value]
+        CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
+        continue);
       GELOGI("rtStreamSynchronize end.");
       GE_TIMESTAMP_END(rtStreamSynchronize, "GraphExcute::Wait for rtStreamSynchronize");
 
@@ -1536,14 +1545,14 @@ void *DavinciModel::Run(DavinciModel *model) {
     GE_TIMESTAMP_START(ReturnResult3);
     // copy output data from device to host
     GE_IF_BOOL_EXEC(
-        !model->output_op_list_.empty(),
-        (void)model->ReturnResult(model->model_id_, current_data.index, rslt_flg, false, data_wrapper->GetOutput()))
+      !model->output_op_list_.empty(),
+      (void)model->ReturnResult(model->model_id_, current_data.index, rslt_flg, false, data_wrapper->GetOutput()))
     // copy output data from device to host for variable graph
     GE_IF_BOOL_EXEC(model->output_op_list_.empty(), (void)model->ReturnNoOutput(model->model_id_, current_data.index));
     GE_TIMESTAMP_END(ReturnResult3, "GraphExcute::CopyDataFromDeviceToHost");
 
-    interator_count++;
-    GELOGI("interator_count=%u", interator_count);
+    model->iterator_count_++;
+    GELOGI("run iterator count is %lu", model->iterator_count_);
   }
 
   CsaInteract::GetInstance().WriteInternalErrorCode();
@@ -1645,7 +1654,7 @@ void DavinciModel::UnbindTaskSinkStream() {
   return;
 }
 
-Status DavinciModel::InitTaskInfo(ModelTaskDef &model_task_def) {
+Status DavinciModel::InitTaskInfo(domi::ModelTaskDef &model_task_def) {
   GELOGI("InitTaskInfo in,task size %zu", model_task_def.task().size());
   task_list_.resize(model_task_def.task_size());
   std::vector<std::future<Status>> futures(model_task_def.task_size());
@@ -1659,23 +1668,28 @@ Status DavinciModel::InitTaskInfo(ModelTaskDef &model_task_def) {
   }
 
   for (int32_t i = 0; i < model_task_def.task_size(); ++i) {
-    futures[i] = executor.commit(
-        [](const domi::TaskDef &task, DavinciModel *model, rtContext_t ctx, int32_t idx) -> Status {
-          rtError_t ctx_ret = rtCtxSetCurrent(ctx);
-          if (ctx_ret != RT_ERROR_NONE) {
-            GELOGE(RT_FAILED, "Failed to set context from rt, error-code 0x%X.", ctx_ret);
-            return RT_FAILED;
-          }
+    std::future<Status> f = executor.commit(
+      [](const domi::TaskDef &task, DavinciModel *model, rtContext_t ctx, int32_t idx) -> Status {
+        rtError_t rt_ret = rtCtxSetCurrent(ctx);
+        if (rt_ret != RT_ERROR_NONE) {
+          GELOGE(RT_FAILED, "Failed to set context from rt, error-code 0x%X.", rt_ret);
+          return RT_FAILED;
+        }
 
-          model->task_list_[idx] = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task.type()));
+        model->task_list_[idx] = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task.type()));
 
-          Status ret = FAILED;
-          if (model->task_list_[idx] != nullptr) {
-            ret = model->task_list_[idx]->Init(task, model);
-          }
-          return ret;
-        },
-        model_task_def.task(i), this, ctx, i);
+        Status ret = FAILED;
+        if (model->task_list_[idx] != nullptr) {
+          ret = model->task_list_[idx]->Init(task, model);
+        }
+        return ret;
+      },
+      model_task_def.task(i), this, ctx, i);
+    if (!f.valid()) {
+      GELOGE(FAILED, "Future is invalid");
+      return FAILED;
+    }
+    futures[i] = std::move(f);
   }
 
   Status ret;
@@ -1845,7 +1859,7 @@ Status DavinciModel::ZeroCopyInput(const InputData &input_data) {
       GELOGE(INTERNAL_ERROR, "data_buf.data is nullptr");
       return INTERNAL_ERROR;
     }
-    if (!outputs.empty() && ZeroCopyImpl(outputs[0], data_buf) != SUCCESS) {
+    if (ZeroCopyImpl(outputs[0], data_buf) != SUCCESS) {
       return FAILED;
     }
   }
@@ -1986,10 +2000,10 @@ Status DavinciModel::InitConstant(const ConstOpDescPtr &op_desc) const {
                   return PARAM_INVALID;);
 
   GeTensor *tensor = const_cast<GeTensor *>(v_weights[0].get());
-  GE_IF_BOOL_EXEC(v_output_size[0] < tensor->GetData().size(),
-                  GELOGE(PARAM_INVALID, "output size:%u less than weight data size:%zu", v_output_size[0],
-                         tensor->GetData().size());
-                  return PARAM_INVALID;);
+  GE_IF_BOOL_EXEC(
+    v_output_size[0] < tensor->GetData().size(),
+    GELOGE(PARAM_INVALID, "output size:%u less than weight data size:%zu", v_output_size[0], tensor->GetData().size());
+    return PARAM_INVALID;);
 
   GE_IF_BOOL_EXEC(tensor->GetData().size() == 0, GELOGW("const op:%s has no weight data.", op_desc->GetName().c_str());
                   return SUCCESS;);
@@ -2125,25 +2139,27 @@ Status DavinciModel::MarkActiveStream(const OpDescPtr &op_desc) {
   GE_CHECK_NOTNULL(op_desc);
   std::string type = op_desc->GetType();
   GE_IF_BOOL_EXEC(
-      type == STREAMSWITCH, std::vector<uint32_t> active_stream_list;
-      GE_LOGI_IF(!ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list),
-                 "GetInt ACTIVE_STREAM_LIST fail.");
-      if (active_stream_list.size() != TRUE_BRANCH_STREAM_NUM) {
-        GELOGE(INTERNAL_ERROR, "Stream num of switch true branch must be %u.", TRUE_BRANCH_STREAM_NUM);
-        return INTERNAL_ERROR;
-      } uint32_t true_stream_id = active_stream_list.front();
-      active_stream_indication_.insert(true_stream_id);
-      GELOGI("flowctrl_op_index_map  node:%s, true_stream_id=%u.", op_desc->GetName().c_str(), true_stream_id););
-  GE_IF_BOOL_EXEC(type == STREAMACTIVE, if (op_desc->HasAttr(ATTR_NAME_SWITCH_BRANCH_NODE_LABEL)) {
-    std::vector<uint32_t> active_stream_list;
-    GE_CHK_BOOL_EXEC(AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list),
-                     return INTERNAL_ERROR, "StreamActiveOp get attr ACTIVE_STREAM fail.");
+    type == STREAMSWITCH, std::vector<uint32_t> active_stream_list;
+    GE_LOGI_IF(!ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list),
+               "GetInt ACTIVE_STREAM_LIST fail.");
+    if (active_stream_list.size() != TRUE_BRANCH_STREAM_NUM) {
+      GELOGE(INTERNAL_ERROR, "Stream num of switch true branch must be %u.", TRUE_BRANCH_STREAM_NUM);
+      return INTERNAL_ERROR;
+    } uint32_t true_stream_id = active_stream_list.front();
+    active_stream_indication_.insert(true_stream_id);
+    GELOGI("flowctrl_op_index_map  node:%s, true_stream_id=%u.", op_desc->GetName().c_str(), true_stream_id););
+  GE_IF_BOOL_EXEC(
+    type == STREAMACTIVE, if (op_desc->HasAttr(ATTR_NAME_SWITCH_BRANCH_NODE_LABEL)) {
+      std::vector<uint32_t> active_stream_list;
+      GE_CHK_BOOL_EXEC(AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list),
+                       return INTERNAL_ERROR, "StreamActiveOp get attr ACTIVE_STREAM fail.");
 
-    for (size_t j = 0; j < active_stream_list.size(); ++j) {
-      active_stream_indication_.insert(active_stream_list[j]);
-      GELOGI("flowctrl_op_index_map  node:%s, active_stream_id=%u.", op_desc->GetName().c_str(), active_stream_list[j]);
-    }
-  });
+      for (size_t j = 0; j < active_stream_list.size(); ++j) {
+        active_stream_indication_.insert(active_stream_list[j]);
+        GELOGI("flowctrl_op_index_map  node:%s, active_stream_id=%u.", op_desc->GetName().c_str(),
+               active_stream_list[j]);
+      }
+    });
   return SUCCESS;
 }
 
@@ -2264,7 +2280,7 @@ uint8_t *DavinciModel::MallocWeightsMem(uint32_t weights_size) {
   if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
     string weight_memory_key = std::to_string(0) + "_w";
     weights_mem_base =
-        MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(weight_memory_key, weights_size, GetDeviceId());
+      MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(weight_memory_key, weights_size, GetDeviceId());
   } else {
     weights_mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(weights_size, GetDeviceId());
   }
@@ -2334,46 +2350,50 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
     if (node->GetType() != VARIABLE) {
       continue;
     }
-    vector_future.push_back(executor.commit(
-        [](ge::NodePtr &node, DavinciModel *model, rtContext_t ctx, uint32_t graph_id) -> Status {
-          if (model == nullptr) {
-            GELOGE(FAILED, "DavinciModel is NULL!");
-            return FAILED;
+    std::future<Status> f = executor.commit(
+      [](ge::NodePtr &node, DavinciModel *model, rtContext_t ctx, uint32_t graph_id) -> Status {
+        if (model == nullptr) {
+          GELOGE(FAILED, "DavinciModel is NULL!");
+          return FAILED;
+        }
+        rtError_t rt_ret = rtCtxSetCurrent(ctx);
+        if (rt_ret != RT_ERROR_NONE) {
+          GELOGE(RT_FAILED, "Failed to set context, error_code is: 0x%X.", rt_ret);
+          return RT_FAILED;
+        }
+        uint32_t allocated_graph_id = 0;
+        Status ret = VarManager::Instance(model->session_id_)->GetAllocatedGraphId(node->GetName(), allocated_graph_id);
+        if (ret != SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "var has not been allocated, node:%s, graph_id:%u.", node->GetName().c_str(),
+                 graph_id);
+          return INTERNAL_ERROR;
+        }
+        uint32_t changed_graph_id = 0;
+        ret = VarManager::Instance(model->session_id_)->GetChangedGraphId(node->GetName(), changed_graph_id);
+        bool call_trans_var =
+          (ret == SUCCESS && changed_graph_id == graph_id && changed_graph_id != allocated_graph_id);
+        if (call_trans_var) {
+          GELOGI("VarManager::GetChangedGraphId() success, node:%s, graph_id:%u.", node->GetName().c_str(), graph_id);
+          VarTransRoad *trans_road = VarManager::Instance(model->session_id_)->GetTransRoad(node->GetName());
+          if (trans_road == nullptr) {
+            GELOGI("The variable %s does not have any trans road", node->GetName().c_str());
+            return SUCCESS;
           }
-          rtError_t rt_ret = rtCtxSetCurrent(ctx);
-          if (rt_ret != RT_ERROR_NONE) {
-            GELOGE(RT_FAILED, "Failed to set context, error_code is: 0x%X.", rt_ret);
-            return RT_FAILED;
-          }
-          uint32_t allocated_graph_id = 0;
-          Status ret =
-              VarManager::Instance(model->session_id_)->GetAllocatedGraphId(node->GetName(), allocated_graph_id);
+          ret = TransVarData(node, *trans_road, model->session_id_, model->device_id_);
           if (ret != SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "var has not been allocated, node:%s, graph_id:%u.", node->GetName().c_str(),
-                   graph_id);
+            GELOGE(INTERNAL_ERROR, "TransVarData failed, node:%s, graph_id:%u.", node->GetName().c_str(), graph_id);
             return INTERNAL_ERROR;
           }
-          uint32_t changed_graph_id = 0;
-          ret = VarManager::Instance(model->session_id_)->GetChangedGraphId(node->GetName(), changed_graph_id);
-          bool call_trans_var =
-              (ret == SUCCESS && changed_graph_id == graph_id && changed_graph_id != allocated_graph_id);
-          if (call_trans_var) {
-            GELOGI("VarManager::GetChangedGraphId() success, node:%s, graph_id:%u.", node->GetName().c_str(), graph_id);
-            VarTransRoad *trans_road = VarManager::Instance(model->session_id_)->GetTransRoad(node->GetName());
-            if (trans_road == nullptr) {
-              GELOGI("The variable %s does not have any trans road", node->GetName().c_str());
-              return SUCCESS;
-            }
-            ret = TransVarData(node, *trans_road, model->session_id_, model->device_id_);
-            if (ret != SUCCESS) {
-              GELOGE(INTERNAL_ERROR, "TransVarData failed, node:%s, graph_id:%u.", node->GetName().c_str(), graph_id);
-              return INTERNAL_ERROR;
-            }
-            VarManager::Instance(model->session_id_)->RemoveChangedGraphId(node->GetName());
-          }
-          return SUCCESS;
-        },
-        node, this, ctx, graph_id));
+          VarManager::Instance(model->session_id_)->RemoveChangedGraphId(node->GetName());
+        }
+        return SUCCESS;
+      },
+      node, this, ctx, graph_id);
+    if (!f.valid()) {
+      GELOGE(FAILED, "Future is invalid");
+      return FAILED;
+    }
+    vector_future.push_back(std::move(f));
   }
 
   Status ret_status;
@@ -2390,8 +2410,8 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
   return SUCCESS;
 }
 
-void DavinciModel::InitDataDumper() {
-  GELOGI("data dumper init, name: %s, id: %u.", name_.c_str(), model_id_);
+void DavinciModel::SetDataDumperArgs() {
+  GELOGI("set data dumper args, name: %s, id: %u.", name_.c_str(), model_id_);
   data_dumper_.SetModelName(name_);
   data_dumper_.SetModelId(model_id_);
   data_dumper_.SetMemory(runtime_param_);
@@ -2403,7 +2423,26 @@ void DavinciModel::InitDataDumper() {
     return;
   }
   data_dumper_.SetDeviceId(device_id);
-  GELOGI("InitDataDumper end.");
+
+  // set loop count addr
+  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void * {
+    if (op != nullptr) {
+      auto v_output_size = ModelUtils::GetOutputSize(op);
+      auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param, op);
+      if (v_output_size.empty() || v_output_addr.empty()) {
+        return nullptr;
+      }
+      return v_output_addr[0];
+    }
+    GELOGW("op is null.");
+    return nullptr;
+  };
+
+  data_dumper_.SetLoopAddr(get_var_addr(GetVariableOp(NODE_NAME_GLOBAL_STEP), runtime_param_),
+                           get_var_addr(GetVariableOp(NODE_NAME_FLOWCTRL_LOOP_PER_ITER), runtime_param_),
+                           get_var_addr(GetVariableOp(NODE_NAME_FLOWCTRL_LOOP_COND), runtime_param_));
+
+  GELOGI("SetDataDumperArgs end.");
 }
 
 uint32_t DavinciModel::GetFlowctrlIndex(uint32_t op_index) {
@@ -2425,13 +2464,13 @@ Status TransTensor(uint8_t *var_data, const NodePtr &var_src, const NodePtr &var
   auto src_data_datatype = var_src->GetOpDesc()->GetOutputDesc(0).GetDataType();
   auto dst_data_datatype = var_dst->GetOpDesc()->GetOutputDesc(0).GetDataType();
   GE_IF_BOOL_EXEC(
-      src_data_datatype != dst_data_datatype,
-      auto ret = formats::TransDataType(
-          {var_data, static_cast<size_t>(src_data_shape_size), src_data_datatype, dst_data_datatype}, result);
-      if (ret != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "trans var data on host failed");
-        return ret;
-      });
+    src_data_datatype != dst_data_datatype,
+    auto ret = formats::TransDataType(
+      {var_data, static_cast<size_t>(src_data_shape_size), src_data_datatype, dst_data_datatype}, result);
+    if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "trans var data on host failed");
+      return ret;
+    });
   return SUCCESS;
 }
 

@@ -18,7 +18,6 @@
 #define GE_GE_RUNTIME_TASK_EVENT_RECORD_TASK_H_
 
 #include <memory>
-
 #include "ge_runtime/task/task.h"
 
 namespace ge {
@@ -34,7 +33,7 @@ class EventRecordTask : public TaskRepeater<EventRecordTaskInfo> {
  private:
   std::shared_ptr<EventRecordTaskInfo> task_info_;
   rtStream_t stream_;
-  rtEvent_t  event_;
+  rtEvent_t event_;
 };
 }  // namespace model_runner
 }  // namespace ge

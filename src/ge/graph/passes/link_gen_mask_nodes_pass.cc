@@ -70,8 +70,8 @@ Status LinkGenMaskNodesPass::Run(ComputeGraphPtr graph) {
     auto dest_anchor = dest_node->GetInControlAnchor();
     GE_CHECK_NOTNULL(dest_anchor);
 
-    graphStatus ret = src_anchor->LinkTo(dest_anchor);
-    if (ret != GRAPH_SUCCESS) {
+    graphStatus status = src_anchor->LinkTo(dest_anchor);
+    if (status != GRAPH_SUCCESS) {
       GELOGE(FAILED, "Link from %s to %s failed.", src_node->GetName().c_str(), dest_node->GetName().c_str());
       return FAILED;
     }

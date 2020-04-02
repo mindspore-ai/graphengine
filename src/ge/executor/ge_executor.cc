@@ -16,14 +16,11 @@
 
 #include "executor/ge_executor.h"
 
+#include <cce/cce.h>
+#include <cce/compiler_stub.h>
 #include <ctime>
-
 #include <iostream>
 
-#include "cce/cce.h"
-#include "cce/compiler_stub.h"
-#include "cce/aicpu_engine.h"
-#include "cce/fwk_adpt_struct.h"
 #include "common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
@@ -142,7 +139,7 @@ Status GeExecutor::Initialize() {
   GELOGI("current device_id:%d", device_id);
   Options profiling_options;
   profiling_options.device_id = device_id;
-  profiling_options.job_id = 0;
+  profiling_options.job_id = "";
   ProfilingManager::Instance().Init(profiling_options);
   if (ProfilingManager::Instance().Init(profiling_options) != SUCCESS) {
     GELOGE(FAILED, "Failed to init profiling.");
@@ -252,8 +249,8 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
   std::vector<uint32_t> output_formats;
   GELOGI("GetInputOutputDescInfo via new ome.");
 
-  Status ret = GraphExecutor::GetInputOutputDescInfo(model_id, input_desc_infos, output_desc_infos,
-                                                     input_formats, output_formats);
+  Status ret =
+    GraphExecutor::GetInputOutputDescInfo(model_id, input_desc_infos, output_desc_infos, input_formats, output_formats);
   if (ret != domi::SUCCESS) {
     GELOGE(ret, "GetInputOutputDescInfo  failed. ret = %u", ret);
     return TransferDomiErrorCode(ret);
@@ -370,8 +367,8 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
 /// @param [out] uint32_t &model_id: identification after model loading
 /// @return SUCCESS handle successfully / others handle failed
 ///
-Status GeExecutor::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr,
-                                     size_t mem_size, void *weight_ptr, size_t weight_size) {
+Status GeExecutor::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr, size_t mem_size,
+                                     void *weight_ptr, size_t weight_size) {
   return GraphLoader::LoadModelFromData(model_id, model_data, dev_ptr, mem_size, weight_ptr, weight_size);
 }
 
@@ -463,9 +460,7 @@ Status GeExecutor::GetMemAndWeightSize(const void *model_data, size_t model_size
   return ge::ModelManager::GetModelMemAndWeightSize(model, mem_size, weight_size);
 }
 
-Status GeExecutor::LoadSingleOp(const std::string &model_name,
-                                const ge::ModelData &model_data,
-                                void *stream,
+Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelData &model_data, void *stream,
                                 SingleOp **single_op) {
   return SingleOpManager::GetInstance().GetOpFromModel(model_name, model_data, stream, single_op);
 }

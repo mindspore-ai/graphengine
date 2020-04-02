@@ -59,6 +59,9 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "types.cc"
         "util.cc"
         "model_saver.cc"
+# new files, possibly to be deleted?
+        "op/attr_value_util.cc"
+        "op/ge_op_utils.cc"
         )
 
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -75,9 +78,6 @@ include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
-include_directories(${GE_SOURCE_DIR}/third_party/json/include)
-include_directories(${GE_SOURCE_DIR}/third_party/eigen)
-include_directories(${GE_SOURCE_DIR}/third_party/protobuf/src)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
@@ -94,7 +94,6 @@ target_link_libraries(ge_common
         ${c_sec}
         ${slog}
         ${mmpa}
-        ${cce}
         ${resource}
         rt
         dl)

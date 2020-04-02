@@ -20,7 +20,6 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-
 namespace ge {
 #define USR_TYPE_DEC(type, name)                              \
   inline void set_##name(const type &value) { name = value; } \

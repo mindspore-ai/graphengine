@@ -16,9 +16,7 @@
 
 #ifndef GE_GRAPH_BUILD_MEMORY_VAR_MEM_ASSIGN_UTIL_H_
 #define GE_GRAPH_BUILD_MEMORY_VAR_MEM_ASSIGN_UTIL_H_
-
 #include <string>
-
 #include "common/debug/log.h"
 #include "common/ge_inner_error_codes.h"
 #include "graph/utils/node_utils.h"

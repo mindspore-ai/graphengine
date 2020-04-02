@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/event_wait_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -58,6 +57,6 @@ bool EventWaitTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kEventWait, EventWaitTask, EventWaitTaskInfo);
+REGISTER_TASK(TaskInfoType::EVENT_WAIT, EventWaitTask, EventWaitTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

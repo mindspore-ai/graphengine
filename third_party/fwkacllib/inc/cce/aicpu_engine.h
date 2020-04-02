@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __AICPU_ENGINE_H__
-#define __AICPU_ENGINE_H__
+#ifndef AICPU_ENGINE_H__
+#define AICPU_ENGINE_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,4 +46,4 @@ aeStatus_t aeCallInterface(void *addr);
 }
 #endif
 
-#endif
+#endif  // AICPU_ENGINE_H__

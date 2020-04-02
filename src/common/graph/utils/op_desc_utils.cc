@@ -30,6 +30,7 @@
 
 using std::vector;
 
+/*lint -e512 -e737 -e752*/
 namespace ge {
 const char OP_DESC_QUANT_PARAMS[] = "quantize_factor";
 static const int CONST_OP_NORMAL_WEIGHT_SIZE = 1;
@@ -134,11 +135,11 @@ graphStatus OpDescUtils::GetQuantizeFactorParams(const OpDesc &op_desc, Quantize
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 OpDescUtils::SetQuantizeFactorParams(const OpDescPtr &op_desc, const QuantizeFactorParams &quant) {
   GE_CHK_BOOL_EXEC_INFO(op_desc != nullptr, return GRAPH_FAILED, "op_desc is nullptr");
-  return op_desc->SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));
+  return op_desc->SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));  // lint !e732
 }
 
 graphStatus OpDescUtils::SetQuantizeFactorParams(OpDesc &op_desc, const QuantizeFactorParams &quant) {
-  return op_desc.SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));
+  return op_desc.SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));  // lint !e732
 }
 
 GeTensorPtr OpDescUtils::MutableWeights(OpDesc &op_desc) {
@@ -163,7 +164,7 @@ graphStatus OpDescUtils::SetWeights(OpDesc &op_desc, const GeTensorPtr weight) {
     GELOGE(GRAPH_FAILED, "weight is null");
     return GRAPH_FAILED;
   }
-  return AttrUtils::SetTensor(&op_desc, ATTR_NAME_WEIGHTS, weight) ? GRAPH_SUCCESS : GRAPH_FAILED;
+  return AttrUtils::SetTensor(&op_desc, ATTR_NAME_WEIGHTS, weight) ? GRAPH_SUCCESS : GRAPH_FAILED;  // lint !e737
 }
 
 graphStatus OpDescUtils::SetWeights(OpDescPtr op_desc, const GeTensorPtr weight) {
@@ -180,7 +181,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ConstGeTensorPtr> OpDescUt
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ConstGeTensorPtr> OpDescUtils::GetWeights(
-    const ge::ConstNodePtr &node) {
+  const ge::ConstNodePtr &node) {
   if (node == nullptr) {
     return vector<ge::ConstGeTensorPtr>();
   }
@@ -188,7 +189,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ConstGeTensorPtr> OpDescUt
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::GetConstInputNode(
-    const ge::Node &node) {
+  const ge::Node &node) {
   vector<ge::NodePtr> ret;
   auto in_anchors = node.GetAllInDataAnchors();
   for (const auto &in_anchor : in_anchors) {
@@ -207,7 +208,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ConstGeTensorPtr> OpDescUtils::GetInputData(
-    const vector<ge::NodePtr> &input_nodes) {
+  const vector<ge::NodePtr> &input_nodes) {
   vector<ConstGeTensorPtr> ret;
   for (const auto &input_node : input_nodes) {
     auto temp_weight = MutableWeights(input_node->GetOpDesc());
@@ -229,12 +230,12 @@ size_t OpDescUtils::GetNonConstInputsSize(const ge::Node &node) {
         continue;
       }
     }
-    return input_num;
+    return input_num;  // lint !e712
   } else {
     GE_IF_BOOL_EXEC(
-        node.GetInDataNodes().size() < GetConstInputs(node).size(),
-        GELOGE(GRAPH_FAILED, "%zu is smaller than %zu", node.GetInDataNodes().size(), GetConstInputs(node).size());
-        return 0);
+      node.GetInDataNodes().size() < GetConstInputs(node).size(),
+      GELOGE(GRAPH_FAILED, "%zu is smaller than %zu", node.GetInDataNodes().size(), GetConstInputs(node).size());
+      return 0);
     return node.GetInDataNodes().size() - GetConstInputs(node).size();
   }
 }
@@ -334,7 +335,7 @@ bool OpDescUtils::IsNonConstInput(const ge::Node &node, const size_t index) {
   bool ret = false;
   if (index < node.GetAllInDataAnchors().size()) {
     if (NodeUtils::IsAnchorStatusSet(node)) {
-      ret = (ge::AnchorUtils::GetStatus(node.GetInDataAnchor(static_cast<int>(index))) == ANCHOR_DATA);
+      ret = (ge::AnchorUtils::GetStatus(node.GetInDataAnchor(static_cast<int>(index))) == ANCHOR_DATA);  // lint !e712
     } else {
       for (const auto &anchor : node.GetAllInDataAnchors()) {
         if (anchor->GetIdx() != static_cast<int>(index)) {
@@ -363,13 +364,15 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool OpDescUtils::IsNonConstInput
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::GetConstInputs(
-    const ge::ConstNodePtr &node) {
-  if (node == nullptr) { return vector<ge::NodePtr>(); }
+  const ge::ConstNodePtr &node) {
+  if (node == nullptr) {
+    return vector<ge::NodePtr>();
+  }
   return GetConstInputs(*node);
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::GeTensorDesc> OpDescUtils::GetNonConstTensorDesc(
-    const ge::ConstNodePtr &node) {
+  const ge::ConstNodePtr &node) {
   if (node == nullptr || node->GetOpDesc() == nullptr) {
     return vector<ge::GeTensorDesc>();
   }
@@ -377,7 +380,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::GeTensorDesc> OpDescUt
   if (NodeUtils::IsAnchorStatusSet(*node)) {
     for (const auto &in_anchor : node->GetAllInDataAnchors()) {
       if (ge::AnchorUtils::GetStatus(in_anchor) == ANCHOR_DATA) {
-        ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
+        (void)ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
       }
     }
   } else {
@@ -387,7 +390,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::GeTensorDesc> OpDescUt
         continue;
       }
       if (out_anchor->GetOwnerNode()->GetOpDesc()->GetType() != CONSTANT) {
-        ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
+        (void)ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
       }
     }
   }
@@ -571,3 +574,4 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDescUtils::ClearWei
   return GRAPH_SUCCESS;
 }
 }  // namespace ge
+/*lint +e512 +e737 +e752*/

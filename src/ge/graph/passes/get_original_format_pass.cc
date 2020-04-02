@@ -19,12 +19,12 @@
 #include <vector>
 
 #include "common/debug/log.h"
+#include "framework/common/debug/ge_log.h"
 #include "common/types.h"
 #include "common/util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/omg/omg_inner_types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/op_desc_utils.h"
+#include "framework/omg/omg_inner_types.h"
 
 using domi::DOMI_TENSOR_NCHW;
 using domi::DOMI_TENSOR_NHWC;
@@ -96,9 +96,9 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
           OpDescPtr tmpSecondOpPtr = bias_node_ptr->GetInDataNodes().at(1)->GetOpDesc();
           GE_CHECK_NOTNULL(tmpSecondOpPtr);
           GE_IF_BOOL_EXEC(
-              !AttrUtils::GetInt(tmp_first_op_ptr, ATTR_NAME_FORMAT, first_input_format), continue_flag = true; break);
+            !AttrUtils::GetInt(tmp_first_op_ptr, ATTR_NAME_FORMAT, first_input_format), continue_flag = true; break);
           GE_IF_BOOL_EXEC(
-              !AttrUtils::GetInt(tmpSecondOpPtr, ATTR_NAME_FORMAT, second_input_format), continue_flag = true; break);
+            !AttrUtils::GetInt(tmpSecondOpPtr, ATTR_NAME_FORMAT, second_input_format), continue_flag = true; break);
 
           if (first_input_format != second_input_format) {
             GELOGW("biasadd node is followed two nodes with different format, get original format failed");

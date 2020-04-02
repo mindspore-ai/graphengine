@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/event_record_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -34,8 +33,8 @@ EventRecordTask::EventRecordTask(const ModelContext &model_context,
   uint32_t stream_id = task_info->stream_id();
   uint32_t event_id = task_info->event_id();
   if (stream_id >= stream_list.size() || event_id >= event_list.size()) {
-    GELOGW("stream_list size:%zu, stream_id:%u, event_list size:%zu, event_id:%u", stream_list.size(),
-           stream_id, event_list.size(), event_id);
+    GELOGW("stream_list size:%zu, stream_id:%u, event_list size:%zu, event_id:%u", stream_list.size(), stream_id,
+           event_list.size(), event_id);
   }
   stream_ = stream_list[stream_id];
   event_ = event_list[event_id];
@@ -53,6 +52,6 @@ bool EventRecordTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kEventRecord, EventRecordTask, EventRecordTaskInfo);
+REGISTER_TASK(TaskInfoType::EVENT_RECORD, EventRecordTask, EventRecordTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

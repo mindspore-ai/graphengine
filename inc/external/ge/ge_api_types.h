@@ -50,7 +50,7 @@ const char *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
 // its value should be int32_t type, default value is "1"
 const std::string STREAM_NUM = "ge.streamNum";
 
-// Configure add head stream to model,
+// Configure add head stream to model.
 // its value should be "0" or "1", default value is "0"
 const std::string HEAD_STREAM = "ge.headStream";
 
@@ -138,7 +138,7 @@ const std::string GE_FE_FLAG = "ge.feFlag";
 // this option is to obtain stream max parallel num
 const std::string STREAM_MAX_PARALLEL_NUM = "ge.streamMaxParallelNum";
 
-// configure outputDatatype to setting net output type
+// congigure outputDatatype to setting net output type
 const std::string OUTPUT_DATATYPE = "ge.outputDatatype";
 
 // configure whether to enable hcom parallel by session constructor options param,
@@ -149,7 +149,7 @@ const std::string HCOM_PARALLEL = "ge.hcomParallel";
 // example: GA|RL, support configure multiple, split by |
 const std::string AUTO_TUNE_MODE = "ge.autoTuneMode";
 
-// Configure core type "VectorEngine", default value is "AICoreEngine"
+// Configure core type "VectorEngine", default value is "AIcoreEngine"
 const std::string CORE_TYPE = "ge.engineType";
 
 // Configure soc version , example: "Ascend310"
@@ -164,6 +164,10 @@ const std::string ORIGINAL_MODEL_FILE = "ge.originalModelFile";
 const char *const OPTION_GE_MAX_DUMP_FILE_NUM = "ge.maxDumpFileNum";
 const char *const OPTION_GE_MAX_DUMP_FILE_SIZE = "ge.maxDumpFileSize";
 const char *const OPTION_GE_MAX_DUMP_OP_NUM = "ge.maxDumpOpNum";
+
+// Configure for print op pass
+// Its value should be "0" or "1", default value is "1"
+const char *const ENABLE_PRINT_OP_PASS = "ge.enablePrintOpPass";
 
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };

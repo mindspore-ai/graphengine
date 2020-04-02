@@ -268,8 +268,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
         }
         auto op_type = node_op_desc->GetType();
         bool is_reuse_memory = !out_flg && reuse_mem_flag && (op_type != DATA_TYPE) && (op_type != AIPP_DATA_TYPE) &&
-            (op_type != CONSTANT) && (op_type != NETOUTPUT) && (op_type != PROPOSAL) &&
-            (op_type != ANN_DATA_TYPE) && (op_type != ZEROSLIKE) && (op_type != CONSTANTOP);
+                               (op_type != CONSTANT) && (op_type != NETOUTPUT) && (op_type != PROPOSAL) &&
+                               (op_type != ANN_DATA_TYPE) && (op_type != ZEROSLIKE) && (op_type != CONSTANTOP);
         auto stream_id = node_op_desc->GetStreamId();
         auto map_iter = reusable_streams_map_.find(stream_id);
         if (is_reuse_memory && map_iter != reusable_streams_map_.end()) {
@@ -278,10 +278,10 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
             bool is_data = false;
             for (auto node_type : reusable_block->NodeTypeIndexList()) {
               GE_IF_BOOL_EXEC(node_type.node_ != nullptr, string type = node_type.node_->GetType();
-                  bool flag = (type == DATA_TYPE) || (type == ENTER) || (type == REFENTER) ||
-                      (type == AIPP_DATA_TYPE) || (type == NEXTITERATION) ||
-                      (type == REFNEXTITERATION);
-                  GE_IF_BOOL_EXEC(flag, is_data = true; break;););
+                              bool flag = (type == DATA_TYPE) || (type == ENTER) || (type == REFENTER) ||
+                                          (type == AIPP_DATA_TYPE) || (type == NEXTITERATION) ||
+                                          (type == REFNEXTITERATION);
+                              GE_IF_BOOL_EXEC(flag, is_data = true; break;););
             }
             GE_IF_BOOL_EXEC(is_data == true, continue);
 
@@ -337,9 +337,8 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
     auto reuse_src_node = peer_out_anchor->GetOwnerNode();
     auto reuse_src_node_output_index = static_cast<uint32_t>(peer_out_anchor->GetIdx());
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-        (node_out_blocks_.empty() ||
-            (node_out_blocks_[reuse_src_node->GetName()].size() <= reuse_src_node_output_index)),
-        return nullptr, "node_out_block of node_out_block[reuse_src_node->Name()] is empty!");
+      (node_out_blocks_.empty() || (node_out_blocks_[reuse_src_node->GetName()].size() <= reuse_src_node_output_index)),
+      return nullptr, "node_out_block of node_out_block[reuse_src_node->Name()] is empty!");
     block = node_out_blocks_[reuse_src_node->GetName()][reuse_src_node_output_index];
   } else {
     auto block_size = GetBlockSize(size, ranges);
@@ -347,10 +346,11 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
     block = ApplyMemory(block_size, size, kOutput, n, index, workspace_reuse_flag);
   }
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(block == nullptr, return nullptr, "Block is nullptr.");
+  int out_count_reuse_input = block->ref_count_;
+  int out_count = 0;
   GE_IF_BOOL_EXEC(index >= n->GetAllOutDataAnchors().size(), GELOGE(FAILED, "index is out of range."); return nullptr);
   auto out_data_anchor = n->GetOutDataAnchor(index);
   GE_IF_BOOL_EXEC(out_data_anchor == nullptr, GELOGE(FAILED, "Out data anchor is nullptr."); return nullptr);
-  int out_count = 0;
   for (const auto &in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     auto owner_node = in_anchor->GetOwnerNode();
     auto op_desc = owner_node->GetOpDesc();
@@ -361,7 +361,6 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
       out_count++;
     }
   }
-  int out_count_reuse_input = block->ref_count_;
   for (const auto &in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     auto owner_node = in_anchor->GetOwnerNode();
     GE_IF_BOOL_EXEC(owner_node == nullptr, continue);
@@ -425,8 +424,7 @@ void BlockMemAssigner::ReleaseInputNodeOutMemory(const NodePtr &n,
                                                  vector<MemoryBlock *> &reusable_memory) {
   for (const auto &in_anchor : n->GetAllInDataAnchors()) {
     if ((in_anchor->GetPeerOutAnchor() == nullptr) ||
-        (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetOpDesc() == nullptr) ||
-        (n->GetOpDesc() == nullptr)) {
+        (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetOpDesc() == nullptr) || (n->GetOpDesc() == nullptr)) {
       return;
     }
     GE_IF_BOOL_EXEC(IsOutputBlock(in_anchor), continue);
@@ -434,8 +432,8 @@ void BlockMemAssigner::ReleaseInputNodeOutMemory(const NodePtr &n,
     auto node_name = in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetName();
 
     GE_IF_BOOL_EXEC((in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetType() == CONSTANT) ||
-        (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetType() == FASTRCNNPREDICTIONS) ||
-        (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetType() == CONSTANTOP),
+                      (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetType() == FASTRCNNPREDICTIONS) ||
+                      (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetType() == CONSTANTOP),
                     continue);
 
     auto it = node_out_blocks.find(node_name);
@@ -506,17 +504,17 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
     GetNodeWorkSpaceSize(n, temp);
     vector<bool> workspace_reuse_flag;
     GE_IF_BOOL_EXEC(!ge::AttrUtils::GetListBool(node_op_desc, kAttrNameWorkspaceReuseFlag, workspace_reuse_flag),
-                    GELOGI("OP %s get workspace_reuse_flag attr failed", node_op_desc->GetName().c_str()));
+                    GELOGD("OP %s get workspace_reuse_flag attr failed", node_op_desc->GetName().c_str()));
     for (size_t i = 0; i < temp.size(); i++) {
       if (temp[i] == 0) {
         zero_memory_list_.emplace_back(n, kWorkspace, static_cast<uint32_t>(i));
         continue;
       }
       MemoryBlock *mem_block =
-          ApplyMemory(GetBlockSize(static_cast<size_t>(temp[i]), ranges), static_cast<size_t>(temp[i]), kWorkspace, n,
-                      static_cast<uint32_t>(i), workspace_reuse_flag);
+        ApplyMemory(GetBlockSize(static_cast<size_t>(temp[i]), ranges), static_cast<size_t>(temp[i]), kWorkspace, n,
+                    static_cast<uint32_t>(i), workspace_reuse_flag);
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mem_block == nullptr, continue, "failed to apply memory block.");
-      stream_workspace_blocks_[stream_id].emplace_back(mem_block);
+      CheckWorkspaceReuse(workspace_reuse_flag, i, stream_id, mem_block);
     }
     ReleaseInputNodeOutMemory(n, node_out_blocks_, reusable_blocks_);
   }
@@ -534,6 +532,15 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
   for (auto mem_block : memory_blocks_) {
     GELOGD("%s", mem_block->String().c_str());
     (void)mem_block;  // Fix warning
+  }
+}
+
+void BlockMemAssigner::CheckWorkspaceReuse(const vector<bool> &workspace_reuse_flag, uint32_t index, int64_t stream_id,
+                                           MemoryBlock *mem_block) {
+  bool reuse_mem_flag =
+    ((workspace_reuse_flag.size() > index) && (workspace_reuse_flag[index] == false)) ? false : true;
+  if (reuse_mem_flag) {
+    stream_workspace_blocks_[stream_id].emplace_back(mem_block);
   }
 }
 
@@ -632,9 +639,11 @@ void BlockMemAssigner::ResizeMemoryBlocks() {
 /// @brief given NodeTypeIndex, set offset in Op's OpDef
 /// @param [in&out] node_type_index <node, memory type, id>
 /// @param [in] offset offset to be set
+/// @param [in] size memory size
+/// @param [in] real_size memory size in need
 /// @return Status result
 ///
-void SetOffsetSize(const NodeTypeIndex &node_type_index, int64_t offset) {
+void SetOffsetSize(const NodeTypeIndex &node_type_index, int64_t offset, size_t size, size_t real_size) {
   ge::OpDescPtr op_desc = node_type_index.node_->GetOpDesc();
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(op_desc == nullptr, return, "op_desc is null.");
   if (node_type_index.mem_type_ == kOutput) {
@@ -673,12 +682,19 @@ void BlockMemAssigner::SetOpMemOffset() {
     if (memory_block == nullptr || memory_block->deleted_block_) {
       continue;
     }
+    size_t index = 0;
+    size_t real_size = 0;
+    auto real_size_list_size = memory_block->RealSizeList().size();
     for (const NodeTypeIndex &node_type_index : memory_block->NodeTypeIndexList()) {
-      SetOffsetSize(node_type_index, memory_block->HeadOffset());
+      if (index < real_size_list_size) {
+        real_size = memory_block->RealSizeList()[index];
+      }
+      SetOffsetSize(node_type_index, memory_block->HeadOffset(), memory_block->Size(), real_size);
+      index++;
     }
   }
   for (const NodeTypeIndex &node_type_index : zero_memory_list_) {
-    SetOffsetSize(node_type_index, 0);
+    SetOffsetSize(node_type_index, 0, 0, 0);
   }
 }
 
@@ -783,7 +799,7 @@ void BlockMemAssigner::FindDependentStream(map<int64_t, pair<NodePtr, NodePtr>> 
 
 bool BlockMemAssigner::CheckIsZeroMemNodeType(const string &node_type) const {
   return (node_type == VARIABLE) || (node_type == CONSTANT) || (node_type == MULTISHAPE) ||
-      (node_type == HCOMBROADCAST) || (node_type == HCOMALLREDUCE) || (node_type == CONSTANTOP) ||
-      (node_type == ASSIGNADD) || (node_type == ASSIGNSUB) || (node_type == ASSIGN);
+         (node_type == HCOMBROADCAST) || (node_type == HCOMALLREDUCE) || (node_type == CONSTANTOP) ||
+         (node_type == ASSIGNADD) || (node_type == ASSIGNSUB) || (node_type == ASSIGN);
 }
 }  // namespace ge

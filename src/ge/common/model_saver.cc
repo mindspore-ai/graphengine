@@ -63,10 +63,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   const char *model_char = model_str.c_str();
   uint32_t len = static_cast<uint32_t>(model_str.length());
   // Write data to file
-  mmSsize_t mmpa_ret = mmWrite(fd, const_cast<void *>((const void *)model_char), len);
+  int32_t mmpa_ret = mmWrite(fd, const_cast<void *>((const void *)model_char), len);
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
     // Need to both print the error info of mmWrite and mmClose, so return ret after mmClose
-    GELOGE(FAILED, "Write to file failed. errno = %ld", mmpa_ret);
+    GELOGE(FAILED, "Write to file failed. errno = %d", mmpa_ret);
     ret = FAILED;
   }
   // Close file

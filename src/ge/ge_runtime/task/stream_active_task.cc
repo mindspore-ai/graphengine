@@ -53,6 +53,6 @@ bool StreamActiveTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kStreamActive, StreamActiveTask, StreamActiveTaskInfo);
+REGISTER_TASK(TaskInfoType::STREAM_ACTIVE, StreamActiveTask, StreamActiveTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

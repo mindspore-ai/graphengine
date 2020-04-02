@@ -63,7 +63,4 @@
 #include "stateless_random_ops.h"
 #include "dvpp_ops.h"
 #include "basic_lstm_cell.h"
-#include "fsrdetectionoutput_ops.h"
-#include "roipooling_ops.h"
-#include "power_ops.h"
 #endif  // BUILT_IN_OP_PROTO_INC_ALL_OPS_H_

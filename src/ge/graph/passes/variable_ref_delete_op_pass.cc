@@ -33,7 +33,7 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     std::string ref_var_src_var_name;
     bool is_variable_ref = (node->GetOpDesc()->GetType() == VARIABLE) &&
-        (ge::AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name));
+                           (ge::AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name));
     if (!is_variable_ref) {
       continue;
     }
@@ -94,8 +94,8 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   GE_CHECK_NOTNULL(var_ref_src_var->GetOpDesc());
   bool is_set_index = ge::AttrUtils::SetInt(var_ref_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, index);
   if (is_set_str && is_set_index) {
-    GELOGI("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
-    GELOGI("[%s]: add attr [ REF_VAR_PRE_PEER_OUT_INDEX: %d ]", var_ref_src_var->GetName().c_str(), index);
+    GELOGD("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
+    GELOGD("[%s]: add attr [ REF_VAR_PRE_PEER_OUT_INDEX: %d ]", var_ref_src_var->GetName().c_str(), index);
   }
 
   return SUCCESS;

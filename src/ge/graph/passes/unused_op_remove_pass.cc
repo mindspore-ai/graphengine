@@ -22,11 +22,14 @@
 #include <vector>
 
 #include "common/debug/log.h"
+#include "common/op/ge_op_utils.h"
 #include "common/types.h"
 #include "common/util.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
+#include "inc/pass_manager.h"
+#include "graph/passes/isolated_op_remove_pass.h"
 
 using domi::SUCCESS;
 
@@ -120,11 +123,10 @@ bool UnusedOpRemovePass::IsExceptions(const NodePtr &node) {
   GE_CHK_BOOL_EXEC(op_def != nullptr, return false, "opdesc is nullptr");
   // permute optimised in permute_pass.cpp
   if (op_def->GetType() == PERMUTE) {
-    GE_IF_BOOL_EXEC(
-        (node->GetInDataNodes().size() != 0 &&
-         (node->GetInDataNodes().at(0) != nullptr && node->GetInDataNodes().at(0)->GetOpDesc() != nullptr &&
-          node->GetInDataNodes().at(0)->GetOpDesc()->GetType() == ATTENTIONDECODER)),
-        return false);
+    GE_IF_BOOL_EXEC((node->GetInDataNodes().size() != 0 &&
+                     (node->GetInDataNodes().at(0) != nullptr && node->GetInDataNodes().at(0)->GetOpDesc() != nullptr &&
+                      node->GetInDataNodes().at(0)->GetOpDesc()->GetType() == ATTENTIONDECODER)),
+                    return false);
     return true;
   }
   return false;

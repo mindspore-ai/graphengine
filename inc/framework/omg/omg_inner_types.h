@@ -24,7 +24,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/types.h"
 #include "register/register_fmk_types.h"
@@ -40,10 +39,10 @@ using std::unordered_map;
 using std::vector;
 
 namespace ge {
-///
-/// @ingroup domi_omg
-/// @brief run model
-///
+/**
+ * @ingroup domi_omg
+ * @brief run model
+ */
 enum RunMode {
   kGeOmModel = 0,     // generate offline model file
   kModelToJson = 1,   // convert to JSON file
@@ -119,12 +118,20 @@ struct OmgContext {
 }  // namespace ge
 
 namespace domi {
-///
-/// @ingroup domi_omg
-/// @brief get OMG context
-/// @return OmgContext context
-///
+/**
+ * @ingroup domi_omg
+ * @brief get OMG context
+ * @return OmgContext context
+ */
 ge::OmgContext &GetContext();
+
+struct TEBinInfo {
+  // It is obsolete. It will be automatically obtained from the binfilename field of the JSON file later.
+  // To be compatible with use cases written by previous users, fields are not deleted.(2018.11.21)
+  std::string bin_file_path;
+  std::string json_file_path;
+  std::string ddk_version;
+};
 }  // namespace domi
 
 #endif  // INC_FRAMEWORK_OMG_OMG_INNER_TYPES_H_

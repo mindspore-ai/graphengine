@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  // __cplusplus
 
 // If you need export the function of this library in Win32 dll, use __declspec(dllexport)
 #ifndef RTS_API
@@ -29,8 +29,8 @@ extern "C" {
 #define RTS_API __declspec(dllexport)
 #else
 #define RTS_API
-#endif
-#endif
+#endif  // RTS_DLL_EXPORT
+#endif  // RTS_API
 
 /**
  * @ingroup dvrt_base
@@ -65,7 +65,8 @@ typedef enum tagRtError {
   RT_ERROR_MODEL_STREAM_EXE_FAILED = 0x91,  // the model stream failed
   RT_ERROR_MODEL_LOAD_FAILED = 0x94,        // the model stream failed
   RT_ERROR_END_OF_SEQUENCE = 0x95,          // end of sequence
-
+  RT_ERROR_NO_STREAM_CB_REG = 0x96,         // no callback register info for stream
+  RT_ERROR_DATA_DUMP_LOAD_FAILED = 0x97,    // data dump load info fail
   RT_ERROR_RESERVED
 } rtError_t;
 

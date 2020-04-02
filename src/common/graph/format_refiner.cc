@@ -67,6 +67,7 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
   anchor_points.clear();
   // Get all anchor point nodes and switch nodes
   for (const auto &node_ptr : graph->GetAllNodes()) {
+    std::vector<bool> is_node_set_format;
     if (node_ptr == nullptr) {
       return GRAPH_FAILED;
     }
@@ -166,7 +167,7 @@ graphStatus FormatRefiner::BackInferProcess(std::deque<ge::NodePtr> &nodes, ge::
     if (ge_tensor_desc.GetOriginFormat() == FORMAT_ND) {
       auto dim_num = ge_tensor_desc.GetShape().GetDimNum();
       if (dim_num == 0) {
-        GELOGI("node name:%s idx:%d out is scalar. stop back infer!", peer_out_data_node->GetName().c_str(), idx);
+        GELOGD("node name:%s idx:%d out is scalar. stop back infer!", peer_out_data_node->GetName().c_str(), idx);
         continue;
       }
       /// Check whether node to change dims ()
@@ -175,7 +176,7 @@ graphStatus FormatRefiner::BackInferProcess(std::deque<ge::NodePtr> &nodes, ge::
       auto iter1 = kChangeDimNodes.find(peer_out_data_node_type);
       // 4 means dims num
       if ((iter1 != kChangeDimNodes.end()) && (dim_num < 4)) {
-        GELOGI("Node[%s] is change dim node and shape is smaller than 4. do not modify format",
+        GELOGD("Node[%s] is change dim node and shape is smaller than 4. do not modify format",
                (peer_out_data_node->GetName()).c_str());
         continue;
       }
@@ -235,7 +236,7 @@ graphStatus FormatRefiner::ForwardInferProcess(std::deque<ge::NodePtr> &nodes, g
         auto iter1 = kChangeDimNodes.find(peer_in_data_node_type);
         // 4 means dims num
         if ((iter1 != kChangeDimNodes.end()) && (dim_num < 4)) {
-          GELOGI("Node[%s] is change dim node. do not infer origin format", (peer_in_data_node->GetName()).c_str());
+          GELOGD("Node[%s] is change dim node. do not infer origin format", (peer_in_data_node->GetName()).c_str());
           continue;
         }
         ge_tensor_desc.SetOriginFormat(to_be_set_format);
@@ -292,7 +293,7 @@ graphStatus FormatRefiner::DataNodeFormatProcess(std::vector<ge::NodePtr> &data_
     return GRAPH_SUCCESS;
   }
   GELOGD("Enter DataNodeFormatProcess");
-  std::vector<ge::NodePtr> uninferred_data_nodes;
+  std::vector<ge::NodePtr> uninfered_data_nodes;
   // Check and renew data nodes format
   for (const auto &data_node : data_nodes) {
     GE_CHECK_NOTNULL(data_node);
@@ -301,10 +302,10 @@ graphStatus FormatRefiner::DataNodeFormatProcess(std::vector<ge::NodePtr> &data_
     GE_CHECK_NOTNULL(op_desc->GetOutputDescPtr(0));
     auto curr_format = op_desc->GetOutputDescPtr(0)->GetOriginFormat();
     if (curr_format != FORMAT_ND) {
-      // Data format has been inferred , continue
+      // Data format has been infered , continue
       continue;
     }
-    // Set format for un-inferred data node
+    // Set format for un-infered data node
     auto input_descs = op_desc->GetAllInputsDescPtr();
     auto output_descs = op_desc->GetAllOutputsDescPtr();
 
@@ -320,10 +321,10 @@ graphStatus FormatRefiner::DataNodeFormatProcess(std::vector<ge::NodePtr> &data_
         output_desc->SetFormat(data_format);
       }
     }
-    uninferred_data_nodes.push_back(data_node);
+    uninfered_data_nodes.push_back(data_node);
   }
   // Reinfer format from uninfered data nodes
-  for (const auto &node : uninferred_data_nodes) {
+  for (const auto &node : uninfered_data_nodes) {
     if (node == nullptr) {
       continue;
     }
@@ -341,7 +342,7 @@ graphStatus FormatRefiner::DataNodeFormatProcess(std::vector<ge::NodePtr> &data_
 graphStatus FormatRefiner::InferOrigineFormat(const ge::ComputeGraphPtr &graph) {
   GELOGI("Enter InferOrigineFormat process!");
 
-  // True: inferred false:no-inferred
+  // True: infered false:no-infered
   std::unordered_map<ge::NodePtr, bool> node_status;
   std::vector<ge::NodePtr> anchor_points;
   std::vector<ge::NodePtr> data_nodes;
@@ -373,7 +374,7 @@ graphStatus FormatRefiner::InferOrigineFormat(const ge::ComputeGraphPtr &graph) 
     }
   }
   /// According to discuss with sys-enginer, data node default format is ND.Its format
-  /// should be set by inferred.But if some data-node can not be got by infer, set context's
+  /// should be set by infered.But if some data-node can not be got by infer, set context's
   /// format for these data nodes.
   /// Notice: ignore 5D formats
   auto data_format = graph->GetDataFormat();

@@ -111,6 +111,22 @@ REG_OP(SpaceToDepth)
   .ATTR(data_format, String, "NHWC")
   .OP_END_FACTORY_REG(SpaceToDepth)
 
+/**
+*@brief Rearranges data from depth into blocks of spatial data.
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, double, int32, uint8,
+*     int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, uint32, uint64
+
+*@par Attributes:
+*Two attributes, including:
+* @li block_size: An int >= 2, specifying the size of the spatial block.
+* @li data_format: An optional string, specifying the data format. Defaults to "NHWC".
+
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+*/
 REG_OP(DepthToSpace)
   .INPUT(x, TensorType::BasicType())
   .OUTPUT(y, TensorType::BasicType())
@@ -230,15 +246,18 @@ REG_OP(Unpack)
 * images: A 4D Tensor with shape [batch, in_rows, in_cols, depth].
 
 * @par Attributes:
-* @li ksizes: The size of the sliding window for each dimension of images.
-* @li strides: How far the centers of two consecutive patches are in the images.\n
+* @li ksizes: An optional tuple or list. size of the sliding window for
+* each dimension of images.
+* @li strides: An optional tuple or list. How far the centers of two
+* consecutive patches are in the images.\n
 * Must be: [1, stride_rows, stride_cols, 1].
-* @li rates: Must be: [1, rate_rows, rate_cols, 1]. This is the input stride,\n
+* @li rates: Must be: An optional tuple or list. [1, rate_rows, rate_cols, 1].
+* This is the input stride,\n
 * specifying how far two consecutive patch samples are in the input. Equivalent\n
 * to extracting patches with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *\n
 * (rates - 1), followed by subsampling them spatially by a factor of rates. This\n
 * is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
-* @li padding: The type of padding algorithm to use.
+* @li padding: An optional string. The type of padding algorithm to use.
 
 * @par Outputs:
 * Output: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *\n
@@ -258,6 +277,20 @@ REG_OP(ExtractImagePatches)
     .ATTR(padding, String, "SAME")
     .OP_END_FACTORY_REG(ExtractImagePatches)
 
+/**
+*@brief Confuse reshape and transpose.
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
+
+*@par Attributes:
+*@li perm: A permutation of the dimensions of "x".
+*@li shape: The shape of the input.
+*@li transpose_first: If True, the transpose is first, otherwise the reshape is first.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*/
 REG_OP(ConfusionTransposeD)
     .INPUT(x, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())
@@ -266,6 +299,20 @@ REG_OP(ConfusionTransposeD)
     .REQUIRED_ATTR(transpose_first, Bool)
     .OP_END_FACTORY_REG(ConfusionTransposeD)
 
+/**
+*@brief Confuse reshape and transpose.
+
+*@par Inputs:
+*@li x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
+*@li shape: The shape of the input.
+
+*@par Attributes:
+*@li perm: A permutation of the dimensions of "x".
+*@li transpose_first: If True, the transpose is first, otherwise the reshape is first.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*/
 REG_OP(ConfusionTranspose)
     .INPUT(x, TensorType::BasicType())
     .INPUT(shape, TensorType::IndexNumberType())
@@ -274,14 +321,6 @@ REG_OP(ConfusionTranspose)
     .REQUIRED_ATTR(transpose_first, Bool)
     .OP_END_FACTORY_REG(ConfusionTranspose)
 
-REG_OP(FlattenV2)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                          DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                           DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
-    .ATTR(axis, Int, 1)
-    .ATTR(end_axis, Int, -1)
-    .OP_END_FACTORY_REG(FlattenV2)
 }  // namespace ge
 
 #endif  // GE_OP_TRANSFORMATION_OPS_H

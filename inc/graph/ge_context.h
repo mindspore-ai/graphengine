@@ -27,15 +27,15 @@ class GEContext {
   graphStatus GetOption(const std::string &key, std::string &option);
   uint64_t SessionId();
   uint32_t DeviceId();
-  uint64_t JobId();
+  uint64_t TraceId();
   void Init();
   void SetCtxDeviceId(uint32_t device_id);
 
  private:
   uint64_t session_id_ = 0;
   uint32_t device_id_ = 0;
-  uint64_t job_id_ = 0;
-};
+  uint64_t trace_id_ = 0;
+};  // class GEContext
 
 /// Get context
 /// @return

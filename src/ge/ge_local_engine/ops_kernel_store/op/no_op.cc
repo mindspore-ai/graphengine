@@ -15,7 +15,6 @@
  */
 
 #include "ge_local_engine/ops_kernel_store/op/no_op.h"
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "ge_local_engine/ops_kernel_store/op/op_factory.h"
@@ -25,7 +24,6 @@ namespace ge_local {
 NoOp::NoOp(const Node &node, RunContext &run_context) : Op(node, run_context) {}
 
 Status NoOp::Run() {
-  GELOGI("Node:%s type is %s, no need gen task.", name_.c_str(), type_.c_str());
   // Do nothing
   return SUCCESS;
 }

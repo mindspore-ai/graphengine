@@ -22,12 +22,11 @@
 #include <string>
 #include <vector>
 
-#include "cce/dnn_base_def.hpp"
-#include "common/ge/ge_util.h"
+#include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
-#include "framework/common/debug/ge_log.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"
@@ -40,7 +39,7 @@
 namespace ge {
 namespace {
 const uint32_t kShapeDimSize = 1;
-const uint32_t kDimSizeTwo = 2;
+const uint32_t DIM_SIZE_TWO = 2;
 }  // namespace
 
 Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std::vector<int64_t> &data,
@@ -89,14 +88,13 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std:
 template <typename T>
 Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, T *buf, uint32_t len,
                                               std::vector<GeTensorPtr> &v_output, const bool scalar_output) {
-  bool empty_shape = ((len == 1) && scalar_output) || (len == 0);
   // construct TensorDesc
-  GeShape out_shape = (empty_shape ? GeShape() : GeShape({len}));
+  GeShape out_shape = (scalar_output ? GeShape() : GeShape({len}));
   GeTensorDesc output_tensor_desc(out_desc);
   output_tensor_desc.SetShape(out_shape);
 
   GeTensorPtr output_tensor_ptr =
-      MakeShared<GeTensor>(output_tensor_desc, reinterpret_cast<uint8_t *>(buf), sizeof(T) * len);
+    MakeShared<GeTensor>(output_tensor_desc, reinterpret_cast<uint8_t *>(buf), sizeof(T) * len);
   if (output_tensor_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;

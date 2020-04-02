@@ -16,7 +16,6 @@
 
 #ifndef COMMON_GRAPH_DEBUG_GE_OP_TYPES_H_
 #define COMMON_GRAPH_DEBUG_GE_OP_TYPES_H_
-
 #include <limits.h>
 #include <stdint.h>
 #include <algorithm>
@@ -26,7 +25,7 @@
 #include <vector>
 
 namespace ge {
-#define GE_REGISTER_OPTYPE(var_name, str_name) static const char *var_name __attribute__((unused)) = str_name
+#define GE_REGISTER_OPTYPE(var_name, str_name) static const char* var_name __attribute__((unused)) = str_name
 
 GE_REGISTER_OPTYPE(DATA, "Data");
 GE_REGISTER_OPTYPE(AIPPDATA, "AippData");
@@ -249,5 +248,5 @@ static const char* const kAippConvOpNmae = "aipp_conv_op";
 /// @brief Operator configuration item separator
 ///
 static const char* const kOpConfDelimiter = ":";
-};  // namespace ge
+};      // namespace ge
 #endif  // COMMON_GRAPH_DEBUG_GE_OP_TYPES_H_

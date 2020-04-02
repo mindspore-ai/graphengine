@@ -25,8 +25,8 @@
 #include "common/math/math_util.h"
 #include "common/math_util.h"
 #include "common/types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "framework/common/util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/attr_utils.h"
 #include "inc/kernel_factory.h"
@@ -131,7 +131,7 @@ Status SsdPriorboxKernel::GetPriorListParam(const OpDescPtr &op_desc, vector<flo
   for (size_t i = 0; i < aspect_ratio_list.size(); i++) {
     float ar = aspect_ratio_list.at(i);
     bool already_exist =
-        std::any_of(aspect_ratios.begin(), aspect_ratios.end(), [&ar](float x) { return fabs(ar - x) < kMinistBias; });
+      std::any_of(aspect_ratios.begin(), aspect_ratios.end(), [&ar](float x) { return fabs(ar - x) < kMinistBias; });
     if (!already_exist) {
       aspect_ratios.push_back(ar);
       if (flip) {

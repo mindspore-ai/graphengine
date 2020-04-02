@@ -19,17 +19,15 @@
 #include <vector>
 
 #include "cce/aicpu_engine_struct.h"
-#include "cce/fwk_adpt_struct.h"
-#include "common/ge/ge_util.h"
-#include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
+#include "common/ge/ge_util.h"
+#include "common/properties_manager.h"
 #include "graph/attr_value.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/model_manager.h"
 
 namespace ge {
-static const char *const GE_GLOBAL_STEP = "Variable";
 
 Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("KernelExTaskInfo Init Start.");
@@ -59,8 +57,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     return FAILED;
   } else {
     rtError_t rt_ret =
-        rtMemcpy(workspace_data_addrs[0], kernel_ex_def.task_info_size(), kernel_ex_def.task_info().data(),
-                 kernel_ex_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
+      rtMemcpy(workspace_data_addrs[0], kernel_ex_def.task_info_size(), kernel_ex_def.task_info().data(),
+               kernel_ex_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(FAILED, "rtMemcpy error: 0x%X", rt_ret); return FAILED);
   }
 
@@ -72,19 +70,19 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     return FAILED;
   }
   errno_t sec_ret =
-      memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args().data(), kernel_ex_def.args_size());
+    memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args().data(), kernel_ex_def.args_size());
   if (sec_ret != EOK) {
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
     return FAILED;
   }
 
   // 2.1 get loop cond variable for tensor array write
-  uint64_t loop_cond_addr = 0;
-  OpDescPtr loop_cond_node = davinci_model->GetVariableOp(GE_GLOBAL_STEP);
-  if (loop_cond_node != nullptr) {
-    vector<void *> v_loop_cond_addr = ModelUtils::GetOutputDataAddrs(davinci_model->GetRuntimeParam(), loop_cond_node);
-    if (v_loop_cond_addr.size() != 0) {
-      loop_cond_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_loop_cond_addr[0]));
+  uint64_t step_id_addr = 0;
+  OpDescPtr step_id_node = davinci_model->GetVariableOp(NODE_NAME_GLOBAL_STEP);
+  if (step_id_node != nullptr) {
+    vector<void *> v_step_id_addr = ModelUtils::GetOutputDataAddrs(davinci_model->GetRuntimeParam(), step_id_node);
+    if (!v_step_id_addr.empty()) {
+      step_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_step_id_addr[0]));
     }
   }
 
@@ -107,15 +105,15 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 
     if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model->Name(), op_desc->GetName())) {
       dump_flag_ = RT_KERNEL_DUMPFLAG;
-      dump_args_ = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(input_output_addr_) +
-                                            sizeof(void *) * input_addrs.size());
+      dump_args_ =
+        reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(input_output_addr_) + sizeof(void *) * input_addrs.size());
     }
   }
 
   uint64_t input_output_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr_));
   fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr = workspace_base_addr;
   fwk_op_kernel.fwkKernelBase.fwk_kernel.inputOutputAddr = input_output_addr;
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = loop_cond_addr;
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = step_id_addr;
 
   // 4. Create session
   auto session_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID;

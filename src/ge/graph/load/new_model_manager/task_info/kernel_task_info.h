@@ -65,7 +65,7 @@ class KernelTaskInfo : public TaskInfo {
   uint32_t GetTaskID() override { return task_id_; }
 
   uintptr_t GetDumpArgs() override {
-    auto ret = reinterpret_cast<uintptr_t >(dump_args_);
+    auto ret = reinterpret_cast<uintptr_t>(dump_args_);
     return ret;
   }
 
@@ -91,6 +91,9 @@ class KernelTaskInfo : public TaskInfo {
 
   Status UpdateCceArgs(std::string &sm_desc, std::string &flowtable, DavinciModel *davinci_model,
                        const domi::KernelDef &kernel_def);
+  Status CceUpdateKernelArgs(const domi::KernelContext &context, uint64_t &data_base_addr, uint64_t &weight_base_addr,
+                             uint64_t &var_base_addr, std::string &sm_desc, std::string &flowtable,
+                             const domi::KernelDef &kernel_def);
 
   Status SetFlowtable(std::string &flowtable, const domi::KernelDef &kernel_def);
 

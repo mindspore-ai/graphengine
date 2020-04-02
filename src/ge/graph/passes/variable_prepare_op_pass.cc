@@ -24,9 +24,10 @@
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "external/graph/graph.h"
+#include "framework/common/debug/ge_log.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/node.h"
 #include "graph/utils/tensor_utils.h"
-
 
 namespace ge {
 Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
@@ -176,7 +177,7 @@ Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, g
   }
   // add edge final node:index ---> var_ref_node:0
   graphStatus ret =
-      ge::GraphUtils::AddEdge(final_writable_node->GetOutDataAnchor(index), var_ref_node->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(final_writable_node->GetOutDataAnchor(index), var_ref_node->GetInDataAnchor(0));
   if (ret != GRAPH_SUCCESS) {
     GELOGE(FAILED, "add  data anchor between var_ref_node and final_writable peer_node failed");
     return FAILED;
@@ -202,8 +203,7 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
     return nullptr;
   }
 
-  OpDescPtr var_ref_op_desc =
-      MakeShared<OpDesc>(var_node->GetName() + var_ref_name.str(), var_op_desc->GetType());
+  OpDescPtr var_ref_op_desc = MakeShared<OpDesc>(var_node->GetName() + var_ref_name.str(), var_op_desc->GetType());
   if (var_ref_op_desc == nullptr) {
     GELOGE(FAILED, "var_ref opdesc is nullptr");
     return nullptr;
@@ -211,10 +211,10 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
 
   GE_IF_BOOL_EXEC(var_ref_op_desc->AddOutputDesc(var_op_desc->GetOutputDesc(0)) != SUCCESS,
                   GELOGW("add output desc edge failed");
-                      return nullptr);
+                  return nullptr);
   GE_IF_BOOL_EXEC(var_ref_op_desc->AddInputDesc(var_op_desc->GetOutputDesc(0)) != SUCCESS,
                   GELOGW("add input desc edge failed");
-                      return nullptr);
+                  return nullptr);
   NodePtr var_ref_node = var_node->GetOwnerComputeGraph()->AddNode(var_ref_op_desc);
   GE_IF_BOOL_EXEC(var_ref_node == nullptr, GELOGW("var_ref_node is null"); return nullptr);
 

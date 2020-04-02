@@ -31,9 +31,9 @@
 namespace ge {
 std::unordered_set<std::string> control_anchor;
 std::vector<string> types = {
-    "DT_FLOAT", "DT_FLOAT16", "DT_INT8",          "DT_INT32",          "DT_UINT8",    "",
-    "DT_INT16", "DT_UINT16",  "DT_UINT32",        "DT_INT64",          "DT_UINT64",   "DT_DOUBLE",
-    "DT_BOOL",  "DT_DUAL",    "DT_DUAL_SUB_INT8", "DT_DUAL_SUB_UINT8", "DT_UNDEFINED"};
+  "DT_FLOAT", "DT_FLOAT16", "DT_INT8",          "DT_INT32",          "DT_UINT8",    "",
+  "DT_INT16", "DT_UINT16",  "DT_UINT32",        "DT_INT64",          "DT_UINT64",   "DT_DOUBLE",
+  "DT_BOOL",  "DT_DUAL",    "DT_DUAL_SUB_INT8", "DT_DUAL_SUB_UINT8", "DT_UNDEFINED"};
 
 std::vector<string> formats = {"FORMAT_NCHW",
                                "FORMAT_NHWC",
@@ -92,7 +92,7 @@ void GraphDebugPrinter::DumpNodeToDot(const NodePtr node, std::ostringstream &ou
 
   auto input_anchors = node->GetAllInDataAnchors();
   auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL_EXEC(op_desc, return);
+  GE_CHECK_NOTNULL_EXEC(op_desc, return );
   if (!input_anchors.empty()) {
     out_ << TAB << TAB << "<tr>";
   }
@@ -138,7 +138,7 @@ void GraphDebugPrinter::DumpEdgeToDot(const NodePtr node, std::ostringstream &ou
   }
   auto all_out_anchor = node->GetAllOutDataAnchors();
   auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL_EXEC(op_desc, return);
+  GE_CHECK_NOTNULL_EXEC(op_desc, return );
   for (const auto &anchor : all_out_anchor) {
     auto src_anchor = anchor;
     auto src_node_name = node->GetName();
@@ -170,12 +170,12 @@ void GraphDebugPrinter::DumpEdgeToDot(const NodePtr node, std::ostringstream &ou
       if (flag != DOT_NOT_SHOW_EDGE_LABEL && in_data_anchor) {
         string label;
         auto src_ops = src_anchor->GetOwnerNode()->GetOpDesc();
-        GE_CHECK_NOTNULL_EXEC(src_ops, return);
+        GE_CHECK_NOTNULL_EXEC(src_ops, return );
         auto src_shape = src_ops->GetOutputDesc(src_anchor->GetIdx()).GetShape();
         auto dim = src_shape.GetDims();
         std::ostringstream tensor_info;
         if (dim.size() > 0) {
-          for (unsigned int i = 0; i < dim.size(); i++) {
+          for (size_t i = 0; i < dim.size(); i++) {
             if (i != dim.size() - 1) {
               tensor_info << dim[i] << "x";
             } else {
@@ -186,7 +186,7 @@ void GraphDebugPrinter::DumpEdgeToDot(const NodePtr node, std::ostringstream &ou
           tensor_info << "?";
         }
         auto src_tensor_desc = src_ops->GetOutputDescPtr(src_anchor->GetIdx());
-        GE_CHECK_NOTNULL_EXEC(src_tensor_desc, return);
+        GE_CHECK_NOTNULL_EXEC(src_tensor_desc, return );
         auto format = src_tensor_desc->GetFormat();
         auto datatype = src_tensor_desc->GetDataType();
         tensor_info << " : " << formats[format] << " : " << types[datatype];

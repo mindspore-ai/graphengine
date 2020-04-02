@@ -16,13 +16,10 @@
 
 #ifndef GE_GE_RUNTIME_RUNTIME_MODEL_H_
 #define GE_GE_RUNTIME_RUNTIME_MODEL_H_
-
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "cce/dnn_base_def.hpp"
 #include "ge_runtime/davinci_model.h"
 #include "common/ge_types.h"
 #include "runtime/base.h"
@@ -41,10 +38,8 @@ class RuntimeModel {
   const std::vector<uint32_t> &GetTaskIdList() const;
   bool Run();
   bool CopyInputData(const InputData &input_data);
-  bool GetInputOutputDescInfo(bool zero_copy,
-                              std::vector<InputOutputDescInfo> *input_desc,
-                              std::vector<InputOutputDescInfo> *output_desc,
-                              std::vector<uint32_t> *input_format,
+  bool GetInputOutputDescInfo(bool zero_copy, std::vector<InputOutputDescInfo> *input_desc,
+                              std::vector<InputOutputDescInfo> *output_desc, std::vector<uint32_t> *input_format,
                               std::vector<uint32_t> *output_format);
 
  private:
@@ -58,10 +53,10 @@ class RuntimeModel {
   bool InitOutputInfo(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model);
   void RtModelUnbindStream() noexcept;
-  void RtStreamDestroy() noexcept;
-  void RtModelDestroy() noexcept;
-  void RtLabelDestroy() noexcept;
-  void RtEventDestroy() noexcept;
+  void RtStreamDestory() noexcept;
+  void RtModelDestory() noexcept;
+  void RtLabelDestory() noexcept;
+  void RtEventDestory() noexcept;
   bool CopyInputDataToModel(const std::vector<DataBuffer> &data, const std::shared_ptr<OpInfo> &data_info);
   bool CopyHostData(const std::vector<DataBuffer> &data, const std::shared_ptr<OpInfo> &data_info) const;
   bool CopyTransData(const std::vector<DataBuffer> &data, const std::shared_ptr<OpInfo> &data_info);
@@ -80,8 +75,6 @@ class RuntimeModel {
   std::vector<std::shared_ptr<OpInfo>> data_info_list_{};
   std::vector<std::shared_ptr<OpInfo>> output_info_list_{};
   std::vector<std::shared_ptr<OpInfo>> constant_info_list_{};
-  std::map<std::string, cce::ccTensorDescriptor_t> input_tensor_desc_list_{};
-  std::map<std::string, cce::ccTensorDescriptor_t> output_tensor_desc_list_{};
 
   std::vector<uint32_t> task_id_list_{};
 };

@@ -19,7 +19,6 @@
 
 #include <utility>
 #include <vector>
-
 #include "graph/build/memory/block_mem_assigner.h"
 
 namespace ge {

@@ -15,9 +15,7 @@
  */
 
 #include "graph/build/memory/var_mem_assign_util.h"
-
 #include <vector>
-
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/common/transop_util.h"
@@ -56,25 +54,25 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
     string ref_var_src_var_name;
     GE_CHECK_NOTNULL(n->GetOpDesc());
     GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(n->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name), continue);
+    string node_name = n->GetName();
     GE_IF_BOOL_EXEC(n->GetOpDesc()->GetAllOutputsDesc().empty(),
                     GELOGE(FAILED, "node:%s has no OutputDesc.", n->GetName().c_str());
                     return FAILED);
     ge::ConstGeTensorDescPtr tensor_desc = n->GetOpDesc()->GetOutputDescPtr(0);
     GE_CHECK_NOTNULL(tensor_desc);
-    string node_name = n->GetName();
     if (!VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(node_name, *tensor_desc)) {
       GE_CHK_STATUS_RET(
-          VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, RT_MEMORY_HBM));
+        VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, RT_MEMORY_HBM));
       GE_IF_BOOL_EXEC(n->GetType() == VARIABLE,
                       GE_CHK_STATUS_RET(AssignData2Fp32Var(n, compute_graph->GetSessionID())));
       GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
-                            ->SetAllocatedGraphId(node_name, compute_graph->GetGraphID()));
+                          ->SetAllocatedGraphId(node_name, compute_graph->GetGraphID()));
     }
 
     uint8_t *dev_ptr = nullptr;
     rtMemType_t memory_type = RT_MEMORY_HBM;
-    GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
-                          ->GetVarAddr(node_name, *tensor_desc, &dev_ptr, memory_type));
+    GE_CHK_STATUS_RET(
+      VarManager::Instance(compute_graph->GetSessionID())->GetVarAddr(node_name, *tensor_desc, &dev_ptr, memory_type));
     vector<int64_t> output_list = n->GetOpDesc()->GetOutputOffset();
     GE_IF_BOOL_EXEC(output_list.empty(), return FAILED);
     output_list[0] = static_cast<int64_t>(reinterpret_cast<intptr_t>(dev_ptr));
@@ -92,9 +90,9 @@ Status VarMemAssignUtil::AssignData2Fp32Var(const ge::NodePtr &node, uint64_t se
     rtMemType_t memory_type = RT_MEMORY_HBM;
     GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetCurVarDesc(src_var_name, cur_tensor_desc));
     GE_CHK_STATUS_RET(
-        VarManager::Instance(session_id)->GetVarAddr(src_var_name, cur_tensor_desc, &dev_ptr, memory_type));
+      VarManager::Instance(session_id)->GetVarAddr(src_var_name, cur_tensor_desc, &dev_ptr, memory_type));
     GE_CHK_STATUS_RET(
-        VarManager::Instance(session_id)->SetVarAddr(node->GetName(), cur_tensor_desc, dev_ptr, memory_type));
+      VarManager::Instance(session_id)->SetVarAddr(node->GetName(), cur_tensor_desc, dev_ptr, memory_type));
   }
   return SUCCESS;
 }
@@ -124,13 +122,12 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
   GeTensorDesc var_tensor_desc = var_node->GetOpDesc()->GetOutputDesc(0);
   rtMemType_t memory_type = RT_MEMORY_HBM;
   GE_CHK_STATUS_RET(
-      VarManager::Instance(session_id)->GetVarAddr(var_node->GetName(), var_tensor_desc, &dev_ptr, memory_type));
+    VarManager::Instance(session_id)->GetVarAddr(var_node->GetName(), var_tensor_desc, &dev_ptr, memory_type));
 
   int out_list_size = static_cast<int>(output_list.size());
   GE_CHK_BOOL_RET_STATUS(index < out_list_size, FAILED, "index %d >= output_list.size() %d", index, out_list_size);
 
   output_list[index] = static_cast<int64_t>(reinterpret_cast<intptr_t>(dev_ptr));
-  GELOGI("Assign node outputOffset[index] is: %ld", output_list[index]);
   node->GetOpDesc()->SetOutputOffset(output_list);
 
   return SUCCESS;
@@ -142,8 +139,7 @@ Status VarMemAssignUtil::DealExportVariableNode(const ge::NodePtr &node, const g
   GE_IF_BOOL_EXEC(var_out_anchor == nullptr, return FAILED);
   for (const ge::InDataAnchorPtr &dst_in_var_anchor : var_out_anchor->GetPeerInDataAnchors()) {
     ge::NodePtr dst_node = dst_in_var_anchor->GetOwnerNode();
-    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) ||
-        (dst_node->GetType() == ASSIGNSUB)) {
+    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
       if (dst_in_var_anchor == dst_node->GetInDataAnchor(0)) {
         GE_CHK_STATUS_RET(DealExportVariableNode(dst_node, var_node, session_id));
       }
@@ -174,7 +170,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
                          "Get broadcast op %s input tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),
                          input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr input_tensor_desc =
-      input_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
+    input_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
   uint32_t input_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(*input_tensor_desc, input_size), "get input size failed.");
   broad_cast_info.input_size = input_size;
@@ -193,7 +189,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
                          "Get broadcast op %s output tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),
                          output_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr output_tensor_desc =
-      output_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
+    output_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
   uint32_t output_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(*output_tensor_desc, output_size), "get input size failed.");
   broad_cast_info.output_size = output_size;
@@ -216,15 +212,14 @@ Status VarMemAssignUtil::DealVariableNode(uint32_t graph_id, const ge::NodePtr &
         continue;
       }
 
-      if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) ||
-          (dst_node->GetType() == ASSIGNSUB)) {
+      if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
         if (dst_in_data_anchor == dst_node->GetInDataAnchor(0)) {
           GE_CHK_STATUS_RET(DealExportVariableNode(dst_node, node, session_id));
         }
       }
       auto dst_type = dst_node->GetType();
-      bool is_trans_node = (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) ||
-                           (dst_type == PERMUTE);
+      bool is_trans_node =
+        (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
       if (is_trans_node) {
         NodePtr final_trans_node = GetFinalTransNode(dst_node);
         GE_CHK_STATUS_RET(DealTransNode(final_trans_node));
@@ -241,8 +236,8 @@ ge::NodePtr VarMemAssignUtil::GetFinalTransNode(const ge::NodePtr &trans_node) {
   for (const auto &dst_in_anchor : trans_out_data_anchor->GetPeerInDataAnchors()) {
     NodePtr dst_node = dst_in_anchor->GetOwnerNode();
     auto dst_type = dst_node->GetType();
-    bool is_trans_node = (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) ||
-                         (dst_type == PERMUTE);
+    bool is_trans_node =
+      (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
     if (is_trans_node && (dst_in_anchor->GetIdx() == 0)) {
       final_ref_node = GetFinalTransNode(dst_node);
     }
@@ -256,8 +251,7 @@ Status VarMemAssignUtil::DealTransNode(const ge::NodePtr &final_trans_node) {
   GE_IF_BOOL_EXEC(final_trans_out_anchor == nullptr, return SUCCESS);
   for (const ge::InDataAnchorPtr &dst_in_var_anchor : final_trans_out_anchor->GetPeerInDataAnchors()) {
     ge::NodePtr dst_node = dst_in_var_anchor->GetOwnerNode();
-    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) ||
-        (dst_node->GetType() == ASSIGNSUB)) {
+    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
       GE_CHK_STATUS_RET(DealExportTransNode(dst_node, final_trans_node));
     }
   }
@@ -269,8 +263,7 @@ Status VarMemAssignUtil::DealExportTransNode(const ge::NodePtr &node, const ge::
   GE_CHECK_NOTNULL(node_out_anchor);
   for (const ge::InDataAnchorPtr &dst_in_var_anchor : node_out_anchor->GetPeerInDataAnchors()) {
     ge::NodePtr dst_node = dst_in_var_anchor->GetOwnerNode();
-    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) ||
-        (dst_node->GetType() == ASSIGNSUB)) {
+    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
       GE_CHK_STATUS_RET(DealExportTransNode(dst_node, final_trans_node));
     }
   }

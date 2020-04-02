@@ -138,7 +138,7 @@ Status PackKernel::ValidateInputs(const ge::OpDescPtr &op_desc_ptr, const std::v
       }
     }
     if (!formats::IsShapeEqual(shape, dst_shape)) {
-      GELOGW("Shape of input %ld is not equal with input 0.", i);
+      GELOGW("Shape of input %ld is not equal wiht input 0.", i);
       return NOT_CHANGED;
     }
   }
@@ -165,8 +165,7 @@ void PackKernel::ExpandDims(const int64_t axis, const std::vector<ge::ConstGeTen
   final_shape = GeShape(final_dims);
 }
 
-Status PackKernel::CopyOutputData(const GeShape &final_shape,
-                                  const std::vector<ge::ConstGeTensorPtr> &input,
+Status PackKernel::CopyOutputData(const GeShape &final_shape, const std::vector<ge::ConstGeTensorPtr> &input,
                                   ge::GeTensorPtr &output_ptr) {
   int64_t times = 1;
   int64_t unit = 1;
@@ -197,8 +196,8 @@ Status PackKernel::CopyOutputData(const GeShape &final_shape,
     for (int64_t j = 0; j < n_; j++) {
       // input range already check before. Range is [0,n_).
       const uint8_t *in_data = input[j]->GetData().data();
-      auto ret = memcpy_s(buf.get() + dst_offset, output_size * data_size - dst_offset, in_data + src_offset,
-                          data_size * unit);
+      auto ret =
+        memcpy_s(buf.get() + dst_offset, output_size * data_size - dst_offset, in_data + src_offset, data_size * unit);
       if (ret != EOK) {
         GELOGW("Memory copy failed.");
         return NOT_CHANGED;

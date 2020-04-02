@@ -184,10 +184,10 @@ Status GatherV2Kernel::GenData(const int64_t data_num, ConstGeTensorPtr tensor_x
     GELOGE(MEMALLOC_FAILED, "New sizeof(T) * data_num(%zu) memory failed", static_cast<size_t>(sizeof(T) * data_num));
     return MEMALLOC_FAILED;
   }
-  GE_IF_BOOL_EXEC(output->SetData(reinterpret_cast<uint8_t *>(buf.get()), static_cast<size_t>(data_num * sizeof(T))) !=
-                      GRAPH_SUCCESS,
-                  GELOGE(INTERNAL_ERROR, "set data failed");
-                  return INTERNAL_ERROR);
+  GE_IF_BOOL_EXEC(
+    output->SetData(reinterpret_cast<uint8_t *>(buf.get()), static_cast<size_t>(data_num * sizeof(T))) != GRAPH_SUCCESS,
+    GELOGE(INTERNAL_ERROR, "set data failed");
+    return INTERNAL_ERROR);
 
   Status ret = SUCCESS;
   switch (axis) {
@@ -316,7 +316,7 @@ Status GatherV2Kernel::Check(const OpDescPtr &op_desc_ptr, const vector<ConstGeT
   ConstGeTensorPtr tensor2 = input.at(kGatherV2InputIndexTwo);
 
   bool size_is_zero =
-      ((tensor0->GetData().size() == 0) || (tensor1->GetData().size() == 0) || (tensor2->GetData().size() == 0));
+    ((tensor0->GetData().size() == 0) || (tensor1->GetData().size() == 0) || (tensor2->GetData().size() == 0));
   if (size_is_zero) {
     GELOGE(NOT_CHANGED, "some input size is zero.");
     return NOT_CHANGED;
@@ -385,8 +385,8 @@ Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGe
 
   auto axis_data_type = tensor2->GetTensorDesc().GetDataType();
   int64_t axis = axis_data_type == DT_INT32
-                     ? *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(tensor2->GetData().data())))
-                     : *(const_cast<int64_t *>(reinterpret_cast<const int64_t *>(tensor2->GetData().data())));
+                   ? *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(tensor2->GetData().data())))
+                   : *(const_cast<int64_t *>(reinterpret_cast<const int64_t *>(tensor2->GetData().data())));
   axis = axis >= 0 ? axis : axis + x_shape.GetDimNum();
   // check axis value
   if (axis < 0 || (axis + 1) > static_cast<int64_t>(x_shape.GetDimNum())) {

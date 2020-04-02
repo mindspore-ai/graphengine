@@ -15,10 +15,8 @@
  */
 
 #include "graph/anchor.h"
-
 #include <algorithm>
 #include <cstring>
-
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/node.h"
@@ -53,6 +51,7 @@ void Anchor::UnlinkAll() noexcept {
       if (Unlink(peer_anchor_ptr) != GRAPH_SUCCESS) {
         GELOGW("unlink peer_anchor_ptr failed.");
       }
+
     } while (!peer_anchors_.empty());
   }
 }
@@ -70,10 +69,10 @@ graphStatus Anchor::Unlink(const AnchorPtr &peer) {
   GE_IF_BOOL_EXEC(it == peer_anchors_.end(), GELOGW("this anchor is not connected to peer"); return GRAPH_FAILED);
 
   auto it_peer =
-      std::find_if(peer->peer_anchors_.begin(), peer->peer_anchors_.end(), [this](const std::weak_ptr<Anchor> &an) {
-        auto anchor = an.lock();
-        return Equal(anchor);
-      });
+    std::find_if(peer->peer_anchors_.begin(), peer->peer_anchors_.end(), [this](const std::weak_ptr<Anchor> &an) {
+      auto anchor = an.lock();
+      return Equal(anchor);
+    });
 
   GE_CHK_BOOL_RET_STATUS(it_peer != peer->peer_anchors_.end(), GRAPH_FAILED, "peer is not connected to this anchor");
 

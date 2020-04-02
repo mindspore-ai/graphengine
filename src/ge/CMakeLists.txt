@@ -260,7 +260,6 @@ target_link_libraries(ge_train
         ${hccl}
         ${msprof}
         ${runtime}
-        ${cce}
         ${resouce}
         rt
         dl)
@@ -468,7 +467,6 @@ target_link_libraries(ge
         ${mmpa}
         ${msprof}
         ${runtime}
-        ${cce}
         ${resouce}
         rt
         dl)

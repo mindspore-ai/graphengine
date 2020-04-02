@@ -30,7 +30,6 @@
 #include "graph/utils/graph_utils.h"
 #include "init/gelib.h"
 
-
 namespace {
 const uint32_t kMaxNodeNum = 350;
 }  // namespace

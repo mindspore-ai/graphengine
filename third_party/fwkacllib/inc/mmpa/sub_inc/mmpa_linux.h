@@ -20,8 +20,8 @@
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
-#endif /* __cpluscplus */
-#endif /* __cpluscplus */
+#endif  // __cpluscplus
+#endif  // __cpluscplus
 
 #define MMPA_MACINFO_DEFAULT_SIZE 18
 #define MMPA_CPUDESC_DEFAULT_SIZE 64
@@ -46,8 +46,8 @@ typedef int (*mmSort)(const mmDirent **a, const mmDirent **b);
 typedef VOID *(*userProcFunc)(VOID *pulArg);
 
 typedef struct {
-  userProcFunc procFunc;
-  VOID *pulArg;
+  userProcFunc procFunc;  // Callback function pointer
+  VOID *pulArg;           // Callback function parameters
 } mmUserBlock_t;
 
 typedef struct {
@@ -102,28 +102,28 @@ typedef enum {
 } mmPollType;
 
 typedef struct {
-  mmPollHandle handle;
-  mmPollType pollType;
-
-  INT32 ioctlCode;
-  mmComPletionKey completionKey;
-
+  mmPollHandle handle;            // The file descriptor or handle of poll is required
+  mmPollType pollType;            // Operation type requiring poll
+                                  // read or recv or ioctl
+  INT32 ioctlCode;                // IOCTL operation code, dedicated to IOCTL
+  mmComPletionKey completionKey;  // The default value is blank, which is used in windows
+                                  // The data used to receive the difference between which handle is readable
 } mmPollfd;
 
 typedef struct {
-  VOID *priv;
-  mmPollHandle bufHandle;
-  mmPollType bufType;
-  VOID *buf;
-  UINT32 bufLen;
-  UINT32 bufRes;
+  VOID *priv;              // User defined private content
+  mmPollHandle bufHandle;  // Value of handle corresponding to buf
+  mmPollType bufType;      // Data types polled to
+  VOID *buf;               // Data used in poll
+  UINT32 bufLen;           // Data length used in poll
+  UINT32 bufRes;           // Actual return length
 } mmPollData, *pmmPollData;
 
 typedef VOID (*mmPollBack)(pmmPollData);
 
 typedef struct {
-  INT32 tz_minuteswest;
-  INT32 tz_dsttime;  // type of DST correction
+  INT32 tz_minuteswest;  // How many minutes is it different from Greenwich
+  INT32 tz_dsttime;      // type of DST correction
 } mmTimezone;
 
 typedef struct {
@@ -174,14 +174,16 @@ typedef struct {
 typedef mode_t MODE;
 
 typedef struct {
-  INT32 detachFlag;
-  INT32 priorityFlag;
-  INT32 priority;
-  INT32 policyFlag;
-  INT32 policy;
-
-  INT32 stackFlag;
-  UINT32 stackSize;
+  INT32 detachFlag;    // Determine whether to set separation property 0, not to separate 1
+  INT32 priorityFlag;  // Determine whether to set priority 0 and not set 1
+  INT32 priority;      // Priority value range to be set 1-99
+  INT32 policyFlag;    // Set scheduling policy or not 0 do not set 1 setting
+  INT32 policy;        // Scheduling policy value value
+                       //  MMPA_THREAD_SCHED_RR
+                       //  MMPA_THREAD_SCHED_OTHER
+                       //  MMPA_THREAD_SCHED_FIFO
+  INT32 stackFlag;     // Set stack size or not: 0 does not set 1 setting
+  UINT32 stackSize;    // The stack size unit bytes to be set cannot be less than MMPA_THREAD_STACK_MIN
 } mmThreadAttr;
 
 #ifdef __ANDROID__
@@ -210,9 +212,10 @@ typedef struct {
 #define M_MSG_EXCL (IPC_CREAT | IPC_EXCL)
 #define M_MSG_NOWAIT IPC_NOWAIT
 
-#define M_WAIT_NOHANG WNOHANG
-#define M_WAIT_UNTRACED WUNTRACED
-
+#define M_WAIT_NOHANG WNOHANG  // Non blocking waiting
+#define M_WAIT_UNTRACED \
+  WUNTRACED  // If the subprocess enters the suspended state, it will return immediately
+             // But the end state of the subprocess is ignored
 #define M_UMASK_USRREAD S_IRUSR
 #define M_UMASK_GRPREAD S_IRGRP
 #define M_UMASK_OTHREAD S_IROTH
@@ -319,6 +322,7 @@ extern mmAtomicType mmValueInc(mmAtomicType *ptr, mmAtomicType value);
 extern mmAtomicType mmValueSub(mmAtomicType *ptr, mmAtomicType value);
 extern INT32 mmCreateTaskWithDetach(mmThread *threadHandle, mmUserBlock_t *funcBlock);
 
+// The following 3 interfaces are to be deleted
 extern INT32 mmCreateNamedPipe(mmPipeHandle pipe[], CHAR *pipeName[], INT32 waitMode);
 extern INT32 mmOpenNamePipe(mmPipeHandle pipe[], CHAR *pipeName[], INT32 waitMode);
 extern VOID mmCloseNamedPipe(mmPipeHandle namedPipe[]);
@@ -327,6 +331,7 @@ extern INT32 mmCreatePipe(mmPipeHandle pipe[], CHAR *pipeName[], UINT32 pipeCoun
 extern INT32 mmOpenPipe(mmPipeHandle pipe[], CHAR *pipeName[], UINT32 pipeCount, INT32 waitMode);
 extern VOID mmClosePipe(mmPipeHandle pipe[], UINT32 pipeCount);
 
+// Poll related interface
 extern mmCompletionHandle mmCreateCompletionPort();
 extern VOID mmCloseCompletionPort(mmCompletionHandle handle);
 extern INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, mmCompletionHandle handleIOCP, pmmPollData polledData,
@@ -388,12 +393,37 @@ extern CHAR *mmDirName(CHAR *path);
 extern CHAR *mmBaseName(CHAR *path);
 extern INT32 mmGetDiskFreeSpace(const char *path, mmDiskSize *diskSize);
 
+/*
+ * Function: set the thread name created by mmcreatetask
+ * Input: pstThreadHandle: thread ID
+ *  name: thread name, the actual length of name must be < MMPA_THREADNAME_SIZE
+ * The input parameter error returns EN_INVALID_PARAM, the execution success returns EN_OK, and the
+ * execution failure returns EN_ERROR
+ */
 extern INT32 mmSetThreadName(mmThread *threadHandle, const CHAR *name);
 
+/*
+ * Function: get thread name
+ * Input: pstThreadHandle: thread ID
+ *      size: Cache length of thread name
+ *  name:User allocated cache for thread name, Cache length must be >= MMPA_THREADNAME_SIZE
+ * The input parameter error returns EN_INVALID_PARAM, the execution success returns EN_OK, and the
+ * execution failure returns EN_ERROR
+ */
 extern INT32 mmGetThreadName(mmThread *threadHandle, CHAR *name, INT32 size);
-
+/*
+ * Function:Set the thread name of the currently executing thread - call inside the thread body
+ * Input:name:Thread name to be set
+ * The input parameter error returns EN_INVALID_PARAM, the execution success returns EN_OK, and the
+ * execution failure returns EN_ERROR
+ */
 extern INT32 mmSetCurrentThreadName(const CHAR *name);
-
+/*
+ * Function:Get the thread name of the currently executing thread - in body call
+ * Input:name:The name of the thread to get, and the cache is allocated by the user，size>=MMPA_THREADNAME_SIZE
+ * The input parameter error returns EN_INVALID_PARAM, the execution success returns EN_OK, and the
+ * execution failure returns EN_ERROR
+ */
 extern INT32 mmGetCurrentThreadName(CHAR *name, INT32 size);
 extern INT32 mmGetFileSize(const CHAR *fileName, ULONGLONG *length);
 extern INT32 mmIsDir(const CHAR *fileName);
@@ -413,6 +443,6 @@ extern INT32 mmCreateTaskWithThreadAttr(mmThread *threadHandle, const mmUserBloc
 #if __cplusplus
 }
 #endif /* __cpluscplus */
-#endif /* __cpluscplus */
+#endif // __cpluscplus
 
-#endif /* _MMPA_LINUX_MMPA_LINUX_H_ */
+#endif // MMPA_LINUX_MMPA_LINUX_H_

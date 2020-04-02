@@ -21,6 +21,35 @@
 
 namespace ge {
 
+/**
+*@brief A fusion operator for batchnorm.
+
+*@par Inputs:
+*Ten inputs, including:
+* @li x: A Tensor. Must be one of the following types: float32.
+* @li scale: A Tensor. Must be one of the following types: float32.
+* @li b: A Tensor. Must be one of the following types: float32.
+* @li mean: A Tensor. Must be one of the following types: float32.
+* @li variance: A Tensor. Must be one of the following types: float32.
+
+*@par Attributes:
+* @li mode: A Tensor. Must be one of the following types: int.
+* @li epsilon: A Tensor. Must be one of the following types: float32.
+* @li momentum: A Tensor. Must be one of the following types: float32.
+* @li is_training: A Tensor. Must be one of the following types: bool.
+* @li is_training_fusion: A Tensor. Must be one of the following types: bool.
+* @li moving_average_fraction: A Tensor. Must be one of the following types: float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li y: A Tensor. Must be one of the following types: float32.
+* @li running_mean: A Tensor. Must be one of the following types: float32.
+* @li running_variance: A Tensor. Must be one of the following types: float32.
+* @li save_mean: A Tensor. Must be one of the following types: float32.
+* @li save_inv_variance: A Tensor. Must be one of the following types: float32.
+* @li save_inv_variance1: A Tensor. Must be one of the following types: float32.
+
+*/
 REG_OP(FusedBatchNorm)
     .INPUT(x, TensorType{DT_FLOAT})
     .INPUT(scale, TensorType{DT_FLOAT})
@@ -40,6 +69,29 @@ REG_OP(FusedBatchNorm)
     .ATTR(is_training_fusion, Bool, true)
     .ATTR(moving_average_fraction, Float, 0.00300002098)
     .OP_END_FACTORY_REG(FusedBatchNorm)
+
+/**
+*@brief A fusion operator for batchnorm.
+
+*@par Inputs:
+*Ten inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float32.
+* @li x: A Tensor. Must be one of the following types: float32.
+* @li scale: A Tensor. Must be one of the following types: float32.
+* @li save_mean: A Tensor. Must be one of the following types: float32.
+* @li save_inv_variance: A Tensor. Must be one of the following types: float32.
+* @li save_inv_variance1: A Tensor. Must be one of the following types: float32.
+
+*@par Attributes:
+* @li epsilon: A Tensor. Must be one of the following types: float32.
+* @li momentum: A Tensor. Must be one of the following types: float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li dx: A Tensor. Must be one of the following types: float32.
+* @li bn_scale: A Tensor. Must be one of the following types: float32.
+* @li bn_bias: A Tensor. Must be one of the following types: float32.
+*/
 
 REG_OP(FusedBatchNormGrad)
     .INPUT(dy, TensorType{DT_FLOAT})

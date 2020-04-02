@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __CCE_DEF_H__
-#define __CCE_DEF_H__
+#ifndef CCE_DEF_H__
+#define CCE_DEF_H__
 
 #include "runtime/rt.h"
 
@@ -149,4 +149,4 @@ ccStatus_t ccSetFuncState(ccFuncParamType_t type, bool isOpen);
 bool ccGetFuncState(ccFuncParamType_t type);
 
 }  // namespace cce
-#endif
+#endif  // CCE_DEF_H__

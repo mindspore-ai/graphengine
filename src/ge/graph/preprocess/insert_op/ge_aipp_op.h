@@ -19,7 +19,6 @@
 
 #include <utility>
 #include <vector>
-
 #include "common/op/attr_value_util.h"
 #include "graph/preprocess/insert_op/base_insert_op.h"
 #include "proto/insert_op.pb.h"
@@ -49,7 +48,6 @@ class AippOp : public InsertOpBase {
   /// @ingroup domi_omg
   /// @brief Generate Op Desc
   ///
-
   Status GenerateOpDesc(ge::OpDescPtr op_desc) override;
 
   ///
@@ -65,8 +63,8 @@ class AippOp : public InsertOpBase {
   domi::AippOpParams::AippMode GetAippMode() override;
 
  private:
-  AippOp& operator=(const AippOp& aipp_op);
-  AippOp(const AippOp& aipp_op);
+  AippOp &operator=(const AippOp &aipp_op);
+  AippOp(const AippOp &aipp_op);
 
   ///
   /// @ingroup domi_omg
@@ -77,10 +75,9 @@ class AippOp : public InsertOpBase {
 
   void SetDtcDefaultValue();
 
-  domi::AippOpParams *aipp_params_;
+  domi::AippOpParams *aipp_params_ = nullptr;
   ge::NodePtr aipp_node_ = nullptr;
 };
 }  // namespace ge
 
 #endif  // GE_GRAPH_PREPROCESS_INSERT_OP_GE_AIPP_OP_H_
-

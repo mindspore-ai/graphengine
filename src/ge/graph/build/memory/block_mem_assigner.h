@@ -23,7 +23,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "common/util.h"
@@ -215,6 +214,19 @@ class BlockMemAssigner : public MemAssigner {
   ///
   MemoryBlock *ApplyMemory(size_t block_size, size_t real_size, MemoryType mem_type, const ge::NodePtr &n,
                            uint32_t out_index, const std::vector<bool> &workspace_reuse_flag);
+
+  ///
+  /// @ingroup GE
+  /// @brief check workspace_reuse_flag to judge if add workspace block wait reuse
+  /// @param [in] workspace_reuse_flag mark out index if support resue
+  /// @param [in] index out index
+  /// @param [in] stream_id which stream op in
+  /// @param [in] mem_block node workspace mem_block
+  /// @return void
+  /// @author
+  ///
+  void CheckWorkspaceReuse(const vector<bool> &workspace_reuse_flag, uint32_t index, int64_t stream_id,
+                           MemoryBlock *mem_block);
 
   ///
   /// @ingroup GE

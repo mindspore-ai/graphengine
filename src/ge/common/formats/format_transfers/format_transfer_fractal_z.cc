@@ -29,13 +29,14 @@ namespace formats {
 namespace {
 Status CheckDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_type) > 0 ? SUCCESS : UNSUPPORTED; }
 
-///
-/// FZ represents the weight of convolution,.
-/// After the conversion to two-dimensional matrix, the memory arrangement is small n and large Z.
-/// If 4D(eg.NCHW) is used to represent convolution kernel, N is width, HWC is height.
-///
-/// frac_z axises: (C1*H*W, No, Ni, C0), which Ni = 16, C0 = 16/32, No = Ceil(N/Ni), C1 = Ceil(C/C0)
-///
+/**
+ * FZ represents the weight of convolution,.
+ * After the conversion to two-dimensional matrix, the memory arrangement is small n and large Z.
+ * If 4D(eg.NCHW) is used to represent convolution kernel, N is width, HWC is height.
+ *
+ * frac_z axises: (C1*H*W, No, Ni, C0), which Ni = 16, C0 = 16/32, No = Ceil(N/Ni), C1 = Ceil(C/C0)
+ * @return
+ */
 Status TransShapeToFz(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type, std::vector<int64_t> &dst_shape) {
   auto c0 = GetCubeSizeByDataType(data_type);
   if (c0 < 0) {
@@ -148,8 +149,8 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
           auto idx = gfi * fractal_ele_cnt + col * c0 + row;
           auto offset = idx * size;
           auto protected_size = dst_size - offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           errno_t ret;
           if (need_pad_zero) {
             ret = memset_s(dst.get() + offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
@@ -209,8 +210,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
             int64_t dst_idx = c1i * hwn1n0c0 + hi * wn1n0c0 + wi * n1n0c0 + n1n0i * c0 + c0i;
             int64_t dst_offset = dst_idx * data_size;
             auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                      ? dst_size - dst_offset
-                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                    ? dst_size - dst_offset
+                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
             errno_t ret;
             if (pad_zero) {
@@ -274,8 +275,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
             int64_t dst_idx = c1i * hwn1n0c0 + hi * wn1n0c0 + wi * n1n0c0 + n1n0i * c0 + c0i;
             int64_t dst_offset = dst_idx * data_size;
             auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                      ? dst_size - dst_offset
-                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                    ? dst_size - dst_offset
+                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
             errno_t ret;
             if (pad_zero) {

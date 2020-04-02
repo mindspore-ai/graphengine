@@ -45,17 +45,20 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ThreadPool {
   template <class Func, class... Args>
   auto commit(Func &&func, Args &&... args) -> std::future<decltype(func(args...))> {
     GELOGD("commit run task enter.");
+    using retType = decltype(func(args...));
+    std::future<retType> fail_future;
     if (is_stoped_.load()) {
       GELOGE(ge::FAILED, "thread pool has been stopped.");
+      return fail_future;
     }
 
-    using RetType = decltype(func(args...));
     auto bind_func = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
-    auto task = ge::MakeShared<std::packaged_task<RetType()>>(bind_func);
+    auto task = ge::MakeShared<std::packaged_task<retType()>>(bind_func);
     if (task == nullptr) {
-      GELOGW("Make shared failed.");
+      GELOGE(ge::FAILED, "Make shared failed.");
+      return fail_future;
     }
-    std::future<RetType> future = task->get_future();
+    std::future<retType> future = task->get_future();
     {
       std::lock_guard<std::mutex> lock{m_lock_};
       tasks_.emplace([task]() { (*task)(); });

@@ -20,7 +20,6 @@
 #include <map>
 #include <memory>
 #include <string>
-
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/optimizer/graph_optimizer.h"
 
@@ -29,57 +28,57 @@ using GraphOptimizerPtr = std::shared_ptr<ge::GraphOptimizer>;
 
 namespace ge {
 namespace ge_local {
-///
-/// ge local engine.
-/// Used for the ops not belong to any engine. eg:netoutput
-///
+/**
+ * ge local engine.
+ * Used for the ops not belong to any engine. eg:netoutput
+ */
 class GeLocalEngine {
  public:
-  ///
-  /// get GeLocalEngine instance.
-  /// @return  GeLocalEngine instance.
-  ///
+  /**
+   * get GeLocalEngine instance.
+   * @return  GeLocalEngine instance.
+   */
   static GeLocalEngine &Instance();
 
   virtual ~GeLocalEngine() = default;
 
-  ///
-  /// When Ge start, GE will invoke this interface
-  /// @return The status whether initialize successfully
-  ///
+  /**
+   * When Ge start, GE will invoke this interface
+   * @return The status whether initialize successfully
+   */
   Status Initialize(const std::map<string, string> &options);
 
-  ///
-  /// After the initialize, GE will invoke this interface
-  /// to get the Ops kernel Store.
-  /// @param ops_kernel_map The ge local's ops kernel info
-  ///
+  /**
+   * After the initialize, GE will invoke this interface
+   * to get the Ops kernel Store.
+   * @param ops_kernel_map The ge local's ops kernel info
+   */
   void GetOpsKernelInfoStores(std::map<std::string, OpsKernelInfoStorePtr> &ops_kernel_map);
 
-  ///
-  /// After the initialize, GE will invoke this interface
-  /// to get the Graph Optimizer.
-  /// @param graph_optimizers The ge local's Graph Optimizer objs
-  ///
+  /**
+   * After the initialize, GE will invoke this interface
+   * to get the Graph Optimizer.
+   * @param graph_optimizers The ge local's Graph Optimizer objs
+   */
   void GetGraphOptimizerObjs(std::map<std::string, GraphOptimizerPtr> &graph_optimizers);
 
-  ///
-  /// When the graph finished, GE will invoke this interface
-  /// @return The status whether initialize successfully
-  ///
+  /**
+   * When the graph finished, GE will invoke this interface
+   * @return The status whether initialize successfully
+   */
   Status Finalize();
 
   // Copy prohibited
-  GeLocalEngine(const GeLocalEngine &ge_local_engine) = delete;
+  GeLocalEngine(const GeLocalEngine &geLocalEngine) = delete;
 
   // Move prohibited
-  GeLocalEngine(const GeLocalEngine &&ge_local_engine) = delete;
+  GeLocalEngine(const GeLocalEngine &&geLocalEngine) = delete;
 
   // Copy prohibited
-  GeLocalEngine &operator=(const GeLocalEngine &ge_local_engine) = delete;
+  GeLocalEngine &operator=(const GeLocalEngine &geLocalEngine) = delete;
 
   // Move prohibited
-  GeLocalEngine &operator=(GeLocalEngine &&ge_local_engine) = delete;
+  GeLocalEngine &operator=(GeLocalEngine &&geLocalEngine) = delete;
 
  private:
   GeLocalEngine() = default;
@@ -91,28 +90,28 @@ class GeLocalEngine {
 
 extern "C" {
 
-///
-/// When Ge start, GE will invoke this interface
-/// @return The status whether initialize successfully
-///
+/**
+ * When Ge start, GE will invoke this interface
+ * @return The status whether initialize successfully
+ */
 ge::Status Initialize(const map<string, string> &options);
 
-///
-/// After the initialize, GE will invoke this interface to get the Ops kernel Store
-/// @param ops_kernel_map The ge local's ops kernel info
-///
+/**
+ * After the initialize, GE will invoke this interface to get the Ops kernel Store
+ * @param ops_kernel_map The ge local's ops kernel info
+ */
 void GetOpsKernelInfoStores(std::map<std::string, OpsKernelInfoStorePtr> &ops_kernel_map);
 
-///
-/// After the initialize, GE will invoke this interface to get the Graph Optimizer
-/// @param graph_optimizers The ge local's Graph Optimizer objs
-///
+/**
+ * After the initialize, GE will invoke this interface to get the Graph Optimizer
+ * @param graph_optimizers The ge local's Graph Optimizer objs
+ */
 void GetGraphOptimizerObjs(std::map<std::string, GraphOptimizerPtr> &graph_optimizers);
 
-///
-/// When the graph finished, GE will invoke this interface
-/// @return The status whether initialize successfully
-///
+/**
+ * When the graph finished, GE will invoke this interface
+ * @return The status whether initialize successfully
+ */
 ge::Status Finalize();
 }
 

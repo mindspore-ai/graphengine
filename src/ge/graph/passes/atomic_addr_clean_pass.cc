@@ -18,13 +18,13 @@
 
 #include <map>
 #include <memory>
-#include <sstream>
 #include <string>
+#include <sstream>
 #include <vector>
 
-#include "common/ge/ge_util.h"
-#include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
+#include "common/ge_inner_error_codes.h"
+#include "common/ge/ge_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "init/gelib.h"
 
@@ -155,7 +155,7 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
 
 Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr &atomic_clean_node) {
   GE_IF_BOOL_EXEC(atomic_node == nullptr || atomic_clean_node == nullptr,
-                  GELOGE(PARAM_INVALID, "param [atomic_node][atomic_clean_node] must not be null.");
+                  GE_LOGE("param [atomic_node][atomic_clean_node] must not be null.");
                   return PARAM_INVALID);
   InControlAnchorPtr in_ctrl_anchor = atomic_node->GetInControlAnchor();
   OutControlAnchorPtr out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
@@ -205,7 +205,7 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
             in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
           auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
           if (peer_in_node->GetType() == DATA) {
-            (void)AttrUtils::SetBool(peer_in_node->GetOpDesc(), "_need_memset", true);
+            (void)AttrUtils::SetBool(peer_in_node->GetOpDesc(), "_need_memset", true);  // no need return
             GELOGI("Recognized atomic op %s from HCCL engine and input is DATA.", op_desc->GetName().c_str());
             return false;
           }

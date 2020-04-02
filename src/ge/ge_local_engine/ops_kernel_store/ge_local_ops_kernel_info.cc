@@ -15,21 +15,21 @@
  */
 
 #include "ge_local_engine/ops_kernel_store/ge_local_ops_kernel_info.h"
-
 #include <memory>
-
 #include "common/constant/constant.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
+#include "common/ge_inner_error_codes.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "op/op_factory.h"
 #include "proto/task.pb.h"
 
 namespace {
-const char *const kConstantOpType = "Constant";
-const char *const kConstantOpAttrName = "value";
+const char *kConstantOpType = "Constant";
+const char *kConstantOpAttrName = "value";
 }  // namespace
 namespace ge {
 namespace ge_local {
@@ -113,10 +113,10 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
       return FAILED;
     }
     GELOGI(
-        "Calc op[%s:%s] out[%zu] mem size is %ld,"
-        " format=%s, data_type=%s.",
-        node_name.c_str(), node_type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
-        TypeUtils::DataTypeToSerialString(data_type).c_str());
+      "Calc op[%s:%s] out[%zu] mem size is %ld,"
+      " format=%s, data_type=%s.",
+      node_name.c_str(), node_type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+      TypeUtils::DataTypeToSerialString(data_type).c_str());
 
     if (output_mem_size > static_cast<int64_t>(UINT_MAX)) {
       GELOGE(FAILED,
@@ -176,7 +176,7 @@ Status GeLocalOpsKernelInfoStore::GenerateTask(const Node &node, RunContext &con
     GELOGE(ret, "Node:%s(%s) op run failed.", name.c_str(), type.c_str());
     return ret;
   }
-  GELOGI("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());
+  GELOGD("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());
   return ret;
 }
 

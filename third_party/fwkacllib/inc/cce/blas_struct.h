@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __CC_BLAS_STRUCT_API__
-#define __CC_BLAS_STRUCT_API__
+#ifndef CC_BLAS_STRUCT_API__
+#define CC_BLAS_STRUCT_API__
 
 #include <stdint.h>
 
@@ -28,4 +28,4 @@ typedef enum {
 
 typedef enum { CCBLAS_DIAG_NON_UNIT = 0, CCBLAS_DIAG_UNIT = 1 } ccblasDiagType_t;
 
-#endif /*__CC_BLAS_STRUCT_API__*/
+#endif  // CC_BLAS_STRUCT_API__

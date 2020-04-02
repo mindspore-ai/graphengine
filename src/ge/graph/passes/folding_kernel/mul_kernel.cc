@@ -45,14 +45,14 @@ Status IsOverflow(T const &a, T const &b, DataType &type) {
   }
 }
 
-#define DEFINE_FUNC_WITH_STATUS_BY_TYPE(TYPE)                                             \
-  std::function<TYPE(TYPE const &, TYPE const &, DataType &, Status &)> func_##TYPE = []( \
-      TYPE const &a, TYPE const &b, DataType &type, Status &ret) -> TYPE {                \
-    ret = IsOverflow(a, b, type);                                                         \
-    if (ret != SUCCESS) {                                                                 \
-      return static_cast<TYPE>(0);                                                        \
-    }                                                                                     \
-    return a * b;                                                                         \
+#define DEFINE_FUNC_WITH_STATUS_BY_TYPE(TYPE)                                         \
+  std::function<TYPE(TYPE const &, TYPE const &, DataType &, Status &)> func_##TYPE = \
+    [](TYPE const &a, TYPE const &b, DataType &type, Status &ret) -> TYPE {           \
+    ret = IsOverflow(a, b, type);                                                     \
+    if (ret != SUCCESS) {                                                             \
+      return static_cast<TYPE>(0);                                                    \
+    }                                                                                 \
+    return a * b;                                                                     \
   };
 
 #define SET_BCAST_COMPUTE_CASE(DTYPE, TYPE)                           \
@@ -64,6 +64,7 @@ Status IsOverflow(T const &a, T const &b, DataType &type) {
   case DTYPE:                                                                                                    \
     (void)output_ptr->SetData(reinterpret_cast<uint8_t *>(y_data_##TYPE.data()), y_data_##TYPE.size() * length); \
     break;
+// [no need to check result]
 DEFINE_FUNC_WITH_STATUS_BY_TYPE(int32_t)
 DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint32_t)
 }  // namespace

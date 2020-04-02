@@ -15,7 +15,6 @@
  */
 
 #include "graph/build/graph_build.h"
-
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
 #include "common/opskernel/ops_kernel_info_types.h"
@@ -199,8 +198,8 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
 
   auto *get_var_mem_base = reinterpret_cast<uint8_t *>(ge::VarManager::Instance(0)->GetVarMemLogicBase());
   uint64_t var_size = (ge::VarManager::Instance(session_id)->GetVarMemSize(RT_MEMORY_HBM) > 0)
-                          ? ge::VarManager::Instance(0)->GetVarMemMaxSize()
-                          : 0;
+                        ? ge::VarManager::Instance(0)->GetVarMemMaxSize()
+                        : 0;
   TaskGenerator task_generator(get_var_mem_base, var_size);
   ret = task_generator.GetTaskInfo(*model_ptr, comp_graph, session_id, run_context.GetRunContext());
 
@@ -209,7 +208,6 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
 
 Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
   // set input_desc.size = src_node.output_desc.size
-  GELOGI("Start to set input desc size.");
   for (const auto &in_data_anchor : node_ptr->GetAllInDataAnchors()) {
     const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
@@ -223,18 +221,18 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
 
     uint32_t size = 0;
     GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc_temp, size) != SUCCESS, GELOGI("Get size failed!"));
-    GELOGI("src node %s output desc, dim_size: %zu, mem_size: %u, format: %s, type: %s.", src_node->GetName().c_str(),
+    GELOGD("src node %s output desc, dim_size: %zu, mem_size: %u, format: %s, type: %s.", src_node->GetName().c_str(),
            desc_temp.GetShape().GetDimNum(), size, TypeUtils::FormatToSerialString(desc_temp.GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(desc_temp.GetDataType()).c_str());
     for (size_t i = 0; i < desc_temp.GetShape().GetDimNum(); ++i) {
-      GELOGI("dims[%zu]: %ld", i, desc_temp.GetShape().GetDim(i));
+      GELOGD("dims[%zu]: %ld", i, desc_temp.GetShape().GetDim(i));
     }
 
     auto input_desc = node_op_desc->GetInputDescPtr(in_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(input_desc);
     ge::TensorUtils::SetSize(const_cast<GeTensorDesc &>(*input_desc), size);
     GE_CHK_STATUS_RET(node_op_desc->UpdateInputDesc(in_data_anchor->GetIdx(), *input_desc));
-    GELOGI("%s input desc, dim_size: %zu, mem_size: %u, format: %s, type: %s.", node_ptr->GetName().c_str(),
+    GELOGD("%s input desc, dim_size: %zu, mem_size: %u, format: %s, type: %s.", node_ptr->GetName().c_str(),
            input_desc->GetShape().GetDimNum(), size, TypeUtils::FormatToSerialString(input_desc->GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str());
   }

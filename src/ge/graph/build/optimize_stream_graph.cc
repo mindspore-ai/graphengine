@@ -22,6 +22,7 @@
 #include <utility>
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
+
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "init/gelib.h"
@@ -43,10 +44,9 @@ void OptimizeStreamGraph::RefreshNodeId(const ComputeGraphPtr &comp_graph, vecto
       continue;
     }
     for (ge::NodePtr &node : sub_graph->GetAllNodes()) {
-      GE_CHECK_NOTNULL_EXEC(node->GetOpDesc(), return);
+      GE_CHECK_NOTNULL_EXEC(node->GetOpDesc(), return );
       if ((node->GetType() == END) || (node->GetType() == PLACEHOLDER)) {
         node->GetOpDesc()->SetId(static_cast<int64_t>(node_size));
-        GELOGI("Refresh node %s nodeId: %ld", node->GetName().c_str(), node->GetOpDesc()->GetId());
         node_size++;
       }
     }
@@ -69,7 +69,7 @@ bool OptimizeStreamGraph::IsSameStreamId(const ComputeGraphPtr &comp_graph) {
     stream_set.insert(stream_id);
   }
   if (stream_set.size() > 1) {
-    GELOGI("Nodes of graph: %s have different stream id, node num: %zu, different stream num: %zu.",
+    GELOGD("Nodes of graph: %s have different stream id, node num: %zu, different stream num: %zu.",
            comp_graph->GetName().c_str(), comp_graph->GetDirectNodesSize(), stream_set.size());
     return false;
   }
@@ -98,15 +98,13 @@ Status OptimizeStreamGraph::OptimizeStreamedSubGraph(const ComputeGraphPtr &comp
     vector<GraphOptimizerPtr> graph_optimizers;
     if (instance->DNNEngineManagerObj().IsEngineRegistered(engine_name)) {
       instance->OpsKernelManagerObj().GetGraphOptimizerByEngine(engine_name, graph_optimizers);
-      GELOGI("Subgraph: %s start optimize streamed graph. engineName: %s, subgraph num: %zu, graph Optimizer num: %zu.",
-             sub_graph->GetName().c_str(), engine_name.c_str(), subgraph_infos.size(), graph_optimizers.size());
 
       auto nodes = sub_graph->GetAllNodes();
       if (nodes.empty()) {
         continue;
       }
       if (!IsSameStreamId(sub_graph)) {
-        GELOGI("There are more than one stream in subgraph %s", sub_graph->GetName().c_str());
+        GELOGD("There are more than one stream in subgraph %s", sub_graph->GetName().c_str());
         continue;
       }
       OpDescPtr op_desc = nodes.at(0)->GetOpDesc();
@@ -130,10 +128,10 @@ Status OptimizeStreamGraph::OptimizeStreamedSubGraph(const ComputeGraphPtr &comp
                  sub_graph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size(), ret);
           return ret;
         }
-        GELOGI(
-            "[optimizeStreamedSubGraph]: optimize streamed subgraph success, subgraph: %s, engine_name: %s, graph "
-            "Optimizer num: %zu!",
-            sub_graph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size());
+        GELOGD(
+          "[optimizeStreamedSubGraph]: optimize streamed subgraph success, subgraph: %s, engine_name: %s, graph "
+          "Optimizer num: %zu!",
+          sub_graph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size());
       }
     }
   }

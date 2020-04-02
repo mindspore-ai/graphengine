@@ -17,15 +17,13 @@
 #include "graph/passes/transop_depth_fusion_pass.h"
 
 #include <algorithm>
-
+#include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
-#include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
-
 
 namespace ge {
 graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
@@ -71,11 +69,11 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
   temp_depth++;
   if (temp_depth >= max_recursive_depth) {
     GELOGI(
-        "Caution: recursive depth is become %u."
-        "It's abnormally to have so many trans ops between two normal ops"
-        "Please check your graph in detail!"
-        "The search terminate here and continue to another branch.",
-        temp_depth);
+      "Caution: recursive depth is become %u."
+      "It's abnormally to have so many trans ops between two normal ops"
+      "Please check your graph in detail!"
+      "The search terminate here and continue to another branch.",
+      temp_depth);
     temp_depth--;
     return GRAPH_SUCCESS;
   }
@@ -261,15 +259,15 @@ graphStatus TransOpDepthFusionPass::RelinkEdges(const OutDataAnchorPtr &new_out_
   GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(old_out_anchor, in_data_anchor), "remove edge failed");
   GE_CHK_STATUS_RET(GraphUtils::AddEdge(new_out_anchor, in_data_anchor), "add edge failed");
   GELOGD(
-      "relink edges before remove node, remove data edge between node: %s, "
-      "type: %s and node: %s, type: %s.",
-      old_out_anchor->GetOwnerNode()->GetName().c_str(), old_out_anchor->GetOwnerNode()->GetType().c_str(),
-      in_data_anchor->GetOwnerNode()->GetName().c_str(), in_data_anchor->GetOwnerNode()->GetType().c_str());
+    "relink edges before remove node, remove data edge between node: %s, "
+    "type: %s and node: %s, type: %s.",
+    old_out_anchor->GetOwnerNode()->GetName().c_str(), old_out_anchor->GetOwnerNode()->GetType().c_str(),
+    in_data_anchor->GetOwnerNode()->GetName().c_str(), in_data_anchor->GetOwnerNode()->GetType().c_str());
   GELOGD(
-      "relink edges before remove node, add data edge between node: %s, "
-      "type: %s and node: %s, type: %s.",
-      new_out_anchor->GetOwnerNode()->GetName().c_str(), new_out_anchor->GetOwnerNode()->GetType().c_str(),
-      in_data_anchor->GetOwnerNode()->GetName().c_str(), in_data_anchor->GetOwnerNode()->GetType().c_str());
+    "relink edges before remove node, add data edge between node: %s, "
+    "type: %s and node: %s, type: %s.",
+    new_out_anchor->GetOwnerNode()->GetName().c_str(), new_out_anchor->GetOwnerNode()->GetType().c_str(),
+    in_data_anchor->GetOwnerNode()->GetName().c_str(), in_data_anchor->GetOwnerNode()->GetType().c_str());
 
   bool is_linked = false;
   auto dst_node = in_data_anchor->GetOwnerNode();
@@ -284,10 +282,10 @@ graphStatus TransOpDepthFusionPass::RelinkEdges(const OutDataAnchorPtr &new_out_
     auto in_ctrl_anchor = dst_node->GetInControlAnchor();
     GE_CHK_STATUS_RET(GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor), "add edge failed");
     GELOGD(
-        "relink edges before remove node, add control edge between node: %s,"
-        " type: %s and node: %s, type: %s.",
-        src_node->GetName().c_str(), src_node->GetType().c_str(), dst_node->GetName().c_str(),
-        dst_node->GetType().c_str());
+      "relink edges before remove node, add control edge between node: %s,"
+      " type: %s and node: %s, type: %s.",
+      src_node->GetName().c_str(), src_node->GetType().c_str(), dst_node->GetName().c_str(),
+      dst_node->GetType().c_str());
   }
   return GRAPH_SUCCESS;
 }

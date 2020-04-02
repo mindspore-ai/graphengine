@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
+#ifndef MSPROF_ENGINE_PROF_REPORTER_H_
+#define MSPROF_ENGINE_PROF_REPORTER_H_
+#define MSVP_PROF_API __attribute__((visibility("default")))
+
 /**
+ * @file prof_reporter.h
  * @defgroup reporter the reporter group
  * This is the reporter group
  */
-#ifndef _MSPROF_ENGINE_PROF_REPORTER_H_
-#define _MSPROF_ENGINE_PROF_REPORTER_H_
-#define MSVP_PROF_API __attribute__((visibility("default")))
 namespace Msprof {
 namespace Engine {
-
 /// the max tag length
 #define MSPROF_ENGINE_MAX_TAG_LEN (31)
-
 /**
  * @ingroup reporter
  * @brief struct ReporterData
@@ -86,11 +86,4 @@ class MSVP_PROF_API Reporter {
 }  // namespace Engine
 }  // namespace Msprof
 
-#endif
-/*
- * History: \n
- * 2019-04-10, huawei, Create file.     \n
- * 2020-02-10, huawei, Add Api Comment. \n
- *
- * vi: set expandtab ts=4 sw=4 tw=120:
- */
+#endif  // MSPROF_ENGINE_PROF_REPORTER_H_

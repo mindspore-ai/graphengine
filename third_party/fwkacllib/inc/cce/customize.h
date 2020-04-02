@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef __CC_CUSTOMIZE_API__
-#define __CC_CUSTOMIZE_API__
+#ifndef CC_CUSTOMIZE_API__
+#define CC_CUSTOMIZE_API__
+
 #include <stdint.h>
 
 #define CC_DEVICE_DIM_MAX 8
@@ -55,5 +56,5 @@ typedef void (*aicpu_run_func)(opTensor_t **, void **, int32_t,
                                opTensor_t **, void **, int32_t, void *, rtStream_t);
 
 
-#endif /*__CC_CUSTOMIZE_API__*/
+#endif  // CC_CUSTOMIZE_API__
 

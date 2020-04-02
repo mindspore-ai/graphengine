@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __DNN_OP_H__
-#define __DNN_OP_H__
+#ifndef DNN_OP_H__
+#define DNN_OP_H__
 
 #include "cce/blas_struct.h"
 #include "cce/cce.h"
@@ -3461,7 +3461,7 @@ ccStatus_t ccEmbeddingLookupForward(ccHandle_t handle, const void *alpha, const 
 
 /**
  * @ingroup
- * @brief embedding lookup forward.
+ * @brief embedding lookup forward. for nn.embedding_lookup
  * @param [in] handle       cce handle
  * @param [in] alpha        common scale factor
  * @param [in] inputNum   inputNum
@@ -4835,4 +4835,4 @@ ccStatus_t ccIsFinite(ccHandle_t handle, const void *alpha, const ccTensorDescri
                       const ccTensorDescriptor_t yDesc, const void *y, const void *beta);
 };  // namespace cce
 
-#endif /* __DNN_OP_H__ */
+#endif  // DNN_OP_H__

@@ -15,9 +15,7 @@
  */
 
 #include "ge_runtime/task/tbe_task.h"
-
 #include <vector>
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -107,6 +105,6 @@ bool TbeTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kTbe, TbeTask, TbeTaskInfo);
+REGISTER_TASK(TaskInfoType::TBE, TbeTask, TbeTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

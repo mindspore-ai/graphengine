@@ -19,8 +19,8 @@
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
-#endif /* __cpluscplus */
-#endif /* __cpluscplus */
+#endif  // __cpluscplus
+#endif  // __cpluscplus
 #ifdef MMPA_DLL
 #define MMPA_DLL_API __declspec(dllexport)
 #else
@@ -75,7 +75,7 @@ typedef enum {
 
 typedef struct {
   unsigned char d_type;
-  char d_name[MAX_PATH];
+  char d_name[MAX_PATH];  // file name
 } mmDirent;
 
 typedef int (*mmFilter)(const mmDirent *entry);
@@ -88,9 +88,9 @@ typedef struct {
 typedef PVOID mmInAddr;
 
 typedef enum {
-  pollTypeRead = 1,
-  pollTypeRecv,
-  pollTypeIoctl,
+  pollTypeRead = 1,  // pipeline reading
+  pollTypeRecv,      // socket receive
+  pollTypeIoctl,     // ioctl read
 } mmPollType;
 
 typedef struct {
@@ -100,9 +100,9 @@ typedef struct {
 } mmComPletionKey, *pmmComPletionKey;
 
 typedef struct {
-  VOID *priv;
-  mmPollHandle bufHandle;
-  mmPollType bufType;
+  VOID *priv;              // User defined private content
+  mmPollHandle bufHandle;  // Value of handle corresponding to buf
+  mmPollType bufType;      // Data types polled to
   VOID *buf;
   UINT32 bufLen;
   UINT32 bufRes;
@@ -110,10 +110,11 @@ typedef struct {
 
 typedef VOID (*mmPollBack)(pmmPollData);
 typedef struct {
-  mmPollHandle handle;
-  mmPollType pollType;
-  INT32 ioctlCode;
-  mmComPletionKey completionKey;
+  mmPollHandle handle;            // The file descriptor or handle of poll is required
+  mmPollType pollType;            // Operation type requiring poll，read or recv or ioctl
+  INT32 ioctlCode;                // IOCTL operation code, dedicated to IOCTL
+  mmComPletionKey completionKey;  // The default value is blank, which will be used in windows to receive the data with
+                                  // different handle
 } mmPollfd;
 
 typedef struct {
@@ -126,7 +127,7 @@ typedef OVERLAPPED mmOverLap;
 
 typedef struct {
   UINT32 createFlag;
-  INT32 oaFlag;
+  INT32 oaFlag;  // Overlap operation is supported if it is not 0
 } mmCreateFlag;
 
 typedef struct {
@@ -148,8 +149,8 @@ typedef struct {
 } mmTimeval;
 
 typedef struct {
-  INT32 tz_minuteswest;
-  INT32 tz_dsttime;
+  INT32 tz_minuteswest;  // How many minutes is it different from Greenwich
+  INT32 tz_dsttime;      // DST correction type
 } mmTimezone;
 
 typedef struct {
@@ -202,8 +203,9 @@ typedef struct {
   INT32 envpCount;
 } mmArgvEnv;
 
+// Windows currently does not support properties other than thread separation properties
 typedef struct {
-  INT32 detachFlag;
+  INT32 detachFlag;  // Thread detach property: 0 do not detach 1 detach
   INT32 priorityFlag;
   INT32 priority;
   INT32 policyFlag;
@@ -256,7 +258,7 @@ typedef VOID (*mmPf)(VOID);
 #define MMPA_FLAG_PERMUTE 0x01   // permute non-options to the end of argv
 #define MMPA_FLAG_ALLARGS 0x02   // treat non-options as args to option "-1"
 #define MMPA_FLAG_LONGONLY 0x04  // operate as getopt_long_only
-/* return values */
+// return values
 #define MMPA_BADCH (INT32)'?'
 #define MMPA_BADARG ((*options == ':') ? (INT32)':' : (INT32)'?')
 #define MMPA_INORDER (INT32)1
@@ -371,7 +373,6 @@ _declspec(dllexport) INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, m
 _declspec(dllexport) INT32 mmGetErrorCode();
 _declspec(dllexport) INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone);
 _declspec(dllexport) mmTimespec mmGetTickCount();
-
 _declspec(dllexport) INT32 mmGetRealPath(CHAR *path, CHAR *realPath);
 
 _declspec(dllexport) INT32 mmRealPath(const CHAR *path, CHAR *realPath, INT32 realPathLen);
@@ -422,8 +423,22 @@ _declspec(dllexport) INT32 mmGetDiskFreeSpace(const char *path, mmDiskSize *disk
 _declspec(dllexport) INT32 mmSetThreadName(mmThread *threadHandle, const CHAR *name);
 _declspec(dllexport) INT32 mmGetThreadName(mmThread *threadHandle, CHAR *name, INT32 size);
 
+/*
+ * Function: set the thread name of the currently executing thread - internal call of thread, which is not supported
+ * under Windows temporarily, and is null.
+ * Input: name: the thread name to be set
+ * The input parameter error returns EN_INVALID_PARAM, the execution success returns EN_OK, and the
+ * execution failure returns EN_ERROR
+ */
 _declspec(dllexport) INT32 mmSetCurrentThreadName(const CHAR *name);
 
+/*
+ * Function: Get the thread name of the currently executing thread - thread body call, not supported under windows, null
+ * implementation.
+ * Input:name:The name of the thread to get, and the cache is allocated by the user，size>=MMPA_THREADNAME_SIZE.
+ * The input parameter error returns EN_INVALID_PARAM, the execution success returns
+ * EN_OK, and the execution failure returns EN_ERROR
+ */
 _declspec(dllexport) INT32 mmGetCurrentThreadName(CHAR *name, INT32 size);
 
 _declspec(dllexport) INT32 mmGetFileSize(const CHAR *fileName, ULONGLONG *length);
@@ -444,6 +459,6 @@ _declspec(dllexport) INT32
 #if __cplusplus
 }
 #endif /* __cpluscplus */
-#endif /* __cpluscplus */
+#endif // __cpluscplus
 
-#endif /* _MMPA_WIN_MMPA_WIN_H_ */
+#endif // MMPA_WIN_MMPA_WIN_H_

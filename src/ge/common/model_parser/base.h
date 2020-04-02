@@ -17,6 +17,7 @@
 #ifndef GE_COMMON_MODEL_PARSER_BASE_H_
 #define GE_COMMON_MODEL_PARSER_BASE_H_
 
+#include <securec.h>
 #include <memory>
 
 #include "framework/common/debug/log.h"
@@ -36,7 +37,7 @@ class ModelParserBase {
   /// @ingroup hiai
   /// @brief destructor
   ///
-  virtual ~ModelParserBase();
+  ~ModelParserBase();
 
   ///
   /// @ingroup hiai

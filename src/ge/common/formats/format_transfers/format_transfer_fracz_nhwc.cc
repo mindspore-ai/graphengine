@@ -105,8 +105,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
           auto src_offset = src_idx * size;
           auto dst_offset = dst_idx * size;
           auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? total_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? total_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {

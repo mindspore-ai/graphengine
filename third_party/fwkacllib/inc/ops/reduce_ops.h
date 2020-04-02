@@ -55,6 +55,16 @@ REG_OP(BNTrainingUpdate)
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingUpdate)
 
+REG_OP(BNInfer)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(scale, TensorType({DT_FLOAT}))
+    .INPUT(offset, TensorType({DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT}))
+    .INPUT(variance, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(epsilon, Float)
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(BNInfer)
+
 REG_OP(BNTrainingUpdateV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(sum, TensorType({DT_FLOAT}))
@@ -212,6 +222,23 @@ REG_OP(ReduceMax)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMax)
 
+/**
+*@brief Returns the maximum of elements across dimensions of a Tensor.
+
+*@par Inputs:
+*x: A multi-dimensional Tensor of type float16, float32, or int16.
+
+*@par Attributes:
+* Two attributes, including: \n
+*@li axis: A required listint, specifying the axis information of the index with the maximum value.
+*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false".
+
+*@par Outputs:
+*y: A multi-dimensional Tensor, specifying the maximum value of the corresponding axis in the tensor. Has the same type as "x". (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
+
+*@attention Constraints:
+* The value range of "axis" is [-dims, dims - 1]. "dims" indicates the dimension length of "x".
+*/
 REG_OP(ReduceMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8, DT_INT8,
                           DT_FLOAT16, DT_INT32}))

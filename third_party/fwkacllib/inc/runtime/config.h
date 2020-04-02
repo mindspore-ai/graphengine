@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  // __cplusplus
 
 #define PLAT_COMBINE(arch, chip, ver) ((arch << 16) | (chip << 8) | (ver))
 #define PLAT_GET_ARCH(type) ((type >> 16) & 0xffff)
@@ -114,9 +114,7 @@ typedef struct tagRtMemoryConfig {
   uint32_t compilerSize;
 } rtMemoryConfig_t;
 
-typedef struct tagRtPlatformConfig {
-  uint32_t platformConfig;
-} rtPlatformConfig_t;
+typedef struct tagRtPlatformConfig { uint32_t platformConfig; } rtPlatformConfig_t;
 
 /**
  * @ingroup

@@ -22,7 +22,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "common/ge_inner_error_codes.h"
 #include "ge/ge_api_types.h"
 #include "session/inner_session.h"
@@ -61,6 +60,18 @@ class SessionManager {
   /// @return Status result of function
   ///
   Status AddGraph(SessionId session_id, uint32_t graph_id, const ge::Graph &graph);
+
+  ///
+  /// @ingroup ge_session
+  /// @brief add a graph to the session with specific session id
+  /// @param [in] session_id session id
+  /// @param [in] graph_id graph id
+  /// @param [in] graph the graph to add
+  /// @param [in] options graph level options
+  /// @return Status result of function
+  ///
+  Status AddGraph(SessionId session_id, uint32_t graph_id, const Graph &graph,
+                  const std::map<std::string, std::string> &options);
 
   ///
   /// @ingroup ge_session
@@ -114,8 +125,8 @@ class SessionManager {
   /// @return Status result of function
   ///
   Status RegisterCallBackFunc(
-      SessionId session_id, const std::string &key,
-      const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+    SessionId session_id, const std::string &key,
+    const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
   bool IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id);
 
@@ -141,7 +152,7 @@ class SessionManager {
 
   bool HasSession(SessionId session_id);
 
-  Status GetNextSessionId(SessionId &next_session_id) const;
+  Status GetNextSessionId(SessionId &next_session_id);
 
   std::map<SessionId, SessionPtr> session_manager_map_;
   std::mutex mutex_;

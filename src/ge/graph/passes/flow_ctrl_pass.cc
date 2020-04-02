@@ -20,10 +20,10 @@
 #include <string>
 #include <vector>
 
-#include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/common/omg_util.h"
+#include "common/ge/ge_util.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/passes/pass_utils.h"
 
@@ -32,6 +32,12 @@ namespace ge {
 
 Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
+
+  if (AddGlobalStepVariableNode(compute_graph) != SUCCESS) {
+    GELOGE(FAILED, "Add global step variable node fail.");
+    return FAILED;
+  }
+
   if (!PassUtils::IsNeedTrainIteFlowCtrl(compute_graph)) {
     GELOGI("No need FlowCtrl");
     return NOT_CHANGED;
@@ -109,7 +115,7 @@ NodePtr FlowCtrlPass::InsertOp(ComputeGraphPtr &compute_graph, const string &nod
     }
   }
 
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED, "compute_graph is nullptr"); return nullptr);
+  GE_IF_BOOL_EXEC(compute_graph == nullptr, GE_LOGE("compute_graph is nullptr"); return nullptr);
   NodePtr node = compute_graph->AddNode(op_desc);
   if (node == nullptr) {
     GELOGE(FAILED, "add node failed, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
@@ -153,14 +159,14 @@ NodePtr FlowCtrlPass::InsertStreamSwitchOp(ComputeGraphPtr &compute_graph, const
   // stream switch op need switch cond by attr.
   GE_IF_BOOL_EXEC(
     !AttrUtils::SetInt(stream_switch->GetOpDesc(), ATTR_NAME_STREAM_SWITCH_COND, static_cast<int64_t>(RT_LESS)),
-    GELOGE(FAILED, "set ATTR_NAME_STREAM_SWITCH_COND failed");
+    GE_LOGE("set ATTR_NAME_STREAM_SWITCH_COND failed");
     return nullptr);
 
   return stream_switch;
 }
 
 NodePtr FlowCtrlPass::AddVariableNode(ComputeGraphPtr &compute_graph, const string &name) {
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED, "compute_graph is nullptr"); return nullptr);
+  GE_IF_BOOL_EXEC(compute_graph == nullptr, GE_LOGE("compute_graph is nullptr"); return nullptr);
   NodePtr exist_node = compute_graph->FindNode(name);
   if (exist_node != nullptr) {
     GELOGD("Node %s already exist, no need add.", name.c_str());
@@ -180,6 +186,37 @@ NodePtr FlowCtrlPass::AddVariableNode(ComputeGraphPtr &compute_graph, const stri
   std::vector<GeTensorDesc> output_desc_list = {tensor_desc};
   // insert node
   return InsertOp(compute_graph, VARIABLE, name, input_desc_list, output_desc_list);
+}
+
+Status FlowCtrlPass::AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph) {
+  NodePtr output_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  if (output_node == nullptr) {
+    GELOGD("Node %s can't be found in graph %u", NODE_NAME_NET_OUTPUT.c_str(), compute_graph->GetGraphID());
+    return SUCCESS;
+  }
+  NodePtr exist_node = compute_graph->FindNode(NODE_NAME_GLOBAL_STEP);
+  if (exist_node != nullptr) {
+    GELOGD("Node %s already exist, no need add.", NODE_NAME_GLOBAL_STEP.c_str());
+    return SUCCESS;
+  }
+  // set global step tensor desc
+  GeTensorDesc tensor_desc(GeShape({1}), FORMAT_ND, DT_UINT64);
+  std::vector<GeTensorDesc> input_desc_list = {};
+  std::vector<GeTensorDesc> output_desc_list = {tensor_desc};
+  NodePtr global_step = InsertOp(compute_graph, VARIABLE, NODE_NAME_GLOBAL_STEP, input_desc_list, output_desc_list);
+  if (global_step == nullptr) {
+    GELOGE(FAILED, "Add global_step node failed, global_step is null.");
+    return FAILED;
+  }
+
+  // add ctrl edges
+  graphStatus add_ret = GraphUtils::AddEdge(global_step->GetOutControlAnchor(), output_node->GetInControlAnchor());
+  if (add_ret != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Add global_step to netoutput edge failed, add_ret=%u.", add_ret);
+    return FAILED;
+  }
+  GELOGD("Add global_step to netoutput edge in graph %u success", compute_graph->GetGraphID());
+  return SUCCESS;
 }
 
 NodePtr FlowCtrlPass::InsertAssignOp(ge::ComputeGraphPtr &compute_graph, const string &node_type,
@@ -247,7 +284,7 @@ Status FlowCtrlPass::CreateIterCtrlTrueBranch(ComputeGraphPtr &compute_graph, co
   }
   GE_CHK_STATUS_RET(SetStreamLabel(active_node, active_name), "set stream label failed");
   GE_IF_BOOL_EXEC(!AttrUtils::SetBool(active_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, true),
-                  GELOGE(FAILED, "set ATTR_NAME_IS_LOOP_ACTIVE failed");
+                  GE_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
                   return FAILED);
 
   // add ctrl edges
@@ -300,7 +337,7 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
 }
 
 Status FlowCtrlPass::AddFpBpIteratorCtrl(ComputeGraphPtr &compute_graph, NodePtr &pre_node) {
-  GE_IF_BOOL_EXEC(pre_node == nullptr, GELOGE(FAILED, "pre_node is nullptr"); return FAILED);
+  GE_IF_BOOL_EXEC(pre_node == nullptr, GE_LOGE("pre_node is nullptr"); return FAILED);
   string pre_node_name = pre_node->GetName();
   GELOGI("Add FpBp Iterator ctrl, pre node:%s.", pre_node_name.c_str());
   // 1. Get or add variables
@@ -376,7 +413,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
    *          itersPerLoop  loopCond
    */
   GE_IF_BOOL_EXEC(loop_after_node == nullptr || compute_graph == nullptr,
-                  GELOGE(FAILED, "loop after node or compute graph is null");
+                  GE_LOGE("loop after node or compute graph is null");
                   return FAILED);
   InDataAnchorPtr in_anchor = loop_after_node->GetInDataAnchor(0);
   if (in_anchor == nullptr || in_anchor->GetPeerOutAnchor() == nullptr) {
@@ -398,7 +435,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
   }
 
   // 2. Add StreamSwitch and edges to switch_node.
-  GE_IF_BOOL_EXEC(loop_pre_node == nullptr, GELOGE(FAILED, "loop pre node is null"); return FAILED);
+  GE_IF_BOOL_EXEC(loop_pre_node == nullptr, GE_LOGE("loop pre node is null"); return FAILED);
   string switch_name = loop_pre_node->GetName() + "_" + NODE_NAME_STREAM_SWITCH;
   NodePtr switch_node = InsertStreamSwitchOp(compute_graph, switch_name, loop_cond_node, iter_per_loop_node);
   if (switch_node == nullptr) {
@@ -432,7 +469,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
   GE_CHK_STATUS_RET(SetStreamLabel(active_node, active_name), "set stream label failed");
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetBool(active_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, true),
-                  GELOGE(FAILED, "set ATTR_NAME_IS_LOOP_ACTIVE failed");
+                  GE_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
                   return FAILED);
 
   add_ret = GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), active_node->GetInControlAnchor());

@@ -15,22 +15,21 @@
  */
 
 #include "graph/build/stream_allocator.h"
-
 #include <memory>
-
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/types.h"
-#include "graph/build/logical_stream_allocator.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "init/gelib.h"
 
-using std::string;
-using std::vector;
+#include "graph/build/logical_stream_allocator.h"
+
 using std::map;
 using std::set;
+using std::string;
+using std::vector;
 
 namespace {
 const int64_t kMaxNodeNumInNormalStream = 350;
@@ -194,9 +193,9 @@ Status StreamAllocator::SplitStreams() {
     if (stream_node_num_vec[stream_id] > max_node_num_one_stream) {
       last_stream_id++;
       GELOGI(
-          "stream_node_num_vec[%ld]= %ld > max_node_num_one_stream : %ld, "
-          "It's time to split the stream, split newly-added stream id is %ld",
-          stream_id, stream_node_num_vec[stream_id], max_node_num_one_stream, last_stream_id);
+        "stream_node_num_vec[%ld]= %ld > max_node_num_one_stream : %ld, "
+        "It's time to split the stream, split newly-added stream id is %ld",
+        stream_id, stream_node_num_vec[stream_id], max_node_num_one_stream, last_stream_id);
 
       stream_node_num_vec[stream_id] = 1;
       added_stream_num_vec[stream_id]++;
@@ -575,6 +574,10 @@ bool StreamAllocator::IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr
               pre_activate_stream_node->GetOpDesc()->GetId() >= send_node_ptr->GetOpDesc()->GetId()) {
             return true;
           }
+          auto in_nodes_of_pre = pre_activate_stream_node->GetInNodes();
+          if (std::find(in_nodes_of_pre.begin(), in_nodes_of_pre.end(), send_node_ptr) != in_nodes_of_pre.end()) {
+            return true;
+          }
         }
         auto iterator = specific_activated_streams_nodes_map_.find(activate_stream_node->GetOpDesc()->GetStreamId());
         if (iterator != specific_activated_streams_nodes_map_.end()) {
@@ -916,9 +919,9 @@ Status StreamAllocator::InsertActiveEntryStream(const std::vector<uint32_t> &act
   GELOGI("Create StreamActive op:%s.", op_desc->GetName().c_str());
 
   GE_CHK_BOOL_EXEC(
-      AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
-      GELOGE(FAILED, "SetListStr failed.");
-      return FAILED);
+    AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
+    GELOGE(FAILED, "SetListStr failed.");
+    return FAILED);
 
   NodePtr active_node = whole_graph_->AddNodeFront(op_desc);
   GE_IF_BOOL_EXEC(active_node == nullptr,

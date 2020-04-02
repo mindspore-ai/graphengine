@@ -63,7 +63,7 @@ TEST_F(UtestGeProfilinganager, init_success) {
   setenv("PROFILING_MODE", "true", true);
   Options options;
   options.device_id = 0;
-  options.job_id = 0;
+  options.job_id = "0";
   string profiling_config;
 
   ProfilingManager::Instance().SetProfilingConfig(profiling_config);

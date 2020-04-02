@@ -19,9 +19,10 @@
 #include "common/types.h"
 #include "common/util.h"
 #include "graph/utils/node_utils.h"
+#include "omg/omg_inner_types.h"
 
 namespace ge {
-const vector<GraphPass *>& PassManager::GraphPasses() const { return graph_passes_; }
+const vector<GraphPass *> &PassManager::GraphPasses() const { return graph_passes_; }
 
 Status PassManager::AddPass(GraphPass *pass) {
   GE_CHECK_NOTNULL(pass);

@@ -15,13 +15,11 @@
  */
 
 #include "graph/partition/graph_partition.h"
-
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
-
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/debug/ge_attr_define.h"
@@ -126,11 +124,11 @@ Status ge::GraphPartitioner::RemoveNodeAndEdgeBetweenEndPld(ge::ComputeGraphPtr 
     if ((end != nullptr) && (pld != nullptr) && (end->GetInDataAnchor(0) != nullptr) &&
         (pld->GetOutDataAnchor(0) != nullptr)) {
       AnchorPtr end_in_anchor = (end->GetInDataAnchor(0)->GetFirstPeerAnchor() == nullptr)
-                                    ? Anchor::DynamicAnchorCast<Anchor>(end->GetInControlAnchor())
-                                    : Anchor::DynamicAnchorCast<Anchor>(end->GetInDataAnchor(0));
+                                  ? Anchor::DynamicAnchorCast<Anchor>(end->GetInControlAnchor())
+                                  : Anchor::DynamicAnchorCast<Anchor>(end->GetInDataAnchor(0));
       AnchorPtr pld_out_anchor = (pld->GetOutDataAnchor(0)->GetFirstPeerAnchor() == nullptr)
-                                     ? Anchor::DynamicAnchorCast<Anchor>(pld->GetOutControlAnchor())
-                                     : Anchor::DynamicAnchorCast<Anchor>(pld->GetOutDataAnchor(0));
+                                   ? Anchor::DynamicAnchorCast<Anchor>(pld->GetOutControlAnchor())
+                                   : Anchor::DynamicAnchorCast<Anchor>(pld->GetOutDataAnchor(0));
       auto src_anchor = end_in_anchor->GetFirstPeerAnchor();  // src_anchor should be only 1
       if (GraphUtils::RemoveEdge(src_anchor, end_in_anchor) != GRAPH_SUCCESS) {
         GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: RemoveEdge failed. node_name:%s, graph_name:%s",
@@ -273,7 +271,6 @@ Status ge::GraphPartitioner::UpdateEndOpDesc(const NodePtr &dst_node, int input_
     end_op_desc->MutableInputDesc(0)->SetDataType(input_desc.GetOriginDataType());
   } else {
     GELOGI("Original data type of %s is undefined![data type is %s]", dst_node->GetName().c_str(),
-
            TypeUtils::DataTypeToSerialString(input_desc.GetDataType()).c_str());
   }
   // flush end format as original format
@@ -399,7 +396,7 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   return SUCCESS;
 }
 
-Status ge::GraphPartitioner::LinkInput2EndRemoveOriginalLink(ge::NodePtr input_node, ge::ComputeGraphPtr src_graph,
+Status ge::GraphPartitioner::LinkInput2EndRemoveOrginalLink(ge::NodePtr input_node, ge::ComputeGraphPtr src_graph,
                                                             ge::ComputeGraphPtr dst_graph) {
   if (input_node == nullptr || src_graph == nullptr || dst_graph == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
@@ -461,8 +458,8 @@ Status ge::GraphPartitioner::PutInputNodesInSubGraph(const ge::ComputeGraphPtr &
         GELOGE(FAILED, "[GraphPartitioner]: AddNode() failed.");
         return FAILED;
       }
-      if (LinkInput2EndRemoveOriginalLink(input_node, src_graph, dst_graph) != ge::SUCCESS) {
-        GELOGE(FAILED, "[GraphPartitioner]: LinkInput2EndRemoveOriginalLink() failed.");
+      if (LinkInput2EndRemoveOrginalLink(input_node, src_graph, dst_graph) != ge::SUCCESS) {
+        GELOGE(FAILED, "[GraphPartitioner]: LinkInput2EndRemoveOrginalLink() failed.");
         return FAILED;
       }
     }
@@ -479,9 +476,8 @@ void ge::GraphPartitioner::AddNewGraphToPartition(ge::ComputeGraphPtr &input_gra
 }
 
 bool ge::GraphPartitioner::IsDataLike(ge::NodePtr node) {
-  return (node->GetType() == CONSTANT) || (node->GetType() == DATA) ||
-         (node->GetType() == AIPPDATA) || (node->GetType() == CONSTANTOP) ||
-         (node->GetType() == VARIABLE);
+  return (node->GetType() == CONSTANT) || (node->GetType() == DATA) || (node->GetType() == AIPPDATA) ||
+         (node->GetType() == CONSTANTOP) || (node->GetType() == VARIABLE);
 }
 
 bool ge::GraphPartitioner::HasNoInput(ge::NodePtr node) {
@@ -584,8 +580,6 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
       sgi->SetInputFlag(sub_graph_input);
       sgi->SetOutputContext(output_name_);
       AddEndPldInformationToSubGraphInfo(sgi);
-      GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s",
-             engine_name.c_str(), subGraph->GetName().c_str(), sgi->GetStreamLabel().c_str());
       output_subgraphs.push_back(sgi);
     }
   }
@@ -601,7 +595,7 @@ bool ge::GraphPartitioner::IsMergeable(size_t parent_cluster, size_t child_clust
   // Check if parent_cluster,child_cluster has same engine or stream label
   if ((clusters_[parent_cluster]->engine_name_ != clusters_[child_cluster]->engine_name_) ||
       (clusters_[parent_cluster]->stream_label_ != clusters_[child_cluster]->stream_label_)) {
-    GELOGI("Parent cluster %zu engine %s stream label %s, child cluster %zu engine %s stream label %s can not merge",
+    GELOGD("Parent cluster %zu engine %s stream label %s, child cluster %zu engine %s stream label %s can not merge",
            parent_cluster, clusters_[parent_cluster]->engine_name_.c_str(),
            clusters_[parent_cluster]->stream_label_.c_str(), child_cluster,
            clusters_[child_cluster]->engine_name_.c_str(), clusters_[child_cluster]->stream_label_.c_str());
@@ -611,7 +605,7 @@ bool ge::GraphPartitioner::IsMergeable(size_t parent_cluster, size_t child_clust
   RemoveEdge(parent_cluster, child_cluster);
   // Check if there is a path between parent and child, if return true, can not merge
   if (HasSecondPath(parent_cluster, child_cluster, upper_bound)) {
-    GELOGI("Find second path from %zu to %zu, upper bound is %zu", parent_cluster, child_cluster, upper_bound);
+    GELOGD("Find second path from %zu to %zu, upper bound is %zu", parent_cluster, child_cluster, upper_bound);
     InsertEdge(parent_cluster, child_cluster);
     return false;
   }
@@ -926,7 +920,7 @@ Status ge::GraphPartitioner::SortSubGraphs(const ge::ComputeGraphPtr &compute_gr
     if (it != nullptr) {
       // rename subGraph based on rank
       string graph_name =
-          "partition" + std::to_string(partition_times_) + "_rank" + std::to_string(rank) + "_" + it->GetName();
+        "partition" + std::to_string(partition_times_) + "_rank" + std::to_string(rank) + "_" + it->GetName();
       it->SetName(graph_name);
     }
     rank++;

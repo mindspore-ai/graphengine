@@ -15,12 +15,10 @@
  */
 
 #include "graph/ge_tensor.h"
-
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <map>
-
 #include "debug/ge_attr_define.h"
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
@@ -36,37 +34,37 @@ namespace ge {
 static const char *const kKeyDataTypeSelfDefined = "__tensor_desc_data_type__";
 
 static const std::map<DataType, ::ge::proto::DataType> kDataTypeMap = {
-    {DT_UNDEFINED, proto::DT_UNDEFINED},
-    {DT_FLOAT, proto::DT_FLOAT},
-    {DT_FLOAT16, proto::DT_FLOAT16},
-    {DT_INT8, proto::DT_INT8},
-    {DT_UINT8, proto::DT_UINT8},
-    {DT_INT16, proto::DT_INT16},
-    {DT_UINT16, proto::DT_UINT16},
-    {DT_INT32, proto::DT_INT32},
-    {DT_INT64, proto::DT_INT64},
-    {DT_UINT32, proto::DT_UINT32},
-    {DT_UINT64, proto::DT_UINT64},
-    {DT_BOOL, proto::DT_BOOL},
-    {DT_DOUBLE, proto::DT_DOUBLE},
-    {DT_DUAL, proto::DT_DUAL},
-    {DT_DUAL_SUB_INT8, proto::DT_DUAL_SUB_INT8},
-    {DT_DUAL_SUB_UINT8, proto::DT_DUAL_SUB_UINT8},
-    {DT_COMPLEX64, proto::DT_COMPLEX64},
-    {DT_COMPLEX128, proto::DT_COMPLEX128},
-    {DT_QINT8, proto::DT_QINT8},
-    {DT_QINT16, proto::DT_QINT16},
-    {DT_QINT32, proto::DT_QINT32},
-    {DT_QUINT8, proto::DT_QUINT8},
-    {DT_QUINT16, proto::DT_QUINT16},
-    {DT_RESOURCE, proto::DT_RESOURCE},
-    {DT_STRING_REF, proto::DT_STRING_REF},
-    {DT_STRING, proto::DT_STRING},
+  {DT_UNDEFINED, proto::DT_UNDEFINED},
+  {DT_FLOAT, proto::DT_FLOAT},
+  {DT_FLOAT16, proto::DT_FLOAT16},
+  {DT_INT8, proto::DT_INT8},
+  {DT_UINT8, proto::DT_UINT8},
+  {DT_INT16, proto::DT_INT16},
+  {DT_UINT16, proto::DT_UINT16},
+  {DT_INT32, proto::DT_INT32},
+  {DT_INT64, proto::DT_INT64},
+  {DT_UINT32, proto::DT_UINT32},
+  {DT_UINT64, proto::DT_UINT64},
+  {DT_BOOL, proto::DT_BOOL},
+  {DT_DOUBLE, proto::DT_DOUBLE},
+  {DT_DUAL, proto::DT_DUAL},
+  {DT_DUAL_SUB_INT8, proto::DT_DUAL_SUB_INT8},
+  {DT_DUAL_SUB_UINT8, proto::DT_DUAL_SUB_UINT8},
+  {DT_COMPLEX64, proto::DT_COMPLEX64},
+  {DT_COMPLEX128, proto::DT_COMPLEX128},
+  {DT_QINT8, proto::DT_QINT8},
+  {DT_QINT16, proto::DT_QINT16},
+  {DT_QINT32, proto::DT_QINT32},
+  {DT_QUINT8, proto::DT_QUINT8},
+  {DT_QUINT16, proto::DT_QUINT16},
+  {DT_RESOURCE, proto::DT_RESOURCE},
+  {DT_STRING_REF, proto::DT_STRING_REF},
+  {DT_STRING, proto::DT_STRING},
 };
 
 static const std::map<DataType, int> kDataTypeSelfDefinedMap = {
-    {DT_DUAL, 13},  {DT_DUAL_SUB_INT8, 14}, {DT_DUAL_SUB_UINT8, 15}, {DT_COMPLEX64, 16}, {DT_COMPLEX128, 17},
-    {DT_QINT8, 18}, {DT_QINT16, 19},        {DT_QINT32, 20},         {DT_QUINT8, 21},    {DT_QUINT16, 22},
+  {DT_DUAL, 13},  {DT_DUAL_SUB_INT8, 14}, {DT_DUAL_SUB_UINT8, 15}, {DT_COMPLEX64, 16}, {DT_COMPLEX128, 17},
+  {DT_QINT8, 18}, {DT_QINT16, 19},        {DT_QINT32, 20},         {DT_QUINT8, 21},    {DT_QUINT16, 22},
 };
 
 GeShape::GeShape() { shape_def_.InitDefault(); }
@@ -287,35 +285,32 @@ bool GeTensorDesc::GeTensorDescAttrsAreEqual(const GeTensorDesc &r_ge_tensor_des
   const auto &r_tensor_descriptor = r_ge_tensor_desc.tensor_descriptor_.GetProtoMsg();
   if ((tensor_descriptor != nullptr) && (r_tensor_descriptor != nullptr)) {
     // Message TensorDescriptor in ge_ir.proto
-    return (IsEqual(tensor_descriptor->name(), r_tensor_descriptor->name(), "TensorDescriptor.name()") &&
-            IsEqual(tensor_descriptor->dtype(), r_tensor_descriptor->dtype(), "TensorDescriptor.dtype()") &&
-            // Message ShapeDef in ge_ir.proto
-            IsEqual(ToString(tensor_descriptor->shape().dim()), ToString(r_tensor_descriptor->shape().dim()),
-                    "TensorDescriptor.shape().dim()") &&
-            IsEqual(tensor_descriptor->layout(), r_tensor_descriptor->layout(), "TensorDescriptor.layout()") &&
-            IsEqual(tensor_descriptor->has_out_attr(), r_tensor_descriptor->has_out_attr(),
-                    "TensorDescriptor.has_out_attr()") &&
-            IsEqual(tensor_descriptor->size(), r_tensor_descriptor->size(), "TensorDescriptor.size()") &&
-            IsEqual(tensor_descriptor->weight_size(), r_tensor_descriptor->weight_size(),
-                    "TensorDescriptor.weight_size()") &&
-            IsEqual(tensor_descriptor->reuse_input(), r_tensor_descriptor->reuse_input(),
-                    "TensorDescriptor.reuse_input()") &&
-            IsEqual(tensor_descriptor->output_tensor(), r_tensor_descriptor->output_tensor(),
-                    "TensorDescriptor.output_tensor()") &&
-            IsEqual(tensor_descriptor->device_type(), r_tensor_descriptor->device_type(),
-                    "TensorDescriptor.device_type()") &&
-            IsEqual(tensor_descriptor->input_tensor(), r_tensor_descriptor->input_tensor(),
-                    "TensorDescriptor.input_tensor()") &&
-            IsEqual(tensor_descriptor->real_dim_cnt(), r_tensor_descriptor->real_dim_cnt(),
-                    "TensorDescriptor.real_dim_cnt()") &&
-            IsEqual(tensor_descriptor->reuse_input_index(), r_tensor_descriptor->reuse_input_index(),
-                    "TensorDescriptor.reuse_input_index()") &&
-            IsEqual(tensor_descriptor->data_offset(), r_tensor_descriptor->data_offset(),
-                    "TensorDescriptor.data_offset()") &&
-            IsEqual(tensor_descriptor->cmps_size(), r_tensor_descriptor->cmps_size(), "TensorDescriptor.cmps_size()") &&
-            IsEqual(tensor_descriptor->cmps_tab(), r_tensor_descriptor->cmps_tab(), "TensorDescriptor.cmps_tab()") &&
-            IsEqual(tensor_descriptor->cmps_tab_offset(), r_tensor_descriptor->cmps_tab_offset(),
-                    "TensorDescriptor.cmps_tab_offset()"));
+    return (
+      IsEqual(tensor_descriptor->name(), r_tensor_descriptor->name(), "TensorDescriptor.name()") &&
+      IsEqual(tensor_descriptor->dtype(), r_tensor_descriptor->dtype(), "TensorDescriptor.dtype()") &&
+      // Message ShapeDef in ge_ir.proto
+      IsEqual(ToString(tensor_descriptor->shape().dim()), ToString(r_tensor_descriptor->shape().dim()),
+              "TensorDescriptor.shape().dim()") &&
+      IsEqual(tensor_descriptor->layout(), r_tensor_descriptor->layout(), "TensorDescriptor.layout()") &&
+      IsEqual(tensor_descriptor->has_out_attr(), r_tensor_descriptor->has_out_attr(),
+              "TensorDescriptor.has_out_attr()") &&
+      IsEqual(tensor_descriptor->size(), r_tensor_descriptor->size(), "TensorDescriptor.size()") &&
+      IsEqual(tensor_descriptor->weight_size(), r_tensor_descriptor->weight_size(), "TensorDescriptor.weight_size()") &&
+      IsEqual(tensor_descriptor->reuse_input(), r_tensor_descriptor->reuse_input(), "TensorDescriptor.reuse_input()") &&
+      IsEqual(tensor_descriptor->output_tensor(), r_tensor_descriptor->output_tensor(),
+              "TensorDescriptor.output_tensor()") &&
+      IsEqual(tensor_descriptor->device_type(), r_tensor_descriptor->device_type(), "TensorDescriptor.device_type()") &&
+      IsEqual(tensor_descriptor->input_tensor(), r_tensor_descriptor->input_tensor(),
+              "TensorDescriptor.input_tensor()") &&
+      IsEqual(tensor_descriptor->real_dim_cnt(), r_tensor_descriptor->real_dim_cnt(),
+              "TensorDescriptor.real_dim_cnt()") &&
+      IsEqual(tensor_descriptor->reuse_input_index(), r_tensor_descriptor->reuse_input_index(),
+              "TensorDescriptor.reuse_input_index()") &&
+      IsEqual(tensor_descriptor->data_offset(), r_tensor_descriptor->data_offset(), "TensorDescriptor.data_offset()") &&
+      IsEqual(tensor_descriptor->cmps_size(), r_tensor_descriptor->cmps_size(), "TensorDescriptor.cmps_size()") &&
+      IsEqual(tensor_descriptor->cmps_tab(), r_tensor_descriptor->cmps_tab(), "TensorDescriptor.cmps_tab()") &&
+      IsEqual(tensor_descriptor->cmps_tab_offset(), r_tensor_descriptor->cmps_tab_offset(),
+              "TensorDescriptor.cmps_tab_offset()"));
   } else {
     return ((tensor_descriptor == nullptr) && (r_tensor_descriptor == nullptr));
   }
@@ -575,9 +570,7 @@ GeTensorDesc &GeTensor::DescReference() const {
   return __desc_;
 }
 
-void GeTensor::SetTensorDesc(const GeTensorDesc &tensor_desc) {
-  DescReference() = tensor_desc;
-}
+void GeTensor::SetTensorDesc(const GeTensorDesc &tensor_desc) { DescReference() = tensor_desc; }
 
 const Buffer GeTensor::GetData() const {
   auto proto_msg = tensor_def_.GetProtoMsg();
@@ -741,10 +734,12 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void TensorUtils::SetOutputTensor
 }
 
 static map<uint32_t, string> device_to_str_map{
-    {0, "NPU"}, {1, "CPU"},
+  {0, "NPU"},
+  {1, "CPU"},
 };
 static map<string, uint32_t> str_to_device_map{
-    {"NPU", 0}, {"CPU", 1},
+  {"NPU", 0},
+  {"CPU", 1},
 };
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus TensorUtils::GetDeviceType(const GeTensorDesc &tensor_desc,
@@ -901,7 +896,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void TensorUtils::SetCmpsInfo(GeT
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool TensorUtils::HasAlloffsetQuantizeInfo(
-    const GeTensorDesc &tensor_desc) {
+  const GeTensorDesc &tensor_desc) {
   return tensor_desc.HasAttr(TENSOR_UTILS_ALLOFFSET_QUANTIZE_INFO);
 }
 

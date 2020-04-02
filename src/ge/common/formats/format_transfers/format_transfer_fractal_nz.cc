@@ -45,12 +45,12 @@ bool CheckShape(Format format, const ShapeVector &shape) {
   }
 }
 
-///
-/// After the conversion to two-dimensional matrix, the memory arrangement is small z and large N.
-/// @src_shape: N*H*W
-/// @dst_shape: N*W1*H1*H0*w0
-/// @return
-///
+/**
+ * After the conversion to two-dimensional matrix, the memory arrangement is small z and large N.
+ * @src_shape: N*H*W
+ * @dst_shape: N*W1*H1*H0*w0
+ * @return
+ */
 Status TransShapeToFracNz(const ShapeVector &src_shape, DataType data_type, ShapeVector &dst_shape,
                           ShapeVector &hw_shape) {
   dst_shape.clear();
@@ -150,8 +150,8 @@ Status TransFormatFromNdToFracNz(const TransArgs &args, TransResult &result, con
         auto dst_offset = (h1h0_head + w1_idx * h1h0w0) * size;
         auto src_offset = (src_h_head + w1_idx * w0) * size;
         auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                  ? dst_size - dst_offset
-                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                ? dst_size - dst_offset
+                                : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
         auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                             static_cast<size_t>(size * w0));
         if (ret != EOK) {
@@ -165,8 +165,8 @@ Status TransFormatFromNdToFracNz(const TransArgs &args, TransResult &result, con
         auto dst_offset = (h1h0_head + num_w1 * h1h0w0 + w0_idx) * size;
         auto src_offset = (src_h_head + src_w_idx) * size;
         auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                  ? dst_size - dst_offset
-                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                ? dst_size - dst_offset
+                                : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
         auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                             static_cast<size_t>(size));
         if (ret != EOK) {
@@ -218,8 +218,8 @@ Status TransFormatFromFracNzToNd(const TransArgs &args, TransResult &result, con
         auto src_offset = (h1h0_head + w1_idx * h1h0w0) * size;
         auto dst_offset = (dst_h_head + w1_idx * w0) * size;
         auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                  ? dst_size - dst_offset
-                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                ? dst_size - dst_offset
+                                : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
         ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                        static_cast<size_t>(size * w0));
         if (ret != EOK) {
@@ -233,8 +233,8 @@ Status TransFormatFromFracNzToNd(const TransArgs &args, TransResult &result, con
         auto src_offset = (h1h0_head + num_w1 * h1h0w0 + w0_idx) * size;
         auto dst_offset = (dst_h_head + dst_w_idx) * size;
         auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                  ? dst_size - dst_offset
-                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                ? dst_size - dst_offset
+                                : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
         ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                        static_cast<size_t>(size));
         if (ret != EOK) {

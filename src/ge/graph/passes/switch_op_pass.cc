@@ -558,7 +558,7 @@ Status SwitchOpPass::MarkBranchs(OutDataAnchorPtr &peer_cond_anchor, NodePtr &st
     switch_list.emplace_back(false_node_list);
     switch_list.emplace_back(true_node_list);
     auto result = cond_node_map_.insert(
-        std::pair<OutDataAnchorPtr, std::vector<std::list<NodePtr>>>(peer_cond_anchor, switch_list));
+      std::pair<OutDataAnchorPtr, std::vector<std::list<NodePtr>>>(peer_cond_anchor, switch_list));
     GE_IF_BOOL_EXEC(!result.second, {
       GELOGE(INTERNAL_ERROR, "cond_node_map_ insert fail, node: %s", stream_switch->GetName().c_str());
       return FAILED;
@@ -632,7 +632,7 @@ Status SwitchOpPass::AddConstNode(ComputeGraphPtr &graph, NodePtr &stream_switch
   auto resize_value = (int32_t)value;
   GeTensorDesc data_desc = op_desc->GetInputDesc(1);
   GeTensorPtr const_value =
-      MakeShared<GeTensor>(data_desc, reinterpret_cast<uint8_t *>(&resize_value), sizeof(int32_t));
+    MakeShared<GeTensor>(data_desc, reinterpret_cast<uint8_t *>(&resize_value), sizeof(int32_t));
   if (const_value == nullptr) {
     GELOGE(FAILED, "Create tensor fail.");
     return FAILED;
@@ -921,7 +921,7 @@ void SwitchOpPass::MarkCycleDependence(const std::unordered_map<NodePtr, std::ve
           out_nodes.push(out_node);
           continue;
         }
-        GE_IF_BOOL_EXEC(SetCyclicDependenceFlag(out_node) != SUCCESS, GELOGW("set cyclic dependence failed"); return);
+        GE_IF_BOOL_EXEC(SetCyclicDependenceFlag(out_node) != SUCCESS, GELOGW("set cyclic dependence failed"); return );
         auto map_iter = switch_cyclic_map_.find(out_node);
         if (map_iter == switch_cyclic_map_.end()) {
           switch_cyclic_map_[out_node] = {tmp_node->GetName()};
@@ -1116,7 +1116,7 @@ void SwitchOpPass::RemoveControlEdges(NodePtr &node) {
 /// @return void
 ///
 void SwitchOpPass::ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node) {
-  GE_IF_BOOL_EXEC(old_node == new_node, return);
+  GE_IF_BOOL_EXEC(old_node == new_node, return );
   CopyControlEdges(old_node, new_node);
   RemoveControlEdges(old_node);
 }

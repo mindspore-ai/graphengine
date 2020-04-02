@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  // __cplusplus
 
 typedef enum tagModelTaskType {
   RT_MODEL_TASK_KERNEL = 0,
@@ -92,6 +92,7 @@ typedef struct tagAicpuModelInfo {
   uint64_t aicpuTaskPtr;
 } rtAicpuModelInfo_t;
 
+/* lint -e148 */
 typedef struct tagKernelTaskInfo {
   uint16_t blockDim;
   uint16_t argsCount;
@@ -101,7 +102,7 @@ typedef struct tagKernelTaskInfo {
   uint8_t *smDesc;
   uint8_t *args;
   uint16_t *argsOffset;
-} rtKernelTaskInfo_t;
+} rtKernelTaskInfo_t; /* lint +e148 */
 
 typedef struct tagKernelTaskInfoEx {
   uint32_t flags;

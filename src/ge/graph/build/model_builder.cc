@@ -15,11 +15,8 @@
  */
 
 #include "graph/build/model_builder.h"
-
 #include <iostream>
 #include <set>
-#include <unordered_map>
-
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
@@ -45,21 +42,30 @@
 #include "omg/version.h"
 #include "register/op_registry.h"
 
-using std::string;
-using std::vector;
-using std::map;
-using std::set;
-using domi::DOMI_TENSOR_NC1HWC0;
 using domi::AippOpParams;
+using domi::DOMI_TENSOR_NC1HWC0;
 using domi::ModelTaskDef;
 using ge::FAILED;
-using ge::SUCCESS;
 using ge::PARAM_INVALID;
+using ge::SUCCESS;
+using std::map;
+using std::set;
+using std::string;
+using std::vector;
 
 namespace {
 const uint32_t kWeightsStartOffset = 512;
 const int32_t kWrongIndex = -2;
+
+const float kImgRatioYUV420SP_U8 = 1.5;
+const int kImgRatioRGB888_U8 = 3;
+const int kImgRatioNC1HWC0DI_FP16 = 12;
 const int kInvalidIndexNum = -1;
+
+const uint32_t kInputDimensions2D = 2;
+const uint32_t kInputDimensions3D = 3;
+
+const set<string> adjust_layer_type_ = {ge::CONVOLUTION};
 
 bool IsGeLocalOp(const ge::ConstOpDescPtr &op_desc) {
   auto type = op_desc->GetType();
@@ -68,10 +74,9 @@ bool IsGeLocalOp(const ge::ConstOpDescPtr &op_desc) {
     ge::GeTensorDesc output_desc = op_desc->GetOutputDesc(0);
     return !(output_desc.GetDataType() == ge::DT_STRING);
   }
-  const set<string> ge_local_set = {ge::STREAMMERGE, ge::MEMCPYASYNC, ge::STREAMACTIVE,  ge::STREAMSWITCH,
-                                    ge::VARIABLE,    ge::NOOP,        ge::CONSTANT,      ge::ENTER,
-                                    ge::REFENTER,    ge::LOOPCOND,    ge::NEXTITERATION, ge::REFNEXTITERATION,
-                                    ge::EXIT,        ge::REFEXIT};
+  const set<string> ge_local_set = {
+    ge::STREAMMERGE, ge::MEMCPYASYNC, ge::STREAMACTIVE, ge::STREAMSWITCH,  ge::VARIABLE,         ge::NOOP, ge::CONSTANT,
+    ge::ENTER,       ge::REFENTER,    ge::LOOPCOND,     ge::NEXTITERATION, ge::REFNEXTITERATION, ge::EXIT, ge::REFEXIT};
   return (ge_local_set.find(type) != ge_local_set.end());
 }
 }  // namespace
@@ -252,12 +257,12 @@ Status ModelBuilder::AssignMemory() {
 void ModelBuilder::AddNodeInputProperty() {
   for (const ge::NodePtr &node : compute_graph_->GetDirectNode()) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     vector<string> src_name_list;
     vector<int64_t> src_index_list;
     for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
       auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, GELOGW("peer_out_anchor is nullptr!"); continue);
+      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
       GE_IF_BOOL_EXEC(node_op_desc->HasAttr(MERGE_PRENODE_FLAG), continue);
 
       ge::NodePtr src_node = peer_out_anchor->GetOwnerNode();
@@ -279,10 +284,10 @@ void ModelBuilder::AddNodeInputProperty() {
 
   for (const ge::NodePtr &node : compute_graph_->GetDirectNode()) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     GE_IF_BOOL_EXEC(node_op_desc->GetType() == NETOUTPUT, continue);
     auto out_control_anchor = node->GetOutControlAnchor();
-    GE_IF_BOOL_EXEC(out_control_anchor == nullptr, GELOGW("out_control_anchor is nullptr"); return);
+    GE_IF_BOOL_EXEC(out_control_anchor == nullptr, GELOGW("out_control_anchor is nullptr"); return );
     vector<string> dst_name_list;
     vector<int64_t> dst_index_list;
     string dst_name_temp;
@@ -300,7 +305,7 @@ void ModelBuilder::AddNodeInputProperty() {
       dst_name_temp = "";
       int64_t dst_index = kWrongIndex;  // assign an impossible value to dst_index.
       for (const auto &in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-        GE_IF_BOOL_EXEC(in_data_anchor == nullptr, GELOGW("in_data_anchor is nullptr"); return);
+        GE_IF_BOOL_EXEC(in_data_anchor == nullptr, GELOGW("in_data_anchor is nullptr"); return );
         ge::NodePtr dst_node = in_data_anchor->GetOwnerNode();
         dst_name_temp = dst_name_temp.empty() ? dst_node->GetName() : dst_name_temp + ":" + dst_node->GetName();
         dst_index = in_data_anchor->GetIdx();
@@ -378,20 +383,23 @@ void ModelBuilder::ClearOriginalFormat() {
         }
       }
 
-      GE_IF_BOOL_EXEC(node_op_desc->HasAttr(ATTR_NAME_INFERRED_FORMAT),
-                      if (node_op_desc->DelAttr(ATTR_NAME_INFERRED_FORMAT) != SUCCESS) {
-                        GELOGW("DelAttr ATTR_NAME_INFERRED_FORMAT failed.");
-                      });
+      GE_IF_BOOL_EXEC(
+        node_op_desc->HasAttr(ATTR_NAME_INFERRED_FORMAT),
+        if (node_op_desc->DelAttr(ATTR_NAME_INFERRED_FORMAT) != SUCCESS) {
+          GELOGW("DelAttr ATTR_NAME_INFERRED_FORMAT failed.");
+        });
 
-      GE_IF_BOOL_EXEC(node_op_desc->HasAttr(ATTR_NAME_PRED_PERMUTE_DELETED),
-                      if (node_op_desc->DelAttr(ATTR_NAME_PRED_PERMUTE_DELETED) != SUCCESS) {
-                        GELOGW("DelAttr ATTR_NAME_PRED_PERMUTE_DELETED failed.");
-                      });
+      GE_IF_BOOL_EXEC(
+        node_op_desc->HasAttr(ATTR_NAME_PRED_PERMUTE_DELETED),
+        if (node_op_desc->DelAttr(ATTR_NAME_PRED_PERMUTE_DELETED) != SUCCESS) {
+          GELOGW("DelAttr ATTR_NAME_PRED_PERMUTE_DELETED failed.");
+        });
 
-      GE_IF_BOOL_EXEC(node_op_desc->HasAttr(ATTR_NAME_IGNORE_PRED_FORMAT),
-                      if (node_op_desc->DelAttr(ATTR_NAME_IGNORE_PRED_FORMAT) != SUCCESS) {
-                        GELOGW("DelAttr ATTR_NAME_IGNORE_PRED_FORMAT failed.");
-                      });
+      GE_IF_BOOL_EXEC(
+        node_op_desc->HasAttr(ATTR_NAME_IGNORE_PRED_FORMAT),
+        if (node_op_desc->DelAttr(ATTR_NAME_IGNORE_PRED_FORMAT) != SUCCESS) {
+          GELOGW("DelAttr ATTR_NAME_IGNORE_PRED_FORMAT failed.");
+        });
     }
   }
 }
@@ -441,8 +449,8 @@ Status ModelBuilder::MergeWeights() {
     if (weight_data.data() != nullptr) {
       GE_IF_BOOL_EXEC(base_addr == nullptr, GELOGE(FAILED, "Base addr is nullptr."); return FAILED);
       GE_CHK_BOOL_EXEC(
-          memcpy_s(base_addr + offset, weight_offset_ - offset, weight_data.data(), weight_data.size()) == EOK,
-          return FAILED, "call memcpy_s failed.");
+        memcpy_s(base_addr + offset, weight_offset_ - offset, weight_data.data(), weight_data.size()) == EOK,
+        return FAILED, "call memcpy_s failed.");
     }
 
     weight_data.clear();
@@ -545,7 +553,6 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
 }
 
 ge::Buffer ModelBuilder::GetWeightBuffer() const { return weight_buffer_; }
-
 Status ModelBuilder::CompileSingleOp() {
   GELOGD("Begin to compile single op.");
   // Create ge instance

@@ -26,10 +26,10 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 
-using std::string;
-using ge::TBEKernelStore;
-using ge::TBEKernelPtr;
 using domi::ModelTaskDef;
+using ge::TBEKernelPtr;
+using ge::TBEKernelStore;
+using std::string;
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelHelper::~ModelHelper() { (void)ReleaseLocalModelData(); }
@@ -201,7 +201,7 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
     GELOGE(FAILED, "SaveModel fail for save buffer fail");
     return FAILED;
   }
-  shared_ptr<OmFileSaveHelper> om_file_save_helper = ge::MakeShared<OmFileSaveHelper>();
+  std::shared_ptr<OmFileSaveHelper> om_file_save_helper = ge::MakeShared<OmFileSaveHelper>();
   GE_CHECK_NOTNULL_EXEC(om_file_save_helper, return MEMALLOC_FAILED);
   ModelPartition partition_model;
   partition_model.data = model_buffer.GetData();
@@ -428,7 +428,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::TransModelT
       TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
       GE_IF_BOOL_EXEC(tbe_kernel == nullptr, continue);
       kernel_store.AddTBEKernel(tbe_kernel);
-      GELOGI("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
     }
   }
   if (!kernel_store.Build()) {

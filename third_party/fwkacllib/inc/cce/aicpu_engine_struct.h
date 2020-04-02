@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __AICPU_ENGINE_STRUCT_H__
-#define __AICPU_ENGINE_STRUCT_H__
+#ifndef AICPU_ENGINE_STRUCT_H__
+#define AICPU_ENGINE_STRUCT_H__
 
 #include "fwk_adpt_struct.h"
 
@@ -43,4 +43,4 @@ typedef struct {
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif  // AICPU_ENGINE_STRUCT_H__

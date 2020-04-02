@@ -18,9 +18,9 @@
 #define GE_GRAPH_BUILD_MEMORY_HYBRID_MEM_ASSIGNER_H_
 
 #include <memory>
-
 #include "graph/build/memory/mem_assigner.h"
 #include "graph/compute_graph.h"
+
 #include "common/types.h"
 #include "common/util.h"
 

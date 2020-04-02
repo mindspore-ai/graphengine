@@ -26,9 +26,10 @@
 #include "external/graph/types.h"
 
 namespace ge {
+class ShapeImpl;
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Shape {
  public:
-  Shape() = default;
+  Shape();
   ~Shape() = default;
   explicit Shape(const std::vector<int64_t> &dims);
 
@@ -40,7 +41,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Shape {
   int64_t GetShapeSize() const;
 
  private:
-  std::vector<int64_t> dims_;
+  std::shared_ptr<ShapeImpl> impl_;
 };
 
 class TensorDescImpl;
@@ -66,10 +67,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
   void SetFormat(Format format);
 
   Shape GetOriginShape() const;
-  void SetOriginShape(const Shape &origin_shape);
+  void SetOriginShape(const Shape &originShape);
 
   Format GetOriginFormat() const;
-  void SetOriginFormat(Format origin_format);
+  void SetOriginFormat(Format originFormat);
 
   DataType GetDataType() const;
   void SetDataType(DataType dt);
@@ -82,7 +83,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
   int64_t GetSize() const;
 
   int64_t GetRealDimCnt() const;
-  void SetRealDimCnt(const int64_t real_dim_cnt);
+  void SetRealDimCnt(const int64_t realDimCnt);
 
  private:
   std::shared_ptr<TensorDescImpl> impl;

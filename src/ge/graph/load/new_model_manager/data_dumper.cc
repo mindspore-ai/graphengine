@@ -15,19 +15,16 @@
  */
 
 #include "graph/load/new_model_manager/data_dumper.h"
-
-#include <utility>
-
-#include "common/properties_manager.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/util.h"
-#include "graph/anchor.h"
-#include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/model_utils.h"
 #include "graph/utils/attr_utils.h"
-#include "proto/ge_ir.pb.h"
+#include "graph/debug/ge_attr_define.h"
+#include "framework/common/debug/ge_log.h"
 #include "proto/op_mapping_info.pb.h"
+#include "proto/ge_ir.pb.h"
 #include "runtime/mem.h"
+#include "common/properties_manager.h"
+#include "framework/common/util.h"
+#include "model_utils.h"
+#include "graph/anchor.h"
 
 namespace {
 const uint32_t kAicpuLoadFlag = 1;
@@ -36,32 +33,32 @@ const uint32_t kAicpuUnloadFlag = 0;
 
 static int32_t GetIrDataType(ge::DataType data_type) {
   static const std::map<ge::DataType, ge::proto::DataType> data_type_map = {
-      {ge::DT_UNDEFINED, ge::proto::DT_UNDEFINED},
-      {ge::DT_FLOAT, ge::proto::DT_FLOAT},
-      {ge::DT_FLOAT16, ge::proto::DT_FLOAT16},
-      {ge::DT_INT8, ge::proto::DT_INT8},
-      {ge::DT_UINT8, ge::proto::DT_UINT8},
-      {ge::DT_INT16, ge::proto::DT_INT16},
-      {ge::DT_UINT16, ge::proto::DT_UINT16},
-      {ge::DT_INT32, ge::proto::DT_INT32},
-      {ge::DT_INT64, ge::proto::DT_INT64},
-      {ge::DT_UINT32, ge::proto::DT_UINT32},
-      {ge::DT_UINT64, ge::proto::DT_UINT64},
-      {ge::DT_BOOL, ge::proto::DT_BOOL},
-      {ge::DT_DOUBLE, ge::proto::DT_DOUBLE},
-      {ge::DT_DUAL, ge::proto::DT_DUAL},
-      {ge::DT_DUAL_SUB_INT8, ge::proto::DT_DUAL_SUB_INT8},
-      {ge::DT_DUAL_SUB_UINT8, ge::proto::DT_DUAL_SUB_UINT8},
-      {ge::DT_COMPLEX64, ge::proto::DT_COMPLEX64},
-      {ge::DT_COMPLEX128, ge::proto::DT_COMPLEX128},
-      {ge::DT_QINT8, ge::proto::DT_QINT8},
-      {ge::DT_QINT16, ge::proto::DT_QINT16},
-      {ge::DT_QINT32, ge::proto::DT_QINT32},
-      {ge::DT_QUINT8, ge::proto::DT_QUINT8},
-      {ge::DT_QUINT16, ge::proto::DT_QUINT16},
-      {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
-      {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
-      {ge::DT_STRING, ge::proto::DT_STRING},
+    {ge::DT_UNDEFINED, ge::proto::DT_UNDEFINED},
+    {ge::DT_FLOAT, ge::proto::DT_FLOAT},
+    {ge::DT_FLOAT16, ge::proto::DT_FLOAT16},
+    {ge::DT_INT8, ge::proto::DT_INT8},
+    {ge::DT_UINT8, ge::proto::DT_UINT8},
+    {ge::DT_INT16, ge::proto::DT_INT16},
+    {ge::DT_UINT16, ge::proto::DT_UINT16},
+    {ge::DT_INT32, ge::proto::DT_INT32},
+    {ge::DT_INT64, ge::proto::DT_INT64},
+    {ge::DT_UINT32, ge::proto::DT_UINT32},
+    {ge::DT_UINT64, ge::proto::DT_UINT64},
+    {ge::DT_BOOL, ge::proto::DT_BOOL},
+    {ge::DT_DOUBLE, ge::proto::DT_DOUBLE},
+    {ge::DT_DUAL, ge::proto::DT_DUAL},
+    {ge::DT_DUAL_SUB_INT8, ge::proto::DT_DUAL_SUB_INT8},
+    {ge::DT_DUAL_SUB_UINT8, ge::proto::DT_DUAL_SUB_UINT8},
+    {ge::DT_COMPLEX64, ge::proto::DT_COMPLEX64},
+    {ge::DT_COMPLEX128, ge::proto::DT_COMPLEX128},
+    {ge::DT_QINT8, ge::proto::DT_QINT8},
+    {ge::DT_QINT16, ge::proto::DT_QINT16},
+    {ge::DT_QINT32, ge::proto::DT_QINT32},
+    {ge::DT_QUINT8, ge::proto::DT_QUINT8},
+    {ge::DT_QUINT16, ge::proto::DT_QUINT16},
+    {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
+    {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
+    {ge::DT_STRING, ge::proto::DT_STRING},
   };
 
   auto iter = data_type_map.find(data_type);
@@ -93,6 +90,12 @@ void DataDumper::ReleaseDevMem(void **ptr) noexcept {
   }
 }
 
+void DataDumper::SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_cond) {
+  global_step_ = reinterpret_cast<uintptr_t>(global_step);
+  loop_per_iter_ = reinterpret_cast<uintptr_t>(loop_per_iter);
+  loop_cond_ = reinterpret_cast<uintptr_t>(loop_cond);
+}
+
 void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
   if (node != nullptr) {
     auto input_op_desc = node->GetOpDesc();
@@ -110,7 +113,7 @@ void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
           return;
         }
         input_map_.insert(
-            {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
+          {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
       }
     }
   }
@@ -148,6 +151,30 @@ void DataDumper::SaveDumpTask(uint32_t task_id, const std::shared_ptr<OpDesc> &o
   }
 }
 
+static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uintptr_t loop_cond,
+                                 aicpu::dump::OpMappingInfo &op_mapping_info) {
+  if (step_id != 0) {
+    GELOGI("step_id exist.");
+    op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
+  } else {
+    GELOGI("step_id is null.");
+  }
+
+  if (loop_per_iter != 0) {
+    GELOGI("loop_per_iter exist.");
+    op_mapping_info.set_iterations_per_loop_addr(static_cast<uint64_t>(loop_per_iter));
+  } else {
+    GELOGI("loop_per_iter is null.");
+  }
+
+  if (loop_cond != 0) {
+    GELOGI("loop_cond exist.");
+    op_mapping_info.set_loop_cond_addr(static_cast<uint64_t>(loop_cond));
+  } else {
+    GELOGI("loop_cond is null.");
+  }
+}
+
 Status DataDumper::LoadDumpInfo() {
   GELOGI("%zu op need dump in %s.", op_list_.size(), model_name_.c_str());
   if (op_list_.empty()) {
@@ -161,6 +188,7 @@ Status DataDumper::LoadDumpInfo() {
   op_mapping_info.set_model_name(model_name_);
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuLoadFlag);
+  SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
 
   for (const auto &op_iter : op_list_) {
     aicpu::dump::Task task;

@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <string>
+#include <memory>
 
 #include "common/fmk_types.h"
 #include "common/helper/om_file_helper.h"

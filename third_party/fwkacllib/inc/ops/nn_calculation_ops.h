@@ -21,33 +21,47 @@
 
 namespace ge {
 /**
-* @brief Computes the gradients of depthwise convolution with respect to the filter.
+* @brief Computes the gradients of depthwise convolution with respect to the
+* filter.
 
 * @par Inputs:
 * Three inputs include: \n
-* @li input: 4D origin shape of input tensor [N, C, H, W] or [N, H, W, C], support float16, float32, double
+* @li input: 4D origin shape of input tensor [N, C, H, W] or [N, H, W, C],
+* support float16, float32, double
 * @li filter_size: A 4D tensor of type int32, with shape [H, W, C, K]
-* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C]. Must be one of the following types: float16, float32, double.
+* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C]. Must be
+* one of the following types: float16, float32, double.
 
 * @par Attributes:
-* @li strides: The stride of the sliding window for height and width of input "x" of the convolution.
-* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height, stride_width, 1].
-* @li dilations: The dilation factor for each dimension of input "x". If set to k > 1, there will be k-1 skipped cells between each
-*               filter element on that dimension. Must be with shape [1, 1, dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
-* @li pads: Padding added to each dimension of the input.
-* @li data_format: Input data format, either "NHWC" or "NCHW".
+* @li strides: An optional list or tuple. The stride of the sliding window for
+* height and width of input "x" of the convolution.
+* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height,
+* stride_width, 1].
+* @li dilations: An optional list or tuple. The dilation factor for each
+* dimension of input "x". If set to k > 1, there will be k-1 skipped cells
+* between each filter element on that dimension. Must be with shape [1, 1,
+* dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
+* @li pads: An optional list or tuple. Padding added to each dimension of the
+* input.
+* @li data_format: An optional string. Input data format, either "NHWC" or
+* "NCHW".
 
 * @par Outputs:
-* filter_grad: Gradient of the deep convolution relative to the filter with shape [H, W, C, K]. Must be one of the following types: float16, float32, double.
+* filter_grad: Gradient of the deep convolution relative to the filter with
+* shape [H, W, C, K]. Must be one of the following types: float16, float32,
+* double.
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
 * the data is 5D with shape [N, C1, Hi, Wi, C0], where C0 is 16.\n
-* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape [C1, Hf, Wf, K, Co, C0],
+* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape
+* [C1, Hf, Wf, K, Co, C0],
 * where K is fixed at 1, and Co and C0 are 16.\n
-* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the data is 5D with shape [N, C1, Ho, Wo, C0],
+* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
+* data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 * stride_h + 32 * filter_h) * ceil(Wi, 16) ≤ l1_size and Hf * Wf ≤ l0b_size/512.\n
+* Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
+* stride_h + 32 * filter_h) * ceil(Wi, 16) ≤ l1_size and Hf*Wf ≤ l0b_size/512.\n
 */
 REG_OP(DepthwiseConv2DBackpropFilter)
     .INPUT(input, TensorType({float16}))
@@ -61,33 +75,44 @@ REG_OP(DepthwiseConv2DBackpropFilter)
     .OP_END_FACTORY_REG(DepthwiseConv2DBackpropFilter)
 
 /**
-* @brief Computes the gradients of depthwise convolution with respect to the filter.
+* @brief Computes the gradients of depthwise convolution with respect to the
+* filter.
 
 * @par Inputs:
 * Two inputs include: \n
 * @li input: 4D tensor with shape [N, C, H, W] or [N, H, W, C], of type float16
-* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C], of type float16
+* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C], of type
+* float16
 
 * @par Attributes:
-* @li filter_size: Shape of filter.
-* @li strides: The stride of the sliding window for height and width of input "x" of the convolution.
-* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height, stride_width, 1].
-* @li dilations: The dilation factor for each dimension of input "x". If set to k > 1, there will be k-1 skipped cells between each
-*               filter element on that dimension. Must be with shape [1, 1, dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
-* @li pads: Padding added to each dimension of the input.
-* @li data_format: Input data format, either "NHWC" or "NCHW".
+* @li filter_size: An optional list or tuple. Shape of filter.
+* @li strides: An optional list or tuple. The stride of the sliding window for
+* height and width of input "x" of the convolution.
+* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height,
+* stride_width, 1].
+* @li dilations: An optional list or tuple. The dilation factor for each
+* dimension of input "x". If set to k > 1, there will be k-1 skipped cells
+* between each filter element on that dimension. Must be with shape [1, 1,
+* dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
+* @li pads: An optional list or tuple. Padding added to each dimension of the
+* input.
+* @li data_format: An optional string. Input data format, either "NHWC" or
+* "NCHW".
 
 * @par Outputs:
-* filter_grad: Gradient of the deep convolution relative to the filter with shape [H, W, C, K]. Must be of type float32.
+* filter_grad: Gradient of the deep convolution relative to the filter with
+* shape [H, W, C, K]. Must be of type float32.
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
 * the data is 5D with shape [N, C1, Hi, Wi, C0], where C0 is 16.\n
-* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape [C1, Hf, Wf, K, Co, C0],
-* where K is fixed at 1, and Co and C0 are 16.\n
-* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the data is 5D with shape [N, C1, Ho, Wo, C0],
-* where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 * stride_h + 32 * filter_h) * ceil(Wi, 16) ≤ l1_size and Hf * Wf ≤ l0b_size/512.\n
+* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape
+* [C1, Hf, Wf, K, Co, C0], where K is fixed at 1, and Co and C0 are 16.\n
+* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
+* data is 5D with shape [N, C1, Ho, Wo, C0], where C is the same as that of the
+* feature map and C0 is 16.\n
+* Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
+* stride_h + 32 * filter_h) * ceil(Wi, 16) ≤ l1_size and Hf*Wf ≤ l0b_size/512.\n
 */
 REG_OP(DepthwiseConv2DBackpropFilterD)
     .INPUT(input, TensorType({float16}))
@@ -101,33 +126,47 @@ REG_OP(DepthwiseConv2DBackpropFilterD)
     .OP_END_FACTORY_REG(DepthwiseConv2DBackpropFilterD)
 
 /**
-* @brief Computes the gradients of depthwise convolution with respect to the input.
+* @brief Computes the gradients of depthwise convolution with respect to the
+* input.
 
 * @par Inputs:
 * Three inputs include: \n
-* @li input_size: 4D shape of input tensor [N, C, H, W] or [N, H, W, C], support int32
-* @li filter: 4D filter tensor with shape of [H, W, C, K], support float16, float32, double
-* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C]. Must be one of the following types: float16, float32, double.
+* @li input_size: 4D shape of input tensor [N, C, H, W] or [N, H, W, C],
+* support int32
+* @li filter: 4D filter tensor with shape of [H, W, C, K], support float16,
+* float32, double
+* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C].
+* Must be one of the following types: float16, float32, double.
 
 * @par Attributes:
-* @li strides: The stride of the sliding window for height and width of input "x" of the convolution.
-* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height, stride_width, 1].
-* @li dilations: The dilation factor for each dimension of input "x". If set to k > 1, there will be k-1 skipped cells between each
-*               filter element on that dimension. Must be with shape [1, 1, dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
-* @li pads: Padding added to each dimension of the input.
-* @li data_format: Input data format, either "NHWC" or "NCHW".
+* @li strides: An optional list or tuple. The stride of the sliding window for
+* height and width of input "x" of the convolution.
+* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height,
+* stride_width, 1].
+* @li dilations: An optional list or tuple. The dilation factor for each
+* dimension of input "x". If set to k > 1, there will be k-1 skipped cells
+* between each filter element on that dimension. Must be with shape [1, 1,
+* dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
+* @li pads: An optional list or tuple. Padding added to each dimension of the
+* input.
+* @li data_format: An optional string. Input data format, either "NHWC" or
+* "NCHW".
 
 * @par Outputs:
-* input_grad: Gradient of the deep convolution relative to the input with shape [N, C, H, W] or [N, H, W, C] Must be one of the following types: float16, float32, double.
+* input_grad: Gradient of the deep convolution relative to the input with shape
+* [N, C, H, W] or [N, H, W, C] Must be one of the following types: float16,
+* float32, double.
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
 * the data is 5D with shape [N, C1, Hi, Wi, C0], where C0 is 16.\n
-* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape [C1, Hf, Wf, K, Co, C0],
-* where K is fixed at 1, and Co and C0 are 16.\n
-* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the data is 5D with shape [N, C1, Ho, Wo, C0],
-* where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 ≥ C0, where max_h_in_l1 = (l1_size - Hf*Wf*C0*C0*2) / (2* Wo *C0).\n
+* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape
+* [C1, Hf, Wf, K, Co, C0], where K is fixed at 1, and Co and C0 are 16.\n
+* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
+* data is 5D with shape [N, C1, Ho, Wo, C0], where C is the same as that of the
+* feature map and C0 is 16.\n
+* Limited by Tiling: max_h_in_l1 ≥ C0, where max_h_in_l1 = (l1_size - Hf * Wf *
+* C0 * C0 * 2) / (2 * Wo * C0).\n
 */
 REG_OP(DepthwiseConv2DBackpropInput)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
@@ -141,33 +180,44 @@ REG_OP(DepthwiseConv2DBackpropInput)
     .OP_END_FACTORY_REG(DepthwiseConv2DBackpropInput)
 
 /**
-* @brief Computes the gradients of depthwise convolution with respect to the input.
+* @brief Computes the gradients of depthwise convolution with respect to the
+* input.
 
 * @par Inputs:
 * Two inputs include: \n
 * @li filter: A 4D tensor of type float16, with shape [H, W, C, K]
-* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C], of type float16
+* @li out_backprop: 4D tensor with shape [N, C, H, W] or [N, H, W, C], of type
+* float16
 
 * @par Attributes:
-* @li input_size: The origin shape of input.
-* @li strides: The stride of the sliding window for height and width of input "x" of the convolution.
-* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height, stride_width, 1].
-* @li dilations: The dilation factor for each dimension of input "x". If set to k > 1, there will be k-1 skipped cells between each
-*               filter element on that dimension. Must be with shape [1, 1, dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
-* @li pads: Padding added to each dimension of the input.
-* @li data_format: Input data format, either "NHWC" or "NCHW".
+* @li input_size: An optional list or tuple. The origin shape of input.
+* @li strides: An optional list or tuple. The stride of the sliding window for
+* height and width of input "x" of the convolution.
+* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height,
+* stride_width, 1].
+* @li dilations: An optional list or tuple. The dilation factor for each
+* dimension of input "x". If set to k > 1, there will be k-1 skipped cells
+* between each filter element on that dimension. Must be with shape [1, 1,
+* dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
+* @li pads: An optional list or tuple. Padding added to each dimension of the
+* input.
+* @li data_format: An optional string. Input data format, either "NHWC" or
+* "NCHW".
 
 * @par Outputs:
-* input_grad: Gradient of the deep convolution relative to the input with shape [N, C, H, W] or [N, H, W, C]. Must be of type float16.
+* input_grad: Gradient of the deep convolution relative to the input with shape
+* [N, C, H, W] or [N, H, W, C]. Must be of type float16.
 
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
 * the data is 5D with shape [N, C1, Hi, Wi, C0], where C0 is 16.\n
-* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape [C1, Hf, Wf, K, Co, C0],
-* where K is fixed at 1, and Co and C0 are 16.\n
-* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the data is 5D with shape [N, C1, Ho, Wo, C0],
-* where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 ≥ C0, where max_h_in_l1 = (l1_size - Hf*Wf*C0*C0*2) / (2* Wo *C0).\n
+* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape
+* [C1, Hf, Wf, K, Co, C0], where K is fixed at 1, and Co and C0 are 16.\n
+* Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
+* data is 5D with shape [N, C1, Ho, Wo, C0], where C is the same as that of the
+* feature map and C0 is 16.\n
+* Limited by Tiling: max_h_in_l1 ≥ C0, where max_h_in_l1 = (l1_size - Hf * Wf *
+* C0 * C0 * 2) / (2 * Wo * C0).\n
 */
 REG_OP(DepthwiseConv2DBackpropInputD)
     .INPUT(filter, TensorType({DT_FLOAT16}))
@@ -181,7 +231,8 @@ REG_OP(DepthwiseConv2DBackpropInputD)
     .OP_END_FACTORY_REG(DepthwiseConv2DBackpropInputD)
 
 /**
-*@brief Computes a 2D deep convolution given a 4D input tensor and a filter tensor.
+*@brief Computes a 2D deep convolution given a 4D input tensor and a filter
+* tensor.
 
 *@par Inputs:
 *Two required inputs and two optional inputs, including: \n
@@ -191,13 +242,19 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * @li offset_w: An optional float16, used for quantized inference
 
 * @par Attributes:
-* @li strides: The stride of the sliding window for height and width of input "x" of the convolution.
-* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height, stride_width, 1].
-* @li dilations: The dilation factor for each dimension of input "x". If set to k > 1, there will be k-1 skipped cells between each
-*               filter element on that dimension. Must be with shape [1, 1, dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
-* @li pads: Padding added to each dimension of the input.
-* @li data_format: Input data format, either "NHWC" or "NCHW".
-* @li offset_a: Input offset, used for quantized inference.
+* @li strides: An optional list or tuple. The stride of the sliding window for
+* height and width of input "x" of the convolution.
+* Must be with shape [1, 1, stride_height, stride_width] or [1, stride_height,
+* stride_width, 1].
+* @li dilations: An optional list or tuple. The dilation factor for each
+* dimension of input "x". If set to k > 1, there will be k-1 skipped cells
+* between each filter element on that dimension. Must be with shape [1, 1,
+* dilation_height, dilation_width] or [1, dilation_height, dilation_width, 1].
+* @li pads: An optional list or tuple. Padding added to each dimension of the
+* input.
+* @li data_format: An optional string. Input data format, either "NHWC" or
+* "NCHW".
+* @li offset_a: An optional int. Input offset, used for quantized inference.
 
 * @par Outputs:
 * y: 4D tensor of type float16, with shape [N, C, H, W] or [N, H, W, C]
@@ -205,10 +262,11 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * @attention Constraints:\n
 * The feature map is 4D with shape [N, C, Hi, Wi] or [N, Hi, Wi, C], but
 * the data is 5D with shape [N, C1, Hi, Wi, C0], where C0 is 16.\n
-* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape [C1, Hf, Wf, K, Co, C0],
-* where K is fixed at 1, and Co and C0 are 16.\n
+* The filter is 4D with shape [Hf, Wf, C, K], but the data is 6D with shape
+* [C1, Hf, Wf, K, Co, C0], where K is fixed at 1, and Co and C0 are 16.\n
 * Limited by the size of L1 buffer memory: \n
-* (l1_size - filter_h*filter_w*BLOCK_SIZE*BLOCK_SIZE*data_size) // (Wi*BLOCK_SIZE*data_size) >= (BLOCK_SIZE*strides_h + filter_h - strides_h).\n
+* (l1_size - filter_h*filter_w*BLOCK_SIZE*BLOCK_SIZE*data_size) // (Wi *
+* BLOCK_SIZE * data_size) >= (BLOCK_SIZE * strides_h + filter_h - strides_h).\n
 */
 REG_OP(DepthwiseConv2D)
     .INPUT(x, TensorType({DT_FLOAT16}))

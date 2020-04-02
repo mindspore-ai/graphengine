@@ -18,7 +18,6 @@
 #define GE_GRAPH_BUILD_RUN_CONTEXT_H_
 
 #include <vector>
-
 #include "common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_types.h"
 #include "framework/common/types.h"
@@ -37,8 +36,7 @@ class RunContextUtil {
   Status InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size, uint8_t *weight_mem_base,
                      uint64_t weight_mem_size);
 
-  Status CreateRunContext(Model &model_def, const ComputeGraphPtr &graph, Buffer &buffer,
-                          const uint64_t session_id);
+  Status CreateRunContext(Model &model_def, const ComputeGraphPtr &graph, Buffer &buffer, const uint64_t session_id);
 
   RunContext &GetRunContext();
 

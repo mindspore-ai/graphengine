@@ -15,16 +15,13 @@
  */
 
 #include "init/gelib.h"
-
 #include <dlfcn.h>
 #include <cstdlib>
-
 #include <mutex>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/plugin_manager.h"
 #include "common/ge/ge_util.h"
@@ -35,8 +32,7 @@
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "ge/ge_api_types.h"
-#include "cce/aicpu_engine.h"
-#include "cce/fwk_adpt_struct.h"
+#include <cstdlib>
 #include "graph/load/new_model_manager/model_manager.h"
 #include "omm/csa_interact.h"
 #include "common/properties_manager.h"
@@ -171,10 +167,9 @@ void GELib::InitOptions(const map<string, string> &options) {
   if (iter != options.end()) {
     this->options_.device_id = static_cast<int32_t>(std::strtol(iter->second.c_str(), nullptr, kDecimal));
   }
-  this->options_.job_id = 0;
   iter = options.find(OPTION_EXEC_JOB_ID);
   if (iter != options.end()) {
-    this->options_.job_id = std::strtoll(iter->second.c_str(), nullptr, kDecimal);
+    this->options_.job_id = iter->second.c_str();
   }
   this->options_.isUseHcom = false;
   iter = options.find(OPTION_EXEC_IS_USEHCOM);
@@ -209,7 +204,7 @@ void GELib::InitOptions(const map<string, string> &options) {
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOptions(Options &options) {
   GELOGI("Training init GELib. session Id:%ld, device id :%d ", options.session_id, options.device_id);
-  GEEVENT("System init with options begin, job id %ld", options.job_id);
+  GEEVENT("System init with options begin, job id %s", options.job_id.c_str());
   std::lock_guard<std::mutex> lock(status_mutex_);
   GE_IF_BOOL_EXEC(is_system_inited && !is_shutdown,
                   GELOGW("System init with options is already inited and not shutdown.");
@@ -218,7 +213,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
 
   // profiling init
   if (ProfilingManager::Instance().Init(options) != SUCCESS) {
-      GELOGW("Profiling init failed.");
+    GELOGW("Profiling init failed.");
   }
 
   std::vector<rtMemType_t> mem_type;
@@ -230,7 +225,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   }
 
   // Update CSA file
-  CsaInteract::GetInstance().Init(options.device_id, options.job_id);
+  CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
   GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
   options.physical_device_id = options.device_id;
@@ -248,7 +243,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   GetContext().SetCtxDeviceId(dev_logic_index);
 
   GE_CHK_RT_RET(rtSetDevice(options.device_id));
-  cce::cceSysInit();
   // In the scenario that the automatic add fusion is set, but there is no cleanaddr operator,
   // maybe need to check it
   is_system_inited = true;
@@ -303,7 +297,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithout
     GELOGW("System init without options is already inited,  don't need to init again.");
     return SUCCESS;
   }
-  cce::cceSysInit();
   is_inited = true;
   GELOGI("Inference init GELib success.");
 

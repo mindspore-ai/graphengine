@@ -23,7 +23,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "common/op/ge_op_utils.h"
 #include "common/tbe_kernel_store.h"
 #include "common/types.h"

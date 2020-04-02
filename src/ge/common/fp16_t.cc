@@ -198,7 +198,7 @@ fp16_t &fp16_t::operator=(const int32_t &i_val) {
       }
     } else {
       e_ret = FP16_EXP_BIAS;
-      m_tmp = m_tmp << static_cast<uint32_t >(kDim_11 - len);
+      m_tmp = m_tmp << static_cast<uint32_t>(kDim_11 - len);
       e_ret = e_ret + (len - 1);
     }
     uint16_t m_ret = static_cast<uint16_t>(m_tmp);

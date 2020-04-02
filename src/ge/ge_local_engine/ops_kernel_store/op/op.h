@@ -18,19 +18,17 @@
 #define GE_GE_LOCAL_ENGINE_OPS_KERNEL_STORE_OP_OP_H_
 
 #include <climits>
-
 #include <string>
 #include <vector>
-
 #include "common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_types.h"
 #include "graph/node.h"
 
 namespace ge {
 namespace ge_local {
-///
-/// The base class for all op.
-///
+/**
+ * The base class for all op.
+ */
 class Op {
  public:
   Op(const Node &node, RunContext &run_context);

@@ -47,8 +47,6 @@ include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
-include_directories(${GE_SOURCE_DIR}/third_party/json/include)
-include_directories(${GE_SOURCE_DIR}/third_party/protobuf/src)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
@@ -70,7 +68,6 @@ target_link_libraries(ge_client_train
         ${slog}
         ${mmpa}
         ${runtime}
-        ${cce}
         rt
         dl)
 
@@ -91,6 +88,5 @@ target_link_libraries(ge_client
         ${slog}
         ${mmpa}
         ${runtime}
-        ${cce}
         rt
         dl)

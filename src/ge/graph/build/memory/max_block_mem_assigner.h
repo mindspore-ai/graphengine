@@ -16,10 +16,8 @@
 
 #ifndef GE_GRAPH_BUILD_MEMORY_MAX_BLOCK_MEM_ASSIGNER_H_
 #define GE_GRAPH_BUILD_MEMORY_MAX_BLOCK_MEM_ASSIGNER_H_
-
 #include <utility>
 #include <vector>
-
 #include "graph/build/memory/block_mem_assigner.h"
 
 namespace ge {

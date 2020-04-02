@@ -114,14 +114,14 @@ REG_OP(Relu6)
 
 /**
 * @brief Computes rectified linear 6 gradients for a Relu6 operation.
-*     z = dy * (y > 0) * (y < 6).
+*     backprops = gradients * (features > 0) * (features < 6).
 
 * @par Inputs:
-* @li y: A Tensor of type RealNumberType.
-* @li dy: A Tensor of type RealNumberType.
+* @li features: A Tensor of type RealNumberType.
+* @li gradients: A Tensor of type RealNumberType.
 
 * @par Outputs:
-* z: A Tensor of type RealNumberType.
+* backprops: A Tensor of type RealNumberType.
 */
 REG_OP(Relu6Grad)
     .INPUT(gradients, TensorType::RealNumberType())
@@ -139,9 +139,7 @@ REG_OP(Relu6Grad)
 * A Tensor. Has the same type as "x".
 
 * @attention Constraints:
-* @li "x" is with shape (D1, D2, ..., DK), where, D1 * D2... * Dn <= 2^31-1,
-* Di <= 1000000, n <= 8.
-* @li Ascend 310 provides only 1?? accuracy for the result.
+* @li Ascend 310 provides only 1e-3 accuracy for the result.
 
 * @see Relu()
 */
@@ -305,12 +303,6 @@ REG_OP(EluGrad)
     .INPUT(activations, TensorType::FloatingDataType())
     .OUTPUT(y, TensorType::FloatingDataType())
     .OP_END_FACTORY_REG(EluGrad)
-
-REG_OP(LeakyRelu)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
-    .ATTR(negative_slope, Float, 0.0)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
-    .OP_END_FACTORY_REG(LeakyRelu)
 
 } // namespace ge
 

@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  // __cplusplus
 
 typedef struct tagRTDeviceInfo {
   uint8_t env_type; /* 0: FPGA  1: EMU 2: ESL */

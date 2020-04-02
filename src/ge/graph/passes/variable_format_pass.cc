@@ -66,9 +66,8 @@ bool VariableFormatPass::ConfirmUseOpAndIndexByAnchor(const ge::InDataAnchorPtr 
   GELOGD("ConfirmUseOpAndIndex, var name %s, dst_type = %s, input index %d", dst_node->GetName().c_str(),
          dst_type.c_str(), input_index);
 
-  GE_IF_BOOL_EXEC(
-      confirm_ops.count(dst_type) > 0,
-      GE_IF_BOOL_EXEC(confirm_ops.at(dst_type).count(input_index) > 0, use_node = dst_node; return true););
+  GE_IF_BOOL_EXEC(confirm_ops.count(dst_type) > 0,
+                  GE_IF_BOOL_EXEC(confirm_ops.at(dst_type).count(input_index) > 0, use_node = dst_node; return true););
   return false;
 }
 
@@ -106,8 +105,8 @@ Status VariableFormatPass::UpdateApplyMomentumInputFormat(const ge::NodePtr &nod
   GE_CHECK_NOTNULL(op_desc_ptr->MutableOutputDesc(0));
   NodePtr in_node = node->GetInDataAnchor(0)->GetPeerOutAnchor()->GetOwnerNode();
   if (in_node != nullptr) {
-    string inOpType = in_node->GetType();
-    if ((inOpType == VARIABLE) && (in_node->GetOpDesc() != nullptr)) {
+    string in_op_type = in_node->GetType();
+    if ((in_op_type == VARIABLE) && (in_node->GetOpDesc() != nullptr)) {
       ge::Format format = in_node->GetOpDesc()->MutableOutputDesc(0)->GetFormat();
       op_desc_ptr->MutableInputDesc(0)->SetFormat(format);
       op_desc_ptr->MutableInputDesc(0)->SetOriginFormat(format);

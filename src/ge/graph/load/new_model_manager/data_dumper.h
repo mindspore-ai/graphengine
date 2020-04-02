@@ -17,10 +17,8 @@
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_
 
-#include <map>
-#include <memory>
 #include <string>
-#include <vector>
+#include <memory>
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
@@ -38,7 +36,10 @@ class DataDumper {
         op_list_(),
         input_map_(),
         load_flag_(false),
-        device_id_(0) {}
+        device_id_(0),
+        global_step_(0),
+        loop_per_iter_(0),
+        loop_cond_(0) {}
 
   ~DataDumper();
 
@@ -46,6 +47,7 @@ class DataDumper {
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
   void SetMemory(const RuntimeParam &runtime_param) { runtime_param_ = runtime_param; }
   void SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
+  void SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_cond);
 
   void SaveDumpInput(const std::shared_ptr<Node> &node);
   // args is device memory stored first output addr
@@ -64,26 +66,31 @@ class DataDumper {
 
   struct InnerDumpInfo;
   struct InnerInputMapping;
+
   std::vector<InnerDumpInfo> op_list_;
   std::multimap<std::string, InnerInputMapping> input_map_;
   bool load_flag_;
   uint32_t device_id_;
-
-  struct InnerDumpInfo {
-    uint32_t task_id;
-    std::shared_ptr<OpDesc> op;
-    uintptr_t args;
-    bool is_task;
-    int input_anchor_index;
-    int output_anchor_index;
-  };
-
-  struct InnerInputMapping {
-    std::shared_ptr<OpDesc> data_op;
-    int input_anchor_index;
-    int output_anchor_index;
-  };
+  uintptr_t global_step_;
+  uintptr_t loop_per_iter_;
+  uintptr_t loop_cond_;
 };
+
+struct DataDumper::InnerDumpInfo {
+  uint32_t task_id;
+  std::shared_ptr<OpDesc> op;
+  uintptr_t args;
+  bool is_task;
+  int input_anchor_index;
+  int output_anchor_index;
+};
+
+struct DataDumper::InnerInputMapping {
+  std::shared_ptr<OpDesc> data_op;
+  int input_anchor_index;
+  int output_anchor_index;
+};
+
 }  // namespace ge
 
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_

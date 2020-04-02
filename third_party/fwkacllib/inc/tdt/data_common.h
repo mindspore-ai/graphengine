@@ -72,4 +72,4 @@ struct DataItem {
   std::shared_ptr<void> dataPtr_; /**< Data  pointer*/
 };
 }  // namespace tdt
-#endif
+#endif  // HOST_INNER_INC_DATA_COMMON_H_

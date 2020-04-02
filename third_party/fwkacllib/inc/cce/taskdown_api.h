@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _TASKDOWN_API_H_
-#define _TASKDOWN_API_H_
+#ifndef TASKDOWN_API_H_
+#define TASKDOWN_API_H_
 
 #include <map>
 #include <vector>
@@ -34,6 +34,7 @@ typedef struct tagOpAddrsInfo {
 
 ccStatus_t ccUpdateKernelArgs(ccOpContext &opContext, uint64_t dataBaseAddr, uint64_t weightBaseAddr,
                               uint64_t variableBaseAddr, void *argsAddr, uint64_t argsSize, void *l2ctrlAddr);
+
 ccStatus_t ccGetKernelArgsAddrs(ccOpContext &opContext, void *argsAddr, uint64_t argsSize, void *l2ctrlAddr,
                                 std::vector<ccOpAddrsInfo> &opAddrsInfo);
 
@@ -42,4 +43,4 @@ ccStatus_t ccSetKernelArgs(std::vector<ccOpAddrsInfo> &dateInfo);
 ccStatus_t ccGetKernelTypeByOpId(uint32_t opId, ccKernelType &kernelType);
 
 }  // namespace cce
-#endif
+#endif  // TASKDOWN_API_H_

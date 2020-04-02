@@ -17,11 +17,13 @@
 #ifndef GE_GE_LOCAL_ENGINE_COMMON_CONSTANT_CONSTANT_H_
 #define GE_GE_LOCAL_ENGINE_COMMON_CONSTANT_CONSTANT_H_
 
+#include <string>
+
 namespace ge {
 namespace ge_local {
 // engine name
-const char *const kGeLocalEngineName = "DNN_VM_GE_LOCAL";
-const char *const kGeLocalOpKernelLibName = "DNN_VM_GE_LOCAL_OP_STORE";
+const char kGeLocalEngineName[] = "DNN_VM_GE_LOCAL";
+const char kGeLocalOpKernelLibName[] = "DNN_VM_GE_LOCAL_OP_STORE";
 }  // namespace ge_local
 }  // namespace ge
 

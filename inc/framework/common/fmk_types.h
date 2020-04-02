@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,4 +20,4 @@
 #include "graph/types.h"
 #include "register/register_types.h"
 
-#endif // INC_FRAMEWORK_COMMON_FMK_TYPES_H_
+#endif  // INC_FRAMEWORK_COMMON_FMK_TYPES_H_

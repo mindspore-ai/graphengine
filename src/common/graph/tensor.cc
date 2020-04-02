@@ -15,7 +15,6 @@
  */
 
 #include "external/graph/tensor.h"
-
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_tensor.h"
@@ -91,41 +90,72 @@ class TensorImpl {
   GeTensor ge_tensor;
 };
 
-Shape::Shape(const std::vector<int64_t> &dims) : dims_(dims) {}
+class ShapeImpl {
+ public:
+  ShapeImpl() = default;
+  ~ShapeImpl() = default;
+  explicit ShapeImpl(const std::vector<int64_t> &dims) : dims_(dims) {}
 
-size_t Shape::GetDimNum() const { return dims_.size(); }
+  std::vector<int64_t> dims_;
+};
+
+Shape::Shape() { impl_ = ComGraphMakeShared<ShapeImpl>(); }
+
+Shape::Shape(const std::vector<int64_t> &dims) { impl_ = ComGraphMakeShared<ShapeImpl>(dims); }
+
+size_t Shape::GetDimNum() const {
+  if (impl_ != nullptr) {
+    return impl_->dims_.size();
+  }
+  return 0;
+}
 
 int64_t Shape::GetDim(size_t idx) const {
-  if (idx >= dims_.size()) {
-    return 0;
+  if (impl_ != nullptr) {
+    if (idx >= impl_->dims_.size()) {
+      return 0;
+    }
+    return impl_->dims_[idx];
   }
-  return dims_[idx];
+  return 0;
 }
 
 graphStatus Shape::SetDim(size_t idx, int64_t value) {
-  if (idx >= dims_.size()) {
-    return GRAPH_FAILED;
+  if (impl_ != nullptr) {
+    if (idx >= impl_->dims_.size()) {
+      return GRAPH_FAILED;
+    }
+    impl_->dims_[idx] = value;
+    return GRAPH_SUCCESS;
   }
-  dims_[idx] = value;
-  return GRAPH_SUCCESS;
+  return GRAPH_FAILED;
 }
 
-std::vector<int64_t> Shape::GetDims() const { return dims_; }
+std::vector<int64_t> Shape::GetDims() const {
+  vector<int64_t> dims;
+  if (impl_ != nullptr) {
+    return impl_->dims_;
+  }
+  return dims;
+}
 
 int64_t Shape::GetShapeSize() const {
-  if (dims_.empty()) {
-    return 0;
-  }
-  int64_t size = 1;
-  for (auto i : dims_) {
-    if (!Int64MulNotOverflow(size, i)) {
-      GELOGE(GRAPH_FAILED, "mul overflow: %ld, %ld", size, i);
-      size = 0;
-      return size;
+  if (impl_ != nullptr) {
+    if (impl_->dims_.empty()) {
+      return 0;
     }
-    size *= i;
+    int64_t size = 1;
+    for (auto i : impl_->dims_) {
+      if (!Int64MulNotOverflow(size, i)) {
+        GELOGE(GRAPH_FAILED, "mul overflow: %ld, %ld", size, i);
+        size = 0;
+        return size;
+      }
+      size *= i;
+    }
+    return size;
   }
-  return size;
+  return 0;
 }
 
 TensorDesc::TensorDesc() { impl = ComGraphMakeShared<TensorDescImpl>(); }
@@ -486,6 +516,7 @@ graphStatus Tensor::IsValid() {
         GELOGW("mul overflow: %lu, %u", shape_size, type_length);
       } else {
         if (shape_size * type_length != data_size) {
+          // [Just log] Constructor
           GELOGW("tensor length not equal: shape_byte_size=%lu, data_size=%zu, dt_type=%s.", shape_size * type_length,
                  data_size, TypeUtils::DataTypeToSerialString(data_type).c_str());
         }

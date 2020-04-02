@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _CATCH_HPP_
-#define _CATCH_HPP_
+#ifndef CATCH_HPP_
+#define CATCH_HPP_
 
 #include <stdint.h>
 #include <iostream>
@@ -92,4 +92,4 @@
   __tabFinal:
 #define END_FINAL /*GO_ASSERT_FALSE()*/ ;
 #define GOTO_FINAL() goto __tabFinal;
-#endif /* __ATTRINFO_MAP_HPP__ */
+#endif  // CATCH_HPP_

@@ -15,7 +15,6 @@
  */
 
 #include "graph/op_desc.h"
-
 #include "debug/ge_attr_define.h"
 #include "debug/ge_util.h"
 #include "external/graph/operator.h"
@@ -33,6 +32,7 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+/*lint -save -e521 -e681 -e732 -e737*/
 namespace ge {
 const std::string ATTR_NAME_ID = "id";
 
@@ -302,29 +302,28 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool OpDesc::OpDescAttrsAreEqual(
   if ((op_def != nullptr) && (r_op_def != nullptr)) {
     // Message OpDef in ge_ir.proto
     return (
-        IsEqual(op_def->name(), r_op_def->name(), "OpDef_.name()") &&
-        IsEqual(op_def->type(), r_op_def->type(), "OpDef_.type()") &&
-        IsEqual(ToString(op_def->input()), ToString(r_op_def->input()), "OpDef_.input()") &&
-        IsEqual(op_def->has_out_attr(), r_op_def->has_out_attr(), "OpDef_.has_out_attr()") &&
-        IsEqual(op_def->stream_id(), r_op_def->stream_id(), "OpDef_.stream_id()") &&
-        IsEqual(ToString(op_def->input_name()), ToString(r_op_def->input_name()), "OpDef_.input_name()") &&
-        IsEqual(ToString(op_def->src_name()), ToString(r_op_def->src_name()), "OpDef_.src_name()") &&
-        IsEqual(ToString(op_def->dst_name()), ToString(r_op_def->dst_name()), "OpDef_.dst_name()") &&
-        IsEqual(ToString(op_def->src_index()), ToString(r_op_def->src_index()), "OpDef_.src_index()") &&
-        IsEqual(ToString(op_def->dst_index()), ToString(r_op_def->dst_index()), "OpDef_.dst_index()") &&
-        IsEqual(ToString(op_def->input_i()), ToString(r_op_def->input_i()), "OpDef_.input_i()") &&
-        IsEqual(ToString(op_def->output_i()), ToString(r_op_def->output_i()), "OpDef_.output_i()") &&
-        IsEqual(ToString(op_def->workspace()), ToString(r_op_def->workspace()), "OpDef_.workspace()") &&
-        IsEqual(ToString(op_def->workspace_bytes()), ToString(r_op_def->workspace_bytes()),
-                "OpDef_.workspace_bytes()") &&
-        IsEqual(ToString(op_def->is_input_const()), ToString(r_op_def->is_input_const()), "OpDef_.is_input_const()"));
+      IsEqual(op_def->name(), r_op_def->name(), "OpDef_.name()") &&
+      IsEqual(op_def->type(), r_op_def->type(), "OpDef_.type()") &&
+      IsEqual(ToString(op_def->input()), ToString(r_op_def->input()), "OpDef_.input()") &&
+      IsEqual(op_def->has_out_attr(), r_op_def->has_out_attr(), "OpDef_.has_out_attr()") &&
+      IsEqual(op_def->stream_id(), r_op_def->stream_id(), "OpDef_.stream_id()") &&
+      IsEqual(ToString(op_def->input_name()), ToString(r_op_def->input_name()), "OpDef_.input_name()") &&
+      IsEqual(ToString(op_def->src_name()), ToString(r_op_def->src_name()), "OpDef_.src_name()") &&
+      IsEqual(ToString(op_def->dst_name()), ToString(r_op_def->dst_name()), "OpDef_.dst_name()") &&
+      IsEqual(ToString(op_def->src_index()), ToString(r_op_def->src_index()), "OpDef_.src_index()") &&
+      IsEqual(ToString(op_def->dst_index()), ToString(r_op_def->dst_index()), "OpDef_.dst_index()") &&
+      IsEqual(ToString(op_def->input_i()), ToString(r_op_def->input_i()), "OpDef_.input_i()") &&
+      IsEqual(ToString(op_def->output_i()), ToString(r_op_def->output_i()), "OpDef_.output_i()") &&
+      IsEqual(ToString(op_def->workspace()), ToString(r_op_def->workspace()), "OpDef_.workspace()") &&
+      IsEqual(ToString(op_def->workspace_bytes()), ToString(r_op_def->workspace_bytes()), "OpDef_.workspace_bytes()") &&
+      IsEqual(ToString(op_def->is_input_const()), ToString(r_op_def->is_input_const()), "OpDef_.is_input_const()"));
   } else {
     return ((op_def == nullptr) && (r_op_def == nullptr));
   }
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool OpDesc::OpDescGenTensorDescsAreEqual(
-    const OpDesc &r_op_desc) const {
+  const OpDesc &r_op_desc) const {
   // 1.Verify inputs and outputs desc size
   const auto inputs_desc_size = this->inputs_desc_.size();
   const auto r_inputs_desc_size = r_op_desc.inputs_desc_.size();

@@ -15,9 +15,7 @@
  */
 
 #include "graph/build/memory/binary_block_mem_assigner.h"
-
 #include <algorithm>
-
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/type_utils.h"
 
@@ -77,7 +75,7 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
     return FAILED;
   }
   auto range_number = static_cast<size_t>(
-      ceil(log(all_memory_size.back() / static_cast<double>(all_memory_size.front())) / log(kLogBase)));
+    ceil(log(all_memory_size.back() / static_cast<double>(all_memory_size.front())) / log(kLogBase)));
   range_number = (range_number == 0) ? 1 : range_number;
   GELOGI("Range number: %zu", range_number);
 

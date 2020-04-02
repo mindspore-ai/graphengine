@@ -29,6 +29,9 @@
 #include "common/util.h"
 
 namespace ge {
+
+static const std::set<std::string> black_list = {"IteratorV2"};
+
 PropertiesManager::PropertiesManager() : is_inited_(false), delimiter("=") {}
 PropertiesManager::~PropertiesManager() {}
 
@@ -61,7 +64,7 @@ bool PropertiesManager::LoadFileContent(const std::string &file_path) {
   // Normalize the path
   string resolved_file_path = RealPath(file_path.c_str());
   if (resolved_file_path.empty()) {
-    GELOGE(false, "Invalid input file path [%s], make sure that the file path is correct.", file_path.c_str());
+    GE_LOGE("Invalid input file path [%s], make sure that the file path is correct.", file_path.c_str());
     return false;
   }
   std::ifstream fs(resolved_file_path, std::ifstream::in);
@@ -199,6 +202,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> Propertie
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::IsLayerNeedDump(const std::string &model,
                                                                                          const std::string &op_name) {
   std::lock_guard<std::mutex> lock(dump_mutex_);
+
+  if (black_list.find(op_name) != black_list.end()) {
+    return false;
+  }
+
   // if dump all
   if (model_dump_properties_map_.find(ge::DUMP_ALL_MODEL) != model_dump_properties_map_.end()) {
     return true;

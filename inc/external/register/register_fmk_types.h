@@ -31,12 +31,6 @@ enum FrameworkType {
   FMK_TYPE_A_NN,
   FMK_TYPE_RESERVED,
 };
-
-struct TEBinInfo {
-  std::string bin_file_path;
-  std::string json_file_path;
-  std::string ddk_version;
-};
 }  // namespace domi
 
 #endif  // INC_EXTERNAL_REGISTER_REGISTER_FMK_TYPES_H_

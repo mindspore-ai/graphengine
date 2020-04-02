@@ -34,6 +34,11 @@ REG_OP(Assert)
   .ATTR(summarize, Int, 3)
   .OP_END_FACTORY_REG(Assert)
 
+REG_OP(Print)
+.DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
+    DT_INT64, DT_UINT32, DT_UINT64, DT_DOUBLE, DT_STRING}))
+.OP_END_FACTORY_REG(Print)
+
 REG_OP(PrintV2)
   .INPUT(x, TensorType({DT_STRING}))
   .ATTR(output_stream, String, "stderr")

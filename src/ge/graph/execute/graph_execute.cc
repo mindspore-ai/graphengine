@@ -15,10 +15,7 @@
  */
 
 #include "graph/execute/graph_execute.h"
-
-#include <memory>
 #include <string>
-
 #include "common/ge_inner_error_codes.h"
 #include "common/model_parser/base.h"
 #include "graph/load/new_model_manager/model_manager.h"
@@ -27,6 +24,10 @@
 #include "runtime/mem.h"
 
 namespace ge {
+namespace {
+const char ENGINE_AI_CORE[] = "DNN_V100";
+}  // namespace
+
 GraphExecutor::GraphExecutor()
     : init_flag_(false),
       train_graph_flag_(false),
@@ -472,7 +473,7 @@ Status GraphExecutor::GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vecto
     auto model_manager = ge::ModelManager::GetInstance();
     GE_CHECK_NOTNULL(model_manager);
     Status ret =
-        model_manager->GetInputOutputDescInfoForZeroCopy(model_id, input_desc, output_desc, input_formats, out_formats);
+      model_manager->GetInputOutputDescInfoForZeroCopy(model_id, input_desc, output_desc, input_formats, out_formats);
     if (ret != SUCCESS) {
       GELOGE(ret, "GetInputOutputDescInfoForZeroCopy failed.");
       return ret;

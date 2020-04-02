@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/profiler_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -48,6 +47,7 @@ bool ProfilerTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kProfilerTrace, ProfilerTask, ProfilerTraceTaskInfo);
+REGISTER_TASK(TaskInfoType::PROFILER_TRACE, ProfilerTask, ProfilerTraceTaskInfo);
+
 }  // namespace model_runner
 }  // namespace ge

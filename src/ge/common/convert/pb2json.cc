@@ -18,7 +18,6 @@
 // Description: This imply file for protobuf message and json interconversion
 
 #include "common/convert/pb2json.h"
-
 #include <set>
 #include <string>
 
@@ -130,7 +129,7 @@ void Pb2Json::OneField2Json(const ProtobufMsg &message, const ProtobufFieldDescr
 void Pb2Json::RepeatedMessage2Json(const ProtobufMsg &message, const ProtobufFieldDescriptor *field,
                                    const ProtobufReflection *reflection, const set<string> &black_fields, Json &json,
                                    bool enum2str) {
-  if (field == nullptr || reflection == nullptr) {
+  if (nullptr == field || nullptr == reflection) {
     Message2Json(message, black_fields, json);
     return;
   }

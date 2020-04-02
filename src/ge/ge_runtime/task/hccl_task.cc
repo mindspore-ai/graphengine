@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/hccl_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/opskernel/ge_task_info.h"
@@ -23,9 +22,15 @@
 namespace ge {
 namespace model_runner {
 HcclTask::HcclTask(const ModelContext &model_context, const std::shared_ptr<HcclTaskInfo> &task_info)
-    : TaskRepeater<HcclTaskInfo>(model_context, task_info), task_info_(task_info), stream_(nullptr),
-      rt_model_handle_(nullptr), priority_(0), slave_stream_list_(), hcom_bind_model_(nullptr),
-      hcom_unbind_model_(nullptr), hcom_distribute_task_(nullptr) {
+    : TaskRepeater<HcclTaskInfo>(model_context, task_info),
+      task_info_(task_info),
+      stream_(nullptr),
+      rt_model_handle_(nullptr),
+      priority_(0),
+      slave_stream_list_(),
+      hcom_bind_model_(nullptr),
+      hcom_unbind_model_(nullptr),
+      hcom_distribute_task_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
   }
@@ -40,7 +45,7 @@ HcclTask::HcclTask(const ModelContext &model_context, const std::shared_ptr<Hccl
   if (hcom_bind_model_ != nullptr) {
     if (rt_model_handle_list_.insert(rt_model_handle_).second) {
       for (auto stream : stream_list) {
-        (void) hcom_bind_model_(rt_model_handle_, stream);
+        (void)hcom_bind_model_(rt_model_handle_, stream);
       }
     }
   }
@@ -71,7 +76,7 @@ HcclTask::~HcclTask() {
 
   if (hcom_unbind_model_ != nullptr) {
     if (rt_model_handle_list_.find(rt_model_handle_) != rt_model_handle_list_.end()) {
-      (void) hcom_unbind_model_(rt_model_handle_);
+      (void)hcom_unbind_model_(rt_model_handle_);
       (void)rt_model_handle_list_.erase(rt_model_handle_);
     }
   }
@@ -85,10 +90,10 @@ bool HcclTask::Distribute() {
   }
 
   // Ops kernel info store
-  // Get private_def and ops_kernel_store_ptr
+  // Get privateDef and opsKernelStorePtr
   GELOGI("get custom info in modelTaskDef");
   void *ops_kernel_store = task_info_->ops_kernel_store();
-  OpsKernelInfoStore* ops_kernel_info_store = reinterpret_cast<OpsKernelInfoStore*> (ops_kernel_store);
+  OpsKernelInfoStore *ops_kernel_info_store = reinterpret_cast<OpsKernelInfoStore *>(ops_kernel_store);
   if (ops_kernel_store == nullptr) {
     GELOGE(PARAM_INVALID, "No hcom distribute function ptr and no ops kernel store.");
     return false;
@@ -148,6 +153,6 @@ bool HcclTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kHccl, HcclTask, HcclTaskInfo);
+REGISTER_TASK(TaskInfoType::HCCL, HcclTask, HcclTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

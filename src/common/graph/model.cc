@@ -15,7 +15,6 @@
  */
 
 #include "graph/model.h"
-
 #include <fcntl.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream.h>
@@ -28,7 +27,6 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
-
 #include "debug/ge_attr_define.h"
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"

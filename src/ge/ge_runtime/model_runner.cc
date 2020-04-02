@@ -15,8 +15,6 @@
  */
 
 #include "ge_runtime/model_runner.h"
-
-#include "./op_info_utils.h"
 #include "./runtime_model.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
@@ -35,9 +33,7 @@ ModelRunner &ModelRunner::Instance() {
   return instance;
 }
 
-bool ModelRunner::LoadDavinciModel(uint32_t device_id,
-                                   uint64_t session_id,
-                                   uint32_t model_id,
+bool ModelRunner::LoadDavinciModel(uint32_t device_id, uint64_t session_id, uint32_t model_id,
                                    std::shared_ptr<DavinciModel> davinci_model,
                                    std::shared_ptr<ModelListener> listener) {
   std::shared_ptr<RuntimeModel> model = MakeShared<RuntimeModel>();
@@ -100,12 +96,10 @@ bool ModelRunner::RunModel(uint32_t model_id, const InputData &input_data, Outpu
   return true;
 }
 
-bool ModelRunner::GetInputOutputDescInfo(uint32_t model_id,
-                                         bool zero_copy,
+bool ModelRunner::GetInputOutputDescInfo(uint32_t model_id, bool zero_copy,
                                          std::vector<InputOutputDescInfo> *input_desc,
                                          std::vector<InputOutputDescInfo> *output_desc,
-                                         std::vector<uint32_t> *input_format,
-                                         std::vector<uint32_t> *output_format) {
+                                         std::vector<uint32_t> *input_format, std::vector<uint32_t> *output_format) {
   if (runtime_models_.find(model_id) == runtime_models_.end()) {
     GELOGE(PARAM_INVALID, "Model id %u not found.", model_id);
     return false;

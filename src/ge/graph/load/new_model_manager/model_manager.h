@@ -102,14 +102,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ///
   /// @ingroup domi_ome
-  /// @brief unload all models and free resources
-  /// @return Status run result
-  /// @author
-  ///
-  ge::Status UnLoadAllModel(int32_t DeviceId);
-
-  ///
-  /// @ingroup domi_ome
   /// @brief process input data asynchronously
   /// cannot be invoked by multiple thread
   /// if one fails, other continue
@@ -179,8 +171,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
                                     std::vector<InputOutputDescInfo> &output_desc);
 
   ge::Status GetInputOutputDescInfo(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
-                                    std::vector<InputOutputDescInfo> &output_desc,
-                                    std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats);
+                                    std::vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &inputFormats,
+                                    std::vector<uint32_t> &outputFormats);
 
   ///
   /// @ingroup domi_ome

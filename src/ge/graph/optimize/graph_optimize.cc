@@ -18,7 +18,6 @@
 
 #include <utility>
 
-#include "cce/optimizer/fusion_engine.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
 #include "graph/passes/dimension_adjust_pass.h"
@@ -51,25 +50,24 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   }
   for (ge::NodePtr &node : compute_graph->GetDirectNode()) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     auto in_control_anchor = node->GetInControlAnchor();
     vector<string> src_name_list;
     vector<string> input_name_list;
     vector<int64_t> src_index_list;
     GE_IF_BOOL_EXEC(
-        in_control_anchor != nullptr, string src_name_temp; for (auto &out_control_anchor
-                                                                 : in_control_anchor->GetPeerOutControlAnchors()) {
-          ge::NodePtr src_node = out_control_anchor->GetOwnerNode();
-          GE_IF_BOOL_EXEC(src_node == nullptr, GELOGW("src_node is nullptr!"); continue);
-          src_name_temp = src_name_temp == "" ? src_node->GetName() : src_name_temp + ":" + src_node->GetName();
-        } GE_IF_BOOL_EXEC(src_name_temp != "", src_name_list.emplace_back(src_name_temp);
-                          node_op_desc->SetSrcName(src_name_list);))
+      in_control_anchor != nullptr, string src_name_temp; for (auto &out_control_anchor
+                                                               : in_control_anchor->GetPeerOutControlAnchors()) {
+        ge::NodePtr src_node = out_control_anchor->GetOwnerNode();
+        GE_IF_BOOL_EXEC(src_node == nullptr, GELOGW("src_node is nullptr!"); continue);
+        src_name_temp = src_name_temp == "" ? src_node->GetName() : src_name_temp + ":" + src_node->GetName();
+      } GE_IF_BOOL_EXEC(src_name_temp != "", src_name_list.emplace_back(src_name_temp);
+                        node_op_desc->SetSrcName(src_name_list);))
 
     for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
       auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr,
-                      GELOGW("peer_out_anchor is nullptr! node: %s", node->GetName().c_str());
-                      continue);
+      GE_IF_BOOL_EXEC(
+        peer_out_anchor == nullptr, GELOGW("peer_out_anchor is nullptr! node: %s", node->GetName().c_str()); continue);
 
       ge::NodePtr src_node = peer_out_anchor->GetOwnerNode();
       src_name_list = node_op_desc->GetSrcName();
@@ -78,11 +76,11 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
       src_index_list.emplace_back(peer_out_anchor->GetIdx());
       node_op_desc->SetSrcName(src_name_list);
       node_op_desc->SetSrcIndex(src_index_list);
-      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && GetContext().type == domi::FMK_TYPE_T),
+      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && domi::GetContext().type == domi::FMK_TYPE_T),
                       ge::NodePtr peer_owner_node = peer_out_anchor->GetOwnerNode();
                       input_name_list = node_op_desc->GetInputName(); input_name_list.emplace_back(
-                          peer_owner_node->GetName() +
-                          (peer_out_anchor->GetIdx() == 0 ? "" : ": " + to_string(peer_out_anchor->GetIdx())));
+                        peer_owner_node->GetName() +
+                        (peer_out_anchor->GetIdx() == 0 ? "" : ": " + to_string(peer_out_anchor->GetIdx())));
                       node_op_desc->SetInputName(input_name_list);)
     }
   }
@@ -217,7 +215,7 @@ void GraphOptimize::TranFrameOp(ComputeGraphPtr &compute_graph) {
     GE_IF_BOOL_EXEC(op == nullptr, GELOGW("op is nullptr!"); continue);
     // fwkop black-white sheet
     vector<string>::iterator iter =
-        std::find(local_framework_op_vec.begin(), local_framework_op_vec.end(), op->GetType());
+      std::find(local_framework_op_vec.begin(), local_framework_op_vec.end(), op->GetType());
     if (iter != local_framework_op_vec.end()) {
       // set - original_type
       if (!AttrUtils::SetStr(op, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, op->GetType())) {

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __DNN_BASE_H__
-#define __DNN_BASE_H__
+#ifndef DNN_BASE_H__
+#define DNN_BASE_H__
 
 #include "cce/blas_struct.h"
 #include "cce/customize.h"
@@ -26,7 +26,7 @@ namespace cce {
   * @ingroup dnn
   * @brief Minimum epsilon allowed to be used in the Batch Normalization formula
   */
-#define CC_BN_MIN_EPSILON
+#define CC_BN_MIN_EPSILON               (1e-7)
 
 #ifndef NULL
     #ifdef __cplusplus
@@ -673,4 +673,4 @@ ccStatus_t   ccSetQuantizeAlgoAndScaleType(ccQuantizeDescriptor_t quantizeInfo, 
 
 }; /* end cce */
 
-#endif /* __DNN_BASE_H__ */
+#endif  // DNN_BASE_H__

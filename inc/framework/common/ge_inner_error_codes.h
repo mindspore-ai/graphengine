@@ -14,79 +14,78 @@
  * limitations under the License.
  */
 
+/*lint -e* */
 #ifndef INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_
 #define INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_
 
 #include <map>
 #include <string>
-
 #include "ge/ge_api_error_codes.h"
 
 namespace ge {
 // System ID
-enum SystemIdType { kSysidGE = 8 };
-
+enum SystemIdType { SYSID_GE = 8 };
 // Runtime location
 enum LogRuntime {
-  KRtHost = 0b01,
-  kRtDevice = 0b10,
+  RT_HOST = 0b01,
+  RT_DEVICE = 0b10,
 };
 
 // Sub model
 enum SubModuleId {
-  kCommonModule = 0,
-  kClientModule = 1,
-  kInitModule = 2,
-  kSessionModule = 3,
-  kGraphModule = 4,
-  kEngineMOdule = 5,
-  kOpsModule = 6,
-  kPluginModule = 7,
-  kRuntimeModule = 8,
-  kExecutorModule = 9,
-  kGeneratorModule = 10,
+  COMMON_MODULE = 0,
+  CLIENT_MODULE = 1,
+  INIT_MODULE = 2,
+  SESSION_MODULE = 3,
+  GRAPH_MODULE = 4,
+  ENGINE_MODULE = 5,
+  OPS_MODULE = 6,
+  PLUGIN_MODULE = 7,
+  RUNTIME_MODULE = 8,
+  EXECUTOR_MODULE = 9,
+  GENERATOR_MODULE = 10,
 };
 
 // Error code type
 enum ErrorCodeType {
-  kErrorCode = 0b01,
-  kExceptionCode = 0b10,
+  ERROR_CODE = 0b01,
+  EXCEPTION_CODE = 0b10,
 };
 
 // Error level
 enum ErrorLevel {
-  kCommonLevel = 0b000,
-  kSuggestionLevel = 0b001,
-  kMinorLevel = 0b010,
-  kMajorLevel = 0b011,
-  kCriticalLevel = 0b100,
+  COMMON_LEVEL = 0b000,
+  SUGGESTION_LEVEL = 0b001,
+  MINOR_LEVEL = 0b010,
+  MAJOR_LEVEL = 0b011,
+  CRITICAL_LEVEL = 0b100,
 };
 
-// The error code is defined by the following macros
+// Each module defines error codes using the following macros
 #define GE_ERRORNO_COMMON(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kCommonModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, COMMON_MODULE, name, value, desc)
 #define GE_ERRORNO_CLIENT(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kClientModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, CLIENT_MODULE, name, value, desc)
 #define GE_ERRORNO_INIT(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kInitModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, INIT_MODULE, name, value, desc)
 #define GE_ERRORNO_SESSION(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kSessionModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, SESSION_MODULE, name, value, desc)
 #define GE_ERRORNO_GRAPH(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kGraphModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, GRAPH_MODULE, name, value, desc)
 #define GE_ERRORNO_ENGINE(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kEngineMOdule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, ENGINE_MODULE, name, value, desc)
 #define GE_ERRORNO_OPS(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kOpsModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, OPS_MODULE, name, value, desc)
 #define GE_ERRORNO_PLUGIN(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kPluginModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, PLUGIN_MODULE, name, value, desc)
 #define GE_ERRORNO_RUNTIME(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kRuntimeModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, RUNTIME_MODULE, name, value, desc)
 #define GE_ERRORNO_EXECUTOR(name, value, desc) \
-  GE_ERRORNO(kRtDevice, kErrorCode, kCommonLevel, kSysidGE, kExecutorModule, name, value, desc)
+  GE_ERRORNO(RT_DEVICE, ERROR_CODE, COMMON_LEVEL, SYSID_GE, EXECUTOR_MODULE, name, value, desc)
 #define GE_ERRORNO_GENERATOR(name, value, desc) \
-  GE_ERRORNO(KRtHost, kErrorCode, kCommonLevel, kSysidGE, kGeneratorModule, name, value, desc)
+  GE_ERRORNO(RT_HOST, ERROR_CODE, COMMON_LEVEL, SYSID_GE, GENERATOR_MODULE, name, value, desc)
 
-// Get the description of the error code
+// Get error code description
 #define GE_GET_ERRORNO_STR(value) ge::StatusFactory::Instance()->GetErrDesc(value)
 
 // Common module error code definition
@@ -206,10 +205,9 @@ GE_ERRORNO_GRAPH(GE_GRAPH_NODE_SEARCHER_GET_GRAPH_REBUILD_FAILED, 60,
 GE_ERRORNO_GRAPH(GE_GRAPH_NODE_SEARCHER_SET_GRAPH_FINISH_REBUILD_GRAPH_FAILED, 61,
                  "Failed set graph finish rebuild in node searcher.");                   // 1343242301
 GE_ERRORNO_GRAPH(GE_GRAPH_VARIABLE_OP_PASS_FAILED, 62, "Failed to run variable pass.");  // 1343242302
-
 // Optimize errocode
-GE_ERRORNO_GRAPH(TO_BE_DELETED, 63, "The node of the graph to be deleted.");  // 1343242303
-GE_ERRORNO_GRAPH(NOT_CHANGED, 64, "The node of the graph no changed.");       // 1343242304
+GE_ERRORNO_GRAPH(TO_BE_DELETED, 200, "The node of the graph to be deleted.");
+GE_ERRORNO_GRAPH(NOT_CHANGED, 201, "NThe node of the graph not changed.");
 
 // Engine_manager module error code definition
 GE_ERRORNO_ENGINE(GE_ENG_INIT_FAILED, 0, "Failed to initialize engine.");                             // 1343246336

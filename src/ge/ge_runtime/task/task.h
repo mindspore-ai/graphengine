@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <vector>
-
 #include "runtime/rt_model.h"
 #include "ge_runtime/model_context.h"
 #include "ge_runtime/task_info.h"

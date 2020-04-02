@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _TASKDOWN_COMMON_H_
-#define _TASKDOWN_COMMON_H_
+#ifndef TASKDOWN_COMMON_H_
+#define TASKDOWN_COMMON_H_
 
 #include <map>
 #include "cce/cce_def.hpp"
@@ -103,4 +103,4 @@ ccStatus_t ccClearStreamL2Map(ccHandle_t handle);
 ccStatus_t ccGetKernelReadCount(rtStream_t streamId, ccOpReadCount &rc);
 
 }  // namespace cce
-#endif
+#endif  // TASKDOWN_COMMON_H_

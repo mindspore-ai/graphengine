@@ -18,9 +18,8 @@
 #define GE_COMMON_MATH_UTIL_H_
 
 #include <securec.h>
-#include <cmath>
-
 #include <algorithm>
+#include <cmath>
 
 #include "Eigen/Eigen"
 #include "framework/common/debug/log.h"
@@ -32,13 +31,13 @@
 namespace ge {
 
 /**
-* @ingroup domi_calibration
-* @brief  Initializes an input array to a specified value
-* @param [in]  n        array initialization length
-* @param [in]  alpha    initialization value
-* @param [out]  output  array to be initialized
-* @return      Status
-*/
+ * @ingroup domi_calibration
+ * @brief  Initializes an input array to a specified value
+ * @param [in]  n        array initialization length
+ * @param [in]  alpha    initialization value
+ * @param [out]  output  array to be initialized
+ * @return      Status
+ */
 template <typename Dtype>
 Status NnSet(const int32_t n, const Dtype alpha, Dtype *output) {
   GE_CHECK_NOTNULL(output);

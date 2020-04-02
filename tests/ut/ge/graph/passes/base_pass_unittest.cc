@@ -111,7 +111,6 @@ class UTESTGraphPassesBasePass : public testing::Test {
   }
   NamesToPass names_to_pass_;
 };
-
 ///      reshape1
 ///        |
 ///       add1

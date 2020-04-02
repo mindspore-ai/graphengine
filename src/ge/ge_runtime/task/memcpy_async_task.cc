@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/memcpy_async_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -41,8 +40,7 @@ MemcpyAsyncTask::~MemcpyAsyncTask() {}
 bool MemcpyAsyncTask::Distribute() {
   GELOGI("MemcpyAsyncTask Distribute start.");
   GELOGI("dst_max:%lu, count:%lu, kind:%u.", task_info_->dst_max(), task_info_->count(), task_info_->kind());
-  rtError_t rt_ret = rtMemcpyAsync(task_info_->dst(), task_info_->dst_max(),
-                                   task_info_->src(), task_info_->count(),
+  rtError_t rt_ret = rtMemcpyAsync(task_info_->dst(), task_info_->dst_max(), task_info_->src(), task_info_->count(),
                                    static_cast<rtMemcpyKind_t>(task_info_->kind()), stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
@@ -52,6 +50,6 @@ bool MemcpyAsyncTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kMemcpyAsync, MemcpyAsyncTask, MemcpyAsyncTaskInfo);
+REGISTER_TASK(TaskInfoType::MEMCPY_ASYNC, MemcpyAsyncTask, MemcpyAsyncTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

@@ -31,10 +31,10 @@ class NoOp : public Op {
 
   NoOp(const NoOp &op) = delete;
 
-  ///
-  /// @brief generate task.
-  /// @return result
-  ///
+  /**
+   *  @brief generate task.
+   *  @return result
+   */
   ge::Status Run() override;
 };
 }  // namespace ge_local

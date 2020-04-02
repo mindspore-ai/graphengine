@@ -176,7 +176,7 @@ graphStatus GraphUtils::ReplaceEdgeDst(const OutControlAnchorPtr &src, const InC
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::InsertNodeBetweenDataAnchors(
-    const OutDataAnchorPtr &src, const InDataAnchorPtr &dst, const NodePtr &new_node) {
+  const OutDataAnchorPtr &src, const InDataAnchorPtr &dst, const NodePtr &new_node) {
   GE_CHECK_NOTNULL(src);
   GE_CHECK_NOTNULL(dst);
   GE_CHECK_NOTNULL(new_node);
@@ -213,10 +213,10 @@ GraphUtils::RemoveNodeWithoutRelink(const ComputeGraphPtr &compute_graph, const 
 
 /// Add two edges to the new node, respectively connecting the SRC and DST
 /// associated with the original edge
-/// A ---> B transferred to  A ---> N ---> B
+/// A ---> B transfered to  A ---> N ---> B
 graphStatus InsertTransNode(ComputeGraph &compute_graph, const InDataAnchorPtr &in_data_anchor,
                             const std::vector<OpDescPtr> &vec_op_desc) {
-  for (auto &op_desc : vec_op_desc) {
+  for (const auto &op_desc : vec_op_desc) {
     GE_CHECK_NOTNULL(op_desc);
 
     auto ret = op_desc->AddInputDesc(GeTensorDesc());
@@ -275,9 +275,11 @@ graphStatus InsertTransNode(ComputeGraph &compute_graph, const InDataAnchorPtr &
       int64_t output_format = 0;
       if (!AttrUtils::GetInt(op_desc, "input_format", input_format)) {
         GELOGW("get attr input_format failed");
+        continue;
       }
       if (!AttrUtils::GetInt(op_desc, "output_format", output_format)) {
         GELOGW("get attr output_format failed");
+        continue;
       }
 
       GE_CHECK_NOTNULL(node_to_insert->GetInDataAnchor(0)->GetPeerOutAnchor());
@@ -299,11 +301,11 @@ graphStatus InsertTransNode(ComputeGraph &compute_graph, const InDataAnchorPtr &
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::InsertTransNode(
-    ComputeGraphPtr compute_graph, const InDataAnchorPtr &in_data_anchor, const std::vector<OpDescPtr> &vec_op_desc) {
+  ComputeGraphPtr compute_graph, const InDataAnchorPtr &in_data_anchor, const std::vector<OpDescPtr> &vec_op_desc) {
   GE_CHECK_NOTNULL(compute_graph);
   GE_CHECK_NOTNULL(in_data_anchor);
   graphStatus ret =
-      ge::InsertTransNode(*compute_graph, in_data_anchor, vec_op_desc) == GRAPH_SUCCESS ? GRAPH_SUCCESS : GRAPH_FAILED;
+    ge::InsertTransNode(*compute_graph, in_data_anchor, vec_op_desc) == GRAPH_SUCCESS ? GRAPH_SUCCESS : GRAPH_FAILED;
   return ret;
 }
 
@@ -335,6 +337,10 @@ void GraphUtils::RecordOriginalNames(std::vector<ge::NodePtr> original_nodes, co
   for (const auto &node_tmp : original_nodes) {
     std::vector<std::string> names_tmp;
     ge::OpDescPtr opdesc_tmp = node_tmp->GetOpDesc();
+    if (opdesc_tmp == nullptr) {
+      GELOGE(GRAPH_FAILED, "Node %s get opdesc is nullptr", node_tmp->GetName().c_str());
+      continue;
+    }
     (void)ge::AttrUtils::GetListStr(opdesc_tmp, "original_op_names", names_tmp);
     if (names_tmp.size() != 0) {
       original_names.insert(original_names.end(), names_tmp.begin(), names_tmp.end());
@@ -355,7 +361,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::RecordOriginalNa
   GE_CHK_BOOL_EXEC(node != nullptr, return, "node is null.");
   std::vector<std::string> original_names;
   if (names_tmp.size() != 0) {
-    original_names.insert(original_names.end(), names_tmp.begin(), names_tmp.end());
+    (void)original_names.insert(original_names.end(), names_tmp.begin(), names_tmp.end());
   } else {
     std::string tmp;
     original_names.push_back(tmp);
@@ -367,7 +373,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::RecordOriginalNa
 // Check global_step Node has IsVariable and Read.
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::CheckGlobalStepNode(const ge::NodePtr &node) {
   GE_CHK_BOOL_EXEC(
-      node != nullptr, { return false; }, "node is null.");
+    node != nullptr, { return false; }, "node is null.");
   bool has_variable = false;
   bool has_cond_read = false;
   for (const auto &out : node->GetOutDataNodes()) {
@@ -382,21 +388,22 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::CheckGlobalStepN
 
 // Check origin ComputeGraph is TrainGraph.
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::CheckIsTrainGraph(
-    const ge::ComputeGraphPtr &compute_graph) {
+  const ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_BOOL_EXEC(
-      compute_graph != nullptr, { return false; }, "compute_graph is nullptr");
+    compute_graph != nullptr, { return false; }, "compute_graph is nullptr");
 
   bool is_iterator_v2 = false;
   bool is_train_graph = false;
   for (const auto &node : compute_graph->GetDirectNode()) {
-    if (node->GetType() == "ApplyMomentum") {
+    if ((node->GetType() == "ApplyMomentum") || (node->GetType() == "ApplyGradientDescent")) {
+      GELOGI("graph needs iteration.");
       return true;
     }
     // Check global_step has IsVariable and Read.
     if ((node->GetType() == "Variable") && (node->GetName() == "global_step")) {
       is_train_graph = CheckGlobalStepNode(node);
     } else if ((node->GetType() == "FrameworkOp") && (node->GetName() == "IteratorGetNext")) {
-      // Train Graph must has GetNext.
+      // Train Graph must have GetNext.
       is_iterator_v2 = true;
     }
     if (is_iterator_v2 && is_train_graph) {
@@ -410,7 +417,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::CheckIsTrainGrap
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::MatchDumpStr(const std::string &suffix) {
   char *dump_level = std::getenv(kDumpGraphLevel);
   int64_t dump_graph_level =
-      (dump_level != nullptr) ? std::strtol(dump_level, nullptr, kBaseOfIntegerValue) : kDumpLevel2;
+    (dump_level != nullptr) ? std::strtol(dump_level, nullptr, kBaseOfIntegerValue) : kDumpLevel2;
+
   if (dump_graph_level == kDumpLevel1) {
     return false;
   }
@@ -499,6 +507,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::LoadGEGraph(cons
   ge::Model model;
   // Get Model object from ModelDef by deserialize ModelDef
   if (model.Load(model_def) == GRAPH_SUCCESS) {
+    GE_CHK_BOOL_EXEC(GraphUtils::GetComputeGraph(model.GetGraph()) != nullptr, return false,
+                     "Get computer graph is nullptr");
     compute_graph = *(GraphUtils::GetComputeGraph(model.GetGraph()));
     return true;
   } else {
@@ -509,7 +519,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::LoadGEGraph(cons
 
 // Printing protocol messages in text format is useful for debugging and human editing of messages.
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToTextFile(
-    const google::protobuf::Message &proto, const char *real_path) {
+  const google::protobuf::Message &proto, const char *real_path) {
 #ifdef FMK_SUPPORT_DUMP
   const int FILE_AUTHORITY = 0600;
   int fd = open(real_path, O_WRONLY | O_CREAT | O_TRUNC, FILE_AUTHORITY);
@@ -563,7 +573,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::ReadProtoFromTextFile(
-    const char *file, google::protobuf::Message *proto) {
+  const char *file, google::protobuf::Message *proto) {
   if (file == nullptr || proto == nullptr) {
     GELOGE(GRAPH_FAILED, "incorrect parameter. file path or message is invalid");
     return false;
@@ -587,7 +597,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraphToOnn
 #ifdef FMK_SUPPORT_DUMP
   char *dump_ge_graph = std::getenv(kDumpGeGraph);
   int64_t dump_ge_graph_level =
-      (dump_ge_graph != nullptr) ? std::strtol(dump_ge_graph, nullptr, kBaseOfIntegerValue) : OnnxUtils::NO_DUMP;
+    (dump_ge_graph != nullptr) ? std::strtol(dump_ge_graph, nullptr, kBaseOfIntegerValue) : OnnxUtils::NO_DUMP;
   if ((dump_ge_graph_level == OnnxUtils::NO_DUMP) || (dump_ge_graph_level >= OnnxUtils::DUMP_LEVEL_END)) {
     GELOGD("Skip DumpGEGraphToOnnx with dump_ge_graph_level %ld.", dump_ge_graph_level);
     return;
@@ -1029,8 +1039,8 @@ GraphUtils::ReplaceNodeAnchors(const NodePtr &new_node, const NodePtr &old_node,
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::ReplaceNodeAnchors(
-    const NodePtr &new_node, const NodePtr &old_node, const std::initializer_list<int> inputs_map,
-    const std::initializer_list<int> outputs_map) {
+  const NodePtr &new_node, const NodePtr &old_node, const std::initializer_list<int> inputs_map,
+  const std::initializer_list<int> outputs_map) {
   return ReplaceNodeAnchors(new_node, old_node, std::vector<int>(inputs_map), std::vector<int>(outputs_map));
 }
 

@@ -15,8 +15,8 @@
  */
 
 #include "graph/build/run_context.h"
-
 #include "framework/common/debug/ge_log.h"
+
 #include "common/util.h"
 #include "graph/debug/ge_attr_define.h"
 
@@ -144,4 +144,5 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
 }
 
 RunContext &RunContextUtil::GetRunContext() { return run_context_; }
+
 }  // namespace ge

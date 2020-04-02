@@ -21,7 +21,6 @@
 #include <utility>
 #include <vector>
 #include <memory>
-
 #include "common/fmk_error_codes.h"
 #include "common/types.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -101,4 +100,3 @@ class InsertOpBase {
 }  // namespace ge
 
 #endif  // GE_GRAPH_PREPROCESS_INSERT_OP_BASE_INSERT_OP_H_
-

@@ -96,7 +96,7 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
     if (workspace_mem_size_tmp != 0) {
       workspace_mem_size_ = workspace_mem_size_tmp;
       vector<void *> workspace_data_addrs =
-          ModelUtils::GetWorkspaceDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
+        ModelUtils::GetWorkspaceDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
       if (!workspace_data_addrs.empty()) {
         GELOGI("Get work_space_addr");
         workspace_addr_ = workspace_data_addrs[0];
@@ -114,7 +114,7 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   for (int64_t i = 0; i < hccl_stream_num; ++i) {
     rtStream_t stream = nullptr;
     rtError_t rt_ret =
-        rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
+      rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return RT_FAILED;
@@ -213,8 +213,8 @@ void HcclTaskInfo::TransToGETaskInfo(GETaskInfo &ge_task) {
   ge_task.kernelHcclInfo.outputDataAddr = output_data_addr_;
   ge_task.kernelHcclInfo.workSpaceAddr = workspace_addr_;
   ge_task.kernelHcclInfo.count = count_;
-  ge_task.kernelHcclInfo.dataType = data_type_;
-  ge_task.kernelHcclInfo.opType = op_type_;
+  ge_task.kernelHcclInfo.dataType = static_cast<int32_t>(data_type_);
+  ge_task.kernelHcclInfo.opType = static_cast<int32_t>(op_type_);
   ge_task.kernelHcclInfo.rootId = root_id_;
   ge_task.kernelHcclInfo.workSpaceMemSize = workspace_mem_size_;
   ge_task.kernelHcclInfo.hcclStreamList = hccl_stream_list_;
@@ -240,8 +240,8 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
         return;
       }
 
-      ret = rtMemcpy(private_def_, private_def_len_, task.private_def().c_str(), private_def_len_,
-                     RT_MEMCPY_HOST_TO_HOST);
+      ret =
+        rtMemcpy(private_def_, private_def_len_, task.private_def().c_str(), private_def_len_, RT_MEMCPY_HOST_TO_HOST);
       if (ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "Call rtMemcpy Fail, ret = 0x%X.", ret);
         return;

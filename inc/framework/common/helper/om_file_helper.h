@@ -35,8 +35,8 @@ struct ModelPartition {
 };
 
 struct OmFileContext {
-  vector<ModelPartition> partition_datas_;
-  vector<char> partition_table_;
+  std::vector<ModelPartition> partition_datas_;
+  std::vector<char> partition_table_;
   uint32_t model_data_len_;
 };
 
@@ -78,7 +78,7 @@ class OmFileSaveHelper {
 
   Status AddPartition(ModelPartition &partition);
 
-  const vector<ModelPartition> &GetModelPartitions() const;
+  const std::vector<ModelPartition> &GetModelPartitions() const;
 
   Status SaveModel(const SaveParam &save_param, const char *target_file);
 
@@ -88,4 +88,5 @@ class OmFileSaveHelper {
   OmFileContext context_;
 };
 }  // namespace ge
+/*lint +e148*/
 #endif  // INC_FRAMEWORK_COMMON_HELPER_OM_FILE_HELPER_H_

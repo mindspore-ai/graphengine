@@ -15,13 +15,12 @@
  */
 
 #include "graph/build/task_generator.h"
-
 #include <string>
 #include <utility>
-
-#include "common/types.h"
 #include "common/util.h"
+#include "common/types.h"
 #include "framework/common/debug/ge_log.h"
+
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/manager/graph_var_manager.h"
@@ -31,12 +30,12 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 
+using domi::LogTimeStampDef;
+using domi::ModelTaskDef;
+using domi::TaskDef;
+using std::map;
 using std::string;
 using std::vector;
-using std::map;
-using domi::TaskDef;
-using domi::ModelTaskDef;
-using domi::LogTimeStampDef;
 
 namespace {
 const char *const kIsFirstNode = "is_first_node";
@@ -122,13 +121,13 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
 Status TaskGenerator::AddModelTaskToModel(const ModelTaskDef &model_task_def, uint64_t session_id, ge::Model &model,
                                           RunContext &run_context) {
   GE_CHK_BOOL_EXEC(
-      AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_BASE_ADDR, reinterpret_cast<uintptr_t>(run_context.dataMemBase)),
-      GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_BASE_ADDR failed.");
-      return FAILED);
+    AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_BASE_ADDR, reinterpret_cast<uintptr_t>(run_context.dataMemBase)),
+    GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_BASE_ADDR failed.");
+    return FAILED);
   GE_CHK_BOOL_EXEC(
-      AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, reinterpret_cast<uintptr_t>(run_context.weightMemBase)),
-      GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_WEIGHT_ADDR failed.");
-      return FAILED);
+    AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, reinterpret_cast<uintptr_t>(run_context.weightMemBase)),
+    GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_WEIGHT_ADDR failed.");
+    return FAILED);
   GE_CHK_BOOL_EXEC(AttrUtils::SetInt(model, ATTR_MODEL_TASK_GEN_VAR_ADDR, reinterpret_cast<uintptr_t>(var_mem_base_)),
                    GELOGE(FAILED, "SetInt ATTR_MODEL_TASK_GEN_VAR_ADDR failed.");
                    return FAILED);
@@ -431,7 +430,7 @@ Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const 
     return SUCCESS;
   }
   if (ppoint.fp_index == node_index) {
-    uint64_t jobid_log_id = ge::GetContext().JobId();
+    uint64_t jobid_log_id = ge::GetContext().TraceId();
     GELOGI("The first FP operator is %s, idx %u, job_id %lu", op_desc->GetName().c_str(), node_index, jobid_log_id);
 
     TaskDef job_task_def;

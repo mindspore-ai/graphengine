@@ -176,8 +176,8 @@ TEST_F(UtestBroadcastGradientArgsKernel, CheckOutputInputsSameEmptyOut) {
   });
 
   vector<vector<int64_t>> output_shape_dims({
-      {},
-      {},
+      {0},
+      {0},
   });
   vector<vector<int64_t>> output_data({{}, {}});
 
@@ -219,7 +219,7 @@ TEST_F(UtestBroadcastGradientArgsKernel, CheckOutputInputsBothScalar) {
   });
 
   vector<vector<int64_t>> output_shape_dims({
-      {},
+      {0},
       {1},
   });
   vector<vector<int64_t>> output_data({{}, {0}});

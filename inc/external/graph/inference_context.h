@@ -28,29 +28,29 @@ namespace ge {
 class InferenceContext;
 using InferenceContextPtr = std::shared_ptr<InferenceContext>;
 
+class ShapeAndTypeImpl;
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ShapeAndType {
  public:
-  ShapeAndType() = default;
+  ShapeAndType();
   ~ShapeAndType() = default;
 
-  ShapeAndType(const Shape &shape, DataType data_type);
+  ShapeAndType(const Shape &shape, DataType dataType);
 
   void SetShape(const Shape &shape);
 
-  void SetType(DataType data_type);
+  void SetType(DataType dataType);
 
-  const Shape &GetShape() const;
+  Shape GetShape() const;
 
   DataType GetDataType() const;
 
  private:
-  Shape shape_;
-  DataType data_type_ = DT_UNDEFINED;
+  std::shared_ptr<ShapeAndTypeImpl> shape_and_type_impl_;
 };
 
+class InferenceContextImpl;
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InferenceContext {
  public:
-  InferenceContext() = default;
   ~InferenceContext() = default;
   InferenceContext(const InferenceContext &context) = delete;
   InferenceContext(const InferenceContext &&context) = delete;
@@ -58,22 +58,19 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InferenceContext {
   InferenceContext &operator=(const InferenceContext &&context) = delete;
 
   void SetInputHandleShapesAndTypes(std::vector<std::vector<ShapeAndType>> &&shapes_and_types);
-
   const std::vector<std::vector<ShapeAndType>> &GetInputHandleShapesAndTypes() const;
-
   const std::vector<std::vector<ShapeAndType>> &GetOutputHandleShapesAndTypes() const;
-
   void SetOutputHandleShapesAndTypes(const std::vector<std::vector<ShapeAndType>> &shapes_and_types);
   void SetOutputHandleShapesAndTypes(std::vector<std::vector<ShapeAndType>> &&shapes_and_types);
 
   void SetMarks(const std::vector<std::string> &marks);
   const std::vector<std::string> &GetMarks() const;
 
+  static std::unique_ptr<InferenceContext> Create();
+
  private:
-  // For deliver to op in pair, help to support dynamic shape
-  std::vector<std::string> marks_;
-  std::vector<std::vector<ShapeAndType>> input_handle_shapes_and_types_;
-  std::vector<std::vector<ShapeAndType>> output_handle_shapes_and_types_;
+  InferenceContext(std::unique_ptr<InferenceContextImpl> &impl);
+  std::shared_ptr<InferenceContextImpl> inference_context_impl_;
 };
 }  // namespace ge
 #endif  // INC_EXTERNAL_GRAPH_INFERENCE_CONTEXT_H_

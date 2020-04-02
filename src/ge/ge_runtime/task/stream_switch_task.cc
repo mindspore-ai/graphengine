@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/stream_switch_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -73,6 +72,6 @@ bool StreamSwitchTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kStreamSwitch, StreamSwitchTask, StreamSwitchTaskInfo);
+REGISTER_TASK(TaskInfoType::STREAM_SWITCH, StreamSwitchTask, StreamSwitchTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

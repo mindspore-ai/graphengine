@@ -18,16 +18,15 @@
 #define INC_COMMON_OPSKERNEL_OPS_KERNEL_INFO_TYPES_H_
 
 #include <stdint.h>
-
 #include <string>
 #include <vector>
-
 #include "graph/buffer.h"
 #include "runtime/rt_model.h"
 
 using std::string;
 
 namespace ge {
+/*lint -e148*/
 struct RunContext {
   rtModel_t model;
   rtStream_t stream;
@@ -37,9 +36,11 @@ struct RunContext {
   uint64_t weightMemSize;
   uint8_t *weightMemBase;
   ge::Buffer weightsBuffer;
-  std::vector<rtStream_t> graphStreamList;  // all streams of graph which are sort by ge stream id(0,1,...)
-  std::vector<rtEvent_t> graphEventList;    // all events of graph which are sort by ge event id(0,1,...)
+  std::vector<rtStream_t> graphStreamList;  // all streams of graph, order by ge stream id(0,1,...)
+  std::vector<rtEvent_t> graphEventList;    // all events of graph, order by ge event id(0,1,...)
 };
+
+/*lint +e148*/
 
 struct Task {
   uint32_t id;
@@ -49,10 +50,11 @@ struct Task {
 };
 
 struct OpInfo {
-  string engine;       // engine name
-  string opKernelLib;  // opsKernelStore name
+  string engine;  // which engin
+  /*lint -e148*/
+  string opKernelLib;  // which opsKernelStore
   int computeCost;     // compute cost
-  bool flagPartial;    // whether to support related shape
+  bool flagPartial;    // whether to support is related to shape
   bool flagAsync;      // Whether to support asynchronous
   bool isAtomic;       // whether to support atomic addr clean
   string opFileName;   // op file name

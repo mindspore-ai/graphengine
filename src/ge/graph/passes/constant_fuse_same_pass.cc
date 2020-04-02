@@ -22,10 +22,10 @@
 #include <utility>
 #include <vector>
 
-#include "common/ge/ge_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/debug/ge_attr_define.h"
+#include "common/ge/ge_util.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 

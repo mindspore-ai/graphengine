@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef __ATTR_LIST_HPP__
-#define __ATTR_LIST_HPP__
+#ifndef ATTR_LIST_HPP__
+#define ATTR_LIST_HPP__
+
 #include "catch.hpp"
 
 /**
@@ -78,4 +79,4 @@ class AttrList {
   uint32_t initLen_;
   uint32_t Init();
 };
-#endif /* __ATTR_LIST_HPP__ */
+#endif  // ATTR_LIST_HPP__

@@ -21,7 +21,6 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
-
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge_runtime/task_info.h"
@@ -76,13 +75,12 @@ class TaskFactory {
   };
 };
 
-#define REGISTER_TASK(type, task_clazz, task_info_clazz)                                                            \
-  TaskFactory::Register g_##task_clazz##_register(                                                                  \
-      type,                                                                                                         \
-      [](const ModelContext &model_context, const std::shared_ptr<TaskInfo> &task_info) -> std::shared_ptr<Task> {  \
-        std::shared_ptr<task_info_clazz> concrete_task_info = std::static_pointer_cast<task_info_clazz>(task_info); \
-        return std::make_shared<task_clazz>(model_context, concrete_task_info);                                     \
-      });
+#define REGISTER_TASK(type, task_clazz, task_info_clazz)                                                               \
+  TaskFactory::Register g_##task_clazz##_register(                                                                     \
+    type, [](const ModelContext &model_context, const std::shared_ptr<TaskInfo> &task_info) -> std::shared_ptr<Task> { \
+      std::shared_ptr<task_info_clazz> concrete_task_info = std::static_pointer_cast<task_info_clazz>(task_info);      \
+      return std::make_shared<task_clazz>(model_context, concrete_task_info);                                          \
+    });
 
 }  // namespace model_runner
 }  // namespace ge

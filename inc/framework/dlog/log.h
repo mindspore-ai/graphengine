@@ -21,7 +21,7 @@
 #if !defined(__ANDROID__) && !defined(ANDROID)
 #include "toolchain/slog.h"
 #else
-#include<android/log.h>
+#include <android/log.h>
 #endif
 
 #ifdef _MSC_VER
@@ -31,16 +31,11 @@
 #endif
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
-#define DAV_LOGI(MOD_NAME, fmt, ...) \
-  dlog_info(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
-#define DAV_LOGW(MOD_NAME, fmt, ...) \
-  dlog_warn(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
-#define DAV_LOGE(MOD_NAME, fmt, ...) \
-  dlog_error(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
-#define DAV_LOGD(MOD_NAME, fmt, ...) \
-  dlog_debug(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
-#define DAV_EVENT(MOD_NAME, fmt, ...) \
-  dlog_event(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
+#define DAV_LOGI(MOD_NAME, fmt, ...) dlog_info(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
+#define DAV_LOGW(MOD_NAME, fmt, ...) dlog_warn(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
+#define DAV_LOGE(MOD_NAME, fmt, ...) dlog_error(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
+#define DAV_LOGD(MOD_NAME, fmt, ...) dlog_debug(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
+#define DAV_EVENT(MOD_NAME, fmt, ...) dlog_event(static_cast<int>(GE), "%s:" #fmt, __FUNCTION__, ##__VA_ARGS__)
 #else
 #define DAV_LOGI(MOD_NAME, fmt, ...) \
   __android_log_print(ANDROID_LOG_INFO, MOD_NAME, "%s %s(%d)::" #fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)

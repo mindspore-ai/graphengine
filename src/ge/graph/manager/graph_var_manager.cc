@@ -29,9 +29,9 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/type_utils.h"
 
+using std::map;
 using std::string;
 using std::vector;
-using std::map;
 
 namespace ge {
 VarResource::VarResource(uint64_t session_id) : session_id_(session_id) {}
@@ -67,7 +67,6 @@ ge::Status VarResource::GetVarAddr(const std::string &var_name, const ge::GeTens
 void VarResource::SetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *dev_ptr,
                              rtMemType_t memory_type) {
   std::string var_key = VarKey(var_name, tensor_desc);
-  GELOGI("VarResource::SetVarAddr , var_key = %s, mem_type:%u", var_key.c_str(), memory_type);
   if (var_addr_mgr_map_.count(var_key) == 0) {
     GELOGI("SetVarAddr node_name %s, tensor_desc type %s, format %s", var_name.c_str(),
            TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
@@ -89,9 +88,6 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   if (var_addr_mgr_map_.count(var_key) == 0) {
     uint64_t logic_address = VarManager::Instance(0)->GetVarMemLogicBase() +
                              reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
-    GELOGI("SaveVarAddr node_name %s, tensor_desc format %s, type %s.", var_name.c_str(),
-           TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
-           TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str());
     VarAddrMgr var_addr_mgr;
     var_addr_mgr.address = reinterpret_cast<uint8_t *>(reinterpret_cast<std::uintptr_t>(logic_address));
     var_addr_mgr.offset = reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
@@ -117,8 +113,8 @@ bool VarResource::IsVarExist(const std::string &var_name) { return cur_var_tenso
 std::string VarResource::VarKey(const std::string &var_name, const ge::GeTensorDesc &tensor_desc) {
   std::string var_key(var_name);
   var_key.append(std::to_string(static_cast<int32_t>(tensor_desc.GetFormat())))
-      .append("_")
-      .append(std::to_string(static_cast<int32_t>(tensor_desc.GetDataType())));
+    .append("_")
+    .append(std::to_string(static_cast<int32_t>(tensor_desc.GetDataType())));
   return var_key;
 }
 
@@ -257,7 +253,7 @@ Status VarResource::SetAllocatedGraphId(const std::string &var_name, uint32_t gr
   return SUCCESS;
 }
 
-MemResource::MemResource() : total_size_(0), var_mem_base_(nullptr), var_mem_size_(0) {}
+MemResource::MemResource() : total_size_(0), var_mem_size_(0) {}
 
 Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset) {
   size = (size + kSessionMemAlignSize - 1) / kSessionMemAlignSize * kSessionMemAlignSize;
@@ -407,9 +403,6 @@ int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
 ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTensorDesc &tensor_desc,
                                     rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  GELOGI("VarManager::AssignVarMem var_name = %s, data_type = %s, data_format = %s.", var_name.c_str(),
-         ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
-         ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str());
 
   uint32_t tensor_desc_size = 0;
   size_t mem_offset = 0;
@@ -448,14 +441,14 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   }
 
   result = var_resource_->SaveVarAddr(
-      var_name, tensor_desc, reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
+    var_name, tensor_desc, reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
   if (result != SUCCESS) {
     GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
     return ge::INTERNAL_ERROR;
   }
 
   result = var_resource_->GetVarAddr(
-      var_name, tensor_desc, reinterpret_cast<uint8_t **>(reinterpret_cast<uintptr_t>(&mem_offset)), memory_type);
+    var_name, tensor_desc, reinterpret_cast<uint8_t **>(reinterpret_cast<uintptr_t>(&mem_offset)), memory_type);
   if (result != SUCCESS) {
     GELOGE(ge::INTERNAL_ERROR, "GetVarAddr by offset failed.");
     return ge::INTERNAL_ERROR;
@@ -532,12 +525,12 @@ ge::Status VarManager::GetCurVarDesc(const std::string &var_name, ge::GeTensorDe
 ge::Status VarManager::SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   GELOGI(
-      "VarManager::SaveBroadCastInfo var_name = %s, broadcast name = %s, "
-      "idx = %d, input_offset = %ld, input_size = %lu, output_offset = %ld, "
-      "output_size = %lu",
-      broad_cast_info.var_name.c_str(), broad_cast_info.broadcast_name.c_str(), broad_cast_info.idx,
-      broad_cast_info.input_offset, broad_cast_info.input_size, broad_cast_info.output_offset,
-      broad_cast_info.output_size);
+    "VarManager::SaveBroadCastInfo var_name = %s, broadcast name = %s, "
+    "idx = %d, input_offset = %ld, input_size = %lu, output_offset = %ld, "
+    "output_size = %lu",
+    broad_cast_info.var_name.c_str(), broad_cast_info.broadcast_name.c_str(), broad_cast_info.idx,
+    broad_cast_info.input_offset, broad_cast_info.input_size, broad_cast_info.output_offset,
+    broad_cast_info.output_size);
   if (var_resource_ == nullptr) {
     GELOGW("VarManager has not been init.");
     return ge::INTERNAL_ERROR;

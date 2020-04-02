@@ -19,16 +19,16 @@
 #include <string>
 #include <vector>
 
+#include "framework/common/debug/ge_log.h"
 #include "common/op/attr_value_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
 #include "common/util.h"
-#include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "framework/omg/omg_inner_types.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 namespace {
@@ -45,6 +45,8 @@ Status NoReshapeOpRemovePass::Run(ge::NodePtr &node) {
     return CheckNodeShapeAndForamt(node);
   } else if (op_desc_ptr->GetType() == RESHAPE) {
     if (op_desc_ptr->GetName() == kReshapeName) {
+      NodePtr out_data_node;
+      NodePtr reshape_out_node;
       std::vector<string> types;
       std::list<ge::NodePtr> path;
       path.push_back(node);
@@ -53,8 +55,8 @@ Status NoReshapeOpRemovePass::Run(ge::NodePtr &node) {
       types.emplace_back(CORRELATION);
       // check reshape out data node fit specific type
       bool reshape_correlation_flag = true;
-      for (const auto &type : types) {
-        if (!CheckOutDataNodesType(type, path)) {
+      for (size_t i = 0; i < types.size(); i++) {
+        if (!CheckOutDataNodesType(types[i], path)) {
           reshape_correlation_flag = false;
           break;
         }
@@ -173,8 +175,8 @@ vector<ge::NodePtr> NoReshapeOpRemovePass::CheckLinkedReshape(ge::NodePtr &node)
       continue;
     }
     Node::Vistor<NodePtr> out_data_nodes = src_node->GetOutDataNodes();
-    if ((out_data_nodes.size() == 1) && (out_data_nodes.at(0)->GetOpDesc() != nullptr)
-        && (out_data_nodes.at(0)->GetOpDesc()->GetType() == RESHAPE)) {
+    if ((out_data_nodes.size() == 1) && (out_data_nodes.at(0)->GetOpDesc() != nullptr) &&
+        (out_data_nodes.at(0)->GetOpDesc()->GetType() == RESHAPE)) {
       NodePtr dst_node = out_data_nodes.at(0);
       node_path.push_back(dst_node);
       GeTensorDesc dst_output_desc = dst_node->GetOpDesc()->GetOutputDesc(0);

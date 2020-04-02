@@ -331,23 +331,24 @@ enum {
 #define TDT_GET_ERROR_STR(CODE_NAME) (tdt::StatusFactory::GetInstance()->GetErrDesc(CODE_NAME))
 #endif
 
-constexpr uint16_t MODID_TDT_CLIENT = 0x0101;
-constexpr uint16_t MODID_TSD_SERVER = 0x0102;  // TSD_SERVER
-constexpr uint16_t MODID_HDC = 0x0103;         // HDC_SERVER
-constexpr uint16_t MODID_TDT_SHUFFLE = 0x0104;
-constexpr uint16_t MODID_TDT_PREFETCH = 0x0105;
-constexpr uint16_t MODID_TDT_TRANSFER = 0x0106;
-constexpr uint16_t MODID_TDT_SUPERVISOR = 0x0107;
-constexpr uint16_t MODID_MEM_POOL = 0x0108;  // MEMORY_POOL
-constexpr uint16_t MODID_PPC = 0x0109;       // TDT PPC
-constexpr uint16_t MODID_TDT_FILE = 0x0110;
-constexpr uint16_t MODID_HDC_SERVER = 0x0111;
-constexpr uint16_t MODID_TDT_SERVER = 0x0112;
-constexpr uint16_t MODID_HDC_CLIENT = 0x0113;
-constexpr uint16_t MODID_TSD_CLIENT = 0x0114;
-constexpr uint16_t MODID_CHECKSUM = 0x0115;
-constexpr uint16_t MODID_TDT_MONITOR = 0x0116;
-constexpr uint16_t MODID_TDT_HOST = 0x0117;
+// Register module id: 0xAABB, AA means system level number, BB means module level number
+constexpr uint16_t MODID_TDT_CLIENT = 0x0101; // TDT_CLIENT module ID
+constexpr uint16_t MODID_TSD_SERVER = 0x0102; // TSD_SERVER
+constexpr uint16_t MODID_HDC = 0x0103; // HDC_SERVER
+constexpr uint16_t MODID_TDT_SHUFFLE = 0x0104; // TDT shuffle module ID
+constexpr uint16_t MODID_TDT_PREFETCH = 0x0105; // TDT prefetch module ID
+constexpr uint16_t MODID_TDT_TRANSFER = 0x0106; // TDT TrainDataTransfer module ID
+constexpr uint16_t MODID_TDT_SUPERVISOR = 0x0107; // TDT supervisor模块ID
+constexpr uint16_t MODID_MEM_POOL = 0x0108; // MEMORY_POOL
+constexpr uint16_t MODID_PPC = 0x0109; // TDT PPC
+constexpr uint16_t MODID_TDT_FILE = 0x0110; // TDT file operation module ID
+constexpr uint16_t MODID_HDC_SERVER = 0x0111; // HDC_SERVER module ID
+constexpr uint16_t MODID_TDT_SERVER = 0x0112; // TDTServer module ID
+constexpr uint16_t MODID_HDC_CLIENT = 0x0113; // HDC_CLIENT module ID
+constexpr uint16_t MODID_TSD_CLIENT = 0x0114; // TSD_CLIENT module ID
+constexpr uint16_t MODID_CHECKSUM = 0x0115; // Checksum module ID
+constexpr uint16_t MODID_TDT_MONITOR = 0x0116; // TDT monitor module ID
+constexpr uint16_t MODID_TDT_HOST = 0x0117; // GE adapts the TDT HOST module ID
 
 constexpr uint32_t TDT_API_MAX_SUB_VERSION = 100;
 static const int32_t TDT_INVAILED_DEVICE_ID = 0xFFFFFFFF;
@@ -362,17 +363,50 @@ typedef enum tdt_api_version {
 namespace tdt {
 class StatusFactory {
  public:
+  /**
+  * @ingroup hiaiengine
+  * @brief Get a pointer to StatusFactory
+  * @param [in]:
+  * @return StatusFactory pointer
+  */
   TDT_LIB_EXPORT static StatusFactory *GetInstance();
 
+  /**
+  * @ingroup hiaiengine
+  * @brief Registration error code
+  * @param [in]err error code
+  * @param [in]desc Description string of the error code
+  */
   TDT_LIB_EXPORT void RegisterErrorNo(const uint32_t err, const std::string &desc);
 
+  /**
+  * @ingroup hiaiengine
+  * @brief Get error code description string
+  * @param [in]err error code
+  */
   std::string GetErrDesc(const uint32_t err);
 
+  /**
+  * @ingroup hiaiengine
+  * @brief Static function: Get error code description string
+  * @param [in]err error code
+  * return : If there is a problem, return the empty string ""
+  */
   static std::string GetErrCodeDesc(uint32_t errCode);
 
  protected:
+  /**
+  * @ingroup hiaiengine
+  * @brief Constructor
+  * @param [in] void
+  */
   StatusFactory();
 
+  /**
+  * @ingroup hiaiengine
+  * @brief Destructor
+  * @param [in] void
+  */
   ~StatusFactory() {}
 
   StatusFactory(const StatusFactory &) = delete;
@@ -389,6 +423,12 @@ class StatusFactory {
 
 class ErrorNoRegisterar {
  public:
+  /**
+  * @ingroup hiaiengine
+  * @brief Registration error code
+  * @param [in]err error code
+  * @param [in]desc Description of the registration error code
+  */
   ErrorNoRegisterar(const uint32_t &err, const std::string &desc) {
     StatusFactory::GetInstance()->RegisterErrorNo(err, desc);
   }
@@ -452,6 +492,7 @@ TDT_DEF_ERROR_CODE(MODID_HDC_SERVER, TDT_ERROR, TDT_HDC_SERVER_CLIENT_SOCKET_CLO
                    "hdc service or client socket closed");
 
 /*********************TSDAEMON************************/
+// create TSDAEMON error level error
 TDT_DEF_ERROR_CODE(MODID_TSD_SERVER, TDT_ERROR, TDT_TSD_START_FAIL, "Tsdaemon start fail");
 TDT_DEF_ERROR_CODE(MODID_TSD_SERVER, TDT_ERROR, TDT_TSD_CLEANPROC_FIRST_GETPID_FAILED, "Tsdaemon first get pid fail");
 TDT_DEF_ERROR_CODE(MODID_TSD_SERVER, TDT_ERROR, TDT_TSD_CLEANPROC_KILL_PROCESS_FAILED, "Tsdaemon kill processfail");
@@ -464,6 +505,7 @@ TDT_DEF_ERROR_CODE(MODID_TSD_SERVER, TDT_ERROR, TDT_TSD_CLEAN_RESOURCE_FAILED, "
 TDT_DEF_ERROR_CODE(MODID_TSD_SERVER, TDT_ERROR, TDT_TSD_SEND_MSG_FAILED, "Tsdaemon send msg fail");
 
 /********************* PPC ****************************/
+// create PPC error level error
 TDT_DEF_ERROR_CODE(MODID_PPC, TDT_ERROR, TDT_PPC_DRIVER_INIT_FAIL, "Init PPC driver fail");
 TDT_DEF_ERROR_CODE(MODID_PPC, TDT_ERROR, TDT_PPC_SERVER_CLIENT_CREATE_FAIL, "Create PPC server or PPC client fail");
 TDT_DEF_ERROR_CODE(MODID_PPC, TDT_ERROR, TDT_PPC_SERVER_CLIENT_DESTORY_FAIL, "Destory PPC server or PPC client fail");

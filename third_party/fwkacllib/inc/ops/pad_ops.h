@@ -111,12 +111,41 @@ REG_OP(BroadcastToD)
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(BroadcastToD)
 
+/**
+*@brief Pads a tensor.
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, uint32, uint64.
+* @li paddings: A Tensor of type int32 or int64.
+
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+*/
 REG_OP(Pad)
     .INPUT(x, TensorType::BasicType())
     .INPUT(paddings, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Pad)
 
+/**
+*@brief Pads a tensor.
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
+
+*@par Attributes:
+*paddings: An optional "vector<vector<int>>". Defaults to "{}".
+*     For each dimension D of input, paddings[D, 0] indicates how many
+*     values to add before the contents of tensor in that dimension,
+*     and paddings[D, 1] indicates how many values to add after the
+*     contents of tensor in that dimension.
+
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+*/
 REG_OP(PadD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))

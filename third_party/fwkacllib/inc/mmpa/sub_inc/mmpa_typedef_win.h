@@ -20,8 +20,8 @@
 #ifdef __cplusplus
 #if __cplusplus
 extern "C" {
-#endif /* __cpluscplus */
-#endif /* __cpluscplus */
+#endif  // __cpluscplus
+#endif  // __cpluscplus
 
 #ifndef FALSE
 #define FALSE 0
@@ -74,6 +74,6 @@ extern "C" {
 #ifdef __cplusplus
 #if __cplusplus
 }
-#endif /* __cpluscplus */
-#endif /* __cpluscplus */
-#endif /* _MMPA_TYPEDEF_WIN_H_ */
+#endif  // __cpluscplus
+#endif  // __cpluscplus
+#endif  // _MMPA_TYPEDEF_WIN_H_

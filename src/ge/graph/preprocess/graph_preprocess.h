@@ -16,13 +16,11 @@
 
 #ifndef GE_GRAPH_PREPROCESS_GRAPH_PREPROCESS_H_
 #define GE_GRAPH_PREPROCESS_GRAPH_PREPROCESS_H_
-
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/model_parser/base.h"
@@ -39,6 +37,7 @@
 #include "omg/omg_inner_types.h"
 #include "runtime/context.h"
 
+/*lint -e148*/
 namespace ge {
 class GraphPrepare {
  public:
@@ -46,8 +45,8 @@ class GraphPrepare {
   virtual ~GraphPrepare();
   GraphPrepare(const GraphPrepare &in) = delete;
   GraphPrepare &operator=(const GraphPrepare &in) = delete;
-  Status Prepare(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
-                 ge::ComputeGraphPtr &compute_graph, uint64_t session_id = 0);
+  Status Prepare(ConstGraphPtr graph, const std::vector<GeTensor> &user_input, ge::ComputeGraphPtr &compute_graph,
+                 uint64_t session_id = 0);
   void SetOptions(const GraphManagerOptions &options);
 
  private:
@@ -66,7 +65,7 @@ class GraphPrepare {
   Status OptimizeForDataAfterInfershape();
   Status UpdateVariableFormats(ComputeGraphPtr &graph);
   Status FormatAndShapeProcess();
-  Status ResourcePairProcess(const std::string& action);
+  Status ResourcePairProcess(const std::string &action);
   void ProcessCCEFormat();
   Status OptimizeBeforeInfershape();
   void SaveOriginalGraphToOmModel();
@@ -74,4 +73,5 @@ class GraphPrepare {
   GraphManagerOptions options_;
 };
 }  // namespace ge
+/*lint +e148*/
 #endif  // GE_GRAPH_PREPROCESS_GRAPH_PREPROCESS_H_

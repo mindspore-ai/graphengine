@@ -21,7 +21,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
 #include "./compute_graph.h"
 #include "./external/graph/types.h"
 #include "./ge_error_codes.h"

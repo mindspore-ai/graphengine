@@ -19,6 +19,21 @@
 
 #include "../graph/operator_reg.h"
 namespace ge {
+
+/**
+*@brief Computes the gradient for log softmax activations.
+
+*@par Inputs:
+*@li grad: A Tensor. Must be one of the following types: float16, float32.
+*@li x: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Attributes:
+* axis: An optional list of ints. Defaults to "{-1}".
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "grad".
+*/
+
 REG_OP(LogSoftmaxGrad)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -195,6 +210,27 @@ REG_OP(Scale)
     .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(Scale)
 
+REG_OP(SoftmaxGradExt)
+  .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .INPUT(x2, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .ATTR(axis, ListInt, {-1})
+  .ATTR(keep_dims, Bool, false)
+  .OP_END_FACTORY_REG(SoftmaxGradExt)
+
+/**
+*@brief Confuse mul, sum and sub.
+
+*@par Inputs:
+*Two inputs, including:
+* @li grad: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+* y: A Tensor of the same type as "grad".
+
+*/
 REG_OP(ConfusionSoftmaxGrad)
   .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
   .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))

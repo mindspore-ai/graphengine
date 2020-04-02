@@ -18,7 +18,6 @@
 #define GE_GE_RUNTIME_MODEL_CONTEXT_H_
 
 #include <vector>
-
 #include "runtime/rt_model.h"
 
 namespace ge {
@@ -28,8 +27,13 @@ class ModelContext {
   ModelContext(uint32_t device_id, uint64_t session_id, int32_t priority, rtModel_t rt_model_handle,
                rtStream_t rt_model_stream, const std::vector<rtStream_t> &stream_list,
                const std::vector<rtLabel_t> &label_list, const std::vector<rtEvent_t> &event_list)
-      : device_id_(device_id), session_id_(session_id), priority_(priority), rt_model_handle_(rt_model_handle),
-        rt_model_stream_(rt_model_stream), stream_list_(stream_list), label_list_(label_list),
+      : device_id_(device_id),
+        session_id_(session_id),
+        priority_(priority),
+        rt_model_handle_(rt_model_handle),
+        rt_model_stream_(rt_model_stream),
+        stream_list_(stream_list),
+        label_list_(label_list),
         event_list_(event_list) {}
   ~ModelContext() {}
 

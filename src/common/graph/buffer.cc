@@ -15,7 +15,6 @@
  */
 
 #include "graph/buffer.h"
-
 #include "proto/ge_ir.pb.h"
 #include "framework/common/debug/ge_log.h"
 

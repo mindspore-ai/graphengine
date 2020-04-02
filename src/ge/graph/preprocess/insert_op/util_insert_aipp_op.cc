@@ -15,24 +15,22 @@
  */
 
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
-
 #include <fstream>
 #include <utility>
-
-#include "common/dynamic_aipp.h"
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/omg/omg_inner_types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/preprocess/insert_op/ge_aipp_op.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "inc/common/dynamic_aipp.h"
 
 using domi::AippOpParams;
 
@@ -132,7 +130,7 @@ Status InsertNewOpUtil::Parse(const char *conf_path) {
   return SUCCESS;
 }
 
-Status InsertNewOpUtil::AddAippInputData(const ge::NodePtr &aipp_node, const ge::ComputeGraphPtr &graph) {
+Status InsertNewOpUtil::AddAippInputData(ge::NodePtr aipp_node, ge::ComputeGraphPtr graph) {
   GELOGD("Enter add aipp data node process!");
   static int index = 0;
 
@@ -164,7 +162,7 @@ Status InsertNewOpUtil::AddAippInputData(const ge::NodePtr &aipp_node, const ge:
   auto batch_count = nchw_dims[NCHW_DIM_N];
   // new add aipp_data ops for dynamic aipp param input
   OpDescPtr op_desc_ptr_data =
-      ge::MakeShared<ge::OpDesc>(std::string("aipp_data_").append(std::to_string(index++)), AIPPDATA);
+    ge::MakeShared<ge::OpDesc>(std::string("aipp_data_").append(std::to_string(index++)), AIPPDATA);
 
   // calc max size
   if (batch_count <= 0 || batch_count > kMaxBatchCountNum) {
@@ -197,7 +195,6 @@ Status InsertNewOpUtil::AddAippInputData(const ge::NodePtr &aipp_node, const ge:
     return INTERNAL_ERROR;
   }
   // add node desc for aipp node
-  GE_CHECK_NOTNULL(aipp_node->GetOpDesc());
   auto stat3 = aipp_node->GetOpDesc()->UpdateInputDesc(1, output_tensor);
   if (stat1 != SUCCESS || stat2 != SUCCESS || stat3 != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "node process desc failed!");
@@ -272,11 +269,11 @@ Status InsertNewOpUtil::CheckPositionNotRepeat() {
       GE_IF_BOOL_EXEC(item->related_input_rank() != another_item->related_input_rank(), continue;);
 
       GE_IF_BOOL_EXEC(
-          item->input_edge_idx_size() == 0 || another_item->input_edge_idx_size() == 0 ||
-              item->input_edge_idx(0) == another_item->input_edge_idx(0),
-          GELOGE(PARAM_INVALID,
-                 "Can not insert aipp op to the same position! please check related_input_rank and input_edge_idx.");
-          return PARAM_INVALID;);
+        item->input_edge_idx_size() == 0 || another_item->input_edge_idx_size() == 0 ||
+          item->input_edge_idx(0) == another_item->input_edge_idx(0),
+        GELOGE(PARAM_INVALID,
+               "Can not insert aipp op to the same postion! please check related_input_rank and input_edge_idx.");
+        return PARAM_INVALID;);
     }
   }
 
@@ -318,39 +315,39 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
                     GE_CHK_BOOL_RET_STATUS(aippMode == aippParams->aipp_mode(), PARAM_INVALID,
                                            "The aipp_mode of all aipp_op must be the same"););
 
-    GE_IF_BOOL_EXEC(aippNodes.size() > 1, for (decltype(aippNodes)::size_type i = 1; i < aippNodes.size(); i++) {
-      std::unique_ptr<domi::AippOpParams> currAippParam(new (std::nothrow) domi::AippOpParams());
-      GE_CHECK_NOTNULL(currAippParam);
-      GE_CHK_STATUS(GetAippParams(currAippParam, aippNodes[i]));
+    GE_IF_BOOL_EXEC(
+      aippNodes.size() > 1, for (decltype(aippNodes)::size_type i = 1; i < aippNodes.size(); i++) {
+        std::unique_ptr<domi::AippOpParams> currAippParam(new (std::nothrow) domi::AippOpParams());
+        GE_CHECK_NOTNULL(currAippParam);
+        GE_CHK_STATUS(GetAippParams(currAippParam, aippNodes[i]));
 
-      GE_CHK_BOOL_RET_STATUS(aippMode == currAippParam->aipp_mode(), PARAM_INVALID,
-                             "The aipp_mode of all aipp_op must be the same");
-      if (aippMode == domi::AippOpParams::static_) {
-        GE_CHK_BOOL_RET_STATUS(aippParams->input_format() == currAippParam->input_format(), PARAM_INVALID,
-                               "The input_format of all aipp_ops after one Data should be the same");
-        GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_w() == currAippParam->src_image_size_w(), PARAM_INVALID,
-                               "The src_image_size_w of all aipp_ops after one Data should be the same");
-        GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_h() == currAippParam->src_image_size_h(), PARAM_INVALID,
-                               "The src_image_size_h of all aipp_ops after one Data should be the same");
-      } else {
-        GE_CHK_BOOL_RET_STATUS(aippParams->max_src_image_size() == currAippParam->max_src_image_size(), PARAM_INVALID,
-                               "The max_src_image_size of all aipp_ops after one Data should be the same");
-      }
-    });
+        GE_CHK_BOOL_RET_STATUS(aippMode == currAippParam->aipp_mode(), PARAM_INVALID,
+                               "The aipp_mode of all aipp_op must be the same");
+        if (aippMode == domi::AippOpParams::static_) {
+          GE_CHK_BOOL_RET_STATUS(aippParams->input_format() == currAippParam->input_format(), PARAM_INVALID,
+                                 "The input_format of all aipp_ops after one Data should be the same");
+          GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_w() == currAippParam->src_image_size_w(), PARAM_INVALID,
+                                 "The src_image_size_w of all aipp_ops after one Data should be the same");
+          GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_h() == currAippParam->src_image_size_h(), PARAM_INVALID,
+                                 "The src_image_size_h of all aipp_ops after one Data should be the same");
+        } else {
+          GE_CHK_BOOL_RET_STATUS(aippParams->max_src_image_size() == currAippParam->max_src_image_size(), PARAM_INVALID,
+                                 "The max_src_image_size of all aipp_ops after one Data should be the same");
+        }
+      });
   }
 
   return SUCCESS;
 }
 
-Status InsertNewOpUtil::GetAippParams(const std::unique_ptr<domi::AippOpParams> &aipp_params,
-                                      const NodePtr &aipp_node) {
+Status InsertNewOpUtil::GetAippParams(const std::unique_ptr<domi::AippOpParams> &aippParams, const NodePtr &aipp_node) {
   GE_CHECK_NOTNULL(aipp_node);
   ge::GeAttrValue::NamedAttrs aipp_attr;
   const OpDescPtr tmpOpPtr = aipp_node->GetOpDesc();
   GE_CHECK_NOTNULL(tmpOpPtr);
   GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(tmpOpPtr, ATTR_NAME_AIPP, aipp_attr), FAILED,
                          "Aipp node should contain param aipp!");
-  GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aipp_params.get()), "get aipp params failed");
+  GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aippParams.get()), "get aipp params failed");
 
   return SUCCESS;
 }
@@ -358,13 +355,13 @@ Status InsertNewOpUtil::GetAippParams(const std::unique_ptr<domi::AippOpParams> 
 Status InsertNewOpUtil::AddMultiShapeInputData(const ge::ComputeGraphPtr &graph) {
   GE_CHECK_NOTNULL(graph);
   for (auto &node : graph->GetDirectNode()) {
-    GE_CHECK_NOTNULL(node->GetOpDesc());
+    GE_CHECK_NOTNULL(node);
     if (node->GetOpDesc()->GetType() != MULTISHAPE) {
       continue;
     }
 
     GE_CHK_BOOL_RET_STATUS(node->GetInDataNodes().size() == 1, FAILED,
-                           "multi_shape node should follow one data node, but size of input edges is %zu",
+                           "multi_shape node should follow one data node, but size of input edges is %d",
                            node->GetInDataNodes().size());
 
     NodePtr dataNode = node->GetInDataNodes().at(0);

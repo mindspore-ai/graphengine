@@ -21,10 +21,10 @@
 #include <unistd.h>
 #include <string>
 
-#include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
-#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
+#include "framework/common/ge_inner_error_codes.h"
 
 using std::string;
 
@@ -51,10 +51,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
 
   // Write the data to the file
   Status ret = SUCCESS;
-  mmSsize_t mmpa_ret = mmWrite(fd, data, len);
+  int32_t mmpa_ret = mmWrite(fd, data, len);
   // mmWrite return -1:Failed to write data to file；return -2:Invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    GELOGE(FAILED, "Write to file failed. errno = %ld", mmpa_ret);
+    GELOGE(FAILED, "Write to file failed. errno = %d", mmpa_ret);
     ret = FAILED;
   }
 
@@ -99,10 +99,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Dump(void 
   GE_CHK_BOOL_RET_STATUS(data != nullptr, FAILED, "Incorrect parameter. data is nullptr");
 
 #ifdef FMK_SUPPORT_DUMP
-  mmSsize_t mmpa_ret = mmWrite(fd_, data, len);
+  int32_t mmpa_ret = mmWrite(fd_, data, len);
   // mmWrite return -1:failed to write data to file；return -2:invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    GELOGE(FAILED, "Write to file failed. errno = %ld", mmpa_ret);
+    GELOGE(FAILED, "Write to file failed. errno = %d", mmpa_ret);
     return FAILED;
   }
 
@@ -136,18 +136,18 @@ int MemoryDumper::OpenFile(const char *filename) {
   string real_path;
   char tmp_path[PATH_MAX] = {0};
   GE_IF_BOOL_EXEC(
-      -1 != path_split_pos, string prefix_path = std::string(filename).substr(0, path_split_pos);
-      string last_path = std::string(filename).substr(path_split_pos, strlen(filename) - 1);
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= PATH_MAX, return kInvalidFd, "Prefix path is too long!");
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(realpath(prefix_path.c_str(), tmp_path) == nullptr, return kInvalidFd,
-                                     "Dir %s does not exit.", prefix_path.c_str());
-      real_path = std::string(tmp_path) + last_path;)
+    -1 != path_split_pos, string prefix_path = std::string(filename).substr(0, path_split_pos);
+    string last_path = std::string(filename).substr(path_split_pos, strlen(filename) - 1);
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= PATH_MAX, return kInvalidFd, "Prefix path is too long!");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(realpath(prefix_path.c_str(), tmp_path) == nullptr, return kInvalidFd,
+                                   "Dir %s does not exit.", prefix_path.c_str());
+    real_path = std::string(tmp_path) + last_path;)
   GE_IF_BOOL_EXEC(
-      path_split_pos == -1 || path_split_pos == 0,
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(filename) >= PATH_MAX, return kInvalidFd, "Prefix path is too long!");
-      GE_IF_BOOL_EXEC(realpath(filename, tmp_path) == nullptr,
-                      GELOGI("File %s does not exit, it will be created.", filename));
-      real_path = std::string(tmp_path);)
+    path_split_pos == -1 || path_split_pos == 0,
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(filename) >= PATH_MAX, return kInvalidFd, "Prefix path is too long!");
+    GE_IF_BOOL_EXEC(realpath(filename, tmp_path) == nullptr,
+                    GELOGI("File %s does not exit, it will be created.", filename));
+    real_path = std::string(tmp_path);)
 
   // Open file, only the current user can read and write, to avoid malicious application access
   // Using the O_EXCL, if the file already exists,return failed to avoid privilege escalation vulnerability.

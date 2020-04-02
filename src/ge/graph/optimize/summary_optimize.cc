@@ -77,7 +77,7 @@ Status GraphOptimize::HandleSummaryOp(ComputeGraphPtr &compute_graph) {
       del_nodes.emplace_back(node_ptr);
     }
   }
-  summary_output_indexes_.emplace(compute_graph->GetGraphID(), summary_output_indexes);
+  summary_output_indexes_.insert({compute_graph->GetGraphID(), summary_output_indexes});
 
   // add output nodes for summary
   std::vector<std::pair<NodePtr, int32_t>> out_nodes_info;

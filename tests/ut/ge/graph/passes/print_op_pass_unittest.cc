@@ -22,7 +22,6 @@
 #include "utils/op_desc_utils.h"
 
 using domi::GetContext;
-
 namespace ge {
 class UtestGraphPassesPrintOpPass : public testing::Test {
  protected:

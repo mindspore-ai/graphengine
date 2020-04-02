@@ -32,12 +32,12 @@ const int64_t kDumpLevel = (kDumpGeGraph != nullptr) ? std::strtol(kDumpGeGraph,
 namespace ge {
 // Part 1: from IR convert to ONNX Protobuf
 static const std::map<ge::DataType, onnx::TensorProto_DataType> kGeDataTypeToOnnxMap = {
-    {DT_INT64, onnx::TensorProto_DataType_INT64},   {DT_UINT64, onnx::TensorProto_DataType_UINT64},
-    {DT_FLOAT, onnx::TensorProto_DataType_FLOAT},   {DT_INT32, onnx::TensorProto_DataType_INT32},
-    {DT_UINT32, onnx::TensorProto_DataType_UINT32}, {DT_INT8, onnx::TensorProto_DataType_INT8},
-    {DT_UINT8, onnx::TensorProto_DataType_UINT8},   {DT_INT16, onnx::TensorProto_DataType_INT16},
-    {DT_UINT16, onnx::TensorProto_DataType_UINT16}, {DT_FLOAT16, onnx::TensorProto_DataType_FLOAT16},
-    {DT_DOUBLE, onnx::TensorProto_DataType_DOUBLE}, {DT_BOOL, onnx::TensorProto_DataType_BOOL},
+  {DT_INT64, onnx::TensorProto_DataType_INT64},   {DT_UINT64, onnx::TensorProto_DataType_UINT64},
+  {DT_FLOAT, onnx::TensorProto_DataType_FLOAT},   {DT_INT32, onnx::TensorProto_DataType_INT32},
+  {DT_UINT32, onnx::TensorProto_DataType_UINT32}, {DT_INT8, onnx::TensorProto_DataType_INT8},
+  {DT_UINT8, onnx::TensorProto_DataType_UINT8},   {DT_INT16, onnx::TensorProto_DataType_INT16},
+  {DT_UINT16, onnx::TensorProto_DataType_UINT16}, {DT_FLOAT16, onnx::TensorProto_DataType_FLOAT16},
+  {DT_DOUBLE, onnx::TensorProto_DataType_DOUBLE}, {DT_BOOL, onnx::TensorProto_DataType_BOOL},
 };
 
 onnx::TensorProto_DataType OnnxUtils::EncodeDataType(DataType data_type) {
@@ -693,12 +693,12 @@ bool OnnxUtils::ConvertGeModelToModelProto(const ge::Model &model, onnx::ModelPr
 
 // Part 2: from ONNX Protobuf convert to IR
 static std::map<onnx::TensorProto_DataType, ge::DataType> onnxDataTypeToGeMap = {
-    {onnx::TensorProto_DataType_INT64, DT_INT64},   {onnx::TensorProto_DataType_UINT64, DT_UINT64},
-    {onnx::TensorProto_DataType_FLOAT, DT_FLOAT},   {onnx::TensorProto_DataType_INT32, DT_INT32},
-    {onnx::TensorProto_DataType_UINT32, DT_UINT32}, {onnx::TensorProto_DataType_INT8, DT_INT8},
-    {onnx::TensorProto_DataType_UINT8, DT_UINT8},   {onnx::TensorProto_DataType_INT16, DT_INT16},
-    {onnx::TensorProto_DataType_UINT16, DT_UINT16}, {onnx::TensorProto_DataType_FLOAT16, DT_FLOAT16},
-    {onnx::TensorProto_DataType_DOUBLE, DT_DOUBLE}, {onnx::TensorProto_DataType_BOOL, DT_BOOL},
+  {onnx::TensorProto_DataType_INT64, DT_INT64},   {onnx::TensorProto_DataType_UINT64, DT_UINT64},
+  {onnx::TensorProto_DataType_FLOAT, DT_FLOAT},   {onnx::TensorProto_DataType_INT32, DT_INT32},
+  {onnx::TensorProto_DataType_UINT32, DT_UINT32}, {onnx::TensorProto_DataType_INT8, DT_INT8},
+  {onnx::TensorProto_DataType_UINT8, DT_UINT8},   {onnx::TensorProto_DataType_INT16, DT_INT16},
+  {onnx::TensorProto_DataType_UINT16, DT_UINT16}, {onnx::TensorProto_DataType_FLOAT16, DT_FLOAT16},
+  {onnx::TensorProto_DataType_DOUBLE, DT_DOUBLE}, {onnx::TensorProto_DataType_BOOL, DT_BOOL},
 };
 
 ge::DataType OnnxUtils::DecodeDataType(onnx::TensorProto_DataType data_type) {
@@ -949,7 +949,7 @@ bool OnnxUtils::DecodeNodeDesc(const onnx::NodeProto *node_proto, OpDescPtr &op_
       auto size_out = attr.i();
       for (int64_t i = 0; i < size_out; i++) {
         GeTensorDesc ge_tensor_desc;
-        if (op_desc->AddOutputDesc(ge_tensor_desc) != GRAPH_SUCCESS) {
+        if (op_desc->AddInputDesc(ge_tensor_desc) != GRAPH_SUCCESS) {
           GELOGW("add inputdesc failed");
           continue;
         }

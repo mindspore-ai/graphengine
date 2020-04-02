@@ -137,7 +137,7 @@ class ModelListener {
 struct Options {
   int64_t session_id;
   int32_t device_id;
-  int64_t job_id;
+  std::string job_id;
   bool isUseHcom;
   bool deployMode;
   bool isAICPUMode;
@@ -149,5 +149,4 @@ struct Options {
   int32_t physical_device_id;
 };
 }  // namespace ge
-
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

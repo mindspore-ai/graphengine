@@ -20,7 +20,6 @@
 #include <limits.h>
 #include <linux/limits.h>
 #include <stdint.h>
-
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -49,7 +48,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_S
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_LAYER;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_FILE_PATH;
 
-// public property names which are supported
+// Supported public properties name
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_START_TIME;  // Start time
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_DUMP_PATH;   // Dump path
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_LOG_PATH;    // Log path
@@ -1033,11 +1032,14 @@ struct BasicInfo {
   uint32_t workspace_size;   // workspace
   uint32_t total_size;       // total memory size
 };
+
 #pragma pack()  // Cancels single-byte alignment
 }  // namespace ge
 
 namespace domi {
+
 /// @brief Data structure definition related to task sinking
+/// Build model
 enum BuildMode {
   GEN_TASK_WITHOUT_L2FUSION = 3,  // Carrying task data (L2 convergence function disabled)
   GEN_TASK_WITHOUT_FUSION = 4,    // Carrying task data (all convergence functions disabled)

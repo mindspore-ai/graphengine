@@ -201,7 +201,7 @@ Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_
   void *workspace_addr = nullptr;
   GE_CHK_RT_RET(rtMalloc(&workspace_addr, task_info.size(), RT_MEMORY_HBM));
   rtError_t rt_ret =
-      rtMemcpy(workspace_addr, task_info.size(), task_info.data(), task_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
+    rtMemcpy(workspace_addr, task_info.size(), task_info.data(), task_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "rtMemcpy error");
     GE_CHK_RT(rtFree(workspace_addr));
@@ -216,7 +216,7 @@ Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_
 Status AicpuConstantFoldingPass::UpdateInputAndOutputAddr(const vector<uint64_t> &io_addrs,
                                                           STR_FWK_OP_KERNEL &task) const {
   auto addrs_size = sizeof(uint64_t) * (io_addrs.size());
-  if (addrs_size < 1) {
+  if (addrs_size <= 0) {
     GELOGE(FAILED, "addrs_size is less than 1 ");
     return FAILED;
   }
@@ -326,12 +326,12 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
   }
   std::function<void()> callback = [&]() {
     void *input_output_ptr =
-        reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr));
+      reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr));
     if (input_output_ptr != nullptr) {
       GE_CHK_RT(rtFree(input_output_ptr));
     }
     void *workspace_addr_ptr =
-        reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr));
+      reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr));
     if (workspace_addr_ptr != nullptr) {
       GE_CHK_RT(rtFree(workspace_addr_ptr));
     }
@@ -384,12 +384,12 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
       GE_CHK_RT(rtFree(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(item))));  // pointer cannot be null
     }
     void *input_output_ptr =
-        reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr));
+      reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr));
     if (input_output_ptr != nullptr) {
       GE_CHK_RT(rtFree(input_output_ptr));
     }
     void *workspace_addr_ptr =
-        reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr));
+      reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr));
     if (workspace_addr_ptr != nullptr) {
       GE_CHK_RT(rtFree(workspace_addr_ptr));
     }

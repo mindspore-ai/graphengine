@@ -30,7 +30,7 @@ const char *const kInitialize = "Initialize";
 const char *const kGetOpsKernelInfoStores = "GetOpsKernelInfoStores";
 const char *const kGetGraphOptimizerObjs = "GetGraphOptimizerObjs";
 const char *const kFinalize = "Finalize";
-}
+}  // namespace
 
 namespace ge {
 OpsKernelManager::OpsKernelManager()
@@ -69,10 +69,11 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
   ret = plugin_manager_.LoadSo(extern_engine_path, func_check_list);
   if (ret == SUCCESS) {
     initialize_ = options;
-    Status rst0 = plugin_manager_.InvokeAll<map<string, string>&, Status>(kInitialize, initialize_);
+    Status rst0 = plugin_manager_.InvokeAll<map<string, string> &, Status>(kInitialize, initialize_);
     Status rst1 =
-        plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr>&>(kGetOpsKernelInfoStores, ops_kernel_store_);
-    Status rst2 = plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr>&>(kGetGraphOptimizerObjs, graph_optimizers_);
+      plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr> &>(kGetOpsKernelInfoStores, ops_kernel_store_);
+    Status rst2 =
+      plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr> &>(kGetGraphOptimizerObjs, graph_optimizers_);
     if ((rst0 != SUCCESS) || (rst1 != SUCCESS) || (rst2 != SUCCESS)) {
       GELOGE(GE_OPS_GET_NO_VALID_SO);
       return GE_OPS_GET_NO_VALID_SO;
@@ -109,10 +110,8 @@ void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path) {
   std::string path_base = PluginManager::GetPath();
   std::string so_path = "plugin/opskernel/";
   std::string path = path_base + so_path;
-  extern_engine_path = (path + "libfe.so" + ":") +
-                       (path + "libge_local_engine.so" + ":") +
-                       (path + "librts_engine.so" + ":") +
-                       (path + "libaicpu_engine.so" + ":") +
+  extern_engine_path = (path + "libfe.so" + ":") + (path + "libge_local_engine.so" + ":") +
+                       (path + "librts_engine.so" + ":") + (path + "libaicpu_engine.so" + ":") +
                        (path_base + "libhccl.so");
 }
 
@@ -363,9 +362,7 @@ void OpsKernelManager::GetGraphOptimizerByEngine(const std::string &engine_name,
 
 bool OpsKernelManager::GetEnableFeFlag() const { return enable_fe_flag_; }
 
-
 bool OpsKernelManager::GetEnableAICPUFlag() const { return enable_aicpu_flag_; }
-
 
 bool OpsKernelManager::GetEnablePluginFlag() const { return (enable_fe_flag_ || enable_aicpu_flag_); }
 

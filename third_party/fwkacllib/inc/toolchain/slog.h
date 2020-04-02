@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef _D_SYSLOG_H
-#define _D_SYSLOG_H
+#ifndef D_SYSLOG_H_
+#define D_SYSLOG_H_
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // __cplusplus
 
 /**
  * @ingroup slog
@@ -218,7 +218,7 @@ static DCODE g_moduleIdName[] = {SET_MOUDLE_ID_MAP_NAME(SLOG),
                                  SET_MOUDLE_ID_MAP_NAME(SIS),
                                  SET_MOUDLE_ID_MAP_NAME(HSM),
                                  {NULL, -1}};
-#endif
+#endif // SET_MOUDLE_ID_MAP_NAME
 
 /**
  * @ingroup slog
@@ -352,5 +352,5 @@ void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, c
 
 #ifdef __cplusplus
 }
-#endif
-#endif /* sys/slog.h */
+#endif // __cplusplus
+#endif // D_SYSLOG_H_

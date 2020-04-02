@@ -50,6 +50,7 @@ const size_t kAddOutputSize = 1;
     }                                                                     \
     break;                                                                \
   }
+
 }  // namespace
 
 template <typename T>

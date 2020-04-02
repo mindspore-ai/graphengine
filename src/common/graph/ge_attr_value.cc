@@ -15,7 +15,6 @@
  */
 
 #include "graph/ge_attr_value.h"
-
 #include "graph/ge_tensor.h"
 #include "external/graph/graph.h"
 #include "utils/attr_utils.h"
@@ -35,7 +34,7 @@ namespace ge {
 GeAttrValue::NamedAttrs::NamedAttrs() { named_attrs_.InitDefault(); }
 
 GeAttrValue::NamedAttrs::NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *proto_msg)
-    : named_attrs_(owner, proto_msg) {}
+    : named_attrs_(owner, proto_msg) {}  // lint !e1744
 
 void GeAttrValue::NamedAttrs::SetName(const std::string &name) {
   auto proto_msg = named_attrs_.GetProtoMsg();
@@ -155,29 +154,29 @@ class GeAttrValueImp {
 };
 
 map<proto::AttrDef::ValueCase, GeAttrValue::ValueType> GeAttrValueImp::attr_val_one_type_map_ = {
-    {proto::AttrDef::kI, GeAttrValue::VT_INT},
-    {proto::AttrDef::kF, GeAttrValue::VT_FLOAT},
-    {proto::AttrDef::kB, GeAttrValue::VT_BOOL},
-    {proto::AttrDef::kS, GeAttrValue::VT_STRING},
-    {proto::AttrDef::kT, GeAttrValue::VT_TENSOR},
-    {proto::AttrDef::kTd, GeAttrValue::VT_TENSOR_DESC},
-    {proto::AttrDef::kG, GeAttrValue::VT_GRAPH},
-    {proto::AttrDef::kBt, GeAttrValue::VT_BYTES},
-    {proto::AttrDef::kFunc, GeAttrValue::VT_NAMED_ATTRS},
-    {proto::AttrDef::kListListInt, GeAttrValue::VT_LIST_LIST_INT},
-    {proto::AttrDef::kDt, GeAttrValue::VT_DATA_TYPE},
+  {proto::AttrDef::kI, GeAttrValue::VT_INT},
+  {proto::AttrDef::kF, GeAttrValue::VT_FLOAT},
+  {proto::AttrDef::kB, GeAttrValue::VT_BOOL},
+  {proto::AttrDef::kS, GeAttrValue::VT_STRING},
+  {proto::AttrDef::kT, GeAttrValue::VT_TENSOR},
+  {proto::AttrDef::kTd, GeAttrValue::VT_TENSOR_DESC},
+  {proto::AttrDef::kG, GeAttrValue::VT_GRAPH},
+  {proto::AttrDef::kBt, GeAttrValue::VT_BYTES},
+  {proto::AttrDef::kFunc, GeAttrValue::VT_NAMED_ATTRS},
+  {proto::AttrDef::kListListInt, GeAttrValue::VT_LIST_LIST_INT},
+  {proto::AttrDef::kDt, GeAttrValue::VT_DATA_TYPE},
 };
 map<proto::AttrDef_ListValue_ListValueType, GeAttrValue::ValueType> GeAttrValueImp::attr_val_list_type_map_ = {
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_INT, GeAttrValue::VT_LIST_INT},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_FLOAT, GeAttrValue::VT_LIST_FLOAT},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_BOOL, GeAttrValue::VT_LIST_BOOL},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_STRING, GeAttrValue::VT_LIST_STRING},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR, GeAttrValue::VT_LIST_TENSOR},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR_DESC, GeAttrValue::VT_LIST_TENSOR_DESC},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_GRAPH, GeAttrValue::VT_LIST_GRAPH},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_BYTES, GeAttrValue::VT_LIST_BYTES},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS, GeAttrValue::VT_LIST_NAMED_ATTRS},
-    {proto::AttrDef_ListValue_ListValueType_VT_LIST_DATA_TYPE, GeAttrValue::VT_LIST_DATA_TYPE},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_INT, GeAttrValue::VT_LIST_INT},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_FLOAT, GeAttrValue::VT_LIST_FLOAT},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_BOOL, GeAttrValue::VT_LIST_BOOL},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_STRING, GeAttrValue::VT_LIST_STRING},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR, GeAttrValue::VT_LIST_TENSOR},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR_DESC, GeAttrValue::VT_LIST_TENSOR_DESC},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_GRAPH, GeAttrValue::VT_LIST_GRAPH},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_BYTES, GeAttrValue::VT_LIST_BYTES},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS, GeAttrValue::VT_LIST_NAMED_ATTRS},
+  {proto::AttrDef_ListValue_ListValueType_VT_LIST_DATA_TYPE, GeAttrValue::VT_LIST_DATA_TYPE},
 };
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeAttrValue::GeAttrValue() { value_.InitDefault(); }
@@ -240,7 +239,7 @@ ATTR_VALUE_SET_GET_IMP(GeAttrValue::STR)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::STR>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::INT)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::INT>)
-ATTR_VALUE_SET_GET_IMP(GeAttrValue::FLOAT)
+ATTR_VALUE_SET_GET_IMP(GeAttrValue::FLOAT)  // lint !e524
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::FLOAT>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::BOOL)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::BOOL>)
@@ -254,9 +253,11 @@ ATTR_VALUE_SET_GET_IMP(GeAttrValue::BYTES)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::BYTES>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::NAMED_ATTRS)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::NAMED_ATTRS>)
+/*lint -e665*/
 ATTR_VALUE_SET_GET_IMP(vector<vector<int64_t>>)
-ATTR_VALUE_SET_GET_IMP(vector<DataType>)
-ATTR_VALUE_SET_GET_IMP(GeAttrValue::DATA_TYPE)
+/*lint +e665*/
+ATTR_VALUE_SET_GET_IMP(vector<DataType>)        // lint !e665
+ATTR_VALUE_SET_GET_IMP(GeAttrValue::DATA_TYPE)  // lint !e665
 
 #undef ATTR_VALUE_SET_GET_IMP
 
@@ -275,8 +276,8 @@ class AttrUtilsHelper {
   }
 
   inline static bool GetValueCheckListType(
-      const proto::AttrDef &attr_def, proto::AttrDef_ListValue_ListValueType proto_list_case,
-      const std::function<bool(const proto::AttrDef &proto_attr_val)> item_check_fun) {
+    const proto::AttrDef &attr_def, proto::AttrDef_ListValue_ListValueType proto_list_case,
+    const std::function<bool(const proto::AttrDef &proto_attr_val)> item_check_fun) {
     if (attr_def.value_case() != proto::AttrDef::kList) {
       GELOGW("Check ListType Failed, value_case %u", attr_def.value_case());
       return false;
@@ -636,9 +637,8 @@ bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const ge::DataType
 #define ATTR_VALUE_IMP_GET_LIST(ValType, proto_list_case, protoItem)                                                   \
   bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoMsgOwner &, vector<ValType> &value) { \
     value.clear();                                                                                                     \
-    if (!AttrUtilsHelper::GetValueCheckListType(proto_attr_val,                                                        \
-                                                proto::AttrDef_ListValue_ListValueType_##proto_list_case,              \
-                                                ListValueItemCheck(protoItem))) {                                      \
+    if (!AttrUtilsHelper::GetValueCheckListType(                                                                       \
+          proto_attr_val, proto::AttrDef_ListValue_ListValueType_##proto_list_case, ListValueItemCheck(protoItem))) {  \
       return false;                                                                                                    \
     }                                                                                                                  \
     auto &list = proto_attr_val.list();                                                                                \
@@ -673,7 +673,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
 bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoMsgOwner &,
                               vector<GeTensorDesc> &value) {
   if (!AttrUtilsHelper::GetValueCheckListType(
-          proto_attr_val, proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR_DESC, ListValueItemCheck(td))) {
+        proto_attr_val, proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR_DESC, ListValueItemCheck(td))) {
     return false;
   }
   auto &list = proto_attr_val.list();
@@ -693,8 +693,8 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
   if (!AttrUtilsHelper::GetValueCheckType(proto_attr_val, proto::AttrDef::kT)) {
     return false;
   }
-  value = std::shared_ptr<GeTensor>(
-      new (std::nothrow) GeTensor(proto_owner, const_cast<proto::AttrDef &>(proto_attr_val).mutable_t()));
+  value = std::shared_ptr<GeTensor>(new (std::nothrow)
+                                      GeTensor(proto_owner, const_cast<proto::AttrDef &>(proto_attr_val).mutable_t()));
   GE_CHK_BOOL_RET_STATUS(value != nullptr, false, "value is nullptr");
   return true;
 }
@@ -757,7 +757,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
                               vector<GeAttrValue::NamedAttrs> &value) {
   value.clear();
   if (!AttrUtilsHelper::GetValueCheckListType(
-          proto_attr_val, proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS, ListValueItemCheck(na))) {
+        proto_attr_val, proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS, ListValueItemCheck(na))) {
     return false;
   }
   auto &list = proto_attr_val.list();
@@ -931,7 +931,7 @@ bool AttrUtils::HasAttr(ConstAttrHolderAdapter &&obj, const string &name) {
 
 #define ATTR_UTILS_SET_IMP(FuncName, Type)                                                                    \
   GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool AttrUtils::Set##FuncName(                               \
-      AttrHolderAdapter &&obj, const string &name, const Type &value) {                                       \
+    AttrHolderAdapter &&obj, const string &name, const Type &value) {                                         \
     proto::AttrDef *proto_attr_val = nullptr;                                                                 \
     if (!AttrUtilsHelper::MutableAttrMapItem(obj.get(), name, proto_attr_val) || proto_attr_val == nullptr) { \
       return false;                                                                                           \

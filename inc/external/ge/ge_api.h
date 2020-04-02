@@ -50,6 +50,16 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
   Status AddGraph(uint32_t graphId, const Graph &graph);
 
   ///
+  /// @ingroup client
+  /// @brief add a graph with a specific graphId and graphOptions
+  /// @param [in] graphId graph id
+  /// @param [in] graph the graph
+  /// @param [in] options graph options
+  /// @return Status result of function
+  ///
+  Status AddGraph(uint32_t graphId, const Graph &graph, const std::map<std::string, std::string> &options);
+
+  ///
   /// @ingroup ge_graph
   /// @brief remove a graph of the session with specific session id
   /// @param [in] graphId graph id

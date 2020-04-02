@@ -191,7 +191,7 @@ bool ModelSerializeImp::SerializeModel(const Model &model, proto::ModelDef *mode
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ModelSerializeImp::UnserializeTensor(
-    GeTensorPtr &tensor, proto::TensorDef &tensor_proto) {
+  GeTensorPtr &tensor, proto::TensorDef &tensor_proto) {
   tensor = std::shared_ptr<GeTensor>(new (std::nothrow) GeTensor(protobuf_owner_, &tensor_proto));
   if (tensor == nullptr) {
     GELOGE(GRAPH_FAILED, "tensor is nullptr");
@@ -208,14 +208,14 @@ bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_d
   // Input tensor
   for (auto &input_desc : *op_def_proto.mutable_input_desc()) {
     std::shared_ptr<GeTensorDesc> temp_value =
-        std::shared_ptr<GeTensorDesc>(new (std::nothrow) GeTensorDesc(protobuf_owner_, &input_desc));
+      std::shared_ptr<GeTensorDesc>(new (std::nothrow) GeTensorDesc(protobuf_owner_, &input_desc));
     GE_CHK_BOOL_RET_STATUS(temp_value != nullptr, false, "temp_value is nullptr");
     op_desc->inputs_desc_.push_back(temp_value);
   }
   // Output tensor
   for (auto &output_desc : *op_def_proto.mutable_output_desc()) {
     std::shared_ptr<GeTensorDesc> temp_value =
-        std::shared_ptr<GeTensorDesc>(new (std::nothrow) GeTensorDesc(protobuf_owner_, &output_desc));
+      std::shared_ptr<GeTensorDesc>(new (std::nothrow) GeTensorDesc(protobuf_owner_, &output_desc));
     GE_CHK_BOOL_RET_STATUS(temp_value != nullptr, false, "temp_value is nullptr");
     op_desc->outputs_desc_.push_back(temp_value);
   }
@@ -265,13 +265,13 @@ bool ModelSerializeImp::HandleNodeNameRef() {
                item.dst_node_name.c_str(), item.dst_in_index);
         return false;
       }
-      GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");
+      GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");  // lint !e737
     } else {
       // Control edge
       auto src_anchor = src_node_it->second->GetOutControlAnchor();
       auto dst_anchor = item.dst_node->GetInControlAnchor();
       if (src_anchor != nullptr && dst_anchor != nullptr) {
-        GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");
+        GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");  // lint !e737
       }
     }
   }

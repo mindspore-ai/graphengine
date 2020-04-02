@@ -15,11 +15,9 @@
  */
 
 #include "session/inner_session.h"
-
 #include <map>
 #include <memory>
 #include <vector>
-
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/ge_global_options.h"
 #include "graph/ge_local_context.h"
@@ -41,7 +39,7 @@ Status InnerSession::Initialize() {
     GELOGW("[InnerSession:%lu] session already initialize.", session_id_);
     return SUCCESS;
   }
-  UpdateThreadContext();
+  UpdateThreadContext(std::map<std::string, std::string>{});
 
   GE_CHK_RT_RET(rtSetDevice(GetContext().DeviceId()));
 
@@ -51,10 +49,10 @@ Status InnerSession::Initialize() {
     return ret;
   }
 
-  int32_t version = static_cast<int32_t >(SessionVersion::ClOUD_VERSION);
-  const int kDefaultDeviceId = 0;
-  const int kDefaultJobId = 0;
-  ret = VarManager::Instance(session_id_)->Init(version, session_id_, kDefaultDeviceId, kDefaultJobId);
+  int32_t version = static_cast<int32_t>(SessionVersion::ClOUD_VERSION);
+  const int DEFAULT_DEVICE_ID = 0;
+  const int DEFAULT_JOB_ID = 0;
+  ret = VarManager::Instance(session_id_)->Init(version, session_id_, DEFAULT_DEVICE_ID, DEFAULT_JOB_ID);
   if (ret != SUCCESS) {
     GELOGE(ret, "failed to init session instance");
   }
@@ -68,7 +66,7 @@ Status InnerSession::Finalize() {
     GELOGW("[InnerSession:%lu] session does not initialize.", session_id_);
     return SUCCESS;
   }
-  UpdateThreadContext();
+  UpdateThreadContext(std::map<std::string, std::string>{});
   Status ret = graph_manager_.Finalize();
   if (ret != SUCCESS) {
     // Subsequent code execution is required, so no return is required
@@ -80,24 +78,30 @@ Status InnerSession::Finalize() {
   // release var memory
   GELOGI("VarManager free var memory.");
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
-  GE_CHK_RT(rtDeviceReset(static_cast<int32_t >(GetContext().DeviceId())));
+  GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
 
   return ret;
 }
 
 Status InnerSession::GetVariable(const std::string &name, Tensor &val) {
-  UpdateThreadContext();
+  UpdateThreadContext(std::map<std::string, std::string>{});
   return graph_manager_.GetVariable(name, val);
 }
 
 Status InnerSession::AddGraph(uint32_t graph_id, const Graph &graph) {
+  std::map<std::string, std::string> options;
+  return AddGraph(graph_id, graph, options);
+}
+
+Status InnerSession::AddGraph(uint32_t graph_id, const Graph &graph,
+                              const std::map<std::string, std::string> &options) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
     GELOGE(GE_SESS_INIT_FAILED, "[InnerSession:%lu] initialize failed.", session_id_);
     return GE_SESS_INIT_FAILED;
   }
-  UpdateThreadContext();
-  Status ret = graph_manager_.AddGraph(graph_id, graph);
+  UpdateThreadContext(options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] add graph %u failed.", session_id_, graph_id);
     return ret;
@@ -115,7 +119,7 @@ Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inpu
       GELOGE(GE_SESS_INIT_FAILED, "[InnerSession:%lu] initialize failed.", session_id_);
       return GE_SESS_INIT_FAILED;
     }
-    UpdateThreadContext();
+    UpdateThreadContext(graph_id);
     vector<GeTensor> geInputs;
     for (auto &item : inputs) {
       geInputs.push_back(TensorAdapter::AsGeTensor(item));
@@ -147,7 +151,7 @@ Status InnerSession::RemoveGraph(uint32_t graph_id) {
     GELOGE(GE_SESS_INIT_FAILED, "[InnerSession:%lu] initialize failed.", session_id_);
     return GE_SESS_INIT_FAILED;
   }
-  UpdateThreadContext();
+  UpdateThreadContext(graph_id);
   Status ret = graph_manager_.RemoveGraph(graph_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] remove graph failed, graph_id=%u.", session_id_, graph_id);
@@ -159,14 +163,13 @@ Status InnerSession::RemoveGraph(uint32_t graph_id) {
 }
 
 Status InnerSession::RegisterCallBackFunc(
-    const std::string &key,
-    const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
+  const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
     GELOGE(GE_SESS_INIT_FAILED, "[InnerSession:%lu] initialize failed.", session_id_);
     return GE_SESS_INIT_FAILED;
   }
-  UpdateThreadContext();
+  UpdateThreadContext(std::map<std::string, std::string>{});
   Status ret = graph_manager_.RegisterCallBackFunc(key, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] register %s callback function failed.", session_id_, key.c_str());
@@ -179,7 +182,7 @@ Status InnerSession::RegisterCallBackFunc(
 
 Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<TensorInfo> &inputs,
                                    std::vector<TensorInfo> &outputs, std::function<void(Status)> callback) {
-  UpdateThreadContext();
+  UpdateThreadContext(graph_id);
   GELOGI("[InnerSession:%lu] run graph on session, graph_id=%u.", session_id_, graph_id);
   Status ret = graph_manager_.RunGraphAsync(graph_id, inputs, outputs, session_id_, callback);
   if (ret != SUCCESS) {
@@ -192,12 +195,24 @@ Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<TensorIn
 
 const GraphManager &InnerSession::getGraphManagerObj() const { return graph_manager_; }
 
-void InnerSession::UpdateThreadContext() {
+void InnerSession::UpdateThreadContext(const std::map<std::string, std::string> &options) {
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GetThreadLocalContext().SetSessionOption(options_);
+  GetThreadLocalContext().SetGraphOption(options);
 }
+
+void InnerSession::UpdateThreadContext(uint32_t graph_id) {
+  auto options = graph_manager_.GetGraphOptions(graph_id);
+  if (options == nullptr) {
+    GELOGW("graph level options is null.");
+    UpdateThreadContext(std::map<std::string, std::string>{});
+  } else {
+    UpdateThreadContext(*options);
+  }
+}
+
 bool InnerSession::IsGraphNeedRebuild(uint32_t graph_id) {
-  UpdateThreadContext();
+  UpdateThreadContext(graph_id);
   return graph_manager_.IsGraphNeedRebuild(graph_id);
 }
 }  // namespace ge

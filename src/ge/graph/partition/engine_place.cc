@@ -15,12 +15,10 @@
  */
 
 #include "graph/partition/engine_place.h"
-
 #include <climits>
 #include <memory>
 #include <string>
 #include <utility>
-
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
@@ -73,7 +71,7 @@ Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::st
   }
 
   // private function, promise node_ptr->GetOpDesc() not null
-  GELOGI("Assigning DNNEngine %s to node %s, op type %s", engine_name.c_str(), node_ptr->GetName().c_str(),
+  GELOGD("Assigning DNNEngine %s to node %s, op type is %s", engine_name.c_str(), node_ptr->GetName().c_str(),
          node_ptr->GetOpDesc()->GetType().c_str());
 
   // Record the node assigned engine name
@@ -82,4 +80,3 @@ Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::st
   return SUCCESS;
 }
 }  // namespace ge
-

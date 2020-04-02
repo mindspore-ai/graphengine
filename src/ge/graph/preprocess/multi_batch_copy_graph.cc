@@ -16,22 +16,22 @@
 
 #include "graph/preprocess/multi_batch_copy_graph.h"
 
-#include <queue>
-#include <set>
 #include <string>
+#include <set>
+#include <queue>
 
-#include "common/formats/utils/formats_trans_utils.h"
-#include "common/ge/ge_util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/ge_inner_error_codes.h"
-#include "framework/common/string_util.h"
-#include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
-#include "graph/passes/prune_pass.h"
-#include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
+#include "graph/utils/attr_utils.h"
+#include "graph/debug/ge_attr_define.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
+#include "framework/common/string_util.h"
+#include "framework/common/debug/ge_log.h"
+#include "common/ge/ge_util.h"
+#include "common/formats/utils/formats_trans_utils.h"
+#include "graph/passes/prune_pass.h"
 
 namespace ge {
 namespace multibatch {
@@ -44,9 +44,7 @@ const int kMergeDataOutIndex = 0;
 const size_t kMaxShapesCount = 16;
 const size_t kMinShapesCount = 2;
 
-inline bool IsDataLikeType(const std::string &node_type) {
-  return (node_type == DATA) || (node_type == AIPP);
-}
+inline bool IsDataLikeType(const std::string &node_type) { return (node_type == DATA) || (node_type == AIPP); }
 
 NodePtr InsertMergeNodeToGraph(const std::string &name, size_t input_num, const ComputeGraphPtr &graph) {
   OpDescPtr desc = MakeShared<OpDesc>();
@@ -630,16 +628,9 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
   switchn_desc->SetType(SWITCHN);
 
   GeTensorDesc tensor(NodeUtils::GetOutputDesc(*data, kDataOutIndex));
-  if (switchn_desc->AddInputDesc(tensor) != GRAPH_SUCCESS) {  // data
-    GELOGE(FAILED, "Failed to add inpit desc.");
-    return FAILED;
-  }
-
+  switchn_desc->AddInputDesc(tensor);  // data
   GeTensorDesc pred_tensor;
-  if (switchn_desc->AddInputDesc(pred_tensor) != GRAPH_SUCCESS) {  // pred
-    GELOGE(FAILED, "Failed to add inpit desc.");
-    return FAILED;
-  }
+  switchn_desc->AddInputDesc(pred_tensor);  // pred
   for (size_t i = 0; i < shapes_.size(); ++i) {
     auto shape = data_shape;
     auto ret = CalcShape(shapes_.at(i), shape);
@@ -653,10 +644,7 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
       GELOGE(INTERNAL_ERROR, "Failed to add attr value on output %zu tensor", i);
       return INTERNAL_ERROR;
     }
-    if (switchn_desc->AddOutputDesc(tensor) != GRAPH_SUCCESS) {  // pred
-      GELOGE(FAILED, "Failed to add inpit desc.");
-      return FAILED;
-    }
+    switchn_desc->AddOutputDesc(tensor);
     GELOGD("The SwitchN %s output index %zu, shape %s", switchn_desc->GetName().c_str(), i, shape.ToString().c_str());
   }
 
@@ -745,7 +733,7 @@ Status MultiBatchGraphCopyer::LinkEdges() {
 Status MultiBatchGraphCopyer::LinkDataToSwitchN(const NodePtr &data) {
   auto switchn = data_nodes_to_switchn_[data.get()];
   auto ret =
-      GraphUtils::AddEdge(shape_data_->GetOutDataAnchor(kDataOutIndex), switchn->GetInDataAnchor(kSwitchNPredIndex));
+    GraphUtils::AddEdge(shape_data_->GetOutDataAnchor(kDataOutIndex), switchn->GetInDataAnchor(kSwitchNPredIndex));
   if (ret != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to link shape data %s to switchn %s", shape_data_->GetName().c_str(),
            switchn->GetName().c_str());

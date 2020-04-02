@@ -75,9 +75,9 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
   auto prev_trans_node_out_anchor = trans_in_anchor->GetPeerOutAnchor();
   if (prev_trans_node_out_anchor == nullptr) {
     GELOGW(
-        "The trans node %s does not have an input, so the ref node %s does"
-        " not have any inputs after bypass",
-        trans_node->GetName().c_str(), trans_node->GetName().c_str());
+      "The trans node %s does not have an input, so the ref node %s does"
+      " not have any inputs after bypass",
+      trans_node->GetName().c_str(), trans_node->GetName().c_str());
   } else {
     ret = GraphUtils::AddEdge(prev_trans_node_out_anchor, ref_in_anchor);
     if (ret != GRAPH_SUCCESS) {
@@ -161,14 +161,14 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
     auto start_iter = fusion_road.begin();
     auto end_iter = fusion_road.rbegin();
     GELOGI(
-        "Trans variable data for %s from format %s to %s, shape %s to %s "
-        "data-type %s to %s, path len %zu success",
-        node->GetName().c_str(), TypeUtils::FormatToSerialString(start_iter->input.GetFormat()).c_str(),
-        TypeUtils::FormatToSerialString(end_iter->output.GetFormat()).c_str(),
-        formats::ShapeToString(start_iter->input.GetShape().GetDims()).c_str(),
-        formats::ShapeToString(end_iter->output.GetShape().GetDims()).c_str(),
-        TypeUtils::DataTypeToSerialString(start_iter->input.GetDataType()).c_str(),
-        TypeUtils::DataTypeToSerialString(end_iter->output.GetDataType()).c_str(), fusion_road.size());
+      "Trans variable data for %s from format %s to %s, shape %s to %s "
+      "data-type %s to %s, path len %zu success",
+      node->GetName().c_str(), TypeUtils::FormatToSerialString(start_iter->input.GetFormat()).c_str(),
+      TypeUtils::FormatToSerialString(end_iter->output.GetFormat()).c_str(),
+      formats::ShapeToString(start_iter->input.GetShape().GetDims()).c_str(),
+      formats::ShapeToString(end_iter->output.GetShape().GetDims()).c_str(),
+      TypeUtils::DataTypeToSerialString(start_iter->input.GetDataType()).c_str(),
+      TypeUtils::DataTypeToSerialString(end_iter->output.GetDataType()).c_str(), fusion_road.size());
 
     ret = VarManager::Instance(graph->GetSessionID())->SetTransRoad(node->GetName(), fusion_road);
     if (ret != SUCCESS) {
@@ -222,9 +222,9 @@ Status VariableOpPass::DealFusion(const ge::NodePtr &var_node) {
              trans_node->GetType().c_str(), var_node->GetName().c_str());
       if (trans_node->GetOutDataNodes().size() > 1) {
         GELOGD(
-            "The trans node %s type %s connecting with var-ref %s has more"
-            " than one output data nodes, unlink the edge between them",
-            trans_node->GetName().c_str(), trans_node->GetType().c_str(), ref_node->GetName().c_str());
+          "The trans node %s type %s connecting with var-ref %s has more"
+          " than one output data nodes, unlink the edge between them",
+          trans_node->GetName().c_str(), trans_node->GetType().c_str(), ref_node->GetName().c_str());
         if (ByPassTransNode(trans_node, ref_node) != SUCCESS) {
           GELOGE(INTERNAL_ERROR, "Failed to bypass trans node %s to ref %s", trans_node->GetName().c_str(),
                  ref_node->GetName().c_str());
@@ -232,9 +232,9 @@ Status VariableOpPass::DealFusion(const ge::NodePtr &var_node) {
         }
       } else {
         GELOGD(
-            "The trans node %s type %s connecting with var-ref %s has only"
-            " one output data nodes, isolate and remove it.",
-            trans_node->GetName().c_str(), trans_node->GetType().c_str(), ref_node->GetName().c_str());
+          "The trans node %s type %s connecting with var-ref %s has only"
+          " one output data nodes, isolate and remove it.",
+          trans_node->GetName().c_str(), trans_node->GetType().c_str(), ref_node->GetName().c_str());
         if (GraphUtils::IsolateNode(trans_node, {0}) != SUCCESS) {
           return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
         }
@@ -272,9 +272,9 @@ Status VariableOpPass::CheckSameAndTransOp(const ge::NodePtr &var_node, bool &is
     }
     if (data_index != in_anchor->GetIdx()) {
       GELOGD(
-          "Variables only can be fusion with trans nodes, the next node %s"
-          " type %s index %d does not trans anything(correct index %d)",
-          out_node->GetName().c_str(), out_node->GetType().c_str(), in_anchor->GetIdx(), data_index);
+        "Variables only can be fusion with trans nodes, the next node %s"
+        " type %s index %d does not trans anything(correct index %d)",
+        out_node->GetName().c_str(), out_node->GetType().c_str(), in_anchor->GetIdx(), data_index);
       return SUCCESS;
     }
 
@@ -304,9 +304,9 @@ Status VariableOpPass::CheckSameAndTransOp(const ge::NodePtr &var_node, bool &is
     }
 
     GELOGW(
-        "trans_op type size for var Node(%s) is over 1, Currently not"
-        " supported, dataTypeAndFormats is %s.",
-        var_node->GetName().c_str(), type_and_formats_stream.str().c_str());
+      "trans_op type size for var Node(%s) is over 1, Currently not"
+      " supported, dataTypeAndFormats is %s.",
+      var_node->GetName().c_str(), type_and_formats_stream.str().c_str());
     return SUCCESS;
   }
 
@@ -574,8 +574,8 @@ Status VariableOpPass::RenewVarDesc(ge::ComputeGraphPtr &graph) {
   // renew var manager desc
   Status ret = SUCCESS;
   for (auto &node : graph->GetDirectNode()) {
-    bool is_var_node = (node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2) ||
-                       (node->GetType() == VARHANDLEOP);
+    bool is_var_node =
+      (node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2) || (node->GetType() == VARHANDLEOP);
     if (is_var_node) {
       if (!ge::VarManager::Instance(graph->GetSessionID())->IsVarExist(node->GetName())) {
         GELOGI("var manager does not exist var node[%s]", node->GetName().c_str());

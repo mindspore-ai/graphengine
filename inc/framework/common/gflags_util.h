@@ -23,11 +23,6 @@
 namespace ge {
 class GflagsUtils {
  public:
-  ///
-  /// @brief Determines whether the parameter is true
-  /// @param name name parameter name
-  /// @return true or false
-  ///
   static bool IsSetCommandTrue(const char *name) {
     std::string out;
     return gflags::GetCommandLineOption(name, &out) && out == "true";

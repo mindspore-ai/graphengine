@@ -15,9 +15,7 @@
  */
 
 #include "graph/node.h"
-
 #include <utility>
-
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
 #include "external/graph/operator_factory.h"
@@ -533,7 +531,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Node::Vistor<NodePtr> Node::GetIn
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool Node::IsAllInNodesSeen(
-    std::unordered_set<Node *> &nodes_seen) const {
+  std::unordered_set<Node *> &nodes_seen) const {
   for (const auto &in_anchor : in_data_anchors_) {
     GE_CHK_BOOL_EXEC((in_anchor != nullptr), continue, "in_data_anchor is nullptr");
     auto out_anchor = in_anchor->GetPeerOutAnchor();
@@ -736,10 +734,10 @@ graphStatus Node::Verify() const {
       continue;
     }
     GE_CHK_BOOL_RET_STATUS(
-        op_->GetType() == data_type || op_->GetType() == aipp_data_type || op_->GetType() == const_type ||
-            op_->GetType() == variable_type || op_->IsOptionalInput(in_anchor_ptr->GetIdx()) ||
-            in_anchor_ptr->GetPeerAnchors().size() > 0,
-        GRAPH_FAILED, "operator %s's input %d is not linked.", GetName().c_str(), in_anchor_ptr->GetIdx());
+      op_->GetType() == data_type || op_->GetType() == aipp_data_type || op_->GetType() == const_type ||
+        op_->GetType() == variable_type || op_->IsOptionalInput(in_anchor_ptr->GetIdx()) ||
+        in_anchor_ptr->GetPeerAnchors().size() > 0,
+      GRAPH_FAILED, "operator %s's input %d is not linked.", GetName().c_str(), in_anchor_ptr->GetIdx());
   }
 
   string frameworkop_type = "FrameworkOp";

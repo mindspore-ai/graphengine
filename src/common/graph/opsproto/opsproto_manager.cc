@@ -33,7 +33,9 @@ OpsProtoManager *OpsProtoManager::Instance() {
 }
 
 bool OpsProtoManager::Initialize(const std::map<std::string, std::string> &options) {
+  /*lint -e1561*/
   auto proto_iter = options.find("ge.opsProtoLibPath");
+  /*lint +e1561*/
   if (proto_iter == options.end()) {
     GELOGW("ge.opsProtoLibPath option not set, return.");
     return false;

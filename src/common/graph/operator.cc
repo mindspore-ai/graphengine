@@ -22,10 +22,12 @@
 #include <queue>
 #include <set>
 
+//#include "./array_ops.h"
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
 #include "external/graph/attr_value.h"
+#include "external/graph/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
 #include "graph/ge_attr_value.h"
@@ -33,6 +35,7 @@
 #include "graph/node.h"
 #include "graph/op_desc.h"
 #include "graph/operator_factory.h"
+#include "graph/usr_types.h"
 #include "utils/graph_utils.h"
 #include "utils/op_desc_utils.h"
 #include "utils/tensor_adapter.h"
@@ -74,6 +77,29 @@ class OpIO {
   int index_;
   std::shared_ptr<OperatorImpl> owner_;
 };
+
+class TensorTypeImpl {
+ public:
+  TensorTypeImpl() = default;
+  ~TensorTypeImpl() = default;
+
+  std::vector<DataType> dt_vec_;
+};
+
+TensorType::TensorType(DataType dt) {
+  tensor_type_impl_ = ComGraphMakeShared<TensorTypeImpl>();
+  if (tensor_type_impl_ != nullptr) {
+    tensor_type_impl_->dt_vec_.push_back(dt);
+  }
+}
+
+TensorType::TensorType(const std::initializer_list<DataType> &types) {
+  tensor_type_impl_ = ComGraphMakeShared<TensorTypeImpl>();
+  if (tensor_type_impl_ != nullptr) {
+    tensor_type_impl_->dt_vec_ = types;
+  }
+}
+
 class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
   friend class GraphBuilderImpl;
   friend class OpDescUtils;
@@ -128,8 +154,15 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
 
     OpIO op_dst(dst_name, dst_index, shared_from_this());
     src_op_impl->UpdateLinkMapImpl(src_name, op_dst);
+    auto output_desc = src_op_impl->GetOutputDesc(src_name);
+    auto input_desc = op_desc_->GetInputDesc(dst_name);
+    if (input_desc.GetFormat() == FORMAT_RESERVED) {
+      output_desc.SetFormat(FORMAT_ND);
+    } else {
+      output_desc.SetFormat(input_desc.GetFormat());
+    }
     // Fix for linking opdesc
-    if (op_desc_->UpdateInputDesc(dst_name, src_op_impl->GetOutputDesc(src_name)) != GRAPH_SUCCESS) {
+    if (op_desc_->UpdateInputDesc(dst_name, output_desc) != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "Update inputdesc failed,dst name is %s, src name is %s", dst_name.c_str(),
              src_name.c_str());
       return;
@@ -146,10 +179,11 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     int dst_index = op_desc_->GetInputIndexByName(dst_name);
     GE_CHK_BOOL_EXEC(dst_index >= 0, return, "Find input index by name failed. name[%s], op name:%s", dst_name.c_str(),
                      op_desc_->GetName().c_str());
-    GE_CHK_BOOL_EXEC(out_handler->GetOwner() != nullptr && out_handler->GetOwner()->GetOpDescImpl() != nullptr, return,
-                     "out_handler invalid. name[%s]", dst_name.c_str());
+    auto out_op_impl = out_handler->GetOwner();
+    GE_CHK_BOOL_EXEC(out_op_impl && out_op_impl->GetOpDescImpl(), return, "out_handler invalid. name[%s]",
+                     dst_name.c_str());
     bool is_const = false;
-    if (out_handler->GetOwner()->GetOpDescImpl()->GetType() == CONSTANT) {
+    if (out_op_impl->GetOpDescImpl()->GetType() == CONSTANT) {
       is_const = true;
     }
     auto is_input_const = op_desc_->GetIsInputConst();
@@ -160,14 +194,19 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     op_desc_->SetIsInputConst(is_input_const);
 
     OpIO in_handler(dst_name, dst_index, shared_from_this());
-    auto out_op_impl = out_handler->GetOwner();
-    GE_CHK_BOOL_EXEC(out_op_impl != nullptr, return, "Get out_handler's impl failed.");
+    GE_CHK_BOOL_EXEC(!!out_op_impl, return, "Get out_handler's impl failed.");
 
     out_op_impl->UpdateLinkMapImpl(src_name, in_handler);
-    GE_CHK_BOOL_EXEC(
-        op_desc_->UpdateInputDesc(dst_name, out_handler->GetOwner()->GetOutputDesc(src_name)) == GRAPH_SUCCESS, return,
-        "Update input desc failed,dst name is %s,src name is %s", dst_name.c_str(),
-        src_name.c_str());  // fix for linking opdesc
+    auto src_output_desc = out_op_impl->GetOutputDesc(src_name);
+    auto dst_input_desc = op_desc_->GetInputDesc(dst_name);
+    if (dst_input_desc.GetFormat() == FORMAT_RESERVED) {
+      src_output_desc.SetFormat(FORMAT_ND);
+    } else {
+      src_output_desc.SetFormat(dst_input_desc.GetFormat());
+    }
+    GE_CHK_BOOL_EXEC(op_desc_->UpdateInputDesc(dst_name, src_output_desc) == GRAPH_SUCCESS, return,
+                     "Update input desc failed,dst name is %s,src name is %s", dst_name.c_str(),
+                     src_name.c_str());  // fix for linking opdesc
   }
 
   void AddControlInputImp(const ge::Operator &src_oprt) {
@@ -382,7 +421,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator OpDescUtils::CreateOpera
     return Operator("default");
   }
   OperatorKeeper::GetInstance().CheckInOperator(operator_impl_ptr);
-  return operator_impl_ptr->ToOperator();
+  return operator_impl_ptr->ToOperator();  // lint !e514
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr OpDescUtils::GetOpDescFromOperator(const Operator &oprt) {
@@ -617,26 +656,26 @@ GE_FUNC_HOST_VISIBILITY size_t Operator::GetOutputsSize() const {
 // According to op get the attrs name and type
 namespace {
 const std::map<GeAttrValue::ValueType, std::string> kAttrTypesMap = {
-    {GeAttrValue::VT_NONE, "VT_STRING"},
-    {GeAttrValue::VT_STRING, "VT_STRING"},
-    {GeAttrValue::VT_FLOAT, "VT_FLOAT"},
-    {GeAttrValue::VT_BOOL, "VT_BOOL"},
-    {GeAttrValue::VT_INT, "VT_INT"},
-    {GeAttrValue::VT_TENSOR_DESC, "VT_TENSOR_DESC"},
-    {GeAttrValue::VT_TENSOR, "VT_TENSOR"},
-    {GeAttrValue::VT_BYTES, "VT_BYTES"},
-    {GeAttrValue::VT_GRAPH, "VT_GRAPH"},
-    {GeAttrValue::VT_NAMED_ATTRS, "VT_NAMED_ATTRS"},
-    {GeAttrValue::VT_LIST_BASE, "VT_LIST_BASE"},
-    {GeAttrValue::VT_LIST_STRING, "VT_LIST_STRING"},
-    {GeAttrValue::VT_LIST_FLOAT, "VT_LIST_FLOAT"},
-    {GeAttrValue::VT_LIST_BOOL, "VT_LIST_BOOL"},
-    {GeAttrValue::VT_LIST_INT, "VT_LIST_INT"},
-    {GeAttrValue::VT_LIST_TENSOR_DESC, "VT_LIST_TENSOR_DESC"},
-    {GeAttrValue::VT_LIST_TENSOR, "VT_LIST_TENSOR"},
-    {GeAttrValue::VT_LIST_BYTES, "VT_LIST_BYTES"},
-    {GeAttrValue::VT_GRAPH, "VT_GRAPH"},
-    {GeAttrValue::VT_LIST_NAMED_ATTRS, "VT_LIST_NAMED_ATTRS"},
+  {GeAttrValue::VT_NONE, "VT_STRING"},
+  {GeAttrValue::VT_STRING, "VT_STRING"},
+  {GeAttrValue::VT_FLOAT, "VT_FLOAT"},
+  {GeAttrValue::VT_BOOL, "VT_BOOL"},
+  {GeAttrValue::VT_INT, "VT_INT"},
+  {GeAttrValue::VT_TENSOR_DESC, "VT_TENSOR_DESC"},
+  {GeAttrValue::VT_TENSOR, "VT_TENSOR"},
+  {GeAttrValue::VT_BYTES, "VT_BYTES"},
+  {GeAttrValue::VT_GRAPH, "VT_GRAPH"},
+  {GeAttrValue::VT_NAMED_ATTRS, "VT_NAMED_ATTRS"},
+  {GeAttrValue::VT_LIST_BASE, "VT_LIST_BASE"},
+  {GeAttrValue::VT_LIST_STRING, "VT_LIST_STRING"},
+  {GeAttrValue::VT_LIST_FLOAT, "VT_LIST_FLOAT"},
+  {GeAttrValue::VT_LIST_BOOL, "VT_LIST_BOOL"},
+  {GeAttrValue::VT_LIST_INT, "VT_LIST_INT"},
+  {GeAttrValue::VT_LIST_TENSOR_DESC, "VT_LIST_TENSOR_DESC"},
+  {GeAttrValue::VT_LIST_TENSOR, "VT_LIST_TENSOR"},
+  {GeAttrValue::VT_LIST_BYTES, "VT_LIST_BYTES"},
+  {GeAttrValue::VT_GRAPH, "VT_GRAPH"},
+  {GeAttrValue::VT_LIST_NAMED_ATTRS, "VT_LIST_NAMED_ATTRS"},
 };
 }  // namespace
 const std::map<std::string, std::string> Operator::GetAllAttrNamesAndTypes() const {
@@ -665,32 +704,32 @@ const std::map<std::string, std::string> Operator::GetAllAttrNamesAndTypes() con
 void Operator::InputRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  (void)operator_impl_->GetOpDescImpl()->AddInputDesc(name, GeTensorDesc());
+  operator_impl_->GetOpDescImpl()->AddInputDesc(name, GeTensorDesc());
 }
 
 void Operator::OptionalInputRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
   (void)operator_impl_->GetOpDescImpl()->AddOptionalInputDesc(name,
-          GeTensorDesc(GeShape(), FORMAT_RESERVED, DT_UNDEFINED));
+                                                              GeTensorDesc(GeShape(), FORMAT_RESERVED, DT_UNDEFINED));
 }
 
 void Operator::InferFuncRegister(const std::function<graphStatus(Operator &)> &func) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  operator_impl_->GetOpDescImpl()->AddInferFunc(func);
+  (void)operator_impl_->GetOpDescImpl()->AddInferFunc(func);
 }
 
 void Operator::InferFormatFuncRegister(const std::function<graphStatus(Operator &)> &func) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  operator_impl_->GetOpDescImpl()->AddInferFormatFunc(func);
+  (void)operator_impl_->GetOpDescImpl()->AddInferFormatFunc(func);
 }
 
 void Operator::VerifierFuncRegister(const std::function<graphStatus(Operator &)> &func) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  operator_impl_->GetOpDescImpl()->AddVerifierFunc(func);
+  (void)operator_impl_->GetOpDescImpl()->AddVerifierFunc(func);
 }
 
 void Operator::OutputRegister(const string &name) {
@@ -734,7 +773,7 @@ int Operator::GetDynamicOutputNum(const string &name) const {
 void Operator::RequiredAttrRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  (void)operator_impl_->GetOpDescImpl()->AddRequiredAttr(name);
+  operator_impl_->GetOpDescImpl()->AddRequiredAttr(name);
 }
 
 graphStatus Operator::VerifyAll() {
@@ -960,26 +999,6 @@ graphStatus Operator::GetAttr(const string &name, OpBytes &attr_value) const {
   return GRAPH_SUCCESS;
 }
 
-Operator &Operator::SetAttr(const string &name, const UsrQuantizeFactorParams &attr_value) {
-  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "operator impl is nullptr, name %s.", name.c_str());
-  QuantizeFactorParams def_quant;
-  GE_CHK_BOOL_EXEC(TypeUtils::Usr2DefQuantizeFactorParams(attr_value, def_quant) == GRAPH_SUCCESS, return *this,
-                   "trans para fail");
-  GE_CHK_BOOL_EXEC(OpDescUtils::SetQuantizeFactorParams(operator_impl_->GetOpDescImpl(), def_quant) == GRAPH_SUCCESS,
-                   return *this, "operator set QuantizeFactorParams fail");
-  return *this;
-}
-
-graphStatus Operator::GetAttr(const string &name, UsrQuantizeFactorParams &attr_value) const {
-  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
-  QuantizeFactorParams def_quant;
-  GE_CHK_BOOL_EXEC(OpDescUtils::GetQuantizeFactorParams(operator_impl_->GetOpDescImpl(), def_quant) == GRAPH_SUCCESS,
-                   return GRAPH_FAILED, "operator get QuantizeFactorParams fail");
-  GE_CHK_BOOL_EXEC(TypeUtils::Def2UsrQuantizeFactorParams(def_quant, attr_value) == GRAPH_SUCCESS, return GRAPH_FAILED,
-                   "trans para fail");
-  return GRAPH_SUCCESS;
-}
-
 Operator &Operator::SetAttr(const string &name, ge::AttrValue &&attrValue) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "operator impl is nullptr.");
   (void)operator_impl_->SetAttr(name, std::move(attrValue.impl->geAttrValue_));
@@ -1099,7 +1118,6 @@ class GraphBuilderImpl {
   explicit GraphBuilderImpl(const string &name) : graph_(ComGraphMakeShared<ComputeGraph>(name)) {
     if (graph_ == nullptr) {
       GELOGE(GRAPH_FAILED, "ComputeGraph make shared failed");
-      graph_ = nullptr;
       return;
     }
   }

@@ -22,10 +22,11 @@
 #include "inc/kernel.h"
 
 namespace ge {
-///
-/// @ingroup ge
-/// @brief Squeeze optimization operator processing
-///
+/**
+ * @ingroup ge
+ * @brief Squeeze optimization operator processing
+ * @author
+ */
 class SqueezeKernel : public Kernel {
  public:
   // DimensionAdjustPass

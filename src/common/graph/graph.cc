@@ -15,7 +15,6 @@
  */
 
 #include "external/graph/graph.h"
-
 #include "debug/ge_util.h"
 #include "external/graph/operator.h"
 #include "framework/common/debug/ge_log.h"

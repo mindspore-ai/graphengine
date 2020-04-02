@@ -15,7 +15,9 @@
  */
 
 #include "graph/compute_graph.h"
+
 #include <deque>
+
 #include "./format_refiner.h"
 #include "./ge_context.h"
 #include "debug/ge_attr_define.h"
@@ -95,7 +97,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::FindNode(co
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ComputeGraph::GraphAttrsAreEqual(
-    const ComputeGraph &r_graph) const {
+  const ComputeGraph &r_graph) const {
   // ProtoMsgOwner <::google::protobuf::Message> is temporarily ignored
   if ((this->attrs_.protoMsg_ != nullptr) && (r_graph.attrs_.protoMsg_ != nullptr)) {
     const auto &proto_attr_map = *(this->attrs_.protoMsg_);
@@ -122,7 +124,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ComputeGraph::GraphAttrsAreE
 /// Since there may be different input nodes
 /// chosen by user in the same graph, special judgment is needed
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ComputeGraph::VectorInputNodePtrIsEqual(
-    const std::vector<NodePtr> &left_nodes, const std::vector<NodePtr> &right_nodes) const {
+  const std::vector<NodePtr> &left_nodes, const std::vector<NodePtr> &right_nodes) const {
   const auto left_nodes_size = left_nodes.size();
   const auto right_nodes_size = right_nodes.size();
   if (left_nodes_size != right_nodes_size) {
@@ -151,7 +153,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ComputeGraph::VectorInputNod
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ComputeGraph::GraphMembersAreEqual(
-    const ComputeGraph &r_graph) const {
+  const ComputeGraph &r_graph) const {
   return (IsEqual(this->sub_graph_.size(), r_graph.sub_graph_.size(), "graph.sub_graph_.size()") &&
           IsEqual(this->nodes_.size(), r_graph.nodes_.size(), "graph.nodes_.size()") &&
           VectorInputNodePtrIsEqual(this->input_nodes_, r_graph.input_nodes_) &&
@@ -472,14 +474,14 @@ graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
       }
     }
     GE_IF_BOOL_EXEC(
-        node->GetOutControlAnchor() != nullptr, for (AnchorPtr peer_in_anchor
-                                                     : node->GetOutControlAnchor()->GetPeerAnchors()) {
-          GE_CHECK_NOTNULL(peer_in_anchor);
-          auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
-          if (iter != map_in_edge_num.end() && --iter->second == 0) {
-            stack.push_back(peer_in_anchor->GetOwnerNode());
-          }
-        })
+      node->GetOutControlAnchor() != nullptr, for (AnchorPtr peer_in_anchor
+                                                   : node->GetOutControlAnchor()->GetPeerAnchors()) {
+        GE_CHECK_NOTNULL(peer_in_anchor);
+        auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
+        if (iter != map_in_edge_num.end() && --iter->second == 0) {
+          stack.push_back(peer_in_anchor->GetOwnerNode());
+        }
+      })
   }
 
   return GRAPH_SUCCESS;
@@ -521,28 +523,30 @@ graphStatus ComputeGraph::BFSTopologicalSorting(std::vector<NodePtr> &node_vec,
 
 graphStatus ComputeGraph::CollectBreadthOutNode(const NodePtr &node, std::map<NodePtr, uint32_t> &map_in_edge_num,
                                                 std::map<string, NodePtr> &breadth_node_map) {
-    for (const auto &anchor : node->GetAllOutDataAnchors()) {
-      for (const auto &peer_in_anchor : anchor->GetPeerInDataAnchors()) {
-        auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
-        if (iter != map_in_edge_num.end() && --iter->second == 0) {
-          (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
-        }
-      }
-      for (const auto &peer_in_anchor : anchor->GetPeerInControlAnchors()) {
-        auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
-        if (iter != map_in_edge_num.end() && --iter->second == 0) {
-          (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
-        }
+  for (const auto &anchor : node->GetAllOutDataAnchors()) {
+    for (const auto &peer_in_anchor : anchor->GetPeerInDataAnchors()) {
+      auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
+      if (iter != map_in_edge_num.end() && 0 == --iter->second) {
+        (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
       }
     }
-    GE_IF_BOOL_EXEC(
-        node->GetOutControlAnchor() != nullptr, for (AnchorPtr peer_in_anchor
-                                                     : node->GetOutControlAnchor()->GetPeerAnchors()) {
-          auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
-          if (iter != map_in_edge_num.end() && --iter->second == 0) {
-            (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
-          }
-        })
+
+    for (const auto &peer_in_anchor : anchor->GetPeerInControlAnchors()) {
+      auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
+      if (iter != map_in_edge_num.end() && 0 == --iter->second) {
+        (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
+      }
+    }
+  }
+
+  GE_IF_BOOL_EXEC(
+    node->GetOutControlAnchor() != nullptr, for (AnchorPtr peer_in_anchor
+                                                 : node->GetOutControlAnchor()->GetPeerAnchors()) {
+      auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
+      if (iter != map_in_edge_num.end() && 0 == --iter->second) {
+        (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
+      }
+    })
   return GRAPH_SUCCESS;
 }
 
@@ -636,7 +640,7 @@ graphStatus ComputeGraph::SortNodes(std::vector<NodePtr> &stack, std::map<NodePt
   /// 2. Compare two indices, if not match, swap the positions of two inputs
   /// *: Remind: stack is reverse-order
   for (size_t i = 0; i < stack.size(); ++i) {
-    // [stack: should not be null]
+    //[stack: should not be null]
     for (size_t j = i + 1; j < stack.size(); ++j) {
       // If not found in 'inputs_order_', skip it
       auto it_i = std::find(inputs_order_.begin(), inputs_order_.end(), stack[i]->GetName());
@@ -721,7 +725,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ComputeGraph::Dump() const {
       }
     }
     GE_IF_BOOL_EXEC(node->GetOutControlAnchor() == nullptr, GELOGE(GRAPH_FAILED, "Out control anchor is null");
-                    return);
+                    return );
     for (const auto &peer_in_anchor : node->GetOutControlAnchor()->GetPeerInControlAnchors()) {
       GE_IF_BOOL_EXEC(peer_in_anchor != nullptr && peer_in_anchor->GetOwnerNode() != nullptr,
                       GELOGI("node name = %s, out control node name = %s.", node->GetName().c_str(),
@@ -745,7 +749,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::Isolate
       GE_CHK_BOOL_EXEC(GraphUtils::RemoveEdge(pre_out_data_anchor, in_data_anchor) == GRAPH_SUCCESS,
                        return GRAPH_FAILED, "remove edge failed");
       GE_IF_BOOL_EXEC(pre_out_data_anchor->GetOwnerNode()->GetType() == CONSTANT ||
-                          pre_out_data_anchor->GetOwnerNode()->GetType() == CONSTANTOP,
+                        pre_out_data_anchor->GetOwnerNode()->GetType() == CONSTANTOP,
                       continue);
       for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
         for (const auto &next_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {

@@ -60,10 +60,10 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size == 0 || data == nullptr, return PARAM_INVALID);
 
   // Write data
-  mmSsize_t write_count = mmWrite(fd, const_cast<void *>(data), size);
+  int32_t write_count = mmWrite(fd, const_cast<void *>(data), size);
   // -1: Failed to write to file; - 2: Illegal parameter
   if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
-    GELOGE(FAILED, "Write data failed. mmpa_errorno = %ld", write_count);
+    GELOGE(FAILED, "Write data failed. mmpa_errorno = %d", write_count);
     return FAILED;
   }
 
@@ -102,9 +102,9 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
                                      ModelPartitionTable &model_partition_table,
                                      const std::vector<ModelPartition> &partition_datas) {
   GE_CHK_BOOL_RET_STATUS(
-      !partition_datas.empty() && model_partition_table.num != 0 && model_partition_table.num == partition_datas.size(),
-      FAILED, "Invalid param:partition data size(%u), model_partition_table.num(%zu).", model_partition_table.num,
-      partition_datas.size());
+    !partition_datas.empty() && model_partition_table.num != 0 && model_partition_table.num == partition_datas.size(),
+    FAILED, "Invalid param:partition data size(%u), model_partition_table.num(%zu).", model_partition_table.num,
+    partition_datas.size());
   // Open file
   int32_t fd = 0;
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(OpenFile(fd, file_path) != SUCCESS, return FAILED);
@@ -112,17 +112,16 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   do {
     // Write file header
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-        WriteData(static_cast<const void *>(&file_header), sizeof(ModelFileHeader), fd) != SUCCESS, ret = FAILED;
-        break);
+      WriteData(static_cast<const void *>(&file_header), sizeof(ModelFileHeader), fd) != SUCCESS, ret = FAILED; break);
     // Write model partition table
     uint32_t table_size = static_cast<uint32_t>(SIZE_OF_MODEL_PARTITION_TABLE(model_partition_table));
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-        WriteData(static_cast<const void *>(&model_partition_table), table_size, fd) != SUCCESS, ret = FAILED; break);
+      WriteData(static_cast<const void *>(&model_partition_table), table_size, fd) != SUCCESS, ret = FAILED; break);
     // Write partition data
     for (const auto &partition_data : partition_datas) {
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-          WriteData(static_cast<const void *>(partition_data.data), partition_data.size, fd) != SUCCESS, ret = FAILED;
-          break);
+        WriteData(static_cast<const void *>(partition_data.data), partition_data.size, fd) != SUCCESS, ret = FAILED;
+        break);
     }
   } while (0);
   // Close file

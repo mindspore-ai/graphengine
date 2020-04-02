@@ -15,10 +15,8 @@
  */
 
 #include "graph/build/memory/hybrid_mem_assigner.h"
-
 #include <utility>
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "graph/build/memory/binary_block_mem_assigner.h"
 #include "graph/build/memory/max_block_mem_assigner.h"

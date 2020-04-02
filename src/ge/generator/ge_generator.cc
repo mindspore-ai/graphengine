@@ -15,7 +15,6 @@
  */
 
 #include "generator/ge_generator.h"
-
 #include "common/ge/ge_util.h"
 #include "common/ge/plugin_manager.h"
 #include "common/helper/model_helper.h"
@@ -29,9 +28,9 @@
 #include "graph/utils/graph_utils.h"
 #include "model/ge_model.h"
 
+using std::map;
 using std::string;
 using std::vector;
-using std::map;
 
 namespace {
 const char *const kAttrOpType = "op_type";
@@ -223,15 +222,15 @@ Status GeGenerator::GenerateOfflineModel(const Graph &graph, const string &file_
   return SUCCESS;
 }
 
-///
-/// @ingroup ge
-/// @brief Compiling a single operator into an offline model
-/// @param [in] OpDescPtr &op_desc: Operator description info that needs to be compiled into an offline model file
-/// @param [in] vector<GeTensor> &inputs: Operator input data description information.
-/// @param [in] vector<GeTensor> &outputs: Operator output data description information.
-/// @param [in] const string &model_file_name: Offline model filename.
-/// @return SUCCESS handle successfully / others handle failed
-///
+/**
+ * @ingroup ge
+ * @brief Compiling a single operator into an offline model
+ * @param [in] OpDescPtr &op_desc: Operator description info that needs to be compiled into an offline model file
+ * @param [in] vector<GeTensor> &inputs: Operator input data description information.
+ * @param [in] vector<GeTensor> &outputs: Operator output data description information.
+ * @param [in] const string &model_file_name: Offline model filename.
+ * @return SUCCESS handle successfully / others handle failed
+ */
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, const string &model_file_name) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
@@ -243,9 +242,6 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Outputs size:%zu", outputs.size(), op_desc->GetOutputsSize());
     return PARAM_INVALID;
   }
-
-  // 0. Save original attributes.
-  map<string, GeAttrValue> op_attrs = op_desc->GetAllAttrs();
 
   // 1. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
@@ -294,6 +290,7 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
   GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, graph_id, ge_models));
 
   if (!ge_models.empty()) {
+    map<string, GeAttrValue> op_attrs = op_desc->GetAllAttrs();
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_models[0], op_desc->GetType(), op_attrs, inputs, outputs));
   }
 
@@ -330,8 +327,8 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, vector<GeMod
 Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GraphId &graph_id,
                                      vector<GeModelPtr> &ge_models) {
   static GraphId id = 0;
-
-  Status ret = graph_manager_.AddGraph(id, graph);
+  const std::map<std::string, std::string> options;
+  Status ret = graph_manager_.AddGraph(id, graph, options);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "graphManager AddGraph failed, id: %u", id);
     graph_manager_.Finalize();

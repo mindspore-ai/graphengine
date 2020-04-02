@@ -316,21 +316,33 @@ REG_OP(ScatterUpdate)
     .OP_END_FACTORY_REG(ScatterUpdate)
 
 /**
-*@brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+* @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+* That is for rows we have grad for, we update var, accum and linear
 
-*@par Inputs:
-* Four inputs, including:
-*@li var: An NCHW, NHWC, or ND Tensor of type float32.
-*@li accum: An NCHW, NHWC, or ND Tensor of type float32.
-*@li grad: An NCHW, NHWC, or ND Tensor of type float32.
-*@li indices: An NCHW, NHWC, or ND Tensor of type int32.
+* @par Inputs:
+* Ten inputs, including:
+* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li linear: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li grad: A Tensor of the same type as "var", for the gradient.
+* @li indices: A vector of indices into the first dimension of var and accum.
+* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
+* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
+* @li l2_shrinkage: A Tensor of the same type as "var", L2 shrinkage regulariation. Must be a scalar.
+* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
 
-*@par Attributes:
-*@li lr: Required, used for computation.
-*@li use_locking: An optional bool. Defaults to "False". If "True", the operation will be protected by a lock.
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False".
+* If "True", updating of the "var" and "accum" tensors will be
+* rotected by a lock; otherwise the behavior is undefined,
+* but may exhibit less contention.
 
-*@par Outputs:
-*var: A Tensor. Has the same type and format as input "var".
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var".
 */
 REG_OP(SparseApplyFtrlV2)
     .INPUT(var, TensorType({DT_FLOAT}))
@@ -347,6 +359,35 @@ REG_OP(SparseApplyFtrlV2)
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyFtrlV2)
 
+/**
+* @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+* That is for rows we have grad for, we update var, accum and linear
+
+* @par Inputs:
+* Ten inputs, including:
+* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li linear: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li grad: A Tensor of the same type as "var", for the gradient.
+* @li indices: A vector of indices into the first dimension of var and accum.
+
+* @par Attributes:
+* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
+* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
+* @li l2_shrinkage: A Tensor of the same type as "var", L2 shrinkage regulariation. Must be a scalar.
+* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li use_locking: An optional bool. Defaults to "False".
+*     If "True", updating of the "var" and "accum" tensors will be
+*     rotected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var".
+*/
 REG_OP(SparseApplyFtrlV2D)
     .INPUT(var, TensorType({DT_FLOAT}))
     .INPUT(accum, TensorType({DT_FLOAT}))

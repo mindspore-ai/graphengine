@@ -28,23 +28,23 @@
 struct PROC_PARAM {
   uint8_t *model_name;
 
-  // ISV Ek buffer
+  /* ISV Ek buffer */
   uint8_t *model_key;
   uint32_t model_key_len;
 
-  // ISV  root certificate buffer
+  /* ISV  root certificate buffer */
   uint8_t *root_cert;
   uint32_t root_cert_len;
 
-  // ISV private key buffer
+  /* ISV private key buffer */
   uint8_t *pri_key;
   uint32_t pri_key_len;
 
-  // Raw AI Module Image buffer
+  /* Raw AI Module Image buffer */
   uint8_t *ai_image;
   uint32_t ai_image_len;
 
-  // ISV HW key buffer
+  /* ISV HW key buffer */
   uint8_t *hw_key;
   uint32_t hw_key_len;
 };
@@ -61,11 +61,11 @@ using std::string;
 
 class FileSaver {
  public:
-  ///
-  /// @ingroup domi_common
-  /// @brief save model, no encryption
-  /// @return Status  result
-  ///
+  /**
+   * @ingroup domi_common
+   * @brief save model, no encryption
+   * @return Status  result
+   */
   static Status SaveToFile(const string &file_path, const ge::ModelData &model,
                            const ModelFileHeader *model_file_header = nullptr);
 
@@ -74,26 +74,26 @@ class FileSaver {
                            const std::vector<ModelPartition> &partition_datas);
 
  protected:
-  ///
-  /// @ingroup domi_common
-  /// @brief Check validity of the file path
-  /// @return Status  result
-  ///
+  /**
+   * @ingroup domi_common
+   * @brief Check validity of the file path
+   * @return Status  result
+   */
   static Status CheckPath(const string &file_path);
 
   static Status WriteData(const void *data, uint32_t size, int32_t fd);
 
   static Status OpenFile(int32_t &fd, const std::string &file_path);
 
-  ///
-  /// @ingroup domi_common
-  /// @brief save model to file
-  /// @param [in] file_path  file output path
-  /// @param [in] file_header  file header info
-  /// @param [in] data  model data
-  /// @param [in] len  model length
-  /// @return Status  result
-  ///
+  /**
+   * @ingroup domi_common
+   * @brief save model to file
+   * @param [in] file_path  file output path
+   * @param [in] file_header  file header info
+   * @param [in] data  model data
+   * @param [in] len  model length
+   * @return Status  result
+   */
   static Status SaveWithFileHeader(const string &file_path, const ModelFileHeader &file_header, const void *data,
                                    int len);
 

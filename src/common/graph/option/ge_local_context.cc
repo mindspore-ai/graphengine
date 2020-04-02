@@ -15,7 +15,6 @@
  */
 
 #include "./ge_local_context.h"
-
 #include <utility>
 
 namespace ge {
@@ -26,9 +25,14 @@ thread_local GEThreadLocalContext thread_context;
 GEThreadLocalContext &GetThreadLocalContext() { return thread_context; }
 
 graphStatus GEThreadLocalContext::GetOption(const string &key, string &option) {
-  auto iter = session_options_.find(key);
-  if (iter != session_options_.end()) {
-    option = iter->second;
+  auto graph_iter = graph_options_.find(key);
+  if (graph_iter != graph_options_.end()) {
+    option = graph_iter->second;
+    return GRAPH_SUCCESS;
+  }
+  auto session_iter = session_options_.find(key);
+  if (session_iter != session_options_.end()) {
+    option = session_iter->second;
     return GRAPH_SUCCESS;
   }
   auto global_iter = global_options_.find(key);
@@ -47,5 +51,10 @@ void GEThreadLocalContext::SetGlobalOption(map<string, string> options_map) {
 void GEThreadLocalContext::SetSessionOption(map<string, string> options_map) {
   session_options_.clear();
   session_options_ = std::move(options_map);
+}
+
+void GEThreadLocalContext::SetGraphOption(map<std::string, string> options_map) {
+  graph_options_.clear();
+  graph_options_ = std::move(options_map);
 }
 }  // namespace ge

@@ -21,6 +21,10 @@
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
+namespace {
+const int64_t kMinTrainingTraceJobId = 256;
+const int kDecimal = 10;
+}  // namespace
 GEContext &GetContext() {
   static GEContext ge_context{};
   return ge_context;
@@ -58,12 +62,21 @@ void GEContext::Init() {
 
   string job_id;
   (void)GetOption("ge.exec.jobId", job_id);
-  try {
-    job_id_ = static_cast<uint64_t>(std::stoi(job_id.c_str()));
-  } catch (std::invalid_argument &) {
-    GELOGW("%s transform to int failed.", job_id.c_str());
-  } catch (std::out_of_range &) {
-    GELOGW("%s transform to int failed.", job_id.c_str());
+  std::string s_job_id = "";
+  for (auto c : job_id) {
+    if (c >= '0' && c <= '9') {
+      s_job_id += c;
+    }
+  }
+  if (s_job_id == "") {
+    trace_id_ = kMinTrainingTraceJobId;
+    return;
+  }
+  int64_t d_job_id = std::strtoll(s_job_id.c_str(), nullptr, kDecimal);
+  if (d_job_id < kMinTrainingTraceJobId) {
+    trace_id_ = d_job_id + kMinTrainingTraceJobId;
+  } else {
+    trace_id_ = d_job_id;
   }
 }
 
@@ -71,7 +84,7 @@ uint64_t GEContext::SessionId() { return session_id_; }
 
 uint32_t GEContext::DeviceId() { return device_id_; }
 
-uint64_t GEContext::JobId() { return job_id_; }
+uint64_t GEContext::TraceId() { return trace_id_; }
 
 void GEContext::SetCtxDeviceId(uint32_t device_id) { device_id_ = device_id; }
 }  // namespace ge

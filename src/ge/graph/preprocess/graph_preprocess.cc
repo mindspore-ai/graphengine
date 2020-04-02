@@ -15,18 +15,13 @@
  */
 
 #include "graph/preprocess/graph_preprocess.h"
-
 #include <map>
 #include <set>
 #include <string>
-#include <utility>
-
-#include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
-#include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
-#include "common/helper/model_helper.h"
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "common/op/ge_op_utils.h"
+#include "common/helper/model_helper.h"
 #include "graph/common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
@@ -38,8 +33,6 @@
 #include "graph/passes/assert_pass.h"
 #include "graph/passes/base_pass.h"
 #include "graph/passes/constant_folding_pass.h"
-#include "graph/passes/constant_fuse_same_pass.h"
-#include "graph/passes/control_trigger_pass.h"
 #include "graph/passes/dimension_adjust_pass.h"
 #include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/dropout_pass.h"
@@ -55,6 +48,7 @@
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/net_output_pass.h"
 #include "graph/passes/next_iteration_pass.h"
+#include "graph/passes/control_trigger_pass.h"
 #include "graph/passes/no_use_reshape_remove_pass.h"
 #include "graph/passes/placeholder_with_default_pass.h"
 #include "graph/passes/prevent_gradient_pass.h"
@@ -74,16 +68,20 @@
 #include "graph/passes/update_net_output_pass.h"
 #include "graph/passes/var_is_initialized_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
+#include "graph/passes/constant_fuse_same_pass.h"
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
 #include "graph/types.h"
-#include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
+#include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
+#include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
+#include "graph/utils/tensor_utils.h"
 #include "runtime/dev.h"
 
 namespace ge {
 namespace {
+
 OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
   GeTensorPtr tensor = MakeShared<GeTensor>();
   if (tensor == nullptr) {
@@ -112,9 +110,9 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
       dst_shape[i] = dst_ge_shape.GetDim(static_cast<size_t>(i));
     }
     GE_IF_BOOL_EXEC(
-        tensor->SetData(reinterpret_cast<const uint8_t *>(dst_shape.get()), dim_cnt * sizeof(int64_t)) != GRAPH_SUCCESS,
-        GELOGE(INTERNAL_ERROR, "tensor set data failed");
-        return nullptr;)
+      tensor->SetData(reinterpret_cast<const uint8_t *>(dst_shape.get()), dim_cnt * sizeof(int64_t)) != GRAPH_SUCCESS,
+      GELOGE(INTERNAL_ERROR, "tensor set data failed");
+      return nullptr;)
   }
 
   GELOGD("Create shape input dim [%s]", dst_ge_shape.ToString().c_str());
@@ -126,11 +124,11 @@ void AddTransNodeAttr(const std::string &node_type, const GeTensorDesc &input, c
   // For format transfer node, the IR definition has src/dst format attrs
   if (node_type == TRANSDATA) {
     GE_IF_BOOL_EXEC(
-        !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_SRC_FORMAT, TypeUtils::FormatToSerialString(input.GetFormat())),
-        GELOGW("SetStr FORMAT_TRANSFER_SRC_FORMAT failed");)
+      !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_SRC_FORMAT, TypeUtils::FormatToSerialString(input.GetFormat())),
+      GELOGW("SetStr FORMAT_TRANSFER_SRC_FORMAT failed");)
     GE_IF_BOOL_EXEC(
-        !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_DST_FORMAT, TypeUtils::FormatToSerialString(output.GetFormat())),
-        GELOGW("SetStr FORMAT_TRANSFER_DST_FORMAT failed");)
+      !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_DST_FORMAT, TypeUtils::FormatToSerialString(output.GetFormat())),
+      GELOGW("SetStr FORMAT_TRANSFER_DST_FORMAT failed");)
   }
   // For cast node, the IR definition has src/dst attrs
   if (node_type == CAST) {
@@ -170,8 +168,8 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
 
   // for data dump
   GE_IF_BOOL_EXEC(
-      !AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
-      GELOGW("CreateTransNode: SetListStr failed");)
+    !AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
+    GELOGW("CreateTransNode: SetListStr failed");)
 
   // Default single input and single output
   auto ret = op_desc->AddInputDesc(input);
@@ -442,7 +440,7 @@ NodePtr CreateCastOp(const ge::GeShape &shape, const ge::DataType input_data_typ
   static uint32_t transop_count = 0;
   std::string name = std::string("cast_node").append(std::to_string(transop_count++));
 
-  GELOGI("create cast op:%s, input datatype:%s, out datatype:%s", name.c_str(),
+  GELOGI("Create cast op:%s, input datatype:%s, out datatype:%s", name.c_str(),
          TypeUtils::DataTypeToSerialString(input_data_type).c_str(),
          TypeUtils::DataTypeToSerialString(output_data_type).c_str());
 
@@ -508,7 +506,7 @@ NodePtr CreateTransdataNode(const ge::GeShape &in_shape, const ge::Format input_
   // Does not involve multithreading.
   std::string name = std::string("transdata_node").append(std::to_string(transop_count++));
 
-  GELOGI("create trandata op:%s, input format:%s, out format:%s", name.c_str(),
+  GELOGI("Create trandata op:%s, input format:%s, out format:%s", name.c_str(),
          TypeUtils::FormatToSerialString(input_format).c_str(), TypeUtils::FormatToSerialString(output_format).c_str());
 
   GeTensorDesc input(in_shape, input_format, dt);
@@ -594,7 +592,7 @@ Status ProcessInputNC1HWC0(NodePtr &node_ptr) {
   }
 
   NodePtr trans_node =
-      CreateTransdataNode(input->GetShape(), FORMAT_NC1HWC0, old_shape, old_format, input->GetDataType(), node_ptr);
+    CreateTransdataNode(input->GetShape(), FORMAT_NC1HWC0, old_shape, old_format, input->GetDataType(), node_ptr);
   GE_CHECK_NOTNULL(trans_node);
   OutDataAnchorPtr src_out = node_ptr->GetOutDataAnchor(0);
   InDataAnchorPtr trans_in = trans_node->GetInDataAnchor(0);
@@ -611,6 +609,10 @@ GraphPrepare::GraphPrepare() : compute_graph_(nullptr) {}
 
 GraphPrepare::~GraphPrepare() {}
 
+/**
+ * @param graph
+ * @return
+ */
 Status GraphPrepare::UpdateVariableFormats(ComputeGraphPtr &graph) {
   GE_CHECK_NOTNULL(graph);
   auto var_names_to_refs = CollectVarNamesToRefs(graph);
@@ -684,7 +686,7 @@ Status GraphPrepare::CheckGraph() {
 }
 
 Status GraphPrepare::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode) {
-  GELOGI("set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
+  GELOGI("Set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
   RtContextUtil::GetInstance().AddrtContext(rt_context);
@@ -758,6 +760,7 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       int64_t shape_size = desc_shape * length;
       GE_IF_BOOL_EXEC(shape_size == 0, shape_size = static_cast<int64_t>(length));
       uint32_t size = 0;
+      // [No need to check return value]
       ge::TensorUtils::GetSize(desc, size);
       if ((size != 0) && (shape_size != static_cast<int64_t>(size))) {
         GELOGE(PARAM_INVALID, "input data size =%u, shape_size =%ld.", size, shape_size);
@@ -1310,7 +1313,9 @@ Status GraphPrepare::OptimizeForPreprocess() {
   AddNPass addn_pass;
   names_to_passes.emplace_back("AddNPass", &addn_pass);
   PrintOpPass print_pass;
-  names_to_passes.emplace_back("PrintOpPass", &print_pass);
+  if (options_.enable_print_op_pass) {
+    names_to_passes.emplace_back("PrintOpPass", &print_pass);
+  }
   NoUseReshapeRemovePass no_use_reshape_remove_pass;
   names_to_passes.emplace_back("NoUseReshapeRemovePass", &no_use_reshape_remove_pass);
 
@@ -1360,7 +1365,7 @@ Status GraphPrepare::OptimizeForPreprocess() {
     (void)graph_pass.AddPass(new ControlTriggerPass);
     (void)graph_pass.AddPass(new SwitchOpPass);
     (void)graph_pass.AddPass(new HcclMemcpyPass);
-    (void)graph_pass.AddPass(new FlowCtrlPass);
+    GE_IF_BOOL_EXEC(options_.train_graph_flag, (void)graph_pass.AddPass(new FlowCtrlPass);)
     (void)graph_pass.AddPass(new EndGraphPass);
   } catch (std::bad_alloc &e) {
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");

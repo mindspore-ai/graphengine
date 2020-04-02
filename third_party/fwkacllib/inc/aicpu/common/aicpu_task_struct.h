@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef __AICPU_TASK_STRUCT_H__
-#define __AICPU_TASK_STRUCT_H__
+#ifndef AICPU_TASK_STRUCT_H_
+#define AICPU_TASK_STRUCT_H_
 
 #include <cstdint>
 
 namespace aicpu {
 
 struct AicpuParamHead {
-  uint32_t length;     // Total length: include cunstom message
-  uint32_t ioAddrNum;  // Input and output address number
-} __attribute__((packed));
+    uint32_t        length;                    // Total length: include cunstom message
+    uint32_t        ioAddrNum;                 // Input and output address number
+} __attribute__ ((packed));
 
-}  // end  namespace aicpu
-#endif  //__AICPU_TASK_STRUCT_H__
+} // namespace aicpu
+
+#endif  // AICPU_TASK_STRUCT_H_
+

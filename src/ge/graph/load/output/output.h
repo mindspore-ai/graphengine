@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include "cce/dnn_base_def.hpp"
 #include "common/debug/log.h"
 #include "common/op/attr_value_util.h"
 #include "common/op/ge_op_utils.h"
@@ -55,8 +54,7 @@ class Output {
   /// @brief when model running, Add one DataOp as input node, Add one Output Op as output node.
   /// @return Status
   ///
-  virtual Status CopyResult(OutputData &rslt, uint32_t data_begin, uint32_t &data_index,
-                            bool support_mem_share);
+  virtual Status CopyResult(OutputData &rslt, uint32_t data_begin, uint32_t &data_index, bool support_mem_share);
 
   ///
   /// @ingroup domi

@@ -15,16 +15,14 @@
  */
 
 #include "memory/memory_assigner.h"
-
 #include <memory>
-
 #include "framework/common/debug/ge_log.h"
 #include "graph/build/memory/graph_mem_assigner.h"
 
 namespace ge {
 Status MemoryAssigner::AssignMemory(bool is_loop_graph, size_t &mem_offset) {
   std::unique_ptr<ge::GraphMemoryAssigner> graph_mem_assigner(new (std::nothrow)
-                                                                  ge::GraphMemoryAssigner(compute_graph_));
+                                                                ge::GraphMemoryAssigner(compute_graph_));
   if (graph_mem_assigner == nullptr) {
     GELOGE(ge::FAILED, "Alloc GraphMemoryAssigner failed.");
     return ge::FAILED;

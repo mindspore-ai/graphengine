@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __DNN_BASE_HPP__
-#define __DNN_BASE_HPP__
+#ifndef DNN_BASE_HPP__
+#define DNN_BASE_HPP__
 
 #include "cce/cce_def.hpp"
 
@@ -603,7 +603,6 @@ typedef union tagCcActivationPara {
  */
 typedef enum tagCcSquareMode {
   CC_SQUARE_2 = 0, /* square */
-  //    CC_SQUARE_3,        /* cube */
 } ccSquareMode_t;
 
 /**
@@ -755,22 +754,10 @@ typedef struct tagCcQuantize {
 
   ccConvolutionScaleType_t scaleWType;  // show scaleRq,scaleDq type
 
-  // The quantization parameter is used when input is FP16.
-  // scalar
-  // scaleValueMode=SCALE_NORMAL, = 1/scale_d
-  // scaleValueMode=SCALE_SQRT, = (1/scale_d)^1/2
   CcQuantizePara_t scaleQ;
 
-  // The requantized parameter is used when output is int8.
-  // When scaleWType=SCALE_VEC, the dimension of the vector corresponds to the N dimension of filer; SCALE_SCALAR is
-  // scalars. scaleValueMode=SCALE_NORMAL, = scale_d*scale_w[n]/scale_d_next*1/DEQSCALE,  DEQSCALE=2^-17
-  // scaleValueMode=SCALE_SQRT, = (scale_d*scale_w[n]/scale_d_next*1/DEQSCALE)^1/2,  DEQSCALE=2^-17
   CcQuantizePara_t scaleRq;
 
-  // The dequantization parameter is used when output is fp16.
-  // When scaleWType=SCALE_VEC, the dimension of the vector corresponds to the N dimension of filer; SCALE_SCALAR is
-  // scalars. scaleValueMode=SCALE_NORMAL, = scale_d*scale_w[n]*1/DEQSCALE,  DEQSCALE=2^-17 scaleValueMode=SCALE_SQRT, =
-  // (scale_d*scale_w[n]*1/DEQSCALE)^1/2,  DEQSCALE=2^-17
   CcQuantizePara_t scaleDq;
 
   // need relu
@@ -1004,4 +991,4 @@ typedef struct tagCcArgmaxmin *ccArgmaxminDescriptor_t;
 
 };  // namespace cce
 
-#endif /* __DNN_BASE_HPP__ */
+#endif  // DNN_BASE_HPP__

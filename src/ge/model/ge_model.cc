@@ -15,9 +15,7 @@
  */
 
 #include "model/ge_model.h"
-
 #include <utility>
-
 #include "common/debug/log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/attr_utils.h"
@@ -58,9 +56,7 @@ void GeModel::SetGraph(const Graph &graph) { this->graph_ = graph; }
 
 void GeModel::SetModelTaskDef(const std::shared_ptr<domi::ModelTaskDef> &task) { this->task_ = task; }
 
-void GeModel::SetTBEKernelStore(const TBEKernelStore &tbe_kernal_store) {
-  this->tbe_kernal_store_ = tbe_kernal_store;
-}
+void GeModel::SetTBEKernelStore(const TBEKernelStore &tbe_kernal_store) { this->tbe_kernal_store_ = tbe_kernal_store; }
 
 void GeModel::SetWeight(const Buffer &weights_buffer) { this->weights_buffer_ = weights_buffer; }
 

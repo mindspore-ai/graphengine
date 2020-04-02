@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __DNN_STRUCT_BASE_HPP__
-#define __DNN_STRUCT_BASE_HPP__
+#ifndef DNN_STRUCT_BASE_HPP__
+#define DNN_STRUCT_BASE_HPP__
 
 #include "cce/cce_def.hpp"
 
@@ -891,4 +891,4 @@ typedef struct tagCcConcatFive2Four_t {
 } ccConcatFive2Four_t;
 
 };     // namespace cce
-#endif /* __DNN_STRUCT_BASE_HPP__ */
+#endif  // DNN_STRUCT_BASE_HPP__

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef __DNN_H__
-#define __DNN_H__
+#ifndef DNN_H__
+#define DNN_H__
 
 #include "cce/dnn_base.h"
 #include "cce/dnn_op.h"
 
-#endif /* __DNN_H__ */
+#endif  // DNN_H__

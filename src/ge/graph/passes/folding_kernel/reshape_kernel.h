@@ -22,10 +22,10 @@
 #include "inc/kernel.h"
 
 namespace ge {
-///
-/// @ingroup ge
-/// @brief Reshape optimization operator processing
-///
+/**
+ * @ingroup ge
+ * @brief Reshape optimization operator processing
+ */
 class ReshapeKernel : public Kernel {
  public:
   Status Compute(const NodePtr &node_ptr) override;

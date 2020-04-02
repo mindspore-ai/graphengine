@@ -26,14 +26,12 @@
 
 namespace ge {
 static std::map<std::string, ge::DataType> kOutputTypeStrToDataType = {
-    {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},     {"INT16", ge::DT_INT16},
-    {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},   {"INT64", ge::DT_INT64},
-    {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE},
+  {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},     {"INT16", ge::DT_INT16},
+  {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},   {"INT64", ge::DT_INT64},
+  {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE},
 };
 
-static void SetNetoutputDataType(OpDescPtr &op_desc,
-                                 uint32_t index,
-                                 ge::DataType output_data_type) {
+static void SetNetoutputDataType(OpDescPtr &op_desc, uint32_t index, ge::DataType output_data_type) {
   // op_desc is judged not nullptr
   auto net_output_in_desc = op_desc->MutableInputDesc(index);
   if (net_output_in_desc != nullptr) {
@@ -56,9 +54,7 @@ static Status SetNetoutputFormat(OpDescPtr op_desc, uint32_t index, ge::Format f
   auto net_output_in_desc = op_desc->MutableInputDesc(index);
   GE_CHECK_NOTNULL(net_output_in_desc);
   ge::Format old_format = net_output_in_desc->GetFormat();
-  bool support = ((old_format == FORMAT_NC1HWC0) ||
-      (old_format == FORMAT_NCHW) ||
-      (old_format == FORMAT_NHWC));
+  bool support = ((old_format == FORMAT_NC1HWC0) || (old_format == FORMAT_NCHW) || (old_format == FORMAT_NHWC));
   if (!support) {
     GELOGE(INTERNAL_ERROR, "The node %s format [%s] is unsupported", op_desc->GetName().c_str(),
            TypeUtils::FormatToSerialString(old_format).c_str());
@@ -101,8 +97,7 @@ static Status SetNetoutputFormat(OpDescPtr op_desc, uint32_t index, ge::Format f
   net_output_out_desc->SetOriginShape(ge::GeShape(dst_shape_dims));
   net_output_out_desc->SetFormat(format);
   net_output_out_desc->SetOriginFormat(format);
-  GELOGI("Update out desc, format:%s",
-         TypeUtils::FormatToSerialString(op_desc->GetOutputDesc(0).GetFormat()).c_str());
+  GELOGI("Update out desc, format:%s", TypeUtils::FormatToSerialString(op_desc->GetOutputDesc(0).GetFormat()).c_str());
   return SUCCESS;
 }
 

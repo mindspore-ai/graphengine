@@ -20,7 +20,6 @@
 #include <map>
 #include <string>
 #include <vector>
-
 #include "framework/common/ge_types.h"
 #include "ge/ge_api_types.h"
 #include "graph/manager/graph_manager.h"
@@ -36,6 +35,9 @@ class InnerSession {
 
   Status AddGraph(uint32_t graph_id, const Graph &graph);
 
+  Status AddGraph(uint32_t graph_id, const Graph &graph,
+                  const std::map<std::string, std::string> &options); /*lint !e148*/
+
   Status RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
 
   Status RemoveGraph(uint32_t graph_id);
@@ -48,8 +50,7 @@ class InnerSession {
   Status GetVariable(const std::string &name, Tensor &val);
 
   Status RegisterCallBackFunc(
-      const std::string &key,
-      const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+    const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
   const GraphManager &getGraphManagerObj() const;
 
@@ -61,7 +62,8 @@ class InnerSession {
   std::map<string, string> options_;
   GraphManager graph_manager_;
   std::mutex resource_mutex_;  // AddGraph, RemoveGraph and Finalize use
-  void UpdateThreadContext();
+  void UpdateThreadContext(const std::map<std::string, std::string> &options);
+  void UpdateThreadContext(uint32_t graph_id);
 };
 }  // namespace ge
 

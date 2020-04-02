@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __FWK_ADPT_STRUCT_H__
-#define __FWK_ADPT_STRUCT_H__
+#ifndef FWK_ADPT_STRUCT_H__
+#define FWK_ADPT_STRUCT_H__
 
 #include <cstdint>
 
@@ -78,4 +78,4 @@ struct ResultSummary {
 }  // end  namespace FWKAdapter
 }  // namespace aicpu
 
-#endif  //__FWK_ADPT_STRUCT_H__
+#endif  // FWK_ADPT_STRUCT_H__

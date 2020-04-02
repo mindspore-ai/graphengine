@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef _MSPROF_ENGINE_PROF_ENGINE_H_
-#define _MSPROF_ENGINE_PROF_ENGINE_H_
+#ifndef MSPROF_ENGINE_PROF_ENGINE_H_
+#define MSPROF_ENGINE_PROF_ENGINE_H_
 #define MSVP_PROF_API __attribute__((visibility("default")))
 
 #include <map>
 #include <string>
 #include "prof_reporter.h"
 
-namespace Msprof {
-namespace Engine {
-
 /**
+ * @file prof_engine.h
  * @defgroup ModuleJobConfig the ModuleJobConfig group
  * This is the ModuleJobConfig group
  */
-
+namespace Msprof {
+namespace Engine {
 /**
  * @ingroup ModuleJobConfig
  * @brief struct ModuleJobConfig
@@ -205,11 +204,4 @@ MSVP_PROF_API int UnInit(const std::string &module);
 }  // namespace Engine
 }  // namespace Msprof
 
-#endif
-/*
- * History: \n
- * 2019-04-10, huawei, Create file.     \n
- * 2020-02-10, huawei, Add Api Comment. \n
- *
- * vi: set expandtab ts=4 sw=4 tw=120:
- */
+#endif  // MSPROF_ENGINE_PROF_ENGINE_H_

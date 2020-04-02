@@ -118,14 +118,14 @@ REG_OP(MaxPool)
 * @li grad: A mutable NC1HWC0 tensor of type RealNumberType.
 
 * @par Attributes:
-* @li ksize: A tuple or list, specifying the size of the window for each
-* dimension of the input tensor.
-* @li strides: A tuple or list, specifying the stride of the sliding window for
+* @li ksize: A required tuple or list, specifying the size of the window for
 * each dimension of the input tensor.
-* @li padding: A string, specifying the type of padding algorithm to use.
+* @li strides: A required tuple or list, specifying the stride of the sliding
+* window for each dimension of the input tensor.
+* @li padding: A required string, specifying the type of padding algorithm to use.
 
 * @par Outputs:
-* y: A mutable tensor. Has the same shape and type as "x1.
+* y: A mutable tensor. Has the same shape and type as "x1".
 
 * @attention Constraints:
 * @li Computing gradients of global pooling is not supported, which means
@@ -151,14 +151,16 @@ REG_OP(MaxPoolGrad)
 * @li grad: Gradient tensor of type float16
 
 * @par Attributes:
-* @li ksize: A required list, specifying the size of the sliding window.
-* @li strides: A required list, specifying the stride of the sliding window.
-* @li padding: window sliding mode. Either SAME or VALID.
-* @li data_format: Format of the original input, either NCHW or NHWC. Defaults
+* @li ksize: A required list or tuple, specifying the size of the sliding window.
+* @li strides: A required list or tuple,
+* specifying the stride of the sliding window.
+* @li padding: A required string, window sliding mode. Either SAME or VALID.
+* @li data_format: An optional string. Format of the original input,
+* either NCHW or NHWC. Defaults
 * to NHWC.
 
 * @attention Constraints:
-* @li Only the cloud platform is supported.
+* @li Only the Ascend 910 platform is supported.
 * @li "x1" and "grads" must have the same shape.
 * @li "x2" and "y" must have the same shape. Otherwise, an error is reported.
 * @li "x1", "x2", "grads", and "y" must be 5D tensors.
@@ -232,13 +234,13 @@ REG_OP(MaxPoolGradWithArgmax)
 * @brief Computes second-order gradients of the maxpooling function.
 
 * @par Inputs:
-* @li x:Original forward input tensor of type float16
-* @li grad:Gradient tensor of type float16
-* @li argmax:An tensor of type uint16
+* @li x: Original forward input tensor of type float16
+* @li grad: Gradient tensor of type float16
+* @li argmax: An tensor of type uint16
 * @par Attributes:
 * @li ksize: A required list, specifying the size of the sliding window.
 * @li strides: A required list, specifying the stride of the sliding window.
-* @li padding: window sliding mode. Either SAME or VALID.
+* @li padding: A required string, window sliding mode. Either SAME or VALID.
 * @par Outputs:
 * @li y:Result tensor of type float16
 
@@ -269,12 +271,13 @@ REG_OP(MaxPoolGradGradWithArgmax)
 * @li input_grad: An NHWC tensor of type float16, float32, or double.
 
 * @par Attributes:
-* @li ksize: A tuple or list, specifying the size of the window for each
-* dimension of the input tensor.
-* @li strides: A tuple or list, specifying the stride of the sliding window for\n
+* @li ksize: A required tuple or list, specifying the size of the window for
 * each dimension of the input tensor.
-* @li padding: A string, specifying the type of the padding algorithm to use.
-* @li data_format: A string. Defaults to "NHWC".
+* @li strides: A required tuple or list, specifying the stride of the sliding
+* window for each dimension of the input tensor.
+* @li padding: A required string, specifying the type of the padding algorithm
+* to use.
+* @li data_format: An optional string. Defaults to "NHWC".
 
 * @par Outputs:
 * @out_grad: A mutable tensor with the same shape and type as "orig_input".
@@ -297,12 +300,13 @@ REG_OP(AvgPoolGrad)
 
 * @par Attributes:
 * @li orig_input_shape: Original input dimensions.
-* @li ksize: A tuple or list, specifying the size of the window for each
-* dimension of the input tensor.
-* @li strides: A tuple or list, specifying the stride of the sliding window for\n
+* @li ksize: A required tuple or list, specifying the size of the window for
 * each dimension of the input tensor.
-* @li padding: A string, specifying the type of the padding algorithm to use.
-* @li data_format: A string. Defaults to "NHWC".
+* @li strides: A required tuple or list, specifying the stride of the sliding
+* window for each dimension of the input tensor.
+* @li padding: A required string, specifying the type of the padding algorithm
+* to use.
+* @li data_format: An optional string. Defaults to "NHWC".
 
 * @par Outputs:
 * @out_grad: A mutable tensor with the same shape and type as "orig_input".
@@ -348,12 +352,6 @@ REG_OP(MaxPoolGradWithArgmaxCCE)
    .ATTR(nan_opt, Int, 0)
    .OP_END_FACTORY_REG(MaxPoolGradWithArgmaxCCE)
 
-REG_OP(Upsample)
-   .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
-   .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
-   .ATTR(scale, Float, 1)
-   .ATTR(stride, Int, 2)
-   .OP_END_FACTORY_REG(Upsample)
 }  // namespace ge
 
 #endif  // GE_OP_NN_POOLING_OPS_H

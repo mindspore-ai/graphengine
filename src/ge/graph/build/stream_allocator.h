@@ -22,7 +22,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "engine_manager/dnnengine_manager.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"

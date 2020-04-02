@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 namespace domi {
-// General
+// general
 const float DEFAULT_ALPHA_VALUE = 1.0;
 const float DEFAULT_BETA_VALUE = 0.0;
 const uint32_t NORMAL_INPUT_NUM = 1;
@@ -37,7 +37,7 @@ const int NORMAL_DEVICE_DATA_TYPE = static_cast<const int>(cce::CC_DATA_HALF);
 const int DEFAULT_POOLING_MODE = static_cast<const int>(cce::CC_POOLING_MAX);
 const uint32_t DEFAULT_REAL_DIM_CNT = 4;
 
-// Const
+// const
 const uint32_t CONST_OP_INPUT_NUM = 0;
 const uint32_t CONST_OP_NORMAL_WEIGHT_SIZE = 1;
 
@@ -56,7 +56,7 @@ const int32_t FUSEDBATCHNORMGRAD_WORKSPACE_NUM = 1;
 const int32_t FUSEDBATCHNORMGRAD_INPUT_NUM = 5;
 const int32_t FUSEDBATCHNORMGRAD_OUTPUT_NUM = 3;
 
-// Conv
+// conv
 const uint32_t CONVOLUTION_WORKSPACE_NUM = 1;
 const uint32_t CONVOLUTION_PAD_SIZE = 4;
 const uint32_t CONVOLUTION_STRIDE_SIZE = 2;
@@ -104,7 +104,7 @@ const float LRN_DEFAULT_BETA = 0.75;
 
 ///
 ///  @ingroup domi_common
-///  @brief default value of roipooling
+///  @brief roipooling default value
 ///
 const uint32_t ROIPOOLING_DEFAULT_POOLED_H = 0;
 const uint32_t ROIPOOLING_DEFAULT_POOLED_W = 0;
@@ -115,7 +115,7 @@ const int32_t ROIPOOLING_DEFAULT_SAMPLING_RATIO = -1;
 const int32_t DETECTIONOUTPUT_INPUT_SIZE = 3;
 const int32_t DETECTIONOUTPUT_OUTPUT_SIZE = 2;
 const int32_t DETECTIONOUTPUT_WORKSPACE_NUM = 1;
-const int DETECTIONOUTPUT_CLASS_NUM = 20;
+const int DETECTIONOUTPUT_CLASS_NUM = 20;  // Number of background categories
 const int DETECTIONOUTPUT_NUM_CLASSES_DEFAULT_VALUE = 21;
 const float DETECTIONOUTPUT_NMS_THRESHOLD_DEFAULT_VALUE = 0.3;
 const float DETECTIONOUTPUT_CONFIDENCE_THRESHOLD_DEFAULT_VALUE = 0.8;
@@ -392,9 +392,9 @@ const uint32_t ATTENTION_DECODER_WEIGHT_CELL1_CANDIDATE_BIAS = 14;
 const uint32_t ATTENTION_DECODER_WEIGHT_EMBEDDING = 15;
 const uint32_t ATTENTION_DECODER_WEIGHT_ATTENVA = 16;
 const uint32_t ATTENTION_DECODER_WEIGHT_DECODER_INITIAL = 17;
-
 // Attention decoder weight size
 const uint32_t ATTENTION_DECODER_WEIGHT_SIZE = 18;
+
 const uint32_t ATTENTION_DECODER_INPUT_SIZE = 2;
 const uint32_t ATTENTION_DECODER_WORKSPACE_NUM = 1;
 const uint32_t ATTENTION_DECODER_INPUT_DECODER_INPUTS = 0;

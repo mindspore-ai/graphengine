@@ -23,7 +23,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "runtime/mem.h"

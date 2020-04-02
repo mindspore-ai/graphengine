@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <vector>
-
 #include "ge_runtime/davinci_model.h"
 #include "common/ge_types.h"
 
@@ -34,7 +33,7 @@ class Output {
 
   bool CopyRslt(OutputData *rslt, uint32_t data_begin, uint32_t &data_index, bool support_mem_share);
 
-  bool SetDataBuf(DataBuffer &data_buf, uint32_t &data_count, size_t i, bool support_mem_share);
+  bool SetDataBuf(DataBuffer &data_buf, uint32_t data_begin, uint32_t &data_count, size_t i, bool support_mem_share);
 
   // Copy assignment operator and copy constructor are deleted
   Output &operator=(const Output &output) = delete;

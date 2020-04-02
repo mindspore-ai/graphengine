@@ -24,6 +24,7 @@ extern "C" {
 #endif
 
 typedef uint32_t Status_t;
+using Status_t = uint32_t;
 
 typedef void *OpAttr_t;
 typedef void *OpTensor_t;

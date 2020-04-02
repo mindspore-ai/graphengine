@@ -19,6 +19,7 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/graph.h"

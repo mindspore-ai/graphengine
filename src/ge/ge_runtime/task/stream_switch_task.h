@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <vector>
-
 #include "ge_runtime/task/task.h"
 
 namespace ge {

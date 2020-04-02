@@ -148,7 +148,7 @@ Status ReduceProdKernel::DataCal(const std::vector<ge::ConstGeTensorPtr> &input,
 
     GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()),
                                         static_cast<size_t>(head_dim_ * end_dim_ * sizeof(int32_t))) != GRAPH_SUCCESS,
-                    GELOGE(INTERNAL_ERROR, "set data failed");
+                    GELOGW("set data failed");
                     return INTERNAL_ERROR);
     output_ptr->MutableTensorDesc().SetDataType(data_dtype);
   }
@@ -159,13 +159,13 @@ void ReduceProdKernel::ShapeCal(const ge::OpDescPtr &op_desc_ptr, const std::vec
                                 ge::GeTensorPtr output_ptr) {
   ConstGeTensorPtr data_tensor = input.at(kReduceProdDataIndex);
   ConstGeTensorPtr axis_tensor = input.at(kReduceProdAxisIndex);
-  auto axis_data = axis_tensor->GetData().GetData();
-  if (axis_data == nullptr) {
-    GELOGE(FAILED, "Data of axis tensor is nullptr.");
-    return;
-  }
   vector<int64_t> data_dims = data_tensor->GetTensorDesc().GetShape().GetDims();
   int32_t data_dim_size = static_cast<int32_t>(data_dims.size());
+  const uint8_t *axis_data = axis_tensor->GetData().GetData();
+  if (axis_data == nullptr) {
+    GE_LOGE(param axis_data must not be null.);
+    return;
+  }
   int32_t axis = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(axis_data)));
   bool keep_dims = false;
   if (!AttrUtils::GetBool(op_desc_ptr, "keep_dims", keep_dims)) {
@@ -228,7 +228,7 @@ Status ReduceProdKernel::ComputeNoAxis(const ge::OpDescPtr &op_desc_ptr, const s
     }
     buf[0] = tmp_x;
     GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()), sizeof(int32_t)) != GRAPH_SUCCESS,
-                    GELOGE(INTERNAL_ERROR, "set data failed");
+                    GELOGW("set data failed");
                     return INTERNAL_ERROR);
     output_ptr->MutableTensorDesc().SetDataType(data_type);
     output_ptr->MutableTensorDesc().SetShape(GeShape());

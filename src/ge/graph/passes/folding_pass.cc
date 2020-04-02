@@ -18,16 +18,15 @@
 
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "framework/common/debug/ge_log.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "inc/kernel.h"
 #include "inc/kernel_factory.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 namespace folding_pass {
@@ -172,7 +171,7 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
              node->GetName().c_str());
       auto identity_name = node->GetName() + "_ctrl_identity_" + std::to_string(in_data_anchor->GetIdx());
       auto identity =
-          AddIdentityNodeToGraph(identity_name, node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx()), graph);
+        AddIdentityNodeToGraph(identity_name, node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx()), graph);
       if (identity == nullptr) {
         GELOGE(INTERNAL_ERROR, "Failed to add identity node to graph.");
         return INTERNAL_ERROR;

@@ -54,7 +54,6 @@
 
 #include "new_op_test_utils.h"
 #include "graph/debug/ge_attr_define.h"
-
 using namespace std;
 using namespace testing;
 using domi::EventExDef;

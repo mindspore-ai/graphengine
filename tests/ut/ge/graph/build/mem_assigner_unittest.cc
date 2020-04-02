@@ -170,7 +170,6 @@ class MockBlockMemAssigner : public BlockMemAssigner {
   virtual ~MockBlockMemAssigner(){};
 
   Status GetMemoryRanges(std::vector<int64_t> &ranges) override { return FAILED; }
-
 };
 }  // namespace ge
 

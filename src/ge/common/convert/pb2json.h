@@ -19,12 +19,10 @@
 
 #ifndef GE_COMMON_CONVERT_PB2JSON_H_
 #define GE_COMMON_CONVERT_PB2JSON_H_
-
 #include <functional>
 #include <memory>
 #include <set>
 #include <string>
-
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "nlohmann/json.hpp"
@@ -40,12 +38,12 @@ using ProtobufEnumValueDescriptor = ::google::protobuf::EnumValueDescriptor;
 class Pb2Json {
  public:
   /**
-  * @ingroup domi_omg
-  * @brief Transfer protobuf object to JSON object
-  * @param [out] json Converted JSON object
-  * @return void success
-  * @author
-  */
+   * @ingroup domi_omg
+   * @brief Transfer protobuf object to JSON object
+   * @param [out] json Converted JSON object
+   * @return void success
+   * @author
+   */
   static void Message2Json(const ProtobufMsg &message, const std::set<std::string> &black_fields, Json &json,
                            bool enum2str = false);
 

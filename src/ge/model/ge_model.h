@@ -17,10 +17,10 @@
 #ifndef GE_MODEL_GE_MODEL_H_
 #define GE_MODEL_GE_MODEL_H_
 
+#include <securec.h>
 #include <map>
 #include <memory>
 #include <string>
-
 #include "common/tbe_kernel_store.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
@@ -61,9 +61,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
 
   ProtoAttrMapHelper MutableAttrMap() override;
 
-  using AttrHolder::SetAttr;
-  using AttrHolder::GetAllAttrs;
   using AttrHolder::GetAllAttrNames;
+  using AttrHolder::GetAllAttrs;
+  using AttrHolder::SetAttr;
 
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
   uint32_t GetModelId() const { return model_id_; }
@@ -74,12 +74,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
  private:
   void Init();
 
-  ProtoAttrMapHelper attrs_;
+  ProtoAttrMapHelper attrs_; /*lint !e148*/
 
-  Graph graph_;
-  std::shared_ptr<domi::ModelTaskDef> task_;
+  Graph graph_;                              /*lint !e148*/
+  std::shared_ptr<domi::ModelTaskDef> task_; /*lint !e148*/
   TBEKernelStore tbe_kernal_store_;
-  Buffer weights_buffer_;
+  Buffer weights_buffer_; /*lint !e148*/
 
   std::string name_;
   uint32_t version_ = {0};

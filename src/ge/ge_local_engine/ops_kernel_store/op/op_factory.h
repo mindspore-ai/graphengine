@@ -22,7 +22,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "common/ge/ge_util.h"
 #include "ge_local_engine/ops_kernel_store/op/op.h"
 
@@ -30,25 +29,27 @@ namespace ge {
 namespace ge_local {
 using OP_CREATOR_FUNC = std::function<std::shared_ptr<Op>(const Node &, RunContext &)>;
 
-// manage all the op, support create op.
+/**
+ * manage all the op, support create op.
+ */
 class OpFactory {
  public:
   static OpFactory &Instance();
 
-  ///
-  /// @brief create Op.
-  /// @param [in] node share ptr of node
-  /// @param [in] run_context run context
-  /// @return not nullptr success
-  /// @return nullptr fail
-  ///
+  /**
+   *  @brief create Op.
+   *  @param [in] node share ptr of node
+   *  @param [in] run_context run context
+   *  @return not nullptr success
+   *  @return nullptr fail
+   */
   std::shared_ptr<Op> CreateOp(const Node &node, RunContext &run_context);
 
-  ///
-  /// @brief Register Op create function.
-  /// @param [in] type Op type
-  /// @param [in] func Op create func
-  ///
+  /**
+   *  @brief Register Op create function.
+   *  @param [in] type Op type
+   *  @param [in] func Op create func
+   */
   void RegisterCreator(const std::string &type, const OP_CREATOR_FUNC &func);
 
   const std::vector<std::string> &GetAllOps() const { return all_ops_; }

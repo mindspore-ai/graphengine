@@ -27,7 +27,6 @@ include_directories(${GE_SOURCE_DIR}/inc/framework/ge_runtime)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
-include_directories(${GE_SOURCE_DIR}/third_party/protobuf/src)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
@@ -35,7 +34,6 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 file(GLOB_RECURSE GE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "model_runner.cc"
         "runtime_model.cc"
-        "op_info_utils.cc"
         "output.cc"
         "task/*.cc"
         )
@@ -46,7 +44,6 @@ target_compile_definitions(ge_runtime PUBLIC
         Werror)
 target_link_libraries(ge_runtime
         graph
-        ${cce}
         ${slog}
         ${runtime}
         ${c_sec}

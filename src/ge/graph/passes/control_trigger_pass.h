@@ -25,15 +25,7 @@
 #include "inc/graph_pass.h"
 
 namespace ge {
-enum ControlNodeType {
-  kNotControlOp,
-  kCondSwitch,
-  kCondMerge,
-  kLoopSwitchT,
-  kLoopSwitchF,
-  kEnter,
-  kInvalidType
-};
+enum ControlNodeType { kNotControlOp, kCondSwitch, kCondMerge, kLoopSwitchT, kLoopSwitchF, kEnter, kInvalidType };
 
 class ControlTriggerPass : public GraphPass {
  public:

@@ -20,13 +20,12 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "graph/compute_graph.h"
 #include "graph/preprocess/insert_op/base_insert_op.h"
 #include "proto/insert_op.pb.h"
 
 namespace ge {
-enum AippType { kOldType, kNewType };
+enum AippType { OLD_TYPE, NEW_TYPE };
 
 class InsertNewOpUtil {
  public:
@@ -41,7 +40,7 @@ class InsertNewOpUtil {
 
   Status InsertNewOps(const ge::ComputeGraphPtr &graph);
 
-  Status InsertAippOps(ge::ComputeGraphPtr &graph, std::string &aipp_config_path);
+  Status InsertAippOps(ge::ComputeGraphPtr &graph, std::string &aippConfigPath);
 
   void ClearNewOps();
 
@@ -50,13 +49,13 @@ class InsertNewOpUtil {
 
   Status AddMultiShapeInputData(const ge::ComputeGraphPtr &graph);
 
-  Status GetAippParams(const std::unique_ptr<domi::AippOpParams> &aipp_params, const ge::NodePtr &aipp_node);
+  Status GetAippParams(const std::unique_ptr<domi::AippOpParams> &aippParams, const ge::NodePtr &aipp_node);
 
   Status CheckGraph(const ge::ComputeGraphPtr &graph);
 
   InsertNewOpUtil() {}
 
-  Status AddAippInputData(const ge::NodePtr &aipp_node, const ge::ComputeGraphPtr &graph);
+  Status AddAippInputData(ge::NodePtr aipp_node, ge::ComputeGraphPtr graph);
 
   ~InsertNewOpUtil() = default;
 

@@ -31,6 +31,8 @@ using std::map;
 using std::string;
 using std::vector;
 
+/*lint -e148*/
+
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Model : public AttrHolder {
  public:
   Model();
@@ -65,7 +67,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Model : public AttrHolder {
   graphStatus Save(Buffer &buffer) const;
 
   graphStatus SaveToFile(const string &file_name) const;
-  // Model will be rewritten
+  // Model will be rewrite
   static graphStatus Load(const uint8_t *data, size_t len, Model &model);
   graphStatus Load(ge::proto::ModelDef &model_def);
   graphStatus LoadFromFile(const string &file_name);
@@ -89,6 +91,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Model : public AttrHolder {
   std::string platform_version_{""};
   Graph graph_;
 };
+/*lint +e148*/
 }  // namespace ge
 using ModelPtr = std::shared_ptr<ge::Model>;
 

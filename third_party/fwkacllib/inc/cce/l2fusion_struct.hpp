@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _L2FUSION_STRUCT_HPP_
-#define _L2FUSION_STRUCT_HPP_
+#ifndef L2FUSION_STRUCT_HPP_
+#define L2FUSION_STRUCT_HPP_
 
 #include <map>
 #include <string>
@@ -53,4 +53,4 @@ typedef std::pair<string, TaskL2Info_t> TaskL2InfoFEPair_t;  // the key is nodeN
 
 }  // namespace fusion
 
-#endif
+#endif  // L2FUSION_STRUCT_HPP_

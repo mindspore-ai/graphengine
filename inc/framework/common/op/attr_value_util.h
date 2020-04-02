@@ -17,19 +17,17 @@
 #ifndef INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_
 #define INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_
 
-#include <google/protobuf/map.h>
-#include <string>
 #include <unordered_map>
-
-#include "common/types.h"
+#include <google/protobuf/map.h>
 #include "graph/debug/ge_attr_define.h"
+#include "common/types.h"
 #include "proto/om.pb.h"
 
 using domi::AttrDef;
-using domi::OpDef;
 using domi::AttrDef_ListValue;
 using domi::ModelDef;
 using domi::NamedAttrs;
+using domi::OpDef;
 
 namespace ge {
 using AttrDefMap = ::google::protobuf::Map<::std::string, ::domi::AttrDef>;

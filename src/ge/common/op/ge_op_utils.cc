@@ -18,8 +18,6 @@
 
 #include <list>
 
-#include "cce/dnn.h"
-#include "cce/dnn_struct.hpp"
 #include "common/ge/ge_util.h"
 #include "external/graph/types.h"
 #include "framework/common/debug/ge_log.h"
@@ -74,352 +72,6 @@ const uint32_t SWITCH_FALSE_OUTPUT = 0;
 const uint32_t SWITCH_TRUE_OUTPUT = 1;
 const uint32_t SWITCH_DATA_INPUT = 0;
 const uint32_t SWITCH_PRED_INPUT = 1;
-// Internal constant
-const uint32_t kPoolMaskDescWinH = 4;
-const uint32_t kPoolMaskDescWinW = 5;
-const uint32_t kPoolMaskDescDimSize = 6;
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool OpUtils::IsComputDimsSize(const int32_t format,
-                                                                                const uint32_t real_dim_cnt) {
-  return ((format == cce::CC_TENSOR_ND) ||
-          ((format != cce::CC_TENSOR_NC1KHKWHWC0) && (format != cce::CC_TENSOR_C1HWNCoC0) &&
-           (real_dim_cnt > DIM_DEFAULT_SIZE)));
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::InitTensorDescriptor(const GeTensorDesc &tensor, cce::ccTensorDescriptor_t &cc_tensor) {
-  return InitTensorDescriptor(tensor, static_cast<int32_t>(tensor.GetDataType()), cc_tensor);
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::InitTensorDescriptor(
-    const GeTensorDesc &model_tensor, int32_t dst_data_type, cce::ccTensorDescriptor_t &cc_tensor) {
-  uint32_t real_dim_cnt = OpUtils::GetRealDimCnt(model_tensor);
-  return InitTensorDescriptor(static_cast<int32_t>(model_tensor.GetFormat()), dst_data_type,
-                              model_tensor.GetShape().GetDims(), cc_tensor, real_dim_cnt);
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::InitTensorDescriptor(const GeTensor &model_tensor, cce::ccTensorDescriptor_t &cc_tensor) {
-  return InitTensorDescriptor(model_tensor, static_cast<int32_t>(model_tensor.GetTensorDesc().GetDataType()),
-                              cc_tensor);
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::InitTensorDescriptor(
-    const GeTensor &model_tensor, int32_t dst_data_type, cce::ccTensorDescriptor_t &cc_tensor) {
-  const GeTensorDesc &tensor_desc = model_tensor.GetTensorDesc();
-  const GeShape &shape = tensor_desc.GetShape();
-  return InitTensorDescriptor(static_cast<int32_t>(tensor_desc.GetFormat()), dst_data_type, shape.GetDims(), cc_tensor,
-                              static_cast<uint32_t>(shape.GetDimNum()));
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::InitTensorDescriptor(int32_t format, int32_t data_type, const std::vector<int64_t> &dim,
-                              cce::ccTensorDescriptor_t &cc_tensor, uint32_t real_dim_cnt) {
-  Status ret = SUCCESS;
-  ccDataType_t data_type_ = cce::tagCcDataType(data_type);
-  real_dim_cnt =
-      static_cast<uint32_t>(((real_dim_cnt == 0) && (dim.size() > DIM_DEFAULT_SIZE)) ? dim.size() : real_dim_cnt);
-  if (IsComputDimsSize(format, real_dim_cnt)) {
-    GE_CHK_CCE_RET(cce::ccCreateTensorDescriptor(&cc_tensor));
-#if (defined(__GNUC__) && !(defined(__ICC) || defined(__INTEL_COMPILER))) && \
-    (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 50000
-    // Variable length array initialization is not supported in gcc4. X compilation environment
-    GE_CHK_BOOL_RET_STATUS(real_dim_cnt <= CC_DIM_MAX, domi::CCE_FAILED, "real_dim_cnt support <= 8.");
-    int32_t real_dim[CC_DIM_MAX] = {0};
-#else
-    int32_t real_dim[real_dim_cnt] = {};
-#endif
-    uint32_t i = 0;
-    for (auto dim_temp : dim) {
-      GE_CHK_BOOL_EXEC_NOLOG(i < real_dim_cnt && i < kDimMaxSize, break);
-      real_dim[i] = static_cast<int32_t>(dim_temp);
-      i++;
-    }
-
-    auto cc_ret = cce::ccSetTensorNdDescriptor(cc_tensor, data_type_, real_dim_cnt, real_dim);
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS,
-                      GELOGE(domi::CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor)); return domi::CCE_FAILED);
-
-    return ret;
-  } else if (format == cce::CC_TENSOR_NC1KHKWHWC0) {
-    GE_CHK_CCE_RET(cce::ccCreatePoolingMaskDescriptor(&cc_tensor));
-    cce::ccTensorFormat_t format_new = cce::tagCcTensorFormat(format);
-    GE_IF_BOOL_EXEC(
-        dim.size() != kPoolMaskDescDimSize,
-        GELOGE(PARAM_INVALID, "format CC_TENSOR_NC1KHKWHWC0 dim size must be 6,dim size id %lu.", dim.size());
-        GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor)); return PARAM_INVALID);
-    auto cc_ret = ccSetPoolingMaskTensorDescriptor(
-        cc_tensor, format_new, data_type_, static_cast<int32_t>(dim[NCHW_DIM_N]),
-        static_cast<int32_t>(dim[NCHW_DIM_C]), static_cast<int32_t>(dim[NCHW_DIM_H]),
-        static_cast<int32_t>(dim[NCHW_DIM_W]), static_cast<int32_t>(dim[kPoolMaskDescWinH]),
-        static_cast<int32_t>(dim[kPoolMaskDescWinW]));
-
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS,
-                      GELOGE(domi::CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor)); return domi::CCE_FAILED);
-    return ret;
-  } else if (format == cce::CC_TENSOR_C1HWNCoC0) {
-    GE_CHK_CCE_RET(cce::ccCreateTensorDescriptor(&cc_tensor));
-    cce::ccTensorFormat_t format_new = cce::tagCcTensorFormat(format);
-    GE_IF_BOOL_EXEC(
-        dim.size() != DIM_C1HWNCoC0_SIZE,
-        GELOGE(PARAM_INVALID, "format C1HWNCoC0_DIM_SIZE dim size must be 5,dim size id %lu.", dim.size());
-        GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor)); return PARAM_INVALID);
-
-    auto cc_ret = cce::ccSetFilter6dDescriptor(
-        cc_tensor, format_new, data_type_, static_cast<int32_t>(dim[C1HWNCoC0_DIM_C1]),
-        static_cast<int32_t>(dim[C1HWNCoC0_DIM_H]), static_cast<int32_t>(dim[C1HWNCoC0_DIM_W]),
-        static_cast<int32_t>(dim[C1HWNCoC0_DIM_N]), static_cast<int32_t>(dim[C1HWNCoC0_DIM_Co]),
-        static_cast<int32_t>(dim[C1HWNCoC0_DIM_C0]));
-
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS, GELOGE(CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor)); return CCE_FAILED);
-
-    return ret;
-  }
-  std::vector<int64_t> dim_vector;
-  (void)TransferDim(dim, dim_vector);  // TransferDim always return success, no need to check value
-  // format
-  if (!CheckEnumValid(format, cce::CC_TENSOR_NCHW, cce::CC_TENSOR_RESERVED)) {
-    GELOGE(PARAM_INVALID, "not supported format, format = %d", format);
-    return PARAM_INVALID;
-  }
-  cce::ccTensorFormat_t format_new = cce::tagCcTensorFormat(format);
-
-  // data type
-  if (!CheckEnumValid(data_type, cce::CC_DATA_FLOAT, cce::CC_DATA_RESERVED)) {
-    GELOGE(PARAM_INVALID, "not supported data type, type = %d", data_type);
-    return PARAM_INVALID;
-  }
-
-  // create tensor descriptor
-  GE_CHK_CCE_RET(cce::ccCreateTensorDescriptor(&cc_tensor));
-
-  // input shape
-  size_t input_shape_size = dim_vector.size();
-  GE_IF_BOOL_EXEC(input_shape_size != DIM_DEFAULT_SIZE, GELOGI("input_shape_size is %zu", input_shape_size));
-
-  // The last two outputs of fusedbatchnormgrad are 0. Need special processing for fusedbatchnormgrad.
-  GE_IF_BOOL_EXEC(dim.size() == 1 && dim[0] == 0,
-                    GE_IF_BOOL_EXEC(cce::ccSetTensorRealDimCnt(cc_tensor, real_dim_cnt) != cce::CC_STATUS_SUCCESS,
-                                      GELOGE(domi::CCE_FAILED, "Call cce failed.");
-                                      GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor)); return domi::CCE_FAILED);
-                    return ret);
-
-  if (format == cce::CC_TENSOR_NHWC) {
-    auto cc_ret = cce::ccSetTensor4dDescriptor(
-        cc_tensor, format_new, data_type_, static_cast<int32_t>(dim_vector.at(NHWC_DIM_N)),
-        static_cast<int32_t>(dim_vector.at(NHWC_DIM_C)), static_cast<int32_t>(dim_vector.at(NHWC_DIM_H)),
-        static_cast<int32_t>(dim_vector.at(NHWC_DIM_W)));
-
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS,
-                      GELOGE(domi::CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      ret = domi::CCE_FAILED);
-  } else if (format == cce::CC_TENSOR_HWCN) {
-    auto cc_ret = cce::ccSetTensor4dDescriptor(
-        cc_tensor, format_new, data_type_, static_cast<int32_t>(dim_vector.at(NHWC_DIM_C)),
-        static_cast<int32_t>(dim_vector.at(NHWC_DIM_W)), static_cast<int32_t>(dim_vector.at(NHWC_DIM_N)),
-        static_cast<int32_t>(dim_vector.at(NHWC_DIM_H)));
-
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS,
-                      GELOGE(domi::CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      ret = domi::CCE_FAILED);
-  } else if (format >= cce::CC_TENSOR_HASHTABLE_LOOKUP_LOOKUPS && format <= cce::CC_TENSOR_HASHTABLE_LOOKUP_HITS) {
-    int32_t dims[dim.size()];
-    for (size_t i = 0; i < dim.size(); i++) {
-      dims[i] = static_cast<int32_t>(dim[i]);
-    }
-
-    auto cc_ret = cce::ccSetTensorNdDescriptor(cc_tensor, data_type_, static_cast<int32_t>(dim.size()), dims);
-    cce::ccSetTensorFormat(cc_tensor, format_new);
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS, GELOGE(CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      ret = CCE_FAILED);
-  } else {
-    auto cc_ret = cce::ccSetTensor4dDescriptor(
-        cc_tensor, format_new, data_type_, static_cast<int32_t>(dim_vector.at(NHWC_DIM_N)),
-        static_cast<int32_t>(dim_vector.at(NHWC_DIM_H)), static_cast<int32_t>(dim_vector.at(NHWC_DIM_W)),
-        static_cast<int32_t>(dim_vector.at(NHWC_DIM_C)));
-
-    GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS,
-                      GELOGE(domi::CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                      ret = domi::CCE_FAILED);
-  }
-  auto cc_ret = cce::ccSetTensorRealDimCnt(cc_tensor, real_dim_cnt);
-  GE_IF_BOOL_EXEC(cc_ret != cce::CC_STATUS_SUCCESS, GELOGE(domi::CCE_FAILED, "Call cce failed. cc_ret = %d", cc_ret);
-                    ret = domi::CCE_FAILED);
-
-  if (ret != SUCCESS) {
-    GE_CHK_CCE(cce::ccDestroyTensorDescriptor(&cc_tensor));
-    cc_tensor = nullptr;
-  }
-
-  return ret;
-}
-
-// Initialize filter description
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::InitFilterDescriptor(const GeTensor &model_filter, cce::ccFilterDescriptor_t &cc_filter) {
-  const GeTensorDesc &tensor_desc = model_filter.GetTensorDesc();
-  const GeShape &shape = tensor_desc.GetShape();
-  const std::vector<int64_t> dims = shape.GetDims();
-
-  // format
-  RETURN_IF_TRUE(!CheckEnumValid(tensor_desc.GetFormat(), cce::CC_TENSOR_NCHW, cce::CC_TENSOR_RESERVED), PARAM_INVALID,
-                 "not supported format, format = %d", tensor_desc.GetFormat());
-
-  uint32_t tmp_int = static_cast<uint32_t>(tensor_desc.GetFormat());
-  cce::ccTensorFormat_t format = cce::tagCcTensorFormat(tmp_int);
-
-  // data type
-  RETURN_IF_TRUE(!CheckEnumValid(tensor_desc.GetDataType(), cce::CC_DATA_FLOAT, cce::CC_DATA_RESERVED), PARAM_INVALID,
-                 "not supported data type, type = %s",
-                 TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str());
-
-  uint32_t dt_tmp = static_cast<uint32_t>(tensor_desc.GetDataType());
-
-  ccDataType_t dataType = cce::tagCcDataType(dt_tmp);
-
-  // create filter descriptor
-  GE_CHK_CCE_RET(cce::ccCreateFilterDescriptor(&cc_filter));
-
-  Status ret = SUCCESS;
-  // input filter
-  size_t filter_shape_size = shape.GetDimNum();
-  if (filter_shape_size == DIM_DEFAULT_SIZE) {
-    cce::ccStatus_t cc_ret = cce::CC_STATUS_SUCCESS;
-
-    GE_IF_BOOL_EXEC(dims.size() < 4, GELOGE(domi::CCE_FAILED, "dims is invalid!"); return domi::CCE_FAILED);
-
-    if (dataType == CC_DATA_INT8) {
-      cc_ret = ccSetInt8Filter4dDescriptor(cc_filter, format, dataType, static_cast<int32_t>(dims[KCHW_DIM_K]),
-                                           static_cast<int32_t>(dims[KCHW_DIM_C]),
-                                           static_cast<int32_t>(dims[KCHW_DIM_H]),
-                                           static_cast<int32_t>(dims[KCHW_DIM_W]), cce::CC_DATA_HALF);
-    } else if (format == cce::CC_TENSOR_FRACTAL_Z_C04 || format == cce::CC_TENSOR_FRACTAL_DECONV_SP_STRIDE_TRANS ||
-               format == cce::CC_TENSOR_FRACTAL_Z || format == cce::CC_TENSOR_FRACTAL_DECONV) {
-      cc_ret = cce::ccSetFilterFractalDescriptor(
-          cc_filter, format, dataType, static_cast<int32_t>(dims[KCHW_DIM_K]),
-          static_cast<int32_t>(dims[KCHW_DIM_C]), static_cast<int32_t>(dims[KCHW_DIM_H]),
-          static_cast<int32_t>(dims[KCHW_DIM_W]));
-    } else if (format == cce::CC_TENSOR_NHWC) {
-      cc_ret = cce::ccSetFilter4dDescriptor(cc_filter, format, dataType, static_cast<int32_t>(dims[NHWC_DIM_N]),
-                                            static_cast<int32_t>(dims[NHWC_DIM_C]),
-                                            static_cast<int32_t>(dims[NHWC_DIM_H]),
-                                            static_cast<int32_t>(dims[NHWC_DIM_W]));
-    } else if (format == cce::CC_TENSOR_CHWN) {
-      cc_ret = cce::ccSetFilter4dDescriptor(cc_filter, format, dataType, static_cast<int32_t>(dims[CHWN_DIM_N]),
-                                            static_cast<int32_t>(dims[CHWN_DIM_C]),
-                                            static_cast<int32_t>(dims[CHWN_DIM_H]),
-                                            static_cast<int32_t>(dims[CHWN_DIM_W]));
-    } else if (format == cce::CC_TENSOR_HWCN) {
-      cc_ret = cce::ccSetFilter4dDescriptor(cc_filter, format, dataType, static_cast<int32_t>(dims[NHWC_DIM_C]),
-                                            static_cast<int32_t>(dims[NHWC_DIM_W]),
-                                            static_cast<int32_t>(dims[NHWC_DIM_N]),
-                                            static_cast<int32_t>(dims[NHWC_DIM_H]));
-    } else {
-      cc_ret = cce::ccSetFilter4dDescriptor(cc_filter, format, dataType, static_cast<int32_t>(dims[KCHW_DIM_K]),
-                                            static_cast<int32_t>(dims[KCHW_DIM_C]),
-                                            static_cast<int32_t>(dims[KCHW_DIM_H]),
-                                            static_cast<int32_t>(dims[KCHW_DIM_W]));
-    }
-
-    if (cc_ret != cce::CC_STATUS_SUCCESS) {
-      GELOGE(domi::CCE_FAILED, "ccSetFilterDescriptor failed. cc_ret = %d, format1 = %d", cc_ret, format);
-      ret = domi::CCE_FAILED;
-    }
-  } else {
-    GELOGE(UNSUPPORTED, "not supported shape size. size = %d", filter_shape_size);
-    ret = UNSUPPORTED;
-  }
-
-  if (ret != SUCCESS) {
-    GE_CHK_CCE(cce::ccDestroyFilterDescriptor(&cc_filter));
-    cc_filter = nullptr;
-  }
-
-  return ret;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool OpUtils::ConvertDim(cce::ccTensorFormat_t src_format,
-                                                                          const std::vector<int64_t> &src,
-                                                                          cce::ccTensorFormat_t dst_format,
-                                                                          std::vector<int64_t> &dst) {
-  // The input of 3-dimension and 4-dimension is considered as picture dimension,
-  // which needs to be converted according to specific format
-  if ((src.size() != DIM_DEFAULT_SIZE && src.size() != 3) || src_format == dst_format) {
-    GELOGI("Convert format , src size %zu <3 ,not need convert", src.size());
-    dst = src;
-    return true;
-  }
-
-  std::vector<int64_t> nchw_dim;
-
-  switch (src_format) {
-    case cce::CC_TENSOR_NCHW:
-      nchw_dim = src;
-      break;
-    case cce::CC_TENSOR_NHWC:
-      if (src.size() == DIM_DEFAULT_SIZE) {
-        nchw_dim.push_back(src[NHWC_DIM_N]);
-        nchw_dim.push_back(src[NHWC_DIM_C]);
-        nchw_dim.push_back(src[NHWC_DIM_H]);
-        nchw_dim.push_back(src[NHWC_DIM_W]);
-      } else {
-        nchw_dim.push_back(src[HWC_DIM_C]);
-        nchw_dim.push_back(src[HWC_DIM_H]);
-        nchw_dim.push_back(src[HWC_DIM_W]);
-      }
-      break;
-    default:
-      GELOGW("Not support src format is %d", src_format);
-      return false;
-  }
-
-  if (nchw_dim.empty()) {
-    GELOGW("Vector is empty!");
-    return false;
-  }
-
-  switch (dst_format) {
-    case cce::CC_TENSOR_NCHW:
-      dst = nchw_dim;
-      break;
-    case cce::CC_TENSOR_NHWC:
-      if (src.size() == DIM_DEFAULT_SIZE) {
-        dst.push_back(nchw_dim[NCHW_DIM_N]);
-        dst.push_back(nchw_dim[NCHW_DIM_H]);
-        dst.push_back(nchw_dim[NCHW_DIM_W]);
-        dst.push_back(nchw_dim[NCHW_DIM_C]);
-      } else {
-        dst.push_back(nchw_dim[CHW_DIM_H]);
-        dst.push_back(nchw_dim[CHW_DIM_W]);
-        dst.push_back(nchw_dim[CHW_DIM_C]);
-      }
-      break;
-    default:
-      GELOGW("Not support dst format of %d", dst_format);
-      return false;
-  }
-
-  return true;
-}
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::DestroyTensorDescriptor(
-    cce::ccTensorDescriptor_t &cc_tensor) noexcept {
-  if (cc_tensor != nullptr) {
-    cce::ccStatus_t ret = cce::ccDestroyTensorDescriptor(&cc_tensor);
-    GE_LOGE_IF(ret != cce::CC_STATUS_SUCCESS, "cce::ccDestroyTensorDescriptor failed. ret = %d", ret);
-    cc_tensor = nullptr;
-  }
-}
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::DestroyFilterDescriptor(
-    cce::ccFilterDescriptor_t &cc_filter) {
-  if (cc_filter != nullptr) {
-    cce::ccStatus_t ret = ccDestroyFilterDescriptor(&cc_filter);
-    GE_LOGE_IF(ret != cce::CC_STATUS_SUCCESS, "ccDestroyFilterDescriptor failed. ret = %d", ret);
-    cc_filter = nullptr;
-  }
-}
 
 // Get the value of key from attr
 #define AIPP_GET_ATTR_VALUE(KEY, ATTR_TYPE)                          \
@@ -522,68 +174,6 @@ OpUtils::ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr, domi::AippO
   return SUCCESS;
 }
 
-CceTensorDescriptor::CceTensorDescriptor(cce::ccTensorDescriptor_t cc_tensor) : cc_tensor_(cc_tensor) {}
-
-CceTensorDescriptor::~CceTensorDescriptor() {
-  if (cc_tensor_ != nullptr) {
-    OpUtils::DestroyTensorDescriptor(cc_tensor_);
-    cc_tensor_ = nullptr;
-  }
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CceTensorDescriptor::InitTensor(int32_t format,
-                                                                                        int32_t data_type,
-                                                                                        const vector<int64_t> &dims) {
-  if (cc_tensor_ != nullptr) {
-    GELOGE(PARAM_INVALID, "Cannot init cce tensor descriptor twice!");
-    return PARAM_INVALID;
-  }
-  cce::ccTensorDescriptor_t cc_tensor = nullptr;
-
-  Status ret = OpUtils::InitTensorDescriptor(format, data_type, dims, cc_tensor);
-
-  GE_CHK_STATUS_EXEC(ret, OpUtils::DestroyTensorDescriptor(cc_tensor); return FAILED, "init cc_tensor failed.");
-
-  cc_tensor_ = cc_tensor;
-  return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CceTensorDescriptor::InitTensor(int32_t format,
-                                                                                        int32_t data_type,
-                                                                                        const ge::GeShape &shape) {
-  return InitTensor(format, data_type, shape.GetDims());
-}
-
-Status CceTensorDescriptor::GetFormat(cce::ccTensorFormat_t *format) {
-  GE_CHECK_NOTNULL(format);
-  GE_CHK_CCE_RET(cce::ccGetTensorFormat(cc_tensor_, format));
-  return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CceTensorDescriptor::GetTensorSizeInBytes(uint32_t *size) {
-  GE_CHECK_NOTNULL(size);
-  GE_CHK_CCE_RET(cce::ccGetTensorSizeInBytes(cc_tensor_, size));
-  return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-CceTensorDescriptor::TransTensor(const cce::ccTensorDescriptor_t x_desc, const void *x,
-                                 const CceTensorDescriptorPtr &y_desc, void *y, uint32_t y_size_in_bytes) {
-  GE_CHECK_NOTNULL(y_desc);
-  GE_CHK_CCE_RET(cce::ccTransTensor(x_desc, x, y_desc->cc_tensor_, y, y_size_in_bytes));
-  return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY CceTensorDescriptorPtr CceTensorDescriptor::Create() {
-  shared_ptr<CceTensorDescriptor> desc = nullptr;
-  desc = ge::MakeShared<CceTensorDescriptor>(nullptr);
-  if (desc == nullptr) {
-    GELOGE(FAILED, "Make CceTensorDescriptor failed.");
-    return nullptr;
-  }
-  return desc;
-}
-
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::TransferDim(const std::vector<int64_t> &dim,
                                                                              std::vector<int64_t> &dim_vector) {
   size_t input_shape_size = dim.size();
@@ -643,8 +233,8 @@ void OpUtils::SliceData(std::vector<char *> &input, int64_t chunk_size, std::vec
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetOutputSliceData(
-    void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims, std::vector<int64_t> &begin,
-    std::vector<int64_t> &output_dims, GeTensor *output, std::vector<int64_t> &stride) {
+  void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims, std::vector<int64_t> &begin,
+  std::vector<int64_t> &output_dims, GeTensor *output, std::vector<int64_t> &stride) {
   GE_CHECK_NOTNULL(data);
   GE_CHECK_NOTNULL(output);
   std::vector<char *> chunk_input;
@@ -727,7 +317,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataHWCK2KCH
   const char *w_data = (const char *)input;
 
   int64_t count = h * w * c * k;
-  GE_IF_BOOL_EXEC(count <= 0, GELOGW("Count value must be greater than 0, but count = %ld", count); return);
+  GE_IF_BOOL_EXEC(count <= 0, GELOGW("Count value must be greater than 0, but count = %ld", count); return );
   float *buf = new (std::nothrow) float[count]();
   GE_RT_VOID_CHECK_NOTNULL(buf);
   float *src_buff = nullptr;
@@ -778,58 +368,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataKCHW2HWC
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::InitFilterTensorDescriptor(const GeTensorDesc &model_tensor, cce::ccFilterDescriptor_t &cc_tensor) {
-  auto dims = model_tensor.GetShape().GetDims();
-  auto dim_size = dims.size();
-  if (dim_size == 0) {
-    GELOGE(FAILED, "Invalid dim size");
-    return FAILED;
-  }
-  uint32_t cc_format_tmp = static_cast<uint32_t>(model_tensor.GetFormat());
-  cce::ccTensorFormat_t format = cce::tagCcTensorFormat(cc_format_tmp);
-  uint32_t model_tensor_dt = static_cast<uint32_t>(model_tensor.GetDataType());
-  ccDataType_t data_type = cce::tagCcDataType(model_tensor_dt);
-  GE_CHK_BOOL_EXEC(
-      ((format == cce::CC_TENSOR_NCHW) || (format == cce::CC_TENSOR_FRACTAL_Z) || (format == cce::CC_TENSOR_HWCN)),
-      return PARAM_INVALID, "Filter tensor format:%d not correct.", format);
-  GE_IF_BOOL_EXEC(static_cast<uint32_t>(dims.size()) <= NCHW_DIM_W,
-                    GELOGE(PARAM_INVALID, "Array index is invalid!");
-                    return PARAM_INVALID);
-  // create tensor descriptor
-  GE_CHK_CCE_RET(cce::ccCreateFilterDescriptor(&cc_tensor));
-  if (format == cce::CC_TENSOR_FRACTAL_Z) {
-    GE_CHK_CCE_RET(cce::ccSetFilterFractalDescriptor(
-        cc_tensor, format, data_type, static_cast<int32_t>(dims[NCHW_DIM_N]),
-        static_cast<int32_t>(dims[NCHW_DIM_C]), static_cast<int32_t>(dims[NCHW_DIM_H]),
-        static_cast<int32_t>(dims[NCHW_DIM_W])));
-  } else if (format == cce::CC_TENSOR_HWCN) {
-    GE_CHK_CCE_RET(cce::ccSetFilter4dDescriptor(
-        cc_tensor, format, data_type, static_cast<int32_t>(dims[NCHW_DIM_W]),
-        static_cast<int32_t>(dims[NCHW_DIM_H]), static_cast<int32_t>(dims[NCHW_DIM_N]),
-        static_cast<int32_t>(dims[NCHW_DIM_C])));
-  } else {
-    GE_CHK_CCE_RET(cce::ccSetFilter4dDescriptor(
-        cc_tensor, format, data_type, static_cast<int32_t>(dims[NCHW_DIM_N]),
-        static_cast<int32_t>(dims[NCHW_DIM_C]), static_cast<int32_t>(dims[NCHW_DIM_H]),
-        static_cast<int32_t>(dims[NCHW_DIM_W])));
-  }
-  return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::SetTensorDescriptorAllOffsetQuantizeInfo(
-    const GeTensorDesc &tensor, cce::ccTensorDescriptor_t cc_tensor) {
-  GE_IF_BOOL_EXEC(!TensorUtils::HasAlloffsetQuantizeInfo(tensor), return;);
-  ccVecQuantizePara_t temp;
-  AllOffsetQuantizeInfo temp_quantInfo;
-  GE_CHK_BOOL_EXEC(TensorUtils::GetAlloffsetQuantizeInfo(tensor, temp_quantInfo) == GRAPH_SUCCESS, return,
-                   "Execute GetAlloffsetQuantizeInfo failed.");
-  temp.scale = temp_quantInfo.scale;
-  temp.offset = static_cast<uint16_t>(temp_quantInfo.offset);
-  temp.rrv = 0;
-  cce::ccSetTensorDescriptorQuantizeParam(cc_tensor, &temp);
-}
-
 vector<ConstGeTensorPtr> OpUtils::GetWeights(const ge::Node &node) { return OpDescUtils::GetWeights(node); }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY vector<ConstGeTensorPtr> OpUtils::GetWeights(ge::ConstNodePtr node) {
@@ -871,12 +409,14 @@ OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType ty
 
   if (type == DT_INT32) {
     int32_t *shape_data = const_cast<int32_t *>(reinterpret_cast<const int32_t *>(tensor->GetData().GetData()));
+    GE_CHECK_NOTNULL(shape_data);
     size_t dims_num = tensor->GetData().size() / sizeof(int32_t);
     for (size_t i = 0; i < dims_num; i++) {
       dims.push_back(static_cast<int64_t>(shape_data[i]));
     }
   } else if (type == DT_INT64) {
     int64_t *shape_data = const_cast<int64_t *>(reinterpret_cast<const int64_t *>(tensor->GetData().GetData()));
+    GE_CHECK_NOTNULL(shape_data);
     size_t dims_num = tensor->GetData().size() / sizeof(int64_t);
     for (size_t i = 0; i < dims_num; i++) {
       dims.push_back(shape_data[i]);

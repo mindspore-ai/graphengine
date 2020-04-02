@@ -23,20 +23,22 @@
 
 #include "graph/ge_error_codes.h"
 
-using std::string;
 using std::map;
+using std::string;
 
 namespace ge {
 class GEThreadLocalContext {
  public:
   graphStatus GetOption(const string &key, string &option);
-  void SetGlobalOption(map<std::string, string> options_map);
+  void SetGraphOption(map<std::string, string> options_map);
   void SetSessionOption(map<std::string, string> options_map);
+  void SetGlobalOption(map<std::string, string> options_map);
 
  private:
+  map<string, string> graph_options_;
   map<string, string> session_options_;
   map<string, string> global_options_;
-};
+};  // class GEThreadLocalContext
 
 GEThreadLocalContext &GetThreadLocalContext();
 }  // namespace ge

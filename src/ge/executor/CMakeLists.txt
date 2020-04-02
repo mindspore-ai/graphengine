@@ -26,6 +26,7 @@ file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ge_executor.cc"
+        "../common/ge/plugin_manager.cc"
         "../common/profiling/profiling_manager.cc"
         "../graph/execute/graph_execute.cc"
         "../graph/load/graph_loader.cc"
@@ -81,8 +82,6 @@ include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
-include_directories(${GE_SOURCE_DIR}/third_party/json/include)
-include_directories(${GE_SOURCE_DIR}/third_party/protobuf/src)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
@@ -99,7 +98,6 @@ target_link_libraries(ge_executor
         ${PROTOBUF_LIBRARY}
         ${register}
         ${c_sec}
-        ${cce}
         ${runtime}
         ${slog}
         ${mmpa}

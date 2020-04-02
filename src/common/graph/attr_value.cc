@@ -15,7 +15,6 @@
  */
 
 #include "external/graph/attr_value.h"
-
 #include "debug/ge_log.h"
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"

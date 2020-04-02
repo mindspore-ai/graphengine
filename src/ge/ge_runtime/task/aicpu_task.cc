@@ -15,11 +15,9 @@
  */
 
 #include "ge_runtime/task/aicpu_task.h"
-
 #include <vector>
-
-#include "aicpu/common/aicpu_task_struct.h"
 #include "ge_runtime/task/task_factory.h"
+#include "aicpu/common/aicpu_task_struct.h"
 
 namespace ge {
 namespace model_runner {
@@ -51,7 +49,7 @@ bool AicpuTask::Distribute() {
   constexpr uint32_t io_addr_offset = sizeof(aicpu::AicpuParamHead);
   uint32_t node_def_addr_offset = io_addr_offset + io_addrs_size;
   uint32_t args_size =
-      sizeof(aicpu::AicpuParamHead) + io_addrs_size + static_cast<uint32_t>(task_info_->node_def().size());
+    sizeof(aicpu::AicpuParamHead) + io_addrs_size + static_cast<uint32_t>(task_info_->node_def().size());
   aicpu::AicpuParamHead aicpu_param_head = {args_size, io_addrs_num};
 
   // Malloc device memory for args
@@ -113,6 +111,6 @@ void AicpuTask::ReleaseRtMem(void **ptr) noexcept {
   *ptr = nullptr;
 }
 
-REGISTER_TASK(TaskInfoType::kAiCpu, AicpuTask, AicpuTaskInfo);
+REGISTER_TASK(TaskInfoType::AICPU, AicpuTask, AicpuTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

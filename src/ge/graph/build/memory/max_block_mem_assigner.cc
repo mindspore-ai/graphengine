@@ -15,7 +15,6 @@
  */
 
 #include "graph/build/memory/max_block_mem_assigner.h"
-
 #include <algorithm>
 
 namespace ge {

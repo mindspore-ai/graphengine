@@ -22,7 +22,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #include "securec.h"
 
 namespace ge {

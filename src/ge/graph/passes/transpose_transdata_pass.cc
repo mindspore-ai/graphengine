@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/type_utils.h"
@@ -29,7 +28,7 @@
 
 namespace {
 const char *const kAttrNameSrcFormat = "src_format";
-}
+}  // namespace
 
 namespace ge {
 Status TransposeTransDataPass::Run(NodePtr &node) {
@@ -109,6 +108,7 @@ Status TransposeTransDataPass::RemoveTranspose(NodePtr &node) {
   // If delete Transpos/TransposeD, change its peer in ctrl anchor to its input node
   // If not delete, need do nothing
   auto origin_node_in = node->GetInDataNodes().at(0);
+  GE_CHECK_NOTNULL(node->GetOutControlAnchor());
   for (auto &peer_anchor : node->GetOutControlAnchor()->GetPeerInControlAnchors()) {
     GE_CHECK_NOTNULL(origin_node_in);
     GE_CHECK_NOTNULL(origin_node_in->GetOutControlAnchor());
@@ -175,12 +175,13 @@ bool TransposeTransDataPass::FusionIfNeed(OpDescPtr &op_desc, OpDescPtr &transda
   // add attr to fused TransData, then will be rebuild
   string new_node_name = op_desc->GetName() + transdata_op_desc->GetName();
   transdata_op_desc->SetName(new_node_name);
-  GE_IF_BOOL_EXEC(!AttrUtils::SetBool(transdata_op_desc, ATTR_NEED_COMPILE, true),
-                  GELOGW("set ext attr failed"); return false);
+  GE_IF_BOOL_EXEC(!AttrUtils::SetBool(transdata_op_desc, ATTR_NEED_COMPILE, true), GELOGW("set ext attr failed");
+                  return false);
 
   string format_val = TypeUtils::FormatToSerialString(src_format);
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(transdata_op_desc, kAttrNameSrcFormat, format_val),
-                  GELOGW("set kAttrNameSrcFormat failed"); return false);
+                  GELOGW("set kAttrNameSrcFormat failed");
+                  return false);
   GELOGI("TransposeTransDataPass, fuse to be node %s.", transdata_op_desc->GetName().c_str());
   return true;
 }
@@ -195,11 +196,11 @@ void TransposeTransDataPass::CopyInputEdges(NodePtr &origin_node, NodePtr &new_n
   }
   OutDataAnchorPtr out_anchor = origin_node->GetInDataAnchor(0)->GetPeerOutAnchor();
   new_in_data_anchor->UnlinkAll();
-  GE_IF_BOOL_EXEC(new_in_data_anchor->LinkFrom(out_anchor) != GRAPH_SUCCESS, GELOGW("Link failed"); return);
+  GE_IF_BOOL_EXEC(new_in_data_anchor->LinkFrom(out_anchor) != GRAPH_SUCCESS, GELOGW("Link failed"); return );
 
   // control anchor only link to control anchor
-  GE_IF_BOOL_EXEC(GraphUtils::CopyInCtrlEdges(origin_node, new_node) != GRAPH_SUCCESS,
-                  GELOGW("Copy in ctrl edges failed"); return);
+  GE_IF_BOOL_EXEC(
+    GraphUtils::CopyInCtrlEdges(origin_node, new_node) != GRAPH_SUCCESS, GELOGW("Copy in ctrl edges failed"); return );
 }
 
 bool TransposeTransDataPass::TransDataCheckAccuracySupported(const OpDescPtr &op_desc) {

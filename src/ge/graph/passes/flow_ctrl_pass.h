@@ -85,16 +85,13 @@ class FlowCtrlPass : public GraphPass {
   NodePtr AddVariableNode(ComputeGraphPtr &compute_graph, const string &name);
 
   ///
-  /// insert GlobalStepAssignAdd to graph.
-  /// just for ME, please remove when ME do itself.
+  /// add global step variable node to graph.
+  /// if the variable is exists, do nothing.
   /// @param compute_graph graph
-  /// @param pre_node pre node
-  /// @param global_step global step node
-  /// @param loop_increment_node loop increment node
-  /// @return the GlobalStepAssignAdd node. if insert failed return nullptr.
+  /// @return SUCCESS: do success
+  ///         Other: failed
   ///
-  NodePtr InsertGlobalStepAssignAddOp(ComputeGraphPtr &compute_graph, NodePtr &pre_node, const NodePtr &global_step,
-                                      const NodePtr &loop_increment_node);
+  Status AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph);
 
   ///
   /// create switch true branch for big cycle.

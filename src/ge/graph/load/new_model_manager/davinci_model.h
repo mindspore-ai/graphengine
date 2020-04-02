@@ -24,28 +24,24 @@
 #include <thread>
 #include <vector>
 
-#include "cce/cce_def.hpp"
-#include "cce/dnn.h"
-#include "cce/dnn_base_def.hpp"
-#include "cce/taskdown_common.hpp"
 #include "common/ge_types.h"
-#include "common/helper/model_helper.h"
-#include "common/helper/om_file_helper.h"
-#include "common/opskernel/ge_task_info.h"
 #include "common/types.h"
-#include "framework/common/util.h"
-#include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/data_dumper.h"
 #include "graph/load/new_model_manager/data_inputer.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "proto/task.pb.h"
+#include "mmpa/mmpa_api.h"
+#include "graph/debug/ge_attr_define.h"
+#include "common/opskernel/ge_task_info.h"
+#include "framework/common/util.h"
 #include "graph/model.h"
-#include "graph/node.h"
 #include "graph/op_desc.h"
 #include "graph/operator.h"
-#include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "mmpa/mmpa_api.h"
-#include "proto/task.pb.h"
+#include "common/helper/model_helper.h"
+#include "common/helper/om_file_helper.h"
+#include "graph/load/new_model_manager/data_dumper.h"
+#include "graph/node.h"
+#include "graph/utils/attr_utils.h"
 #include "task_info/task_info.h"
 
 #define WEIGHTS_ADDR_TO_CCE(var)
@@ -521,7 +517,7 @@ class DavinciModel {
   Status CopyVarData(ComputeGraphPtr &graph);
   Status CopyTensorFromSrcVarNode(const NodePtr &var_src, const NodePtr &var_dst);
 
-  void InitDataDumper();
+  void SetDataDumperArgs();
 
   bool is_model_has_inited_;
   uint32_t model_id_;
@@ -615,6 +611,8 @@ class DavinciModel {
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
+
+  uint64_t iterator_count_;
 };
 
 #define TIME_LOG_HEAD_FMT "       OP_ID   OP_NAME                OP_TYPE           ELAPSED TIME(ms)"

@@ -22,17 +22,16 @@
 #include "inc/kernel.h"
 
 namespace ge {
-class AddKernel: public Kernel {
+class AddKernel : public Kernel {
  public:
   template <typename T>
   bool OverflowCheck(const T &x, const T &y, DataType data_type);
 
   template <typename InT>
-  Status BCastAdd(const OpDescPtr &op_desc_ptr,
-                  const std::vector<ConstGeTensorPtr> &input,
+  Status BCastAdd(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input,
                   std::vector<GeTensorPtr> &v_output);
-  Status Compute(const ge::OpDescPtr op_desc_ptr,
-      const std::vector<ge::ConstGeTensorPtr> &input, std::vector<ge::GeTensorPtr> &v_output) override;
+  Status Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge::ConstGeTensorPtr> &input,
+                 std::vector<ge::GeTensorPtr> &v_output) override;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_FOLDING_KERNEL_ADD_KERNEL_H_

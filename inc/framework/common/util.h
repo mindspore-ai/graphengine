@@ -65,13 +65,29 @@
     if (var) GE_CHK_CCE(ccDestroyFilterDescriptor(&var)); \
   });
 
+// For propagating errors when calling a function.
+#define GE_RETURN_IF_ERROR(expr)         \
+  do {                                   \
+    const ::ge::Status _status = (expr); \
+    if (_status) return _status;         \
+  } while (0)
+
 #define GE_RETURN_WITH_LOG_IF_ERROR(expr, ...) \
   do {                                         \
     const ::ge::Status _status = (expr);       \
     if (_status) {                             \
-      GELOGE(ge::FAILED, __VA_ARGS__);         \
+      GE_LOGE(__VA_ARGS__);                    \
       return _status;                          \
     }                                          \
+  } while (0)
+
+// check whether the parameter is true. If it is, return FAILED and record the error log
+#define GE_RETURN_WITH_LOG_IF_TRUE(condition, ...) \
+  do {                                             \
+    if (condition) {                               \
+      GE_LOGE(__VA_ARGS__);                        \
+      return ge::FAILED;                           \
+    }                                              \
   } while (0)
 
 // Check if the parameter is false. If yes, return FAILED and record the error log
@@ -79,103 +95,130 @@
   do {                                              \
     bool _condition = (condition);                  \
     if (!_condition) {                              \
-      GELOGE(ge::FAILED, __VA_ARGS__);              \
+      GE_LOGE(__VA_ARGS__);                         \
       return ge::FAILED;                            \
     }                                               \
   } while (0)
 
-// Check if the parameter is null. If yes, return PARAM_INVALID and record the error
-#define GE_CHECK_NOTNULL(val)                                     \
-  do {                                                            \
-    if (val == nullptr) {                                         \
-      GELOGE(ge::PARAM_INVALID, "param[#val] must not be null."); \
-      return ge::PARAM_INVALID;                                   \
-    }                                                             \
+// Checks whether the parameter is true. If so, returns PARAM_INVALID and records the error log
+#define GE_RT_PARAM_INVALID_WITH_LOG_IF_TRUE(condition, ...) \
+  do {                                                       \
+    if (condition) {                                         \
+      GE_LOGE(__VA_ARGS__);                                  \
+      return ge::PARAM_INVALID;                              \
+    }                                                        \
+  } while (0)
+
+// Check if the parameter is false. If yes, return PARAM_INVALID and record the error log
+#define GE_RT_PARAM_INVALID_WITH_LOG_IF_FALSE(condition, ...) \
+  do {                                                        \
+    bool _condition = (condition);                            \
+    if (!_condition) {                                        \
+      GE_LOGE(__VA_ARGS__);                                   \
+      return ge::PARAM_INVALID;                               \
+    }                                                         \
   } while (0)
 
 // Check if the parameter is null. If yes, return PARAM_INVALID and record the error
-#define GE_CHECK_NOTNULL_JUST_RETURN(val)                         \
-  do {                                                            \
-    if (val == nullptr) {                                         \
-      GELOGE(ge::PARAM_INVALID, "param[#val] must not be null."); \
-      return;                                                     \
-    }                                                             \
+#define GE_CHECK_NOTNULL(val)                 \
+  do {                                        \
+    if (val == nullptr) {                     \
+      GE_LOGE(param[#val] must not be null.); \
+      return ge::PARAM_INVALID;               \
+    }                                         \
+  } while (0)
+
+// Check if the parameter is null. If yes, return PARAM_INVALID and record the error
+#define GE_CHECK_NOTNULL_JUST_RETURN(val)     \
+  do {                                        \
+    if (val == nullptr) {                     \
+      GE_LOGE(param[#val] must not be null.); \
+      return;                                 \
+    }                                         \
   } while (0)
 
 // Check whether the parameter is null. If so, execute the exec_expr expression and record the error log
-#define GE_CHECK_NOTNULL_EXEC(val, exec_expr)                     \
-  do {                                                            \
-    if (val == nullptr) {                                         \
-      GELOGE(ge::PARAM_INVALID, "param[#val] must not be null."); \
-      exec_expr;                                                  \
-    }                                                             \
+#define GE_CHECK_NOTNULL_EXEC(val, exec_expr) \
+  do {                                        \
+    if (val == nullptr) {                     \
+      GE_LOGE(param[#val] must not be null.); \
+      exec_expr;                              \
+    }                                         \
   } while (0)
 
 // Check whether the parameter is null. If yes, return directly and record the error log
-#define GE_RT_VOID_CHECK_NOTNULL(val)                             \
-  do {                                                            \
-    if (val == nullptr) {                                         \
-      GELOGE(ge::PARAM_INVALID, "param[#val] must not be null."); \
-      return;                                                     \
-    }                                                             \
+#define GE_RT_VOID_CHECK_NOTNULL(val)         \
+  do {                                        \
+    if (val == nullptr) {                     \
+      GE_LOGE(param[#val] must not be null.); \
+      return;                                 \
+    }                                         \
   } while (0)
 
 // Check if the parameter is null. If yes, return false and record the error log
-#define GE_RT_FALSE_CHECK_NOTNULL(val)                     \
-  do {                                                     \
-    if (val == nullptr) {                                  \
-      GELOGE(ge::FAILED, "param[#val] must not be null."); \
-      return false;                                        \
-    }                                                      \
+#define GE_RT_FALSE_CHECK_NOTNULL(val)        \
+  do {                                        \
+    if (val == nullptr) {                     \
+      GE_LOGE(param[#val] must not be null.); \
+      return false;                           \
+    }                                         \
   } while (0)
 
 // Check if the parameter is out of bounds
-#define GE_CHECK_SIZE(size)                                      \
-  do {                                                           \
-    if (size == 0) {                                             \
-      GELOGE(ge::PARAM_INVALID, "param[#size] is out of range"); \
-      return ge::PARAM_INVALID;                                  \
-    }                                                            \
+#define GE_CHECK_SIZE(size)                  \
+  do {                                       \
+    if (size == 0) {                         \
+      GE_LOGE(param[#size] is out of range); \
+      return ge::PARAM_INVALID;              \
+    }                                        \
   } while (0)
 
 // Macros that define the size variable
-#define GE_DEFINE_BYTE_SIZE(_var_name, _expr, _sizeof)                      \
-  uint32_t _var_name;                                                       \
-  do {                                                                      \
-    uint32_t _expr_size = (_expr);                                          \
-    uint32_t _sizeof_size = (_sizeof);                                      \
-    if (_expr_size > (0xffffffff) / _sizeof_size) {                         \
-      GELOGE(ge::PARAM_INVALID, "byte_size: [#_var_name] is out of range"); \
-      return ge::PARAM_INVALID;                                             \
-    }                                                                       \
-    _var_name = _sizeof_size * _expr_size;                                  \
+#define GE_DEFINE_BYTE_SIZE(_var_name, _expr, _sizeof) \
+  uint32_t _var_name;                                  \
+  do {                                                 \
+    uint32_t _expr_size = (_expr);                     \
+    uint32_t _sizeof_size = (_sizeof);                 \
+    if (_expr_size > (0xffffffff) / _sizeof_size) {    \
+      GE_LOGE(byte size : #_var_name is out of range); \
+      return ge::PARAM_INVALID;                        \
+    }                                                  \
+    _var_name = _sizeof_size * _expr_size;             \
   } while (0);
 
 // Check if the container is empty
-#define GE_CHECK_VECTOR_NOT_EMPTY(vector)              \
-  do {                                                 \
-    if (vector.empty()) {                              \
-      GELOGE(ge::FAILED, "param[#vector] is empty !"); \
-      return ge::FAILED;                               \
-    }                                                  \
+#define GE_CHECK_VECTOR_NOT_EMPTY(vector) \
+  do {                                    \
+    if (vector.empty()) {                 \
+      GE_LOGE(param[#vector] is empty !); \
+      return ge::FAILED;                  \
+    }                                     \
+  } while (0)
+
+#define GE_CHECK_POSITIVE_SIZE_RANGE(size)            \
+  do {                                                \
+    if (size <= 0) {                                  \
+      GE_LOGE(param[#size] is not a positive number); \
+      return ge::PARAM_INVALID;                       \
+    }                                                 \
   } while (0)
 
 // Check if the value on the left is greater than or equal to the value on the right
-#define GE_CHECK_GE(lhs, rhs)                                      \
-  do {                                                             \
-    if (lhs < rhs) {                                               \
-      GELOGE(ge::PARAM_INVALID, "param[#lhs] is less than[#rhs]"); \
-      return ge::PARAM_INVALID;                                    \
-    }                                                              \
+#define GE_CHECK_GE(lhs, rhs)                  \
+  do {                                         \
+    if (lhs < rhs) {                           \
+      GE_LOGE(param[#lhs] is less than[#rhs]); \
+      return ge::PARAM_INVALID;                \
+    }                                          \
   } while (0)
 
 // Check if the value on the left is less than or equal to the value on the right
-#define GE_CHECK_LE(lhs, rhs)                                         \
-  do {                                                                \
-    if (lhs > rhs) {                                                  \
-      GELOGE(ge::PARAM_INVALID, "param[#lhs] is greater than[#rhs]"); \
-      return ge::PARAM_INVALID;                                       \
-    }                                                                 \
+#define GE_CHECK_LE(lhs, rhs)                     \
+  do {                                            \
+    if (lhs > rhs) {                              \
+      GE_LOGE(param[#lhs] is greater than[#rhs]); \
+      return ge::PARAM_INVALID;                   \
+    }                                             \
   } while (0)
 
 #define GE_DELETE_NEW_SINGLE(var) \
@@ -194,13 +237,15 @@
     }                            \
   };
 
-///
-/// @ingroup domi_common
-/// @brief version of om.proto file
-///
+/**
+ * @ingroup domi_common
+ * @brief version of om.proto file
+ */
 static constexpr int32_t OM_PROTO_VERSION = 2;
 
-// Finding an Integer Ceiling Value Without Precision Loss
+/**
+ * Finding an Integer Ceiling Value Without Precision Loss
+ */
 #define CEIL(N, n) (((N) + (n)-1) / (n))
 
 namespace ge {

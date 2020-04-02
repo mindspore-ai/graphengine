@@ -40,7 +40,7 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
     return;
   }
   ge::OpDescPtr op_desc = node->GetOpDesc();
-  GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return);
+  GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return );
   std::string str;
   if (!op_desc->GetAllInputsDescPtr().empty()) {
     std::string input_desc_str = "input shape: ";
@@ -118,16 +118,16 @@ graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &
 
 InferenceContextPtr CreateInferenceContext(const std::unordered_map<NodePtr, InferenceContextPtr> &context_map,
                                            const NodePtr &node) {
-  auto ctx = std::shared_ptr<InferenceContext>(new (std::nothrow) InferenceContext());
-  if (ctx == nullptr) {
-    GELOGE(GRAPH_FAILED, "Failed to alloc InferenceContext");
-    return nullptr;
-  }
   if (node == nullptr) {
     GELOGE(GRAPH_FAILED, "node is null");
     return nullptr;
   }
-  InferenceContextPtr inference_context = std::shared_ptr<InferenceContext>(ctx);
+  InferenceContextPtr inference_context = std::shared_ptr<InferenceContext>(InferenceContext::Create());
+  if (inference_context == nullptr) {
+    GELOGE(GRAPH_FAILED, "Failed to alloc InferenceContext");
+    return nullptr;
+  }
+
   auto all_in_data_anchors = node->GetAllInDataAnchors();
   std::vector<std::vector<ShapeAndType>> input_shapes_and_types(all_in_data_anchors.size());
   std::vector<std::string> marks;
@@ -169,9 +169,9 @@ InferenceContextPtr CreateInferenceContext(const std::unordered_map<NodePtr, Inf
   }
 
   if (has_input_shapes_and_types) {
-    ctx->SetInputHandleShapesAndTypes(std::move(input_shapes_and_types));
+    inference_context->SetInputHandleShapesAndTypes(std::move(input_shapes_and_types));
   }
-  ctx->SetMarks(marks);
+  inference_context->SetMarks(marks);
 
   return inference_context;
 }

@@ -15,11 +15,9 @@
  */
 
 #include "ge_local_engine/engine/ge_local_engine.h"
-
 #include <map>
 #include <memory>
 #include <string>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/constant/constant.h"

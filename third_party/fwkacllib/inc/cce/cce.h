@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef __CCE_H__
-#define __CCE_H__
+#ifndef CCE_H__
+#define CCE_H__
 
 #include <stdint.h>
 #include "cce_def.hpp"
@@ -98,4 +98,4 @@ ccStatus_t CceProfilingConfig(const char *target, const char *job_ctx, uint32_t 
 
 };  // namespace cce
 
-#endif /* __CCE_H__ */
+#endif  // CCE_H__

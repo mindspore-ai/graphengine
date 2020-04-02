@@ -119,7 +119,22 @@ REG_OP(DropOutGenMask)
     .ATTR(seed2, Int, 0)
     .OP_END_FACTORY_REG(DropOutGenMask)
 
+/**
+*@brief Generates values in an interval.
 
+*@par Inputs:\n
+* Four ND inputs, including:
+*@li input_assist: A 1D Tensor of type float32.
+*@li input_start: A 1D Tensor of type float32, for the first entry in the range.
+*@li input_stop: A 1D Tensor of type float32, for the last entry in the range.
+*@li input_num: A 1D Tensor of type int32, for the common difference of the entries.
+
+*@par Outputs:\n
+*output_op: A 1D Tensor of type float32.
+
+*@attention Constraints:\n
+* "input_assist" is a sequence of "input_num" evenly-spaced values beginning at 0 with an common difference of 1.
+*/
 REG_OP(LinSpaceD)
     .INPUT(assist, TensorType({DT_FLOAT}))
     .INPUT(start, TensorType({DT_FLOAT}))

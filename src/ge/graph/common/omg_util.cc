@@ -18,6 +18,7 @@
 
 #include <algorithm>
 
+#include "common/op/attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"

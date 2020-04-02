@@ -44,6 +44,8 @@ inline bool IsLogEnable(int module_name, int log_level) noexcept {
   return false;
 }
 
+/*lint --emacro((773),GE_TIMESTAMP_START)*/
+/*lint -esym(773,GE_TIMESTAMP_START)*/
 #define GE_TIMESTAMP_START(stage) uint64_t startUsec_##stage = ge::GetCurrentTimestap()
 
 #define GE_TIMESTAMP_END(stage, stage_name)                                           \

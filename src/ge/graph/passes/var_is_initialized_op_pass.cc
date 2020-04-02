@@ -15,10 +15,8 @@
  */
 
 #include "graph/passes/var_is_initialized_op_pass.h"
-
 #include <memory>
 #include <utility>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "graph/anchor.h"
@@ -50,12 +48,10 @@ Status VarIsInitializedOpPass::Run(NodePtr &node) {
   if (CheckSrcNode(node, inited) != SUCCESS) {
     return FAILED;
   }
-  GELOGI("The variable inited status %s on node %s",
-         inited ? "true" : "false", node->GetName().c_str());
+  GELOGI("The variable inited status %s on node %s", inited ? "true" : "false", node->GetName().c_str());
 
   ret = ChangeNodeToConstant(node, inited);
-  GELOGI("Change VarIsInitializedOp %s to be Constant %s end.",
-         node->GetName().c_str(), inited ? "true" : "false");
+  GELOGI("Change VarIsInitializedOp %s to be Constant %s end.", node->GetName().c_str(), inited ? "true" : "false");
   return ret;
 }
 
@@ -63,9 +59,7 @@ Status VarIsInitializedOpPass::CheckSrcNode(const NodePtr &node, bool &inited) c
   GE_CHECK_NOTNULL(node);
   auto input_nodes = node->GetInDataNodes();
   if (input_nodes.size() != kVarIsInitializedIOCnt) {
-    GELOGE(FAILED,
-           "[%s] Node input data nodes size [%zu] is not equal 1.",
-           node->GetName().c_str(),
+    GELOGE(FAILED, "[%s] Node input data nodes size [%zu] is not equal 1.", node->GetName().c_str(),
            input_nodes.size());
     return FAILED;
   }
@@ -131,8 +125,7 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
   GE_CHECK_NOTNULL(new_node);
   auto in_anchors = node->GetAllInDataAnchors();
   auto out_anchors = node->GetAllOutDataAnchors();
-  if ((in_anchors.size() != kVarIsInitializedIOCnt) ||
-      (out_anchors.size() != kVarIsInitializedIOCnt)) {
+  if ((in_anchors.size() != kVarIsInitializedIOCnt) || (out_anchors.size() != kVarIsInitializedIOCnt)) {
     GELOGE(FAILED,
            "[%s] Node input/output data anchors"
            " size [%lu][%lu] is not all equal 1.",
@@ -151,8 +144,8 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
   }
   auto src_node = peer_out_anchor->GetOwnerNode();
   if (GraphUtils::AddEdge(src_node->GetOutControlAnchor(), new_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Failed to link control edges from var %s to new const %s",
-           src_node->GetName().c_str(), new_node->GetName().c_str());
+    GELOGE(FAILED, "Failed to link control edges from var %s to new const %s", src_node->GetName().c_str(),
+           new_node->GetName().c_str());
     return FAILED;
   }
 
@@ -255,15 +248,15 @@ Status VarIsInitializedOpPass::UpdateInitedVars(const NodePtr &node) {
   if (inited_vars != nullptr) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     nodes_to_inited_vars_[node->GetOpDesc()->GetId()] = inited_vars;
-    GELOGD("Inited vars on this graph when node %s, inited vars count %zu",
-           node->GetName().c_str(), inited_vars->size());
+    GELOGD("Inited vars on this graph when node %s, inited vars count %zu", node->GetName().c_str(),
+           inited_vars->size());
   }
 
   return SUCCESS;
 }
 
 std::set<int64_t> *VarIsInitializedOpPass::CreateInitedVars() {
-  std::unique_ptr<std::set<int64_t>> inited_vars_keeper(new(std::nothrow) std::set<int64_t>());
+  std::unique_ptr<std::set<int64_t>> inited_vars_keeper(new (std::nothrow) std::set<int64_t>());
   if (inited_vars_keeper == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to alloc set memory");
     return nullptr;

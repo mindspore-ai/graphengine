@@ -16,7 +16,7 @@
 
 #include "framework/common/types.h"
 
-#include "cce/dnn.h"
+#include "graph/types.h"
 
 namespace ge {
 // dump
@@ -29,7 +29,7 @@ const std::string DUMP_FILE_PATH = "path";
 
 using ge::OpTypeRegistrar;
 namespace ge {
-const int DEFAULT_FORMAT = static_cast<const int>(cce::CC_TENSOR_NCHW);
+const int DEFAULT_FORMAT = static_cast<const int>(ge::FORMAT_NCHW);
 // Supported public property names
 const std::string PROP_OME_START_TIME = "ome_start_time";  // start time
 const std::string PROP_OME_DUMP_PATH = "ome_dump_path";    // dump path
@@ -47,7 +47,9 @@ const std::string RTS_PROFILE_PATH = "RTS_PATH";
 const std::string PROFILE_STOP_KEY = "stop";
 const std::string PROFILE_STOP_VALUE = "enable";
 const std::map<std::string, std::string> PROFILE_COMPONENT_MAP{
-    {"ome", OME_PROFILE}, {"cce", CCE_PROFILE}, {"runtime", RTS_PROFILE},
+  {"ome", OME_PROFILE},
+  {"cce", CCE_PROFILE},
+  {"runtime", RTS_PROFILE},
 };
 const std::string PROFILE_CONFIG = "config";
 
@@ -631,6 +633,6 @@ const std::string NODE_NAME_ATOMIC_ADDR_CLEAN = "atomic_addr_clean";
 const uint32_t TRUE_STREAM_ID = 0;
 const uint32_t STREAM_SWITCH_INPUT_NUM = 2;
 
-const std::string NODE_NAME_GLOBAL_STEP = "global_step";
+const std::string NODE_NAME_GLOBAL_STEP = "ge_global_step";
 const std::string NODE_NAME_GLOBAL_STEP_ASSIGNADD = "global_step_assignadd";
 };  // namespace ge

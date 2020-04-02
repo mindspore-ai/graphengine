@@ -22,14 +22,13 @@
 #include <utility>
 #include <vector>
 
-#include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/debug/ge_attr_define.h"
+#include "common/ge/ge_util.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
@@ -144,9 +143,9 @@ void NetOutputPass::AddInOutForNetOutputOp(const ge::ComputeGraphPtr &graph, con
     return;
   }
   ge::GeTensorDesc out_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
-  GE_IF_BOOL_EXEC(net_output_desc->AddInputDesc(out_desc) != SUCCESS, GELOGW("add input desc failed"); return);
+  GE_IF_BOOL_EXEC(net_output_desc->AddInputDesc(out_desc) != SUCCESS, GELOGW("add input desc failed"); return );
   TensorUtils::SetOutputTensor(out_desc, true);
-  GE_IF_BOOL_EXEC(net_output_desc->AddOutputDesc(out_desc) != SUCCESS, GELOGW("add output desc failed"); return);
+  GE_IF_BOOL_EXEC(net_output_desc->AddOutputDesc(out_desc) != SUCCESS, GELOGW("add output desc failed"); return );
 }
 
 Status NetOutputPass::RemoveUnusedNode(const ge::ComputeGraphPtr &graph) {
@@ -260,7 +259,7 @@ Status NetOutputPass::AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, con
     NodePtr src_node = item.first;
     GE_CHECK_NOTNULL(src_node);
     graphStatus status =
-        GraphUtils::AddEdge(src_node->GetOutDataAnchor(item.second), net_out_node->GetInDataAnchor(net_input_index));
+      GraphUtils::AddEdge(src_node->GetOutDataAnchor(item.second), net_out_node->GetInDataAnchor(net_input_index));
     if (status != GRAPH_SUCCESS) {
       GELOGE(INTERNAL_ERROR, "AddEdge failed, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(),
              item.second, net_input_index);

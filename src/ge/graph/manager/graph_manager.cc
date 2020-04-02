@@ -194,7 +194,8 @@ Status GraphManager::Finalize() {
   return unload_model_ret;
 }
 
-Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph) {
+Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
+                              const std::map<std::string, std::string> &options) {
   if (graph_map_.find(graph_id) != graph_map_.end()) {
     GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u.", graph_id);
     return GE_GRAPH_GRAPH_ALREADY_EXIST;
@@ -228,6 +229,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph) {
   }
 
   graph_node->SetGraph(graph_ptr);
+  graph_node->SetOptions(options);
 
   graph_map_.insert(std::make_pair(graph_id, graph_node));
 
@@ -307,8 +309,13 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   size_t sub_graph_list_size = sub_graph_list.size();
   std::vector<std::future<Status>> vector_future(sub_graph_list_size);
   for (size_t i = 0; i < sub_graph_list_size; ++i) {
-    vector_future[i] = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, sub_graph_list[i],
-                                       session_id, GetThreadLocalContext());
+    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, sub_graph_list[i],
+                                            session_id, GetThreadLocalContext());
+    if (!f.valid()) {
+      GELOGE(FAILED, "Future is invalid");
+      return FAILED;
+    }
+    vector_future[i] = std::move(f);
   }
   for (size_t i = 0; i < vector_future.size(); ++i) {
     Status ret_status = vector_future[i].get();
@@ -363,7 +370,8 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   }
 
   bool is_always_dump = false;
-  if (!PropertiesManager::Instance().GetDumpOutputPath().empty()) {
+  PropertiesManager &properties_manager = PropertiesManager::Instance();
+  if (!properties_manager.GetDumpOutputPath().empty()) {
     is_always_dump = true;
   }
 
@@ -502,13 +510,13 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
   ComputeGraphPtr compute_graph_tmp = GraphUtils::GetComputeGraph(*(graph_node->GetGraph()));
 
   GE_IF_BOOL_EXEC(
-      GetTrainFlag(), GE_IF_BOOL_EXEC(compute_graph_tmp == nullptr,
-                                      GELOGE(GE_GRAPH_GRAPH_NODE_NULL,
-                                             "[RunGraph] compute_graph_tmp is NULL, graph id = %u.", graph_id);
-                                      return GE_GRAPH_GRAPH_NODE_NULL;)
-      // adapt for not set.
-      GE_IF_BOOL_EXEC(!compute_graph_tmp->GetNeedIteration(),
-                      compute_graph_tmp->SetNeedIteration(GraphUtils::CheckIsTrainGraph(compute_graph_tmp));))
+    GetTrainFlag(),
+    GE_IF_BOOL_EXEC(compute_graph_tmp == nullptr,
+                    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] compute_graph_tmp is NULL, graph id = %u.", graph_id);
+                    return GE_GRAPH_GRAPH_NODE_NULL;)
+    // adapt for not set.
+    GE_IF_BOOL_EXEC(!compute_graph_tmp->GetNeedIteration(),
+                    compute_graph_tmp->SetNeedIteration(GraphUtils::CheckIsTrainGraph(compute_graph_tmp));))
 
   std::vector<GeModelPtr> ge_models;
 
@@ -802,7 +810,11 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
     GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.localFmkopFlag value is invalid, must be 0 or 1.");
     return GE_GRAPH_OPTIONS_INVALID;
   }
-
+  options_.enable_print_op_pass = true;
+  ret = ParseOption(options, ENABLE_PRINT_OP_PASS, options_.enable_print_op_pass);
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.enablePrintOpPass value is invalid, must be 0 or 1.");
+                  return GE_GRAPH_OPTIONS_INVALID);
   // parse hcom parallel
   options_.hcom_parallel = false;
   ret = ParseOption(options, HCOM_PARALLEL, options_.hcom_parallel);
@@ -1030,7 +1042,7 @@ Status GraphManager::SummaryHandle(const GraphId &graph_id, std::vector<GeTensor
   std::set<int> summary_output_index;
   GELOGI("[GraphManager] SummaryHandle, outputsSize=%zu.", outputs.size());
   const std::map<uint32_t, std::map<string, size_t>> &whole_summary_output_indexes =
-      graph_optimize_.GetSummaryOutputIndexes();
+    graph_optimize_.GetSummaryOutputIndexes();
   if (whole_summary_output_indexes.find(graph_id) == whole_summary_output_indexes.end()) {
     GELOGE(FAILED, "No Summary graph found in map.");
     return FAILED;
@@ -1098,8 +1110,7 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const std::vector
 }
 
 Status GraphManager::RegisterCallBackFunc(
-    const std::string &key,
-    const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
+  const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
   GELOGI("[GraphManager] RegisterCallBackFunc, key=%s.", key.c_str());
   me_callback_map_[key] = callback;
   return SUCCESS;
@@ -1335,10 +1346,9 @@ Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_gra
   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) VariableRefDeleteOpPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) SameTransdataBreadthFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) TransOpWithoutReshapeFusionPass))
-  GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) CompileNodesPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) AtomicAddrCleanPass))
   GE_CHK_STATUS_RET(
-      after_merge_passes.AddPass(new (std::nothrow) LinkGenMaskNodesPass(options_.stream_max_parallel_num)))
+    after_merge_passes.AddPass(new (std::nothrow) LinkGenMaskNodesPass(options_.stream_max_parallel_num)))
 
   GE_TIMESTAMP_START(after_merge_passes);
   ret = after_merge_passes.Run(compute_graph);
@@ -1445,9 +1455,9 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
   }
 
   GELOGI(
-      "CheckAndReleaseMemory Graph[%u] need memory_size[%ld], weight_size[%ld],"
-      " Device[%u] free_memory_size[%ld]",
-      graph_node->GetGraphId(), memory_size, weight_size, GetContext().DeviceId(), free_memory);
+    "CheckAndReleaseMemory Graph[%u] need memory_size[%ld], weight_size[%ld],"
+    " Device[%u] free_memory_size[%ld]",
+    graph_node->GetGraphId(), memory_size, weight_size, GetContext().DeviceId(), free_memory);
   if (CheckInt64AddOverflow(memory_size, weight_size) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "The sum of Memory size and weight size exceeds INT64_MAX");
     return INTERNAL_ERROR;
@@ -1502,7 +1512,7 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
     ComputeGraphPtr compute_graph_tmp = sub_graph_info_ptr->GetSubGraph();
     const std::string &engine_name = sub_graph_info_ptr->GetEngineName();
-    GELOGI("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
+    GELOGD("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
            compute_graph_tmp != nullptr ? compute_graph_tmp->GetName().c_str() : "", engine_name.c_str(),
            pthread_self());
     GraphUtils::DumpGEGraph(compute_graph_tmp, "OptimizeSubGraphBefore");
@@ -1513,13 +1523,11 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
     if (ret != SUCCESS) {
       GELOGE(ret, "SubGraph optimize Failed %s", engine_name.c_str());
       return ret;
-    } else {
-      GELOGI("SubGraph optimize success %s", engine_name.c_str());
     }
     GraphUtils::DumpGEGraph(compute_graph_tmp, "OptimizeSubGraphAfter");
     GraphUtils::DumpGEGraphToOnnx(*compute_graph_tmp, "OptimizeSubGraphAfter");
     sub_graph_info_ptr->SetSubGraph(compute_graph_tmp);
-    GELOGI("ProcessSubGraphWithMultiThreads end, graph name is %s, engine_name is %s, thread id is %lu",
+    GELOGD("ProcessSubGraphWithMultiThreads end, graph name is %s, engine_name is %s, thread id is %lu",
            compute_graph_tmp != nullptr ? compute_graph_tmp->GetName().c_str() : "", engine_name.c_str(),
            pthread_self());
   } else {
@@ -1537,7 +1545,7 @@ Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge
          inputs.size(), outputs.size());
 
   bool ret =
-      prerun_args_q_.Push(PreRunArgs({graph_id, inputs, outputs, session_id, GetThreadLocalContext(), callback}));
+    prerun_args_q_.Push(PreRunArgs({graph_id, inputs, outputs, session_id, GetThreadLocalContext(), callback}));
   if (!ret) {
     GELOGE(FAILED, "[GraphManager] Run graph async failed, graph_id=%u.", graph_id);
     return FAILED;
@@ -1620,15 +1628,16 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       if (graph_node->GetBuildFlag()) {
         ReturnError(graph_manager, args.callback, PARAM_INVALID,
                     "The graph " + std::to_string(graph_node->GetGraphId()) +
-                        " need to re-build, you should remove it"
-                        " from GE first, then AddGraph again and rebuild it.");
+                      " need to re-build, you should remove it"
+                      " from GE first, then AddGraph again and rebuild it.");
+        graph_node->Unlock();
         return;
       }
 
       ret = graph_manager->PreRun(graph_node, ge_inputs, ge_models, ge_model, args.session_id);
       if (ret != SUCCESS) {
         graph_node->SetRunFlag(false);
-        ReturnError(graph_manager, args.callback, ret, "PreRun Failed.");
+        ReturnError(graph_manager, args.callback, ret, "PreRun failed, thread exit.");
         graph_node->Unlock();
         return;
       }
@@ -1735,5 +1744,19 @@ bool GraphManager::IsGraphNeedRebuild(uint32_t graph_id) {
 
 bool GraphManager::IsGraphNeedBuild(const GraphNodePtr &graph_node) {
   return !graph_node->GetBuildFlag() || var_acc_ctrl_.IsGraphNeedRebuild(graph_node->GetGraphId());
+}
+const map<std::string, std::string> *GraphManager::GetGraphOptions(uint32_t graph_id) {
+  GraphNodePtr graph_node = nullptr;
+  Status ret = GetGraphNode(graph_id, graph_node);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[RunGraph] graph not exist, graph_id=%u.", graph_id);
+    return nullptr;
+  }
+
+  if (!graph_node) {
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] graph node is NULL, graph_id=%u.", graph_id);
+    return nullptr;
+  }
+  return &(graph_node->GetOptions());
 }
 }  // namespace ge

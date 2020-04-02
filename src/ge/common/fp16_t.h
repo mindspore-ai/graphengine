@@ -17,10 +17,9 @@
 #ifndef GE_COMMON_FP16_T_H_
 #define GE_COMMON_FP16_T_H_
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
-
-#include <algorithm>
 
 namespace ge {
 /**

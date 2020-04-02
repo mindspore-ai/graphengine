@@ -15,25 +15,23 @@
  */
 
 #include "graph/preprocess/insert_op/base_insert_op.h"
-
 #include <utility>
 #include <vector>
-
-#include "common/ge/ge_util.h"
-#include "common/math/math_util.h"
+#include "external/graph/operator_factory.h"
+#include "external/graph/operator.h"
+#include "framework/common/debug/ge_log.h"
 #include "common/op/attr_value_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
 #include "common/util.h"
-#include "external/graph/operator.h"
-#include "external/graph/operator_factory.h"
-#include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "common/ge/ge_util.h"
+#include "graph/debug/ge_attr_define.h"
+#include "common/math/math_util.h"
 
 namespace ge {
 static const char *const kAippConfigPath = "aipp_config_route";
@@ -42,7 +40,7 @@ static const uint32_t kImageRatioYuv420SpU8Div = 2;
 static const uint32_t kImageRatioXrgb8888U8 = 4;
 static const uint32_t kImageRatioRgb888U8 = 3;
 
-Status InsertOpBase::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aipp_config_path,
+Status InsertOpBase::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfigPath,
                                        ge::NodePtr &inserted_aipp_node) {
   GE_CHECK_NOTNULL(graph);
   NodePtr target_input = nullptr;
@@ -58,7 +56,7 @@ Status InsertOpBase::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aipp
                   GELOGW("InsertAippToGraph: GetNamedAttrs failed");
                   return FAILED)
 
-  auto opdesc_src_data = target_input->GetOpDesc()->GetOutputDesc(0);
+  auto opdesc_src_data = target_input->GetOpDesc()->GetOutputDesc(0);  // [Cascade pointer]
   if (opdesc_src_data.GetDataType() != DT_FLOAT) {
     GELOGW("The datatype of data node %s is not FP32", target_input->GetName().c_str());
     opdesc_src_data.SetDataType(DT_FLOAT);
@@ -86,14 +84,14 @@ Status InsertOpBase::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aipp
       return FAILED;
     }
   }
-  GE_IF_BOOL_EXEC(!AttrUtils::SetStr(aipp_opdesc_ptr, kAippConfigPath, aipp_config_path),
+  GE_IF_BOOL_EXEC(!AttrUtils::SetStr(aipp_opdesc_ptr, kAippConfigPath, aippConfigPath),
                   GELOGW("SetStr kAippConfigPath failed");)
-  GELOGI("Aipp config path is %s", aipp_config_path.c_str());
+  GELOGI("Aipp config path is %s", aippConfigPath.c_str());
 
   // for data dump
-  GE_IF_BOOL_EXEC(!AttrUtils::SetListStr(aipp_opdesc_ptr, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES,
-                                         std::move(std::vector<std::string>())),
-                  GELOGW("InsertAippToGraph: SetListStr failed");)
+  GE_IF_BOOL_EXEC(
+    !AttrUtils::SetListStr(aipp_opdesc_ptr, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
+    GELOGW("InsertAippToGraph: SetListStr failed");)
 
   NodePtr insert_op = graph->AddNode(aipp_opdesc_ptr);
   GE_CHECK_NOTNULL(insert_op);
@@ -129,11 +127,11 @@ uint32_t InsertOpBase::AdjustDataSize(const GeTensorDesc &input_desc, unique_ptr
     const uint32_t h = (input_desc.GetFormat() == ge::FORMAT_NHWC) ? NHWC_DIM_H : NCHW_DIM_H;
     const uint32_t w = (input_desc.GetFormat() == ge::FORMAT_NHWC) ? NHWC_DIM_W : NCHW_DIM_W;
     const uint32_t shape_h =
-        aipp_params->src_image_size_h() ? aipp_params->src_image_size_h() : input_desc.GetShape().GetDim(h);
+      aipp_params->src_image_size_h() ? aipp_params->src_image_size_h() : input_desc.GetShape().GetDim(h);
     FMK_UINT32_MULCHECK(size, shape_h);
     size *= shape_h;
     const uint32_t shape_w =
-        aipp_params->src_image_size_w() ? aipp_params->src_image_size_w() : input_desc.GetShape().GetDim(w);
+      aipp_params->src_image_size_w() ? aipp_params->src_image_size_w() : input_desc.GetShape().GetDim(w);
     FMK_UINT32_MULCHECK(size, shape_w);
     size *= shape_w;
     if (aipp_params->input_format() == domi::AippOpParams::YUV420SP_U8) {

@@ -15,7 +15,6 @@
  */
 
 #include "generator/generator_api.h"
-
 #include "common/ge/ge_util.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
@@ -99,18 +98,18 @@ class OpAttr {
   std::map<string, ge::GeAttrValue> attrs_;
 };
 
-///
-/// @ingroup ge
-/// @brief Generate offline model for the op.
-/// @param [in] op_type: type name of the op.
-/// @param [in] in_tensor: input description array (created by OpTensorCreate).
-/// @param [in] in_num: number of in_tensor.
-/// @param [in] out_tensor: output description array (created by OpTensorCreate).
-/// @param [in] out_num: number of out_tensor.
-/// @param [in] attr: the attributes of the op (created by OpAttrCreate).
-/// @param [in] om_file: file name for the om to save.
-/// @return 0 for success / others for fail
-///
+/**
+ * @ingroup ge
+ * @brief Generate offline model for the op.
+ * @param [in] op_type: type name of the op.
+ * @param [in] in_tensor: input description array (created by OpTensorCreate).
+ * @param [in] in_num: number of in_tensor.
+ * @param [in] out_tensor: output description array (created by OpTensorCreate).
+ * @param [in] out_num: number of out_tensor.
+ * @param [in] attr: the attributes of the op (created by OpAttrCreate).
+ * @param [in] om_file: file name for the om to save.
+ * @return 0 for success / others for fail
+ */
 Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int in_num, const OpTensor_t *out_tensor,
                           int out_num, const OpAttr_t attr, const char *om_file) {
   CHECK_PARAM_NOT_NULL(op_type);
@@ -167,15 +166,15 @@ Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int 
   return generator.BuildSingleOpModel(op_desc, inputs, outputs, om_file_name);
 }
 
-///
-/// @ingroup ge
-/// @brief Create Tensor Description.
-/// @param [in] format: tensor format of the data.
-/// @param [in] datatype: tensor type of the data.
-/// @param [in] shape: tensor shape array.
-/// @param [in] num: number of shape.
-/// @return OpTensor_t for success / nullptr for fail
-///
+/**
+ * @ingroup ge
+ * @brief Create Tensor Description.
+ * @param [in] format: tensor format of the data.
+ * @param [in] datatype: tensor type of the data.
+ * @param [in] shape: tensor shape array.
+ * @param [in] num: number of shape.
+ * @return OpTensor_t for success / nullptr for fail
+ */
 OpTensor_t OpTensorCreate(int format, int datatype, const int64_t *shape, int num) {
   std::vector<int64_t> dims;
   if (shape != nullptr) {
@@ -190,13 +189,13 @@ OpTensor_t OpTensorCreate(int format, int datatype, const int64_t *shape, int nu
   return new (std::nothrow) ge::TensorDesc(ge::Shape(dims), fmt, dt);
 }
 
-///
-/// @ingroup ge
-/// @brief Destroy Tensor Description.
-/// @param [in] OpTensor_t tensor: created by OpTensorCreate.
-/// @param [out] none
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Destroy Tensor Description.
+ * @param [in] OpTensor_t tensor: created by OpTensorCreate.
+ * @param [out] none
+ * @return 0 for success / others for fail.
+ */
 Status_t OpTensorDestroy(OpTensor_t tensor) {
   ge::TensorDesc *op_tensor = CHECK_PARAM_OBJECT(ge::TensorDesc, tensor);
   delete op_tensor;
@@ -205,22 +204,22 @@ Status_t OpTensorDestroy(OpTensor_t tensor) {
   return ge::SUCCESS;
 }
 
-///
-/// @ingroup ge
-/// @brief Create an attribute holder.
-/// @param [in] none
-/// @param [out] none
-/// @return OpAttr_t for success / nullptr for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Create an attribute holder.
+ * @param [in] none
+ * @param [out] none
+ * @return OpAttr_t for success / nullptr for fail.
+ */
 OpAttr_t OpAttrCreate() { return new (std::nothrow) OpAttr; }
 
-///
-/// @ingroup ge
-/// @brief Destroy Attribute holder.
-/// @param [in] OpAttr_t attr: created by OpAttrCreate.
-/// @param [out] none
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Destroy Attribute holder.
+ * @param [in] OpAttr_t attr: created by OpAttrCreate.
+ * @param [out] none
+ * @return 0 for success / others for fail.
+ */
 Status_t OpAttrDestroy(OpAttr_t attr) {
   OpAttr *op_attr = CHECK_PARAM_OBJECT(OpAttr, attr);
   delete op_attr;
@@ -228,14 +227,14 @@ Status_t OpAttrDestroy(OpAttr_t attr) {
   return ge::SUCCESS;
 }
 
-///
-/// @ingroup ge
-/// @brief Set a boolean attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value.
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set a boolean attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrBool(OpAttr_t attr, const char *name, bool value) {
   CHECK_PARAM_NOT_NULL(name);
   OpAttr *op_attr = CHECK_PARAM_OBJECT(OpAttr, attr);
@@ -243,14 +242,14 @@ Status_t SetAttrBool(OpAttr_t attr, const char *name, bool value) {
   return op_attr->SetAttr(name, value);
 }
 
-///
-/// @ingroup ge
-/// @brief Set an integer attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value.
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set an integer attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrInt(OpAttr_t attr, const char *name, int64_t value) {
   CHECK_PARAM_NOT_NULL(name);
   OpAttr *op_attr = CHECK_PARAM_OBJECT(OpAttr, attr);
@@ -258,14 +257,14 @@ Status_t SetAttrInt(OpAttr_t attr, const char *name, int64_t value) {
   return op_attr->SetAttr(name, value);
 }
 
-///
-/// @ingroup ge
-/// @brief Set a float attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value.
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set a float attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrFloat(OpAttr_t attr, const char *name, float value) {
   CHECK_PARAM_NOT_NULL(name);
   OpAttr *op_attr = CHECK_PARAM_OBJECT(OpAttr, attr);
@@ -273,14 +272,14 @@ Status_t SetAttrFloat(OpAttr_t attr, const char *name, float value) {
   return op_attr->SetAttr(name, value);
 }
 
-///
-/// @ingroup ge
-/// @brief Set a string attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value (can`t be nullptr, end with '\0').
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set a string attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value (can`t be nullptr, end with '\0').
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrString(OpAttr_t attr, const char *name, const char *value) {
   CHECK_PARAM_NOT_NULL(name);
   CHECK_PARAM_NOT_NULL(value);
@@ -289,15 +288,15 @@ Status_t SetAttrString(OpAttr_t attr, const char *name, const char *value) {
   return op_attr->SetAttr(name, string(value));
 }
 
-///
-/// @ingroup ge
-/// @brief Set a boolean array attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value array.
-/// @param [in] num: number of value array.
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set a boolean array attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value array.
+ * @param [in] num: number of value array.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrBoolList(OpAttr_t attr, const char *name, const bool *value, int num) {
   CHECK_PARAM_NOT_NULL(name);
   CHECK_PARAM_NOT_NULL(value);
@@ -305,15 +304,16 @@ Status_t SetAttrBoolList(OpAttr_t attr, const char *name, const bool *value, int
 
   return op_attr->SetAttr(name, value, num);
 }
-///
-/// @ingroup ge
-/// @brief Set an integer array attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value array.
-/// @param [in] num: number of value array.
-/// @return 0 for success / others for fail.
-///
+
+/**
+ * @ingroup ge
+ * @brief Set an integer array attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value array.
+ * @param [in] num: number of value array.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrIntList(OpAttr_t attr, const char *name, const int64_t *value, int num) {
   CHECK_PARAM_NOT_NULL(name);
   CHECK_PARAM_NOT_NULL(value);
@@ -322,15 +322,15 @@ Status_t SetAttrIntList(OpAttr_t attr, const char *name, const int64_t *value, i
   return op_attr->SetAttr(name, value, num);
 }
 
-///
-/// @ingroup ge
-/// @brief Set a float array attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value array.
-/// @param [in] num: number of value array.
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set a float array attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value array.
+ * @param [in] num: number of value array.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrFloatList(OpAttr_t attr, const char *name, const float *value, int num) {
   CHECK_PARAM_NOT_NULL(name);
   CHECK_PARAM_NOT_NULL(value);
@@ -339,15 +339,15 @@ Status_t SetAttrFloatList(OpAttr_t attr, const char *name, const float *value, i
   return op_attr->SetAttr(name, value, num);
 }
 
-///
-/// @ingroup ge
-/// @brief Set a string array attribute to the attribute holder.
-/// @param [in] attr: attribute holder (created by OpAttrCreate).
-/// @param [in] name: attribute name (can`t be nullptr, end with '\0').
-/// @param [in] value: attribute value array (each value can`t be nullptr, end with '\0').
-/// @param [in] num: number of value array.
-/// @return 0 for success / others for fail.
-///
+/**
+ * @ingroup ge
+ * @brief Set a string array attribute to the attribute holder.
+ * @param [in] attr: attribute holder (created by OpAttrCreate).
+ * @param [in] name: attribute name (can`t be nullptr, end with '\0').
+ * @param [in] value: attribute value array (each value can`t be nullptr, end with '\0').
+ * @param [in] num: number of value array.
+ * @return 0 for success / others for fail.
+ */
 Status_t SetAttrStringList(OpAttr_t attr, const char *name, const char **value, int num) {
   CHECK_PARAM_NOT_NULL(name);
   CHECK_PARAM_NOT_NULL(value);

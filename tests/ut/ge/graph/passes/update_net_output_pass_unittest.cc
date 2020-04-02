@@ -36,7 +36,6 @@
 #undef private
 
 using namespace testing;
-
 namespace ge {
 class UtestNodePassesUpdateNetoutputPass : public Test {
  protected:

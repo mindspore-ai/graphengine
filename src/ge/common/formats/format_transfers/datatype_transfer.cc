@@ -48,19 +48,19 @@ enum DataTypeTransMode {
 };
 
 std::map<std::pair<DataType, DataType>, DataTypeTransMode> trans_mode_map{
-    {std::pair<DataType, DataType>(DT_FLOAT, DT_FLOAT16), kTransferWithDatatypeFloatToFloat16},
-    {std::pair<DataType, DataType>(DT_FLOAT, DT_INT32), kTransferWithDatatypeFloatToInt32},
-    {std::pair<DataType, DataType>(DT_FLOAT16, DT_FLOAT), kTransferWithDatatypeFloat16ToFloat},
-    {std::pair<DataType, DataType>(DT_FLOAT16, DT_INT32), kTransferWithDatatypeFloat16ToInt32},
-    {std::pair<DataType, DataType>(DT_INT32, DT_FLOAT), kTransferWithDatatypeInt32ToFloat},
-    {std::pair<DataType, DataType>(DT_INT32, DT_FLOAT16), kTransferWithDatatypeInt32ToFloat16},
-    {std::pair<DataType, DataType>(DT_INT32, DT_UINT8), kTransferWithDatatypeInt32ToUint8},
-    {std::pair<DataType, DataType>(DT_INT32, DT_INT8), kTransferWithDatatypeInt32ToInt8},
-    {std::pair<DataType, DataType>(DT_UINT8, DT_FLOAT), kTransferWithDatatypeUint8ToFloat},
-    {std::pair<DataType, DataType>(DT_UINT8, DT_INT32), kTransferWithDatatypeUint8ToInt32},
-    {std::pair<DataType, DataType>(DT_INT8, DT_FLOAT), kTransferWithDatatypeInt8ToFloat},
-    {std::pair<DataType, DataType>(DT_INT8, DT_INT32), kTransferWithDatatypeInt8ToInt32},
-    {std::pair<DataType, DataType>(DT_INT64, DT_INT32), kTransferWithDatatypeInt64ToInt32}};
+  {std::pair<DataType, DataType>(DT_FLOAT, DT_FLOAT16), kTransferWithDatatypeFloatToFloat16},
+  {std::pair<DataType, DataType>(DT_FLOAT, DT_INT32), kTransferWithDatatypeFloatToInt32},
+  {std::pair<DataType, DataType>(DT_FLOAT16, DT_FLOAT), kTransferWithDatatypeFloat16ToFloat},
+  {std::pair<DataType, DataType>(DT_FLOAT16, DT_INT32), kTransferWithDatatypeFloat16ToInt32},
+  {std::pair<DataType, DataType>(DT_INT32, DT_FLOAT), kTransferWithDatatypeInt32ToFloat},
+  {std::pair<DataType, DataType>(DT_INT32, DT_FLOAT16), kTransferWithDatatypeInt32ToFloat16},
+  {std::pair<DataType, DataType>(DT_INT32, DT_UINT8), kTransferWithDatatypeInt32ToUint8},
+  {std::pair<DataType, DataType>(DT_INT32, DT_INT8), kTransferWithDatatypeInt32ToInt8},
+  {std::pair<DataType, DataType>(DT_UINT8, DT_FLOAT), kTransferWithDatatypeUint8ToFloat},
+  {std::pair<DataType, DataType>(DT_UINT8, DT_INT32), kTransferWithDatatypeUint8ToInt32},
+  {std::pair<DataType, DataType>(DT_INT8, DT_FLOAT), kTransferWithDatatypeInt8ToFloat},
+  {std::pair<DataType, DataType>(DT_INT8, DT_INT32), kTransferWithDatatypeInt8ToInt32},
+  {std::pair<DataType, DataType>(DT_INT64, DT_INT32), kTransferWithDatatypeInt64ToInt32}};
 
 template <typename SrcT, typename DstT>
 Status TransDataSrc2Dst(const CastArgs &args, uint8_t *dst, const size_t data_size) {

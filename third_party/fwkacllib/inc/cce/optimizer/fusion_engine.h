@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _FUSION_ENGINE_HPP_
-#define _FUSION_ENGINE_HPP_
+#ifndef FUSION_ENGINE_HPP_
+#define FUSION_ENGINE_HPP_
 
 #include "cce/cce.h"
 #include "graph/compute_graph.h"
@@ -62,4 +62,4 @@ void FusionTaskBuildComplete(std::vector<cce::ccHandle_t> cchandleList);
 uint32_t GraphFusionTrain(ge::ComputeGraphPtr origGraph, ge::ComputeGraphPtr fusionGraph);
 }  // namespace fusion
 
-#endif
+#endif  // FUSION_ENGINE_HPP_

@@ -480,12 +480,6 @@ REG_OP(SGD)
 *    mom <- momentum * mom_{t-1} + lr * grad / sqrt(ms + epsilon)\n
 *    var <- var - mom\n
 *
-* @attention Constraints:
-* @li Note that in dense implementation of this algorithm, "ms" and "mom" will\n
-* update even if "grad" is 0, but in this sparse implementation, "ms" and "mom"\n
-* will not update in iterations during which "grad" is 0.\n
-* @li The input tensors "var", "ms", "mom" and "grad" must have the same shape.
-*
 * @par Inputs:
 * @li var: A mutable tensor. Must be one of the data types defined in\n
 * TensorType::NumberType(). Should be from a Variable().
@@ -506,6 +500,12 @@ REG_OP(SGD)
 *
 * @par Outputs:
 * var: A mutable tensor. Has the same type as input "var".
+*
+* @attention Constraints:
+* @li Note that in dense implementation of this algorithm, "ms" and "mom" will\n
+* update even if "grad" is 0, but in this sparse implementation, "ms" and "mom"\n
+* will not update in iterations during which "grad" is 0.\n
+* @li The input tensors "var", "ms", "mom" and "grad" must have the same shape.
 */
 REG_OP(ApplyRMSProp)
     .INPUT(var, TensorType::NumberType())
@@ -529,12 +529,6 @@ REG_OP(ApplyRMSProp)
 *     mom <- momentum * mom_{t-1} + lr * grad / sqrt(ms + epsilon)\n
 *     var <- var - mom
 *
-* @attention Constraints:
-* @li Note that in dense implementation of this algorithm, "ms" and "mom" will\n
-* update even if "grad" is 0, but in this sparse implementation, "ms" and "mom"\n
-* will not update in iterations during which "grad" is 0.
-* @li The input tensors "var", "ms", "mom" and "grad" must have the same shape.
-*
 * @par Inputs:
 * @li var: A mutable tensor. Must be one of the data types defined in\n
 * TensorType::NumberType(). Should be from a Variable().
@@ -549,12 +543,17 @@ REG_OP(ApplyRMSProp)
 * @li use_locking: An optional "bool". Defaults to "False". If "True", updating\n
 * of the "var", "ms", and "mom" tensors will be protected by a lock; otherwise
 * the behavior is undefined, but may exhibit less contention.
-* @li rho: A scalar. Must have the same type as "var".
-* @li momentum: A scalar. Must have the same type as "var".
-* @li epsilon: A scalar. Must have the same type as "var".
+* @li rho: A required scalar. Must have the same type as "var".
+* @li momentum: A required scalar. Must have the same type as "var".
+* @li epsilon: A required scalar. Must have the same type as "var".
 *
 * @par Outputs:
 * var: A mutable tensor. Must have the same type as input "var".
+* @attention Constraints:
+* @li Note that in dense implementation of this algorithm, "ms" and "mom" will\n
+* update even if "grad" is 0, but in this sparse implementation, "ms" and "mom"\n
+* will not update in iterations during which "grad" is 0.
+* @li The input tensors "var", "ms", "mom" and "grad" must have the same shape.
 */
 REG_OP(ApplyRMSPropD)
     .INPUT(var, TensorType::NumberType())
@@ -769,6 +768,8 @@ REG_OP(ApplyAdam)
     .INPUT(epsilon, TensorType::NumberType())
     .INPUT(grad, TensorType::NumberType())
     .OUTPUT(var, TensorType::NumberType())
+    .OUTPUT(m, TensorType::NumberType())
+    .OUTPUT(v, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .ATTR(use_nesterov, Bool, false)
     .OP_END_FACTORY_REG(ApplyAdam)
@@ -810,6 +811,37 @@ REG_OP(ApplyAdadelta)
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyAdadelta)
 
+/**
+*@brief Updates "var" according to the ApplyMomentum algorithm. \n
+*  accum = accum * momentum + x1 * x2
+*  if use_nesterov is True:
+*      var -= x1 * x2 * lr + accum * momentum * lr
+*  else:
+*      var -= accum * lr
+
+*@par Inputs:
+*Six inputs, including:
+* @li var: A mutable Tensor of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li lr: A scalar of the same type as "var", for the scaling factor.
+* @li x1: A Tensor of type TensorType::NumberType().
+* @li momentum: A scalar of the same type as "var".
+* @li x2: A Tensor of the same type as "var".
+
+*@par Attributes:
+*Two Attributes, including:
+*@li use_nesterov: An optional bool. Defaults to "False". \n
+*  If True, the tensor passed to compute grad will be var - lr * momentum * accum, \n
+*  so in the end, the var you get is actually var - lr * momentum * accum.
+*@li use_locking: An optional bool. Defaults to "False". \n
+*  If "True", updating of the "var", m", and "v" tensors will be protected \n
+*  by a lock; otherwise the behavior is undefined, but may exhibit less contention.
+
+*@par Outputs:
+*var: A mutable Tensor. Has the same type as "var".
+*/
 REG_OP(FusedMulApplyMomentum)
   .INPUT(var, TensorType::NumberType())
   .INPUT(accum, TensorType::NumberType())
@@ -822,6 +854,39 @@ REG_OP(FusedMulApplyMomentum)
   .ATTR(use_locking, Bool, false)
   .OP_END_FACTORY_REG(FusedMulApplyMomentum)
 
+/**
+*@brief Updates "var" according to the ApplyMomentum algorithm. \n
+*  accum = accum * momentum + x1 * x2
+*  if use_nesterov is True:
+*      var -= x1 * x2 * lr + accum * momentum * lr
+*  else:
+*      var -= accum * lr
+
+*@par Inputs:
+*Six inputs, including:
+* @li var: A mutable Tensor of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li lr: A scalar of the same type as "var", for the scaling factor.
+* @li x1: A Tensor of type TensorType::NumberType().
+* @li momentum: A scalar of the same type as "var".
+* @li x2: A Tensor of the same type as "var".
+
+*@par Attributes:
+*Two Attributes, including:
+*@li use_nesterov: An optional bool. Defaults to "False". \n
+*    If True, the tensor passed to compute grad will be var - lr * momentum * accum, \n
+*    so in the end, the var you get is actually var - lr * momentum * accum.
+*@li use_locking: An optional bool. Defaults to "False". \n
+*    If "True", updating of the "var", m", and "v" tensors will be protected \n
+*    by a lock; otherwise the behavior is undefined, but may exhibit less contention.
+
+*@par Outputs:
+*Two outputs, including:
+*@li var: A Tensor. Has the same type as "var".
+*@li var_copy: A Tensor. Has the same type as "var".
+*/
 REG_OP(FusedMulApplyMomentumExtern)
   .INPUT(var, TensorType::NumberType())
   .INPUT(accum, TensorType::NumberType())
@@ -836,6 +901,26 @@ REG_OP(FusedMulApplyMomentumExtern)
   .ATTR(use_locking, Bool, false)
   .OP_END_FACTORY_REG(FusedMulApplyMomentumExtern)
 
+/**
+*@brief Update "g" according to the LARS algorithm.
+
+*@par Inputs:
+*Four inputs, including:
+* @li w: A Tensor. Must be of type TensorType::DT_FLOAT.
+* @li g: A Tensor of the same type and shape as "w".
+* @li weight_decay: A Tensor of the same type as "w",  Must be a scalar.
+* @li learning_rate: A Tensor of the same type as "w", Must be a scalar.
+
+*@par Attributes:
+*Three Attributes, including:
+* @li hyperpara: An optional float. Default value is 0.001.
+* @li epsilon: An optional float. Default value is 1e-5.Avoid denominator is 0.
+* @li use_clip: An optional bool. Defaults to "False".\n
+*     If "True", updating learning rate.
+
+*@par Outputs:
+*g_new: Tensor of the same type as "w".
+*/
 REG_OP(LarsV2)
     .INPUT(w, TensorType(DT_FLOAT))
     .INPUT(g, TensorType(DT_FLOAT))
@@ -847,6 +932,28 @@ REG_OP(LarsV2)
     .ATTR(use_clip, Bool, false)
     .OP_END_FACTORY_REG(LarsV2)
 
+/**
+*@brief Update "g" according to the LARS algorithm.
+
+*@par Inputs:
+*Six inputs, including:
+* @li w: A Tensor. Must be of type TensorType::DT_FLOAT.
+* @li g: A Tensor of the same type and shape as "w".
+* @li w_square_sum: A Tensor of  square_sum(w), has the same type as "w",  Must be a scalar.
+* @li g_square_sum: A Tensor of  square(g), has the same type as "w", Must be a scalar.
+* @li weight_decay: A Tensor of the same type as "w",  Must be a scalar.
+* @li learning_rate: A Tensor of the same type as "w", Must be a scalar.
+
+*@par Attributes:
+*Three Attributes, including:
+* @li hyperpara: An optional float. Default value is 0.001.
+* @li epsilon: An optional float. Default value is 1e-5.Avoid denominator is 0.
+* @li use_clip: An optional bool. Defaults to "False".\n
+*     If "True", updating learning rate.
+
+*@par Outputs:
+*g_new: Tensor of the same type as "w".
+*/
 REG_OP(LarsV2Update)
     .INPUT(w, TensorType(DT_FLOAT))
     .INPUT(g, TensorType(DT_FLOAT))

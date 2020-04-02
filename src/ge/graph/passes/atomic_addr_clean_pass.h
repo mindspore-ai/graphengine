@@ -23,43 +23,54 @@
 #include "inc/graph_pass.h"
 
 namespace ge {
+/*
+ * Atomic addr clean task fusion
+ * Find all atomic op in graph,and insert one AtomicAddrClean op.
+ * To clean atomic output and workspace once for all.
+ * before iteration starts, empty AtomicAdd output, workspace memory
+ *         op1                         op1
+ *          |                           |
+ *         op2(atomic)       ==>       op2
+ *          |                           |  \
+ *         op3(atomic)                 op3 -AtomicClean
+ */
 class AtomicAddrCleanPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
 
  private:
-  ///
-  /// HandleLoopGraph
-  /// @param graph
-  /// @return
-  ///
+  /**
+   * HandleLoopGraph
+   * @param graph
+   * @return
+   */
   Status HandleLoopGraph(ComputeGraphPtr &graph, const vector<NodePtr> &atomic_node_vec);
-  ///
-  /// HandleNormalGraph
-  /// @param graph
-  /// @return
-  ///
+  /**
+   * HandleNormalGraph
+   * @param graph
+   * @return
+   */
   Status HandleNormalGraph(ComputeGraphPtr &graph, const vector<NodePtr> &atomic_node_vec);
-  ///
-  /// Insert atomic clean node to graph
-  /// @param graph
-  /// @return
-  ///
+  /**
+   * Insert atomic clean node to graph
+   * @param graph
+   * @return
+   */
   NodePtr InsertAtomicAddrCleanNode(ComputeGraphPtr &graph);
 
-  ///
-  /// Link control anchor from atomic clean node to atomic node
-  /// @param atomic_node
-  /// @param atomic_clean_node
-  /// @return
-  ///
+  /**
+   * Link control anchor from atomic clean node to atomic node
+   * @param atomic_node
+   * @param atomic_clean_node
+   * @return
+   */
   Status LinkToAtomicNode(const NodePtr &atomic_node, NodePtr &atomic_clean_node);
 
-  ///
-  /// Check if this node is atomic op.
-  /// @param node
-  /// @return
-  ///
+  /**
+   * Check if this node is atomic op.
+   * @param node
+   * @return
+   */
   bool IsAtomicOp(const NodePtr &node);
 
   vector<NodePtr> hcom_node_vec_;

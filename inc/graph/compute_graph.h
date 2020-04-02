@@ -23,7 +23,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <deque>
 #include "detail/attributes_holder.h"
 #include "graph/anchor.h"
 #include "graph/node.h"

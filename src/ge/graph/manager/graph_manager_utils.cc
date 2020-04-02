@@ -30,6 +30,8 @@
 #include "runtime/mem.h"
 
 namespace ge {
+using OpDescPtr = std::shared_ptr<OpDesc>;
+
 GraphNode::GraphNode(GraphId graph_id)
     : graph_id_(graph_id),
       run_flag_(false),
@@ -48,9 +50,7 @@ GraphNode::GraphNode(GraphId graph_id)
 
 GraphNode::~GraphNode() = default;
 
-void GraphNode::Lock() {
-  sem_.Push(0);
-}
+void GraphNode::Lock() { sem_.Push(0); }
 
 void GraphNode::Unlock() {
   uint8_t unused;
@@ -111,9 +111,9 @@ Status GraphModelListener::SetCondition(std::mutex *mutex, std::condition_variab
 
 Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result) {
   GELOGI(
-      "[GraphManager] graph compute call back, model_id:%u, task_id:%u, "
-      "resultCode:%u.",
-      model_id, task_id, result);
+    "[GraphManager] graph compute call back, model_id:%u, task_id:%u, "
+    "resultCode:%u.",
+    model_id, task_id, result);
   GE_IF_BOOL_EXEC(condition_ == nullptr, GELOGE(FAILED, "[GraphModelListener] condition is null."); return FAILED);
   std::lock_guard<std::mutex> lock(*mutex_);
   result_code_ = result;
@@ -150,8 +150,7 @@ void RunAsyncListener::SetCallback(const std::function<void(Status)> &callback) 
 }
 
 Status RunAsyncListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result) {
-  GELOGI("[GraphManager] run graph async call back, modelId:%u, taskId:%u, resultCode:%u.",
-         model_id, task_id, result);
+  GELOGI("[GraphManager] run graph async call back, modelId:%u, taskId:%u, resultCode:%u.", model_id, task_id, result);
   GE_CHECK_NOTNULL(callback_);
   callback_(result);
   uint8_t unused;
@@ -175,22 +174,6 @@ bool HasCalcOp(const ComputeGraphPtr &graph) {
   }
 
   return false;
-}
-
-Status CheckTinyCalc(const char *cal_conf, const ComputeGraphPtr &graph) {
-  if ((Params::Instance() != nullptr) && (Params::Instance()->GetTarget() != TARGET_TYPE_TINY)) {
-    return SUCCESS;
-  }
-
-  if (cal_conf != nullptr && *cal_conf != '\0') {
-    return SUCCESS;
-  }
-
-  if (HasCalcOp(graph)) {
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  return SUCCESS;
 }
 
 Status ParseOutNodes(const string &out_nodes) {

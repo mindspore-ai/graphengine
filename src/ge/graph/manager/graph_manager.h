@@ -69,7 +69,7 @@ class GraphManager {
   /// @param [out] Graph output graph
   /// @return Status result of function
   ///
-  Status AddGraph(const GraphId &graph_id, const Graph &graph);
+  Status AddGraph(const GraphId &graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
 
   ///
   /// @ingroup ge_graph
@@ -143,12 +143,13 @@ class GraphManager {
   /// @return Status result of function
   ///
   Status RegisterCallBackFunc(
-      const std::string &key,
-      const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+    const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
   const bool GetTrainFlag() const { return options_.train_graph_flag; }
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
+
+  const std::map<std::string, std::string> *GetGraphOptions(uint32_t graph_id);
 
  private:
   struct PreRunArgs {

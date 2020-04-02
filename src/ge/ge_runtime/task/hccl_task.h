@@ -20,7 +20,6 @@
 #include <memory>
 #include <set>
 #include <vector>
-
 #include "ge_runtime/task/task.h"
 
 namespace ge {

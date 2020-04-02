@@ -15,7 +15,6 @@
  */
 
 #include "ge_runtime/task/cce_task.h"
-
 #include "ge_runtime/task/task_factory.h"
 
 namespace ge {
@@ -101,15 +100,10 @@ bool CceTask::Distribute() {
 
     // Modify flowtable addr in args
     auto args = const_cast<uint8_t *>(task_info_->args().data());
-    if (task_info_->args_offset().size() < sizeof(uint16_t)) {
-      GELOGE(FAILED, "size of args_offset is smaller than sizeof(uint16_t).");
-      return false;
-    }
     auto task_offset = reinterpret_cast<uint16_t *>(const_cast<uint8_t *>(task_info_->args_offset().data()));
 
     if (task_info_->args().size() < (task_offset[0] + sizeof(uint64_t))) {
-      GELOGE(FAILED,
-             "(context.args_offset().data()))[0]:%u + sizeof(uint64_t):%zu > kernelDef.args().size():%zu",
+      GELOGE(FAILED, "(context.args_offset().data()))[0]:%u + sizeof(uint64_t):%zu > kernelDef.args().size():%zu",
              static_cast<uint32_t>(task_offset[0]), sizeof(uint64_t), task_info_->args().size());
       return false;
     }
@@ -139,8 +133,7 @@ bool CceTask::Distribute() {
       return false;
     }
 
-    rt_ret = rtMemcpy(sm_desc_, task_info_->sm_desc().size(),
-                      task_info_->sm_desc().data(),
+    rt_ret = rtMemcpy(sm_desc_, task_info_->sm_desc().size(), task_info_->sm_desc().data(),
                       task_info_->sm_desc().size(), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
@@ -149,12 +142,8 @@ bool CceTask::Distribute() {
   }
 
   // Kernel launch
-  rt_ret = rtKernelLaunch(stub_func_,
-                          task_info_->block_dim(),
-                          args_,
-                          task_info_->args_size(),
-                          static_cast<rtSmDesc_t *>(sm_desc_),
-                          stream_);
+  rt_ret = rtKernelLaunch(stub_func_, task_info_->block_dim(), args_, task_info_->args_size(),
+                          static_cast<rtSmDesc_t *>(sm_desc_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
@@ -162,6 +151,6 @@ bool CceTask::Distribute() {
   return true;
 }
 
-REGISTER_TASK(TaskInfoType::kCce, CceTask, CceTaskInfo);
+REGISTER_TASK(TaskInfoType::CCE, CceTask, CceTaskInfo);
 }  // namespace model_runner
 }  // namespace ge

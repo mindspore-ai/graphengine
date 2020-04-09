@@ -44,9 +44,7 @@ include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/common)
 include_directories(${GE_SOURCE_DIR}/inc/ops)
-include_directories(${GE_SOURCE_DIR}/third_party/eigen)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
-include_directories(${GE_SOURCE_DIR}/third_party/json/include)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
@@ -540,9 +538,9 @@ add_executable(ut_libge_multiparts_utest
 target_link_libraries(ut_libge_multiparts_utest
         ge_build_common ge_load_common ge_build_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common
     ge_prepare_common ge_single_op ge_ut_common
-        graphengine::gtest graphengine::gtest_main ge_protobuf::protobuf rt dl
+        graphengine::gtest graphengine::gtest_main protobuf::protobuf rt dl
 )
-target_link_libraries(ut_libge_multiparts_utest  ${COMMON_SHARED_LIBRARIES} ge_protobuf::protobuf)
+target_link_libraries(ut_libge_multiparts_utest  ${COMMON_SHARED_LIBRARIES} protobuf::protobuf)
 
 # libge_others_utest
 add_executable(ut_libge_others_utest
@@ -554,9 +552,9 @@ add_executable(ut_libge_others_utest
 )
 target_link_libraries(ut_libge_others_utest
         ge_execute_common ge_load_common ge_pass_common ge_ut_common
-        graphengine::gtest graphengine::gtest_main ge_protobuf::protobuf rt dl
+        graphengine::gtest graphengine::gtest_main protobuf::protobuf rt dl
 )
-target_link_libraries(ut_libge_others_utest  ${COMMON_SHARED_LIBRARIES} ge_protobuf::protobuf)
+target_link_libraries(ut_libge_others_utest  ${COMMON_SHARED_LIBRARIES} protobuf::protobuf)
 
 # libge_kernel_utest
 add_executable(ut_libge_kernel_utest
@@ -567,9 +565,9 @@ add_executable(ut_libge_kernel_utest
 )
 target_link_libraries(ut_libge_kernel_utest
         ge_pass_common ge_ut_common  ge_load_common
-        graphengine::gtest graphengine::gtest_main ge_protobuf::protobuf rt dl
+        graphengine::gtest graphengine::gtest_main protobuf::protobuf rt dl
 )
-target_link_libraries(ut_libge_kernel_utest  ${COMMON_SHARED_LIBRARIES} ge_protobuf::protobuf)
+target_link_libraries(ut_libge_kernel_utest  ${COMMON_SHARED_LIBRARIES} protobuf::protobuf)
 
 # libge_distinct_load_utest
 add_executable(ut_libge_distinct_load_utest
@@ -583,5 +581,5 @@ target_link_libraries(ut_libge_distinct_load_utest ${COMMON_SHARED_LIBRARIES}
         ge_execute_common ge_ut_common  ge_ut_common_format  ge_pass_common ge_load_common
         ge_single_op   ge_prepare_common
         ge_optimize_common  ge_build_common ge_partition_common
-        graphengine::gtest graphengine::gtest_main ge_protobuf::protobuf rt dl pthread
+        graphengine::gtest graphengine::gtest_main protobuf::protobuf rt dl pthread
 )

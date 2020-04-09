@@ -43,4 +43,4 @@ file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 )
 
 add_library(omg_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(omg_stub ge_protobuf::protobuf)
+target_link_libraries(omg_stub protobuf::protobuf)

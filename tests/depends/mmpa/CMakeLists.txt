@@ -28,4 +28,4 @@ include_directories(${GE_SOURCE_DIR}/inc/external)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 
 add_library(mmpa_stub SHARED ${SRCS})
-target_link_libraries(mmpa_stub ge_protobuf::protobuf)
+target_link_libraries(mmpa_stub protobuf::protobuf)

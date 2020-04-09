@@ -37,7 +37,6 @@ include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/inc/common)
 include_directories(${GE_SOURCE_DIR}/inc/ops)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
-include_directories(${GE_SOURCE_DIR}/third_party/json/include)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(/usr/local/HiAI/opp/op_proto/built-in/inc)
@@ -97,4 +96,4 @@ file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(ut_libgraph graphengine::gtest graphengine::gtest_main slog_stub ge_protobuf::protobuf ${c_sec} rt dl)
+target_link_libraries(ut_libgraph graphengine::gtest graphengine::gtest_main slog_stub protobuf::protobuf ${c_sec} rt dl)

@@ -1,27 +1,24 @@
-if (NOT TARGET protobuf::libprotobuf)
-graphengine_add_pkg(protobuf
-        VER 3.8.0
-        HEAD_ONLY ./
-        URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
-        MD5 3d9e32700639618a4d2d342c99d4507a)
-set(protobuf_BUILD_TESTS OFF CACHE BOOL "Disahble protobuf test")
-set(protobuf_BUILD_SHARED_LIBS ON CACHE BOOL "Gen shared library")
-set(_ms_tmp_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+if (NOT TARGET protobuf::protobuf)
+set(protobuf_USE_STATIC_LIBS ON)
+set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 -O2")
+set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
+set(_ge_tmp_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 string(REPLACE " -Wall" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 string(REPLACE " -Werror" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
-set(PROTOBUF_CMAKE_FILE "${protobuf_DIRPATH}/cmake/libprotobuf.cmake" )
-FILE(READ ${PROTOBUF_CMAKE_FILE} GE_MR_PROTOBUF_CMAKE)
-STRING(REPLACE "VERSION \${protobuf_VERSION}" "VERSION 19" GE_MR_PROTOBUF_CMAKE_V19 "${GE_MR_PROTOBUF_CMAKE}" )
-FILE(WRITE ${PROTOBUF_CMAKE_FILE} "${GE_MR_PROTOBUF_CMAKE_V19}")
-
-add_subdirectory(${protobuf_DIRPATH}/cmake ${protobuf_DIRPATH}/build)
-set(CMAKE_CXX_FLAGS ${_ms_tmp_CMAKE_CXX_FLAGS})
+graphengine_add_pkg(protobuf
+        VER 3.8.0
+        LIBS protobuf
+        EXE protoc
+        URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
+        MD5 3d9e32700639618a4d2d342c99d4507a
+        CMAKE_PATH ../cmake/
+        CMAKE_OPTION -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF)
+set(CMAKE_CXX_FLAGS ${_ge_tmp_CMAKE_CXX_FLAGS})
 endif()
-
-set(PROTOBUF_LIBRARY protobuf::libprotobuf)
+add_library(graphengine::protobuf ALIAS protobuf::protobuf)
+set(PROTOBUF_LIBRARY protobuf::protobuf)
+include_directories(${protobuf_INC})
 include_directories(${protobuf_DIRPATH}/src)
-add_library(ge_protobuf::protobuf ALIAS libprotobuf)
 
 function(ge_protobuf_generate comp c_var h_var)
     if(NOT ARGN)

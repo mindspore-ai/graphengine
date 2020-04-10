@@ -67,7 +67,7 @@ file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
     "${GE_SOURCE_DIR}/src/common/graph/opsproto/opsproto_manager.cc"
 )
 add_library(cce_ge_stub SHARED src/cce_stub.cc ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(cce_ge_stub ge_protobuf::protobuf)
+target_link_libraries(cce_ge_stub protobuf::protobuf)
 
 add_library(cce_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(cce_stub ge_protobuf::protobuf)
+target_link_libraries(cce_stub protobuf::protobuf)

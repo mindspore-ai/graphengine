@@ -110,6 +110,83 @@ REG_OP(GetNext)
     .ATTR(output_num, Int, 1)
     .ATTR(channel_name, String, "")
     .OP_END_FACTORY_REG(GetNext)
+/**
+*@brief: Computes the Gauss error function of `x` element-wise.
+
+*@par Inputs:\n
+*x: A Tensor of type float16 or float32.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*/
+REG_OP(Erf)
+    .INPUT(x, TensorType::FloatingDataType())
+    .OUTPUT(y, TensorType::FloatingDataType())
+    .OP_END_FACTORY_REG(Erf)
+
+/**
+*@brief: Computes the Gauss complementary error function of "x" element-wise.
+
+*@par Inputs:\n
+*x: A Tensor of type float16 or float32.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*/
+REG_OP(Erfc)
+    .INPUT(x, TensorType::FloatingDataType())
+    .OUTPUT(y, TensorType::FloatingDataType())
+    .OP_END_FACTORY_REG(Erfc)
+
+/**
+*@brief This operation returns a rank 1 histogram counting the number of entries in `values` \n
+*  that fell into every bin.The bins are equal width and determined by the arguments \n
+*  'value_range' and 'nbins'. \n
+
+*@par Inputs:
+*Three inputs, including: \n
+*@li x: A Tensor of type float32,float16,int32.
+*@li range: A Tensor of type float32,float16,int32.
+*@li nbins: A Tensor of type int32.
+
+*@par Attributes:
+* dtype: An optional attribute. Defaults to "int32".
+
+*@par Outputs:
+*y: A Tensor. A Tensor of type int32.
+*/
+REG_OP(HistogramFixedWidth)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(nbins, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .ATTR(dtype, String, "int32")
+    .OP_END_FACTORY_REG(HistogramFixedWidth)
+
+/**
+*@brief This operation returns a rank 1 histogram counting the number of entries in `values` \n
+*  that fell into every bin.The bins are equal width and determined by the arguments \n
+*  'value_range' and 'nbins'. \n
+
+*@par Inputs:
+*Two inputs, including: \n
+*@li x: A Tensor of type float32,float16,int32.
+*@li range: A Tensor of type float32,float16,int32.
+
+*@par Attributes:
+*@li dtype: An optional attribute. Defaults to "int32".
+*@li nbins: A required attribute,the type is int32.
+
+*@par Outputs:
+*y: A Tensor. A Tensor of type int32.
+*/
+REG_OP(HistogramFixedWidthD)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(nbins, Int)
+    .ATTR(dtype, String, "int32")
+    .OP_END_FACTORY_REG(HistogramFixedWidthD)
 }  // namespace ge
 
 #endif  // GE_OP_MATH_OPS_H_

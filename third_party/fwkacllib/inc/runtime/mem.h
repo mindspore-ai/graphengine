@@ -17,9 +17,7 @@
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
 
-/*lint -e7*/
 #include <stddef.h>
-/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"

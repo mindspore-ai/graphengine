@@ -402,6 +402,31 @@ bool IsOutputBlock(const ge::InDataAnchorPtr &in_data_anchor) {
   return false;
 }
 
+// current node's output uses previous node's output memory
+bool IsReferencePreviousNodeOutputMemory(const ge::NodePtr &node, uint32_t output_index) {
+  // Get the reference type of the node, default is false
+  bool is_ref = false;
+  // If GetBool fail, is_ref is false.
+  auto op_desc = node->GetOpDesc();
+  if (op_desc == nullptr) {
+    return false;
+  }
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_REFERENCE, is_ref);
+  if (!is_ref) {
+    return false;
+  }
+  const string &output_name = op_desc->GetOutputNameByIndex(output_index);
+  for (const auto &input_name : op_desc->GetAllInputNames()) {
+    if (!input_name.empty() && output_name == input_name) {
+      int input_index = op_desc->GetInputIndexByName(input_name);
+      GELOGI("Reference memory:name[%s] output[%s][%u] ref to input[%s][%d] ", op_desc->GetName().c_str(),
+             output_name.c_str(), output_index, input_name.c_str(), input_index);
+      return true;
+    }
+  }
+  return false;
+}
+
 void BlockMemAssigner::ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr, return, "Input parameter to_release is null.");
   GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0, return, "Release memory");
@@ -489,7 +514,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
       if (output_op_desc != nullptr) {
         GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS, GELOGI("Get size failed"));
       }
-      if ((size == 0) || CheckIsZeroMemNodeType(n->GetType())) {
+      if ((size == 0) || CheckIsZeroMemNodeType(n->GetType()) || IsReferencePreviousNodeOutputMemory(n, i)) {
         zero_memory_list_.emplace_back(n, kOutput, i);
         continue;
       }
@@ -607,11 +632,11 @@ void BlockMemAssigner::MergeDynamicBatchBlocks() {
     std::sort(it->second.begin(), it->second.end(), CompareBlockMaxSize);
   }
   if (it_max != dynamic_batch_blocks.end()) {
-    GELOGI("MergeDynamicBatch %s block counts %zu", it_max->first.c_str(), it_max->second.size());
+    GELOGD("MergeDynamicBatch %s block counts %zu", it_max->first.c_str(), it_max->second.size());
   }
   for (it = dynamic_batch_blocks.begin(); it != dynamic_batch_blocks.end(); ++it) {
     if (it != it_max) {
-      GELOGI("MergeDynamicBatch from %s to %s", it->first.c_str(), it_max->first.c_str());
+      GELOGD("MergeDynamicBatch from %s to %s", it->first.c_str(), it_max->first.c_str());
       MergeBlocks(it_max->second, it->second);
     }
   }

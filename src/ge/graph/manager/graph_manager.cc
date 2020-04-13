@@ -34,6 +34,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/ge_types.h"
 #include "graph/common/transop_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/ge_local_context.h"
@@ -1078,28 +1079,60 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const std::vector
   GELOGI("[GraphManager] CheckpointHandle, outputsSize=%zu.", outputs.size());
   std::vector<InputOutputDescInfo> outputs_desc = graph_executor_.GetOutputsDesc();
   GELOGI("[GraphManager] CheckpointHandle, outputsDescSize=%zu.", outputs_desc.size());
+  // find graph
+  GraphNodePtr graph_node = nullptr;
+  Status ret = GetGraphNode(graph_id, graph_node);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[CheckpointHandle] graph not exist, graph_id = %u.", graph_id);
+    return ret;
+  }
+  ComputeGraphPtr compute_graph_ptr = GraphUtils::GetComputeGraph(*(graph_node->GetGraph()));
   std::map<string, Tensor> save_results;
-  for (size_t i = 0; i < outputs_desc.size(); ++i) {
-    std::string desc_name = outputs_desc.at(i).name;
-    auto index = desc_name.find_last_of("_");
-    if (index != std::string::npos) {
-      desc_name = desc_name.substr(0, index);
-      index = desc_name.find_first_of("_");
-      if (index != std::string::npos) {
-        desc_name = desc_name.substr(index + 1);
-        index = desc_name.find_first_of("_");
-        if (index != std::string::npos) {
-          desc_name = desc_name.substr(index + 1);
+  NodePtr netoutput = nullptr;
+  for (const auto &node : compute_graph_ptr->GetDirectNode()) {
+    if (node->GetType() == kNetOutput) {
+      netoutput = node;
+      break;
+    }
+  }
+  if (netoutput == nullptr) {
+    GELOGE(FAILED, "Netoutput is null.");
+    return FAILED;
+  }
+  for (const auto &in : netoutput->GetAllInDataAnchors()) {
+    std::string desc_name;
+    auto out_anchor = in->GetPeerOutAnchor();
+    if (out_anchor == nullptr) {
+      GELOGE(FAILED, "out_anchor is null.");
+      return FAILED;
+    }
+    ge::NodePtr peer_node = out_anchor->GetOwnerNode();
+    // find the variable node in graph
+    while (peer_node != nullptr && peer_node->GetType() != kVariable) {
+      if (peer_node->GetAllInDataAnchors().size() != 1) {
+        GELOGE(FAILED, "More than one prior nodes of peer_node %s in checkpoint Graph.", peer_node->GetName().c_str());
+        return FAILED;
+      }
+      auto peer_node_in = peer_node->GetAllInDataAnchors().at(0);
+      auto peer_node_out_anchor = peer_node_in->GetPeerOutAnchor();
+      if (peer_node_out_anchor != nullptr) {
+        peer_node = peer_node_out_anchor->GetOwnerNode();
+        if (peer_node->GetType() == kVariable) {
+          break;
         }
       }
     }
-    index = desc_name.find("_trans");
-    if (index != std::string::npos) {
-      desc_name = desc_name.substr(0, index);
+    if (peer_node == nullptr) {
+      GELOGE(FAILED, "No variable op found in one branch, checkpoint graph illegal.");
+      return FAILED;
     }
-
+    desc_name = peer_node->GetName();
     GELOGI("[GraphManager] CheckpointHandle, descName=%s.", desc_name.c_str());
-    save_results.emplace(desc_name, TensorAdapter::AsTensor(outputs.at(i)));
+    if (in->GetIdx() >= static_cast<int>(outputs.size())) {
+      GELOGE(FAILED, "variable index out of range.");
+      return FAILED;
+    }
+    save_results.emplace(desc_name, TensorAdapter::AsTensor(outputs.at(in->GetIdx())));
   }
 
   if (!save_results.empty()) {
@@ -1447,6 +1480,8 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
   int64_t memory_size = ret ? value : 0;
   ret = ge::AttrUtils::GetInt(ge_model, ATTR_MODEL_WEIGHT_SIZE, value);
   int64_t weight_size = ret ? value : 0;
+  ret = ge::AttrUtils::GetInt(ge_model, MODEL_ATTR_SESSION_ID, value);
+  uint64_t session_id = ret ? value : 0;
 
   int64_t free_memory = 0;
   Status result = GraphLoader::GetMemoryInfo(free_memory);
@@ -1493,6 +1528,11 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
     result = GraphLoader::UnloadModel(model_id);
     if (result != SUCCESS) {
       GELOGW("[GraphManager:] unload model failed, modelId=%u, graphId=%u.", model_id, graph_id);
+    }
+    result = GraphLoader::DestroyAicpuKernel(session_id, model_id);
+    if (result != SUCCESS) {
+      GELOGW("[GraphManager:] destroy aicpu kernel failed when dynamic memory, modelId=%u, graphId=%u.", model_id,
+             graph_id);
     }
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {

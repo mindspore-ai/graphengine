@@ -286,10 +286,10 @@ static graphStatus CalcTensorElementCnt(const std::vector<int64_t> &dims, Format
 
   const string type_str = TypeUtils::DataTypeToSerialString(data_type);
   if (graph_status == GRAPH_SUCCESS) {
-    GELOGI(
-        "CalcTensorElementCnt end, format=%d(%s),"
-        " data_type=%d(%s), element_cnt=%ld.",
-        format, format_str.c_str(), data_type, type_str.c_str(), element_cnt);
+    GELOGD(
+      "CalcTensorElementCnt end, format=%d(%s),"
+      " data_type=%d(%s), element_cnt=%ld.",
+      format, format_str.c_str(), data_type, type_str.c_str(), element_cnt);
   } else {
     GELOGE(GRAPH_FAILED, "CalcTensorElementCnt failed, format=%d(%s), data_type=%d(%s).", format, format_str.c_str(),
            data_type, type_str.c_str());
@@ -329,10 +329,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus TensorUtils::CalcTens
   // Support unknown shape
   if (element_cnt < 0) {
     mem_size = kMemSizeUnknownShape;
-    GELOGI(
-        "element_cnt is unknown. "
-        "format=%d(%s), data_type=%d(%s), mem_size=%ld",
-        format, format_str.c_str(), data_type, type_str.c_str(), mem_size);
+    GELOGD(
+      "element_cnt is unknown. "
+      "format=%d(%s), data_type=%d(%s), mem_size=%ld",
+      format, format_str.c_str(), data_type, type_str.c_str(), mem_size);
     return GRAPH_SUCCESS;
   }
   auto type_size_int64 = static_cast<int64_t>(type_size);
@@ -343,10 +343,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus TensorUtils::CalcTens
   }
   mem_size = element_cnt * type_size_int64;
 
-  GELOGI(
-      "CalcTensorMemSize end, "
-      "format=%d(%s), data_type=%d(%s), mem_size=%ld",
-      format, format_str.c_str(), data_type, type_str.c_str(), mem_size);
+  GELOGD(
+    "CalcTensorMemSize end, "
+    "format=%d(%s), data_type=%d(%s), mem_size=%ld",
+    format, format_str.c_str(), data_type, type_str.c_str(), mem_size);
   return GRAPH_SUCCESS;
 }
 

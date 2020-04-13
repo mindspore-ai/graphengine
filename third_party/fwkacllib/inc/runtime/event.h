@@ -110,28 +110,6 @@ RTS_API rtError_t rtNameEvent(rtEvent_t event_, const char *name);
 
 /**
  * @ingroup dvrt_event
- * @brief make event shared interprocess and assigned a name
- * @param [in] event  event to be shared
- * @param [in] name   identification name
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
- */
-RTS_API rtError_t rtIpcSetEventName(rtEvent_t event, char *name, uint32_t len);
-
-/**
- * @ingroup dvrt_event
- * @brief open a interprocess shared event
- * @param [in|out] event    event to be opened
- * @param [in] name   identification name
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of ptr, name
- * @return RT_ERROR_DRV_ERR for driver error
- */
-RTS_API rtError_t rtIpcOpenEvent(rtEvent_t *event, const char *name);
-
-/**
- * @ingroup dvrt_event
  * @brief Create a notify
  * @param [in] device_id  device id
  * @param [in|out] notify_   notify to be created

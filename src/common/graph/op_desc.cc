@@ -32,7 +32,6 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
-/*lint -save -e521 -e681 -e732 -e737*/
 namespace ge {
 const std::string ATTR_NAME_ID = "id";
 

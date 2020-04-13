@@ -99,6 +99,8 @@ class TaskGenerator {
                                   std::vector<uint32_t> &ar_ppoint, uint32_t node_index,
                                   std::vector<domi::TaskDef> &task_def_list);
 
+  static bool IsProfPoint(const OpDescPtr &op, const std::string &name);
+
   uint8_t *var_mem_base_ = nullptr;
   uint64_t var_mem_size_ = 0;
 };

@@ -160,7 +160,7 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
 
     auto start_iter = fusion_road.begin();
     auto end_iter = fusion_road.rbegin();
-    GELOGI(
+    GELOGD(
       "Trans variable data for %s from format %s to %s, shape %s to %s "
       "data-type %s to %s, path len %zu success",
       node->GetName().c_str(), TypeUtils::FormatToSerialString(start_iter->input.GetFormat()).c_str(),
@@ -197,7 +197,7 @@ Status VariableOpPass::DealFusion(const ge::NodePtr &var_node) {
   GELOGD("Begin to fusion var %s with trans", var_node->GetName().c_str());
   auto graph = var_node->GetOwnerComputeGraph();
   for (auto &trans_node : var_node->GetOutDataNodes()) {
-    GELOGI("Remove node %s type %s when fusion with variable %s", trans_node->GetName().c_str(),
+    GELOGD("Remove node %s type %s when fusion with variable %s", trans_node->GetName().c_str(),
            trans_node->GetType().c_str(), var_node->GetName().c_str());
 
     if (GraphUtils::IsolateNode(trans_node, {0}) != SUCCESS) {
@@ -218,7 +218,7 @@ Status VariableOpPass::DealFusion(const ge::NodePtr &var_node) {
   for (auto ref_node : iterator->second) {
     GE_CHECK_NOTNULL(ref_node);
     for (auto &trans_node : ref_node->GetInDataNodes()) {
-      GELOGI("Remove node %s type %s when fusion with variable %s", trans_node->GetName().c_str(),
+      GELOGD("Remove node %s type %s when fusion with variable %s", trans_node->GetName().c_str(),
              trans_node->GetType().c_str(), var_node->GetName().c_str());
       if (trans_node->GetOutDataNodes().size() > 1) {
         GELOGD(
@@ -578,7 +578,7 @@ Status VariableOpPass::RenewVarDesc(ge::ComputeGraphPtr &graph) {
       (node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2) || (node->GetType() == VARHANDLEOP);
     if (is_var_node) {
       if (!ge::VarManager::Instance(graph->GetSessionID())->IsVarExist(node->GetName())) {
-        GELOGI("var manager does not exist var node[%s]", node->GetName().c_str());
+        GELOGD("var manager does not exist var node[%s]", node->GetName().c_str());
         continue;
       }
       GELOGD("var manager exist var node[%s], graph name[%s]", node->GetName().c_str(), graph->GetName().c_str());

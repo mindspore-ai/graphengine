@@ -24,6 +24,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include "cce/aicpu_engine_struct.h"
 #include "common/types.h"
 #include "common/ge_types.h"
 #include "common/ge_inner_error_codes.h"
@@ -199,11 +200,17 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   std::shared_ptr<DavinciModel> GetModel(uint32_t id);
 
+  ge::Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id);
+
   ge::Status CreateAicpuSession(uint64_t session_id);
 
   static ge::Status GetModelMemAndWeightSize(const ModelData &model, size_t &mem_size, size_t &weight_size);
 
   void DestroyAicpuSession(uint64_t session_id);
+
+  ge::Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
+
+  ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id);
 
  private:
   ///
@@ -233,6 +240,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   void GenModelId(uint32_t *id);
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
+  std::map<std::string, std::vector<uint64_t>> model_aicpu_kernel_;
   std::vector<uint32_t> free_model_id_;
   uint32_t max_model_id_;
   std::mutex map_mutex_;

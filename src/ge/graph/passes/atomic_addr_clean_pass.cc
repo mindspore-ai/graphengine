@@ -170,7 +170,7 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
            atomic_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
-  GELOGI("Graph add cleanAddrNode op out ctrl edge, dst node: %s.", atomic_node->GetName().c_str());
+  GELOGD("Graph add cleanAddrNode op out ctrl edge, dst node: %s.", atomic_node->GetName().c_str());
   std::string stream_label;
   if (is_loop_graph && AttrUtils::GetStr(atomic_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
     if (!AttrUtils::SetStr(atomic_clean_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
@@ -228,7 +228,7 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   if (ret != GRAPH_SUCCESS) {
     GELOGW("set attr ATOMIC_ATTR_IS_ATOMIC_NODE fail.");
   }
-  GELOGI("Recognized atomic op %s from FE engine.", op_desc->GetName().c_str());
+  GELOGD("Recognized atomic op %s from FE engine.", op_desc->GetName().c_str());
   return true;
 }
 }  // namespace ge

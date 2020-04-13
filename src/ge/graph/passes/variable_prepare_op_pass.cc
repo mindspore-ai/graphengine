@@ -190,7 +190,7 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
     GELOGE(FAILED, "parameter ptr is null.");
     return nullptr;
   }
-  GELOGI("Create VarRef Op: final_writable_node: [%s] var_node: [%s]>>>>", final_writable_node->GetName().c_str(),
+  GELOGD("Create VarRef Op: final_writable_node: [%s] var_node: [%s]>>>>", final_writable_node->GetName().c_str(),
          var_node->GetName().c_str());
 
   static uint32_t var_ref_count = 0;
@@ -220,7 +220,7 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
 
   bool is_set_str = ge::AttrUtils::SetStr(var_ref_op_desc, REF_VAR_SRC_VAR_NAME, var_op_desc->GetName());
   if (is_set_str) {
-    GELOGI("Set node [%s] REF_VAR_SRC_VAR_NAME [%s]", var_ref_node->GetName().c_str(), var_op_desc->GetName().c_str());
+    GELOGD("Set node [%s] REF_VAR_SRC_VAR_NAME [%s]", var_ref_node->GetName().c_str(), var_op_desc->GetName().c_str());
   }
   return var_ref_node;
 }
@@ -229,7 +229,7 @@ int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int inpu
   if (node == nullptr) {
     return -1;
   }
-  GELOGI("get writable node and input index %s:%d", node->GetName().c_str(), input_index);
+  GELOGD("get writable node and input index %s:%d", node->GetName().c_str(), input_index);
   auto node_type = node->GetType();
   if (node_type == ASSIGN) {
     if (UpdateAssignOpDesc(node) != SUCCESS) {

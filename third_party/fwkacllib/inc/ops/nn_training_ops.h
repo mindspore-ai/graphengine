@@ -17,6 +17,7 @@
 #ifndef GE_OP_TRAINING_OPS_H
 #define GE_OP_TRAINING_OPS_H
 
+#include "../../../inc/external/graph/operator_reg.h"
 #include "../graph/operator_reg.h"
 namespace ge {
 /**
@@ -109,6 +110,63 @@ REG_OP(ApplyMomentum)
     .ATTR(use_nesterov, Bool, false)
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyMomentum)
+
+/**
+*@brief Updates relevant entries in "var" and "accum" according to the adagrad scheme.
+
+*@par Inputs:
+* Five inputs, including:
+*@li var: An NCHW, NHWC, or ND Tensor of type float32.
+*@li accum: An NCHW, NHWC, or ND Tensor of type float32.
+*@li lr: An NCHW, NHWC, or ND Tensor of type float32.
+*@li grad: An NCHW, NHWC, or ND Tensor of type float32.
+*@li indices: An NCHW, NHWC, or ND Tensor of type float32.
+
+*@par Attributes:
+*@li use_locking: An optional bool. Defaults to "False". If "True", the operation will be protected by a lock.
+*@li update_slots: An optional bool. Defaults to "True". If "True", the calcution will be different as "False".
+
+*@par Outputs:
+*var: A Tensor. Has the same type and format as input "var".
+*/
+REG_OP(SparseApplyAdagrad)
+    .INPUT(var, TensorType({DT_FLOAT}))
+    .INPUT(accum, TensorType({DT_FLOAT}))
+    .INPUT(lr, TensorType({DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .OUTPUT(var, TensorType({DT_FLOAT}))
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(SparseApplyAdagrad)
+
+/**
+*@brief Updates relevant entries in "var" and "accum" according to the adagrad scheme.
+
+*@par Inputs:
+* Four inputs, including:
+*@li var: An NCHW, NHWC, or ND Tensor of type float32.
+*@li accum: An NCHW, NHWC, or ND Tensor of type float32.
+*@li grad: An NCHW, NHWC, or ND Tensor of type float32.
+*@li indices: An NCHW, NHWC, or ND Tensor of type int32.
+
+*@par Attributes:
+*@li lr: Required, used for computation.
+*@li use_locking: An optional bool. Defaults to "False". If "True", the operation will be protected by a lock.
+*@li update_slots: An optional bool. Defaults to "True". If "True", the calcution will be different as "False".
+
+*@par Outputs:
+*var: A Tensor. Has the same type and format as input "var".
+*/
+REG_OP(SparseApplyAdagradD)
+    .INPUT(var, TensorType({DT_FLOAT}))
+    .INPUT(accum, TensorType({DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .OUTPUT(var, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(lr, Float)
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(SparseApplyAdagradD)
+
 
 REG_OP(ApplyMomentumCCE)
     .INPUT(var, TensorType::NumberType())
@@ -967,6 +1025,186 @@ REG_OP(LarsV2Update)
     .ATTR(use_clip, Bool, false)
     .OP_END_FACTORY_REG(LarsV2Update)
 
+/**
+* @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+
+* @par Inputs:
+* Nine inputs, including:
+* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li linear: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li grad: A Tensor of the same type as "var", for the gradient.
+* @li indices: A vector of indices into the first dimension of var and accum.
+* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
+* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
+* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False".
+*     If "True", updating of the "var" and "accum" tensors will be
+*     protected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var".
+*/
+REG_OP(SparseApplyFtrl)
+    .INPUT(var, TensorType({DT_FLOAT}))
+    .INPUT(accum, TensorType({DT_FLOAT}))
+    .INPUT(linear, TensorType({DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(lr, TensorType({DT_FLOAT}))
+    .INPUT(l1, TensorType({DT_FLOAT}))
+    .INPUT(l2, TensorType({DT_FLOAT}))
+    .INPUT(lr_power, TensorType({DT_FLOAT}))
+    .OUTPUT(var, TensorType({DT_FLOAT}))
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(SparseApplyFtrl)
+
+/**
+* @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+
+* @par Inputs:
+* Nine inputs, including:
+* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li linear: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li grad: A Tensor of the same type as "var", for the gradient.
+* @li indices: A vector of indices into the first dimension of var and accum.
+* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
+* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
+* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False".
+*     If "True", updating of the "var" and "accum" tensors will be
+*     protected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var".
+*/
+REG_OP(SparseApplyFtrlD)
+    .INPUT(var, TensorType({DT_FLOAT}))
+    .INPUT(accum, TensorType({DT_FLOAT}))
+    .INPUT(linear, TensorType({DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .OUTPUT(var, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(lr, Float)
+    .REQUIRED_ATTR(l1, Float)
+    .REQUIRED_ATTR(l2, Float)
+    .REQUIRED_ATTR(lr_power, Float)
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(SparseApplyFtrlD)
+
+/**
+* @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+* That is for rows we have grad for, we update var, accum and linear
+
+* @par Inputs:
+* Ten inputs, including:
+* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li linear: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li grad: A Tensor of the same type as "var", for the gradient.
+* @li indices: A vector of indices into the first dimension of var and accum.
+* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
+* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
+* @li l2_shrinkage: A Tensor of the same type as "var", L2 shrinkage regulariation. Must be a scalar.
+* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+
+* @par Attributes:
+* use_locking: An optional bool. Defaults to "False".
+* If "True", updating of the "var" and "accum" tensors will be
+* rotected by a lock; otherwise the behavior is undefined,
+* but may exhibit less contention.
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var".
+*/
+REG_OP(SparseApplyFtrlV2)
+    .INPUT(var, TensorType({DT_FLOAT}))
+    .INPUT(accum, TensorType({DT_FLOAT}))
+    .INPUT(linear, TensorType({DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(lr, TensorType({DT_FLOAT}))
+    .INPUT(l1, TensorType({DT_FLOAT}))
+    .INPUT(l2, TensorType({DT_FLOAT}))
+    .INPUT(l2_shrinkage, TensorType({DT_FLOAT}))
+    .INPUT(lr_power, TensorType({DT_FLOAT}))
+    .OUTPUT(var, TensorType({DT_FLOAT}))
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(SparseApplyFtrlV2)
+
+/**
+* @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
+* That is for rows we have grad for, we update var, accum and linear
+
+* @par Inputs:
+* Ten inputs, including:
+* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
+*     Should be a Variable Tensor.
+* @li accum: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li linear: A mutable Tensor of the same type as "var".
+*     Should be a Variable Tensor.
+* @li grad: A Tensor of the same type as "var", for the gradient.
+* @li indices: A vector of indices into the first dimension of var and accum.
+
+* @par Attributes:
+* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
+* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
+* @li l2_shrinkage: A Tensor of the same type as "var", L2 shrinkage regulariation. Must be a scalar.
+* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
+* @li use_locking: An optional bool. Defaults to "False".
+*     If "True", updating of the "var" and "accum" tensors will be
+*     rotected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
+
+* @par Outputs:
+* var: A Tensor. Has the same type and format as input "var".
+*/
+REG_OP(SparseApplyFtrlV2D)
+    .INPUT(var, TensorType({DT_FLOAT}))
+    .INPUT(accum, TensorType({DT_FLOAT}))
+    .INPUT(linear, TensorType({DT_FLOAT}))
+    .INPUT(grad, TensorType({DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .OUTPUT(var, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(lr, Float)
+    .REQUIRED_ATTR(l1, Float)
+    .REQUIRED_ATTR(l2, Float)
+    .REQUIRED_ATTR(l2_shrinkage, Float)
+    .REQUIRED_ATTR(lr_power, Float)
+    .ATTR(use_locking, Bool, false)
+    .OP_END_FACTORY_REG(SparseApplyFtrlV2D)
+
+/**
+*@brief Clean memory of workspace list.
+
+*@par Attributes:
+* @li automic_add_mem_size: sizes of workspaces.
+
+*/
+REG_OP(AtomicAddrClean)
+    .ATTR(automic_add_mem_size, ListInt, {})
+    .OP_END_FACTORY_REG(AtomicAddrClean)
 }  // namespace ge
 
 #endif // GE_OP_TRAINING_OPS_H

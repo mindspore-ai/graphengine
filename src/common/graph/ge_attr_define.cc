@@ -124,7 +124,7 @@ const std::string ATTR_NAME_BROACAST_REAL_DIM_CNT = "broacast_real_dim_cnt";
 const std::string ATTR_NAME_DIM_ALIGN = "dim_align";
 const std::string ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE = "original_type";
 
-const std::string ATTR_NAME_SESSION_GRAPH_ID = "session_graph_id";
+const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
 
 const std::string ATTR_NAME_AUTOMIC_ADD_START = "automic_add_addr_start";
 const std::string ATTR_NAME_AUTOMIC_ADD_MEM_SIZE = "automic_add_mem_size";

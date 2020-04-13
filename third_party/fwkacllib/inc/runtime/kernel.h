@@ -24,7 +24,6 @@
 extern "C" {
 #endif  // __cplusplus
 
-/*lint -e148*/
 /**
  * @ingroup rt_kernel
  * @brief shared memory data control
@@ -41,7 +40,6 @@ typedef struct tagRtSmData {
   uint8_t reserved[2];             // reserved
 } rtSmData_t;
 
-/*lint -e148*/
 /**
  * @ingroup rt_kernel
  * @brief shared memory description

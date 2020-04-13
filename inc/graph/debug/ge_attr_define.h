@@ -774,4 +774,3 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string DYNAMIC_
 }  // namespace ge
 
 #endif  // INC_GRAPH_DEBUG_GE_ATTR_DEFINE_H_
-/*lint +e618*/

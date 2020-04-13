@@ -33,7 +33,6 @@
 #include "graph/manager/graph_manager_utils.h"
 #include "omg/omg_inner_types.h"
 
-/*lint -e148*/
 namespace ge {
 using ComputeGraphPtr = std::shared_ptr<ge::ComputeGraph>;
 using GraphOptimizerPtr = std::shared_ptr<ge::GraphOptimizer>;
@@ -56,7 +55,7 @@ class GraphOptimize {
 
   const std::map<uint32_t, std::map<string, size_t>> &GetSummaryOutputIndexes() const {
     return summary_output_indexes_;
-  }  // lint !e1073
+  }
 
   void ClearSummaryOutputIndexes() { summary_output_indexes_.clear(); }
 
@@ -81,6 +80,5 @@ class GraphOptimize {
   std::map<uint32_t, std::map<string, size_t>> summary_output_indexes_ = {};
   std::string func_bin_path_;
 };
-};  // namespace ge
-/*lint +e148*/
+};      // namespace ge
 #endif  // GE_GRAPH_OPTIMIZE_GRAPH_OPTIMIZE_H_

@@ -34,7 +34,7 @@ namespace ge {
 GeAttrValue::NamedAttrs::NamedAttrs() { named_attrs_.InitDefault(); }
 
 GeAttrValue::NamedAttrs::NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *proto_msg)
-    : named_attrs_(owner, proto_msg) {}  // lint !e1744
+    : named_attrs_(owner, proto_msg) {}
 
 void GeAttrValue::NamedAttrs::SetName(const std::string &name) {
   auto proto_msg = named_attrs_.GetProtoMsg();
@@ -239,7 +239,7 @@ ATTR_VALUE_SET_GET_IMP(GeAttrValue::STR)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::STR>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::INT)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::INT>)
-ATTR_VALUE_SET_GET_IMP(GeAttrValue::FLOAT)  // lint !e524
+ATTR_VALUE_SET_GET_IMP(GeAttrValue::FLOAT)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::FLOAT>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::BOOL)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::BOOL>)
@@ -253,11 +253,9 @@ ATTR_VALUE_SET_GET_IMP(GeAttrValue::BYTES)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::BYTES>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::NAMED_ATTRS)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::NAMED_ATTRS>)
-/*lint -e665*/
 ATTR_VALUE_SET_GET_IMP(vector<vector<int64_t>>)
-/*lint +e665*/
-ATTR_VALUE_SET_GET_IMP(vector<DataType>)        // lint !e665
-ATTR_VALUE_SET_GET_IMP(GeAttrValue::DATA_TYPE)  // lint !e665
+ATTR_VALUE_SET_GET_IMP(vector<DataType>)
+ATTR_VALUE_SET_GET_IMP(GeAttrValue::DATA_TYPE)
 
 #undef ATTR_VALUE_SET_GET_IMP
 

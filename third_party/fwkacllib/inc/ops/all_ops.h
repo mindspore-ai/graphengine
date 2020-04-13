@@ -40,7 +40,6 @@
 #include "nn_detect_ops.h"
 #include "nn_norm_ops.h"
 #include "nn_ops.h"
-#include "nn_other_ops.h"
 #include "nn_pooling_ops.h"
 #include "nn_training_ops.h"
 #include "nonlinear_fuc_ops.h"
@@ -62,5 +61,5 @@
 #include "outfeed_ops.h"
 #include "stateless_random_ops.h"
 #include "dvpp_ops.h"
-#include "basic_lstm_cell.h"
+#include "rnn.h"
 #endif  // BUILT_IN_OP_PROTO_INC_ALL_OPS_H_

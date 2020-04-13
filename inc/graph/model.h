@@ -31,8 +31,6 @@ using std::map;
 using std::string;
 using std::vector;
 
-/*lint -e148*/
-
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Model : public AttrHolder {
  public:
   Model();
@@ -91,7 +89,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Model : public AttrHolder {
   std::string platform_version_{""};
   Graph graph_;
 };
-/*lint +e148*/
 }  // namespace ge
 using ModelPtr = std::shared_ptr<ge::Model>;
 

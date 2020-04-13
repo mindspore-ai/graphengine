@@ -25,6 +25,8 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/op_desc.h"
 
+using domi::ImplyType;
+
 namespace {
 const char *const kAICPUEngineName = "DNN_VM_AICPU";
 const char *const kAICPUKernelLibName = "aicpu_kernel";
@@ -142,6 +144,7 @@ graphStatus CompileNodesPass::CompileNodes(const std::shared_ptr<GELib> instance
         // this node will go to aicpu engine ,no need compile
         node->GetOpDesc()->SetOpEngineName(kAICPUEngineName);
         node->GetOpDesc()->SetOpKernelLibName(kAICPUKernelLibName);
+        AttrUtils::SetInt(node->GetOpDesc(), ATTR_NAME_IMPLY_TYPE, static_cast<int64_t>(ImplyType::AI_CPU));
       }
       continue;
     }

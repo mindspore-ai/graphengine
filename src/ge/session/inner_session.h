@@ -35,8 +35,7 @@ class InnerSession {
 
   Status AddGraph(uint32_t graph_id, const Graph &graph);
 
-  Status AddGraph(uint32_t graph_id, const Graph &graph,
-                  const std::map<std::string, std::string> &options); /*lint !e148*/
+  Status AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
 
   Status RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
 

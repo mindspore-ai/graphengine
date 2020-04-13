@@ -74,12 +74,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
  private:
   void Init();
 
-  ProtoAttrMapHelper attrs_; /*lint !e148*/
+  ProtoAttrMapHelper attrs_;
 
-  Graph graph_;                              /*lint !e148*/
-  std::shared_ptr<domi::ModelTaskDef> task_; /*lint !e148*/
+  Graph graph_;
+  std::shared_ptr<domi::ModelTaskDef> task_;
   TBEKernelStore tbe_kernal_store_;
-  Buffer weights_buffer_; /*lint !e148*/
+  Buffer weights_buffer_;
 
   std::string name_;
   uint32_t version_ = {0};

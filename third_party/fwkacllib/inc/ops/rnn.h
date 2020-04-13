@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GE_OP_BASIC_LSTM_CELL_H
-#define GE_OP_BASIC_LSTM_CELL_H
+#ifndef GE_OP_RNN_H
+#define GE_OP_RNN_H
 
 #include "../graph/operator_reg.h"
 
@@ -151,4 +151,4 @@ REG_OP(BasicLSTMCellCStateGrad)
     .OP_END_FACTORY_REG(BasicLSTMCellCStateGrad)
 }  // namespace ge
 
-#endif  // GE_OP_BASIC_LSTM_CELL_H
+#endif  // GE_OP_RNN_H

@@ -421,7 +421,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator OpDescUtils::CreateOpera
     return Operator("default");
   }
   OperatorKeeper::GetInstance().CheckInOperator(operator_impl_ptr);
-  return operator_impl_ptr->ToOperator();  // lint !e514
+  return operator_impl_ptr->ToOperator();
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr OpDescUtils::GetOpDescFromOperator(const Operator &oprt) {

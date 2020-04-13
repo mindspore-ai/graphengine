@@ -37,7 +37,6 @@
 #include "omg/omg_inner_types.h"
 #include "runtime/context.h"
 
-/*lint -e148*/
 namespace ge {
 class GraphPrepare {
  public:
@@ -73,5 +72,4 @@ class GraphPrepare {
   GraphManagerOptions options_;
 };
 }  // namespace ge
-/*lint +e148*/
 #endif  // GE_GRAPH_PREPROCESS_GRAPH_PREPROCESS_H_

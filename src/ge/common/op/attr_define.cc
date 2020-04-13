@@ -108,7 +108,7 @@ const std::string ATTR_NAME_NAN_OPT = "nan_opt";
 const std::string ATTR_NAME_AIPP = "aipp";
 const std::string NEW_AIPP_CONV_OP = "new_conv_op_for_aipp";
 
-const std::string ATTR_NAME_SESSION_GRAPH_ID = "session_graph_id";
+const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
 
 const std::string ATTR_NAME_MULTISHAPE_BATCHLIST = "multi_shape_batchlist";
 const std::string ATTR_NAME_MULTISHAPE_BATCHLIST_SIZE = "multi_shape_batchlist_size";

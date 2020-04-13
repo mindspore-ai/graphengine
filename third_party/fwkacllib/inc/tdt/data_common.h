@@ -32,6 +32,7 @@ enum TdtDataType {
   TDT_DATA_LABEL,      /**< Data label*/
   TDT_END_OF_SEQUENCE, /**< End of Sequence*/
   TDT_TENSOR,          /**< Tensor*/
+  TDT_ABNORMAL,        /**< ABNORMAL*/
   TDT_DATATYPE_MAX     /**< Max*/
 };
 #endif

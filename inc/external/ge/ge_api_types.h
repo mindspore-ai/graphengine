@@ -98,7 +98,7 @@ const std::string OUTPUT_NODE_NAME = "ge.outputNodeName";
 // its value should be "0" or "1", default value is "0"
 const std::string COMPRESS_FLAG = "ge.compressFlag";
 
-const std::string ATUO_PRECISION_FLAG = "ge.exec.auto_mix_precision";
+const std::string PRECISION_MODE = "ge.exec.precision_mode";
 
 // Configure single op flag for FE
 // its value should be "0" or "1", default value is "0"

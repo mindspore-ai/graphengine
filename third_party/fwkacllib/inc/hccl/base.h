@@ -63,9 +63,6 @@ typedef enum tagHcclResult {
     HCCL_E_RESERVED                 /**< reserved */
 } hcclResult_t;
 
-/* handle to communicator */
-typedef void *hcclComm_t;
-
 /**
  * @brief HCCL Reduction opperation
  */
@@ -87,13 +84,6 @@ typedef enum tagHcclDataType {
     HCCL_DATA_TYPE_FLOAT = 3, /**< fp32 */
     HCCL_DATA_TYPE_RESERVED   /**< reserved */
 } hcclDataType_t;
-
-const s32 HCCL_TAG_ANY = -1;
-const u32 BASE_UNIQUE_ID_BYTES = 27;
-#define HCCL_UNIQUE_ID_BYTES (BASE_UNIQUE_ID_BYTES + 5 + 16 + 128)
-typedef struct {
-    char internal[HCCL_UNIQUE_ID_BYTES];
-} hcclUniqueId;
 
 const u32 HCCL_MAX_SEGMENT_NUM = 8;   // The max number of gradient segments.
 

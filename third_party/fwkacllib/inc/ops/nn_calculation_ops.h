@@ -407,6 +407,32 @@ REG_OP(Conv2DBackpropInputD)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .OP_END_FACTORY_REG(Conv2DBackpropInputD)
 
+/**
+*@brief Computes the Deconvolution with respect to the input.
+*@par Inputs:
+ * Two inputs:
+ * @li x: A Tensor. Must have the same type as "filter". 4D with shape\n
+ * [batch, out_height, out_width, out_channels]\n
+ * or [batch, out_channels, out_height, out_width]. Gradients with respect\n
+ * to the output of the convolution.
+ * @li filter: A Tensor of type float16.
+ * 4D with shape [filter_height, filter_width, in_channels, out_channels],\n
+ * or [out_channels, filter_height, filter_width, in_channels], \n
+ * or [out_channels, in_channel, filter_height, filter_width].
+ * One optional input:
+ * @li bias: An optional tensor of type int8
+*@par Attributes:
+ * Three attributes:
+ * @li strides: A tuple or list of 2 integers. The stride of the sliding window\n
+ * for H/W dimension.
+ * @li pads: A tuple or list of 4 integers. The [top, bottom, left, right] \n
+ * padding on the feature map
+ * @li dilations: A tuple or list of 4 integers. The dilation factor for each\n
+ * dimension of input. Must be [1, 1, 1, 1].
+*@par Outputs:
+ * y: A Tensor. Has the same type as "filter". 4D tensor with shape\n
+ * [batch, height, width, channels] or [batch, channels, height, width].
+*/
 REG_OP(Deconvolution)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

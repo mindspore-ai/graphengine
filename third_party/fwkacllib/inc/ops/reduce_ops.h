@@ -153,6 +153,20 @@ REG_OP(ReduceAll)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceAll)
 
+/**
+*@brief  Reduce a tensor on a certain axis based on product..
+
+*@par Inputs:
+*Two inputs, including:
+*@li x: A mutable Tensor. Must be the type of NumberType.
+*@li axis: A mutable Tensor. The dimensions to reduce.
+
+*@par Attributes:
+*@li keep_dims: A bool. If true, retains reduced dimensions with length 1. Defaults to "False".
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "x".
+*/
 REG_OP(ReduceProd)
     .INPUT(x,TensorType::NumberType())
     .INPUT(axis, TensorType::IndexNumberType())
@@ -160,6 +174,23 @@ REG_OP(ReduceProd)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceProd)
 
+/**
+*@brief Computes the product of elements across dimensions of a tensor.
+
+*@par Inputs:
+* One input: \n
+*x: A Tensor. Must be one of the following types: float16, float, int8, uint8.
+
+*@par Attributes:
+*@li axis: A required int8, int16, int32, or int64. Specifies the dimensions to reduce. No default value.
+*@li keep_dims: An optional bool. If "True", retains reduced dimensions with length 1. Defaults to "False".
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "x".
+
+*@attention Constraints:
+* "keep_dims" is in the range [-rank(input_tensor), rank(input_tensor)].
+*/
 REG_OP(ReduceProdD)
     .INPUT(x,TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16}))
     .OUTPUT(y,TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16}))

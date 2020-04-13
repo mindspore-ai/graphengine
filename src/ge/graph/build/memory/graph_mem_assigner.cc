@@ -296,7 +296,7 @@ Status GraphMemoryAssigner::ReAssignVirtualConcatMemory() {
       }
       output_list.at(0) = memory_offset_[0].mem_offset_;
       n->GetOpDesc()->SetOutputOffset(output_list);
-      GELOGI("Set Concat %s output offset to %zu.", n->GetOpDesc()->GetName().c_str(), memory_offset_[0].mem_offset_);
+      GELOGD("Set Concat %s output offset to %zu.", n->GetOpDesc()->GetName().c_str(), memory_offset_[0].mem_offset_);
 
       size_t extra_memory_size = 0;
       for (const auto &in_data_anchor : n->GetAllInDataAnchors()) {
@@ -401,7 +401,7 @@ Status GraphMemoryAssigner::ReAssignMergeMemory() {
         data_output_offset = output_list[index];
         max_output_size = tmp_output_size;
       }
-      GELOGI("merge=%s, input=%s, size=%ld, offset=%ld, max_size=%ld", n->GetName().c_str(),
+      GELOGD("merge=%s, input=%s, size=%ld, offset=%ld, max_size=%ld", n->GetName().c_str(),
              src_node->GetName().c_str(), tmp_output_size, data_output_offset, max_output_size);
     }
 
@@ -541,7 +541,7 @@ Status GraphMemoryAssigner::AssignReferenceMemory(const ge::NodePtr &node) {
       GE_CHECK_NOTNULL(peer_out_op_desc);
       output_list[out_data_anchor->GetIdx()] = peer_out_op_desc->GetOutputOffset()[peer_out_anchor_index];
     } else {
-      GELOGI("Reference output : origin %s name[%s] output[%d] offset is [%ld] stream_id[%ld]",
+      GELOGD("Reference output : origin %s name[%s] output[%d] offset is [%ld] stream_id[%ld]",
              node->GetOwnerComputeGraph()->GetName().c_str(), out_op_desc->GetName().c_str(), out_data_anchor->GetIdx(),
              output_list[out_data_anchor->GetIdx()], out_op_desc->GetStreamId());
     }
@@ -576,7 +576,7 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
 Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
   auto op_desc = node->GetOpDesc();
   GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(ge::FAILED, "op_desc is null."); return ge::FAILED);
-  GELOGI("Begin to assign atomic output memory, node = %s.", op_desc->GetName().c_str());
+  GELOGD("Begin to assign atomic output memory, node = %s.", op_desc->GetName().c_str());
 
   vector<int64_t> atomic_output_index;
   // If GetListInt fail, atomic_output_index is empty.
@@ -620,7 +620,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
 
     // If you have already assigned an atomic address, skip it, and you don't need to reassign it.
     if (is_assigned_mem) {
-      GELOGI(
+      GELOGD(
         "[IMAS]Atomic output : we have assigned atomic memory as the input of next node in "
         "ReAssignContinuousMemory function.");
       continue;
@@ -822,7 +822,7 @@ Status GraphMemoryAssigner::SetLoopGraphAtomicAttr(const ge::NodePtr &node, int6
         continue;
       }
 
-      GELOGI("SetLoopGraphAtomicAttr,  node is %s, op type is %s.", peer_out_node_desc->GetName().c_str(),
+      GELOGD("SetLoopGraphAtomicAttr,  node is %s, op type is %s.", peer_out_node_desc->GetName().c_str(),
              peer_out_node_desc->GetType().c_str());
 
       if (peer_out_node_desc->GetType() == ATOMICADDRCLEAN) {

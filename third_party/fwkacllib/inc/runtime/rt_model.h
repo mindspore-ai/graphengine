@@ -92,7 +92,6 @@ typedef struct tagAicpuModelInfo {
   uint64_t aicpuTaskPtr;
 } rtAicpuModelInfo_t;
 
-/* lint -e148 */
 typedef struct tagKernelTaskInfo {
   uint16_t blockDim;
   uint16_t argsCount;
@@ -102,7 +101,7 @@ typedef struct tagKernelTaskInfo {
   uint8_t *smDesc;
   uint8_t *args;
   uint16_t *argsOffset;
-} rtKernelTaskInfo_t; /* lint +e148 */
+} rtKernelTaskInfo_t;
 
 typedef struct tagKernelTaskInfoEx {
   uint32_t flags;

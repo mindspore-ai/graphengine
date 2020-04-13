@@ -84,8 +84,6 @@ Status Output::Init() {
     }
   }
 
-  GELOGI("Init output:%lu, %lu, %lu", input_num_, v_input_size_.size(), v_input_data_addr_.size());
-
   return SUCCESS;
 }
 
@@ -125,11 +123,10 @@ Status Output::SetDataBuf(DataBuffer &data_buf, uint32_t &data_count, size_t i, 
   }
 
   if (data_buf.isDataSupportMemShare && support_mem_share) {
-    GELOGI("No need to copy input data, user's output data buffer can be shared.");
+    GELOGD("No need to copy input data, user's output data buffer can be shared.");
   } else {
     // Copy result to Databuf
     uint32_t size = v_input_size_[i];
-    GELOGI("Tensor data size before: %u", size);
 
     graphStatus graph_status = TensorUtils::GetTensorSizeInBytes(*tensor_desc, size);
     if (graph_status != ge::GRAPH_SUCCESS) {
@@ -142,7 +139,7 @@ Status Output::SetDataBuf(DataBuffer &data_buf, uint32_t &data_count, size_t i, 
       GELOGE(rt_ret, "rtmemcpy error");
       return FAILED;
     }
-    GELOGI("Tensor data size: %u data_buflength: %u", size, data_buf.length);
+    GELOGD("Tensor data size: %u data_buflength: %u", size, data_buf.length);
   }
 
   ++data_count;

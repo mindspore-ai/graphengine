@@ -398,22 +398,25 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
     if (op_kernel_lib_name.empty()) {
       continue;
     }
-    if (op_desc->GetName() == bp_point_str) {
-      last_bp = current_idx;
-      GELOGI("Last bp name %s, idx %u", op_desc->GetName().c_str(), last_bp);
-    }
+
     if (op_desc->GetType() == NETOUTPUT) {
       iter_end = current_idx;
       GELOGI("Iter end name %s, idx %u", op_desc->GetName().c_str(), iter_end);
-    }
-    if (op_desc->GetName() == fp_point_str) {
-      first_fp = current_idx;
-      GELOGI("First fp name %s, idx %u", op_desc->GetName().c_str(), first_fp);
     }
 
     if (op_desc->GetType() == HCOMALLREDUCE) {
       ar_ppoint.emplace_back(current_idx);
       GELOGI("Allreduce name %s, idx %u", op_desc->GetName().c_str(), current_idx);
+    }
+
+    if (first_fp == 0 && IsProfPoint(op_desc, fp_point_str)) {
+      first_fp = current_idx;
+      GELOGI("First fp name %s, idx %u", op_desc->GetName().c_str(), first_fp);
+    }
+
+    if (IsProfPoint(op_desc, bp_point_str)) {
+      last_bp = current_idx;
+      GELOGI("Last bp name %s, idx %u", op_desc->GetName().c_str(), last_bp);
     }
   }
   ppoint.fp_index = first_fp;
@@ -526,4 +529,29 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
   }
   return SUCCESS;
 }
+
+bool TaskGenerator::IsProfPoint(const OpDescPtr &op, const std::string &name) {
+  if (op == nullptr) {
+    return false;
+  }
+
+  if (op->GetName() == name) {
+    return true;
+  }
+
+  std::vector<std::string> original_op_names;
+  bool ret = AttrUtils::GetListStr(op, ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, original_op_names);
+  if (!ret) {
+    return false;
+  }
+
+  for (auto &origin_name : original_op_names) {
+    if (origin_name == name) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 }  // namespace ge

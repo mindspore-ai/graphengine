@@ -18,7 +18,6 @@
 
 #include <string>
 
-#include "cce/aicpu_engine_struct.h"
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
@@ -41,17 +40,43 @@ std::shared_ptr<ModelManager> ModelManager::GetInstance() {
 
 ModelManager::ModelManager() { max_model_id_ = 0; }
 
-static Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType opType, uint64_t session_id) {
+Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id) {
   STR_FWK_OP_KERNEL param_base = {};
   void *devicebase = nullptr;
+  void *aicpu_kernel_addr = nullptr;
   const uint32_t kKernelType = 0;
   param_base.fwkKernelType = kKernelType;
-  param_base.fwkKernelBase.fwk_kernel.opType = opType;
+  param_base.fwkKernelBase.fwk_kernel.opType = op_type;
   param_base.fwkKernelBase.fwk_kernel.sessionID = session_id;
+  if (op_type == aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY) {
+    std::vector<uint64_t> v_aicpu_kernel;
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+    auto iter = model_aicpu_kernel_.find(model_key);
+    if (iter != model_aicpu_kernel_.end()) {
+      GELOGD("kernel destroy session_id %lu, model_id %u.", session_id, model_id);
+      v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
+      // Insert size of aicpu kernel vector in the first element
+      v_aicpu_kernel.insert(v_aicpu_kernel.begin(), v_aicpu_kernel.size());
+
+      auto kernel_size = sizeof(uint64_t) * (v_aicpu_kernel.size());
+      rtError_t rt_ret = rtMalloc(&aicpu_kernel_addr, kernel_size, RT_MEMORY_HBM);
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
+                      return RT_FAILED;)
+
+      rt_ret = rtMemcpy(aicpu_kernel_addr, kernel_size, v_aicpu_kernel.data(), kernel_size, RT_MEMCPY_HOST_TO_DEVICE);
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
+                      GE_CHK_RT(rtFree(aicpu_kernel_addr)); return FAILED;)
+      uint64_t kernel_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(aicpu_kernel_addr));
+      param_base.fwkKernelBase.fwk_kernel.kernelID = kernel_id_addr;
+      // Remove model key from map
+      model_aicpu_kernel_.erase(iter);
+    }
+  }
 
   rtError_t rt_ret = rtMalloc(&(devicebase), sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "malloc device memory failed.");
+    GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     return FAILED;
   }
 
@@ -59,6 +84,7 @@ static Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType opType, uint64_t 
     rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "memory copy to device failed.");
+    GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
     return FAILED;
   }
@@ -67,6 +93,7 @@ static Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType opType, uint64_t 
   rt_ret = rtStreamCreate(&stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "create stream failed.");
+    GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
     return FAILED;
   }
@@ -74,6 +101,7 @@ static Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType opType, uint64_t 
   rt_ret = rtKernelLaunchEx(devicebase, sizeof(STR_FWK_OP_KERNEL), 0, stream);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "rtKernelLaunchEx failed.");
+    GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
     GE_CHK_RT(rtStreamDestroy(stream));
     return FAILED;
@@ -81,11 +109,20 @@ static Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType opType, uint64_t 
   rt_ret = rtStreamSynchronize(stream);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "rtStreamSynchronize failed.");
+    GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
     GE_CHK_RT(rtStreamDestroy(stream));
     return FAILED;
   }
-
+  if (aicpu_kernel_addr != nullptr) {
+    rt_ret = rtFree(aicpu_kernel_addr);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(rt_ret, "free memory failed.");
+      GE_CHK_RT(rtFree(devicebase));
+      GE_CHK_RT(rtStreamDestroy(stream));
+      return FAILED;
+    }
+  }
   rt_ret = rtFree(devicebase);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "free memory failed.");
@@ -107,7 +144,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
     GELOGI("The session: %lu not created.", session_id);
     return;
   } else {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0);
     if (ret != SUCCESS) {
       GELOGW("The session: %lu destroy failed.", session_id);
     } else {
@@ -117,9 +154,36 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
   }
 }
 
+ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
+  GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
+  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Destroy aicpu kernel failed.");
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
+  std::vector<uint64_t> v_aicpu_kernel;
+  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
+    v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
+  }
+  v_aicpu_kernel.push_back(kernel_id);
+  model_aicpu_kernel_[model_key] = v_aicpu_kernel;
+  return SUCCESS;
+}
+
 ModelManager::~ModelManager() {
   std::lock_guard<std::mutex> lock(map_mutex_);
   model_map_.clear();
+  model_aicpu_kernel_.clear();
 
   GE_IF_BOOL_EXEC(device_count > 0, GE_CHK_RT(rtDeviceReset(0)));
 }
@@ -687,7 +751,7 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   auto it = sess_ids_.find(session_id);
   // never been created by any model
   if (it == sess_ids_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0);
     if (ret == SUCCESS) {
       (void)sess_ids_.insert(session_id);
       GELOGI("The session: %lu create success.", session_id);

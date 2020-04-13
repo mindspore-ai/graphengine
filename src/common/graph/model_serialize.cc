@@ -265,13 +265,13 @@ bool ModelSerializeImp::HandleNodeNameRef() {
                item.dst_node_name.c_str(), item.dst_in_index);
         return false;
       }
-      GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");  // lint !e737
+      GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");
     } else {
       // Control edge
       auto src_anchor = src_node_it->second->GetOutControlAnchor();
       auto dst_anchor = item.dst_node->GetInControlAnchor();
       if (src_anchor != nullptr && dst_anchor != nullptr) {
-        GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");  // lint !e737
+        GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");
       }
     }
   }

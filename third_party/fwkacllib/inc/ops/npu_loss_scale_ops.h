@@ -33,15 +33,39 @@ REG_OP(NPUGetFloatStatusOperator)
     .OUTPUT(data, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(NPUGetFloatStatusOperator)
 
+/**
+*@brief Produces a variable with 0 in memory.
+
+*@par Outputs:
+*y: A Tensor of type int32, output eight numbers with a value of zero.
+*/
 REG_OP(NPUAllocFloatStatus)
     .OUTPUT(data, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(NPUAllocFloatStatus)
 
+/**
+*@brief Set the value of address 0x40000 to 0 in each core.
+
+*@par Inputs:
+*@li addr: A tensor of type float32.
+
+*@par Outputs:
+*data: A Tensor of type float32.
+*/
 REG_OP(NPUClearFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})
     .OUTPUT(data, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(NPUClearFloatStatus)
 
+/**
+*@brief Get the value of address 0x40000.
+
+*@par Inputs:
+*@li addr: A tensor of type float32.
+
+*@par Outputs:
+*data: A Tensor of type float32.
+*/
 REG_OP(NPUGetFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})
     .OUTPUT(data, TensorType({DT_FLOAT}))

@@ -24,7 +24,7 @@
 namespace ge {
 class AssertPass : public BaseNodePass {
  public:
-  Status Run(NodePtr& node) override; /*lint !e148*/
+  Status Run(NodePtr& node) override;
 
  private:
   ///
@@ -33,7 +33,7 @@ class AssertPass : public BaseNodePass {
   /// @param nodes_unused nodes to be deleted
   /// @return void
   ///
-  void CollectUnusedNode(const NodePtr& assert_node, std::vector<ge::NodePtr>& nodes_unused); /*lint !e148*/
+  void CollectUnusedNode(const NodePtr& assert_node, std::vector<ge::NodePtr>& nodes_unused);
 
   ///
   /// remove unused nodes from graph
@@ -41,7 +41,7 @@ class AssertPass : public BaseNodePass {
   /// @param nodes_unused nodes to be deleted
   /// @return Status
   ///
-  Status RemoveUnusedNode(std::vector<NodePtr>& nodes_unused); /*lint !e148*/
+  Status RemoveUnusedNode(std::vector<NodePtr>& nodes_unused);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_ASSERT_PASS_H_

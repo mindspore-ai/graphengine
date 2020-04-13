@@ -44,9 +44,10 @@ enum FWKAdptAPIRetCode {
 // Notice: add new operate type  need check with OMM, and make sure append to the end line.
 enum FWKOperateType {
   FWK_ADPT_SESSION_CREATE = 0,
-  FWK_ADPT_KERNEL_RUN = 1,
-  FWK_ADPT_SESSION_DESTROY = 2,
-  FWK_ADPT_SINGLE_OP_RUN = 3
+  FWK_ADPT_KERNEL_RUN,
+  FWK_ADPT_KERNEL_DESTROY,
+  FWK_ADPT_SESSION_DESTROY,
+  FWK_ADPT_SINGLE_OP_RUN
 };
 
 // API Parameter Structure

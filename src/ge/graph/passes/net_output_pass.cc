@@ -169,7 +169,6 @@ Status NetOutputPass::RemoveUnusedNode(const ge::ComputeGraphPtr &graph) {
       GELOGE(INTERNAL_ERROR, "Remove node failed, node name:%s.", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    GELOGI("Net output pass remove node:%s.", node->GetName().c_str());
   }
   return SUCCESS;
 }
@@ -209,7 +208,7 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
       GELOGE(INTERNAL_ERROR, "Update output desc failed, index:%u.", index);
       return INTERNAL_ERROR;
     }
-    GELOGI("Update desc, format:%s, data type:%s, index:%u.",
+    GELOGD("Update desc, format:%s, data type:%s, index:%u.",
            TypeUtils::FormatToSerialString(output_in_desc.GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(output_in_desc.GetDataType()).c_str(), index);
   }
@@ -234,7 +233,7 @@ Status NetOutputPass::AddCtrlEdgeForTargets(const ge::NodePtr &net_out_node) {
              net_out_node->GetName().c_str(), node->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    GELOGI("Add ctrl edge to netoutput node[%s] for target node [%s] success!", net_out_node->GetName().c_str(),
+    GELOGD("Add ctrl edge to netoutput node[%s] for target node [%s] success!", net_out_node->GetName().c_str(),
            node->GetName().c_str());
   }
   return SUCCESS;
@@ -265,7 +264,7 @@ Status NetOutputPass::AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, con
              item.second, net_input_index);
       return INTERNAL_ERROR;
     }
-    GELOGI("AddEdge to output node, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(), item.second,
+    GELOGD("AddEdge to output node, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(), item.second,
            net_input_index);
     net_input_index++;
   }
@@ -417,7 +416,7 @@ Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraph
         node->GetOutDataNodesSize() == 0 && node->GetOutControlNodes().size() == 0) {
       GE_CHK_STATUS_RET(GraphUtils::AddEdge(node->GetOutControlAnchor(), net_out_node->GetInControlAnchor()),
                         "add edge failed");
-      GELOGI("Add ctrl edge success. src name :%s, dst name :%s", node->GetName().c_str(),
+      GELOGD("Add ctrl edge success. src name :%s, dst name :%s", node->GetName().c_str(),
              net_out_node->GetName().c_str());
     }
   }
@@ -488,11 +487,10 @@ Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
       auto it = targets_.find(src_node);
       if (it != targets_.end()) {
         iter = output_nodes_info.erase(iter);
-        GELOGI("node [%s] is in processed targets, do not add inout for netoutput!", src_node->GetName().c_str());
+        GELOGD("node [%s] is in processed targets, do not add inout for netoutput!", src_node->GetName().c_str());
         continue;
       }
       AddInOutForNetOutputOp(graph, net_output_desc, src_node, src_index);
-      GELOGI("Add output node:%s, index:%d.", src_node->GetName().c_str(), src_index);
       is_input_const.push_back(PassUtils::IsConstant(src_node));
       ++iter;
     }

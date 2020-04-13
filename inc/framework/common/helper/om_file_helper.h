@@ -88,5 +88,4 @@ class OmFileSaveHelper {
   OmFileContext context_;
 };
 }  // namespace ge
-/*lint +e148*/
 #endif  // INC_FRAMEWORK_COMMON_HELPER_OM_FILE_HELPER_H_

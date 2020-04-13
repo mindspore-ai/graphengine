@@ -120,9 +120,13 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   GELOGI("session_id: %lu", session_id);
   GE_CHECK_NOTNULL(ModelManager::GetInstance());
   GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
-                  GELOGE(ret, "CreateAicpuSession error.");
-                  return ret;)
-
+                  GELOGE(FAILED, "CreateAicpuSession error.");
+                  return FAILED;)
+  // 4.1 Collect aicpu kernel
+  uint64_t kernel_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.kernelID;
+  GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuKernel(session_id, davinci_model->Id(), kernel_id) != SUCCESS,
+                  GELOGE(FAILED, "CreateAicpuKernel error.");
+                  return FAILED;)
   // 5. Return result
   rtError_t rt_ret = rtMalloc(&kernel_buf_, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc error: 0x%X", rt_ret); return FAILED;)

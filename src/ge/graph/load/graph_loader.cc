@@ -336,7 +336,7 @@ Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model
     auto model_manager = ModelManager::GetInstance();
     GE_CHECK_NOTNULL(model_manager);
     Status ret =
-        model_manager->LoadModelOffline(model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
+      model_manager->LoadModelOffline(model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
     if (ret != SUCCESS) {
       GELOGE(ret, "Load model failed, model_id:%u.", model_id);
       return ret;
@@ -426,6 +426,17 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
   // Add small page memory size
   free = static_cast<int64_t>(free_mem + VarManager::Instance(0)->GetUseMaxMemorySize() - total_mem);
   GELOGI("GetMemoryInfo free[%zu], total[%zu], return free[%ld]", free_mem, total_mem, free);
+  return SUCCESS;
+}
+
+Status GraphLoader::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->DestroyAicpuKernel(session_id, model_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Destroy aicpu kernel failed.");
+    return ret;
+  }
   return SUCCESS;
 }
 }  // namespace ge

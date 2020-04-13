@@ -2543,41 +2543,6 @@ REG_OP(Bias)
     .ATTR(bias_from_blob, Bool, true)
     .OP_END_FACTORY_REG(Bias)
 
-/**
-* @brief Computes the gradient for Local Response Normalization.
-
-* @par Inputs:
-* @li grads: A 4D Tensor of type float16 or float32.
-* @li x: A 4D Tensor of type float16 or float32.
-* @li y: A 4D Tensor of type float16 or float32.
-
-* @par Attributes:
-* @li depth_radius: An optional int, specifying the half-width of the
-* normalization window. Defaults to "5".
-* @li bias: An optional float32. An offset, usually > 0 to avoid dividing by 0.
-* Defaults to "1".
-* @li alpha: An optional float32. A scaling factor, usually positive.
-* Defaults to "1".
-* @li beta: An optional float32. An exponent. Defaults to "0.5".
-
-* @par Outputs:
-* z: A Tensor. Has the same type and shape as "grads".
-
-* @attention Constraints:
-* "x" and "y" must have the same shape and type as "grads".
-*/
-
-REG_OP(LRNGrad)
-    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(z, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .ATTR(depth_radius, Int, 5)
-    .ATTR(bias, Float, 1.0)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.5)
-    .OP_END_FACTORY_REG(LRNGrad)
-
 REG_OP(ConfusionMulGrad)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2588,16 +2553,13 @@ REG_OP(ConfusionMulGrad)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ConfusionMulGrad)
 
-REG_OP(LRN)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .ATTR(depth_radius, Int, 5)
-    .ATTR(bias, Float, 1.0)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.5)
-    .ATTR(norm_region, String, "ACROSS_CHANNELS")
-    .OP_END_FACTORY_REG(LRN)
-
+REG_OP(FusedMulAddNL2loss)
+    .INPUT(x1, TensorType::NumberType())
+    .INPUT(x2, TensorType::NumberType())
+    .INPUT(x3, TensorType::NumberType())
+    .OUTPUT(y1, TensorType::NumberType())
+    .OUTPUT(y2, TensorType::NumberType())
+    .OP_END_FACTORY_REG(FusedMulAddNL2loss)
 }  // namespace ge
 
 #endif  // GE_OP_ELEWISE_CALCULATION_OPS_H

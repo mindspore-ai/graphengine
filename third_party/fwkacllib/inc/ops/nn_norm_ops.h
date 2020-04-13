@@ -236,6 +236,256 @@ REG_OP(ConfusionSoftmaxGrad)
   .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
   .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
   .OP_END_FACTORY_REG(ConfusionSoftmaxGrad)
+
+/**
+*@brief Layernorm operator interface implementation
+*  calculating: x, gamma, beta
+*  mean  = np.mean(x, reduce_axis, keepdims=True)
+*  variance = np.mean(np.power((x - mean),2), reduce_axis, keepdims=True)
+*  y = gamma*((x - mean) / np.sqrt(variance + 0.001)) + beta
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Attributes:
+* @li begin_norm_axis: A required attribute, the type is int32.
+* @li begin_params_axis: A required attribute,the type is int32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li y: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+*/
+REG_OP(LayerNorm)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(begin_norm_axis, Int, 0)
+    .ATTR(begin_params_axis, Int, 0)
+    .ATTR(epsilon, Float, 0.0000001)
+    .OP_END_FACTORY_REG(LayerNorm)
+
+/**
+*@brief LayerNormGrad operator interface implementation
+*  calculating: dy, x, variance, mean, gamma
+*  pd_xl = data_dy*data_gamma
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
+*           np.power((data_variance + EPSLON), (-1.5))),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl
+*            np.power((data_variance + EPSLON), (-0.5))),
+*            reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean)
+*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True)
+*  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
+
+*@par Inputs:
+*Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+*/
+REG_OP(LayerNormGrad)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(LayerNormGrad)
+
+/**
+*@brief LayerNormXBackprop operator interface implementation
+*  calculating: dy, x, variance, mean, gamma
+*  pd_xl = data_dy*data_gamma
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
+*           np.power((data_variance + EPSLON), (-1.5))),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl
+*            np.power((data_variance + EPSLON), (-0.5))),
+*            reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean)
+*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True)
+*  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
+
+*@par Inputs:
+*Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+*/
+REG_OP(LayerNormXBackprop)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(LayerNormXBackprop)
+
+/**
+*@brief LayerNormBetaGammaBackprop operator interface implementation
+*  calculating: dy, x, variance, mean
+*  pd_xl = data_dy*data_gamma
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
+*           np.power((data_variance + EPSLON), (-1.5))),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl
+*            np.power((data_variance + EPSLON), (-0.5))),
+*            reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*  pd_gamma = np.sum((data_dy*(data_x - data_mean)
+*             np.power((data_variance + EPSLON), (-0.5))), param_axis, keepdims=True)
+*  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
+
+*@par Inputs:
+*Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+*/
+REG_OP(LayerNormBetaGammaBackprop)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(shape_gamma, ListInt)
+    .OP_END_FACTORY_REG(LayerNormBetaGammaBackprop)
+
+/**
+*@brief Return "output" according to the algorithm of dropout_do_mask: \n
+*  scale_x = x *(1 / keep_prob)
+*  output = select(mask == 1, scale_x, 0)
+
+*@par Inputs:
+*Three inputs, including: \n
+* @li x: A mutable Tensor. Must be one of the following types:
+*     float16, float32
+* @li mask: A mutable Tensor. Must met all of the following rules:
+*     shape of mask should be 1D.
+*     dtype of mask should be uint8.
+*     value of shape should met the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128 //8
+* @li keep_prob: A mutable Tensor. Must met all of the following rules:
+*     shape of "keep_prob" should be (1,) or [1,].
+*     Has the same type as "x".
+
+*@par Output:
+*y: A mutable Tensor. Has the same type as "x".
+*/
+REG_OP(DropOutDoMask)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(DropOutDoMask)
+
+/**
+*@brief Local Response Normalization.
+
+*@par Inputs:
+*One input, including:
+*@li x: A Tensor. Must be 4-D shape, and only support the following types: float16, float32.
+
+*@par Attributes:
+*@li depth_radius: An optional int, specifying the half-width of the
+* normalization window. Defaults to "5".
+*@li bias: An optional float32. An offset, usually > 0 to avoid dividing by 0.
+* Defaults to "1".
+*@li alpha: An optional float32. A scaling factor, usually positive.
+* Defaults to "1".
+*@li beta: An optional float32. An exponent. Defaults to "0.5".
+*@li norm_region: An optional string. A mode option. Defaults to "ACROSS_CHANNELS".
+
+*@par Outputs:
+*y: A Tensor. Has the same data type and shape as "x".
+*/
+REG_OP(LRN)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(depth_radius, Int, 5)
+    .ATTR(bias, Float, 1.0)
+    .ATTR(alpha, Float, 1.0)
+    .ATTR(beta, Float, 0.5)
+    .ATTR(norm_region, String, "ACROSS_CHANNELS")
+    .OP_END_FACTORY_REG(LRN)
+
+/**
+* @brief Computes the gradient for Local Response Normalization.
+
+* @par Inputs:
+* @li grads: A 4D Tensor of type float16 or float32.
+* @li x: A 4D Tensor of type float16 or float32.
+* @li y: A 4D Tensor of type float16 or float32.
+
+* @par Attributes:
+* @li depth_radius: An optional int, specifying the half-width of the
+* normalization window. Defaults to "5".
+* @li bias: An optional float32. An offset, usually > 0 to avoid dividing by 0.
+* Defaults to "1".
+* @li alpha: An optional float32. A scaling factor, usually positive.
+* Defaults to "1".
+* @li beta: An optional float32. An exponent. Defaults to "0.5".
+
+* @par Outputs:
+* z: A Tensor. Has the same type and shape as "grads".
+
+* @attention Constraints:
+* "x" and "y" must have the same shape and type as "grads".
+*/
+REG_OP(LRNGrad)
+    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(z, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(depth_radius, Int, 5)
+    .ATTR(bias, Float, 1.0)
+    .ATTR(alpha, Float, 1.0)
+    .ATTR(beta, Float, 0.5)
+    .OP_END_FACTORY_REG(LRNGrad)
+
 }  // namespace ge
 
 #endif  //GE_OP_NN_NORM_OPS_H

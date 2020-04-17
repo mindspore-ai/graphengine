@@ -74,4 +74,8 @@ TEST_F(UtestStreamResource, test_do_malloc_memory) {
   StreamResource::DoMallocMemory(101, max_allocated, allocated);
   ASSERT_EQ(allocated.size(), 2);
   ASSERT_EQ(max_allocated, 101);
+
+  for (auto res : allocated) {
+      rtFree(res);
+  }
 }

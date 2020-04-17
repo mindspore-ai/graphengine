@@ -17,7 +17,7 @@ cmake_minimum_required(VERSION 3.14)
 project (GraphEngine[CXX])
 set(CMAKE_CXX_STANDARD 14)
 
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_BINARY_DIR})
 set(GE_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR})
 set(GE_PROTO_DIR ${GE_SOURCE_DIR}/src)
 
@@ -71,7 +71,6 @@ elseif(DEFINED ENV{D_LINK_PATH})
     find_library(msprof libmsprof.so ${GE_LIB_PATH})
     find_library(register libregister.so ${GE_LIB_PATH})
     find_library(hccl libhccl.so ${GE_LIB_PATH})
-    find_library(cce libcce.so ${GE_LIB_PATH})
     find_library(resource libresource.so ${GE_LIB_PATH})
 else()
     # Ascend mode

@@ -89,6 +89,6 @@ typedef enum tagHiAiNpuModuleId {
 
 #define HIAI_NPU_ERR_CODE_HEAD(npuLocal, codeType, errLevel, moduleId)                              \
   (HIAI_NPU_LOC_BIT(npuLocal) + HIAI_NPU_CODE_TYPE_BIT(codeType) + HIAI_NPU_ERR_LEV_BIT(errLevel) + \
-  HIAI_NPU_MOD_ID_BIT(moduleId))
+   HIAI_NPU_MOD_ID_BIT(moduleId))
 
 #endif  // INC_COMMON_NPU_ERROR_DEFINE_H_

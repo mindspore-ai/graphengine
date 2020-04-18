@@ -1,5 +1,5 @@
-set(ge_gtest_CXXFLAGS "-D_FORTIFY_SOURCE=2 -O2")
-set(ge_gtest_CFLAGS "-D_FORTIFY_SOURCE=2 -O2")
+set(ge_gtest_CXXFLAGS "-D_FORTIFY_SOURCE=2 -O2 -fstack-protector-all -Wl,-z,relro,-z,now,-z,noexecstack")
+set(ge_gtest_CFLAGS "-D_FORTIFY_SOURCE=2 -O2 -fstack-protector-all -Wl,-z,relro,-z,now,-z,noexecstack")
 
 graphengine_add_pkg(ge_gtest
         VER 1.8.0

@@ -24,6 +24,8 @@
 #include <securec.h>
 #include <sys/prctl.h>
 #include <map>
+#include <algorithm>
+
 #include "common/debug/log.h"
 #include "common/formats/formats.h"
 #include "common/formats/utils/formats_trans_utils.h"

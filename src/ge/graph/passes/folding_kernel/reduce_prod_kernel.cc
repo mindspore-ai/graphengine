@@ -163,7 +163,7 @@ void ReduceProdKernel::ShapeCal(const ge::OpDescPtr &op_desc_ptr, const std::vec
   int32_t data_dim_size = static_cast<int32_t>(data_dims.size());
   const uint8_t *axis_data = axis_tensor->GetData().GetData();
   if (axis_data == nullptr) {
-    GE_LOGE(param axis_data must not be null.);
+    GE_LOGE("param axis_data must not be null.");
     return;
   }
   int32_t axis = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(axis_data)));

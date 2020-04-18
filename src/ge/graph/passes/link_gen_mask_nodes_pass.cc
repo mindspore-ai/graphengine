@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"

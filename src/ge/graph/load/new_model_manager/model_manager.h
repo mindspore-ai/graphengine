@@ -24,6 +24,7 @@
 #include <memory>
 #include <set>
 #include <vector>
+#include <string>
 #include "cce/aicpu_engine_struct.h"
 #include "common/types.h"
 #include "common/ge_types.h"

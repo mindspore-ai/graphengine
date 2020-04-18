@@ -20,7 +20,8 @@
 #include "debug/ge_log.h"
 #include "debug/ge_util.h"
 
-using namespace std;
+using std::vector;
+using std::function;
 
 namespace ge {
 

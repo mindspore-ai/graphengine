@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#include <vector>
+#include <utility>
+#include <map>
+
 #include "graph/load/new_model_manager/data_dumper.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/debug/ge_attr_define.h"

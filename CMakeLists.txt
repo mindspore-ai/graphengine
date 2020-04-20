@@ -109,7 +109,7 @@ else()
 endif ()
 
 # force __FILE__ to show relative path of file, from source directory, as cmake project makes __FILE__ absolute directory
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILE__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"' -Wno-builtin-macro-redefined")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILE__='\"$(subst $(realpath ${CMAKE_SOURCE_DIR})/,,$(abspath $<))\"' -Wno-builtin-macro-redefined")
 
 # compile libraries from following directories
 # libgraph is compiled in any situation

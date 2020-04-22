@@ -238,13 +238,13 @@ class EventWaitTaskInfo : public EventTaskInfo {
 
 class FusionStartTaskInfo : public TaskInfo {
  public:
-  FusionStartTaskInfo(uint32_t stream_id) : TaskInfo(stream_id, TaskInfoType::FUSION_START) {}
+  explicit FusionStartTaskInfo(uint32_t stream_id) : TaskInfo(stream_id, TaskInfoType::FUSION_START) {}
   ~FusionStartTaskInfo() override {}
 };
 
 class FusionEndTaskInfo : public TaskInfo {
  public:
-  FusionEndTaskInfo(uint32_t stream_id) : TaskInfo(stream_id, TaskInfoType::FUSION_END) {}
+  explicit FusionEndTaskInfo(uint32_t stream_id) : TaskInfo(stream_id, TaskInfoType::FUSION_END) {}
   ~FusionEndTaskInfo() override {}
 };
 

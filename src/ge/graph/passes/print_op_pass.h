@@ -21,7 +21,6 @@
 #include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/common/omg_util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/graph.h"
 #include "graph/passes/base_pass.h"
 #include "graph/utils/graph_utils.h"

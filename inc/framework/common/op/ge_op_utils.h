@@ -172,7 +172,7 @@ class OpUtils {
 
   ///
   /// @ingroup domi_omg
-  /// @brief Convert the convolution¡®s weight data from [h, w, c, k] to [k, c, h, w]
+  /// @brief Convert the convolution weight data from [h, w, c, k] to [k, c, h, w]
   /// @param [in] input Weight data in HWCK format
   /// @param [in] H value of H dimension
   /// @param [in] W value of W dimension
@@ -183,7 +183,7 @@ class OpUtils {
   static void TransDataHWCK2KCHW(const void *input, int64_t H, int64_t W, int64_t C, int64_t K, void **output);
   ///
   /// @ingroup domi_omg
-  /// @brief Converts the convolution¡®s weight data from [k, c, h, w] to [h, w, c, k].
+  /// @brief Converts the convolution weight data from [k, c, h, w] to [h, w, c, k].
   /// @param [in] input Weight data in HWCK format
   /// @param [in] K value of K dimension
   /// @param [in] C value of C dimension

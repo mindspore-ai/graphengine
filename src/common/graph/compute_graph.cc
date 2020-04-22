@@ -640,7 +640,7 @@ graphStatus ComputeGraph::SortNodes(std::vector<NodePtr> &stack, std::map<NodePt
   /// 2. Compare two indices, if not match, swap the positions of two inputs
   /// *: Remind: stack is reverse-order
   for (size_t i = 0; i < stack.size(); ++i) {
-    //[stack: should not be null]
+    // [stack: should not be null]
     for (size_t j = i + 1; j < stack.size(); ++j) {
       // If not found in 'inputs_order_', skip it
       auto it_i = std::find(inputs_order_.begin(), inputs_order_.end(), stack[i]->GetName());

@@ -20,6 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/graph_utils.h"

@@ -22,7 +22,6 @@
 #include <queue>
 #include <set>
 
-//#include "./array_ops.h"
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"

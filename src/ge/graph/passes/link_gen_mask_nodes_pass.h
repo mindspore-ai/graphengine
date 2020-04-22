@@ -17,6 +17,10 @@
 #ifndef GE_GRAPH_PASSES_LINK_GEN_MASK_NODES_PASS_H_
 #define GE_GRAPH_PASSES_LINK_GEN_MASK_NODES_PASS_H_
 
+#include <vector>
+#include <map>
+#include <string>
+
 #include "graph/graph.h"
 #include "inc/graph_pass.h"
 

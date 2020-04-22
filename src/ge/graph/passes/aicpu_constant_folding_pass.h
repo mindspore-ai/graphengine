@@ -18,6 +18,7 @@
 #define GE_GRAPH_PASSES_AICPU_CONSTANT_FOLDING_PASS_H_
 
 #include <vector>
+#include <string>
 
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "graph/passes/folding_pass.h"

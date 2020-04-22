@@ -515,7 +515,6 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
   std::string dump_model(DUMP_ALL_MODEL);
   std::string dump_path("/");
   std::set<std::string> dump_layers;
-  std::string dump_layer_count;
 
   auto iter_dump_status = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_STATUS);
   if (iter_dump_status != command.cmd_params.end()) {

@@ -51,7 +51,6 @@ void Anchor::UnlinkAll() noexcept {
       if (Unlink(peer_anchor_ptr) != GRAPH_SUCCESS) {
         GELOGW("unlink peer_anchor_ptr failed.");
       }
-
     } while (!peer_anchors_.empty());
   }
 }

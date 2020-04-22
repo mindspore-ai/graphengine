@@ -19,6 +19,8 @@
 
 #include <string>
 #include <memory>
+#include <vector>
+#include <map>
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"

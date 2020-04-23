@@ -27,6 +27,7 @@
 #include "session/session_manager.h"
 #include "graph/opsproto_manager.h"
 #include "graph/utils/type_utils.h"
+#include "graph/manager/util/rt_context_util.h"
 #include "register/op_registry.h"
 
 using domi::GetContext;
@@ -183,6 +184,8 @@ Status GEFinalize() {
   }
 
   if (kGeInitialized && ret == SUCCESS) {
+    // Unified destruct rt_context
+    RtContextUtil::GetInstance().DestroyrtContexts();
     kGeInitialized = false;
   }
 

@@ -317,6 +317,11 @@ Status DataDumper::UnloadDumpInfo() {
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuUnloadFlag);
 
+  for (const auto &op_iter : op_list_) {
+    aicpu::dump::Task task;
+    task.set_task_id(op_iter.task_id);
+    op_mapping_info.mutable_task()->Add(std::move(task));
+  }
   std::string proto_str;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);

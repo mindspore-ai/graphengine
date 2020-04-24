@@ -135,7 +135,7 @@ rm -f ${OUTPUT_PATH}/lib*_stub.so
 chmod -R 750 ${OUTPUT_PATH}
 find ${OUTPUT_PATH} -name "*.so*" -print0 | xargs -0 chmod 500
 
-echo "---------------- GraphEngine output package generated ----------------"
+echo "---------------- GraphEngine output generated ----------------"
 
 if [[ "X$ENABLE_GE_ST" = "Xon" ]]; then
     cp ${BUILD_PATH}/graphengine/tests/st/st_resnet50_train ${OUTPUT_PATH}
@@ -170,3 +170,13 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
         gcovr -r ./ --exclude 'third_party' --exclude 'build' --exclude 'tests' --exclude 'prebuild' --exclude 'inc' --print-summary --html --html-details -d -o cov/index.html
     fi
 fi
+
+# generate output package in tar form, including ut/st libraries/executables
+cd ${BASEPATH}
+mkdir -p output/plugin/nnengine/ge_config/
+find output/ -name graphengine_lib.tar -exec rm {} \;
+cp src/ge/engine_manager/engine_conf.json output/plugin/nnengine/ge_config/
+find output/ -maxdepth 1 -name libengine.so -exec mv {} output/plugin/nnengine/ \;
+tar -cf graphengine_lib.tar output/*
+mv -f graphengine_lib.tar output
+echo "---------------- GraphEngine package archive generated ----------------"

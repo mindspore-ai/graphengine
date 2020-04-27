@@ -39,10 +39,10 @@ def test_resnet50_train():
             os.environ['PYTHONPATH']=real_pythonpath
     print('PYTHONPATH: '+os.environ.get('PYTHONPATH'))
 
-    os.environ['ASCEND_OPP_PATH']='/usr/local/HiAI/runtime/ops'
-    os.environ['ASCEND_ENGINE_PATH']='/usr/local/HiAI/runtime/lib64/plugin/opskernel/libaicpu_ms_engine.so:' \
-                                     '/usr/local/HiAI/runtime/lib64/plugin/opskernel/libfe.so:' \
-                                     '/usr/local/HiAI/runtime/lib64/plugin/opskernel/librts_engine.so:'+ \
+    os.environ['ASCEND_OPP_PATH']='/usr/local/Ascend/opp'
+    os.environ['ASCEND_ENGINE_PATH']='/usr/local/Ascend/fwkacllib/lib64/plugin/opskernel/libaicpu_engine.so:' \
+                                     '/usr/local/Ascend/fwkacllib/lib64/plugin/opskernel/libfe.so:' \
+                                     '/usr/local/Ascend/fwkacllib/lib64/plugin/opskernel/librts_engine.so:'+ \
                                      ge_lib_dir + '/libge_local_engine.so'
     print('ASCEND_OPP_PATH: '+os.environ.get('ASCEND_OPP_PATH'))
     print('ASCEND_ENGINE_PATH: '+os.environ.get('ASCEND_ENGINE_PATH'))

@@ -1,17 +1,20 @@
-# Release 0.1.0-alpha
+# Release 0.2.0-alpha
 
-This is the initial release of GraphEngine(GE) which was designed by the researchers and engineers in Huawei Technologies Co.,Ltd. GE is implemented via C++ and acts as a powerful backing force for MindSpore. GE is a linked up module between MindSpore front end and Ascend Chips.
+## Major Features and Improvements
+- Provides a common graph-level option, and multiple requirements can also share this mechanism in the future.
+- Improve graph compilation performance.
+- Optimize memory allocation.
+- Optimize serveral operators e.g., Slice, StridedSlice, ScatterMax etc.
 
-## Main features
+## Bugfixes 
+- Delete redudant codes.([#I1EU2Z](https://gitee.com/mindspore/graphengine/issues/I1EU2Z))
+- Fix HCCL initilization bugs under train and eval scenarios.([#I1DIBJ](https://gitee.com/mindspore/graphengine/issues/I1DIBJ))
+- Optimize compilation and linking process, enhancing efficiency and performance of concurrent compilation of GraphEngine and MindSpore. ([#I1DFIY](https://gitee.com/mindspore/mindspore/issues/I1DFIY))
+- Fix the bug that GE checkpoint cannot save variable names correctly.([#I1DIBJ](https://gitee.com/mindspore/graphengine/issues/I1DIBJ))
+- Save dump files on every iteration instead of every execution.([#I1DIBJ](https://gitee.com/mindspore/graphengine/issues/I1DIBJ))
 
-- GE API
-  - GE provides an unified interface with the front end including graph management interfaces i.e., graph loading and graph execution, and GE core initiallization and finalization interfaces.
 
-- Graph Processing
-  - Six parts of graph processing operations are executed within GE, i.e. graph preparation, graph partition, graph optimization, graph compilation, graph loading and graph execution.
-  - GE highly optimizes the graph defined by the front end to a form which can be effectively executed on Ascend Chips.
-  - GE supports several optimizations to reduce computation costs, e.g. operator fusion, parallel operation, data format transition.
+## Thanks to our Contributors
+Thanks goes to these wonderful people: Wang Cong, Tianchun Xu, Haoran Yang.
 
-- Debugging
-  - GE supports data dump and graph dump for debugging.
-  - GE provides profiling tools to thoroughly analyze the speed performances.
+Contributions of any kind are welcome!

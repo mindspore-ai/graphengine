@@ -29,7 +29,18 @@
 using cce::CC_STATUS_SUCCESS;
 using cce::ccStatus_t;
 
-#define GE_LOGE(...) DAV_LOGE("GE", __VA_ARGS__)
+#if !defined(__ANDROID__) && !defined(ANDROID)
+#define DOMI_LOGE(...) DAV_LOGE("DOMI", __VA_ARGS__)
+#else
+#include <android/log.h>
+#if defined(BUILD_VERSION_PERF)
+#define DOMI_LOGE(fmt, ...)
+#else
+// The Android system has strict log control. Do not modify the log.
+#define DOMI_LOGE(fmt, ...) \
+  __android_log_print(ANDROID_LOG_ERROR, "NPU_FMK", "%s %s(%d)::" #fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+#endif
+#endif
 
 // ge marco
 #define GE_LOGI_IF(condition, ...) \
@@ -44,7 +55,7 @@ using cce::ccStatus_t;
 
 #define GE_LOGE_IF(condition, ...) \
   if ((condition)) {               \
-    GE_LOGE(__VA_ARGS__);          \
+    DOMI_LOGE(__VA_ARGS__);        \
   }
 
 // If expr is not SUCCESS, print the log and return the same value
@@ -52,7 +63,7 @@ using cce::ccStatus_t;
   do {                                 \
     const ge::Status _status = (expr); \
     if (_status != ge::SUCCESS) {      \
-      GE_LOGE(__VA_ARGS__);            \
+      DOMI_LOGE(__VA_ARGS__);          \
       return _status;                  \
     }                                  \
   } while (0);
@@ -62,7 +73,7 @@ using cce::ccStatus_t;
   do {                                 \
     const ge::Status _status = (expr); \
     if (_status != ge::SUCCESS) {      \
-      GE_LOGE(__VA_ARGS__);            \
+      DOMI_LOGE(__VA_ARGS__);          \
     }                                  \
   } while (0);
 
@@ -73,6 +84,15 @@ using cce::ccStatus_t;
     if (_status != ge::SUCCESS) {      \
       return _status;                  \
     }                                  \
+  } while (0);
+
+// If expr is not GRAPH_SUCCESS, print the log and return FAILED
+#define GE_CHK_GRAPH_STATUS_RET(expr, ...) \
+  do {                                     \
+    if ((expr) != ge::GRAPH_SUCCESS) {     \
+      DOMI_LOGE(__VA_ARGS__);              \
+      return FAILED;                       \
+    }                                      \
   } while (0);
 
 // If expr is not SUCCESS, print the log and execute a custom statement
@@ -91,23 +111,9 @@ using cce::ccStatus_t;
       (void)msg.append(ge::StringUtils::FormatString(__VA_ARGS__));                                        \
       (void)msg.append(                                                                                    \
         ge::StringUtils::FormatString(" Error Code:0x%X(%s)", _status, GET_ERRORNO_STR(_status).c_str())); \
-      GE_LOGE("%s", msg.c_str());                                                                          \
+      DOMI_LOGE("%s", msg.c_str());                                                                        \
       return _status;                                                                                      \
     }                                                                                                      \
-  } while (0);
-
-// If expr is not true, print the Info log and return the specified status
-#define GE_CHK_BOOL_RET_STATUS_LOGI(expr, _status, ...)                                                                \
-  do {                                                                                                                 \
-    bool b = (expr);                                                                                                   \
-    if (!b) {                                                                                                          \
-      std::string msg;                                                                                                 \
-      (void)msg.append(StringUtils::FormatString(__VA_ARGS__));                                                        \
-      (void)msg.append(                                                                                                \
-        StringUtils::FormatString(" Check result false, status: 0x%X %s", _status, GET_ERRORNO_STR(_status).c_str())); \
-      GELOGI("%s", msg.c_str());                                                                                       \
-      return _status;                                                                                                  \
-    }                                                                                                                  \
   } while (0);
 
 // If expr is not true, print the log and return the specified status
@@ -124,7 +130,7 @@ using cce::ccStatus_t;
   {                                            \
     bool b = (expr);                           \
     if (!b) {                                  \
-      GE_LOGE(__VA_ARGS__);                    \
+      DOMI_LOGE(__VA_ARGS__);                  \
       exec_expr;                               \
     }                                          \
   };
@@ -163,7 +169,7 @@ using cce::ccStatus_t;
   {                                                          \
     bool b = (expr);                                         \
     if (b) {                                                 \
-      GE_LOGE(__VA_ARGS__);                                  \
+      DOMI_LOGE(__VA_ARGS__);                                \
       exec_expr;                                             \
     }                                                        \
   };
@@ -182,7 +188,7 @@ using cce::ccStatus_t;
   {                                                     \
     bool b = (expr);                                    \
     if (b) {                                            \
-      GE_LOGE(__VA_ARGS__);                             \
+      DOMI_LOGE(__VA_ARGS__);                           \
       exec_expr;                                        \
       return;                                           \
     }                                                   \
@@ -193,7 +199,7 @@ using cce::ccStatus_t;
   {                                                                     \
     bool b = (expr);                                                    \
     if (b) {                                                            \
-      GE_LOGE(__VA_ARGS__);                                             \
+      DOMI_LOGE(__VA_ARGS__);                                           \
       exec_expr;                                                        \
       return _status;                                                   \
     }                                                                   \
@@ -210,62 +216,42 @@ using cce::ccStatus_t;
 
 // -----------------runtime related macro definitions-------------------------------
 // If expr is not RT_ERROR_NONE, print the log
-#define GE_CHK_RT(expr)                                  \
-  do {                                                   \
-    rtError_t _rt_ret = (expr);                          \
-    if (_rt_ret != RT_ERROR_NONE) {                      \
-      GE_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
-    }                                                    \
+#define GE_CHK_RT(expr)                                    \
+  do {                                                     \
+    rtError_t _rt_ret = (expr);                            \
+    if (_rt_ret != RT_ERROR_NONE) {                        \
+      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
+    }                                                      \
   } while (0);
 
 // If expr is not RT_ERROR_NONE, print the log and execute the exec_expr expression
-#define GE_CHK_RT_EXEC(expr, exec_expr)                  \
-  {                                                      \
-    rtError_t _rt_ret = (expr);                          \
-    if (_rt_ret != RT_ERROR_NONE) {                      \
-      GE_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
-      exec_expr;                                         \
-    }                                                    \
+#define GE_CHK_RT_EXEC(expr, exec_expr)                    \
+  {                                                        \
+    rtError_t _rt_ret = (expr);                            \
+    if (_rt_ret != RT_ERROR_NONE) {                        \
+      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
+      exec_expr;                                           \
+    }                                                      \
   }
 
 // If expr is not RT_ERROR_NONE, print the log and return
-#define GE_CHK_RT_RET(expr)                              \
-  do {                                                   \
-    rtError_t _rt_ret = (expr);                          \
-    if (_rt_ret != RT_ERROR_NONE) {                      \
-      GE_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
-      return ge::RT_FAILED;                              \
-    }                                                    \
+#define GE_CHK_RT_RET(expr)                                \
+  do {                                                     \
+    rtError_t _rt_ret = (expr);                            \
+    if (_rt_ret != RT_ERROR_NONE) {                        \
+      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
+      return ge::RT_FAILED;                                \
+    }                                                      \
   } while (0);
 
 // ------------------------cce related macro definitions----------------------------
 // If expr is not CC_STATUS_SUCCESS, print the log
-#define GE_CHK_CCE(expr)                                  \
-  do {                                                    \
-    ccStatus_t _cc_ret = (expr);                          \
-    if (_cc_ret != CC_STATUS_SUCCESS) {                   \
-      GE_LOGE("Call cce api failed, ret: 0x%X", _cc_ret); \
-    }                                                     \
-  } while (0);
-
-// If expr is not CC_STATUS_SUCCESS, print the log and execute the exec_expr expression
-#define GE_CHK_CCE_EXEC(expr, exec_expr)                  \
-  do {                                                    \
-    ccStatus_t _cc_ret = (expr);                          \
-    if (_cc_ret != CC_STATUS_SUCCESS) {                   \
-      GE_LOGE("Call cce api failed, ret: 0x%X", _cc_ret); \
-      exec_expr;                                          \
-    }                                                     \
-  } while (0);
-
-// If expr is not CC_STATUS_SUCCESS, print the log and return
-#define GE_CHK_CCE_RET(expr)                              \
-  do {                                                    \
-    ccStatus_t _cc_ret = (expr);                          \
-    if (_cc_ret != CC_STATUS_SUCCESS) {                   \
-      GE_LOGE("Call cce api failed, ret: 0x%X", _cc_ret); \
-      return ge::CCE_FAILED;                              \
-    }                                                     \
+#define GE_CHK_CCE(expr)                                    \
+  do {                                                      \
+    ccStatus_t _cc_ret = (expr);                            \
+    if (_cc_ret != CC_STATUS_SUCCESS) {                     \
+      DOMI_LOGE("Call cce api failed, ret: 0x%X", _cc_ret); \
+    }                                                       \
   } while (0);
 
 // If expr is true, execute exec_expr without printing logs
@@ -281,37 +267,8 @@ using cce::ccStatus_t;
   try {                                        \
     exec_expr0;                                \
   } catch (const std::bad_alloc &) {           \
-    GE_LOGE("Make shared failed");             \
+    DOMI_LOGE("Make shared failed");           \
     exec_expr1;                                \
   }
-
-#define GE_CHECK_INT32_MUL_OVERFLOW(a, b, ...)         \
-  do {                                                 \
-    if ((a) > 0) {                                     \
-      if ((b) > 0) {                                   \
-        if ((a) > (INT32_MAX / (b))) {                 \
-          GE_LOGE(__VA_ARGS__);                        \
-          return ge::FAILED;                           \
-        }                                              \
-      } else {                                         \
-        if ((b) < (INT32_MIN / (a))) {                 \
-          GE_LOGE(__VA_ARGS__);                        \
-          return ge::FAILED;                           \
-        }                                              \
-      }                                                \
-    } else {                                           \
-      if ((b) > 0) {                                   \
-        if ((a) < (INT32_MAX / (b))) {                 \
-          GE_LOGE(__VA_ARGS__);                        \
-          return ge::FAILED;                           \
-        }                                              \
-      } else {                                         \
-        if (((a) != 0) && ((b) < (INT32_MAX / (a)))) { \
-          GE_LOGE(__VA_ARGS__);                        \
-          return ge::FAILED;                           \
-        }                                              \
-      }                                                \
-    }                                                  \
-  } while (0);
 
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_LOG_H_

@@ -15,12 +15,10 @@
  */
 
 #include "graph/passes/unused_op_remove_pass.h"
-
 #include <queue>
 #include <set>
 #include <string>
 #include <vector>
-
 #include "common/debug/log.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
@@ -60,6 +58,7 @@ Status UnusedOpRemovePass::Run(ComputeGraphPtr graph) {
           GE_CHECK_NOTNULL(dst_node->GetOpDesc());
           int dst_index = in_anchor->GetIdx();
           std::vector<bool> list_bool;
+          GE_CHECK_NOTNULL(dst_node->GetOpDesc());
           list_bool = dst_node->GetOpDesc()->GetIsInputConst();
           GE_IF_BOOL_EXEC(list_bool.size() == 0, continue);
           list_bool.erase(list_bool.begin() + dst_index);

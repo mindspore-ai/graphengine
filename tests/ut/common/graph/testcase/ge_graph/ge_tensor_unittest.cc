@@ -125,7 +125,7 @@ TEST_F(UtestGeTensor, tensor_desc) {
   GeTensorDesc d;
   d = c.Clone();
   GeTensorDesc e = c;
-  uint32_t size2 = 0;
+  int64_t size2 = 0;
   EXPECT_EQ(TensorUtils::GetSize(e, size2), GRAPH_SUCCESS);
   EXPECT_EQ(size2, 1);
 
@@ -344,35 +344,35 @@ TEST_F(UtestGeTensor, test_tensor_invalid) {
   TensorDesc tensor_desc(shape);
   std::vector<uint8_t> data({1, 2, 3, 4, 5});
   Tensor tensor1(tensor_desc, data);
-  EXPECT_EQ(tensor1.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor1.IsValid(), GRAPH_FAILED);
 
   // Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size)
   TensorDesc tensor_desc2(Shape({3, 3, 3}), FORMAT_NCHW, DT_FLOAT);
   uint32_t size2 = 3 * 3 * 3;
   uint8_t data2[3 * 3 * 3] = {0};
   Tensor tensor2(tensor_desc2, data2, size2);
-  EXPECT_EQ(tensor2.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor2.IsValid(), GRAPH_FAILED);
 
   // Tensor(TensorDesc &&tensor_desc, std::vector<uint8_t> &&data)
   Tensor tensor3(std::move(tensor_desc), std::move(data));
-  EXPECT_EQ(tensor3.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor3.IsValid(), GRAPH_FAILED);
 
   // Tensor()
   Tensor tensor4;
   tensor4.SetTensorDesc(tensor_desc);
-  EXPECT_EQ(tensor4.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor4.IsValid(), GRAPH_FAILED);
   tensor4.SetData(data);
-  EXPECT_EQ(tensor4.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor4.IsValid(), GRAPH_FAILED);
 
   Tensor tensor5;
   tensor5.SetData(data);
-  EXPECT_EQ(tensor5.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor5.IsValid(), GRAPH_FAILED);
   tensor5.SetTensorDesc(tensor_desc);
-  EXPECT_EQ(tensor5.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor5.IsValid(), GRAPH_FAILED);
 
   // scalar
   TensorDesc tensor_desc6(Shape(), FORMAT_NCHW, DT_FLOAT);
   uint8_t data6 = 2;
   Tensor tensor6(tensor_desc6, &data6, 1);
-  EXPECT_EQ(tensor6.IsValid(), GRAPH_SUCCESS);
+  EXPECT_EQ(tensor6.IsValid(), GRAPH_FAILED);
 }

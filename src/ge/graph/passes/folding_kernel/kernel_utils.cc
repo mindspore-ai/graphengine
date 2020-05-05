@@ -55,7 +55,7 @@ Status KernelUtils::CheckDimensionNodeInfo(const NodePtr &node_ptr) {
     GELOGE(PARAM_INVALID, "dim node must be const op");
     return PARAM_INVALID;
   }
-  ConstGeTensorPtr input_dim = const_ge_tensor.at(0);
+  const ConstGeTensorPtr &input_dim = const_ge_tensor.at(0);
   if (input_dim->GetData().size() == 0) {
     GELOGE(PARAM_INVALID, "dim data size is 0");
     return PARAM_INVALID;
@@ -74,7 +74,9 @@ bool KernelUtils::CheckFormatSupported(const NodePtr &node_ptr) {
     GELOGE(FAILED, "op_desc is null");
     return false;
   }
-  Format fmt = op_desc->GetInputDesc(kDimensionShapeIndex).GetFormat();
+  const auto &input_desc = op_desc->MutableInputDesc(kDimensionShapeIndex);
+  GE_CHECK_NOTNULL_EXEC(input_desc, return false);
+  Format fmt = input_desc->GetFormat();
   if (fmt == FORMAT_NC1HWC0 || fmt == FORMAT_FRACTAL_Z) {
     GELOGW("invalid format, fmt: %s", TypeUtils::FormatToSerialString(fmt).c_str());
     return false;
@@ -83,18 +85,18 @@ bool KernelUtils::CheckFormatSupported(const NodePtr &node_ptr) {
   return true;
 }
 
-bool KernelUtils::CheckSizeForTransOp(const ge::ConstGeTensorPtr &const_weight_ptr,
-                                      const ge::OpDescPtr &op_desc_ptr) {
+bool KernelUtils::CheckSizeForTransOp(const ge::ConstGeTensorPtr &const_weight_ptr, const ge::OpDescPtr &op_desc_ptr) {
   if (const_weight_ptr == nullptr || op_desc_ptr == nullptr) {
     GELOGE(FAILED, "parameter invalid");
     return false;
   }
   auto data_size = const_weight_ptr->GetData().GetSize();
-
-  DataType data_type = op_desc_ptr->GetInputDesc(0).GetDataType();
-  GeShape data_shape = op_desc_ptr->GetInputDesc(0).GetShape();
-  Format data_format = op_desc_ptr->GetInputDesc(0).GetFormat();
-  auto shape_size = op_desc_ptr->GetInputDesc(0).GetShape().GetShapeSize();
+  const auto &input_desc = op_desc_ptr->MutableInputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(input_desc, return false);
+  DataType data_type = input_desc->GetDataType();
+  GeShape data_shape = input_desc->GetShape();
+  Format data_format = input_desc->GetFormat();
+  auto shape_size = input_desc->GetShape().GetShapeSize();
   int64_t cal_size = 0;
 
   auto ret = TensorUtils::CalcTensorMemSize(data_shape, data_format, data_type, cal_size);

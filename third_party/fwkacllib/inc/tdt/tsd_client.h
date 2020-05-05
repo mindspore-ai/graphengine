@@ -27,6 +27,48 @@
 extern "C" {
 #endif  // __cplusplus
 
+/**
+* @ingroup Open
+* @brief Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @par Function
+* Used for the Framework process to communicate with the TSDDaemon process,
+* and notify TSD to complete the initialization of other processes
+*
+* @param phyDeviceId [IN] type #unsigned int. Physical device ID
+* @param rankSize [IN] type #unsigned int. The rankSize of the training.
+* The default value is 1. When rankSize is greater than 1,
+* HCCP will be pulled to perform set communication related operations.
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tsd_client.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_StatusT TsdOpen(const uint32_t phyDeviceId, const uint32_t rankSize);
+
+/**
+* @ingroup Close
+* @brief notify TSDClient close resource
+*
+* @par Function
+* notify TSDClient close resource
+*
+* @param NA
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tsd_client.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_StatusT TsdClose(const uint32_t phyDeviceId);
+
+
 namespace tdt {
 /**
 * @ingroup  RANK_SIZE_DEFAULT_VALUE。

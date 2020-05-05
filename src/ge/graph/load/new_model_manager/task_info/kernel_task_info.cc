@@ -26,21 +26,36 @@
 #include "framework/common/l2_cache_optimize.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/debug/ge_attr_define.h"
 #include "runtime/kernel.h"
+#include "graph/debug/ge_attr_define.h"
+#include "super_kernel/super_kernel_factory.h"
+#include "super_kernel/super_kernel.h"
 
 namespace {
 const uint8_t kL2LoadToDdr = 1;
 const uint8_t kL2NotLoadToDdr = 0;
+// for skt
+constexpr int64_t kInvalidGroupKey = -1;
+constexpr uint32_t kSKTSingleSize = 1;
+constexpr uint32_t kSKTMaxSizeLimit = 20000;
+const char *kIsLastNode = "is_last_node";
+const char *kIsFirstNode = "is_first_node";
+const int64_t kCloseSkt = 100;
 }  // namespace
 
 namespace ge {
+KernelTaskInfo::SuperKernelTaskInfo KernelTaskInfo::skt_info_ = {
+  0, 0, 0, nullptr, nullptr, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
+
 Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
-  GELOGD("KernelTaskInfo Init Start.");
   if (davinci_model == nullptr) {
     GELOGE(PARAM_INVALID, "davinci_model is null!");
     return PARAM_INVALID;
   }
   davinci_model_ = davinci_model;
+  is_l1_fusion_enable_ = davinci_model_->GetL1FusionEnableOption();
+  GELOGD("KernelTaskInfo Init Start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
 
   Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
   if (ret != SUCCESS) {
@@ -54,15 +69,29 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   const domi::KernelContext &context = kernel_def.context();
   // get kernel_type
   kernel_type_ = static_cast<cce::ccKernelType>(context.kernel_type());
-  // get bin_file_key
-  OpDescPtr op_desc = davinci_model->GetOpByIndex(context.op_index());
-  if (op_desc == nullptr) {
+  // get opdesc
+  op_desc_ = davinci_model->GetOpByIndex(context.op_index());
+  if (op_desc_ == nullptr) {
     GELOGE(INTERNAL_ERROR, "Get op_desc failed, index is out of range!");
     return INTERNAL_ERROR;
   }
+  (void)AttrUtils::GetBool(*op_desc_, ATTR_N_BATCH_SPILT, is_n_batch_spilt_);
+  GELOGD("node[%s] is_n_batch_spilt %d", op_desc_->GetName().c_str(), is_n_batch_spilt_);
+  (void)AttrUtils::GetInt(*op_desc_, ATTR_NAME_L1_FUSION_GROUP_KEY, group_key_);
+  has_group_key_ = (group_key_ != kInvalidGroupKey);
+  GELOGD("node[%s] has_group_key_ %ld, group key is [%ld]", op_desc_->GetName().c_str(), has_group_key_, group_key_);
+
+  // fusion_op_info
+  vector<std::string> original_op_names;
+  bool result = AttrUtils::GetListStr(op_desc_, ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, original_op_names);
+  GE_IF_BOOL_EXEC(result, fusion_op_info_.stream_id = task_def.stream_id();
+                  fusion_op_info_.op_index = context.op_index(); fusion_op_info_.original_op_names = original_op_names;
+                  fusion_op_info_.op_name = op_desc_->GetName());
+
   string session_graph_model_id;
-  davinci_model->GetUniqueId(op_desc, session_graph_model_id);
-  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc->GetName(), session_graph_model_id);
+  davinci_model->GetUniqueId(op_desc_, session_graph_model_id);
+  // get bin_file_key
+  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
   if (kernel_type_ == cce::ccKernelType::CCE_AI_CORE) {
     rtError_t rt_ret;
@@ -107,39 +136,242 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     }
     ret = InitCceTask(davinci_model, kernel_def);
   }
-  GELOGD("KernelTaskInfo Init end.");
 
+  GELOGD("KernelTaskInfo Init finish, result=%u.", ret);
   return ret;
+}
+
+Status KernelTaskInfo::SaveSKTDumpInfo() {
+  GE_CHECK_NOTNULL(davinci_model_);
+  davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_op, skt_info_.last_dump_args);
+  return SUCCESS;
+}
+
+void KernelTaskInfo::UpdateSKTTaskId() {
+  uint32_t task_id = 0;
+  if (davinci_model_ != nullptr) {
+    rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      return;
+    }
+    skt_info_.last_task_id = task_id;
+    skt_id_ = skt_info_.last_task_id;
+    GELOGI("UpdateTaskId:UpdateSKTTaskId [%u]", task_id);
+  }
+}
+
+void KernelTaskInfo::UpdateTaskId() {
+  uint32_t task_id = 0;
+  uint32_t stream_id = UINT32_MAX;  //  default value, wait for rts
+  if (davinci_model_ != nullptr) {
+    rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      return;
+    }
+    task_id_ = task_id;
+    stream_id_ = stream_id;
+    GELOGI("UpdateTaskId:UpdateTaskId [%u]", task_id);
+  }
+}
+
+Status KernelTaskInfo::SKTFinalize() {
+  UpdateSKTTaskId();
+  GE_CHK_STATUS_RET(SaveSKTDumpInfo(), "skt save dump info failed");
+  GELOGI("SuperKernel Distribute [skt_id:%u]", skt_id_);
+  skt_info_.kernel_list.clear();
+  skt_info_.arg_list.clear();
+  skt_info_.last_stream = nullptr;
+  skt_info_.last_block_dim = 0;
+  skt_info_.last_sm_desc = sm_desc_;
+  skt_info_.last_group_key = kInvalidGroupKey;
+  skt_info_.last_dump_flag = RT_KERNEL_DEFAULT;
+  skt_info_.last_dump_args = 0;
+  skt_info_.last_op = nullptr;
+  return SUCCESS;
+}
+
+Status KernelTaskInfo::SuperKernelLaunch() {
+  if (skt_info_.kernel_list.empty()) {
+    GELOGI("SuperKernelLaunch: Skt_kernel_list has no task, just return");
+    return SUCCESS;
+  }
+  rtError_t rt_ret;
+  auto &skt_kernel_list = skt_info_.kernel_list;
+  auto &skt_arg_list = skt_info_.arg_list;
+  GELOGI("SuperKernelLaunch: Skt_kernel_list size[%d] skt_arg_list[%d]", skt_kernel_list.size(), skt_arg_list.size());
+  if (skt_kernel_list.size() == kSKTSingleSize) {
+    rt_ret = rtKernelLaunchWithFlag(skt_info_.kernel_list[0], static_cast<uint32_t>(skt_info_.last_block_dim),
+                                    skt_info_.arg_list[0], skt_info_.last_args_size,
+                                    static_cast<rtSmDesc_t *>(skt_info_.last_sm_desc), skt_info_.last_stream,
+                                    skt_info_.last_dump_flag);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "SuperKernelLaunch: Call rt api failed, ret: 0x%X", rt_ret);
+      return RT_FAILED;
+    }
+    GE_CHK_STATUS_RET(SKTFinalize(), "Skt finalize failed");
+    return SUCCESS;
+  }
+  // Create super kernel factory
+  skt::SuperKernelFactory *factory = &skt::SuperKernelFactory::GetInstance();
+  // Init super kernel factory
+  if (factory->Init() != SUCCESS) {
+    GELOGE(RT_FAILED, "SuperKernelLaunch: SuperKernelFactory init failed");
+    return RT_FAILED;
+  }
+  // Call the fuse API
+  skt::SuperKernel *superKernel;
+  if (factory->FuseKernels(skt_kernel_list, skt_arg_list, skt_info_.last_block_dim, superKernel) != SUCCESS) {
+    GELOGE(RT_FAILED, "SuperKernelLaunch: fuse call failed");
+    return RT_FAILED;
+  }
+  // Launch a super kernel
+  if (superKernel->Launch(skt_info_.last_stream, true) != SUCCESS) {
+    GELOGE(RT_FAILED, "SuperKernelLaunch: launch failed");
+    return RT_FAILED;
+  }
+  GELOGI("SuperKernelLaunch: success[skt_kernel_list size[%zu] skt_arg_list[%zu]]", skt_kernel_list.size(),
+         skt_arg_list.size());
+  GE_CHK_STATUS_RET(SKTFinalize(), "Skt finalize failed");
+  return SUCCESS;
+}
+
+Status KernelTaskInfo::SaveSuperKernelInfo() {
+  skt_info_.kernel_list.push_back(stub_func_);
+  skt_info_.arg_list.push_back(args_);
+  skt_info_.last_stream = stream_;
+  skt_info_.last_block_dim = block_dim_;
+  skt_info_.last_args_size = args_size_;
+  skt_info_.last_sm_desc = sm_desc_;
+  skt_info_.last_dump_flag = dump_flag_;
+  skt_info_.last_group_key = group_key_;
+  skt_info_.last_dump_args = reinterpret_cast<uintptr_t>(dump_args_);
+  skt_info_.last_op = op_desc_;
+  // last node in a stream, just launch
+  if (IsMarkedLastNode()) {
+    return SuperKernelLaunch();
+  }
+  return SUCCESS;
+}
+
+bool KernelTaskInfo::IsMarkedLastNode() {
+  if (davinci_model_ == nullptr) {
+    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    return false;
+  }
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(ctx_.opIndex);
+  if (op_desc == nullptr) {
+    GELOGE(INTERNAL_ERROR, "InitTVMTaskInfo error, index is out of range!");
+    return false;
+  }
+  bool is_last_node = false;
+  (void)AttrUtils::GetBool(*op_desc, kIsLastNode, is_last_node);
+  return is_last_node;
+}
+
+bool KernelTaskInfo::IsMarkedFirstNode() {
+  if (davinci_model_ == nullptr) {
+    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    return false;
+  }
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(ctx_.opIndex);
+  if (op_desc == nullptr) {
+    GELOGE(INTERNAL_ERROR, "InitTVMTaskInfo error, index is out of range!");
+    return false;
+  }
+  bool is_first_node = false;
+  (void)AttrUtils::GetBool(*op_desc, kIsFirstNode, is_first_node);
+  return is_first_node;
+}
+// current task 's block dim and stream and grouo key (if have) must same with last task,
+// then may be saved to skt task list; else
+// call skt launch those saved tasks before
+bool KernelTaskInfo::FirstCallSKTLaunchCheck() {
+  return ((block_dim_ != skt_info_.last_block_dim) || (stream_ != skt_info_.last_stream) ||
+          (has_group_key_ && (group_key_ != skt_info_.last_group_key)));
+}
+
+// current task has group_id or has n ATTR_N_BATCH_SPLIT then save it to skt task list; else
+// call skt launch those saved tasks and call rtlaunch for current task
+bool KernelTaskInfo::DoubleCallSKTSaveCheck() { return (!is_n_batch_spilt_ && !has_group_key_); }
+
+Status KernelTaskInfo::SuperKernelDistribute() {
+  Status ret;
+  char *skt_task_num = getenv("SKT_TASK_NUM");
+  auto task_num = static_cast<uint64_t>((skt_task_num != nullptr) ? strtol(skt_task_num, nullptr, 10)
+                                                                  : kSKTMaxSizeLimit);  // 10 for decimal number
+  GELOGI("SKT: SuperKernel Distribute Task num[skt_id:%lu]", task_num);
+  if (FirstCallSKTLaunchCheck()) {
+    ret = SuperKernelLaunch();
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Call SuperKernelLaunch failed!");
+      return FAILED;
+    }
+  }
+  if (DoubleCallSKTSaveCheck()) {
+    // 1.launch before
+    ret = SuperKernelLaunch();
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Call SuperKernelLaunch failed!");
+      return FAILED;
+    }
+    // 2.launch current
+    rtError_t rt_ret = rtKernelLaunchWithFlag(stub_func_, block_dim_, args_, args_size_,
+                                              static_cast<rtSmDesc_t *>(sm_desc_), stream_, dump_flag_);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      return FAILED;
+    }
+    UpdateTaskId();
+    GELOGI("Current Common Task Distribute [taskid:%u]", task_id_);
+  } else {
+    ret = SaveSuperKernelInfo();
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Call SuperKernelLaunch failed!");
+      return FAILED;
+    }
+    GELOGI("Save Current task [block_dim:%u, size:%zu].", block_dim_, skt_info_.kernel_list.size());
+  }
+  return SUCCESS;
 }
 
 Status KernelTaskInfo::Distribute() {
   GELOGD("KernelTaskInfo Distribute Start.");
-  rtError_t rt_ret;
-
+  rtError_t rt_ret = RT_ERROR_NONE;
+  char *skt_enable_env = getenv("SKT_ENABLE");
+  int64_t env_flag = (skt_enable_env != nullptr) ? strtol(skt_enable_env, nullptr, 10) : 0;
   if (kernel_type_ == cce::ccKernelType::AI_CPU) {
     // blockDim is reserved parameter, set to 1
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
                                        reinterpret_cast<const void *>(kernel_name_.c_str()), 1, args_, args_size_,
                                        nullptr, stream_, dump_flag_);
   } else {
-    rt_ret = rtKernelLaunchWithFlag(stub_func_, block_dim_, args_, args_size_, static_cast<rtSmDesc_t *>(sm_desc_),
-                                    stream_, dump_flag_);
+    /* default: not skt launch */
+    bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
+    GELOGI(
+      "KernelTaskInfo Distribute Start, sktenable:%ld taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
+      "stubfunc:%p blockdim:%u stream:%p",
+      env_flag, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
+    // l1 fusion enable and env flag open (kCloseSkt for skt debug)
+    if (call_skt && (env_flag != kCloseSkt)) {
+      GE_RETURN_IF_ERROR(SuperKernelDistribute());
+    } else {
+      // call rtKernelLaunch for current task
+      rt_ret = rtKernelLaunchWithFlag(stub_func_, block_dim_, args_, args_size_, static_cast<rtSmDesc_t *>(sm_desc_),
+                                      stream_, dump_flag_);
+    }
   }
-
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
-
-  uint32_t taskid = 0;
-  GE_CHECK_NOTNULL(davinci_model_);
-  rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &taskid);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
-  }
-  task_id_ = taskid;
-
+  // set for task_id_
+  UpdateTaskId();
+  GELOGI(
+    "KernelTaskInfo Distribute Success. sktenable:%d taskid:%d sktid:%d stubfunc_name:%s stubfunc:%p "
+    "blockdim:%d stream:%p",
+    env_flag, task_id_, skt_id_, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
   return SUCCESS;
 }
 
@@ -168,7 +400,7 @@ Status KernelTaskInfo::Release() {
 }
 
 Status KernelTaskInfo::InitTVMTask(DavinciModel *davinci_model, uint16_t offset, const domi::KernelDef &kernel_def) {
-  GELOGD("Do InitTVMTask");
+  GELOGD("Do InitTVMTask.");
   GE_CHECK_NOTNULL(davinci_model);
   // get tvm op desc
   OpDescPtr op_desc = davinci_model->GetOpByIndex(ctx_.opIndex);
@@ -236,7 +468,7 @@ Status KernelTaskInfo::InitTVMTask(DavinciModel *davinci_model, uint16_t offset,
       reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_) + offset + sizeof(void *) * input_data_addrs.size());
   }
 
-  davinci_model_->SetZeroCopyAddr(tensor_device_addrs, static_cast<char *>(args_) + offset);
+  davinci_model_->SetZeroCopyAddr(op_desc, tensor_device_addrs, static_cast<char *>(args_) + offset);
   // update origin l2 data
   string sm_desc = kernel_def.sm_desc();
   char *sm_contrl = nullptr;
@@ -253,6 +485,7 @@ Status KernelTaskInfo::InitTVMTask(DavinciModel *davinci_model, uint16_t offset,
     for (uint32_t data_index = 0; data_index < l2_ctrl_info_data_count; ++data_index) {
       if (l2_ctrl_info->data[data_index].L2_mirror_addr != 0) {
         l2_ctrl_info->data[data_index].L2_mirror_addr += data_base_addr;
+        l2_ctrl_info->data[data_index].L2_load_to_ddr = IsL2CpToDDR(l2_ctrl_info->data[data_index].L2_load_to_ddr);
       }
     }
 
@@ -308,6 +541,7 @@ Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_
 
   Status ret = StoreInputOutputTensor(input_data_addrs, output_data_addrs, ModelUtils::GetInputDescs(op_desc),
                                       ModelUtils::GetOutputDescs(op_desc));
+
   if (ret != SUCCESS) {
     GELOGE(ret, "StoreInputOutputTensor Failed");
     return ret;
@@ -372,8 +606,8 @@ Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_
     return RT_FAILED;
   }
 
-  davinci_model_->SetZeroCopyAddr(input_data_addrs, custom_info_.input_addrs);
-  davinci_model_->SetZeroCopyAddr(output_data_addrs, custom_info_.output_addrs);
+  davinci_model_->SetZeroCopyAddr(op_desc, input_data_addrs, custom_info_.input_addrs);
+  davinci_model_->SetZeroCopyAddr(op_desc, output_data_addrs, custom_info_.output_addrs);
   return SUCCESS;
 }
 
@@ -431,6 +665,7 @@ Status KernelTaskInfo::InitCceTask(DavinciModel *davinci_model, const domi::Kern
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "cce task physical memory.", kernel_def.args_size())
 
   rt_ret =
     rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(), RT_MEMCPY_HOST_TO_DEVICE);
@@ -470,6 +705,7 @@ Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_lis
 
   // copy args to new host memory
   std::unique_ptr<uint8_t[]> args_addr(new (std::nothrow) uint8_t[args_size_]);
+  GE_PRINT_DYNAMIC_MEMORY(new, "cce task physical memory.", sizeof(uint8_t) * args_size_)
   errno_t sec_ret = memcpy_s(static_cast<void *>(args_addr.get()), args_size_,
                              static_cast<const void *>(kernel_def.args().data()), args_size_);
   if (sec_ret != EOK) {
@@ -501,6 +737,7 @@ Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_lis
     GELOGE(RT_FAILED, "Call rt api(rtMalloc) failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "cce task physical memory.", args_size_)
 
   // copy args to device
   rt_ret = rtMemcpy(args_, args_size_, static_cast<void *>(args_addr.get()), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
@@ -515,7 +752,7 @@ Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_lis
                                           sizeof(void *) * input_addrs.size());
   }
 
-  davinci_model_->SetZeroCopyAddr(io_addrs, static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead));
+  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead));
   return SUCCESS;
 }
 
@@ -564,7 +801,6 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
-
   for (std::size_t i = 0; i < output_size; ++i) {
     rt_ret = rtMemcpy(static_cast<opTensor_t *>(custom_info_.output_descs) + i, sizeof(opTensor_t),
                       const_cast<tagOpTensor *>(&input_descs[i]), sizeof(opTensor_t), RT_MEMCPY_HOST_TO_DEVICE);
@@ -661,7 +897,6 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
                                            uint64_t &weight_base_addr, uint64_t &var_base_addr, std::string &sm_desc,
                                            std::string &flowtable, const domi::KernelDef &kernel_def) {
   char *sm_contrl = nullptr;
-
   if (!sm_desc.empty()) {
     sm_contrl = const_cast<char *>(sm_desc.data());
   }
@@ -669,18 +904,14 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
   std::string file_name = "libcce.so";
   std::string path = PluginManager::GetPath();
   path.append(file_name);
-  char canonicalPath[PATH_MAX] = {0};
-  if (path.length() >= PATH_MAX) {
-    GELOGW("File path is too long.");
-    return FAILED;
-  }
-  if (realpath(path.c_str(), canonicalPath) == nullptr) {
+  string canonicalPath = RealPath(path.c_str());
+  if (canonicalPath.empty()) {
     GELOGW("failed to get realpath of %s", path.c_str());
     return FAILED;
   }
 
-  GELOGI("FileName:%s, Path:%s.", file_name.c_str(), canonicalPath);
-  auto handle = dlopen(canonicalPath, RTLD_NOW | RTLD_GLOBAL);
+  GELOGI("FileName:%s, Path:%s.", file_name.c_str(), canonicalPath.c_str());
+  auto handle = dlopen(canonicalPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
   if (handle == nullptr) {
     GELOGE(GE_PLGMGR_SO_NOT_EXIST, "Failed in dlopen %s! ", dlerror());
     return FAILED;
@@ -725,6 +956,7 @@ Status KernelTaskInfo::SetFlowtable(std::string &flowtable, const domi::KernelDe
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return RT_FAILED;
     }
+    GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "flowtable refresh of cce scence.", flowtable.size())
 
     rt_ret = rtMemcpy(flowtable_, flowtable.size(), flowtable.data(), flowtable.size(), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
@@ -748,6 +980,27 @@ Status KernelTaskInfo::SetFlowtable(std::string &flowtable, const domi::KernelDe
       reinterpret_cast<uint64_t>(flowtable_);
   }
   return SUCCESS;
+}
+
+uint8_t KernelTaskInfo::IsL2CpToDDR(uint8_t origain_L2_load_to_ddr) {
+  if (origain_L2_load_to_ddr == kL2LoadToDdr) {
+    return kL2LoadToDdr;
+  }
+
+  if (dump_flag_ == RT_KERNEL_DUMPFLAG) {
+    return kL2LoadToDdr;
+  }
+
+  static char *ge_dump_env = std::getenv("DUMP_OP");
+  if (ge_dump_env != nullptr) {
+    static std::string ge_dump_str(ge_dump_env);
+    static std::string open_ge_dump("1");
+    if (ge_dump_str == open_ge_dump) {
+      return kL2LoadToDdr;
+    }
+  }
+
+  return kL2NotLoadToDdr;
 }
 
 REGISTER_TASK_INFO(RT_MODEL_TASK_KERNEL, KernelTaskInfo);

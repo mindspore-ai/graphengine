@@ -27,13 +27,15 @@
 namespace ge {
 namespace folding_pass {
 shared_ptr<Kernel> GetKernelByType(const NodePtr &node);
-}
+bool IsNoNeedConstantFolding(const NodePtr &node);
+}  // namespace folding_pass
 
 using IndexsToAnchors = std::map<int, std::vector<InDataAnchorPtr>>;
 
 class FoldingPass : public BaseNodePass {
  protected:
   Status Folding(NodePtr &node, vector<GeTensorPtr> &outputs);
+  static Status RunOpKernel(NodePtr &node, const vector<ConstGeTensorPtr> &inputs, vector<GeTensorPtr> &outputs);
 
  private:
   Status AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_anchors, std::vector<GeTensorPtr> &v_weight);

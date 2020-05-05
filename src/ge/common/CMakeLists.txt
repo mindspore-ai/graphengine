@@ -30,6 +30,8 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "formats/format_transfers/datatype_transfer.cc"
         "formats/format_transfers/format_transfer.cc"
         "formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
+        "formats/format_transfers/format_transfer_dhwcn_fracz3D.cc"
+        "formats/format_transfers/format_transfer_dhwnc_fracz3D_transpose.cc"
         "formats/format_transfers/format_transfer_fractal_nz.cc"
         "formats/format_transfers/format_transfer_fractal_z.cc"
         "formats/format_transfers/format_transfer_fractal_zz.cc"
@@ -39,6 +41,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
         "formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
         "formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
+        "formats/format_transfers/format_transfer_nchw_fz_c04.cc"
         "formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
         "formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
         "formats/format_transfers/format_transfer_transpose.cc"
@@ -50,6 +53,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ge_format_util.cc"
         "helper/model_helper.cc"
         "helper/om_file_helper.cc"
+        "math/fp16_math.cc"
         "model_parser/base.cc"
         "op/attr_value_util.cc"
         "op/ge_op_utils.cc"
@@ -59,9 +63,8 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "types.cc"
         "util.cc"
         "model_saver.cc"
-# new files, possibly to be deleted?
-        "op/attr_value_util.cc"
-        "op/ge_op_utils.cc"
+        ###############################
+        "op/attr_define.cc"
         )
 
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})

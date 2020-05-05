@@ -22,7 +22,7 @@
 #include "graph/model_serialize.h"
 #include "proto/ge_ir.pb.h"
 #include "detail/model_serialize_imp.h"
-#include "graph/debug/ge_attr_define.h"
+#include "debug/ge_attr_define.h"
 #include "debug/ge_log.h"
 #include "debug/ge_util.h"
 
@@ -53,7 +53,7 @@ string GeAttrValue::NamedAttrs::GetName() const {
 
 GeAttrValue GeAttrValue::NamedAttrs::GetItem(const string &key) const {
   GeAttrValue value;
-  (void)GetAttr(key, value);
+  GetAttr(key, value);
   return value;
 }
 
@@ -1081,6 +1081,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool AttrUtils::GetListInt(ConstA
   if (!GetListInt(std::move(obj), name, int64_list)) {
     return false;
   }
+
   for (size_t i = 0; i < int64_list.size(); ++i) {
     if (int64_list[i] > INT32_MAX) {
       GELOGE(GRAPH_FAILED, "index %zu %ld int64_t value cannot cast to int32_t", i, int64_list[i]);
@@ -1098,6 +1099,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool AttrUtils::GetListInt(ConstA
   if (!GetListInt(std::move(obj), name, int64_list)) {
     return false;
   }
+
   for (size_t i = 0; i < int64_list.size(); ++i) {
     if (int64_list[i] > UINT32_MAX) {
       GELOGE(GRAPH_FAILED, "index %zu %ld int64_t value cannot cast to uint32_t", i, int64_list[i]);
@@ -1215,6 +1217,23 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CloneOpDesc(
   GE_CHK_BOOL_EXEC(imp.UnserializeOpDesc(op_desc, *op_def), return op_desc, "op_desc unserialize failed");
   op_desc->extAttrs_ = org_op_desc->extAttrs_;
 
+  if (op_desc->HasAttr("_input_name_idx_key")) {
+    if (op_desc->DelAttr("_input_name_idx_key") != SUCCESS) {
+      GELOGE(GRAPH_FAILED, "DelAttr _input_name_idx_key failed.");
+    }
+  }
+
+  if (op_desc->HasAttr("_input_name_idx_value")) {
+    if (op_desc->DelAttr("_input_name_idx_value") != SUCCESS) {
+      GELOGE(GRAPH_FAILED, "DelAttr _input_name_idx_value failed.");
+    }
+  }
+
+  if (op_desc->HasAttr("_opt_input")) {
+    if (op_desc->DelAttr("_opt_input") != SUCCESS) {
+      GELOGE(GRAPH_FAILED, "DelAttr _opt_input failed.");
+    }
+  }
   return op_desc;
 }
 
@@ -1237,11 +1256,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CopyOpDesc(c
 
   op_desc->extAttrs_ = org_op_desc->extAttrs_;
 
-  op_desc->input_name_idx_.insert(org_op_desc->input_name_idx_.begin(), org_op_desc->input_name_idx_.end());
-  op_desc->optional_input_names_.insert(org_op_desc->optional_input_names_.begin(),
-                                        org_op_desc->optional_input_names_.end());
-  op_desc->output_name_idx_.insert(org_op_desc->output_name_idx_.begin(), org_op_desc->output_name_idx_.end());
-
   op_desc->output_name_idx_.insert(org_op_desc->output_name_idx_.begin(), org_op_desc->output_name_idx_.end());
 
   op_desc->infer_func_ = org_op_desc->infer_func_;
@@ -1249,5 +1263,26 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CopyOpDesc(c
   op_desc->verifier_func_ = org_op_desc->verifier_func_;
 
   return op_desc;
+}
+std::string AttrUtils::GetAllAttrsStr(AttrUtils::ConstAttrHolderAdapter &&obj) {
+  auto holder = obj.get();
+  if (holder == nullptr) {
+    return "";
+  }
+  auto attrs_map = holder->GetAttrMap();
+  if (attrs_map.GetProtoMsg() == nullptr) {
+    return "";
+  }
+
+  std::map<std::string, std::string> ordered_attrs;
+  for (auto &attr : *(attrs_map.GetProtoMsg())) {
+    ordered_attrs[attr.first] = attr.second.SerializeAsString();
+  }
+
+  std::stringstream ss;
+  for (auto &attr : ordered_attrs) {
+    ss << attr.first << ":" << attr.second << ";";
+  }
+  return ss.str();
 }
 }  // namespace ge

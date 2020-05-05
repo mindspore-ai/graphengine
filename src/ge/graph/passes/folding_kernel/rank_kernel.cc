@@ -46,8 +46,9 @@ Status RankKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_outp
     return NOT_CHANGED;
   }
 
-  GeTensorDesc input_shape = op_desc->GetInputDesc(kRankDataInputIndex);
-  auto ndims = input_shape.GetShape().GetDimNum();
+  const auto &input_shape = op_desc->MutableInputDesc(kRankDataInputIndex);
+  GE_CHECK_NOTNULL(input_shape);
+  auto ndims = input_shape->GetShape().GetDimNum();
   GeTensorDesc tensor_desc(op_desc->GetOutputDesc(0));
   GeTensorPtr output_ptr;
   output_ptr = MakeShared<ge::GeTensor>(tensor_desc, reinterpret_cast<uint8_t *>(&ndims), sizeof(ndims));

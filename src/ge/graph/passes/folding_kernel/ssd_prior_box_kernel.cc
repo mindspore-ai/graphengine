@@ -17,7 +17,6 @@
 #include "graph/passes/folding_kernel/ssd_prior_box_kernel.h"
 
 #include <cfloat>
-
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -184,13 +183,13 @@ Status SsdPriorboxKernel::SetVariance(const vector<float> &variance, const int d
 Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint aspect_ratios_size, uint min_sizes_size, uint max_sizes_size,
                                                 int layer_width, int layer_height, int &num_priors,
                                                 int &dim_size) const {
-  if (CheckUint32MulOverflow(min_sizes_size, aspect_ratios_size) != SUCCESS) {
+  if (ge::CheckUint32MulOverflow(min_sizes_size, aspect_ratios_size) != SUCCESS) {
     return PARAM_INVALID;
   }
 
   uint tmp_value = aspect_ratios_size * min_sizes_size;
-  if (CheckUint32AddOverflow(tmp_value, max_sizes_size) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Failed to get list param.");
+  if (ge::CheckUint32AddOverflow(tmp_value, max_sizes_size) != SUCCESS) {
+    GELOGW("Failed to get list param.");
     return PARAM_INVALID;
   }
   tmp_value += max_sizes_size;
@@ -201,18 +200,18 @@ Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint aspect_ratios_size, uint mi
   }
   num_priors = static_cast<int>(tmp_value);
 
-  if (CheckIntMulOverflow(layer_width, layer_height) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Failed to get list param.");
+  if (ge::CheckIntMulOverflow(layer_width, layer_height) != SUCCESS) {
+    GELOGW("Failed to get list param.");
     return PARAM_INVALID;
   }
 
-  if (CheckIntMulOverflow(layer_width * layer_height, num_priors) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Failed to get list param.");
+  if (ge::CheckIntMulOverflow(layer_width * layer_height, num_priors) != SUCCESS) {
+    GELOGW("Failed to get list param.");
     return PARAM_INVALID;
   }
 
-  if (CheckIntMulOverflow(layer_width * layer_height * num_priors, kNumVariance) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Failed to get list param.");
+  if (ge::CheckIntMulOverflow(layer_width * layer_height * num_priors, kNumVariance) != SUCCESS) {
+    GELOGW("Failed to get list param.");
     return PARAM_INVALID;
   }
   dim_size = layer_width * layer_height * num_priors * kNumVariance;  // 4 variance

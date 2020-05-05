@@ -15,7 +15,6 @@
  */
 
 #include "framework/common/ge_format_util.h"
-
 #include "formats/formats.h"
 
 namespace ge {

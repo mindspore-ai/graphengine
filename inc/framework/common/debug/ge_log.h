@@ -18,11 +18,13 @@
 #define INC_FRAMEWORK_COMMON_DEBUG_GE_LOG_H_
 
 #include <cstdint>
+#include <unistd.h>
+#include <sys/syscall.h>
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "toolchain/slog.h"
 
-#define GE_MODULE_NAME GE
+#define GE_MODULE_NAME static_cast<int>(GE)
 
 // trace status of log
 enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
@@ -35,13 +37,18 @@ enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
 #define GELOGO(...) GE_LOG_OPLOG(GE_MODULE_NAME, __VA_ARGS__)
 #define GELOGT(VALUE, ...) GE_LOG_TRACE(GE_MODULE_NAME, VALUE, __VA_ARGS__)
 
-inline bool IsLogEnable(int module_name, int log_level) noexcept {
-  int32_t enable_event = 0;
-  int32_t dlog_level = dlog_getlevel(module_name, &enable_event);
-  if (dlog_level <= log_level) {
+inline bool IsLogEnable(int module_name, int log_level) {
+  int32_t enable = CheckLogLevel(module_name, log_level);
+  // 1:enable, 0:disable
+  if (enable == 1) {
     return true;
   }
   return false;
+}
+
+inline pid_t GetTid() {
+  thread_local static pid_t tid = syscall(__NR_gettid);
+  return tid;
 }
 
 #define GE_TIMESTAMP_START(stage) uint64_t startUsec_##stage = ge::GetCurrentTimestap()
@@ -68,29 +75,35 @@ inline bool IsLogEnable(int module_name, int log_level) noexcept {
   GEEVENT("[GEPERFTRACE] The time cost of %s is [%lu] micro second, call num is %lu", (stage_name), time_of##stage, \
           call_num_of##stage)
 
-#define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                           \
-  dlog_error(static_cast<int>(MOD_NAME), "%s: ErrorNo: %d(%s) " fmt, __FUNCTION__, ERROR_CODE, \
+#define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                       \
+  dlog_error(MOD_NAME, "%lu %s: ErrorNo: %d(%s) " fmt, GetTid(), __FUNCTION__, ERROR_CODE, \
              ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ##__VA_ARGS__)
-#define GE_LOG_WARN(MOD_NAME, fmt, ...)                   \
-  if (IsLogEnable(static_cast<int>(MOD_NAME), DLOG_WARN)) \
-  dlog_warn(static_cast<int>(MOD_NAME), "%s:" fmt, __FUNCTION__, ##__VA_ARGS__)
-#define GE_LOG_INFO(MOD_NAME, fmt, ...)                   \
-  if (IsLogEnable(static_cast<int>(MOD_NAME), DLOG_INFO)) \
-  dlog_info(static_cast<int>(MOD_NAME), "%s:" fmt, __FUNCTION__, ##__VA_ARGS__)
-#define GE_LOG_DEBUG(MOD_NAME, fmt, ...)                   \
-  if (IsLogEnable(static_cast<int>(MOD_NAME), DLOG_DEBUG)) \
-  dlog_debug(static_cast<int>(MOD_NAME), "%s:" fmt, __FUNCTION__, ##__VA_ARGS__)
-#define GE_LOG_EVENT(MOD_NAME, fmt, ...) dlog_event(static_cast<int>(MOD_NAME), "%s:" fmt, __FUNCTION__, ##__VA_ARGS__)
+#define GE_LOG_WARN(MOD_NAME, fmt, ...) \
+  if (IsLogEnable(MOD_NAME, DLOG_WARN)) dlog_warn(MOD_NAME, "%lu %s:" fmt, GetTid(), __FUNCTION__, ##__VA_ARGS__)
+#define GE_LOG_INFO(MOD_NAME, fmt, ...) \
+  if (IsLogEnable(MOD_NAME, DLOG_INFO)) dlog_info(MOD_NAME, "%lu %s:" fmt, GetTid(), __FUNCTION__, ##__VA_ARGS__)
+#define GE_LOG_DEBUG(MOD_NAME, fmt, ...) \
+  if (IsLogEnable(MOD_NAME, DLOG_DEBUG)) dlog_debug(MOD_NAME, "%lu %s:" fmt, GetTid(), __FUNCTION__, ##__VA_ARGS__)
+#define GE_LOG_EVENT(MOD_NAME, fmt, ...) dlog_event(MOD_NAME, "%lu %s:" fmt, GetTid(), __FUNCTION__, ##__VA_ARGS__)
 #define GE_LOG_OPLOG(MOD_NAME, fmt, ...) \
-  Dlog(static_cast<int>(MOD_NAME), DLOG_OPLOG, "%s:" fmt, __FUNCTION__, ##__VA_ARGS__)
-#define GE_LOG_TRACE(MOD_NAME, value, fmt, ...)                                                         \
-  do {                                                                                                  \
-    TraceStatus stat = value;                                                                           \
-    const char *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                          \
-    int idx = static_cast<int>(stat);                                                                   \
-    char *k = const_cast<char *>("status");                                                             \
-    char *v = const_cast<char *>(TraceStatStr[idx]);                                                    \
-    KeyValue kv = {k, v};                                                                               \
-    DlogWithKV(static_cast<int>(MOD_NAME), DLOG_TRACE, &kv, 1, "%s:" fmt, __FUNCTION__, ##__VA_ARGS__); \
+  Dlog(MOD_NAME, DLOG_OPLOG, "%lu %s:" fmt, GetTid(), __FUNCTION__, ##__VA_ARGS__)
+
+#define GE_LOG_TRACE(MOD_NAME, value, fmt, ...)                                                                       \
+  do {                                                                                                                \
+    TraceStatus stat = value;                                                                                         \
+    const char *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                                        \
+    int idx = static_cast<int>(stat);                                                                                 \
+    char *k = const_cast<char *>("status");                                                                           \
+    char *v = const_cast<char *>(TraceStatStr[idx]);                                                                  \
+    KeyValue kv = {k, v};                                                                                             \
+    DlogWithKV(static_cast<int>(MOD_NAME), DLOG_TRACE, &kv, 1, "%lu %s:" fmt, GetTid(), __FUNCTION__, ##__VA_ARGS__); \
   } while (0)
+
+// print memory when it is greater than 1KB.
+#define GE_PRINT_DYNAMIC_MEMORY(FUNC, PURPOSE, SIZE)                                                        \
+  do {                                                                                                      \
+    if ((SIZE) > 1024) {                                                                                    \
+      GELOGI("MallocMemory, func=%s, size=%zu, purpose=%s", (#FUNC), static_cast<size_t>(SIZE), (PURPOSE)); \
+    }                                                                                                       \
+  } while (0);
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_GE_LOG_H_

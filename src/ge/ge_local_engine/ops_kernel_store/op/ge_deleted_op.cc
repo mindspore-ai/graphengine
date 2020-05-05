@@ -58,6 +58,7 @@ REGISTER_OP_CREATOR(Placeholder, GeDeletedOp);
 REGISTER_OP_CREATOR(End, GeDeletedOp);
 REGISTER_OP_CREATOR(Merge, GeDeletedOp);
 REGISTER_OP_CREATOR(Switch, GeDeletedOp);
+REGISTER_OP_CREATOR(SwitchN, GeDeletedOp);
 REGISTER_OP_CREATOR(RefMerge, GeDeletedOp);
 REGISTER_OP_CREATOR(RefSwitch, GeDeletedOp);
 }  // namespace ge_local

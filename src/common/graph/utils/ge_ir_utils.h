@@ -131,6 +131,10 @@ class OnnxUtils {
 
   static void AddAttrProtoForOpInAndOutDesc(onnx::NodeProto *node_proto, const OpDescPtr &op_desc);
 
+  static void AddAttrProtoForAttrsFromAttrMap(const ::google::protobuf::Map<std::string, ge::proto::AttrDef> &attr_map,
+                                              onnx::NodeProto *node_proto, const std::string &prefix = "",
+                                              const std::string &suffix = "");
+
   static void AddAttrProtoForAttrsFromOpDef(const ge::proto::OpDef *op_def, onnx::NodeProto *node_proto);
 
   static onnx::TensorProto_DataType EncodeDataType(ge::DataType data_type);
@@ -172,9 +176,19 @@ class OnnxUtils {
 
   static void DecodeAttribute(const onnx::AttributeProto &attr_proto, std::string &value);
 
+  static void DecodeNodeAttributeForOpOutDesc(const onnx::AttributeProto &attr_proto,
+                                              const std::string &attr_name_for_output_desc, int32_t index,
+                                              OpDescPtr &op_desc);
+
+  static void DecodeNodeAttributeForOpInDesc(const onnx::AttributeProto &attr_proto,
+                                             const std::string &attr_name_for_input_desc, int32_t index,
+                                             OpDescPtr &op_desc);
+
   static void DecodeNodeAttributeForOpInAndOutDesc(const onnx::AttributeProto &attr_proto,
                                                    const std::string &attr_name_for_input_output_desc, int32_t index,
                                                    OpDescPtr &op_desc);
+
+  static void DecodeNodeAttributeForOpDef(const onnx::AttributeProto &attr_proto, ge::proto::OpDef &op_def);
 
   static void DecodeNodeAttributeForOpDesc(const onnx::AttributeProto &attr_proto, OpDescPtr &op_desc);
 

@@ -15,12 +15,10 @@
  */
 
 #include "graph/debug/graph_debug.h"
-
 #include <algorithm>
 #include <unordered_set>
 #include <vector>
 #include "debug/ge_util.h"
-
 #include "framework/common/debug/ge_log.h"
 
 #define TAB "    "

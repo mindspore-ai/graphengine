@@ -32,8 +32,16 @@ typedef struct tagOpAddrsInfo {
   uintptr_t addrData;
 } ccOpAddrsInfo;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ccStatus_t ccUpdateKernelArgs(ccOpContext &opContext, uint64_t dataBaseAddr, uint64_t weightBaseAddr,
                               uint64_t variableBaseAddr, void *argsAddr, uint64_t argsSize, void *l2ctrlAddr);
+
+#ifdef __cplusplus
+}
+#endif
 
 ccStatus_t ccGetKernelArgsAddrs(ccOpContext &opContext, void *argsAddr, uint64_t argsSize, void *l2ctrlAddr,
                                 std::vector<ccOpAddrsInfo> &opAddrsInfo);

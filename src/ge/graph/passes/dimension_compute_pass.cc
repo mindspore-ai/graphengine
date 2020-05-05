@@ -29,7 +29,7 @@ namespace ge {
 Status DimensionComputePass::Run(ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   auto op_kernel = folding_pass::GetKernelByType(node);
-  if (op_kernel == nullptr) {
+  if (op_kernel == nullptr || folding_pass::IsNoNeedConstantFolding(node)) {
     return SUCCESS;
   }
   std::vector<GeTensorPtr> outputs;

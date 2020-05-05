@@ -26,6 +26,7 @@
 #include "graph/common/bcast.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
+
 namespace ge {
 namespace {
 const size_t kFloorModInputX = 0;
@@ -62,14 +63,14 @@ Status CheckYIsZero(T const &y, DataType &type) {
 }
 
 // mod(x,y) equals to x - y * floor(x/y)
-#define DEFINE_FUNC_BY_TYPE(TYPE)                                                         \
-  std::function<TYPE(TYPE const &, TYPE const &, DataType &, Status &)> func_##TYPE = []( \
-      TYPE const &a, TYPE const &b, DataType &type, Status &ret) -> TYPE {                \
-    ret = CheckYIsZero(b, type);                                                          \
-    if (ret != SUCCESS) {                                                                 \
-      return static_cast<TYPE>(0);                                                        \
-    }                                                                                     \
-    return (a - b * FloorDiv(a, b));                                                      \
+#define DEFINE_FUNC_BY_TYPE(TYPE)                                                     \
+  std::function<TYPE(TYPE const &, TYPE const &, DataType &, Status &)> func_##TYPE = \
+    [](TYPE const &a, TYPE const &b, DataType &type, Status &ret) -> TYPE {           \
+    ret = CheckYIsZero(b, type);                                                      \
+    if (ret != SUCCESS) {                                                             \
+      return static_cast<TYPE>(0);                                                    \
+    }                                                                                 \
+    return (a - b * FloorDiv(a, b));                                                  \
   };
 
 #define SET_BCAST_COMPUTE_CASE(DTYPE, TYPE)                           \

@@ -19,7 +19,6 @@
 
 #include <string>
 #include <vector>
-
 #include "framework/common/ge_types.h"
 #include "inc/graph_pass.h"
 

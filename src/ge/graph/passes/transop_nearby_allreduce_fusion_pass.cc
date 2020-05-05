@@ -15,7 +15,6 @@
  */
 
 #include "graph/passes/transop_nearby_allreduce_fusion_pass.h"
-
 #include "framework/common/debug/ge_log.h"
 #include "common/debug/log.h"
 #include "common/types.h"
@@ -56,33 +55,35 @@ bool TransOpNearbyAllreduceFusionPass::IsSymmetricTransOps(const NodePtr &node1,
     return false;
   }
 
-  auto node1_input_desc = node1->GetOpDesc()->GetInputDesc(0);
-  auto node1_output_desc = node1->GetOpDesc()->GetOutputDesc(0);
+  const auto &node1_input_desc = node1->GetOpDesc()->MutableInputDesc(0);
+  const auto &node1_output_desc = node1->GetOpDesc()->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(node1_input_desc, return false);
+  GE_CHECK_NOTNULL_EXEC(node1_output_desc, return false);
 
-  auto node2_input_desc = node2->GetOpDesc()->GetInputDesc(0);
-  auto node2_output_desc = node2->GetOpDesc()->GetOutputDesc(0);
+  const auto &node2_input_desc = node2->GetOpDesc()->MutableInputDesc(0);
+  const auto &node2_output_desc = node2->GetOpDesc()->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(node2_input_desc, return false);
+  GE_CHECK_NOTNULL_EXEC(node2_output_desc, return false);
 
   // two symmetric trans ops should have symmetric input/output datatype
-  GELOGD("format: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d",
-         node1_input_desc.GetFormat(), node1_output_desc.GetFormat(), node2_input_desc.GetFormat(),
-         node2_output_desc.GetFormat());
-  if (node1_input_desc.GetFormat() != node2_output_desc.GetFormat() ||
-      node1_output_desc.GetFormat() != node2_input_desc.GetFormat()) {
+  GELOGD("format: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d", node1_input_desc->GetFormat(),
+         node1_output_desc->GetFormat(), node2_input_desc->GetFormat(), node2_output_desc->GetFormat());
+  if (node1_input_desc->GetFormat() != node2_output_desc->GetFormat() ||
+      node1_output_desc->GetFormat() != node2_input_desc->GetFormat()) {
     return false;
   }
 
   // two symmetric trans ops should have symmetric input/output format
-  GELOGD("datatype: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d",
-         node1_input_desc.GetDataType(), node1_output_desc.GetDataType(), node2_input_desc.GetDataType(),
-         node2_output_desc.GetDataType());
-  if (node1_input_desc.GetDataType() != node2_output_desc.GetDataType() ||
-      node1_output_desc.GetDataType() != node2_input_desc.GetDataType()) {
+  GELOGD("datatype: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d", node1_input_desc->GetDataType(),
+         node1_output_desc->GetDataType(), node2_input_desc->GetDataType(), node2_output_desc->GetDataType());
+  if (node1_input_desc->GetDataType() != node2_output_desc->GetDataType() ||
+      node1_output_desc->GetDataType() != node2_input_desc->GetDataType()) {
     return false;
   }
 
   // two symmetric trans ops should have symmetric input/output shape
-  if (node1_input_desc.GetShape().GetDims() != node2_output_desc.GetShape().GetDims() ||
-      node1_output_desc.GetShape().GetDims() != node2_input_desc.GetShape().GetDims()) {
+  if (node1_input_desc->GetShape().GetDims() != node2_output_desc->GetShape().GetDims() ||
+      node1_output_desc->GetShape().GetDims() != node2_input_desc->GetShape().GetDims()) {
     return false;
   }
   return true;
@@ -133,8 +134,8 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
 
     GELOGI("in_node=%s, out_node=%s", in_node->GetName().c_str(), out_node->GetName().c_str());
     if (!IsSymmetricTransOps(in_node, out_node)) {
-      GELOGD("ignore asymmetric transop %s and %s for node %s",
-             in_node->GetName().c_str(), out_node->GetName().c_str(), node->GetName().c_str());
+      GELOGD("ignore asymmetric transop %s and %s for node %s", in_node->GetName().c_str(), out_node->GetName().c_str(),
+             node->GetName().c_str());
       continue;
     }
 
@@ -164,8 +165,8 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
     if (node->GetOpDesc()->UpdateOutputDesc(static_cast<uint32_t>(i), output_desc) != GRAPH_SUCCESS) {
       GELOGE(FAILED, "UpdateOutputDesc");
     }
-    GELOGI("successfully remove paired transop (%s and %s) for node %s",
-           in_node->GetName().c_str(), out_node->GetName().c_str(), node->GetName().c_str());
+    GELOGI("successfully remove paired transop (%s and %s) for node %s", in_node->GetName().c_str(),
+           out_node->GetName().c_str(), node->GetName().c_str());
   }
   GELOGI("successfully remove %zu pair of transops in total for node %s", removed_node_count, node->GetName().c_str());
   return SUCCESS;

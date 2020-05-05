@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-# libge.so & libge_train.so
+# libge_compiler.so & libge_train.so
 # will later be integrated into libgraph_runner.so, works for both training and inference
 # compiling proto files generates some warnings, use no-unused-variable to suppress them
 set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
@@ -49,7 +49,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
 ######### libge_train.so #############
 # need to remove dependencies on pb files later
-file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/formats/format_transfers/*.cc"
         "common/formats/formats.cc"
         "common/formats/utils/formats_trans_utils.cc"
@@ -57,20 +57,24 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/ge/plugin_manager.cc"
         "common/profiling/profiling_manager.cc"
         "engine_manager/dnnengine_manager.cc"
+        "ge_local_engine/engine/host_cpu_engine.cc"
         "generator/ge_generator.cc"
         "generator/generator_api.cc"
-        "graph/build/graph_build.cc"
+        "graph/build/graph_builder.cc"
+        "graph/build/label_allocator.cc"
         "graph/build/logical_stream_allocator.cc"
         "graph/build/model_builder.cc"
-        "graph/build/optimize_stream_graph.cc"
         "graph/build/run_context.cc"
         "graph/build/stream_allocator.cc"
+        "graph/build/stream_graph_optimizer.cc"
         "graph/build/task_generator.cc"
         "graph/common/bcast.cc"
         "graph/common/omg_util.cc"
         "graph/common/transop_util.cc"
         "graph/execute/graph_execute.cc"
+        "graph/label/*.cc"
         "graph/load/graph_loader.cc"
+        "graph/load/new_model_manager/cpu_queue_schedule.cc"
         "graph/load/new_model_manager/data_dumper.cc"
         "graph/load/new_model_manager/data_inputer.cc"
         "graph/load/new_model_manager/davinci_model.cc"
@@ -92,10 +96,12 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
+        "graph/load/new_model_manager/task_info/stream_switchn_task_info.cc"
+        "graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
+        "graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
         "graph/load/new_model_manager/task_info/task_info.cc"
         "graph/load/new_model_manager/tbe_handle_store.cc"
         "graph/load/output/output.cc"
-        "graph/manager/custom/custom_op.cc"
         "graph/manager/graph_context.cc"
         "graph/manager/graph_manager.cc"
         "graph/manager/graph_manager_utils.cc"
@@ -105,12 +111,9 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/manager/trans_var_data_utils.cc"
         "graph/manager/util/debug.cc"
         "graph/manager/util/hcom_util.cc"
-        "graph/manager/util/node_searcher/need_rebuild_node_searcher.cc"
         "graph/manager/util/rt_context_util.cc"
         "graph/manager/util/variable_accelerate_ctrl.cc"
-        "graph/optimize/graph_functiondef.cc"
         "graph/optimize/graph_optimize.cc"
-        "graph/optimize/graph_optimizer.cc"
         "graph/optimize/optimizer/allreduce_fusion_pass.cc"
         "graph/optimize/summary_optimize.cc"
         "graph/partition/engine_place.cc"
@@ -120,7 +123,9 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/assert_pass.cc"
         "graph/passes/atomic_addr_clean_pass.cc"
         "graph/passes/base_pass.cc"
+        "graph/passes/cast_remove_pass.cc"
         "graph/passes/cast_translate_pass.cc"
+        "graph/passes/common_subexpression_elimination_pass.cc"
         "graph/passes/compile_nodes_pass.cc"
         "graph/passes/constant_folding_pass.cc"
         "graph/passes/constant_fuse_same_pass.cc"
@@ -159,12 +164,14 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/folding_kernel/shape_kernel.cc"
         "graph/passes/folding_kernel/shape_n_kernel.cc"
         "graph/passes/folding_kernel/size_kernel.cc"
+        "graph/passes/folding_kernel/slice_d_kernel.cc"
         "graph/passes/folding_kernel/slice_kernel.cc"
         "graph/passes/folding_kernel/squeeze_kernel.cc"
         "graph/passes/folding_kernel/ssd_prior_box_kernel.cc"
         "graph/passes/folding_kernel/strided_slice_kernel.cc"
         "graph/passes/folding_kernel/sub_kernel.cc"
         "graph/passes/folding_kernel/transdata_kernel.cc"
+        "graph/passes/folding_kernel/unpack_kernel.cc"
         "graph/passes/folding_pass.cc"
         "graph/passes/get_original_format_pass.cc"
         "graph/passes/guarantee_const_pass.cc"
@@ -179,7 +186,6 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/multi_batch_pass.cc"
         "graph/passes/net_output_pass.cc"
         "graph/passes/next_iteration_pass.cc"
-        "graph/passes/no_reshape_op_remove_pass.cc"
         "graph/passes/no_use_reshape_remove_pass.cc"
         "graph/passes/pass_manager.cc"
         "graph/passes/pass_utils.cc"
@@ -188,6 +194,7 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/prevent_gradient_pass.cc"
         "graph/passes/print_op_pass.cc"
         "graph/passes/prune_pass.cc"
+        "graph/passes/replace_with_empty_const_pass.cc"
         "graph/passes/reshape_remove_pass.cc"
         "graph/passes/resource_pair_add_control_pass.cc"
         "graph/passes/resource_pair_remove_control_pass.cc"
@@ -206,14 +213,12 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/transpose_transdata_pass.cc"
         "graph/passes/unused_const_pass.cc"
         "graph/passes/unused_op_remove_pass.cc"
-        "graph/passes/update_net_output_pass.cc"
         "graph/passes/var_is_initialized_op_pass.cc"
         "graph/passes/variable_format_pass.cc"
         "graph/passes/variable_op_pass.cc"
         "graph/passes/variable_prepare_op_pass.cc"
         "graph/passes/variable_ref_delete_op_pass.cc"
         "graph/preprocess/graph_preprocess.cc"
-        "graph/preprocess/insert_op/base_insert_op.cc"
         "graph/preprocess/insert_op/ge_aipp_op.cc"
         "graph/preprocess/insert_op/util_insert_aipp_op.cc"
         "graph/preprocess/multi_batch_copy_graph.cc"
@@ -223,13 +228,8 @@ file(GLOB_RECURSE TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "opskernel_manager/ops_kernel_manager.cc"
         "session/inner_session.cc"
         "session/session_manager.cc"
-        "single_op/single_op.cc"
-        "single_op/single_op_manager.cc"
-        "single_op/single_op_model.cc"
-        "single_op/stream_resource.cc"
-        "single_op/task/build_task_utils.cc"
-        "single_op/task/op_task.cc"
-        "single_op/task/tbe_task_builder.cc"
+        "single_op/*.cc"
+        "single_op/task/*.cc"
         )
 
 
@@ -261,9 +261,9 @@ target_link_libraries(ge_train
         rt
         dl)
 
-######### libge.so #############
+######### libge_compiler.so #############
 # need to remove dependencies on pb files later
-file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/formats/format_transfers/*.cc"
         "common/formats/formats.cc"
         "common/formats/utils/formats_trans_utils.cc"
@@ -271,20 +271,24 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/ge/plugin_manager.cc"
         "common/profiling/profiling_manager.cc"
         "engine_manager/dnnengine_manager.cc"
+        "ge_local_engine/engine/host_cpu_engine.cc"
         "generator/ge_generator.cc"
         "generator/generator_api.cc"
-        "graph/build/graph_build.cc"
+        "graph/build/graph_builder.cc"
+        "graph/build/label_allocator.cc"
         "graph/build/logical_stream_allocator.cc"
         "graph/build/model_builder.cc"
-        "graph/build/optimize_stream_graph.cc"
         "graph/build/run_context.cc"
         "graph/build/stream_allocator.cc"
+        "graph/build/stream_graph_optimizer.cc"
         "graph/build/task_generator.cc"
         "graph/common/bcast.cc"
         "graph/common/omg_util.cc"
         "graph/common/transop_util.cc"
         "graph/execute/graph_execute.cc"
+        "graph/label/*.cc"
         "graph/load/graph_loader.cc"
+        "graph/load/new_model_manager/cpu_queue_schedule.cc"
         "graph/load/new_model_manager/data_dumper.cc"
         "graph/load/new_model_manager/data_inputer.cc"
         "graph/load/new_model_manager/davinci_model.cc"
@@ -305,10 +309,12 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
+        "graph/load/new_model_manager/task_info/stream_switchn_task_info.cc"
+        "graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
+        "graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
         "graph/load/new_model_manager/task_info/task_info.cc"
         "graph/load/new_model_manager/tbe_handle_store.cc"
         "graph/load/output/output.cc"
-        "graph/manager/custom/custom_op.cc"
         "graph/manager/graph_context.cc"
         "graph/manager/graph_manager.cc"
         "graph/manager/graph_manager_utils.cc"
@@ -317,13 +323,9 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/manager/model_manager/event_manager.cc"
         "graph/manager/trans_var_data_utils.cc"
         "graph/manager/util/debug.cc"
-        "graph/manager/util/node_searcher/need_rebuild_node_searcher.cc"
         "graph/manager/util/rt_context_util.cc"
         "graph/manager/util/variable_accelerate_ctrl.cc"
-        "graph/optimize/graph_functiondef.cc"
         "graph/optimize/graph_optimize.cc"
-        "graph/optimize/graph_optimizer.cc"
-        "graph/optimize/optimizer/allreduce_fusion_inference_pass.cc"
         "graph/optimize/summary_optimize.cc"
         "graph/partition/engine_place.cc"
         "graph/partition/graph_partition.cc"
@@ -332,7 +334,9 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/assert_pass.cc"
         "graph/passes/atomic_addr_clean_pass.cc"
         "graph/passes/base_pass.cc"
+        "graph/passes/cast_remove_pass.cc"
         "graph/passes/cast_translate_pass.cc"
+        "graph/passes/common_subexpression_elimination_pass.cc"
         "graph/passes/compile_nodes_pass.cc"
         "graph/passes/constant_folding_pass.cc"
         "graph/passes/constant_fuse_same_pass.cc"
@@ -371,12 +375,14 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/folding_kernel/shape_kernel.cc"
         "graph/passes/folding_kernel/shape_n_kernel.cc"
         "graph/passes/folding_kernel/size_kernel.cc"
+        "graph/passes/folding_kernel/slice_d_kernel.cc"
         "graph/passes/folding_kernel/slice_kernel.cc"
         "graph/passes/folding_kernel/squeeze_kernel.cc"
         "graph/passes/folding_kernel/ssd_prior_box_kernel.cc"
         "graph/passes/folding_kernel/strided_slice_kernel.cc"
         "graph/passes/folding_kernel/sub_kernel.cc"
         "graph/passes/folding_kernel/transdata_kernel.cc"
+        "graph/passes/folding_kernel/unpack_kernel.cc"
         "graph/passes/folding_pass.cc"
         "graph/passes/get_original_format_pass.cc"
         "graph/passes/guarantee_const_pass.cc"
@@ -391,7 +397,6 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/multi_batch_pass.cc"
         "graph/passes/net_output_pass.cc"
         "graph/passes/next_iteration_pass.cc"
-        "graph/passes/no_reshape_op_remove_pass.cc"
         "graph/passes/no_use_reshape_remove_pass.cc"
         "graph/passes/pass_manager.cc"
         "graph/passes/pass_utils.cc"
@@ -400,6 +405,7 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/prevent_gradient_pass.cc"
         "graph/passes/print_op_pass.cc"
         "graph/passes/prune_pass.cc"
+        "graph/passes/replace_with_empty_const_pass.cc"
         "graph/passes/reshape_remove_pass.cc"
         "graph/passes/resource_pair_add_control_pass.cc"
         "graph/passes/resource_pair_remove_control_pass.cc"
@@ -418,14 +424,12 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/transpose_transdata_pass.cc"
         "graph/passes/unused_const_pass.cc"
         "graph/passes/unused_op_remove_pass.cc"
-        "graph/passes/update_net_output_pass.cc"
         "graph/passes/var_is_initialized_op_pass.cc"
         "graph/passes/variable_format_pass.cc"
         "graph/passes/variable_op_pass.cc"
         "graph/passes/variable_prepare_op_pass.cc"
         "graph/passes/variable_ref_delete_op_pass.cc"
         "graph/preprocess/graph_preprocess.cc"
-        "graph/preprocess/insert_op/base_insert_op.cc"
         "graph/preprocess/insert_op/ge_aipp_op.cc"
         "graph/preprocess/insert_op/util_insert_aipp_op.cc"
         "graph/preprocess/multi_batch_copy_graph.cc"
@@ -442,16 +446,19 @@ file(GLOB_RECURSE INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "single_op/task/build_task_utils.cc"
         "single_op/task/op_task.cc"
         "single_op/task/tbe_task_builder.cc"
+##########################################
+#        "ir_build/ge_ir_build.cc"
+#        "offline/atc_ir_common.cc"
         )
 
-add_library(ge SHARED ${INFER_SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HDRS})
-target_compile_definitions(ge PRIVATE
+add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HDRS})
+target_compile_definitions(ge_compiler PRIVATE
         PROTOBUF_INLINE_NOT_IN_HEADERS=0
         DAVINCI_SUPPORT_PROFILING
         REUSE_MEMORY=1
         FMK_HOST_INFER
         PLATFORM_CLOUD)
-target_link_libraries(ge
+target_link_libraries(ge_compiler
         graph
         ge_common
         "-Wl,--whole-archive"

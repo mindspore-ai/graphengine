@@ -93,6 +93,10 @@ class GraphMemoryAssigner {
   ///
   ge::Status AssignVarAttr2Nodes();
 
+  ge::Status AssignSubgraphInputsMemory();
+
+  ge::Status AssignSubgraphOutputsMemory();
+
   ge::Status ReAssignMemory(bool is_loop_graph, size_t &mem_offset);
 
   ge::Status SetInputOffset();
@@ -109,7 +113,12 @@ class GraphMemoryAssigner {
   ///
   ge::Status ReAssignContinuousMemory(bool is_loop_graph);
 
-  ge::Status ReAssignVirtualConcatMemory();
+  ge::Status ReAssignReuseAndNoPaddingContinuousInputMemory();
+
+  ge::Status ReAssignReuseAndNoPaddingContinuousOutputMemory();
+
+  ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &output_desc, int64_t dim_index,
+                                               int64_t &output_mem_size, int64_t &batch_dim_num, int64_t &out_size);
 
   ge::Status ReAssignMergeMemory();
 
@@ -146,6 +155,8 @@ class GraphMemoryAssigner {
   ge::Status SetAtomicCleanAttr(const ge::NodePtr &n, int64_t atomic_mem_start, int64_t atomic_mem_size);
 
   void AlignMemOffset(const int64_t &mem_align_size);
+
+  ge::Status UpdateOpInputOffset(const NodePtr &node, vector<int64_t> &input_list) const;
 
   MemoryOffsetList memory_offset_;
   ge::ComputeGraphPtr compute_graph_;

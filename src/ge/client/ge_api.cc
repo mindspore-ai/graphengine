@@ -61,14 +61,14 @@ Status CheckDumpAndReuseMemory(const std::map<string, string> &options) {
   const int kDecimal = 10;
   auto dump_op_env = std::getenv("DUMP_OP");
   int dump_op_flag = (dump_op_env != nullptr) ? std::strtol(dump_op_env, nullptr, kDecimal) : 0;
-  auto disable_reuse_memory_iter = options.find("ge.exec.disableReuseMemory");
-  if (disable_reuse_memory_iter != options.end()) {
-    if (disable_reuse_memory_iter->second == "0") {
+  auto disableReuseMemoryIter = options.find("ge.exec.disableReuseMemory");
+  if (disableReuseMemoryIter != options.end()) {
+    if (disableReuseMemoryIter->second == "0") {
       GELOGD("ge.exec.disableReuseMemory=0, reuse memory is open");
       if (dump_op_flag) {
         GELOGW("Will dump incorrect op data with GE Option ge.exec.disableReuseMemory=0");
       }
-    } else if (disable_reuse_memory_iter->second == "1") {
+    } else if (disableReuseMemoryIter->second == "1") {
       GELOGD("ge.exec.disableReuseMemory=1, reuse memory is close");
     } else {
       GELOGE(PARAM_INVALID, "CheckDumpAndReuseMemory ge.exec.disableReuseMemory is valid");
@@ -128,22 +128,29 @@ Status GEInitialize(const std::map<string, string> &options) {
   OpsProtoManager *manager = OpsProtoManager::Instance();
   std::map<string, string> option_tmp;
   option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
+  GE_TIMESTAMP_START(GEInitialize);
   bool is_proto_init = manager->Initialize(option_tmp);
+  GE_TIMESTAMP_END(GEInitialize, "GEInitialize::ManagerInitialize");
   if (!is_proto_init) {
     GELOGE(GE_CLI_INIT_FAILED, "geInitialize failed, ops proto path is invalid.");
     return FAILED;
   }
 
   // check options is valid
+  GE_TIMESTAMP_START(CheckOptionsValid);
   if (CheckOptionsValid(options) != SUCCESS) {
     return FAILED;
   }
+  GE_TIMESTAMP_END(CheckOptionsValid, "GEInitialize::CheckOptionsValid");
 
+  GE_TIMESTAMP_START(InitPreparation);
   SaveDdkVersion(options);
-
+  GE_TIMESTAMP_END(InitPreparation, "GEInitialize::InitPreparation");
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
+  GE_TIMESTAMP_START(GELibInitialize);
   Status ret = ge::GELib::Initialize(options);
+  GE_TIMESTAMP_END(GELibInitialize, "GEInitialize::GELibInitialize");
   if (ret != SUCCESS) {
     GELOGE(GE_CLI_INIT_FAILED, "geInitialize failed, error code = %u", ret);
     return FAILED;
@@ -170,17 +177,20 @@ Status GEFinalize() {
 
   std::lock_guard<std::mutex> lock(kGeReleaseMutex);
   // call Finalize
+  Status ret = SUCCESS;
+  Status middle_ret;
   GELOGT(TRACE_RUNNING, "Finalizing environment");
-  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
-  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GEFinalize Failed: GE not initialized");
-    return GE_CLI_GE_NOT_INITIALIZED;
+  std::shared_ptr<GELib> instancePtr = ge::GELib::GetInstance();
+  if (instancePtr == nullptr || !instancePtr->InitFlag()) {
+    GELOGW("GEFinalize Failed: GE not initialized.");
+    ret = GE_CLI_GE_NOT_INITIALIZED;
   }
-  Status ret = instance_ptr->Finalize();
-  GELOGI("GEFinalize finalize gelib ret=%u", ret);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "GEFinalize Failed");
-    return FAILED;
+  if (ret != GE_CLI_GE_NOT_INITIALIZED) {
+    middle_ret = instancePtr->Finalize();
+    GELOGI("GEFinalize finalize gelib ret=%u", middle_ret);
+    if (middle_ret != SUCCESS) {
+      ret = middle_ret;
+    }
   }
 
   if (kGeInitialized && ret == SUCCESS) {
@@ -379,8 +389,6 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
 }
 
 Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback) {
-  GELOGW(
-    "The callback function will not be checked. Please ensure that the implementation of the function is trusted.");
   return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, key, callback);
 }
 

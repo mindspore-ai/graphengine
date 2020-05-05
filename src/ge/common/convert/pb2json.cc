@@ -20,13 +20,16 @@
 #include "common/convert/pb2json.h"
 #include <set>
 #include <string>
-
+#include "securec.h"
 #include "framework/common/fmk_types.h"
 
 using std::set;
 using std::string;
 
 namespace ge {
+namespace {
+const int kSignificantDigits = 10;
+}
 // JSON parses non utf8 character throwing exceptions, so some fields need to be shielded through black fields
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void Pb2Json::Message2Json(const ProtobufMsg &message,
                                                                             const set<string> &black_fields, Json &json,
@@ -75,7 +78,7 @@ void Pb2Json::OneField2Json(const ProtobufMsg &message, const ProtobufFieldDescr
     case ProtobufFieldDescriptor::TYPE_MESSAGE: {
       const ProtobufMsg &tmp_message = reflection->GetMessage(message, field);
       if (0 != tmp_message.ByteSize()) {
-        Message2Json(tmp_message, black_fields, json[field->name()]);
+        Message2Json(tmp_message, black_fields, json[field->name()], enum2str);
       }
       break;
     }
@@ -113,24 +116,47 @@ void Pb2Json::OneField2Json(const ProtobufMsg &message, const ProtobufFieldDescr
       break;
 
     case ProtobufFieldDescriptor::TYPE_FLOAT:
-      json[field->name()] = reflection->GetFloat(message, field);
+      char str[kSignificantDigits];
+      sprintf_s(str, kSignificantDigits, "%g", reflection->GetFloat(message, field));
+      json[field->name()] = str;
       break;
 
     case ProtobufFieldDescriptor::TYPE_STRING:
-    case ProtobufFieldDescriptor::TYPE_BYTES:
       json[field->name()] = reflection->GetString(message, field);
       break;
+
+    case ProtobufFieldDescriptor::TYPE_BYTES: {
+      string field_name = field->name();
+      string type_bytes = reflection->GetString(message, field);
+      json[field_name] = TypeBytes2String(field_name, type_bytes);
+      break;
+    }
 
     default:
       break;
   }
 }
 
+string Pb2Json::TypeBytes2String(string &field_name, string &type_bytes) {
+  if (field_name != "offset") {
+    return type_bytes;
+  }
+  string result = "";
+  for (char temp_value : type_bytes) {
+    uint8_t *value = 0;
+    value = reinterpret_cast<uint8_t *>(&temp_value);
+    char str[kSignificantDigits];
+    sprintf_s(str, kSignificantDigits, "%d", *value);
+    result += str;
+  }
+  return result;
+}
+
 void Pb2Json::RepeatedMessage2Json(const ProtobufMsg &message, const ProtobufFieldDescriptor *field,
                                    const ProtobufReflection *reflection, const set<string> &black_fields, Json &json,
                                    bool enum2str) {
   if (nullptr == field || nullptr == reflection) {
-    Message2Json(message, black_fields, json);
+    Message2Json(message, black_fields, json, enum2str);
     return;
   }
 
@@ -140,7 +166,7 @@ void Pb2Json::RepeatedMessage2Json(const ProtobufMsg &message, const ProtobufFie
       case ProtobufFieldDescriptor::TYPE_MESSAGE: {
         const ProtobufMsg &tmp_message = reflection->GetRepeatedMessage(message, field, i);
         if (0 != tmp_message.ByteSize()) {
-          Message2Json(tmp_message, black_fields, tmp_json);
+          Message2Json(tmp_message, black_fields, tmp_json, enum2str);
         }
       } break;
 

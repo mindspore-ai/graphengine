@@ -28,7 +28,7 @@ class ReFormatKernel : public Kernel {
                  std::vector<GeTensorPtr> &v_output) override;
 
  private:
-  Status ValidateInput(const OpDescPtr &attr, const std::vector<ConstGeTensorPtr> &input);
+  Status ValidateInput(const OpDescPtr &attr, const std::vector<ConstGeTensorPtr> &input) const;
 };
 }  // namespace ge
 

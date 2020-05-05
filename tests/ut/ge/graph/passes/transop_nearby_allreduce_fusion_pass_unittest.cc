@@ -365,7 +365,7 @@ TEST(UtestTransopNearbyAllreduceFusionPass, test8_in_and_out_data_anchor_are_not
   NamesToPass names_to_pass;
   names_to_pass.emplace_back("TransOpNearbyAllreduceFusionPass", &transop_nearby_allreduce_fusion_pass);
   Status ret = ge_pass.Run(names_to_pass);
-  EXPECT_EQ(ret, INTERNAL_ERROR);
+  EXPECT_EQ(ret, FAILED);
 }
 
 }  // namespace

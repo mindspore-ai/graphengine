@@ -43,8 +43,8 @@ Status EmptyKernel::EmptyCheck(const OpDescPtr &op_desc_ptr, const std::vector<C
   }
   // check input size
   bool size_check =
-      ((op_desc_ptr->GetAllInputsDesc().size() != kEmptyInputsSize) || (input.size() != kEmptyInputsSize) ||
-       (op_desc_ptr->GetAllOutputsDesc().size() != kEmptyOutputsSize));
+    ((op_desc_ptr->GetAllInputsDesc().size() != kEmptyInputsSize) || (input.size() != kEmptyInputsSize) ||
+     (op_desc_ptr->GetAllOutputsDesc().size() != kEmptyOutputsSize));
   if (size_check) {
     GELOGE(PARAM_INVALID, "Input/Output size error. InDesc size:%zu, OutDesc size:%zu, in size:%zu ",
            op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
@@ -109,7 +109,7 @@ Status EmptyKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
     ret = KernelUtils::GenData(total_data_size, (type)data, output_ptr); \
     break;
     CASE(DT_FLOAT, float)
-    CASE(DT_FLOAT16, fp16_t)
+    CASE(DT_FLOAT16, ge::fp16_t)
     CASE(DT_INT8, int8_t)
     CASE(DT_INT16, int16_t)
     CASE(DT_UINT16, uint16_t)

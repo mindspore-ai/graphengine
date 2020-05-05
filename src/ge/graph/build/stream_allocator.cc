@@ -42,8 +42,8 @@ namespace ge {
 Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &max_parallel_num, bool hcom_parallel) {
   GELOGI("AssignLogicalStreams start.");
   GE_CHECK_NOTNULL(whole_graph_);
-  GraphUtils::DumpGEGraph(whole_graph_, "BeforeAssignedLogicalStreams_whole_graph");
-  GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "BeforeAssignedLogicalStreams_whole_graph");
+  GraphUtils::DumpGEGraph(whole_graph_, "BeforeAssignedLogicalStreams");
+  GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "BeforeAssignedLogicalStreams");
 
   auto gelib = GELib::GetInstance();
   if (gelib == nullptr) {
@@ -60,8 +60,8 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
     return status;
   }
 
-  GraphUtils::DumpGEGraph(whole_graph_, "AfterAssignedLogicalStreams_whole_graph");
-  GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "AfterAssignedLogicalStreams_whole_graph");
+  GraphUtils::DumpGEGraph(whole_graph_, "AfterAssignedLogicalStreams");
+  GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "AfterAssignedLogicalStreams");
   GELOGI("AssignLogicalStreams success.");
 
   return SUCCESS;
@@ -124,7 +124,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
   GraphUtils::DumpGEGraph(whole_graph_, "RefreshRealStream");
   GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "RefreshRealStream");
 
-  for (const NodePtr &node : whole_graph_->GetDirectNode()) {
+  for (const NodePtr &node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     auto stream_id = node->GetOpDesc()->GetStreamId();
     if (stream_id == kInvalidStream) {
@@ -169,7 +169,7 @@ Status StreamAllocator::SplitStreams() {
     pre_node_vec[i] = nullptr;
   }
 
-  for (const auto &cur_node : whole_graph_->GetDirectNode()) {
+  for (const auto &cur_node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(cur_node->GetOpDesc());
     int64_t stream_id = cur_node->GetOpDesc()->GetStreamId();
     if (stream_id == kInvalidStream) {
@@ -225,12 +225,11 @@ Status StreamAllocator::SplitStreams() {
   if (last_stream_id >= 0) {
     stream_num_ = last_stream_id + 1;
   }
-
   return UpdateActiveStreams(split_streams);
 }
 
 Status StreamAllocator::UpdateActiveStreams(vector<set<int64_t>> &split_streams) {
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     vector<uint32_t> active_streams;
     GE_CHECK_NOTNULL(node->GetOpDesc());
     if (AttrUtils::GetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
@@ -260,7 +259,7 @@ Status StreamAllocator::UpdateActiveStreams(vector<set<int64_t>> &split_streams)
 Status StreamAllocator::ActiveStreamsBySpecificLabels() {
   // <stream label, set<stream id>>
   map<string, set<int64_t>> labeled_streams;
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     string stream_label;
@@ -272,7 +271,7 @@ Status StreamAllocator::ActiveStreamsBySpecificLabels() {
     }
   }
 
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     vector<string> activated_label_list;
     if (!AttrUtils::GetListStr(node->GetOpDesc(), ATTR_NAME_ACTIVE_LABEL_LIST, activated_label_list) ||
@@ -306,7 +305,7 @@ Status StreamAllocator::ActiveStreamsForLoop() {
     }
   }
   // Set the stream that needs to be activated
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     bool is_loop_active = false;
     if (AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, is_loop_active) && is_loop_active) {
@@ -329,7 +328,7 @@ Status StreamAllocator::ActiveStreamsForLoop() {
 }
 
 Status StreamAllocator::CheckStreamActived() const {
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     vector<uint32_t> active_streams;
     if (AttrUtils::GetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
@@ -347,7 +346,7 @@ Status StreamAllocator::CheckStreamActived() const {
 
 // Insert the send/recv event id to the graph
 Status StreamAllocator::InsertSyncEvents() {
-  for (const auto &cur_node : whole_graph_->GetDirectNode()) {
+  for (const auto &cur_node : whole_graph_->GetAllNodes()) {
     // Take the adjacent points, then judge whether need to insert the event
     for (const OutDataAnchorPtr &anchor : cur_node->GetAllOutDataAnchors()) {
       for (const InDataAnchorPtr &peer_in_anchor : anchor->GetPeerInDataAnchors()) {
@@ -427,7 +426,7 @@ Status StreamAllocator::InsertOneEventInTwoNodes(const NodePtr &cur_node, const 
 Status StreamAllocator::OptimizeSyncEvents() {
   map<int64_t, vector<NodePtr>> stream_nodes;
 
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     int64_t stream_id = node->GetOpDesc()->GetStreamId();
     stream_nodes[stream_id].emplace_back(node);
@@ -484,8 +483,8 @@ Status StreamAllocator::OptimizeBySendEvents(const map<int64_t, vector<NodePtr>>
         if (send_node_to_event_id.find(send_node_ptr) != send_node_to_event_id.end()) {
           RmvSendEventId(send_node_ptr, event_id);
           RmvRecvEventId(recv_node_ptr, event_id);
-          GELOGI("Remove send event %u for node: %s", event_id, send_node_ptr->GetName().c_str());
-          GELOGI("Remove recv event %u for node: %s", event_id, recv_node_ptr->GetName().c_str());
+          GELOGI("Remove event %u between node %s and node %s", event_id, send_node_ptr->GetName().c_str(),
+                 recv_node_ptr->GetName().c_str());
         } else {
           send_node_to_event_id[send_node_ptr] = event_id;
         }
@@ -603,6 +602,8 @@ Status StreamAllocator::OptimizeByStreamActivate() {
       if (IsRecvNodeActivatedBySendNode(send_node_ptr, recv_node_ptr)) {
         RmvSendEventId(send_node_ptr, event_id);
         RmvRecvEventId(recv_node_ptr, event_id);
+        GELOGI("Remove event %u between node %s and node %s.", event_id, send_node_ptr->GetName().c_str(),
+               recv_node_ptr->GetName().c_str());
       }
     }
   }
@@ -654,7 +655,7 @@ Status StreamAllocator::RefreshContinuousEvents() {
 
 // Insert the real send/recv node in the graph
 Status StreamAllocator::InsertSyncEventNodes() {
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     // Add the node corresponding to the recv event
     vector<uint32_t> recv_event_id_list;
     GetRecvEventIdList(node, recv_event_id_list);
@@ -682,7 +683,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
         return status;
       }
 
-      GELOGI("Add recv %u before node: %s", event_id, node->GetName().c_str());
+      GELOGI("Insert recv event %u before node: %s", event_id, node->GetName().c_str());
     }
 
     // Add the node corresponding to the send event
@@ -710,7 +711,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
         return status;
       }
 
-      GELOGI("Add send event %u after node: %s", event_id, node->GetName().c_str());
+      GELOGI("Insert send event %u after node: %s", event_id, node->GetName().c_str());
     }
   }
 
@@ -813,7 +814,7 @@ NodePtr StreamAllocator::GetNodeFromRecvEventId(uint32_t recv_event_id) const {
 
 void StreamAllocator::DumpEvents() {
   map<int64_t, vector<NodePtr>> after_refresh_stream_nodes;
-  for (const auto &node : whole_graph_->GetDirectNode()) {
+  for (const auto &node : whole_graph_->GetAllNodes()) {
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
     int64_t stream_id = node->GetOpDesc()->GetStreamId();
     after_refresh_stream_nodes[stream_id].emplace_back(node);
@@ -854,7 +855,7 @@ Status StreamAllocator::AddActiveEntryStream() {
 
   // Collect streams active by StreamSwitch/StreamActive node.
   std::set<uint32_t> deactive_stream;
-  for (ge::NodePtr &node : whole_graph_->GetDirectNode()) {
+  for (ge::NodePtr &node : whole_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     Status ret = CollectDeactiveStream(node->GetOpDesc(), deactive_stream);
     if (ret != SUCCESS) {

@@ -17,8 +17,8 @@
 #ifndef GE_GRAPH_PASSES_AICPU_CONSTANT_FOLDING_PASS_H_
 #define GE_GRAPH_PASSES_AICPU_CONSTANT_FOLDING_PASS_H_
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "graph/passes/folding_pass.h"
@@ -43,15 +43,16 @@ class AicpuConstantFoldingPass : public FoldingPass {
     uint64_t dst_ptr;
   } __attribute__((packed));
   bool CheckInput(const ge::NodePtr &node, vector<ConstGeTensorPtr> &weight_vec);
+  bool IsSkipFold(const ge::NodePtr &node);
   Status GetInputAddrs(const vector<ConstGeTensorPtr> &weight_vec, vector<AddrAndType> &input_addrs);
   Status GetOutputAddrs(const OpDescPtr &node_desc, vector<uint64_t> &output_addrs);
-  Status GenerateTaskForLaunch(STR_FWK_OP_KERNEL &aicpu_task, void *&task_buf) const;
+  Status GenerateTaskForLaunch(STR_FWK_OP_KERNEL &aicpu_task, void *&task_buf);
   Status GenerateDataPtrInfo(const vector<uint64_t> &output_addrs, vector<DataPtrInfo> &data_vec,
                              vector<uint64_t> &data_infos);
   Status GenerateGeTensor(const OpDescPtr &node_desc, const vector<DataPtrInfo> &data_vec,
                           vector<GeTensorPtr> &outputs);
-  Status UpdateWorkSpaceAddr(string &task_info, STR_FWK_OP_KERNEL &task) const;
-  Status UpdateInputAndOutputAddr(const vector<uint64_t> &io_addrs, STR_FWK_OP_KERNEL &task) const;
+  Status UpdateWorkSpaceAddr(string &task_info, STR_FWK_OP_KERNEL &task);
+  Status UpdateInputAndOutputAddr(const vector<uint64_t> &io_addrs, STR_FWK_OP_KERNEL &task);
   Status UpdateSingleOpAddr(string &task_info, const vector<AddrAndType> &input_addrs,
                             const vector<uint64_t> &outputs_addr_vec, STR_FWK_OP_KERNEL &task);
   Status UpdateMemCopyAddr(string &task_info, const vector<uint64_t> &data_infos, vector<uint64_t> &internal_addrs,
@@ -60,8 +61,8 @@ class AicpuConstantFoldingPass : public FoldingPass {
                                const vector<uint64_t> &output_addrs);
   Status LaunchMemCopyTask(const vector<uint64_t> &data_infos);
   void ReleaseMemory(const vector<AddrAndType> &input_addrs, const vector<uint64_t> &output_addrs,
-                     const vector<DataPtrInfo> &data_vec) const;
-  Status KernelLaunch(void *aicpu_task) const;
+                     const vector<DataPtrInfo> &data_vec);
+  Status KernelLaunch(void *aicpu_task);
 };
 }  // namespace ge
 

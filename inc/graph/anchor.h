@@ -20,13 +20,17 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "graph/ge_error_codes.h"
 #include "graph/range_vistor.h"
 #include "graph/types.h"
 
 namespace ge {
-enum AnchorStatus { ANCHOR_SUSPEND = 0, ANCHOR_CONST = 1, ANCHOR_DATA = 2, ANCHOR_RESERVED = 3 };
+enum AnchorStatus {
+  ANCHOR_SUSPEND = 0,  // dat null
+  ANCHOR_CONST = 1,
+  ANCHOR_DATA = 2,  // Effective
+  ANCHOR_RESERVED = 3
+};
 using std::string;
 using std::vector;
 
@@ -81,17 +85,19 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Anchor : public std::enable
   virtual ~Anchor() = default;
 
  protected:
-  // Whether the two anchors are equal
+  // Whether the two anchor is equal
   virtual bool Equal(AnchorPtr anchor) const = 0;
   virtual bool IsTypeOf(TYPE type) const;
 
  public:
   // Get all peer anchors connected to current anchor
   Vistor<AnchorPtr> GetPeerAnchors() const;
-  // Get the first peer anchor
+  // Get peer anchor size
+  size_t GetPeerAnchorsSize() const;
+  // Get first peer anchor
   AnchorPtr GetFirstPeerAnchor() const;
 
-  // Get the node which is the owner of the anchor
+  // Get the anchor belong to which node
   NodePtr GetOwnerNode() const;
 
   // Remove all links with the anchor
@@ -100,22 +106,22 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Anchor : public std::enable
   // Remove link with the given anchor
   graphStatus Unlink(const AnchorPtr &peer);
 
-  // Replace the peeranchor with the new peeranchor
+  // Replace peer with new peers
   graphStatus ReplacePeer(const AnchorPtr &oldPeer, const AnchorPtr &firstPeer, const AnchorPtr &secondPeer);
 
   // Judge if the anchor is linked with the given anchor
   bool IsLinkedWith(const AnchorPtr &peer);
 
-  // Get the anchor index of the node
+  // Get anchor index of the node
   int GetIdx() const;
 
-  // Set the anchor index of the node
+  // set anchor index of the node
   void SetIdx(int index);
 
  protected:
   // All peer anchors connected to current anchor
   vector<std::weak_ptr<Anchor>> peer_anchors_;
-  // The owner nodes of the anchor
+  // The owner node of anchor
   std::weak_ptr<Node> owner_node_;
   // The index of current anchor
   int idx_;
@@ -167,7 +173,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InDataAnchor : public DataA
 
   virtual ~InDataAnchor() = default;
 
-  // Get source out data anchor
+  // Get  source out data anchor
   OutDataAnchorPtr GetPeerOutAnchor() const;
 
   // Build connection from OutDataAnchor to InDataAnchor

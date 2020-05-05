@@ -17,9 +17,9 @@
 #ifndef GE_GRAPH_PASSES_LINK_GEN_MASK_NODES_PASS_H_
 #define GE_GRAPH_PASSES_LINK_GEN_MASK_NODES_PASS_H_
 
-#include <vector>
 #include <map>
 #include <string>
+#include <vector>
 
 #include "graph/graph.h"
 #include "inc/graph_pass.h"
@@ -28,7 +28,7 @@ namespace ge {
 // Link all GenMask nodes using control edges.
 class LinkGenMaskNodesPass : public GraphPass {
  public:
-  explicit LinkGenMaskNodesPass(const std::map<std::string, int> &stream_max_parallel_num);
+  LinkGenMaskNodesPass(const std::map<std::string, int> &stream_max_parallel_num);
   ~LinkGenMaskNodesPass() override = default;
   LinkGenMaskNodesPass(const LinkGenMaskNodesPass &) = delete;
   LinkGenMaskNodesPass &operator=(const LinkGenMaskNodesPass &) = delete;
@@ -37,7 +37,7 @@ class LinkGenMaskNodesPass : public GraphPass {
 
  private:
   bool AreAllInputsConst(const NodePtr &node) const;
-  void GetAllGenMaskNodes(const ComputeGraphPtr &graph, std::vector<NodePtr> &gen_mask_nodes) const;
+  void GetAllGenMaskNodes(ComputeGraphPtr graph, std::vector<NodePtr> &gen_mask_nodes) const;
   Status GetGenMaskGroupSize(std::vector<NodePtr> &gen_mask_nodes, size_t &gen_mask_group_size) const;
 
   const std::map<std::string, int> stream_max_parallel_num_;

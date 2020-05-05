@@ -22,8 +22,8 @@
 #include <string>
 #include <vector>
 
-#include "external/graph/ge_error_codes.h"
-#include "external/graph/types.h"
+#include "./ge_error_codes.h"
+#include "./types.h"
 
 namespace ge {
 class ShapeImpl;

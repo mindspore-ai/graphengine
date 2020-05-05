@@ -17,31 +17,33 @@
 #include "graph/preprocess/multi_batch_copy_graph.h"
 
 #include <string>
-#include <set>
 #include <queue>
+#include <set>
 
+#include "common/formats/utils/formats_trans_utils.h"
+#include "common/ge/ge_util.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/omg/omg_inner_types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
+#include "graph/passes/prune_pass.h"
+#include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
-#include "graph/utils/attr_utils.h"
-#include "graph/debug/ge_attr_define.h"
-#include "framework/common/ge_inner_error_codes.h"
-#include "framework/common/types.h"
-#include "framework/common/string_util.h"
-#include "framework/common/debug/ge_log.h"
-#include "common/ge/ge_util.h"
-#include "common/formats/utils/formats_trans_utils.h"
-#include "graph/passes/prune_pass.h"
 
 namespace ge {
 namespace multibatch {
 namespace {
+const char *const kMbatchSwitchnName = "mbatch-switch-name";
 const int kSwitchNDataIndex = 0;
 const int kSwitchNPredIndex = 1;
 const int kDataOutIndex = 0;
 const int kDataInIndex = 0;
 const int kMergeDataOutIndex = 0;
-const size_t kMaxShapesCount = 16;
+const size_t kMaxShapesCount = 100;
 const size_t kMinShapesCount = 2;
 
 inline bool IsDataLikeType(const std::string &node_type) { return (node_type == DATA) || (node_type == AIPP); }
@@ -57,18 +59,16 @@ NodePtr InsertMergeNodeToGraph(const std::string &name, size_t input_num, const 
   GeTensorDesc tensor_desc;
   for (size_t i = 0; i < input_num; ++i) {
     auto ret = desc->AddInputDesc("x" + std::to_string(i), tensor_desc);
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to create merge node %s, failed to add input %zu, error-code %u", name.c_str(), i,
-             ret);
-      return nullptr;
-    }
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                    GELOGE(INTERNAL_ERROR, "Failed to create merge node %s, failed to add input %zu, error-code %u",
+                           name.c_str(), i, ret);
+                    return nullptr);
   }
   auto ret = desc->AddOutputDesc("y", tensor_desc);
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to create merge node %s, failed to add output 'y', error-code %u", name.c_str(),
-           ret);
-    return nullptr;
-  }
+  GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                  GELOGE(INTERNAL_ERROR, "Failed to create merge node %s, failed to add output 'y', error-code %u",
+                         name.c_str(), ret);
+                  return nullptr);
   tensor_desc.SetDataType(DT_INT32);
   ret = desc->AddOutputDesc("value_index", tensor_desc);
   if (ret != GRAPH_SUCCESS) {
@@ -86,34 +86,33 @@ NodePtr InsertMergeNodeToGraph(const std::string &name, size_t input_num, const 
 
 NodePtr InsertCopyNode(const NodePtr &node, const std::string &name) {
   auto src_op_desc = node->GetOpDesc();
-  if (src_op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Failed to copy node %s to %s, the OpDesc is null", node->GetName().c_str(), name.c_str());
-    return nullptr;
-  }
+  GE_IF_BOOL_EXEC(src_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "Failed to copy node %s to %s, the OpDesc is null",
+                                                 node->GetName().c_str(), name.c_str());
+                  return nullptr);
+
   auto desc = AttrUtils::CopyOpDesc(src_op_desc);
-  if (desc == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to create op desc for copy node for node %s name %s", node->GetName().c_str(),
-           name.c_str());
-    return nullptr;
-  }
+  GE_IF_BOOL_EXEC(desc == nullptr, GELOGE(OUT_OF_MEMORY, "Failed to create op desc for copy node for node %s name %s",
+                                          node->GetName().c_str(), name.c_str());
+                  return nullptr);
+
   desc->SetName(name);
   desc->CopyAttrsFrom(*src_op_desc);
   for (uint32_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
     auto input_desc = desc->MutableInputDesc(i);
-    if (input_desc == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to get input desc by index %u from node %s when copy from %s", i,
-             desc->GetName().c_str(), node->GetName().c_str());
-      return nullptr;
-    }
+    GE_IF_BOOL_EXEC(input_desc == nullptr,
+                    GELOGE(INTERNAL_ERROR, "Failed to get input desc by index %u from node %s when copy from %s", i,
+                           desc->GetName().c_str(), node->GetName().c_str());
+                    return nullptr);
+
     input_desc->CopyAttrsFrom(src_op_desc->GetInputDesc(i));
   }
   for (uint32_t i = 0; i < node->GetAllOutDataAnchorsSize(); ++i) {
     auto output_desc = desc->MutableOutputDesc(i);
-    if (output_desc == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to get output desc by index %u from node %s when copy from %s", i,
-             desc->GetName().c_str(), node->GetName().c_str());
-      return nullptr;
-    }
+    GE_IF_BOOL_EXEC(output_desc == nullptr,
+                    GELOGE(INTERNAL_ERROR, "Failed to get output desc by index %u from node %s when copy from %s", i,
+                           desc->GetName().c_str(), node->GetName().c_str());
+                    return nullptr);
+
     output_desc->CopyAttrsFrom(src_op_desc->GetOutputDesc(i));
   }
   auto graph = node->GetOwnerComputeGraph();
@@ -242,8 +241,8 @@ Status MultiBatchGraphCopyer::Init() {
   if (ret != SUCCESS) {
     return ret;
   }
-  auto tmp_all_nodes = graph_->GetAllNodes();
-  for (auto &node : tmp_all_nodes) {
+
+  for (auto &node : graph_->GetAllNodes()) {
     origin_all_nodes_.emplace_back(node);
     if (IsDataLikeType(node->GetType())) {
       origin_data_nodes_.emplace_back(node);
@@ -322,12 +321,11 @@ NodePtr MultiBatchGraphCopyer::InsertMergeNode(const NodePtr &node, int index) {
     return merge_nodes[index];
   }
 
-  auto merge_node_name = node->GetName() + "_huawei_mbatch_merge_" + std::to_string(index);
+  auto merge_node_name = node->GetName() + "_ascend_mbatch_merge_" + std::to_string(index);
   auto merge_node = InsertMergeNodeToGraph(merge_node_name, shapes_.size(), node->GetOwnerComputeGraph());
-  if (merge_node == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Failed to create merge node for node %s, out index %d", node->GetName().c_str(), index);
-    return nullptr;
-  }
+  GE_IF_BOOL_EXEC(merge_node == nullptr, GELOGE(INTERNAL_ERROR, "Failed to create merge node for node %s, out index %d",
+                                                node->GetName().c_str(), index);
+                  return nullptr);
   merge_nodes[index] = merge_node;
   GELOGI("Create merge node %s for node %s index %d", merge_node_name.c_str(), node->GetName().c_str(), index);
   return merge_node;
@@ -428,7 +426,7 @@ NodePtr MultiBatchGraphCopyer::InsertShapeDataNode() {
     GELOGE(OUT_OF_MEMORY, "Failed to create shape data node, out of memory");
     return nullptr;
   }
-  desc->SetName("huawei_mbatch_shape_data");
+  desc->SetName("ascend_mbatch_shape_data");
   desc->SetType(DATA);
 
   GeTensorDesc tensor_desc;
@@ -481,7 +479,8 @@ Status MultiBatchGraphCopyer::CheckArguments() {
   size_t shape_size = shapes_.at(0).size();
   for (auto &shape : shapes_) {
     if (shape_size != shape.size()) {
-      GELOGE(PARAM_INVALID, "All batch shapes size must be the same");
+      GELOGE(PARAM_INVALID, "All batch shapes size must be the same, first group's size is %zu and another's is %zu.",
+             shape_size, shape.size());
       return PARAM_INVALID;
     }
     for (auto dim : shape) {
@@ -522,11 +521,10 @@ Status MultiBatchGraphCopyer::LinkDataToMerge(const NodePtr &data, const NodePtr
          switchn->GetName().c_str());
   for (size_t i = 0; i < shapes_.size(); ++i) {
     auto ret = GraphUtils::AddEdge(switchn->GetOutDataAnchor(i), merge->GetInDataAnchor(i));
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to add edge between switchn %s(%zu) to merge %s(%zu), error-code %u",
-             switchn->GetName().c_str(), i, merge->GetName().c_str(), i, ret);
-      return INTERNAL_ERROR;
-    }
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                    GELOGE(INTERNAL_ERROR, "Failed to add edge between switchn %s(%zu) to merge %s(%zu), error-code %u",
+                           switchn->GetName().c_str(), i, merge->GetName().c_str(), i, ret);
+                    return INTERNAL_ERROR);
   }
   return SUCCESS;
 }
@@ -548,17 +546,16 @@ Status MultiBatchGraphCopyer::LinkNodeToMerge(const NodePtr &node, int out_index
       GELOGI("The node %s on the batch branch edge does not have any data output, create a const %s for it",
              src_node->GetName().c_str(), const_name.c_str());
       auto const_node = InsertConst(const_name, graph_);
-      if (const_node == nullptr) {
-        GELOGE(OUT_OF_MEMORY, "Failed to create const for node %s to connect to a merge node",
-               src_node->GetName().c_str());
-        return OUT_OF_MEMORY;
-      }
+      GE_IF_BOOL_EXEC(const_node == nullptr,
+                      GELOGE(OUT_OF_MEMORY, "Failed to create const for node %s to connect to a merge node",
+                             src_node->GetName().c_str());
+                      return OUT_OF_MEMORY);
+
       auto ret = GraphUtils::AddEdge(src_node->GetOutControlAnchor(), const_node->GetInControlAnchor());
-      if (ret != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Failed to add control edge from %s to %s", src_node->GetName().c_str(),
-               const_node->GetName().c_str());
-        return INTERNAL_ERROR;
-      }
+      GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add control edge from %s to %s",
+                                                   src_node->GetName().c_str(), const_node->GetName().c_str());
+                      return INTERNAL_ERROR);
+
       src_node = const_node;
     }
     auto ret = GraphUtils::AddEdge(src_node->GetOutDataAnchor(out_index), merge->GetInDataAnchor(i));
@@ -624,13 +621,17 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
     GELOGE(OUT_OF_MEMORY, "Failed to create switchn for data %s", data->GetName().c_str());
     return OUT_OF_MEMORY;
   }
-  switchn_desc->SetName(data->GetName() + "_huawei_mbatch_switchn");
+  switchn_desc->SetName(data->GetName() + "_ascend_mbatch_switchn");
   switchn_desc->SetType(SWITCHN);
 
   GeTensorDesc tensor(NodeUtils::GetOutputDesc(*data, kDataOutIndex));
-  switchn_desc->AddInputDesc(tensor);  // data
+  if (switchn_desc->AddInputDesc(tensor) != GRAPH_SUCCESS) {  // data
+    return OUT_OF_MEMORY;
+  }
   GeTensorDesc pred_tensor;
-  switchn_desc->AddInputDesc(pred_tensor);  // pred
+  if (switchn_desc->AddInputDesc(pred_tensor) != GRAPH_SUCCESS) {  // pred
+    return OUT_OF_MEMORY;
+  }
   for (size_t i = 0; i < shapes_.size(); ++i) {
     auto shape = data_shape;
     auto ret = CalcShape(shapes_.at(i), shape);
@@ -644,12 +645,19 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
       GELOGE(INTERNAL_ERROR, "Failed to add attr value on output %zu tensor", i);
       return INTERNAL_ERROR;
     }
-    switchn_desc->AddOutputDesc(tensor);
+    if (switchn_desc->AddOutputDesc(tensor) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Opdesc AddOutputDesc failed");
+      return GRAPH_FAILED;
+    }
     GELOGD("The SwitchN %s output index %zu, shape %s", switchn_desc->GetName().c_str(), i, shape.ToString().c_str());
   }
 
   if (!AttrUtils::SetBool(switchn_desc, ATTR_INSERT_BY_MBATCH, true)) {
     GELOGE(INTERNAL_ERROR, "Failed to add insert attr on switchn node %s", switchn_desc->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  if (!AttrUtils::SetStr(data->GetOpDesc(), kMbatchSwitchnName, switchn_desc->GetName())) {
+    GELOGE(INTERNAL_ERROR, "Failed to add switchn attr on data node %s", data->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -693,7 +701,7 @@ Status MultiBatchGraphCopyer::InsertMergeForEdgeNode(const NodePtr &node) {
 Status MultiBatchGraphCopyer::CopyNodeInBatchBranch(const NodePtr &node) {
   auto &copyed_nodes = nodes_to_batch_nodes_[node.get()];
   for (size_t i = 0; i < shapes_.size(); ++i) {
-    auto copyed_node = InsertCopyNode(node, node->GetName() + "_huawei_mbatch_batch_" + std::to_string(i));
+    auto copyed_node = InsertCopyNode(node, node->GetName() + "_ascend_mbatch_batch_" + std::to_string(i));
     if (copyed_node == nullptr) {
       GELOGE(INTERNAL_ERROR, "Failed to add node to graph when copy node %s", node->GetName().c_str());
       return INTERNAL_ERROR;
@@ -734,17 +742,14 @@ Status MultiBatchGraphCopyer::LinkDataToSwitchN(const NodePtr &data) {
   auto switchn = data_nodes_to_switchn_[data.get()];
   auto ret =
     GraphUtils::AddEdge(shape_data_->GetOutDataAnchor(kDataOutIndex), switchn->GetInDataAnchor(kSwitchNPredIndex));
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to link shape data %s to switchn %s", shape_data_->GetName().c_str(),
-           switchn->GetName().c_str());
-    return INTERNAL_ERROR;
-  }
+  GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link shape data %s to switchn %s",
+                                               shape_data_->GetName().c_str(), switchn->GetName().c_str());
+                  return INTERNAL_ERROR);
 
   ret = GraphUtils::AddEdge(data->GetOutDataAnchor(kDataOutIndex), switchn->GetInDataAnchor(kSwitchNDataIndex));
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to link data %s to switchn %s", data->GetName().c_str(), switchn->GetName().c_str());
-    return INTERNAL_ERROR;
-  }
+  GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link data %s to switchn %s",
+                                               data->GetName().c_str(), switchn->GetName().c_str());
+                  return INTERNAL_ERROR);
   return SUCCESS;
 }
 Status MultiBatchGraphCopyer::LinkToMerge(const NodePtr &node) {
@@ -843,18 +848,18 @@ Status MultiBatchGraphCopyer::LinkToNodeOutBranch(const NodePtr &node) {
              in_node->GetName().c_str(), node->GetName().c_str());
       return INTERNAL_ERROR;
     }
+
+    GE_IF_BOOL_EXEC(in_node->GetOutControlAnchor() == nullptr,
+                    GELOGE(INTERNAL_ERROR, "Innode outputControlAnchor is null");
+                    return INTERNAL_ERROR);
     auto ret = in_node->GetOutControlAnchor()->Unlink(node->GetInControlAnchor());
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to unlink the control edge from %s to %s", in_node->GetName().c_str(),
-             node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to unlink the control edge from %s to %s",
+                                                 in_node->GetName().c_str(), node->GetName().c_str());
+                    return INTERNAL_ERROR);
     ret = GraphUtils::AddEdge(merge_node->GetOutControlAnchor(), node->GetInControlAnchor());
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to add control edge from %s to %s", merge_node->GetName().c_str(),
-             node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add control edge from %s to %s",
+                                                 merge_node->GetName().c_str(), node->GetName().c_str());
+                    return INTERNAL_ERROR);
     GELOGI("Link control edge from merge %s(from %s) to %s", merge_node->GetName().c_str(), in_node->GetName().c_str(),
            node->GetName().c_str());
   }
@@ -865,22 +870,30 @@ Status MultiBatchGraphCopyer::LinkToNodeOutBranch(const NodePtr &node) {
 Status ProcessMultiBatch(ComputeGraphPtr &graph) {
   const int kDecimal = 10;
   std::vector<std::vector<int64_t>> shapes;
-  std::string option;
-  if (GetContext().GetOption("ge.dynamic_batchsize", option) == GRAPH_SUCCESS) {
-    GELOGD("Found dynamic batch option, value %s", option.c_str());
-    std::vector<std::string> dims = StringUtils::Split(option, ',');
+  if (!domi::GetContext().dynamic_batch_size.empty()) {
+    GELOGD("Found dynamic batch option, value %s", domi::GetContext().dynamic_batch_size.c_str());
+    std::vector<std::string> dims = ge::StringUtils::Split(domi::GetContext().dynamic_batch_size, ',');
     for (const auto &dim : dims) {
+      if (dim.empty()) {
+        continue;
+      }
       shapes.emplace_back(std::vector<int64_t>({std::strtol(dim.c_str(), nullptr, kDecimal)}));
       GELOGI("Found dynamic batch, shape %s", formats::JoinToString(*shapes.rbegin()).c_str());
     }
   }
-  if (GetContext().GetOption("ge.dynamic_imagesize", option) == GRAPH_SUCCESS) {
-    GELOGD("Found dynamic image size option, value %s", option.c_str());
-    std::vector<std::string> shape_strs = StringUtils::Split(option, ';');
+  if (!domi::GetContext().dynamic_image_size.empty()) {
+    GELOGD("Found dynamic image size option, value %s", domi::GetContext().dynamic_image_size.c_str());
+    std::vector<std::string> shape_strs = ge::StringUtils::Split(domi::GetContext().dynamic_image_size, ';');
     for (const auto &shape_str : shape_strs) {
+      if (shape_str.empty()) {
+        continue;
+      }
       std::vector<int64_t> shape;
-      std::vector<std::string> dims = StringUtils::Split(shape_str, ',');
+      std::vector<std::string> dims = ge::StringUtils::Split(shape_str, ',');
       for (const auto &dim : dims) {
+        if (dim.empty()) {
+          continue;
+        }
         shape.emplace_back(std::strtol(dim.c_str(), nullptr, kDecimal));
       }
       shapes.emplace_back(shape);
@@ -888,7 +901,7 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
     }
   }
   if (shapes.empty()) {
-    GELOGD("There is no multi-batch options, no need to process multi-batch copys");
+    GELOGD("There is no multi-batch options, no need to process multi-batch copy");
     return SUCCESS;
   }
 

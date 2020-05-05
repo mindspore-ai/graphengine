@@ -19,13 +19,12 @@
 
 #include <runtime/rt.h>
 #include <stdint.h>
-
 #include <string>
 #include <vector>
 
 using std::string;
 namespace ge {
-// DAVINCI_TRAIN/DAVINCI_CLOUD is not needed when GETaskKernelHcclInfo needed
+// when need to eliminate GETaskKernelHcclInfo, so not need DAVINCI_TRAIN/DAVINCI_CLOUD
 struct GETaskKernelHcclInfo {
   string hccl_type;
   void *inputDataAddr;

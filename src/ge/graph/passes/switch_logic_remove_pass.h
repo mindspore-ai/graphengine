@@ -16,13 +16,13 @@
 
 #ifndef GE_GRAPH_PASSES_SWITCH_LOGIC_REMOVE_PASS_H_
 #define GE_GRAPH_PASSES_SWITCH_LOGIC_REMOVE_PASS_H_
-
 #include "graph/passes/base_pass.h"
 
 namespace ge {
 class SwitchLogicRemovePass : public BaseNodePass {
  public:
   Status Run(NodePtr &node) override;
+
  private:
   Status RemoveSwitchNodeLogically(int parent_index, NodePtr &switch_node);
 };

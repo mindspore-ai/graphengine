@@ -27,7 +27,9 @@
 namespace ge {
 namespace formats {
 namespace {
-bool CheckDataTypeSupported(const DataType &data_type) { return (data_type == DT_FLOAT || data_type == DT_FLOAT16); }
+bool CheckDataTypeSupported(const DataType &data_type) {
+  return (data_type == DT_FLOAT || data_type == DT_FLOAT16 || data_type == DT_INT8);
+}
 
 Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
   auto src_shape = args.src_shape;
@@ -51,10 +53,11 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
     GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
     return PARAM_INVALID;
   }
-  if (src_shape.at(kC1hwncoc0C1) != (dst_shape.at(kHwcnC) - 1) / kCubeSize + 1 ||
+  auto cube_size = GetCubeSizeByDataType(args.src_data_type);
+  if (src_shape.at(kC1hwncoc0C1) != (dst_shape.at(kHwcnC) - 1) / cube_size + 1 ||
       src_shape.at(kC1hwncoc0H) != dst_shape.at(kHwcnH) || src_shape.at(kC1hwncoc0W) != dst_shape.at(kHwcnW) ||
-      src_shape.at(kC1hwncoc0N) != dst_shape.at(kHwcnN) || src_shape.at(kC1hwncoc0Co) != kCubeSize ||
-      src_shape.at(kC1hwncoc0C0) != kCubeSize) {
+      src_shape.at(kC1hwncoc0N) != dst_shape.at(kHwcnN) || src_shape.at(kC1hwncoc0Co) != cube_size ||
+      src_shape.at(kC1hwncoc0C0) != cube_size) {
     GELOGE(PARAM_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     return PARAM_INVALID;
@@ -78,6 +81,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
   auto c0 = args.src_shape.at(kC1hwncoc0C0);
   auto co = args.src_shape.at(kC1hwncoc0Co);
   auto c = args.dst_shape.at(kHwcnC);
+  auto cube_size = GetCubeSizeByDataType(args.src_data_type);
   int64_t cn = c * n;
   int64_t wcn = w * cn;
   int64_t coc0 = co * c0;
@@ -93,16 +97,16 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
         int64_t c_head_addr = w_head_addr + c_idx * n;
         for (int64_t n_idx = 0; n_idx < n; n_idx++) {
           int64_t dst_idx = c_head_addr + n_idx;
-          int64_t c1_idx = c_idx / kCubeSize;
-          int64_t c0_idx = c_idx % kCubeSize;
+          int64_t c1_idx = c_idx / cube_size;
+          int64_t c0_idx = c_idx % cube_size;
           int64_t co_idx = c0_idx;
           int64_t src_idx = c1_idx * hwncoc0 + h_idx * wncoc0 + w_idx * ncoc0 + n_idx * coc0 + co_idx * c0 + c0_idx;
           auto src_offset = src_idx * size;
           auto dst_offset = dst_idx * size;
           // The memcpy_s/memset_s argument `dstMax` must be less than 2G
           auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? total_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? total_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {

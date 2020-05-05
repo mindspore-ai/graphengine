@@ -15,19 +15,18 @@
  */
 
 #include "graph/passes/variable_op_pass.h"
-
 #include <string>
 #include <vector>
 
-#include "common/formats/formats.h"
-#include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/ge_context.h"
 #include "graph/graph.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "common/formats/formats.h"
+#include "common/formats/utils/formats_trans_utils.h"
+#include "graph/ge_context.h"
 
 namespace ge {
 namespace {
@@ -113,6 +112,7 @@ bool IsTransSupport(const TransNodeInfo &trans_info) {
 }  // namespace
 
 Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(VariableOpPass);
   if (graph == nullptr) {
     GELOGE(INTERNAL_ERROR, "Failed to run variable op pass, null graph");
     return INTERNAL_ERROR;
@@ -189,6 +189,7 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
     }
   }
 
+  GE_TIMESTAMP_END(VariableOpPass, "GraphManager::VariableOpPass");
   return SUCCESS;
 }
 
@@ -404,10 +405,14 @@ Status VariableOpPass::UpdateVarAndRefOutputFormatInfo(const GeTensorDesc &final
     if (var_ref_node_description->UpdateInputDesc(0, node_desc) != GRAPH_SUCCESS) {
       GELOGW("UpdateInputDesc fail.");
     }
+    const auto &input_desc = var_ref_node_description->MutableInputDesc(0);
+    const auto &output_desc = var_ref_node_description->MutableOutputDesc(0);
+    GE_CHECK_NOTNULL(input_desc);
+    GE_CHECK_NOTNULL(output_desc);
     GELOGD("var_ref_node ref is (%s, %s, %zu), var_ref_name is %s.",
-           TypeUtils::DataTypeToSerialString(var_ref_node_description->GetInputDesc(0).GetDataType()).c_str(),
-           TypeUtils::FormatToSerialString(var_ref_node_description->GetInputDesc(0).GetFormat()).c_str(),
-           var_ref_node_description->GetOutputDesc(0).GetShape().GetDims().size(), var_ref_node->GetName().c_str());
+           TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str(),
+           TypeUtils::FormatToSerialString(input_desc->GetFormat()).c_str(), output_desc->GetShape().GetDims().size(),
+           var_ref_node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -470,25 +475,29 @@ Status VariableOpPass::CheckTransNodeAreInverse(const NodePtr &node_a, const Nod
   const auto &node_b_op_desc = node_b->GetOpDesc();
   GE_CHECK_NOTNULL(node_a_op_desc);
   GE_CHECK_NOTNULL(node_b_op_desc);
-  const auto &node_a_out_op_desc = node_a_op_desc->GetOutputDesc(0);
-  const auto &node_a_in_op_desc = node_a_op_desc->GetInputDesc(0);
+  const auto &node_a_out_op_desc = node_a_op_desc->MutableOutputDesc(0);
+  const auto &node_a_in_op_desc = node_a_op_desc->MutableInputDesc(0);
+  GE_CHECK_NOTNULL(node_a_out_op_desc);
+  GE_CHECK_NOTNULL(node_a_in_op_desc);
 
-  const auto &node_b_out_op_desc = node_b_op_desc->GetOutputDesc(0);
-  const auto &node_b_in_op_desc = node_b_op_desc->GetInputDesc(0);
+  const auto &node_b_out_op_desc = node_b_op_desc->MutableOutputDesc(0);
+  const auto &node_b_in_op_desc = node_b_op_desc->MutableInputDesc(0);
+  GE_CHECK_NOTNULL(node_b_out_op_desc);
+  GE_CHECK_NOTNULL(node_b_in_op_desc);
 
   is_same = IsOpDescSame(node_a_out_op_desc, node_b_in_op_desc) && IsOpDescSame(node_b_out_op_desc, node_a_in_op_desc);
 
   return SUCCESS;
 }
 
-bool VariableOpPass::IsOpDescSame(const GeTensorDesc &op_desc_a, const GeTensorDesc &op_desc_b) {
-  const auto format_a = op_desc_a.GetFormat();
-  const auto type_a = op_desc_a.GetDataType();
-  const auto shape_a = op_desc_a.GetShape();
+bool VariableOpPass::IsOpDescSame(const GeTensorDescPtr &op_desc_a, const GeTensorDescPtr &op_desc_b) {
+  const auto &format_a = op_desc_a->GetFormat();
+  const auto &type_a = op_desc_a->GetDataType();
+  const auto &shape_a = op_desc_a->GetShape();
 
-  const auto format_b = op_desc_b.GetFormat();
-  const auto type_b = op_desc_b.GetDataType();
-  const auto shape_b = op_desc_b.GetShape();
+  const auto &format_b = op_desc_b->GetFormat();
+  const auto &type_b = op_desc_b->GetDataType();
+  const auto &shape_b = op_desc_b->GetShape();
 
   const auto &dims_a = shape_a.GetDims();
   const auto &dims_b = shape_b.GetDims();

@@ -651,6 +651,8 @@ const std::string ATTR_MODEL_STREAM_NUM = "stream_num";
 
 const std::string ATTR_MODEL_EVENT_NUM = "event_num";
 
+const std::string ATTR_MODEL_LABEL_NUM = "label_num";
+
 const std::string ATTR_MODEL_MEMORY_SIZE = "memory_size";
 
 const std::string ATTR_MODEL_WEIGHT_SIZE = "weight_size";
@@ -783,7 +785,7 @@ const std::string LOG_TIME_STAMP_NOTIFY = "notify";
 /*ShapeN*/
 const std::string SHAPEN_ATTR_N = "N";
 const std::string SHAPEN_ATTR_IN_TYPE = "in_type";
-const std::string SHAPEN_ATTR_OUT_TYPE = "out_type";
+const std::string SHAPEN_ATTR_OUT_TYPE = "dtype";
 
 /* control flow */
 const std::string ATTR_NAME_ITERATORS_PER_LOOP = "iterations_per_loop";
@@ -807,4 +809,6 @@ const std::string ATTR_NAME_LINK_WITH_SPARE = "link_with_sparse";
 const std::string ATTR_NAME_NET_OUTPUT_FORMAT = "net_output_format";
 const std::string ATTR_NAME_NET_OUTPUT_DATATYPE = "net_output_datatype";
 
+/* For constant folding */
+const std::string ATTR_NO_NEED_CONSTANT_FOLDING = "no_need_constant_folding";
 }  // namespace domi

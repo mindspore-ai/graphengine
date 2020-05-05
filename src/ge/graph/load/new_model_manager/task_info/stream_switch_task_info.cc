@@ -41,7 +41,6 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
   }
 
   auto stream_switch_def = task_def.stream_switch();
-  GELOGI("InitStreamSwitchTaskInfo start.");
   uint32_t op_index = stream_switch_def.op_index();
 
   // get StreamSwitch op
@@ -62,8 +61,8 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
 
   size_t input_size = op_desc->GetInputsSize();
   if (input_data_addr.size() != STREAM_SWITCH_INPUT_NUM || input_size != STREAM_SWITCH_INPUT_NUM) {
-    GELOGE(INTERNAL_ERROR, "Input num should be %u. inputAddr size:%zu, inputDesc size:%zu.",
-           STREAM_SWITCH_INPUT_NUM, input_data_addr.size(), input_size);
+    GELOGE(INTERNAL_ERROR, "Input num should be %u. inputAddr size:%zu, inputDesc size:%zu.", STREAM_SWITCH_INPUT_NUM,
+           input_data_addr.size(), input_size);
     return INTERNAL_ERROR;
   }
 
@@ -96,7 +95,6 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
     }
     data_type_ = static_cast<rtSwitchDataType_t>(data_type);
   }
-
   return SUCCESS;
 }
 
@@ -107,7 +105,6 @@ Status StreamSwitchTaskInfo::Distribute() {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
-
   return SUCCESS;
 }
 

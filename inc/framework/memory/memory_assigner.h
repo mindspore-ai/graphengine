@@ -23,7 +23,7 @@
 #include "graph/node.h"
 
 namespace ge {
-const int64_t kMemAlignSize = 512;
+const int64_t MEM_ALIGN_SIZE = 512;
 class MemoryAssigner {
  public:
   explicit MemoryAssigner(ge::ComputeGraphPtr compute_graph) : compute_graph_(std::move(compute_graph)) {}

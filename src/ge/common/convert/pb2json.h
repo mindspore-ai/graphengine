@@ -60,6 +60,8 @@ class Pb2Json {
   static void OneField2Json(const ProtobufMsg &message, const ProtobufFieldDescriptor *field,
                             const ProtobufReflection *reflection, const std::set<std::string> &black_fields, Json &json,
                             bool enum2str);
+
+  static std::string TypeBytes2String(std::string &field_name, std::string &type_bytes);
 };
 }  // namespace ge
 

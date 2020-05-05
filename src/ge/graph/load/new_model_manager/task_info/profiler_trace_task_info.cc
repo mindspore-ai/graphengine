@@ -33,18 +33,16 @@ Status ProfilerTraceTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
   }
 
   auto log_time_stamp_def = task_def.log_timestamp();
-  GELOGI("do InitLogTimeStampTaskInfo");
-
   log_id_ = log_time_stamp_def.logid();
   notify_ = log_time_stamp_def.notify();
   flat_ = log_time_stamp_def.flat();
 
+  GELOGI("ProfilerTraceTaskInfo Init Success.");
   return SUCCESS;
 }
 
 Status ProfilerTraceTaskInfo::Distribute() {
-  GELOGI("ProfilerTraceTaskInfo Distribute Start.");
-  GELOGI("rtProfilerTrace: logid = %lu. notify = %d.", log_id_, notify_);
+  GELOGI("ProfilerTraceTaskInfo Distribute Start. logid = %lu. notify = %d.", log_id_, notify_);
 
   rtError_t rt_ret = rtProfilerTrace(log_id_, notify_, flat_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
@@ -52,6 +50,7 @@ Status ProfilerTraceTaskInfo::Distribute() {
     return RT_FAILED;
   }
 
+  GELOGI("ProfilerTraceTaskInfo Distribute Success.");
   return SUCCESS;
 }
 

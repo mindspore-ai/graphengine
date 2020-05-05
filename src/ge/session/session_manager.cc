@@ -67,21 +67,21 @@ Status SessionManager::CreateSession(const std::map<std::string, std::string> &o
   SessionId next_session_id = 0;
 
   std::lock_guard<std::mutex> lock(mutex_);
-  Status next_session_id_ret = GetNextSessionId(next_session_id);
-  if (next_session_id_ret != SUCCESS) {
-    return next_session_id_ret;
+  Status nextSessionIdRet = GetNextSessionId(next_session_id);
+  if (nextSessionIdRet != SUCCESS) {
+    return nextSessionIdRet;
   }
 
-  SessionPtr session_ptr = MakeShared<InnerSession>(next_session_id, options);
-  if (session_ptr == nullptr) {
+  SessionPtr sessionPtr = MakeShared<InnerSession>(next_session_id, options);
+  if (sessionPtr == nullptr) {
     return MEMALLOC_FAILED;
   }
-  Status ret = session_ptr->Initialize();
+  Status ret = sessionPtr->Initialize();
   if (ret != SUCCESS) {
     return ret;
   }
 
-  (void)session_manager_map_.emplace(std::pair<SessionId, SessionPtr>(next_session_id, session_ptr));
+  (void)session_manager_map_.emplace(std::pair<SessionId, SessionPtr>(next_session_id, sessionPtr));
   session_id = next_session_id;
 
   // create a context
@@ -108,8 +108,8 @@ Status SessionManager::DestroySession(SessionId session_id) {
   // Unified destruct rt_context
   RtContextUtil::GetInstance().DestroyrtContexts();
 
-  SessionPtr inner_session = it->second;
-  Status ret = inner_session->Finalize();
+  SessionPtr innerSession = it->second;
+  Status ret = innerSession->Finalize();
   if (ret != SUCCESS) {
     return ret;
   }
@@ -122,17 +122,17 @@ Status SessionManager::GetVariable(SessionId session_id, const std::string &name
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
     if (it == session_manager_map_.end()) {
       return GE_SESSION_NOT_EXIST;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
   }
-  return inner_session->GetVariable(name, val);
+  return innerSession->GetVariable(name, val);
 }
 
 Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const Graph &graph) {
@@ -146,14 +146,14 @@ Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const G
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
     if (it == session_manager_map_.end()) {
       return GE_SESSION_NOT_EXIST;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
     auto compute_graph = GraphUtils::GetComputeGraph(graph);
     std::string session_graph_id = std::to_string(session_id) + "_" + std::to_string(graph_id);
@@ -163,7 +163,7 @@ Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const G
       GELOGD("Set graph session_graph_id attr to [%s]", session_graph_id.c_str());
     }
   }
-  return inner_session->AddGraph(graph_id, graph);
+  return innerSession->AddGraph(graph_id, graph, options);
 }
 
 Status SessionManager::RunGraph(SessionId session_id, uint32_t graph_id, const std::vector<Tensor> &inputs,
@@ -172,17 +172,17 @@ Status SessionManager::RunGraph(SessionId session_id, uint32_t graph_id, const s
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
     if (it == session_manager_map_.end()) {
       return GE_SESSION_NOT_EXIST;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
   }
-  return inner_session->RunGraph(graph_id, inputs, outputs);
+  return innerSession->RunGraph(graph_id, inputs, outputs);
 }
 
 Status SessionManager::RemoveGraph(SessionId session_id, uint32_t graph_id) {
@@ -190,17 +190,17 @@ Status SessionManager::RemoveGraph(SessionId session_id, uint32_t graph_id) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
     if (it == session_manager_map_.end()) {
       return GE_SESSION_NOT_EXIST;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
   }
-  return inner_session->RemoveGraph(graph_id);
+  return innerSession->RemoveGraph(graph_id);
 }
 
 bool SessionManager::HasSession(SessionId session_id) {
@@ -229,17 +229,17 @@ Status SessionManager::RegisterCallBackFunc(
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
     if (it == session_manager_map_.end()) {
       return GE_SESSION_NOT_EXIST;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
   }
-  return inner_session->RegisterCallBackFunc(key, callback);
+  return innerSession->RegisterCallBackFunc(key, callback);
 }
 
 Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<TensorInfo> &inputs,
@@ -248,24 +248,24 @@ Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id, co
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
     if (it == session_manager_map_.end()) {
       return GE_SESSION_NOT_EXIST;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
   }
-  return inner_session->RunGraphAsync(graph_id, inputs, outputs, callback);
+  return innerSession->RunGraphAsync(graph_id, inputs, outputs, callback);
 }
 bool SessionManager::IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id) {
   if (!init_flag_) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return true;
   }
-  SessionPtr inner_session = nullptr;
+  SessionPtr innerSession = nullptr;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = session_manager_map_.find(session_id);
@@ -273,9 +273,9 @@ bool SessionManager::IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id)
       GELOGE(GE_SESSION_NOT_EXIST, "The session %lu does not exists", session_id);
       return true;
     } else {
-      inner_session = it->second;
+      innerSession = it->second;
     }
   }
-  return inner_session->IsGraphNeedRebuild(graph_id);
+  return innerSession->IsGraphNeedRebuild(graph_id);
 }
 };  // namespace ge

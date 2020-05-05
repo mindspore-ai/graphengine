@@ -18,13 +18,15 @@
 
 #include <string>
 #include <vector>
-
 #include "common/math/math_util.h"
 #include "common/auth/file_saver.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
+
+using ge::ModelBufferData;
+using std::string;
 
 namespace ge {
 // For Load
@@ -107,13 +109,16 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
   }
   // Init partition table
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
-  if ((partition_table->num != PARTITION_SIZE) && (partition_table->num != PARTITION_SIZE - 1)) {
+  // Davinici model partition include graph-info  weight-info  task-info  tbe-kernel :
+  // Original model partition include graph-info
+  if ((partition_table->num != PARTITION_SIZE) && (partition_table->num != (PARTITION_SIZE - 1)) &&
+      (partition_table->num != 1)) {
     GELOGE(PARAM_INVALID, "Invalid partition_table->num:%u", partition_table->num);
     return PARAM_INVALID;
   }
-
   size_t mem_offset = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);
-  GELOGI("sizeof(ModelFileHeader)=%zu, sizeof(ModelPartitionTable)=%zu", sizeof(ModelFileHeader), mem_offset);
+  GELOGI("ModelPartitionTable num :%u, ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
+         partition_table->num, sizeof(ModelFileHeader), mem_offset);
   if (model_data_size <= mem_offset) {
     GELOGE(PARAM_INVALID, "invalid model data, partition_table->num:%u, model data size %u", partition_table->num,
            model_data_size);
@@ -138,7 +143,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::vector<ModelPartition>
-    &OmFileSaveHelper::GetModelPartitions() const {
+  &OmFileSaveHelper::GetModelPartitions() const {
   return context_.partition_datas_;
 }
 
@@ -162,7 +167,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSave
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileSaveHelper::AddPartition(ModelPartition &partition) {
-  if (CheckUint32AddOverflow(context_.model_data_len_, partition.size) != SUCCESS) {
+  if (ge::CheckUint32AddOverflow(context_.model_data_len_, partition.size) != SUCCESS) {
     GELOGE(FAILED, "UINT32 %u and %u addition can result in overflow!", context_.model_data_len_, partition.size);
     return FAILED;
   }
@@ -171,20 +176,21 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileSaveHelper::AddPar
   return SUCCESS;
 }
 
-Status OmFileSaveHelper::SaveModel(const SaveParam &save_param, const char *output_file) {
+Status OmFileSaveHelper::SaveModel(const SaveParam &save_param, const char *output_file, ModelBufferData &model,
+                                   bool is_offline) {
   (void)save_param.cert_file;
   (void)save_param.ek_file;
   (void)save_param.encode_mode;
   (void)save_param.hw_key_file;
   (void)save_param.pri_key_file;
-  Status ret = SaveModelToFile(output_file);
+  Status ret = SaveModelToFile(output_file, model, is_offline);
   if (ret == SUCCESS) {
     GELOGI("Generate model with encrypt.");
   }
   return ret;
 }
 
-Status OmFileSaveHelper::SaveModelToFile(const char *output_file) {
+Status OmFileSaveHelper::SaveModelToFile(const char *output_file, ModelBufferData &model, bool is_offline) {
 #if !defined(NONSUPPORT_SAVE_TO_FILE)
   uint32_t model_data_len = context_.model_data_len_;
   if (model_data_len == 0) {
@@ -205,7 +211,12 @@ Status OmFileSaveHelper::SaveModelToFile(const char *output_file) {
          sizeof(ModelFileHeader), size_of_table, model_data_len, model_header_.length + sizeof(ModelFileHeader));
 
   std::vector<ModelPartition> partition_datas = context_.partition_datas_;
-  Status ret = FileSaver::SaveToFile(output_file, model_header_, *partition_table, partition_datas);
+  Status ret;
+  if (is_offline) {
+    ret = FileSaver::SaveToFile(output_file, model_header_, *partition_table, partition_datas);
+  } else {
+    ret = FileSaver::SaveToBuffWithFileHeader(model_header_, *partition_table, partition_datas, model);
+  }
   if (ret == SUCCESS) {
     GELOGI("Save model success without encrypt.");
   }

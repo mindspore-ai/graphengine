@@ -33,6 +33,7 @@ bool is_loop_graph = false;
 }
 namespace ge {
 Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(AtomicAddrCleanPass);
   if (graph == nullptr) {
     GELOGE(PARAM_INVALID, "param [graph] must not be null.");
     return PARAM_INVALID;
@@ -68,6 +69,7 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     }
   }
   GELOGD("AtomicAddrCleanPass end.");
+  GE_TIMESTAMP_END(AtomicAddrCleanPass, "GraphManager::AtomicAddrCleanPass");
   return SUCCESS;
 }
 
@@ -155,7 +157,7 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
 
 Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr &atomic_clean_node) {
   GE_IF_BOOL_EXEC(atomic_node == nullptr || atomic_clean_node == nullptr,
-                  GE_LOGE("param [atomic_node][atomic_clean_node] must not be null.");
+                  DOMI_LOGE("param [atomic_node][atomic_clean_node] must not be null.");
                   return PARAM_INVALID);
   InControlAnchorPtr in_ctrl_anchor = atomic_node->GetInControlAnchor();
   OutControlAnchorPtr out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
@@ -199,18 +201,6 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   for (const auto &op_info : op_info_vec) {
     if (op_info.isAtomic) {
       GELOGI("Recognized atomic op %s from HCCL engine.", op_desc->GetName().c_str());
-      // check peer input is DATA
-      for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
-        if (in_data_anchor->GetPeerOutAnchor() != nullptr &&
-            in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
-          auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
-          if (peer_in_node->GetType() == DATA) {
-            (void)AttrUtils::SetBool(peer_in_node->GetOpDesc(), "_need_memset", true);  // no need return
-            GELOGI("Recognized atomic op %s from HCCL engine and input is DATA.", op_desc->GetName().c_str());
-            return false;
-          }
-        }
-      }
       hcom_node_vec_.push_back(node);
       return true;
     }

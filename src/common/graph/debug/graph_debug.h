@@ -16,13 +16,11 @@
 
 #ifndef COMMON_GRAPH_DEBUG_GRAPH_DEBUG_H_
 #define COMMON_GRAPH_DEBUG_GRAPH_DEBUG_H_
-
 #include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
-
 #include "external/graph/graph.h"
 #include "./ge_error_codes.h"
 #include "graph/compute_graph.h"

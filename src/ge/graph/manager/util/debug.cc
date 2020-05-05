@@ -54,7 +54,7 @@ void Debug::DumpProto(const Message &proto, const char *file) {
   }
 }
 
-Status Debug::DumpDevMem(const char *file, const void *addr, uint32_t size) {
+Status Debug::DumpDevMem(const char *file, const void *addr, int64_t size) {
   if (size == 0) {
     GELOGI("Dump data failed because the size is 0.");
     return SUCCESS;

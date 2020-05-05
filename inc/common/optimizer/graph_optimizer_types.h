@@ -19,8 +19,6 @@
 
 #include <stdint.h>
 #include <string>
-
-using std::string;
 namespace ge {
 enum OPTIMIZER_SCOPE {
   UNIT = 0,
@@ -28,7 +26,7 @@ enum OPTIMIZER_SCOPE {
 };
 
 struct GraphOptimizerAttribute {
-  string engineName;
+  std::string engineName;
   OPTIMIZER_SCOPE scope;
 };
 }  // namespace ge

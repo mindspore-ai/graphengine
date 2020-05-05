@@ -52,28 +52,28 @@ class ModelUtils {
   /// @brief Get input size.
   /// @return vector<uint32_t>
   ///
-  static vector<uint32_t> GetInputSize(ConstOpDescPtr op_desc);
+  static vector<int64_t> GetInputSize(ConstOpDescPtr op_desc);
 
   ///
   /// @ingroup domi_ome
   /// @brief Get output size.
   /// @return vector<uint32_t>
   ///
-  static vector<uint32_t> GetOutputSize(ConstOpDescPtr op_desc);
+  static vector<int64_t> GetOutputSize(ConstOpDescPtr op_desc);
 
   ///
   /// @ingroup domi_ome
   /// @brief Get workspace size.
   /// @return vector<uint32_t>
   ///
-  static vector<uint32_t> GetWorkspaceSize(ConstOpDescPtr op_desc);
+  static vector<int64_t> GetWorkspaceSize(ConstOpDescPtr op_desc);
 
   ///
   /// @ingroup domi_ome
   /// @brief Get weight size.
   /// @return vector<uint32_t>
   ///
-  static vector<uint32_t> GetWeightSize(ConstOpDescPtr op_desc);
+  static vector<int64_t> GetWeightSize(ConstOpDescPtr op_desc);
 
   ///
   /// @ingroup domi_ome
@@ -87,8 +87,8 @@ class ModelUtils {
   /// @brief Save Output tensor info to vector.
   /// @return Status
   ///
-  static Status GetOutputSize(ConstOpDescPtr op_desc, vector<uint32_t> &output_size_list,
-                              vector<uint32_t> &output_memory_size_list);
+  static Status GetOutputSize(ConstOpDescPtr op_desc, vector<int64_t> &output_size_list,
+                              vector<int64_t> &output_memory_size_list);
 
   ///
   /// @ingroup domi_ome
@@ -123,7 +123,8 @@ class ModelUtils {
   /// @brief Get workspace data address.
   /// @return vector<void*>
   ///
-  static vector<void *> GetWorkspaceDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc);
+  static vector<void *> GetWorkspaceDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc,
+                                              bool need_convert = true);
 
   static ge::Status ConvertVirtualAddressToPhysical(uint8_t *virtual_address, uint64_t size,
                                                     uint8_t *&physical_address);

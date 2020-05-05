@@ -22,7 +22,7 @@
 #include <math.h>
 #include <stdint.h>
 
-namespace domi {
+namespace ge {
 // general
 const float DEFAULT_ALPHA_VALUE = 1.0;
 const float DEFAULT_BETA_VALUE = 0.0;
@@ -421,5 +421,5 @@ const uint32_t MULTI_SHAPE_INPUT_NUM = 2;
 
 // Shufflechannel
 const uint32_t SHUFFLECHANNEL_DEFAULT_GROUP = 1;
-}  // namespace domi
+}  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_OP_OP_PARSER_UTIL_H_

@@ -40,9 +40,6 @@ class Params : public Singleton<Params> {
     if (tmp_target == "mini") {
       target_ = "MINI";
       target_8bit_ = TARGET_TYPE_MINI_8BIT;
-    } else if (tmp_target == "tiny") {
-      target_ = "TINY";
-      target_8bit_ = TARGET_TYPE_TINY_8BIT;
     } else if (tmp_target == "lite") {
       target_ = "LITE";
       target_8bit_ = TARGET_TYPE_LTTE_8BIT;
@@ -63,4 +60,3 @@ class Params : public Singleton<Params> {
 }  // namespace ge
 
 #endif  // GE_GRAPH_OPTIMIZE_COMMON_PARAMS_H_
-

@@ -22,7 +22,7 @@
 
 #define DECLARE_ERRORNO(sysid, modid, name, value) \
   const domi::Status name =                        \
-      ((0xFF & ((uint8_t)sysid)) << 24) | ((0xFF & ((uint8_t)modid)) << 16) | (0xFFFF & ((uint16_t)value));
+    ((0xFF & ((uint8_t)sysid)) << 24) | ((0xFF & ((uint8_t)modid)) << 16) | (0xFFFF & ((uint16_t)value));
 
 #define DECLARE_ERRORNO_COMMON(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_COMMON, name, value)
 
@@ -33,6 +33,7 @@ using Status = uint32_t;
 DECLARE_ERRORNO(0, 0, SUCCESS, 0);
 DECLARE_ERRORNO(0xFF, 0xFF, FAILED, 0xFFFFFFFF);
 DECLARE_ERRORNO_COMMON(PARAM_INVALID, 1);  // 50331649
+DECLARE_ERRORNO(SYSID_FWK, 1, SCOPE_NOT_CHANGED, 201);
 }  // namespace domi
 
 #endif  // INC_EXTERNAL_REGISTER_REGISTER_ERROR_CODES_H_

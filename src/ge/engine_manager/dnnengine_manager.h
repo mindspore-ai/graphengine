@@ -59,9 +59,9 @@ class DNNEngineManager {
  public:
   friend class GELib;
   std::shared_ptr<ge::DNNEngine> GetEngine(const std::string &name) const;
-  bool IsEngineRegistered(const std::string &name) const;
+  bool IsEngineRegistered(const std::string &name);
   // If can't find appropriate engine name, return "", report error
-  string GetDNNEngineName(const OpDescPtr &op_desc) const;
+  string GetDNNEngineName(const OpDescPtr &op_desc);
   const map<string, SchedulerConf> &GetSchedulers() const;
 
  private:

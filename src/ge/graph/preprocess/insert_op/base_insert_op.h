@@ -47,19 +47,11 @@ class InsertOpBase {
 
   ///
   /// @ingroup ge_omg
-  /// @brief Insert the insert_op operator into the network graph
-  /// @param [in] graph
-  ///
-  virtual Status InsertOpToGraph(ge::ComputeGraphPtr graph);
-
-  ///
-  /// @ingroup ge_omg
   /// @brief Insert aipp operator into the network graph
   /// @param [in] graph
   /// @param [in] aippConfigPath aipp
   ///
-  virtual Status InsertAippToGraph(ge::ComputeGraphPtr &graph, std::string &aippConfigPath,
-                                   ge::NodePtr &inserted_aipp_node);
+  virtual Status InsertAippToGraph(ge::ComputeGraphPtr &graph, std::string &aippConfigPath, const uint32_t index) = 0;
 
   ///
   /// @ingroup ge_omg
@@ -69,18 +61,6 @@ class InsertOpBase {
   virtual domi::AippOpParams::AippMode GetAippMode() = 0;
 
  protected:
-  ///
-  /// @ingroup ge_omg
-  /// @brief Get the input operator in the model
-  ///
-  static Status GetInputNode(ge::ComputeGraphPtr graph, ge::NodePtr &target_input, uint32_t rank);
-
-  ///
-  /// @ingroup ge_omg
-  /// @brief Get the size of data bases on the input
-  ///
-  uint32_t AdjustDataSize(const ge::GeTensorDesc &desc, std::unique_ptr<domi::AippOpParams> &aipp_params);
-
   ///
   /// @ingroup ge_omg
   /// @brief Generate the insert_op operator

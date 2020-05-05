@@ -30,10 +30,7 @@ namespace {
 const char FMK_STATUS_FILE_DIR_ENV[] = "FMK_STATUS_FILE_DIR";
 const char JOBSTATE_FILE_NAME[] = "jobstateupdate_framework";
 const char HCOM_DETECT_FILE_NAME[] = "hcom_detection_result";
-
 const char FILE_SEPARATE[] = "/";
-
-const uint32_t CSA_DIR_RWX_RIGHT = 0750;
 }  // namespace
 
 ///

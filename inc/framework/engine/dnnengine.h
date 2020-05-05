@@ -38,7 +38,7 @@ struct DNNEngineAttribute {
   std::vector<std::string> mem_type;
   uint32_t compute_cost;
   enum RuntimeType runtime_type;  // HOST, DEVICE
-  // set this attribute if the inputformat of engine must be specific, otherwise set FORMAT_RESERVED
+  // If engine input format must be specific, set this attribute, else set FORMAT_RESERVED
   Format engine_input_format;
   Format engine_output_format;
 };

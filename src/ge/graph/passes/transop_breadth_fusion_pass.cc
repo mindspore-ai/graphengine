@@ -26,6 +26,7 @@
 
 namespace ge {
 Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(TransOpBreadthFusionPass);
   if (graph == nullptr) {
     return SUCCESS;
   }
@@ -36,9 +37,9 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
     for (auto const &id_to_trans_nodes : ids_to_trans_nodes) {
       if (id_to_trans_nodes.second.size() > 1) {
         GELOGI(
-            "Begin to breath fusion output trans-op-nodes for %s, "
-            "trans id %s, trans-op count %zu",
-            node->GetName().c_str(), id_to_trans_nodes.first.c_str(), id_to_trans_nodes.second.size());
+          "Begin to breath fusion output trans-op-nodes for %s, "
+          "trans id %s, trans-op count %zu",
+          node->GetName().c_str(), id_to_trans_nodes.first.c_str(), id_to_trans_nodes.second.size());
         graphStatus status = Fusion(id_to_trans_nodes.second, graph);
         if (status != GRAPH_SUCCESS) {
           return FAILED;
@@ -46,6 +47,7 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
       }
     }
   }
+  GE_TIMESTAMP_END(TransOpBreadthFusionPass, "GraphManager::TransOpBreadthFusionPass");
   return SUCCESS;
 }
 
@@ -76,35 +78,40 @@ std::string TransOpBreadthFusionPass::GetNodeId(const int anchor_index, const No
     GELOGD("Get stream label %s for node %s, add it to fusion id", stream_label.c_str(), node->GetName().c_str());
     id << '-' << stream_label;
   }
+  // [Cascade pointer]
+  const auto &input_desc = node->GetOpDesc()->MutableInputDesc(0);
+  const auto &output_desc = node->GetOpDesc()->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(input_desc, return "");
+  GE_CHECK_NOTNULL_EXEC(output_desc, return "");
   if (trans_data_type) {
     id << '-';
-    id << static_cast<int>(node->GetOpDesc()->GetInputDesc(0).GetDataType());
+    id << static_cast<int>(input_desc->GetDataType());
     id << '-';
-    id << static_cast<int>(node->GetOpDesc()->GetOutputDesc(0).GetDataType());
+    id << static_cast<int>(output_desc->GetDataType());
   }
   if (trans_format) {
     id << '-';
-    id << static_cast<int>(node->GetOpDesc()->GetInputDesc(0).GetFormat());
+    id << static_cast<int>(input_desc->GetFormat());
     id << '-';
-    id << static_cast<int>(node->GetOpDesc()->GetOutputDesc(0).GetFormat());
+    id << static_cast<int>(output_desc->GetFormat());
   }
   if (trans_shape) {
     id << '-';
-    id << JoinDims(",", node->GetOpDesc()->GetInputDesc(0).GetShape().GetDims());
+    id << JoinDims(",", input_desc->GetShape().GetDims());
     id << '-';
-    id << JoinDims(",", node->GetOpDesc()->GetOutputDesc(0).GetShape().GetDims());
+    id << JoinDims(",", output_desc->GetShape().GetDims());
   }
 
   return id.str();
 }
 
-///
-/// Get all transform operators in the output of node.
-/// @param node
-/// @return std::map
-///     key   - transform operator identifer
-///     value - transform operator set
-///
+/**
+ * Get all transform operators in the output of node.
+ * @param node
+ * @return std::map
+ *     key   - transform operator identifer
+ *     value - transform operator set
+ */
 std::map<std::string, std::vector<NodePtr>> TransOpBreadthFusionPass::GetOutputTransOpNodes(const NodePtr &node) {
   auto result = std::map<std::string, std::vector<NodePtr>>();
   if (node == nullptr) {
@@ -134,13 +141,13 @@ std::map<std::string, std::vector<NodePtr>> TransOpBreadthFusionPass::GetOutputT
   return result;
 }
 
-///
-/// Reserving Transform operators which with smaller topo index,
-/// other transform operators's output edges merge to the reserved transform operator.
-/// Removed transform operators have no output edges.
-/// @param trans_nodes
-/// @param graph
-///
+/**
+ * Reserving Transform operators which with smaller topo index,
+ * other transform operators's output edges merge to the reserved transform operator.
+ * Removed transform operators have no output edges.
+ * @param trans_nodes
+ * @param graph
+ */
 graphStatus TransOpBreadthFusionPass::Fusion(const std::vector<NodePtr> &trans_nodes, ComputeGraphPtr &graph) {
   if (trans_nodes.empty()) {
     return GRAPH_FAILED;

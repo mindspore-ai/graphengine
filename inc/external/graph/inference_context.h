@@ -21,8 +21,8 @@
 #include <string>
 #include <vector>
 
-#include "external/graph/tensor.h"
-#include "external/graph/types.h"
+#include "./tensor.h"
+#include "./types.h"
 
 namespace ge {
 class InferenceContext;
@@ -69,7 +69,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InferenceContext {
   static std::unique_ptr<InferenceContext> Create();
 
  private:
-  InferenceContext(std::unique_ptr<InferenceContextImpl> &impl);
+  explicit InferenceContext(std::unique_ptr<InferenceContextImpl> &impl);
   std::shared_ptr<InferenceContextImpl> inference_context_impl_;
 };
 }  // namespace ge

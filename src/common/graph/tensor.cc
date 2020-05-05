@@ -353,6 +353,7 @@ Tensor::Tensor(const TensorDesc &tensor_desc, const uint8_t *data, size_t size) 
       }
     }
   }
+
   impl = ComGraphMakeShared<TensorImpl>(tensor_desc, data, size);
 }
 
@@ -516,13 +517,14 @@ graphStatus Tensor::IsValid() {
         GELOGW("mul overflow: %lu, %u", shape_size, type_length);
       } else {
         if (shape_size * type_length != data_size) {
-          // [Just log] Constructor
           GELOGW("tensor length not equal: shape_byte_size=%lu, data_size=%zu, dt_type=%s.", shape_size * type_length,
                  data_size, TypeUtils::DataTypeToSerialString(data_type).c_str());
+          return GRAPH_FAILED;
         }
       }
     }
   }
+
   return GRAPH_SUCCESS;
 }
 
@@ -539,7 +541,7 @@ GeTensorDesc TensorAdapter::TensorDesc2GeTensorDesc(const TensorDesc &tensor_des
                               tensor_desc.GetDataType());
   ge_tensor_desc.SetOriginShape(GeShape(tensor_desc.GetOriginShape().GetDims()));
   ge_tensor_desc.SetOriginFormat(tensor_desc.GetOriginFormat());
-  auto size = static_cast<uint32_t>(tensor_desc.GetSize());
+  auto size = tensor_desc.GetSize();
   TensorUtils::SetSize(ge_tensor_desc, size);
 
   auto real_dim_cnt = static_cast<uint32_t>(tensor_desc.GetRealDimCnt());
@@ -552,7 +554,7 @@ TensorDesc TensorAdapter::GeTensorDesc2TensorDesc(const GeTensorDesc &ge_tensor_
                          ge_tensor_desc.GetDataType());
   tensor_desc.SetOriginShape(Shape(ge_tensor_desc.GetOriginShape().GetDims()));
   tensor_desc.SetOriginFormat(ge_tensor_desc.GetOriginFormat());
-  uint32_t size = 0;
+  int64_t size = 0;
   (void)TensorUtils::GetSize(ge_tensor_desc, size);
   tensor_desc.SetSize(size);
 

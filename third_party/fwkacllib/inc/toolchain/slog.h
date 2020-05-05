@@ -21,6 +21,14 @@
 extern "C" {
 #endif // __cplusplus
 
+#ifndef LINUX
+#define LINUX 0
+#endif // LINUX
+
+#ifndef OS_TYPE
+#define OS_TYPE 0
+#endif // OS_TYPE
+
 /**
  * @ingroup slog
  *
@@ -109,7 +117,11 @@ enum {
   DVPP,          /**< DVPP */
   RUNTIME,       /**< Runtime */
   CCE,           /**< CCE */
-  HDC,           /**< HDC */
+#if (OS_TYPE == LINUX)
+    HDC,         /**< HDC */
+#else
+    HDCL,
+#endif // OS_TYPE
   DRV,           /**< Driver */
   MDCFUSION,     /**< Mdc fusion */
   MDCLOCATION,   /**< Mdc location */
@@ -150,8 +162,12 @@ enum {
   CAMERA,
   ASCENDCL,
   TEEOS,
+  ISP,
   SIS,
   HSM,
+  DSS,
+  PROCMGR,     // Process Manager, Base Platform
+  BBOX,
   INVLID_MOUDLE_ID
 };
 
@@ -174,7 +190,11 @@ static DCODE g_moduleIdName[] = {SET_MOUDLE_ID_MAP_NAME(SLOG),
                                  SET_MOUDLE_ID_MAP_NAME(DVPP),
                                  SET_MOUDLE_ID_MAP_NAME(RUNTIME),
                                  SET_MOUDLE_ID_MAP_NAME(CCE),
+#if (OS_TYPE == LINUX)
                                  SET_MOUDLE_ID_MAP_NAME(HDC),
+#else
+                                 SET_MOUDLE_ID_MAP_NAME(HDCL),
+#endif // OS_TYPE
                                  SET_MOUDLE_ID_MAP_NAME(DRV),
                                  SET_MOUDLE_ID_MAP_NAME(MDCFUSION),
                                  SET_MOUDLE_ID_MAP_NAME(MDCLOCATION),
@@ -215,11 +235,16 @@ static DCODE g_moduleIdName[] = {SET_MOUDLE_ID_MAP_NAME(SLOG),
                                  SET_MOUDLE_ID_MAP_NAME(CAMERA),
                                  SET_MOUDLE_ID_MAP_NAME(ASCENDCL),
                                  SET_MOUDLE_ID_MAP_NAME(TEEOS),
+                                 SET_MOUDLE_ID_MAP_NAME(ISP),
                                  SET_MOUDLE_ID_MAP_NAME(SIS),
                                  SET_MOUDLE_ID_MAP_NAME(HSM),
-                                 {NULL, -1}};
-#endif // SET_MOUDLE_ID_MAP_NAME
+                                 SET_MOUDLE_ID_MAP_NAME(DSS),
+                                 SET_MOUDLE_ID_MAP_NAME(PROCMGR),
+                                 SET_MOUDLE_ID_MAP_NAME(BBOX),
+                                 { NULL, -1 }};
+#endif // MODULE_ID_NAME
 
+#if (OS_TYPE == LINUX)
 /**
  * @ingroup slog
  * @brief External log interface, which called by modules
@@ -235,6 +260,16 @@ extern void dlog_init(void);
  * @return: module level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
  */
 extern int dlog_getlevel(int moduleId, int *enableEvent);
+
+/**
+* @ingroup slog
+* @brief CheckLogLevel: check module level enable or not
+*
+* @param [in]moduleId: module id, eg: CCE
+* @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
+* @return: 1:enable, 0:disable
+*/
+extern int CheckLogLevel(int moduleId, int logLevel);
 
 /**
  * @ingroup slog
@@ -338,6 +373,7 @@ extern int dlog_getlevel(int moduleId, int *enableEvent);
     DlogWithKVInner(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
   } while (0)
 
+
 /**
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
@@ -349,6 +385,11 @@ void DlogDebugInner(int moduleId, const char *fmt, ...);
 void DlogEventInner(int moduleId, const char *fmt, ...);
 void DlogInner(int moduleId, int level, const char *fmt, ...);
 void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+
+#else
+_declspec(dllexport) void dlog_init(void);
+_declspec(dllexport) int dlog_getlevel(int moduleId, int *enableEvent);
+#endif // OS_TYPE
 
 #ifdef __cplusplus
 }

@@ -30,12 +30,10 @@ class DynamicStitchKernel : public Kernel {
 
  private:
   Status ValidateParams(const OpDescPtr &attr, const std::vector<ConstGeTensorPtr> &input);
-  template <typename T>
-  void ComputeMergedShape(const vector<ConstGeTensorPtr> &input, GeShape &merged_shape,
-                          map<int32_t, T> &indice_data_mapping);
-  template <typename T>
-  Status GenData(const vector<ConstGeTensorPtr> &input, vector<GeTensorPtr> &v_output);
-
+  void ComputeMergedShape(const vector<ConstGeTensorPtr> &input, GeShape &merged_shape);
+  Status GenData(const vector<ConstGeTensorPtr> &input, GeTensorPtr &output_ptr);
+  Status StitchDataFollowIndices(int64_t data_unit, const vector<ConstGeTensorPtr> &input, int64_t allowance,
+                                 std::unique_ptr<uint8_t[]> &buf);
   int n_;  // data input number
 };
 }  // namespace ge

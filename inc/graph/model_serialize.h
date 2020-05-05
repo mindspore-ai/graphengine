@@ -19,7 +19,6 @@
 
 #include <map>
 #include <string>
-
 #include "graph/buffer.h"
 #include "graph/compute_graph.h"
 #include "graph/model.h"
@@ -27,7 +26,7 @@
 namespace ge {
 class ModelSerialize {
  public:
-  Buffer SerializeModel(const Model &model);
+  Buffer SerializeModel(const Model &model, bool is_dump = false);
 
   Model UnserializeModel(const uint8_t *data, size_t len);
   Model UnserializeModel(ge::proto::ModelDef &model_def);

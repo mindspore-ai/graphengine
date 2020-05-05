@@ -46,8 +46,18 @@ Status PassManager::Run(const ComputeGraphPtr &graph, vector<GraphPass *> &passe
     if (status == SUCCESS) {
       not_changed = false;
     } else if (status != NOT_CHANGED) {
-      GELOGE(status, "Pass Run failed");
+      GELOGE(status, "Pass Run failed on graph %s", graph->GetName().c_str());
       return status;
+    }
+    for (const auto &subgraph : graph->GetAllSubgraphs()) {
+      GE_CHECK_NOTNULL(subgraph);
+      status = pass->Run(subgraph);
+      if (status == SUCCESS) {
+        not_changed = false;
+      } else if (status != NOT_CHANGED) {
+        GELOGE(status, "Pass Run failed on subgraph %s", subgraph->GetName().c_str());
+        return status;
+      }
     }
   }
 

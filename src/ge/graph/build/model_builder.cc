@@ -17,11 +17,13 @@
 #include "graph/build/model_builder.h"
 #include <iostream>
 #include <set>
+#include <unordered_map>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
 #include "graph/attr_value.h"
 #include "graph/buffer.h"
+#include "graph/build/label_allocator.h"
 #include "graph/build/stream_allocator.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
@@ -37,14 +39,12 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/ge_context.h"
 #include "init/gelib.h"
 #include "memory/memory_assigner.h"
 #include "omg/version.h"
 #include "register/op_registry.h"
 
-using domi::AippOpParams;
-using domi::DOMI_TENSOR_NC1HWC0;
-using domi::ModelTaskDef;
 using ge::FAILED;
 using ge::PARAM_INVALID;
 using ge::SUCCESS;
@@ -64,6 +64,10 @@ const int kInvalidIndexNum = -1;
 
 const uint32_t kInputDimensions2D = 2;
 const uint32_t kInputDimensions3D = 3;
+
+const char *const kVectorCore = "VectorCore";
+const char *const kCoreType = "ge.engineType";
+const std::string kEnableL1Fusion = "ge.l1Fusion";
 
 const set<string> adjust_layer_type_ = {ge::CONVOLUTION};
 
@@ -90,12 +94,14 @@ ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const vector<SubGr
       subgraphs_(subgraphs),
       stream_num_(0),
       event_num_(0),
+      label_num_(0),
       stream_max_parallel_num_(stream_max_parallel_num),
       hcom_parallel_(hcom_parallel),
       build_mode_(mode),
       max_mem_offset_(0),
       platform_type_(0),
-      is_loop_graph_(false) {}
+      is_loop_graph_(false),
+      is_l1_fusion_enable_(false) {}
 
 ModelBuilder::~ModelBuilder() {}
 
@@ -110,7 +116,7 @@ Status ModelBuilder::CalcOutputSize(const ge::NodePtr &n) {
     uint32_t dim_num = static_cast<uint32_t>(desc_temp.GetShape().GetDimNum());
     GE_IF_BOOL_EXEC(dim_num > DIM_DEFAULT_SIZE, TensorUtils::SetRealDimCnt(desc_temp, dim_num));
     // calculate tensor size
-    uint32_t size_temp = 0;
+    int64_t size_temp = 0;
     graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(desc_temp, size_temp);
     if (graph_status != GRAPH_SUCCESS) {
       GELOGE(graph_status, "GetTensorMemorySizeInBytes failed!");
@@ -122,7 +128,7 @@ Status ModelBuilder::CalcOutputSize(const ge::NodePtr &n) {
       return FAILED;
     }
 
-    GELOGD("update output desc, dim_size: %u, mem_size: %u, format: %s, type: %s, node name:%s", dim_num, size_temp,
+    GELOGD("update output desc, dim_size: %u, mem_size: %ld, format: %s, type: %s, node name:%s", dim_num, size_temp,
            TypeUtils::FormatToSerialString(desc_temp.GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(desc_temp.GetDataType()).c_str(), node_op_desc->GetName().c_str());
     index++;
@@ -234,23 +240,10 @@ Status ModelBuilder::SetInputOutputDesc() {
     ret = AdjustConstWeightSize(n, weight_offset_);
     GE_CHK_STATUS_RET(ret, "AdjustConstWeightSize failed");
 
-    GE_IF_BOOL_EXEC(((weight_offset_ > 0) && (weight_offset_ % kMemAlignSize != 0)),
-                    weight_offset_ = (weight_offset_ + kMemAlignSize - 1) / kMemAlignSize * kMemAlignSize);
+    GE_IF_BOOL_EXEC(((weight_offset_ > 0) && (weight_offset_ % MEM_ALIGN_SIZE != 0)),
+                    weight_offset_ = (weight_offset_ + MEM_ALIGN_SIZE - 1) / MEM_ALIGN_SIZE * MEM_ALIGN_SIZE);
   }
   GE_CHK_STATUS_RET(compute_graph_->TopologicalSorting(), "TopologicalSorting failed");
-  return SUCCESS;
-}
-
-Status ModelBuilder::AssignMemory() {
-  std::unique_ptr<ge::MemoryAssigner> mem_assigner(new (std::nothrow) ge::MemoryAssigner(compute_graph_));
-  if (mem_assigner == nullptr) {
-    GELOGE(FAILED, "new memory allocator failed.");
-    return FAILED;
-  }
-  if (mem_assigner->AssignMemory(is_loop_graph_, mem_offset_) != SUCCESS) {
-    GELOGE(FAILED, "memory allocator failed.");
-    return FAILED;
-  }
   return SUCCESS;
 }
 
@@ -262,7 +255,7 @@ void ModelBuilder::AddNodeInputProperty() {
     vector<int64_t> src_index_list;
     for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
       auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, GELOGW("peer_out_anchor is nullptr!"); continue);
       GE_IF_BOOL_EXEC(node_op_desc->HasAttr(MERGE_PRENODE_FLAG), continue);
 
       ge::NodePtr src_node = peer_out_anchor->GetOwnerNode();
@@ -341,6 +334,16 @@ Status ModelBuilder::AdjustInputTensorFlag() {
   }
   return SUCCESS;
 }
+void ModelBuilder::InitL1FusionOption() {
+  string is_l1_fusion_enable = "false";
+  graphStatus ret = ge::GetContext().GetOption(kEnableL1Fusion, is_l1_fusion_enable);
+  if (ret == GRAPH_SUCCESS) {
+    is_l1_fusion_enable_ = is_l1_fusion_enable == "true";
+    GELOGD("The value of %s is %s.", kEnableL1Fusion.c_str(), is_l1_fusion_enable.c_str());
+  } else {
+    GELOGW("The value of %s is empty.", kEnableL1Fusion.c_str());
+  }
+}
 
 Status ModelBuilder::BuildModelDef(ge::Model &model) {
   ClearOriginalFormat();
@@ -357,6 +360,23 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_EVENT_NUM, event_num_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_EVENT_NUM failed.");
+                   return FAILED);
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_LABEL_NUM, label_num_),
+                   GELOGE(FAILED, "SetInt of ATTR_MODEL_LABEL_NUM failed.");
+                   return FAILED);
+  string ge_core_type;
+  Status ret = ge::GetContext().GetOption(kCoreType, ge_core_type);
+  if (ret != SUCCESS) {
+    GELOGW("get the option CORE_TYPE fail, set it to default value VECTOR_ENGINE");
+  }
+  int64_t core_type = (ge_core_type == kVectorCore) ? 1 : 0;
+  GELOGI("core_type: %ld", core_type);
+  if (!ge::AttrUtils::SetInt(&model, ATTR_MODEL_CORE_TYPE, core_type)) {
+    GELOGE(FAILED, "SetInt of ATTR_CORE_TYPE failed.");
+  }
+  InitL1FusionOption();
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(&model, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_),
+                   GELOGE(FAILED, "SetBool of ATTR_NAME_SWITCH_FOR_L1_FUSION failed.");
                    return FAILED);
   model.SetName(compute_graph_->GetName());
   model.SetGraph(ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph_));
@@ -485,7 +505,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     return INTERNAL_ERROR;
   }
   int byte_size = static_cast<int>(task_def_bytes.GetSize());
-  std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
+  std::shared_ptr<domi::ModelTaskDef> task = ge::MakeShared<domi::ModelTaskDef>();
   GE_CHECK_NOTNULL(task);
   GE_CHK_BOOL_EXEC(ReadProtoFromArray(task_def_bytes.GetData(), byte_size, task.get()), return INTERNAL_ERROR,
                    "ReadProtoFromArray failed.");
@@ -533,19 +553,39 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
 
   // Assign logical streams.
   StreamAllocator stream_allocator(compute_graph_, subgraphs_);
+  GE_TIMESTAMP_START(AssignLogicalStreams);
   GE_CHK_STATUS_RET(stream_allocator.AssignLogicalStreams(stream_max_parallel_num_, hcom_parallel_),
                     "Assign logical streams failed.");
+  GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
-  GE_CHK_STATUS_RET(AssignMemory(), "Assign Memory Failed!");
+  // Assign functional op labels.
+  GE_TIMESTAMP_START(AssignFunctionalLabels);
+  LabelAllocator label_allocator(compute_graph_);
+  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
+  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
+
+  GE_TIMESTAMP_START(AssignMemory);
+  MemoryAssigner mem_assigner(compute_graph_);
+  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_offset_), "Assign Memory Failed!");
+  GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 
   // Compile single op in graph build stage
+  GE_TIMESTAMP_START(CompileSingleOp);
   GE_CHK_STATUS_RET(CompileSingleOp(), "ATC builder CompileSingleOp() return fail.");
+  GE_TIMESTAMP_END(CompileSingleOp, "GraphBuilder::CompileSingleOp");
 
   // Refresh real streams and insert event nodes.
+  GE_TIMESTAMP_START(RefreshRealStream);
   GE_CHK_STATUS_RET(stream_allocator.RefreshRealStream(stream_num_, event_num_), "RefreshRealStream failed.");
+  GE_TIMESTAMP_END(RefreshRealStream, "GraphBuilder::RefreshRealStream");
 
+  GE_TIMESTAMP_START(MergeWeights);
   GE_CHK_STATUS_RET(MergeWeights(), "MergeWeights Failed!");
+  GE_TIMESTAMP_END(MergeWeights, "GraphBuilder::MergeWeights");
+
+  GE_TIMESTAMP_START(BuildModelDef);
   GE_CHK_STATUS_RET(BuildModelDef(model), "BuildModelDef failed!");
+  GE_TIMESTAMP_END(BuildModelDef, "GraphBuilder::BuildModelDef");
 
   SetModelVersion(model);
 
@@ -562,7 +602,6 @@ Status ModelBuilder::CompileSingleOp() {
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  GE_TIMESTAMP_CALLNUM_START(CheckAccuracySupported);
   GE_TIMESTAMP_CALLNUM_START(BatchCompileOp);
   std::unordered_map<string, vector<ge::NodePtr>> node_vector_map;
   for (auto &node : compute_graph_->GetAllNodes()) {
@@ -610,7 +649,6 @@ Status ModelBuilder::CompileSingleOp() {
     }
   }
   GE_TIMESTAMP_CALLNUM_END(BatchCompileOp, "GraphBuild::CompileOp");
-  GE_TIMESTAMP_CALLNUM_END(CheckAccuracySupported, "GraphBuild::CheckAccuracySupported");
   return ge::SUCCESS;
 }
 }  // namespace ge

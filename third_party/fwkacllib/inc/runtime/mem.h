@@ -17,38 +17,40 @@
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
 
+/*lint -e7*/
 #include <stddef.h>
+/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 /**
  * @ingroup dvrt_mem
  * @brief memory type
  */
-#define RT_MEMORY_DEFAULT ((uint32_t)0x0)    // default memory on device
-#define RT_MEMORY_HBM ((uint32_t)0x2)        // HBM memory on device
-#define RT_MEMORY_DDR ((uint32_t)0x4)        // DDR memory on device
-#define RT_MEMORY_SPM ((uint32_t)0x8)        // shared physical memory on device
+#define RT_MEMORY_DEFAULT ((uint32_t)0x0)   // default memory on device
+#define RT_MEMORY_HBM ((uint32_t)0x2)       // HBM memory on device
+#define RT_MEMORY_DDR ((uint32_t)0x4)       // DDR memory on device
+#define RT_MEMORY_SPM ((uint32_t)0x8)       // shared physical memory on device
 #define RT_MEMORY_P2P_HBM ((uint32_t)0x10)  // HBM memory on other 4P device
-#define RT_MEMORY_P2P_DDR ((uint32_t)0x11)  // DDR memory on other device>
-#define RT_MEMORY_DDR_NC ((uint32_t)0x20)   // DDR memory of non-cache>
+#define RT_MEMORY_P2P_DDR ((uint32_t)0x11)  // DDR memory on other device
+#define RT_MEMORY_DDR_NC ((uint32_t)0x20)   // DDR memory of non-cache
 #define RT_MEMORY_RESERVED ((uint32_t)0x40)
 
 /**
  * @ingroup dvrt_mem
  * @brief memory Policy
  */
-#define RT_MEMORY_POLICY_NONE ((uint32_t)0x0)                      // Malloc mem prior hage page, then default page
+#define RT_MEMORY_POLICY_NONE ((uint32_t)0x0)                     // Malloc mem prior hage page, then default page
 #define RT_MEMORY_POLICY_HUGE_PAGE_FIRST ((uint32_t)0x1 << 10)    // Malloc mem prior hage page, then default page
 #define RT_MEMORY_POLICY_HUGE_PAGE_ONLY ((uint32_t)0x1 << 11)     // Malloc mem only use hage page
 #define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY ((uint32_t)0x1 << 12)  // Malloc mem only use default page
 
-#define MEM_ALLOC_TYPE_BIT ((uint32_t)0x3FF)                       // mem type bit in <0, 9>
+#define MEM_ALLOC_TYPE_BIT ((uint32_t)0x3FF)  // mem type bit in <0, 9>
 
 /**
  * @ingroup dvrt_mem
@@ -95,7 +97,7 @@ typedef enum tagRtDataType {
 typedef enum tagRtMemcpyChannelType {
   RT_MEMCPY_CHANNEL_TYPE_INNER = 0,  // 1P
   RT_MEMCPY_CHANNEL_TYPE_PCIe,
-  RT_MEMCPY_CHANNEL_TYPE_HCCs,       // not support now
+  RT_MEMCPY_CHANNEL_TYPE_HCCs,  // not support now
   RT_MEMCPY_CHANNEL_TYPE_RESERVED,
 } rtMemcpyChannelType_t;
 
@@ -441,6 +443,18 @@ RTS_API rtError_t rtMemSetRC(const void *devPtr, uint64_t size, uint32_t readCou
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtSetIpcMemPid(const char *name, int32_t pid[], int num);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief HCCL Async memory cpy
+ * @param [in] dbindex single device 0
+ * @param [in] dbinfo doorbell info
+ * @param [in] stream asynchronized task stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input of ptr, name
+ * @return RT_ERROR_DRV_ERR for driver error
+ */
+RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stream);
 
 #ifdef __cplusplus
 }

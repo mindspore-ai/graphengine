@@ -22,25 +22,20 @@
 namespace ge {
 
 /**
-*@brief Elementwise computes the bitwise right-shift of x and y.
+*@brief Element-wise computes the bitwise right-shift of x and y.
 
-*@par Inputs:
-*The input x can be k-dimensional tensor, num_lower and num_upper can be zero-dimensional scalar. Inputs include: \n
-* @li x:A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, uint32, uint64. \n
-* @li y:A Tensor. Must have the same type as x. \n
+*@par Inputs: 
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+are 0D scalars.
+* @li x: A Tensor. Must be one of the following types: int8, int16, int32, \n
+int64, uint8, uint16, uint32, uint64. \n
+* @li y: A Tensor. Has the same type as "x". \n
 
-*@par Outputs:
-*@li z:A Tensor. Has the same type as x. \n
+*@par Outputs: 
+* z: A Tensor. Has the same type as "x". \n
 
-*@attention Constraints:\n
-*-The implementation for Unique on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*@attention Constraints: \n
+*Unique runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(RightShift)

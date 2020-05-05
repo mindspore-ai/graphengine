@@ -27,6 +27,12 @@ using std::set;
 using std::string;
 using std::vector;
 
+namespace {
+const char *const kAICPUEngineName = "DNN_VM_AICPU";
+const char *const kAttrNameParentOpType = "parentOpType";
+const size_t kHeadNodeMaxNum = 820;  // calculated by 1024 * 0.8
+}  // namespace
+
 namespace ge {
 LogicalStreamPass::LogicalStreamPass(const string &name) : name_(name) {}
 
@@ -44,6 +50,24 @@ bool LogicalStreamPass::HasStreamLabel(const Subgraph &subgraph) const {
 
 bool LogicalStreamPass::HasAssignedStream(const Subgraph &subgraph) const {
   return subgraph.stream_id != kInvalidStream;
+}
+
+bool LogicalStreamPass::HasNonConstInputNode(const Subgraph &subgraph) const {
+  const SubGraphInfo &subgraph_info = subgraph.subgraph_info;
+  const auto &pld_to_end_map = subgraph_info.GetPld2EndMap();
+  for (const auto &pld_to_end : pld_to_end_map) {
+    const NodePtr &placeholder = pld_to_end.first;
+    if (placeholder != nullptr) {
+      string parent_op_type;
+      if (AttrUtils::GetStr(placeholder->GetOpDesc(), kAttrNameParentOpType, parent_op_type)) {
+        if ((parent_op_type != CONSTANT) && (parent_op_type != CONSTANTOP)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 Status AssignByLabelPass::Run(ComputeGraphPtr whole_graph, const vector<SubgraphPtr> &subgraphs, Context &context) {
@@ -108,6 +132,21 @@ Status IndependentStreamPass::Run(ComputeGraphPtr whole_graph, const vector<Subg
 Status AssignByDependencyPass::Run(ComputeGraphPtr whole_graph, const vector<SubgraphPtr> &subgraphs,
                                    Context &context) {
   bool changed = false;
+  if (IsHeadNodeExceeded(subgraphs)) {
+    int64_t &next_stream = context.next_stream;
+    for (const SubgraphPtr &subgraph : subgraphs) {
+      if (!HasAssignedStream(*subgraph)) {
+        subgraph->stream_id = next_stream;
+        changed = true;
+      }
+    }
+    if (changed) {
+      ++next_stream;
+      return SUCCESS;
+    }
+    return NOT_CHANGED;
+  }
+
   map<NodePtr, SubgraphPtr> end_subgraph_map;
   map<NodePtr, SubgraphPtr> pld_subgraph_map;
   InitEndSubgraphMap(subgraphs, end_subgraph_map);
@@ -148,6 +187,24 @@ Status AssignByDependencyPass::Run(ComputeGraphPtr whole_graph, const vector<Sub
   UpdateReusedSubgraphs();
 
   return changed ? SUCCESS : NOT_CHANGED;
+}
+
+bool AssignByDependencyPass::IsHeadNodeExceeded(const vector<SubgraphPtr> &subgraphs) const {
+  size_t aicpu_node_num = 0;
+  for (const SubgraphPtr &subgraph : subgraphs) {
+    if (subgraph->engine_conf.id == kAICPUEngineName && !HasNonConstInputNode(*subgraph)) {
+      const SubGraphInfo &subgraph_info = subgraph->subgraph_info;
+      auto compute_graph = subgraph_info.GetSubGraph();
+      aicpu_node_num += compute_graph->GetDirectNode().size() - subgraph_info.GetPld2EndMap().size() -
+                        subgraph_info.GetEnd2PldMap().size();
+      if (aicpu_node_num > kHeadNodeMaxNum) {
+        GELOGI("aicpu_node_num, %zu", aicpu_node_num);
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void AssignByDependencyPass::InitEndSubgraphMap(const vector<SubgraphPtr> &subgraphs,
@@ -266,6 +323,7 @@ void AssignByDependencyPass::UpdateAssignedSubgraphs(Context &context) {
   // Update the subgraphs assigned by the engine.
   for (auto &subgraph : assigned_subgraphs_) {
     subgraph->stream_id += engine_start_streams[subgraph->engine_conf.id];
+    GELOGI("Stream of subgraph %s has been updated to %ld.", subgraph->name.c_str(), subgraph->stream_id);
   }
 }
 
@@ -318,6 +376,8 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr whole_graph, const vector<Subgr
 
   // Update stream id for nodes belong to skipped engine subgraph
   GE_CHK_STATUS_RET(UpdateForSkippedEngine(whole_graph, subgraphs));
+
+  RefreshContinuousStreams(whole_graph, context);
 
   return SUCCESS;
 }
@@ -404,7 +464,7 @@ int64_t NodeStreamUpdatePass::GetSingleInoutStream(const NodePtr &node) const {
   }
   if (stream_ids.size() == 1) {
     int64_t stream_id = *(stream_ids.begin());
-    GELOGI("Node %s of type %s: its all input and output nodes are in same stream id[%ld].", node->GetName().c_str(),
+    GELOGI("Node %s of type %s: its all input and output nodes are in same stream[%ld].", node->GetName().c_str(),
            node->GetType().c_str(), stream_id);
     return stream_id;
   }
@@ -419,8 +479,8 @@ Status NodeStreamUpdatePass::UpdateForSkippedEngine(const ComputeGraphPtr &whole
   // Check if sub graph is engine skipped and without stream label or not
   for (const SubgraphPtr &subgraph : subgraphs) {
     if (IsEngineSkip(*subgraph) && !HasStreamLabel(*subgraph)) {
-      auto compute_graph = subgraph->subgraph_info.GetSubGraph();
-      for (NodePtr &node : compute_graph->GetDirectNode()) {
+      auto graph = subgraph->subgraph_info.GetSubGraph();
+      for (NodePtr &node : graph->GetDirectNode()) {
         auto op_desc = node->GetOpDesc();
         GE_CHECK_NOTNULL(op_desc);
         auto stream_id = op_desc->GetStreamId();
@@ -465,6 +525,42 @@ bool NodeStreamUpdatePass::AreAllPredStreamsInvalid(const NodePtr &node) const {
   return true;
 }
 
+void NodeStreamUpdatePass::RefreshContinuousStreams(ComputeGraphPtr whole_graph, Context &context) const {
+  int64_t stream_num = context.next_stream;
+  vector<bool> stream_has_node(stream_num);
+
+  for (const NodePtr &node : whole_graph->GetDirectNode()) {
+    if (node != nullptr) {
+      auto op_desc = node->GetOpDesc();
+      if (op_desc != nullptr) {
+        int64_t stream_id = op_desc->GetStreamId();
+        if (stream_id != kInvalidStream && stream_id < stream_num) {
+          stream_has_node[stream_id] = true;
+        }
+      }
+    }
+  }
+
+  context.next_stream = 0;
+  vector<int64_t> old_to_new_streams(stream_num, kInvalidStream);
+  for (size_t old_stream = 0; old_stream < stream_has_node.size(); ++old_stream) {
+    if (stream_has_node[old_stream]) {
+      old_to_new_streams[old_stream] = context.next_stream;
+      ++context.next_stream;
+    }
+  }
+
+  for (const NodePtr &node : whole_graph->GetDirectNode()) {
+    auto op_desc = node->GetOpDesc();
+    if (op_desc != nullptr) {
+      int64_t stream_id = op_desc->GetStreamId();
+      if (stream_id != kInvalidStream && stream_id < stream_num) {
+        op_desc->SetStreamId(old_to_new_streams[stream_id]);
+      }
+    }
+  }
+}
+
 LogicalStreamAllocator::LogicalStreamAllocator(const map<string, SchedulerConf> &scheduler_confs,
                                                const map<string, int> &max_parallel_num, bool hcom_parallel)
     : scheduler_confs_(scheduler_confs), max_parallel_num_(max_parallel_num) {
@@ -475,6 +571,7 @@ Status LogicalStreamAllocator::Assign(const ComputeGraphPtr &whole_graph, const 
                                       int64_t &stream_num) {
   GE_CHECK_NOTNULL(whole_graph);
   map<string, EngineConfPtr> engine_confs;
+  GE_TIMESTAMP_START(InitEngineConfs);
   for (const auto &item : scheduler_confs_) {
     const SchedulerConf &scheduler = item.second;
     for (const auto &engine_pair : scheduler.cal_engines) {
@@ -484,9 +581,12 @@ Status LogicalStreamAllocator::Assign(const ComputeGraphPtr &whole_graph, const 
       }
     }
   }
+  GE_TIMESTAMP_END(InitEngineConfs, "GraphBuilder::AssignStreamInitEngineConfs");
 
   vector<SubgraphPtr> subgraphs;
+  GE_TIMESTAMP_START(ConvertSubgraphs);
   Status status = ConvertSubgraphs(subgraph_infos, engine_confs, subgraphs);
+  GE_TIMESTAMP_END(ConvertSubgraphs, "GraphBuilder::AssignStreamConvertSubgraphs");
   if (status != SUCCESS) {
     GELOGE(status, "Create subgraphs failed.");
     return status;

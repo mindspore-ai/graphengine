@@ -37,6 +37,7 @@ struct RunContext {
   ge::Buffer weightsBuffer;
   std::vector<rtStream_t> graphStreamList;  // all streams of graph, order by ge stream id(0,1,...)
   std::vector<rtEvent_t> graphEventList;    // all events of graph, order by ge event id(0,1,...)
+  std::vector<rtLabel_t> graphLabelList;    // all labels of graph, order by ge label id(0,1,...)
 };
 
 struct Task {

@@ -74,33 +74,33 @@ Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, hcclDataType
       return PARAM_INVALID;
     }
     ge::GeShape shape = ge::GeShape(shape_dims);
-    auto input_size = static_cast<uint32_t>(shape.GetShapeSize() * size);
+    int64_t input_size = shape.GetShapeSize() * size;
     total_size = (input_size + align_size - 1) / align_size * align_size;
   } else {
     for (size_t i = 0; i < op_desc->GetInputsSize(); i++) {
-      uint32_t input_size = 0;
+      int64_t input_size = 0;
       int64_t block_size = 0;
       GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(i));
       GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(*op_desc->GetInputDescPtr(i), input_size),
                         "get size from TensorDesc failed, op : %s, input index : %zu", op_desc->GetName().c_str(), i);
 
       GE_IF_BOOL_EXEC(
-          op_desc->GetType() == HCOMREDUCESCATTER, int32_t rank_size = 0;
-          GE_CHK_BOOL_RET_STATUS(ge::AttrUtils::GetInt(op_desc, HCOM_ATTR_RANK_SIZE, rank_size), PARAM_INVALID,
-                                 "get HCOM_ATTR_RANK_SIZE failed");
-          GE_CHK_BOOL_RET_STATUS(rank_size != 0, PARAM_INVALID, "rank size is zero");
-          int64_t shape_size = op_desc->GetInputDescPtr(i)->GetShape().GetShapeSize(); GE_CHK_STATUS_RET(
-              CheckInt64Int32MulOverflow(shape_size, size), "Product of shape size and size beyond INT64_MAX");
-          block_size = (shape_size * size) / rank_size;
-          GE_CHK_STATUS_RET(CheckInt64AddOverflow(total_size, block_size), "Total size is beyond the INT64_MAX");
-          total_size = total_size + block_size; continue;);
+        op_desc->GetType() == HCOMREDUCESCATTER, int32_t rank_size = 0;
+        GE_CHK_BOOL_RET_STATUS(ge::AttrUtils::GetInt(op_desc, HCOM_ATTR_RANK_SIZE, rank_size), PARAM_INVALID,
+                               "get HCOM_ATTR_RANK_SIZE failed");
+        GE_CHK_BOOL_RET_STATUS(rank_size != 0, PARAM_INVALID, "rank size is zero");
+        int64_t shape_size = op_desc->GetInputDescPtr(i)->GetShape().GetShapeSize(); GE_CHK_STATUS_RET(
+          ge::CheckInt64Uint32MulOverflow(shape_size, size), "Product of shape size and size beyond INT64_MAX");
+        block_size = (shape_size * size) / rank_size;
+        GE_CHK_STATUS_RET(ge::CheckInt64AddOverflow(total_size, block_size), "Total size is beyond the INT64_MAX");
+        total_size = total_size + block_size; continue;);
 
       int64_t shape_size = op_desc->GetInputDescPtr(i)->GetShape().GetShapeSize();
-      GE_CHK_STATUS_RET(CheckInt64Int32MulOverflow(shape_size, size),
+      GE_CHK_STATUS_RET(ge::CheckInt64Int32MulOverflow(shape_size, size),
                         "Product of shape size and size beyond INT64_MAX");
       GE_IF_BOOL_EXEC(is_allgather, block_size = shape_size * size;);
       GE_IF_BOOL_EXEC(!is_allgather, block_size = (input_size + align_size - 1) / align_size * align_size;);
-      GE_CHK_STATUS_RET(CheckInt64AddOverflow(total_size, block_size), "Total size is beyond the INT64_MAX");
+      GE_CHK_STATUS_RET(ge::CheckInt64AddOverflow(total_size, block_size), "Total size is beyond the INT64_MAX");
       total_size = total_size + block_size;
     }
   }

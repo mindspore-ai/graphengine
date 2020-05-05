@@ -23,8 +23,8 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <vector>
 #include <string>
+#include <vector>
 #include "cce/aicpu_engine_struct.h"
 #include "common/types.h"
 #include "common/ge_types.h"
@@ -37,6 +37,7 @@
 #include "ge/ge_api_types.h"
 
 namespace ge {
+
 class DavinciModel;
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
@@ -175,6 +176,14 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status GetInputOutputDescInfo(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
                                     std::vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &inputFormats,
                                     std::vector<uint32_t> &outputFormats);
+  ///
+  /// @ingroup ge
+  /// @brief Get dynamic batch_info
+  /// @param [in] model_id
+  /// @param [out] batch_info
+  /// @return execute result
+  ///
+  ge::Status GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
   ///
   /// @ingroup domi_ome

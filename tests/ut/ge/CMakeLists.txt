@@ -46,6 +46,7 @@ include_directories(${GE_SOURCE_DIR}/inc/common)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_SOURCE_DIR}/tests/ut/ge)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
@@ -100,6 +101,8 @@ file(GLOB_RECURSE COMMON_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}
     "${GE_SOURCE_DIR}/src/common/graph/opsproto/opsproto_manager.cc"
     "${GE_SOURCE_DIR}/src/common/graph/op_imp.cc"
     "${GE_SOURCE_DIR}/src/common/register/register.cc"
+    "${GE_SOURCE_DIR}/src/common/register/op_kernel_registry.cc"
+    "${GE_SOURCE_DIR}/tests/depends/cce/src/op_kernel_registry.cc"
     "${GE_SOURCE_DIR}/src/common/register/auto_mapping_util.cc"
     "${GE_SOURCE_DIR}/src/common/register/tensor_assign.cc"
     "${GE_SOURCE_DIR}/src/common/graph/format_refiner.cc"
@@ -164,6 +167,7 @@ file(GLOB_RECURSE DISTINCT_GRAPH_LOAD_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}
     "${GE_SOURCE_DIR}/src/ge/common/model_parser/base.cc"
     "${GE_SOURCE_DIR}/src/ge/common/tbe_kernel_store.cc"
     "${GE_SOURCE_DIR}/src/ge/common/util.cc"
+    "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/cpu_queue_schedule.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/data_dumper.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/data_inputer.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/davinci_model.cc"
@@ -187,6 +191,8 @@ file(GLOB_RECURSE DISTINCT_GRAPH_LOAD_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/stream_active_task_info.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/end_graph_task_info.cc"
+    "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
+    "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/output/output.cc"
     "${GE_SOURCE_DIR}/src/ge/model/ge_model.cc"
     "${GE_SOURCE_DIR}/src/ge/common/helper/model_helper.cc"
@@ -294,6 +300,7 @@ file(GLOB_RECURSE GRAPH_PASS_COMMON_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}
     "${GE_SOURCE_DIR}/src/ge/graph/passes/no_use_reshape_remove_pass.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/passes/control_op_attr_pass.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/passes/infershape_pass.cc"
+    "${GE_SOURCE_DIR}/src/ge/ge_local_engine/engine/host_cpu_engine.cc"
 )
 
 file(GLOB_RECURSE KERNEL_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}
@@ -402,8 +409,6 @@ file(GLOB_RECURSE PASS_TEST_FILES ${CMAKE_CURRENT_SOURCE_DIR}
     "graph/passes/dimension_adjust_pass_unittest.cc"
     "graph/passes/pass_utils_unittest.cc"
     "graph/passes/net_output_pass_unittest.cc"
-    "graph/passes/update_net_output_pass_unittest.cc"
-    "graph/passes/no_reshape_op_remove_pass_unittest.cc"
     "graph/passes/no_use_reshape_remove_pass_unittest.cc"
     "graph/passes/infershape_pass_unittest.cc"
 )

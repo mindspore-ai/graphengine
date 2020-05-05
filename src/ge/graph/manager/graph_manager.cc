@@ -47,7 +47,6 @@
 #include "graph/passes/identify_reference_pass.h"
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 #include "graph/passes/multi_batch_pass.h"
-#include "graph/passes/no_reshape_op_remove_pass.h"
 #include "graph/passes/permute_pass.h"
 #include "graph/passes/reshape_remove_pass.h"
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
@@ -55,9 +54,12 @@
 #include "graph/passes/transop_depth_fusion_pass.h"
 #include "graph/passes/transop_nearby_allreduce_fusion_pass.h"
 #include "graph/passes/transop_without_reshape_fusion_pass.h"
+#include "graph/passes/cast_remove_pass.h"
 #include "graph/passes/transpose_transdata_pass.h"
 #include "graph/passes/variable_op_pass.h"
+#include "graph/passes/variable_prepare_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
+#include "graph/passes/replace_with_empty_const_pass.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
@@ -81,15 +83,10 @@ Status GraphManager::Initialize(const std::map<string, string> &options) {
   }
 
   // malloc
-  graph_run_listener_ = MakeShared<GraphModelListener>();
+  graph_run_listener_ = MakeShared<GraphModelListener>(sync_run_mutex_, condition_);
   if (graph_run_listener_ == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;
-  }
-  Status ret = graph_run_listener_->SetCondition(&sync_run_mutex_, &condition_);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[Initialize] mutex and cond is invalid.");
-    return ret;
   }
   // graph context
   graph_context_ = MakeShared<GraphContext>();
@@ -99,7 +96,7 @@ Status GraphManager::Initialize(const std::map<string, string> &options) {
   }
 
   // parse option parameters
-  ret = ParseOptions(options);
+  Status ret = ParseOptions(options);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Initialize] parse options failed.");
     return ret;
@@ -135,7 +132,9 @@ Status GraphManager::Finalize() {
     return SUCCESS;
   }
 
-  GE_CHK_STATUS_RET(graph_executor_.FreeExecuteMemory());
+  if (graph_executor_.FreeExecuteMemory() != SUCCESS) {
+    GELOGW("Graph executor FreeExecuteMemory failed, resources may not be released correctly.");
+  }
 
   StopQueue(this);
 
@@ -240,10 +239,10 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   return SUCCESS;
 }
 
-Status GraphManager::MergeSubGraph(ComputeGraphPtr &compute_graph, const std::vector<SubGraphInfoPtr> &sub_graph_list) {
+Status GraphManager::MergeSubGraph(ComputeGraphPtr &compute_graph, const ge::ComputeGraphPtr &original_compute_graph) {
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr != nullptr && instance_ptr->InitFlag()) {
-    Status ret = graph_partitioner_.MergeAfterSubGraphOptimization(compute_graph, sub_graph_list);
+    Status ret = graph_partitioner_.MergeAfterSubGraphOptimization(compute_graph, original_compute_graph);
     if (ret != SUCCESS) {
       GELOGE(ret, "merge end and placeholder after subGraph optimization failed.");
       return FAILED;
@@ -254,10 +253,54 @@ Status GraphManager::MergeSubGraph(ComputeGraphPtr &compute_graph, const std::ve
       GELOGE(ret_topo, "[GraphManager]: TopologicalSorting the merged graph failed.");
       return ret_topo;
     }
-  } else if (!sub_graph_list.empty() && (sub_graph_list[0] != nullptr)) {
-    compute_graph = sub_graph_list[0]->GetSubGraph();
+  } else {
+    auto subgraph_list = graph_partitioner_.GetSubGraphMap();
+    if (subgraph_list.find(original_compute_graph) != subgraph_list.end() &&
+        !subgraph_list[original_compute_graph].empty() && subgraph_list[original_compute_graph][0] != nullptr) {
+      compute_graph = subgraph_list[original_compute_graph][0]->GetSubGraph();
+    }
   }
 
+  return SUCCESS;
+}
+
+Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph) {
+  // use default 16 multi thread
+  const uint32_t thread_num = 16;
+  ThreadPool executor(thread_num);
+  auto sub_graph_map = graph_partitioner_.GetSubGraphMap();
+  std::vector<std::future<Status>> vector_future;
+  const auto &root_subgraph_list = sub_graph_map[compute_graph];
+  for (const auto &subgraph : root_subgraph_list) {
+    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, subgraph, session_id,
+                                            GetThreadLocalContext());
+    if (!f.valid()) {
+      GELOGE(FAILED, "Future is invalid");
+      return FAILED;
+    }
+    vector_future.emplace_back(std::move(f));
+  }
+
+  for (auto &function_graph : compute_graph->GetAllSubgraphs()) {
+    auto subgraph_list = sub_graph_map[function_graph];
+    for (const auto &subgraph : subgraph_list) {
+      std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, subgraph, session_id,
+                                              GetThreadLocalContext());
+      if (!f.valid()) {
+        GELOGE(FAILED, "Future is invalid");
+        return FAILED;
+      }
+      vector_future.emplace_back(std::move(f));
+    }
+  }
+  GELOGI("All sub graph num is %zu", vector_future.size());
+  for (size_t i = 0; i < vector_future.size(); ++i) {
+    Status ret_status = vector_future[i].get();
+    if (ret_status != SUCCESS) {
+      GELOGE(ret_status, "subgraph %zu optimize failed", i);
+      return ret_status;
+    }
+  }
   return SUCCESS;
 }
 
@@ -272,6 +315,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED, "compute graph is NULL."); return FAILED);
   GraphUtils::DumpGEGraph(compute_graph, "BeforeSummaryHandle");
   GraphUtils::DumpGEGraphToOnnx(*compute_graph, "BeforeSummaryHandle");
+  GEEVENT("PreRun start, graph node size is %zu", compute_graph->GetDirectNodesSize());
   // optimize the summary op in graph: store the summary name and replace the summary ops with net_output op.
   GE_TIMESTAMP_START(HandleSummaryOp);
   auto ret = graph_optimize_.HandleSummaryOp(compute_graph);
@@ -295,52 +339,43 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
                      return GE_GRAPH_INFERSHAPE_FAILED;)
   GE_TIMESTAMP_END(InferShape, "ComputeGraph::InferShapeInNeed");
   // graph partition
-  std::vector<SubGraphInfoPtr> sub_graph_list;
+  // all sub graph list of root graph and sub graph
   GE_TIMESTAMP_START(GraphPartition);
-  ret = graph_partitioner_.Partition(compute_graph, sub_graph_list, GraphPartitioner::kPartitioning);
+  ret = graph_partitioner_.Partition(compute_graph, GraphPartitioner::kPartitioning);
   if (ret != SUCCESS) {
     GELOGE(ret, "Graph partition Failed");
     return ret;
   }
   GE_TIMESTAMP_END(GraphPartition, "GraphPartitioner::Partition1");
   GE_TIMESTAMP_START(SetSubgraph);
-  // use default 16 multi thread
-  const uint32_t thread_num = 16;
-  ThreadPool executor(thread_num);
-  size_t sub_graph_list_size = sub_graph_list.size();
-  std::vector<std::future<Status>> vector_future(sub_graph_list_size);
-  for (size_t i = 0; i < sub_graph_list_size; ++i) {
-    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, sub_graph_list[i],
-                                            session_id, GetThreadLocalContext());
-    if (!f.valid()) {
-      GELOGE(FAILED, "Future is invalid");
-      return FAILED;
-    }
-    vector_future[i] = std::move(f);
-  }
-  for (size_t i = 0; i < vector_future.size(); ++i) {
-    Status ret_status = vector_future[i].get();
-    if (ret_status != SUCCESS) {
-      GELOGE(ret_status, "subgraph %zu optimize failed", i);
-      return ret_status;
-    }
+  ret = SetSubgraph(session_id, compute_graph);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Graph set subgraph Failed");
+    return ret;
   }
   GE_TIMESTAMP_END(SetSubgraph, "SetSubGraph");
 
   ComputeGraphPtr merged_compute_graph = nullptr;
+  std::vector<ComputeGraphPtr> merged_sub_graph_list;
 
   GE_TIMESTAMP_START(MergeSubgraph);
-  ret = MergeSubGraph(merged_compute_graph, sub_graph_list);
+  ret = MergeSubGraph(merged_compute_graph, compute_graph);
   if (ret != SUCCESS) {
     GELOGE(ret, "Merge SubGraph Failed");
     return ret;
   }
   merged_compute_graph->SetSessionID(session_id);
   merged_compute_graph->SetGraphID(graph_node->GetGraphId());
-  GE_TIMESTAMP_END(MergeSubgraph, "GraphManager::MergeSubGraph");
-
   GraphUtils::DumpGEGraph(merged_compute_graph, "mergedComputeGraph");
   GraphUtils::DumpGEGraphToOnnx(*merged_compute_graph, "mergedComputeGraph");
+  for (auto &sub_graph : merged_compute_graph->GetAllSubgraphs()) {
+    string subgraph_name = "mergedComputeGraph" + sub_graph->GetName();
+    sub_graph->SetSessionID(session_id);
+    sub_graph->SetGraphID(graph_node->GetGraphId());
+    GraphUtils::DumpGEGraph(merged_compute_graph, subgraph_name);
+    GraphUtils::DumpGEGraphToOnnx(*merged_compute_graph, subgraph_name);
+  }
+  GE_TIMESTAMP_END(MergeSubgraph, "GraphManager::MergeSubGraph");
 
   std::shared_ptr<GELib> instance_ge = ge::GELib::GetInstance();
   if (instance_ge != nullptr && instance_ge->InitFlag()) {
@@ -353,7 +388,6 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
     GE_TIMESTAMP_END(OptimizeAfterMergeSubgraph, "GraphManager::OptimizeAfterMergeSubGraph");
   }
-
   GraphUtils::DumpGEGraph(merged_compute_graph, "OptimizeMergeSubGraphAfter");
   GraphUtils::DumpGEGraphToOnnx(*merged_compute_graph, "OptimizeMergeSubGraphAfter");
 
@@ -364,6 +398,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     graph_name.append(std::to_string(graph_node->GetGraphId()));
     merged_compute_graph->SetName(graph_name);
   }
+  std::vector<SubGraphInfoPtr> sub_graph_list;
   ret = graph_builder_.Build(merged_compute_graph, sub_graph_list, ge_model, session_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "SubGraph build Failed.");
@@ -514,10 +549,7 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
     GetTrainFlag(),
     GE_IF_BOOL_EXEC(compute_graph_tmp == nullptr,
                     GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] compute_graph_tmp is NULL, graph id = %u.", graph_id);
-                    return GE_GRAPH_GRAPH_NODE_NULL;)
-    // adapt for not set.
-    GE_IF_BOOL_EXEC(!compute_graph_tmp->GetNeedIteration(),
-                    compute_graph_tmp->SetNeedIteration(GraphUtils::CheckIsTrainGraph(compute_graph_tmp));))
+                    return GE_GRAPH_GRAPH_NODE_NULL;))
 
   std::vector<GeModelPtr> ge_models;
 
@@ -831,9 +863,8 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   }
 
   // Set save_original_model flag (ge.save_original_model)
-  GE_CHK_STATUS_RET(ParseOption(options, SAVE_ORIGINAL_MODEL, options_.save_original_model),
-                    "Set save original model flag fail");
-  GELOGI("Set save original model flag %s", options_.save_original_model ? "true" : "false");
+  ParseOption(options, SAVE_ORIGINAL_MODEL, options_.save_original_model);
+  GELOGI("Set save original model flag %s", options_.save_original_model.c_str());
   // Original model file name
   ParseOption(options, ORIGINAL_MODEL_FILE, options_.original_model_file);
 
@@ -1323,28 +1354,24 @@ bool GraphManager::ConfirmUseOpAndIndexByNode(const ge::NodePtr &var_node,
   return false;
 }
 
-void GraphManager::ResetConstType(ge::ComputeGraphPtr &compute_graph) {
-  if (options_.train_graph_flag) {
-    for (ge::NodePtr &n : compute_graph->GetDirectNode()) {
-      if (n->GetOpDesc() == nullptr) {
-        continue;
-      }
-      if (n->GetOpDesc()->GetType() == CONSTANT) {
-        n->GetOpDesc()->SetType(CONSTANTOP);
+Status GraphManager::RemoveIsolatedConst(ge::ComputeGraphPtr &compute_graph) {
+  for (ge::NodePtr &n : compute_graph->GetAllNodes()) {
+    if (n->GetOpDesc() == nullptr) {
+      continue;
+    }
+    if (n->GetOpDesc()->GetType() == CONSTANT || n->GetOpDesc()->GetType() == CONSTANTOP) {
+      // reset const type depend on train_flag
+      options_.train_graph_flag ? n->GetOpDesc()->SetType(CONSTANTOP) : n->GetOpDesc()->SetType(CONSTANT);
+      if (n->GetOutAllNodes().empty() && n->GetInAllNodes().empty()) {
+        // it is an isolated constant, just remove it
+        if (GraphUtils::RemoveJustNode(compute_graph, n) != GRAPH_SUCCESS) {
+          GELOGE(FAILED, "remove constant %s failed.", n->GetName().c_str());
+          return FAILED;
+        }
       }
     }
   }
-
-  if (!options_.train_graph_flag) {
-    for (ge::NodePtr &n : compute_graph->GetDirectNode()) {
-      if (n->GetOpDesc() == nullptr) {
-        continue;
-      }
-      if (n->GetOpDesc()->GetType() == CONSTANTOP) {
-        n->GetOpDesc()->SetType(CONSTANT);
-      }
-    }
-  }
+  return SUCCESS;
 }
 
 Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph) {
@@ -1354,8 +1381,8 @@ Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_gra
   NamesToPass names_to_passes_for_shape;
   IdentifyReferencePass identify_reference_pass;
   names_to_passes_for_shape.emplace_back("IdentifyReferencePass", &identify_reference_pass);
-  NoReshapeOpRemovePass no_reshape_op_remove_pass;
-  names_to_passes_for_shape.emplace_back("NoReshapeOpRemovePass", &no_reshape_op_remove_pass);
+  CastRemovePass cast_remove_pass;
+  names_to_passes_for_shape.emplace_back("CastRemovePass", &cast_remove_pass);
   TransposeTransDataPass transpose_transdata_pass;
   names_to_passes_for_shape.emplace_back("TransposeTransDataPass", &transpose_transdata_pass);
   GE_TIMESTAMP_START(ge_passes_for_shape);
@@ -1372,6 +1399,7 @@ Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_gra
   }
   PassManager after_merge_passes;
   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) PermutePass))
+  GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) VariablePrepareOpPass))
   GE_IF_BOOL_EXEC(options == "default" || options == "1", GELOGI("turn on variable accelerator");
                   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) VariableOpPass(&var_acc_ctrl_))))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass(new (std::nothrow) TransOpDepthFusionPass))
@@ -1411,6 +1439,8 @@ Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_gra
   names_to_passes.emplace_back("ReshapeRemovePass", &trans_op_nearby_allreduce_fusion_pass);
   ReshapeRemovePass reshape_remove_pass;
   names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
+  ReplaceWithEmptyConstPass replace_with_empty_const_pass;
+  names_to_passes.emplace_back("ReplaceWithEmptyConstPass", &replace_with_empty_const_pass);
   ConstantFoldingPass constant_folding_pass;
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   DimensionAdjustPass dimension_adjust_pass;
@@ -1423,7 +1453,11 @@ Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_gra
     return ret;
   }
 
-  ResetConstType(compute_graph);
+  ret = RemoveIsolatedConst(compute_graph);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Remove isolated Constant failed, ret:%d.", ret);
+    return ret;
+  }
 
   PassManager pass_for_control_attr_optimize;
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass(new (std::nothrow) MultiBatchPass))
@@ -1493,7 +1527,7 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
     "CheckAndReleaseMemory Graph[%u] need memory_size[%ld], weight_size[%ld],"
     " Device[%u] free_memory_size[%ld]",
     graph_node->GetGraphId(), memory_size, weight_size, GetContext().DeviceId(), free_memory);
-  if (CheckInt64AddOverflow(memory_size, weight_size) != SUCCESS) {
+  if (ge::CheckInt64AddOverflow(memory_size, weight_size) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "The sum of Memory size and weight size exceeds INT64_MAX");
     return INTERNAL_ERROR;
   }
@@ -1545,14 +1579,15 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
   return SUCCESS;
 }
 
-Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, SubGraphInfoPtr &sub_graph_info_ptr,
-                                                     uint64_t session_id, const GEThreadLocalContext &ge_context) {
+Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager,
+                                                     const SubGraphInfoPtr &sub_graph_info_ptr, uint64_t session_id,
+                                                     const GEThreadLocalContext &ge_context) {
   Status ret = SUCCESS;
   GetThreadLocalContext() = ge_context;
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
     ComputeGraphPtr compute_graph_tmp = sub_graph_info_ptr->GetSubGraph();
     const std::string &engine_name = sub_graph_info_ptr->GetEngineName();
-    GELOGD("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
+    GELOGI("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
            compute_graph_tmp != nullptr ? compute_graph_tmp->GetName().c_str() : "", engine_name.c_str(),
            pthread_self());
     GraphUtils::DumpGEGraph(compute_graph_tmp, "OptimizeSubGraphBefore");
@@ -1563,11 +1598,13 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
     if (ret != SUCCESS) {
       GELOGE(ret, "SubGraph optimize Failed %s", engine_name.c_str());
       return ret;
+    } else {
+      GELOGI("SubGraph optimize success %s", engine_name.c_str());
     }
     GraphUtils::DumpGEGraph(compute_graph_tmp, "OptimizeSubGraphAfter");
     GraphUtils::DumpGEGraphToOnnx(*compute_graph_tmp, "OptimizeSubGraphAfter");
     sub_graph_info_ptr->SetSubGraph(compute_graph_tmp);
-    GELOGD("ProcessSubGraphWithMultiThreads end, graph name is %s, engine_name is %s, thread id is %lu",
+    GELOGI("ProcessSubGraphWithMultiThreads end, graph name is %s, engine_name is %s, thread id is %lu",
            compute_graph_tmp != nullptr ? compute_graph_tmp->GetName().c_str() : "", engine_name.c_str(),
            pthread_self());
   } else {
@@ -1646,10 +1683,6 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
                     "[RunGraph] compute_graph_tmp is NULL, graph id = %u.");
         graph_node->Unlock();
         return;
-      }
-
-      if (!compute_graph_tmp->GetNeedIteration()) {
-        compute_graph_tmp->SetNeedIteration(GraphUtils::CheckIsTrainGraph(compute_graph_tmp));
       }
     }
 

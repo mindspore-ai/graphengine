@@ -17,7 +17,6 @@
 #include "graph/passes/folding_kernel/size_kernel.h"
 
 #include <climits>
-
 #include <memory>
 
 #include "common/debug/log.h"

@@ -15,13 +15,11 @@
  */
 
 #include "graph/opsproto_manager.h"
-
-#include <algorithm>
 #include <cstdlib>
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <sstream>
-
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_log.h"
@@ -155,7 +153,7 @@ void OpsProtoManager::LoadOpsProtoPluginSo(std::string &path) {
 
   // Load .so file
   for (auto elem : file_list) {
-    void *handle = dlopen(elem.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+    void *handle = dlopen(elem.c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (handle == nullptr) {
       GELOGW("OpsProtoManager dlopen failed, plugin name:%s. Message(%s).", elem.c_str(), dlerror());
       continue;

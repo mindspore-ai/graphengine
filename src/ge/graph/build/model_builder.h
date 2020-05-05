@@ -54,8 +54,6 @@ class ModelBuilder {
   ge::Buffer GetWeightBuffer() const;
 
  protected:
-  Status AssignMemory();
-
   void AddNodeInputProperty();
 
   void ClearOriginalFormat();
@@ -77,6 +75,8 @@ class ModelBuilder {
 
   Status BuildModelDef(ge::Model &model_def);
 
+  void InitL1FusionOption();
+
   Status CompileSingleOp();
 
   size_t mem_offset_;
@@ -91,6 +91,8 @@ class ModelBuilder {
 
   int64_t event_num_;
 
+  uint32_t label_num_;
+
   ge::Buffer weight_buffer_;
 
   std::map<std::string, int> stream_max_parallel_num_;
@@ -103,6 +105,7 @@ class ModelBuilder {
 
   uint8_t platform_type_;
   bool is_loop_graph_;
+  bool is_l1_fusion_enable_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MODEL_BUILDER_H_

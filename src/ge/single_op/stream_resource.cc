@@ -44,9 +44,7 @@ StreamResource::~StreamResource() {
   }
 }
 
-void StreamResource::CacheOperator(const void *key, SingleOp *single_op) {
-  op_map_[key] = single_op;
-}
+void StreamResource::CacheOperator(const void *key, SingleOp *single_op) { op_map_[key] = single_op; }
 
 SingleOp *StreamResource::GetOperator(const void *key) {
   auto it = op_map_.find(key);
@@ -69,6 +67,7 @@ uint8_t *StreamResource::DoMallocMemory(size_t size, size_t &max_allocated, std:
     GELOGE(RT_FAILED, "rtMalloc failed, size = %zu, ret = %d", size, ret);
     return nullptr;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "malloc function.", size)
 
   ret = rtMemset(buffer, size, 0U, size);
   if (ret != RT_ERROR_NONE) {

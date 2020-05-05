@@ -38,30 +38,29 @@ class InsertNewOpUtil {
 
   Status Parse(const char *conf_path);
 
-  Status InsertNewOps(const ge::ComputeGraphPtr &graph);
-
   Status InsertAippOps(ge::ComputeGraphPtr &graph, std::string &aippConfigPath);
 
   void ClearNewOps();
 
+  Status UpdateDataNodeByAipp(const ComputeGraphPtr &graph);
+
  private:
   Status CheckPositionNotRepeat();
-
-  Status AddMultiShapeInputData(const ge::ComputeGraphPtr &graph);
 
   Status GetAippParams(const std::unique_ptr<domi::AippOpParams> &aippParams, const ge::NodePtr &aipp_node);
 
   Status CheckGraph(const ge::ComputeGraphPtr &graph);
 
-  InsertNewOpUtil() {}
-
-  Status AddAippInputData(ge::NodePtr aipp_node, ge::ComputeGraphPtr graph);
+  InsertNewOpUtil() = default;
 
   ~InsertNewOpUtil() = default;
 
   std::vector<std::unique_ptr<InsertOpBase>> insert_ops_;
 
   std::unique_ptr<domi::InsertNewOps> insert_op_conf_;
+
+  Status UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &switchns);
+  Status UpdateDataBySwitchN(const NodePtr &switchn, const NodePtr &data);
 };
 }  // namespace ge
 

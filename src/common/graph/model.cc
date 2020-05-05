@@ -49,6 +49,7 @@ void Model::Init() {
   (void)AttrUtils::SetInt(this, ATTR_MODEL_MEMORY_SIZE, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_STREAM_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_EVENT_NUM, 0);
+  (void)AttrUtils::SetInt(this, ATTR_MODEL_LABEL_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_WEIGHT_SIZE, 0);
   (void)AttrUtils::SetStr(this, ATTR_MODEL_TARGET_TYPE, TARGET_TYPE_MINI);
   version_ = 0;
@@ -77,9 +78,9 @@ void Model::SetGraph(const ge::Graph &graph) { graph_ = graph; }
 
 Graph Model::GetGraph() const { return graph_; }
 
-graphStatus Model::Save(Buffer &buffer) const {
+graphStatus Model::Save(Buffer &buffer, bool is_dump) const {
   ModelSerialize serialize;
-  buffer = serialize.SerializeModel(*this);
+  buffer = serialize.SerializeModel(*this, is_dump);
   return buffer.GetSize() > 0 ? GRAPH_SUCCESS : GRAPH_FAILED;
 }
 
@@ -113,7 +114,7 @@ graphStatus Model::SaveToFile(const string &file_name) const {
     }
     int fd = open(real_path, O_WRONLY | O_CREAT | O_TRUNC, ACCESS_PERMISSION_BITS);
     if (fd < 0) {
-      GELOGE(GRAPH_FAILED, "open file failed, file path [%s] ", real_path);
+      GELOGE(GRAPH_FAILED, "open file failed, file path [%s], %s ", real_path, strerror(errno));
       return GRAPH_FAILED;
     }
     bool ret = ge_proto.SerializeToFileDescriptor(fd);
@@ -127,6 +128,10 @@ graphStatus Model::SaveToFile(const string &file_name) const {
     }
     if (close(fd) != 0) {
       GELOGE(GRAPH_FAILED, "close file descriptor fail.");
+      return GRAPH_FAILED;
+    }
+    if (!ret) {
+      GELOGE(GRAPH_FAILED, "function [SerializeToFileDescriptor] failed");
       return GRAPH_FAILED;
     }
   }
@@ -152,7 +157,7 @@ graphStatus Model::LoadFromFile(const string &file_name) {
   }
   int fd = open(real_path, O_RDONLY);
   if (fd < 0) {
-    GELOGE(GRAPH_FAILED, "open file failed");
+    GELOGE(GRAPH_FAILED, "open file failed, %s", strerror(errno));
     return GRAPH_FAILED;
   }
 
@@ -168,6 +173,10 @@ graphStatus Model::LoadFromFile(const string &file_name) {
   }
   if (close(fd) != 0) {
     GELOGE(GRAPH_FAILED, "close file descriptor fail.");
+    return GRAPH_FAILED;
+  }
+  if (!ret) {
+    GELOGE(GRAPH_FAILED, "function [ParseFromFileDescriptor] failed");
     return GRAPH_FAILED;
   }
   return Load(model_def);

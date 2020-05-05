@@ -208,6 +208,10 @@ bool RuntimeModel::LoadTask() {
     }
     task_id_list_.push_back(task_id);
   }
+  if (task_list_.empty()) {
+    GELOGE(FAILED, "Task list is empty");
+    return false;
+  }
   GELOGI("Distribute task succ.");
 
   auto rt_ret = rtModelLoadComplete(rt_model_handle_);

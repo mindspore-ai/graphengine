@@ -34,19 +34,20 @@ enum MemoryType { kOutput, kWorkspace };
 
 struct NodeTypeIndex {
   NodeTypeIndex(ge::NodePtr node, MemoryType mem_type, uint32_t index)
-      : node_(std::move(node)), mem_type_(mem_type), index_(index) {}
+      : node(std::move(node)), mem_type(mem_type), index(index) {}
 
-  ge::NodePtr node_ = nullptr;
-  MemoryType mem_type_ = kOutput;
-  uint32_t index_ = 0;
+  ge::NodePtr node = nullptr;
+  MemoryType mem_type = kOutput;
+  uint32_t index = 0;
 };
 
 class MemoryBlock {
  public:
-  explicit MemoryBlock(size_t block_size)
+  explicit MemoryBlock(size_t block_size, bool reuse_mem = true)
       : ref_count_(0),
         stream_id_(0),
         deleted_block_(false),
+        reuse_mem_(reuse_mem),
         block_size_(block_size),
         head_offset_(0),
         tail_offset_(0) {}
@@ -88,6 +89,7 @@ class MemoryBlock {
   int ref_count_;
   int64_t stream_id_;
   bool deleted_block_;
+  bool reuse_mem_;
 
  private:
   size_t block_size_;
@@ -198,8 +200,10 @@ class BlockMemAssigner : public MemAssigner {
   /// @return MemoryBlock*
   /// @author
   ///
-  MemoryBlock *ApplyOutMemory(const ge::NodePtr &n, uint32_t index, const std::vector<int64_t> &ranges);
+  MemoryBlock *ApplyOutMemory(const ge::NodePtr &n, uint32_t index, const std::vector<int64_t> &ranges,
+                              const bool is_op_reuse_mem);
 
+  Status AssignOutputMemoryWithReuse(const NodePtr &node, vector<int64_t> &ranges);
   ///
   /// @ingroup GE
   /// @brief Traversing the compute_graph_ to apply for memory while considering reuse
@@ -213,7 +217,8 @@ class BlockMemAssigner : public MemAssigner {
   /// @author
   ///
   MemoryBlock *ApplyMemory(size_t block_size, size_t real_size, MemoryType mem_type, const ge::NodePtr &n,
-                           uint32_t out_index, const std::vector<bool> &workspace_reuse_flag);
+                           uint32_t out_index, const std::vector<bool> &workspace_reuse_flag,
+                           const bool is_op_reuse_mem);
 
   ///
   /// @ingroup GE
@@ -257,9 +262,8 @@ class BlockMemAssigner : public MemAssigner {
   /// @return void
   /// @author
   ///
-  void ReleaseInputNodeOutMemory(const ge::NodePtr &n,
-                                 const std::unordered_map<string, vector<MemoryBlock *>> &node_out_blocks,
-                                 vector<MemoryBlock *> &reusable_memory);
+  void ReleaseInputNodeOutMemory(const std::unordered_map<string, vector<MemoryBlock *>> &node_out_blocks,
+                                 vector<MemoryBlock *> &reusable_memory, ge::NodePtr &n);
 
   ///
   /// @ingroup GE
@@ -279,6 +283,15 @@ class BlockMemAssigner : public MemAssigner {
 
   // save stream_id and reusable stream_ids
   std::unordered_map<int64_t, std::unordered_set<int64_t>> reusable_streams_map_;
+
+  // reuse memory
+  vector<string> op_no_reuse_mem_vec_;
+
+  bool op_reuse_env_valid_ = false;
+
+  std::string ge_disable_reuse_mem_env_ = "0";
+
+  bool is_op_reuse_mem_ = true;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MEMORY_BLOCK_MEM_ASSIGNER_H_

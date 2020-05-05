@@ -15,11 +15,9 @@
  */
 
 #include "graph/passes/variable_format_pass.h"
-
 #include <map>
 #include <set>
 #include <string>
-
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {

@@ -41,7 +41,7 @@ const std::set<DataType> kReduceProdSupportedType = {DT_INT32};
 Status ReduceProdKernel::ReduceProdCheck(const ge::OpDescPtr &op_desc_ptr,
                                          const std::vector<ge::ConstGeTensorPtr> &input) const {
   if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "input opdesc is nullptr.");
+    GELOGW("Input opdesc is nullptr.");
     return PARAM_INVALID;
   }
   if (input.size() != kReduceProdInputSize) {
@@ -130,14 +130,15 @@ Status ReduceProdKernel::DataCal(const std::vector<ge::ConstGeTensorPtr> &input,
     }
 
     int32_t tmp_x = 1;
+    int32_t tmp_y = 1;
     for (int64_t i = 0; i < head_dim_; ++i) {
       for (int64_t j = 0; j < end_dim_; ++j) {
         // all index for input_data is less than size of input_data
         tmp_x = input_data[static_cast<size_t>(i * end_dim_ * axis_dim_ + j)];
         for (int64_t k = 1; k < axis_dim_; ++k) {
-          int32_t tmp_y = input_data[static_cast<size_t>(i * end_dim_ * axis_dim_ + j + k * end_dim_)];
-          if (CheckInt32MulOverflow(tmp_x, tmp_y) != SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "Product is overflow. multiplier 1: %d. multiplier 2: %d.", tmp_x, tmp_y);
+          tmp_y = input_data[static_cast<size_t>(i * end_dim_ * axis_dim_ + j + k * end_dim_)];
+          if (ge::CheckInt32MulOverflow(tmp_x, tmp_y) != SUCCESS) {
+            GELOGW("Product is overflow. multiplier 1: %d. multiplier 2: %d.", tmp_x, tmp_y);
             return INTERNAL_ERROR;
           }
           tmp_x *= tmp_y;
@@ -163,7 +164,7 @@ void ReduceProdKernel::ShapeCal(const ge::OpDescPtr &op_desc_ptr, const std::vec
   int32_t data_dim_size = static_cast<int32_t>(data_dims.size());
   const uint8_t *axis_data = axis_tensor->GetData().GetData();
   if (axis_data == nullptr) {
-    GE_LOGE("param axis_data must not be null.");
+    DOMI_LOGE(param axis_data must not be null.);
     return;
   }
   int32_t axis = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(axis_data)));
@@ -220,8 +221,8 @@ Status ReduceProdKernel::ComputeNoAxis(const ge::OpDescPtr &op_desc_ptr, const s
     int32_t tmp_y = 1;
     for (size_t k = 1; k < data_num; ++k) {
       tmp_y = input_data[k];
-      if (CheckInt32MulOverflow(tmp_x, tmp_y) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Product is overflow. multiplier 1: %d. multiplier 2: %d.", tmp_x, tmp_y);
+      if (ge::CheckInt32MulOverflow(tmp_x, tmp_y) != SUCCESS) {
+        GELOGW("Product is overflow. multiplier 1: %d. multiplier 2: %d.", tmp_x, tmp_y);
         return INTERNAL_ERROR;
       }
       tmp_x *= tmp_y;
@@ -245,7 +246,9 @@ Status ReduceProdKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vec
     return NOT_CHANGED;
   }
 
-  GeTensorPtr output_ptr = MakeShared<GeTensor>();
+  // Index 0 can always gets a GeTensorDesc object from any OpDescPtr.
+  auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
+  GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;

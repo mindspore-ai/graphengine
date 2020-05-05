@@ -90,6 +90,7 @@ bool CceTask::Distribute() {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return false;
     }
+    GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "task information.", task_info_->flow_table().size())
 
     rt_ret = rtMemcpy(flowtable_, task_info_->flow_table().size(), task_info_->flow_table().data(),
                       task_info_->flow_table().size(), RT_MEMCPY_HOST_TO_DEVICE);
@@ -117,6 +118,7 @@ bool CceTask::Distribute() {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "task information.", task_info_->args_size())
 
   rt_ret = rtMemcpy(args_, task_info_->args_size(), task_info_->args().data(), task_info_->args_size(),
                     RT_MEMCPY_HOST_TO_DEVICE);

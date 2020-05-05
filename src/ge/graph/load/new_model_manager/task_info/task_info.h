@@ -38,9 +38,17 @@ struct RuntimeParam {
   uint32_t batch_num = 0;
   uint32_t stream_num = 0;
   uint32_t event_num = 0;
+  uint32_t label_num = 0;
   uint64_t session_id = 0;
   uint32_t graph_id = 0;
 };
+
+typedef struct FusionOpInfo {
+  vector<string> original_op_names;
+  string op_name;
+  uint32_t op_index;
+  uint32_t stream_id;
+} FusionOpInfo;
 
 class DavinciModel;
 
@@ -60,7 +68,13 @@ class TaskInfo {
 
   virtual uint32_t GetTaskID() { return 0xFFFFFFFF; }
 
+  virtual uint32_t GetStreamId() { return 0xFFFFFFFF; }
+
   virtual uintptr_t GetDumpArgs() { return 0; }
+
+  virtual uint32_t GetSktTaskID() { return 0xFFFFFFFF; }
+
+  virtual FusionOpInfo *GetFusionOpInfo() { return nullptr; }
 
  protected:
   Status SetStream(uint32_t stream_id, const std::vector<rtStream_t> &stream_list);

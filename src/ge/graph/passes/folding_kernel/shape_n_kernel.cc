@@ -40,12 +40,15 @@ Status ShapeNKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_ou
   }
 
   for (size_t i = 0; i < op_desc->GetAllInputsDesc().size(); i++) {
-    if (KernelUtils::IsUnknownShape(op_desc->GetInputDesc(i).GetShape())) {
+    const auto &input_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(input_desc);
+    if (KernelUtils::IsUnknownShape(input_desc->GetShape())) {
       GELOGW("Input %zu shape is unknown, ignore shape_n kernel.", i);
       return NOT_CHANGED;
     }
-    vector<int64_t> dims = op_desc->GetInputDesc(i).GetShape().GetDims();
-    Status ret = PassUtils::ConstructTensorDescWithData(op_desc->GetOutputDesc(i), dims, v_output);
+    vector<int64_t> dims = input_desc->GetShape().GetDims();
+    Status ret =
+      PassUtils::ConstructTensorDescWithData(op_desc->GetOutputDesc(static_cast<uint32_t>(i)), dims, v_output);
     if (ret != SUCCESS) {
       GELOGE(PARAM_INVALID, "ShapeN kernel construct tensor desc failed, i:%zu", i);
       return ret;

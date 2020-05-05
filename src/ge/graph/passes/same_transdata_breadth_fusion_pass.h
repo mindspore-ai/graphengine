@@ -19,7 +19,6 @@
 
 #include <utility>
 #include <vector>
-
 #include "inc/graph_pass.h"
 
 namespace ge {

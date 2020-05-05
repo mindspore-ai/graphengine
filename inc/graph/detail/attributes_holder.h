@@ -23,7 +23,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
 #include "graph/detail/any_map.h"
 #include "graph/ge_error_codes.h"
 #include "graph/types.h"
@@ -96,7 +95,7 @@ class GeIrProtoHelper {
     }
   }
 
-  // protoMsg_ is part of protoOwner_ and they have the same runtime
+  // protoMsg_ is part of protoOwner_, they have the same runtime
   ProtoMsgOwner protoOwner_ = nullptr;
   ProtoType *protoMsg_ = nullptr;
   friend class GeIrProtoHelper<typename std::conditional<

@@ -47,7 +47,7 @@ REG_OP(DepthwiseWeight6DTo4D)
 REG_OP(TransposeD)
     .INPUT(x, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())
-    .ATTR(perm, ListInt, {})
+    .REQUIRED_ATTR(perm, ListInt)
     .OP_END_FACTORY_REG(TransposeD)
 
 /**
@@ -67,6 +67,37 @@ REG_OP(Transpose)
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Transpose)
 
+/**
+*@brief Permutes the dimensions according to order.\n
+        The returned tensor's dimension i will correspond to the input dimension order[i].
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Attributes:
+*order: A permutation of the dimensions of "x".support any axis transformation
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*/
+REG_OP(Permute)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(order, ListInt, {0})
+    .OP_END_FACTORY_REG(Permute)
+
+/**
+*@brief Flattens the inputs. Reserves axis 0 and flattens the input tensors along axis 1.
+
+*@par Inputs:
+*One input: \n
+*x: A multi-dimensional Tensor. Must be one of the following types: \n
+int8, uint8, int16, uint16, int32, int64, float16, float32, float64.
+
+*@par Outputs:
+*y: A 2D flattened Tensor (Reserves axis 0 and flattens the input tensors along axis 1). Must be one of the following data types: int8, uint8, int16, uint16, int32, int64, float16, float32, float64.
+
+*/
 REG_OP(Flatten)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64,
                           DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64,
@@ -76,6 +107,19 @@ REG_OP(Flatten)
                            DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(Flatten)
 
+/**
+*@brief Permutes and crops the input tensor.
+
+*@par Inputs:
+* Three inputs, including: \n
+*@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+*@li block_shape: A 1D list or tuple of int32 or int64.
+*@li crops: A 2D list or tuple of int32 or int64. Specifies the amount to crop from start and end dimensions after permutation.
+
+*@par Outputs:
+*y: A Tensor with format NC1HWC0. Has the same type as input "x".
+
+*/
 REG_OP(BatchToSpaceND)
     .INPUT(x, TensorType::BasicType())
     .INPUT(block_shape, TensorType::IndexNumberType())
@@ -83,6 +127,22 @@ REG_OP(BatchToSpaceND)
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(BatchToSpaceND)
 
+/**
+*@brief Permutes and crops the input tensor.
+
+*@par Inputs:
+* One input: \n
+*x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+
+*@par Attributes:
+*@li block_shape: A required 1D list or tuple of int32 or int64.
+*@li crops: A required 2D list or tuple of int32 or int64. Specifies the amount to crop from the start and end dimensions after permutation.
+
+*@par Outputs:
+*y: A Tensor with format NC1HWC0. Has the same type as input "x".
+
+
+*/
 REG_OP(BatchToSpaceNDD)
     .INPUT(x, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())
@@ -90,6 +150,19 @@ REG_OP(BatchToSpaceNDD)
     .REQUIRED_ATTR(crops, ListInt)
     .OP_END_FACTORY_REG(BatchToSpaceNDD)
 
+/**
+*@brief Pads and permutes the input tensor.
+
+*@par Inputs:
+* Three inputs, including: \n
+*@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+*@li block_shape: A 1D list or tuple of int32 or int64.
+*@li paddings: A 2D list or tuple of int32 or int64. Specifies the padding for the start and end dimensions after permutation.
+
+*@par Outputs:
+*y: A Tensor with format NC1HWC0. Has the same type as input "x".
+
+*/
 REG_OP(SpaceToBatchND)
     .INPUT(x, TensorType::BasicType())
     .INPUT(block_shape, TensorType::IndexNumberType())
@@ -97,6 +170,21 @@ REG_OP(SpaceToBatchND)
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(SpaceToBatchND)
 
+/**
+*@brief Pads and permutes the input tensor.
+
+*@par Inputs:
+* One input: \n
+*x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+
+*@par Attributes:
+*@li block_shape: A required 1D list or tuple of int32 or int64.
+*@li paddings: A required 2D list or tuple of int32 or int64. Specifies the padding for the start and end dimensions after permutation.
+
+*@par Outputs:
+*y: A Tensor with format NC1HWC0. Has the same type as input "x".
+
+*/
 REG_OP(SpaceToBatchNDD)
     .INPUT(x, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())
@@ -104,6 +192,21 @@ REG_OP(SpaceToBatchNDD)
     .REQUIRED_ATTR(paddings, ListInt)
     .OP_END_FACTORY_REG(SpaceToBatchNDD)
 
+/**
+*@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are moved to the "depth" dimension.
+
+*@par Inputs:
+*x: An NHWC Tensor. Must be one of the following types:
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+
+
+*@par Attributes:
+*@li block_size: A required int, specifying the input block size.
+*@li data_format: An optional string from "NHWC" and "NCHW"
+
+*@par Outputs:
+*y: A Tensor. Has the same type as input "x".
+*/
 REG_OP(SpaceToDepth)
   .INPUT(x, TensorType::BasicType())
   .OUTPUT(y, TensorType::BasicType())
@@ -196,6 +299,21 @@ REG_OP(BatchToSpaceD)
     .REQUIRED_ATTR(crops, ListInt)
     .OP_END_FACTORY_REG(BatchToSpaceD)
 
+/**
+*@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are padded and rearranged to the "batch" dimension.
+
+*@par Inputs:
+*@li x: An NC1HWC0 Tensor. Must be one of the following types:
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+
+*@li paddings: A 2D tensor of type int, specifying the input.
+
+*@par Attributes:
+*block_size: A required int, specifying the input block size.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as input "x".
+*/
 REG_OP(SpaceToBatch)
     .INPUT(x, TensorType::BasicType())
     .INPUT(paddings, TensorType::IndexNumberType())
@@ -203,6 +321,20 @@ REG_OP(SpaceToBatch)
     .REQUIRED_ATTR(block_size, Int)
     .OP_END_FACTORY_REG(SpaceToBatch)
 
+/**
+*@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are padded and rearranged to the "batch" dimension.
+
+*@par Inputs:
+*x: An NC1HWC0 Tensor. Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+
+
+*@par Attributes:
+*@li block_size: A required int, specifying the input block size.
+*@li paddings: A 2D tensor. All data types are supported.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as input "x".
+*/
 REG_OP(SpaceToBatchD)
     .INPUT(x, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())
@@ -211,11 +343,11 @@ REG_OP(SpaceToBatchD)
     .OP_END_FACTORY_REG(SpaceToBatchD)
 
 /**
-* @brief Unpacks the given dimension of a rank-R tensor "value" into rank-(R-1)
+* @brief Unpacks the given dimension of a rank-R tensor "x" into rank-(R-1)
 * tensors.
 
 * @par Inputs:
-* @ value: A rank-R tensor (R > 0) of type BasicType, with format ND or NC1HWC0.
+* @ x: A rank-R tensor (R > 0) of type BasicType, with format ND or NC1HWC0.
 
 * @par Attributes:
 * @li num: An optional int, specifying the number of tensors to be unpacked to.
@@ -224,16 +356,16 @@ REG_OP(SpaceToBatchD)
 * is [-R, R).
 
 * @par Outputs:
-* output: The list of Tensor objects unpacked from "value", of type BasicType.
+* y: The list of Tensor objects unpacked from "x", of type BasicType.
 
 * @attention Constraints:
-* @li If "num" is not specified, it is inferred from the shape of "value".
+* @li If "num" is not specified, it is inferred from the shape of "x".
 * @li For the ND format, "axis" is in the range [-R, R); For the NC1HWC0 format,
 * "axis" must not be 2, 3, -2, or -3.
 */
 REG_OP(Unpack)
-    .INPUT(value, TensorType::BasicType())
-    .DYNAMIC_OUTPUT(output, TensorType::BasicType())
+    .INPUT(x, TensorType::BasicType())
+    .DYNAMIC_OUTPUT(y, TensorType::BasicType())
     .REQUIRED_ATTR(num, Int)
     .ATTR(axis, Int, 0)
     .OP_END_FACTORY_REG(Unpack)
@@ -243,21 +375,20 @@ REG_OP(Unpack)
 * dimension of the output.
 
 * @par Inputs:
-* images: A 4D Tensor with shape [batch, in_rows, in_cols, depth].
+* x: A 4D Tensor with shape [batch, in_rows, in_cols, depth].
 
 * @par Attributes:
-* @li ksizes: An optional tuple or list. size of the sliding window for
-* each dimension of images.
-* @li strides: An optional tuple or list. How far the centers of two
-* consecutive patches are in the images.\n
-* Must be: [1, stride_rows, stride_cols, 1].
-* @li rates: Must be: An optional tuple or list. [1, rate_rows, rate_cols, 1].
-* This is the input stride,\n
-* specifying how far two consecutive patch samples are in the input. Equivalent\n
-* to extracting patches with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *\n
-* (rates - 1), followed by subsampling them spatially by a factor of rates. This\n
-* is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
-* @li padding: An optional string. The type of padding algorithm to use.
+* @li ksizes: A required list or tuple. The size of the sliding window for each
+* dimension of images.
+* @li strides: A required list or tuple. How far the centers of two consecutive
+* patches are in the images. Must be: [1, stride_rows, stride_cols, 1].
+* @li rates: A required list or tuple. Must be: [1, rate_rows, rate_cols, 1]. \n
+* This is the input stride, specifying how far two consecutive patch  \n
+* samples are in the input. Equivalent to extracting patches
+* with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *\n
+* (rates - 1), followed by subsampling them spatially by a factor of rates. \n
+* This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
+* @li padding: A required string. The type of padding algorithm to use.
 
 * @par Outputs:
 * Output: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *\n
@@ -269,12 +400,12 @@ REG_OP(Unpack)
 * "ksizes", "strides" and "rates" are lists of integers.
 */
 REG_OP(ExtractImagePatches)
-    .INPUT(images, TensorType::REALNUMBERTYPE())
+    .INPUT(x, TensorType::REALNUMBERTYPE())
     .OUTPUT(y, TensorType::REALNUMBERTYPE())
-    .ATTR(ksizes, ListInt, {1,3,3,1})
-    .ATTR(strides, ListInt, {1,1,1,1})
-    .ATTR(rates, ListInt, {1,1,1,1})
-    .ATTR(padding, String, "SAME")
+    .REQUIRED_ATTR(ksizes, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(rates, ListInt)
+    .REQUIRED_ATTR(padding, String)
     .OP_END_FACTORY_REG(ExtractImagePatches)
 
 /**
@@ -321,6 +452,35 @@ REG_OP(ConfusionTranspose)
     .REQUIRED_ATTR(transpose_first, Bool)
     .OP_END_FACTORY_REG(ConfusionTranspose)
 
+/**
+*@brief Flattens the input tensor to one-dimensional.
+
+*@par Inputs:
+*x: An ND tensor. All data types are supported.
+
+*@par Attributes:
+*@li axis: An optional int32, specifying the first axis to flatten. All preceding axes are retained in the output. Defaults to "1".
+*@li end_axis: An optional int32, specifying the last axis to flatten. All following axes are retained in the output. Defaults to "-1".
+
+*@par Outputs:
+*y: The flattened ND tensor. All data types are supported.
+
+*@attention Constraints:
+* "axis" and "end_axis" must be within the dimension range of the input.
+*/
+REG_OP(FlattenV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
+                          DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
+                           DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .ATTR(axis, Int, 1)
+    .ATTR(end_axis, Int, -1)
+    .OP_END_FACTORY_REG(FlattenV2)
+
+REG_OP(DeConvTrans)
+    .INPUT(x, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_INT8}))
+    .OP_END_FACTORY_REG(DeConvTrans)
 }  // namespace ge
 
 #endif  // GE_OP_TRANSFORMATION_OPS_H

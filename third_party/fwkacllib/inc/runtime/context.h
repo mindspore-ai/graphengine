@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 /**
  * @ingroup rt_context
@@ -29,7 +29,10 @@ extern "C" {
  */
 typedef void *rtContext_t;
 
-typedef enum tagDryRunFlag { RT_DRYRUN_FLAG_FALSE = 0, RT_DRYRUN_FLAG_TRUE = 1 } rtDryRunFlag_t;
+typedef enum tagDryRunFlag {
+  RT_DRYRUN_FLAG_FALSE = 0,
+  RT_DRYRUN_FLAG_TRUE = 1,
+} rtDryRunFlag_t;
 
 typedef enum tagCtxMode {
   RT_CTX_NORMAL_MODE = 0,
@@ -63,6 +66,14 @@ RTS_API rtError_t rtCtxCreateEx(rtContext_t *ctx, uint32_t flags, int32_t device
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtCtxDestroy(rtContext_t ctx);
+
+/**
+ * @ingroup rt_context
+ * @brief destroy context instance
+ * @param [in] ctx   context to destroy
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtCtxDestroyEx(rtContext_t ctx);
 
 /**
  * @ingroup rt_context

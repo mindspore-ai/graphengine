@@ -31,7 +31,6 @@
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_RESERVED;
 using domi::domiTensorFormat_t;
-using domi::FMK_TYPE_RESERVED;
 using domi::FrameworkType;
 using std::map;
 using std::string;
@@ -44,10 +43,10 @@ namespace ge {
  * @brief run model
  */
 enum RunMode {
-  kGeOmModel = 0,     // generate offline model file
-  kModelToJson = 1,   // convert to JSON file
-  kOnlyPreCheck = 3,  // only for pre-check
-  kPbtxtToJson = 5    // pbtxt to json
+  GEN_OM_MODEL = 0,    // generate offline model file
+  MODEL_TO_JSON = 1,   // convert to JSON file
+  ONLY_PRE_CHECK = 3,  // only for pre-check
+  PBTXT_TO_JSON = 5    // pbtxt to json
 };
 
 ///
@@ -56,10 +55,10 @@ enum RunMode {
 ///
 enum HighPrecisionMode {
   // the FP16 high-precision function is disabled in common mode
-  kHighPrecisonDefault = 0,
+  HIGH_PRECISION_DEFAULT = 0,
 
-  // high-precision mode, in which FP16 high-precision mode (Convolution/FullConnect/AvgPooling are involved) is enable
-  kHighPrecisionFP16 = 1
+  // high-precision mode, enabling FP16 high-precision mode (Convolution/FullConnect/AvgPooling are involved)
+  HIGH_PRECISION_FP16 = 1
 };
 
 ///
@@ -99,21 +98,23 @@ struct OmgContext {
   // preferential format used by the entire network
   domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
   domi::FrameworkType type = domi::FMK_TYPE_RESERVED;
-  RunMode run_mode = kOnlyPreCheck;
+  RunMode run_mode = ONLY_PRE_CHECK;
   bool train_flag = false;
   // whether to use FP16 high precision
-  int32_t fp16_high_precision = kHighPrecisonDefault;
+  int32_t fp16_high_precision = HIGH_PRECISION_DEFAULT;
 
   std::string output_type;
 
   // Save the name of the entire network: Some special operators are used to determine a network. Some operators in the
-  // network require special processing based on the specific network.
-  // e.g：faster-rcnn, the FirstStageProcessor module is determined as the Faster-R-CNN network based on the scope
-  // fusion. Then, the conv+reshape operators in the FirstStageBoxPredictor/BoxEncodingPredictor scope are combined. The
-  // convolution kernel rearrangement reshape operator needs to be deleted for the convolution kernel.
+  // network require special processing based on the specific network. e.g：faster-rcnn, the FirstStageProcessor module
+  // is determined as the Faster-R-CNN network based on the scope fusion. Then, the conv+reshape operators in the
+  // FirstStageBoxPredictor/BoxEncodingPredictor scope are combined. The convolution kernel rearrangement reshape
+  // operator needs to be deleted for the convolution kernel.
   std::string net_name;
-  // whether to enable dynamic batch
-  bool enable_l2dynamic = false;
+  // Whether to use dynamic batch size or dynamic image size
+  bool is_dynamic_input = false;
+  std::string dynamic_batch_size;
+  std::string dynamic_image_size;
 };
 }  // namespace ge
 

@@ -20,10 +20,8 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-
 #include "graph/attr_value_serializable.h"
 #include "graph/buffer.h"
-
 namespace ge {
 #define DEF_TYPE_DEC(type, name)                              \
   inline void set_##name(const type &value) { name = value; } \
@@ -49,10 +47,9 @@ namespace ge {
   inline void add_##name(type value) { name.push_back(value); }          \
   inline std::vector<type> *mutable_##name() { return &name; }
 
-#define DEF_TYPE_BYTES_DEC(name)                                                                                \
-  inline void clear_##name() { name.ClearBuffer(); }                                                            \
-  inline void set_##name(const void *value, size_t size) {                                                      \
-    name = Buffer::CopyFrom((const uint8_t *)(value), size); }                                        \
+#define DEF_TYPE_BYTES_DEC(name)                                                                                      \
+  inline void clear_##name() { name.ClearBuffer(); }                                                                  \
+  inline void set_##name(const void *value, size_t size) { name = Buffer::CopyFrom((const uint8_t *)(value), size); } \
   inline Buffer *mutable_##name() { return &name; }
 
 struct CompressInfo {

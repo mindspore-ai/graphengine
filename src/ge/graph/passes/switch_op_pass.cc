@@ -15,7 +15,6 @@
  */
 
 #include "graph/passes/switch_op_pass.h"
-
 #include <algorithm>
 #include <memory>
 #include <set>
@@ -23,7 +22,6 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
-
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"

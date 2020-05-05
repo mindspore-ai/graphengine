@@ -23,6 +23,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
@@ -51,15 +52,13 @@ bool CastTranslatePass::CheckInAndOutDataAnchor(NodePtr &node) const {
 
 bool CastTranslatePass::IsCastNode(NodePtr &node) const {
   std::string original_type;
-  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS,
-          GELOGW("get original type failed"); return false);
+  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("get original type failed"); return false);
   return (original_type == CAST);
 }
 
 bool CastTranslatePass::IsTranslateNode(NodePtr &node) const {
   std::string original_type;
-  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS,
-                    GELOGW("get original type failed"); return false);
+  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("get original type failed"); return false);
   return (original_type == TRANSLATE);
 }
 
@@ -131,13 +130,21 @@ bool CastTranslatePass::IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans
   OpDescPtr trans_op_desc = trans_node->GetOpDesc();
   GE_IF_BOOL_EXEC(trans_op_desc == nullptr, GELOGW("trans_op_desc is null."); return false);
   // backup datatype
-  DataType trans_in_datatype = trans_op_desc->GetInputDesc(0).GetDataType();
-  DataType trans_out_datatype = trans_op_desc->GetOutputDesc(0).GetDataType();
+  const auto &trans_op_indesc = trans_op_desc->MutableInputDesc(0);
+  const auto &trans_op_outdesc = trans_op_desc->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(trans_op_indesc, return false);
+  GE_CHECK_NOTNULL_EXEC(trans_op_outdesc, return false);
+  DataType trans_in_datatype = trans_op_indesc->GetDataType();
+  DataType trans_out_datatype = trans_op_outdesc->GetDataType();
 
   auto cast_op_desc = cast_node->GetOpDesc();
   GE_IF_BOOL_EXEC(cast_op_desc == nullptr, GELOGW("cast_op_desc is null."); return false);
-  DataType cast_in_datatype = cast_op_desc->GetInputDesc(0).GetDataType();
-  DataType cast_out_datatype = cast_op_desc->GetOutputDesc(0).GetDataType();
+  const auto &cast_op_indesc = cast_op_desc->MutableInputDesc(0);
+  const auto &cast_op_outdesc = cast_op_desc->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(cast_op_indesc, return false);
+  GE_CHECK_NOTNULL_EXEC(cast_op_outdesc, return false);
+  DataType cast_in_datatype = cast_op_indesc->GetDataType();
+  DataType cast_out_datatype = cast_op_outdesc->GetDataType();
   GELOGI("CastTranslatePass, cast in %s out %s, translate in %s out %s.",
          TypeUtils::DataTypeToSerialString(cast_in_datatype).c_str(),
          TypeUtils::DataTypeToSerialString(cast_out_datatype).c_str(),
@@ -149,13 +156,13 @@ bool CastTranslatePass::IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans
     // change Translate input datatype to be the input of Cast
     // then delete Cast
     // [MutableInputDesc guarantees non empty throughout the process]
-    trans_op_desc->MutableInputDesc(0)->SetDataType(cast_in_datatype);
+    trans_op_indesc->SetDataType(cast_in_datatype);
   } else {
     // Translate-->Cast-->A
     // change Translate output datatype to be the output of Cast
     // then delete Cast
     // [MutableInputDesc guarantees non empty throughout the process]
-    trans_op_desc->MutableOutputDesc(0)->SetDataType(cast_out_datatype);
+    trans_op_outdesc->SetDataType(cast_out_datatype);
   }
 
   if (!TranslateCheckAccuracySupported(trans_op_desc)) {
@@ -169,16 +176,16 @@ bool CastTranslatePass::IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans
   }
 
   if (is_src_cast) {
-    GE_IF_BOOL_EXEC(
-            !AttrUtils::SetInt(trans_op_desc, ATTR_NAME_INPUT_DATATYPE, static_cast<int64_t>(cast_in_datatype)),
-            GELOGW("set ATTR_NAME_INPUT_DATATYPE failed"); return false);
+    GE_IF_BOOL_EXEC(!AttrUtils::SetInt(trans_op_desc, ATTR_NAME_INPUT_DATATYPE, static_cast<int64_t>(cast_in_datatype)),
+                    GELOGW("set ATTR_NAME_INPUT_DATATYPE failed");
+                    return false);
   } else {
     GE_IF_BOOL_EXEC(
-            !AttrUtils::SetInt(trans_op_desc, ATTR_NAME_OUTPUT_DATATYPE, static_cast<int64_t>(cast_out_datatype)),
-            GELOGW("set ATTR_NAME_INPUT_DATATYPE failed"); return false);
+      !AttrUtils::SetInt(trans_op_desc, ATTR_NAME_OUTPUT_DATATYPE, static_cast<int64_t>(cast_out_datatype)),
+      GELOGW("set ATTR_NAME_INPUT_DATATYPE failed");
+      return false);
   }
-  GELOGI("CastTranslatePass, translate in %d out %d.", trans_op_desc->GetInputDesc(0).GetDataType(),
-         trans_op_desc->GetOutputDesc(0).GetDataType());
+  GELOGI("CastTranslatePass, translate in %d out %d.", trans_op_indesc->GetDataType(), trans_op_outdesc->GetDataType());
   return true;
 }
 

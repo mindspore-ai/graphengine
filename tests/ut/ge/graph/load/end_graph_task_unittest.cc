@@ -47,9 +47,4 @@ TEST_F(UtestEndGraphTask, init_end_graph_task_info) {
   EXPECT_EQ(task_info.Init(task_def, &model), SUCCESS);
   model.stream_list_.clear();
 }
-
-TEST_F(UtestEndGraphTask, distribute_success) {
-  EndGraphTaskInfo task_info;
-  EXPECT_EQ(task_info.Distribute(), SUCCESS);
-}
 }  // namespace ge

@@ -21,12 +21,10 @@
 #include <algorithm>
 #include <cmath>
 
-#include "Eigen/Eigen"
 #include "framework/common/debug/log.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
 #include "mmpa/mmpa_api.h"
-#include "unsupported/Eigen/CXX11/Tensor"
 
 namespace ge {
 
@@ -70,6 +68,6 @@ Status NnSet(const int32_t n, const Dtype alpha, Dtype *output) {
   return SUCCESS;
 }
 
-}  // namespace ge
+}  // end namespace ge
 
 #endif  //  GE_COMMON_MATH_UTIL_H_

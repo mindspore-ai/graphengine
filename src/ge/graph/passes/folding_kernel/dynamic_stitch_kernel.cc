@@ -16,180 +16,199 @@
 
 #include "graph/passes/folding_kernel/dynamic_stitch_kernel.h"
 
+#include <securec.h>
 #include <memory>
 
 #include "common/fp16_t.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/math/math_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/passes/folding_kernel/kernel_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
 namespace ge {
 namespace {
 const int kDoubleAttrN = 2;
+const int kFirstOutputDescIdx = 0;
+const int kMergedShapeSecondDim = 1;
+const std::set<DataType> kSupportedTypeSet = {DT_INT8,  DT_UINT8, DT_INT16,   DT_UINT16, DT_INT32,
+                                              DT_INT64, DT_BOOL,  DT_FLOAT16, DT_FLOAT,  DT_DOUBLE};
 }  // namespace
 Status DynamicStitchKernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGeTensorPtr> &input,
                                     vector<GeTensorPtr> &v_output) {
-  GELOGI("DynamicStitch Kernel in.");
+  GELOGD("DynamicStitch Kernel in.");
   Status validate_ret = ValidateParams(op_desc_ptr, input);
   if (validate_ret != SUCCESS) {
     GELOGW("Dynamic stitch kernel params validate failed.");
-    return validate_ret;
+    return NOT_CHANGED;
   }
 
-  GE_CHECK_NOTNULL(input[n_]);
-  auto data_type = input[n_]->GetTensorDesc().GetDataType();
-  Status ret;
-  switch (data_type) {
-    case DT_INT8:
-      ret = GenData<int8_t>(input, v_output);
-      break;
-    case DT_UINT8:
-      ret = GenData<uint8_t>(input, v_output);
-      break;
-    case DT_INT16:
-      ret = GenData<int16_t>(input, v_output);
-      break;
-    case DT_UINT16:
-      ret = GenData<uint16_t>(input, v_output);
-      break;
-    case DT_INT32:
-      ret = GenData<int32_t>(input, v_output);
-      break;
-    case DT_INT64:
-      ret = GenData<int64_t>(input, v_output);
-      break;
-    case DT_BOOL:
-      ret = GenData<bool>(input, v_output);
-      break;
-    case DT_FLOAT16:
-      ret = GenData<fp16_t>(input, v_output);
-      break;
-    case DT_FLOAT:
-      ret = GenData<float>(input, v_output);
-      break;
-    case DT_DOUBLE:
-      ret = GenData<double>(input, v_output);
-      break;
-    default:
-      ret = NOT_CHANGED;
-      GELOGI("Dynamic stitch op not support data type of %s.", TypeUtils::DataTypeToSerialString(data_type).c_str());
-      break;
+  // OutputDesc size is not null, validated before
+  GeTensorPtr output_ptr = MakeShared<GeTensor>(op_desc_ptr->GetOutputDesc(kFirstOutputDescIdx));
+  if (output_ptr == nullptr) {
+    GELOGW("Fail to malloc output.");
+    return NOT_CHANGED;
   }
+  Status ret = GenData(input, output_ptr);
   if (ret != SUCCESS) {
     GELOGW("Dynamic stitch folding failed.");
-    return ret;
+    return NOT_CHANGED;
   }
-  GELOGI("Dynamic stitch end.");
+  v_output.push_back(output_ptr);
+  GELOGD("Dynamic stitch end.");
   return SUCCESS;
 }
 
 Status DynamicStitchKernel::ValidateParams(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input) {
   if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "input opdesc is nullptr.");
+    GELOGE(PARAM_INVALID, "Input op_desc is nullptr.");
+    return PARAM_INVALID;
+  }
+  if (op_desc_ptr->GetOutputsSize() == 0) {
+    GELOGE(PARAM_INVALID, "Current output_desc is empty.");
     return PARAM_INVALID;
   }
   // validate input
-  // input[0]~input[N-1] is indices, input[N]~input[2N-1] is datas
+  // input[0]~input[N-1] is indices, input[N]~input[2N-1] is data
   if (input.empty()) {
-    GELOGI("Input is empty.Ignore dynamic stitch kernel.");
+    GELOGI("Input is empty. Ignore dynamic stitch kernel.");
     return NOT_CHANGED;
   }
+  for (const auto &in : input) {
+    if (in == nullptr) {
+      GELOGE(PARAM_INVALID, "input is nullptr.");
+      return PARAM_INVALID;
+    }
+  }
   // validate attrs
-  if (!(AttrUtils::GetInt(op_desc_ptr, DYNAMIC_STITCH_ATTR_NAME_NUM, n_))) {
-    GELOGW("Attr %s is not exist.", DYNAMIC_STITCH_ATTR_NAME_NUM.c_str());
+  if (!(AttrUtils::GetInt(op_desc_ptr, ATTR_NAME_N, n_))) {
+    GELOGW("Attr %s is not exist.", ATTR_NAME_N.c_str());
     return NOT_CHANGED;
   }
   // validate attr N and input.size
-  if ((kDoubleAttrN * n_) != static_cast<int>(input.size())) {
-    GELOGW("Input size is not not match with attr N. Ignore dynamic stitch kernel.");
+  if ((kDoubleAttrN * n_) > static_cast<int>(input.size())) {
+    GELOGW("Input size %zu is not not match with attr %d. Ignore dynamic stitch kernel.", input.size(), n_);
+    return NOT_CHANGED;
+  }
+  // validate supported datatype
+  DataType data_type = input[n_]->GetTensorDesc().GetDataType();
+  if (kSupportedTypeSet.find(data_type) == kSupportedTypeSet.end()) {
+    GELOGW("Input data_type %s is not supported. Please check IR definition. Ignore dynamic stitch kernel.",
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
     return NOT_CHANGED;
   }
   return SUCCESS;
 }
 
-template <typename T>
-void DynamicStitchKernel::ComputeMergedShape(const vector<ConstGeTensorPtr> &input, GeShape &merged_shape,
-                                             map<int32_t, T> &indice_data_mapping) {
-  // data[i].shape = indices[i].shape + constant
-  size_t indice_dim = input[0]->GetTensorDesc().GetShape().GetDimNum();
-  // index n_ for input is less than size of input
-  GeShape input_n_shape = input[n_]->GetTensorDesc().GetShape();
-  int64_t dim_offset = (input_n_shape.GetDimNum() == indice_dim) ? 0 : input_n_shape.GetDim(indice_dim);
-
-  int64_t merged_first_dim = 0;
-  vector<int64_t> indice_dims;
+void DynamicStitchKernel::ComputeMergedShape(const vector<ConstGeTensorPtr> &input, GeShape &merged_shape) {
+  // Safety note: index [1~2*n_] for input is valid, and all input is not null, validated in ValidateParams
+  // merged.shape = [max(indices)] + step
+  // 1. Compute merged first dim, which is the max index.
+  int32_t merged_first_dim = 0;
+  int64_t indices_shape_size = 0;
   for (int i = 0; i < n_; i++) {
-    // all index for input is less than size of input
-    indice_dims = input[i]->GetTensorDesc().GetShape().GetDims();
-    int32_t *input_indice = const_cast<int32_t *>(reinterpret_cast<const int32_t *>(input[i]->GetData().data()));
-    T *input_data = const_cast<T *>(reinterpret_cast<const T *>(input[i + n_]->GetData().data()));
-    // scaler indice has one element
-    if (indice_dims.empty()) {
-      // if indice repeated, need new data replace old data
-      indice_data_mapping[input_indice[0]] = input_data[0];
-      merged_first_dim = (merged_first_dim > input_indice[0]) ? merged_first_dim : input_indice[0];
-      continue;
-    }
-    // vector indice element mapping
-    for (const auto &dim : indice_dims) {
-      for (auto j = 0; j < dim; j++) {
-        // if indice repeated, need new data replace old data
-        indice_data_mapping[input_indice[j]] = input_data[j];
-        merged_first_dim = (merged_first_dim > input_indice[j]) ? merged_first_dim : input_indice[j];
-      }
+    indices_shape_size = input[i]->GetTensorDesc().GetShape().GetShapeSize();
+    indices_shape_size = indices_shape_size == 0 ? 1 : indices_shape_size;
+    const int32_t *input_indices = reinterpret_cast<const int32_t *>(input[i]->GetData().data());
+    for (int64_t j = 0; j < indices_shape_size; j++) {
+      merged_first_dim = std::max(merged_first_dim, input_indices[j]);
     }
   }
-  ++merged_first_dim;
+  // 2. Compute step, which is follow : step = data[t].shape - indices[t].shape
+  size_t indices_dim_num = input[0]->GetTensorDesc().GetShape().GetDimNum();
+  GeShape data_shape = input[n_]->GetTensorDesc().GetShape();
+  int64_t step = (data_shape.GetDimNum() == indices_dim_num) ? 0 : data_shape.GetDim(indices_dim_num);
 
-  vector<int64_t> merged_dim_vec = {merged_first_dim};
-  if (dim_offset != 0) {
-    merged_dim_vec.emplace_back(dim_offset);
-    GELOGI("merged_shape is [ %ld, %ld].", merged_first_dim, dim_offset);
+  vector<int64_t> merged_dim_vec = {merged_first_dim + 1};
+  if (step > 0) {
+    merged_dim_vec.emplace_back(step);
+    GELOGD("merged_shape is [ %ld, %ld].", merged_first_dim, step);
   }
   merged_shape = GeShape(merged_dim_vec);
-  GELOGI("merged_shape is [ %ld ].", merged_first_dim);
+  GELOGD("merged_shape is [ %ld ].", merged_first_dim);
 }
 
-template <typename T>
-Status DynamicStitchKernel::GenData(const vector<ConstGeTensorPtr> &input, vector<GeTensorPtr> &v_output) {
+Status DynamicStitchKernel::GenData(const vector<ConstGeTensorPtr> &input, GeTensorPtr &output_ptr) {
+  // Safety note: index [1~2*n_] for input is valid, and all input is not null, validated in ValidateParams
   GeShape merged_shape;
-  map<int32_t, T> indice_data_mapping;
-  ComputeMergedShape(input, merged_shape, indice_data_mapping);
+  ComputeMergedShape(input, merged_shape);
+  auto data_type = input[n_]->GetTensorDesc().GetDataType();
 
-  int64_t output_size = merged_shape.GetShapeSize();
-  unique_ptr<T[]> buf(new (std::nothrow) T[output_size]());
+  // 1.calc output data size
+  auto output_size = merged_shape.GetShapeSize();
+  int64_t data_size = GetSizeByDataType(data_type);
+  auto step = merged_shape.GetDim(kMergedShapeSecondDim);
+  if (!CheckInt64MulOverflow(output_size, data_size) || !CheckInt64MulOverflow(step, data_size)) {
+    GELOGW("Check int64 mul overflow failed. Output_size is %ld, data_size is %ld, step is %ld.", output_size,
+           data_size, step);
+    return NOT_CHANGED;
+  }
+  auto allowance = output_size * data_size;
+  auto data_unit = step > 0 ? step * data_size : data_size;
+  // 2.allocate memery for output
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[allowance]);
   if (buf == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "new buf failed");
+    GELOGE(MEMALLOC_FAILED, "new buffer failed");
     return INTERNAL_ERROR;
   }
-  for (const auto &indice_data : indice_data_mapping) {
-    auto index = indice_data.first;
-    buf[index] = indice_data.second;
-  }
-
-  GeTensorPtr output_ptr = MakeShared<GeTensor>();
-  if (output_ptr == nullptr) {
-    GELOGW("Fail to malloc output.");
+  // 3.copy data from input_data along with the sequence of input_indices
+  Status stitch_ret = StitchDataFollowIndices(data_unit, input, allowance, buf);
+  if (stitch_ret != SUCCESS) {
+    GELOGW("Stitch data follow index failed.");
     return NOT_CHANGED;
   }
-  auto dtype = input[n_]->GetTensorDesc().GetDataType();
-  output_ptr->MutableTensorDesc().SetDataType(dtype);
+
+  output_ptr->MutableTensorDesc().SetDataType(data_type);
   output_ptr->MutableTensorDesc().SetShape(merged_shape);
-
-  uint32_t length = 1;
-  if (!TypeUtils::GetDataTypeLength(dtype, length)) {
-    GELOGW("Can't GetDataTypeLength of data_type: %s", TypeUtils::DataTypeToSerialString(dtype).c_str());
+  Status ret = output_ptr->SetData(buf.get(), allowance);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "set data failed");
     return NOT_CHANGED;
   }
-  GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()),
-                                      static_cast<size_t>(output_size * length)) != GRAPH_SUCCESS,
-                  GELOGE(INTERNAL_ERROR, "set data failed");
-                  return NOT_CHANGED);
-  v_output.push_back(output_ptr);
+  return SUCCESS;
+}
+
+Status DynamicStitchKernel::StitchDataFollowIndices(int64_t data_unit, const vector<ConstGeTensorPtr> &input,
+                                                    int64_t allowance, std::unique_ptr<uint8_t[]> &buf) {
+  // Safety note: index [1~2*n_] for input is valid, and all input is not null, validated in ValidateParams
+  int64_t dst_offset = 0;
+  int64_t src_offset = 0;
+  std::set<int32_t> indices_set;
+  for (int i = 0; i < n_; i++) {
+    auto indices_shape_size = input[i]->GetTensorDesc().GetShape().GetShapeSize();
+    // to normalize logic, assume scalar as vector with shape of [1].
+    indices_shape_size = (indices_shape_size == 0) ? 1 : indices_shape_size;
+    // all index for input is less than size of input
+    const int32_t *input_indices = reinterpret_cast<const int32_t *>(input[i]->GetData().data());
+    const uint8_t *input_data = input[i + n_]->GetData().data();
+    for (int64_t j = 0; j < indices_shape_size; j++) {
+      // if index repeated, need new data replace old data , so give more allowance
+      if (indices_set.find(input_indices[j]) != indices_set.end()) {
+        if (ge::CheckInt64AddOverflow(input_indices[j], data_unit) != SUCCESS) {
+          GELOGW("Check int64 mul overflow failed. Indices is %ld, data_unit is %ld.", input_indices[j], data_unit);
+          return NOT_CHANGED;
+        }
+        allowance += data_unit;
+      }
+      indices_set.insert(input_indices[j]);
+      if (!CheckInt64MulOverflow(input_indices[j], data_unit)) {
+        GELOGW("Check int64 mul overflow failed. Indices is %ld, data_unit is %ld.", input_indices[j], data_unit);
+        return NOT_CHANGED;
+      }
+      dst_offset = input_indices[j] * data_unit;
+      src_offset = j * data_unit;
+      auto protected_size =
+        allowance < static_cast<int64_t>(SECUREC_MEM_MAX_LEN) ? allowance : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+      auto ret = memcpy_s(buf.get() + dst_offset, protected_size, input_data + src_offset, data_unit);
+      if (ret != EOK) {
+        GELOGW("Memory copy failed.");
+        return NOT_CHANGED;
+      }
+      allowance -= data_unit;
+    }
+  }
   return SUCCESS;
 }
 

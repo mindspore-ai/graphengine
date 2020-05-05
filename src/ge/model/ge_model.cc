@@ -25,6 +25,7 @@ void GeModel::Init() {
   (void)AttrUtils::SetInt(this, ATTR_MODEL_MEMORY_SIZE, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_STREAM_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_EVENT_NUM, 0);
+  (void)AttrUtils::SetInt(this, ATTR_MODEL_LABEL_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_WEIGHT_SIZE, 0);
   (void)AttrUtils::SetStr(this, ATTR_MODEL_TARGET_TYPE, TARGET_TYPE_MINI);
   version_ = 0;

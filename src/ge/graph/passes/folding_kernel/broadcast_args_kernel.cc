@@ -41,18 +41,22 @@ Status BroadcastArgsKernel::Compute(const OpDescPtr op_desc_ptr, const std::vect
   }
   // check input size
   bool size_check =
-      (op_desc_ptr->GetAllInputsDesc().size() != kBCastArgsInputsSize || input.size() != kBCastArgsInputsSize ||
-       op_desc_ptr->GetAllOutputsDesc().size() != kBCastArgsOutputsSize);
+    (op_desc_ptr->GetAllInputsDesc().size() != kBCastArgsInputsSize || input.size() != kBCastArgsInputsSize ||
+     op_desc_ptr->GetAllOutputsDesc().size() != kBCastArgsOutputsSize);
   if (size_check) {
-    GELOGW("input/output size error. InDesc size:%zu,"
-           "OutDesc size:%zu, in size:%zu ",
-           op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
+    GELOGW(
+      "input/output size error. InDesc size:%zu,"
+      "OutDesc size:%zu, in size:%zu ",
+      op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
     return NOT_CHANGED;
   }
 
   vector<int64_t> x1_dims;
   vector<int64_t> x2_dims;
-  DataType data_type = op_desc_ptr->GetInputDesc(0).GetDataType();
+  const auto &op_in_desc = op_desc_ptr->MutableInputDesc(0);
+  GE_CHECK_NOTNULL(op_in_desc);
+  ;
+  DataType data_type = op_in_desc->GetDataType();
   bool result = (OpUtils::GetShapeDataFromConstTensor(input[0], data_type, x1_dims) == SUCCESS) &&
                 (OpUtils::GetShapeDataFromConstTensor(input[1], data_type, x2_dims) == SUCCESS);
   if (!result) {

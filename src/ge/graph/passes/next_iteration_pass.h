@@ -17,7 +17,6 @@
 #ifndef GE_GRAPH_PASSES_NEXT_ITERATION_PASS_H_
 #define GE_GRAPH_PASSES_NEXT_ITERATION_PASS_H_
 
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>

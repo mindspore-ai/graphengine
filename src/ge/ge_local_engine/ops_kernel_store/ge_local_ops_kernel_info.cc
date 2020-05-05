@@ -17,17 +17,18 @@
 #include "ge_local_engine/ops_kernel_store/ge_local_ops_kernel_info.h"
 #include <memory>
 #include "common/constant/constant.h"
-#include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
+#include "common/ge_inner_error_codes.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "op/op_factory.h"
 #include "proto/task.pb.h"
 
 namespace {
-const char *kConstantOpType = "Constant";
-const char *kConstantOpAttrName = "value";
+const char *const kConstantOpType = "Constant";
+const char *const kConstantOpAttrName = "value";
+const char *const kDataOpType = "Data";
 }  // namespace
 namespace ge {
 namespace ge_local {
@@ -77,11 +78,11 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
     Format format = output_tensor.GetFormat();
     DataType data_type = output_tensor.GetDataType();
 
-    uint32_t mem_size = 0;
+    int64_t mem_size = 0;
     graphStatus graph_status = TensorUtils::GetSize(output_tensor, mem_size);
     // If mem size has been set, no need reset.
     if ((graph_status == GRAPH_SUCCESS) && (mem_size > 0) && (data_type != DT_STRING)) {
-      GELOGD("Op[%s:%s] out[%zu] mem size has been set, no need calc again, format=%s, data_type=%s, mem_size=%u.",
+      GELOGD("Op[%s:%s] out[%zu] mem size has been set, no need calc again, format=%s, data_type=%s, mem_size=%ld.",
              node_name.c_str(), node_type.c_str(), i, TypeUtils::FormatToSerialString(format).c_str(),
              TypeUtils::DataTypeToSerialString(data_type).c_str(), mem_size);
       continue;
@@ -91,6 +92,10 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
     GeShape output_shape = output_tensor.GetShape();
     if ((node_type == kConstantOpType) && (data_type == DT_STRING)) {
       graph_status = CalcConstantStrMemSize(op_desc, output_mem_size);
+    } else if (node_type == kDataOpType) {
+      int64_t output_size = 0;
+      graph_status = TensorUtils::GetTensorMemorySizeInBytes(output_tensor, output_size);
+      output_mem_size = output_size;
     } else {
       graph_status = TensorUtils::CalcTensorMemSize(output_shape, format, data_type, output_mem_size);
     }
@@ -116,14 +121,7 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
       node_name.c_str(), node_type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
       TypeUtils::DataTypeToSerialString(data_type).c_str());
 
-    if (output_mem_size > static_cast<int64_t>(UINT_MAX)) {
-      GELOGE(FAILED,
-             "Calc op[%s:%s] out[%zu] mem size failed, as GE need data, "
-             "type is uint32, but output_mem_size[%ld] is overflow.",
-             node_name.c_str(), node_type.c_str(), i, output_mem_size);
-      return FAILED;
-    }
-    TensorUtils::SetSize(output_tensor, static_cast<uint32_t>(output_mem_size));
+    TensorUtils::SetSize(output_tensor, output_mem_size);
 
     graph_status = op_desc->UpdateOutputDesc(static_cast<uint32_t>(i), output_tensor);
     if (graph_status != GRAPH_SUCCESS) {
@@ -174,7 +172,7 @@ Status GeLocalOpsKernelInfoStore::GenerateTask(const Node &node, RunContext &con
     GELOGE(ret, "Node:%s(%s) op run failed.", name.c_str(), type.c_str());
     return ret;
   }
-  GELOGD("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());
+  GELOGI("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());
   return ret;
 }
 

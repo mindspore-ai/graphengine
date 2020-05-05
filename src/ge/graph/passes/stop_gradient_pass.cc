@@ -15,7 +15,6 @@
  */
 
 #include "graph/passes/stop_gradient_pass.h"
-
 #include <string>
 
 namespace ge {
@@ -27,7 +26,7 @@ Status StopGradientPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
-    GELOGE(status_ret, "StopGradientPass get original type fail.");
+    GELOGE(status_ret, "StopGradientPass get original type failed.");
     return status_ret;
   }
 

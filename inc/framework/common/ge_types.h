@@ -24,8 +24,7 @@
 
 #include "common/fmk_error_codes.h"
 #include "ge/ge_api_error_codes.h"
-
-using std::string;
+#include "external/graph/types.h"
 
 namespace ge {
 enum RuntimeType { HOST = 0, DEVICE = 1 };
@@ -56,7 +55,7 @@ struct DataBuffer {
 
 ///
 /// @ingroup domi_ome
-/// @brief External inputdata
+/// @brief External input data
 ///
 struct InputData {
   uint32_t index;                 // Index of input data
@@ -65,13 +64,14 @@ struct InputData {
   uint32_t model_id;              // Model ID required for data processing
   uint64_t request_id = 0;        // Request ID
   std::vector<DataBuffer> blobs;  // Actual input data, currently only supports one input
+  bool is_dynamic_batch = false;  // Whether is dynamic batch size scene, default:false
+  std::string batch_label;        // Gear used for current inference in dynamic batch scene
 };
 
-// The definition of output result structure
+/// Output result structure definition
 struct OutputData {
   uint32_t index;     // Index of input data
   uint32_t model_id;  // The model ID corresponding to the processing result
-
   /// Output data cache, arranged in sequence of output operators.
   /// If the operator has multiple outputs,
   /// the data buffer order of the operator is the same as that defined in the
@@ -142,11 +142,31 @@ struct Options {
   bool deployMode;
   bool isAICPUMode;
   bool enable_atomic;
-  string podName;
+  std::string podName;
   int64_t rankId;
-  string rankTableFile;
+  std::string rankTableFile;
   int32_t ge_hccl_flag = 0;
   int32_t physical_device_id;
+};
+
+// Profiling info of task
+struct TaskDescInfo {
+  std::string op_name;
+  uint32_t block_dim;
+  uint32_t task_id;
+  uint32_t stream_id;
+};
+
+// Profiling info of graph
+struct ComputeGraphDescInfo {
+  std::string op_name;
+  std::string op_type;
+  std::vector<Format> input_format;
+  std::vector<std::vector<int64_t>> input_shape;
+  std::vector<DataType> input_data_type;
+  std::vector<Format> output_format;
+  std::vector<std::vector<int64_t>> output_shape;
+  std::vector<DataType> output_data_type;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

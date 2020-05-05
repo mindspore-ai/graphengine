@@ -33,7 +33,7 @@ class SessionManager {
   friend class GELib;
 
  public:
-  Status SetrtContext(rtContext_t rt_context);
+  Status SetrtContext(rtContext_t rtContext);
   ///
   /// @ingroup ge_session
   /// @brief create session

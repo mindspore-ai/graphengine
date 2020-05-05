@@ -45,9 +45,11 @@ Status GuaranteeConstPass::Run(NodePtr &node) {
     GELOGE(PARAM_INVALID, "input size error. Input size:%zu", node->GetOpDesc()->GetAllInputsDesc().size());
     return PARAM_INVALID;
   }
-  auto inDesc = node->GetOpDesc()->GetInputDesc(0);
+  // [Cascade pointer]
+  const auto &in_desc = node->GetOpDesc()->MutableInputDesc(0);
+  GE_CHECK_NOTNULL(in_desc);
   // Input tensor cannot be a resource variable handle.
-  const DataType input_dtype = inDesc.GetDataType();
+  const DataType &input_dtype = in_desc->GetDataType();
   if (input_dtype == DT_RESOURCE) {
     GELOGE(FAILED, "Input tensor cannot be a resource variable handle in [%s].", node->GetName().c_str());
     return FAILED;

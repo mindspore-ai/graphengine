@@ -55,7 +55,7 @@ class Debug {
   ~Debug();
 
   static void DumpProto(const Message &proto, const char *file);
-  static Status DumpDevMem(const char *file, const void *addr, uint32_t size);
+  static Status DumpDevMem(const char *file, const void *addr, int64_t size);
 };
 }  // namespace ge
 

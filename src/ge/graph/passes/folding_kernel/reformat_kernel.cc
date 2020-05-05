@@ -33,11 +33,8 @@ const size_t kReformatFirstInput = 0;
 const size_t kReformatFirstOutput = 0;
 }  // namespace
 
-Status ReFormatKernel::ValidateInput(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input) {
-  if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "Input opDescPtr is nullptr.");
-    return PARAM_INVALID;
-  }
+Status ReFormatKernel::ValidateInput(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input) const {
+  GE_CHECK_NOTNULL(op_desc_ptr);
   if (op_desc_ptr->GetInputsSize() != kReFormatInputSize) {
     GELOGW("trans_op has more than 1 input_size.");
     return PARAM_INVALID;
@@ -63,12 +60,14 @@ Status ReFormatKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Co
     return NOT_CHANGED;
   }
 
-  GeTensorDesc op_desc = op_desc_ptr->GetOutputDesc(kReformatFirstOutput);
-  GeTensorDesc op_desc_in = op_desc_ptr->GetInputDesc(kReformatFirstInput);
-  auto src_shape = op_desc_in.GetShape().GetDims();
-  auto src_dtype = op_desc_in.GetDataType();
-  auto dst_shape = op_desc.GetShape().GetDims();
-  auto dst_dtype = op_desc.GetDataType();
+  const auto &op_desc = op_desc_ptr->MutableOutputDesc(kReformatFirstOutput);
+  const auto &op_desc_in = op_desc_ptr->MutableInputDesc(kReformatFirstInput);
+  GE_CHECK_NOTNULL(op_desc);
+  GE_CHECK_NOTNULL(op_desc_in);
+  const auto &src_shape = op_desc_in->GetShape().GetDims();
+  const auto &src_dtype = op_desc_in->GetDataType();
+  const auto &dst_shape = op_desc->GetShape().GetDims();
+  const auto &dst_dtype = op_desc->GetDataType();
   if (src_dtype != dst_dtype || src_shape != dst_shape) {
     GELOGW("Check params failed. src data type %s and shape %s should be equal to dst data type %s and shape %s",
            TypeUtils::DataTypeToSerialString(src_dtype).c_str(), formats::ShapeToString(src_shape).c_str(),

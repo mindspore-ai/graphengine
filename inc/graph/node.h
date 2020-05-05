@@ -113,25 +113,25 @@ class Node : public std::enable_shared_from_this<Node> {
 
   bool IsAllInNodesSeen(std::unordered_set<Node *> &nodes_seen) const;
 
-  // All inData nodes
+  // All in Data nodes
   Vistor<NodePtr> GetInDataNodes() const;
-  // All inControl nodes
+  // All in Control nodes
   Vistor<NodePtr> GetInControlNodes() const;
   // GetInAllNodes = InDataNodes + InControlNodes
   Vistor<NodePtr> GetInAllNodes() const;
 
-  // All outData nodes
+  // All out Data nodes
   Vistor<NodePtr> GetOutDataNodes() const;
   uint32_t GetOutDataNodesSize() const;
-  // All outControl nodes
+  // All out Control nodes
   Vistor<NodePtr> GetOutControlNodes() const;
   // GetOutAllNodes = OutDataNodes + InControlNodes
   Vistor<NodePtr> GetOutAllNodes() const;
 
-  // Get all indata nodes and its outanchor
+  // Get all in data nodes and its out-anchor
   Vistor<std::pair<NodePtr, OutDataAnchorPtr>> GetInDataNodesAndAnchors() const;
 
-  // Get all outdata nodes and its inanchor
+  // Get all out data nodes and its in-anchor
   Vistor<std::pair<NodePtr, InDataAnchorPtr>> GetOutDataNodesAndAnchors() const;
 
   graphStatus InferShapeAndType() const;
@@ -176,7 +176,7 @@ class Node : public std::enable_shared_from_this<Node> {
 
   void SetOrigNode(const NodePtr &orignode) { orig_node_ = orignode; }
 
-  NodePtr GetOrigNode(void) { return orig_node_; }
+  NodePtr GetOrigNode() { return orig_node_; }
 
  private:
   bool NodeMembersAreEqual(const Node &r_node) const;

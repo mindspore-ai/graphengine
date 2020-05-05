@@ -341,7 +341,7 @@ const map<string, OpsKernelInfoStorePtr> &OpsKernelManager::GetAllOpsKernelInfoS
 const map<string, GraphOptimizerPtr> &OpsKernelManager::GetAllGraphOptimizerObjs() const { return graph_optimizers_; }
 
 void OpsKernelManager::GetGraphOptimizerByEngine(const std::string &engine_name,
-                                                 vector<GraphOptimizerPtr> &graph_optimizer) const {
+                                                 vector<GraphOptimizerPtr> &graph_optimizer) {
   for (const auto &it : graph_optimizers_) {
     GraphOptimizerAttribute attrs;
     if (it.second->GetAttributes(attrs) != SUCCESS) {

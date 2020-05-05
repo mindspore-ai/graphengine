@@ -37,6 +37,7 @@ const char *const kIndependent = "independent";
 const char *const kSkipAssignStream = "skip_assign_stream";
 const char *const kCalEngines = "cal_engines";
 const char *const kAttch = "attach";
+const char *const kVectorCore = "VectorCore";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kCustomOpFlag = "_custom_op_flag";
@@ -151,7 +152,7 @@ std::shared_ptr<ge::DNNEngine> DNNEngineManager::GetEngine(const std::string &na
   return nullptr;
 }
 
-bool DNNEngineManager::IsEngineRegistered(const std::string &name) const {
+bool DNNEngineManager::IsEngineRegistered(const std::string &name) {
   auto iter = engines_map_.find(name);
   if (iter != engines_map_.end()) {
     return true;
@@ -160,11 +161,9 @@ bool DNNEngineManager::IsEngineRegistered(const std::string &name) const {
   return false;
 }
 
-std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) const {
-  if (op_desc == nullptr) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "DNNEngineManager: op_desc is nullptr");
-    return "";
-  }
+std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
+  GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(GE_CLI_GE_NOT_INITIALIZED, "DNNEngineManager: op_desc is nullptr");
+                  return "");
   // Use the OpsKernelManager in GELib to get the opInfos for this opCode
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
@@ -182,7 +181,7 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) const {
   if (ret != SUCCESS) {
     GELOGD("get the option CORE_TYPE fail, set it to default value VECTOR_ENGINE");
   }
-  string exclude_core_Type = (ge_core_type == kVectorEngine) ? kAIcoreEngine : kVectorEngine;
+  string exclude_core_Type = (ge_core_type == kVectorCore) ? kAIcoreEngine : kVectorEngine;
   GELOGD("engine type will exclude: %s", exclude_core_Type.c_str());
   std::map<std::string, std::string> unsupported_reasons;
   for (const auto &it : op_infos) {
@@ -371,7 +370,7 @@ Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle h
   const char *file = file_path.data();
   if ((access(file, F_OK)) == -1) {
     if (engines_map_.size() != 0) {
-      GELOGE(FAILED, "The json file %s is not exist", file_path.c_str());
+      GELOGE(FAILED, "The json file %s is not exist, %s", file_path.c_str(), strerror(errno));
       return FAILED;
     } else {
       GELOGW("The json file %s is not need", file_path.c_str());

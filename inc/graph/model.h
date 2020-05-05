@@ -21,7 +21,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "detail/attributes_holder.h"
 #include "graph/ge_attr_value.h"
 #include "graph/graph.h"
@@ -62,7 +61,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Model : public AttrHolder {
   using AttrHolder::HasAttr;
   using AttrHolder::SetAttr;
 
-  graphStatus Save(Buffer &buffer) const;
+  graphStatus Save(Buffer &buffer, bool is_dump = false) const;
 
   graphStatus SaveToFile(const string &file_name) const;
   // Model will be rewrite

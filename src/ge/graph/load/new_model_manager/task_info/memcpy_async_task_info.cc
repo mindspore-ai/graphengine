@@ -33,9 +33,6 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   }
 
   auto memcpy_async_def = task_def.memcpy_async();
-
-  GELOGI("InitMemcpyAsyncTaskInfo start.");
-
   uint64_t logic_dst = memcpy_async_def.dst();
   uint64_t logic_src = memcpy_async_def.src();
 
@@ -59,8 +56,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
 }
 
 Status MemcpyAsyncTaskInfo::Distribute() {
-  GELOGI("MemcpyAsyncTaskInfo Distribute Start.");
-  GELOGI("Distribute MemcpyAsync, dst_max:%lu, count:%lu, kind:%u.", dst_max_, count_, kind_);
+  GELOGI("MemcpyAsyncTaskInfo Distribute Start. dst_max:%lu, count:%lu, kind:%u.", dst_max_, count_, kind_);
 
   rtError_t rt_ret = rtMemcpyAsync(dst_, dst_max_, src_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
@@ -68,13 +64,14 @@ Status MemcpyAsyncTaskInfo::Distribute() {
     return RT_FAILED;
   }
 
+  GELOGI("MemcpyAsyncTaskInfo Distribute Success.");
   return SUCCESS;
 }
 
 Status MemcpyAsyncTaskInfo::GetUpdateBaseAddr(DavinciModel *davinci_model, uint64_t update_addr, uint64_t &base_addr) {
   GE_CHECK_NOTNULL(davinci_model);
-  uint64_t data_base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->MemBase())) -
-                            davinci_model->GetRtBaseAddr();
+  uint64_t data_base_addr =
+    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->MemBase())) - davinci_model->GetRtBaseAddr();
   uint64_t weight_base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->WeightsMemBase())) -
                               davinci_model->GetRtWeightAddr();
   uint64_t var_base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->VarMemBase())) -

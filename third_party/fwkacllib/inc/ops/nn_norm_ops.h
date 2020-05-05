@@ -92,12 +92,36 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
     .OUTPUT(backprop, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(SoftmaxCrossEntropyWithLogits)
 
+/**
+*@brief Computes gradients for a softmax operation.
+
+*@par Inputs:
+* Two inputs, including: \n
+* @li softmax: Output of the softmax operator. Must be one of the following types: float16, float31, int32, int8, uint8. The format is NC1HWC0 or DN.
+* @li grad_softmax: A Tensor. Has the same shape and type as "softmax". The format is NC1HWC0 or DN.
+
+*@par Outputs:
+*grad_x: A Tensor. Has the same shape and type as "softmax".
+
+*/
 REG_OP(SoftmaxGrad)
     .INPUT(softmax, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .INPUT(grad_softmax, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .OUTPUT(grad_x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .OP_END_FACTORY_REG(SoftmaxGrad)
 
+/**
+*@brief Computes the sigmoid cross entropy loss of "predict" and "target".
+
+*@par Inputs:
+* Two inputs, including: \n
+*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
+
+*@par Outputs:
+*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict".
+
+*/
 REG_OP(SigmoidCrossEntropyWithLogitsGrad)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -105,12 +129,43 @@ REG_OP(SigmoidCrossEntropyWithLogitsGrad)
     .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGrad)
 
+/**
+*@brief Performs the backpropagation of SigmoidCrossEntropyWithLogits for training scenarios.
+
+*@par Inputs:
+* Three inputs, including: \n
+*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
+*@li dout: A multi-dimensional Tensor of float16 or float32, specifying the gradient transferred from the upper layer.
+
+*@par Outputs: \n
+*gradient: Return gradient. Has the same dimensions and type as "predict".
+
+*/
 REG_OP(SigmoidCrossEntropyWithLogits)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogits)
 
+/**
+*@brief Computes the regression box of the RPN. It is a FasterRCNN operator.
+
+*@par Inputs:
+* Two inputs, including: \n
+*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
+*@li label: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
+
+*@par Attributes:
+* sigma: Must be a floating point number. Defaults to "1.0".
+
+*@par Outputs:
+*loss: Indicates the loss between the predictive value and target value. Has the same dimensions as "predict".
+
+*@attention Constraints:
+* This operator does not perform the "reduce" operation on the loss value. Call other reduce operators to perform "reduce" operation on the loss if required.
+
+*/
 REG_OP(SmoothL1Loss)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -118,6 +173,22 @@ REG_OP(SmoothL1Loss)
     .ATTR(sigma, Float, 1.0)
     .OP_END_FACTORY_REG(SmoothL1Loss)
 
+/**
+*@brief Performs the backpropagation of SmoothL1Loss for training scenarios.
+
+*@par Inputs:
+* Three inputs, including: \n
+*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
+*@li label: A multi-dimensional Tensor of float16 or float32, specifying the target value.
+*@li dout: A multi-dimensional Tensor of float16 or float32, specifying the gradient transferred from the upper layer.
+
+*@par Attributes:
+* sigma: Must be a floating point number. Defaults to "1.0".
+
+*@par Outputs:
+*gradient: Return gradient. Has the same dimensions and type as "predict".
+
+*/
 REG_OP(SmoothL1LossGrad)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -126,6 +197,26 @@ REG_OP(SmoothL1LossGrad)
     .ATTR(sigma, Float, 1.0)
     .OP_END_FACTORY_REG(SmoothL1LossGrad)
 
+/**
+*@brief Creates a criterion that measures the Binary Cross Entropy between the target and the output.
+
+*@par Inputs:
+* Three inputs, including: \n
+*@li x: A 1D or 2D Tensor of type float16 or float32, specifying a predictive value.
+*@li y: A 1D or 2D Tensor of type float16 or float32, indicating a tag.
+*@li weight: An optional 1D or 2D Tensor, specifying the weight.
+
+*@par Attributes:
+*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean".
+
+*@par Outputs:
+*output: Output loss. Has the same dimension with the inputs. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output.
+
+*@attention Constraints:
+*@li The value of "x" must range from 0 to 1.
+*@li The value of "y" must be "0" or "1".
+
+*/
 REG_OP(BinaryCrossEntropy)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -134,6 +225,27 @@ REG_OP(BinaryCrossEntropy)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(BinaryCrossEntropy)
 
+/**
+*@brief Performs the backpropagation of BinaryCrossEntropy for training scenarios.
+
+*@par Inputs:
+* Four inputs, including: \n
+*@li x: A 1D or 2D Tensor of type float16 or float32, specifying a predictive value.
+*@li y: A 1D or 2D Tensor of type float16 or float32, indicating a tag.
+*@li grad_output: A 1D or 2D Tensor of type float16 or float32, specifying the backpropagation gradient.
+*@li weight: An optional 1D or 2D Tensor, specifying the weight.
+
+*@par Attributes: \n
+*reduction: A character string from "none", "mean", and "sum", specifying the gradient output mode. Defaults to "mean".
+
+*@par Outputs: \n
+*output: A 1D or 2D Tensor. When "reduction" is set to "none", a Tensor with the same size as "x" is output. Otherwise, a Scalar is output.
+
+*@attention Constraints:
+*@li The value of "x" must range from 0 to 1.
+*@li The value of "y" must be "0" or "1".
+
+*/
 REG_OP(BinaryCrossEntropyGrad)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -153,16 +265,16 @@ that the elements of the n-dimensional output Tensor lie in the range [0,1] and 
 *float32, double. Should be a Variable Tensor.
 
 *@par Attributes:
-*axis: A list of ints. The dimension softmax would be performed on.
+*axes: A list of ints. The dimension softmax would be performed on.
 
 *@par Outputs:
 *y: A Tensor. Has the same dimensionality and shape as the "x" with values in the range [0, 1]. Must be one of the following types: float16, float32, int32.
 */
-REG_OP(Softmax)
+REG_OP(SoftmaxV2)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
-    .ATTR(axis, ListInt, {-1})
-    .OP_END_FACTORY_REG(Softmax)
+    .ATTR(axes, ListInt, {-1})
+    .OP_END_FACTORY_REG(SoftmaxV2)
 
 /**
 *@brief Computes log softmax activations.
@@ -172,16 +284,16 @@ REG_OP(Softmax)
 * logits: A Tensor. Must be one of the following types: double, float16, float32.
 
 *@par Attributes:
-* axis: An optional list of ints. Defaults to "{-1}".
+* axes: An optional list of ints. Defaults to "{-1}".
 
 *@par Outputs:
 * logsoftmax: A Tensor. Has the same type as "logits".
 */
-REG_OP(LogSoftmax)
+REG_OP(LogSoftmaxV2)
     .INPUT(logits, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(logsoftmax, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
-    .ATTR(axis, ListInt, {-1})
-    .OP_END_FACTORY_REG(LogSoftmax)
+    .ATTR(axes, ListInt, {-1})
+    .OP_END_FACTORY_REG(LogSoftmaxV2)
 
 REG_OP(FusedBatchNormV2)
     .INPUT(x, TensorType{DT_FLOAT})                  /* Input data tensor from the previous operator"" */
@@ -198,26 +310,6 @@ REG_OP(FusedBatchNormV2)
     .ATTR(beta, Float, 0)
     .OP_END_FACTORY_REG(FusedBatchNormV2)
 
-REG_OP(Scale)
-    .INPUT(x, TensorType{DT_FLOAT})
-    .OPTIONAL_INPUT(w, TensorType{DT_FLOAT})
-    .OPTIONAL_INPUT(b, TensorType{DT_FLOAT})
-    .OUTPUT(y, TensorType{DT_FLOAT})
-    .ATTR(bias_term, Bool, false)
-    .ATTR(axis, Int, 1)
-    .ATTR(num_axis, Int, 1)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
-    .OP_END_FACTORY_REG(Scale)
-
-REG_OP(SoftmaxGradExt)
-  .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .INPUT(x2, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
-  .ATTR(axis, ListInt, {-1})
-  .ATTR(keep_dims, Bool, false)
-  .OP_END_FACTORY_REG(SoftmaxGradExt)
 
 /**
 *@brief Confuse mul, sum and sub.
@@ -236,6 +328,77 @@ REG_OP(ConfusionSoftmaxGrad)
   .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
   .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
   .OP_END_FACTORY_REG(ConfusionSoftmaxGrad)
+
+REG_OP(SoftmaxGradExt)
+  .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .INPUT(x2, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+  .ATTR(axes, Int, 1)
+  .ATTR(keep_dims, Bool, false)
+  .OP_END_FACTORY_REG(SoftmaxGradExt)
+  
+/**
+*@brief Normalizes the input.
+
+*@par Inputs:
+* One input:
+*x: An NCHW tensor of type float16 or float32.
+
+*@par Attributes:
+*@li normalize_variance: An optional bool specifying whether to normalize the variance, either "true" (default) or "false"
+* the value "false" indicates only to subtract the mean.
+*@li across_channels: An optional bool specifying whether to perform across-channel MVN, either "true" or "false" (default)
+* The value "true" indicates "CHW" is treated as a vector.
+*@li eps: An optional float32 epsilon for not dividing by zero. Defaults to "1e-9".
+
+*@par Outputs:
+*y: An NCHW tensor of type float16 or float32.
+
+*@attention Constraints:\n
+* The input tensor must have the NCHW format, whose shape length must be 4.
+*/
+
+REG_OP(MVN)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))  /* "Result, has same element type as inputs" */
+    .ATTR(normalize_variance, Bool, true)
+    .ATTR(across_channels, Bool, false)
+    .ATTR(eps, Float, 1e-9)
+    .OP_END_FACTORY_REG(MVN)
+
+/**
+*@brief Normalizes the input "x1".
+
+*@par Inputs:
+* Two inputs, including:
+*@li x1: A required NCHW or NHWC tensor of type float32, float16, or int8.
+*@li x2: A required ND tensor of type float32, float16, or int8, specifying
+* the scaling factor. If "channel_shared" is "true", "x2" is a [1]-dimensional
+* vector. If "channel_shared" is "false", "x2" is a [C]-dimensional vector.
+
+*@par Attributes:
+*@li across_spatial: An optional bool, specifying the dimension of input "x1"
+* to be summed. The value "true" (default) indicates dimensions C, H, W, and
+* the value "false" indicates dimension C.
+*@li channel_shared: An optional bool, specifying the dimension count of input
+* "x2". The value "true" (default) indicates 1, and the value "false" indicates
+* dimension C of "x1".
+*@li eps: An optional float32, specifying the bias when "across_spatial" is
+* "true". Defaults to "1e-10".
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as "x1".
+
+*/
+REG_OP(Normalize)
+     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+     .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+     .ATTR(across_spatial, Bool, true)
+     .ATTR(channel_shared, Bool, true)
+     .ATTR(eps, Float, 1e-10)
+     .OP_END_FACTORY_REG(Normalize);
 
 /**
 *@brief Layernorm operator interface implementation
@@ -421,6 +584,43 @@ REG_OP(DropOutDoMask)
     .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(DropOutDoMask)
+	
+/**
+*@brief Scales the input.
+
+*@par Inputs:
+* Three inputs, including:
+*@li x: An ND tensor of type float16 or float32.
+*@li scale: An ND tensor of type float16 or float32.
+*@li bias: An ND tensor of type float16 or float32.
+
+*@par Attributes:
+*@li axis: An optional int32 used to compute the shape of scale and bias input from the online bottoms. Defaults to "1".
+
+*@par Outputs:
+*y: An ND tensor of type float16 or float32.
+
+*@attention Constraints:\n
+* Assume that the shape length of "x" is "n" and that of "scale" is "m".
+*@li "axis" is within the range [-n, n-1]. num_axes >= -1.
+*@li If "scale_from_blob = true", "num_axes = -1", and "axis >= 0", the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < n-axis).\n  
+* If "axis < 0", the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < -axis).
+*@li If "scale_from_blob = true" and "num_axes = 0", "scale" is a scalar with shape length 1 and dimension size 1.
+*@li If "scale_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + num_axes" must be less than or equal to "n" and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).\n
+* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
+*@li If "scale_from_blob = false", "scale" is not a scalar, and "axis >= 0","axis + m" must be less than or equal to "n" and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).\n
+* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
+*@li If "bias" is not None, the constraints for "bias" is the same as that for "scale".
+*/
+REG_OP(Scale)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
+    .INPUT(scale, TensorType({DT_FLOAT, DT_FLOAT16})) /* "Second operand." */
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16})) /* "Third operand." */
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))  /* "Result, has same element type as x" */
+    .ATTR(axis, Int, 1)
+    .ATTR(num_axes, Int, 1)
+    .ATTR(scale_from_blob, Bool, true)
+    .OP_END_FACTORY_REG(Scale)
 
 /**
 *@brief Local Response Normalization.
@@ -430,17 +630,16 @@ REG_OP(DropOutDoMask)
 *@li x: A Tensor. Must be 4-D shape, and only support the following types: float16, float32.
 
 *@par Attributes:
-*@li depth_radius: An optional int, specifying the half-width of the
-* normalization window. Defaults to "5".
+* depth_radius = (local_size + 1) / 2. Defaults to "5".
 *@li bias: An optional float32. An offset, usually > 0 to avoid dividing by 0.
 * Defaults to "1".
 *@li alpha: An optional float32. A scaling factor, usually positive.
 * Defaults to "1".
-*@li beta: An optional float32. An exponent. Defaults to "0.5".
-*@li norm_region: An optional string. A mode option. Defaults to "ACROSS_CHANNELS".
+*@li norm_region: An optional string. A mode option. "ACROSS_CHANNELS":0, "WITHIN_CHANNEL":1. Defaults to "ACROSS_CHANNELS".
 
 *@par Outputs:
 *y: A Tensor. Has the same data type and shape as "x".
+
 */
 REG_OP(LRN)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -474,6 +673,7 @@ REG_OP(LRN)
 
 * @attention Constraints:
 * "x" and "y" must have the same shape and type as "grads".
+
 */
 REG_OP(LRNGrad)
     .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))

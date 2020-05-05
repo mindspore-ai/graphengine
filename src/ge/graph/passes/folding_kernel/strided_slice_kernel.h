@@ -40,9 +40,10 @@ class StridedSliceKernel : public Kernel {
   Status CheckAndGetAttr(const OpDescPtr &attr, const std::vector<ConstGeTensorPtr> &input, Attr &args);
   Status CheckWeight(const ConstGeTensorPtr &weight0, const ConstGeTensorPtr &weight1, const ConstGeTensorPtr &weight2,
                      const ConstGeTensorPtr &weight3) const;
-  void MaskCal(const bool &begin_mask_flag, const bool &end_mask_flag, const bool &shrink_mask_flag, int32_t &begin_i,
-               int32_t &end_i, int32_t &dim_i) const;
+  Status MaskCal(const bool &begin_mask_flag, const bool &end_mask_flag, const bool &shrink_mask_flag, int32_t &begin_i,
+                 int32_t &end_i, int32_t &dim_i) const;
+  void GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, const Attr &args,
+                     vector<int64_t> &v_dims);
 };
 }  // namespace ge
-
 #endif  // GE_GRAPH_PASSES_FOLDING_KERNEL_STRIDED_SLICE_KERNEL_H_

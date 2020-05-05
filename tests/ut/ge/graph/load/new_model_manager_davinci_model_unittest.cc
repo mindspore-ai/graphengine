@@ -149,7 +149,7 @@ TEST_F(UtestModelManagerDavinciModel, failed_rt_free_host) {
 
   model.data_op_list_.push_back(op_desc);
 
-  EXPECT_EQ(ge::INTERNAL_ERROR, model.ReturnResult(1, 1, false, false, &output_data));
+  EXPECT_EQ(ge::INTERNAL_ERROR, model.ReturnResult(1, false, false, &output_data));
 }
 
 // test modeldef_fail
@@ -274,7 +274,7 @@ TEST_F(UtestModelManagerDavinciModel, failed_reset_device) {
   rtMalloc(&buf_data.data, 128, RT_MEMORY_HBM);
   buf_data.length = 128;
   output_data.blobs.push_back(buf_data);
-  EXPECT_EQ(ge::INTERNAL_ERROR, model.ReturnResult(1, 1, true, false, &output_data));
+  EXPECT_EQ(ge::INTERNAL_ERROR, model.ReturnResult(1, true, false, &output_data));
   rtFree(buf_data.data);
 }
 
@@ -1222,7 +1222,7 @@ TEST_F(UtestModelManagerDavinciModel, success_output_list_0) {
   Status ret = VarManager::Instance(session_id)->Init(version, session_id, device_id, job_id);
   EXPECT_EQ(ret, ge::SUCCESS);
 
-  ret = model.ReturnNoOutput(1, 1);
+  ret = model.ReturnNoOutput(1);
   EXPECT_EQ(ret, ge::SUCCESS);
 
   VarManagerPool::Instance().Destroy();

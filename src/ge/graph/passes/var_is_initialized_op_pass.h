@@ -16,12 +16,10 @@
 
 #ifndef GE_GRAPH_PASSES_VAR_IS_INITIALIZED_OP_PASS_H_
 #define GE_GRAPH_PASSES_VAR_IS_INITIALIZED_OP_PASS_H_
-
 #include <map>
 #include <memory>
 #include <set>
 #include <vector>
-
 #include "graph/passes/base_pass.h"
 
 namespace ge {

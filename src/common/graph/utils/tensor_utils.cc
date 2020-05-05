@@ -15,7 +15,6 @@
  */
 
 #include "graph/utils/tensor_utils.h"
-
 #include <cmath>
 
 #include "debug/ge_log.h"
@@ -276,6 +275,14 @@ static graphStatus CalcTensorElementCnt(const std::vector<int64_t> &dims, Format
       break;
     case FORMAT_FRACTAL_NZ:
     case FORMAT_FRACTAL_ZZ:
+    case FORMAT_NDHWC:
+    case FORMAT_NCDHW:
+    case FORMAT_DHWCN:
+    case FORMAT_DHWNC:
+    case FORMAT_FRACTAL_Z_3D:
+    case FORMAT_FRACTAL_Z_3D_TRANSPOSE:
+    case FORMAT_NDC1HWC0:
+    case FORMAT_FRACTAL_Z_C04:
       graph_status = CalcElementCntByDims(dims, element_cnt);
       break;
     default:
@@ -351,21 +358,21 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus TensorUtils::CalcTens
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
-TensorUtils::GetTensorMemorySizeInBytes(const GeTensorDesc &desc_temp, uint32_t &size_temp) {
+TensorUtils::GetTensorMemorySizeInBytes(const GeTensorDesc &desc_temp, int64_t &size_temp) {
   graphStatus graph_status = GetTensorSizeInBytes(desc_temp, size_temp);
   if (graph_status != GRAPH_SUCCESS) {
     return GRAPH_FAILED;
   }
   // 64-byte alignment, if size is 0, align to 32 bytes
-  if (size_temp > (UINT32_MAX - kNum2 * kDataMemAlignSize)) {
-    GELOGW("The updated mem size %u is bigger than UINT32_MAX", size_temp);
+  if (size_temp > (INT64_MAX - kNum2 * kDataMemAlignSize)) {
+    GELOGW("The updated mem size %ld is bigger than INT64_MAX", size_temp);
   } else {
     size_temp = ((size_temp + kNum2 * kDataMemAlignSize - 1) / kDataMemAlignSize) * kDataMemAlignSize;
   }
   return GRAPH_SUCCESS;
 }
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
-TensorUtils::GetTensorSizeInBytes(const GeTensorDesc &desc_temp, uint32_t &size_temp) {
+TensorUtils::GetTensorSizeInBytes(const GeTensorDesc &desc_temp, int64_t &size_temp) {
   GeShape output_shape = desc_temp.GetShape();
   Format format = desc_temp.GetFormat();
   DataType data_type = desc_temp.GetDataType();
@@ -376,13 +383,13 @@ TensorUtils::GetTensorSizeInBytes(const GeTensorDesc &desc_temp, uint32_t &size_
     return GRAPH_FAILED;
   }
 
-  if ((output_mem_size > UINT32_MAX) || (output_mem_size < 0)) {
-    GELOGE(GRAPH_FAILED, "After calc concat tensor memory size, output_mem_size = %ld, out of data range [0, %u]",
-           output_mem_size, UINT32_MAX);
+  if (output_mem_size < 0) {
+    GELOGE(GRAPH_FAILED, "After calc concat tensor memory size, output_mem_size = %ld, out of data range [0, %ld]",
+           output_mem_size, INT64_MAX);
     return GRAPH_FAILED;
   }
 
-  size_temp = static_cast<uint32_t>(output_mem_size);
+  size_temp = output_mem_size;
   return GRAPH_SUCCESS;
 }
 }  // namespace ge

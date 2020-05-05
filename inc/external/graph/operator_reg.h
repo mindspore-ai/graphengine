@@ -22,10 +22,10 @@
 #include <string>
 #include <vector>
 
-#include "external/graph/operator.h"
-#include "external/graph/operator_factory.h"
-#include "external/graph/tensor.h"
-#include "external/graph/types.h"
+#include "./operator.h"
+#include "./operator_factory.h"
+#include "./tensor.h"
+#include "./types.h"
 
 namespace ge {
 using std::function;
@@ -60,7 +60,7 @@ class OpReg {
                                                                      \
    private:                                                          \
     void __##x() {                                                   \
-    OpReg()
+      OpReg()
 
 #define ATTR(x, Type, ...)                                                  \
   N();                                                                      \
@@ -86,7 +86,7 @@ class OpReg {
   void __attr_##x() {                                                       \
     Operator::AttrRegister(#x, Op##Type(__VA_ARGS__));                      \
     string attr_name(#x);                                                   \
-  (void)OpReg()
+    (void)OpReg()
 
 #define REQUIRED_ATTR(x, Type)                                              \
   N();                                                                      \
@@ -112,7 +112,7 @@ class OpReg {
   void __required_attr_##x() {                                              \
     Operator::RequiredAttrRegister(#x);                                     \
     string attr_name(#x);                                                   \
-  (void)OpReg()
+    (void)OpReg()
 
 #define INPUT(x, t)                                                            \
   N();                                                                         \
@@ -137,7 +137,7 @@ class OpReg {
  private:                                                                      \
   void __input_##x() {                                                         \
     Operator::InputRegister(#x);                                               \
-  (void)OpReg()
+    (void)OpReg()
 
 #define OPTIONAL_INPUT(x, t)                                                   \
   N();                                                                         \
@@ -162,7 +162,7 @@ class OpReg {
  private:                                                                      \
   void __optional_input_##x() {                                                \
     Operator::OptionalInputRegister(#x);                                       \
-  (void)OpReg()
+    (void)OpReg()
 
 #define OUTPUT(x, t)                                                             \
   N();                                                                           \
@@ -179,7 +179,7 @@ class OpReg {
  private:                                                                        \
   void __out_##x() {                                                             \
     Operator::OutputRegister(#x);                                                \
-  (void)OpReg()
+    (void)OpReg()
 
 #define DYNAMIC_INPUT(x, t)                                                                                            \
   N();                                                                                                                 \
@@ -206,7 +206,7 @@ class OpReg {
                                                                                                                        \
  private:                                                                                                              \
   void __dy_input_##x() {                                                                                              \
-  (void)OpReg()
+    (void)OpReg()
 
 #define DYNAMIC_OUTPUT(x, t)                                                                     \
   N();                                                                                           \
@@ -227,18 +227,18 @@ class OpReg {
                                                                                                  \
  private:                                                                                        \
   void __dy_output_##x() {                                                                       \
-  (void)OpReg()
+    (void)OpReg()
 
 #define PASTE(g_register, y) g_register##y
-#define __OP_END_IMPL__(x, y)                                                                                      \
-  N();                                                                                                             \
-  }                                                                                                                \
-  static_assert(                                                                                                   \
-      std::is_same<x, _THIS_TYPE>::value,                                                                          \
-      "The class name entered into the OP_END_FACTORY_REG needs to be the same as the operator name you define."); \
-  }                                                                                                                \
-  ;                                                                                                                \
-  static const OperatorCreatorRegister PASTE(g_register, y)(#x, [](const std::string &name) { return x(name); });  \
+#define __OP_END_IMPL__(x, y)                                                                                     \
+  N();                                                                                                            \
+  }                                                                                                               \
+  static_assert(                                                                                                  \
+    std::is_same<x, _THIS_TYPE>::value,                                                                           \
+    "The class name entered into the OP_END_FACTORY_REG needs to be the same as the operator name you define.");  \
+  }                                                                                                               \
+  ;                                                                                                               \
+  static const OperatorCreatorRegister PASTE(g_register, y)(#x, [](const std::string &name) { return x(name); }); \
   }
 #define OP_END_FACTORY_REG(x) __OP_END_IMPL__(x, __COUNTER__)
 
@@ -286,7 +286,7 @@ class OpReg {
 // Common shape inferencer
 
 #define ELMTWISE_INFER_SHAPEANDTYPE(in_name, out_name)            \
-  [](Operator op)->graphStatus {                                \
+  [](Operator op) -> graphStatus {                                \
     auto x_shape = op.GetInputDesc(in_name).GetShape().GetDims(); \
     auto x_type = op.GetInputDesc(in_name).GetDataType();         \
     TensorDesc op_output_desc = op.GetOutputDesc(out_name);       \
@@ -300,7 +300,7 @@ graphStatus BroadCastInfer(const function<vector<int64_t>()> &get_in1_shape,
                            const function<void(const vector<int64_t> &y_shape)> &set_out_shape);
 
 #define BROADCAST_INFER(in1_name, in2_name, out_name)                                       \
-  [](Operator op)->graphStatus {                                                          \
+  [](Operator op) -> graphStatus {                                                          \
     return BroadCastInfer([&]() { return op.GetInputDesc(in1_name).GetShape().GetDims(); }, \
                           [&]() { return op.GetInputDesc(in2_name).GetShape().GetDims(); }, \
                           [&](const vector<int64_t> &y_shape) {                             \

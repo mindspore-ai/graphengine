@@ -17,9 +17,8 @@
 #ifndef GE_GRAPH_PASSES_TRANSOP_WITHOUT_RESHAPE_FUSION_PASS_H_
 #define GE_GRAPH_PASSES_TRANSOP_WITHOUT_RESHAPE_FUSION_PASS_H_
 
-#include <utility>
 #include <vector>
-
+#include <utility>
 #include "inc/graph_pass.h"
 
 namespace ge {

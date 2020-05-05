@@ -21,6 +21,7 @@
 #include "common/debug/log.h"
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
+#include "graph/operator_factory.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
@@ -32,37 +33,45 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GELOGD("Begin to run constant folding on node %s", node->GetName().c_str());
 
-  OpDescPtr node_desc = node->GetOpDesc();
-  if (node_desc == nullptr) {
+  if (folding_pass::IsNoNeedConstantFolding(node)) {
     return SUCCESS;
   }
+  OpDescPtr node_desc = node->GetOpDesc();
   DataType data_type = node_desc->GetOutputDesc(0).GetDataType();
   Format format = node_desc->GetOutputDesc(0).GetFormat();
-  GELOGD("current [node:%s, type:%s] info: format: %s, datatype:%s", node->GetName().c_str(), node->GetType().c_str(),
+  GELOGD("Current [node:%s, type:%s] info: format: %s, datatype:%s", node->GetName().c_str(), node->GetType().c_str(),
          TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
   auto input_nodes = OpDescUtils::GetConstInputNode(*node);
   if (input_nodes.empty() || input_nodes.size() != node_desc->GetInputsSize()) {
-    GELOGI("Const input nodes size is %zu, and nodeDesc inputsSize is %zu.",
-        input_nodes.size(), node_desc->GetInputsSize());
+    GELOGD("Node:%s, const input nodes size is %zu, and nodeDesc inputsSize is %zu.", node->GetName().c_str(),
+           input_nodes.size(), node_desc->GetInputsSize());
     return SUCCESS;
   }
 
-  auto op_kernel = folding_pass::GetKernelByType(node);
-  if (op_kernel == nullptr) {
-    GELOGD("No op kernel for node %s type %s, skip the constant folding", node->GetName().c_str(),
-           node->GetType().c_str());
-    return SUCCESS;
-  }
   auto inputs = OpDescUtils::GetInputData(input_nodes);
   vector<GeTensorPtr> outputs;
-  auto ret = op_kernel->Compute(node_desc, inputs, outputs);
+  auto ret = RunOpKernel(node, inputs, outputs);
   if (ret != SUCCESS) {
-    if (ret == NOT_CHANGED) {
+    auto op_kernel = folding_pass::GetKernelByType(node);
+    if (op_kernel == nullptr) {
+      GELOGD("No op kernel for node %s type %s, skip the constant folding", node->GetName().c_str(),
+             node->GetType().c_str());
       return SUCCESS;
     }
-    GELOGE(INTERNAL_ERROR, "Calculate for node %s failed in constant folding", node->GetName().c_str());
-    return ret;
+
+    ret = op_kernel->Compute(node_desc, inputs, outputs);
+    if (ret != SUCCESS) {
+      if (ret == NOT_CHANGED) {
+        GELOGD("Node %s type %s, compute terminates and exits the constant folding.", node->GetName().c_str(),
+               node->GetType().c_str());
+        return SUCCESS;
+      }
+      GELOGE(INTERNAL_ERROR, "Calculate for node %s failed in constant folding", node->GetName().c_str());
+      return ret;
+    }
+    GELOGI("Node %s type %s, constant folding compute success.", node->GetName().c_str(), node->GetType().c_str());
   }
+
   if (outputs.empty()) {
     GELOGE(INTERNAL_ERROR,
            "Failed to constant folding on node %s,"

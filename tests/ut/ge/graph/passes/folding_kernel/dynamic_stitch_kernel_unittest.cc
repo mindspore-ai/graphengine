@@ -49,7 +49,7 @@ class UtestGraphPassesFoldingKernelDynamicStitchKernel : public testing::Test {
 
 TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, IndiceFloatSuccess) {
   OpDescPtr op_desc_ptr = std::make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
-  AttrUtils::SetInt(op_desc_ptr, "DynamicStitchN_", (int64_t)2);
+  AttrUtils::SetInt(op_desc_ptr, "N", (int64_t)2);
   vector<bool> is_input_const_vec = {true, true, true, true};
   op_desc_ptr->SetIsInputConst(is_input_const_vec);
 
@@ -81,6 +81,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, IndiceFloatSuccess) {
   op_desc_ptr->AddInputDesc(tensor_desc_1);
   op_desc_ptr->AddInputDesc(tensor_desc_2);
   op_desc_ptr->AddInputDesc(tensor_desc_3);
+  op_desc_ptr->AddOutputDesc(tensor_desc_3);
 
   vector<ConstGeTensorPtr> input = {tensor_0, tensor_1, tensor_2, tensor_3};
   vector<GeTensorPtr> outputs;
@@ -99,7 +100,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, IndiceFloatSuccess) {
 
 TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, ScalerIndiceDoubleSuccess) {
   OpDescPtr op_desc_ptr = std::make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
-  AttrUtils::SetInt(op_desc_ptr, "DynamicStitchN_", (int64_t)2);
+  AttrUtils::SetInt(op_desc_ptr, "N", (int64_t)2);
   vector<bool> is_input_const_vec = {true, true, true, true};
   op_desc_ptr->SetIsInputConst(is_input_const_vec);
 
@@ -131,6 +132,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, ScalerIndiceDoubleSucce
   op_desc_ptr->AddInputDesc(tensor_desc_1);
   op_desc_ptr->AddInputDesc(tensor_desc_2);
   op_desc_ptr->AddInputDesc(tensor_desc_3);
+  op_desc_ptr->AddOutputDesc(tensor_desc_3);
 
   vector<ConstGeTensorPtr> input = {tensor_0, tensor_1, tensor_2, tensor_3};
   vector<GeTensorPtr> outputs;
@@ -148,7 +150,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, ScalerIndiceDoubleSucce
 
 TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, UnsupportedDataType) {
   OpDescPtr op_desc_ptr = std::make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
-  AttrUtils::SetInt(op_desc_ptr, "DynamicStitchN_", (int64_t)2);
+  AttrUtils::SetInt(op_desc_ptr, "N", (int64_t)2);
   vector<bool> is_input_const_vec = {true, true, true, true};
   op_desc_ptr->SetIsInputConst(is_input_const_vec);
 
@@ -180,6 +182,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, UnsupportedDataType) {
   op_desc_ptr->AddInputDesc(tensor_desc_1);
   op_desc_ptr->AddInputDesc(tensor_desc_2);
   op_desc_ptr->AddInputDesc(tensor_desc_3);
+  op_desc_ptr->AddOutputDesc(tensor_desc_3);
 
   vector<ConstGeTensorPtr> input = {tensor_0, tensor_1, tensor_2, tensor_3};
   vector<GeTensorPtr> outputs;
@@ -196,9 +199,14 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, ValidateParamFail) {
   OpDescPtr op_desc_ptr = nullptr;
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(DYNAMICSTITCH);
   Status status = kernel->Compute(nullptr, empty_input, empty_output);
-  EXPECT_EQ(status, ge::PARAM_INVALID);
+  EXPECT_EQ(status, NOT_CHANGED);
+  // outputdesc is null
+  op_desc_ptr = make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
+  status = kernel->Compute(op_desc_ptr, empty_input, empty_output);
+  EXPECT_EQ(status, NOT_CHANGED);
   // input is empty
   op_desc_ptr = std::make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
+  op_desc_ptr->AddOutputDesc(GeTensorDesc());
   status = kernel->Compute(op_desc_ptr, empty_input, empty_output);
   EXPECT_EQ(status, NOT_CHANGED);
 
@@ -219,14 +227,14 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, ValidateParamFail) {
   status = kernel->Compute(op_desc_ptr, input, empty_output);
   EXPECT_EQ(status, NOT_CHANGED);
 
-  AttrUtils::SetInt(op_desc_ptr, "DynamicStitchN_", (int64_t)4);
+  AttrUtils::SetInt(op_desc_ptr, "N", (int64_t)4);
   status = kernel->Compute(op_desc_ptr, input, empty_output);
   EXPECT_EQ(status, NOT_CHANGED);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, RepeatedIndiceInt32Success) {
   OpDescPtr op_desc_ptr = std::make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
-  AttrUtils::SetInt(op_desc_ptr, "DynamicStitchN_", (int64_t)2);
+  AttrUtils::SetInt(op_desc_ptr, "N", (int64_t)2);
   vector<bool> is_input_const_vec = {true, true, true, true};
   op_desc_ptr->SetIsInputConst(is_input_const_vec);
 
@@ -258,6 +266,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, RepeatedIndiceInt32Succ
   op_desc_ptr->AddInputDesc(tensor_desc_1);
   op_desc_ptr->AddInputDesc(tensor_desc_2);
   op_desc_ptr->AddInputDesc(tensor_desc_3);
+  op_desc_ptr->AddOutputDesc(tensor_desc_3);
 
   vector<ConstGeTensorPtr> input = {tensor_0, tensor_1, tensor_2, tensor_3};
   vector<GeTensorPtr> outputs;
@@ -274,7 +283,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, RepeatedIndiceInt32Succ
 
 TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, RepeatedIndiceInt64Success) {
   OpDescPtr op_desc_ptr = std::make_shared<OpDesc>("dynamicstitch", "DynamicStitch");
-  AttrUtils::SetInt(op_desc_ptr, "DynamicStitchN_", (int64_t)2);
+  AttrUtils::SetInt(op_desc_ptr, "N", (int64_t)2);
   vector<bool> is_input_const_vec = {true, true, true, true};
   op_desc_ptr->SetIsInputConst(is_input_const_vec);
 
@@ -306,6 +315,7 @@ TEST_F(UtestGraphPassesFoldingKernelDynamicStitchKernel, RepeatedIndiceInt64Succ
   op_desc_ptr->AddInputDesc(tensor_desc_1);
   op_desc_ptr->AddInputDesc(tensor_desc_2);
   op_desc_ptr->AddInputDesc(tensor_desc_3);
+  op_desc_ptr->AddOutputDesc(tensor_desc_3);
 
   vector<ConstGeTensorPtr> input = {tensor_0, tensor_1, tensor_2, tensor_3};
   vector<GeTensorPtr> outputs;

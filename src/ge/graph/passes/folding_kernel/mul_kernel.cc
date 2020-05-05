@@ -31,42 +31,83 @@
 
 namespace ge {
 namespace {
-const std::set<DataType> mul_supported_type = {DT_INT32, DT_UINT32};
-
+const std::set<DataType> kMulSupportedType = {DT_INT8,   DT_INT16,  DT_INT32,   DT_INT64, DT_UINT8, DT_UINT16,
+                                              DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE};
 template <typename T>
-Status IsOverflow(T const &a, T const &b, DataType &type) {
+Status OverflowCheck(T const &x, T const &y, DataType &type) {
   switch (type) {
+    case DT_INT8:
+      FMK_INT8_MULCHECK(x, y)
+      break;
+    case DT_INT16:
+      FMK_INT16_MULCHECK(x, y)
+      break;
     case DT_INT32:
-      return CheckInt32MulOverflow(a, b);
+      FMK_INT32_MULCHECK(x, y)
+      break;
+    case DT_INT64:
+      FMK_INT64_MULCHECK(x, y)
+      break;
+    case DT_UINT8:
+      FMK_UINT8_MULCHECK(x, y)
+      break;
+    case DT_UINT16:
+      FMK_UINT16_MULCHECK(x, y)
+      break;
     case DT_UINT32:
-      return CheckUint32MulOverflow(a, b);
+      FMK_UINT32_MULCHECK(x, y)
+      break;
+    case DT_UINT64:
+      FMK_UINT64_MULCHECK(x, y)
+      break;
+    case DT_FLOAT16:
+      FMK_FP16_MULCHECK(x, y)
+      break;
+    case DT_FLOAT:
+      FMK_FLOAT_MULCHECK(x, y)
+      break;
+    case DT_DOUBLE:
+      FMK_DOUBLE_MULCHECK(x, y)
+      break;
     default:
-      return FAILED;
+      break;
   }
+
+  return SUCCESS;
 }
 
 #define DEFINE_FUNC_WITH_STATUS_BY_TYPE(TYPE)                                         \
   std::function<TYPE(TYPE const &, TYPE const &, DataType &, Status &)> func_##TYPE = \
     [](TYPE const &a, TYPE const &b, DataType &type, Status &ret) -> TYPE {           \
-    ret = IsOverflow(a, b, type);                                                     \
+    ret = OverflowCheck(a, b, type);                                                  \
     if (ret != SUCCESS) {                                                             \
+      GELOGE(PARAM_INVALID, "Result of mul is overflow.");                            \
       return static_cast<TYPE>(0);                                                    \
     }                                                                                 \
-    return a * b;                                                                     \
+    return static_cast<TYPE>(a) * static_cast<TYPE>(b);                               \
   };
 
-#define SET_BCAST_COMPUTE_CASE(DTYPE, TYPE)                           \
-  case DTYPE:                                                         \
-    ret = bcast.BCastComputeCheck(input, y_data_##TYPE, func_##TYPE); \
+#define SET_BCAST_COMPUTE_CASE(DTYPE, TYPE)                              \
+  case DTYPE:                                                            \
+    ret = bcast.BCastComputeCheck(input, y_data_##TYPE##_, func_##TYPE); \
     break;
 
-#define SET_OUTPUT(DTYPE, TYPE)                                                                                  \
-  case DTYPE:                                                                                                    \
-    (void)output_ptr->SetData(reinterpret_cast<uint8_t *>(y_data_##TYPE.data()), y_data_##TYPE.size() * length); \
+#define SET_OUTPUT(DTYPE, TYPE)                                                                                        \
+  case DTYPE:                                                                                                          \
+    (void)output_ptr->SetData(reinterpret_cast<uint8_t *>(y_data_##TYPE##_.data()), y_data_##TYPE##_.size() * length); \
     break;
 // [no need to check result]
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int8_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int16_t)
 DEFINE_FUNC_WITH_STATUS_BY_TYPE(int32_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int64_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint8_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint16_t)
 DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint32_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint64_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(fp16_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(float)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(double)
 }  // namespace
 
 Status MulKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstGeTensorPtr> &input,
@@ -81,13 +122,20 @@ Status MulKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstGe
     return ret;
   }
 
-  std::vector<int32_t> y_data_int32_t;
-  std::vector<uint32_t> y_data_uint32_t;
   DataType data_type = input[0]->GetTensorDesc().GetDataType();
   BCast bcast;
   switch (data_type) {
+    SET_BCAST_COMPUTE_CASE(DT_INT8, int8_t)
+    SET_BCAST_COMPUTE_CASE(DT_INT16, int16_t)
     SET_BCAST_COMPUTE_CASE(DT_INT32, int32_t)
+    SET_BCAST_COMPUTE_CASE(DT_INT64, int64_t)
+    SET_BCAST_COMPUTE_CASE(DT_UINT8, uint8_t)
+    SET_BCAST_COMPUTE_CASE(DT_UINT16, uint16_t)
     SET_BCAST_COMPUTE_CASE(DT_UINT32, uint32_t)
+    SET_BCAST_COMPUTE_CASE(DT_UINT64, uint64_t)
+    SET_BCAST_COMPUTE_CASE(DT_FLOAT16, fp16_t)
+    SET_BCAST_COMPUTE_CASE(DT_FLOAT, float)
+    SET_BCAST_COMPUTE_CASE(DT_DOUBLE, double)
     default:
       ret = NOT_CHANGED;
       break;
@@ -114,8 +162,17 @@ Status MulKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstGe
   output_ptr->MutableTensorDesc().SetShape(GeShape(bcast.GetOutputShape()));
   // only return GRAPH_SUCCESS here
   switch (data_type) {
+    SET_OUTPUT(DT_INT8, int8_t)
+    SET_OUTPUT(DT_INT16, int16_t)
     SET_OUTPUT(DT_INT32, int32_t)
+    SET_OUTPUT(DT_INT64, int64_t)
+    SET_OUTPUT(DT_UINT8, uint8_t)
+    SET_OUTPUT(DT_UINT16, uint16_t)
     SET_OUTPUT(DT_UINT32, uint32_t)
+    SET_OUTPUT(DT_UINT64, uint64_t)
+    SET_OUTPUT(DT_FLOAT16, fp16_t)
+    SET_OUTPUT(DT_FLOAT, float)
+    SET_OUTPUT(DT_DOUBLE, double)
     default:
       break;
   }
@@ -151,7 +208,7 @@ Status MulKernel::MulCheck(const std::vector<ConstGeTensorPtr> &input) {
   }
 
   // check if input data type is supported
-  if (mul_supported_type.find(type) == mul_supported_type.end()) {
+  if (kMulSupportedType.find(type) == kMulSupportedType.end()) {
     GELOGI("Mul does not support this Data type: %s", TypeUtils::DataTypeToSerialString(type).c_str());
     return NOT_CHANGED;
   }

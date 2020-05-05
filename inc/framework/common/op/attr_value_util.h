@@ -17,11 +17,12 @@
 #ifndef INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_
 #define INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_
 
+#include <google/protobuf/map.h>
 #include <unordered_map>
 #include <string>
-#include <google/protobuf/map.h>
-#include "graph/debug/ge_attr_define.h"
+
 #include "common/types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "proto/om.pb.h"
 
 using domi::AttrDef;

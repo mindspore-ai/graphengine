@@ -16,10 +16,8 @@
 
 #ifndef GE_GRAPH_PASSES_VARIABLE_OP_PASS_H_
 #define GE_GRAPH_PASSES_VARIABLE_OP_PASS_H_
-
 #include <map>
 #include <set>
-
 #include "graph/common/transop_util.h"
 #include "graph/graph.h"
 #include "graph/manager/graph_var_manager.h"
@@ -54,7 +52,7 @@ class VariableOpPass : public GraphPass {
   Status CheckVarAndVarRefAreAlike(const NodePtr &var_node, const NodePtr &var_ref_node,
                                    bool &is_var_and_var_ref_alike);
 
-  bool IsOpDescSame(const GeTensorDesc &op_desc_a, const GeTensorDesc &op_desc_b);
+  bool IsOpDescSame(const GeTensorDescPtr &op_desc_a, const GeTensorDescPtr &op_desc_b);
 
   Status CheckTransNodeAreInverse(const NodePtr &node_a, const NodePtr &node_b, bool &is_trans_node_inverse);
 

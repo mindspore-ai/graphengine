@@ -17,9 +17,9 @@
 #include "framework/common/helper/model_helper.h"
 
 #include "common/ge/ge_util.h"
-#include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
+#include "framework/common/debug/ge_log.h"
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
@@ -27,9 +27,14 @@
 #include "graph/utils/graph_utils.h"
 
 using domi::ModelTaskDef;
+using ge::ModelBufferData;
 using ge::TBEKernelPtr;
 using ge::TBEKernelStore;
 using std::string;
+
+namespace {
+const int64_t kOriginalOmPartitionNum = 1;
+}
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelHelper::~ModelHelper() { (void)ReleaseLocalModelData(); }
@@ -57,7 +62,8 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model,
                                                                                    const SaveParam &save_param,
-                                                                                   const std::string &output_file) {
+                                                                                   const std::string &output_file,
+                                                                                   ModelBufferData &model) {
   if (output_file.empty()) {
     GELOGE(FAILED, "GraphBuilder SaveModel received invalid file name prefix");
     return FAILED;
@@ -85,13 +91,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
       return PARAM_INVALID;
     }
   }
-
   auto ge_model_weight = ge_model->GetWeight();
-  GELOGI("WEIGHTS_DATA size is %zu", ge_model_weight.GetSize());
+  GELOGI("WEIGHTS_DATA size is %zu , %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
   if (SaveModelPartition(om_file_save_helper, ModelPartitionType::WEIGHTS_DATA, ge_model_weight.GetData(),
                          ge_model_weight.GetSize()) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Add weight partition failed");
-    return PARAM_INVALID;
+    GELOGW("Add weight partition failed");  // weight is not necessary
   }
 
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
@@ -159,7 +163,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   string model_name = reinterpret_cast<char *>(model_header.name);
   GELOGI("Model name save:%s", model_name.c_str());
 
-  Status ret = om_file_save_helper->SaveModel(save_param, output_file.c_str());
+  Status ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "OmFileSaveHelper SaveModel return fail.");
     return FAILED;
@@ -223,12 +227,15 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
     GELOGE(FAILED, "ModelHelper SaveModel failed for platform_version");
     return FAILED;
   }
-  err = memcpy_s(model_header.name, MODEL_NAME_LENGTH, model_ptr->GetName().c_str(), model_ptr->GetName().size() + 1);
+  size_t name_size = model_ptr->GetName().size();
+  name_size = name_size > (MODEL_NAME_LENGTH - 1) ? (MODEL_NAME_LENGTH - 1) : name_size;
+  err = memcpy_s(model_header.name, MODEL_NAME_LENGTH, model_ptr->GetName().c_str(), name_size);
   if (err != EOK) {
     GELOGE(FAILED, "ModelHelper SaveModel memory copy failed");
     return FAILED;
   }
-  Status ret = om_file_save_helper->SaveModelToFile(output_file.c_str());
+  ModelBufferData model;
+  Status ret = om_file_save_helper->SaveModelToFile(output_file.c_str(), model, is_offline_);
   return (ret == SUCCESS ? SUCCESS : FAILED);
 }
 
@@ -242,6 +249,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
     GELOGE(FAILED, "Model helper has already loaded!");
     return FAILED;
   }
+
   if (ReleaseLocalModelData() != SUCCESS) {
     GELOGE(FAILED, "ReleaseLocalModelData failed.");
     return FAILED;
@@ -260,7 +268,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
     model_addr_tmp_ = nullptr;
     return FAILED;
   }
-
+  auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_addr_tmp_);
+  if (partition_table->num == kOriginalOmPartitionNum) {
+    GELOGE(FAILED, "om model is error,please use executable om model");
+    return FAILED;
+  }
   // Encrypt model need to del temp model/no encrypt model don't need to del model
   model_addr_tmp_ = nullptr;
 
@@ -299,7 +311,7 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper) {
   ModelPartition partition_model_def;
   // no need to check value, DATA->NetOutput
   om_load_helper.GetModelPartition(ModelPartitionType::MODEL_DEF, partition_model_def);
-  GELOGI("Model_def partition size:%u", partition_model_def.size);
+  GELOGI("Model_def partition addr:%p,size:%u", partition_model_def.data, partition_model_def.size);
 
   ge::Model model;
   if (ge::Model::Load(partition_model_def.data, partition_model_def.size, model) != SUCCESS) {
@@ -346,7 +358,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
       GELOGE(INTERNAL_ERROR, "ReadProtoFromArray failed.");
       return INTERNAL_ERROR;
     }
-    GELOGI("TASK_INFO op_size:%d, stream_num:%u", task->op().size(), task->stream_num());
+    GELOGI("TASK_INFO op_size:%zu, stream_num:%u", task->op().size(), task->stream_num());
   }
   model_->SetModelTaskDef(task);
   return SUCCESS;
@@ -428,6 +440,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::TransModelT
       TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
       GE_IF_BOOL_EXEC(tbe_kernel == nullptr, continue);
       kernel_store.AddTBEKernel(tbe_kernel);
+      GELOGI("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
     }
   }
   if (!kernel_store.Build()) {
@@ -470,6 +483,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::TransGeMode
       GELOGE(MEMALLOC_FAILED, "alloc model attr task buffer failed!");
       return MEMALLOC_FAILED;
     }
+    // no need to check value
     (void)model_task->SerializePartialToArray(buffer.GetData(), size);
     ret = ge::AttrUtils::SetZeroCopyBytes(model, MODEL_ATTR_TASKS, std::move(buffer));
     if (!ret) {

@@ -51,6 +51,8 @@ const uint64_t kProfilingBpEndLogid = 2;
 const uint64_t kProfilingArStartLogid = 3;
 const uint64_t kProfilingArEndLogid = 4;
 const uint64_t kProfilingIterEndLogid = 255;
+const int64_t kMaxNodeNumInNormalStream = 350;
+const int64_t kInvalidGroupId = -1;
 }  // namespace
 namespace ge {
 TaskGenerator::TaskGenerator(uint8_t *var_mem_base, uint64_t var_mem_size) {
@@ -179,6 +181,57 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
   return SUCCESS;
 }
 
+Status TaskGenerator::SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes, ComputeGraphPtr &graph) {
+  std::map<NodePtr, int64_t> nodes_with_group_attr;
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    int64_t group_id = kInvalidGroupId;
+    string name = node->GetName();
+    string type = node->GetType();
+    // For l1 fusion ddb pass, task def must be continuous.
+    // Part1: store
+    // If op_desc have this tag, store it in the map firstly,
+    // call the elements in the map GenerateTask at last
+    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id)) {
+      auto stream_id = op_desc->GetStreamId();
+      auto group_key = group_id + stream_id * kMaxNodeNumInNormalStream;
+      (void)ge::AttrUtils::SetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_KEY, group_key);
+      GELOGI("L1Fusion: store node[name:%s(%s), group id:%ld, group key:%ld, stream_id:%ld] task.", name.c_str(),
+             type.c_str(), group_id, group_key, op_desc->GetStreamId());
+      l1_fusion_nodes[group_key].push_back(node);
+      nodes_with_group_attr.insert({node, group_id});
+    }
+
+    // if node's all in nodes both with same group attr
+    // and it have no attr or group attr different
+    // which means bad case, return error
+    bool call_check = true;
+    std::unordered_set<int64_t> input_group_ids;
+    for (const auto &input_node : node->GetInNodes()) {
+      auto iter = nodes_with_group_attr.find(input_node);
+      if (iter == nodes_with_group_attr.end()) {
+        call_check = false;
+        break;
+      } else {
+        input_group_ids.insert(iter->second);
+      }
+    }
+    call_check = (call_check && (input_group_ids.size() == 1));
+    if (call_check) {
+      auto input_group_id = *input_group_ids.begin();
+      if (group_id != input_group_id) {
+        GELOGE(INTERNAL_ERROR,
+               "L1Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
+               name.c_str(), type.c_str(), group_id, input_group_id);
+        return INTERNAL_ERROR;
+      }
+    }
+  }
+  GELOGI("L1Fusion: get fusion group numbers [%zu].", l1_fusion_nodes.size());
+  return SUCCESS;
+}
+
 Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &graph,
                                    vector<domi::TaskDef> &task_def_list, map<uint32_t, string> &op_name_map) {
   std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
@@ -186,36 +239,53 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GenerateTask failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
-
-  auto ret = MarkFirstAndLastNode(graph);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "MarkFirstAndLastNode failed.");
-    return ret;
-  }
-
+  GE_CHK_STATUS_RET(MarkNodeAndSetIndex(graph), "MarkFirstAndLastNode failed.");
   ProfilingPoint ppoint;
   vector<uint32_t> ar_ppoint;
   GE_CHK_STATUS_RET(FindProfilingTaskIndex(graph, ppoint, ar_ppoint));
 
   const OpsKernelManager &ops_kernel_manager = ge_lib->OpsKernelManagerObj();
 
-  uint32_t node_index = 0;
   GE_TIMESTAMP_CALLNUM_START(GenerateTask);
+  // map store l1 fusion nodes
+  map<int64_t, std::vector<NodePtr>> l1_fusion_nodes;
+  string is_l1_fusion_enable = "false";
+  graphStatus ret = ge::GetContext().GetOption("ge.l1Fusion", is_l1_fusion_enable);
+  if ((ret == GRAPH_SUCCESS) && (is_l1_fusion_enable == "true")) {
+    GE_CHK_STATUS_RET(SaveL1fusionNodes(l1_fusion_nodes, graph));
+  }
+  std::unordered_set<Node *> l1_fusion_nodes_seen;
+  int64_t group_id;
+  uint32_t node_index = 0;
   for (auto &node : graph->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node->GetOpDesc());
-    if (node->GetOpDesc()->GetType() == CONCAT) {
-      int64_t is_node_virtual;
-      GE_IF_BOOL_EXEC(ge::AttrUtils::GetInt(node->GetOpDesc(), "fusion_virtual_op", is_node_virtual), continue);
-    }
-    node_index++;
     OpDescPtr op_desc = node->GetOpDesc();
-    GE_CHK_STATUS_RET(UpdateOpIsVarAttr(op_desc, graph->GetSessionID()));
-
+    GE_CHECK_NOTNULL(op_desc);
+    node_index++;
     string name = node->GetName();
     string type = node->GetType();
+    bool attr_notask = false;
+    bool get_attr_notask_flag = ge::AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_notask);
+    GE_IF_BOOL_EXEC(get_attr_notask_flag && attr_notask,
+                    GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
+                    continue);
+
+    GE_CHK_STATUS_RET(UpdateOpIsVarAttr(op_desc, graph->GetSessionID()));
     string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+    // For l1 fusion ddb pass, task def must be continuous.
+    // Part2: Call
+    auto l1_fusion_task_info =
+      L1FusionTaskInfo{run_context,        graph,         node,        op_desc, node_index, ge_lib,
+                       ops_kernel_manager, task_def_list, op_name_map, ppoint,  ar_ppoint};
+    GE_CHK_STATUS_RET(GenerateTaskForL1FusionNode(l1_fusion_task_info, l1_fusion_nodes, l1_fusion_nodes_seen),
+                      "Call GenerateTaskForL1FusionNode node:%s(%s) failed", name.c_str(), type.c_str());
+    // continue directly
+    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id)) {
+      GELOGI("L1Fusion not %s to generate node[name:%s(%s) task again.", op_kernel_lib_name.c_str(), name.c_str(),
+             type.c_str());
+      continue;
+    }
     if (op_kernel_lib_name.empty()) {
-      GELOGI("Node[name:%s(%s)] task no need to generate task.", name.c_str(), type.c_str());
+      GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
       continue;
     }
 
@@ -225,13 +295,8 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
              type.c_str(), op_kernel_lib_name.c_str());
       return INTERNAL_ERROR;
     }
-
-    ret = UpdateAnchorStatus(node);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Call UpdateAnchorStatus node:%s(%s) failed", name.c_str(), type.c_str());
-      return ret;
-    }
-
+    GE_CHK_STATUS_RET(UpdateAnchorStatus(node), "Call UpdateAnchorStatus node:%s(%s) failed", name.c_str(),
+                      type.c_str());
     int64_t op_id = op_desc->GetId();
     int64_t stream_id = op_desc->GetStreamId();
     if (stream_id < 0 || stream_id >= static_cast<int64_t>(run_context.graphStreamList.size())) {
@@ -247,7 +312,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task.", op_kernel_lib_name.c_str(),
            name.c_str(), type.c_str(), op_id, stream_id);
     GE_TIMESTAMP_RESTART(GenerateTask);
-    ret = kernel_info_store->GenerateTask(*node, run_context, task_def_list);
+    auto ret = kernel_info_store->GenerateTask(*node, run_context, task_def_list);
     GE_TIMESTAMP_ADD(GenerateTask);
     if (ret != SUCCESS) {
       GELOGE(ret, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task failed.",
@@ -285,6 +350,113 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   return SUCCESS;
 }
 
+Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_info,
+                                                  std::map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes,
+                                                  std::unordered_set<Node *> &l1_fusion_nodes_seen) {
+  Status ret = SUCCESS;
+  int64_t group_id;
+  auto &run_context = fusion_task_info.run_context;
+  auto &graph = fusion_task_info.graph;
+  auto &node = fusion_task_info.node;
+  auto &fusion_op_desc = fusion_task_info.fusion_op_desc;
+  auto &node_index = fusion_task_info.node_index;
+  const auto &ops_kernel_manager = fusion_task_info.ops_kernel_manager;
+  auto &task_def_list = fusion_task_info.task_def_list;
+  auto &op_name_map = fusion_task_info.op_name_map;
+  auto &ppoint = fusion_task_info.ppoint;
+  auto &ar_ppoint = fusion_task_info.ar_ppoint;
+  auto stream_id = fusion_op_desc->GetStreamId();
+  // If op_desc have this attr, call nodes with same group id in a stream together
+  if (ge::AttrUtils::GetInt(fusion_op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id) &&
+      (l1_fusion_nodes_seen.count(node.get()) == 0)) {
+    auto group_key = group_id + stream_id * kMaxNodeNumInNormalStream;
+    GELOGI("L1Fusion: start fusion group index[%ld], nodes size[%ld].", group_key, l1_fusion_nodes[group_key].size());
+    for (auto &fusion_node : l1_fusion_nodes[group_key]) {
+      OpDescPtr op_desc = fusion_node->GetOpDesc();
+
+      UpdateOpIsVarAttr(op_desc, graph->GetSessionID());
+      std::string fusion_node_name = fusion_node->GetName();
+      std::string fusion_node_type = fusion_node->GetType();
+      std::string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+      if (op_kernel_lib_name.empty()) {
+        GELOGI("L1Fusion: fusion_node[name:%s(%s)] task no need to generate task.", fusion_node_name.c_str(),
+               fusion_node_type.c_str());
+        continue;
+      }
+
+      size_t task_list_size_before = task_def_list.size();
+      OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
+      if (kernel_info_store == nullptr) {
+        GELOGE(INTERNAL_ERROR, "L1Fusion: No ops kernel store found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
+               fusion_node_name.c_str(), fusion_node_type.c_str(), op_kernel_lib_name.c_str());
+        return INTERNAL_ERROR;
+      }
+
+      ret = UpdateAnchorStatus(fusion_node);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "L1Fusion: Call UpdateAnchorStatus fusion_node:%s(%s) failed", fusion_node_name.c_str(),
+               fusion_node_type.c_str());
+        return ret;
+      }
+
+      int64_t op_id = op_desc->GetId();
+      int64_t stream_id = op_desc->GetStreamId();
+      if (stream_id < 0 || stream_id >= (int64_t)run_context.graphStreamList.size()) {
+        GELOGE(INTERNAL_ERROR, "L1Fusion: fusion_node[name:%s(%s), id:%ld] stream id is invalid, stream list size=%zu",
+               fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, run_context.graphStreamList.size());
+        return INTERNAL_ERROR;
+      }
+      // profiling task
+      (void)InsertProfilingTaskBefore(op_desc, ppoint, ar_ppoint, node_index, task_def_list);
+      run_context.stream = run_context.graphStreamList[stream_id];
+      GELOGI("L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld] task.",
+             op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
+      ret = kernel_info_store->GenerateTask(*fusion_node, run_context, task_def_list);
+      if (ret != SUCCESS) {
+        GELOGE(ret,
+               "L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
+               "id:%ld, stream_id:%ld] task failed.",
+               op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
+        return ret;
+      }
+      // profiling task
+      (void)InsertProfilingTaskAfter(op_desc, ppoint, ar_ppoint, node_index, task_def_list);
+      size_t task_list_size_after = task_def_list.size();
+      // if tasks is reduced
+      if (task_list_size_after < task_list_size_before) {
+        GELOGE(FAILED,
+               "L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
+               "id:%ld, stream_id:%ld] task. but task num from %zu to %zu.",
+               op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
+               task_list_size_before, task_list_size_after);
+        return FAILED;
+      }
+
+      // reset stream id to ge stream id, as graph load must use ge stream to reassign stream
+      void *ops_kernel_info_store_ptr = kernel_info_store.get();
+      for (size_t idx = task_list_size_before; idx < task_list_size_after; ++idx) {
+        task_def_list[idx].set_stream_id(static_cast<uint32_t>(stream_id));
+        op_name_map[idx] = fusion_node_name;
+        // set opsKernelInfoStorePtr and op_index, the two fields be use in DistributeTask and InitTaskInfo
+        TaskDef *task_def_ptr = &task_def_list[idx];
+        task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(ops_kernel_info_store_ptr));
+      }
+
+      GELOGI(
+        "L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
+        " task finished, generate %u task(s).",
+        op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
+        task_list_size_after - task_list_size_before);
+
+      // record nodes which have call generate task successfully
+      l1_fusion_nodes_seen.insert(fusion_node.get());
+      node_index++;
+    }
+  }
+  // without tag or has been seen, skip directly
+  return ret;
+}
+
 Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
   if (NodeUtils::SetAllAnchorStatus(node) != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "NodeUtils::SetAllAnchorStatus failed.");
@@ -313,23 +485,26 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status TaskGenerator::MarkFirstAndLastNode(ComputeGraphPtr &graph) {
+Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
   std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
   if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
+  int64_t node_index = 0;
   map<string, map<int64_t, std::pair<NodePtr, NodePtr>>> engine_stream_stat;
   for (auto &node : graph->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node->GetOpDesc());
-    string op_kernel_lib_name = node->GetOpDesc()->GetOpKernelLibName();
-    int64_t stream_id = node->GetOpDesc()->GetStreamId();
+    const OpDescPtr &op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+    int64_t stream_id = op_desc->GetStreamId();
+    op_desc->SetId(node_index++);
 
     if (op_kernel_lib_name.empty()) {
       // Reset op kernel lib
-      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(node->GetOpDesc());
-      op_kernel_lib_name = node->GetOpDesc()->GetOpKernelLibName();
+      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(op_desc);
+      op_kernel_lib_name = op_desc->GetOpKernelLibName();
       if (op_kernel_lib_name.empty()) {
         GELOGE(INTERNAL_ERROR, "node:%s(%s) get op kernel lib failed.", node->GetName().c_str(),
                node->GetType().c_str());
@@ -378,11 +553,13 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
   }
   const char *fp_point = std::getenv(kProfilingFpPoint);
   if (fp_point == nullptr) {
+    GELOGW("first forward profiling op name not set.");
     return SUCCESS;
   }
   string fp_point_str = string(fp_point);
   const char *bp_point = std::getenv(kProfilingBpPoint);
   if (bp_point == nullptr) {
+    GELOGW("last backward profiling op name not set.");
     return SUCCESS;
   }
   string bp_point_str = string(bp_point);
@@ -422,6 +599,13 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
   ppoint.fp_index = first_fp;
   ppoint.bp_index = last_bp;
   ppoint.end_index = iter_end;
+  bool train_graph = graph->GetNeedIteration();
+  if (ppoint.fp_index == 0 && train_graph) {
+    GELOGE(FAILED, "First forward op name can't be found in graph for training trace.");
+  }
+  if (ppoint.bp_index == 0 && train_graph) {
+    GELOGE(FAILED, "Last backward op name can't be found in graph for training trace.");
+  }
   return SUCCESS;
 }
 

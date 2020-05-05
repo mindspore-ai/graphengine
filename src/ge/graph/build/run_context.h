@@ -33,26 +33,28 @@ class RunContextUtil {
   virtual ~RunContextUtil();
 
   // Init mem info.
-  Status InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size, uint8_t *weight_mem_base,
-                     uint64_t weight_mem_size);
+  ge::Status InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size, uint8_t *weight_mem_base,
+                         uint64_t weight_mem_size);
 
-  Status CreateRunContext(Model &model_def, const ComputeGraphPtr &graph, Buffer &buffer, const uint64_t session_id);
+  ge::Status CreateRunContext(Model &model_def, const ComputeGraphPtr &graph, Buffer &buffer,
+                              const uint64_t session_id);
 
   RunContext &GetRunContext();
 
   RunContext run_context_;
 
  private:
-  // Create Rt model/stream/event for task generate
-  Status CreateRtModelStreamsAndEvents(uint32_t stream_num, uint32_t event_num);
+  // Create Rt model/stream/event/label for task generate
+  ge::Status CreateRtModelResources(uint32_t stream_num, uint32_t event_num, uint32_t label_num);
 
-  // Destroy Rt model/stream/event
-  void DestroyRtModelStreamAndEvents() noexcept;
+  // Destroy Rt model/stream/event/label
+  void DestroyRtModelResources() noexcept;
 
   // Model
   rtModel_t rt_model_ = nullptr;
   std::vector<rtStream_t> stream_list_;
   std::vector<rtEvent_t> event_list_;
+  std::vector<rtEvent_t> label_list_;
 
   // Mem info
   uint8_t *data_mem_base_ = nullptr;

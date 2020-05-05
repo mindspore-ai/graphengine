@@ -41,7 +41,7 @@ Status FloorDivKernel::FloorDivCheck(const OpDescPtr &op_desc_ptr,
                                      const std::vector<ge::ConstGeTensorPtr> &input) const {
   // check input size
   if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "input opdesc is nullptr.");
+    GELOGW("Input opdesc is nullptr.");
     return PARAM_INVALID;
   }
   if (input.size() != kFloorDivInputSize) {
@@ -256,7 +256,9 @@ Status FloorDivKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Co
     return NOT_CHANGED;
   }
 
-  GeTensorPtr output_ptr = MakeShared<GeTensor>();
+  // Index 0 can always gets a GeTensorDesc object from any OpDescPtr.
+  auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
+  GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;

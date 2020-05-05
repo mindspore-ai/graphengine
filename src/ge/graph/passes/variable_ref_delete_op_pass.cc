@@ -15,13 +15,12 @@
  */
 
 #include "graph/passes/variable_ref_delete_op_pass.h"
-
 #include <string>
-
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
 Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(VariableRefDeleteOpPass);
   GE_CHECK_NOTNULL(graph);
 
   for (auto &node : graph->GetDirectNode()) {
@@ -48,6 +47,7 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
     GELOGD("after VariableRefDeleteOpPass, graph has node: %s, and node name: %s", node->GetType().c_str(),
            node->GetName().c_str());
   }
+  GE_TIMESTAMP_END(VariableRefDeleteOpPass, "GraphManager::VariableRefDeleteOpPass");
 
   return SUCCESS;
 }
@@ -94,8 +94,8 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   GE_CHECK_NOTNULL(var_ref_src_var->GetOpDesc());
   bool is_set_index = ge::AttrUtils::SetInt(var_ref_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, index);
   if (is_set_str && is_set_index) {
-    GELOGD("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
-    GELOGD("[%s]: add attr [ REF_VAR_PRE_PEER_OUT_INDEX: %d ]", var_ref_src_var->GetName().c_str(), index);
+    GELOGI("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
+    GELOGI("[%s]: add attr [ REF_VAR_PRE_PEER_OUT_INDEX: %d ]", var_ref_src_var->GetName().c_str(), index);
   }
 
   return SUCCESS;

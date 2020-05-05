@@ -169,8 +169,8 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
 }
 
 ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::vector<uint64_t> v_aicpu_kernel;
   std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::vector<uint64_t> v_aicpu_kernel;
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
@@ -212,7 +212,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &
 
   GE_CHK_STATUS_RET(SetDevice(static_cast<int32_t>(GetContext().DeviceId())), "Set device failed, model id:%u.",
                     model_id);
-
+  mmTimespec timespec = mmGetTickCount();
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, listener);
   if (davinci_model == nullptr) {
     GELOGE(FAILED, "davinci_model is nullptr");
@@ -239,6 +239,15 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &
     InsertModel(model_id, davinci_model);
 
     GELOGI("Parse model %u success.", model_id);
+
+    if (ProfilingManager::Instance().ProfilingOn()) {
+      davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+                                                       timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
+      davinci_model->SetProfileTime(MODEL_LOAD_END);
+      if (davinci_model->SinkModelProfile(davinci_model) != SUCCESS) {
+        GELOGW("Sink model profile failed.");
+      }
+    }
   } while (0);
 
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
@@ -350,19 +359,16 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<Tensor
   input_data.index = 0;
 
   std::size_t index = 0;
-  for (const auto &item : model->GetOpList()) {
-    auto op = item.second;
+  for (const auto &op : model->GetDataList()) {
     GE_CHECK_NOTNULL(op);
-    if (op->GetType() == DATA) {
-      GE_CHECK_GE(inputs.size(), 1);
-      GE_CHECK_GE(inputs.size() - 1, index);
+    GE_CHECK_GE(inputs.size(), 1);
+    GE_CHECK_GE(inputs.size() - 1, index);
 
-      DataBuffer data;
-      data.data = inputs[index].data.data;
-      data.length = inputs[index].data.length;
-      input_data.blobs.push_back(data);
-      index++;
-    }
+    DataBuffer data;
+    data.data = inputs[index].data.data;
+    data.length = inputs[index].data.length;
+    input_data.blobs.push_back(data);
+    index++;
   }
 
   CHECK_FALSE_EXEC(input_data.blobs.size() >= inputs.size(),
@@ -610,6 +616,21 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
 }
 
+///
+/// @ingroup ge
+/// @brief Get dynamic batch_info
+/// @param [in] model_id
+/// @param [out] batch_info
+/// @return execute result
+///
+Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetDynamicBatchInfo Failed, Invalid Model ID %u !",
+                         model_id);
+
+  return davinci_model->GetDynamicBatchInfo(batch_info);
+}
+
 Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                                        vector<InputOutputDescInfo> &output_desc,
                                                        std::vector<uint32_t> &inputFormats,
@@ -624,10 +645,11 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0, PARAM_INVALID,
-                         "input key file path is not valid!");
+                         "input key file path is not valid, %s", strerror(errno));
   GenModelId(&model_id);
 
   shared_ptr<DavinciModel> davinci_model = nullptr;
+  mmTimespec timespec = mmGetTickCount();
 
   ModelHelper model_helper;
   Status ret = model_helper.LoadModel(model);
@@ -661,6 +683,15 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 
     GELOGI("Parse model %u success.", model_id);
 
+    if (ProfilingManager::Instance().ProfilingOn()) {
+      davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+                                                       timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
+      davinci_model->SetProfileTime(MODEL_LOAD_END);
+      if (davinci_model->SinkModelProfile(davinci_model) != SUCCESS) {
+        GELOGW("Sink model profile failed.");
+      }
+    }
+
     GE_IF_BOOL_EXEC(ret == SUCCESS, device_count++);
     return SUCCESS;
   } while (0);
@@ -681,7 +712,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
                                     const std::vector<uint32_t> &input_queue_ids,
                                     const std::vector<uint32_t> &output_queue_ids) {
   GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0, PARAM_INVALID,
-                         "input key file path is not valid!");
+                         "input key file path is not valid, %s", strerror(errno));
 
   ModelHelper model_helper;
   Status ret = model_helper.LoadModel(model_data);
@@ -778,6 +809,11 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
   ret = om_file_helper.Init(model_data, model_len);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "om file helperInit failed!");
 
+  auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
+  if (partition_table->num == 1) {
+    GELOGE(FAILED, "om model is error,please use executable om model");
+    return FAILED;
+  }
   ModelPartition task_partition;
   if (om_file_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
     GELOGE(FAILED, "get task model partition failed.");

@@ -15,7 +15,6 @@
  */
 
 #include "graph/passes/reshape_remove_pass.h"
-
 #include "graph/passes/pass_utils.h"
 
 namespace ge {

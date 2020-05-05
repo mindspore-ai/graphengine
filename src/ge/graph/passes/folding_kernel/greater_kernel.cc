@@ -31,6 +31,7 @@
 
 using domi::Status;
 using domi::SUCCESS;
+using ge::fp16_t;
 
 namespace ge {
 namespace {

@@ -29,6 +29,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using ge::fp16_t;
+
 namespace ge {
 namespace {
 const size_t kMaximumInputNum = 2;
@@ -166,11 +168,11 @@ Status MaximumKernel::MaximumCheck(const std::vector<ConstGeTensorPtr> &input) {
   }
   ConstGeTensorPtr input_x1 = input.at(kMaximumFirstInput);
   ConstGeTensorPtr input_x2 = input.at(kMaximumSecondInput);
-  GE_CHECK_NOTNULL(input_x2);
+  GE_CHECK_NOTNULL(input_x1);
   GE_CHECK_NOTNULL(input_x2);
 
   // check whether there is data in Tensor
-  if (input_x1->GetData().size() == 0 || input_x2->GetData().size() == 0) {
+  if ((input_x1->GetData().size() == 0) || (input_x2->GetData().size() == 0)) {
     GELOGI("Check data size fail. x1: %zu, x2: %zu", input_x1->GetData().size(), input_x2->GetData().size());
     return NOT_CHANGED;
   }

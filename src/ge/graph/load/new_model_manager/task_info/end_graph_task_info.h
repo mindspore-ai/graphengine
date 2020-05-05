@@ -29,8 +29,13 @@ class EndGraphTaskInfo : public TaskInfo {
 
   Status Distribute() override;
 
+  uint32_t GetTaskID() override { return task_id_; }
+
  private:
   rtModel_t model_;
+  DavinciModel *davinci_model_;
+  uint32_t task_id_;
 };
+
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_END_GRAPH_TASK_INFO_H_

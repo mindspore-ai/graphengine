@@ -92,13 +92,13 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   auto workspace_bytes = op_desc->GetWorkspaceBytes();
   if (!workspace_bytes.empty()) {
     uint64_t workspace_mem_size_tmp = workspace_bytes[0];
-    GELOGI("hccl need work_space_mem_size=%lu", workspace_mem_size_tmp);
+    GELOGI("hccl need workSpaceMemSize=%lu", workspace_mem_size_tmp);
     if (workspace_mem_size_tmp != 0) {
       workspace_mem_size_ = workspace_mem_size_tmp;
       vector<void *> workspace_data_addrs =
         ModelUtils::GetWorkspaceDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
       if (!workspace_data_addrs.empty()) {
-        GELOGI("Get work_space_addr");
+        GELOGI("Get workSpaceAddr");
         workspace_addr_ = workspace_data_addrs[0];
       }
     }
@@ -106,10 +106,8 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   // GE's new process: hccl declares the number of streams required, creates a stream by GE, and sends it to hccl
   int64_t hccl_stream_num = 0;
   if (!ge::AttrUtils::GetInt(op_desc, "used_stream_num", hccl_stream_num)) {
-    GELOGW("op_desc has no attr used_stream_num!");
+    GELOGI("op_desc has no attr used_stream_num!");
   }
-
-  GELOGI("hcclStreamNum =%ld", hccl_stream_num);
 
   for (int64_t i = 0; i < hccl_stream_num; ++i) {
     rtStream_t stream = nullptr;
@@ -131,6 +129,7 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
     davinci_model->PushHcclStream(stream);
   }
 
+  GELOGI("HcclTaskInfo Init Success, hcclStreamNum =%ld", hccl_stream_num);
   return SUCCESS;
 }
 
@@ -151,7 +150,7 @@ Status HcclTaskInfo::Distribute() {
     return INTERNAL_ERROR;
   }
 
-  GELOGI("Call function LoadTask end.");
+  GELOGI("HcclTaskInfo Distribute Success.");
   return SUCCESS;
 }
 

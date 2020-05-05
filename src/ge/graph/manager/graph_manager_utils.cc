@@ -21,8 +21,8 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "common/string_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/compute_graph.h"
 #include "graph/op_desc.h"
 #include "graph/optimize/common/params.h"
@@ -96,29 +96,19 @@ Status SubGraphInfo::FreeInOutBuffer() {
   }
 }
 
-GraphModelListener::GraphModelListener() : result_code_(0), is_finished_(false), mutex_(nullptr), condition_(nullptr) {}
-
-Status GraphModelListener::SetCondition(std::mutex *mutex, std::condition_variable *cond) {
-  if (mutex == nullptr || cond == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphManager] param is NULL.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  mutex_ = mutex;
-  condition_ = cond;
-  return SUCCESS;
-}
+GraphModelListener::GraphModelListener(std::mutex &mutex, std::condition_variable &cond)
+    : result_code_(0), is_finished_(false), mutex_(mutex), condition_(cond) {}
 
 Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result) {
   GELOGI(
     "[GraphManager] graph compute call back, model_id:%u, task_id:%u, "
     "resultCode:%u.",
     model_id, task_id, result);
-  GE_IF_BOOL_EXEC(condition_ == nullptr, GELOGE(FAILED, "[GraphModelListener] condition is null."); return FAILED);
-  std::lock_guard<std::mutex> lock(*mutex_);
+
+  std::lock_guard<std::mutex> lock(mutex_);
   result_code_ = result;
   is_finished_ = true;
-  condition_->notify_all();
+  condition_.notify_all();
 
   return SUCCESS;
 }
@@ -132,12 +122,7 @@ uint32_t GraphModelListener::GetResultCode() const {
 }
 
 Status GraphModelListener::ResetResult() {
-  if (mutex_ == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphManager] param is NULL.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  std::lock_guard<std::mutex> lock(*mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   result_code_ = 0;
   is_finished_ = false;
 

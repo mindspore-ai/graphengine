@@ -45,7 +45,7 @@ class MemoryDumper {
    *  @return FAILED   output failed
    *  @author
    */
-  static Status DumpToFile(const char *filename, void *data, uint32_t len);
+  static Status DumpToFile(const char *filename, void *data, int64_t len);
 
   /** @ingroup domi_common
    *  @brief open the dump file

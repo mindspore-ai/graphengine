@@ -93,7 +93,12 @@ TEST_F(UtestGraphPassesFoldingKernelMulKernel, DoubleNotchanged) {
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(MUL);
   Status status = kernel->Compute(op_desc_ptr, input, outputs);
 
-  EXPECT_EQ(NOT_CHANGED, status);
+  const double *output_data = reinterpret_cast<const double *>(outputs[0]->GetData().data());
+  double diff = output_data[0] - (15.0);
+  bool is_same = fabs(diff) < 0.00001 ? true : false;
+
+  EXPECT_EQ(is_same, true);
+  EXPECT_EQ(domi::SUCCESS, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelMulKernel, MulOverflow) {

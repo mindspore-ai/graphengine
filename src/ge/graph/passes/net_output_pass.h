@@ -18,7 +18,6 @@
 #define GE_GRAPH_PASSES_NET_OUTPUT_PASS_H_
 
 #include <map>
-#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
@@ -177,7 +176,7 @@ class NetOutputPass : public GraphPass {
   ///
   Status ProcessWithNetoutput(const ge::ComputeGraphPtr &graph, const ge::NodePtr &output_node);
   ///
-  /// check node whether exist in user-set output nodes
+  /// check node wether exist in user-set output nodes
   /// @param [in] graph: ComputeGraph
   /// @param [in] net_out_node: The netOutput node
   /// @return SUCCESS: Execution succeed

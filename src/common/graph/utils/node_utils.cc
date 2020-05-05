@@ -15,10 +15,12 @@
  */
 
 #include "utils/node_utils.h"
+#include "graph/utils/graph_utils.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
+#include "graph/debug/ge_attr_define.h"
 #include "utils/tensor_utils.h"
 #include "utils/type_utils.h"
 
@@ -109,6 +111,7 @@ graphStatus NodeUtils::GetDataOutAnchorAndControlInAnchor(const NodePtr &node_pt
 graphStatus NodeUtils::ClearInDataAnchor(const NodePtr &node_ptr, const InDataAnchorPtr &in_data_anchor) {
   GE_CHK_BOOL_EXEC(node_ptr != nullptr && in_data_anchor != nullptr, return GRAPH_FAILED,
                    "node or in_data_anchor is nullptr");
+
   bool find_flag = false;
   uint32_t index = 0;
   vector<InDataAnchorPtr>::iterator it = node_ptr->in_data_anchors_.end();
@@ -356,6 +359,47 @@ graphStatus NodeUtils::UpdateInputShape(const Node &node, uint32_t index, const 
     return GRAPH_PARAM_INVALID;
   }
   input_desc->SetShape(shape);
+  return GRAPH_SUCCESS;
+}
+std::string NodeUtils::GetNodeType(const Node &node) {
+  if (node.GetType() != FRAMEWORKOP) {
+    return node.GetType();
+  }
+  std::string type;
+  (void)AttrUtils::GetStr(node.GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type);
+  return type;
+}
+ComputeGraphPtr NodeUtils::GetSubgraph(const Node &node, uint32_t index) {
+  auto op_desc = node.GetOpDesc();
+  if (op_desc == nullptr) {
+    return nullptr;
+  }
+  auto root_graph = GraphUtils::FindRootGraph(node.GetOwnerComputeGraph());
+  if (root_graph == nullptr) {
+    return nullptr;
+  }
+  return root_graph->GetSubgraph(op_desc->GetSubgraphInstanceName(index));
+}
+
+graphStatus NodeUtils::AddSubgraph(Node &node, const ComputeGraphPtr &subgraph) {
+  if (subgraph == nullptr) {
+    GE_LOGE("Failed to add subgraph to node %s, null subgraph", node.GetName().c_str());
+    return GRAPH_PARAM_INVALID;
+  }
+  auto op_desc = node.GetOpDesc();
+  if (op_desc == nullptr) {
+    return GRAPH_PARAM_INVALID;
+  }
+  auto root_graph = GraphUtils::FindRootGraph(node.GetOwnerComputeGraph());
+  if (root_graph == nullptr) {
+    GE_LOGE("Failed to add subgraph to node %s, null root graph", node.GetName().c_str());
+    return GRAPH_PARAM_INVALID;
+  }
+  op_desc->AddSubgraphInstanceName(subgraph->GetName());
+  subgraph->SetParentNode(node.shared_from_this());
+  subgraph->SetParentGraph(node.GetOwnerComputeGraph());
+  root_graph->AddSubgraph(subgraph);
+
   return GRAPH_SUCCESS;
 }
 }  // namespace ge

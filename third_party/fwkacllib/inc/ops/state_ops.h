@@ -55,21 +55,21 @@ pass the reference to the variable tensor to the matching DestroyTemporaryVariab
 *@par Attributes:
 *@li shape: A required list of int32 or int64. The shape of the variable tensor.
 *@li dtype: Required. The type of elements in the variable tensor.
-*@li var_name: An optional string. The name of the variable to be created. 
+*@li var_name: An optional string. The name of the variable to be created.
 
 *@par Outputs:
 *y: The created variable tensor.
 */
 REG_OP(TemporaryVariable)
     .OUTPUT(y, TensorType::ALL())
-    .ATTR(shape, ListInt, {})
-    .ATTR(dtype, Int, 0)
+    .REQUIRED_ATTR(shape, ListInt)
+    .REQUIRED_ATTR(dtype, Int)
     .ATTR(var_name, String, "")
     .OP_END_FACTORY_REG(TemporaryVariable)
 
 /**
 *@brief Destroys the temporary variable and returns its final value. \n
-All other uses of the temporary variable must have been executed before this op. 
+All other uses of the temporary variable must have been executed before this op.
 
 *@par Inputs:
 *x: A reference to the temporary variable tensor.
@@ -102,6 +102,30 @@ REG_OP(IsVariableInitialized)
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsVariableInitialized)
 
+REG_OP(VarIsInitializedOp)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
+                          DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_BOOL}))
+    .OP_END_FACTORY_REG(VarIsInitializedOp)
+
+/**
+*@brief Increments 'ref' until it reaches 'limit'.
+
+*@par Inputs:
+*Inputs include: \n
+*ref: A mutable Tensor. Must be one of the following types: int32, int64.
+
+*@par Attributes:
+*limit: An int. If incrementing ref would bring it above limit, instead \n
+ generates an 'OutOfRange' error.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as ref.
+
+*@attention Constraints:\n
+*-The implementation for CountUpTo on Ascend uses AICPU, with bad performance.\n
+
+*/
 REG_OP(CountUpTo)
     .INPUT(ref, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT32, DT_INT64}))

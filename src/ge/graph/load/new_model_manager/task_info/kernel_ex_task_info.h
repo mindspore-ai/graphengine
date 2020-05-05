@@ -18,6 +18,7 @@
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_EX_TASK_INFO_H_
 
 #include "graph/load/new_model_manager/task_info/task_info.h"
+#include "graph/op_desc.h"
 
 namespace ge {
 class KernelExTaskInfo : public TaskInfo {
@@ -41,13 +42,18 @@ class KernelExTaskInfo : public TaskInfo {
 
   uint32_t GetTaskID() override { return task_id_; }
 
+  uint32_t GetStreamId() override { return stream_id_; }
+
   uintptr_t GetDumpArgs() override {
-    auto ret = reinterpret_cast<uintptr_t >(dump_args_);
+    auto ret = reinterpret_cast<uintptr_t>(dump_args_);
     return ret;
   }
 
  private:
+  Status CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param, const OpDescPtr &op_desc);
+
   uint32_t task_id_;
+  uint32_t stream_id_;
   uint32_t dump_flag_;
   uint32_t kernel_buf_size_;
   DavinciModel *davinci_model_;

@@ -47,8 +47,18 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
 
   bool to_be_deleted = true;
   // compare input and output dims
-  std::vector<int64_t> input_4dims = op_desc_ptr->GetInputDesc(0).GetShape().GetDims();
-  std::vector<int64_t> output_4dims = op_desc_ptr->GetOutputDesc(0).GetShape().GetDims();
+  if (op_desc_ptr->GetAllInputsDesc().empty() || op_desc_ptr->GetAllOutputsDesc().empty()) {
+    GELOGE(INTERNAL_ERROR, "Input or output num is zero. node name:%s, input size:%zu, output size:%zu",
+           op_desc_ptr->GetName().c_str(), op_desc_ptr->GetAllInputsDesc().size(),
+           op_desc_ptr->GetAllOutputsDesc().size());
+    return INTERNAL_ERROR;
+  }
+  const auto &input_desc = op_desc_ptr->MutableInputDesc(0);
+  const auto &output_desc = op_desc_ptr->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL(input_desc);
+  GE_CHECK_NOTNULL(output_desc);
+  std::vector<int64_t> input_4dims = input_desc->GetShape().GetDims();
+  std::vector<int64_t> output_4dims = output_desc->GetShape().GetDims();
 
   if (input_4dims.size() != output_4dims.size()) {
     GELOGI("Input and output dim size is not equal.Keep this reshape op.");

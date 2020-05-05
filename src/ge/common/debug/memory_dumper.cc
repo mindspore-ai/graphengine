@@ -37,14 +37,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY MemoryDumper::~MemoryDumper() {
 
 // Dump the data to the file
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile(const char *filename, void *data,
-                                                                                 uint32_t len) {
-  GE_CHK_BOOL_RET_STATUS(!(filename == nullptr || data == nullptr || len == 0), FAILED,
-                         "Incorrect parameter. filename is nullptr || data is nullptr || len is 0");
-
+                                                                                 int64_t len) {
 #ifdef FMK_SUPPORT_DUMP
+  GE_CHECK_NOTNULL(filename);
+  GE_CHECK_NOTNULL(data);
+  if (len == 0) {
+    GELOGE(FAILED, "len is 0.");
+    return PARAM_INVALID;
+  }
+
   // Open the file
   int fd = OpenFile(filename);
-  if (kInvalidFd == fd) {
+  if (fd == kInvalidFd) {
     GELOGE(FAILED, "Open file failed.");
     return FAILED;
   }
@@ -54,7 +58,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
   int32_t mmpa_ret = mmWrite(fd, data, len);
   // mmWrite return -1:Failed to write data to file；return -2:Invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    GELOGE(FAILED, "Write to file failed. errno = %d", mmpa_ret);
+    GELOGE(FAILED, "Write to file failed. errno = %d, %s", mmpa_ret, strerror(errno));
     ret = FAILED;
   }
 
@@ -65,7 +69,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
   }
 
   return ret;
-
 #else
   GELOGW("need to define FMK_SUPPORT_DUMP for dump op input and output.");
   return SUCCESS;
@@ -102,12 +105,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Dump(void 
   int32_t mmpa_ret = mmWrite(fd_, data, len);
   // mmWrite return -1:failed to write data to file；return -2:invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    GELOGE(FAILED, "Write to file failed. errno = %d", mmpa_ret);
+    GELOGE(FAILED, "Write to file failed. errno = %d, %s", mmpa_ret, strerror(errno));
     return FAILED;
   }
 
   return SUCCESS;
-
 #else
   GELOGW("need to define FMK_SUPPORT_DUMP for dump op input and output.");
   return SUCCESS;
@@ -155,7 +157,7 @@ int MemoryDumper::OpenFile(const char *filename) {
 
   int32_t fd = mmOpen2(real_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
-    GELOGE(kInvalidFd, "Open file failed. errno = %d", fd);
+    GELOGE(kInvalidFd, "open file failed. errno = %d, %s", fd, strerror(errno));
     return kInvalidFd;
   }
   return fd;

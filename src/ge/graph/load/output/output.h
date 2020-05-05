@@ -23,13 +23,12 @@
 #include "common/debug/log.h"
 #include "common/op/attr_value_util.h"
 #include "common/op/ge_op_utils.h"
-#include "common/op/op_parser_util.h"
 #include "common/types.h"
 #include "common/util.h"
 #include "common/ge_types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/op_desc.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 using std::string;
@@ -68,7 +67,7 @@ class Output {
   /// @brief Get Output data and size.
   /// @return void
   ///
-  void GetOutputData(vector<void *> &v_data_addr, vector<uint32_t> &v_data_size);
+  void GetOutputData(vector<void *> &v_data_addr, vector<int64_t> &v_data_size);
 
   // Copy assignment operator and copy constructor are deleted
   Output &operator=(const Output &output) = delete;
@@ -88,7 +87,7 @@ class Output {
   // Input descriptions
   size_t input_num_;
   vector<void *> v_input_data_addr_;  // init as:buf_base + op_def_->input(i));
-  vector<uint32_t> v_input_size_;
+  vector<int64_t> v_input_size_;
 };
 }  // namespace ge
 

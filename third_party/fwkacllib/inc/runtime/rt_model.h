@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 typedef enum tagModelTaskType {
   RT_MODEL_TASK_KERNEL = 0,
@@ -44,13 +44,19 @@ typedef enum tagModelTaskType {
   RT_MODEL_TASK_RDMA_SEND,
   RT_MODEL_TASK_EVENT_RESET = 18,
   RT_MODEL_TASK_MODEL_END_GRAPH,
-  RT_MODEL_TASK_STREAM_SWITCH_N
+  RT_MODEL_TASK_STREAM_SWITCH_N,
+  RT_MODEL_TASK_RDMA_DB_SEND
 } rtModelTaskType_t;
 
-typedef enum tagModelStreamType {
-  RT_MODEL_HEAD_STREAM = 0,
-  RT_MODEL_WAIT_ACTIVE_STREAM = 1
+typedef enum tagModelStreamType { 
+  RT_MODEL_HEAD_STREAM = 0, 
+  RT_MODEL_WAIT_ACTIVE_STREAM = 1 
 } rtModelStreamType_t;
+
+typedef enum tagModelQueueFlag {
+  RT_MODEL_INPUT_QUEUE = 0,
+  RT_MODEL_OUTPUT_QUEUE = 1
+} rtModelQueueFlag_t;
 
 #define EXECUTOR_NONE ((uint32_t)0x0)
 #define EXECUTOR_TS ((uint32_t)0x01)
@@ -83,6 +89,11 @@ typedef struct tagModelStreamInfo {
   uint32_t streamFlag;
 } rtModelStreamInfo_t;
 
+typedef struct tagModelQueueInfo {
+  uint32_t queueID;
+  uint32_t flag;
+} rtModelQueueInfo_t;
+
 typedef struct tagAicpuModelInfo {
   uint32_t moduleID;
   uint32_t tsId;
@@ -90,6 +101,8 @@ typedef struct tagAicpuModelInfo {
   uint16_t aicpuTaskNum;
   uint64_t streamInfoPtr;
   uint64_t aicpuTaskPtr;
+  uint16_t queueSize;
+  uint64_t queueInfoPtr;
 } rtAicpuModelInfo_t;
 
 typedef struct tagKernelTaskInfo {
@@ -189,6 +202,12 @@ typedef struct tagrtRdmaSendTaskInfo {
   uint32_t reserved[8];
 } rtRdmaSendTaskInfo_t;
 
+typedef struct tagrtRdmaDbSendTaskInfo {
+  uint64_t dbInfo;
+  uint32_t dbIndex;
+  uint32_t reserved[7]; // offset 7
+} rtRdmaDbSendTaskInfo_t;
+
 typedef struct tagrtModelEndGraphTaskInfo {
   uint32_t modelId;
   uint32_t executorFlag;
@@ -212,6 +231,7 @@ typedef struct tagTaskInfo {
     rtNotifyTaskInfo_t notifyTask;
     rtReduceAsyncTaskInfo_t reduceAsyncTask;
     rtRdmaSendTaskInfo_t rdmaSendTask;
+    rtRdmaDbSendTaskInfo_t rdmaDbSendTask;
     rtModelEndGraphTaskInfo_t modelEndGraphTask;
     rtStreamSwitchNTaskInfo_t streamSwitchNTask;
     uint32_t reserved[10];
@@ -309,6 +329,17 @@ RTS_API rtError_t rtEndGraph(rtModel_t model, rtStream_t stream);
 
 /**
  * @ingroup rt_model
+ * @brief add a end graph task with flag to stream
+ * @param [in] model   model to execute
+ * @param [in] end graph stream
+ * @param [in] flags   AICPU datadump
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input handle
+ */
+RTS_API rtError_t rtEndGraphEx(rtModel_t model, rtStream_t stream, uint32_t flags);
+
+/**
+ * @ingroup rt_model
  * @brief add a end graph task to stream
  * @param [in] model   model to execute
  * @param [in] flags EXECUTOR_TS | EXECUTOR_AICPU
@@ -325,6 +356,27 @@ RTS_API rtError_t rtModelExecutorSet(rtModel_t model, uint8_t flags);
  * @return RT_ERROR_INVALID_VALUE for error input handle
  */
 RTS_API rtError_t rtModelAbort(rtModel_t model);
+
+/**
+ * @ingroup rt_model
+ * @brief bind queue
+ * @param [in] model     model to bind
+ * @param [in] queueId   queueId to bind
+ * @param [in] flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input handle
+ */
+RTS_API rtError_t rtModelBindQueue(rtModel_t model, uint32_t queueId, rtModelQueueFlag_t flag);
+
+/**
+ * @ingroup rt_model
+ * @brief get model id
+ * @param [in] model
+ * @param [out] modelId   model id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input handle
+ */
+RTS_API rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId);
 
 #ifdef __cplusplus
 }

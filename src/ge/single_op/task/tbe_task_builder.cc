@@ -22,8 +22,8 @@
 
 #include "common/helper/model_helper.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/task_info/task_info.h"
 #include "graph/manager/graph_var_manager.h"
 #include "runtime/rt.h"
@@ -201,8 +201,8 @@ Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task) {
         return INTERNAL_ERROR;
       }
     } else {
-        delete holder;
-        holder = nullptr;
+      delete holder;
+      holder = nullptr;
     }
   }
 

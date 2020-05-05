@@ -166,15 +166,150 @@ REG_OP(ROIAlignGrad)
 *output: Outputs the feature sample of each ROI position. The format is 5HD. The axis N is the number of input ROIs. Axes H, W, and C are consistent with the values of "pooled_height", "pooled_width", and "features", respectively.
 */
 REG_OP(ROIAlign)
-    .INPUT(features, TensorType({DT_FLOAT}))
-    .INPUT(rois, TensorType({DT_FLOAT}))
+    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(rois_n, TensorType({DT_INT32}))
-    .OUTPUT(output, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(spatial_scale, Float)
     .REQUIRED_ATTR(pooled_height, Int)
     .REQUIRED_ATTR(pooled_width, Int)
     .ATTR(sample_num, Int, 2)
+    .ATTR(roi_end_mode, Int, 1)
     .OP_END_FACTORY_REG(ROIAlign)
+
+/**
+*@brief Performs SSD prior box detection.
+
+*@par Inputs:
+* Two inputs, including:
+*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li img: source image. Has the same type and format as "x".
+
+*@par Attributes:
+*@li min_size: A required float32, specifying the minimum edge length of a square prior box.
+*@li max_size: A required float32, specifying the maximum edge length of a square prior box: sqrt(min_size * max_size)
+*@li aspect_ratio: An required float32, specifying the aspect ratio for generated rectangle boxes. The height is min_size/sqrt(aspect_ratio), the width is min_size*sqrt(aspect_ratio). Defaults to "1.0".
+*@li img_h: An optional int32, specifying the source image height. Defaults to "0".
+*@li img_w: An optional int32, specifying the source image width. Defaults to "0".
+*@li step_h: An optional float32, specifying the height step for mapping the center point from the feature map to the source image. Defaults to "0.0".
+*@li step_w: An optional float32, specifying the width step for mapping the center point from the feature map to the source image. Defaults to "0.0".
+*@li flip: An optional bool. If "True", "aspect_ratio" will be flipped. Defaults to "True".
+*@li clip: An optional bool. If "True", a prior box is clipped to within [0, 1]. Defaults to "False".
+*@li offset: An optional float32, specifying the offset. Defaults to "0.5".
+*@li variance: An optional float32, specifying the variance of a prior box, either one or four variances. Defaults to "0.1" (one value).
+
+*@par Outputs:
+*y: An ND tensor of type float32 or float16, specifying the prior box information, including its coordinates and variance.
+
+*@attention Constraints:\n
+* This operator applies only to SSD networks.
+*@see SSDDetectionOutput()
+*/
+ REG_OP(PriorBox)
+     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .REQUIRED_ATTR(min_size, ListFloat)
+     .REQUIRED_ATTR(max_size, ListFloat)
+     .REQUIRED_ATTR(aspect_ratio, ListFloat)
+     .ATTR(img_h, Int, 0)
+     .ATTR(img_w, Int, 0)
+     .ATTR(step_h, Float, 0.0)
+     .ATTR(step_w, Float, 0.0)
+     .ATTR(flip, Bool, true)
+     .ATTR(clip, Bool, false)
+     .ATTR(offset, Float, 0.5)
+     .ATTR(variance, ListFloat, {0.1})
+     .OP_END_FACTORY_REG(PriorBox);
+
+/**
+*@brief Performs SSD prior box detection, with four additional matrices and the "aspect_ratio" attribute deleted compared to PriorBox.
+
+*@par Inputs:
+* Six inputs, including:
+*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li img: source image. Has the same type and format as "x".
+*@li data_h: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map height.
+*@li data_w: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the matrix for indexing the feature map width.
+*@li box_height: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the height of each prior box.
+*@li box_width: An NC1HWC0 or NCHW tensor of type float32 or float16, specifying the width of each prior box.
+
+*@par Attributes:
+*@li min_size: A required float32, specifying the minimum edge length of a square prior box.
+*@li max_size: A required float32, specifying the maximum edge length of a square prior box: sqrt(min_size * max_size)
+*@li img_h: An optional int32, specifying the height of the source image.
+*@li img_w: An optional int32, specifying the width of the source image.
+*@li step_h: An optional float32, specifying the height step for mapping the center point from the feature map to the source image.
+*@li step_w: An optional float32, specifying the width step for mapping the center point from the feature map to the source image.
+*@li flip: An optional bool. If "True", "aspect_ratio" will be flipped. Defaults to "True".
+*@li clip: An optional bool. If "True", a prior box is clipped to within [0, 1]. Defaults to "False".
+*@li offset: An optional float32, specifying the offset. Defaults to "0.5".
+*@li variance: An optional float32, specifying the variance of a prior box, either one or four variances. Defaults to "0.1" (one value).
+
+*@par Outputs:
+*y: An ND tensor of type float32 or float16, specifying the prior box information, including its coordinates and variance.
+
+*@attention Constraints:\n
+* This operator applies only to SSD networks.
+*@see SSDDetectionOutput()
+*/
+ REG_OP(PriorBoxD)
+     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(data_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(data_w, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(box_height, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(box_width, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .REQUIRED_ATTR(min_size, ListFloat)
+     .REQUIRED_ATTR(max_size, ListFloat)
+     .ATTR(img_h, Int, 0)
+     .ATTR(img_w, Int, 0)
+     .ATTR(step_h, Float, 0.0)
+     .ATTR(step_w, Float, 0.0)
+     .ATTR(flip, Bool, true)
+     .ATTR(clip, Bool, false)
+     .ATTR(offset, Float, 0.5)
+     .ATTR(variance, ListFloat, {0.1})
+     .OP_END_FACTORY_REG(PriorBoxD);
+
+/**
+*@brief Performs Position Sensitive ROI Pooling.
+
+*@par Inputs:
+* Two inputs, including:
+*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+* map, dimension C1 must be equal to
+* (int(output_dim+15)/C0))*group_size*group_size.
+*@li rois: A tensor of type float16 or float32, with shape
+* [batch, 5, rois_num], describing the ROIs, each ROI consists of five
+* elements: "batch_id", "x1", "y1", "x2", and "y2", which "batch_id" indicates
+* the index of the input feature map, "x1", "y1", "x2", or "y2" must be
+* greater than or equal to "0.0".
+
+*@par Attributes:
+*@li output_dim: A required int32, specifying the number of output channels,
+* must be greater than 0.
+*@li group_size: A required int32, specifying the number of groups to encode
+* position-sensitive score maps, must be within the range (0, 128).
+*@li spatial_scale: A required scaling factor for mapping the input
+* coordinates to the ROI coordinates.
+
+*@par Outputs:
+*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+* feature map.
+
+*@attention Constraints:
+* HC1HWC0: channel must be Group_size squared, rois_num is a multiple of 16
+*/
+REG_OP(PSROIPooling)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(rois, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(output_dim, Int, 0)
+    .ATTR(group_size, Int, 0)
+    .ATTR(spatial_scale, Float, 0.0625)
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(PSROIPooling)
 
 }  // namespace ge
 

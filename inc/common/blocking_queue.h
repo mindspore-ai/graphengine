@@ -18,7 +18,6 @@
 #define INC_COMMON_BLOCKING_QUEUE_H_
 
 #include <stdint.h>
-
 #include <condition_variable>
 #include <list>
 #include <mutex>
@@ -87,7 +86,7 @@ class BlockingQueue {
     is_stoped_ = false;
   }
 
-  // if the queue stop , the function to release the unprocessed items will be call
+  // if the queue is stoped ,need call this function to release the unprocessed items
   std::list<T> GetRemainItems() {
     std::unique_lock<std::mutex> lock(mutex_);
 

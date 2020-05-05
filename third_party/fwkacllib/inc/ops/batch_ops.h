@@ -22,37 +22,35 @@
 namespace ge {
 
 /**
-*@brief Creates batches of tensors in tensors.
+*@brief Creates batches of tensors in "x_tensors".
 
-*@par Inputs:
-*The input x_tensors can be a list or a dictionary of tensors. Inputs include: \n
-*x_tensors:The list or dictionary of tensors to enqueue.
+*@par Inputs: 
+*Input "x_tensors" is a list or a dictionary of tensors. \n
+*x_tensors: The list or dictionary of tensors to enqueue.
 
-*@par Attributes:
-*@li num_batch_threads:The number of threads enqueuing tensors. The batching will be nondeterministic if num_batch_threads > 1.
-*@li max_batch_size:Max batch size pulled from the queue.
-*@li max_enqueued_batches:Maximum number of batches pulled from the queue.
-*@li batch_timeout_micros:Batch processing timeout in microseconds unit.
-*@li allowed_batch_sizes:Allowed batch size pulled from the queue.
-*@li grad_timeout_micros:Calculate the gradient batch processing timeout in microseconds unit.
-*@li container:If non-empty, this queue is placed in the given container. Otherwise, a default container is used.
-*@li shared_name:If set, this queue will be shared under the given name across multiple sessions.
-*@li batching_queue:queue resource container.
+*@par Attributes: 
+*@li num_batch_threads: The number of threads enqueuing "x_tensors". \n
+The batching will be nondeterministic if "num_batch_threads" > 1.
+*@li max_batch_size: The maximum batch size pulled from the queue.
+*@li max_enqueued_batches: The maximum number of batches pulled from the queue.
+*@li batch_timeout_micros: The batch processing timeout, in microseconds.
+*@li allowed_batch_sizes: The allowed batch size pulled from the queue.
+*@li grad_timeout_micros: The gradient batch processing timeout, \n
+in microseconds.
+*@li container: If non-empty, this queue is placed in the given container. \n
+Otherwise, a default container is used.
+*@li shared_name: If set, this queue will be shared under the given name \n
+across multiple sessions.
+*@li batching_queue: The queue resource container.
 
-*@par Outputs:
-*@li y_index:Tensor, index of a BatchTensor. Must be in row-major order.
-*@li y_id:Tensor, id of a BatchTensor. Must be in row-major order.
-*@li y_tensors:A list or dictionary of tensors with the same types as tensors.
+*@par Outputs: 
+*@li y_index: A Tensor. The index of a BatchTensor. Must be in row-major order.
+*@li y_id: A Tensor. The ID of a BatchTensor. Must be in row-major order.
+*@li y_tensors: A list or dictionary of tensors with \n
+the same types as "x_tensors".
 
 *@attention Constraints: \n
-*-The implementation for Batch on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*Batch runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(Batch)
@@ -76,29 +74,24 @@ REG_OP(Batch)
 /**
 *@brief Reverses the operation of Batch for a single output Tensor.
 
-*@par Inputs:
-*The input x_tensors can be a list or a dictionary of tensors. Inputs include: \n
-* @li x_tensors:The list or dictionary of tensors to enqueue.
-* @li index:The matching batch_index obtained from Batch.
-* @li id:The id scalar emitted by Batch.
+*@par Inputs: 
+*Input "x_tensors" is a list or a dictionary of tensors. \n
+* @li x_tensors: The list or dictionary of tensors to enqueue.
+* @li index: The matching "batch_index" obtained from Batch.
+* @li id: The "id" scalar emitted by Batch.
 
-*@par Attributes:
-*@li timeout_micros:Calculate the unbatch processing timeout in microseconds unit.
-*@li container:If non-empty, this queue is placed in the given container. Otherwise, a default container is used.
-*@li shared_name:If set, this queue will be shared under the given name across multiple sessions.
+*@par Attributes: 
+*@li timeout_micros: The unbatch processing timeout, in microseconds.
+*@li container: If non-empty, this queue is placed in the given container. \n
+Otherwise, a default container is used.
+*@li shared_name: If set, this queue will be shared under the given name \n
+across multiple sessions.
 
-*@par Outputs:
-*y_tensor:A list or dictionary of tensors with the same types as tensors.
+*@par Outputs: 
+*y_tensor: A list or dictionary of tensors with the same types as "x_tensors".
 
 *@attention Constraints: \n
-*-The implementation for Unbatch on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*Unbatch runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(Unbatch)
@@ -114,31 +107,27 @@ REG_OP(Unbatch)
   .OP_END_FACTORY_REG(Unbatch)
 
 /**
-*@brief Acts like Batch but using the given batch_index index of batching things as they become available.
+*@brief Acts like Batch but using the given "batch_index" index of batching \n
+things as they become available.
 
-*@par Inputs:
-*The input x_input can be a list or a dictionary of tensors. Inputs include: \n
-* @li x_input:The input to the Unbatch operation.
-* @li index:The batch_index given to the Unbatch operation.
-* @li id:The id scalar emitted by Batch.
-* @li grad:The downstream gradient.
+*@par Inputs: 
+*Input "x_input" is a list or a dictionary of tensors. \n
+* @li x_input: The input to the Unbatch operation.
+* @li index: The batch_index given to the Unbatch operation.
+* @li id: The "id" scalar emitted by Batch.
+* @li grad: The downstream gradient.
 
-*@par Attributes:
-*@li container:If non-empty, this queue is placed in the given container. Otherwise, a default container is used.
-*@li shared_name:If set, this queue will be shared under the given name across multiple sessions.
+*@par Attributes: 
+*@li container: If non-empty, this queue is placed in the given container. \n
+Otherwise, a default container is used.
+*@li shared_name: If set, this queue will be shared under the given name \n
+across multiple sessions.
 
-*@par Outputs:
-*y_grad:The return value, either an empty tensor or the batched gradient.
+*@par Outputs: 
+*y_grad: The return value, either an empty tensor or the batched gradient.
 
 *@attention Constraints: \n
-*-The implementation for UnbatchGrad on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UnbatchGrad runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(UnbatchGrad)

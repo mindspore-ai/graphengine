@@ -52,8 +52,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ThreadPool {
       return fail_future;
     }
 
-    auto bind_func = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
-    auto task = ge::MakeShared<std::packaged_task<retType()>>(bind_func);
+    auto bindFunc = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
+    auto task = ge::MakeShared<std::packaged_task<retType()>>(bindFunc);
     if (task == nullptr) {
       GELOGE(ge::FAILED, "Make shared failed.");
       return fail_future;

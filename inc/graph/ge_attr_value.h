@@ -23,7 +23,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "graph/buffer.h"
 #include "detail/attributes_holder.h"
 #include "graph/ge_error_codes.h"
@@ -139,15 +138,14 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeAttrValue {
 
   template <typename vector_type>
   // To cols
-  using enable_if_vector_type_valid_t = typename std::enable_if<IsAttrTypeEnable<vector_type>::LIST_VALUE,
-                                                                int>::type;
+  using enable_if_vector_type_valid_t = typename std::enable_if<IsAttrTypeEnable<vector_type>::LIST_VALUE, int>::type;
 
   template <typename one_type>
   using enable_if_one_type_valid_t = typename std::enable_if<IsAttrTypeEnable<one_type>::VALUE, int>::type;
 
   template <typename val_type>
   using enable_if_type_valid_t =
-      typename std::enable_if<IsAttrTypeEnable<val_type>::VALUE || IsAttrTypeEnable<val_type>::LIST_VALUE, int>::type;
+    typename std::enable_if<IsAttrTypeEnable<val_type>::VALUE || IsAttrTypeEnable<val_type>::LIST_VALUE, int>::type;
 
   template <typename seriliable_type>
   using enable_if_seriliable_type_valid_t = typename seriliable_type::__ge_serializable;

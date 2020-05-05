@@ -15,13 +15,13 @@
  */
 
 #include "graph/build/run_context.h"
-#include "framework/common/debug/ge_log.h"
 
 #include "common/util.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 
 namespace ge {
-RunContextUtil::~RunContextUtil() { DestroyRtModelStreamAndEvents(); }
+RunContextUtil::~RunContextUtil() { DestroyRtModelResources(); }
 
 Status RunContextUtil::InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size, uint8_t *weight_mem_base,
                                    uint64_t weight_mem_size) {
@@ -40,7 +40,7 @@ Status RunContextUtil::InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_siz
   return SUCCESS;
 }
 
-Status RunContextUtil::CreateRtModelStreamsAndEvents(uint32_t stream_num, uint32_t event_num) {
+Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t event_num, uint32_t label_num) {
   // Create rt model
   rtError_t rt_ret = rtModelCreate(&rt_model_, 0);
   if (rt_ret != RT_ERROR_NONE) {
@@ -75,10 +75,22 @@ Status RunContextUtil::CreateRtModelStreamsAndEvents(uint32_t stream_num, uint32
     }
     event_list_.emplace_back(event);
   }
+
+  // Create rt label
+  for (uint32_t i = 0; i < label_num; ++i) {
+    rtLabel_t label = nullptr;
+    rt_ret = rtLabelCreate(&label);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "rtLabelCreate failed. rt_ret = %d, index = %u", static_cast<int>(rt_ret), i);
+      return RT_FAILED;
+    }
+    label_list_.emplace_back(label);
+  }
+
   return SUCCESS;
 }
 
-void RunContextUtil::DestroyRtModelStreamAndEvents() noexcept {
+void RunContextUtil::DestroyRtModelResources() noexcept {
   rtError_t rt_ret;
   for (size_t i = 0; i < stream_list_.size(); i++) {
     // Unbind stream to model first
@@ -97,6 +109,14 @@ void RunContextUtil::DestroyRtModelStreamAndEvents() noexcept {
     }
   }
   event_list_.clear();
+
+  for (size_t i = 0; i < label_list_.size(); ++i) {
+    rt_ret = rtLabelDestroy(label_list_[i]);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGW("Destroy label failed. rt_ret = %d, index = %zu.", static_cast<int>(rt_ret), i);
+    }
+  }
+  label_list_.clear();
 
   if (rt_model_ != nullptr) {
     rt_ret = rtModelDestroy(rt_model_);
@@ -130,16 +150,22 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
   }
   GELOGI("Event_num = %u", event_num);
 
-  Status ret = CreateRtModelStreamsAndEvents(stream_num, event_num);
+  uint32_t label_num = 0;
+  if (!AttrUtils::GetInt(&model, ATTR_MODEL_LABEL_NUM, label_num)) {
+    GELOGE(INTERNAL_ERROR, "Get label_num attr from model failed. session_id=%lu", session_id);
+    return INTERNAL_ERROR;
+  }
+  GELOGI("Label_num = %u", label_num);
+
+  Status ret = CreateRtModelResources(stream_num, event_num, label_num);
   if (ret != SUCCESS) {
-    GELOGE(ret, "CreateRtModelStreamsAndEvents failed. session_id=%lu", session_id);
-    DestroyRtModelStreamAndEvents();
+    GELOGE(ret, "CreateRtModelResources failed. session_id=%lu", session_id);
+    DestroyRtModelResources();
     return ret;
   }
 
-  run_context_ = {rt_model_,        nullptr,          session_id, data_mem_size_, data_mem_base_,
-                  weight_mem_size_, weight_mem_base_, buffer,     stream_list_,   event_list_};
-
+  run_context_ = {rt_model_,        nullptr, session_id,   data_mem_size_, data_mem_base_, weight_mem_size_,
+                  weight_mem_base_, buffer,  stream_list_, event_list_,    label_list_};
   return SUCCESS;
 }
 

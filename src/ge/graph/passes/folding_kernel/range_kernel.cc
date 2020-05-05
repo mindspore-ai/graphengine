@@ -32,7 +32,7 @@ namespace ge {
 namespace {
 constexpr size_t kRangeInputNum = 3;
 constexpr uint32_t kRangeDimNum = 0;
-const std::set<DataType> range_supported_type = {DT_INT32, DT_FLOAT};
+const std::set<DataType> kRangeSupportedType = {DT_INT32, DT_FLOAT};
 }  // namespace
 
 Status RangeKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstGeTensorPtr> &input,
@@ -99,23 +99,23 @@ Status RangeKernel::RangeCheck(const std::vector<ConstGeTensorPtr> &input) {
 
   // check whether the data types are the same
   DataType type = start->GetTensorDesc().GetDataType();
-  if (type != limit->GetTensorDesc().GetDataType() || type != delta->GetTensorDesc().GetDataType()) {
+  if ((type != limit->GetTensorDesc().GetDataType()) || (type != delta->GetTensorDesc().GetDataType())) {
     GELOGI("Data type of inputs for Range not matched.");
     return NOT_CHANGED;
   }
 
   // check whether are all scalars
   size_t range_dim = static_cast<size_t>(kRangeDimNum);
-  bool all_scalar = start->GetTensorDesc().MutableShape().GetDimNum() == range_dim &&
-                    limit->GetTensorDesc().MutableShape().GetDimNum() == range_dim &&
-                    delta->GetTensorDesc().MutableShape().GetDimNum() == range_dim;
+  bool all_scalar = (start->GetTensorDesc().MutableShape().GetDimNum() == range_dim) &&
+                    (limit->GetTensorDesc().MutableShape().GetDimNum() == range_dim) &&
+                    (delta->GetTensorDesc().MutableShape().GetDimNum() == range_dim);
   if (!all_scalar) {
     GELOGI("Inputs for Range are not all scalars.");
     return NOT_CHANGED;
   }
 
   // check if input data type is supported
-  if (range_supported_type.find(type) == range_supported_type.end()) {
+  if (kRangeSupportedType.find(type) == kRangeSupportedType.end()) {
     GELOGI("Range does not support this Data type: %s", TypeUtils::DataTypeToSerialString(type).c_str());
     return NOT_CHANGED;
   }

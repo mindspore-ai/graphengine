@@ -18,15 +18,14 @@
 #define INC_GRAPH_UTILS_TENSOR_UTILS_H_
 
 #include <vector>
-
 #include "graph/def_types.h"
 #include "graph/ge_error_codes.h"
 #include "graph/ge_tensor.h"
 namespace ge {
 class TensorUtils {
  public:
-  static ge::graphStatus GetSize(const GeTensorDesc &tensorDesc, uint32_t &size);
-  static void SetSize(GeTensorDesc &tensorDesc, uint32_t size);
+  static ge::graphStatus GetSize(const GeTensorDesc &tensorDesc, int64_t &size);
+  static void SetSize(GeTensorDesc &tensorDesc, int64_t size);
   static uint32_t GetWeightSize(const ConstGeTensorPtr &tensorPtr);
   static uint32_t GetWeightSize(const GeTensor &tensor);
   static uint32_t GetWeightSize(const GeTensorDesc &tensorDesc);
@@ -62,16 +61,16 @@ class TensorUtils {
   static void SetRC(GeTensorDesc &tensorDesc, uint32_t rc);
 
   ///
-  /// calculate mem size of the tensor.
+  /// calculate tensor mem size.
   /// @param shape tensor shape
   /// @param format tensor format
   /// @param data_type tensor data type
-  /// @param mem_size -1 means unknown shape,others means mem size
-  /// @return GRAPH_SUCCESS:success, others:failed
+  /// @param mem_size -1 means unknown shape,other means mem size
+  /// @return GRAPH_SUCCESS:success, other:failed
   ///
   static ge::graphStatus CalcTensorMemSize(const GeShape &shape, Format format, DataType data_type, int64_t &mem_size);
-  static ge::graphStatus GetTensorMemorySizeInBytes(const GeTensorDesc &desc_temp, uint32_t &size_temp);
-  static ge::graphStatus GetTensorSizeInBytes(const GeTensorDesc &desc_temp, uint32_t &size_temp);
+  static ge::graphStatus GetTensorMemorySizeInBytes(const GeTensorDesc &desc_temp, int64_t &size_temp);
+  static ge::graphStatus GetTensorSizeInBytes(const GeTensorDesc &desc_temp, int64_t &size_temp);
 };
 }  // namespace ge
 #endif  // INC_GRAPH_UTILS_TENSOR_UTILS_H_

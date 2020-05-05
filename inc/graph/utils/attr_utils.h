@@ -99,8 +99,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrUtils {
   static bool SetZeroCopyBytes(AttrHolderAdapter &&obj, const string &name, Buffer &&buffer);
   static bool GetZeroCopyBytes(ConstAttrHolderAdapter &&obj, const string &name, Buffer &buffer);
   // Value will be moved
-  static bool SetZeroCopyListBytes(AttrHolderAdapter &&obj, const string &name,
-                                   vector<Buffer> &listBuffer);
+  static bool SetZeroCopyListBytes(AttrHolderAdapter &&obj, const string &name, vector<Buffer> &listBuffer);
   static bool GetZeroCopyListBytes(ConstAttrHolderAdapter &&obj, const string &name, vector<Buffer> &listBuffer);
 
   static bool SetListListInt(AttrHolderAdapter &&obj, const string &name, const vector<vector<int64_t>> &value);
@@ -115,6 +114,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrUtils {
   static OpDescPtr CloneOpDesc(const ConstOpDescPtr &orgOpDesc);
 
   static OpDescPtr CopyOpDesc(const ConstOpDescPtr &orgOpDesc);
+
+  static std::string GetAllAttrsStr(ConstAttrHolderAdapter &&obj);
 
   class AttrHolderAdapter {
    public:

@@ -84,13 +84,13 @@ TEST_F(UtestGeProfilinganager, start_profiling_success) {
 
   Status ret = ProfilingManager::Instance().Init(options);
   EXPECT_EQ(ret, ge::SUCCESS);
-  ret = ProfilingManager::Instance().StartProfiling(iter_num);
+  ret = ProfilingManager::Instance().StartProfiling(iter_num, 0);
   EXPECT_EQ(ret, ge::SUCCESS);
 
   setenv("PROFILING_OPTIONS", "op_trance", true);
   ret = ProfilingManager::Instance().Init(options);
   EXPECT_EQ(ret, ge::SUCCESS);
-  ret = ProfilingManager::Instance().StartProfiling(iter_num);
+  ret = ProfilingManager::Instance().StartProfiling(iter_num, 0);
   EXPECT_EQ(ret, ge::SUCCESS);
 }
 
@@ -107,16 +107,9 @@ TEST_F(UtestGeProfilinganager, stop_profiling_success) {
   setenv("PROFILING_OPTIONS", "op_trance", true);
   ret = ProfilingManager::Instance().Init(options);
   EXPECT_EQ(ret, ge::SUCCESS);
-  ret = ProfilingManager::Instance().StartProfiling(iter_num);
+  ret = ProfilingManager::Instance().StartProfiling(iter_num, 0);
   EXPECT_EQ(ret, ge::SUCCESS);
   ProfilingManager::Instance().StopProfiling();
-}
-
-TEST_F(UtestGeProfilinganager, report_profiling_data_success) {
-  map<uint32_t, string> op_task_id_map;
-  op_task_id_map[0] = "conv";
-  op_task_id_map.insert(pair<uint32_t, string>(1, "mul"));
-  ProfilingManager::Instance().ReportProfilingData(op_task_id_map);
 }
 
 TEST_F(UtestGeProfilinganager, plugin_impl_success) {

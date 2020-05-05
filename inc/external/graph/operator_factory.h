@@ -22,8 +22,8 @@
 #include <string>
 #include <vector>
 
-#include "external/graph//operator.h"
-#include "external/graph/ge_error_codes.h"
+#include "./operator.h"
+#include "./ge_error_codes.h"
 
 namespace ge {
 using OpCreator = std::function<Operator(const std::string &)>;

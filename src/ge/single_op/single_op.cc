@@ -143,15 +143,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
       return ret;
     }
   }
-  if (ProfilingManager::Instance().ProfilingOpTraceOn()) {
-    GELOGI("Op trace on, iter num:%d", ProfilingManager::Instance().GetOpTraceIterNum());
-    ret = rtStreamSynchronize(stream_);
-    if (ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Invoke rtStreamSynchronize failed.");
-      return ret;
-    }
-    ProfilingManager::Instance().StopProfiling();
-  }
   return ret;
 }
 

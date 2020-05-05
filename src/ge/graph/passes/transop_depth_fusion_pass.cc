@@ -24,16 +24,18 @@
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/common/transop_util.h"
 
 namespace ge {
 graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(TransOpDepthFusionPass);
   GELOGI("[TransOpDepthFusionPass]: optimize in depth begin...");
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
   }
   for (const auto &node : graph->GetAllNodes()) {
     GE_CHECK_NOTNULL(node);
-    if (IsTransOp(node)) {
+    if (TransOpUtil::IsTransOp(node)) {
       continue;
     }
     GELOGD("Current normal node is: %s, type: %s, begin in-depth recursive", node->GetName().c_str(),
@@ -49,6 +51,7 @@ graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
     }
   }
   GELOGI("[TransOpDepthFusionPass]: Optimize in depth success...");
+  GE_TIMESTAMP_END(TransOpDepthFusionPass, "GraphManager::TransOpDepthFusionPass");
   return GRAPH_SUCCESS;
 }
 
@@ -84,12 +87,12 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
     return GRAPH_FAILED;
   }
   auto node = dst_in_anchor->GetOwnerNode();
-  if (!IsTransOp(node)) {
+  if (!TransOpUtil::IsTransOp(node) || dst_in_anchor->GetIdx() != TransOpUtil::GetTransOpDataIndex(node)) {
     GELOGD("Now the end of this branch, node: %s, type: %s, recursive depth: %u", node->GetName().c_str(),
            node->GetType().c_str(), temp_depth);
     temp_depth--;
     return GRAPH_SUCCESS;
-  } else if (node->GetType() == RESHAPE || node->GetType() == REFORMAT) {
+  } else if (CheckNodeCanBeDeleted(node)) {
     GELOGD("node: %s, type: %s does not change memory, just delete", node->GetName().c_str(), node->GetType().c_str());
 
     auto out_anchor = node->GetOutDataAnchor(0);
@@ -160,12 +163,9 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
   return GRAPH_SUCCESS;
 }
 
-bool TransOpDepthFusionPass::IsTransOp(const NodePtr &node) {
-  if (node == nullptr) {
-    return false;
-  }
-  return node->GetType() == CAST || node->GetType() == RESHAPE || node->GetType() == REFORMAT ||
-         node->GetType() == TRANSPOSE || node->GetType() == TRANSPOSED || node->GetType() == TRANSDATA;
+bool TransOpDepthFusionPass::CheckNodeCanBeDeleted(const NodePtr &node) {
+  return node->GetType() == RESHAPE || node->GetType() == REFORMAT || node->GetType() == SQUEEZE ||
+         node->GetType() == EXPANDDIMS;
 }
 
 bool TransOpDepthFusionPass::DescAreSymmetry(const NodePtr &src_node, const NodePtr &dst_node) {
@@ -173,14 +173,16 @@ bool TransOpDepthFusionPass::DescAreSymmetry(const NodePtr &src_node, const Node
       dst_node->GetOpDesc() == nullptr) {
     return false;
   }
-  auto src_input_desc = src_node->GetOpDesc()->GetInputDesc(0);
-  auto dst_output_desc = dst_node->GetOpDesc()->GetOutputDesc(0);
-  auto src_input_dtype = src_input_desc.GetDataType();
-  auto src_input_format = src_input_desc.GetFormat();
-  auto src_input_shape = src_input_desc.GetShape().GetDims();
-  auto dst_output_dtype = dst_output_desc.GetDataType();
-  auto dst_output_format = dst_output_desc.GetFormat();
-  auto dst_output_shape = dst_output_desc.GetShape().GetDims();
+  const auto &src_input_desc = src_node->GetOpDesc()->MutableInputDesc(0);
+  const auto &dst_output_desc = dst_node->GetOpDesc()->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL_EXEC(src_input_desc, return false);
+  GE_CHECK_NOTNULL_EXEC(dst_output_desc, return false);
+  const auto &src_input_dtype = src_input_desc->GetDataType();
+  const auto &src_input_format = src_input_desc->GetFormat();
+  const auto &src_input_shape = src_input_desc->GetShape().GetDims();
+  const auto &dst_output_dtype = dst_output_desc->GetDataType();
+  const auto &dst_output_format = dst_output_desc->GetFormat();
+  const auto &dst_output_shape = dst_output_desc->GetShape().GetDims();
 
   if (src_node->GetType() == CAST && dst_node->GetType() == CAST) {
     return src_input_dtype == dst_output_dtype && src_input_format == dst_output_format;

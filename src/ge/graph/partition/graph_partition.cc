@@ -22,10 +22,9 @@
 #include <vector>
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
-#include "graph/debug/ge_attr_define.h"
 #include "framework/common/types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_manager_utils.h"
-#include "graph/optimize/optimizer/graph_pass.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
@@ -43,20 +42,14 @@ const int kRankZero = 0;  // order of graph list is 0,1,2,3..., 0 means first or
 namespace ge {
 Status ge::GraphPartitioner::CheckIfEnd2PldEmpty(ge::ComputeGraphPtr &output_merged_compute_graph) {
   // only one condition:no data node, one engine, there is only one graph + input graph
-  if (partitions_.size() == kOneGraph) {
-    auto partition = (*partitions_.begin());
+  if (graph_info_.partitions_.size() == kOneGraph) {
+    auto partition = (*graph_info_.partitions_.begin());
     if (partition.first == nullptr) {
       GELOGE(GE_GRAPH_EMPTY_PARTITION, "[GraphPartitioner]: partition.first is null, engine name is %s",
              partition.second.c_str());
       return FAILED;
     }
     output_merged_compute_graph = partition.first;
-    // flush all nodes' engine of merged graph
-    engine_placer_.SetComputeGraph(output_merged_compute_graph);
-    if (engine_placer_.Run() != SUCCESS) {
-      GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: engine_placer run failed");
-      return FAILED;
-    }
   } else {  // if placeholder to end map is empty, it should be an exception condition
     GELOGE(GE_GRAPH_EMPTY_PARTITION, "[GraphPartitioner]: placeholder to end map is empty, partitions size is not 1.");
     return FAILED;
@@ -66,13 +59,13 @@ Status ge::GraphPartitioner::CheckIfEnd2PldEmpty(ge::ComputeGraphPtr &output_mer
 
 Status ge::GraphPartitioner::MergeAllSubGraph(ge::ComputeGraphPtr &output_merged_compute_graph,
                                               const std::vector<SubGraphInfoPtr> &sub_graph_list) {
-  for (size_t rank = 0; rank < rank_2_partitions_.size(); rank++) {
+  for (size_t rank = 0; rank < graph_info_.rank_2_partitions_.size(); rank++) {
     string temp_stream;
     // sub_graph_list index is one ahead of rank_2_partitions_list index
     if (rank > 0) {
       temp_stream = sub_graph_list[rank - 1]->GetStreamLabel();
     }
-    for (const auto &node : rank_2_partitions_[rank]->GetAllNodes()) {
+    for (const auto &node : graph_info_.rank_2_partitions_[rank]->GetDirectNode()) {
       if (node == nullptr) {
         continue;
       }
@@ -97,8 +90,8 @@ Status ge::GraphPartitioner::MergeAllSubGraph(ge::ComputeGraphPtr &output_merged
 void ge::GraphPartitioner::SetMergedGraphId(ge::ComputeGraphPtr &output_merged_compute_graph) {
   string session_graph_id;
   // get session graph id from subgraph
-  if (rank_2_partitions_.empty() ||
-      !AttrUtils::GetStr(*(rank_2_partitions_[0]), ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
+  if (graph_info_.rank_2_partitions_.empty() ||
+      !AttrUtils::GetStr(*(graph_info_.rank_2_partitions_[0]), ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
     GELOGW("Get graph session_graph_id attr failed.");
   }
   // set session graph id into merged subgraph
@@ -118,9 +111,9 @@ Status ge::GraphPartitioner::RemoveNodeAndEdgeBetweenEndPld(ge::ComputeGraphPtr 
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MergeAllSubGraph failed.");
     return FAILED;
   }
-  for (const auto &it : index_2_end_) {
+  for (const auto &it : graph_info_.index_2_end_) {
     auto &end = it.second;
-    auto &pld = end_2_pld_[it.second];
+    auto &pld = graph_info_.end_2_pld_[it.second];
     if ((end != nullptr) && (pld != nullptr) && (end->GetInDataAnchor(0) != nullptr) &&
         (pld->GetOutDataAnchor(0) != nullptr)) {
       AnchorPtr end_in_anchor = (end->GetInDataAnchor(0)->GetFirstPeerAnchor() == nullptr)
@@ -154,28 +147,67 @@ Status ge::GraphPartitioner::RemoveNodeAndEdgeBetweenEndPld(ge::ComputeGraphPtr 
   return SUCCESS;
 }
 
-void ge::GraphPartitioner::ClearAllPartitionData(Mode mode) {
-  transfer_graph_.clear();
-  rank_2_partitions_.clear();
-  partitions_2_rank_.clear();
-  partitions_.clear();
-  corresponding_node_in_partitions_.clear();
-  index_2_end_.clear();
-  cluster_2_partition_.clear();
-  clusters_.clear();
-  node_2_cluster_.clear();
-  pld_2_end_.clear();
-  end_2_pld_.clear();
-  if (mode_ == kMerging) {
-    mode_ = kPartitioning;
-  } else {
-    mode_ = mode;
+Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr &output_merged_compute_graph,
+                                                            const ge::ComputeGraphPtr &original_compute_graph) {
+  auto ret = MergeSubGraph(output_merged_compute_graph, original_compute_graph);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Graph merging Failed");
+    return ret;
   }
+  // partition sub graph
+  for (const auto &sub_graph : original_compute_graph->GetAllSubgraphs()) {
+    ComputeGraphPtr merged_sub_graph = nullptr;
+    ret = MergeSubGraph(merged_sub_graph, sub_graph);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Sub graph merging Failed");
+      return ret;
+    }
+    // add sub graph
+    output_merged_compute_graph->SetName(original_compute_graph->GetName());
+    merged_sub_graph->SetName(sub_graph->GetName());
+    merged_sub_graph->SetInputSize(sub_graph->GetInputSize());
+    merged_sub_graph->SetOutputSize(sub_graph->GetOutputSize());
+    auto parent_node = sub_graph->GetParentNode();
+    GE_IF_BOOL_EXEC(parent_node == nullptr,
+                    GELOGE(FAILED, "Parent node is null, graph name is %s", sub_graph->GetName().c_str());
+                    return FAILED;)
+    auto original_graph = parent_node->GetOwnerComputeGraph();
+    GE_IF_BOOL_EXEC(graph_2_graph_partition_info_.find(original_graph) == graph_2_graph_partition_info_.end(),
+                    GELOGE(FAILED, "Find graph info failed, graph name is %s", original_graph->GetName().c_str());
+                    return FAILED;)
+    auto graph_info = graph_2_graph_partition_info_[original_graph];
+    GE_IF_BOOL_EXEC(
+      graph_info.corresponding_node_in_partitions_.find(parent_node) ==
+        graph_info.corresponding_node_in_partitions_.end(),
+      GELOGE(FAILED, "Find corresponding node failed, parent node name is %s", parent_node->GetName().c_str());
+      return FAILED;)
+    auto corresponding_node = graph_info.corresponding_node_in_partitions_[parent_node];
+    merged_sub_graph->SetParentNode(corresponding_node);
+    merged_sub_graph->SetParentGraph(output_merged_compute_graph);
+    ret = output_merged_compute_graph->AddSubgraph(sub_graph->GetName(), merged_sub_graph);
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, return ret;)
+  }
+  graph_2_graph_partition_info_.clear();
+  graph_2_subgraph_list_.clear();
+  return SUCCESS;
 }
 
-Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr &output_merged_compute_graph,
-                                                            const std::vector<SubGraphInfoPtr> &sub_graph_list) {
-  if (mode_ != kMerging) {
+Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_compute_graph,
+                                           const ge::ComputeGraphPtr &original_compute_graph) {
+  if (original_compute_graph == nullptr) {
+    GELOGE(GE_GRAPH_NULL_INPUT, "[GraphPartitioner]: compute_graph is null.");
+    return FAILED;
+  }
+  if ((graph_2_graph_partition_info_.find(original_compute_graph) == graph_2_graph_partition_info_.end()) ||
+      (graph_2_subgraph_list_.find(original_compute_graph) == graph_2_subgraph_list_.end())) {
+    GELOGE(GE_GRAPH_NULL_INPUT, "[GraphPartitioner]: compute_graph is error.");
+    return FAILED;
+  }
+  GraphPartitionInfo &subgraph_info = graph_2_graph_partition_info_[original_compute_graph];
+  const auto &sub_graph_list = graph_2_subgraph_list_[original_compute_graph];
+  graph_info_ = subgraph_info;
+
+  if (graph_info_.mode_ != kMerging) {
     GELOGE(GE_GRAPH_UNSUPPORTED, "Cannot call merging in partition mode");
     return FAILED;
   }
@@ -187,7 +219,8 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
       return FAILED;
     }
   }
-  if (end_2_pld_.empty() || pld_2_end_.empty()) {
+  bool is_map_empty = graph_info_.end_2_pld_.empty() || graph_info_.pld_2_end_.empty();
+  if (is_map_empty) {
     if (CheckIfEnd2PldEmpty(output_merged_compute_graph) != SUCCESS) {
       return FAILED;
     }
@@ -205,15 +238,6 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
     return FAILED;
   }
   GE_TIMESTAMP_END(MergeGraphTopologicalSorting, "GraphPartitioner::MergeGraphTopologicalSorting");
-  // flush all nodes' engine of merged graph
-  GE_TIMESTAMP_START(MergeGraphEnginePlacerRun);
-  engine_placer_.SetComputeGraph(output_merged_compute_graph);
-  if (engine_placer_.Run() != SUCCESS) {
-    GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: engine_placer run failed");
-    return FAILED;
-  }
-  GE_TIMESTAMP_END(MergeGraphEnginePlacerRun, "GraphPartitioner::MergeGraphEnginePlacerRun");
-  ClearAllPartitionData(kMerging);
   GELOGI("Graph merge ends.");
   return SUCCESS;
 }
@@ -297,18 +321,19 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   string engine_end_name;
   string engine_pld_name;
   // link input -> end
-  string end_name = kEndType + std::to_string(num_of_pld_end_);
+  string end_name = kEndType + std::to_string(graph_info_.num_of_pld_end_);
   auto end_op_desc = MakeShared<OpDesc>(end_name, END);
   if (end_op_desc == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "pld_op_desc is nullptr.");
     return FAILED;
   }
-  GE_IF_BOOL_EXEC(!AttrUtils::SetInt(end_op_desc, "peerIndex", num_of_pld_end_), GELOGW("SetInt peerIndex failed");)
+  GE_IF_BOOL_EXEC(!AttrUtils::SetInt(end_op_desc, "peerIndex", graph_info_.num_of_pld_end_),
+                  GELOGW("SetInt peerIndex failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(end_op_desc, "parentOpType", dst_node->GetType()),
                   GELOGW("SetStr parentOpType failed");)
   // replace input_desc of end with owner node's desc
   int input_index = ge::AnchorUtils::GetIdx(peer_in_anchor);
-  bool is_need_update_desc = (input_index >= 0) && (mode_ == kPartitioning);
+  bool is_need_update_desc = (input_index >= 0) && (graph_info_.mode_ == kPartitioning);
   if (is_need_update_desc) {
     if (UpdateEndOpDesc(dst_node, input_index, end_op_desc) != SUCCESS) {
       GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, input index %d, engine name is %s", input_index,
@@ -342,13 +367,14 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   auto const &src_node_opdesc = src_node->GetOpDesc();
   GE_CHECK_NOTNULL(src_node_opdesc);
   int64_t node_id = src_node_opdesc->GetId();
-  const string pld_name = kPlaceHolderType + std::to_string(num_of_pld_end_);
+  const string pld_name = kPlaceHolderType + std::to_string(graph_info_.num_of_pld_end_);
   auto pld_op_desc = MakeShared<OpDesc>(pld_name, PLACEHOLDER);
   if (pld_op_desc == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "pld_op_desc is nullptr.");
     return FAILED;
   }
-  GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "peerIndex", num_of_pld_end_), GELOGW("SetInt peerIndex failed");)
+  GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "peerIndex", graph_info_.num_of_pld_end_),
+                  GELOGW("SetInt peerIndex failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "parentOpType", src_node->GetType()),
                   GELOGW("SetStr parentOpType failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "parentId", end_graph->GetName() + ":" + std::to_string(node_id)),
@@ -356,10 +382,10 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "anchorIndex", AnchorUtils::GetIdx(out_anchor)),
                   GELOGW("SetInt anchorIndex failed");)
   // do not care over flow
-  num_of_pld_end_++;
+  graph_info_.num_of_pld_end_++;
   // replace output_desc of pld with input node's output desc
   int output_index = ge::AnchorUtils::GetIdx(out_anchor);
-  is_need_update_desc = (output_index >= 0) && (mode_ == kPartitioning);
+  is_need_update_desc = (output_index >= 0) && (graph_info_.mode_ == kPartitioning);
   if (is_need_update_desc) {
     if (UpdatePldOpDesc(src_node, output_index, pld_op_desc) != SUCCESS) {
       GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, output index %d, engine name is %s", output_index,
@@ -390,9 +416,9 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
            dst_node->GetName().c_str(), AnchorUtils::GetIdx(peer_in_anchor), pld_graph->GetName().c_str());
     return FAILED;
   }
-  index_2_end_[num_of_pld_end_] = new_end_node;
-  pld_2_end_[new_pld_node] = new_end_node;
-  end_2_pld_[new_end_node] = new_pld_node;
+  graph_info_.index_2_end_[graph_info_.num_of_pld_end_] = new_end_node;
+  graph_info_.pld_2_end_[new_pld_node] = new_end_node;
+  graph_info_.end_2_pld_[new_end_node] = new_pld_node;
   return SUCCESS;
 }
 
@@ -442,7 +468,7 @@ Status ge::GraphPartitioner::PutInputNodesInSubGraph(const ge::ComputeGraphPtr &
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
   }
-  for (auto &input_node : src_graph->GetAllNodes()) {
+  for (auto &input_node : src_graph->GetDirectNode()) {
     if (IsDataLike(input_node)) {
       if (input_node->SetOwnerComputeGraph(dst_graph) != GRAPH_SUCCESS) {
         GELOGE(FAILED, "[GraphPartitioner]: SetOwnerComputeGraph failed.");
@@ -472,7 +498,7 @@ void ge::GraphPartitioner::AddNewGraphToPartition(ge::ComputeGraphPtr &input_gra
     GELOGW("[GraphPartitioner]: input_graph is null, engine name is %s", engine_name.c_str());
     return;
   }
-  partitions_[input_graph] = engine_name;
+  graph_info_.partitions_[input_graph] = engine_name;
 }
 
 bool ge::GraphPartitioner::IsDataLike(ge::NodePtr node) {
@@ -495,12 +521,12 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
     GELOGE(GE_GRAPH_NOT_INIT, "Graph partitioner initialize failed.");
     return FAILED;
   }
-  engine_placer_.SetComputeGraph(compute_graph);
-  if (engine_placer_.Run() != SUCCESS) {
+  graph_info_.engine_placer_.SetComputeGraph(compute_graph);
+  if (graph_info_.engine_placer_.Run() != SUCCESS) {
     GELOGE(FAILED, "Engine placer run failed.");
     return FAILED;
   }
-  const NodeEngineMap *node_engine_map = engine_placer_.GetNodeEngineMap();
+  const NodeEngineMap *node_engine_map = graph_info_.engine_placer_.GetNodeEngineMap();
   size_t temp_index = 0;
   for (const auto &node : compute_graph->GetDirectNode()) {
     std::string temp_stream;
@@ -523,12 +549,12 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
     new_cluster->nodes_.push_back(node);
     if (!HasNoInput(node)) {
       for (const auto &parent : node->GetInAllNodes()) {
-        new_cluster->in_clu_.insert(node_2_cluster_.at(parent)->index_);
-        node_2_cluster_.at(parent)->out_clu_.insert(temp_index);
+        new_cluster->in_clu_.insert(graph_info_.node_2_cluster_.at(parent)->index_);
+        graph_info_.node_2_cluster_.at(parent)->out_clu_.insert(temp_index);
       }
     }
-    node_2_cluster_[node] = new_cluster;
-    clusters_[temp_index] = new_cluster;
+    graph_info_.node_2_cluster_[node] = new_cluster;
+    graph_info_.clusters_[temp_index] = new_cluster;
     GELOGD("Node name is %s, engine is %s, cluster index is %zu, stream label is %s", node->GetName().c_str(),
            new_cluster->engine_name_.c_str(), new_cluster->index_, new_cluster->stream_label_.c_str());
     temp_index++;
@@ -546,18 +572,20 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
     return INTERNAL_ERROR;
   }
   // the output_subgraphs have topological order
-  for (const auto &subGraph : rank_2_partitions_) {
-    if (partitions_.find(subGraph) == partitions_.end()) {
+  for (const auto &sub_graph : graph_info_.rank_2_partitions_) {
+    if (graph_info_.partitions_.find(sub_graph) == graph_info_.partitions_.end()) {
       GELOGE(GE_GRAPH_EMPTY_PARTITION, "[GraphPartitioner]: partition is null.");
       return FAILED;
     }
-    auto &engine_name = partitions_.at(subGraph);
-    GraphUtils::DumpGEGraph(subGraph, subGraph->GetName());
-    GraphUtils::DumpGEGraphToOnnx(*subGraph, subGraph->GetName());
+    auto &engine_name = graph_info_.partitions_.at(sub_graph);
+    GraphUtils::DumpGEGraph(sub_graph, sub_graph->GetName());
+    GraphUtils::DumpGEGraphToOnnx(*sub_graph, sub_graph->GetName());
     if (!session_graph_id.empty()) {
-      GE_IF_BOOL_EXEC(!AttrUtils::SetStr(subGraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
+      GE_IF_BOOL_EXEC(!AttrUtils::SetStr(sub_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
                       GELOGW("SetStr ATTR_NAME_SESSION_GRAPH_ID failed");)
     }
+    // flush parent node of subgraph
+    sub_graph->SetParentNode(compute_graph->GetParentNode());
     if (engine_name != input_subgraph_name) {  // do not add Data subGraph into SubGraphInfo
       auto sgi = MakeShared<SubGraphInfo>();
       if (sgi == nullptr) {
@@ -568,18 +596,20 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
       sgi->SetEngineName(engine_name);
       // set stream label
       string sub_graph_stream;
-      if (AttrUtils::GetStr(subGraph->GetDirectNode().at(0)->GetOpDesc(), ATTR_NAME_STREAM_LABEL, sub_graph_stream)) {
+      if (AttrUtils::GetStr(sub_graph->GetDirectNode().at(0)->GetOpDesc(), ATTR_NAME_STREAM_LABEL, sub_graph_stream)) {
         sgi->SetStreamLabel(sub_graph_stream);
       }
       /// for now inputFlag is the same before and after partition. It should
       /// be changed according to the real partition
-      std::vector<bool> sub_graph_input(input_size_, true);
-      std::vector<bool> sub_graph_output(output_size_, true);
-      sgi->SetSubGraph(subGraph);
+      std::vector<bool> sub_graph_input(graph_info_.input_size_, true);
+      std::vector<bool> sub_graph_output(graph_info_.output_size_, true);
+      sgi->SetSubGraph(sub_graph);
       sgi->SetOutputFlag(sub_graph_output);
       sgi->SetInputFlag(sub_graph_input);
-      sgi->SetOutputContext(output_name_);
+      sgi->SetOutputContext(graph_info_.output_name_);
       AddEndPldInformationToSubGraphInfo(sgi);
+      GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s",
+             engine_name.c_str(), sub_graph->GetName().c_str(), sgi->GetStreamLabel().c_str());
       output_subgraphs.push_back(sgi);
     }
   }
@@ -588,17 +618,18 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
 
 // check if two clusters can merge
 bool ge::GraphPartitioner::IsMergeable(size_t parent_cluster, size_t child_cluster, size_t upper_bound) {
-  if ((clusters_[parent_cluster] == nullptr) || (clusters_[parent_cluster]->nodes_.empty()) ||
-      (clusters_[child_cluster] == nullptr) || (clusters_[child_cluster]->nodes_.empty())) {
+  if ((graph_info_.clusters_[parent_cluster] == nullptr) || (graph_info_.clusters_[parent_cluster]->nodes_.empty()) ||
+      (graph_info_.clusters_[child_cluster] == nullptr) || (graph_info_.clusters_[child_cluster]->nodes_.empty())) {
     return false;
   }
   // Check if parent_cluster,child_cluster has same engine or stream label
-  if ((clusters_[parent_cluster]->engine_name_ != clusters_[child_cluster]->engine_name_) ||
-      (clusters_[parent_cluster]->stream_label_ != clusters_[child_cluster]->stream_label_)) {
+  if ((graph_info_.clusters_[parent_cluster]->engine_name_ != graph_info_.clusters_[child_cluster]->engine_name_) ||
+      (graph_info_.clusters_[parent_cluster]->stream_label_ != graph_info_.clusters_[child_cluster]->stream_label_)) {
     GELOGD("Parent cluster %zu engine %s stream label %s, child cluster %zu engine %s stream label %s can not merge",
-           parent_cluster, clusters_[parent_cluster]->engine_name_.c_str(),
-           clusters_[parent_cluster]->stream_label_.c_str(), child_cluster,
-           clusters_[child_cluster]->engine_name_.c_str(), clusters_[child_cluster]->stream_label_.c_str());
+           parent_cluster, graph_info_.clusters_[parent_cluster]->engine_name_.c_str(),
+           graph_info_.clusters_[parent_cluster]->stream_label_.c_str(), child_cluster,
+           graph_info_.clusters_[child_cluster]->engine_name_.c_str(),
+           graph_info_.clusters_[child_cluster]->stream_label_.c_str());
     return false;
   }
   // Check if parent_cluster,child_cluster is reachable
@@ -628,51 +659,52 @@ void ge::GraphPartitioner::MergeTwoClusters(size_t parent_cluster, size_t &child
   }
 
   // update node_2_cluster_ map
-  for (auto &node : clusters_[big_cluster]->nodes_) {
-    node_2_cluster_[node] = clusters_[small_cluster];
+  for (auto &node : graph_info_.clusters_[big_cluster]->nodes_) {
+    graph_info_.node_2_cluster_[node] = graph_info_.clusters_[small_cluster];
   }
   // merge nodes
-  clusters_[small_cluster]->nodes_.splice(clusters_[small_cluster]->nodes_.end(), clusters_[big_cluster]->nodes_);
+  graph_info_.clusters_[small_cluster]->nodes_.splice(graph_info_.clusters_[small_cluster]->nodes_.end(),
+                                                      graph_info_.clusters_[big_cluster]->nodes_);
   // merge all input & output to small cluster
-  clusters_[small_cluster]->in_clu_.insert(clusters_[big_cluster]->in_clu_.begin(),
-                                           clusters_[big_cluster]->in_clu_.end());
-  clusters_[small_cluster]->out_clu_.insert(clusters_[big_cluster]->out_clu_.begin(),
-                                            clusters_[big_cluster]->out_clu_.end());
+  graph_info_.clusters_[small_cluster]->in_clu_.insert(graph_info_.clusters_[big_cluster]->in_clu_.begin(),
+                                                       graph_info_.clusters_[big_cluster]->in_clu_.end());
+  graph_info_.clusters_[small_cluster]->out_clu_.insert(graph_info_.clusters_[big_cluster]->out_clu_.begin(),
+                                                        graph_info_.clusters_[big_cluster]->out_clu_.end());
   // remove child_cluster's out parent_cluster's in between child_cluster and parent_cluster
   RemoveEdge(parent_cluster, child_cluster_original);
   // update in/out of the cluster with bigger index
-  for (auto in_clu : clusters_[big_cluster]->in_clu_) {
-    clusters_[in_clu]->out_clu_.insert(small_cluster);
-    clusters_[in_clu]->out_clu_.erase(big_cluster);
+  for (auto in_clu : graph_info_.clusters_[big_cluster]->in_clu_) {
+    graph_info_.clusters_[in_clu]->out_clu_.insert(small_cluster);
+    graph_info_.clusters_[in_clu]->out_clu_.erase(big_cluster);
   }
-  for (auto out_clu : clusters_[big_cluster]->out_clu_) {
-    clusters_[out_clu]->in_clu_.insert(small_cluster);
-    clusters_[out_clu]->in_clu_.erase(big_cluster);
+  for (auto out_clu : graph_info_.clusters_[big_cluster]->out_clu_) {
+    graph_info_.clusters_[out_clu]->in_clu_.insert(small_cluster);
+    graph_info_.clusters_[out_clu]->in_clu_.erase(big_cluster);
   }
-  clusters_[big_cluster] = clusters_[small_cluster];
+  graph_info_.clusters_[big_cluster] = graph_info_.clusters_[small_cluster];
 }
 
 void ge::GraphPartitioner::RemoveEdge(size_t parent_cluster, size_t child_cluster) {
-  clusters_[child_cluster]->in_clu_.erase(parent_cluster);
-  clusters_[parent_cluster]->out_clu_.erase(child_cluster);
+  graph_info_.clusters_[child_cluster]->in_clu_.erase(parent_cluster);
+  graph_info_.clusters_[parent_cluster]->out_clu_.erase(child_cluster);
 }
 
 void ge::GraphPartitioner::InsertEdge(size_t from, size_t to) {
   if (from == to) {
     return;
   }
-  if (!clusters_[from]->out_clu_.insert(to).second) {
+  if (!graph_info_.clusters_[from]->out_clu_.insert(to).second) {
     // edge has already exists
     return;
   }
-  clusters_[to]->in_clu_.insert(from);
+  graph_info_.clusters_[to]->in_clu_.insert(from);
 }
 
 void ge::GraphPartitioner::MarkClusters() {
-  GELOGI("MarkClusters starts. cluster size is %zu", clusters_.size());
-  size_t cluster_size = clusters_.size();
+  GELOGI("MarkClusters starts. cluster size is %zu", graph_info_.clusters_.size());
+  size_t cluster_size = graph_info_.clusters_.size();
   for (size_t child_cluster = 0; child_cluster < cluster_size; child_cluster++) {
-    auto found_child_cluster = clusters_[child_cluster];
+    auto found_child_cluster = graph_info_.clusters_[child_cluster];
     if (found_child_cluster == nullptr) {
       GELOGW("can not found child_cluster is %zu", child_cluster);
       continue;
@@ -684,7 +716,8 @@ void ge::GraphPartitioner::MarkClusters() {
     }
     // sort cluster according to it's output amount
     auto comp_func = [this](const size_t &parent_cluster1, const size_t &parent_cluster2) -> bool {
-      return clusters_[parent_cluster1]->out_clu_.size() < clusters_[parent_cluster2]->out_clu_.size();
+      return graph_info_.clusters_[parent_cluster1]->out_clu_.size() <
+             graph_info_.clusters_[parent_cluster2]->out_clu_.size();
     };
     std::sort(ordered_cluster.begin(), ordered_cluster.end(), comp_func);
     auto child_merged = child_cluster;
@@ -709,14 +742,14 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
   // add pld&end
   for (auto &node : compute_graph->GetDirectNode()) {
     GELOGD("Node name is %s.", node->GetName().c_str());
-    auto child_cluster = node_2_cluster_[node];
+    auto child_cluster = graph_info_.node_2_cluster_[node];
     ge::ComputeGraphPtr corresponding_graph;
     // unordered_set's insert returns a pair, second of pair is bool
     if (!cluster_set.insert(child_cluster).second) {
       GELOGD("Old sub graph, child_cluster is %zu", child_cluster->index_);
-      corresponding_graph = cluster_2_partition_.at(child_cluster);
+      corresponding_graph = graph_info_.cluster_2_partition_.at(child_cluster);
     } else {
-      std::string graph_name = "new_sub_graph" + std::to_string(partitions_.size());
+      std::string graph_name = "new_sub_graph" + std::to_string(graph_info_.partitions_.size());
       ComputeGraphPtr new_sub_graph = MakeShared<ge::ComputeGraph>(graph_name);
       if (new_sub_graph == nullptr) {
         GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MakeShared() failed.");
@@ -724,7 +757,7 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
       }
       AddNewGraphToPartition(new_sub_graph, child_cluster->engine_name_);
       corresponding_graph = new_sub_graph;
-      cluster_2_partition_[child_cluster] = corresponding_graph;
+      graph_info_.cluster_2_partition_[child_cluster] = corresponding_graph;
       GELOGD("New sub graph, name is %s", graph_name.c_str());
     }
     // build node to corresponding node map
@@ -733,20 +766,20 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
       GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: AddNode() failed.");
       return FAILED;
     }
-    corresponding_node_in_partitions_[node] = corresponding_node;
+    graph_info_.corresponding_node_in_partitions_[node] = corresponding_node;
     GE_CHK_STATUS_RET(corresponding_node->SetOwnerComputeGraph(corresponding_graph))
     for (const auto &in_anchor : node->GetAllInAnchors()) {
       GELOGD("In anchor index is %d", AnchorUtils::GetIdx(in_anchor));
       for (auto &peer_out_anchor : in_anchor->GetPeerAnchors()) {
         GELOGD("Peer out anchor index is %d", AnchorUtils::GetIdx(peer_out_anchor));
         // All nodes have a copy in corresponding_node_in_partitions_, so function at can not be execption
-        auto parent_node = corresponding_node_in_partitions_.at(peer_out_anchor->GetOwnerNode());
+        auto parent_node = graph_info_.corresponding_node_in_partitions_.at(peer_out_anchor->GetOwnerNode());
         GELOGD("Parent node name is %s", parent_node->GetName().c_str());
         // add edge
         auto src_anchor = parent_node->GetOutAnchor(AnchorUtils::GetIdx(peer_out_anchor));
         auto dst_anchor = corresponding_node->GetInAnchor(AnchorUtils::GetIdx(in_anchor));
         // if child and parent's cluster is not same, add plc and end
-        auto parent_cluster = node_2_cluster_[peer_out_anchor->GetOwnerNode()];
+        auto parent_cluster = graph_info_.node_2_cluster_[peer_out_anchor->GetOwnerNode()];
         if (parent_cluster != child_cluster) {
           GELOGD("Parent cluster is %zu, child_cluster is %zu", parent_cluster->index_, child_cluster->index_);
           if (AddPlaceHolderEnd(peer_out_anchor, in_anchor) != ge::SUCCESS) {
@@ -771,7 +804,7 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
 /// before calling this function, the direct path between src and dst are already removed.
 /// return true if a second path is found
 bool ge::GraphPartitioner::HasSecondPath(size_t src, size_t dst, size_t upper_bound) {
-  if (clusters_.at(src)->out_clu_.empty() || clusters_.at(dst)->in_clu_.empty()) {
+  if (graph_info_.clusters_.at(src)->out_clu_.empty() || graph_info_.clusters_.at(dst)->in_clu_.empty()) {
     return false;
   }
   /// Avoid recursion since stack space might be limited.
@@ -782,7 +815,7 @@ bool ge::GraphPartitioner::HasSecondPath(size_t src, size_t dst, size_t upper_bo
   while (!temp_stack.empty()) {
     size_t cluster = temp_stack.back();
     temp_stack.pop_back();
-    ClusterPtr cur_cluster = clusters_[cluster];
+    ClusterPtr cur_cluster = graph_info_.clusters_[cluster];
     if (!visited.insert(cluster).second) {
       continue;
     }
@@ -798,21 +831,40 @@ bool ge::GraphPartitioner::HasSecondPath(size_t src, size_t dst, size_t upper_bo
   return false;
 }
 
-Status ge::GraphPartitioner::Partition(ge::ComputeGraphPtr compute_graph, vector<ge::SubGraphInfoPtr> &output_subgraphs,
-                                       Mode mode) {
-  ClearAllPartitionData(mode);
+Status ge::GraphPartitioner::Partition(ge::ComputeGraphPtr compute_graph, Mode mode) {
+  graph_2_graph_partition_info_.clear();
+  graph_2_subgraph_list_.clear();
+  auto ret = PartitionSubGraph(compute_graph, mode);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Sub graph partition Failed");
+    return ret;
+  }
+  // partition sub graph
+  for (const auto &sub_graph : compute_graph->GetAllSubgraphs()) {
+    ret = PartitionSubGraph(sub_graph, mode);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Sub graph partition Failed");
+      return ret;
+    }
+  }
+  return SUCCESS;
+}
+
+Status ge::GraphPartitioner::PartitionSubGraph(ge::ComputeGraphPtr compute_graph, Mode mode) {
   if (compute_graph == nullptr) {
     GELOGE(GE_GRAPH_NULL_INPUT, "[GraphPartitioner]: compute_graph is null.");
     return FAILED;
   }
-  output_name_ = compute_graph->GetOutput();
-  output_size_ = compute_graph->GetOutputSize();
-  input_size_ = compute_graph->GetInputSize();
-  if (output_size_ == 0) {
+  // clear graph_info
+  graph_info_.ClearAllData(mode);
+  graph_info_.output_name_ = compute_graph->GetOutput();
+  graph_info_.output_size_ = compute_graph->GetOutputSize();
+  graph_info_.input_size_ = compute_graph->GetInputSize();
+  if (graph_info_.output_size_ == 0) {
     GELOGE(GE_GRAPH_NULL_INPUT, "The output size need to be greater than 0.");
     return FAILED;
   }
-  GELOGI("Graph partition starts, graph nodes size is %zu", compute_graph->GetDirectNodesSize());
+  GELOGI("Graph Partition starts, graph nodes size is %zu", compute_graph->GetDirectNodesSize());
   Status ret = compute_graph->TopologicalSorting();
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_TOPO_SORT_FAILED, "[GraphPartitioner]: subGraphPtr->TopologicalSorting failed");
@@ -840,15 +892,18 @@ Status ge::GraphPartitioner::Partition(ge::ComputeGraphPtr compute_graph, vector
   }
   GE_TIMESTAMP_END(GraphPartitionSortSubGraphs, "GraphPartitioner::PartitionSortSubGraphs");
   GE_TIMESTAMP_START(GraphPartitionAddPartitionsToGraphNode);
+  vector<ge::SubGraphInfoPtr> output_subgraphs;
   if (AddPartitionsToGraphNode(output_subgraphs, compute_graph) != ge::SUCCESS) {
     GELOGE(GE_GRAPH_EMPTY_PARTITION, "Graph Partition AddPartitionsToGraphNode failed.");
     return ge::FAILED;
   }
   GE_TIMESTAMP_END(GraphPartitionAddPartitionsToGraphNode, "GraphPartitioner::PartitionAddPartitionsToGraphNode");
-  GELOGI("Graph partition ends. Adding partitions to SubGraphInfo, got %zu sub graphs", output_subgraphs.size());
-  mode_ = kMerging;
+  GELOGI("Graph Partition ends. Adding partitions to SubGraphInfo, got %zu sub graphs", output_subgraphs.size());
+  graph_info_.mode_ = kMerging;
   // do not care over flow
   partition_times_++;
+  graph_2_graph_partition_info_[compute_graph] = graph_info_;
+  graph_2_subgraph_list_[compute_graph] = output_subgraphs;
   return SUCCESS;
 }
 
@@ -866,8 +921,10 @@ Status ge::GraphPartitioner::AddPlaceHolderEnd(const AnchorPtr &out_anchor, cons
     return FAILED;
   }
   // All nodes have a copy in corresponding_node_in_partitions_, so function at can not be execption
-  auto src_anchor = corresponding_node_in_partitions_.at(src_node)->GetOutAnchor(AnchorUtils::GetIdx(out_anchor));
-  auto dst_anchor = corresponding_node_in_partitions_.at(dst_node)->GetInAnchor(AnchorUtils::GetIdx(in_anchor));
+  auto src_anchor =
+    graph_info_.corresponding_node_in_partitions_.at(src_node)->GetOutAnchor(AnchorUtils::GetIdx(out_anchor));
+  auto dst_anchor =
+    graph_info_.corresponding_node_in_partitions_.at(dst_node)->GetInAnchor(AnchorUtils::GetIdx(in_anchor));
   if ((src_anchor == nullptr) || (dst_anchor == nullptr)) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "src_anchor or dst_anchor is null.");
     return FAILED;
@@ -893,29 +950,29 @@ Status ge::GraphPartitioner::SortSubGraphs(const ge::ComputeGraphPtr &compute_gr
   }
   for (const auto &node : compute_graph->GetDirectNode()) {
     // All nodes in original graph have a copy in corresponding_node_in_partitions_, so it can not be null
-    auto sub_graph = corresponding_node_in_partitions_.at(node)->GetOwnerComputeGraph();
-    if ((partitions_2_rank_.find(sub_graph) == partitions_2_rank_.end()) &&
-        (partitions_[sub_graph] != kEngineDefaultData)) {
-      partitions_2_rank_[sub_graph] = rank;
-      rank_2_partitions_.push_back(sub_graph);
+    auto sub_graph = graph_info_.corresponding_node_in_partitions_.at(node)->GetOwnerComputeGraph();
+    if ((graph_info_.partitions_2_rank_.find(sub_graph) == graph_info_.partitions_2_rank_.end()) &&
+        (graph_info_.partitions_[sub_graph] != kEngineDefaultData)) {
+      graph_info_.partitions_2_rank_[sub_graph] = rank;
+      graph_info_.rank_2_partitions_.push_back(sub_graph);
       rank++;
-    } else if (partitions_[sub_graph] == kEngineDefaultData) {  // merge data graph
+    } else if (graph_info_.partitions_[sub_graph] == kEngineDefaultData) {  // merge data graph
       if (PutInputNodesInSubGraph(sub_graph, new_input_nodes_sub_graph) != SUCCESS) {
         GELOGE(FAILED, "[GraphPartitioner]: putInputNodesInSubGraph failed.");
         return FAILED;
       }
-      auto to_be_del = partitions_.find(sub_graph);
-      partitions_.erase(to_be_del);
+      auto to_be_del = graph_info_.partitions_.find(sub_graph);
+      graph_info_.partitions_.erase(to_be_del);
     }
   }
   if (!new_input_nodes_sub_graph->GetDirectNode().empty()) {
-    rank_2_partitions_.insert(rank_2_partitions_.begin(), new_input_nodes_sub_graph);
-    partitions_2_rank_[new_input_nodes_sub_graph] = 0;
+    graph_info_.rank_2_partitions_.insert(graph_info_.rank_2_partitions_.begin(), new_input_nodes_sub_graph);
+    graph_info_.partitions_2_rank_[new_input_nodes_sub_graph] = 0;
     AddNewGraphToPartition(new_input_nodes_sub_graph, "inputNodesSubGraph");
   }
   // reinit rank
   rank = kRankZero;
-  for (const auto &it : rank_2_partitions_) {
+  for (const auto &it : graph_info_.rank_2_partitions_) {
     // rename subGraph based on rank
     if (it != nullptr) {
       // rename subGraph based on rank
@@ -965,15 +1022,17 @@ void ge::GraphPartitioner::AddEndPldInformationToSubGraphInfo(ge::SubGraphInfoPt
   GE_CHECK_NOTNULL_JUST_RETURN(sub_graph);
   NodetoNodeMap end_map;
   NodetoNodeMap pld_map;
-  for (const auto &node : sub_graph->GetAllNodes()) {
+  for (const auto &node : sub_graph->GetDirectNode()) {
     if (node->GetType() == kEndType) {
-      end_map[node] = end_2_pld_.at(node);
+      end_map[node] = graph_info_.end_2_pld_.at(node);
     }
     if (node->GetType() == kPlaceHolderType) {
-      pld_map[node] = pld_2_end_.at(node);
+      pld_map[node] = graph_info_.pld_2_end_.at(node);
     }
   }
   sub_graph_info->SetEnd2PldMap(end_map);
   sub_graph_info->SetPld2EndMap(pld_map);
 }
+
+const Graph2SubGraphInfoList &ge::GraphPartitioner::GetSubGraphMap() { return graph_2_subgraph_list_; }
 }  // namespace ge

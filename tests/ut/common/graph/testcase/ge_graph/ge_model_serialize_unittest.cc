@@ -371,7 +371,7 @@ TEST(UtestGeModelSerialize, simple) {
     AttrUtils::GetTensorDesc(s_op, "node_key7", s_tensor_desc);
     EXPECT_EQ(s_tensor_desc.GetFormat(), FORMAT_NCHW);
     EXPECT_EQ(s_tensor_desc.GetDataType(), DT_INT16);
-    uint32_t size = 0;
+    int64_t size = 0;
     TensorUtils::GetSize(s_tensor_desc, size);
     EXPECT_EQ(size, 100);
 

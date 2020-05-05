@@ -39,7 +39,7 @@ REG_OP(QuantizedInnerProduct)
 /**
 * @brief Dequantizes the input tensor into a float tensor.\n
 * [input_min_range, input_max_range] are scalar floats that specify the range
-* for "output_data".
+* for "output_data". \n
 * The "mode" attribute controls exactly which calculations are used to convert\n
 * the float values to their quantized equivalents.
 * @par Inputs:
@@ -69,21 +69,53 @@ REG_OP(Dequantize)
     .ATTR(mode, String, "MIN_COMBINED")
     .OP_END_FACTORY_REG(Dequantize)
 
+/**
+*@brief Quantizes the input.
+
+*@par Inputs:
+*x: An NC1HWC0 tensor of type float16 or float32, specifying the input.
+
+*@par Attributes:
+*@li scale: A required float32, specifying the scaling ratio.
+*@li offset: A required float16, specifying the offset.
+*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
+*@li round_mode: An optional string, specifying the float16 to int8 cast type.
+* The value range is [Round, Floor, Ceiling, Truncate]. Defaults to "Round".
+
+*@par Outputs:
+*y: The quantized output tensor of type int8 and with format NC1HWC0.
+*/
 REG_OP(AscendQuant)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .OUTPUT(y, TensorType({DT_INT8}))
     .REQUIRED_ATTR(scale, Float)
-    .REQUIRED_ATTR(sqrt_mode, Bool)
     .REQUIRED_ATTR(offset, Float)
+    .ATTR(sqrt_mode, Bool, false)
     .ATTR(round_mode, String, "Round")
     .OP_END_FACTORY_REG(AscendQuant)
 
+/**
+*@brief Dequantizes the input.
+
+*@par Inputs:
+*@li x: An NC1HWC0 tensor of type int32, specifying the input.
+*@li deq_scale: An NC1HWC0 tensor of type float16 or uint64, specifying the scaling ratio.
+
+*@par Attributes:
+*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
+*@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
+*@li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
+
+*@par Outputs:
+*y: The dequantized output tensor of type float16 or float32 and with format NC1HWC0.
+*/
 REG_OP(AscendDequant)
     .INPUT(x, TensorType({DT_INT32}))
     .INPUT(deq_scale, TensorType({DT_FLOAT16, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
-    .REQUIRED_ATTR(sqrt_mode, Bool)
-    .REQUIRED_ATTR(relu_flag, Bool)
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(sqrt_mode, Bool, false)
+    .ATTR(relu_flag, Bool, false)
+    .ATTR(dtype, Int, DT_FLOAT)
     .OP_END_FACTORY_REG(AscendDequant)
 
 } // namespace ge

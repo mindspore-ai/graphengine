@@ -36,11 +36,11 @@ class TransOpDepthFusionPass : public GraphPass {
 
  private:
   ///
-  /// judge whether an operator is a transform op or not
+  /// Judge whether the node can be deleted in depth fusion
   /// @param node
   /// @return True or False
   ///
-  static bool IsTransOp(const NodePtr &node);
+  static bool CheckNodeCanBeDeleted(const NodePtr &node);
 
   ///
   /// two transform nodes can be offset only when the front node's input is

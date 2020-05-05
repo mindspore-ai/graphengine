@@ -47,6 +47,7 @@ Status LabelGotoTaskInfo::Distribute() {
     return RT_FAILED;
   }
 
+  GELOGI("LabelGotoTaskInfo Distribute Success.");
   return SUCCESS;
 }
 

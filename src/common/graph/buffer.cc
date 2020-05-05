@@ -32,8 +32,7 @@ Buffer::Buffer(const Buffer &other) {
   buffer_ = other.buffer_;
 }
 
-// default
-Buffer::Buffer(std::size_t buffer_size, std::uint8_t default_val) : Buffer() {
+Buffer::Buffer(std::size_t buffer_size, std::uint8_t default_val) : Buffer() {  // default
   auto proto_msg = data_.GetProtoMsg();
   if (proto_msg != nullptr) {
     try {

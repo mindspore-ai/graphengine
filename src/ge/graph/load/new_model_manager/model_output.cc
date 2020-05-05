@@ -15,13 +15,12 @@
  */
 
 #include "graph/load/new_model_manager/model_output.h"
-
 #include <memory>
 #include <string>
-
 #include "common/debug/log.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+
 #include "graph/load/output/output.h"
 
 namespace ge {

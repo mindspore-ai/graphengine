@@ -27,14 +27,13 @@ namespace ge {
 class TransVarDataUtils {
  public:
   static ge::Status SyncVarData2BroadCast(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,
-                                          uint8_t *dst_addr, uint32_t dst_addr_size, uint64_t session_id_);
-  static ge::Status SyncBroadCastData2Var(uint8_t *src_addr, uint32_t src_addr_size, const string &var_name,
+                                          uint8_t *dst_addr, int64_t dst_addr_size, uint64_t session_id_);
+  static ge::Status SyncBroadCastData2Var(uint8_t *src_addr, int64_t src_addr_size, const string &var_name,
                                           const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id_);
 
  private:
   static ge::Status SyncTensorToHost(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,
-                                     uint8_t **host_addr, uint32_t &addr_size, uint64_t session_id_);
-
+                                     uint8_t **host_addr, int64_t &addr_size, uint64_t session_id_);
   static ge::Status SyncTensorToDevice(const string &var_name, const uint8_t *host_addr, uint32_t addr_size,
                                        const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id_);
 };

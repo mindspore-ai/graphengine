@@ -22,34 +22,41 @@
 namespace ge {
 
 /**
-*@brief Generates labels for candidate sampling with a learned unigram distribution.
+*@brief Generates labels for candidate sampling with \n
+a learned unigram distribution.
 
-*@par Inputs:
-*The input true_classes must be two-dimensional matrices. Inputs include: \n
-*true_classes:A batch_size * num_true matrix, in which each row contains the IDs of the num_true target_classes in the corresponding original label.
+*@par Inputs: 
+*Input "true_classes" is a 2D matrix. \n
+*true_classes: A "batch_size * num_true" matrix, in which each row contains \n
+the IDs of the "num_true" "target_classes" in the corresponding original label.
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li num_sampled:Number of candidates to randomly sample.
-*@li unique:If unique is true, we sample with rejection, so that all sampled candidates in a batch are unique. This requires some approximation to estimate the post-rejection sampling probabilities.
-*@li range_max:The sampler will sample integers from the interval [0, range_max).
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li num_sampled: Number of candidates to randomly sample.
+*@li unique: If "unique" is true, samples with rejection, \n
+so that all sampled candidates in a batch are unique.
+*This requires some approximation to estimate the post-rejection \n
+sampling probabilities.
+*@li range_max: The sampler will sample integers from the interval \n
+[0, range_max).
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-*sampled_candidates:A vector of length num_sampled, in which each element is the ID of a sampled candidate.
-*true_expected_count:A batch_size * num_true matrix, representing the number of times each candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
-*sampled_expected_count:A vector of length num_sampled, for each sampled candidate representing the number of times the candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
+*@par Outputs: 
+*@li sampled_candidates: A vector of length "num_sampled", in which each \n
+element is the ID of a sampled candidate.
+*@li true_expected_count: A "batch_size * num_true" matrix, representing \n
+the number of times each candidate is expected to occur in a batch of sampled \n
+candidates. If "unique" is true, then this is a probability.
+*@li sampled_expected_count: A vector of length "num_sampled", \n
+for each sampled candidate.
+*representing the number of times the candidate is expected to occur \n
+in a batch of sampled candidates.
+* If "unique" is true, then this is a probability. \n
 
 *@attention Constraints: \n
-*-The implementation for ThreadUnsafeUnigramCandidateSampler on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*ThreadUnsafeUnigramCandidateSampler runs on the Ascend AI CPU, \n
+which delivers poor performance.
 */
 
 REG_OP(ThreadUnsafeUnigramCandidateSampler)
@@ -66,34 +73,41 @@ REG_OP(ThreadUnsafeUnigramCandidateSampler)
     .OP_END_FACTORY_REG(ThreadUnsafeUnigramCandidateSampler)
 
 /**
-*@brief Generates labels for candidate sampling with a learned unigram distribution.
+*@brief Generates labels for candidate sampling with a learned \n
+unigram distribution.
 
-*@par Inputs:
-*The input true_classes must be two-dimensional matrices. Inputs include: \n
-*true_classes:A batch_size * num_true matrix, in which each row contains the IDs of the num_true target_classes in the corresponding original label.
+*@par Inputs: 
+*true_classes: A "batch_size * num_true" matrix, in which each row contains \n
+the IDs of the "num_true" "target_classes" in the corresponding original label.
+*Input "true_classes" is a 2D matrix.
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li num_sampled:Number of candidates to randomly sample.
-*@li unique:If unique is true, we sample with rejection, so that all sampled candidates in a batch are unique. This requires some approximation to estimate the post-rejection sampling probabilities.
-*@li range_max:The sampler will sample integers from the interval [0, range_max).
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li num_sampled: Number of candidates to randomly sample.
+*@li unique: If "unique" is true, samples with rejection, \n
+so that all sampled candidates in a batch are unique.
+*This requires some approximation to estimate the post-rejection \n
+sampling probabilities.
+*@li range_max: The sampler will sample integers from the interval \n
+[0, range_max).
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-*@li sampled_candidates:A vector of length num_sampled, in which each element is the ID of a sampled candidate.
-*@li true_expected_count:A batch_size * num_true matrix, representing the number of times each candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
-*@li sampled_expected_count:A vector of length num_sampled, for each sampled candidate representing the number of times the candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
+*@par Outputs: 
+*@li sampled_candidates: A vector of length "num_sampled", \n
+in which each element is the ID of a sampled candidate.
+*@li true_expected_count: A "batch_size * num_true" matrix, representing the \n
+number of times each candidate is expected to occur \n
+in a batch of sampled candidates.
+*If "unique" is true, then this is a probability.
+*@li sampled_expected_count: A vector of length "num_sampled", for each \n
+sampled candidate representing the number of times.
+* the candidate is expected to occur in a batch of sampled candidates. \n
+*If "unique" is true, then this is a probability.
 
 *@attention Constraints: \n
-*-The implementation for UniformCandidateSampler on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UniformCandidateSampler runs on the Ascend AI CPU, \n
+which delivers poor performance.
 */
 
 REG_OP(UniformCandidateSampler)
@@ -110,40 +124,53 @@ REG_OP(UniformCandidateSampler)
     .OP_END_FACTORY_REG(UniformCandidateSampler)
 
 /**
-*@brief Generates labels for candidate sampling with a learned unigram distribution.
+*@brief Generates labels for candidate sampling with a learned \n
+unigram distribution.
 
-*@par Inputs:
-*The input true_classes can be two-dimensional matrices. Inputs include: \n
-*true_classes:A batch_size * num_true matrix, in which each row contains the IDs of the num_true target_classes in the corresponding original label.
+*@par Inputs: 
+*true_classes: A "batch_size * num_true" matrix, in which each row contains \n
+the IDs of the "num_true" "target_classes" in the corresponding original label.
+* Input "true_classes" is a 2D matrix.
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li num_sampled:Number of candidates to randomly sample.
-*@li unique:If unique is true, we sample with rejection, so that all sampled candidates in a batch are unique. This requires some approximation to estimate the post-rejection sampling probabilities.
-*@li range_max:The sampler will sample integers from the interval [0, range_max).
-*@li vocab_file:Each valid line in this file (which should have a CSV-like format) corresponds to a valid word ID. IDs are in sequential order, starting from num_reserved_ids.
-*@li distortion:The distortion is used to skew the unigram probability distribution. Each weight is first raised to the distortion's power before adding to the internal unigram distribution.
-*@li num_reserved_ids:Optionally some reserved IDs can be added in the range [0, ..., num_reserved_ids) by the users. One use case is that a special unknown word token is used as ID 0.
-*@li num_shards:A sampler can be used to sample from a subset of the original range in order to speed up the whole computation through parallelism.
-*@li shard:A sampler can be used to sample from a subset of the original range in order to speed up the whole computation through parallelism.
-*@li unigrams:A list of unigram counts or probabilities, one per ID in sequential order.
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li num_sampled: Number of candidates to randomly sample.
+*@li unique: If "unique" is true, samples with rejection, \n
+so that all sampled candidates in a batch are unique. This requires \n
+some approximation to estimate the post-rejection sampling probabilities.
+*@li range_max: The sampler will sample integers from the interval [0, range_max).
+*@li vocab_file: Each valid line in this file (which should have a \n
+CSV-like format) corresponds to a valid word ID. \n
+*IDs are in sequential order, starting from num_reserved_ids.
+*@li distortion: The distortion is used to skew the unigram probability \n
+distribution. Each weight is first raised to the distortion's power before \n
+adding to the internal unigram distribution.
+*@li num_reserved_ids: Optionally some reserved IDs can be added in the range \n
+[0, ..., num_reserved_ids) by the users. \n
+* One use case is that a special unknown word token is used as ID 0.
+*@li num_shards: A sampler can be used to sample from a subset of the \n 
+original range. in order to speed up the whole computation through parallelism.
+*@li shard: A sampler can be used to sample from a subset of the original \n
+range in order to speed up the whole computation through parallelism.
+*@li unigrams: A list of unigram counts or probabilities, one per ID in \n
+sequential order.
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-*@li sampled_candidates:A vector of length num_sampled, in which each element is the ID of a sampled candidate.
-*@li true_expected_count:A batch_size * num_true matrix, representing the number of times each candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
-*@li sampled_expected_count:A vector of length num_sampled, for each sampled candidate representing the number of times the candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
+*@par Outputs: 
+*@li sampled_candidates: A vector of length "num_sampled", in which each \n
+element is the ID of a sampled candidate.
+*@li true_expected_count: A "batch_size * num_true" matrix, representing the \n
+number of times each candidate is expected to occur in a batch of sampled \n
+candidates. If "unique" is true, then this is a probability.
+*@li sampled_expected_count: A vector of length "num_sampled", \n
+for each sampled candidate representing the number of times the candidate is \n
+expected to occur in a batch of sampled candidates. \n
+If "unique" is true, then this is a probability.
 
 *@attention Constraints: \n
-*-The implementation for FixedUnigramCandidateSampler on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+* FixedUnigramCandidateSampler runs on the Ascend AI CPU, \n
+which delivers poor performance.
 */
 
 REG_OP(FixedUnigramCandidateSampler)
@@ -166,34 +193,40 @@ REG_OP(FixedUnigramCandidateSampler)
     .OP_END_FACTORY_REG(FixedUnigramCandidateSampler)
 
 /**
-*@brief Generates labels for candidate sampling with a learned unigram distribution.
+*@brief Generates labels for candidate sampling with a learned \n
+unigram distribution.
 
-*@par Inputs:
-*The input true_classes can be two-dimensional matrices. Inputs include: \n
-*true_classes:A batch_size * num_true matrix, in which each row contains the IDs of the num_true target_classes in the corresponding original label.
+*@par Inputs: 
+*true_classes: A "batch_size * num_true" matrix, in which each row contains \n
+the IDs of the "num_true" "target_classes" in the corresponding original label.
+* Input "true_classes" is a 2D matrix.
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li num_sampled:Number of candidates to randomly sample.
-*@li unique:If unique is true, we sample with rejection, so that all sampled candidates in a batch are unique. This requires some approximation to estimate the post-rejection sampling probabilities.
-*@li range_max:The sampler will sample integers from the interval [0, range_max).
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li num_sampled: Number of candidates to randomly sample.
+*@li unique: If "unique" is true, samples with rejection, \n
+so that all sampled candidates in a batch are unique. \n
+*This requires some approximation to estimate the post-rejection \n
+sampling probabilities.
+*@li range_max: The sampler will sample integers from the interval \n
+[0, range_max).
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-*@li sampled_candidates:A vector of length num_sampled, in which each element is the ID of a sampled candidate.
-*@li true_expected_count:A batch_size * num_true matrix, representing the number of times each candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
-*@li sampled_expected_count:A vector of length num_sampled, for each sampled candidate representing the number of times the candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
+*@par Outputs: 
+*@li sampled_candidates: A vector of length "num_sampled", in which each \n
+element is the ID of a sampled candidate.
+*@li true_expected_count: A "batch_size * num_true" matrix, representing \n
+the number of times each candidate is expected to occur in a batch of sampled candidates. \n
+*If "unique" is true, then this is a probability.
+*@li sampled_expected_count: A vector of length "num_sampled", for each \n
+sampled candidate representing the number of times the candidate is expected \n
+to occur in a batch of sampled candidates. \n
+*If "unique" is true, then this is a probability.
 
 *@attention Constraints: \n
-*-The implementation for LearnedUnigramCandidateSampler on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*LearnedUnigramCandidateSampler runs on the Ascend AI CPU, which delivers \n
+poor performance.
 */
 
 REG_OP(LearnedUnigramCandidateSampler)
@@ -210,34 +243,39 @@ REG_OP(LearnedUnigramCandidateSampler)
     .OP_END_FACTORY_REG(LearnedUnigramCandidateSampler)
 
 /**
-*@brief Generates labels for candidate sampling with a log-uniform distribution.
+*@brief Generates labels for candidate sampling with a log-uniform \n
+distribution.
 
-*@par Inputs:
-*The input true_classes can be two-dimensional matrices. Inputs include: \n
-*true_classes:A batch_size * num_true matrix, in which each row contains the IDs of the num_true target_classes in the corresponding original label.
+*@par Inputs: 
+*true_classes: A "batch_size * num_true" matrix, in which each row contains \n
+the IDs of the "num_true" "target_classes" in the corresponding original label. \n
+* Input "true_classes" is a 2D matrix.
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li num_sampled:Number of candidates to randomly sample.
-*@li unique:If unique is true, we sample with rejection, so that all sampled candidates in a batch are unique. This requires some approximation to estimate the post-rejection sampling probabilities.
-*@li range_max:The sampler will sample integers from the interval [0, range_max).
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li num_sampled: Number of candidates to randomly sample.
+*@li unique: If "unique" is true, samples with rejection, so that all \n
+sampled candidates in a batch are unique. This requires some approximation \n
+to estimate the post-rejection sampling probabilities.
+*@li range_max: The sampler will sample integers from the interval \n
+[0, range_max).
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-*@li sampled_candidates:A vector of length num_sampled, in which each element is the ID of a sampled candidate.
-*@li true_expected_count:A batch_size * num_true matrix, representing the number of times each candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
-*@li sampled_expected_count:A vector of length num_sampled, for each sampled candidate representing the number of times the candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
+*@par Outputs: 
+*@li sampled_candidates: A vector of length "num_sampled", in which each \n
+element is the ID of a sampled candidate.
+*@li true_expected_count: A "batch_size * num_true" matrix, representing \n
+the number of times each candidate is expected to occur in a batch of sampled \n
+candidates. If "unique" is true, then this is a probability.
+*@li sampled_expected_count: A vector of length "num_sampled", for each \n
+sampled candidate representing the number of times the candidate is expected \n
+to occur in a batch of sampled candidates. \n
+*If "unique" is true, then this is a probability.
 
-*@attention Constraints:\n
-*-The implementation for LogUniformCandidateSampler on Ascend uses AI CPU, with bad performance.\n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*@attention Constraints: \n
+*LogUniformCandidateSampler runs on the Ascend AI CPU, which delivers \n
+poor performance.
 */
 
 REG_OP(LogUniformCandidateSampler)
@@ -254,33 +292,35 @@ REG_OP(LogUniformCandidateSampler)
     .OP_END_FACTORY_REG(LogUniformCandidateSampler)
 
 /**
-*@brief Generates labels for candidate sampling with a learned unigram distribution.
+*@brief Generates labels for candidate sampling with a learned \n
+unigram distribution.
 
-*@par Inputs:
-*The input true_classes can be two-dimensional matrices. Inputs include: \n
-*true_classes:A batch_size * num_true matrix, in which each row contains the IDs of the num_true target_classes in the corresponding original label.
+*@par Inputs: 
+*true_classes: A "batch_size * num_true" matrix, in which each row contains \n
+the IDs of the "num_true" "target_classes" in the corresponding original label. \n
+* Input "true_classes" is a 2D matrix.
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li num_sampled:Number of candidates to randomly sample.
-*@li unique:If unique is true, we sample with rejection, so that all sampled candidates in a batch are unique. This requires some approximation to estimate the post-rejection sampling probabilities.
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li num_sampled: Number of candidates to randomly sample.
+*@li unique: If "unique" is true, samples with rejection, \n
+so that all sampled candidates in a batch are unique. This requires some \n
+approximation to estimate the post-rejection sampling probabilities.
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-*@li sampled_candidates:A vector of length num_sampled, in which each element is the ID of a sampled candidate.
-*@li true_expected_count:A batch_size * num_true matrix, representing the number of times each candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
-*@li sampled_expected_count:A vector of length num_sampled, for each sampled candidate representing the number of times the candidate is expected to occur in a batch of sampled candidates. If unique=true, then this is a probability.
+*@par Outputs: 
+*@li sampled_candidates: A vector of length "num_sampled", \n
+in which each element is the ID of a sampled candidate.
+*@li true_expected_count: A "batch_size * num_true" matrix, representing the \n
+number of times each candidate is expected to occur in a batch of sampled candidates. \n
+*If "unique" is true, then this is a probability.
+*@li sampled_expected_count: A vector of length "num_sampled", for each \n
+sampled candidate representing the number of times the candidate is expected \n
+to occur in a batch of sampled candidates. If "unique" is true, then this is a probability.
 
-*@attention Constraints:\n
-*-The implementation for AllCandidateSampler on Ascend uses AI CPU, with bad performance.\n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*@attention Constraints: \n
+*AllCandidateSampler runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(AllCandidateSampler)
@@ -296,32 +336,28 @@ REG_OP(AllCandidateSampler)
     .OP_END_FACTORY_REG(AllCandidateSampler)
 
 /**
-*@brief Computes the ids of the positions in sampled_candidates that match true_labels.
+*@brief Computes the "ids" of the positions in "sampled_candidates" that \n
+match "true_labels".
 
-*@par Inputs:
-* @li The input true_classes can be two-dimensional matrices. Inputs include: \n
-* @li true_classes:The true_classes output of UnpackSparseLabels. \n
-* @li sampled_candidates:The sampled_candidates output of CandidateSampler. \n
+*@par Inputs: 
+* @li Input "true_classes" is a 2D matrix. \n
+* @li true_classes: The "true_classes" output of UnpackSparseLabels. \n
+* @li sampled_candidates: The "sampled_candidates" output of CandidateSampler. \n
 
-*@par Attributes:
-*@li num_true:Number of true labels per context.
-*@li seed:If either seed or seed2 are set to be non-zero.
-*@li seed2:An second seed to avoid seed collision.
+*@par Attributes: 
+*@li num_true: Number of true labels per context.
+*@li seed: If either "seed" or "seed2" are set to be non-zero.
+*@li seed2: A second seed to avoid seed collision.
 
-*@par Outputs:
-* @li indices:A vector of indices corresponding to rows of true_candidates.
-* @li ids:A vector of IDs of positions in sampled_candidates that match a true_label for the row with the corresponding index in indices.
-* @li weights:A vector of the same length as indices and ids, in which each element is -FLOAT_MAX.
+*@par Outputs: 
+* @li indices: A vector of indices corresponding to rows of "true_candidates".
+* @li ids: A vector of IDs of positions in "sampled_candidates" that match a \n
+"true_label" for the row with the corresponding index in indices.
+* @li weights: A vector of the same length as "indices" and "ids", in which \n
+each element is -FLOAT_MAX.
 
-*@attention Constraints:\n
-*-The implementation for ComputeAccidentalHits on Ascend uses AI CPU, with bad performance.\n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*@attention Constraints: \n
+*ComputeAccidentalHits runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(ComputeAccidentalHits)

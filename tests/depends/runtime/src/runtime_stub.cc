@@ -105,6 +105,10 @@ rtError_t rtMemcpyAsync(void *dst, uint64_t dest_max, const void *src, uint64_t 
 
 rtError_t rtStreamWaitEvent(rtStream_t stream, rtEvent_t event) { return RT_ERROR_NONE; }
 
+rtError_t rtSetTSDevice(uint32_t tsId) {
+  return RT_ERROR_NONE;
+}
+
 rtError_t rtGetDeviceCount(int32_t *count) {
   *count = 1;
   return RT_ERROR_NONE;
@@ -201,7 +205,11 @@ rtError_t rtGetFunctionByName(const char *stub_name, void **stub_func) {
   *(char **)stub_func = "func";
   return RT_ERROR_NONE;
 }
-
+rtError_t rtGetAddrByFun(const void *stubFunc, void **addr)
+{
+  *(char**)addr =  "dev_func";
+  return RT_ERROR_NONE;
+}
 rtError_t rtQueryFunctionRegistered(const char *stub_name) { return RT_ERROR_NONE; }
 
 rtError_t rtCtxCreate(rtContext_t *ctx, uint32_t flags, int32_t device) { return RT_ERROR_NONE; }
@@ -218,6 +226,10 @@ rtError_t rtModelGetTaskId(void *handle, uint32_t *task_id) {
   return RT_ERROR_NONE;
 }
 rtError_t rtEndGraph(rtModel_t model, rtStream_t stream) { return RT_ERROR_NONE; }
+rtError_t rtEndGraphEx(rtModel_t model, rtStream_t stream, uint32_t flags)
+{
+  return RT_ERROR_NONE;
+}
 rtError_t rtProfilerStop(void) { return RT_ERROR_NONE; }
 
 rtError_t rtSetDvfsProfile(DvfsProfileMode mode) { return RT_ERROR_NONE; }
@@ -283,5 +295,15 @@ rtError_t rtKernelLaunchWithFlag(const void *stub_func, uint32_t block_dim, void
 
 rtError_t rtCpuKernelLaunchWithFlag(const void *so_name, const void *kernel_name, uint32_t core_dim, const void *args,
                                     uint32_t args_size, rtL2Ctrl_t *l2ctrl, rtStream_t stream_, uint32_t flags) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtModelBindQueue(rtModel_t model, uint32_t queueId, rtModelQueueFlag_t flag)
+{
   return RT_ERROR_NONE;
 }

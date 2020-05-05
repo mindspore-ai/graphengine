@@ -48,6 +48,10 @@ typedef enum tagDomiTensorFormat {
   DOMI_TENSOR_BN_WEIGHT,
   DOMI_TENSOR_CHWN,         // Android NN Depth CONV
   DOMI_TENSOR_FILTER_HWCK,  // filter input tensor format
+  DOMI_TENSOR_NDHWC,
+  DOMI_TENSOR_NCDHW,
+  DOMI_TENSOR_DHWCN,  // 3D filter input tensor format
+  DOMI_TENSOR_DHWNC,
   DOMI_TENSOR_RESERVED
 } domiTensorFormat_t;
 }  // namespace domi

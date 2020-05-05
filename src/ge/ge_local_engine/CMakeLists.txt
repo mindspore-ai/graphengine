@@ -20,7 +20,7 @@ file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         )
 
 file(GLOB_RECURSE SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "engine/*.cc"
+        "engine/ge_local_engine.cc"
         "ops_kernel_store/*.cc"
         )
 

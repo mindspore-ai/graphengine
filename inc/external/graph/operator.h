@@ -23,9 +23,9 @@
 #include <string>
 #include <vector>
 
-#include "external/graph/ge_error_codes.h"
-#include "external/graph/inference_context.h"
-#include "external/graph/tensor.h"
+#include "./ge_error_codes.h"
+#include "./inference_context.h"
+#include "./tensor.h"
 
 #ifndef USER_GE_LOGI
 #define USER_GE_LOGI(...)

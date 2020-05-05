@@ -73,7 +73,9 @@ Status RsqrtKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
       buf[i] = 1 / denominator;
     }
 
-    GeTensorPtr output_ptr = MakeShared<GeTensor>();
+    // Index 0 can always gets a GeTensorDesc object from any OpDescPtr.
+    auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
+    GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
     if (output_ptr == nullptr) {
       GELOGE(MEMALLOC_FAILED, "MakeShared GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
       return NOT_CHANGED;

@@ -18,7 +18,6 @@
 #define GE_GRAPH_PASSES_PASS_UTILS_H_
 
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
@@ -37,7 +36,7 @@ class PassUtils {
   static Status RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes);
 
   static Status RemoveInactiveBranchToMerge(const OutDataAnchorPtr &inactive_output_anchor,
-      std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes);
+                                            std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes);
 
   ///
   /// check is need iter flow ctrl.

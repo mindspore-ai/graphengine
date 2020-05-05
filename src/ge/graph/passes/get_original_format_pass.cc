@@ -33,6 +33,8 @@ using domi::FAILED;
 using domi::PARAM_INVALID;
 using domi::SUCCESS;
 
+using domi::GetContext;
+
 namespace ge {
 Status GetOriginalFormatPass::Run(ge::ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);

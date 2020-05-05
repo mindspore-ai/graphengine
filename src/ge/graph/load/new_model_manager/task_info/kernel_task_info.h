@@ -31,6 +31,7 @@ class KernelTaskInfo : public TaskInfo {
 
   KernelTaskInfo()
       : ctx_(),
+        fusion_op_info_(),
         stub_func_(nullptr),
         args_(nullptr),
         sm_desc_(nullptr),
@@ -39,12 +40,20 @@ class KernelTaskInfo : public TaskInfo {
         args_size_(0),
         flowtable_size_(0),
         task_id_(0),
+        stream_id_(0),
         so_name_(""),
         kernel_name_(""),
         kernel_type_(cce::ccKernelType::CCE_AI_CORE),
         dump_flag_(RT_KERNEL_DEFAULT),
         dump_args_(nullptr),
-        davinci_model_(nullptr) {}
+        op_desc_(nullptr),
+        davinci_model_(nullptr),
+        skt_id_(0),
+        stub_func_name_(""),
+        is_l1_fusion_enable_(false),
+        is_n_batch_spilt_(false),
+        group_key_(-1),
+        has_group_key_(false) {}
 
   ~KernelTaskInfo() override {
     davinci_model_ = nullptr;
@@ -62,14 +71,21 @@ class KernelTaskInfo : public TaskInfo {
 
   cce::ccOpContext *GetCtx() override { return &ctx_; }
 
+  FusionOpInfo *GetFusionOpInfo() override { return &fusion_op_info_; }
+
   uint32_t GetTaskID() override { return task_id_; }
+
+  uint32_t GetStreamId() override { return stream_id_; }
 
   uintptr_t GetDumpArgs() override {
     auto ret = reinterpret_cast<uintptr_t>(dump_args_);
     return ret;
   }
 
+  uint32_t GetSktTaskID() override { return skt_id_; }
+
   cce::ccOpContext ctx_;
+  FusionOpInfo fusion_op_info_;
 
  private:
   Status InitTVMTask(DavinciModel *davinci_model, uint16_t offset, const domi::KernelDef &kernel_def);
@@ -97,7 +113,23 @@ class KernelTaskInfo : public TaskInfo {
 
   Status SetFlowtable(std::string &flowtable, const domi::KernelDef &kernel_def);
 
+  uint8_t IsL2CpToDDR(uint8_t origain_L2_load_to_ddr);
+
   static void FreeRtMem(void **ptr);
+
+  Status SuperKernelDistribute();
+
+  // For super kernel
+  Status SaveSKTDumpInfo();
+  void UpdateTaskId();
+  void UpdateSKTTaskId();
+  Status SKTFinalize();
+  Status SuperKernelLaunch();
+  Status SaveSuperKernelInfo();
+  bool IsMarkedLastNode();
+  bool IsMarkedFirstNode();
+  bool FirstCallSKTLaunchCheck();
+  bool DoubleCallSKTSaveCheck();
 
   void *stub_func_;
   void *args_;
@@ -107,12 +139,22 @@ class KernelTaskInfo : public TaskInfo {
   uint32_t args_size_;
   uint32_t flowtable_size_;
   uint32_t task_id_;
+  uint32_t stream_id_;
   std::string so_name_;
   std::string kernel_name_;
   cce::ccKernelType kernel_type_;
   uint32_t dump_flag_;
   void *dump_args_;
+  OpDescPtr op_desc_;
   DavinciModel *davinci_model_;
+
+  // For super kernel
+  uint32_t skt_id_;
+  std::string stub_func_name_;
+  bool is_l1_fusion_enable_;
+  bool is_n_batch_spilt_;
+  int64_t group_key_;
+  bool has_group_key_;
 
   struct AICPUCustomInfo {
     void *input_descs = nullptr;
@@ -121,6 +163,21 @@ class KernelTaskInfo : public TaskInfo {
     void *output_addrs = nullptr;
     void *attr_handle = nullptr;
   } custom_info_;
+
+  // For super kernel
+  static struct SuperKernelTaskInfo {
+    uint32_t last_block_dim;
+    uint32_t last_args_size;
+    uint32_t last_task_id;
+    void *last_stream;
+    void *last_sm_desc;
+    std::vector<void *> kernel_list;
+    std::vector<void *> arg_list;
+    uint32_t last_dump_flag;
+    int64_t last_group_key;
+    uintptr_t last_dump_args;
+    OpDescPtr last_op;
+  } skt_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_TASK_INFO_H_

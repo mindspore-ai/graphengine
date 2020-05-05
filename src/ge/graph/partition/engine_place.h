@@ -24,7 +24,7 @@
 #include "graph/compute_graph.h"
 
 namespace ge {
-using NodeEngineMap = std::unordered_map<ConstNodePtr, const std::string>;
+using NodeEngineMap = std::unordered_map<ConstNodePtr, std::string>;
 
 ///
 /// @ingroup graph/partition
@@ -36,12 +36,6 @@ class EnginePlacer {
   explicit EnginePlacer(const ComputeGraphPtr &graph) : compute_graph_(graph) {}
   EnginePlacer() = default;
   ~EnginePlacer() = default;
-
-  // Disable copy constructor and assignment operator
-  EnginePlacer(const EnginePlacer &) = delete;
-  EnginePlacer(const EnginePlacer &&) = delete;
-  EnginePlacer &operator=(const EnginePlacer &) = delete;
-  EnginePlacer &operator=(const EnginePlacer &&) = delete;
 
   Status Run();
 

@@ -52,10 +52,10 @@
 #define DLOG_DECLARE(level) \
   void Log_##level(const char *mod_name, const char *func, const char *file, int line, const char *format, ...)
 
-namespace ge {
+namespace domi {
 DLOG_DECLARE(INFO);
 DLOG_DECLARE(WARNING);
 DLOG_DECLARE(ERROR);
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_DLOG_LOG_H_

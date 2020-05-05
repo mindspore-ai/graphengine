@@ -15,17 +15,17 @@
  */
 
 #include "executor/ge_executor.h"
-
 #include <cce/cce.h>
 #include <cce/compiler_stub.h>
 #include <ctime>
 #include <iostream>
-
 #include "common/debug/log.h"
-#include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
+#include "common/profiling/profiling_manager.h"
 #include "common/util.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/util.h"
 #include "graph/execute/graph_execute.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
@@ -35,31 +35,15 @@
 #include "graph/utils/graph_utils.h"
 #include "mmpa/mmpa_api.h"
 #include "single_op/single_op_manager.h"
-#include "framework/common/util.h"
-#include "common/profiling/profiling_manager.h"
 
 namespace {
-const uint64_t kDynamicImageSizeParamNum = 2;
-}  // namespace
+const size_t kDynamicBatchSizeVecSize = 1;
+const size_t kDynamicImageSizeVecSize = 2;
+const size_t kDynamicImageSizeInputSize = 2;
+const char *const kBatchLabel = "Batch_";
 
-namespace ge {
-bool GeExecutor::is_init_ = false;
-
-class ModelListenerAdapter : public ModelListener {
- public:
-  domi::Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code) {
-    if (listener == nullptr) {
-      GELOGE(ge::FAILED, "listener is null.");
-      return FAILED;
-    }
-    return listener->OnComputeDone(model_id, data_index, result_code);
-  }
-
-  std::shared_ptr<ge::ModelListener> listener;
-};
-
-ge::Status TransferDomiErrorCode(const uint32_t error_code) {
-  switch (error_code) {
+ge::Status TransferDomiErrorCode(const uint32_t errorCode) {
+  switch (errorCode) {
     case ge::PARAM_INVALID:
     case domi::PARAM_INVALID:
       return ge::PARAM_INVALID;
@@ -72,19 +56,19 @@ ge::Status TransferDomiErrorCode(const uint32_t error_code) {
 }
 
 void GetGeTensorDescFromDomiInfo(std::vector<ge::TensorDesc> &ge_descs,
-                                 const std::vector<InputOutputDescInfo> &domi_descs,
+                                 const std::vector<ge::InputOutputDescInfo> &domi_descs,
                                  const std::vector<uint32_t> &formats) {
   uint32_t idx = 0;
   for (auto desc_item : domi_descs) {
     ge::TensorDesc ge_desc;
     ge_desc.SetName(desc_item.name);
-    ge_desc.SetDataType(static_cast<DataType>(desc_item.data_type));
+    ge_desc.SetDataType(static_cast<ge::DataType>(desc_item.data_type));
     ge_desc.SetFormat(static_cast<ge::Format>(formats[idx]));
     std::vector<int64_t> shape_dims;
     for (auto dim : desc_item.shape_info.dims) {
       shape_dims.push_back(dim);
     }
-    Shape ge_shape(shape_dims);
+    ge::Shape ge_shape(shape_dims);
     ge_desc.SetShape(ge_shape);
     ge_desc.SetSize(desc_item.size);
     ge_descs.emplace_back(ge_desc);
@@ -92,32 +76,111 @@ void GetGeTensorDescFromDomiInfo(std::vector<ge::TensorDesc> &ge_descs,
   }
 }
 
-void GetDomiInputData(const ge::RunModelData &input_data, InputData &inputs) {
+void GetDomiInputData(const ge::RunModelData &input_data, ge::InputData &inputs) {
   inputs.index = input_data.index;
-  inputs.model_id = input_data.model_id;
+  inputs.model_id = input_data.modelId;
   inputs.timestamp = input_data.timestamp;
   inputs.timeout = input_data.timeout;
   inputs.request_id = input_data.request_id;
   for (const auto &data_item : input_data.blobs) {
-    DataBuffer data_buf{data_item.data, data_item.length, data_item.isDataSupportMemShare};
-    inputs.blobs.emplace_back(data_buf);
+    ge::DataBuffer dataBuf{data_item.data, data_item.length, data_item.isDataSupportMemShare};
+    inputs.blobs.emplace_back(dataBuf);
   }
 }
 
-void GetDomiOutputData(const ge::RunModelData &output_data, OutputData &outputs) {
+void GetDomiOutputData(const ge::RunModelData &output_data, ge::OutputData &outputs) {
   outputs.index = output_data.index;
-  outputs.model_id = output_data.model_id;
+  outputs.model_id = output_data.modelId;
   for (const auto &data_item : output_data.blobs) {
-    DataBuffer data_buf(data_item.data, data_item.length, data_item.isDataSupportMemShare);
-    outputs.blobs.emplace_back(data_buf);
+    ge::DataBuffer dataBuf(data_item.data, data_item.length, data_item.isDataSupportMemShare);
+    outputs.blobs.emplace_back(dataBuf);
   }
 }
+
+void SetDynamicInputDataFlag(const ge::RunModelData &input_data, const std::vector<std::vector<int64_t>> batch_info,
+                             ge::InputData &inputs) {
+  inputs.is_dynamic_batch = true;
+  std::string batch_label;
+  for (size_t i = 0; i < batch_info.size(); ++i) {
+    if (batch_info[i].size() == kDynamicBatchSizeVecSize &&
+        batch_info[i][0] == static_cast<int64_t>(input_data.dynamic_batch_size)) {
+      batch_label = kBatchLabel + std::to_string(i);
+      inputs.batch_label = batch_label;
+      break;
+    } else if (batch_info[i].size() == kDynamicImageSizeVecSize &&
+               batch_info[i][0] == static_cast<int64_t>(input_data.dynamic_image_height) &&
+               batch_info[i][1] == static_cast<int64_t>(input_data.dynamic_image_width)) {
+      batch_label = kBatchLabel + std::to_string(i);
+      inputs.batch_label = batch_label;
+      break;
+    }
+  }
+  GELOGI("current batch label:%s", batch_label.c_str());
+}
+
+bool IsDynamicBatchSizeMatchModel(uint64_t batch_size, const vector<std::vector<int64_t>> &batch_info) {
+  if (batch_info.empty()) {
+    GELOGE(ge::FAILED, "Dynamic batch info is empty.");
+    return false;
+  }
+
+  for (auto batch : batch_info) {
+    if (batch.size() != kDynamicBatchSizeVecSize) {
+      GELOGE(ge::FAILED, "Dynamic batch param num is %zu, current batch size is %zu.", kDynamicBatchSizeVecSize,
+             batch.size());
+      return false;
+    }
+    if (batch[0] == static_cast<int64_t>(batch_size)) {
+      return true;
+    }
+  }
+  GELOGE(ge::FAILED, "Dynamic batch %lu can not match the gear of model.", batch_size);
+  return false;
+}
+
+bool IsDynamicImageSizeMatchModel(uint64_t image_height, uint64_t image_width,
+                                  const vector<std::vector<int64_t>> &batch_info) {
+  if (batch_info.empty()) {
+    GELOGE(ge::FAILED, "Dynamic batch info is empty.");
+    return false;
+  }
+
+  for (auto resolution : batch_info) {
+    if (resolution.size() != kDynamicImageSizeVecSize) {
+      GELOGE(ge::FAILED, "Dynamic resolution param num is %zu, current resolution size is %zu.",
+             kDynamicImageSizeVecSize, resolution.size());
+      return false;
+    }
+    if (resolution[0] == static_cast<int64_t>(image_height) && resolution[1] == static_cast<int64_t>(image_width)) {
+      return true;
+    }
+  }
+
+  GELOGE(ge::FAILED, "Dynamic resolution (%lu,%lu) can not match the gear of model.", image_height, image_width);
+  return false;
+}
+}  // namespace
+
+namespace ge {
+bool GeExecutor::isInit_ = false;
+class ModelListenerAdapter : public ModelListener {
+ public:
+  domi::Status OnComputeDone(uint32_t model_id, uint32_t dataIndex, uint32_t resultCode) {
+    if (listener == nullptr) {
+      GELOGE(ge::FAILED, "listener is null.");
+      return FAILED;
+    }
+    return listener->OnComputeDone(model_id, dataIndex, resultCode);
+  }
+
+  std::shared_ptr<ge::ModelListener> listener;
+};
 
 GeExecutor::GeExecutor() {}
 
 Status GeExecutor::Initialize() {
   GELOGI("Init ge_executor begin.");
-  if (is_init_) {
+  if (isInit_) {
     GELOGW("Already inited, don't need to init again.");
     return ge::SUCCESS;
   }
@@ -130,38 +193,160 @@ Status GeExecutor::Initialize() {
   }
 
   // Start profiling
-  int32_t device_id = 0;
-  rtError_t rt_ret = rtGetDevice(&device_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "runtime get device_id failed, current device_id:%d", device_id);
-    return FAILED;
-  }
-  GELOGI("current device_id:%d", device_id);
   Options profiling_options;
-  profiling_options.device_id = device_id;
+  profiling_options.device_id = 0;
   profiling_options.job_id = "";
   ProfilingManager::Instance().Init(profiling_options);
-  if (ProfilingManager::Instance().Init(profiling_options) != SUCCESS) {
-    GELOGE(FAILED, "Failed to init profiling.");
+
+  isInit_ = true;
+  GELOGI("Init ge_executor over.");
+  return ge::SUCCESS;
+}
+
+Status GeExecutor::Finalize() {
+  GELOGI("Uninit ge_executor begin.");
+  if (isInit_ == false) {
+    GELOGW("ge_executor needs to init begin.");
+    return ge::SUCCESS;
+  }
+
+  // Stop profiling
+  ProfilingManager::Instance().StopProfiling();
+  GELOGI("Uninit ge_executor over.");
+  return ge::SUCCESS;
+}
+
+Status GeExecutor::SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
+                                       uint64_t batch_size) {
+  if (dynamic_input_addr == nullptr) {
+    GELOGE(FAILED, "Dynamic input addr is nullptr!");
     return FAILED;
   }
 
-  is_init_ = true;
-  GELOGI("Init ge_executor over.");
-  return ge::SUCCESS;
+  uint64_t size = sizeof(uint64_t);
+  if (length < size) {
+    GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, size);
+    return FAILED;
+  }
+
+  // Verify whether the input dynamic batch matches the model gear
+  std::vector<std::vector<int64_t>> batch_info;
+  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Get dynamic input info failed.");
+    return FAILED;
+  }
+
+  if (!IsDynamicBatchSizeMatchModel(batch_size, batch_info)) {
+    GELOGE(FAILED, "The current dynamic input does not match the gear of the model.");
+    return FAILED;
+  }
+
+  // memcpy dynamic_batch_size from host to device
+  if (rtMemcpy(dynamic_input_addr, length, &batch_size, size, RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
+    GELOGE(FAILED, "memcpy dynamic batch input data failed!");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
+                                       uint64_t image_height, uint64_t image_width) {
+  if (dynamic_input_addr == nullptr) {
+    GELOGE(FAILED, "Dynamic input addr is nullptr!");
+    return FAILED;
+  }
+
+  uint64_t dynamic_input_size = kDynamicImageSizeInputSize * sizeof(uint64_t);
+  if (length < dynamic_input_size) {
+    GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
+    return FAILED;
+  }
+
+  // Verify whether the input dynamic resolution matches the model gear
+  std::vector<std::vector<int64_t>> batch_info;
+  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Get dynamic input info failed.");
+    return FAILED;
+  }
+
+  if (!IsDynamicImageSizeMatchModel(image_height, image_width, batch_info)) {
+    GELOGE(FAILED, "The current dynamic input does not match the gear of the model.");
+    return FAILED;
+  }
+
+  // Memcpy dynamic resolution height from host to device
+  if (rtMemcpy(dynamic_input_addr, sizeof(uint64_t), &image_height, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE) !=
+      RT_ERROR_NONE) {
+    GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
+    return FAILED;
+  }
+
+  uint64_t remain_size = length - sizeof(uint64_t);
+  // Memcpy dynamic resolution width from host to device
+  if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + sizeof(uint64_t)),
+               remain_size, &image_width, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
+    GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status GeExecutor::SetDynamicAippData(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
+                                      const std::vector<kAippDynamicBatchPara> &aippBatchPara,
+                                      const kAippDynamicPara &aippParms) {
+  GELOGI("Enter to SetDynamicAippData.");
+  if (dynamic_input_addr == nullptr) {
+    GELOGE(FAILED, "Dynamic aipp input addr is nullptr!");
+    return FAILED;
+  }
+  if (aippBatchPara.empty()) {
+    GELOGE(FAILED, "aippBatchPara is empty.");
+    return FAILED;
+  }
+  uint64_t batch_num = aippBatchPara.size();
+  uint64_t real_aippParms_size = sizeof(kAippDynamicPara) - sizeof(kAippDynamicBatchPara);
+  uint64_t struct_len = batch_num * sizeof(kAippDynamicBatchPara) + real_aippParms_size;
+  GELOGI(
+    "Get acl input dynamic aipp data, model_id is %u, length is %lu,"
+    "batch num is %lu, struct_len is %lu",
+    model_id, length, batch_num, struct_len);
+  if (struct_len > length) {
+    GELOGE(FAILED, "input dynamic aipp param len [%lu] is larger than aipp_data size [%lu]", struct_len, length);
+    return FAILED;
+  }
+  // Memcpy real kAippDynamicBatchPara from host to device
+  if (rtMemcpy(dynamic_input_addr, length, &aippParms, real_aippParms_size, RT_MEMCPY_HOST_TO_DEVICE) !=
+      RT_ERROR_NONE) {
+    GELOGE(FAILED, "memcpy real_aippParms_size failed!");
+    return FAILED;
+  }
+  uint64_t remain_len = length - real_aippParms_size;
+  uint8_t *aipp_batch_para_dev = reinterpret_cast<uint8_t *>(dynamic_input_addr) + real_aippParms_size;
+
+  for (uint64_t i = 0; i < batch_num; ++i) {
+    if (rtMemcpy(reinterpret_cast<void *>(aipp_batch_para_dev + i * sizeof(kAippDynamicBatchPara)),
+                 (remain_len - i * sizeof(kAippDynamicBatchPara)), &(aippBatchPara[i]), sizeof(kAippDynamicBatchPara),
+                 RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
+      GELOGE(FAILED, "memcpy kAippDynamicBatchPara input data failed!");
+      return FAILED;
+    }
+  }
+  return SUCCESS;
 }
 
 // Load model
 Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path, const std::string &key,
                                     int32_t priority, std::shared_ptr<ge::ModelListener> listener) {
   GELOGI("load model offline begin.");
-  if (!is_init_) {
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
 
-  string file_path = RealPath(path.c_str());
-  if (file_path.empty()) {
+  string filePath = RealPath(path.c_str());
+  if (filePath.empty()) {
     GELOGE(ge::FAILED, "fileath is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;
   }
@@ -183,13 +368,12 @@ Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path,
 
 Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
                              std::shared_ptr<ge::ModelListener> listener) {
-  GELOGI("Load model begin, model_id:%u.", model_id);
-  if (!is_init_) {
+  GELOGI("Load model begin.");
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
 
-  Status ret;
   std::shared_ptr<ModelListenerAdapter> listener_adapter = MakeShared<ModelListenerAdapter>();
   if (listener_adapter == nullptr) {
     GELOGE(MEMALLOC_FAILED, "ModelListenerAdapter make shared failed!");
@@ -197,7 +381,7 @@ Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
   }
   listener_adapter->listener = listener;
 
-  ret = GraphLoader::LoadModel(model_data, listener_adapter, model_id);
+  Status ret = GraphLoader::LoadModel(model_data, listener_adapter, model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[GeExecutor] LoadModel failed.");
     return TransferDomiErrorCode(ret);
@@ -207,21 +391,17 @@ Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
 
 Status GeExecutor::UnloadModel(uint32_t model_id) {
   GELOGI("unload model %u begin.", model_id);
-  if (!is_init_) {
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
 
-  // Stop profiling
-  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().StopProfiling();
-  }
   return GraphLoader::UnloadModel(model_id);
 }
 
 Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData &output_data) {
   GELOGI("run model begin.");
-  if (!is_init_) {
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
@@ -238,7 +418,7 @@ Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData
 Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                     std::vector<ge::TensorDesc> &output_desc) {
   GELOGI("get model desc info begin.");
-  if (!is_init_) {
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
@@ -274,10 +454,34 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
   return ge::SUCCESS;
 }
 
+///
+/// @ingroup ge
+/// @brief Get dynamic batch_info
+/// @param [in] model_id
+/// @param [out] batch_info
+/// @return execute result
+///
+Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
+  GELOGI("Begin to get dynamic batch info.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetDynamicBatchInfo failed.");
+    return ret;
+  }
+
+  GELOGI("Get dynamic batch info succ.");
+  return SUCCESS;
+}
+
 Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                                std::vector<TensorDesc> &output_desc) {
   GELOGI("get model desc info for zero copy begin.");
-  if (!is_init_) {
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
@@ -314,6 +518,7 @@ Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge
 
 Status GeExecutor::CommandHandle(const Command &command) {
   GELOGI("command handle begin.");
+
   Status ret = GraphLoader::CommandHandle(command);
   if (ret != SUCCESS) {
     GELOGE(ret, "CommandHandle: Command Handle failed.");
@@ -323,26 +528,38 @@ Status GeExecutor::CommandHandle(const Command &command) {
 }
 
 Status GeExecutor::GetMaxUsedMemory(uint32_t model_id, uint32_t &max_size) {
+  GELOGI("Get max used memory begin.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
   uint64_t max_mem_size = 0;
   Status ret = GraphLoader::GetMaxUsedMemory(model_id, max_mem_size);
   max_size = static_cast<uint32_t>(max_mem_size);
   return ret;
 }
 
-///
-/// @ingroup ge
-/// @brief Load data from model file to memory
-/// @param [in] const std::string &path: Offline model file path
-/// @param [out] domi::ModelData &model_data: Offline model memory data
-/// @return SUCCESS handle successfully / others handle failed
-///
+/**
+ * @ingroup ge
+ * @brief Load data from model file to memory
+ * @param [in] const std::string &path: Offline model file path
+ * @param [out] domi::ModelData &model_data: Offline model memory data
+ * @return SUCCESS handle successfully / others handle failed
+ */
 Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_data) {
-  string file_path = RealPath(path.c_str());
-  if (file_path.empty()) {
-    GELOGE(ge::FAILED, "file_path is invalid. please check your text file '%s'.", path.c_str());
+  GELOGI("Load data from file begin.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  string filePath = RealPath(path.c_str());
+  if (filePath.empty()) {
+    GELOGE(ge::FAILED, "filePath is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;
   }
-  GELOGI("load model_data from file: %s.", path.c_str());
+  GELOGI("load modelData from file: %s.", path.c_str());
   std::string key_path;
   int32_t priority = 0;
   Status ret = GraphLoader::LoadDataFromFile(path, key_path, priority, model_data);
@@ -356,71 +573,102 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
   return ret;
 }
 
-///
-/// @ingroup ge
-/// @brief Load model from offline model memory data
-/// @param [in] domi::ModelData &model_data: Offline model data
-///            void *dev_ptr: Input/Output memory start address
-///            size_t memsize: Input/Output memory length
-///            void *weight_ptr: Weight memory start address
-///            size_t weightsize: Weight memory length
-/// @param [out] uint32_t &model_id: identification after model loading
-/// @return SUCCESS handle successfully / others handle failed
-///
+/**
+* @ingroup ge
+* @brief Load model from offline model memory data
+* @param [in] domi::ModelData &model_data: Offline model data
+              void *dev_ptr: Input/Output memory start address
+              size_t memsize: Input/Output memory length
+              void *weight_ptr: Weight memory start address
+              size_t weightsize: Weight memory length
+* @param [out] uint32_t &model_id: identification after model loading
+* @return SUCCESS handle successfully / others handle failed
+*/
 Status GeExecutor::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr, size_t mem_size,
                                      void *weight_ptr, size_t weight_size) {
-  return GraphLoader::LoadModelFromData(model_id, model_data, dev_ptr, mem_size, weight_ptr, weight_size);
-}
-
-///
-/// @ingroup ge
-/// @brief Load task list from ModelData with queue.
-/// @param [out] model_id: model id allocate from manager.
-/// @param [in] ge_model_data: Model data load from offline model.
-/// @param [in] input_queue_ids: input queue ids create from user.
-/// @param [in] output_queue_ids: input queue ids create from user.
-/// @return: 0 for success / others for fail
-///
-Status GeExecutor::LoadModelWithQ(uint32_t &model_id, const ModelData &model_data,
-                                  const std::vector<uint32_t> &input_queue_ids,
-                                  const std::vector<uint32_t> &output_queue_ids) {
-  return GraphLoader::LoadModelWithQ(model_id, model_data, input_queue_ids, output_queue_ids);
-}
-
-///
-/// @ingroup ge
-/// @brief Synchronous execution of offline model(Do not create thread)
-/// @param [in] uint32_t modelId: Model ID to execute
-///             void* stream: stream to execute
-///             const domi::InputData *input_data: Model input data
-///             bool async_mode: is asynchronize mode.
-/// @param [out] domi::OutputData *output_data: Model output data
-/// @return SUCCESS handle successfully / others handle failed
-///
-Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModelData &input_data,
-                             ge::RunModelData &output_data, bool async_mode) {
-  if (!is_init_) {
+  GELOGI("Load model from data begin.");
+  if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
 
-  InputData input_data_tmp;
-  OutputData output_data_tmp;
-  GetDomiInputData(input_data, input_data_tmp);
-  GetDomiOutputData(output_data, output_data_tmp);
-
-  return GraphLoader::ExecuteModel(model_id, stream, async_mode, input_data_tmp, output_data_tmp);
+  return GraphLoader::LoadModelFromData(model_id, model_data, dev_ptr, mem_size, weight_ptr, weight_size);
 }
 
-///
-/// @ingroup ge
-/// @brief Get weight memory size from model file
-/// @param [in] const std::string &path: Offline model file path
-/// @param [out] size_t &mem_size Execution memory size
-///              size_t &weight_size Weight memory space size
-/// @return SUCCESS handle successfully / others handle failed
-///
+/**
+ * @ingroup ge
+ * @brief Load task list from ModelData with queue.
+ * @param [out] model_id: model id allocate from manager.
+ * @param [in] ge_model_data: Model data load from offline model.
+ * @param [in] input_queue_ids: input queue ids create from user.
+ * @param [in] output_queue_ids: input queue ids create from user.
+ * @return: 0 for success / others for fail
+ */
+Status GeExecutor::LoadModelWithQ(uint32_t &model_id, const ModelData &model_data,
+                                  const std::vector<uint32_t> &input_queue_ids,
+                                  const std::vector<uint32_t> &output_queue_ids) {
+  GELOGI("Load model with queue begin.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+  return GraphLoader::LoadModelWithQ(model_id, model_data, input_queue_ids, output_queue_ids);
+}
+
+/**
+* @ingroup ge
+* @brief Synchronous execution of offline model(Do not create thread)
+* @param [in] uint32_t model_id: Model ID to execute
+              void* stream: stream to execute
+              const domi::InputData *input_data: Model input data
+              bool async_mode: is asynchronize mode.
+* @param [out] domi::OutputData *output_data: Model output data
+* @return SUCCESS handle successfully / others handle failed
+*/
+Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModelData &run_input_data,
+                             ge::RunModelData &run_output_data, bool async_mode) {
+  GELOGI("Execute model begin.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  InputData input_data;
+  OutputData output_data;
+  GetDomiInputData(run_input_data, input_data);
+  GetDomiOutputData(run_output_data, output_data);
+
+  if ((run_input_data.dynamic_batch_size != 0) || (run_input_data.dynamic_image_width != 0) ||
+      (run_input_data.dynamic_image_height != 0)) {
+    std::vector<std::vector<int64_t>> batch_info;
+    Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Get dynamic input info failed.");
+      return FAILED;
+    }
+    if (!batch_info.empty()) {
+      SetDynamicInputDataFlag(run_input_data, batch_info, input_data);
+    }
+  }
+
+  return GraphLoader::ExecuteModel(model_id, stream, async_mode, input_data, output_data);
+}
+
+/**
+* @ingroup ge
+* @brief Get weight memory size from model file
+* @param [in] const std::string &path: Offline model file path
+* @param [out] size_t &mem_size Execution memory size
+               size_t &weight_size Weight memory space size
+* @return SUCCESS handle successfully / others handle failed
+*/
 Status GeExecutor::GetMemAndWeightSize(const std::string &path, size_t &mem_size, size_t &weight_size) {
+  GELOGI("Get memory and weight size from file begin.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
   ModelData model;
   std::string key;
   Status ret = ge::GraphLoader::LoadDataFromFile(path, key, 0, model);
@@ -437,17 +685,23 @@ Status GeExecutor::GetMemAndWeightSize(const std::string &path, size_t &mem_size
   return ret;
 }
 
-///
-/// @ingroup ge
-/// @brief Get weight memory size from model file
-/// @param [in] const void *model_data Offline model buffer
-///             size_t model_size Offline model buffer length
-/// @param [out] size_t &mem_size Execution memory size
-///              size_t &weight_size Weight memory space size
-/// @return SUCCESS handle successfully / others handle failed
-///
+/**
+* @ingroup ge
+* @brief Get weight memory size from model file
+* @param [in] const void *model_data Offline model buffer
+              size_t model_size Offline model buffer length
+* @param [out] size_t &mem_size Execution memory size
+               size_t &weight_size Weight memory space size
+* @return SUCCESS handle successfully / others handle failed
+*/
 Status GeExecutor::GetMemAndWeightSize(const void *model_data, size_t model_size, size_t &mem_size,
                                        size_t &weight_size) {
+  GELOGI("Get memory and weight size from data begin.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
   if (model_data == nullptr) {
     GELOGE(PARAM_INVALID, "invalid model data!");
     return PARAM_INVALID;
@@ -460,9 +714,9 @@ Status GeExecutor::GetMemAndWeightSize(const void *model_data, size_t model_size
   return ge::ModelManager::GetModelMemAndWeightSize(model, mem_size, weight_size);
 }
 
-Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelData &model_data, void *stream,
+Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                 SingleOp **single_op) {
-  return SingleOpManager::GetInstance().GetOpFromModel(model_name, model_data, stream, single_op);
+  return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op);
 }
 
 Status GeExecutor::ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,

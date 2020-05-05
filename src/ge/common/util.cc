@@ -49,7 +49,7 @@ namespace {
  * If such an exception is encountered during operation,
  * the proto file can be divided into several small files or the limit value can be increased.
  */
-const int kProtoReadBytesLimit = INT_MAX;   // Max size of 2 GB minus 1 byte.
+const int kProtoReadBytesLimit = INT_MAX;     // Max size of 2 GB minus 1 byte.
 const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 
 /// The maximum length of the file.
@@ -96,7 +96,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromBinaryFile(co
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromArray(const void *data, int size, Message *proto) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((proto == nullptr|| data == nullptr || size == 0), return false,
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((proto == nullptr || data == nullptr || size == 0), return false,
                                  "incorrect parameter. proto is nullptr || data is nullptr || size is 0");
 
   google::protobuf::io::CodedInputStream coded_stream(reinterpret_cast<uint8_t *>(const_cast<void *>(data)), size);
@@ -176,10 +176,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size > kMaxFileSizeLimit, file.close();
                                  return false, "file size %ld is out of limit: %d.", size, kMaxFileSizeLimit);
 
-  file.seekg(0, std::ios::beg);
+  file.seekg(0, std::ios::beg);  // [no need to check value]
 
-  buffer.resize(static_cast<uint64_t>(size));
-  file.read(&buffer[0], size);
+  buffer.resize(static_cast<uint64_t>(size));  // [no need to check value]
+  file.read(&buffer[0], size);                 // [no need to check value]
   file.close();
   GELOGI("Read size:%ld", size);
   return true;
@@ -261,7 +261,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
   google::protobuf::io::IstreamInputStream input(&fs);
   bool ret = google::protobuf::TextFormat::Parse(&input, message);
   GE_IF_BOOL_EXEC(
-      !ret, GELOGE(ret, "Call [google::protobuf::TextFormat::Parse] func ret fail, please check your text file."));
+    !ret, GELOGE(ret, "Call [google::protobuf::TextFormat::Parse] func ret fail, please check your text file."));
   fs.close();
 
   return ret;
@@ -277,7 +277,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const cha
   google::protobuf::io::IstreamInputStream input(&fs);
   bool ret = google::protobuf::TextFormat::Parse(&input, message);
   GE_IF_BOOL_EXEC(
-      !ret, GELOGE(ret, "Call [google::protobuf::TextFormat::Parse] func ret fail, please check your text file."));
+    !ret, GELOGE(ret, "Call [google::protobuf::TextFormat::Parse] func ret fail, please check your text file."));
 
   return ret;
 }
@@ -344,28 +344,27 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   }
 
   // A regular matching expression to verify the validity of the input file path
-  // ^(/|./|(../)+|)([.]?[A-Za-z0-9_-]+/)*[A-Za-z0-9_+.-]+$
-  // Path section：Support upper and lower case letters, numbers and underscores
-  // File name section：Support upper and lower case letters, numbers, underscores and dots(.)
-  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[A-Za-z0-9_-]+)/+)*[A-Za-z0-9_+.-]+$";
+  // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
+  // Path section：Support upper and lower case letters, numbers dots(.) chinese and underscores
+  // File name section：Support upper and lower case letters, numbers, underscores chinese and dots(.)
+  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ValidateStr(file_path, mode), return false,
-                                 "input path [%s] is with illegal character. path can only be composed of upper and "
-                                 "lower case letters, numbers, minus sign(-) and underscores; filename can only be "
-                                 "composed of upper and lower case letters, numbers, underscores, dot(.), plus "
-                                 "sign(+) and minus sign(-).",
-                                 file_path.c_str());
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+    !ValidateStr(file_path, mode), return false,
+    "input [%s] is illegal. path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese; filename can "
+    "only contains 'a-z' 'A-Z' '0-9' '_' '.' '+' '-' and chinese",
+    file_path.c_str());
 
   std::string real_path = RealPath(file_path.c_str());
   // Unable to get absolute path (does not exist or does not have permission to access)
   if (real_path.empty()) {
-    GELOGE(ge::FAILED, "Can not get real path for %s.", file_path.c_str());
+    GELOGE(ge::FAILED, "Can not get real path for %s, %s", file_path.c_str(), strerror(errno));
     return false;
   }
 
   // The absolute path points to a file that is not readable
   if (access(real_path.c_str(), R_OK) != 0) {
-    GELOGE(ge::FAILED, "Can not read file in %s.", file_path.c_str());
+    GELOGE(ge::FAILED, "Can not read file in %s, %s", file_path.c_str(), strerror(errno));
     return false;
   }
 
@@ -380,24 +379,23 @@ FMK_FUNC_HOST_VISIBILITY bool CheckOutputPathValid(const std::string &file_path)
   }
 
   // A regular matching expression to verify the validity of the input file path
-  // ^(/|./|(../)+|)([.]?[A-Za-z0-9_-]+/)*[A-Za-z0-9_+.-]+$
-  // Path section：Support upper and lower case letters, numbers and underscores
-  // File name section：Support upper and lower case letters, numbers, underscores and dots(.)
-  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[A-Za-z0-9_-]+)/+)*[A-Za-z0-9_+.-]+$";
+  // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
+  // Path section：Support upper and lower case letters, numbers dots(.) chinese and underscores
+  // File name section：Support upper and lower case letters, numbers, underscores chinese and dots(.)
+  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ValidateStr(file_path, mode), return false,
-                                 "input path [%s] is with illegal character. path can only be composed of upper and "
-                                 "lower case letters, numbers, minus sign(-) and underscores; filename can only be "
-                                 "composed of upper and lower case letters, numbers, underscores, dot(.), plus "
-                                 "sign(+) and minus sign(-).",
-                                 file_path.c_str());
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+    !ValidateStr(file_path, mode), return false,
+    "output [%s] is illegal. path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese; filename can "
+    "only contains 'a-z' 'A-Z' '0-9' '_' '.' '+' '-' and chinese",
+    file_path.c_str());
 
   std::string real_path = RealPath(file_path.c_str());
   // Can get absolute path (file exists)
   if (!real_path.empty()) {
     // File is not readable or writable
     if (access(real_path.c_str(), R_OK | W_OK | F_OK) != 0) {
-      GELOGE(ge::FAILED, "Path[ %s ] exists, but can not be write.", file_path.c_str());
+      GELOGE(ge::FAILED, "Path[ %s ] exists, but can not be write, %s", file_path.c_str(), strerror(errno));
       return false;
     }
   } else {

@@ -163,6 +163,34 @@ int64_t GeShape::GetShapeSize() const {
   return res;
 }
 
+///
+/// @brief Check is unknown shape
+/// @return bool
+/// ///
+bool GeShape::IsUnknownShape() const {
+  auto proto_msg = shape_def_.GetProtoMsg();
+  if (proto_msg != nullptr) {
+    for (auto i : proto_msg->dim()) {
+      if (i < 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+///
+/// @brief Check is a scalar
+/// @return bool
+///
+bool GeShape::IsScalar() const {
+  auto proto_msg = shape_def_.GetProtoMsg();
+  if (proto_msg != nullptr) {
+    return proto_msg->dim().empty();
+  }
+  return false;
+}
+
 const string TENSOR_UTILS_SIZE = "size";
 const string TENSOR_UTILS_WEIGHT_SIZE = "weight_size";
 const string TENSOR_UTILS_REUSE_INPUT = "reuse_input";
@@ -639,14 +667,14 @@ GeTensor &GeTensor::operator=(const GeTensor &other) {
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus TensorUtils::GetSize(const GeTensorDesc &tensor_desc,
-                                                                                uint32_t &size) {
+                                                                                int64_t &size) {
   auto tensor_descriptor_msg = tensor_desc.tensor_descriptor_.GetProtoMsg();
   GE_CHECK_NOTNULL(tensor_descriptor_msg);
-  size = static_cast<uint32_t>(tensor_descriptor_msg->size());
+  size = static_cast<int64_t>(tensor_descriptor_msg->size());
   return GRAPH_SUCCESS;
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void TensorUtils::SetSize(GeTensorDesc &tensor_desc, uint32_t size) {
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void TensorUtils::SetSize(GeTensorDesc &tensor_desc, int64_t size) {
   auto tensor_descriptor_msg = tensor_desc.tensor_descriptor_.GetProtoMsg();
   if (tensor_descriptor_msg != nullptr) {
     tensor_descriptor_msg->set_size(size);

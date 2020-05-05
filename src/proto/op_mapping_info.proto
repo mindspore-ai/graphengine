@@ -42,6 +42,7 @@ message Task {
     uint32 stream_id = 2;
     Op op = 3;
     repeated Output output = 4;
+    bool end_graph = 5;
 };
 
 message OpMappingInfo {
@@ -63,4 +64,5 @@ message OpMappingInfo {
     }
     uint32 flag = 7; // 0x01 load, 0x00 unload
     repeated Task task = 8;
+    string dump_step = 9;
 };

@@ -15,13 +15,10 @@
  */
 
 #include "graph/passes/variable_prepare_op_pass.h"
-
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_set>
-
-#include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "external/graph/graph.h"
 #include "framework/common/debug/ge_log.h"
@@ -32,13 +29,11 @@
 namespace ge {
 Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
-  for (auto &node : graph->GetDirectNode()) {
-    GELOGD("before VariablePrepareOpPass, graph has node: %s, and node name: %s", node->GetType().c_str(),
-           node->GetName().c_str());
-  }
-
   for (const auto &node : graph->GetDirectNode()) {
-    GenerateRefTypeAndInputOutputMap(node);
+    auto iter = ref_input_output_map_.find(node->GetType());
+    if (iter == ref_input_output_map_.end()) {
+      GenerateRefTypeAndInputOutputMap(node);
+    }
   }
 
   if (ref_input_output_map_.empty()) {
@@ -48,17 +43,23 @@ Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
 
   for (auto &node : graph->GetDirectNode()) {
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
-    GE_IF_BOOL_EXEC(node->GetOpDesc()->GetType() != VARIABLE, continue);
-    Status ret = DealVariableNode(node);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "variable add back edge failed");
-      return FAILED;
+    bool is_variable = node->GetOpDesc()->GetType() == VARIABLE;
+    bool is_deal = has_dealed_variable_.find(node->GetName()) == has_dealed_variable_.end();
+    if (is_variable && is_deal) {
+      Status ret = DealVariableNode(node);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "variable add back edge failed");
+        return FAILED;
+      }
     }
   }
 
-  for (auto &node : graph->GetDirectNode()) {
-    GELOGD("after VariablePrepareOpPass, graph has node: %s, and node name: %s", node->GetType().c_str(),
-           node->GetName().c_str());
+  for (auto iter = ref_input_output_map_.begin(); iter != ref_input_output_map_.end(); ++iter) {
+    GELOGI("ref type:[ %s ]", iter->first.c_str());
+    auto index_map = iter->second;
+    for (auto index_iter = index_map.begin(); index_iter != index_map.end(); ++index_iter) {
+      GELOGI("{ %d:%d }", index_iter->first, index_iter->second);
+    }
   }
 
   return SUCCESS;
@@ -203,7 +204,8 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
     return nullptr;
   }
 
-  OpDescPtr var_ref_op_desc = MakeShared<OpDesc>(var_node->GetName() + var_ref_name.str(), var_op_desc->GetType());
+  OpDescPtr var_ref_op_desc =
+    MakeShared<OpDesc>(var_node->GetName() + var_ref_name.str().c_str(), var_op_desc->GetType());
   if (var_ref_op_desc == nullptr) {
     GELOGE(FAILED, "var_ref opdesc is nullptr");
     return nullptr;
@@ -217,6 +219,7 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
                   return nullptr);
   NodePtr var_ref_node = var_node->GetOwnerComputeGraph()->AddNode(var_ref_op_desc);
   GE_IF_BOOL_EXEC(var_ref_node == nullptr, GELOGW("var_ref_node is null"); return nullptr);
+  has_dealed_variable_.insert(var_node->GetName());
 
   bool is_set_str = ge::AttrUtils::SetStr(var_ref_op_desc, REF_VAR_SRC_VAR_NAME, var_op_desc->GetName());
   if (is_set_str) {
@@ -250,34 +253,30 @@ int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int inpu
 }
 
 void VariablePrepareOpPass::GenerateRefTypeAndInputOutputMap(const NodePtr &node) {
-  auto out_op_desc = node->GetOpDesc();
-  map<string, int> input_name_index;
-  for (const auto &input_name : out_op_desc->GetAllInputNames()) {
-    int index = out_op_desc->GetInputIndexByName(input_name);
-    input_name_index.emplace(input_name, index);
+  auto op_desc = node->GetOpDesc();
+  if (op_desc == nullptr) {
+    GELOGW("op_desc in null, please check node:[%s]", node->GetName().c_str());
+    return;
   }
+  for (const auto &out_ancohor : node->GetAllOutDataAnchors()) {
+    int output_index = out_ancohor->GetIdx();
+    string output_name = op_desc->GetOutputNameByIndex(output_index);
+    GELOGD("output name:[%s]", output_name.c_str());
 
-  for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
-    string out_data_anchor_name = out_op_desc->GetOutputNameByIndex(out_data_anchor->GetIdx());
-    auto iter = input_name_index.find(out_data_anchor_name);
-    if (iter != input_name_index.end()) {
-      GELOGD("From input_name_index_map find corresponding output name and out index : [ %s : %d]",
-             out_data_anchor_name.c_str(), out_data_anchor->GetIdx());
-      auto ref_type_iter = ref_input_output_map_.find(node->GetType());
-      if (ref_type_iter != ref_input_output_map_.end()) {
-        GELOGD("From ref_input_output_map_ find already existed ref_type_iter. Type : [%s]",
-               ref_type_iter->first.c_str());
-        auto input_output_iter = ref_type_iter->second.find(iter->second);
-        if (input_output_iter != ref_type_iter->second.end()) {
-          ref_type_iter->second.emplace(iter->second, out_data_anchor->GetIdx());
-          GELOGI("Add RefInputOutputMap  [ %s ] : {%d, %d}", node->GetType().c_str(), iter->second,
-                 out_data_anchor->GetIdx());
-        }
-      } else {
-        ref_input_output_map_.insert({node->GetType(), {{iter->second, out_data_anchor->GetIdx()}}});
-        GELOGI("Create RefInputOutputMap { %s : {%d, %d}}", node->GetType().c_str(), iter->second,
-               out_data_anchor->GetIdx());
+    int input_index = op_desc->GetInputIndexByName(output_name);
+    if (input_index == -1) {
+      continue;
+    }
+    auto ref_type_and_input_output_iter = ref_input_output_map_.find(node->GetType());
+    if (ref_type_and_input_output_iter != ref_input_output_map_.end()) {
+      auto input_output_index_map = ref_type_and_input_output_iter->second;
+      if (input_output_index_map.find(input_index) == input_output_index_map.end()) {
+        input_output_index_map.emplace(input_index, output_index);
+        GELOGD("Add RefInputOutputMap %s:{ %d, %d }", node->GetType().c_str(), input_index, output_index);
       }
+    } else {
+      ref_input_output_map_.insert({node->GetType(), {{input_index, output_index}}});
+      GELOGD("Create RefInputOutputMap { %s:{ %d, %d } }", node->GetType().c_str(), input_index, output_index);
     }
   }
 }

@@ -15,10 +15,8 @@
  */
 
 #include "graph/model_serialize.h"
-
 #include <google/protobuf/text_format.h>
 #include <iostream>
-
 #include "debug/ge_attr_define.h"
 #include "debug/ge_log.h"
 #include "debug/ge_util.h"
@@ -26,6 +24,7 @@
 #include "graph/detail/model_serialize_imp.h"
 #include "proto/ge_ir.pb.h"
 #include "utils/graph_utils.h"
+#include "debug/ge_op_types.h"
 
 using std::string;
 
@@ -84,20 +83,29 @@ bool ModelSerializeImp::SerializeEdge(const NodePtr &node, proto::OpDef *op_def_
   return true;
 }
 
-bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::OpDef *op_def_proto) {
+bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::OpDef *op_def_proto, bool is_dump) {
   if (op_desc == nullptr || op_def_proto == nullptr) {
     GELOGE(GRAPH_FAILED, "Input Para Invalid");
     return false;
   }
   if (op_desc->op_def_.GetProtoMsg() != nullptr) {
     *op_def_proto = *op_desc->op_def_.GetProtoMsg();
+    // Delete unnecessary attr
+    if (is_dump) {
+      auto attr = op_def_proto->mutable_attr();
+      attr->erase(ATTR_NAME_FRAMEWORK_NODE_DEF);
+      attr->erase(ATTR_NAME_FRAMEWORK_OP_DEF);
+      attr->erase(ATTR_NAME_FRAMEWORK_FUNC_DEF);
+      GE_IF_BOOL_EXEC((op_def_proto->type() == CONSTANT || op_def_proto->type() == CONSTANTOP),
+                      attr->erase(ATTR_NAME_WEIGHTS));
+    }
     op_def_proto->clear_input_desc();
     op_def_proto->clear_output_desc();
     // Input descs
-    if (op_desc->GetInputsSize() > 0) {
-      auto size = static_cast<uint32_t>(op_desc->GetInputsSize());
+    if (op_desc->GetAllInputsSize() > 0) {
+      auto size = static_cast<uint32_t>(op_desc->GetAllInputsSize());
       for (uint32_t i = 0; i < size; i++) {
-        auto tensor_desc = op_desc->GetInputDescPtr(i);
+        auto tensor_desc = op_desc->GetInputDescPtrDfault(i);
         if (tensor_desc != nullptr && tensor_desc->tensor_descriptor_.GetProtoMsg() != nullptr) {
           *op_def_proto->add_input_desc() = *(tensor_desc->tensor_descriptor_.GetProtoMsg());
         }
@@ -117,12 +125,12 @@ bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::Op
   return true;
 }
 
-bool ModelSerializeImp::SerializeNode(const NodePtr &node, proto::OpDef *op_def_proto) {
+bool ModelSerializeImp::SerializeNode(const NodePtr &node, proto::OpDef *op_def_proto, bool is_dump) {
   if (node == nullptr || op_def_proto == nullptr) {
     GELOGE(GRAPH_FAILED, "Input Para Node Invalid");
     return false;
   }
-  if (!SerializeOpDesc(node->GetOpDesc(), op_def_proto)) {
+  if (!SerializeOpDesc(node->GetOpDesc(), op_def_proto, is_dump)) {
     GELOGE(GRAPH_FAILED, "Serialize OpDesc failed");
     return false;
   }
@@ -134,7 +142,8 @@ bool ModelSerializeImp::SerializeNode(const NodePtr &node, proto::OpDef *op_def_
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ModelSerializeImp::SerializeGraph(const ConstComputeGraphPtr &graph,
-                                                                                      proto::GraphDef *graph_proto) {
+                                                                                      proto::GraphDef *graph_proto,
+                                                                                      bool is_dump) {
   if (graph == nullptr || graph_proto == nullptr) {
     GELOGE(GRAPH_FAILED, "Input para Invalid");
     return false;
@@ -156,7 +165,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ModelSerializeImp::Serialize
     *graph_proto->mutable_attr() = *graph->attrs_.GetProtoMsg();
   }
   for (const auto &node : graph->GetDirectNode()) {
-    if (!SerializeNode(node, graph_proto->add_op())) {
+    if (!SerializeNode(node, graph_proto->add_op(), is_dump)) {
       if (node->GetOpDesc() != nullptr) {
         GELOGE(GRAPH_FAILED, "Serialize Node %s failed", node->GetName().c_str());
       }
@@ -166,7 +175,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ModelSerializeImp::Serialize
   return true;
 }
 
-bool ModelSerializeImp::SerializeModel(const Model &model, proto::ModelDef *model_proto) {
+bool ModelSerializeImp::SerializeModel(const Model &model, proto::ModelDef *model_proto, bool is_dump) {
   if (model_proto == nullptr) {
     GELOGE(GRAPH_FAILED, "model_proto para Invalid");
     return false;
@@ -183,7 +192,7 @@ bool ModelSerializeImp::SerializeModel(const Model &model, proto::ModelDef *mode
     GELOGE(GRAPH_FAILED, "GetComputeGraph return nullptr");
     return false;
   }
-  if (!SerializeGraph(compute_graph, model_proto->add_graph())) {
+  if (!SerializeGraph(compute_graph, model_proto->add_graph(), is_dump)) {
     GELOGE(GRAPH_FAILED, "SerializeGraph fail");
     return false;
   }
@@ -390,10 +399,10 @@ bool ReadProtoFromBinaryFile(const uint8_t *data, size_t len, google::protobuf::
   return true;
 }
 
-Buffer ModelSerialize::SerializeModel(const Model &model) {
+Buffer ModelSerialize::SerializeModel(const Model &model, bool is_dump) {
   proto::ModelDef model_def;
   ModelSerializeImp imp;
-  if (!imp.SerializeModel(model, &model_def)) {
+  if (!imp.SerializeModel(model, &model_def, is_dump)) {
     return Buffer();
   }
 #if !defined(__ANDROID__) && !defined(ANDROID)

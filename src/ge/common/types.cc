@@ -15,7 +15,6 @@
  */
 
 #include "framework/common/types.h"
-
 #include "graph/types.h"
 
 namespace ge {
@@ -116,18 +115,19 @@ REGISTER_OPTYPE_DEFINE(GATHER, "Gather");
 REGISTER_OPTYPE_DEFINE(REALDIV, "RealDiv");
 REGISTER_OPTYPE_DEFINE(PACK, "Pack");
 REGISTER_OPTYPE_DEFINE(SLICE, "Slice");
+REGISTER_OPTYPE_DEFINE(SLICED, "SliceD");
 REGISTER_OPTYPE_DEFINE(FLOORDIV, "FloorDiv");
 REGISTER_OPTYPE_DEFINE(SQUEEZE, "Squeeze");
 REGISTER_OPTYPE_DEFINE(STRIDEDSLICE, "StridedSlice");
 REGISTER_OPTYPE_DEFINE(RANGE, "Range");
-REGISTER_OPTYPE_DEFINE(RPNPROPOSALS, "GenerateRpnProposals");
-REGISTER_OPTYPE_DEFINE(DECODEBBOX, "DecodeBBox");
+REGISTER_OPTYPE_DEFINE(RPNPROPOSALS, "RpnProposals");
+REGISTER_OPTYPE_DEFINE(DECODEBBOX, "DecodeBbox");
 REGISTER_OPTYPE_DEFINE(PAD, "Pad");
 REGISTER_OPTYPE_DEFINE(PADV2, "PadV2");
 REGISTER_OPTYPE_DEFINE(MIRRORPAD, "MirrorPad");
 REGISTER_OPTYPE_DEFINE(TILE, "Tile");
 REGISTER_OPTYPE_DEFINE(SIZE, "Size");
-REGISTER_OPTYPE_DEFINE(CLIPBOXES, "Clipboxes");
+REGISTER_OPTYPE_DEFINE(CLIPBOXES, "ClipBoxes");
 REGISTER_OPTYPE_DEFINE(FASTRCNNPREDICTIONS, "FastrcnnPredictions");
 REGISTER_OPTYPE_DEFINE(SPLIT, "Split");
 REGISTER_OPTYPE_DEFINE(SPLITV, "SplitV");
@@ -138,6 +138,19 @@ REGISTER_OPTYPE_DEFINE(GREATER, "Greater");
 REGISTER_OPTYPE_DEFINE(SWITCH, "Switch");
 REGISTER_OPTYPE_DEFINE(SWITCHN, "SwitchN");
 REGISTER_OPTYPE_DEFINE(MERGE, "Merge");
+REGISTER_OPTYPE_DEFINE(SYMBOLICGRADIENT, "SymbolicGradient");
+REGISTER_OPTYPE_DEFINE(REMOTECALL, "RemoteCall");
+REGISTER_OPTYPE_DEFINE(_IF, "_If");
+REGISTER_OPTYPE_DEFINE(STATELESSIF, "StatelessIf");
+REGISTER_OPTYPE_DEFINE(IF, "If");
+REGISTER_OPTYPE_DEFINE(CASE, "Case");
+REGISTER_OPTYPE_DEFINE(_WHILE, "_While");
+REGISTER_OPTYPE_DEFINE(WHILE, "While");
+REGISTER_OPTYPE_DEFINE(STATELESSWHILE, "StatelessWhile");
+REGISTER_OPTYPE_DEFINE(FOR, "For");
+REGISTER_OPTYPE_DEFINE(PARTITIONEDCALL, "PartitionedCall");
+REGISTER_OPTYPE_DEFINE(STATEFULPARTITIONEDCALL, "StatefulPartitionedCall");
+REGISTER_OPTYPE_DEFINE(FAKEPARAM, "FakeParam");
 REGISTER_OPTYPE_DEFINE(TRANSPOSE, "Transpose");
 REGISTER_OPTYPE_DEFINE(TRANSPOSED, "TransposeD");
 REGISTER_OPTYPE_DEFINE(CAST, "Cast");
@@ -275,7 +288,7 @@ REGISTER_OPTYPE_DEFINE(BASICLSTMCELL, "BasicLSTMCell");
 REGISTER_OPTYPE_DEFINE(GETNEXT, "GetNext");
 REGISTER_OPTYPE_DEFINE(INITDATA, "InitData");
 
-// Ann special operator
+/***************Ann special operator*************************/
 REGISTER_OPTYPE_DEFINE(ANN_MEAN, "AnnMean");
 REGISTER_OPTYPE_DEFINE(ANN_CONVOLUTION, "AnnConvolution");
 REGISTER_OPTYPE_DEFINE(ANN_DEPCONVOLUTION, "AnnDepthConv");
@@ -292,7 +305,8 @@ REGISTER_OPTYPE_DEFINE(ANN_QUANTIZE, "AnnQuant");
 REGISTER_OPTYPE_DEFINE(ANN_PAD, "AnnPad");
 REGISTER_OPTYPE_DEFINE(ANN_RESIZE_BILINEAR, "AnnResizeBilinear");
 
-// Training operator
+/***************************************************/
+/******************Training operator*************************/
 REGISTER_OPTYPE_DEFINE(GATHERV2, "GatherV2");
 REGISTER_OPTYPE_DEFINE(CONVGRADFILTER, "Conv2DBackpropFilter");
 REGISTER_OPTYPE_DEFINE(CONV2D, "Conv2D");
@@ -376,6 +390,11 @@ REGISTER_OPTYPE_DEFINE(ENDGRAPH, "EndGraph");
 REGISTER_OPTYPE_DEFINE(SEND, "Send");
 REGISTER_OPTYPE_DEFINE(RECV, "Recv");
 
+REGISTER_OPTYPE_DEFINE(LABELSET, "LabelSet");
+REGISTER_OPTYPE_DEFINE(LABELGOTO, "LabelGoto");
+REGISTER_OPTYPE_DEFINE(LABELSWITCH, "LabelSwitch");
+REGISTER_OPTYPE_DEFINE(LABELSWITCHBYINDEX, "LabelSwitchByIndex");
+
 REGISTER_OPTYPE_DEFINE(ATOMICADDRCLEAN, "AtomicAddrClean");
 
 REGISTER_OPTYPE_DEFINE(ABS_GRAD, "AbsGrad");
@@ -448,174 +467,310 @@ const uint64_t ALLOC_MEMORY_MAX_SIZE = 8589934592;  // Max size of 8 GB.
 const uint64_t ALLOC_MEMORY_MAX_SIZE = 536870912;  // Max size of 512M.
 #endif
 
-// Magic number of model file
+///
+///@brief Magic number of model file
+///
 const uint32_t MODEL_FILE_MAGIC_NUM = 0x444F4D49;  // magic number
 
-// Model head length
+///
+///@brief Model head length
+///
 const uint32_t MODEL_FILE_HEAD_LEN = 256;
 
-// Input node type
+///
+///@ingroup domi_omg
+///@brief Input node type
+///
 const std::string INPUT_TYPE = "Input";
 
-// AIPP label, label AIPP conv operator
+///
+///@ingroup domi_omg
+///@brief AIPP label, label AIPP conv operator
+///
 const std::string AIPP_CONV_FLAG = "Aipp_Conv_Flag";
 
-// AIPP label, label aipp data operator
+///
+///@ingroup domi_omg
+///@brief AIPP label, label aipp data operator
+///
 const std::string AIPP_DATA_FLAG = "Aipp_Data_Flag";
 
-// Record the w dimension of model input corresponding to dynamic AIPP
+///
+///@ingroup domi_omg
+///@brief Record the w dimension of model input corresponding to dynamic AIPP
+///
 const std::string AIPP_RELATED_DATA_DIM_W = "aipp_related_data_dim_w";
 
-// Record the H dimension of model input corresponding to dynamic AIPP
+///
+///@ingroup domi_omg
+///@brief Record the H dimension of model input corresponding to dynamic AIPP
+///
 const std::string AIPP_RELATED_DATA_DIM_H = "aipp_related_data_dim_h";
 
-// The tag of the data operator. Mark this input to the dynamic AIPP operator
+///
+///@ingroup domi_omg
+///@brief The tag of the data operator. Mark this input to the dynamic AIPP operator
+///
 const std::string INPUT_TO_DYNAMIC_AIPP = "input_to_dynamic_aipp";
 
-// DATA node type
+///
+///@ingroup domi_omg
+///@brief DATA node type
+///
 const std::string DATA_TYPE = "Data";
 
-// DATA node type
+///
+///@ingroup domi_omg
+///@brief DATA node type
+///
 const std::string AIPP_DATA_TYPE = "AippData";
 
-// Frame operator type
+///
+///@ingroup domi_omg
+///@brief Frame operator type
+///
 const std::string FRAMEWORK_OP_TYPE = "FrameworkOp";
 
-// Data node type
+///
+///@ingroup domi_omg
+///@brief Data node type
+///
 const std::string ANN_DATA_TYPE = "AnnData";
 const std::string ANN_NETOUTPUT_TYPE = "AnnNetOutput";
 const std::string ANN_DEPTHCONV_TYPE = "AnnDepthConv";
 const std::string ANN_CONV_TYPE = "AnnConvolution";
 const std::string ANN_FC_TYPE = "AnnFullConnection";
-//  Convolution node type
+///
+///@ingroup domi_omg
+///@brief Convolution node type
+///
 const std::string NODE_NAME_NET_OUTPUT = "Node_Output";
 
 const std::string NODE_NAME_END_GRAPH = "Node_EndGraph";
 
-// Convolution node type
+///
+///@ingroup domi_omg
+///@brief Convolution node type
+///
 const std::string OP_TYPE_CONVOLUTION = "Convolution";
-// Add convolution node name to AIPP
+///
+///@ingroup domi_omg
+///@brief Add convolution node name to AIPP
+///
 const std::string AIPP_CONV_OP_NAME = "aipp_conv_op";
-// Operator configuration item separator
+///
+///@ingroup domi_omg
+///@brief Operator configuration item separator
+///
 const std::string OP_CONF_DELIMITER = ":";
 
-// attr value name
+///
+///@ingroup domi_omg
+///@brief attr value name
+///
 const std::string ATTR_NAME_VALUE1 = "value1";
 
-// attr value name, 6d_2_4d C
+///
+///@ingroup domi_omg
+///@brief attr value name, 6d_2_4d C
+///
 const std::string ATTR_NAME_INPUT_CVALUE = "input_cvalue";
 
-// alpha default value
+///
+///@ingroup domi_omg
+///@brief alpha default value
+///
 const float ALPHA_DEFAULT_VALUE = 1.0;
 
-// beta default value
+///
+///@ingroup domi_omg
+///@brief beta default value
+///
 const float BETA_DEFAULT_VALUE = 0.0;
 
-// coef default value
+///
+///@ingroup domi_omg
+///@brief coef default value
+///
 const float COEF_DEFAULT_VALUE = 0.0;
 
-// Relu6 coef value
+///
+///@ingroup domi_omg
+///@brief Relu6 coef value
+///
 const float RELU6_COEF = 6.0;
 
-// stride default value
+///
+///@ingroup domi_omg
+///@brief stride default value
+///
 const uint32_t STRIDE_DEFAULT_VALUE = 1;
 
-// pad default value
+///
+///@ingroup domi_omg
+///@brief pad default value
+///
 const uint32_t PAD_DEFAULT_VALUE = 0;
 
-// dilation default value
+///
+///@ingroup domi_omg
+///@brief dilation default value
+///
 const int DILATION_DEFAULT_VALUE = 1;
 
-// kernel default value
+///
+///@ingroup domi_omg
+///@brief kernel default value
+///
 const uint32_t KERNEL_DEFAULT_VALUE = 0;
 
-// defaule convolution group size
+///
+///@ingroup domi_omg
+///@brief defaule convolution group size
+///
 const uint32_t DEFAULT_CONV_GROUP = 1;
 
-// Default deconvolution adj
+///
+///@ingroup domi_omg
+///@brief Default deconvolution adj
+///
 const uint32_t DEFAULT_DECONV_ADJ = 0;
 
-// Represents value 1
+///
+///@ingroup domi_omg
+///@brief Represents value 1
+///
 const uint32_t NUM_ONE = 1;
 
-// spatial dim size default value
+///
+///@ingroup domi_omg
+///@brief   spatial dim size default value
+///
 const int32_t SPATIAL_DIM_DEFAULT_SIZE = 2;
 
-// dim extended default value
+///
+///@ingroup domi_omg
+///@brief dim extended default value
+///
 const int32_t DIM_DEFAULT_VALUE = 1;
 
-// The first weight list in opdef is filter
+///
+///@ingroup domi_omg
+///@brief The first weight list in opdef is filter
+///
 const int32_t WEIGHT_FILTER_INDEX = 0;
 
-// The second weight list in opdef is bias
+///
+///@ingroup domi_omg
+///@brief The second weight list in opdef is bias
+///
 const int32_t WEIGHT_BIAS_INDEX = 1;
 
 const int32_t TENSOR_ND_SUPPORT_SIZE = 8;
 
-// NCHW index default value
+///
+///@ingroup domi_omg
+///@brief NCHW index default value
+///
 const uint32_t NCHW_DIM_N = 0;
 const uint32_t NCHW_DIM_C = 1;
 const uint32_t NCHW_DIM_H = 2;
 const uint32_t NCHW_DIM_W = 3;
 
-// KCHW index default value
+///
+///@ingroup domi_omg
+///@brief KCHW index default value
+///
 const uint32_t KCHW_DIM_K = 0;
 const uint32_t KCHW_DIM_C = 1;
 const uint32_t KCHW_DIM_H = 2;
 const uint32_t KCHW_DIM_W = 3;
 
-// HWCK index default value
+///
+///@ingroup domi_omg
+///@brief HWCK index default value
+///
 const uint32_t HWCK_DIM_H = 0;
 const uint32_t HWCK_DIM_W = 1;
 const uint32_t HWCK_DIM_C = 2;
 const uint32_t HWCK_DIM_K = 3;
 
-// NHWC index default value
+///
+///@ingroup domi_omg
+///@brief NHWC index default value
+///
 const uint32_t NHWC_DIM_N = 0;
 const uint32_t NHWC_DIM_H = 1;
 const uint32_t NHWC_DIM_W = 2;
 const uint32_t NHWC_DIM_C = 3;
 
-// CHWN index default value
+///
+///@ingroup domi_omg
+///@brief CHWN index default value
+///
 const uint32_t CHWN_DIM_N = 3;
 const uint32_t CHWN_DIM_C = 0;
 const uint32_t CHWN_DIM_H = 1;
 const uint32_t CHWN_DIM_W = 2;
 
-// CHW index default value
+///
+///@ingroup domi_omg
+///@brief CHW index default value
+///
 const uint32_t CHW_DIM_C = 0;
 const uint32_t CHW_DIM_H = 1;
 const uint32_t CHW_DIM_W = 2;
 
-// HWC index default value
+///
+///@ingroup domi_omg
+///@brief HWC index default value
+///
 const uint32_t HWC_DIM_H = 0;
 const uint32_t HWC_DIM_W = 1;
 const uint32_t HWC_DIM_C = 2;
-// Pad index default value
+///
+///@ingroup domi_omg
+///@brief Pad index default value
+///
 const uint32_t PAD_H_HEAD = 0;
 const uint32_t PAD_H_TAIL = 1;
 const uint32_t PAD_W_HEAD = 2;
 const uint32_t PAD_W_TAIL = 3;
 
-// window index default value
+///
+///@ingroup domi_omg
+///@brief window index default value
+///
 const uint32_t WINDOW_H = 0;
 const uint32_t WINDOW_W = 1;
 
-// stride index default value
+///
+///@ingroup domi_omg
+///@brief stride index default value
+///
 const uint32_t STRIDE_H = 0;
 const uint32_t STRIDE_W = 1;
 
-// dilation index default value
+///
+///@ingroup domi_omg
+///@brief dilation index default value
+///
 const uint32_t DILATION_H = 0;
 const uint32_t DILATION_W = 1;
 
-// the num of XRBG channel
+///
+///@ingroup domi_omg
+///@brief the num of XRBG channel
+///
 const uint32_t XRGB_CHN_NUM = 4;
 
-// global pooling default value
+///
+///@ingroup domi_omg
+///@brief global pooling default value
+///
 const bool DEFAULT_GLOBAL_POOLING = false;
 
-const uint32_t MODEL_VERSION = 0x10000000; /**< Model version 1.0 */
+const uint32_t MODEL_VERSION = 0x10000000;  ///< Model version 1.0///
 
 // Eltwise's input size
 const int ELTWISE_MIN_INPUT_SIZE = 2;

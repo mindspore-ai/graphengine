@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "ge/ge_ir_build.h"
 #include "common/ge_inner_error_codes.h"
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
@@ -45,6 +45,8 @@ class GeGenerator {
   Status GenerateOfflineModel(const Graph &graph, const std::string &file_name_prefix,
                               const std::vector<GeTensor> &inputs = std::vector<GeTensor>());
 
+  Status GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ge::ModelBufferData &model);
+
   ///
   /// @ingroup ge
   /// @brief: Build single OP in Model.
@@ -58,6 +60,8 @@ class GeGenerator {
                             const std::vector<GeTensor> &outputs, const std::string &model_file_name);
 
  private:
+  Status GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
+                       ge::ModelBufferData &model, bool is_offline = true);
   class Impl;
 
   std::shared_ptr<Impl> impl_;

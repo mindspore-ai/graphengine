@@ -15,9 +15,7 @@
  */
 
 #include "utils/op_desc_utils.h"
-
 #include <algorithm>
-
 #include "debug/ge_attr_define.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -209,6 +207,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ConstGeTensorPtr> OpDescUtils::GetInputData(
   const vector<ge::NodePtr> &input_nodes) {
   vector<ConstGeTensorPtr> ret;
+
   for (const auto &input_node : input_nodes) {
     auto temp_weight = MutableWeights(input_node->GetOpDesc());
     if (temp_weight == nullptr) {
@@ -379,7 +378,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::GeTensorDesc> OpDescUt
   if (NodeUtils::IsAnchorStatusSet(*node)) {
     for (const auto &in_anchor : node->GetAllInDataAnchors()) {
       if (ge::AnchorUtils::GetStatus(in_anchor) == ANCHOR_DATA) {
-        (void)ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
+        ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
       }
     }
   } else {
@@ -389,7 +388,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::GeTensorDesc> OpDescUt
         continue;
       }
       if (out_anchor->GetOwnerNode()->GetOpDesc()->GetType() != CONSTANT) {
-        (void)ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
+        ret.push_back(node->GetOpDesc()->GetInputDesc(in_anchor->GetIdx()));
       }
     }
   }
@@ -571,5 +570,81 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDescUtils::ClearWei
                       const_op->GetType().c_str());
   }
   return GRAPH_SUCCESS;
+}
+
+///
+/// @brief Add input
+/// @param [in] name
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddInput(const std::string &name) {
+  inputs_.emplace_back(name);
+  return *this;
+}
+
+///
+/// @brief Add dynamic input
+/// @param [in] name
+/// @param [in] num
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddDynamicInput(const std::string &name,
+                                                                                             uint32_t num) {
+  for (uint32_t i = 0; i < num; i++) {
+    inputs_.emplace_back(name + std::to_string(i));
+  }
+  return *this;
+}
+
+///
+/// @brief Add output
+/// @param [in] name
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddOutput(const std::string &name) {
+  outputs_.emplace_back(name);
+  return *this;
+}
+
+///
+/// @brief Add dynamic output
+/// @param [in] name
+/// @param [in] num
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddDynamicOutput(const std::string &name,
+                                                                                              uint32_t num) {
+  for (uint32_t i = 0; i < num; i++) {
+    outputs_.emplace_back(name + std::to_string(i));
+  }
+  return *this;
+}
+
+///
+/// @brief Build op_desc
+/// @return OpDescPtr
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr OpDescBuilder::Build() {
+  OpDescPtr op_desc = shared_ptr<OpDesc>(new (std::nothrow) OpDesc(name_, type_));
+  if (op_desc == nullptr) {
+    GELOGE(GRAPH_FAILED, "OpDesc is nullptr");
+    return nullptr;
+  }
+
+  for (auto &input : inputs_) {
+    if (op_desc->AddInputDesc(input, GeTensorDesc()) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Add input_desc failed.");
+      return nullptr;
+    }
+  }
+
+  for (auto &output : outputs_) {
+    if (op_desc->AddOutputDesc(output, GeTensorDesc()) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Add output_desc failed.");
+      return nullptr;
+    }
+  }
+
+  return op_desc;
 }
 }  // namespace ge

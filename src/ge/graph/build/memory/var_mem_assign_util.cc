@@ -128,6 +128,7 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
   GE_CHK_BOOL_RET_STATUS(index < out_list_size, FAILED, "index %d >= output_list.size() %d", index, out_list_size);
 
   output_list[index] = static_cast<int64_t>(reinterpret_cast<intptr_t>(dev_ptr));
+  GELOGI("Assign node outputOffset[index] is: %ld", output_list[index]);
   node->GetOpDesc()->SetOutputOffset(output_list);
 
   return SUCCESS;
@@ -171,7 +172,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
                          input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr input_tensor_desc =
     input_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
-  uint32_t input_size = 0;
+  int64_t input_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(*input_tensor_desc, input_size), "get input size failed.");
   broad_cast_info.input_size = input_size;
 
@@ -190,7 +191,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
                          output_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr output_tensor_desc =
     output_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
-  uint32_t output_size = 0;
+  int64_t output_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(*output_tensor_desc, output_size), "get input size failed.");
   broad_cast_info.output_size = output_size;
   GE_CHK_BOOL_RET_STATUS(broad_cast_info.output_size == broad_cast_info.input_size, FAILED,

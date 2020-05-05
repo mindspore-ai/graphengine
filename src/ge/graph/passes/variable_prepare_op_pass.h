@@ -39,6 +39,7 @@ class VariablePrepareOpPass : public GraphPass {
   void GenerateRefTypeAndInputOutputMap(const NodePtr &node);
 
   std::map<std::string, std::map<int, int>> ref_input_output_map_;
+  std::unordered_set<string> has_dealed_variable_{};
 };
 }  // namespace ge
 

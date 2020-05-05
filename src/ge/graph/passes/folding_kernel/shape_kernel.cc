@@ -42,11 +42,13 @@ Status ShapeKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_out
     GELOGW("Size check fail, inputs size:%zu, outputs size:%zu", op_desc->GetInputsSize(), op_desc->GetOutputsSize());
     return NOT_CHANGED;
   }
-  if (KernelUtils::IsUnknownShape(op_desc->GetInputDesc(0).GetShape())) {
+  const auto &input_desc = op_desc->MutableInputDesc(0);
+  GE_CHECK_NOTNULL(input_desc);
+  if (KernelUtils::IsUnknownShape(input_desc->GetShape())) {
     GELOGW("Input shape is unknown, ignore shape kernel.");
     return NOT_CHANGED;
   }
-  vector<int64_t> dims = op_desc->GetInputDesc(0).GetShape().GetDims();
+  vector<int64_t> dims = input_desc->GetShape().GetDims();
   Status ret = PassUtils::ConstructTensorDescWithData(op_desc->GetOutputDesc(0), dims, v_output);
   if (ret != SUCCESS) {
     GELOGE(ret, "Shape kernel construct tensor desc failed!");

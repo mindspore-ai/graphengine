@@ -82,7 +82,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelInfoParser(const Mo
 
     model_info.name = davinci_model->Name();
   } catch (...) {
-    GELOGE(FAILED, "OM model parser failed, some exceptions occur !");
+    DOMI_LOGE("OM model parser failed, some exceptions occur !");
     GE_CHK_RT(rtDeviceReset(0));
     return FAILED;
   }

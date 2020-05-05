@@ -30,10 +30,27 @@
 #include "runtime/rt.h"
 
 namespace ge {
+class GELib;
+class OpsKernelManager;
+
 struct ProfilingPoint {
   uint32_t fp_index = 0;
   uint32_t bp_index = 0;
   uint32_t end_index = 0;
+};
+// Describes infos needed by generate task for l1 fusion node
+struct L1FusionTaskInfo {
+  RunContext &run_context;
+  ComputeGraphPtr &graph;
+  NodePtr &node;
+  OpDescPtr &fusion_op_desc;
+  uint32_t &node_index;
+  std::shared_ptr<GELib> &ge_lib;
+  const OpsKernelManager &ops_kernel_manager;
+  std::vector<domi::TaskDef> &task_def_list;
+  std::map<uint32_t, string> &op_name_map;
+  ProfilingPoint &ppoint;
+  vector<uint32_t> ar_ppoint;
 };
 
 class TaskGenerator {
@@ -87,7 +104,7 @@ class TaskGenerator {
                              RunContext &run_context);
 
   // Mark first and last node according to the same stream and engine
-  Status MarkFirstAndLastNode(ComputeGraphPtr &graph);
+  Status MarkNodeAndSetIndex(ComputeGraphPtr &graph);
 
   // profiling interface
   Status FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &ppoint,
@@ -100,6 +117,18 @@ class TaskGenerator {
                                   std::vector<domi::TaskDef> &task_def_list);
 
   static bool IsProfPoint(const OpDescPtr &op, const std::string &name);
+  /// call engine to generate task for l1 fusion node.
+  /// @param L1FusionTaskInfo
+  /// @param l1_fusion_nodes: nodes in graph with groud_id attr which means l1 fusion node
+  /// @param l1_fusion_nodes_seen: l1 fusion node has been called generate task
+  /// @return SUCCESS:seccess
+  ///         Other: failed
+  ///
+  Status GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_info,
+                                     std::map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes,
+                                     std::unordered_set<Node *> &l1_fusion_nodes_seen);
+
+  Status SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes, ComputeGraphPtr &graph);
 
   uint8_t *var_mem_base_ = nullptr;
   uint64_t var_mem_size_ = 0;

@@ -35,6 +35,9 @@ class HcclMemcpyPass : public GraphPass {
 
   bool NeedInsertMemcpyOp(const ge::ConstOpDescPtr &op_desc) const;
 
+  Status ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
+                              const InDataAnchorPtr &hccl_in_anchor);
+
   std::unordered_map<std::string, uint32_t> node_num_map_;
 };
 }  // namespace ge

@@ -15,7 +15,6 @@
  */
 
 #include "graph/passes/print_op_pass.h"
-
 #include <string>
 
 namespace ge {

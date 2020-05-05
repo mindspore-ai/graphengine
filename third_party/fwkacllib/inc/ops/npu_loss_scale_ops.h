@@ -70,7 +70,6 @@ REG_OP(NPUGetFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})
     .OUTPUT(data, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(NPUGetFloatStatus)
-
 }  // namespace ge
 
 #endif  // GE_OP_NN_LOSS_SCALE_OPS_H

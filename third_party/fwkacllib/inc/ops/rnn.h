@@ -149,6 +149,86 @@ REG_OP(BasicLSTMCellCStateGrad)
     .ATTR(forget_bias, Float, 1.0)
     .ATTR(activation, String, "tanh")
     .OP_END_FACTORY_REG(BasicLSTMCellCStateGrad)
+
+/**
+*@brief: RNN operator.
+*@par Inputs:
+*eight inputs: \n
+*@li x:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_NZ.
+*@li cont:A 1D Tensor. Must be one of the following types: float16. The format must be ND.
+*@li x_static:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_NZ.
+*@li h_0:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w_xh:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li w_sh:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li w_hh:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li w_ho:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li bias_h:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li bias_o:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+
+*@par Attributes:
+*@li expose_hidden:An bool identifying if expose the hidden state of last time step. Default to false.
+*@li num_output:An integer identifying the number of output features. Default to 0.
+
+*@par Outputs:
+*two outputs: \n
+*@li o:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li h_t:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*/
+REG_OP(RNN)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(cont, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(x_static, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(h_0, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w_xh, TensorType({DT_FLOAT16}))
+    .INPUT(w_sh, TensorType({DT_FLOAT16}))
+    .INPUT(w_hh, TensorType({DT_FLOAT16}))
+    .INPUT(w_ho, TensorType({DT_FLOAT16}))
+    .INPUT(bias_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bias_o, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(o, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(h_t, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(expose_hidden, Bool, false)
+    .ATTR(num_output, Int, 0)
+    .OP_END_FACTORY_REG(RNN)
+
+/**
+*@brief: BasicRNNCell operator.
+*@par Inputs:
+*eight inputs: \n
+*@li x:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_NZ.
+*@li cont:A 1D Tensor. Must be one of the following types: float16. The format must be ND.
+*@li w_xh_x_static:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_NZ.
+*@li h_0:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w_xh:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li w_hh:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li w_ho:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li bias_h:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li bias_o:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+
+*@par Attributes:
+*@li expose_hidden:An bool identifying if expose the hidden state of last time step. Default to false.
+*@li num_output:An integer identifying the number of output features. Default to 0.
+
+*@par Outputs:
+*two outputs: \n
+*@li o_t:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li h_t:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*/
+REG_OP(BasicRNNCell)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(cont, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(w_xh_x_static, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(h_0, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w_xh, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(w_hh, TensorType({DT_FLOAT16}))
+    .INPUT(w_ho, TensorType({DT_FLOAT16}))
+    .INPUT(bias_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bias_o, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(o_t, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(h_t, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(expose_hidden, Bool, false)
+    .ATTR(num_output, Int, 0)
+    .OP_END_FACTORY_REG(BasicRNNCell)
 }  // namespace ge
 
 #endif  // GE_OP_RNN_H

@@ -15,13 +15,12 @@
  */
 
 #include "external/graph/operator.h"
-
 #include <stdint.h>
 #include <algorithm>
 #include <mutex>
 #include <queue>
 #include <set>
-
+#include "array_ops.h"
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -33,7 +32,6 @@
 #include "graph/ge_tensor.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
-#include "graph/operator_factory.h"
 #include "graph/usr_types.h"
 #include "utils/graph_utils.h"
 #include "utils/op_desc_utils.h"
@@ -47,10 +45,6 @@ using std::shared_ptr;
 using std::string;
 using std::to_string;
 using std::vector;
-
-namespace {
-const char *const kValue = "value";
-}  // namespace
 
 namespace ge {
 class OpIO {
@@ -148,6 +142,7 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     for (int i = static_cast<int>(is_input_const.size()); i <= dst_index; ++i) {
       is_input_const.push_back(false);
     }
+
     is_input_const[dst_index] = is_const;
     op_desc_->SetIsInputConst(is_input_const);
 
@@ -179,8 +174,8 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     GE_CHK_BOOL_EXEC(dst_index >= 0, return, "Find input index by name failed. name[%s], op name:%s", dst_name.c_str(),
                      op_desc_->GetName().c_str());
     auto out_op_impl = out_handler->GetOwner();
-    GE_CHK_BOOL_EXEC(out_op_impl && out_op_impl->GetOpDescImpl(), return, "out_handler invalid. name[%s]",
-                     dst_name.c_str());
+    GE_CHK_BOOL_EXEC(out_op_impl != nullptr && out_op_impl->GetOpDescImpl() != nullptr, return,
+                     "out_handler invalid. name[%s]", dst_name.c_str());
     bool is_const = false;
     if (out_op_impl->GetOpDescImpl()->GetType() == CONSTANT) {
       is_const = true;
@@ -193,7 +188,7 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     op_desc_->SetIsInputConst(is_input_const);
 
     OpIO in_handler(dst_name, dst_index, shared_from_this());
-    GE_CHK_BOOL_EXEC(!!out_op_impl, return, "Get out_handler's impl failed.");
+    GE_CHK_BOOL_EXEC(out_op_impl != nullptr, return, "Get out_handler's impl failed.");
 
     out_op_impl->UpdateLinkMapImpl(src_name, in_handler);
     auto src_output_desc = out_op_impl->GetOutputDesc(src_name);
@@ -210,7 +205,7 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
 
   void AddControlInputImp(const ge::Operator &src_oprt) {
     if (src_oprt.operator_impl_ == nullptr) {
-      GELOGE(GRAPH_FAILED, "Src operator impl is nullptr");
+      GELOGE(FAILED, "Src operator impl is nullptr");
       return;
     }
     for (auto &input : control_input_link_) {
@@ -520,9 +515,9 @@ graphStatus Operator::GetInputConstData(const string &dst_name, Tensor &data) co
     if (peer_node_ptr->GetOpDesc() != nullptr) {
       const auto &op_descType = peer_node_ptr->GetOpDesc()->GetType();
       if (op_descType == CONSTANTOP) {
-        return const_op.GetAttr(kValue, data);
+        return const_op.GetAttr(op::Constant::name_attr_value(), data);
       } else if (op_descType == CONSTANT) {
-        return const_op.GetAttr(kValue, data);
+        return const_op.GetAttr(op::Const::name_attr_value(), data);
       }
     }
   } else {
@@ -542,9 +537,9 @@ graphStatus Operator::GetInputConstDataOut(const string &dst_name, Tensor &data)
     Operator const_op(out_handle.GetOwner());
     const auto &op_desc_impl_type = out_handle.GetOwner()->GetOpDescImpl()->GetType();
     if (op_desc_impl_type == CONSTANTOP) {
-      return const_op.GetAttr(kValue, data);
+      return const_op.GetAttr(op::Constant::name_attr_value(), data);
     } else if (op_desc_impl_type == CONSTANT) {
-      return const_op.GetAttr(kValue, data);
+      return const_op.GetAttr(op::Const::name_attr_value(), data);
     }
   }
   return GRAPH_FAILED;
@@ -709,6 +704,7 @@ void Operator::InputRegister(const string &name) {
 void Operator::OptionalInputRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
+  // [No need to verify return value]
   (void)operator_impl_->GetOpDescImpl()->AddOptionalInputDesc(name,
                                                               GeTensorDesc(GeShape(), FORMAT_RESERVED, DT_UNDEFINED));
 }
@@ -716,24 +712,28 @@ void Operator::OptionalInputRegister(const string &name) {
 void Operator::InferFuncRegister(const std::function<graphStatus(Operator &)> &func) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
+  // [No need to verify return value]
   (void)operator_impl_->GetOpDescImpl()->AddInferFunc(func);
 }
 
 void Operator::InferFormatFuncRegister(const std::function<graphStatus(Operator &)> &func) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
+  // [No need to verify return value]
   (void)operator_impl_->GetOpDescImpl()->AddInferFormatFunc(func);
 }
 
 void Operator::VerifierFuncRegister(const std::function<graphStatus(Operator &)> &func) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
+  // [No need to verify return value]
   (void)operator_impl_->GetOpDescImpl()->AddVerifierFunc(func);
 }
 
 void Operator::OutputRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
+  // [No need to verify return value]
   (void)operator_impl_->GetOpDescImpl()->AddOutputDesc(name, GeTensorDesc());
 }
 
@@ -757,7 +757,8 @@ int Operator::GetDynamicInputNum(const string &name) const {
 void Operator::DynamicOutputRegister(const string &name, const unsigned int num, bool is_push_back) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  (void)AttrUtils::SetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_OUTPUT_TD_NUM(name), num);
+  GE_CHK_BOOL_EXEC(AttrUtils::SetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_OUTPUT_TD_NUM(name), num), return,
+                   "Set %s int failed", name.c_str());
   (void)operator_impl_->GetOpDescImpl()->AddDynamicOutputDesc(name, num, is_push_back);
 }
 
@@ -765,7 +766,8 @@ int Operator::GetDynamicOutputNum(const string &name) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return 0, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return 0, "GetOpDescImpl is nullptr.");
   int num = 0;
-  (void)AttrUtils::GetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_INPUT_TD_NUM(name), num);
+  GE_CHK_BOOL_EXEC(AttrUtils::GetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_OUTPUT_TD_NUM(name), num), return num,
+                   "Get %s int failed", name.c_str());
   return num;
 }
 
@@ -1141,7 +1143,9 @@ class GraphBuilderImpl {
         GELOGW("Input operator should be Data, Variable operator or operator that has output but no input.");
       }
     }
-
+    GE_CHK_BOOL_EXEC(!vec_inputs.empty(), return nullptr,
+                     "User Input do not include operator such as \
+     Data, Variable operator or operator that has output but no input.");
     auto ret = WalkAllOperators(vec_inputs);
     GE_CHK_BOOL_EXEC(ret == GRAPH_SUCCESS, return nullptr, "WalkAllOperators failed.");
 
@@ -1163,7 +1167,8 @@ class GraphBuilderImpl {
       que.pop();
       for (const auto &op_impl : vec_tem) {
         GE_CHK_BOOL_EXEC(op_impl != nullptr, return GRAPH_FAILED, "Operator Impl is null.")
-        GE_CHK_BOOL_EXEC_INFO(all_nodes_info_.find(op_impl) == all_nodes_info_.end(), continue)
+        GE_CHK_BOOL_EXEC_INFO(all_nodes_info_.find(op_impl) == all_nodes_info_.end(), continue,
+                              "This node %s has created.", op_impl->GetName().c_str())
         auto node_ptr = graph_->AddNode(op_impl->op_desc_);
         GE_CHK_BOOL_EXEC(node_ptr != nullptr, return GRAPH_FAILED, "Add node failed.");
         all_nodes_info_.insert(std::make_pair(op_impl, node_ptr));
@@ -1202,10 +1207,13 @@ class GraphBuilderImpl {
     for (const auto &node_info : all_nodes_info_) {
       auto src_op_impl_ptr = node_info.first;
       auto src_node_ptr = node_info.second;
+
       GE_IF_BOOL_EXEC(src_op_impl_ptr == nullptr || src_node_ptr == nullptr, continue);
       auto out_links = src_op_impl_ptr->output_links_;
+      GE_CHK_BOOL_EXEC(src_op_impl_ptr->op_desc_ != nullptr, return GRAPH_FAILED,
+                       "Src operator impl's op_desc is null.");
       auto &op_desc = src_op_impl_ptr->op_desc_;
-
+      GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
       for (const auto &out : out_links) {
         auto src_idx = op_desc->GetOutputIndexByName(out.first);
         GE_CHK_BOOL_EXEC(src_idx >= 0, return GRAPH_FAILED, "Find output index by name failed");
@@ -1216,7 +1224,9 @@ class GraphBuilderImpl {
         for (const auto &dst_opio : out.second) {
           auto dst_node_info = all_nodes_info_.find(dst_opio.GetOwner());
           GE_CHK_BOOL_EXEC(dst_node_info != all_nodes_info_.end(), return GRAPH_FAILED, "Find Dst node failed.");
+
           GE_IF_BOOL_EXEC(dst_node_info->second == nullptr, continue);
+
           auto dst_anchor = dst_node_info->second->GetInDataAnchor(dst_opio.GetIndex());
           GE_CHK_BOOL_EXEC(dst_anchor != nullptr, return GRAPH_FAILED, "GetInDataAnchor failed.");
 
@@ -1260,8 +1270,7 @@ inline bool HasSameNameNode(const ComputeGraphPtr &compute_graph) {
 ComputeGraphPtr GraphUtils::CreateGraphFromOperator(const string &name, const vector<ge::Operator> &inputs) {
   auto graph_builder_impl = GraphBuilderImpl(name);
   ComputeGraphPtr compute_graph = graph_builder_impl.BuildGraph(inputs);
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, return compute_graph);
-
+  GE_CHK_BOOL_EXEC(compute_graph != nullptr, return compute_graph, "Computer graph is nullptr");
   compute_graph->SetAllNodesInfo(graph_builder_impl.GetAllNodesInfo());
   if (HasSameNameNode(compute_graph)) {
     GELOGW("Compute do not allow has same name nodes.");

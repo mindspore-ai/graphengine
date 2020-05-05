@@ -27,6 +27,7 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using ge::fp16_t;
 using ge::Status;
 
 namespace {
@@ -88,10 +89,9 @@ Status FillKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge
   DataType data_type = value->GetTensorDesc().GetDataType();
   ret = PARAM_INVALID;
   switch (data_type) {
-#define CASE(dtype, type)                                                                                            \
-  case dtype:                                                                                                        \
-    ret = KernelUtils::GenData(fill_size, *reinterpret_cast<const type *>(value->GetData().data()),                  \
-                               output_ptr);                                                                          \
+#define CASE(dtype, type)                                                                                        \
+  case dtype:                                                                                                    \
+    ret = KernelUtils::GenData(fill_size, *reinterpret_cast<const type *>(value->GetData().data()), output_ptr); \
     break;
     CASE(DT_FLOAT, float)
     CASE(DT_FLOAT16, fp16_t)

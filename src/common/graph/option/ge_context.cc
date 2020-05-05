@@ -15,7 +15,6 @@
  */
 
 #include "./ge_context.h"
-
 #include "./ge_global_options.h"
 #include "./ge_local_context.h"
 #include "framework/common/debug/ge_log.h"
@@ -87,4 +86,5 @@ uint32_t GEContext::DeviceId() { return device_id_; }
 uint64_t GEContext::TraceId() { return trace_id_; }
 
 void GEContext::SetCtxDeviceId(uint32_t device_id) { device_id_ = device_id; }
+
 }  // namespace ge

@@ -47,7 +47,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
 
   // get length of file:
   (void)fs.seekg(0, std::ifstream::end);
-  int64_t len = fs.tellg();
+  uint32_t len = static_cast<uint32_t>(fs.tellg());
 
   GE_CHECK_GE(len, 1);
 
@@ -84,10 +84,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
   auto file_header = reinterpret_cast<ModelFileHeader *>(model.model_data);
   // Determine whether the file length and magic number match
   GE_CHK_BOOL_RET_STATUS(
-      file_header->length == model.model_len - sizeof(ModelFileHeader) && file_header->magic == MODEL_FILE_MAGIC_NUM,
-      PARAM_INVALID,
-      "Invalid model. file_header->length + sizeof(ModelFileHeader) != model->model_len || MODEL_FILE_MAGIC_NUM != "
-      "file_header->magic");
+    file_header->length == model.model_len - sizeof(ModelFileHeader) && file_header->magic == MODEL_FILE_MAGIC_NUM,
+    PARAM_INVALID,
+    "Invalid model. file_header->length + sizeof(ModelFileHeader) != model->model_len || MODEL_FILE_MAGIC_NUM != "
+    "file_header->magic");
 
   Status res = SUCCESS;
 
@@ -99,7 +99,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
 
     model_data = data;
     model_len = file_header->length;
-    GELOGI("model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
+    GELOGI("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
     GELOGE(PARAM_INVALID, "Invalid model. ModelEncryptType not supported.");
     res = PARAM_INVALID;

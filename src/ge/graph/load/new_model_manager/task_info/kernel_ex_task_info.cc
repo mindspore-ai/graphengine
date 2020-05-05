@@ -28,7 +28,6 @@
 #include "graph/load/new_model_manager/model_manager.h"
 
 namespace ge {
-
 Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("KernelExTaskInfo Init Start.");
   if (davinci_model == nullptr) {
@@ -51,15 +50,15 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     return INTERNAL_ERROR;
   }
 
+  if (CopyTaskInfo(kernel_ex_def, davinci_model->GetRuntimeParam(), op_desc) != SUCCESS) {
+    GELOGE(FAILED, "copy task info to workspace failed.");
+    return FAILED;
+  }
+
   vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
   if (workspace_data_addrs.empty()) {
     GELOGE(FAILED, "workspace_data_addrs is empty.");
     return FAILED;
-  } else {
-    rtError_t rt_ret =
-      rtMemcpy(workspace_data_addrs[0], kernel_ex_def.task_info_size(), kernel_ex_def.task_info().data(),
-               kernel_ex_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(FAILED, "rtMemcpy error: 0x%X", rt_ret); return FAILED);
   }
 
   // 2. Reconstruct kernelExDef.args to STR_FWK_OP_KERNEL
@@ -117,10 +116,9 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 
   // 4. Create session
   auto session_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID;
-  GELOGI("session_id: %lu", session_id);
   GE_CHECK_NOTNULL(ModelManager::GetInstance());
   GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
-                  GELOGE(FAILED, "CreateAicpuSession error.");
+                  GELOGE(FAILED, "CreateAicpuSession error. session id: %lu", session_id);
                   return FAILED;)
   // 4.1 Collect aicpu kernel
   uint64_t kernel_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.kernelID;
@@ -134,10 +132,44 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   rt_ret = rtMemcpy(kernel_buf_, sizeof(STR_FWK_OP_KERNEL), static_cast<void *>(&fwk_op_kernel),
                     sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy error, ret: Ox%X", rt_ret); return FAILED;)
-  davinci_model->SetZeroCopyAddr(io_addrs, input_output_addr_);
+  davinci_model->SetZeroCopyAddr(op_desc, io_addrs, input_output_addr_);
 
   kernel_buf_size_ = sizeof(STR_FWK_OP_KERNEL);
   davinci_model_ = davinci_model;
+
+  GELOGI("KernelExTaskInfo Init Success. session id: %lu", session_id);
+  return SUCCESS;
+}
+
+Status KernelExTaskInfo::CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param,
+                                      const OpDescPtr &op_desc) {
+  // Userspace copy need virtual address.
+  const vector<int64_t> workspace_data_sizes = ModelUtils::GetWorkspaceSize(op_desc);
+  const vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc, false);
+  if (workspace_data_addrs.empty() || workspace_data_sizes.empty()) {
+    GELOGE(FAILED, "Node:%s invalid workspace, addrs is %zu, size is %zu.", op_desc->GetName().c_str(),
+           workspace_data_addrs.size(), workspace_data_sizes.size());
+    return FAILED;
+  }
+
+  if (workspace_data_addrs[0] == nullptr) {
+    GELOGE(FAILED, "Node:%s workspace addrs is null.", op_desc->GetName().c_str());
+    return FAILED;
+  }
+
+  if (workspace_data_sizes[0] < static_cast<int64_t>(kernel_def.task_info_size())) {
+    GELOGE(FAILED, "Node:%s workspace size is %zu, task info size is %zu.", op_desc->GetName().c_str(),
+           workspace_data_sizes[0], kernel_def.task_info_size());
+    return FAILED;
+  }
+
+  rtError_t rt_ret = rtMemcpy(workspace_data_addrs[0], kernel_def.task_info_size(), kernel_def.task_info().data(),
+                              kernel_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(FAILED, "rtMemcpy error: 0x%X", rt_ret);
+    return FAILED;
+  }
+
   return SUCCESS;
 }
 
@@ -154,14 +186,17 @@ Status KernelExTaskInfo::Distribute() {
     return PARAM_INVALID;
   }
 
-  uint32_t taskid = 0;
-  rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &taskid);
+  uint32_t task_id = 0;
+  uint32_t stream_id = UINT32_MAX;  //  default value, wait for rts
+  rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
-  task_id_ = taskid;
+  task_id_ = task_id;
+  stream_id_ = stream_id;
 
+  GELOGI("KernelExTaskInfo Distribute Success. task id: %u", task_id_);
   return SUCCESS;
 }
 

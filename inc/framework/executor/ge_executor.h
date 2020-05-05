@@ -26,6 +26,7 @@
 #include "common/types.h"
 #include "graph/tensor.h"
 #include "runtime/base.h"
+#include "common/dynamic_aipp.h"
 
 namespace ge {
 class ModelListenerAdapter;
@@ -33,12 +34,15 @@ class ModelListenerAdapter;
 class SingleOp;
 
 struct RunModelData {
-  uint32_t index;                 // Data index
-  uint32_t model_id;              // Model id
-  std::vector<DataBuffer> blobs;  // All input/output data buffer
-  uint32_t timestamp;             // Data creation time
-  uint32_t timeout;               // Processing timeout
-  uint64_t request_id = 0;        // Request ID
+  uint32_t index;  // Data index
+  uint32_t modelId;
+  std::vector<DataBuffer> blobs;      // All input/output data buffer
+  uint32_t timestamp;                 // Data creation time
+  uint32_t timeout;                   // Processing timeout
+  uint64_t request_id = 0;            // Request ID
+  uint64_t dynamic_batch_size = 0;    // Dynamic batch size scene, set dynamic size, not supported by default:0
+  uint64_t dynamic_image_height = 0;  // Dynamic image size scene, set image height, not supported by default:0
+  uint64_t dynamic_image_width = 0;   // Dynamic image size scene, set image width, not supported by default:0
 };
 
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
@@ -46,18 +50,65 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   GeExecutor();
   ~GeExecutor() = default;
   ge::Status Initialize();
+  ge::Status Finalize();
 
   // Load model
   ge::Status LoadModelOffline(uint32_t &model_id, const std::string &path, const std::string &key, int32_t priority,
                               std::shared_ptr<ge::ModelListener> listener);
 
-  ge::Status UnloadModel(uint32_t model_id);
+  ge::Status UnloadModel(uint32_t modelId);
 
   ge::Status RunModel(const ge::RunModelData &input_data, ge::RunModelData &output_data);
 
   // Get input and output descriptor
   ge::Status GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                               std::vector<ge::TensorDesc> &output_desc);
+
+  ///
+  /// @ingroup ge
+  /// @brief Set dynamic batch size
+  /// @param [in] model_id: model id allocate from manager
+  /// @param [in] dynamic_input_addr: dynamic input addr created by user
+  /// @param [in] length: length of dynamic input addr
+  /// @param [in] batch_size: batch size entered by user in dynamic multi-batch scenario
+  /// @return execute result
+  ///
+  ge::Status SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length, uint64_t batch_size);
+
+  ///
+  /// @ingroup ge
+  /// @brief Set dynamic image info
+  /// @param [in] model_id: model id allocate from manager
+  /// @param [in] dynamic_input_addr: dynamic input addr created by user
+  /// @param [in] length: length of dynamic input addr
+  /// @param [in] image_height: image height entered by user in dynamic multi-resolution scenario
+  /// @param [in] image_width: image width entered by user in dynamic multi-resolution scenario
+  /// @return execute result
+  ///
+  ge::Status SetDynamicImageSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length, uint64_t image_height,
+                                 uint64_t image_width);
+  ///
+  /// @ingroup ge
+  /// @brief Get dynamic batch_info
+  /// @param [in] model_id
+  /// @param [out] batch_info
+  /// @return execute result
+  ///
+  ge::Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+
+  ///
+  /// @ingroup ge
+  /// @brief Set dynamic image info
+  /// @param [in] model_id: model id allocate from manager
+  /// @param [in] dynamic_input_addr: dynamic input addr created by user
+  /// @param [in] length: length of dynamic input addr
+  /// @param [in] aippBatchPara: kAippDynamicBatchPara vector by user in dynamic aipp
+  /// @param [in] aippParms: kAippDynamicPara by user in dynamic aipp
+  /// @return execute result
+  ///
+  ge::Status SetDynamicAippData(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
+                                const std::vector<kAippDynamicBatchPara> &aippBatchPara,
+                                const kAippDynamicPara &aippParms);
 
   ge::Status GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                          std::vector<ge::TensorDesc> &output_desc);
@@ -147,7 +198,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ///
   ge::Status GetMemAndWeightSize(const void *model_data, size_t model_size, size_t &mem_size, size_t &weight_size);
 
-  static ge::Status LoadSingleOp(const std::string &model_name, const ge::ModelData &model_data, void *stream,
+  static ge::Status LoadSingleOp(const std::string &modelName, const ge::ModelData &modelData, void *stream,
                                  SingleOp **single_op);
 
   static ge::Status ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,
@@ -156,8 +207,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   static ge::Status ReleaseSingleOpResource(void *stream);
 
  private:
-  static bool is_init_;
-  std::vector<std::shared_ptr<ModelListenerAdapter>> listener_adapters_;
+  static bool isInit_;
 };
 
 ge::Status ModelInfoParser(const ge::ModelData &model, ge::ModelInfo &model_info);

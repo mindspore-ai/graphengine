@@ -33,7 +33,6 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "framework/common/ge_inner_error_codes.h"
 
-
 namespace ge {
 namespace {
 const char *const kAttrOrder = "order";
@@ -52,8 +51,8 @@ Status PermuteKernel::ValidateInput(const OpDescPtr &op_desc_ptr, const std::vec
     return PARAM_INVALID;
   }
   const uint8_t *src_data = const_weight_ptr->GetData().data();
-  if (op_desc_ptr == nullptr || src_data == nullptr) {
-    GELOGE(PARAM_INVALID, "Input opDescPtr is nullptr.");
+  if ((op_desc_ptr == nullptr) || (src_data == nullptr)) {
+    GELOGW("Input opDescPtr is nullptr.");
     return PARAM_INVALID;
   }
   if (op_desc_ptr->GetInputsSize() >= kTbePermuteInputSize) {
@@ -75,21 +74,21 @@ Status PermuteKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Con
   GeTensorDesc op_desc = op_desc_ptr->GetOutputDesc(0);
   GeTensorDesc op_desc_in = op_desc_ptr->GetInputDesc(0);
   auto src_format = op_desc_in.GetFormat();
-  auto src_shape  = op_desc_in.GetShape().GetDims();
+  auto src_shape = op_desc_in.GetShape().GetDims();
   auto src_data_type = op_desc_in.GetDataType();
   auto data_shape = op_desc.GetShape().GetDims();
   auto data_format = op_desc.GetFormat();
   auto data_type = op_desc.GetDataType();
   GELOGD(
-      "current node %s, format %s, input shape %s, data type %s,  weight format %s, shape %s, data type %s. "
-      "output format %s, shape %s, data type %s",
-      op_desc_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(),
-      formats::ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
-      TypeUtils::FormatToSerialString(const_weight_ptr->GetTensorDesc().GetFormat()).c_str(),
-      formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str(),
-      TypeUtils::DataTypeToSerialString(const_weight_ptr->GetTensorDesc().GetDataType()).c_str(),
-      TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
-      TypeUtils::DataTypeToSerialString(data_type).c_str());
+    "current node %s, format %s, input shape %s, data type %s,  weight format %s, shape %s, data type %s. "
+    "output format %s, shape %s, data type %s",
+    op_desc_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(),
+    formats::ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
+    TypeUtils::FormatToSerialString(const_weight_ptr->GetTensorDesc().GetFormat()).c_str(),
+    formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str(),
+    TypeUtils::DataTypeToSerialString(const_weight_ptr->GetTensorDesc().GetDataType()).c_str(),
+    TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
+    TypeUtils::DataTypeToSerialString(data_type).c_str());
 
   vector<int64_t> perm_list;
   if (!AttrUtils::GetListInt(op_desc_ptr, kAttrOrder, perm_list) &&
@@ -103,7 +102,7 @@ Status PermuteKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Con
          TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(data_format).c_str(),
          formats::ShapeToString(src_shape).c_str(), formats::ShapeToString(data_shape).c_str(),
          formats::ShapeToString(perm_list).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str());
-  if (data_shape.empty() || src_data_type != data_type) {
+  if ((data_shape.empty()) || (src_data_type != data_type)) {
     GELOGW("Transpose is not supported. Invalid shape (src: %s, dst: %s) or inconsistent datatype (src: %s, dst: %s)",
            formats::ShapeToString(src_shape).c_str(), formats::ShapeToString(data_shape).c_str(),
            TypeUtils::DataTypeToSerialString(src_data_type).c_str(),

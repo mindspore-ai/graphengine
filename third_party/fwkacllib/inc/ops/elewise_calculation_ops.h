@@ -24,8 +24,8 @@ namespace ge {
 
 *@par Inputs:
 *Dynamic inputs, including:
-* @li x: A list of Tensor objects, each with same shape and type. The supported types are: 
-*   float16, float32, double, int32, uint8, int16, int8, complex64, int64, 
+* @li x: A list of Tensor objects, each with same shape and type. The supported types are:
+*   float16, float32, double, int32, uint8, int16, int8, complex64, int64,
 *   qint8, quint8, qint32, uint16, complex128, uint32, uint64.
 
 *@par Outputs:
@@ -104,7 +104,7 @@ REG_OP(MinimumGrad)
     .OP_END_FACTORY_REG(MinimumGrad)
 
 /**
-*@brief: Cast a tensor form src data type to dst data type.
+*@brief Cast a tensor form src data type to dst data type.
 
 *@par Inputs:
 *One input:\n
@@ -117,17 +117,6 @@ REG_OP(MinimumGrad)
 
 *@par Outputs:
 *y:A `Tensor`. Has the same type as `x`.
-
-*@par Quantization supported or not
-*Not supported
-
-*@par Quantized inference supported or not
-*Not supported
-
-*@par Multiple batches supported or not
-*Supported
-
-*@since V100R001C33
 */
 REG_OP(Cast)
     .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
@@ -296,7 +285,7 @@ REG_OP(Sub)
     .OP_END_FACTORY_REG(Sub)
 
 /**
-*@ brief computes the absolute value of a tensor.
+*@brief computes the absolute value of a tensor.
 
 *@par Inputs:
 *One inputs, including:
@@ -388,8 +377,8 @@ REG_OP(Cos)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8
-*@li x2: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8
+*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, float64, int64, uint16, int16, complex64, complex128
+*@li x2: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, float64, int64, uint16, int16, complex64, complex128
 
 *@par Outputs:
 * y: A Tensor. Has the same type and format as input "x1".
@@ -435,7 +424,7 @@ REG_OP(Equal)
 
 *@par Inputs:
 *One input:\n
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
+*x: A Tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
 
 *@par Attributes:
 *@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1".
@@ -1446,10 +1435,13 @@ REG_OP(ApproximateEqual)
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
 *
+*@par Attributes:
+* N: the size of x.
 */
 REG_OP(AccumulateNV2)
    .DYNAMIC_INPUT(x, TensorType::NumberType())
    .OUTPUT(y, TensorType::NumberType())
+   .REQUIRED_ATTR(N, Int)
    .OP_END_FACTORY_REG(AccumulateNV2)
 
 /**
@@ -1563,8 +1555,6 @@ REG_OP(FakeQuantWithMinMaxVars)
 
 *@see Region()
 
-*@par Third-party framework compatibility
-* Compatible with the operator FakeQuantWithMinVarsGradient.
 */
 REG_OP(FakeQuantWithMinMaxVarsGradient)
     .INPUT(gradients, TensorType({DT_FLOAT}))
@@ -1915,16 +1905,16 @@ REG_OP(BiasAdd)
 *@li dimension: A Tensor. Must be one of the following types: int32, int64. Must be in the range [-rank(input x), rank(input x)]. Describes which dimension of the input Tensor to reduce across. \n
 * The format is ND.
 *@par Attributes:
-*output_type: The output type, either "int32" or "int64". Defaults to "int64".
+*dtype: The output type, either "int32" or "int64". Defaults to "int64".
 
 *@par Outputs:
-*y: A Tensor of type "output_type".
+*y: A Tensor of type "dtype".
 */
 REG_OP(ArgMin)
     .INPUT(x, TensorType::NumberType())
     .INPUT(dimension, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType({DT_INT32, DT_INT64}))
-    .ATTR(output_type, Type, DT_INT64)
+    .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(ArgMin)
 
 /**
@@ -1937,16 +1927,16 @@ REG_OP(ArgMin)
 
 *@par Attributes:
 *@li dimension: The dimension of the input Tensor to reduce across.
-*@li output_type: An optional attribute, specifying the output data type. Must be "int32". Defaults to "int64".
+*@li dtype: An optional attribute, specifying the output data type. Must be "int32". Defaults to "int64".
 
 *@par Outputs:
-*y: A Tensor of type output_type.
+*y: A Tensor of type dtype.
 */
 REG_OP(ArgMinD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_INT32}))
     .REQUIRED_ATTR(dimension, Int)
-    .ATTR(output_type, Type, DT_INT64)
+    .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(ArgMinD)
 
 /**
@@ -1964,12 +1954,12 @@ REG_OP(ArgMinD)
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
 *@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
 */
-REG_OP(ArgMax)
+REG_OP(ArgMaxV2)
     .INPUT(x, TensorType::NumberType())
     .INPUT(dimension, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType({DT_INT32, DT_INT64}))
-    .ATTR(output_type, Type, DT_INT64)
-    .OP_END_FACTORY_REG(ArgMax)
+    .ATTR(dtype, Type, DT_INT64)
+    .OP_END_FACTORY_REG(ArgMaxV2)
 
 /**
 *@brief Returns the index with the largest value across axes of a tensor.
@@ -1992,7 +1982,7 @@ REG_OP(ArgMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_INT32}))
     .REQUIRED_ATTR(dimension, Int)
-    .ATTR(output_type, Type, DT_INT64)
+    .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(ArgMaxD)
 
 /**
@@ -2053,20 +2043,24 @@ REG_OP(ArgMinWithValue)
 
 *@par Inputs:
 *One input: \n
-*x: the list of input data, the type of element is Tensor that \n
-*   should met one of the following types:
-*   float16, float32
+*x: the list of input data, the type of element in Tensor should be same.
+*   the max size of x is 32.
+*   should met one of the following types: float16, float32
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as "x".
 
 *@par Attributes:
+*@li N: A required attribute. the number of input x, max size is 32.
 *@li model: An optional attribute. Defaults to "1".
 *    "0": product, "1": sum, "2": max.
 *@li coeff: A required attribute. Must met all of following rules:
-*    size of "coeff" must be equal to len("x").
-*    element of "coeff" must be a number.
+*    size of "coeff" must be equal to len("x") or is null.
 */
 REG_OP(Eltwise)
-    .DYNAMIC_INPUT(__input, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(N, Int)
     .ATTR(mode, Int, 1)
     .ATTR(coeff, ListFloat, {})
     .OP_END_FACTORY_REG(Eltwise)
@@ -2090,139 +2084,92 @@ REG_OP(PopulationCount)
 
 *@par Inputs:
 *Thirteen inputs, including:
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor. Must be one of the following types: float16, float32.
-* @li input3: A Tensor. Must be one of the following types: float16, float32.
-* @li input4: A Tensor. Must be one of the following types: float16, float32.
-* @li input5: A Tensor. Must be one of the following types: float16, float32.
-* @li input6: A Tensor. Must be one of the following types: float16, float32.
-* @li input7: A Tensor. Must be one of the following types: float16, float32.
-* @li input8: A Tensor. Must be one of the following types: float16, float32.
-* @li input9: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx0: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx1: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx2: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx3: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul3: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul2: A Tensor. Must be one of the following types: float16, float32.
+* @li input_realdiv1: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul1: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul0: A Tensor. Must be one of the following types: float16, float32.
+* @li input_realdiv0: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul4: A Tensor. Must be one of the following types: float16, float32.
+* @li mul0_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul1_sub: A Tensor. Must be one of the following types: float16, float32.
+* @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul3_sub1: A Tensor. Must be one of the following types: float16, float32.
+* @li mul4_x: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
 
 *@par Outputs:
 *Four outputs, including:
-* @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32.
-* @li output3: A Tensor. Must be one of the following types: float16, float32.
-* @li output4: A Tensor. Must be one of the following types: float16, float32.
+* @li y1: A Tensor. Must be one of the following types: float16, float32.
+* @li y2: A Tensor. Must be one of the following types: float16, float32.
+* @li y3: A Tensor. Must be one of the following types: float16, float32.
+* @li y4: A Tensor. Must be one of the following types: float16, float32.
 
 */
 REG_OP(LambNextMVWithDecay)
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input5, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input6, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input7, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input8, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input9, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx0, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_realdiv1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_realdiv0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul0_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul1_sub, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul3_sub1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul4_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y4, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(LambNextMVWithDecay)
-
-/**
-*@brief A fusion operator for bert lamb.
-
-*@par Inputs:
-*Thirteen inputs, including:
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor. Must be one of the following types: float16, float32.
-* @li input3: A Tensor. Must be one of the following types: float16, float32.
-* @li input4: A Tensor. Must be one of the following types: float16, float32.
-* @li input5: A Tensor. Must be one of the following types: float16, float32.
-* @li input6: A Tensor. Must be one of the following types: float16, float32.
-* @li input7: A Tensor. Must be one of the following types: float16, float32.
-* @li input8: A Tensor. Must be one of the following types: float16, float32.
-* @li input9: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx0: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx1: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx2: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx3: A Tensor. Must be one of the following types: float16, float32.
-
-*@par Outputs:
-*Four outputs, including:
-* @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32.
-* @li output3: A Tensor. Must be one of the following types: float16, float32.
-* @li output4: A Tensor. Must be one of the following types: float16, float32.
-
-*/
-REG_OP(LambNextMVWithDecayV1)
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input5, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input6, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input7, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input8, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input9, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx0, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output4, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OP_END_FACTORY_REG(LambNextMVWithDecayV1)
 
 /**
 *@brief Confuse real_div, rsqrt, sqrt, maximum, minimum, sub and add.
 
 *@par Inputs:
 *Thirteen inputs, including:
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor of the same type as "input1".
-* @li input3: A Tensor of the same type as "input1".
-* @li input4: A Tensor of the same type as "input1".
-* @li input5: A Tensor of the same type as "input1".
-* @li input6: A Tensor. Must be one of the following types: float16, float32.
-* @li input7: A Tensor of the same type as "input1".
-* @li input8: A Tensor of the same type as "input1".
-* @li input9: A Tensor of the same type as "input1".
-* @li inputx0: A Tensor of the same type as "input1".
-* @li inputx1: A Tensor. Must be one of the following types: float16, float32.
-* @li inputx2: A Tensor of the same type as "input1".
-* @li inputx3: A Tensor of the same type as "input1".
+* @li input_mul3: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul2: A Tensor of the same type as "input1".
+* @li input_realdiv1: A Tensor of the same type as "input1".
+* @li input_mul1: A Tensor of the same type as "input1".
+* @li input_mul0: A Tensor of the same type as "input1".
+* @li input_realdiv0: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul4: A Tensor of the same type as "input1".
+* @li mul0_x: A Tensor of the same type as "input1".
+* @li mul1_sub: A Tensor of the same type as "input1".
+* @li mul2_x: A Tensor of the same type as "input1".
+* @li mul3_sub1: A Tensor. Must be one of the following types: float16, float32.
+* @li mul4_x: A Tensor of the same type as "input1".
+* @li add2_y: A Tensor of the same type as "input1".
 
 *@par Outputs:
 *Four outputs, including:
-*@li output1: A Tensor. Has the same type as "input1".
-*@li output2: A Tensor. Has the same type as "input1".
-*@li output3: A Tensor. Has the same type as "input1".
-*@li output4: A Tensor. Has the same type as "input1".
+*@li y1: A Tensor. Has the same type as "input_mul3".
+*@li y2: A Tensor. Has the same type as "input_mul3".
+*@li y3: A Tensor. Has the same type as "input_mul3".
+*@li y4: A Tensor. Has the same type as "input_mul3".
 */
 REG_OP(LambNextMV)
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input5, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input6, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input7, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input8, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input9, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx0, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(inputx3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_realdiv1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_realdiv0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul0_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul1_sub, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul3_sub1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul4_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y4, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(LambNextMV)
 
 /**
@@ -2230,8 +2177,8 @@ REG_OP(LambNextMV)
 
 *@par Inputs:
 *Six inputs, including:
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input_square: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul2: A Tensor. Must be one of the following types: float16, float32.
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
 * @li truediv1_recip: A Tensor. Must be one of the following types: float16, float32.
@@ -2239,77 +2186,51 @@ REG_OP(LambNextMV)
 
 *@par Outputs:
 *Two outputs, including:
-* @li output1: A Tensor of the same type as "input1".
-* @li output2: A Tensor of the same type as "input1".
+* @li y1: A Tensor of the same type as "input_square".
+* @li y2: A Tensor of the same type as "input_square".
 
 */
 REG_OP(LambNextRight)
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_square, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul2, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(mul3_x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(truediv1_recip, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y2, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(LambNextRight)
-
-/**
-*@brief Confuse broadcast, add and mul.
-
-*@par Inputs:
-*Five inputs, including:
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor of the same type as "input1".
-* @li mul_x: A Tensor of the same type as "input1".
-* @li mul1_x: A Tensor of the same type as "input1".
-* @li truediv_recip: A Tensor of the same type as "input1".
-
-*@par Outputs:
-*Two outputs, including:
-*@li output1: A Tensor. Has the same type as "input1".
-*@li output2: A Tensor. Has the same type as "input1".
-*/
-REG_OP(LambNextLeft)
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(mul_x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(mul1_x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(truediv_recip, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OP_END_FACTORY_REG(LambNextLeft)
 
 /**
 *@brief A fusion operator for bert lamb.
 
 *@par Inputs:
 *Six inputs, including:
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor. Must be one of the following types: float16, float32.
-* @li input3: A Tensor. Must be one of the following types: float16, float32.
-* @li input4: A Tensor. Must be one of the following types: float16, float32.
-* @li input5: A Tensor. Must be one of the following types: float16, float32.
-* @li input6: A Tensor. Must be one of the following types: float16, float32.
-* @li input7: A Tensor. Must be one of the following types: float16, float32.
-* @li input8: A Tensor. Must be one of the following types: float16, float32.
-* @li input9: A Tensor. Must be one of the following types: float16, float32.
+* @li input_greater1: A Tensor. Must be one of the following types: float16, float32.
+* @li input_greater_realdiv: A Tensor. Must be one of the following types: float16, float32.
+* @li input_realdiv: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul0: A Tensor. Must be one of the following types: float16, float32.
+* @li input_mul1: A Tensor. Must be one of the following types: float16, float32.
+* @li input_sub: A Tensor. Must be one of the following types: float16, float32.
+* @li greater_y: A Tensor. Must be one of the following types: float16, float32.
+* @li select_e: A Tensor. Must be one of the following types: float16, float32.
+* @li minimum_y: A Tensor. Must be one of the following types: float16, float32.
 
 *@par Outputs:
-*output_y: A Tensor of the same type as "input1".
+*y: A Tensor of the same type as "input_greater1".
 
 */
 REG_OP(LambUpdateWithLr)
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input5, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input6, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input7, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input8, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input9, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_greater1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_greater_realdiv, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_realdiv, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_mul1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input_sub, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(greater_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(select_e, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(minimum_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(LambUpdateWithLr)
 
 /**
@@ -2425,21 +2346,21 @@ REG_OP(AdamApplyOne)
 
 *@par Inputs:
 *Four inputs, including:
-* @li input_x: A Tensor. Must be one of the following types: float16, float32.
-* @li input1: A Tensor. Must be one of the following types: float16, float32.
-* @li input2: A Tensor. Must be one of the following types: float16, float32.
-* @li input3: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li greater_zeros: A Tensor. Must be one of the following types: float16, float32.
+* @li select_ones: A Tensor. Must be one of the following types: float16, float32.
+* @li maximum_ones: A Tensor. Must be one of the following types: float16, float32.
 
 *@par Outputs:
-*output_y: A Tensor of the same type as "input_x".
+*y: A Tensor of the same type as "x".
 
 */
 REG_OP(ClipByNormNoDivSum)
-    .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(greater_zeros, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(select_ones, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(maximum_ones, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(ClipByNormNoDivSum)
 
 /**
@@ -2462,7 +2383,7 @@ REG_OP(SquareSumV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(y1, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(y2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .ATTR(axis, ListInt, {})
+    .REQUIRED_ATTR(axis, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(SquareSumV2)
 
@@ -2483,9 +2404,27 @@ y: A Tensor. Has the same type as "x".
 REG_OP(SquareSumV1)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .ATTR(axis, ListInt, {})
+    .REQUIRED_ATTR(axis, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(SquareSumV1)
+
+/**
+*@brief Calculate square of Tensor and then reducesum
+
+*@par Inputs:
+*x1: A Tensor of type float32.
+*x2: A Tensor of type float32.
+
+*@par Outputs:
+y1: A Tensor. Has the same type as "x1".The result of "x1".
+y2: A Tensor. Has the same type as "x2".The result of "x2".
+*/
+REG_OP(SquareSumAll)
+    .INPUT(x1, TensorType({DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT}))
+    .OUTPUT(y1, TensorType({DT_FLOAT}))
+    .OUTPUT(y2, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(SquareSumAll)
 
 /**
 *@brief Confuse broadcast, addn and mul.
@@ -2549,7 +2488,7 @@ REG_OP(ConfusionMulGrad)
     .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(output0, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .ATTR(axis, ListInt, {})
+    .ATTR(axes, ListInt, {})
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ConfusionMulGrad)
 
@@ -2560,6 +2499,36 @@ REG_OP(FusedMulAddNL2loss)
     .OUTPUT(y1, TensorType::NumberType())
     .OUTPUT(y2, TensorType::NumberType())
     .OP_END_FACTORY_REG(FusedMulAddNL2loss)
+
+
+/**
+*@brief Tests whether the input exceeds a threshold.
+
+*@par Inputs:
+*@li x: A Tensor with any format. Must be one of the following types: float16, float32.
+
+*@par Attributes:
+*@li threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise.
+
+*@par Outputs:
+*@li y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
+*/
+
+ REG_OP(Threshold)
+     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+     .ATTR(threshold, Float, 0.0)
+     .OP_END_FACTORY_REG(Threshold);
+
+REG_OP(ArgMaxWithK)
+     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+     .OUTPUT(indices, TensorType({DT_INT32, DT_FLOAT, DT_FLOAT16}))
+     .OUTPUT(values, TensorType({DT_FLOAT, DT_FLOAT16}))
+     .ATTR(axis, Int, 10000)
+     .ATTR(out_max_val, Bool, false)
+     .ATTR(top_k, Int, 1)
+     .OP_END_FACTORY_REG(ArgMaxWithK)
+
 }  // namespace ge
 
 #endif  // GE_OP_ELEWISE_CALCULATION_OPS_H

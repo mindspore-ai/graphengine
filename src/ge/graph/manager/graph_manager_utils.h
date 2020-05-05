@@ -113,6 +113,7 @@ class SubGraphInfo {
 };
 
 using SubGraphInfoPtr = std::shared_ptr<ge::SubGraphInfo>;
+using Graph2SubGraphInfoList = std::unordered_map<ComputeGraphPtr, std::vector<SubGraphInfoPtr>>;
 
 // for run graph async listener
 class RunAsyncListener : public ge::ModelListener {
@@ -184,14 +185,12 @@ using ConstGraphNodePtr = shared_ptr<const GraphNode>;
 
 class GraphModelListener : public ge::ModelListener {
  public:
-  GraphModelListener();
+  GraphModelListener(std::mutex &mutex, std::condition_variable &cond);
 
   ~GraphModelListener() = default;
 
   // callback
   Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result) override;
-
-  Status SetCondition(std::mutex *mutex, std::condition_variable *cond);
 
   Status ResetResult();
 
@@ -205,9 +204,9 @@ class GraphModelListener : public ge::ModelListener {
   bool is_finished_;
 
   // not owner
-  std::mutex *mutex_;
+  std::mutex &mutex_;
   // not owner
-  std::condition_variable *condition_;
+  std::condition_variable &condition_;
 };
 
 Status ParseOutNodes(const string &out_nodes);
@@ -236,7 +235,7 @@ struct GraphManagerOptions {
   std::map<std::string, int> stream_max_parallel_num;
   std::string output_datatype;
   std::string original_model_file;
-  bool save_original_model;
+  std::string save_original_model;
   GraphManagerOptions()
       : stream_num(1),
         perf_level(domi::GEN_TASK_WITHOUT_FUSION),
@@ -257,7 +256,7 @@ struct GraphManagerOptions {
         local_fmk_op_flag(false),
         hcom_parallel(false),
         enable_print_op_pass(true),
-        save_original_model(false) {}
+        save_original_model("false") {}
 };
 }  // namespace ge
 

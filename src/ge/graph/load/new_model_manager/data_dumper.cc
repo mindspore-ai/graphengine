@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
+#include "graph/load/new_model_manager/data_dumper.h"
+#include <map>
 #include <vector>
 #include <utility>
-#include <map>
-
-#include "graph/load/new_model_manager/data_dumper.h"
-#include "graph/utils/attr_utils.h"
-#include "graph/debug/ge_attr_define.h"
-#include "framework/common/debug/ge_log.h"
-#include "proto/op_mapping_info.pb.h"
-#include "proto/ge_ir.pb.h"
-#include "runtime/mem.h"
 #include "common/properties_manager.h"
+#include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "model_utils.h"
 #include "graph/anchor.h"
+#include "graph/debug/ge_attr_define.h"
+#include "graph/utils/attr_utils.h"
+#include "graph/load/new_model_manager/model_utils.h"
+#include "proto/ge_ir.pb.h"
+#include "proto/op_mapping_info.pb.h"
+#include "runtime/mem.h"
 
 namespace {
 const uint32_t kAicpuLoadFlag = 1;
@@ -116,6 +115,7 @@ void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
           GELOGE(PARAM_INVALID, "input op desc is null.");
           return;
         }
+
         input_map_.insert(
           {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
       }
@@ -140,18 +140,18 @@ void DataDumper::SaveDumpTask(uint32_t task_id, const std::shared_ptr<OpDesc> &o
       return;
     }
 
-    auto output_tensor = data_op->GetOutputDescPtr(inner_input_mapping.output_anchor_index);
-    if (output_tensor == nullptr) {
-      GELOGE(PARAM_INVALID, "output_tensor is null, index: %d, size: %zu.", inner_input_mapping.output_anchor_index,
-             data_op->GetOutputsSize());
+    auto input_tensor = op_desc->GetInputDescPtr(inner_input_mapping.input_anchor_index);
+    if (input_tensor == nullptr) {
+      GELOGE(PARAM_INVALID, "input_tensor is null, index: %d, size: %zu.", inner_input_mapping.input_anchor_index,
+             op_desc->GetInputsSize());
       return;
     }
 
-    uintptr_t data_addr = args - sizeof(void *) * data_op->GetInputOffset().size() +
-                          sizeof(void *) * static_cast<uint32_t>(inner_input_mapping.output_anchor_index);
+    uintptr_t data_addr = args - sizeof(void *) * op_desc->GetInputOffset().size() +
+                          sizeof(void *) * static_cast<uint32_t>(inner_input_mapping.input_anchor_index);
     GELOGI("Save input dump task %s, id: %u.", data_op->GetName().c_str(), task_id);
     op_list_.push_back({task_id, data_op, data_addr, false, inner_input_mapping.input_anchor_index,
-                        inner_input_mapping.output_anchor_index});
+                        inner_input_mapping.output_anchor_index, input_tensor->GetShape().GetDims()});
   }
 }
 
@@ -180,25 +180,28 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
 }
 
 Status DataDumper::LoadDumpInfo() {
-  GELOGI("%zu op need dump in %s.", op_list_.size(), model_name_.c_str());
+  PrintCheckLog();
+
   if (op_list_.empty()) {
     return SUCCESS;
   }
 
   aicpu::dump::OpMappingInfo op_mapping_info;
-
   op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + std::to_string(device_id_) + "/");
-
   op_mapping_info.set_model_name(model_name_);
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuLoadFlag);
+  op_mapping_info.set_dump_step(PropertiesManager::Instance().GetDumpStep());
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
+  GELOGD("Dump step in load dump info is %s", PropertiesManager::Instance().GetDumpStep().c_str());
 
   for (const auto &op_iter : op_list_) {
     aicpu::dump::Task task;
+    auto op_desc = op_iter.op;
+    task.set_end_graph(op_desc->GetType() == ENDGRAPH);
     task.set_task_id(op_iter.task_id);
-    task.mutable_op()->set_op_name(op_iter.op->GetName());
-    task.mutable_op()->set_op_type(op_iter.op->GetType());
+    task.mutable_op()->set_op_name(op_desc->GetName());
+    task.mutable_op()->set_op_type(op_desc->GetType());
 
     if (op_iter.is_task) {
       // tbe or aicpu op
@@ -249,7 +252,7 @@ Status DataDumper::LoadDumpInfo() {
     output.set_data_type(static_cast<int32_t>(GetIrDataType(output_tensor->GetDataType())));
     output.set_format(static_cast<int32_t>(output_tensor->GetFormat()));
 
-    for (auto dim : output_tensor->GetShape().GetDims()) {
+    for (auto dim : op_iter.dims) {
       output.mutable_shape()->add_dim(dim);
     }
 
@@ -270,10 +273,10 @@ Status DataDumper::LoadDumpInfo() {
   }
 
   std::string proto_str;
-  uint32_t proto_size = op_mapping_info.ByteSizeLong();
+  size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
   if (!ret || proto_size == 0) {
-    GELOGE(FAILED, "Protobuf SerializeToString failed, proto size %u.", proto_size);
+    GELOGE(FAILED, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
     return FAILED;
   }
 
@@ -287,6 +290,7 @@ Status DataDumper::LoadDumpInfo() {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "load dump information.", proto_size)
 
   rt_ret = rtMemcpy(dev_mem_load_, proto_size, proto_str.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
@@ -340,6 +344,7 @@ Status DataDumper::UnloadDumpInfo() {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "unload dump information.", proto_size)
 
   rt_ret = rtMemcpy(dev_mem_unload_, proto_size, proto_str.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
@@ -352,9 +357,42 @@ Status DataDumper::UnloadDumpInfo() {
     GELOGE(RT_FAILED, "Call rtDatadumpInfoLoad failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
-
   load_flag_ = false;
   GELOGI("UnloadDumpInfo success, proto size: %zu.", proto_size);
   return SUCCESS;
+}
+
+void DataDumper::PrintCheckLog() {
+  std::set<std::string> model_list = PropertiesManager::Instance().GetAllDumpModel();
+  if (model_list.empty()) {
+    GELOGI("No model need dump.");
+    return;
+  }
+
+  GELOGI("%zu op need dump in %s.", op_list_.size(), model_name_.c_str());
+  if (model_list.find(ge::DUMP_ALL_MODEL) == model_list.end()) {
+    if (model_list.find(model_name_) == model_list.end()) {
+      std::string model_list_str;
+      for (auto &model : model_list) {
+        model_list_str += "[" + model + "].";
+      }
+
+      GELOGW("Model %s not be set to dump, dump list: %s", model_name_.c_str(), model_list_str.c_str());
+      return;
+    }
+  }
+
+  std::set<std::string> config_dump_op_list = PropertiesManager::Instance().GetDumpPropertyValue(model_name_);
+  std::set<std::string> dump_op_list;
+  for (auto &inner_dump_info : op_list_) {
+    // oplist value OpDescPtr is not nullptr
+    dump_op_list.insert(inner_dump_info.op->GetName());
+  }
+
+  for (auto &dump_op : config_dump_op_list) {
+    if (dump_op_list.find(dump_op) == dump_op_list.end()) {
+      GELOGW("Op %s set to dump but not exist in model %s or not a valid op.", dump_op.c_str(), model_name_.c_str());
+    }
+  }
 }
 }  // namespace ge

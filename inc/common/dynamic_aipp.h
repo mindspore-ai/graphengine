@@ -19,10 +19,10 @@
 
 #include <stdint.h>
 
-///
-/// @ingroup dnn
-/// @brief struct define of dynamic aipp batch parameter.
-///
+/**
+ * @ingroup dnn
+ * @brief struct define of dynamic aipp batch parameter.
+ */
 typedef struct tagAippDynamicBatchPara {
   int8_t cropSwitch;     // crop switch
   int8_t scfSwitch;      // resize switch
@@ -66,10 +66,10 @@ typedef struct tagAippDynamicBatchPara {
   int8_t reserve1[16];  // 32B assign, for ub copy
 } kAippDynamicBatchPara;
 
-///
-/// @ingroup dnn
-/// @brief struct definition of dynamic aipp parameter. lite:64+96*batchNum byte ; tiny:64+64*batchNum byte
-///
+/**
+ * @ingroup dnn
+ * @brief struct define of dynamic aipp parameter. lite:64+96*batchNum byte ; tiny:64+64*batchNum byte
+ */
 typedef struct tagAippDynamicPara {
   uint8_t inputFormat;    // input format：YUV420SP_U8/XRGB8888_U8/RGB888_U8
   int8_t cscSwitch;       // csc switch

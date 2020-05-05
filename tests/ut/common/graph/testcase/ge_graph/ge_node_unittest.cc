@@ -167,7 +167,9 @@ TEST_F(UtestGeNode, add_link_from) {
   NodePtr n5 = graph_ptr->AddNode(desc_ptr);
   EXPECT_EQ(n3->AddLinkFrom("x", n4), GRAPH_SUCCESS);
   EXPECT_EQ(n3->AddLinkFrom(0, n5), GRAPH_SUCCESS);
-  desc_ptr->input_name_idx_.insert(make_pair("__input1", 1));
+  auto input_name_idx = desc_ptr->GetAllInputName();
+  input_name_idx.insert(make_pair("__input1", 1));
+  desc_ptr->SetAllInputName(input_name_idx);
   EXPECT_EQ(n2->AddLinkFrom(n1), GRAPH_SUCCESS);
 
   OpDescPtr desc_ptr1 = std::make_shared<OpDesc>("name1", "type1");

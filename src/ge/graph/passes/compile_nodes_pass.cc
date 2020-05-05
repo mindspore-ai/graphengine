@@ -34,6 +34,7 @@ const char *const kAICPUKernelLibName = "aicpu_kernel";
 
 namespace ge {
 graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(CompileNodesPass);
   GELOGI("[CompileNodesPass]: optimize begin.");
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
@@ -77,6 +78,7 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
     return result;
   }
   GELOGI("[CompileNodesPass]: Optimize success.");
+  GE_TIMESTAMP_END(CompileNodesPass, "GraphManager::CompileNodesPass");
   return GRAPH_SUCCESS;
 }
 

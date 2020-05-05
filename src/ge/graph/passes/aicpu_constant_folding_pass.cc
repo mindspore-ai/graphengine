@@ -32,18 +32,18 @@
 
 namespace {
 const char *const kKernelLibName = "aicpu_kernel";
+const char *const kNotSupported = "0";
 const uint64_t kReleaseFlag = 1;
+const uint64_t kOpsFlag = 1;
 const uint64_t kDouble = 2;
 }  // namespace
 namespace ge {
 Status AicpuConstantFoldingPass::Run(ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
-  GELOGD("Begin to run aicpu constant folding on node %s", node->GetName().c_str());
-  if (node->GetType() == NETOUTPUT) {
-    GELOGI("Skip aicpu constant folding on node[netoutput] %s", node->GetName().c_str());
+  GELOGD("Start aicpu constant folding on node [%s]", node->GetName().c_str());
+  if (IsSkipFold(node)) {
     return SUCCESS;
   }
-
   vector<ConstGeTensorPtr> weight_vec;
   bool flag = CheckInput(node, weight_vec);
   if (!flag) {
@@ -110,7 +110,7 @@ bool AicpuConstantFoldingPass::CheckInput(const NodePtr &node, vector<ConstGeTen
          TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
   auto input_nodes = OpDescUtils::GetConstInputNode(*node);
   if (input_nodes.empty() || input_nodes.size() != node_desc->GetInputsSize()) {
-    GELOGD("Const input nodes size is %zu, and nodeDesc inputsSize is %zu.", input_nodes.size(),
+    GELOGD("Const input nodes size is %zu, and nodeDesc inputsSize is %zu, skip fold.", input_nodes.size(),
            node_desc->GetInputsSize());
     return false;
   }
@@ -166,12 +166,16 @@ Status AicpuConstantFoldingPass::GenerateDataPtrInfo(const vector<uint64_t> &out
     GE_CHK_RT_RET(rtMalloc(&raw_data_addr, result_summary.raw_data_size, RT_MEMORY_HBM));
 
     void *shape_data_addr = nullptr;
-    rtError_t rt_ret = rtMalloc(&shape_data_addr, result_summary.shape_data_size, RT_MEMORY_HBM);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "rtMalloc error");
-      GE_CHK_RT(rtFree(raw_data_addr));
-      return FAILED;
+    // shape_data_size = 0 means scalar
+    if (result_summary.shape_data_size != 0) {
+      rtError_t rt_ret = rtMalloc(&shape_data_addr, result_summary.shape_data_size, RT_MEMORY_HBM);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGE(rt_ret, "rtMalloc error");
+        GE_CHK_RT(rtFree(raw_data_addr));
+        return FAILED;
+      }
     }
+
     DataPtrInfo raw_data_info;
     raw_data_info.release_flag = kReleaseFlag;
     raw_data_info.data_size = result_summary.raw_data_size;
@@ -192,7 +196,7 @@ Status AicpuConstantFoldingPass::GenerateDataPtrInfo(const vector<uint64_t> &out
   return SUCCESS;
 }
 
-Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_OP_KERNEL &task) const {
+Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_OP_KERNEL &task) {
   // Update the workspace_addr
   if (task_info.empty()) {
     GELOGE(FAILED, "task_info is empty ");
@@ -213,8 +217,7 @@ Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_
   return SUCCESS;
 }
 
-Status AicpuConstantFoldingPass::UpdateInputAndOutputAddr(const vector<uint64_t> &io_addrs,
-                                                          STR_FWK_OP_KERNEL &task) const {
+Status AicpuConstantFoldingPass::UpdateInputAndOutputAddr(const vector<uint64_t> &io_addrs, STR_FWK_OP_KERNEL &task) {
   auto addrs_size = sizeof(uint64_t) * (io_addrs.size());
   if (addrs_size <= 0) {
     GELOGE(FAILED, "addrs_size is less than 1 ");
@@ -414,7 +417,7 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
   return SUCCESS;
 }
 
-Status AicpuConstantFoldingPass::GenerateTaskForLaunch(STR_FWK_OP_KERNEL &aicpu_task, void *&task_buf) const {
+Status AicpuConstantFoldingPass::GenerateTaskForLaunch(STR_FWK_OP_KERNEL &aicpu_task, void *&task_buf) {
   GE_CHK_RT_RET(rtMalloc(&task_buf, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM));
 
   rtError_t rt_ret = rtMemcpy(task_buf, sizeof(STR_FWK_OP_KERNEL), reinterpret_cast<void *>(&aicpu_task),
@@ -427,7 +430,7 @@ Status AicpuConstantFoldingPass::GenerateTaskForLaunch(STR_FWK_OP_KERNEL &aicpu_
   return SUCCESS;
 }
 
-Status AicpuConstantFoldingPass::KernelLaunch(void *task_buf) const {
+Status AicpuConstantFoldingPass::KernelLaunch(void *task_buf) {
   rtModel_t model = nullptr;
   rtStream_t stream = nullptr;
   rtStream_t stream_run = nullptr;
@@ -517,10 +520,17 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
     GE_IF_BOOL_EXEC(output_ptr->SetData(data_addr.get(), raw_data_size) != GRAPH_SUCCESS,
                     GELOGE(FAILED, "set data failed");
                     return FAILED);
-    GELOGI("GenerateGeTensor: raw_data_size %lu", raw_data_size);
+    GELOGD("GenerateGeTensor: raw_data_size %lu", raw_data_size);
 
     const DataPtrInfo &shape_data_info = data_vec.at(i * kDouble + 1);
     uint64_t shape_data_size = shape_data_info.data_size;
+    GELOGD("GenerateGeTensor: shape_data_size %lu", shape_data_size);
+    if (shape_data_size == 0) {
+      GELOGW("node[%s] outshape is scalar, skip copy shape", node_desc->GetName().c_str());
+      output_ptr->MutableTensorDesc().SetShape(GeShape());
+      outputs.emplace_back(output_ptr);
+      continue;
+    }
     uint64_t dim_num = shape_data_size / sizeof(uint64_t);
     std::unique_ptr<int64_t[]> shape_addr(new (std::nothrow) int64_t[dim_num]());
     if (shape_addr == nullptr) {
@@ -530,13 +540,12 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
     GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), shape_data_size,
                            reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(shape_data_info.dst_ptr)),
                            shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
-    std::vector<int64_t> shapeDims;
-    for (size_t idx = 0; idx < dim_num; idx++) {
-      shapeDims.push_back(shape_addr[idx]);
-      GELOGI("GenerateGeTensor: dim %ld", shape_addr[idx]);
+    std::vector<int64_t> shape_dims;
+    for (size_t j = 0; j < dim_num; j++) {
+      shape_dims.push_back(shape_addr[j]);
+      GELOGD("GenerateGeTensor: dim %ld", shape_addr[j]);
     }
-    output_ptr->MutableTensorDesc().SetShape(GeShape(shapeDims));
-
+    output_ptr->MutableTensorDesc().SetShape(GeShape(shape_dims));
     outputs.emplace_back(output_ptr);
   }
   return SUCCESS;
@@ -544,7 +553,7 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
 
 void AicpuConstantFoldingPass::ReleaseMemory(const vector<AddrAndType> &input_addrs,
                                              const vector<uint64_t> &output_addrs,
-                                             const vector<DataPtrInfo> &data_vec) const {
+                                             const vector<DataPtrInfo> &data_vec) {
   for (const auto &item : input_addrs) {
     GE_CHK_RT(rtFree(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(item.input_addr))));
   }
@@ -552,7 +561,38 @@ void AicpuConstantFoldingPass::ReleaseMemory(const vector<AddrAndType> &input_ad
     GE_CHK_RT(rtFree(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(item))));
   }
   for (const auto &item : data_vec) {
-    GE_CHK_RT(rtFree(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(item.dst_ptr))));
+    auto dst_ptr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(item.dst_ptr));
+    if (dst_ptr != nullptr) {
+      GE_CHK_RT(rtFree(dst_ptr));
+    }
   }
+}
+
+bool AicpuConstantFoldingPass::IsSkipFold(const ge::NodePtr &node) {
+  GE_CHECK_NOTNULL(node);
+  string type = node->GetType();
+  if (type == ge::FRAMEWORKOP) {
+    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), ge::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
+      GELOGW("Skip aicpu constant folding on frameworkop node [%s]", node->GetName().c_str());
+      return true;
+    }
+  }
+  auto instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
+    return true;
+  }
+  OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
+  if (kernel_info == nullptr) {
+    GELOGE(FAILED, "Get op kernel info store failed");
+    return true;
+  }
+  std::string check_result;
+  kernel_info->opsFlagCheck(*node, check_result);
+  if (check_result.empty()) {
+    GELOGE(FAILED, "Get op check_result failed");
+    return true;
+  }
+  return check_result.substr(0, kOpsFlag) == kNotSupported;
 }
 }  // namespace ge

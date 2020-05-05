@@ -21,12 +21,13 @@
 
 namespace aicpu {
 
-struct AicpuParamHead {
+struct AicpuParamHead
+{
     uint32_t        length;                    // Total length: include cunstom message
     uint32_t        ioAddrNum;                 // Input and output address number
 } __attribute__ ((packed));
 
-} // namespace aicpu
+}  // namespace aicpu
 
 #endif  // AICPU_TASK_STRUCT_H_
 

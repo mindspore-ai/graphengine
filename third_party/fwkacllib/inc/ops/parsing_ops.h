@@ -22,6 +22,23 @@
 
 namespace ge {
 
+/**
+*@brief Converts each string in the input Tensor to the specified numeric type.
+
+*@par Inputs:
+*Inputs include: \n
+*x: A Tensor. Must be one of the following types: string.
+
+*@par Attributes:
+*out_type: The numeric type to interpret each string in string_tensor as.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as x.
+
+*@attention Constraints:\n
+*-The implementation for StringToNumber on Ascend uses AICPU, with bad performance.\n
+
+*/
 REG_OP(StringToNumber)
     .INPUT(x, TensorType({DT_STRING}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64}))

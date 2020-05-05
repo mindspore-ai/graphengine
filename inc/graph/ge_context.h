@@ -18,7 +18,6 @@
 #define INC_GRAPH_GE_CONTEXT_H_
 
 #include <string>
-
 #include "graph/ge_error_codes.h"
 
 namespace ge {
@@ -42,4 +41,4 @@ class GEContext {
 GEContext &GetContext();
 }  // namespace ge
 
-#endif  // INC_GRAPH_GE_CONTEXT_H_
+#endif  //  INC_GRAPH_GE_CONTEXT_H_

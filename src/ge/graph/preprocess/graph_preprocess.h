@@ -52,6 +52,9 @@ class GraphPrepare {
   Status Init(const ge::Graph &graph, uint64_t session_id = 0);
   Status Preprocess(const std::vector<GeTensor> &user_input);
   Status CheckGraph();
+  Status CheckRefInputNode(const NodePtr &node, const std::string &input_name,
+                           const std::unordered_set<NodePtr> &ref_nodes);
+  Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
   Status UpdateInput(const std::vector<GeTensor> &user_input);
@@ -61,13 +64,15 @@ class GraphPrepare {
   Status OptimizeForPreprocess();
   Status InferShapeForPreprocess();
   Status TryDoAipp();
-  Status OptimizeForDataAfterInfershape();
+  Status OptimizeAfterInfershapeByAtcParams();
   Status UpdateVariableFormats(ComputeGraphPtr &graph);
   Status FormatAndShapeProcess();
   Status ResourcePairProcess(const std::string &action);
   void ProcessCCEFormat();
   Status OptimizeBeforeInfershape();
+  Status OptimizeGraphBeforeSubGraph();
   void SaveOriginalGraphToOmModel();
+  Status ProcessNetOutput();
   ge::ComputeGraphPtr compute_graph_;
   GraphManagerOptions options_;
 };

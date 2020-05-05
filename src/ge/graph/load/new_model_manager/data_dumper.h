@@ -17,10 +17,10 @@
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_
 
-#include <string>
-#include <memory>
-#include <vector>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
@@ -59,6 +59,7 @@ class DataDumper {
 
  private:
   void ReleaseDevMem(void **ptr) noexcept;
+  void PrintCheckLog();
 
   std::string model_name_;
   uint32_t model_id_;
@@ -85,6 +86,7 @@ struct DataDumper::InnerDumpInfo {
   bool is_task;
   int input_anchor_index;
   int output_anchor_index;
+  std::vector<int64_t> dims;
 };
 
 struct DataDumper::InnerInputMapping {
@@ -92,7 +94,6 @@ struct DataDumper::InnerInputMapping {
   int input_anchor_index;
   int output_anchor_index;
 };
-
 }  // namespace ge
 
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_

@@ -17,7 +17,6 @@
 #ifndef INC_GRAPH_COMPUTE_GRAPH_H_
 #define INC_GRAPH_COMPUTE_GRAPH_H_
 
-#include <deque>
 #include <map>
 #include <memory>
 #include <string>
@@ -63,7 +62,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   using Vistor = RangeVistor<T, std::shared_ptr<ConstComputeGraph>>;
 
   explicit ComputeGraph(const std::string &name);
-  virtual ~ComputeGraph();
+  ~ComputeGraph() override;
 
   std::string GetName() const;
   void SetName(const std::string &name);
@@ -81,7 +80,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   Vistor<NodePtr> GetOutputNodes() const;
 
   NodePtr FindNode(const std::string &name) const;
-  // Add node
+  // AddNode with NodePtr
   NodePtr AddNode(NodePtr node);
   NodePtr AddNode(OpDescPtr op);
   NodePtr AddNodeFront(NodePtr node);
@@ -94,8 +93,39 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   graphStatus RemoveOutputNode(const NodePtr &node);
   graphStatus RemoveConstInput(const NodePtr &node);
 
+  /// Add a subgraph to this graph. The subgraph must has a parent graph and parent node,
+  /// which means the member functions `SetParentGraph` and `SetParentNode` of the subgraph
+  /// must be called before add it to the root graph. and subgraph->GetParentNode()->GetOwnerGraph()
+  /// must equal to subgraph->GetOwnerGraph().
+  /// The subgraphs can only be added to a *root graph*. A root graph is a graph without any parent graph.
+  /// The subgraph's name SHOULD(not must) be the same as the parameter `name`
+  graphStatus AddSubgraph(const std::string &name, const std::shared_ptr<ComputeGraph> &subgraph);
+  graphStatus AddSubgraph(const std::shared_ptr<ComputeGraph> &subgraph);
+
+  void RemoveSubgraph(const std::string &name);
+  void RemoveSubgraph(const std::shared_ptr<ComputeGraph> &subgraph);
+
+  std::shared_ptr<ComputeGraph> GetSubgraph(const std::string &name) const;
+  std::vector<std::shared_ptr<ComputeGraph>> GetAllSubgraphs() const;
+
+  // obsolete
   std::shared_ptr<ComputeGraph> AddSubGraph(std::shared_ptr<ComputeGraph> sub_graph);
+  // obsolete
   graphStatus RemoveSubGraph(const std::shared_ptr<ComputeGraph> &sub_graph);
+
+  ///
+  /// @brief Update input-mapping
+  /// @param [in] input_mapping : index_of_cur_graph_node_input -> index_of_new_graph_node_input
+  /// @return graphStatus
+  ///
+  graphStatus UpdateInputMapping(const std::map<uint32_t, uint32_t> &input_mapping);
+
+  ///
+  /// @brief Update output-mapping
+  /// @param [in] output_mapping : index_of_cur_graph_node_output -> index_of_new_graph_node_output
+  /// @return graphStatus
+  ///
+  graphStatus UpdateOutputMapping(const std::map<uint32_t, uint32_t> &output_mapping);
 
   graphStatus TopologicalSorting();
   bool IsValid() const;
@@ -127,6 +157,11 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
     }
   }
 
+  shared_ptr<ComputeGraph> GetParentGraph();
+  void SetParentGraph(const shared_ptr<ComputeGraph> &parent);
+  shared_ptr<Node> GetParentNode();
+  void SetParentNode(const shared_ptr<Node> &parent);
+
   const std::map<std::string, std::vector<int32_t>> &GetGraphOutNodes() const { return out_nodes_map_; }
 
   void SetOrigGraph(ComputeGraphPtr orig_graph) { origGraph_ = orig_graph; }
@@ -138,8 +173,8 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   uint32_t GetInputSize() const { return input_size_; }
 
   ///
-  /// Set iteration needed.
-  /// If set is true, it means this graph need run iteration some
+  /// Set is need train iteration.
+  /// If set true, it means this graph need to be run iteration some
   /// times(according variant "npu_runconfig/iterations_per_loop").
   /// @param need_iteration is need iteration
   ///
@@ -150,7 +185,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   const std::string GetOutput();
 
   ///
-  /// Get need_iteration.
+  /// Get is need train iteration.
   /// @return is need iteration
   ///
   bool GetNeedIteration() const { return need_iteration_; }
@@ -201,6 +236,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
                                     std::deque<NodePtr> &stack);
   graphStatus CollectBreadthOutNode(const NodePtr &node, std::map<NodePtr, uint32_t> &map_in_edge_num,
                                     std::map<string, NodePtr> &breadth_node_map);
+  graphStatus TopologicalSortingSubgraph();
   graphStatus SortNodes(std::vector<NodePtr> &stack, std::map<NodePtr, uint32_t> &mapInEdgeNum);
   size_t GetInEdgeSize(const NodePtr &node);
   size_t GetOutEdgeSize(const NodePtr &node);
@@ -210,31 +246,38 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   bool VectorInputNodePtrIsEqual(const std::vector<NodePtr> &r_node_ptr_vector,
                                  const std::vector<NodePtr> &l_node_ptr_vector) const;
 
-  ProtoAttrMapHelper attrs_;
-
   friend class ModelSerializeImp;
   friend class GraphDebugImp;
   friend class OnnxUtils;
-  std::vector<NodePtr> nodes_;
-  std::vector<NodePtr> input_nodes_;
-  std::vector<std::shared_ptr<ComputeGraph>> sub_graph_;
+
   std::string name_;
+  uint32_t graph_id_ = 0;
+  ProtoAttrMapHelper attrs_;
+  std::vector<NodePtr> nodes_;
+  std::map<OperatorImplPtr, NodePtr> all_nodes_infos_;
+  std::vector<NodePtr> target_nodes_info_;
+
+  std::vector<NodePtr> input_nodes_;
+  std::vector<std::string> inputs_order_;
+  uint32_t input_size_ = 1;
+  std::map<std::string, std::vector<int32_t>> out_nodes_map_;
+  uint32_t output_size_ = 1;
+  std::vector<std::pair<NodePtr, int32_t>> output_nodes_info_;
+
+  std::vector<std::shared_ptr<ComputeGraph>> sub_graph_;
+  std::map<std::string, std::shared_ptr<ComputeGraph>> names_to_subgraph_;
+  std::weak_ptr<ComputeGraph> parent_graph_;
+  std::weak_ptr<Node> parent_node_;
+
+  // the members followed should not in the ComputeGraph class
   bool is_valid_flag_;
   bool is_summary_graph_ = false;
   // Indicates whether it is need iteration
   bool need_iteration_ = false;
   std::map<std::vector<std::string>, std::vector<std::string>> params_share_map_;
-  std::map<std::string, std::vector<int32_t>> out_nodes_map_;
   // TaskIdx -> op_name Map
   std::map<uint32_t, std::string> op_name_map_;
-  std::vector<std::string> inputs_order_;
-  uint32_t output_size_ = 1;
-  uint32_t input_size_ = 1;
-  std::map<OperatorImplPtr, NodePtr> all_nodes_infos_;
-  std::vector<std::pair<NodePtr, int32_t>> output_nodes_info_;
-  std::vector<NodePtr> target_nodes_info_;
   uint64_t session_id_ = 0;
-  uint32_t graph_id_ = 0;
   ge::Format data_format_ = ge::FORMAT_ND;
 };
 }  // namespace ge

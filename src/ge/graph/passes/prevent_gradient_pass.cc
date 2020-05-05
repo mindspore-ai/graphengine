@@ -17,7 +17,6 @@
 #include "graph/passes/prevent_gradient_pass.h"
 
 #include <string>
-
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"

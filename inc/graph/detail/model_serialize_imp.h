@@ -21,9 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "graph/anchor.h"
-#include "graph/model.h"
 #include "detail/attributes_holder.h"
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
@@ -48,15 +46,15 @@ struct NodeNameNodeReq {
 
 class ModelSerializeImp {
  public:
-  bool SerializeModel(const Model &model, proto::ModelDef *modeProto);
+  bool SerializeModel(const Model &model, proto::ModelDef *modeProto, bool is_dump = false);
 
-  bool SerializeGraph(const ConstComputeGraphPtr &graph, proto::GraphDef *graphProto);
+  bool SerializeGraph(const ConstComputeGraphPtr &graph, proto::GraphDef *graphProto, bool is_dump = false);
 
   bool SerializeEdge(const NodePtr &node, proto::OpDef *opDefProto);
 
-  bool SerializeOpDesc(const ConstOpDescPtr &node, proto::OpDef *opDefProto);
+  bool SerializeOpDesc(const ConstOpDescPtr &node, proto::OpDef *opDefProto, bool is_dump = false);
 
-  bool SerializeNode(const NodePtr &node, proto::OpDef *opDefProto);
+  bool SerializeNode(const NodePtr &node, proto::OpDef *opDefProto, bool is_dump = false);
 
   bool SerializeTensor(const ConstGeTensorPtr &tensor, proto::TensorDef *tensorProto);
 

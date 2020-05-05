@@ -60,20 +60,22 @@ class AippOp : public InsertOpBase {
   Status GetTargetPosition(ge::ComputeGraphPtr graph, ge::NodePtr &target_input,
                            std::vector<std::pair<ge::OutDataAnchorPtr, ge::InDataAnchorPtr>> &target_edges) override;
 
+  Status InsertAippToGraph(ge::ComputeGraphPtr &graph, std::string &aippConfigPath, const uint32_t index) override;
+
   domi::AippOpParams::AippMode GetAippMode() override;
 
  private:
   AippOp &operator=(const AippOp &aipp_op);
   AippOp(const AippOp &aipp_op);
 
-  ///
-  /// @ingroup domi_omg
-  /// @brief Convert Param To Attr
-  ///
   void ConvertParamToAttr(ge::GeAttrValue::NamedAttrs &aipp_attrs);
   void SetCscDefaultValue();
-
   void SetDtcDefaultValue();
+  NodePtr FindDataByIndex(const ComputeGraphPtr &graph, int rank);
+  Status GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr &target, std::set<uint32_t> &edge_indexes);
+  NodePtr CreateAipp(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
+                     const std::string &aippConfigPath, const uint32_t &index);
+  Status CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp);
 
   domi::AippOpParams *aipp_params_ = nullptr;
   ge::NodePtr aipp_node_ = nullptr;

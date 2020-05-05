@@ -63,6 +63,9 @@ typedef enum tagHcclResult {
     HCCL_E_RESERVED                 /**< reserved */
 } hcclResult_t;
 
+/* handle to communicator */
+typedef void *hcclComm_t;
+
 /**
  * @brief HCCL Reduction opperation
  */

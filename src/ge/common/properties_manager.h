@@ -82,6 +82,7 @@ class PropertiesManager {
   void SetPropertyDelimiter(const std::string &de);
 
   void AddDumpPropertyValue(const std::string &model, const std::set<std::string> &layers);
+  std::set<std::string> GetAllDumpModel();
   std::set<std::string> GetDumpPropertyValue(const std::string &model);
   bool IsLayerNeedDump(const std::string &model, const std::string &op_name);
   void DeleteDumpPropertyValue(const std::string &model);
@@ -91,6 +92,8 @@ class PropertiesManager {
   std::string GetDumpOutputModel();
   void SetDumpOutputPath(const std::string &output_path);
   std::string GetDumpOutputPath();
+  void SetDumpStep(const std::string &dump_step);
+  std::string GetDumpStep();
 
  private:
   // Private construct, destructor
@@ -116,6 +119,7 @@ class PropertiesManager {
 
   std::string output_mode_;
   std::string output_path_;
+  std::string dump_step_;
   std::map<std::string, std::set<std::string>> model_dump_properties_map_;  // model_dump_layers_map_
   std::mutex dump_mutex_;
 };

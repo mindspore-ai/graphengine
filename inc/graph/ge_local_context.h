@@ -20,7 +20,6 @@
 #include <map>
 #include <string>
 #include <vector>
-
 #include "graph/ge_error_codes.h"
 
 using std::map;
@@ -42,5 +41,4 @@ class GEThreadLocalContext {
 
 GEThreadLocalContext &GetThreadLocalContext();
 }  // namespace ge
-
 #endif  // INC_GRAPH_GE_LOCAL_CONTEXT_H_

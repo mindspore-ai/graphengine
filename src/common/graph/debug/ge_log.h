@@ -18,21 +18,9 @@
 #define COMMON_GRAPH_DEBUG_GE_LOG_H_
 
 #include "graph/ge_error_codes.h"
-#include "toolchain/slog.h"
 #include "framework/common/debug/ge_log.h"
 
-#define GE_MOD_ID GE
-
-#ifdef _MSC_VER
-#define FUNC_NAME __FUNCTION__
-#else
-#define FUNC_NAME __PRETTY_FUNCTION__
-#endif
-
-#define D_GE_LOGE(fmt, ...) \
-  dlog_error(static_cast<int>(GE_MOD_ID), "%s:" fmt, __FUNCTION__, ##__VA_ARGS__)
-
-#define GE_LOGE(...) D_GE_LOGE(__VA_ARGS__)
+#define GE_LOGE(...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, __VA_ARGS__)
 
 #define GE_LOGI_IF(condition, ...) \
   if ((condition)) {               \
@@ -44,15 +32,15 @@
     GELOGW(__VA_ARGS__);           \
   }
 
-#define GE_LOGE_IF(condition, ...)          \
-  if ((condition)) {                        \
-    GELOGE(ge::GRAPH_FAILED, __VA_ARGS__);  \
+#define GE_LOGE_IF(condition, ...)   \
+  if ((condition)) {                 \
+    GELOGE(ge::FAILED, __VA_ARGS__); \
   }
 
 #define GE_CHK_STATUS_RET_NOLOG(expr)       \
   do {                                      \
     const ge::graphStatus _status = (expr); \
-    if (_status != ge::GRAPH_SUCCESS) {     \
+    if (ge::SUCCESS != _status) {           \
       return _status;                       \
     }                                       \
   } while (0)
@@ -61,7 +49,7 @@
   do {                                             \
     bool b = (expr);                               \
     if (!b) {                                      \
-      GELOGE(ge::GRAPH_FAILED, __VA_ARGS__);       \
+      GELOGE(ge::FAILED, __VA_ARGS__);             \
       return _status;                              \
     }                                              \
   } while (0)
@@ -85,7 +73,7 @@
   do {                                         \
     const ge::graphStatus _status = (expr);    \
     if (_status) {                             \
-      GELOGE(ge::GRAPH_FAILED, __VA_ARGS__);   \
+      GELOGE(ge::FAILED, __VA_ARGS__);         \
       return _status;                          \
     }                                          \
   } while (0)
@@ -95,7 +83,7 @@
   {                                                          \
     bool b = (expr);                                         \
     if (b) {                                                 \
-      GELOGE(ge::GRAPH_FAILED, __VA_ARGS__);                 \
+      GELOGE(ge::FAILED, __VA_ARGS__);                       \
       exec_expr;                                             \
     }                                                        \
   }
@@ -119,63 +107,41 @@
   } while (0)
 
 // If expr is not true, the log is printed and a custom statement is executed
-#define GE_CHK_BOOL_EXEC(expr, exec_expr, ...)           \
-  {                                                      \
-    bool b = (expr);                                     \
-    if (!b) {                                            \
-      GELOGE(ge::GRAPH_FAILED, __VA_ARGS__);             \
-      exec_expr;                                         \
-    }                                                    \
+#define GE_CHK_BOOL_EXEC(expr, exec_expr, ...) \
+  {                                            \
+    bool b = (expr);                           \
+    if (!b) {                                  \
+      GELOGE(ge::FAILED, __VA_ARGS__);         \
+      exec_expr;                               \
+    }                                          \
   }
 
 // If expr is not true, the log is printed and a custom statement is executed
-#define GE_CHK_BOOL_EXEC_INFO(expr, exec_expr, ...)     \
-  {                                                     \
-    bool b = (expr);                                    \
-    if (!b) {                                           \
-      GELOGI(__VA_ARGS__);                              \
-      exec_expr;                                        \
-    }                                                   \
-  }
-
-// If expr is not true, the log is printed and a custom statement is executed
-#define GE_CHK_BOOL_EXEC_DEBUG(expr, exec_expr, ...) \
-  {                                                  \
-    bool b = (expr);                                 \
-    if (!b) {                                        \
-      GELOGD(__VA_ARGS__);                           \
-      exec_expr;                                     \
-    }                                                \
+#define GE_CHK_BOOL_EXEC_INFO(expr, exec_expr, ...) \
+  {                                                 \
+    bool b = (expr);                                \
+    if (!b) {                                       \
+      GELOGI(__VA_ARGS__);                          \
+      exec_expr;                                    \
+    }                                               \
   }
 
 // If expr is not GRAPH_SUCCESS, print the log and return the same value
-#define GE_CHK_STATUS_RET(expr, ...)                          \
-  do {                                                        \
-    const ge::graphStatus _status = (expr);                   \
-    if (_status != ge::GRAPH_SUCCESS) {                       \
-      GELOGE(ge::GRAPH_FAILED, __VA_ARGS__);                  \
-      return _status;                                         \
-    }                                                         \
+#define GE_CHK_STATUS_RET(expr, ...)        \
+  do {                                      \
+    const ge::graphStatus _status = (expr); \
+    if (ge::SUCCESS != _status) {           \
+      GELOGE(ge::FAILED, __VA_ARGS__);      \
+      return _status;                       \
+    }                                       \
   } while (0)
 
-#define GE_MAKE_SHARED(exec_expr0, exec_expr1)                \
-  try {                                                       \
-    exec_expr0;                                               \
-  } catch (...) {                                             \
-    GELOGE(ge::GRAPH_FAILED, "Make shared failed");           \
-    exec_expr1;                                               \
+#define GE_MAKE_SHARED(exec_expr0, exec_expr1) \
+  try {                                        \
+    exec_expr0;                                \
+  } catch (...) {                              \
+    GELOGE(ge::FAILED, "Make shared failed");  \
+    exec_expr1;                                \
   }
 
-/// CCE related macro definition
-/// If expr is not CC_STATUS_GRAPH_SUCCESS, print the log and return
-#define GE_CHK_CCE_RET(expr)                                               \
-  do {                                                                     \
-    ccgraphStatus_t _cc_ret = (expr);                                      \
-    if (_cc_ret != CC_STATUS_GRAPH_SUCCESS) {                              \
-      GELOGE(ge::GRAPH_FAILED, "Call cce api failed, ret: 0x%X", _cc_ret); \
-      return ge::GRAPH_FAILED;                                             \
-    }                                                                      \
-  } while (0)
-
 #endif  // COMMON_GRAPH_DEBUG_GE_LOG_H_
-

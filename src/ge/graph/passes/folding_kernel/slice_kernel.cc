@@ -28,16 +28,16 @@
 namespace ge {
 namespace {
 const size_t kSliceInputSize = 3;
-const size_t kSliceInputIndex0 = 0;
-const size_t kSliceInputIndex1 = 1;
-const size_t kSliceInputIndex2 = 2;
+const size_t kSliceInputIndexX = 0;
+const size_t kSliceInputIndexBegin = 1;
+const size_t kSliceInputIndexSize = 2;
 }  // namespace
 
 Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTensorPtr> &input,
                             vector<GeTensorPtr> &v_output) {
   GELOGI("SliceKernel in.");
   if (attr == nullptr) {
-    GELOGE(PARAM_INVALID, "input opdescptr is nullptr.");
+    GELOGW("Input opdescptr is nullptr.");
     return NOT_CHANGED;
   }
   // check input size
@@ -46,9 +46,9 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
     return NOT_CHANGED;
   }
 
-  ConstGeTensorPtr x_ = input[kSliceInputIndex0];
-  ConstGeTensorPtr begin = input[kSliceInputIndex1];
-  ConstGeTensorPtr size = input[kSliceInputIndex2];
+  ConstGeTensorPtr x_ = input[kSliceInputIndexX];
+  ConstGeTensorPtr begin = input[kSliceInputIndexBegin];
+  ConstGeTensorPtr size = input[kSliceInputIndexSize];
   if (x_ == nullptr || begin == nullptr || size == nullptr) {
     GELOGE(PARAM_INVALID, "input tensor is nullptr.");
     return NOT_CHANGED;

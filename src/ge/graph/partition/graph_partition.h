@@ -57,18 +57,23 @@ class GraphPartitioner {
   /// MergeAfterSubGraphOptimization() can only be called in Merge mode.
   /// After Partition(), change to Merge mode. After MergeAfterSubGraphOptimization(), change to Partition mode
   enum Mode { kPartitioning, kSecondPartitioning, kMerging };
-  GraphPartitioner() : mode_(GraphPartitioner::kPartitioning) {}
+  GraphPartitioner() : partition_times_(0){};
   ~GraphPartitioner() = default;
 
   // the main method that partitions the graph
   // input_size and output_size are the number of inputs and outputs in the original graph
-  Status Partition(ComputeGraphPtr compute_graph, vector<SubGraphInfoPtr> &output_subgraphs, Mode mode);
+  Status Partition(ComputeGraphPtr compute_graph, Mode mode);
 
   // after partition, all SubGraph will be merged back based on end<->pld.
   Status MergeAfterSubGraphOptimization(ComputeGraphPtr &output_merged_compute_graph,
-                                        const std::vector<SubGraphInfoPtr> &sub_graph_list);
+                                        const ComputeGraphPtr &original_compute_graph);
+  // Return all subgraphs
+  const Graph2SubGraphInfoList &GetSubGraphMap();
 
  private:
+  Status MergeSubGraph(ge::ComputeGraphPtr &output_merged_compute_graph,
+                       const ge::ComputeGraphPtr &original_compute_graph);
+  Status PartitionSubGraph(ge::ComputeGraphPtr compute_graph, Mode mode);
   Status MergeAllSubGraph(ComputeGraphPtr &output_merged_compute_graph,
                           const std::vector<SubGraphInfoPtr> &sub_graph_list);
   Status CheckIfEnd2PldEmpty(ComputeGraphPtr &output_merged_compute_graph);
@@ -129,25 +134,47 @@ class GraphPartitioner {
   void ClearAllPartitionData(Mode mode);
   void SetMergedGraphId(ComputeGraphPtr &output_merged_compute_graph);
 
-  // private local variables
-  EnginePlacer engine_placer_;
-  PartitionMap partitions_;  // sub-graphs after partition <sub-graph-id, ComputeGraphPtr>
-  std::unordered_map<ComputeGraphPtr, size_t> partitions_2_rank_;  // <subGraph, rank>
-  std::vector<ComputeGraphPtr> rank_2_partitions_;                 // <rank, subGraph>
-  NodetoNodeMap corresponding_node_in_partitions_;                 // mapping between a node in the original graph and
-  uint32_t num_of_pld_end_ = 0;                                    // a counter to track 'place holder' and 'end'
-  size_t input_size_ = 0;
-  size_t output_size_ = 0;
-  std::string output_name_;
-  NodetoNodeMap end_2_pld_;                // mapping between each 'end; and 'placeHolder' node
-  NodetoNodeMap pld_2_end_;                // mapping between each 'placeHolder' and 'end' node
-  std::map<size_t, NodePtr> index_2_end_;  // order mapping between peerindex and 'end' node
-  Mode mode_ = kPartitioning;
-  uint32_t partition_times_ = 0;                                          // times of call partition
-  std::vector<ComputeGraphPtr> transfer_graph_;                           // contains all transfer graphs
-  std::unordered_map<size_t, ClusterPtr> clusters_;                       // index to cluster ptr, contains all nodes
-  std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // node map to cluster
-  std::unordered_map<std::shared_ptr<Cluster>, ComputeGraphPtr> cluster_2_partition_;  // cluster map to subgraph
+  struct GraphPartitionInfo {
+    EnginePlacer engine_placer_;
+    PartitionMap partitions_;  // sub-graphs after partition <sub-graph-id, ComputeGraphPtr>
+    std::unordered_map<ComputeGraphPtr, size_t> partitions_2_rank_;  // <subGraph, rank>
+    std::vector<ComputeGraphPtr> rank_2_partitions_;                 // <rank, subGraph>
+    NodetoNodeMap corresponding_node_in_partitions_;                 // mapping between a node in the original graph and
+    uint32_t num_of_pld_end_;                                        // a counter to track 'place holder' and 'end'
+    size_t input_size_;
+    size_t output_size_;
+    std::string output_name_;
+    NodetoNodeMap end_2_pld_;                // mapping between each 'end; and 'placeHolder' node
+    NodetoNodeMap pld_2_end_;                // mapping between each 'placeHolder' and 'end' node
+    std::map<size_t, NodePtr> index_2_end_;  // order mapping between peerindex and 'end' node
+    Mode mode_;
+    std::unordered_map<size_t, ClusterPtr> clusters_;                       // index to cluster ptr, contains all nodes
+    std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // node map to cluster
+    std::unordered_map<std::shared_ptr<Cluster>, ComputeGraphPtr> cluster_2_partition_;  // cluster map to subgraph
+    void ClearAllData(Mode mode) {
+      rank_2_partitions_.clear();
+      partitions_2_rank_.clear();
+      partitions_.clear();
+      corresponding_node_in_partitions_.clear();
+      index_2_end_.clear();
+      cluster_2_partition_.clear();
+      clusters_.clear();
+      node_2_cluster_.clear();
+      pld_2_end_.clear();
+      end_2_pld_.clear();
+      if (mode_ == kMerging) {
+        mode_ = kPartitioning;
+      } else {
+        mode_ = mode;
+      }
+    }
+    GraphPartitionInfo() : num_of_pld_end_(0), input_size_(0), output_size_(0), mode_(kPartitioning) {}
+    ~GraphPartitionInfo() = default;
+  };
+  std::unordered_map<ComputeGraphPtr, GraphPartitionInfo> graph_2_graph_partition_info_;
+  Graph2SubGraphInfoList graph_2_subgraph_list_;
+  GraphPartitionInfo graph_info_;
+  uint32_t partition_times_;  // times of call partition
 };
 }  // namespace ge
 

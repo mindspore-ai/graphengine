@@ -71,7 +71,7 @@ Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::st
   }
 
   // private function, promise node_ptr->GetOpDesc() not null
-  GELOGD("Assigning DNNEngine %s to node %s, op type is %s", engine_name.c_str(), node_ptr->GetName().c_str(),
+  GELOGD("Assigning DNNEngine %s to node %s, op type %s", engine_name.c_str(), node_ptr->GetName().c_str(),
          node_ptr->GetOpDesc()->GetType().c_str());
 
   // Record the node assigned engine name

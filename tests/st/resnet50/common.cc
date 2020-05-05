@@ -506,23 +506,26 @@ bool build_multi_input_multi_output_graph(Graph &graph) {
   auto relu2 = op::Relu("Relu2").set_input_x(data2);
 
   auto eltwise = op::Eltwise("Eltwise")
-                     .create_dynamic_input___input(2)
-                     .set_dynamic_input___input(0, relu1)
-                     .set_dynamic_input___input(1, relu2)
+                     .create_dynamic_input_x(2)
+                     .set_dynamic_input_x(0, relu1)
+                     .set_dynamic_input_x(1, relu2)
+                     .set_attr_N(2)
                      .set_attr_mode(1)
                      .set_attr_coeff({1, 1});
 
   auto eltwise1 = op::Eltwise("Eltwise1")
-                      .create_dynamic_input___input(2)
-                      .set_dynamic_input___input(0, eltwise)
-                      .set_dynamic_input___input(1, eltwise)
+                      .create_dynamic_input_x(2)
+                      .set_dynamic_input_x(0, eltwise)
+                      .set_dynamic_input_x(1, eltwise)
+                      .set_attr_N(2)
                       .set_attr_mode(1)
                       .set_attr_coeff({1, 1});
 
   auto eltwise2 = op::Eltwise("Eltwise2")
-                      .create_dynamic_input___input(2)
-                      .set_dynamic_input___input(0, eltwise)
-                      .set_dynamic_input___input(1, eltwise)
+                      .create_dynamic_input_x(2)
+                      .set_dynamic_input_x(0, eltwise)
+                      .set_dynamic_input_x(1, eltwise)
+                      .set_attr_N(2)
                       .set_attr_mode(1)
                       .set_attr_coeff({1, 1});
 
@@ -538,137 +541,137 @@ void build_big_graph(Graph &graph, map<string, std::vector<int64_t>> attr) {
   vector<int64_t> weight_shape(attr["weight"].begin(), attr["weight"].end());
   TensorDesc weight_desc(ge::Shape(weight_shape), FORMAT_NCHW, DT_FLOAT);
   weight.update_output_desc_y(weight_desc);
-  auto conv_1 = op::Conv2D("conv1").set_input_x(data).set_input_filter(weight);
+  auto conv_1 = op::Conv2D("conv1").set_input_x(data).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
 
-  auto conv_2 = op::Conv2D("conv2").set_input_x(conv_1).set_input_filter(weight);
-  auto conv_3 = op::Conv2D("conv3").set_input_x(conv_2).set_input_filter(weight);
-  auto conv_4 = op::Conv2D("conv4").set_input_x(conv_3).set_input_filter(weight);
-  auto conv_5 = op::Conv2D("conv5").set_input_x(conv_4).set_input_filter(weight);
-  auto conv_6 = op::Conv2D("conv6").set_input_x(conv_5).set_input_filter(weight);
-  auto conv_7 = op::Conv2D("conv7").set_input_x(conv_6).set_input_filter(weight);
-  auto conv_8 = op::Conv2D("conv8").set_input_x(conv_7).set_input_filter(weight);
-  auto conv_9 = op::Conv2D("conv9").set_input_x(conv_8).set_input_filter(weight);
-  auto conv_10 = op::Conv2D("conv10").set_input_x(conv_9).set_input_filter(weight);
-  auto conv_11 = op::Conv2D("conv11").set_input_x(conv_10).set_input_filter(weight);
-  auto conv_12 = op::Conv2D("conv12").set_input_x(conv_11).set_input_filter(weight);
-  auto conv_13 = op::Conv2D("conv13").set_input_x(conv_12).set_input_filter(weight);
-  auto conv_14 = op::Conv2D("conv14").set_input_x(conv_13).set_input_filter(weight);
-  auto conv_15 = op::Conv2D("conv15").set_input_x(conv_14).set_input_filter(weight);
-  auto conv_16 = op::Conv2D("conv16").set_input_x(conv_15).set_input_filter(weight);
-  auto conv_17 = op::Conv2D("conv17").set_input_x(conv_16).set_input_filter(weight);
-  auto conv_18 = op::Conv2D("conv18").set_input_x(conv_17).set_input_filter(weight);
-  auto conv_19 = op::Conv2D("conv19").set_input_x(conv_18).set_input_filter(weight);
-  auto conv_20 = op::Conv2D("conv20").set_input_x(conv_19).set_input_filter(weight);
-  auto conv_21 = op::Conv2D("conv21").set_input_x(conv_20).set_input_filter(weight);
-  auto conv_22 = op::Conv2D("conv22").set_input_x(conv_21).set_input_filter(weight);
-  auto conv_23 = op::Conv2D("conv23").set_input_x(conv_22).set_input_filter(weight);
-  auto conv_24 = op::Conv2D("conv24").set_input_x(conv_23).set_input_filter(weight);
-  auto conv_25 = op::Conv2D("conv25").set_input_x(conv_24).set_input_filter(weight);
-  auto conv_26 = op::Conv2D("conv26").set_input_x(conv_25).set_input_filter(weight);
-  auto conv_27 = op::Conv2D("conv27").set_input_x(conv_26).set_input_filter(weight);
-  auto conv_28 = op::Conv2D("conv28").set_input_x(conv_27).set_input_filter(weight);
-  auto conv_29 = op::Conv2D("conv29").set_input_x(conv_28).set_input_filter(weight);
-  auto conv_30 = op::Conv2D("conv30").set_input_x(conv_29).set_input_filter(weight);
-  auto conv_31 = op::Conv2D("conv31").set_input_x(conv_30).set_input_filter(weight);
-  auto conv_32 = op::Conv2D("conv32").set_input_x(conv_31).set_input_filter(weight);
-  auto conv_33 = op::Conv2D("conv33").set_input_x(conv_32).set_input_filter(weight);
-  auto conv_34 = op::Conv2D("conv34").set_input_x(conv_33).set_input_filter(weight);
-  auto conv_35 = op::Conv2D("conv35").set_input_x(conv_34).set_input_filter(weight);
-  auto conv_36 = op::Conv2D("conv36").set_input_x(conv_35).set_input_filter(weight);
-  auto conv_37 = op::Conv2D("conv37").set_input_x(conv_36).set_input_filter(weight);
-  auto conv_38 = op::Conv2D("conv38").set_input_x(conv_37).set_input_filter(weight);
-  auto conv_39 = op::Conv2D("conv39").set_input_x(conv_38).set_input_filter(weight);
-  auto conv_40 = op::Conv2D("conv40").set_input_x(conv_39).set_input_filter(weight);
-  auto conv_41 = op::Conv2D("conv41").set_input_x(conv_40).set_input_filter(weight);
-  auto conv_42 = op::Conv2D("conv42").set_input_x(conv_41).set_input_filter(weight);
-  auto conv_43 = op::Conv2D("conv43").set_input_x(conv_42).set_input_filter(weight);
-  auto conv_44 = op::Conv2D("conv44").set_input_x(conv_43).set_input_filter(weight);
-  auto conv_45 = op::Conv2D("conv45").set_input_x(conv_44).set_input_filter(weight);
-  auto conv_46 = op::Conv2D("conv46").set_input_x(conv_45).set_input_filter(weight);
-  auto conv_47 = op::Conv2D("conv47").set_input_x(conv_46).set_input_filter(weight);
-  auto conv_48 = op::Conv2D("conv48").set_input_x(conv_47).set_input_filter(weight);
-  auto conv_49 = op::Conv2D("conv49").set_input_x(conv_48).set_input_filter(weight);
-  auto conv_50 = op::Conv2D("conv50").set_input_x(conv_49).set_input_filter(weight);
-  auto conv_51 = op::Conv2D("conv51").set_input_x(conv_50).set_input_filter(weight);
-  auto conv_52 = op::Conv2D("conv52").set_input_x(conv_51).set_input_filter(weight);
-  auto conv_53 = op::Conv2D("conv53").set_input_x(conv_52).set_input_filter(weight);
-  auto conv_54 = op::Conv2D("conv54").set_input_x(conv_53).set_input_filter(weight);
-  auto conv_55 = op::Conv2D("conv55").set_input_x(conv_54).set_input_filter(weight);
-  auto conv_56 = op::Conv2D("conv56").set_input_x(conv_55).set_input_filter(weight);
-  auto conv_57 = op::Conv2D("conv57").set_input_x(conv_56).set_input_filter(weight);
-  auto conv_58 = op::Conv2D("conv58").set_input_x(conv_57).set_input_filter(weight);
-  auto conv_59 = op::Conv2D("conv59").set_input_x(conv_58).set_input_filter(weight);
-  auto conv_60 = op::Conv2D("conv60").set_input_x(conv_59).set_input_filter(weight);
-  auto conv_61 = op::Conv2D("conv61").set_input_x(conv_60).set_input_filter(weight);
-  auto conv_62 = op::Conv2D("conv62").set_input_x(conv_61).set_input_filter(weight);
-  auto conv_63 = op::Conv2D("conv63").set_input_x(conv_62).set_input_filter(weight);
-  auto conv_64 = op::Conv2D("conv64").set_input_x(conv_63).set_input_filter(weight);
-  auto conv_65 = op::Conv2D("conv65").set_input_x(conv_64).set_input_filter(weight);
-  auto conv_66 = op::Conv2D("conv66").set_input_x(conv_65).set_input_filter(weight);
-  auto conv_67 = op::Conv2D("conv67").set_input_x(conv_66).set_input_filter(weight);
-  auto conv_68 = op::Conv2D("conv68").set_input_x(conv_67).set_input_filter(weight);
-  auto conv_69 = op::Conv2D("conv69").set_input_x(conv_68).set_input_filter(weight);
-  auto conv_70 = op::Conv2D("conv70").set_input_x(conv_69).set_input_filter(weight);
-  auto conv_71 = op::Conv2D("conv71").set_input_x(conv_70).set_input_filter(weight);
-  auto conv_72 = op::Conv2D("conv72").set_input_x(conv_71).set_input_filter(weight);
-  auto conv_73 = op::Conv2D("conv73").set_input_x(conv_72).set_input_filter(weight);
-  auto conv_74 = op::Conv2D("conv74").set_input_x(conv_73).set_input_filter(weight);
-  auto conv_75 = op::Conv2D("conv75").set_input_x(conv_74).set_input_filter(weight);
-  auto conv_76 = op::Conv2D("conv76").set_input_x(conv_75).set_input_filter(weight);
-  auto conv_77 = op::Conv2D("conv77").set_input_x(conv_76).set_input_filter(weight);
-  auto conv_78 = op::Conv2D("conv78").set_input_x(conv_77).set_input_filter(weight);
-  auto conv_79 = op::Conv2D("conv79").set_input_x(conv_78).set_input_filter(weight);
-  auto conv_80 = op::Conv2D("conv80").set_input_x(conv_79).set_input_filter(weight);
-  auto conv_81 = op::Conv2D("conv81").set_input_x(conv_80).set_input_filter(weight);
-  auto conv_82 = op::Conv2D("conv82").set_input_x(conv_81).set_input_filter(weight);
-  auto conv_83 = op::Conv2D("conv83").set_input_x(conv_82).set_input_filter(weight);
-  auto conv_84 = op::Conv2D("conv84").set_input_x(conv_83).set_input_filter(weight);
-  auto conv_85 = op::Conv2D("conv85").set_input_x(conv_84).set_input_filter(weight);
-  auto conv_86 = op::Conv2D("conv86").set_input_x(conv_85).set_input_filter(weight);
-  auto conv_87 = op::Conv2D("conv87").set_input_x(conv_86).set_input_filter(weight);
-  auto conv_88 = op::Conv2D("conv88").set_input_x(conv_87).set_input_filter(weight);
-  auto conv_89 = op::Conv2D("conv89").set_input_x(conv_88).set_input_filter(weight);
-  auto conv_90 = op::Conv2D("conv90").set_input_x(conv_89).set_input_filter(weight);
-  auto conv_91 = op::Conv2D("conv91").set_input_x(conv_80).set_input_filter(weight);
-  auto conv_92 = op::Conv2D("conv92").set_input_x(conv_91).set_input_filter(weight);
-  auto conv_93 = op::Conv2D("conv93").set_input_x(conv_92).set_input_filter(weight);
-  auto conv_94 = op::Conv2D("conv94").set_input_x(conv_93).set_input_filter(weight);
-  auto conv_95 = op::Conv2D("conv95").set_input_x(conv_94).set_input_filter(weight);
-  auto conv_96 = op::Conv2D("conv96").set_input_x(conv_95).set_input_filter(weight);
-  auto conv_97 = op::Conv2D("conv97").set_input_x(conv_96).set_input_filter(weight);
-  auto conv_98 = op::Conv2D("conv98").set_input_x(conv_97).set_input_filter(weight);
-  auto conv_99 = op::Conv2D("conv99").set_input_x(conv_98).set_input_filter(weight);
-  auto conv_100 = op::Conv2D("conv100").set_input_x(conv_99).set_input_filter(weight);
-  auto conv_101 = op::Conv2D("conv101").set_input_x(conv_100).set_input_filter(weight);
-  auto conv_102 = op::Conv2D("conv102").set_input_x(conv_101).set_input_filter(weight);
-  auto conv_103 = op::Conv2D("conv103").set_input_x(conv_102).set_input_filter(weight);
-  auto conv_104 = op::Conv2D("conv104").set_input_x(conv_103).set_input_filter(weight);
-  auto conv_105 = op::Conv2D("conv105").set_input_x(conv_104).set_input_filter(weight);
-  auto conv_106 = op::Conv2D("conv106").set_input_x(conv_105).set_input_filter(weight);
-  auto conv_107 = op::Conv2D("conv107").set_input_x(conv_106).set_input_filter(weight);
-  auto conv_108 = op::Conv2D("conv108").set_input_x(conv_107).set_input_filter(weight);
-  auto conv_109 = op::Conv2D("conv109").set_input_x(conv_108).set_input_filter(weight);
-  auto conv_110 = op::Conv2D("conv110").set_input_x(conv_109).set_input_filter(weight);
-  auto conv_111 = op::Conv2D("conv111").set_input_x(conv_110).set_input_filter(weight);
-  auto conv_112 = op::Conv2D("conv112").set_input_x(conv_111).set_input_filter(weight);
-  auto conv_113 = op::Conv2D("conv113").set_input_x(conv_112).set_input_filter(weight);
-  auto conv_114 = op::Conv2D("conv114").set_input_x(conv_113).set_input_filter(weight);
-  auto conv_115 = op::Conv2D("conv115").set_input_x(conv_114).set_input_filter(weight);
-  auto conv_116 = op::Conv2D("conv116").set_input_x(conv_115).set_input_filter(weight);
-  auto conv_117 = op::Conv2D("conv117").set_input_x(conv_116).set_input_filter(weight);
-  auto conv_118 = op::Conv2D("conv118").set_input_x(conv_117).set_input_filter(weight);
-  auto conv_119 = op::Conv2D("conv119").set_input_x(conv_118).set_input_filter(weight);
-  auto conv_120 = op::Conv2D("conv120").set_input_x(conv_119).set_input_filter(weight);
-  auto conv_121 = op::Conv2D("conv121").set_input_x(conv_120).set_input_filter(weight);
-  auto conv_122 = op::Conv2D("conv122").set_input_x(conv_121).set_input_filter(weight);
-  auto conv_123 = op::Conv2D("conv123").set_input_x(conv_122).set_input_filter(weight);
-  auto conv_124 = op::Conv2D("conv124").set_input_x(conv_123).set_input_filter(weight);
-  auto conv_125 = op::Conv2D("conv125").set_input_x(conv_124).set_input_filter(weight);
-  auto conv_126 = op::Conv2D("conv126").set_input_x(conv_125).set_input_filter(weight);
-  auto conv_127 = op::Conv2D("conv127").set_input_x(conv_126).set_input_filter(weight);
-  auto conv_128 = op::Conv2D("conv128").set_input_x(conv_127).set_input_filter(weight);
-  auto conv_129 = op::Conv2D("conv129").set_input_x(conv_128).set_input_filter(weight);
-  auto conv_130 = op::Conv2D("conv130").set_input_x(conv_129).set_input_filter(weight);
+  auto conv_2 = op::Conv2D("conv2").set_input_x(conv_1).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_3 = op::Conv2D("conv3").set_input_x(conv_2).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_4 = op::Conv2D("conv4").set_input_x(conv_3).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_5 = op::Conv2D("conv5").set_input_x(conv_4).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_6 = op::Conv2D("conv6").set_input_x(conv_5).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_7 = op::Conv2D("conv7").set_input_x(conv_6).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_8 = op::Conv2D("conv8").set_input_x(conv_7).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_9 = op::Conv2D("conv9").set_input_x(conv_8).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_10 = op::Conv2D("conv10").set_input_x(conv_9).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_11 = op::Conv2D("conv11").set_input_x(conv_10).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_12 = op::Conv2D("conv12").set_input_x(conv_11).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_13 = op::Conv2D("conv13").set_input_x(conv_12).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_14 = op::Conv2D("conv14").set_input_x(conv_13).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_15 = op::Conv2D("conv15").set_input_x(conv_14).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_16 = op::Conv2D("conv16").set_input_x(conv_15).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_17 = op::Conv2D("conv17").set_input_x(conv_16).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_18 = op::Conv2D("conv18").set_input_x(conv_17).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_19 = op::Conv2D("conv19").set_input_x(conv_18).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_20 = op::Conv2D("conv20").set_input_x(conv_19).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_21 = op::Conv2D("conv21").set_input_x(conv_20).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_22 = op::Conv2D("conv22").set_input_x(conv_21).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_23 = op::Conv2D("conv23").set_input_x(conv_22).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_24 = op::Conv2D("conv24").set_input_x(conv_23).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_25 = op::Conv2D("conv25").set_input_x(conv_24).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_26 = op::Conv2D("conv26").set_input_x(conv_25).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_27 = op::Conv2D("conv27").set_input_x(conv_26).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_28 = op::Conv2D("conv28").set_input_x(conv_27).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_29 = op::Conv2D("conv29").set_input_x(conv_28).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_30 = op::Conv2D("conv30").set_input_x(conv_29).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_31 = op::Conv2D("conv31").set_input_x(conv_30).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_32 = op::Conv2D("conv32").set_input_x(conv_31).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_33 = op::Conv2D("conv33").set_input_x(conv_32).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_34 = op::Conv2D("conv34").set_input_x(conv_33).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_35 = op::Conv2D("conv35").set_input_x(conv_34).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_36 = op::Conv2D("conv36").set_input_x(conv_35).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_37 = op::Conv2D("conv37").set_input_x(conv_36).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_38 = op::Conv2D("conv38").set_input_x(conv_37).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_39 = op::Conv2D("conv39").set_input_x(conv_38).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_40 = op::Conv2D("conv40").set_input_x(conv_39).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_41 = op::Conv2D("conv41").set_input_x(conv_40).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_42 = op::Conv2D("conv42").set_input_x(conv_41).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_43 = op::Conv2D("conv43").set_input_x(conv_42).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_44 = op::Conv2D("conv44").set_input_x(conv_43).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_45 = op::Conv2D("conv45").set_input_x(conv_44).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_46 = op::Conv2D("conv46").set_input_x(conv_45).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_47 = op::Conv2D("conv47").set_input_x(conv_46).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_48 = op::Conv2D("conv48").set_input_x(conv_47).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_49 = op::Conv2D("conv49").set_input_x(conv_48).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_50 = op::Conv2D("conv50").set_input_x(conv_49).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_51 = op::Conv2D("conv51").set_input_x(conv_50).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_52 = op::Conv2D("conv52").set_input_x(conv_51).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_53 = op::Conv2D("conv53").set_input_x(conv_52).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_54 = op::Conv2D("conv54").set_input_x(conv_53).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_55 = op::Conv2D("conv55").set_input_x(conv_54).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_56 = op::Conv2D("conv56").set_input_x(conv_55).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_57 = op::Conv2D("conv57").set_input_x(conv_56).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_58 = op::Conv2D("conv58").set_input_x(conv_57).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_59 = op::Conv2D("conv59").set_input_x(conv_58).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_60 = op::Conv2D("conv60").set_input_x(conv_59).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_61 = op::Conv2D("conv61").set_input_x(conv_60).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_62 = op::Conv2D("conv62").set_input_x(conv_61).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_63 = op::Conv2D("conv63").set_input_x(conv_62).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_64 = op::Conv2D("conv64").set_input_x(conv_63).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_65 = op::Conv2D("conv65").set_input_x(conv_64).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_66 = op::Conv2D("conv66").set_input_x(conv_65).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_67 = op::Conv2D("conv67").set_input_x(conv_66).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_68 = op::Conv2D("conv68").set_input_x(conv_67).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_69 = op::Conv2D("conv69").set_input_x(conv_68).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_70 = op::Conv2D("conv70").set_input_x(conv_69).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_71 = op::Conv2D("conv71").set_input_x(conv_70).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_72 = op::Conv2D("conv72").set_input_x(conv_71).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_73 = op::Conv2D("conv73").set_input_x(conv_72).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_74 = op::Conv2D("conv74").set_input_x(conv_73).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_75 = op::Conv2D("conv75").set_input_x(conv_74).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_76 = op::Conv2D("conv76").set_input_x(conv_75).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_77 = op::Conv2D("conv77").set_input_x(conv_76).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_78 = op::Conv2D("conv78").set_input_x(conv_77).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_79 = op::Conv2D("conv79").set_input_x(conv_78).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_80 = op::Conv2D("conv80").set_input_x(conv_79).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_81 = op::Conv2D("conv81").set_input_x(conv_80).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_82 = op::Conv2D("conv82").set_input_x(conv_81).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_83 = op::Conv2D("conv83").set_input_x(conv_82).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_84 = op::Conv2D("conv84").set_input_x(conv_83).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_85 = op::Conv2D("conv85").set_input_x(conv_84).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_86 = op::Conv2D("conv86").set_input_x(conv_85).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_87 = op::Conv2D("conv87").set_input_x(conv_86).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_88 = op::Conv2D("conv88").set_input_x(conv_87).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_89 = op::Conv2D("conv89").set_input_x(conv_88).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_90 = op::Conv2D("conv90").set_input_x(conv_89).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_91 = op::Conv2D("conv91").set_input_x(conv_80).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_92 = op::Conv2D("conv92").set_input_x(conv_91).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_93 = op::Conv2D("conv93").set_input_x(conv_92).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_94 = op::Conv2D("conv94").set_input_x(conv_93).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_95 = op::Conv2D("conv95").set_input_x(conv_94).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_96 = op::Conv2D("conv96").set_input_x(conv_95).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_97 = op::Conv2D("conv97").set_input_x(conv_96).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_98 = op::Conv2D("conv98").set_input_x(conv_97).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_99 = op::Conv2D("conv99").set_input_x(conv_98).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_100 = op::Conv2D("conv100").set_input_x(conv_99).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_101 = op::Conv2D("conv101").set_input_x(conv_100).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_102 = op::Conv2D("conv102").set_input_x(conv_101).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_103 = op::Conv2D("conv103").set_input_x(conv_102).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_104 = op::Conv2D("conv104").set_input_x(conv_103).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_105 = op::Conv2D("conv105").set_input_x(conv_104).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_106 = op::Conv2D("conv106").set_input_x(conv_105).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_107 = op::Conv2D("conv107").set_input_x(conv_106).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_108 = op::Conv2D("conv108").set_input_x(conv_107).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_109 = op::Conv2D("conv109").set_input_x(conv_108).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_110 = op::Conv2D("conv110").set_input_x(conv_109).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_111 = op::Conv2D("conv111").set_input_x(conv_110).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_112 = op::Conv2D("conv112").set_input_x(conv_111).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_113 = op::Conv2D("conv113").set_input_x(conv_112).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_114 = op::Conv2D("conv114").set_input_x(conv_113).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_115 = op::Conv2D("conv115").set_input_x(conv_114).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_116 = op::Conv2D("conv116").set_input_x(conv_115).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_117 = op::Conv2D("conv117").set_input_x(conv_116).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_118 = op::Conv2D("conv118").set_input_x(conv_117).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_119 = op::Conv2D("conv119").set_input_x(conv_118).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_120 = op::Conv2D("conv120").set_input_x(conv_119).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_121 = op::Conv2D("conv121").set_input_x(conv_120).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_122 = op::Conv2D("conv122").set_input_x(conv_121).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_123 = op::Conv2D("conv123").set_input_x(conv_122).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_124 = op::Conv2D("conv124").set_input_x(conv_123).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_125 = op::Conv2D("conv125").set_input_x(conv_124).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_126 = op::Conv2D("conv126").set_input_x(conv_125).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_127 = op::Conv2D("conv127").set_input_x(conv_126).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_128 = op::Conv2D("conv128").set_input_x(conv_127).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_129 = op::Conv2D("conv129").set_input_x(conv_128).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
+  auto conv_130 = op::Conv2D("conv130").set_input_x(conv_129).set_input_filter(weight).set_attr_pads({0,0,0,0}).set_attr_strides({1,1,1,1});
 
   std::vector<Operator> inputs{data};
   std::vector<Operator> outputs{conv_130};
@@ -716,7 +719,7 @@ int buildConvGraph_new(Graph &graph, std::vector<TensorDesc> desc_var, std::vect
   graph.AddOp(var1);
   graph.AddOp(label1);
 
-  auto conv2d = op::Conv2D().set_input_x(data_x_shape).set_input_filter(var).set_attr_strides({1, 1, 1, 1});
+  auto conv2d = op::Conv2D().set_input_x(data_x_shape).set_input_filter(var).set_attr_strides({1, 1, 1, 1}).set_attr_pads({0,0,0,0});
   update_op_format(conv2d, format);
   ge::TensorDesc tensor_desc_w = conv2d.GetInputDesc("filter");
   tensor_desc_w.SetFormat(format);
@@ -724,9 +727,9 @@ int buildConvGraph_new(Graph &graph, std::vector<TensorDesc> desc_var, std::vect
 
   if (flag >= 1) {
     conv2dgrad.set_input_x(data_x_shape)
-        .set_attr_filter_sizes(desc_var[0].GetShape().GetDims())
+        .set_attr_filter_size(desc_var[0].GetShape().GetDims())
         .set_input_out_backprop(conv2d)
-        .set_attr_strides({1, 1})
+        .set_attr_strides({1, 1, 1, 1})
         .set_attr_pads({0, 0, 0, 0});
     update_op_format(conv2dgrad, format);
     graph.AddOp(conv2dgrad);

@@ -23,7 +23,6 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-
 #include "detail/attributes_holder.h"
 #include "graph/range_vistor.h"
 
@@ -108,6 +107,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   size_t GetInputsSize() const;
 
+  size_t GetAllInputsSize() const;
+
   graphStatus AddOutputDesc(const GeTensorDesc &output_desc);
 
   graphStatus AddOutputDesc(const string &name, const GeTensorDesc &output_desc);
@@ -122,6 +123,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   GeTensorDescPtr MutableOutputDesc(uint32_t index) const;
 
+  uint32_t GetAllOutputsDescSize() const;
+
   Vistor<GeTensorDesc> GetAllOutputsDesc() const;
 
   Vistor<GeTensorDescPtr> GetAllOutputsDescPtr() const;
@@ -132,6 +135,10 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   ConstGeTensorDescPtr GetInputDescPtr(uint32_t index) const;
 
+  ConstGeTensorDescPtr GetInputDescPtrDfault(uint32_t index) const;
+
+  ConstGeTensorDescPtr GetInputDescPtr(const string &name) const;
+
   graphStatus AddDynamicInputDesc(const string &name, const unsigned int num, bool isPushBack = true);
 
   graphStatus AddDynamicOutputDesc(const string &name, const unsigned int num, bool isPushBack = true);
@@ -140,7 +147,11 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   bool IsOptionalInput(uint32_t index) const;
 
-  std::map<string, uint32_t> GetAllInputName();
+  std::map<string, uint32_t> GetAllInputName() const;
+
+  void SetAllInputName(const std::map<string, uint32_t> &input_name_idx);
+
+  std::vector<string> GetAllOptionalInputName() const;
 
   std::map<string, uint32_t> GetAllOutputName();
 
@@ -225,6 +236,14 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   std::string GetOpEngineName() const;
 
+  graphStatus AddSubgraphName(const std::string &name);
+  const std::map<std::string, uint32_t> &GetSubgraphNameIndexes() const;
+
+  std::string GetSubgraphInstanceName(uint32_t index) const;
+  const std::vector<std::string> &GetSubgraphInstanceNames() const;
+  void AddSubgraphInstanceName(std::string name);
+  void RemoveSubgraphInstanceName(const std::string &name);
+
  protected:
   ProtoAttrMapHelper MutableAttrMap() override;
   ConstProtoAttrMapHelper GetAttrMap() const override;
@@ -236,9 +255,9 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   bool OpDescGenTensorDescsAreEqual(const OpDesc &r_op_desc) const;
 
   GeIrProtoHelper<ge::proto::OpDef> op_def_;
+  std::vector<std::string> subgraph_instance_names_;
+  std::map<std::string, uint32_t> subgraph_names_to_index_;
   vector<GeTensorDescPtr> inputs_desc_{};
-  map<string, uint32_t> input_name_idx_{};
-  std::unordered_set<string> optional_input_names_{};
   vector<GeTensorDescPtr> outputs_desc_{};
   map<string, uint32_t> output_name_idx_{};
   std::function<graphStatus(Operator &)> infer_func_ = nullptr;

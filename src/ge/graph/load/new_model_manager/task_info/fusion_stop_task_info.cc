@@ -43,6 +43,7 @@ Status FusionStopTaskInfo::Distribute() {
     return RT_FAILED;
   }
 
+  GELOGI("FusionStopTaskInfo Distribute Success.");
   return SUCCESS;
 }
 

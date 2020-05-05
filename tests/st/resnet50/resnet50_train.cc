@@ -71,7 +71,8 @@ vector<int64_t> stride_2{2, 2};
                                      .set_input_x(input, "y")                                                         \
                                      .set_input_filter(LAYER##_##BLK##_##OPNUM##_weight)                              \
                                      .set_attr_strides({1, 1, stride[0], stride[1]})                                  \
-                                     .set_attr_pads(pad);                                                             \
+                                     .set_attr_pads(pad)                                                              \
+                                     .set_attr_data_format("NCHW");                                                   \
   update_op_format(LAYER##_##BLK##_##OPNUM);
 
 #define GENERATE_CONSTANT(LAYER, BLK, OPNUM, CONSTNAME)                                                           \
@@ -435,7 +436,7 @@ vector<int64_t> stride_2{2, 2};
   auto LAYER##_##BLK##_##OPNUM##_propfilter =                                                                 \
       op::Conv2DBackpropFilterD(string(#LAYER) + string(#BLK) + string(#OPNUM) + string("_propfilter"))       \
           .set_input_x(LAYER##_##BLK##_##OPNUM##_input, "y")                                                  \
-          .set_attr_filter_sizes(LAYER##_##BLK##_##OPNUM##_desc.GetShape().GetDims())                         \
+          .set_attr_filter_size(LAYER##_##BLK##_##OPNUM##_desc.GetShape().GetDims())                          \
           .set_input_out_backprop(input_bngrad, input_bngrad.name_out_dx())                                   \
           .set_attr_strides(stride)                                                                           \
           .set_attr_pads({1, 1, 1, 1});                                                                       \
@@ -448,14 +449,14 @@ vector<int64_t> stride_2{2, 2};
                                                        .set_input_momentum(label1)                            \
                                                        .set_input_var(LAYER##_##BLK##_##OPNUM##_weight);
 
-///.set_attr_input_sizes({input_bngrad.name_out_dx().GetOutputDesc().GetShape().GetDim(0),LAYER##_##BLK##_##OPNUM##_weight.GetOutputDesc().GetShape().GetDim(1),
+///.set_attr_input_size({input_bngrad.name_out_dx().GetOutputDesc().GetShape().GetDim(0),LAYER##_##BLK##_##OPNUM##_weight.GetOutputDesc().GetShape().GetDim(1),
 ///input_bngrad.name_out_dx().GetOutputDesc().GetShape().GetDim(2)*stride[2],
 ///input_bngrad.name_out_dx().GetOutputDesc().GetShape().GetDim(3)*stride[3]})
 #define GENERATE_CONV_PROP_INPUT(LAYER, BLK, OPNUM, input_bngrad, stride)                                           \
   auto LAYER##_##BLK##_##OPNUM##_propinput =                                                                        \
       op::Conv2DBackpropInputD(string(#LAYER) + string(#BLK) + string(#OPNUM) + string("_propinput"))               \
-          .set_attr_input_sizes(LAYER##_##BLK##_##OPNUM##_input.GetOutputDesc("y").GetShape().GetDims())            \
-          .set_input_filters(LAYER##_##BLK##_##OPNUM##_weight)                                                      \
+          .set_attr_input_size(LAYER##_##BLK##_##OPNUM##_input.GetOutputDesc("y").GetShape().GetDims())             \
+          .set_input_filter(LAYER##_##BLK##_##OPNUM##_weight)                                                       \
           .set_input_out_backprop(input_bngrad, input_bngrad.name_out_dx())                                         \
           .set_attr_strides(stride)                                                                                 \
           .set_attr_pads({1, 1, 1, 1});                                                                             \
@@ -564,7 +565,7 @@ bool resnet50(Graph &graph) {
   auto data = op::Data().set_attr_index(0);
   auto data1 = op::Data().set_attr_index(1);
   TensorDesc shape_desc(ge::Shape({32, 3, 224, 224}), FORMAT_NCHW, DT_FLOAT);
-  data.update_output_desc_out(shape_desc);
+  data.update_output_desc_y(shape_desc);
 
   TensorDesc desc(ge::Shape({64, 3, 7, 7}), FORMAT_NCHW, DT_FLOAT);
 
@@ -579,7 +580,8 @@ bool resnet50(Graph &graph) {
                     .set_input_x(data)
                     .set_input_filter(var)
                     .set_attr_strides({1, 1, 2, 2})
-                    .set_attr_pads({2, 3, 2, 3});
+                    .set_attr_pads({2, 3, 2, 3})
+                    .set_attr_data_format("NCHW");
   TensorDesc desc_y;
   desc_y.SetFormat(FORMAT_NCHW); // shape: 32 64 112 112
   conv2d.update_output_desc_y(desc_y);

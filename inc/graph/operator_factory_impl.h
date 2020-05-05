@@ -21,7 +21,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "graph/operator_factory.h"
 
 namespace ge {
@@ -47,7 +46,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OperatorFactoryImpl {
 
   static graphStatus RegisterVerifyFunc(const std::string &operator_type, VerifyFunc const verify_func);
 
- private:
   static shared_ptr<std::map<string, OpCreator>> operator_creators_;
   static shared_ptr<std::map<string, InferShapeFunc>> operator_infershape_funcs_;
   static shared_ptr<std::map<string, InferFormatFunc>> operator_inferformat_funcs_;

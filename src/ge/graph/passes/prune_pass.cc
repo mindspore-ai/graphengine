@@ -15,11 +15,10 @@
  */
 
 #include "graph/passes/prune_pass.h"
-
 #include <deque>
+#include <set>
 #include <unordered_set>
 #include <vector>
-
 #include "common/debug/log.h"
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"

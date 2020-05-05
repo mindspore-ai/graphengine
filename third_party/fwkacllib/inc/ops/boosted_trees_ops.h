@@ -22,28 +22,25 @@
 namespace ge {
 
 /**
-*@brief Bucketize each feature based on bucket boundaries.
+*@brief Bucketizes each feature based on bucket boundaries.
 
-*@par Inputs:
-*The input float_values can be 1-D tensor, bucket_boundaries can be 1-D. Inputs include: \n
-* @li float_values: List of Rank 1 Tensor each containing float values for a single feature. \n
-* @li bucket_boundaries:List of Rank 1 Tensors each containing the bucket boundaries for a single. \n
+*@par Inputs: 
+*Input "float_values" is a 1D tensor. Input "bucket_boundaries" is \n
+a list of 1D tensors.
+* @li float_values: A list of rank 1 tensors each containing float \n
+values for a single feature.
+* @li bucket_boundaries: A list of rank 1 tensors each containing \n
+the bucket boundaries for a single feature.
 
-*@par Attributes:
-*@li num_features:number of features \n
+*@par Attributes: 
+*@li num_features: Number of features \n
 
-*@par Outputs:
-*@li y:List of Rank 1 Tensors each containing the bucketized values for a single feature. \n
+*@par Outputs: 
+*@li y: A list of rank 1 tensors each containing the bucketized values for \n
+a single feature.
 
 *@attention Constraints: \n
-*-The implementation for BoostedTreesBucketize on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*BoostedTreesBucketize runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(BoostedTreesBucketize)

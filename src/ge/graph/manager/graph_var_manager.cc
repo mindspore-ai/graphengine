@@ -19,11 +19,11 @@
 #include <utility>
 
 #include "common/l2_cache_optimize.h"
-#include "graph/debug/ge_attr_define.h"
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "ge/ge_api_types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/attr_utils.h"
@@ -67,6 +67,7 @@ ge::Status VarResource::GetVarAddr(const std::string &var_name, const ge::GeTens
 void VarResource::SetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *dev_ptr,
                              rtMemType_t memory_type) {
   std::string var_key = VarKey(var_name, tensor_desc);
+  GELOGI("VarResource::SetVarAddr , var_key = %s, mem_type:%u", var_key.c_str(), memory_type);
   if (var_addr_mgr_map_.count(var_key) == 0) {
     GELOGI("SetVarAddr node_name %s, tensor_desc type %s, format %s", var_name.c_str(),
            TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
@@ -88,6 +89,9 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   if (var_addr_mgr_map_.count(var_key) == 0) {
     uint64_t logic_address = VarManager::Instance(0)->GetVarMemLogicBase() +
                              reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
+    GELOGI("SaveVarAddr node_name %s, tensor_desc format %s, type %s.", var_name.c_str(),
+           TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
+           TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str());
     VarAddrMgr var_addr_mgr;
     var_addr_mgr.address = reinterpret_cast<uint8_t *>(reinterpret_cast<std::uintptr_t>(logic_address));
     var_addr_mgr.offset = reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
@@ -257,7 +261,7 @@ MemResource::MemResource() : total_size_(0), var_mem_size_(0) {}
 
 Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset) {
   size = (size + kSessionMemAlignSize - 1) / kSessionMemAlignSize * kSessionMemAlignSize;
-
+  uint64_t real_size = size;
   total_size_ = VarManager::Instance(0)->GetVarMemMaxSize();
   if (total_size_ < var_mem_size_) {
     GELOGE(PARAM_INVALID, "total_size_: %lu is smaller than var_mem_size_: %lu", total_size_, var_mem_size_);
@@ -265,7 +269,8 @@ Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uin
   }
   uint64_t free_size = total_size_ - var_mem_size_;
   if (free_size < (size + kSessionMemAlignSize * 2)) {
-    GELOGE(PARAM_INVALID, "malloc var mem, size[%lu] > free_size[%lu]", size, free_size);
+    GELOGE(PARAM_INVALID, "Out of memory : current var size[%lu] exceeds total var size[%lu]",
+           size + kSessionMemAlignSize * 2 + var_mem_size_, total_size_);
     return PARAM_INVALID;
   }
 
@@ -403,8 +408,13 @@ int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
 ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTensorDesc &tensor_desc,
                                     rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  GELOGI(
+    "VarManager::AssignVarMem var_name = %s, data_type = %s, data_format = "
+    "%s.",
+    var_name.c_str(), ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
+    ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str());
 
-  uint32_t tensor_desc_size = 0;
+  int64_t tensor_desc_size = 0;
   size_t mem_offset = 0;
   ge::Status result = TensorUtils::GetSize(tensor_desc, tensor_desc_size);
   if (result != ge::SUCCESS) {
@@ -465,13 +475,14 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   if (cur_tensor_desc.GetFormat() != tensor_desc.GetFormat() ||
       cur_tensor_desc.GetDataType() != tensor_desc.GetDataType() ||
       cur_tensor_desc.GetShape().GetDims() != tensor_desc.GetShape().GetDims()) {
-    GELOGI("var %s assigned new memory (format, data type, shape)  (%s, %s, %zu) from (%s, %s, %zu)", var_name.c_str(),
-           ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
-           ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
-           tensor_desc.GetShape().GetDims().size(),
-           ge::TypeUtils::DataTypeToSerialString(cur_tensor_desc.GetDataType()).c_str(),
-           ge::TypeUtils::FormatToSerialString(cur_tensor_desc.GetFormat()).c_str(),
-           cur_tensor_desc.GetShape().GetDims().size());
+    GELOGI(
+      "var %s assigned new memory (format, data type, shape)  (%s, %s, "
+      "%zu) from (%s, %s, %zu)",
+      var_name.c_str(), ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
+      ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(), tensor_desc.GetShape().GetDims().size(),
+      ge::TypeUtils::DataTypeToSerialString(cur_tensor_desc.GetDataType()).c_str(),
+      ge::TypeUtils::FormatToSerialString(cur_tensor_desc.GetFormat()).c_str(),
+      cur_tensor_desc.GetShape().GetDims().size());
     var_resource_->SetVarAddr(var_name, tensor_desc,
                               reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
   }

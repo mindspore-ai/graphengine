@@ -15,12 +15,10 @@
  */
 
 #include "graph/passes/transop_without_reshape_fusion_pass.h"
-
 #include <algorithm>
 #include <memory>
 #include <sstream>
 #include <string>
-
 #include "common/ge/ge_util.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
@@ -198,8 +196,8 @@ void TransOpWithoutReshapeFusionPass::GetInControlPeerOutControlAnchors(
       if (peer_node == nullptr) {
         continue;
       }
-      auto findIter = std::find(sub_graph_nodes_[index].begin(), sub_graph_nodes_[index].end(), peer_node);
-      if (findIter == sub_graph_nodes_[index].end()) {
+      auto iter = std::find(sub_graph_nodes_[index].begin(), sub_graph_nodes_[index].end(), peer_node);
+      if (iter == sub_graph_nodes_[index].end()) {
         in_control_peer_out_control_anchors[index].push_back(peer_out_anchor);
       } else {
         sub_graph_has_control_edge_[index] = true;
@@ -1064,7 +1062,7 @@ graphStatus TransOpWithoutReshapeFusionPass::GetSubGraphsBetweenNormalNode(
       continue;
     }
 
-    nodes_list.push_back(make_pair(out_anchor, peer_in_anchor));
+    nodes_list.emplace_back(out_anchor, peer_in_anchor);
     auto peer_in_node = peer_in_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(peer_in_node);
     if (!IsTransOp(peer_in_node)) {

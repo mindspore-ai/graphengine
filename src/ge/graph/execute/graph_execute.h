@@ -71,6 +71,15 @@ class GraphExecutor {
                                        vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &input_formats,
                                        std::vector<uint32_t> &output_formats);
 
+  ///
+  /// @ingroup ge
+  /// @brief Get dynamic batch_info
+  /// @param [in] model_id
+  /// @param [out] batch_info
+  /// @return execute result
+  ///
+  static Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+
   static Status GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                                   vector<InputOutputDescInfo> &output_desc,
                                                   std::vector<uint32_t> &input_formats,

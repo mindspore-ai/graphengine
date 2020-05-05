@@ -18,10 +18,13 @@
 #include <map>
 #include <set>
 #include <string>
-#include "common/math/math_util.h"
-#include "framework/common/debug/ge_log.h"
-#include "common/op/ge_op_utils.h"
+#include <utility>
+#include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
+#include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
 #include "common/helper/model_helper.h"
+#include "common/math/math_util.h"
+#include "common/op/ge_op_utils.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
@@ -33,6 +36,8 @@
 #include "graph/passes/assert_pass.h"
 #include "graph/passes/base_pass.h"
 #include "graph/passes/constant_folding_pass.h"
+#include "graph/passes/constant_fuse_same_pass.h"
+#include "graph/passes/control_trigger_pass.h"
 #include "graph/passes/dimension_adjust_pass.h"
 #include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/dropout_pass.h"
@@ -48,7 +53,6 @@
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/net_output_pass.h"
 #include "graph/passes/next_iteration_pass.h"
-#include "graph/passes/control_trigger_pass.h"
 #include "graph/passes/no_use_reshape_remove_pass.h"
 #include "graph/passes/placeholder_with_default_pass.h"
 #include "graph/passes/prevent_gradient_pass.h"
@@ -65,22 +69,27 @@
 #include "graph/passes/switch_pass.h"
 #include "graph/passes/unused_const_pass.h"
 #include "graph/passes/unused_op_remove_pass.h"
-#include "graph/passes/update_net_output_pass.h"
 #include "graph/passes/var_is_initialized_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
-#include "graph/passes/constant_fuse_same_pass.h"
+#include "graph/passes/common_subexpression_elimination_pass.h"
+#include "graph/passes/replace_with_empty_const_pass.h"
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
 #include "graph/types.h"
+#include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
-#include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
-#include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
-#include "graph/utils/tensor_utils.h"
+#include "multi_batch_copy_graph.h"
 #include "runtime/dev.h"
+
+using ge::CheckInt64Uint32MulOverflow;
 
 namespace ge {
 namespace {
+static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
+  {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},    {"INT16", ge::DT_INT16},
+  {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
+  {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
 OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
   GeTensorPtr tensor = MakeShared<GeTensor>();
@@ -109,6 +118,7 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
     for (int64_t i = 0; i < dim_cnt; ++i) {
       dst_shape[i] = dst_ge_shape.GetDim(static_cast<size_t>(i));
     }
+
     GE_IF_BOOL_EXEC(
       tensor->SetData(reinterpret_cast<const uint8_t *>(dst_shape.get()), dim_cnt * sizeof(int64_t)) != GRAPH_SUCCESS,
       GELOGE(INTERNAL_ERROR, "tensor set data failed");
@@ -357,49 +367,6 @@ Status RecoverTransRoadForVarRef(const std::set<NodePtr> &nodes, const VarTransR
   return SUCCESS;
 }
 
-Status SetDataNodeByAipp(const ge::NodePtr &node_ptr) {
-  GELOGI("Start to set data node by aipp.");
-  auto aipp_op_desc = node_ptr->GetOpDesc();
-  GE_CHECK_NOTNULL(aipp_op_desc);
-  auto aipp_input = aipp_op_desc->MutableInputDesc(0);
-  GE_CHECK_NOTNULL(aipp_input);
-  ge::DataType aipp_dt = aipp_input->GetDataType();
-  GELOGI("Aipp [%s] input datatype is %s.", aipp_op_desc->GetName().c_str(),
-         TypeUtils::DataTypeToSerialString(aipp_dt).c_str());
-  uint32_t size = 0;
-  graphStatus graph_ret = ge::TensorUtils::GetSize(*aipp_input, size);
-  if (graph_ret != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "UpdateOutputDesc fail, graph_ret:%u", graph_ret);
-    return FAILED;
-  }
-  GELOGI("Get size [%u] from aipp [%s].", size, aipp_op_desc->GetName().c_str());
-  if (size == 0) {
-    GELOGE(FAILED, "Can not get size from aipp [%s]", aipp_op_desc->GetName().c_str());
-    return FAILED;
-  }
-  for (const auto &in_data_anchor : node_ptr->GetAllInDataAnchors()) {
-    const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
-    const auto &src_node = peer_out_anchor->GetOwnerNode();
-    const auto &src_op = src_node->GetOpDesc();
-    GE_IF_BOOL_EXEC(src_op == nullptr, continue);
-
-    const GeTensorDescPtr &input = src_op->MutableInputDesc(0);
-    GE_CHECK_NOTNULL(input);
-    input->SetDataType(aipp_dt);
-    input->SetOriginDataType(aipp_dt);
-    ge::TensorUtils::SetSize(*input, size);
-
-    const GeTensorDescPtr &output = src_op->MutableOutputDesc(0);
-    GE_CHECK_NOTNULL(output);
-    output->SetDataType(aipp_dt);
-    output->SetOriginDataType(aipp_dt);
-    ge::TensorUtils::SetSize(*output, size);
-    GELOGI("Set data size [%u] by aipp.", size);
-  }
-  return SUCCESS;
-}
-
 using VarNamesToRefs = std::map<std::string, std::set<NodePtr>>;
 
 VarNamesToRefs CollectVarNamesToRefs(const ComputeGraphPtr &graph) {
@@ -440,10 +407,9 @@ NodePtr CreateCastOp(const ge::GeShape &shape, const ge::DataType input_data_typ
   static uint32_t transop_count = 0;
   std::string name = std::string("cast_node").append(std::to_string(transop_count++));
 
-  GELOGI("Create cast op:%s, input datatype:%s, out datatype:%s", name.c_str(),
+  GELOGI("create cast op:%s, input datatype:%s, out datatype:%s", name.c_str(),
          TypeUtils::DataTypeToSerialString(input_data_type).c_str(),
          TypeUtils::DataTypeToSerialString(output_data_type).c_str());
-
   GeTensorDesc input(shape, format, input_data_type);
   input.SetOriginFormat(format);
   input.SetOriginShape(shape);
@@ -456,7 +422,9 @@ NodePtr CreateCastOp(const ge::GeShape &shape, const ge::DataType input_data_typ
   output.SetOriginDataType(output_data_type);
   ge::TensorUtils::SetRealDimCnt(output, static_cast<uint32_t>(shape.GetDims().size()));
 
-  return CreateTransNode(name, CAST, input, output, node);
+  auto cast_node = CreateTransNode(name, CAST, input, output, node);
+  GELOGD("Create cast node success.");
+  return cast_node;
 }
 
 Status ProcessInputFP16(NodePtr &node_ptr) {
@@ -480,12 +448,12 @@ Status ProcessInputFP16(NodePtr &node_ptr) {
   int64_t shape_size = desc_shape * len;
   input->SetDataType(DT_FLOAT16);
   input->SetOriginDataType(DT_FLOAT16);
-  ge::TensorUtils::SetSize(*input, static_cast<uint32_t>(shape_size));
+  ge::TensorUtils::SetSize(*input, shape_size);
   const GeTensorDescPtr &output = op_desc->MutableOutputDesc(0);
   GE_CHECK_NOTNULL(output);
   output->SetDataType(DT_FLOAT16);
   output->SetOriginDataType(DT_FLOAT16);
-  ge::TensorUtils::SetSize(*output, static_cast<uint32_t>(shape_size));
+  ge::TensorUtils::SetSize(*output, shape_size);
 
   NodePtr cast_node = CreateCastOp(output->GetShape(), DT_FLOAT16, src_dtype, output->GetFormat(), node_ptr);
   GE_CHECK_NOTNULL(cast_node);
@@ -506,7 +474,7 @@ NodePtr CreateTransdataNode(const ge::GeShape &in_shape, const ge::Format input_
   // Does not involve multithreading.
   std::string name = std::string("transdata_node").append(std::to_string(transop_count++));
 
-  GELOGI("Create trandata op:%s, input format:%s, out format:%s", name.c_str(),
+  GELOGI("create trandata op:%s, input format:%s, out format:%s", name.c_str(),
          TypeUtils::FormatToSerialString(input_format).c_str(), TypeUtils::FormatToSerialString(output_format).c_str());
 
   GeTensorDesc input(in_shape, input_format, dt);
@@ -522,6 +490,24 @@ NodePtr CreateTransdataNode(const ge::GeShape &in_shape, const ge::Format input_
   return CreateTransNode(name, TRANSDATA, input, output, node);
 }
 
+Status TransferShape2NC1HWC0(Format src_format, const std::vector<int64_t> &src_shape, DataType dt, Format dst_format,
+                             std::vector<int64_t> &dst_shape) {
+  if (src_format == FORMAT_NCHW) {
+    formats::FormatTransferNchwNc1hwc0 transfer;
+    if (transfer.TransShape(src_format, src_shape, dt, dst_format, dst_shape) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "TransShape failed");
+      return FAILED;
+    }
+  } else if (src_format == FORMAT_NHWC) {
+    formats::FormatTransferNhwcNc1hwc0 transfer;
+    if (transfer.TransShape(src_format, src_shape, dt, dst_format, dst_shape) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "TransShape failed");
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
 Status ModifyInputFormatAndShape(NodePtr &node_ptr) {
   GE_CHECK_NOTNULL(node_ptr);
   auto op_desc = node_ptr->GetOpDesc();
@@ -532,43 +518,35 @@ Status ModifyInputFormatAndShape(NodePtr &node_ptr) {
   std::vector<int64_t> old_shape = input->GetShape().GetDims();
   ge::DataType dt = input->GetDataType();
   std::vector<int64_t> dst_shape_dims;
-  if (old_format == FORMAT_NCHW) {
-    formats::FormatTransferNchwNc1hwc0 transfer;
-    if (transfer.TransShape(old_format, old_shape, dt, FORMAT_NC1HWC0, dst_shape_dims) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "TransShape failed");
-      return FAILED;
-    }
-  } else if (old_format == FORMAT_NHWC) {
-    formats::FormatTransferNhwcNc1hwc0 transfer;
-    if (transfer.TransShape(old_format, old_shape, dt, FORMAT_NC1HWC0, dst_shape_dims) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "TransShape failed");
-      return FAILED;
-    }
+  if (TransferShape2NC1HWC0(old_format, old_shape, dt, FORMAT_NC1HWC0, dst_shape_dims) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Trans shape failed");
+    return FAILED;
   }
 
-  input->SetShape(ge::GeShape(dst_shape_dims));
-  input->SetOriginShape(ge::GeShape(dst_shape_dims));
   input->SetFormat(FORMAT_NC1HWC0);
   input->SetOriginFormat(FORMAT_NC1HWC0);
+  input->SetShape(ge::GeShape(dst_shape_dims));
+  input->SetOriginShape(ge::GeShape(dst_shape_dims));
 
   auto output = op_desc->MutableOutputDesc(0);
   GE_CHECK_NOTNULL(output);
-  output->SetShape(ge::GeShape(dst_shape_dims));
-  output->SetOriginShape(ge::GeShape(dst_shape_dims));
   output->SetFormat(FORMAT_NC1HWC0);
   output->SetOriginFormat(FORMAT_NC1HWC0);
+  output->SetShape(ge::GeShape(dst_shape_dims));
+  output->SetOriginShape(ge::GeShape(dst_shape_dims));
 
-  uint32_t size = 0;
+  int64_t size = 0;
   graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(*output, size);
   if (graph_status != ge::GRAPH_SUCCESS) {
     GELOGE(graph_status, "GetTensorSizeInBytes failed!");
     return FAILED;
   }
-  ge::TensorUtils::SetSize(*input, size);
   ge::TensorUtils::SetSize(*output, size);
+  ge::TensorUtils::SetSize(*input, size);
 
   return SUCCESS;
 }
+
 Status ProcessInputNC1HWC0(NodePtr &node_ptr) {
   GE_CHECK_NOTNULL(node_ptr);
   auto op_desc = node_ptr->GetOpDesc();
@@ -600,6 +578,161 @@ Status ProcessInputNC1HWC0(NodePtr &node_ptr) {
   if (AddTransNodeBetweenTwoNodes(src_out, trans_in, trans_out) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "add node between two nodes failed");
     return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status ProcessDataNode(NodePtr &node_ptr) {
+  bool set_fp16 = false;
+  if (!ge::AttrUtils::GetBool(node_ptr->GetOpDesc(), "input_fp16", set_fp16) || !set_fp16) {
+    return SUCCESS;
+  }
+  for (auto const &next_node : node_ptr->GetOutNodes()) {
+    if (next_node->GetType() == AIPP) {
+      GELOGE(INTERNAL_ERROR,
+             "This input node [%s] is linked to aipp, can not be set to fp16,"
+             "please check your atc parma insert_op_conf, input_fp16_nodes.",
+             node_ptr->GetName().c_str());
+      return FAILED;
+    }
+  }
+  GELOGI("input_fp16 is found, the node name is %s", node_ptr->GetName().c_str());
+  if (ProcessInputFP16(node_ptr) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "ProcessInputFP16 failed");
+    return FAILED;
+  }
+  // check if need to set format
+  bool set_format = false;
+  if (!ge::AttrUtils::GetBool(node_ptr->GetOpDesc(), "input_set_nc1hwc0", set_format) || !set_format) {
+    return SUCCESS;
+  }
+  GELOGI("The format of node [%s] should be set NC1HWC0", node_ptr->GetName().c_str());
+  if (ProcessInputNC1HWC0(node_ptr) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "ProcessInputNC1HWC0 failed");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status ProcessNetoutputNodeFp16Nc1hwc0(GeTensorDesc &src_desc, const InDataAnchorPtr &in_anchor,
+                                       GeTensorDescPtr &net_output_input_desc, NodePtr &node) {
+  ge::GeShape src_shape = src_desc.GetShape();
+  ge::Format src_format = src_desc.GetFormat();
+  ge::DataType src_dtype = src_desc.GetDataType();
+  if (src_dtype != DT_FLOAT16) {
+    auto peer_out = in_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out);
+    NodePtr cast_node = CreateCastOp(src_shape, src_dtype, DT_FLOAT16, src_format, node);
+    GE_CHECK_NOTNULL(cast_node);
+    if (GraphUtils::InsertNodeBetweenDataAnchors(peer_out, in_anchor, cast_node) != GRAPH_SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "InsertNodeBetweenDataAnchors failed");
+      return FAILED;
+    }
+    net_output_input_desc->SetDataType(DT_FLOAT16);
+    net_output_input_desc->SetOriginDataType(DT_FLOAT16);
+  }
+  if (src_format == FORMAT_NC1HWC0) {
+    GELOGI("Format is NC1HWC0, no need to transfer");
+    return SUCCESS;
+  }
+  std::vector<int64_t> dst_shape_dims;
+  std::vector<int64_t> src_shape_dims = src_shape.GetDims();
+  if (TransferShape2NC1HWC0(src_format, src_shape_dims, DT_FLOAT16, FORMAT_NC1HWC0, dst_shape_dims) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Trans shape failed");
+    return FAILED;
+  }
+  ge::GeShape dst_shape(dst_shape_dims);
+  NodePtr trans_node = CreateTransdataNode(src_shape, src_format, dst_shape, FORMAT_NC1HWC0, DT_FLOAT16, node);
+  GE_CHECK_NOTNULL(trans_node);
+  auto peer_out_new = in_anchor->GetPeerOutAnchor();
+  GE_CHECK_NOTNULL(peer_out_new);
+  if (GraphUtils::InsertNodeBetweenDataAnchors(peer_out_new, in_anchor, trans_node) != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "InsertNodeBetweenDataAnchors failed");
+    return FAILED;
+  }
+  net_output_input_desc->SetFormat(FORMAT_NC1HWC0);
+  net_output_input_desc->SetOriginFormat(FORMAT_NC1HWC0);
+  net_output_input_desc->SetShape(dst_shape);
+  net_output_input_desc->SetOriginShape(dst_shape);
+  return SUCCESS;
+}
+
+Status ProcessNetoutputNode(NodePtr &node, std::string &output_type) {
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  ge::DataType output_data_type = ge::DT_FLOAT;
+  bool is_set_output_type = false;
+  if (output_type_str_to_datatype.find(output_type) != output_type_str_to_datatype.end()) {
+    output_data_type = output_type_str_to_datatype[output_type];
+    is_set_output_type = true;
+  } else {
+    GELOGI("output_type [%s] is not set or set unexpected", output_type.c_str());
+    is_set_output_type = false;
+  }
+
+  for (const auto &in_anchor : node->GetAllInDataAnchors()) {
+    auto index = static_cast<uint32_t>(in_anchor->GetIdx());
+    auto peer_out = in_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out);
+    auto src_index = static_cast<uint32_t>(peer_out->GetIdx());
+    auto own_node = peer_out->GetOwnerNode();
+    OpDescPtr src_op_desc = own_node->GetOpDesc();
+    GE_CHECK_NOTNULL(src_op_desc);
+    auto net_output_input_desc = op_desc->MutableInputDesc(index);
+    GE_CHECK_NOTNULL(net_output_input_desc);
+    auto net_output_output_desc = op_desc->MutableOutputDesc(index);
+    GE_CHECK_NOTNULL(net_output_output_desc);
+    // Update  netoutput outputdesc
+    net_output_output_desc->SetDataType(net_output_input_desc->GetDataType());
+    net_output_output_desc->SetOriginDataType(net_output_input_desc->GetDataType());
+    net_output_output_desc->SetFormat(net_output_input_desc->GetFormat());
+    net_output_output_desc->SetOriginFormat(net_output_input_desc->GetFormat());
+    net_output_output_desc->SetShape(net_output_input_desc->GetShape());
+    net_output_output_desc->SetOriginShape(net_output_input_desc->GetShape());
+
+    ge::GeShape src_shape = src_op_desc->GetOutputDesc(src_index).GetShape();
+    ge::Format src_format = src_op_desc->GetOutputDesc(src_index).GetFormat();
+    ge::DataType src_dtype = src_op_desc->GetOutputDesc(src_index).GetDataType();
+    // Update datatype
+    if (is_set_output_type) {
+      GELOGI("Enter into process output_type schedule");
+      if (src_dtype == output_data_type) {
+        GELOGI("Data type is same ,no need to transfer.");
+        continue;
+      }
+      NodePtr cast_node = CreateCastOp(src_shape, src_dtype, output_data_type, src_format, node);
+      if (GraphUtils::InsertNodeBetweenDataAnchors(peer_out, in_anchor, cast_node) != GRAPH_SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "InsertNodeBetweenDataAnchors failed");
+        return FAILED;
+      }
+      net_output_input_desc->SetDataType(output_data_type);
+      net_output_input_desc->SetOriginDataType(output_data_type);
+      net_output_output_desc->SetDataType(output_data_type);
+      net_output_output_desc->SetOriginDataType(output_data_type);
+      continue;
+    }
+    // output_node is not set,check if is_output_adjust_hw_layout is set
+    bool set_fp16_nc1hwc0 = false;
+    if (AttrUtils::GetBool(src_op_desc, "output_set_fp16_nc1hwc0", set_fp16_nc1hwc0)) {
+      if (set_fp16_nc1hwc0) {
+        GELOGI("Node [%s] should be set FP16 and NC1HWC0", src_op_desc->GetName().c_str());
+        if ((src_format != FORMAT_NCHW) && (src_format != FORMAT_NHWC) && (src_format != FORMAT_NC1HWC0)) {
+          GELOGE(INTERNAL_ERROR, "Format is not one of NCHW, NHWC, NC1HWC0.");
+          return FAILED;
+        }
+        GeTensorDesc src_desc(src_shape, src_format, src_dtype);
+        if (ProcessNetoutputNodeFp16Nc1hwc0(src_desc, in_anchor, net_output_input_desc, node) != SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Process netoutput fp16 nc1hwc0.");
+          return FAILED;
+        }
+        net_output_output_desc->SetDataType(net_output_input_desc->GetDataType());
+        net_output_output_desc->SetOriginDataType(net_output_input_desc->GetDataType());
+        net_output_output_desc->SetFormat(net_output_input_desc->GetFormat());
+        net_output_output_desc->SetOriginFormat(net_output_input_desc->GetFormat());
+        net_output_output_desc->SetShape(net_output_input_desc->GetShape());
+        net_output_output_desc->SetOriginShape(net_output_input_desc->GetShape());
+      }
+    }
   }
   return SUCCESS;
 }
@@ -661,6 +794,12 @@ Status GraphPrepare::Init(const ge::Graph &graph, uint64_t session_id) {
     GELOGE(ret, "RunGraph graph check fail, ret:%u", ret);
     return ret;
   }
+  compute_graph_->TopologicalSorting();
+  ret = CheckRefOp();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "RunGraph check ref op fail, ret:%u", ret);
+    return ret;
+  }
 
   return SUCCESS;
 }
@@ -685,8 +824,83 @@ Status GraphPrepare::CheckGraph() {
   return SUCCESS;
 }
 
+Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &input_name,
+                                       const std::unordered_set<NodePtr> &ref_nodes) {
+  static std::unordered_set<std::string> acceptable_types = {ge::VARIABLE,         ge::VARIABLEV2, ge::VARHANDLEOP,
+                                                             ge::REFSWITCH,        ge::REFMERGE,   ge::REFENTER,
+                                                             ge::REFNEXTITERATION, ge::REFEXIT};
+  GE_CHECK_NOTNULL(node);
+  const auto &op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  const auto input_index = op_desc->GetInputIndexByName(input_name);
+  const auto &in_anchor = node->GetInDataAnchor(input_index);
+  GE_CHECK_NOTNULL(in_anchor);
+  const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
+  GE_CHECK_NOTNULL(peer_out_anchor);
+  const auto &input_node = peer_out_anchor->GetOwnerNode();
+  GE_CHECK_NOTNULL(input_node);
+  const auto &input_op_desc = input_node->GetOpDesc();
+  GE_CHECK_NOTNULL(input_op_desc);
+
+  bool is_ref = (ref_nodes.find(input_node) != ref_nodes.end());
+  if (is_ref) {
+    return SUCCESS;
+  }
+  auto input_type = input_op_desc->GetType();
+  if (input_type == ge::FRAMEWORKOP) {
+    if (!ge::AttrUtils::GetStr(input_op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, input_type)) {
+      GELOGE(PARAM_INVALID, "Get original type failed.");
+      return PARAM_INVALID;
+    }
+  }
+  bool is_acceptable = (acceptable_types.find(input_type) != acceptable_types.end());
+
+  if (!is_acceptable) {
+    GELOGE(PARAM_INVALID, "The ref input of ref node %s[%s] must be ref node or variable, but %s[%s]isn't.",
+           node->GetName().c_str(), node->GetType().c_str(), input_op_desc->GetName().c_str(),
+           input_op_desc->GetType().c_str());
+    return PARAM_INVALID;
+  }
+
+  return SUCCESS;
+}
+
+Status GraphPrepare::CheckRefOp() {
+  GE_CHECK_NOTNULL(compute_graph_);
+  std::unordered_set<NodePtr> ref_nodes;
+  for (const NodePtr &node : compute_graph_->GetDirectNode()) {
+    if (node == nullptr) {
+      GELOGE(PARAM_INVALID, "param [node] must not be null.");
+      return PARAM_INVALID;
+    }
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      GELOGE(PARAM_INVALID, "OpDesc of param [node] must not be null.");
+      return PARAM_INVALID;
+    }
+
+    auto input_names = op_desc->GetAllInputNames();
+    auto outputs = op_desc->GetAllOutputName();
+    std::unordered_set<std::string> all_output_name;
+
+    for (auto &output : outputs) {
+      all_output_name.insert(output.first);
+    }
+    for (const auto &input_name : input_names) {
+      if (all_output_name.find(input_name) != all_output_name.end()) {
+        if (CheckRefInputNode(node, input_name, ref_nodes) != SUCCESS) {
+          GELOGE(PARAM_INVALID, "CheckRefInputNode failed.");
+          return PARAM_INVALID;
+        }
+        (void)ref_nodes.insert(node);
+      }
+    }
+  }
+  return SUCCESS;
+};
+
 Status GraphPrepare::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode) {
-  GELOGI("Set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
+  GELOGI("set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
   RtContextUtil::GetInstance().AddrtContext(rt_context);
@@ -704,7 +918,7 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
   GeTensorDesc output = op_desc_ptr->GetOutputDesc(0);
-  uint32_t tensor_size = 0;
+  int64_t tensor_size = 0;
   graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(output, tensor_size);
   if (graph_status != GRAPH_SUCCESS) {
     GELOGE(graph_status, "GetTensorMemorySizeInBytes failed!");
@@ -721,13 +935,13 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
 
 Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
   compute_graph_->SaveDataFormat((ge::Format)(domi::GetContext().format));
-  for (NodePtr &input_node : compute_graph_->GetAllNodes()) {
+  for (NodePtr &input_node : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
     OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
       GeAttrValue::INT index = 0;
-      if (!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) {
+      if ((!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) || (domi::GetContext().is_dynamic_input)) {
         GELOGW("Get index from data attr failed");
         continue;
       }
@@ -759,15 +973,16 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       FMK_INT64_UINT32_MULCHECK(desc_shape, length);
       int64_t shape_size = desc_shape * length;
       GE_IF_BOOL_EXEC(shape_size == 0, shape_size = static_cast<int64_t>(length));
-      uint32_t size = 0;
-      // [No need to check return value]
-      ge::TensorUtils::GetSize(desc, size);
-      if ((size != 0) && (shape_size != static_cast<int64_t>(size))) {
-        GELOGE(PARAM_INVALID, "input data size =%u, shape_size =%ld.", size, shape_size);
+      int64_t size = 0;
+      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc, size) != GRAPH_SUCCESS,
+                      GELOGE(INTERNAL_ERROR, "TensorUtils GetSize failed");
+                      return FAILED);
+      if ((size != 0) && (shape_size != size)) {
+        GELOGE(PARAM_INVALID, "input data size =%ld, shape_size =%ld.", size, shape_size);
         return FAILED;
       }
 
-      ge::TensorUtils::SetSize(desc, static_cast<uint32_t>(shape_size));
+      ge::TensorUtils::SetSize(desc, shape_size);
 
       graphStatus graph_ret = op->UpdateInputDesc(0, desc);
       if (graph_ret != GRAPH_SUCCESS) {
@@ -883,36 +1098,26 @@ Status GraphPrepare::ResourcePairProcess(const std::string &action) {
   return SUCCESS;
 }
 
-Status GraphPrepare::OptimizeForDataAfterInfershape() {
-  for (auto node_ptr : compute_graph_->GetAllNodes()) {
+Status GraphPrepare::OptimizeAfterInfershapeByAtcParams() {
+  if (options_.train_graph_flag) {
+    GELOGI("This is train mode, no need to do this schedule.");
+    return SUCCESS;
+  }
+  GE_RETURN_IF_ERROR(InsertNewOpUtil::Instance().UpdateDataNodeByAipp(compute_graph_));
+  for (auto &node_ptr : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(node_ptr);
-    if (node_ptr->GetType() == AIPP) {
-      if (SetDataNodeByAipp(node_ptr) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Set data node by aipp failed");
+    if (node_ptr->GetType() == DATA) {
+      if (ProcessDataNode(node_ptr) != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "Process data node failed");
         return FAILED;
       }
     }
-    if (node_ptr->GetType() != DATA) {
-      continue;
-    }
-    bool set_fp16 = false;
-    if (!ge::AttrUtils::GetBool(node_ptr->GetOpDesc(), "input_fp16", set_fp16) || !set_fp16) {
-      continue;
-    }
-    GELOGI("input_node_set_fp16 is found, the name is %s", node_ptr->GetName().c_str());
-    if (ProcessInputFP16(node_ptr) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "ProcessInputFP16 failed");
-      return FAILED;
-    }
-    // check if need to set format
-    bool set_format = false;
-    if (!ge::AttrUtils::GetBool(node_ptr->GetOpDesc(), "input_set_nc1hwc0", set_format) || !set_format) {
-      continue;
-    }
-    GELOGI("Find a node [%s] should set NC1HWC0", node_ptr->GetName().c_str());
-    if (ProcessInputNC1HWC0(node_ptr) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "ProcessInputNC1HWC0 failed");
-      return FAILED;
+
+    if (node_ptr->GetType() == ge::NETOUTPUT) {
+      if (ProcessNetoutputNode(node_ptr, options_.output_datatype) != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "Process netoutput node failed");
+        return FAILED;
+      }
     }
   }
   return SUCCESS;
@@ -934,6 +1139,7 @@ void GraphPrepare::ProcessCCEFormat() {
           if (org_tensor_input.GetFormat() == FORMAT_ND) {
             org_tensor_input.SetFormat(FORMAT_NCHW);
             org_tensor_input.SetOriginFormat(FORMAT_NCHW);
+            // [No need to check value]
             (void)node_op_desc->UpdateInputDesc(i, org_tensor_input);
           }
         }
@@ -944,6 +1150,7 @@ void GraphPrepare::ProcessCCEFormat() {
           if (org_tensor_output.GetFormat() == FORMAT_ND) {
             org_tensor_output.SetFormat(FORMAT_NCHW);
             org_tensor_output.SetOriginFormat(FORMAT_NCHW);
+            // [No need to check value]
             (void)node_op_desc->UpdateOutputDesc(i, org_tensor_output);
           }
         }
@@ -982,7 +1189,7 @@ Status GraphPrepare::OptimizeBeforeInfershape() {
 }
 
 void GraphPrepare::SaveOriginalGraphToOmModel() {
-  if (options_.save_original_model) {
+  if (options_.save_original_model == "true") {
     ModelHelper model_helper;
     Status ret = model_helper.SaveOriginalGraphToOmModel(ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph_),
                                                          options_.original_model_file);
@@ -1029,16 +1236,28 @@ Status GraphPrepare::Preprocess(const std::vector<GeTensor> &user_input) {
       return FAILED;
     }
   }
+
+  GE_TIMESTAMP_START(netoutput_process);
+  ret = ProcessNetOutput();
+  GE_TIMESTAMP_END(netoutput_process, "GraphPrepare::NetOutputProcess")
+  if (ret != SUCCESS) {
+    return ret;
+  }
+  GE_TIMESTAMP_START(multibatch_process);
+  ret = multibatch::ProcessMultiBatch(compute_graph_);
+  GE_TIMESTAMP_END(multibatch_process, "GraphPrepare::MultiBatchProcess")
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed to do multi-batch processing");
+    return ret;
+  }
+  GraphUtils::DumpGEGraph(compute_graph_, "after_multibatch_process");
+  GraphUtils::DumpGEGraphToOnnx(*compute_graph_, "after_multibatch_process");
+
   ret = TryDoAipp();
   if (ret != SUCCESS) {
     return ret;
   }
 
-  ret = OptimizeBeforeInfershape();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "OptimizeBeforeInfershape failed.");
-    return ret;
-  }
   GE_TIMESTAMP_START(FormatAndShapeProcess);
   ret = FormatAndShapeProcess();
   GE_TIMESTAMP_END(FormatAndShapeProcess, "GraphPrepare::FormatAndShapeProcess");
@@ -1051,7 +1270,7 @@ Status GraphPrepare::Preprocess(const std::vector<GeTensor> &user_input) {
 
   ProcessCCEFormat();
 
-  ret = OptimizeForDataAfterInfershape();
+  ret = OptimizeAfterInfershapeByAtcParams();
   if (ret != SUCCESS) {
     GELOGE(ret, "Optimize for input if set inputfp16 failed.");
     return ret;
@@ -1139,6 +1358,13 @@ Status GraphPrepare::Prepare(ConstGraphPtr graph, const std::vector<GeTensor> &u
     return ret;
   }
 
+  GE_TIMESTAMP_START(OptimizeBeforeSubGraph);
+  ret = OptimizeGraphBeforeSubGraph();
+  GE_TIMESTAMP_END(OptimizeBeforeSubGraph, "GraphPrepare::OptimizeBeforeSubGraph");
+  if (ret != SUCCESS) {
+    GELOGE(ret, "originalGraph optimize Failed");
+    return ret;
+  }
   compute_graph = compute_graph_;
   return SUCCESS;
 }
@@ -1198,12 +1424,12 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
 }
 
 Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
-  if (user_input.empty()) {
+  if (user_input.empty() || domi::GetContext().is_dynamic_input) {
     return SUCCESS;
   }
   unsigned int node_num = 0;
   unsigned int data_num = 0;
-  for (NodePtr &input_node : compute_graph_->GetAllNodes()) {
+  for (NodePtr &input_node : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
     OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
@@ -1246,6 +1472,8 @@ Status GraphPrepare::InferShapeForPreprocess() {
   }
   InferShapePass infer_shape_pass;
   names_to_passes.emplace_back("InferShapePass", &infer_shape_pass);
+  ReplaceWithEmptyConstPass replace_with_empty_const_pass;
+  names_to_passes.emplace_back("ReplaceWithEmptyConstPass", &replace_with_empty_const_pass);
   DimensionComputePass dimension_compute_pass;
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   ConstantFoldingPass constant_folding_pass;
@@ -1285,7 +1513,6 @@ Status GraphPrepare::InferShapeForPreprocess() {
 
 Status GraphPrepare::OptimizeForPreprocess() {
   GELOGI("Start optimize for preprocess.");
-
   PassManager original_graph_passes;
   // Graph pass
   try {
@@ -1322,9 +1549,7 @@ Status GraphPrepare::OptimizeForPreprocess() {
   // for infer
   DropOutPass dropout_pass;
   AssertPass assert_pass;
-  ReUpdateNetOutputPass re_update_net_output_pass;
   if (!options_.train_graph_flag) {
-    names_to_passes.emplace_back("ReUpdateNetOutputPass", &re_update_net_output_pass);
     names_to_passes.emplace_back("DropOutPass", &dropout_pass);
     names_to_passes.emplace_back("AssertPass", &assert_pass);
   }
@@ -1390,7 +1615,7 @@ Status GraphPrepare::OptimizeForPreprocess() {
   }
   // The constant for train is CONSTANTOP, and is CONSTANT for inference. They will be unified in future.
   if (options_.train_graph_flag) {
-    for (ge::NodePtr &n : compute_graph_->GetDirectNode()) {
+    for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {
       // This can ensure that n is not a null pointer
       if (n->GetOpDesc()->GetType() == CONSTANT) {
         n->GetOpDesc()->SetType(CONSTANTOP);
@@ -1406,6 +1631,45 @@ Status GraphPrepare::OptimizeForPreprocess() {
 
   GELOGI("End optimize for preprocess.");
 
+  return SUCCESS;
+}
+
+Status GraphPrepare::ProcessNetOutput() {
+  PassManager graph_passes_before_infershape;
+  try {
+    if (options_.train_graph_flag) {
+      graph_passes_before_infershape.AddPass(new (std::nothrow) SavePass);
+    }
+    graph_passes_before_infershape.AddPass(new (std::nothrow) NetOutputPass);
+  } catch (std::bad_alloc) {
+    GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
+    return INTERNAL_ERROR;
+  }
+
+  auto ret = graph_passes_before_infershape.Run(compute_graph_);
+  if ((ret != SUCCESS) && (ret != NOT_CHANGED)) {
+    GELOGE(ret, "Run graph_passes_before_infershape failed, ret:%d.", ret);
+    return ret;
+  }
+  return SUCCESS;
+}
+Status GraphPrepare::OptimizeGraphBeforeSubGraph() {
+  PassManager passes;
+  (void)passes.AddPass(new (std::nothrow) CommonSubexpressionEliminationPass);
+  auto ret = passes.Run(compute_graph_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed to optimize for graph");
+    return ret;
+  }
+  ConstantFoldingPass constant_folding_pass;
+  NamesToPass names_to_passes;
+  names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
+  GEPass ge_passes(compute_graph_);
+  ret = ge_passes.Run(names_to_passes);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed to optimize for graph");
+    return ret;
+  }
   return SUCCESS;
 }
 }  // namespace ge

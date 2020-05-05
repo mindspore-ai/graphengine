@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "external/graph/operator.h"
+#include "./operator.h"
 
 namespace ge {
 class GraphImpl;

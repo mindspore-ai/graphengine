@@ -26,13 +26,15 @@
 
 namespace ge {
 namespace {
-const int kMaxRePassTimes = 1000;
-const size_t kMaxOneInNodes = 1000;
+constexpr int kMaxRePassTimes = 1000;
+constexpr size_t kMaxOneInNodes = 1000;
+// Each iteration, we take about 0.3k memory on the stack, we should change the recursion to loop later
+constexpr int kMaxRecursiveDepth = 10;
 
 void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::queue<NodePtr> &input_edge_nodes,
                             std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_last) {
   nodes_last.clear();
-  for (auto &node : graph->GetAllNodes()) {
+  for (auto &node : graph->GetDirectNode()) {
     if (node == nullptr) {
       continue;
     }
@@ -113,6 +115,18 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unorder
 
   return SUCCESS;
 }
+
+void SetFlagOption(NodePassOption option, NamesToPass names_to_pass) {
+  for (auto &name_to_pass : names_to_pass) {
+    name_to_pass.second->SetOption(option, "");
+  }
+}
+
+void ClearOption(NamesToPass names_to_pass) {
+  for (auto &name_to_pass : names_to_pass) {
+    name_to_pass.second->ClearOptions();
+  }
+}
 }  // namespace
 
 Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> &io_map) {
@@ -120,8 +134,7 @@ Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> 
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
-  GELOGI("Prepare to isolate and delete node, name:%s, type:%s.", node->GetName().c_str(),
-         node->GetType().c_str());
+  GELOGI("Prepare to isolate and delete node, name:%s, type:%s.", node->GetName().c_str(), node->GetType().c_str());
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   if (graph == nullptr) {
     GELOGE(FAILED, "[%s] The owner graph must not be null.", node->GetName().c_str());
@@ -154,6 +167,18 @@ Status GEPass::Run(const NamesToPass &names_to_passes) {
     return INTERNAL_ERROR;
   }
 
+  if (depth_ > kMaxRecursiveDepth) {
+    GELOGE(PARAM_INVALID,
+           "The pass for root graph %s will be terminated because too many nesting"
+           " levels(%d) of subgraphs, last subgraph is %s",
+           root_graph_->GetName().c_str(), depth_, graph_->GetName().c_str());
+    return PARAM_INVALID;
+  }
+
+  return RunPassesOneGraph(names_to_passes);
+}
+
+Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
   GELOGD("Begin to run pass on graph, passes count %zu", names_to_passes.size());
   std::queue<NodePtr> nodes;
   std::unordered_set<Node *> nodes_seen;
@@ -186,18 +211,39 @@ Status GEPass::Run(const NamesToPass &names_to_passes) {
 
       auto ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_deleted, nodes_seen);
       if (ret != SUCCESS) {
-        GELOGE(INTERNAL_ERROR,
-               "Failed to process passes on node %s type %s,"
-               " error code: %u",
-               node->GetName().c_str(), node->GetType().c_str(), ret);
-        return INTERNAL_ERROR;
+        GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u", node->GetName().c_str(),
+               node->GetType().c_str(), ret);
+        return ret;
+      }
+
+      bool has_sub_graph = false;
+      ret = RunPassesOnSubGraph(node, names_to_passes, has_sub_graph);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "Failed to run passes on the sub graph of node %s", node->GetName().c_str());
+        return ret;
+      }
+
+      if (has_sub_graph) {
+        GELOGD("There are subgraphs on node %s, run passes for for the second time", node->GetName().c_str());
+        SetFlagOption(kOptimizeAfterSubGraph, names_to_passes);
+        ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_deleted, nodes_seen);
+        if (ret != SUCCESS) {
+          GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u", node->GetName().c_str(),
+                 node->GetType().c_str(), ret);
+          return ret;
+        }
+
+        // There is only one option scene, so set and clear options around the `RunPasses` func.
+        // if there are more than one scene to set options, the `ClearOption` function
+        // should be called each time at the begin of the iteration
+        ClearOption(names_to_passes);
       }
     }
 
     for (auto &node : nodes_last) {
       bool all_in_nodes_seen = node->IsAllInNodesSeen(nodes_seen);
       if (all_in_nodes_seen && nodes_seen.insert(node.get()).second) {
-         nodes.push(node);
+        nodes.push(node);
       }
     }
     nodes_last.clear();
@@ -208,6 +254,27 @@ Status GEPass::Run(const NamesToPass &names_to_passes) {
   }
   GELOGD("All passes runs end");
 
+  return SUCCESS;
+}
+Status GEPass::RunPassesOnSubGraph(const NodePtr &node, const NamesToPass &names_to_passes, bool &has_sub_graph) {
+  auto sub_graph_names = node->GetOpDesc()->GetSubgraphInstanceNames();
+  has_sub_graph = false;
+  for (const auto &name : sub_graph_names) {
+    auto graph = root_graph_->GetSubgraph(name);
+    if (graph == nullptr) {
+      GELOGW("Can not find the sub graph %s from node %s, the pass-process will skip it", name.c_str(),
+             node->GetName().c_str());
+      continue;
+    }
+    has_sub_graph = true;
+    GELOGI("Begin to run passes on the sub graph %s of node %s", name.c_str(), node->GetName().c_str());
+    GEPass pass(graph, root_graph_, depth_ + 1);
+    auto ret = pass.Run(names_to_passes);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Failed to run passes for sub graph %s from node %s", name.c_str(), node->GetName().c_str());
+      return ret;
+    }
+  }
   return SUCCESS;
 }
 }  // namespace ge

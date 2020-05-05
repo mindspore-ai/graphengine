@@ -19,7 +19,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
@@ -48,7 +47,8 @@ Status SavePass::Run(ge::ComputeGraphPtr graph) {
             out_index.emplace_back(out_anchor->GetIdx());
             ge::OpDescPtr op_desc = peer_node->GetOpDesc();
             GE_IF_BOOL_EXEC(!ge::AttrUtils::SetStr(op_desc, kVarAttrVarIsSave, kVarIsSave),
-                            GELOGE(INTERNAL_ERROR, "get kVarAttrVarIsSave failed"); return INTERNAL_ERROR);
+                            GELOGE(INTERNAL_ERROR, "get kVarAttrVarIsSave failed");
+                            return INTERNAL_ERROR);
           }
         }
       }

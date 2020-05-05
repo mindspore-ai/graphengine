@@ -80,7 +80,7 @@ target_compile_definitions(ge_client_train PRIVATE
         PLATFORM_CLOUD)
 target_link_libraries(ge_client
         graph
-        ge
+        ge_compiler
         ge_common
         ${PROTOBUF_LIBRARY}
         ${register}

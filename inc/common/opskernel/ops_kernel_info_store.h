@@ -21,7 +21,6 @@
 #include <map>
 #include <string>
 #include <vector>
-
 #include "./ge_task_info.h"
 #include "./ops_kernel_info_types.h"
 #include "cce/aicpu_engine_struct.h"
@@ -29,7 +28,6 @@
 #include "common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "proto/task.pb.h"
-
 using std::map;
 using std::string;
 using std::to_string;
@@ -47,7 +45,7 @@ class OpsKernelInfoStore {
   // initialize opsKernelInfoStore
   virtual Status Initialize(const map<string, string> &options) = 0;
 
-  // finalize opsKernelInfoStore
+  // close opsKernelInfoStore
   virtual Status Finalize() = 0;
 
   virtual Status CreateSession(const std::map<std::string, std::string> &session_options) { return SUCCESS; }
@@ -57,18 +55,20 @@ class OpsKernelInfoStore {
   // get all opsKernelInfo
   virtual void GetAllOpsKernelInfo(map<string, OpInfo> &infos) const = 0;
 
-  // check whether opsKernelInfoStore is supported based on the operator attribute
+  // whether the opsKernelInfoStore is supported based on the operator attribute
   virtual bool CheckSupported(const OpDescPtr &opDescPtr, std::string &un_supported_reason) const = 0;
 
   virtual bool CheckAccuracySupported(const OpDescPtr &opDescPtr, std::string &un_supported_reason,
                                       bool realQuery = false) const {
     return CheckSupported(opDescPtr, un_supported_reason);
   }
+  // opsFlag opsFlag[0] indicates constant folding is supported or not
+  virtual void opsFlagCheck(const ge::Node &node, std::string &opsFlag){};
 
-  // requirement of memory allocation
+  // memory allocation requirement
   virtual Status CalcOpRunningParam(Node &node) = 0;
 
-  // generate task for op
+  // generate task for op。
   virtual Status GenerateTask(const Node &node, RunContext &context, std::vector<domi::TaskDef> &tasks) = 0;
 
   // only call fe engine interface to compile single op
@@ -77,10 +77,10 @@ class OpsKernelInfoStore {
   // load task for op
   virtual Status LoadTask(GETaskInfo &task) { return SUCCESS; }
 
-  // only to call aicpu interface for generating task struct
+  // only call aicpu interface to generate task struct
   virtual Status GenSingleOpRunTask(const NodePtr &node, STR_FWK_OP_KERNEL &task, string &task_info) { return SUCCESS; }
 
-  // only to call aicpu interface for generating task struct
+  // only call aicpu interface to generate task struct
   virtual Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, string &task_info) { return SUCCESS; }
 };
 }  // namespace ge

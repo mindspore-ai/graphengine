@@ -19,43 +19,45 @@
 
 namespace ge {
 static const std::map<Format, std::string> kFormatToStringMap = {
-    {FORMAT_NCHW, "NCHW"},
-    {FORMAT_NHWC, "NHWC"},
-    {FORMAT_ND, "ND"},
-    {FORMAT_NC1HWC0, "NC1HWC0"},
-    {FORMAT_FRACTAL_Z, "FRACTAL_Z"},
-    {FORMAT_NC1C0HWPAD, "NC1C0HWPAD"},
-    {FORMAT_NHWC1C0, "NHWC1C0"},
-    {FORMAT_FSR_NCHW, "FSR_NCHW"},
-    {FORMAT_FRACTAL_DECONV, "FRACTAL_DECONV"},
-    {FORMAT_C1HWNC0, "C1HWNC0"},
-    {FORMAT_FRACTAL_DECONV_TRANSPOSE, "FRACTAL_DECONV_TRANSPOSE"},
-    {FORMAT_FRACTAL_DECONV_SP_STRIDE_TRANS, "FRACTAL_DECONV_SP_STRIDE_TRANS"},
-    {FORMAT_NC1HWC0_C04, "NC1HWC0_C04"},
-    {FORMAT_FRACTAL_Z_C04, "FRACTAL_Z_C04"},
-    {FORMAT_CHWN, "CHWN"},
-    {FORMAT_FRACTAL_DECONV_SP_STRIDE8_TRANS, "DECONV_SP_STRIDE8_TRANS"},
-    {FORMAT_NC1KHKWHWC0, "NC1KHKWHWC0"},
-    {FORMAT_BN_WEIGHT, "BN_WEIGHT"},
-    {FORMAT_FILTER_HWCK, "FILTER_HWCK"},
-    {FORMAT_HWCN, "HWCN"},
-    {FORMAT_HASHTABLE_LOOKUP_LOOKUPS, "LOOKUP_LOOKUPS"},
-    {FORMAT_HASHTABLE_LOOKUP_KEYS, "LOOKUP_KEYS"},
-    {FORMAT_HASHTABLE_LOOKUP_VALUE, "LOOKUP_VALUE"},
-    {FORMAT_HASHTABLE_LOOKUP_OUTPUT, "LOOKUP_OUTPUT"},
-    {FORMAT_HASHTABLE_LOOKUP_HITS, "LOOKUP_HITS"},
-    {FORMAT_MD, "MD"},
-    {FORMAT_NDHWC, "NDHWC"},
-    {FORMAT_NCDHW, "NCDHW"},
-    {FORMAT_DHWCK, "DHWCK"},
-    {FORMAT_NDC1HWC0, "NDC1HWC0"},
-    {FORMAT_FRACTAL_Z_3D, "FRACTAL_Z_3D"},
-    {FORMAT_C1HWNCoC0, "C1HWNCoC0"},
-    {FORMAT_FRACTAL_NZ, "FRACTAL_NZ"},
-    {FORMAT_CN, "CN"},
-    {FORMAT_NC, "NC"},
-    {FORMAT_RESERVED, "FORMAT_RESERVED"},
-    {FORMAT_ALL, "ALL"}};
+  {FORMAT_NCHW, "NCHW"},
+  {FORMAT_NHWC, "NHWC"},
+  {FORMAT_ND, "ND"},
+  {FORMAT_NC1HWC0, "NC1HWC0"},
+  {FORMAT_FRACTAL_Z, "FRACTAL_Z"},
+  {FORMAT_NC1C0HWPAD, "NC1C0HWPAD"},
+  {FORMAT_NHWC1C0, "NHWC1C0"},
+  {FORMAT_FSR_NCHW, "FSR_NCHW"},
+  {FORMAT_FRACTAL_DECONV, "FRACTAL_DECONV"},
+  {FORMAT_C1HWNC0, "C1HWNC0"},
+  {FORMAT_FRACTAL_DECONV_TRANSPOSE, "FRACTAL_DECONV_TRANSPOSE"},
+  {FORMAT_FRACTAL_DECONV_SP_STRIDE_TRANS, "FRACTAL_DECONV_SP_STRIDE_TRANS"},
+  {FORMAT_NC1HWC0_C04, "NC1HWC0_C04"},
+  {FORMAT_FRACTAL_Z_C04, "FRACTAL_Z_C04"},
+  {FORMAT_CHWN, "CHWN"},
+  {FORMAT_FRACTAL_DECONV_SP_STRIDE8_TRANS, "DECONV_SP_STRIDE8_TRANS"},
+  {FORMAT_NC1KHKWHWC0, "NC1KHKWHWC0"},
+  {FORMAT_BN_WEIGHT, "BN_WEIGHT"},
+  {FORMAT_FILTER_HWCK, "FILTER_HWCK"},
+  {FORMAT_HWCN, "HWCN"},
+  {FORMAT_HASHTABLE_LOOKUP_LOOKUPS, "LOOKUP_LOOKUPS"},
+  {FORMAT_HASHTABLE_LOOKUP_KEYS, "LOOKUP_KEYS"},
+  {FORMAT_HASHTABLE_LOOKUP_VALUE, "LOOKUP_VALUE"},
+  {FORMAT_HASHTABLE_LOOKUP_OUTPUT, "LOOKUP_OUTPUT"},
+  {FORMAT_HASHTABLE_LOOKUP_HITS, "LOOKUP_HITS"},
+  {FORMAT_MD, "MD"},
+  {FORMAT_NDHWC, "NDHWC"},
+  {FORMAT_NCDHW, "NCDHW"},
+  {FORMAT_DHWCN, "DHWCN"},
+  {FORMAT_DHWNC, "DHWNC"},
+  {FORMAT_NDC1HWC0, "NDC1HWC0"},
+  {FORMAT_FRACTAL_Z_3D, "FRACTAL_Z_3D"},
+  {FORMAT_FRACTAL_Z_3D_TRANSPOSE, "FRACTAL_Z_3D_TRANSPOSE"},
+  {FORMAT_C1HWNCoC0, "C1HWNCoC0"},
+  {FORMAT_FRACTAL_NZ, "FRACTAL_NZ"},
+  {FORMAT_CN, "CN"},
+  {FORMAT_NC, "NC"},
+  {FORMAT_RESERVED, "FORMAT_RESERVED"},
+  {FORMAT_ALL, "ALL"}};
 
 static const std::unordered_set<std::string> kInternalFormat = {"NC1HWC0",
                                                                 "FRACTAL_Z",
@@ -73,137 +75,140 @@ static const std::unordered_set<std::string> kInternalFormat = {"NC1HWC0",
                                                                 "FRACTAL_ZZ",
                                                                 "FRACTAL_NZ",
                                                                 "NDC1HWC0",
-                                                                "FORMAT_FRACTAL_Z_3D"};
+                                                                "FORMAT_FRACTAL_Z_3D",
+                                                                "FORMAT_FRACTAL_Z_3D_TRANSPOSE"};
 
 static const std::map<std::string, Format> kDataFormatMap = {
-    {"NCHW", FORMAT_NCHW}, {"NHWC", FORMAT_NHWC}, {"ND", FORMAT_ND}};
+  {"NCHW", FORMAT_NCHW}, {"NHWC", FORMAT_NHWC}, {"NDHWC", FORMAT_NDHWC}, {"NCDHW", FORMAT_NCDHW}, {"ND", FORMAT_ND}};
 
 static const std::map<std::string, Format> kStringToFormatMap = {
-    {"NCHW", FORMAT_NCHW},
-    {"NHWC", FORMAT_NHWC},
-    {"ND", FORMAT_ND},
-    {"NC1HWC0", FORMAT_NC1HWC0},
-    {"FRACTAL_Z", FORMAT_FRACTAL_Z},
-    {"NC1C0HWPAD", FORMAT_NC1C0HWPAD},
-    {"NHWC1C0", FORMAT_NHWC1C0},
-    {"FSR_NCHW", FORMAT_FSR_NCHW},
-    {"FRACTAL_DECONV", FORMAT_FRACTAL_DECONV},
-    {"C1HWNC0", FORMAT_C1HWNC0},
-    {"FRACTAL_DECONV_TRANSPOSE", FORMAT_FRACTAL_DECONV_TRANSPOSE},
-    {"FRACTAL_DECONV_SP_STRIDE_TRANS", FORMAT_FRACTAL_DECONV_SP_STRIDE_TRANS},
-    {"NC1HWC0_C04", FORMAT_NC1HWC0_C04},
-    {"FRACTAL_Z_C04", FORMAT_FRACTAL_Z_C04},
-    {"CHWN", FORMAT_CHWN},
-    {"DECONV_SP_STRIDE8_TRANS", FORMAT_FRACTAL_DECONV_SP_STRIDE8_TRANS},
-    {"NC1KHKWHWC0", FORMAT_NC1KHKWHWC0},
-    {"BN_WEIGHT", FORMAT_BN_WEIGHT},
-    {"FILTER_HWCK", FORMAT_FILTER_HWCK},
-    {"HWCN", FORMAT_HWCN},
-    {"LOOKUP_LOOKUPS", FORMAT_HASHTABLE_LOOKUP_LOOKUPS},
-    {"LOOKUP_KEYS", FORMAT_HASHTABLE_LOOKUP_KEYS},
-    {"LOOKUP_VALUE", FORMAT_HASHTABLE_LOOKUP_VALUE},
-    {"LOOKUP_OUTPUT", FORMAT_HASHTABLE_LOOKUP_OUTPUT},
-    {"LOOKUP_HITS", FORMAT_HASHTABLE_LOOKUP_HITS},
-    {"MD", FORMAT_MD},
-    {"C1HWNCoC0", FORMAT_C1HWNCoC0},
-    {"FRACTAL_NZ", FORMAT_FRACTAL_NZ},
-    {"NDHWC", FORMAT_NDHWC},
-    {"NCDHW", FORMAT_NCDHW},
-    {"DHWCK", FORMAT_DHWCK},
-    {"NDC1HWC0", FORMAT_NDC1HWC0},
-    {"FRACTAL_Z_3D", FORMAT_FRACTAL_Z_3D},
-    {"CN", FORMAT_CN},
-    {"NC", FORMAT_NC},
-    {"FORMAT_RESERVED", FORMAT_RESERVED},
-    {"ALL", FORMAT_ALL}};
+  {"NCHW", FORMAT_NCHW},
+  {"NHWC", FORMAT_NHWC},
+  {"ND", FORMAT_ND},
+  {"NC1HWC0", FORMAT_NC1HWC0},
+  {"FRACTAL_Z", FORMAT_FRACTAL_Z},
+  {"NC1C0HWPAD", FORMAT_NC1C0HWPAD},
+  {"NHWC1C0", FORMAT_NHWC1C0},
+  {"FSR_NCHW", FORMAT_FSR_NCHW},
+  {"FRACTAL_DECONV", FORMAT_FRACTAL_DECONV},
+  {"C1HWNC0", FORMAT_C1HWNC0},
+  {"FRACTAL_DECONV_TRANSPOSE", FORMAT_FRACTAL_DECONV_TRANSPOSE},
+  {"FRACTAL_DECONV_SP_STRIDE_TRANS", FORMAT_FRACTAL_DECONV_SP_STRIDE_TRANS},
+  {"NC1HWC0_C04", FORMAT_NC1HWC0_C04},
+  {"FRACTAL_Z_C04", FORMAT_FRACTAL_Z_C04},
+  {"CHWN", FORMAT_CHWN},
+  {"DECONV_SP_STRIDE8_TRANS", FORMAT_FRACTAL_DECONV_SP_STRIDE8_TRANS},
+  {"NC1KHKWHWC0", FORMAT_NC1KHKWHWC0},
+  {"BN_WEIGHT", FORMAT_BN_WEIGHT},
+  {"FILTER_HWCK", FORMAT_FILTER_HWCK},
+  {"HWCN", FORMAT_HWCN},
+  {"LOOKUP_LOOKUPS", FORMAT_HASHTABLE_LOOKUP_LOOKUPS},
+  {"LOOKUP_KEYS", FORMAT_HASHTABLE_LOOKUP_KEYS},
+  {"LOOKUP_VALUE", FORMAT_HASHTABLE_LOOKUP_VALUE},
+  {"LOOKUP_OUTPUT", FORMAT_HASHTABLE_LOOKUP_OUTPUT},
+  {"LOOKUP_HITS", FORMAT_HASHTABLE_LOOKUP_HITS},
+  {"MD", FORMAT_MD},
+  {"C1HWNCoC0", FORMAT_C1HWNCoC0},
+  {"FRACTAL_NZ", FORMAT_FRACTAL_NZ},
+  {"NDHWC", FORMAT_NDHWC},
+  {"NCDHW", FORMAT_NCDHW},
+  {"DHWCN", FORMAT_DHWCN},
+  {"DHWNC", FORMAT_DHWNC},
+  {"NDC1HWC0", FORMAT_NDC1HWC0},
+  {"FRACTAL_Z_3D", FORMAT_FRACTAL_Z_3D},
+  {"FRACTAL_Z_3D_TRANSPOSE", FORMAT_FRACTAL_Z_3D_TRANSPOSE},
+  {"CN", FORMAT_CN},
+  {"NC", FORMAT_NC},
+  {"FORMAT_RESERVED", FORMAT_RESERVED},
+  {"ALL", FORMAT_ALL}};
 
 static const std::map<DataType, std::string> kDataTypeToStringMap = {
-    {DT_UNDEFINED, "DT_UNDEFINED"},            // Used to indicate a DataType field has not been set.
-    {DT_FLOAT, "DT_FLOAT"},                    // float type
-    {DT_FLOAT16, "DT_FLOAT16"},                // fp16 type
-    {DT_INT8, "DT_INT8"},                      // int8 type
-    {DT_INT16, "DT_INT16"},                    // int16 type
-    {DT_UINT16, "DT_UINT16"},                  // uint16 type
-    {DT_UINT8, "DT_UINT8"},                    // uint8 type
-    {DT_INT32, "DT_INT32"},                    // uint32 type
-    {DT_INT64, "DT_INT64"},                    // int64 type
-    {DT_UINT32, "DT_UINT32"},                  // unsigned int32
-    {DT_UINT64, "DT_UINT64"},                  // unsigned int64
-    {DT_BOOL, "DT_BOOL"},                      // bool type
-    {DT_DOUBLE, "DT_DOUBLE"},                  // double type
-    {DT_DUAL, "DT_DUAL"},                      // dual output type
-    {DT_DUAL_SUB_INT8, "DT_DUAL_SUB_INT8"},    // dual output int8 type
-    {DT_DUAL_SUB_UINT8, "DT_DUAL_SUB_UINT8"},  // dual output uint8 type
-    {DT_COMPLEX64, "DT_COMPLEX64"},            // complex64 type
-    {DT_COMPLEX128, "DT_COMPLEX128"},          // complex128 type
-    {DT_QINT8, "DT_QINT8"},                    // qint8 type
-    {DT_QINT16, "DT_QINT16"},                  // qint16 type
-    {DT_QINT32, "DT_QINT32"},                  // qint32 type
-    {DT_QUINT8, "DT_QUINT8"},                  // quint8 type
-    {DT_QUINT16, "DT_QUINT16"},                // quint16 type
-    {DT_RESOURCE, "DT_RESOURCE"},              // resource type
-    {DT_STRING_REF, "DT_STRING_REF"},          // string ref type
-    {DT_STRING, "DT_STRING"},                  // string type
+  {DT_UNDEFINED, "DT_UNDEFINED"},            // Used to indicate a DataType field has not been set.
+  {DT_FLOAT, "DT_FLOAT"},                    // float type
+  {DT_FLOAT16, "DT_FLOAT16"},                // fp16 type
+  {DT_INT8, "DT_INT8"},                      // int8 type
+  {DT_INT16, "DT_INT16"},                    // int16 type
+  {DT_UINT16, "DT_UINT16"},                  // uint16 type
+  {DT_UINT8, "DT_UINT8"},                    // uint8 type
+  {DT_INT32, "DT_INT32"},                    // uint32 type
+  {DT_INT64, "DT_INT64"},                    // int64 type
+  {DT_UINT32, "DT_UINT32"},                  // unsigned int32
+  {DT_UINT64, "DT_UINT64"},                  // unsigned int64
+  {DT_BOOL, "DT_BOOL"},                      // bool type
+  {DT_DOUBLE, "DT_DOUBLE"},                  // double type
+  {DT_DUAL, "DT_DUAL"},                      // dual output type
+  {DT_DUAL_SUB_INT8, "DT_DUAL_SUB_INT8"},    // dual output int8 type
+  {DT_DUAL_SUB_UINT8, "DT_DUAL_SUB_UINT8"},  // dual output uint8 type
+  {DT_COMPLEX64, "DT_COMPLEX64"},            // complex64 type
+  {DT_COMPLEX128, "DT_COMPLEX128"},          // complex128 type
+  {DT_QINT8, "DT_QINT8"},                    // qint8 type
+  {DT_QINT16, "DT_QINT16"},                  // qint16 type
+  {DT_QINT32, "DT_QINT32"},                  // qint32 type
+  {DT_QUINT8, "DT_QUINT8"},                  // quint8 type
+  {DT_QUINT16, "DT_QUINT16"},                // quint16 type
+  {DT_RESOURCE, "DT_RESOURCE"},              // resource type
+  {DT_STRING_REF, "DT_STRING_REF"},          // string ref type
+  {DT_STRING, "DT_STRING"},                  // string type
 };
 
 static const std::map<std::string, DataType> kStringTodataTypeMap = {
-    {"DT_UNDEFINED", DT_UNDEFINED},  // Used to indicate a DataType field has not been set.
-    {"DT_FLOAT", DT_FLOAT},          // float type
-    {
-        "DT_FLOAT16",
-        DT_FLOAT16,
-    },                                         // fp16 type
-    {"DT_INT8", DT_INT8},                      // int8 type
-    {"DT_INT16", DT_INT16},                    // int16 type
-    {"DT_UINT16", DT_UINT16},                  // uint16 type
-    {"DT_UINT8", DT_UINT8},                    // uint8 type
-    {"DT_INT32", DT_INT32},                    // uint32 type
-    {"DT_INT64", DT_INT64},                    // int64 type
-    {"DT_UINT32", DT_UINT32},                  // unsigned int32
-    {"DT_UINT64", DT_UINT64},                  // unsigned int64
-    {"DT_BOOL", DT_BOOL},                      // bool type
-    {"DT_DOUBLE", DT_DOUBLE},                  // double type
-    {"DT_DUAL", DT_DUAL},                      // dual output type
-    {"DT_DUAL_SUB_INT8", DT_DUAL_SUB_INT8},    // dual output int8 type
-    {"DT_DUAL_SUB_UINT8", DT_DUAL_SUB_UINT8},  // dual output uint8 type
-    {"DT_COMPLEX64", DT_COMPLEX64},            // complex64 type
-    {"DT_COMPLEX128", DT_COMPLEX128},          // complex128 type
-    {"DT_QINT8", DT_QINT8},                    // qint8 type
-    {"DT_QINT16", DT_QINT16},                  // qint16 type
-    {"DT_QINT32", DT_QINT32},                  // qint32 type
-    {"DT_QUINT8", DT_QUINT8},                  // quint8 type
-    {"DT_QUINT16", DT_QUINT16},                // quint16 type
-    {"DT_RESOURCE", DT_RESOURCE},              // resource type
-    {"DT_STRING_REF", DT_STRING_REF},          // string ref type
-    {"DT_STRING", DT_STRING},                  // string type
+  {"DT_UNDEFINED", DT_UNDEFINED},  // Used to indicate a DataType field has not been set.
+  {"DT_FLOAT", DT_FLOAT},          // float type
+  {
+    "DT_FLOAT16",
+    DT_FLOAT16,
+  },                                         // fp16 type
+  {"DT_INT8", DT_INT8},                      // int8 type
+  {"DT_INT16", DT_INT16},                    // int16 type
+  {"DT_UINT16", DT_UINT16},                  // uint16 type
+  {"DT_UINT8", DT_UINT8},                    // uint8 type
+  {"DT_INT32", DT_INT32},                    // uint32 type
+  {"DT_INT64", DT_INT64},                    // int64 type
+  {"DT_UINT32", DT_UINT32},                  // unsigned int32
+  {"DT_UINT64", DT_UINT64},                  // unsigned int64
+  {"DT_BOOL", DT_BOOL},                      // bool type
+  {"DT_DOUBLE", DT_DOUBLE},                  // double type
+  {"DT_DUAL", DT_DUAL},                      // dual output type
+  {"DT_DUAL_SUB_INT8", DT_DUAL_SUB_INT8},    // dual output int8 type
+  {"DT_DUAL_SUB_UINT8", DT_DUAL_SUB_UINT8},  // dual output uint8 type
+  {"DT_COMPLEX64", DT_COMPLEX64},            // complex64 type
+  {"DT_COMPLEX128", DT_COMPLEX128},          // complex128 type
+  {"DT_QINT8", DT_QINT8},                    // qint8 type
+  {"DT_QINT16", DT_QINT16},                  // qint16 type
+  {"DT_QINT32", DT_QINT32},                  // qint32 type
+  {"DT_QUINT8", DT_QUINT8},                  // quint8 type
+  {"DT_QUINT16", DT_QUINT16},                // quint16 type
+  {"DT_RESOURCE", DT_RESOURCE},              // resource type
+  {"DT_STRING_REF", DT_STRING_REF},          // string ref type
+  {"DT_STRING", DT_STRING},                  // string type
 };
 
 static const std::map<ge::DataType, uint32_t> kDataTypeToLength = {
-    {DT_BOOL, sizeof(bool)},
-    {DT_INT64, sizeof(int64_t)},
-    {DT_UINT64, sizeof(int64_t)},
-    {DT_FLOAT, sizeof(float)},
-    {DT_INT32, sizeof(int32_t)},
-    {DT_UINT32, sizeof(int32_t)},
-    {DT_INT8, sizeof(char)},
-    {DT_UINT8, sizeof(char)},
-    {DT_INT16, sizeof(int16_t)},
-    {DT_UINT16, sizeof(int16_t)},
-    {DT_FLOAT16, sizeof(int16_t)},
-    {DT_DOUBLE, sizeof(double)},
-    {DT_DUAL, sizeof(float) + sizeof(int8_t)},
-    {DT_DUAL_SUB_INT8, sizeof(int8_t)},
-    {DT_DUAL_SUB_UINT8, sizeof(uint8_t)},
-    {DT_COMPLEX64, sizeof(int64_t)},
-    {DT_COMPLEX128, sizeof(int64_t) * 2},
-    {DT_QINT8, sizeof(int8_t)},
-    {DT_QINT16, sizeof(int16_t)},
-    {DT_QINT32, sizeof(int32_t)},
-    {DT_QUINT8, sizeof(uint8_t)},
-    {DT_QUINT16, sizeof(uint16_t)},
-    {DT_STRING_REF, sizeof(uint64_t) * 2},
-    {DT_STRING, sizeof(uint64_t)},
-    {DT_RESOURCE, sizeof(uint64_t)},
+  {DT_BOOL, sizeof(bool)},
+  {DT_INT64, sizeof(int64_t)},
+  {DT_UINT64, sizeof(int64_t)},
+  {DT_FLOAT, sizeof(float)},
+  {DT_INT32, sizeof(int32_t)},
+  {DT_UINT32, sizeof(int32_t)},
+  {DT_INT8, sizeof(char)},
+  {DT_UINT8, sizeof(char)},
+  {DT_INT16, sizeof(int16_t)},
+  {DT_UINT16, sizeof(int16_t)},
+  {DT_FLOAT16, sizeof(int16_t)},
+  {DT_DOUBLE, sizeof(double)},
+  {DT_DUAL, sizeof(float) + sizeof(int8_t)},
+  {DT_DUAL_SUB_INT8, sizeof(int8_t)},
+  {DT_DUAL_SUB_UINT8, sizeof(uint8_t)},
+  {DT_COMPLEX64, sizeof(int64_t)},
+  {DT_COMPLEX128, sizeof(int64_t) * 2},
+  {DT_QINT8, sizeof(int8_t)},
+  {DT_QINT16, sizeof(int16_t)},
+  {DT_QINT32, sizeof(int32_t)},
+  {DT_QUINT8, sizeof(uint8_t)},
+  {DT_QUINT16, sizeof(uint16_t)},
+  {DT_STRING_REF, sizeof(uint64_t) * 2},
+  {DT_STRING, sizeof(uint64_t)},
+  {DT_RESOURCE, sizeof(uint64_t)},
 };
 
 bool TypeUtils::IsDataTypeValid(DataType dt) {

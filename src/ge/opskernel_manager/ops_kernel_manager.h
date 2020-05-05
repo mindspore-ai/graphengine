@@ -32,8 +32,8 @@
 #include "ge/ge_api_types.h"
 #include "runtime/base.h"
 
-using std::string;
 using std::map;
+using std::string;
 using std::vector;
 
 namespace ge {
@@ -59,7 +59,7 @@ class OpsKernelManager {
   const map<string, GraphOptimizerPtr> &GetAllGraphOptimizerObjs() const;
 
   // get subgraphOptimizer by engine name
-  void GetGraphOptimizerByEngine(const std::string &engine_name, vector<GraphOptimizerPtr> &graph_optimizer) const;
+  void GetGraphOptimizerByEngine(const std::string &engine_name, vector<GraphOptimizerPtr> &graph_optimizer);
 
   // get enableFeFlag
   bool GetEnableFeFlag() const;

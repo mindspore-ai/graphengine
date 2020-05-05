@@ -28,6 +28,7 @@
 #include "graph/utils/graph_utils.h"
 #include "model/ge_model.h"
 
+using ge::ModelBufferData;
 using std::map;
 using std::string;
 using std::vector;
@@ -121,13 +122,14 @@ class GeGenerator::Impl {
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GraphId &graph_id,
                     vector<GeModelPtr> &ge_models);
 
-  Status SaveModel(const string &file_name_prefix, vector<GeModelPtr> models);
+  Status SaveModel(const string &file_name_prefix, vector<GeModelPtr> &models, ModelBufferData &model);
 
   Status SaveParams(GeModelPtr &ge_model, const string &type, const map<string, GeAttrValue> &attrs,
                     const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
 
   GraphManager graph_manager_;
   SaveParam save_param_;
+  bool is_offline_ = true;
 };
 
 Status GeGenerator::Initialize(const map<string, string> &options) {
@@ -185,6 +187,16 @@ Status GeGenerator::Finalize() {
 Status GeGenerator::GenerateOfflineModel(const Graph &graph, const string &file_name_prefix,
                                          const vector<GeTensor> &inputs) {
   GELOGI("Start to GenerateOfflineModel.");
+  ModelBufferData model;
+  return GenerateModel(graph, file_name_prefix, inputs, model, true);
+}
+
+Status GeGenerator::GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ModelBufferData &model) {
+  return GenerateModel(graph, "online", inputs, model, false);
+}
+
+Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
+                                  ModelBufferData &model, bool is_offline) {
   GraphId graph_id;
   vector<GeModelPtr> ge_models;
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
@@ -196,7 +208,7 @@ Status GeGenerator::GenerateOfflineModel(const Graph &graph, const string &file_
   } else {
     model_name = compute_graph->GetName();
   }
-
+  impl_->is_offline_ = is_offline;
   Status ret = impl_->BuildModel(graph, inputs, graph_id, ge_models);
   if (ret != SUCCESS) {
     GELOGE(ret, "Build model failed");
@@ -209,8 +221,7 @@ Status GeGenerator::GenerateOfflineModel(const Graph &graph, const string &file_
   if (!model_name.empty() && !ge_models.empty()) {
     ge_models[0]->SetName(model_name);
   }
-
-  ret = impl_->SaveModel(file_name_prefix, ge_models);
+  ret = impl_->SaveModel(file_name_prefix, ge_models, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");
     if (impl_->graph_manager_.Finalize() != SUCCESS) {
@@ -242,6 +253,9 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Outputs size:%zu", outputs.size(), op_desc->GetOutputsSize());
     return PARAM_INVALID;
   }
+
+  // 0. Save original attributes.
+  map<string, GeAttrValue> op_attrs = op_desc->GetAllAttrs();
 
   // 1. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
@@ -290,11 +304,10 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
   GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, graph_id, ge_models));
 
   if (!ge_models.empty()) {
-    map<string, GeAttrValue> op_attrs = op_desc->GetAllAttrs();
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_models[0], op_desc->GetType(), op_attrs, inputs, outputs));
   }
-
-  GE_CHK_STATUS_RET_NOLOG(impl_->SaveModel(model_file_name, ge_models));
+  ModelBufferData model_buff;
+  GE_CHK_STATUS_RET_NOLOG(impl_->SaveModel(model_file_name, ge_models, model_buff));
   return SUCCESS;
 }
 
@@ -308,7 +321,8 @@ Status GeGenerator::Impl::SaveParams(GeModelPtr &ge_model, const string &type, c
   return SUCCESS;
 }
 
-Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, vector<GeModelPtr> models) {
+Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, vector<GeModelPtr> &models,
+                                    ModelBufferData &model_buff) {
   // to be change to ModelHelper interface
   if (models.empty()) {
     GELOGE(FAILED, "models are empty.");
@@ -316,7 +330,8 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, vector<GeMod
   }
 
   ModelHelper model_helper;
-  Status ret = model_helper.SaveToOmModel(models[0], save_param_, file_name_prefix);
+  model_helper.SetSaveMode(is_offline_);
+  Status ret = model_helper.SaveToOmModel(models[0], save_param_, file_name_prefix, model_buff);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save to Om model failed");
     return ret;

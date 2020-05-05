@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <set>
 
 namespace ge {
 // Option key: graph run mode
@@ -38,9 +39,11 @@ const char *const GE_AICPU_FLAG = "ge.aicpuFlag";
 const char *const OPTION_EXEC_EXTERN_PLUGIN_PATH = "ge.soLoadPath";
 const char *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
+const char *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
 // Hccl flag, if ge.exec.hcclFlag =1, it means load plugin for opskernel, else:ge.exec.hcclFlag =0
 const char *const OPTION_EXEC_HCCL_FLAG = "ge.exec.hcclFlag";
 const char *const OPTION_EXEC_ATOMIC_FLAG = "ge.exec.enable_atomic";
+const char *const OPTION_EXEC_DISABLE_REUSED_MEMORY = "ge.exec.disableReuseMemory";
 
 // Option key: memory init
 const char *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
@@ -141,19 +144,43 @@ const std::string STREAM_MAX_PARALLEL_NUM = "ge.streamMaxParallelNum";
 // congigure outputDatatype to setting net output type
 const std::string OUTPUT_DATATYPE = "ge.outputDatatype";
 
+// congigure opSelectImplmode to setting op select implmode
+const std::string kOpSelectImplmode = "ge.opSelectImplmode";
+
 // configure whether to enable hcom parallel by session constructor options param,
 // its value should be "0" or "1", default value is "0"
 const std::string HCOM_PARALLEL = "ge.hcomParallel";
+
+// configure whether to use dynamic batch size
+const char *const kDynamicBatchSize = "ge.dynamicBatchSize";
+
+// configure whether to use dynamic image size
+const char *const kDynamicImageSize = "ge.dynamicImageSize";
 
 // Configure auto tune mode, this option only take effect while AUTO_TUNE_FLAG is Y,
 // example: GA|RL, support configure multiple, split by |
 const std::string AUTO_TUNE_MODE = "ge.autoTuneMode";
 
+// Configure soc version , example: "Ascend310"
+const std::string SOC_VERSION = "ge.socVersion";
+
 // Configure core type "VectorEngine", default value is "AIcoreEngine"
 const std::string CORE_TYPE = "ge.engineType";
 
-// Configure soc version , example: "Ascend310"
-const std::string SOC_VERSION = "ge.socVersion";
+// Configure AICORE NUM
+const std::string AICORE_NUM = "ge.aicoreNum";
+
+// Configure L1FUSION
+const std::string L1_FUSION = "ge.l1Fusion";
+
+// Configure Small Channel flag
+const std::string ENABLE_SMALL_CHANNEL = "ge.enableSmallChannel";
+
+// Configure Compress Weight flag
+const std::string ENABLE_COMPRESS_WEIGHT = "ge.enableCompressWeight";
+
+// Configure fusion switch file path
+const std::string FUSION_SWITCH_FILE = "ge.fusionSwitchFile";
 
 // Save original model
 const std::string SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
@@ -194,6 +221,28 @@ struct TensorInfo {
   DataDesc data;        // tensor data
   ShapeDesc shapeInfo;  // tensor shape
 };
+// for ir build
+namespace ir_option {
+static const char *const INPUT_FORMAT = "input_format";
+static const char *const INPUT_SHAPE = "input_shape";
+static const char *const OP_NAME_MAP = "op_name_map";
+static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
+static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
+static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
+static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
+static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
+static const char *const HEAD_STREAM = ge::HEAD_STREAM.c_str();
+static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
+static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
+static const char *const SOC_VERSION = ge::SOC_VERSION.c_str();
+// for interface: aclgrphBuildModel
+const std::set<std::string> ir_builder_suppported_options = {
+  INPUT_FORMAT,       INPUT_SHAPE,    OP_NAME_MAP,    DYNAMIC_BATCH_SIZE,
+  DYNAMIC_IMAGE_SIZE, INSERT_OP_FILE, PRECISION_MODE, EXEC_DISABLE_REUSED_MEMORY,
+  AUTO_TUNE_MODE};
+// for interface: aclgrphBuildInitialize
+const std::set<std::string> global_options = {HEAD_STREAM, CORE_TYPE, SOC_VERSION};
+}  // namespace ir_option
 }  // namespace ge
 
 #endif  // INC_EXTERNAL_GE_GE_API_TYPES_H_

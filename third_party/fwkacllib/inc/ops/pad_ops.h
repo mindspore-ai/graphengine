@@ -149,7 +149,7 @@ REG_OP(Pad)
 REG_OP(PadD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
-    .ATTR(paddings, ListListInt, {})
+    .REQUIRED_ATTR(paddings, ListListInt)
     .OP_END_FACTORY_REG(PadD)
 
 /**

@@ -19,7 +19,6 @@
 
 #include <map>
 #include <string>
-
 #include "./graph_optimizer_types.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_types.h"
@@ -39,19 +38,19 @@ class GraphOptimizer {
   // close graphOptimizer
   virtual Status Finalize() = 0;
 
-  // optimize original graph for FE quant optimization
+  // optimize original graph for FE quant optimize
   virtual Status OptimizeGraphPrepare(ComputeGraph &graph) { return SUCCESS; }
 
-  // optimize original graph used in the graph preparation stage
+  // optimize original graph, using in graph preparation stage
   virtual Status OptimizeOriginalGraph(ComputeGraph &graph) = 0;
 
   // optimize fused graph
   virtual Status OptimizeFusedGraph(ComputeGraph &graph) = 0;
 
-  // optimize the whole graph which will be used after graph merged
+  // optimize whole graph, using after graph merged stage
   virtual Status OptimizeWholeGraph(ComputeGraph &graph) = 0;
 
-  // get attributes of graph optimizer
+  // get attribute of graph optimizer
   virtual Status GetAttributes(GraphOptimizerAttribute &attrs) const = 0;
 
   // optimize streamed Graph

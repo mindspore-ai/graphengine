@@ -31,7 +31,8 @@ namespace ge {
 * @li values:A `Tensor`. Must have the same type as `sorted_x`.
 
 *@par Attributes:
-*@li out_type:An optional `DType` from: `int32, int64`. Defaults to `int32`.
+*@li out_type:An optional `DType` from: `int32, int64`. \n
+Defaults to `int32`.
 
 *@par Outputs:
 *y: A `Tensor` of type `out_type`.
@@ -60,132 +61,115 @@ REG_OP(LowerBound)
 *@brief Reverses variable length slices.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor, num_lower and num_upper can be zero-dimensional scalar. Inputs include: \n
-* @li x:A Tensor. The input to reverse.
-* @li seq_lengths:A Tensor. Must be one of the following types: int32, int64. 1-D.
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+are 0D scalars.
+* @li x: A Tensor. The input to reverse.
+* @li seq_lengths: A 1D Tensor of type int32 or int64.
 
 *@par Attributes:
-*@li seq_dim:An optional int. Defaults to 0. The dimension along which reversal is performed.
-*@li batch_dim:An optional int. Defaults to 0. The dimension along which reversal is performed.
+*@li seq_dim: An optional int. Defaults to "0". The dimension along which \n
+reversal is performed.
+*@li batch_dim: An optional int. Defaults to "0". The dimension along which \n
+reversal is performed.
 
 *@par Outputs:
-*y: Rank k tensor of the same shape as input. The extracted banded tensor.
+*y: A rank k tensor. Has the same shape as input. The extracted banded tensor.
 
 *@attention Constraints: \n
-*-The implementation for ReverseSequence on Ascend uses AI CPU, with bad performance.
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*ReverseSequence runs on the Ascend AI CPU, which delivers poor performance.
 */
 
 REG_OP(ReverseSequence)
     .INPUT(x,
         TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
-        DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE}))
+        DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .INPUT(seq_lengths, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y,
         TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
-        DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE}))
+        DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .REQUIRED_ATTR(seq_dim, Int)
     .ATTR(batch_dim, Int, 0)
     .OP_END_FACTORY_REG(ReverseSequence)
 
 /**
-*@brief Copy a tensor setting everything outside a central band in each innermost matrix.
+*@brief Copies a tensor setting everything outside a central band in each innermost matrix.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor, num_lower and num_upper can be zero-dimensional scalar. Inputs include: \n
-* @li x:Rank `k` tensor.
-* @li num_lower:0-D tensor. Number of superdiagonals to keep. If negative, keep entire upper triangle.
-* @li num_upper:0-D tensor. Number of superdiagonals to keep. If negative, keep entire upper triangle.
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+are 0D scalars.
+* @li x: A rank k tensor.
+* @li num_lower: A 0D tensor. Number of superdiagonals to keep. If negative, \n
+keeps entire upper triangle.
+* @li num_upper: A 0D tensor. Number of superdiagonals to keep. If negative, \n
+keeps entire upper triangle.
 
 *@par Outputs:
-*y: Rank k tensor of the same shape as input. The extracted banded tensor.
+*y: A rank k tensor. Has the same shape as input. The extracted banded tensor.
 
 *@attention Constraints: \n
-*-The implementation for MatrixBandPart on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*MatrixBandPart runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(MatrixBandPart)
     .INPUT(x, TensorType({ DT_INT8, DT_UINT8, \
            DT_INT16, DT_UINT16, DT_INT32, DT_INT64,
-           DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL }))
+           DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL,
+           DT_COMPLEX64, DT_COMPLEX128 }))
     .INPUT(num_lower, TensorType({ DT_INT32, DT_INT64 }))
     .INPUT(num_upper, TensorType({ DT_INT32, DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL }))
+           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL,
+           DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(MatrixBandPart)
 
 /**
-*@brief Finds unique elements in a 1-D tensor.
+*@brief Finds unique elements in a 1D tensor.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor, num_lower and num_upper can be zero-dimensional scalar. Inputs include: \n
-*x:1-D tensor.
+*x: 1D tensor. \n
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+are 0D scalars.
 
 *@par Attributes:
-*out_idx:An optional DType from: int32, int64. Defaults to int32. \n
+*out_idx: An optional DType from: "int32, int64". \n
+Defaults to "int32".
 
 *@par Outputs:
-*@li y:A Tensor. Has the same type as x.
-*@li idx:A Tensor of type out_idx.
-*@li count:A Tensor of type out_idx.
+*@li y: A Tensor. Has the same type as "x".
+*@li idx: A Tensor of type "out_idx".
+*@li count: A Tensor of type "out_idx".
 
 *@attention Constraints: \n
-*-The implementation for UniqueWithCounts on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UniqueWithCounts runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(UniqueWithCounts)
     .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
     .OUTPUT(idx, TensorType({ DT_INT32, DT_INT64 }))
     .OUTPUT(count, TensorType({ DT_INT32, DT_INT64 }))
     .REQUIRED_ATTR(out_idx, Type)
     .OP_END_FACTORY_REG(UniqueWithCounts)
 
 /**
-*@brief Finds unique elements in a 1-D tensor.
+*@brief Finds unique elements in a 1D tensor.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor, num_lower and num_upper can be zero-dimensional scalar. Inputs include: \n
-*x:1-D tensor.
+*x: 1D tensor. \n
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+are 0D scalars.
 
 *@par Attributes:
-*out_idx:An optional DType from: int32, int64. Defaults to int32.
+*out_idx: An optional DType from: "int32, int64". Defaults to "int32".
 
 *@par Outputs:
-*@li y:x in the unique output y.
-*@li idx:A tensor idx the same size as x that contains the index of each value of x.
+*@li y: "x" in the unique output "y".
+*@li idx: A tensor the same size as "x". The index of each value of "x".
 
 *@attention Constraints: \n
-*-The implementation for Unique on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*Unique runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(Unique)
@@ -198,29 +182,25 @@ REG_OP(Unique)
     .OP_END_FACTORY_REG(Unique)
 
 /**
-*@brief Finds unique elements in a 1-D tensor.
+*@brief Finds unique elements in a 1D tensor.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor, num_lower and num_upper can be zero-dimensional scalar. Inputs include: \n
-* @li x:1-D tensor.
-* @li axis:A `Tensor` of type `int32` (default: None). The axis of the Tensor to.
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+are 0D scalars. \n
+*Including:
+* @li x: 1D tensor.
+* @li axis: A Tensor of type int32. Defaults to "None".
 
 *@par Attributes:
-*out_idx:An optional DType from: int32, int64. Defaults to int32.
+*out_idx: An optional DType from: "int32, int64". \n
+Defaults to "int32".
 
 *@par Outputs:
-*@li y:x in the unique output y.
-*@li idx:A tensor idx the same size as x that contains the index of each value of x.
+*@li y: "x" in the unique output "y".
+*@li idx: A tensor the same size as "x". The index of each value of "x".
 
 *@attention Constraints: \n
-*-The implementation for UniqueExt2 on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UniqueExt2 runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(UniqueExt2)
@@ -237,21 +217,13 @@ REG_OP(UniqueExt2)
 *@brief Computes the inverse permutation of a tensor.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor. Inputs include: \n
-*x:K-D tensor.
+*x: A k-dimensional tensor. \n
 
 *@par Outputs:
-*y:1-D tensor.
+*y: A 1D tensor.
 
-*@attention Constraints:\n
-*-The implementation for InvertPermutation on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*@attention Constraints: \n
+*InvertPermutation runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(InvertPermutation)
@@ -263,24 +235,16 @@ REG_OP(InvertPermutation)
 *@brief Checks a tensor for NaN and Inf values.
 
 *@par Inputs:
-*The input x can be k-dimensional tensor. Inputs include: \n
-*x:The input tensor.
+*x: A k-dimensional tensor. \n
 
 *@par Attributes:
-*message:Prefix of the error message.
+*message: Prefix of the error message.
 
 *@par Outputs:
-*y:The output tensor.
+*y: The output tensor.
 
 *@attention Constraints: \n
-*-The implementation for CheckNumerics on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*CheckNumerics runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(CheckNumerics)
@@ -293,22 +257,17 @@ REG_OP(CheckNumerics)
 *@brief Converts an array of flat indices into a tuple of coordinate arrays.
 
 *@par Inputs:
-*The input indices can be 0-D or 1-D tensor, dims can be 1-D. Inputs include: \n
-* @li indices: A 0-D or 1-D int Tensor whose elements are indices into the flattened version of an array of dimensions dims.
-* @li dims:A Tensor. Must have the same type as indices. An 1-D int Tensor. The shape of the array to use for unraveling indices.
+*Input "indices" is a 0D or 1D tensor. Input "dims" is a 1D tensor. \n
+* @li indices: A 0D or 1D int Tensor whose elements are indices into \n
+the flattened version of an array of dimensions "dims".
+* @li dims: A 1D int Tensor of the same type as "indices". \n
+*The shape of the array to use for unraveling indices.
 
 *@par Outputs:
-*y:A Tensor. Has the same type as indices.
+*y: A Tensor. Has the same type as "indices".
 
 *@attention Constraints: \n
-*-The implementation for UnravelIndex on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UnravelIndex runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(UnravelIndex)
@@ -321,25 +280,18 @@ REG_OP(UnravelIndex)
 *@brief Applies upper_bound(sorted_search_values, values) along each row.
 
 *@par Inputs:
-*The input sorted_x can be 2-D tensor, values can be 2-D. Inputs include:
-* @li sorted_x: 2-D Tensor where each row is ordered.
-* @li values:2-D Tensor with the same numbers of rows as `sorted_x.
+*Inputs "sorted_x" and "values" are 2D tensors.
+* @li sorted_x: A 2D Tensor where each row is ordered.
+* @li values: A 2D Tensor with the same numbers of rows as "sorted_x.
 
 *@par Attributes:
-*out_type:sets the optional out_type attribute to value.
+*out_type: sets the optional out_type attribute to value.
 
 *@par Outputs:
-*y:A `Tensor` with the same shape as `values`.
+*y: A Tensor with the same shape as "values".
 
 *@attention Constraints: \n
-*-The implementation for UpperBound on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UpperBound runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(UpperBound)
@@ -352,101 +304,86 @@ REG_OP(UpperBound)
     .OP_END_FACTORY_REG(UpperBound)
 
 /**
-*@brief Finds unique elements in a 1-D tensor.
+*@brief Finds unique elements in a 1D tensor.
 
 *@par Inputs:
-*The input x can be 1-D vector, axis can be 1-D vector. Inputs include: \n
-* @li x:1-D tensor.
-* @li axis:1-D tensor.
+*Inputs "x" and "axis" are 1D vectors. \n
+* @li x: A 1D tensor.
+* @li axis: A 1D tensor.
 
 *@par Attributes:
-*out_idx:An optional DType from: int32, int64. Defaults to int32.
+*out_idx: An optional DType from: "int32, int64". \n
+Defaults to "int32".
 
 *@par Outputs:
-*@li y:x in the unique output y.
-*@li idx:A tensor idx the same size as x that contains the index of each value of x.
-*@li count:A tensor idx the same size as x that contains the index of each value of x.
+*@li y: "x" in the unique output "y".
+*@li idx: A tensor the same size as "x". The index of each value of "x".
+*@li count: A tensor the same size as "x". The index of each value of "x".
 
 *@attention Constraints: \n
-*-The implementation for UniqueWithCountsExt2 on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*UniqueWithCountsExt2 runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(UniqueWithCountsExt2)
     .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
     .INPUT(axis, TensorType({ DT_INT32, DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_STRING }))
     .OUTPUT(idx, TensorType({ DT_INT32, DT_INT64 }))
     .OUTPUT(count, TensorType({ DT_INT32, DT_INT64 }))
     .REQUIRED_ATTR(out_idx, Type)
     .OP_END_FACTORY_REG(UniqueWithCountsExt2)
 
 /**
-*@brief Fill the tensor with the mirror value.
+*@brief Fills the tensor with the mirror value.
 
 *@par Inputs:
-*The input x and paddings can be one-dimensional scalar. Inputs include: \n
-* @li x: input tensor to be padded.
-* @li paddings: A two-column matrix specifying the padding sizes. The number of rows must be the same as the rank of `input`.
+*Inputs "x" and "paddings" are 1D scalars. \n
+* @li x: The tensor to be padded.
+* @li paddings: A two-column matrix specifying the padding sizes. \n
+The number of rows Has the same rank as "x".
 
 *@par Attributes:
-*mode:Either `REFLECT` or `SYMMETRIC`. In reflect mode the padded regions do not include the borders, while in symmetric mode the padded regions do include the borders.
+*mode: Either "REFLECT" or "SYMMETRIC". In reflect mode the padded regions \n
+do not include the borders, while in symmetric mode the padded regions \n
+do include the borders.
 
 *@par Outputs:
 *y: The padded tensor.
 
 *@attention Constraints: \n
--The implementation for MirrorPad on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*MirrorPad runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(MirrorPad)
     .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL }))
+      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, \
+      DT_COMPLEX64, DT_COMPLEX128 }))
     .INPUT(paddings, TensorType({ DT_INT32, DT_INT64 }))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL }))
+      DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_BOOL, \
+      DT_COMPLEX64, DT_COMPLEX128 }))
     .REQUIRED_ATTR(mode, String)
     .OP_END_FACTORY_REG(MirrorPad)
 
 /**
-*@brief Calculate the difference between two numbers or a list of strings.
+*@brief Calculates the difference between two numbers or a list of strings.
 
 *@par Inputs:
-*The input x and y can be one-dimensional vector. Inputs include: \n
-* @li x:A Tensor. 1-D. Values to keep.
-* @li y:A Tensor. Must have the same type as x. 1-D. Values to remove.
+*Inputs "x" and "y" are 1D vectors. \n
+* @li x: A Tensor. 1D. Values to keep.
+* @li y: A Tensor. Must have the same type as x. 1D. Values to remove.
 
 *@par Attributes:
-*out_idx:An optional DType from: int32, int64. Defaults to int32.
+*out_idx: An optional DType from: "int32, int64". Defaults to "int32".
 
 *@par Outputs:
-*@li out:A Tensor. Has the same type as x.
-*@li idx:A Tensor of type out_idx.
+*@li out: A Tensor. Has the same type as "x".
+*@li idx: A Tensor of type "out_idx".
 
-*@attention Constraints:\n
--The implementation for ListDiff on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*@attention Constraints: \n
+*ListDiff runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(ListDiff)
@@ -465,9 +402,7 @@ REG_OP(ListDiff)
 Operator Const has the same definition as operator Constant.
 
 *@par Attributes:
-*@li value: Required. The value and type of the resulting tensor.
-*@li dtype: Optional. The type of the elements of the resulting tensor. \n
-The data type specified by this parameter must be the same as that of the "value" attribute.
+*value: Required. The value and type of the resulting tensor, and no restrictions on type.
 
 *@par Outputs:
 *y: A constant tensor.
@@ -475,17 +410,14 @@ The data type specified by this parameter must be the same as that of the "value
 REG_OP(Const)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
-    .ATTR(value, Tensor, Tensor())  // This is the value of the const op
-    .ATTR(dtype, Int, 0)
+    .ATTR(value, Tensor, Tensor())
     .OP_END_FACTORY_REG(Const)
 
 /**
 *@brief Creates a constant tensor for training.
 
 *@par Attributes:
-*@li value: Required. The value and type of the resulting tensor.
-*@li dtype: Optional. The type of the elements of the resulting tensor. \n
-The data type specified by this parameter must be the same as that of the "value" attribute.
+*value: Required. The value and type of the resulting tensor, and no restrictions on type.
 
 *@par Outputs:
 *y: The constant tensor.
@@ -493,8 +425,7 @@ The data type specified by this parameter must be the same as that of the "value
 REG_OP(Constant)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
-    .ATTR(value, Tensor, Tensor())  // This is the value of the constant op
-    .ATTR(dtype, Int, 0)
+    .ATTR(value, Tensor, Tensor())
     .OP_END_FACTORY_REG(Constant)
 
 /**
@@ -649,8 +580,6 @@ REG_OP(ExpandDims)
     .INPUT(axis, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
         DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
-    .ATTR(T, Int, 0)
-    .ATTR(Tdim, Int, 0)
     .OP_END_FACTORY_REG(ExpandDims)
 
 /**
@@ -692,8 +621,6 @@ REG_OP(Reshape)
 REG_OP(Squeeze)
     .INPUT(x, TensorType::ALL())
     .OUTPUT(y, TensorType::ALL())
-    .ATTR(T, Int, 0)
-    .ATTR(squeeze_dims, ListInt, {})
     .ATTR(axis, ListInt, {})
     .OP_END_FACTORY_REG(Squeeze)
 
@@ -728,14 +655,25 @@ REG_OP(Size)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
         DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_INT32,DT_INT64}))
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
-    .ATTR(out_type, Int, DT_INT32)
+    .ATTR(dtype, Int, DT_INT32)
     .OP_END_FACTORY_REG(Size)
 
+/**
+*@brief Input data for other operators.
+
+*@par Inputs:
+*x: A tensor.
+
+*@par Attributes:
+*index: Index of the input tensor of type int32 or int64.
+
+*@par Outputs:
+*y: A tensor.
+
+*/
 REG_OP(Data)
-    .INPUT(data, TensorType::ALL())
-    .OUTPUT(out, TensorType::ALL())
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
     .ATTR(index, Int, 0)
     .OP_END_FACTORY_REG(Data)
 
@@ -790,9 +728,7 @@ REG_OP(Shape)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
         DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_INT32, DT_INT64}))
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
-    .ATTR(out_type, Int, DT_INT32)
+    .ATTR(dtype, Int, DT_INT32)
     .OP_END_FACTORY_REG(Shape)
 
 /**
@@ -811,9 +747,7 @@ REG_OP(ShapeN)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
         DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .DYNAMIC_OUTPUT(y, TensorType({DT_INT32, DT_INT64}))
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
-    .ATTR(out_type, Int, DT_INT32)
+    .ATTR(dtype, Int, DT_INT32)
     .OP_END_FACTORY_REG(ShapeN)
 
 /**
@@ -838,38 +772,51 @@ REG_OP(Empty)
     .OP_END_FACTORY_REG(Empty)
 
 /**
-*@brief Gradient op for MirrorPad op. This op folds a mirror-padded tensor.
+*@brief Gradient op for MirrorPad op. Folds a mirror-padded tensor.
 
 *@par Inputs:
-*The input x and y can be one-dimensional vector. Inputs include: \n
-* @li x:A Tensor. The input tensor to be folded.
-* @li paddings:A Tensor. Must be one of the following types: int32, int64. A two-column matrix specifying the padding sizes.
+*Inputs "x" and "y" are 1D vectors. \n
+* @li x: A Tensor. The input tensor to be folded.
+* @li paddings: A Tensor of type int32 or int64. A two-column matrix \n
+specifying the padding sizes.
 
 *@par Attributes:
-*mode:A string from: "REFLECT", "SYMMETRIC". The mode used in the MirrorPad op.
+*mode: A string from: "REFLECT", "SYMMETRIC". The mode used in the MirrorPad op.
 
 *@par Outputs:
-*y:A Tensor. Has the same type as x.
+*y: A Tensor. Has the same type as "x".
 
 *@attention Constraints: \n
--The implementation for MirrorPadGrad on Ascend uses AI CPU, with bad performance. \n
-
-*@par Quantization supported or not
-*Not supported
-*@par Quantized inference supported or not
-*Supported
-*@par L2 convergence supported or not
-*@par Multiple batches supported or not
+*MirrorPadGrad runs on the Ascend AI CPU, which delivers poor performance. \n
 */
 
 REG_OP(MirrorPadGrad)
     .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-              DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+              DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, \
+              DT_COMPLEX64, DT_COMPLEX128 }))
     .INPUT(paddings, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-              DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+              DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, \
+              DT_COMPLEX64, DT_COMPLEX128 }))
     .REQUIRED_ATTR(mode, String)
     .OP_END_FACTORY_REG(MirrorPadGrad)
+
+/**
+*@brief Returns locations of nonzero / true values in a tensor.
+
+*@par Inputs:
+*Including: \n
+*x: A Tensor. Must be one of the following types: \n
+DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \n
+DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL.
+
+*@par Outputs:
+*y: A Tensor of type DT_INT64.
+
+*@attention Constraints:\n
+*Where runs on the Ascend AI CPU, which delivers poor performance.\n
+
+*/
 
 REG_OP(Where)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
@@ -877,6 +824,42 @@ REG_OP(Where)
     .OUTPUT(y, TensorType({DT_INT64}))
     .OP_END_FACTORY_REG(Where)
 
+/**
+*    multiple output blobs for feeding a blob into multiple output layers. \n
+*The Split node is removed from the graph after the split operation is completed.
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int8, int32.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".It's required and the value should equal to output_num.
+*/
+REG_OP(Copy)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .OP_END_FACTORY_REG(Copy);
+
+/**
+*@brief Generates fingerprint values.
+
+*@par Inputs:
+*@li data: Must have rank 1 or higher.
+*@li method: Fingerprint method used by this op. Currently available method is \n
+`farmhash::fingerprint64`.
+
+*@par Outputs:
+y: A two-dimensional `Tensor` of type `tf.uint8`. The first dimension equals to \n
+`data`'s first dimension, and the second dimension size depends on the \n
+fingerprint algorithm.
+
+*/
+
+REG_OP(Fingerprint)
+    .INPUT(data, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .INPUT(method, TensorType({DT_STRING}))
+    .OUTPUT(y, TensorType({DT_UINT8}))
+    .OP_END_FACTORY_REG(Fingerprint)
 }  // namespace ge
 
 #endif  // GE_OP_ARRAY_OPS_H_

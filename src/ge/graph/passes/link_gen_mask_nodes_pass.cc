@@ -17,9 +17,6 @@
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 
 #include <set>
-#include <string>
-#include <vector>
-#include <map>
 
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
@@ -71,8 +68,8 @@ Status LinkGenMaskNodesPass::Run(ComputeGraphPtr graph) {
     auto dest_anchor = dest_node->GetInControlAnchor();
     GE_CHECK_NOTNULL(dest_anchor);
 
-    graphStatus status = src_anchor->LinkTo(dest_anchor);
-    if (status != GRAPH_SUCCESS) {
+    graphStatus status_link_to = src_anchor->LinkTo(dest_anchor);
+    if (status_link_to != GRAPH_SUCCESS) {
       GELOGE(FAILED, "Link from %s to %s failed.", src_node->GetName().c_str(), dest_node->GetName().c_str());
       return FAILED;
     }
@@ -93,7 +90,7 @@ bool LinkGenMaskNodesPass::AreAllInputsConst(const NodePtr &node) const {
   return true;
 }
 
-void LinkGenMaskNodesPass::GetAllGenMaskNodes(const ComputeGraphPtr &graph, vector<NodePtr> &gen_mask_nodes) const {
+void LinkGenMaskNodesPass::GetAllGenMaskNodes(ComputeGraphPtr graph, vector<NodePtr> &gen_mask_nodes) const {
   set<NodePtr> nodes_set;
   for (const NodePtr &node : graph->GetDirectNode()) {
     if (node->GetType() != DROPOUTDOMASK) {

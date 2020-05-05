@@ -20,12 +20,12 @@
 
 #include "common/fp16_t.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/math/math_util.h"
 #include "common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
-
 
 namespace ge {
 namespace {
@@ -35,6 +35,7 @@ const size_t kStridedSliceInputIndex0 = 0;
 const size_t kStridedSliceInputIndex1 = 1;
 const size_t kStridedSliceInputIndex2 = 2;
 const size_t kStridedSliceInputIndex3 = 3;
+const int32_t kDefaultSrideSize = 1;
 }  // namespace
 Status StridedSliceKernel::CheckAndGetAttr(const OpDescPtr &attr, const std::vector<ConstGeTensorPtr> &input,
                                            Attr &args) {
@@ -72,16 +73,18 @@ Status StridedSliceKernel::CheckAndGetAttr(const OpDescPtr &attr, const std::vec
     GELOGE(PARAM_INVALID, "get shrink_axis_mask attr failed.");
     return PARAM_INVALID;
   }
-  if (!(ellipsis_mask == 0 && new_axis_mask == 0)) {
-    GELOGE(NOT_CHANGED, "ellipsis_mask or new_axis_mask must be 0 with optimizer.");
+  if ((ellipsis_mask != 0) || (new_axis_mask != 0)) {
+    GELOGW("ellipsis_mask or new_axis_mask must be 0 with optimizer.");
     return NOT_CHANGED;
   }
-  DataType data_type = attr->GetInputDesc(kStridedSliceInputIndex0).GetDataType();
-  if (!(data_type == DT_FLOAT || data_type == DT_INT32)) {
+  const auto &input_desc = attr->MutableInputDesc(kStridedSliceInputIndex0);
+  GE_CHECK_NOTNULL(input_desc);
+  DataType data_type = input_desc->GetDataType();
+  if ((data_type != DT_FLOAT) && (data_type != DT_INT32)) {
     GELOGW(
-        "Data type of StridedSlice OP must be float or int32."
-        "Constant folding will not be carried out in this condition"
-        "which might affect the time performance but not the accuracy");
+      "Data type of StridedSlice OP must be float or int32."
+      "Constant folding will not be carried out in this condition"
+      "which might affect the time performance but not the accuracy");
   }
   args.begin_mask = begin_mask;
   args.end_mask = end_mask;
@@ -103,8 +106,8 @@ Status StridedSliceKernel::CheckAndGetAttr(const OpDescPtr &attr, const std::vec
 }
 Status StridedSliceKernel::CheckWeight(const ConstGeTensorPtr &weight0, const ConstGeTensorPtr &weight1,
                                        const ConstGeTensorPtr &weight2, const ConstGeTensorPtr &weight3) const {
-  if (weight0 == nullptr || weight1 == nullptr || weight2 == nullptr || weight3 == nullptr) {
-    GELOGE(PARAM_INVALID, "weight is nullptr.");
+  if ((weight0 == nullptr) || (weight1 == nullptr) || (weight2 == nullptr) || (weight3 == nullptr)) {
+    GELOGW("weight is nullptr.");
     return PARAM_INVALID;
   }
   if (!(weight1->GetTensorDesc().GetDataType() == DT_INT32 && weight2->GetTensorDesc().GetDataType() == DT_INT32 &&
@@ -118,25 +121,26 @@ Status StridedSliceKernel::CheckWeight(const ConstGeTensorPtr &weight0, const Co
   size_t weight1_size = weight1->GetData().size() / sizeof(int32_t);
   size_t weight2_size = weight2->GetData().size() / sizeof(int32_t);
   size_t weight3_size = weight3->GetData().size() / sizeof(int32_t);
-  if (weight0_size == 0 || weight1_size == 0 || weight2_size == 0 || weight3_size == 0) {
+  if ((weight0_size == 0) || (weight1_size == 0) || (weight2_size == 0) || (weight3_size == 0)) {
     GELOGW("Data size of inputs is 0.");
     return PARAM_INVALID;
   }
 
   // check dim size
   size_t weight0_dim_size = weight0->GetTensorDesc().GetShape().GetDimNum();
-  if (!(weight0_dim_size == weight1_size && weight0_dim_size == weight2_size && weight0_dim_size == weight3_size)) {
-    GELOGE(PARAM_INVALID, "The sizes of begin, end and stride is not supported.");
+  if (!((weight0_dim_size >= weight1_size) && (weight1_size == weight2_size) && (weight1_size == weight3_size))) {
+    GELOGW("The sizes of begin, end and stride is not supported.");
     return NOT_CHANGED;
   }
 
   return SUCCESS;
 }
 
-void StridedSliceKernel::MaskCal(const bool &begin_mask_flag, const bool &end_mask_flag, const bool &shrink_mask_flag,
-                                 int32_t &begin_i, int32_t &end_i, int32_t &dim_i) const {
+Status StridedSliceKernel::MaskCal(const bool &begin_mask_flag, const bool &end_mask_flag, const bool &shrink_mask_flag,
+                                   int32_t &begin_i, int32_t &end_i, int32_t &dim_i) const {
   if (shrink_mask_flag) {
     begin_i = (begin_i < 0 ? (dim_i + begin_i) : begin_i);
+    FMK_INT32_ADDCHECK(begin_i, kNumOne);
     end_i = begin_i + kNumOne;
   } else {
     if (begin_mask_flag) {
@@ -149,6 +153,18 @@ void StridedSliceKernel::MaskCal(const bool &begin_mask_flag, const bool &end_ma
     } else {
       end_i = (end_i < 0 ? (dim_i + end_i) : end_i);
     }
+  }
+  return SUCCESS;
+}
+
+void StridedSliceKernel::GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, const Attr &args,
+                                       vector<int64_t> &v_dims) {
+  for (uint32_t k = 0; k < dims_size; k++) {
+    bool shrink_mask_i = (static_cast<uint32_t>(args.shrink_axis_mask) & (1 << k));
+    if (shrink_mask_i) {
+      continue;
+    }
+    v_dims.push_back(output_dims[k]);
   }
 }
 
@@ -183,6 +199,7 @@ Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<g
   std::vector<int64_t> begin_vec;
   std::vector<int64_t> output_dims;
   std::vector<int64_t> stride_vec;
+  int64_t dim_final;
   for (size_t i = 0; i < dim_size; i++) {
     int32_t begin_i = begin[i];
     int32_t end_i = end[i];
@@ -193,20 +210,32 @@ Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<g
     bool begin_mask_i = (static_cast<uint32_t>(args.begin_mask) & (1 << i_temp));
     bool end_mask_i = (static_cast<uint32_t>(args.end_mask) & (1 << i_temp));
     bool shrink_mask_i = (static_cast<uint32_t>(args.shrink_axis_mask) & (1 << i_temp));
-    MaskCal(begin_mask_i, end_mask_i, shrink_mask_i, begin_i, end_i, dim_i);
-    if (stride_i <= 0 || end_i <= begin_i) {
-      GELOGE(INTERNAL_ERROR, "Param for stride_slice is invalid.");
+    ret = MaskCal(begin_mask_i, end_mask_i, shrink_mask_i, begin_i, end_i, dim_i);
+    if (ret != SUCCESS) {
+      GELOGW("MaskCal failed, because of data overflow.");
       return NOT_CHANGED;
     }
-
-    int64_t dim_final = (end_i - begin_i) / stride_i;
+    if (stride_i == 0) {
+      stride_i = kDefaultSrideSize;
+    } else if (stride_i < 0) {
+      stride_i = -stride_i;
+      begin_i = x_shape.GetDim(i) - begin_i - 1;
+      end_i = x_shape.GetDim(i) - end_i - 1;
+    }
+    if ((begin_i == 0) && (end_i == 0)) {
+      dim_final = x_shape.GetDim(i);
+    } else {
+      dim_final = abs(end_i - begin_i) / stride_i;
+    }
     output_dims.push_back(dim_final);
     input_dims.push_back(x_shape.GetDim(i));
     begin_vec.push_back(begin_i);
     stride_vec.push_back(stride_i);
   }
 
-  GeTensorPtr output_ptr = MakeShared<GeTensor>();
+  // Index 0 can always gets a GeTensorDesc object from any OpDescPtr.
+  auto output_tensor_desc = attr->GetOutputDesc(0);
+  GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "MakeShared GeTensor failed, node name %s.", attr->GetName().c_str());
     return NOT_CHANGED;
@@ -226,13 +255,7 @@ Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<g
 
   uint32_t final_dim_size = static_cast<uint32_t>(output_dims.size());
   vector<int64_t> v_dims;
-  for (uint32_t k = 0; k < final_dim_size; k++) {
-    bool shrink_mask_i = (static_cast<uint32_t>(args.shrink_axis_mask) & (1 << k));
-    if (shrink_mask_i) {
-      continue;
-    }
-    v_dims.push_back(output_dims[k]);
-  }
+  GetOutputDims(final_dim_size, output_dims, args, v_dims);
   t_d.SetShape(GeShape(v_dims));
   v_output.push_back(output_ptr);
   GELOGI("StridedSliceKernel success.");

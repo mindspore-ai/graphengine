@@ -70,11 +70,11 @@ class UtestGeExecutor : public testing::Test {
 TEST_F(UtestGeExecutor, fail_UnloadModel_model_manager_stop_unload_error) {
   uint32_t model_id = 1;
   ge::GeExecutor ge_executor;
-  ge_executor.is_init_ = true;
+  ge_executor.isInit_ = true;
   ge::Status ret = ge_executor.UnloadModel(model_id);
   EXPECT_EQ(ge::PARAM_INVALID, ret);
 
-  ge_executor.is_init_ = false;
+  ge_executor.isInit_ = false;
   ret = ge_executor.UnloadModel(model_id);
   EXPECT_EQ(ge::GE_EXEC_NOT_INIT, ret);
 }

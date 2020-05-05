@@ -34,13 +34,14 @@ const size_t kConcatV2InputNum = 3;
 const std::set<DataType> concatv2_supported_type = {DT_INT32, DT_FLOAT};
 
 template <typename T>
-void GetOutputData(std::vector<T> &y_data, int loop, size_t &input_size, const std::vector<ConstGeTensorPtr> &input) {
-  for (int i = 0; i < loop; i++) {
+void GetOutputData(std::vector<T> &y_data, int64_t loop, size_t &input_size,
+                   const std::vector<ConstGeTensorPtr> &input) {
+  for (int64_t i = 0; i < loop; i++) {
     for (size_t k = 0; k < input_size; k++) {
       GeShape datak_shape = input.at(k)->GetTensorDesc().GetShape();
       const T *datak = reinterpret_cast<const T *>(input.at(k)->GetData().data());
-      int gapk = datak_shape.GetShapeSize() / loop;  // [2,3] is 6/loop
-      for (int j = 0; j < gapk; j++) {
+      int64_t gapk = datak_shape.GetShapeSize() / loop;  // [2,3] is 6/loop
+      for (int64_t j = 0; j < gapk; j++) {
         y_data.push_back(datak[j + gapk * i]);
       }
     }
@@ -82,14 +83,16 @@ Status ConcatV2Kernel::Compute(const ge::OpDescPtr op_desc_ptr, const vector<ge:
   std::vector<int32_t> y_data_int32_t;
   std::vector<float> y_data_float;
 
-  GeTensorPtr output_ptr = MakeShared<GeTensor>();
+  // Index 0 can always gets a GeTensorDesc object from any OpDescPtr.
+  auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
+  GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "MakeShared failed.");
     return MEMALLOC_FAILED;
   }
 
   GeShape data0_shape = tensor0->GetTensorDesc().GetShape();
-  int loop = 1;
+  int64_t loop = 1;
   for (int i = 0; i < tidx; i++) {
     loop *= data0_shape.GetDim(i);
   }

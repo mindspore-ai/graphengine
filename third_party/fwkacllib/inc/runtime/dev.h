@@ -21,10 +21,10 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 typedef struct tagRTDeviceInfo {
-  uint8_t env_type; /* 0: FPGA  1: EMU 2: ESL */
+  uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
   uint32_t ctrl_cpu_ip;
   uint32_t ctrl_cpu_id;
   uint32_t ctrl_cpu_core_num;
@@ -40,6 +40,13 @@ typedef struct tagRTDeviceInfo {
   uint32_t ts_num;
 #endif
 } rtDeviceInfo_t;
+
+typedef enum tagRtRunMode {
+  RT_RUN_MODE_OFFLINE = 0,
+  RT_RUN_MODE_ONLINE = 1,
+  RT_RUN_MODE_AICPU_SCHED = 2,
+  RT_RUN_MODE_RESERVED
+} rtRunMode;
 
 /**
  * @ingroup dvrt_dev
@@ -198,6 +205,14 @@ RTS_API rtError_t rtSetExceptCallback(rtErrorCallback callback);
  */
 RTS_API rtError_t rtSetTSDevice(uint32_t tsId);
 
+/**
+ * @ingroup dvrt_dev
+ * @brief init aicpu executor
+ * @param [out] runtime run mode
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_DRV_ERR for can not get run mode
+ */
+RTS_API rtError_t rtGetRunMode(rtRunMode *mode);
 #ifdef __cplusplus
 }
 #endif

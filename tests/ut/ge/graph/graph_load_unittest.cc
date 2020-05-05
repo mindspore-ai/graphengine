@@ -73,9 +73,7 @@ TEST_F(UtestGraphGraphLoad, load_graph_param_invalid1) {
 TEST_F(UtestGraphGraphLoad, load_graph_param_invalid2) {
   std::mutex sync_run_mutex;
   std::condition_variable condition;
-  std::shared_ptr<GraphModelListener> listener = std::make_shared<GraphModelListener>();
-  listener->mutex_ = &sync_run_mutex;
-  listener->condition_ = &condition;
+  std::shared_ptr<GraphModelListener> listener = std::make_shared<GraphModelListener>(sync_run_mutex, condition);
 
   SubGraphInfo sub_graph1;
   ge::SubGraphInfoPtr sub_graph_ptr1 = std::make_shared<SubGraphInfo>(sub_graph1);

@@ -18,7 +18,6 @@
 #define GE_GRAPH_PASSES_VARIABLE_REF_DELETE_OP_PASS_H_
 
 #include <string>
-
 #include "framework/common/ge_inner_error_codes.h"
 #include "inc/graph_pass.h"
 
@@ -28,8 +27,7 @@ class VariableRefDeleteOpPass : public GraphPass {
   Status Run(ge::ComputeGraphPtr graph);
 
  private:
-  Status DealVariableRef(ge::ComputeGraphPtr &graph,
-                         ge::NodePtr &variable_ref,
+  Status DealVariableRef(ge::ComputeGraphPtr &graph, ge::NodePtr &variable_ref,
                          const std::string &ref_var_src_var_name);
 };
 }  // namespace ge

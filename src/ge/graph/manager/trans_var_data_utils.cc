@@ -28,10 +28,10 @@
 
 namespace ge {
 Status TransVarDataUtils::SyncVarData2BroadCast(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,
-                                                uint8_t *dst_addr, uint32_t dst_addr_size, uint64_t session_id) {
+                                                uint8_t *dst_addr, int64_t dst_addr_size, uint64_t session_id) {
   GE_CHK_BOOL_RET_STATUS(dst_addr != nullptr, FAILED, "dst addr is null. ");
   uint8_t *src_host_addr = nullptr;
-  uint32_t src_addr_size = 0;
+  int64_t src_addr_size = 0;
   GE_MAKE_GUARD_RTMEM(src_host_addr);
   GE_CHK_STATUS_RET(SyncTensorToHost(var_name, src_tensor_desc, &src_host_addr, src_addr_size, session_id));
 
@@ -42,7 +42,7 @@ Status TransVarDataUtils::SyncVarData2BroadCast(const string &var_name, const ge
   return SUCCESS;
 }
 
-Status TransVarDataUtils::SyncBroadCastData2Var(uint8_t *src_addr, uint32_t src_addr_size, const string &var_name,
+Status TransVarDataUtils::SyncBroadCastData2Var(uint8_t *src_addr, int64_t src_addr_size, const string &var_name,
                                                 const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id) {
   GE_CHK_BOOL_RET_STATUS(src_addr != nullptr, FAILED, "src addr is null. ");
   uint8_t *host_addr = nullptr;
@@ -51,26 +51,26 @@ Status TransVarDataUtils::SyncBroadCastData2Var(uint8_t *src_addr, uint32_t src_
   GE_CHK_RT_RET(rtMemcpy(host_addr, src_addr_size, src_addr, src_addr_size, RT_MEMCPY_DEVICE_TO_HOST));
 
   GE_CHK_STATUS_RET(
-      SyncTensorToDevice(var_name, reinterpret_cast<uint8_t *>(host_addr), src_addr_size, dst_tensor_desc, session_id));
+    SyncTensorToDevice(var_name, reinterpret_cast<uint8_t *>(host_addr), src_addr_size, dst_tensor_desc, session_id));
 
   return SUCCESS;
 }
 
 Status TransVarDataUtils::SyncTensorToHost(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,
-                                           uint8_t **host_addr, uint32_t &src_tensor_size, uint64_t session_id) {
+                                           uint8_t **host_addr, int64_t &src_tensor_size, uint64_t session_id) {
   GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(src_tensor_desc, src_tensor_size), "get size from TensorDesc failed");
 
   uint8_t *src_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, src_tensor_desc, &src_addr));
-  uint8_t *mem_addr =
-      src_addr - static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(0)->GetVarMemLogicBase())) +
-      static_cast<int64_t>(
-          reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
+  uint8_t *mem_addr = src_addr -
+                      static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(0)->GetVarMemLogicBase())) +
+                      static_cast<int64_t>(
+                        reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
   GE_CHK_RT_RET(rtMallocHost(reinterpret_cast<void **>(host_addr), src_tensor_size));
 
   GE_CHK_RT_RET(rtMemcpy(*host_addr, src_tensor_size, mem_addr, src_tensor_size, RT_MEMCPY_DEVICE_TO_HOST));
 
-  GELOGI("SyncTensorToHost var_name %s, src_tensor_size %u", var_name.c_str(), src_tensor_size);
+  GELOGI("SyncTensorToHost var_name %s, src_tensor_size %ld", var_name.c_str(), src_tensor_size);
   return SUCCESS;
 }
 
@@ -78,10 +78,10 @@ Status TransVarDataUtils::SyncTensorToDevice(const string &var_name, const uint8
                                              const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id) {
   uint8_t *dst_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, dst_tensor_desc, &dst_addr));
-  uint8_t *mem_addr =
-      dst_addr - static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(0)->GetVarMemLogicBase())) +
-      static_cast<int64_t>(
-          reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
+  uint8_t *mem_addr = dst_addr -
+                      static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(0)->GetVarMemLogicBase())) +
+                      static_cast<int64_t>(
+                        reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
   GE_CHK_RT_RET(rtMemcpy(mem_addr, addr_size, host_addr, addr_size, RT_MEMCPY_HOST_TO_DEVICE));
 
   GELOGI("SyncTensorToDevice var_name %s, addr_size %u", var_name.c_str(), addr_size);

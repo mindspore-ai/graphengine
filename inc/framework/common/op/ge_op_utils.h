@@ -18,7 +18,6 @@
 #define INC_FRAMEWORK_COMMON_OP_GE_OP_UTILS_H_
 
 #include <cce/dnn.h>
-
 #include <memory>
 #include <vector>
 
@@ -55,6 +54,15 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t SWITCH_FA
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t SWITCH_TRUE_OUTPUT;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t SWITCH_DATA_INPUT;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t SWITCH_PRED_INPUT;
+
+// FunctionOp
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t IF_COND_INPUT;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t FOR_START_INPUT;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t FOR_LIMIT_INPUT;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t FOR_DELTA_INPUT;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const uint32_t FOR_DATA_INPUT;
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const int NORMAL_TENSOR_SIZE;
 
 class OpUtils {
  public:
@@ -164,15 +172,23 @@ class OpUtils {
   ///
   static Status ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params);
   static Status TransferDim(const std::vector<int64_t> &dim, std::vector<int64_t> &dim_vector);
-  static void SliceData(std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output, int64_t begin,
-                        int64_t out_dim, int64_t stride);
+  template <typename T>
+  static void SliceData(const std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output,
+                        int64_t begin, int64_t out_dim, int64_t stride);
+  template <typename T>
+  static Status SetDataByDataType(size_t out_size, const std::vector<char *> &chunk_input,
+                                  const std::vector<char *> &chunk_output, GeTensor *output);
+  template <typename T>
+  static Status SetOutputSliceDataByDataType(void *data, int64_t data_size, const std::vector<int64_t> &input_dims,
+                                             const std::vector<int64_t> &begin, const std::vector<int64_t> &output_dims,
+                                             ge::GeTensor *output, const std::vector<int64_t> &stride);
   static Status SetOutputSliceData(void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims,
                                    std::vector<int64_t> &begin, std::vector<int64_t> &output_dims, ge::GeTensor *output,
                                    std::vector<int64_t> &stride);
 
   ///
   /// @ingroup domi_omg
-  /// @brief Convert the convolution weight data from [h, w, c, k] to [k, c, h, w]
+  /// @brief Convert the convolutional weight data from [h, w, c, k] to [k, c, h, w]
   /// @param [in] input Weight data in HWCK format
   /// @param [in] H value of H dimension
   /// @param [in] W value of W dimension
@@ -183,7 +199,7 @@ class OpUtils {
   static void TransDataHWCK2KCHW(const void *input, int64_t H, int64_t W, int64_t C, int64_t K, void **output);
   ///
   /// @ingroup domi_omg
-  /// @brief Converts the convolution weight data from [k, c, h, w] to [h, w, c, k].
+  /// @brief Converts the convolutional weight data from [k, c, h, w] to [h, w, c, k].
   /// @param [in] input Weight data in HWCK format
   /// @param [in] K value of K dimension
   /// @param [in] C value of C dimension
@@ -222,7 +238,6 @@ using CceTensorDescriptorPtr = std::shared_ptr<CceTensorDescriptor>;
 class CceTensorDescriptor {
  public:
   explicit CceTensorDescriptor(ccTensorDescriptor_t cc_tensor);
-
   CceTensorDescriptor(const CceTensorDescriptor &) = delete;
   CceTensorDescriptor &operator=(const CceTensorDescriptor &) = delete;
 

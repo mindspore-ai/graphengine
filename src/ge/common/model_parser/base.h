@@ -28,40 +28,40 @@
 namespace ge {
 class ModelParserBase {
  public:
-  ///
-  /// @ingroup hiai
-  /// @brief constructor
-  ///
+  /**
+   * @ingroup hiai
+   * @brief constructor
+   */
   ModelParserBase();
-  ///
-  /// @ingroup hiai
-  /// @brief destructor
-  ///
+  /**
+   * @ingroup hiai
+   * @brief destructor
+   */
   ~ModelParserBase();
 
-  ///
-  /// @ingroup hiai
-  /// @brief Parsing a model file
-  /// @param [in] model_file  model path
-  /// @param [in] model_key   model secret key
-  /// @param [in] priority    modle priority
-  /// @param [out] model_data model data
-  /// @return Status  result
-  ///
+  /**
+   * @ingroup hiai
+   * @brief Parsing a model file
+   * @param [in] model_file  model path
+   * @param [in] model_key   model secret key
+   * @param [in] priority    modle priority
+   * @param [out] model_data model data
+   * @return Status  result
+   */
   static Status LoadFromFile(const char *model_file, const char *model_key, int32_t priority,
                              ge::ModelData &model_data);
 
-  ///
-  /// @ingroup domi_ome
-  /// @brief Parse model contents from the ModelData
-  /// @param [in] model  model data read from file
-  /// @param [out] model_data  address of the model data
-  /// @param [out] model_len  model actual length
-  /// If the input is an encrypted model, it needs to be deleted
-  /// @return SUCCESS success
-  /// @return others failure
-  /// @author
-  ///
+  /**
+   * @ingroup domi_ome
+   * @brief Parse model contents from the ModelData
+   * @param [in] model  model data read from file
+   * @param [out] model_data  address of the model data
+   * @param [out] model_len  model actual length
+   * If the input is an encrypted model, it needs to be deleted
+   * @return SUCCESS success
+   * @return others failure
+   * @author
+   */
   static Status ParseModelContent(const ge::ModelData &model, uint8_t *&model_data, uint32_t &model_len);
 };
 }  //  namespace ge

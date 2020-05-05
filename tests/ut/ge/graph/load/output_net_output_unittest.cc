@@ -94,7 +94,7 @@ TEST_F(UtestNetOutput, test_get_input_size) {
   builder.AddOutput(1);
   builder.Finish();
 
-  vector<uint32_t> v_output_size = ModelUtils::GetInputSize(custom_op_desc);
+  vector<int64_t> v_output_size = ModelUtils::GetInputSize(custom_op_desc);
   EXPECT_EQ(v_output_size.size(), 1);
 }
 
@@ -152,7 +152,7 @@ TEST_F(UtestNetOutput, success_is_output_tensor_need_trans) {
 
 // test ModelUtils::GetOutputSize
 TEST_F(UtestNetOutput, success_get_output_size) {
-  vector<uint32_t> v_output_size;
+  vector<int64_t> v_output_size;
 
   ModelUtils *model_utils = new ModelUtils();
   std::shared_ptr<OpDesc> op_desc = std::make_shared<OpDesc>();
@@ -172,7 +172,7 @@ TEST_F(UtestNetOutput, success_get_output_size) {
 
 // test ModelUtils::GetWorkspaceSize
 TEST_F(UtestNetOutput, success_get_workspace_size) {
-  vector<uint32_t> v_workspace_size;
+  vector<int64_t> v_workspace_size;
 
   ModelUtils *model_utils = new ModelUtils();
   std::shared_ptr<OpDesc> op_desc = std::make_shared<OpDesc>();
@@ -188,7 +188,7 @@ TEST_F(UtestNetOutput, success_get_workspace_size) {
 
 // test ModelUtils::GetWeightSize
 TEST_F(UtestNetOutput, success_get_weight_size) {
-  vector<uint32_t> v_weight_size;
+  vector<int64_t> v_weight_size;
 
   ModelUtils *model_utils = new ModelUtils();
   std::shared_ptr<OpDesc> op_desc = std::make_shared<OpDesc>();
@@ -292,7 +292,7 @@ TEST_F(UtestNetOutput, success_get_output_data) {
   output->input_num_ = 1;
 
   vector<void *> v_data_addr;
-  vector<uint32_t> v_data_size;
+  vector<int64_t> v_data_size;
   output->GetOutputData(v_data_addr, v_data_size);
 
   EXPECT_EQ(output->v_input_data_addr_, v_data_addr);

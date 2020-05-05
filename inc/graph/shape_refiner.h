@@ -18,8 +18,8 @@
 #define INC_GRAPH_SHAPE_REFINER_H_
 
 #include <string>
-
 #include "external/graph/inference_context.h"
+
 #include "external/graph/ge_error_codes.h"
 #include "graph/node.h"
 
@@ -27,8 +27,10 @@ namespace ge {
 // ShapeRefiner performs shape inference for compute graphs
 class ShapeRefiner {
  public:
-  static graphStatus InferShapeAndType(const ConstNodePtr &node, Operator &op);
+  static graphStatus InferShapeAndType(const ConstNodePtr &node, Operator &op, bool before_subgraph);
+  static graphStatus InferShapeAndType(const NodePtr &node, bool before_subgraph);
   static graphStatus InferShapeAndType(const NodePtr &node);
+  static graphStatus InferShapeAndType(const ConstNodePtr &node, Operator &op);
 
  private:
   static void PrintInOutTensorShape(const ge::NodePtr &node, const std::string &phase);

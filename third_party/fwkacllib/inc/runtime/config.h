@@ -21,7 +21,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 #define PLAT_COMBINE(arch, chip, ver) ((arch << 16) | (chip << 8) | (ver))
 #define PLAT_GET_ARCH(type) ((type >> 16) & 0xffff)
@@ -52,7 +52,7 @@ typedef enum tagRtVersion {
   VER_END,
 } rtVersion_t;
 
-// match rtChipType_t
+/* match rtChipType_t */
 typedef enum tagRtPlatformType {
   PLATFORM_BEGIN = 0,
   PLATFORM_MINI_V1 = PLATFORM_BEGIN,

@@ -36,7 +36,6 @@ Status StreamActiveTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
   }
 
   auto stream_active_def = task_def.stream_active();
-  GELOGI("InitStreamActiveTaskInfo start.");
   uint32_t op_index = stream_active_def.op_index();
 
   uint32_t internal_index = davinci_model->GetFlowctrlIndex(op_index);
@@ -75,7 +74,6 @@ Status StreamActiveTaskInfo::Distribute() {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
-
   return SUCCESS;
 }
 

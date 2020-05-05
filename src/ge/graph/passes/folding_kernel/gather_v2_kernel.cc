@@ -29,6 +29,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using ge::fp16_t;
+
 namespace ge {
 namespace {
 const size_t kGatherV2InputIndexZero = 0;

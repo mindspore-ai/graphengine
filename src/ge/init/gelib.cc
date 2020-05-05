@@ -15,27 +15,29 @@
  */
 
 #include "init/gelib.h"
-#include <dlfcn.h>
+
 #include <cstdlib>
+#include <dlfcn.h>
 #include <mutex>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
-#include "framework/common/debug/ge_log.h"
-#include "common/ge/plugin_manager.h"
+
 #include "common/ge/ge_util.h"
+#include "common/ge/plugin_manager.h"
 #include "common/profiling/profiling_manager.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/graph_var_manager.h"
-#include "runtime/kernel.h"
+#include "common/properties_manager.h"
+#include "framework/common/debug/ge_log.h"
+#include "ge/ge_api_types.h"
+#include "ge_local_engine/engine/host_cpu_engine.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
-#include "ge/ge_api_types.h"
-#include <cstdlib>
 #include "graph/load/new_model_manager/model_manager.h"
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_var_manager.h"
 #include "omm/csa_interact.h"
-#include "common/properties_manager.h"
+#include "runtime/kernel.h"
 
 using Json = nlohmann::json;
 
@@ -76,43 +78,63 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   }
 
   GELOGI("GE System initial.");
-  Status init_system_status = SystemInitialize(options);
-  if (init_system_status != SUCCESS) {
-    GELOGE(init_system_status);
+  GE_TIMESTAMP_START(SystemInitialize);
+  Status initSystemStatus = SystemInitialize(options);
+  GE_TIMESTAMP_END(SystemInitialize, "InnerInitialize::SystemInitialize");
+  if (initSystemStatus != SUCCESS) {
+    GELOGE(initSystemStatus);
     RollbackInit();
-    return init_system_status;
+    return initSystemStatus;
   }
 
   GELOGI("engineManager initial.");
-  Status init_em_status = engine_manager_.Initialize(options);
-  if (init_em_status != SUCCESS) {
-    GELOGE(init_em_status);
+  GE_TIMESTAMP_START(EngineInitialize);
+  Status initEmStatus = engineManager_.Initialize(options);
+  GE_TIMESTAMP_END(EngineInitialize, "InnerInitialize::EngineInitialize");
+  if (initEmStatus != SUCCESS) {
+    GELOGE(initEmStatus);
     RollbackInit();
-    return init_em_status;
+    return initEmStatus;
   }
 
   GELOGI("opsManager initial.");
-  Status init_ops_status = ops_manager_.Initialize(options);
-  if (init_ops_status != SUCCESS) {
-    GELOGE(init_ops_status);
+  GE_TIMESTAMP_START(OpsManagerInitialize);
+  Status initOpsStatus = opsManager_.Initialize(options);
+  GE_TIMESTAMP_END(OpsManagerInitialize, "InnerInitialize::OpsManagerInitialize");
+  if (initOpsStatus != SUCCESS) {
+    GELOGE(initOpsStatus);
     RollbackInit();
-    return init_ops_status;
+    return initOpsStatus;
   }
 
   GELOGI("sessionManager initial.");
-  Status init_sm_status = session_manager_.Initialize(options);
-  if (init_sm_status != SUCCESS) {
-    GELOGE(init_sm_status);
+  GE_TIMESTAMP_START(SessionManagerInitialize);
+  Status initSmStatus = sessionManager_.Initialize(options);
+  GE_TIMESTAMP_END(SessionManagerInitialize, "InnerInitialize::SessionManagerInitialize");
+  if (initSmStatus != SUCCESS) {
+    GELOGE(initSmStatus);
     RollbackInit();
-    return init_sm_status;
+    return initSmStatus;
   }
 
   GELOGI("memoryMallocSize initial.");
-  Status init_mem_status = VarManager::Instance(0)->SetMemoryMallocSize(options);
-  if (init_mem_status != SUCCESS) {
-    GELOGE(init_mem_status, "failed to set malloc size");
+  GE_TIMESTAMP_START(SetMemoryMallocSize);
+  Status initMemStatus = VarManager::Instance(0)->SetMemoryMallocSize(options);
+  GE_TIMESTAMP_END(SetMemoryMallocSize, "InnerInitialize::SetMemoryMallocSize");
+  if (initMemStatus != SUCCESS) {
+    GELOGE(initMemStatus, "failed to set malloc size");
     RollbackInit();
-    return init_mem_status;
+    return initMemStatus;
+  }
+
+  GELOGI("Start to initialize HostCpuEngine");
+  GE_TIMESTAMP_START(HostCpuEngineInitialize);
+  Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
+  GE_TIMESTAMP_END(HostCpuEngineInitialize, "InnerInitialize::HostCpuEngineInitialize");
+  if (initHostCpuEngineStatus != SUCCESS) {
+    GELOGE(initHostCpuEngineStatus, "Failed to initialize HostCpuEngine");
+    RollbackInit();
+    return initHostCpuEngineStatus;
   }
 
   init_flag_ = true;
@@ -144,6 +166,12 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
 
       PropertiesManager::Instance().AddDumpPropertyValue(DUMP_ALL_MODEL, {});
       PropertiesManager::Instance().SetDumpOutputPath(dump_path);
+    }
+    auto step_iter = options.find(OPTION_EXEC_DUMP_STEP);
+    if (step_iter != options.end()) {
+      std::string dump_step = step_iter->second;
+      GELOGD("Get dump step %s successfully", dump_step.c_str());
+      PropertiesManager::Instance().SetDumpStep(dump_step);
     }
   }
 
@@ -230,7 +258,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
   options.physical_device_id = options.device_id;
 
-  // The physical ID is transferred to the logical ID. FMK receives physical ID and needs to be converted
+  // The physical ID is transferred to the logical ID. FMK receives physical ID
+  // and needs to be converted
   uint32_t dev_logic_index = 0;
   rtError_t rt_ret = rtGetDeviceIndexByPhyId(static_cast<uint32_t>(options.device_id), &dev_logic_index);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
@@ -243,8 +272,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   GetContext().SetCtxDeviceId(dev_logic_index);
 
   GE_CHK_RT_RET(rtSetDevice(options.device_id));
-  // In the scenario that the automatic add fusion is set, but there is no cleanaddr operator,
-  // maybe need to check it
+
+  // In the scenario that the automatic add fusion is set, but there is no
+  // cleanaddr operator, maybe need to check it
   is_system_inited = true;
   is_shutdown = false;
 
@@ -257,10 +287,10 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
   GELOGI("Training finalize GELib begin.");
 
   std::lock_guard<std::mutex> lock(status_mutex_);
-  GE_IF_BOOL_EXEC(is_shutdown || !is_system_inited,
-                  GELOGW("System Shutdown with options is already is_shutdown or system does not inited. "
-                         "is_shutdown:%d is_omm_inited:%d",
-                         is_shutdown, is_system_inited);
+  GE_IF_BOOL_EXEC(is_shutdown || !is_system_inited, GELOGW("System Shutdown with options is already is_shutdown "
+                                                           "or system does not inited. "
+                                                           "is_shutdown:%d is_omm_inited:%d",
+                                                           is_shutdown, is_system_inited);
                   return SUCCESS);
 
   GE_CHK_RT(rtDeviceReset(options.device_id));
@@ -294,7 +324,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithout
 
   static bool is_inited = false;
   if (is_inited) {
-    GELOGW("System init without options is already inited,  don't need to init again.");
+    GELOGW(
+      "System init without options is already inited,  don't need to init "
+      "again.");
     return SUCCESS;
   }
   is_inited = true;
@@ -313,27 +345,26 @@ Status GELib::Finalize() {
     GELOGW("not initialize");
     return SUCCESS;
   }
-
+  Status final_state = SUCCESS;
+  Status mid_state;
   GELOGI("engineManager finalization.");
-  Status final_em_status = engine_manager_.Finalize();
-  GELOGI("sessionManager finalization.");
-  Status final_sm_status = session_manager_.Finalize();
-
-  if (final_em_status != SUCCESS) {
-    GELOGE(final_em_status);
-    return final_em_status;
+  mid_state = engineManager_.Finalize();
+  if (mid_state != SUCCESS) {
+    GELOGW("engineManager finalize failed");
+    final_state = mid_state;
   }
-
-  if (final_sm_status != SUCCESS) {
-    GELOGE(final_sm_status);
-    return final_sm_status;
+  GELOGI("sessionManager finalization.");
+  mid_state = sessionManager_.Finalize();
+  if (mid_state != SUCCESS) {
+    GELOGW("sessionManager finalize failed");
+    final_state = mid_state;
   }
 
   GELOGI("opsManager finalization.");
-  Status final_ops_status = ops_manager_.Finalize();
-  if (final_ops_status != SUCCESS) {
-    GELOGE(final_ops_status);
-    return final_ops_status;
+  mid_state = opsManager_.Finalize();
+  if (mid_state != SUCCESS) {
+    GELOGW("opsManager finalize failed");
+    final_state = mid_state;
   }
 
   GELOGI("VarManagerPool finalization.");
@@ -342,20 +373,25 @@ Status GELib::Finalize() {
   GELOGI("MemManager finalization.");
   MemManager::Instance().Finalize();
 
-#ifdef DAVINCI_CLOUD
+  GELOGI("HostCpuEngine finalization.");
+  HostCpuEngine::GetInstance().Finalize();
+
   if (is_train_mode_) {
     GELOGI("System ShutDown.");
-    Status shutdown_status = SystemShutdownWithOptions(this->options_);
-    if (shutdown_status != SUCCESS) {
-      GELOGE(shutdown_status);
-      return shutdown_status;
+    mid_state = SystemShutdownWithOptions(this->options_);
+    if (mid_state != SUCCESS) {
+      GELOGW("System shutdown with options failed");
+      final_state = mid_state;
     }
   }
   is_train_mode_ = false;
-#endif
 
   instancePtr_ = nullptr;
   init_flag_ = false;
+  if (final_state != SUCCESS) {
+    GELOGE(FAILED, "MemManager finalization.");
+    return final_state;
+  }
   GELOGI("finalization success.");
   return SUCCESS;
 }
@@ -364,14 +400,14 @@ Status GELib::Finalize() {
 std::shared_ptr<GELib> GELib::GetInstance() { return instancePtr_; }
 
 void GELib::RollbackInit() {
-  if (engine_manager_.init_flag_) {
-    (void)engine_manager_.Finalize();
+  if (engineManager_.init_flag_) {
+    (void)engineManager_.Finalize();
   }
-  if (ops_manager_.init_flag_) {
-    (void)ops_manager_.Finalize();
+  if (opsManager_.init_flag_) {
+    (void)opsManager_.Finalize();
   }
-  if (session_manager_.init_flag_) {
-    (void)session_manager_.Finalize();
+  if (sessionManager_.init_flag_) {
+    (void)sessionManager_.Finalize();
   }
   MemManager::Instance().Finalize();
   VarManagerPool::Instance().Destroy();

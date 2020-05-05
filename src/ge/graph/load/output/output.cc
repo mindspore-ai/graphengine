@@ -67,7 +67,7 @@ Status Output::Init() {
   }
 
   for (size_t i = 0; i < input_num_; i++) {
-    uint32_t tensor_size = 0;
+    int64_t tensor_size = 0;
     auto input_desc = op_desc_->GetInputDescPtr(i);
     GE_CHECK_NOTNULL(input_desc);
     Status ret = TensorUtils::GetSize(*input_desc, tensor_size);
@@ -84,6 +84,8 @@ Status Output::Init() {
     }
   }
 
+  GELOGI("Init output:%lu, %lu, %lu", input_num_, v_input_size_.size(), v_input_data_addr_.size());
+
   return SUCCESS;
 }
 
@@ -95,6 +97,13 @@ Status Output::Init() {
 ///
 Status Output::CopyResult(OutputData &rslt, uint32_t data_begin, uint32_t &data_index, bool support_mem_share) {
   uint32_t data_count = 0;
+  if (input_num_ > rslt.blobs.size() - data_begin) {
+    GELOGE(FAILED, "Tensor num %zu, data_buf num: %zu.", input_num_, rslt.blobs.size() - data_begin);
+    return FAILED;
+  } else if (input_num_ < rslt.blobs.size() - data_begin) {
+    GELOGW("Tensor num %zu, data_buf num: %zu.", input_num_, rslt.blobs.size() - data_begin);
+  }
+
   for (size_t i = 0; i < input_num_; i++) {
     DataBuffer data_buf = rslt.blobs[data_begin + data_count];
     Status ret = SetDataBuf(data_buf, data_count, i, support_mem_share);
@@ -123,10 +132,11 @@ Status Output::SetDataBuf(DataBuffer &data_buf, uint32_t &data_count, size_t i, 
   }
 
   if (data_buf.isDataSupportMemShare && support_mem_share) {
-    GELOGD("No need to copy input data, user's output data buffer can be shared.");
+    GELOGI("No need to copy input data, user's output data buffer can be shared.");
   } else {
     // Copy result to Databuf
-    uint32_t size = v_input_size_[i];
+    int64_t size = v_input_size_[i];
+    GELOGI("Tensor data size before: %ld", size);
 
     graphStatus graph_status = TensorUtils::GetTensorSizeInBytes(*tensor_desc, size);
     if (graph_status != ge::GRAPH_SUCCESS) {
@@ -134,12 +144,19 @@ Status Output::SetDataBuf(DataBuffer &data_buf, uint32_t &data_count, size_t i, 
       return FAILED;
     }
 
+    if (data_buf.length < size) {
+      GELOGE(FAILED, "Tensor data size: %ld data_buf length: %ld", size, data_buf.length);
+      return FAILED;
+    } else if (data_buf.length > size) {
+      GELOGW("Tensor data size: %ld data_buf length: %ld", size, data_buf.length);
+    }
+
     rtError_t rt_ret = rtMemcpy(data_buf.data, size, v_input_data_addr_[i], size, RT_MEMCPY_DEVICE_TO_HOST);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(rt_ret, "rtmemcpy error");
       return FAILED;
     }
-    GELOGD("Tensor data size: %u data_buflength: %u", size, data_buf.length);
+    GELOGI("Tensor data size: %ld data_buf length: %ld", size, data_buf.length);
   }
 
   ++data_count;
@@ -149,7 +166,7 @@ Status Output::SetDataBuf(DataBuffer &data_buf, uint32_t &data_count, size_t i, 
   return SUCCESS;
 }
 
-void Output::GetOutputData(vector<void *> &v_data_addr, vector<uint32_t> &v_data_size) {
+void Output::GetOutputData(vector<void *> &v_data_addr, vector<int64_t> &v_data_size) {
   for (size_t i = 0; i < input_num_; ++i) {
     v_data_addr.push_back(v_input_data_addr_[i]);
     v_data_size.push_back(v_input_size_[i]);

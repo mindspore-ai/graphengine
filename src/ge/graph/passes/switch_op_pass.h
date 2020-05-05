@@ -23,7 +23,6 @@
 #include <stack>
 #include <unordered_map>
 #include <vector>
-
 #include "inc/graph_pass.h"
 
 namespace ge {
@@ -124,8 +123,8 @@ class SwitchOpPass : public GraphPass {
 
   Status UpdateCondBranch(NodePtr &node);
 
-  Status UpdateAttachFlag(const NodePtr &node, std::string &stream_label,
-                          bool &merge_flag, bool &exit_flag, bool &net_output_flag);
+  Status UpdateAttachFlag(const NodePtr &node, std::string &stream_label, bool &merge_flag, bool &exit_flag,
+                          bool &net_output_flag);
 
   Status UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const std::string &stream_label);
 

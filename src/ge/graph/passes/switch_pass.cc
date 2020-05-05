@@ -18,7 +18,6 @@
 
 #include <string>
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
@@ -120,12 +119,12 @@ Status SwitchPass::DeleteSwitchNode(NodePtr &node, NodePtr &pred_node, const Out
 Status SwitchPass::Run(NodePtr &node) {
   GELOGD("SwitchPass running");
   if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "param [node] must not be null.");
+    GELOGE(PARAM_INVALID, "Param [node] must not be null.");
     return PARAM_INVALID;
   }
 
   std::string op_type;
-  GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "get original type failed");
+  GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "Get original type failed");
   if ((op_type != SWITCH) && (op_type != REFSWITCH)) {
     return SUCCESS;
   }

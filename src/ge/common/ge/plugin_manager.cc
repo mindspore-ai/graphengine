@@ -27,6 +27,7 @@
 #include <string>
 
 #include "framework/common/debug/log.h"
+#include "framework/common/util.h"
 
 namespace ge {
 static const int kMaxNumOfSo = 64;

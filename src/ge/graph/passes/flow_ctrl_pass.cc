@@ -29,7 +29,6 @@
 
 namespace ge {
 // when namespace change to ge, please delete the using code.
-
 Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
 
@@ -115,7 +114,7 @@ NodePtr FlowCtrlPass::InsertOp(ComputeGraphPtr &compute_graph, const string &nod
     }
   }
 
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, GE_LOGE("compute_graph is nullptr"); return nullptr);
+  GE_IF_BOOL_EXEC(compute_graph == nullptr, DOMI_LOGE("compute_graph is nullptr"); return nullptr);
   NodePtr node = compute_graph->AddNode(op_desc);
   if (node == nullptr) {
     GELOGE(FAILED, "add node failed, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
@@ -159,14 +158,14 @@ NodePtr FlowCtrlPass::InsertStreamSwitchOp(ComputeGraphPtr &compute_graph, const
   // stream switch op need switch cond by attr.
   GE_IF_BOOL_EXEC(
     !AttrUtils::SetInt(stream_switch->GetOpDesc(), ATTR_NAME_STREAM_SWITCH_COND, static_cast<int64_t>(RT_LESS)),
-    GE_LOGE("set ATTR_NAME_STREAM_SWITCH_COND failed");
+    DOMI_LOGE("set ATTR_NAME_STREAM_SWITCH_COND failed");
     return nullptr);
 
   return stream_switch;
 }
 
 NodePtr FlowCtrlPass::AddVariableNode(ComputeGraphPtr &compute_graph, const string &name) {
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, GE_LOGE("compute_graph is nullptr"); return nullptr);
+  GE_IF_BOOL_EXEC(compute_graph == nullptr, DOMI_LOGE("compute_graph is nullptr"); return nullptr);
   NodePtr exist_node = compute_graph->FindNode(name);
   if (exist_node != nullptr) {
     GELOGD("Node %s already exist, no need add.", name.c_str());
@@ -194,6 +193,16 @@ Status FlowCtrlPass::AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph) {
     GELOGD("Node %s can't be found in graph %u", NODE_NAME_NET_OUTPUT.c_str(), compute_graph->GetGraphID());
     return SUCCESS;
   }
+
+  if (compute_graph->GetParentGraph() != nullptr) {  // Global step just add to main graph.
+    GELOGD("Graph %s no need global step variable.", compute_graph->GetName().c_str());
+    uint32_t parent_index = 0;  // Set to 0 as a mark for subgraph.
+    if (!AttrUtils::SetInt(output_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+      GELOGW("Node: %s Add attr %s failed.", output_node->GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    }
+    return SUCCESS;
+  }
+
   NodePtr exist_node = compute_graph->FindNode(NODE_NAME_GLOBAL_STEP);
   if (exist_node != nullptr) {
     GELOGD("Node %s already exist, no need add.", NODE_NAME_GLOBAL_STEP.c_str());
@@ -284,7 +293,7 @@ Status FlowCtrlPass::CreateIterCtrlTrueBranch(ComputeGraphPtr &compute_graph, co
   }
   GE_CHK_STATUS_RET(SetStreamLabel(active_node, active_name), "set stream label failed");
   GE_IF_BOOL_EXEC(!AttrUtils::SetBool(active_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, true),
-                  GE_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
+                  DOMI_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
                   return FAILED);
 
   // add ctrl edges
@@ -337,7 +346,7 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
 }
 
 Status FlowCtrlPass::AddFpBpIteratorCtrl(ComputeGraphPtr &compute_graph, NodePtr &pre_node) {
-  GE_IF_BOOL_EXEC(pre_node == nullptr, GE_LOGE("pre_node is nullptr"); return FAILED);
+  GE_IF_BOOL_EXEC(pre_node == nullptr, DOMI_LOGE("pre_node is nullptr"); return FAILED);
   string pre_node_name = pre_node->GetName();
   GELOGI("Add FpBp Iterator ctrl, pre node:%s.", pre_node_name.c_str());
   // 1. Get or add variables
@@ -413,7 +422,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
    *          itersPerLoop  loopCond
    */
   GE_IF_BOOL_EXEC(loop_after_node == nullptr || compute_graph == nullptr,
-                  GE_LOGE("loop after node or compute graph is null");
+                  DOMI_LOGE("loop after node or compute graph is null");
                   return FAILED);
   InDataAnchorPtr in_anchor = loop_after_node->GetInDataAnchor(0);
   if (in_anchor == nullptr || in_anchor->GetPeerOutAnchor() == nullptr) {
@@ -435,7 +444,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
   }
 
   // 2. Add StreamSwitch and edges to switch_node.
-  GE_IF_BOOL_EXEC(loop_pre_node == nullptr, GE_LOGE("loop pre node is null"); return FAILED);
+  GE_IF_BOOL_EXEC(loop_pre_node == nullptr, DOMI_LOGE("loop pre node is null"); return FAILED);
   string switch_name = loop_pre_node->GetName() + "_" + NODE_NAME_STREAM_SWITCH;
   NodePtr switch_node = InsertStreamSwitchOp(compute_graph, switch_name, loop_cond_node, iter_per_loop_node);
   if (switch_node == nullptr) {
@@ -469,7 +478,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
   GE_CHK_STATUS_RET(SetStreamLabel(active_node, active_name), "set stream label failed");
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetBool(active_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, true),
-                  GE_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
+                  DOMI_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
                   return FAILED);
 
   add_ret = GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), active_node->GetInControlAnchor());

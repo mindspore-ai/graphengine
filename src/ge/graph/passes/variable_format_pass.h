@@ -20,7 +20,6 @@
 #include <map>
 #include <set>
 #include <string>
-
 #include "graph/types.h"
 #include "graph/utils/op_desc_utils.h"
 #include "inc/graph_pass.h"

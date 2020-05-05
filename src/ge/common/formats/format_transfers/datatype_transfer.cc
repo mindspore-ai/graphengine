@@ -27,6 +27,8 @@
 #include "graph/utils/type_utils.h"
 #include "securec.h"
 
+using ge::fp16_t;
+
 namespace ge {
 namespace formats {
 

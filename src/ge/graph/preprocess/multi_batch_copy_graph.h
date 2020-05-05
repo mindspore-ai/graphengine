@@ -16,9 +16,9 @@
 
 #ifndef GE_GRAPH_PREPROCESS_MULTI_BATCH_COPY_GRAPH_H_
 #define GE_GRAPH_PREPROCESS_MULTI_BATCH_COPY_GRAPH_H_
-#include <vector>
 #include <map>
 #include <queue>
+#include <vector>
 
 #include "external/ge/ge_api_error_codes.h"
 
@@ -55,19 +55,18 @@ class MultiBatchGraphCopyer {
   Status UpdateMaxShapeToData(const NodePtr &data);
 
   Status InsertMergeForEdgeNode(const NodePtr &node);
-  /**
-   * Insert a merge node for src node `node` on output index `index`. The merge node will be used to merge all nodes
-   * in batch-branch to one output to the node out of the batch-branch.
-   * Cond 1: If the `index` is -1, then the src node link a data edge(at output 0) to the merge node,
-   * Cond 2: In condition 1, if the src node does not have any data output, we create a const node after it,
-   * the result like this:
-   * src_node ---------> const_for_src_node --------> merge
-   *           control                        data
-   * Cond 3: If the src node is a data-like node, the SwitchN after it will be link to the merge node.
-   * @param node
-   * @param index
-   * @return
-   */
+
+  /// Insert a merge node for src node `node` on output index `index`. The merge node will be used to merge all nodes
+  /// in batch-branch to one output to the node out of the batch-branch.
+  /// Cond 1: If the `index` is -1, then the src node link a data edge(at output 0) to the merge node,
+  /// Cond 2: In condition 1, if the src node does not have any data output, we create a const node after it,
+  /// the result like this:
+  /// src_node ---------> const_for_src_node --------> merge
+  ///           control                        data
+  /// Cond 3: If the src node is a data-like node, the SwitchN after it will be link to the merge node.
+  /// @param node
+  /// @param index
+  /// @return
   NodePtr InsertMergeNode(const NodePtr &node, int index);
   Status CopyNodeInBatchBranch(const NodePtr &node);
 

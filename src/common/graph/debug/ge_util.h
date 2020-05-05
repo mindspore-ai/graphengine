@@ -25,7 +25,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_log.h"
 #include "graph/ge_error_codes.h"

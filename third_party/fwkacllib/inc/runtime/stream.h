@@ -22,7 +22,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 /**
  * @ingroup stream_flags

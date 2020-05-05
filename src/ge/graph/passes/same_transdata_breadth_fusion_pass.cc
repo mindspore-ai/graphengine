@@ -15,13 +15,11 @@
  */
 
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
-
 #include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
@@ -126,13 +124,13 @@ void SameTransdataBreadthFusionPass::GetSameTransdataNode(vector<int> &same_tran
   auto node_for_compare = node_for_compare_in_anchor->GetOwnerNode();
   auto op_desc_for_compare = node_for_compare->GetOpDesc();
   GE_CHECK_NOTNULL_JUST_RETURN(op_desc_for_compare);
-  bool op_compare_label = op_desc_for_compare->HasAttr(ATTR_NAME_STREAM_LABEL);
+  string op_compare_stream_label;
+  (void)AttrUtils::GetStr(op_desc_for_compare, ATTR_NAME_STREAM_LABEL, op_compare_stream_label);
   auto input_desc_for_compare = op_desc_for_compare->GetInputDescPtr(node_for_compare_in_anchor->GetIdx());
   GE_CHECK_NOTNULL_JUST_RETURN(input_desc_for_compare);
   auto output_desc_for_compare = op_desc_for_compare->GetOutputDescPtr(0);
   GE_CHECK_NOTNULL_JUST_RETURN(output_desc_for_compare);
   iter = all_transdata_nodes_.erase(iter);
-  bool op_tmp_label = false;
   while (iter != all_transdata_nodes_.end()) {
     auto in_anchor = iter->second;
     if (in_anchor == nullptr) {
@@ -148,11 +146,13 @@ void SameTransdataBreadthFusionPass::GetSameTransdataNode(vector<int> &same_tran
     GE_CHECK_NOTNULL_JUST_RETURN(op_desc_tmp);
     auto input_desc_tmp = op_desc_tmp->GetInputDescPtr(in_anchor->GetIdx());
     auto output_desc_tmp = op_desc_tmp->GetOutputDescPtr(0);
-    op_tmp_label = op_desc_tmp->HasAttr(ATTR_NAME_STREAM_LABEL);
+    string op_tmp_stream_label;
+    (void)AttrUtils::GetStr(op_desc_tmp, ATTR_NAME_STREAM_LABEL, op_tmp_stream_label);
     GE_CHECK_NOTNULL_JUST_RETURN(input_desc_tmp);
     GE_CHECK_NOTNULL_JUST_RETURN(output_desc_tmp);
 
-    if ((op_compare_label == op_tmp_label) && (input_desc_tmp->GetFormat() == input_desc_for_compare->GetFormat()) &&
+    if ((op_compare_stream_label == op_tmp_stream_label) &&
+        (input_desc_tmp->GetFormat() == input_desc_for_compare->GetFormat()) &&
         (output_desc_tmp->GetFormat() == output_desc_for_compare->GetFormat())) {
       GELOGD("same transdata node:%s, src node:%s", node_tmp->GetName().c_str(), node_for_compare->GetName().c_str());
       InsertSameTransdataNodeIndex(iter->first, same_transdata_nodes);

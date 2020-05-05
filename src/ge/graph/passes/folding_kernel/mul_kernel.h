@@ -21,6 +21,7 @@
 
 #include "graph/ge_tensor.h"
 #include "inc/kernel.h"
+#include "common/fp16_t.h"
 
 namespace ge {
 class MulKernel : public Kernel {
@@ -30,6 +31,17 @@ class MulKernel : public Kernel {
 
  private:
   Status MulCheck(const std::vector<ConstGeTensorPtr> &input);
+  std::vector<int8_t> y_data_int8_t_;
+  std::vector<int16_t> y_data_int16_t_;
+  std::vector<int32_t> y_data_int32_t_;
+  std::vector<int64_t> y_data_int64_t_;
+  std::vector<uint8_t> y_data_uint8_t_;
+  std::vector<uint16_t> y_data_uint16_t_;
+  std::vector<uint32_t> y_data_uint32_t_;
+  std::vector<uint64_t> y_data_uint64_t_;
+  std::vector<fp16_t> y_data_fp16_t_;
+  std::vector<float> y_data_float_;
+  std::vector<double> y_data_double_;
 };
 }  // namespace ge
 

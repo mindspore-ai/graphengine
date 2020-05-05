@@ -129,7 +129,7 @@ TEST(UtestGraphPassesAddnPass, no_output) {
   AddNPass addn_pass;
   NamesToPass names_to_pass;
   names_to_pass.emplace_back("Test", &addn_pass);
-  EXPECT_EQ(pass.Run(names_to_pass), INTERNAL_ERROR);
+  EXPECT_NE(pass.Run(names_to_pass), SUCCESS);
 
   EXPECT_FALSE(add_n_node->GetInDataNodes().empty());
   EXPECT_TRUE(add_n_node->GetOutDataNodes().empty());

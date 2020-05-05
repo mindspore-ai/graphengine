@@ -28,7 +28,6 @@
 #include "graph/attr_value.h"
 #include "graph/ge_tensor.h"
 #include "graph/utils/tensor_adapter.h"
-#include "unsupported/Eigen/CXX11/Tensor"
 
 namespace ge {
 static const size_t kMinDimNum = 2;
@@ -106,24 +105,6 @@ class BCast {
   ///
   static kVecInt TransShapeToDimVec(const GeTensorDesc &shape);
 
-  ///
-  /// @ingroup domi_calibration
-  /// from Bcast::kVecInt to Eigen::array
-  /// @param [in] vec             dim info
-  /// @return Eigen::array
-  ///
-  template <int NDIMS>
-  static Status ToIndexArray(const BCast::kVecInt &vec, Eigen::array<Eigen::DenseIndex, NDIMS> &ret) {
-    if (vec.size() != NDIMS) {
-      GELOGE(domi::PARAM_INVALID, "ToIndexArray failed. size of vector = %zu is not equal to NDIMS = %d.", vec.size(),
-             NDIMS);
-      return domi::PARAM_INVALID;
-    }
-    for (int i = 0; i < NDIMS; ++i) {
-      ret[i] = vec[i];
-    }
-    return domi::SUCCESS;
-  }
   void BCastIndexes(kVecInt &x_indexes, kVecInt &y_indexes);
   template <typename InT, typename OutT>
   Status BCastCompute(const std::vector<ConstGeTensorPtr> &input, std::vector<OutT> &v_output,

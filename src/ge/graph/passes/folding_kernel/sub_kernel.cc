@@ -16,10 +16,12 @@
 
 #include "graph/passes/folding_kernel/sub_kernel.h"
 
+#include <cfloat>
+#include <cmath>
 #include <memory>
 
 #include "common/debug/log.h"
-#include "common/fp16_t.h"
+#include "common/math/math_util.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/common/bcast.h"
 #include "graph/utils/type_utils.h"
@@ -33,31 +35,81 @@ const size_t kSubFirstOutput = 0;
 const size_t kSubOutputSize = 1;
 const size_t kSubInputSize = 2;
 
-#define DEFINE_FUNC_BY_TYPE(TYPE)                                                                          \
-  std::function<TYPE(TYPE const &, TYPE const &)> func_##TYPE = [](TYPE const &a, TYPE const &b) -> TYPE { \
-    return a - b;                                                                                          \
+template <typename T>
+Status OverflowCheck(T const &x, T const &y, DataType &data_type) {
+  switch (data_type) {
+    case DT_INT8:
+      FMK_INT8_SUBCHECK(x, y)
+      break;
+    case DT_INT16:
+      FMK_INT16_SUBCHECK(x, y)
+      break;
+    case DT_INT32:
+      FMK_INT32_SUBCHECK(x, y)
+      break;
+    case DT_INT64:
+      FMK_INT64_SUBCHECK(x, y)
+      break;
+    case DT_UINT8:
+      FMK_UINT8_SUBCHECK(x, y)
+      break;
+    case DT_UINT16:
+      FMK_UINT16_SUBCHECK(x, y)
+      break;
+    case DT_UINT32:
+      FMK_UINT32_SUBCHECK(x, y)
+      break;
+    case DT_UINT64:
+      FMK_UINT64_SUBCHECK(x, y)
+      break;
+    case DT_FLOAT16:
+      FMK_FP16_SUBCHECK(x, y)
+      break;
+    case DT_FLOAT:
+      FMK_FLOAT_SUBCHECK(x, y)
+      break;
+    case DT_DOUBLE:
+      FMK_DOUBLE_SUBCHECK(x, y)
+      break;
+    default:
+      break;
+  }
+
+  return SUCCESS;
+}
+
+#define DEFINE_FUNC_WITH_STATUS_BY_TYPE(TYPE)                                         \
+  std::function<TYPE(TYPE const &, TYPE const &, DataType &, Status &)> func_##TYPE = \
+    [](TYPE const &x, TYPE const &y, DataType &type, Status &ret) -> TYPE {           \
+    ret = OverflowCheck<TYPE>(x, y, type);                                            \
+    if (ret != SUCCESS) {                                                             \
+      GELOGE(PARAM_INVALID, "Result of sub is overflow.");                            \
+      return static_cast<TYPE>(0);                                                    \
+    }                                                                                 \
+    return static_cast<TYPE>(x) - static_cast<TYPE>(y);                               \
   };
 
-#define SET_BCAST_COMPUTE_CASE(DTYPE, TYPE)                      \
-  case DTYPE:                                                    \
-    ret = bcast.BCastCompute(input, y_data_##TYPE, func_##TYPE); \
+#define SET_BCAST_COMPUTE_CASE(DTYPE, TYPE)                              \
+  case DTYPE:                                                            \
+    ret = bcast.BCastComputeCheck(input, y_data_##TYPE##_, func_##TYPE); \
     break;
 
-#define SET_OUTPUT(DTYPE, TYPE)                                                                                  \
-  case DTYPE:                                                                                                    \
-    (void)output_ptr->SetData(reinterpret_cast<uint8_t *>(y_data_##TYPE.data()), y_data_##TYPE.size() * length); \
+#define SET_OUTPUT(DTYPE, TYPE)                                                                                        \
+  case DTYPE:                                                                                                          \
+    (void)output_ptr->SetData(reinterpret_cast<uint8_t *>(y_data_##TYPE##_.data()), y_data_##TYPE##_.size() * length); \
     break;
 
-DEFINE_FUNC_BY_TYPE(int8_t)
-DEFINE_FUNC_BY_TYPE(int16_t)
-DEFINE_FUNC_BY_TYPE(int32_t)
-DEFINE_FUNC_BY_TYPE(int64_t)
-DEFINE_FUNC_BY_TYPE(uint8_t)
-DEFINE_FUNC_BY_TYPE(uint16_t)
-DEFINE_FUNC_BY_TYPE(uint32_t)
-DEFINE_FUNC_BY_TYPE(uint64_t)
-DEFINE_FUNC_BY_TYPE(float)
-DEFINE_FUNC_BY_TYPE(double)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int8_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int16_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int32_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(int64_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint8_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint16_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint32_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(uint64_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(fp16_t)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(float)
+DEFINE_FUNC_WITH_STATUS_BY_TYPE(double)
 }  // namespace
 
 Status SubKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge::ConstGeTensorPtr> &input,
@@ -66,26 +118,13 @@ Status SubKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge:
   // check how many inputs
   if ((input.size() != kSubInputSize) || (op_desc_ptr->GetOutputsSize() != kSubOutputSize)) {
     GELOGW("The number of input for sub must be %zu.", kSubInputSize);
-    return PARAM_INVALID;
+    return NOT_CHANGED;
   }
 
   GE_CHECK_NOTNULL(input[kSubFirstInput]);
   GE_CHECK_NOTNULL(input[kSubSecondInput]);
   ConstGeTensorPtr weight0 = input[kSubFirstInput];
   ConstGeTensorPtr weight1 = input[kSubSecondInput];
-
-  //  to broadcast
-  std::vector<int8_t> y_data_int8_t;
-  std::vector<int16_t> y_data_int16_t;
-  std::vector<int32_t> y_data_int32_t;
-  std::vector<int64_t> y_data_int64_t;
-  std::vector<uint8_t> y_data_uint8_t;
-  std::vector<uint16_t> y_data_uint16_t;
-  std::vector<uint32_t> y_data_uint32_t;
-  std::vector<uint64_t> y_data_uint64_t;
-  std::vector<fp16_t> y_data_fp16_t;
-  std::vector<float> y_data_float;
-  std::vector<double> y_data_double;
 
   Status ret;
   DataType data_type = input[kSubFirstInput]->GetTensorDesc().GetDataType();
@@ -99,9 +138,11 @@ Status SubKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge:
     SET_BCAST_COMPUTE_CASE(DT_UINT16, uint16_t)
     SET_BCAST_COMPUTE_CASE(DT_UINT32, uint32_t)
     SET_BCAST_COMPUTE_CASE(DT_UINT64, uint64_t)
+    SET_BCAST_COMPUTE_CASE(DT_FLOAT16, fp16_t)
     SET_BCAST_COMPUTE_CASE(DT_FLOAT, float)
     SET_BCAST_COMPUTE_CASE(DT_DOUBLE, double)
     default:
+      GELOGI("Sub kernel data type %s not support.", TypeUtils::DataTypeToSerialString(data_type).c_str());
       ret = NOT_CHANGED;
       break;
   }

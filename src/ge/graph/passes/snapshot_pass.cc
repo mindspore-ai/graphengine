@@ -15,9 +15,7 @@
  */
 
 #include "graph/passes/snapshot_pass.h"
-
 #include <string>
-
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
@@ -31,7 +29,7 @@ Status SnapshotPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
-    GELOGE(status_ret, "SnapshotPass get original type fail.");
+    GELOGE(status_ret, "SnapshotPass get original type failed.");
     return status_ret;
   }
   if (type == SNAPSHOT) {

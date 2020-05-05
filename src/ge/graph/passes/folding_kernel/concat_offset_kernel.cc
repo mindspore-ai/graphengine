@@ -71,8 +71,9 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   }
   for (size_t i = 0; i < static_cast<size_t>(N); i++) {
     buf[concat_dim] = offset;
-    // generate output
-    GeTensorPtr output_ptr = MakeShared<GeTensor>();
+    // generate output, index 0 can always gets a GeTensorDesc object from any OpDescPtr.
+    auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
+    GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
     if (output_ptr == nullptr) {
       GELOGE(MEMALLOC_FAILED, "Failed to fold node %s, out of memeory", op_desc_ptr->GetName().c_str());
       return NOT_CHANGED;
@@ -86,7 +87,9 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
                     return NOT_CHANGED);
     v_output.push_back(output_ptr);
     // caculate offset
-    int64_t input_dim = input[i + kConcatOffsetInputIndexOne]->GetTensorDesc().GetShape().GetDim(concat_dim);
+    const int32_t *input_shape =
+      reinterpret_cast<const int32_t *>(input[i + kConcatOffsetInputIndexOne]->GetData().data());
+    int64_t input_dim = input_shape[concat_dim];  // this index is valid, checked before
     if (input_dim > (INT32_MAX - offset)) {
       GELOGE(PARAM_INVALID, " %d and %ld addition can result in overflow!.", offset, input_dim);
       return INTERNAL_ERROR;

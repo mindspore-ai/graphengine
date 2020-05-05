@@ -30,6 +30,7 @@ using ge::ComputeGraph;
 using ge::OpDesc;
 
 namespace {
+const char *const kVectorCore = "VectorCore";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAicoreEngine = "AIcoreEngine";
 }  // namespace
@@ -40,7 +41,7 @@ GraphOptimize::GraphOptimize()
       cal_config_(""),
       insert_op_config_(""),
       parse_out_node_(""),
-      core_type_(kAicoreEngine),
+      core_type_(""),
       graph_context_(nullptr) {}
 
 void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
@@ -140,7 +141,7 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
   std::map<string, GraphOptimizerPtr> graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjs();
   GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
          graph_optimizer.size());
-  string exclude_core_Type = (core_type_ == kVectorEngine) ? kAicoreEngine : kVectorEngine;
+  string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
   GELOGD("[OptimizeOriginalGraph]: engine type will exclude: %s", exclude_core_Type.c_str());
   if (graph_optimizer.size() != 0) {
     for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
@@ -173,7 +174,7 @@ Status GraphOptimize::OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_
   GELOGI("optimize by opskernel in original graph optimize quantize phase. num of graph_optimizer is %zu.",
          graph_optimizer.size());
   Status ret = SUCCESS;
-  string exclude_core_Type = (core_type_ == kVectorEngine) ? kAicoreEngine : kVectorEngine;
+  string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
   GELOGD("[OptimizeOriginalGraphForQuantize]: engine type will exclude: %s", exclude_core_Type.c_str());
   if (graph_optimizer.size() != 0) {
     for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {

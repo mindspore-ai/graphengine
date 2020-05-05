@@ -21,12 +21,10 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "detail/attributes_holder.h"
 #include "graph/buffer.h"
 #include "graph/ge_error_codes.h"
 #include "graph/types.h"
-
 namespace ge {
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeShape {
  public:
@@ -43,6 +41,18 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeShape {
   int64_t GetShapeSize() const;
   std::string ToString() const;
 
+  ///
+  /// @brief Check is unknown shape
+  /// @return bool
+  ///
+  bool IsUnknownShape() const;
+
+  ///
+  /// @brief Check is a scalar
+  /// @return bool
+  ///
+  bool IsScalar() const;
+
   GeShape(const GeShape &other);
   GeShape(GeShape &&other);
   GeShape &operator=(const GeShape &other);
@@ -51,7 +61,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeShape {
  private:
   GeIrProtoHelper<proto::ShapeDef> shape_def_;
   friend class GeTensorDesc;
-  // Create geshape from proto obj
+  // Create from proto obj
   GeShape(const ProtoMsgOwner &protoOnwer, proto::ShapeDef *protoMsg);
 
   void RefTo(const GeShape &shape) { shape_def_ = shape.shape_def_; }
@@ -112,7 +122,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDesc : public AttrH
 
   void Init();
 
-  // Create getensordesc from proto obj
+  // Create from proto obj
   GeTensorDesc(const ProtoMsgOwner &protoOnwer, proto::TensorDescriptor *protoMsg);
   friend class GeTensor;
   friend class GeAttrValueImp;
@@ -159,10 +169,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensor {
   friend class GeAttrValueImp;
   friend class ModelSerializeImp;
   friend class OnnxUtils;
-  // Create getensor from proto obj
+  // Create from proto obj
   GeTensor(const ProtoMsgOwner &protoOnwer, proto::TensorDef *protoMsg);
   GeIrProtoHelper<proto::TensorDef> tensor_def_;
-  // Reference from tensorDef_, cab not use it directly
+  // Reference from tensorDef_, do not direct use
   mutable GeTensorDesc __desc_;
   GeTensorDesc &DescReference() const;
 };

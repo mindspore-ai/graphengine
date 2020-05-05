@@ -53,6 +53,7 @@ Status LabelSetTaskInfo::Distribute() {
     return RT_FAILED;
   }
 
+  GELOGI("LabelSetTaskInfo Distribute Success.");
   return SUCCESS;
 }
 

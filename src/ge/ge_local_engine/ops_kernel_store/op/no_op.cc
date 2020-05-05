@@ -24,6 +24,7 @@ namespace ge_local {
 NoOp::NoOp(const Node &node, RunContext &run_context) : Op(node, run_context) {}
 
 Status NoOp::Run() {
+  GELOGI("Node:%s type is %s, no need gen task.", name_.c_str(), type_.c_str());
   // Do nothing
   return SUCCESS;
 }
@@ -43,5 +44,17 @@ REGISTER_OP_CREATOR(Const, NoOp);
 REGISTER_OP_CREATOR(NetOutput, NoOp);
 
 REGISTER_OP_CREATOR(ControlTrigger, NoOp);
+
+// Functional Op.
+REGISTER_OP_CREATOR(If, NoOp);
+REGISTER_OP_CREATOR(_If, NoOp);
+REGISTER_OP_CREATOR(StatelessIf, NoOp);
+REGISTER_OP_CREATOR(Case, NoOp);
+REGISTER_OP_CREATOR(While, NoOp);
+REGISTER_OP_CREATOR(_While, NoOp);
+REGISTER_OP_CREATOR(StatelessWhile, NoOp);
+REGISTER_OP_CREATOR(For, NoOp);
+REGISTER_OP_CREATOR(PartitionedCall, NoOp);
+REGISTER_OP_CREATOR(StatefulPartitionedCall, NoOp);
 }  // namespace ge_local
 }  // namespace ge

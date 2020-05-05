@@ -19,10 +19,10 @@
 
 #include <string>
 #include <vector>
-
 #include "graph/ge_attr_value.h"
 
 namespace ge {
+
 class GeAttrValue;
 class _GeSerializable {
  public:
@@ -107,7 +107,6 @@ class _GeSerializable {
   static graphStatus LoadItem(GeAttrValue::NamedAttrs &namedAttrs __attribute__((__unused__))) { return GRAPH_SUCCESS; }
 };
 
-
 #define _GE_FI(a) #a, a
 #define _GE_MAP_FIELDS1(a1) _GE_FI(a1)
 #define _GE_MAP_FIELDS2(a1, a2) _GE_FI(a1), _GE_FI(a2)
@@ -130,23 +129,23 @@ class _GeSerializable {
 #define _GE_MAP_FIELDS11(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11)                                           \
   _GE_FI(a1)                                                                                                     \
   , _GE_FI(a2), _GE_FI(a3), _GE_FI(a4), _GE_FI(a5), _GE_FI(a6), _GE_FI(a7), _GE_FI(a8), _GE_FI(a9), _GE_FI(a10), \
-      _GE_FI(a11)
+    _GE_FI(a11)
 #define _GE_MAP_FIELDS12(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12)                                      \
   _GE_FI(a1)                                                                                                     \
   , _GE_FI(a2), _GE_FI(a3), _GE_FI(a4), _GE_FI(a5), _GE_FI(a6), _GE_FI(a7), _GE_FI(a8), _GE_FI(a9), _GE_FI(a10), \
-      _GE_FI(a11), _GE_FI(a12)
+    _GE_FI(a11), _GE_FI(a12)
 #define _GE_MAP_FIELDS13(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13)                                 \
   _GE_FI(a1)                                                                                                     \
   , _GE_FI(a2), _GE_FI(a3), _GE_FI(a4), _GE_FI(a5), _GE_FI(a6), _GE_FI(a7), _GE_FI(a8), _GE_FI(a9), _GE_FI(a10), \
-      _GE_FI(a11), _GE_FI(a12), _GE_FI(a13)
+    _GE_FI(a11), _GE_FI(a12), _GE_FI(a13)
 #define _GE_MAP_FIELDS14(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14)                            \
   _GE_FI(a1)                                                                                                     \
   , _GE_FI(a2), _GE_FI(a3), _GE_FI(a4), _GE_FI(a5), _GE_FI(a6), _GE_FI(a7), _GE_FI(a8), _GE_FI(a9), _GE_FI(a10), \
-      _GE_FI(a11), _GE_FI(a12), _GE_FI(a13), _GE_FI(a14)
+    _GE_FI(a11), _GE_FI(a12), _GE_FI(a13), _GE_FI(a14)
 #define _GE_MAP_FIELDS15(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15)                       \
   _GE_FI(a1)                                                                                                     \
   , _GE_FI(a2), _GE_FI(a3), _GE_FI(a4), _GE_FI(a5), _GE_FI(a6), _GE_FI(a7), _GE_FI(a8), _GE_FI(a9), _GE_FI(a10), \
-      _GE_FI(a11), _GE_FI(a12), _GE_FI(a13), _GE_FI(a14), _GE_FI(a15)
+    _GE_FI(a11), _GE_FI(a12), _GE_FI(a13), _GE_FI(a14), _GE_FI(a15)
 
 #define _GE_PRIVATE_ARGS_GLUE(x, y) x y
 

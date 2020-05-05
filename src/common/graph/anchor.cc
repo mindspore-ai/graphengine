@@ -26,6 +26,8 @@ Anchor::Anchor(const NodePtr &owner_node, int idx) : owner_node_(owner_node), id
 
 bool Anchor::IsTypeOf(TYPE type) const { return strcmp(Anchor::TypeOf<Anchor>(), type) == 0; }
 
+size_t Anchor::GetPeerAnchorsSize() const { return peer_anchors_.size(); }
+
 Anchor::Vistor<AnchorPtr> Anchor::GetPeerAnchors() const {
   vector<AnchorPtr> ret;
   for (const auto &anchor : peer_anchors_) {

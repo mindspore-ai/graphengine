@@ -29,7 +29,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "external/graph/types.h"
 #include "ge/ge_api_types.h"
-#include "graph/build/graph_build.h"
+#include "graph/build/graph_builder.h"
 #include "graph/execute/graph_execute.h"
 #include "graph/ge_local_context.h"
 #include "graph/load/graph_loader.h"
@@ -175,7 +175,7 @@ class GraphManager {
 
   std::shared_ptr<GraphModelListener> GetModelListener() const { return graph_run_listener_; }
 
-  static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, SubGraphInfoPtr &sub_graph_info_ptr,
+  static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, const SubGraphInfoPtr &sub_graph_info_ptr,
                                                 uint64_t session_id, const GEThreadLocalContext &ge_context);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, vector<GeModelPtr> &ge_models,
                 GeModelPtr &ge_model, uint64_t session_id = INVALID_SESSION_ID);
@@ -227,7 +227,9 @@ class GraphManager {
 
   bool CheckTransOpForCheckpointGraph(NodePtr &node);
 
-  Status MergeSubGraph(ComputeGraphPtr &compute_graph, const std::vector<SubGraphInfoPtr> &sub_graph_list);
+  Status MergeSubGraph(ComputeGraphPtr &compute_graph, const ge::ComputeGraphPtr &original_compute_graph);
+
+  Status SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph);
 
   bool IsBroadCastOpData(const ge::NodePtr &var_node);
 
@@ -246,7 +248,7 @@ class GraphManager {
   // graph context
   std::shared_ptr<GraphContext> GetGraphContext() const { return graph_context_; }
 
-  void ResetConstType(ge::ComputeGraphPtr &compute_graph);
+  Status RemoveIsolatedConst(ge::ComputeGraphPtr &compute_graph);
 
   Status OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph);
 

@@ -29,9 +29,9 @@
 #include "runtime/rt.h"
 #include "task/tbe_task_builder.h"
 
-using std::vector;
-using std::unique_ptr;
 using domi::TaskDef;
+using std::unique_ptr;
+using std::vector;
 
 namespace ge {
 namespace {
@@ -77,13 +77,11 @@ void SingleOpModel::ParseOpModelParams(ModelHelper &model_helper, SingleOpModelP
   ret = ge::AttrUtils::GetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, value);
   param.weight_addr = ret ? static_cast<uint64_t>(value) : 0;
 
-  GELOGI("ParseOpModelParams(), memory_size:%lu, weight_size:%lu.", param.memory_size,
-         param.weight_size);
+  GELOGI("ParseOpModelParams(), memory_size:%lu, weight_size:%lu.", param.memory_size, param.weight_size);
 }
 
 Status SingleOpModel::InitModelMem(StreamResource &res) {
   ParseOpModelParams(model_helper_, model_params_);
-
   if (model_params_.memory_size > ALLOC_MEMORY_MAX_SIZE || model_params_.weight_size > ALLOC_MEMORY_MAX_SIZE) {
     GELOGE(PARAM_INVALID, "Can not alloc memory larger than %lu. memory size = %lu, weight size = %lu",
            ALLOC_MEMORY_MAX_SIZE, model_params_.memory_size, model_params_.weight_size);
@@ -117,11 +115,11 @@ Status SingleOpModel::ParseInputNode(const OpDescPtr &op_desc) {
 
   auto output_desc = op_desc->GetOutputDescPtr(0);
   GE_CHECK_NOTNULL(output_desc);
-  uint32_t tensor_size = 0;
+  int64_t tensor_size = 0;
   (void)TensorUtils::GetSize(*output_desc, tensor_size);
   input_offset_list_.emplace_back(offsets[0]);
   input_sizes_.emplace_back(tensor_size);
-  GELOGI("[%s] parse input node: %s, size = %u, offset = %u", model_name_.c_str(), op_desc->GetName().c_str(),
+  GELOGI("[%s] parse input node: %s, size = %ld, offset = %u", model_name_.c_str(), op_desc->GetName().c_str(),
          tensor_size, static_cast<uint32_t>(offsets[0]));
   return SUCCESS;
 }
@@ -133,11 +131,11 @@ void SingleOpModel::ParseOutputNode(const OpDescPtr &op_desc) {
     if (input_desc == nullptr) {
       continue;
     }
-    uint32_t tensor_size = 0;
+    int64_t tensor_size = 0;
     (void)TensorUtils::GetSize(*input_desc, tensor_size);
     output_offset_list_.emplace_back(offsets[k]);
     output_sizes_.emplace_back(tensor_size);
-    GELOGI("[%s] parse output node: %s, size = %u, offset = %u", model_name_.c_str(), op_desc->GetName().c_str(),
+    GELOGI("[%s] parse output node: %s, size = %ld, offset = %u", model_name_.c_str(), op_desc->GetName().c_str(),
            tensor_size, static_cast<uint32_t>(offsets[k]));
   }
 }
@@ -152,7 +150,7 @@ Status SingleOpModel::ParseInputsAndOutputs() {
     return PARAM_INVALID;
   }
 
-  auto nodes = compute_graph->GetAllNodes();
+  auto nodes = compute_graph->GetDirectNode();
   size_t model_op_size = nodes.size();
   GELOGI("[%s] node size = %zu", model_name_.c_str(), model_op_size);
 

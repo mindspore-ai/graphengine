@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "external/graph/ge_error_codes.h"
+#include "./ge_error_codes.h"
 
 using std::make_shared;
 using std::map;

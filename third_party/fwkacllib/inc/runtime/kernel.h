@@ -22,22 +22,22 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  // __cplusplus
+#endif
 
 /**
  * @ingroup rt_kernel
  * @brief shared memory data control
  */
 typedef struct tagRtSmData {
-  uint64_t L2_mirror_addr;         // preload or swap source address
-  uint32_t L2_data_section_size;   // every data size
-  uint8_t L2_preload;              // 1 - preload from mirrorAddr, 0 - no preload
-  uint8_t modified;                // 1 - data will be modified by kernel, 0 - no modified
-  uint8_t priority;                // data priority
-  int8_t prev_L2_page_offset_base; // remap source section offset
-  uint8_t L2_page_offset_base;     // remap destination section offset
-  uint8_t L2_load_to_ddr;          // 1 - need load out, 0 - no need
-  uint8_t reserved[2];             // reserved
+  uint64_t L2_mirror_addr;          // preload or swap source address
+  uint32_t L2_data_section_size;    // every data size
+  uint8_t L2_preload;               // 1 - preload from mirrorAddr, 0 - no preload
+  uint8_t modified;                 // 1 - data will be modified by kernel, 0 - no modified
+  uint8_t priority;                 // data priority
+  int8_t prev_L2_page_offset_base;  // remap source section offset
+  uint8_t L2_page_offset_base;      // remap destination section offset
+  uint8_t L2_load_to_ddr;           // 1 - need load out, 0 - no need
+  uint8_t reserved[2];              // reserved
 } rtSmData_t;
 
 /**
@@ -48,8 +48,8 @@ typedef struct tagRtSmCtrl {
   rtSmData_t data[8];  // data description
   uint64_t size;       // max page Num
   uint8_t remap[64];   /* just using for static remap mode, default:0xFF
-                       * array index: virtual l2 page id, array value: physic l2 page id */
-  uint8_t l2_in_main;  // 0-DDR, 1-L2, default:0xF
+                          array index: virtual l2 page id, array value: physic l2 page id */
+  uint8_t l2_in_main;  // 0-DDR, 1-L2, default:0xFF
   uint8_t reserved[3];
 } rtSmDesc_t;
 
@@ -60,11 +60,29 @@ typedef rtSmDesc_t rtL2Ctrl_t;
  * @brief device binary type
  */
 typedef struct tagRtDevBinary {
-  uint32_t magic;   /**< magic number */
-  uint32_t version; /**< version of binary */
-  const void *data; /**< binary data */
-  uint64_t length;  /**< binary length */
+  uint32_t magic;    // magic number
+  uint32_t version;  // version of binary
+  const void *data;  // binary data
+  uint64_t length;   // binary length
 } rtDevBinary_t;
+
+/**
+  * @ingroup rt_kernel
+  * @brief function mode type
+  */
+#define ONLINE_PROF_MAX_PMU_NUM (8)
+
+typedef struct ProfilefDataInfo {
+  const void *stubFunc;
+  uint32_t blockDim;
+  const void *args;
+  uint32_t argsSize;
+  rtSmDesc_t *smDesc;
+  rtStream_t stream;
+  uint64_t totalcycle;
+  uint64_t ovcycle;
+  uint64_t pmu_cnt[ONLINE_PROF_MAX_PMU_NUM];
+} rtProfDataInfo_t;
 
 /**
  * @ingroup rt_kernel
@@ -111,6 +129,12 @@ typedef rtError_t (*rtKernelReportCallback)(rtStream_t stream, rtKernelInfo_t ke
 
 /**
  * @ingroup rt_kernel
+ * @brief stream report callback
+ */
+typedef void (*rtCallback_t)(void *fnData);
+
+/**
+ * @ingroup rt_kernel
  * @brief magic number of plain binary for aicore
  */
 #define RT_DEV_BINARY_MAGIC_PLAIN 0xabceed50
@@ -149,8 +173,8 @@ typedef rtError_t (*rtKernelReportCallback)(rtStream_t stream, rtKernelInfo_t ke
  * @ingroup rt_kernel_flags
  * @brief kernel op bit flags
  */
-#define RT_KERNEL_DEFAULT  (0x00)
-#define RT_KERNEL_CONVERT  (0x01)
+#define RT_KERNEL_DEFAULT (0x00)
+#define RT_KERNEL_CONVERT (0x01)
 #define RT_KERNEL_DUMPFLAG (0x02)
 
 /**
@@ -226,6 +250,14 @@ RTS_API rtError_t rtGetFunctionByName(const char *stubName, void **stubFunc);
 
 /**
  * @ingroup rt_kernel
+ * @brief find addr by stub func
+ * @param [in] stubFunc   stub function
+ * @param [out] addr
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetAddrByFun(const void *stubFunc, void **addr);
+/**
+ * @ingroup rt_kernel
  * @brief query registered or not by stubName
  * @param [in] stubName   stub function name
  * @return RT_ERROR_NONE for ok
@@ -283,7 +315,6 @@ RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim
  */
 RTS_API rtError_t rtKernelLaunchEx(void *args, uint32_t argsSize, uint32_t flags, rtStream_t stream);
 
-
 /**
  * @ingroup rt_kernel
  * @brief launch cpu kernel to device
@@ -312,9 +343,9 @@ RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, 
  * @param [in] flag          dump flag or others function flag
  * @retval RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kernelName, uint32_t blockDim, 
-                                            const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, 
-                                            rtStream_t stream, uint32_t flags);
+RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kernelName, uint32_t blockDim,
+                                            const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream,
+                                            uint32_t flags);
 
 /**
  * @ingroup rt_kernel
@@ -400,8 +431,62 @@ RTS_API rtError_t rtKernelFusionEnd(rtStream_t stream);
  */
 RTS_API rtError_t rtSetKernelReportCallback(rtKernelReportCallback callBack);
 
+/**
+ * @ingroup rt_kernel
+ * @brief subscribe stream callback report.
+ * @param [in] threadId   thread id for stream
+ * @param [in] stream   stream for subscribe
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stream);
+
+/**
+ * @ingroup rt_kernel
+ * @brief add callback launch task in stream.
+ * @param [in] callBackFunc   app callback function
+ * @param [in] fnData   user data
+ * @param [in] stream   subscribed stream
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtStream_t stream);
+
+/**
+ * @ingroup rt_kernel
+ * @brief process callback report.
+ * @param [in] timeout   if timeout=-1, while(1); else timeout
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtProcessReport(int32_t timeout);
+
+/**
+ * @ingroup rt_kernel
+ * @brief unsubscribe callback report.
+ * @param [in] threadId   thread id for stream
+ * @param [in] stream   stream for subscribe
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stream);
+
+/**
+ * @ingroup profiling_base
+ * @brief start online prof.
+ */
+RTS_API rtError_t rtStartOnlineProf(rtStream_t stream, uint32_t sampleNum);
+
+/**
+ * @ingroup profiling_base
+ * @brief stop online prof.
+ */
+RTS_API rtError_t rtStopOnlineProf(rtStream_t stream);
+
+/**
+ * @ingroup profiling_base
+ * @brief get online prof.
+ */
+RTS_API rtError_t rtGetOnlineProfData(rtStream_t stream, rtProfDataInfo_t *pProfData, uint32_t profDataNum);
 #ifdef __cplusplus
 }
 #endif
 
 #endif  // __CCE_RUNTIME_KERNEL_H__
+

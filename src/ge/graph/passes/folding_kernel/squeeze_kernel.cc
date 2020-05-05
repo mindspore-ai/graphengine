@@ -28,7 +28,7 @@ constexpr uint32_t kInputDescIndex = 0;
 constexpr uint32_t kOutputDescIndex = 0;
 constexpr size_t kSqueezeInputSize = 1;
 constexpr size_t kSqueezeOutputSize = 1;
-}
+}  // namespace
 
 namespace ge {
 Status SqueezeKernel::Compute(const NodePtr &node_ptr) {

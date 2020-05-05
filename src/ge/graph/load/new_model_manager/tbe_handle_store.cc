@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "graph/load/new_model_manager/tbe_handle_store.h"
+#include "tbe_handle_store.h"
 
 #include <limits>
 #include "common/ge_inner_error_codes.h"

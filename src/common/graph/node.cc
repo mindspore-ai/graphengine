@@ -401,7 +401,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Node::Vistor<AnchorPtr> Node::Get
       vec.push_back(in_anchor);
     }
   }
-  // Push back  in_control_anchor_
+  // Push back in_control_anchor_
   if ((in_control_anchor_->GetPeerOutControlAnchors().size() > 0) ||
       (in_control_anchor_->GetPeerOutDataAnchors().size() > 0)) {
     auto in_anchor = Anchor::DynamicAnchorCast<Anchor>(in_control_anchor_);
@@ -512,7 +512,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Node::Vistor<NodePtr> Node::GetIn
 
     auto peer_out_anchors = in_control_anchor_->GetPeerOutDataAnchors();
     for (const auto &out_anchor : peer_out_anchors) {
-      GE_CHK_BOOL_EXEC(out_anchor != nullptr, continue, " in_control_anchor_ peer out data anchors is nullptr");
+      GE_CHK_BOOL_EXEC(out_anchor != nullptr, continue, "in_control_anchor_ peer out data anchors is nullptr");
       auto node = out_anchor->GetOwnerNode();
       GE_CHK_BOOL_EXEC(node != nullptr, continue, "GetOwnerNode is nullptr");
       vec.push_back(node);
@@ -521,7 +521,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Node::Vistor<NodePtr> Node::GetIn
     auto peer_out_control_anchors = in_control_anchor_->GetPeerOutControlAnchors();
     for (const auto &out_control_anchor : peer_out_control_anchors) {
       GE_CHK_BOOL_EXEC(out_control_anchor != nullptr, continue,
-                       " in_control_anchor_ peer out control anchors is nullptr");
+                       "in_control_anchor_ peer out control anchors is nullptr");
       auto node = out_control_anchor->GetOwnerNode();
       GE_CHK_BOOL_EXEC(node != nullptr, continue, "GetOwnerNode is nullptr");
       vec.push_back(node);
@@ -785,6 +785,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus Node::UpdateOpDesc(co
   GE_CHK_BOOL_EXEC(op_->GetInputsSize() == op_desc->GetInputsSize(), return GRAPH_PARAM_INVALID,
                    "Inputs count expected to be same, orginial OpDesc %zu, Param OpDesc %zu", op_->GetInputsSize(),
                    op_desc->GetInputsSize());
+
   GE_CHK_BOOL_EXEC(op_->GetOutputsSize() == op_desc->GetOutputsSize(), return GRAPH_PARAM_INVALID,
                    "Outputs count expected to be same, orginial OpDesc %zu, Param OpDesc %zu", op_->GetOutputsSize(),
                    op_desc->GetOutputsSize());

@@ -58,6 +58,7 @@ bool AicpuTask::Distribute() {
     GELOGE(RT_FAILED, "Call rt api(rtMalloc) failed, ret: 0x%X.", rt_ret);
     return false;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "task args data.", args_size)
   // Memcpy AicpuParamHead
   rt_ret = rtMemcpy(args_, sizeof(aicpu::AicpuParamHead), reinterpret_cast<void *>(&aicpu_param_head),
                     sizeof(aicpu::AicpuParamHead), RT_MEMCPY_HOST_TO_DEVICE);

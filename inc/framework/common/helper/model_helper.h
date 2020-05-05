@@ -19,7 +19,6 @@
 
 #include <memory>
 #include <string>
-#include <memory>
 
 #include "common/fmk_types.h"
 #include "common/helper/om_file_helper.h"
@@ -33,36 +32,41 @@ class ModelHelper {
   ModelHelper() = default;
   ~ModelHelper();
 
-  Status SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param, const std::string &output_file);
-  Status SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file);
-  Status LoadModel(const ge::ModelData &model_data);
+  Status SaveToOmModel(const GeModelPtr& ge_model, const SaveParam& save_param, const std::string& output_file,
+                       ge::ModelBufferData& model);
+  Status SaveOriginalGraphToOmModel(const ge::Graph& graph, const std::string& output_file);
+  Status LoadModel(const ge::ModelData& model_data);
+  Status GetModelBufferData(ge::ModelBufferData& model);
 
-  ModelFileHeader *GetFileHeader() { return file_header_; }
+  ModelFileHeader* GetFileHeader() { return file_header_; }
 
   GeModelPtr GetGeModel();
+  void SetSaveMode(bool val) { is_offline_ = val; }
+  bool GetSaveMode(void) const { return is_offline_; }
 
-  static Status TransModelToGeModel(const ModelPtr &model, GeModelPtr &ge_model);
-  static Status TransGeModelToModel(const GeModelPtr &geModelPtr, ModelPtr &modelPtr);
+  static Status TransModelToGeModel(const ModelPtr& model, GeModelPtr& ge_model);
+  static Status TransGeModelToModel(const GeModelPtr& geModelPtr, ModelPtr& modelPtr);
 
  private:
   bool is_assign_model_ = false;
-  ModelFileHeader *file_header_ = nullptr;
+  bool is_offline_ = true;
+  ModelFileHeader* file_header_ = nullptr;
   // Encrypted model need delete temp model and unencrypted model need not delete model
-  uint8_t *model_addr_tmp_ = nullptr;
+  uint8_t* model_addr_tmp_ = nullptr;
   uint32_t model_len_tmp_ = 0;
   GeModelPtr model_;
 
-  ModelHelper(const ModelHelper &);
-  ModelHelper &operator=(const ModelHelper &);
-  Status GenerateGeModel(OmFileLoadHelper &om_load_helper);
-  Status LoadModelData(OmFileLoadHelper &om_load_helper);
-  void SetModelToGeModel(ge::Model &model);
-  Status LoadWeights(OmFileLoadHelper &om_load_helper);
-  Status LoadTask(OmFileLoadHelper &om_load_helper);
-  Status LoadTBEKernelStore(OmFileLoadHelper &om_load_helper);
+  ModelHelper(const ModelHelper&);
+  ModelHelper& operator=(const ModelHelper&);
+  Status GenerateGeModel(OmFileLoadHelper& om_load_helper);
+  Status LoadModelData(OmFileLoadHelper& om_load_helper);
+  void SetModelToGeModel(ge::Model& model);
+  Status LoadWeights(OmFileLoadHelper& om_load_helper);
+  Status LoadTask(OmFileLoadHelper& om_load_helper);
+  Status LoadTBEKernelStore(OmFileLoadHelper& om_load_helper);
   Status ReleaseLocalModelData() noexcept;
-  Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, ModelPartitionType type,
-                            const uint8_t *data, size_t size);
+  Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper>& om_file_save_helper, ModelPartitionType type,
+                            const uint8_t* data, size_t size);
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_

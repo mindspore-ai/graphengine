@@ -18,6 +18,7 @@
 
 #include <list>
 
+#include "common/fp16_t.h"
 #include "common/ge/ge_util.h"
 #include "external/graph/types.h"
 #include "framework/common/debug/ge_log.h"
@@ -33,23 +34,11 @@
 #include "graph/utils/type_utils.h"
 #include "mmpa/mmpa_api.h"
 
-#define RETURN_IF_TRUE(cond, errcode, ...) \
-  do {                                     \
-    if (cond) {                            \
-      GELOGE(errcode, __VA_ARGS__);        \
-      return errcode;                      \
-    }                                      \
-  } while (0);
-
-using domi::DOMI_TENSOR_NCHW;
+using ge::fp16_t;
 using std::vector;
 
 namespace ge {
 // General constant
-const int32_t kDimMaxSize = 8;
-const float DEFAULT_ALPHA_VALUE = 1.0;
-const float DEFAULT_BETA_VALUE = 0.0;
-const int NORMAL_TENSOR_SIZE = 4;
 const int32_t kDimSizeZero = 0;
 const int32_t kDimSizeOne = 1;
 const int32_t kDimSizeTwo = 2;
@@ -58,13 +47,13 @@ const uint32_t kSliceDataNum = 2;
 
 // Add Sub Mul
 const uint32_t ADD_INPUT_NUM = 2;
-const uint32_t SUB_INPUT_NUM = 2;
 const uint32_t MUL_INPUT_NUM = 2;
 
 // Permute
 const int32_t PERMUTE_ORDER_NUM = 4;
 // Ssd PriroBox
 const double SSD_PRIORBOX_ASPECT_RATIO_VALUE = 1.0;
+
 // Switch
 const uint32_t SWITCH_INPUT_NUM = 2;
 const uint32_t SWITCH_OUTPUT_NUM = 2;
@@ -72,6 +61,15 @@ const uint32_t SWITCH_FALSE_OUTPUT = 0;
 const uint32_t SWITCH_TRUE_OUTPUT = 1;
 const uint32_t SWITCH_DATA_INPUT = 0;
 const uint32_t SWITCH_PRED_INPUT = 1;
+
+// FunctionOp
+const uint32_t IF_COND_INPUT = 0;
+const uint32_t FOR_START_INPUT = 0;
+const uint32_t FOR_LIMIT_INPUT = 1;
+const uint32_t FOR_DELTA_INPUT = 2;
+const uint32_t FOR_DATA_INPUT = 3;
+
+const int NORMAL_TENSOR_SIZE = 4;
 
 // Get the value of key from attr
 #define AIPP_GET_ATTR_VALUE(KEY, ATTR_TYPE)                          \
@@ -221,88 +219,128 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::TransferDim(con
   return SUCCESS;
 }
 
-void OpUtils::SliceData(std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output, int64_t begin,
-                        int64_t out_dim, int64_t stride) {
+template <typename T>
+void OpUtils::SliceData(const std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output,
+                        int64_t begin, int64_t out_dim, int64_t stride) {
   char *slice = nullptr;
+  // chunk_size * (begin + (out_dim-1)*stride) always less than chunk_size * dim_i, no need to check.
   for (size_t j = 0; j < input.size(); j++) {
-    slice = input[j] + sizeof(int32_t) * begin * chunk_size;
+    slice = input[j] + sizeof(T) * begin * chunk_size;
     for (int64_t i = 0; i < out_dim; i++) {
-      output.push_back(slice + sizeof(int32_t) * i * chunk_size * stride);
+      output.push_back(slice + sizeof(T) * i * chunk_size * stride);
     }
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetOutputSliceData(
-  void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims, std::vector<int64_t> &begin,
-  std::vector<int64_t> &output_dims, GeTensor *output, std::vector<int64_t> &stride) {
-  GE_CHECK_NOTNULL(data);
-  GE_CHECK_NOTNULL(output);
+template <typename T>
+Status OpUtils::SetDataByDataType(size_t out_size, const std::vector<char *> &chunk_input,
+                                  const std::vector<char *> &chunk_output, GeTensor *output) {
+  unique_ptr<T[]> output_data(new (std::nothrow) T[out_size]());
+  if (output_data == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "New buf failed");
+    return INTERNAL_ERROR;
+  }
+
+  if (!chunk_input.empty()) {
+    for (size_t j = 0; j < out_size; j++) {
+      T *value = reinterpret_cast<T *>(chunk_input[j]);
+      output_data[j] = value[0];
+    }
+  } else {
+    for (size_t j = 0; j < out_size; j++) {
+      T *value = reinterpret_cast<T *>(chunk_output[j]);
+      output_data[j] = value[0];
+    }
+  }
+
+  // output_data != nullptr and out_size > 0, SetData always return success, no need to check value
+  (void)output->SetData(reinterpret_cast<uint8_t *>(output_data.get()), out_size * sizeof(T));
+  return SUCCESS;
+}
+
+template <typename T>
+Status OpUtils::SetOutputSliceDataByDataType(void *data, int64_t data_size, const std::vector<int64_t> &input_dims,
+                                             const std::vector<int64_t> &begin, const std::vector<int64_t> &output_dims,
+                                             GeTensor *output, const std::vector<int64_t> &stride) {
   std::vector<char *> chunk_input;
   std::vector<char *> chunk_output;
   chunk_input.push_back(reinterpret_cast<char *>(data));
   int64_t chunk_size = data_size;
-  int dim_size = static_cast<int>(input_dims.size());
-  for (int i = 0; i < dim_size; i++) {
+  size_t dim_size = input_dims.size();
+  for (size_t i = 0; i < dim_size; i++) {
     int64_t begin_i = begin[i];
     int64_t size_i = output_dims[i];
     int64_t dim_i = input_dims[i];
     int64_t stride_i = stride[i];
-    GE_CHK_BOOL_EXEC((dim_i != 0), return PARAM_INVALID, "Dim_i can't be 0.");
+    if (dim_i == 0) {
+      GELOGE(PARAM_INVALID, "Dim_i of size tensor can't be 0.");
+      return PARAM_INVALID;
+    }
     chunk_size = chunk_size / dim_i;
 
     if (i % kSliceDataNum == 0) {
-      SliceData(chunk_input, chunk_size, chunk_output, begin_i, size_i, stride_i);
+      SliceData<T>(chunk_input, chunk_size, chunk_output, begin_i, size_i, stride_i);
       chunk_input.clear();
     } else {
-      SliceData(chunk_output, chunk_size, chunk_input, begin_i, size_i, stride_i);
+      SliceData<T>(chunk_output, chunk_size, chunk_input, begin_i, size_i, stride_i);
       chunk_output.clear();
     }
   }
 
   size_t out_size = chunk_input.size() + chunk_output.size();
   GE_CHK_BOOL_RET_STATUS(out_size > 0, FAILED, "Out_size <= 0");
+  Status ret = SetDataByDataType<T>(out_size, chunk_input, chunk_output, output);
+  return ret;
+}
 
-  if (data_type == DT_FLOAT) {
-    float *output_data = new (std::nothrow) float[out_size]();
-    GE_CHECK_NOTNULL(output_data);
-    if (!chunk_input.empty()) {
-      for (size_t j = 0; j < out_size; j++) {
-        float *value = reinterpret_cast<float *>(chunk_input[j]);
-        output_data[j] = *value;
-      }
-    } else {
-      for (size_t j = 0; j < out_size; j++) {
-        float *value = reinterpret_cast<float *>(chunk_output[j]);
-        output_data[j] = *value;
-      }
-    }
-    (void)output->SetData(reinterpret_cast<uint8_t *>(output_data), out_size * sizeof(float));
-    // output_data != nullptr and out_size > 0, SetData always return success, no need to check value
-    GE_DELETE_NEW_ARRAY(output_data);
-  } else if (data_type == DT_INT32) {
-    int *output_data = new (std::nothrow) int[out_size]();
-    GE_CHECK_NOTNULL(output_data);
-
-    if (!chunk_input.empty()) {
-      for (size_t j = 0; j < out_size; j++) {
-        int *value = reinterpret_cast<int *>(chunk_input[j]);
-        output_data[j] = *value;
-      }
-    } else {
-      for (size_t j = 0; j < out_size; j++) {
-        int *value = reinterpret_cast<int *>(chunk_output[j]);
-        output_data[j] = *value;
-      }
-    }
-    (void)output->SetData(reinterpret_cast<uint8_t *>(output_data), out_size * sizeof(int));
-    // output_data != nullptr and out_size > 0, SetData always return success, no need to check value
-    GE_DELETE_NEW_ARRAY(output_data);
-  } else {
-    GELOGE(FAILED, "Data type of Slice OP must be float or int32.");
-    return FAILED;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetOutputSliceData(
+  void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims, std::vector<int64_t> &begin,
+  std::vector<int64_t> &output_dims, GeTensor *output, std::vector<int64_t> &stride) {
+  if (data == nullptr || output == nullptr) {
+    GELOGE(PARAM_INVALID, "Input param is nullptr.");
+    return PARAM_INVALID;
   }
 
-  return SUCCESS;
+  Status ret;
+  switch (data_type) {
+    case DT_INT32:
+      ret = SetOutputSliceDataByDataType<int32_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_FLOAT:
+      ret = SetOutputSliceDataByDataType<float>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_DOUBLE:
+      ret = SetOutputSliceDataByDataType<double>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_FLOAT16:
+      ret = SetOutputSliceDataByDataType<fp16_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_UINT8:
+      ret = SetOutputSliceDataByDataType<uint8_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_INT8:
+      ret = SetOutputSliceDataByDataType<int8_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_UINT16:
+      ret = SetOutputSliceDataByDataType<uint16_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_INT16:
+      ret = SetOutputSliceDataByDataType<int16_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_UINT32:
+      ret = SetOutputSliceDataByDataType<uint32_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_UINT64:
+      ret = SetOutputSliceDataByDataType<uint64_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    case DT_INT64:
+      ret = SetOutputSliceDataByDataType<int64_t>(data, data_size, input_dims, begin, output_dims, output, stride);
+      break;
+    default:
+      GELOGW("Unsupported data type: %s", TypeUtils::DataTypeToSerialString(static_cast<DataType>(data_type)).c_str());
+      return PARAM_INVALID;
+  }
+  return ret;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataHWCK2KCHW(const void *input, int64_t h,

@@ -20,10 +20,12 @@
 #include <string>
 #include <vector>
 
+#include "external/ge/ge_ir_build.h"
 #include "framework/common/fmk_types.h"
-#include "framework/common/ge_types.h"
 #include "framework/common/types.h"
+#include "framework/common/ge_types.h"
 
+using ProcParam = struct PROC_PARAM;
 using std::string;
 using std::vector;
 
@@ -80,9 +82,10 @@ class OmFileSaveHelper {
 
   const std::vector<ModelPartition> &GetModelPartitions() const;
 
-  Status SaveModel(const SaveParam &save_param, const char *target_file);
+  Status SaveModel(const SaveParam &save_param, const char *target_file, ge::ModelBufferData &model,
+                   bool is_offline = true);
 
-  Status SaveModelToFile(const char *output_file);
+  Status SaveModelToFile(const char *output_file, ge::ModelBufferData &model, bool is_offline = true);
 
   ModelFileHeader model_header_;
   OmFileContext context_;

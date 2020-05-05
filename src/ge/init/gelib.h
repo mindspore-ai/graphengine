@@ -48,19 +48,19 @@ class GELib {
   Status Finalize();
 
   // get DNNEngineManager object
-  DNNEngineManager &DNNEngineManagerObj() { return engine_manager_; }
+  DNNEngineManager &DNNEngineManagerObj() { return engineManager_; }
 
   // get OpsKernelManager object
-  OpsKernelManager &OpsKernelManagerObj() { return ops_manager_; }
+  OpsKernelManager &OpsKernelManagerObj() { return opsManager_; }
 
   // get SessionManager object
-  SessionManager &SessionManagerObj() { return session_manager_; }
+  SessionManager &SessionManagerObj() { return sessionManager_; }
 
   // get Initial flag
   bool InitFlag() const { return init_flag_; }
 
   // get TrainMode flag
-  bool isTrainMode() const { return is_train_mode_; }
+  bool isTrainMode() { return is_train_mode_; }
 
   // add head stream to model
   bool HeadStream() const { return head_stream_; }
@@ -77,9 +77,9 @@ class GELib {
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
 
-  DNNEngineManager engine_manager_;
-  OpsKernelManager ops_manager_;
-  SessionManager session_manager_;
+  DNNEngineManager engineManager_;
+  OpsKernelManager opsManager_;
+  SessionManager sessionManager_;
   std::mutex status_mutex_;
   bool init_flag_ = false;
   Options options_;

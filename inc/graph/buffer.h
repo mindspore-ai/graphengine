@@ -17,12 +17,11 @@
 #ifndef INC_GRAPH_BUFFER_H_
 #define INC_GRAPH_BUFFER_H_
 
+#include <graph/types.h>
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "detail/attributes_holder.h"
-#include "graph/types.h"
 
 namespace ge {
 #ifdef HOST_VISIBILITY
@@ -72,7 +71,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Buffer {
   GeIrProtoHelper<proto::AttrDef> data_;
   std::string *buffer_ = nullptr;
 
-  // Create buffer from protobuf obj
+  // Create from protobuf obj
   Buffer(const ProtoMsgOwner &protoOnwer, proto::AttrDef *buffer);
   Buffer(const ProtoMsgOwner &protoOnwer, std::string *buffer);
 

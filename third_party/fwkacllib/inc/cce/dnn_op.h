@@ -3461,7 +3461,7 @@ ccStatus_t ccEmbeddingLookupForward(ccHandle_t handle, const void *alpha, const 
 
 /**
  * @ingroup
- * @brief embedding lookup forward. for nn.embedding_lookup
+ * @brief embedding lookup forward.
  * @param [in] handle       cce handle
  * @param [in] alpha        common scale factor
  * @param [in] inputNum   inputNum

@@ -29,6 +29,16 @@
 #include "graph/utils/op_desc_utils.h"
 
 namespace ge {
+enum NodePassOption {
+  // if there is a sub graph on the node, the pass on the node will do:
+  // Pass(node) -> pass all sub graphs on the node -> Pass(node)
+  // when pass the node for the second time, the kOptimizeAfterSubGraph will be set as a flag key
+  kOptimizeAfterSubGraph,
+
+  // add new options before kOptionEnd
+  kOptionEnd
+};
+
 class BaseNodePass {
  public:
   ///
@@ -44,6 +54,10 @@ class BaseNodePass {
   std::unordered_set<NodePtr> GetNodesNeedRePass() { return nodes_need_re_pass_; }
 
   std::unordered_set<Node *> GetNodesDeleted() { return nodes_deleted_; }
+
+  void SetOption(NodePassOption option, const std::string &value) { options_[option] = value; }
+
+  void ClearOptions() { options_.clear(); }
 
   void init() {
     nodes_need_re_pass_.clear();
@@ -91,21 +105,30 @@ class BaseNodePass {
   ///
   void AddNodeDeleted(Node *node) { nodes_deleted_.insert(node); }
 
+  bool OptionExists(NodePassOption option) { return options_.count(option) > 0; }
+
  private:
   std::unordered_set<NodePtr> nodes_need_re_pass_;
   std::unordered_set<Node *> nodes_deleted_;
+  std::map<NodePassOption, std::string> options_;
 };
 
 using NamesToPass = std::vector<std::pair<std::string, BaseNodePass *>>;
 
 class GEPass {
  public:
-  explicit GEPass(ComputeGraphPtr &graph) : graph_(graph) {}
+  explicit GEPass(ComputeGraphPtr &graph) : graph_(graph), root_graph_(graph), depth_(1) {}
   virtual ~GEPass() = default;
   Status Run(const NamesToPass &names_to_passes);
 
  private:
+  GEPass(ComputeGraphPtr &graph, ComputeGraphPtr &root_graph, int depth)
+      : graph_(graph), root_graph_(root_graph), depth_(depth) {}
+  Status RunPassesOneGraph(const NamesToPass &names_to_passes);
+  Status RunPassesOnSubGraph(const NodePtr &node, const NamesToPass &names_to_passes, bool &has_sub_graph);
   ComputeGraphPtr graph_;
+  ComputeGraphPtr root_graph_;
+  int depth_;
 };
 }  // namespace ge
 

@@ -15,7 +15,10 @@
  */
 
 #include "graph/execute/graph_execute.h"
+
+#include <memory>
 #include <string>
+
 #include "common/ge_inner_error_codes.h"
 #include "common/model_parser/base.h"
 #include "graph/load/new_model_manager/model_manager.h"
@@ -24,10 +27,6 @@
 #include "runtime/mem.h"
 
 namespace ge {
-namespace {
-const char ENGINE_AI_CORE[] = "DNN_V100";
-}  // namespace
-
 GraphExecutor::GraphExecutor()
     : init_flag_(false),
       train_graph_flag_(false),
@@ -159,38 +158,41 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
   graph_input_data.timestamp = 0;
   std::size_t inputSize = input_tensor.size();
   std::size_t output_size = output_desc.size();
-  std::vector<uint32_t> buffer_size_vec;
-  std::vector<void *> addr_vec;
+  std::vector<uint32_t> bufferSizeVec;
+  std::vector<void *> addrVec;
 
   for (std::size_t i = 0; i < inputSize; ++i) {
     const GeTensor *InTensor = &input_tensor[i];
     GE_CHECK_NOTNULL(InTensor);
-    buffer_size_vec.push_back(static_cast<uint32_t &&>(InTensor->GetData().size()));
+    bufferSizeVec.push_back(InTensor->GetData().size());
   }
 
   for (const auto &desc : output_desc) {
-    buffer_size_vec.push_back(desc.size);
+    bufferSizeVec.push_back(desc.size);
   }
 
-  Status ret = MallocInOutBuffer(buffer_size_vec, addr_vec);
+  Status ret = MallocInOutBuffer(bufferSizeVec, addrVec);
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_MALLOC_FAILED, "[GraphExecutor] Malloc mem failed");
     return GE_GRAPH_MALLOC_FAILED;
   }
 
-  for (std::size_t i = 0; i < input_tensor.size() && i < addr_vec.size(); ++i) {
+  for (std::size_t i = 0; i < input_tensor.size() && i < addrVec.size(); ++i) {
     const GeTensor *in_tensor = &input_tensor[i];
     GE_CHECK_NOTNULL(in_tensor);
-    if ((addr_vec[i] != nullptr) && (in_tensor->GetData().data() != nullptr)) {
-      if (memcpy_s(addr_vec[i], buffer_size_vec[i], in_tensor->GetData().data(), in_tensor->GetData().size()) != 0) {
-        GELOGE(GE_GRAPH_EXECUTE_FAILED, "[GraphExecutor] memcpy input data failed.");
+    if ((addrVec[i] != nullptr) && (in_tensor->GetData().data() != nullptr)) {
+      errno_t s_ret = memcpy_s(addrVec[i], bufferSizeVec[i], in_tensor->GetData().data(), in_tensor->GetData().size());
+      if (s_ret != 0) {
+        GELOGE(GE_GRAPH_EXECUTE_FAILED,
+               "[GraphExecutor] memcpy input data failed, errno: %d, dst size: %u, src size: %zu.", s_ret,
+               bufferSizeVec[i], in_tensor->GetData().size());
         return GE_GRAPH_EXECUTE_FAILED;
       }
     }
 
     DataBuffer in_data_buf;
-    in_data_buf.data = reinterpret_cast<uint8_t *>(addr_vec[i]);
-    in_data_buf.length = static_cast<uint32_t>(in_tensor->GetData().size());
+    in_data_buf.data = reinterpret_cast<uint8_t *>(addrVec[i]);
+    in_data_buf.length = in_tensor->GetData().size();
     in_data_buf.isDataSupportMemShare = false;
     graph_input_data.blobs.push_back(in_data_buf);
   }
@@ -202,7 +204,7 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
     uint32_t buffer_size = desc.size;
 
     DataBuffer out_data_buf;
-    out_data_buf.data = reinterpret_cast<uint8_t *>(addr_vec[inputSize + j]);
+    out_data_buf.data = reinterpret_cast<uint8_t *>(addrVec[inputSize + j]);
     out_data_buf.length = buffer_size;
     out_data_buf.isDataSupportMemShare = false;
     graph_output_data.blobs.push_back(out_data_buf);
@@ -264,34 +266,32 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
     }
   }
   for (size_t i = 0; i < output_data.blobs.size(); ++i) {
-    DataBuffer out_data_tmp = output_data.blobs[i];
-    CHECK_FALSE_EXEC(out_data_tmp.length != 0,
+    DataBuffer outputDataTmp = output_data.blobs[i];
+    CHECK_FALSE_EXEC(outputDataTmp.length != 0,
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Failed to allocate memory, length is 0.");
                      return GE_GRAPH_EXECUTE_FAILED);
-    std::unique_ptr<uint8_t> out_buf_tmp(new (std::nothrow) uint8_t[out_data_tmp.length]);
-    if (out_buf_tmp == nullptr) {
+    std::unique_ptr<uint8_t> outBufTmp(new (std::nothrow) uint8_t[outputDataTmp.length]);
+    if (outBufTmp == nullptr) {
       GELOGE(FAILED, "Failed to allocate memory.");
       return FAILED;
     }
-    rtError_t ret_value = rtMemcpy(out_buf_tmp.get(), out_data_tmp.length, out_data_tmp.data, out_data_tmp.length,
+    GE_PRINT_DYNAMIC_MEMORY(new, "the output memory of data on training.", sizeof(uint8_t) * outputDataTmp.length)
+    rtError_t ret_value = rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length,
                                    RT_MEMCPY_DEVICE_TO_HOST);
     CHECK_FALSE_EXEC(ret_value == RT_ERROR_NONE,
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Call rt api rtMemcpy failed, ret: 0x%X", ret);
                      return GE_GRAPH_EXECUTE_FAILED);
-    GeTensor out_tensor;
-    std::vector<int64_t> shape_dims;
+    GeTensor outTensor;
+    std::vector<int64_t> shapeDims;
     for (const auto &dim : output_desc[i].shape_info.dims) {
-      shape_dims.push_back(dim);
+      shapeDims.push_back(dim);
     }
 
-    GeShape out_shape(shape_dims);
-    out_tensor.MutableTensorDesc().SetShape(out_shape);
-    out_tensor.MutableTensorDesc().SetDataType((DataType)output_desc[i].data_type);
-    if (out_tensor.SetData(out_buf_tmp.get(), out_data_tmp.length) != SUCCESS) {
-      GELOGE(FAILED, "Out tensor set data failed");
-      return FAILED;
-    }
-    output_tensor.push_back(out_tensor);
+    GeShape outShape(shapeDims);
+    outTensor.MutableTensorDesc().SetShape(outShape);
+    outTensor.MutableTensorDesc().SetDataType((DataType)output_desc[i].data_type);
+    outTensor.SetData(outBufTmp.get(), outputDataTmp.length);
+    output_tensor.push_back(outTensor);
   }
 
   GELOGI("[GraphExecutor] execute model success, modelId=%u.", model_id);
@@ -460,6 +460,24 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
     GELOGE(FAILED, "GetInputOutputDescInfo failed, some exceptions occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
+  }
+
+  return SUCCESS;
+}
+///
+/// @ingroup ge
+/// @brief Get dynamic batch_info
+/// @param [in] model_id
+/// @param [out] batch_info
+/// @return execute result
+///
+Status GraphExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetDynamicBatchInfo(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetDynamicBatchInfo failed.");
+    return ret;
   }
 
   return SUCCESS;

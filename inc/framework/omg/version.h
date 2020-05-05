@@ -32,15 +32,7 @@ class PlatformVersionManager {
   PlatformVersionManager() = delete;
   ~PlatformVersionManager() = delete;
   static Status GetPlatformVersion(std::string &ver) {
-#if defined PLATFORM_PHOENIX
-    ver = "3.51.z";
-#elif defined PLATFORM_ORLANDO
-    ver = "3.31.z";
-#elif defined PLATFORM_MINI
     ver = "1.11.z";
-#elif defined PLATFORM_CLOUD
-    ver = "1.61.z";
-#endif
     std::vector<std::string> version_splits = StringUtils::Split(ver, '.');
     GE_IF_BOOL_EXEC(version_splits.size() < 3, GELOGW("Read platform version error!"); return FAILED;);
 

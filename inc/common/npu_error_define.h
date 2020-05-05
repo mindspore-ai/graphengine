@@ -61,19 +61,19 @@ typedef enum tagHiAiNpuModuleId {
   HIAI_DP = 23,
 } HiAiNpuModuleId;
 
-// bit 31-bit30 to be hiai local
+/* bit 31-bit30 to be hiai local */
 #define HIAI_NPULOCAL_MASK 0xC0000000
 #define SHIFT_LOCAL_MASK 30
 #define HIAI_NPULOCAL_VAL_MASK 0x3
-// bit 29 -bit28 to be hiai aicpu code type
+/* bit 29 -bit28 to be hiai aicpu code type */
 #define HIAI_CODE_TYPE_MASK 0x30000000
 #define SHIFT_CODE_MASK 28
 #define HIAI_CODE_TYPE_VAL_MASK 0x3
-// bit 27 -bit25 to be hiai error level
+/* bit 27 -bit25 to be hiai error level */
 #define HIAI_ERROR_LEVEL_MASK 0x0E000000
 #define SHIFT_ERROR_LVL_MASK 25
 #define HIAI_ERROR_LEVEL_VAL_MASK 0x7
-// bit 24 -bit17 to be hiai mod
+/* bit 24 -bit17 to be hiai mod */
 #define HIAI_MODE_ID_MASK 0x01FE0000
 #define SHIFT_MODE_MASK 17
 #define HIAI_MODE_ID_VAL_MASK 0xFF

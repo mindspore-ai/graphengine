@@ -22,7 +22,8 @@
 
 namespace ge {
 Status InferShapePass::Run(NodePtr &node) {
-  if (ShapeRefiner::InferShapeAndType(node) != GRAPH_SUCCESS) {
+  auto ret = ShapeRefiner::InferShapeAndType(node, !OptionExists(kOptimizeAfterSubGraph));
+  if (ret != GRAPH_SUCCESS) {
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }

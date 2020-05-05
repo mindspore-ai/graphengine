@@ -26,7 +26,7 @@
 #include "graph/utils/graph_utils.h"
 
 namespace {
-const size_t kAnchorSize = 1;
+const int32_t kAnchorSize = 1;
 const int kAnchorNum = 0;
 }  // namespace
 namespace ge {
@@ -47,36 +47,26 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
       auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
       GE_CHECK_NOTNULL(src_out_anchor);
 
-      size_t src_out_anchor_size = src_out_anchor->GetPeerInDataAnchors().size();
-      if (src_out_anchor_size <= kAnchorSize) {
-        GELOGI("Data op only link to hcom op, no need to add memcpy async node.");
+      int32_t src_out_anchor_size = src_out_anchor->GetPeerInDataAnchors().size();
+      if (src_out_anchor_size == kAnchorSize) {
+        // Memcpyasync needs to be inserted between constant (/data) and hcomallreduce to avoid constant being cleared.
+        NodePtr src_node = src_out_anchor->GetOwnerNode();
+        std::string src_type = src_node->GetType();
+        bool check_src_type = (src_type == CONSTANTOP) || (src_type == DATA);
+        if (check_src_type && node->GetType() == HCOMALLREDUCE) {
+          Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
+          if (ret != SUCCESS) {
+            GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+            return ret;
+          }
+        }
         continue;
       }
 
-      GELOGI("The op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str());
-      NodePtr memcpy_node = CreateMemcpyNode(graph, src_out_anchor);
-      GE_CHECK_NOTNULL(memcpy_node);
-
-      Status ret1 = src_out_anchor->Unlink(hccl_in_anchor);
-      if (ret1 != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "The op %s Unlink anchor %s fail.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
-               node->GetName().c_str());
-        return FAILED;
-      }
-      auto out_data_anchor_0 = memcpy_node->GetOutDataAnchor(kAnchorNum);
-      GE_CHECK_NOTNULL(out_data_anchor_0);
-      ret1 = out_data_anchor_0->LinkTo(hccl_in_anchor);
-      if (ret1 != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "The op %s link anchor %s  fail.", memcpy_node->GetName().c_str(),
-               node->GetName().c_str());
-        return FAILED;
-      }
-
-      Status ret = src_out_anchor->LinkTo(memcpy_node->GetInDataAnchor(kAnchorNum));
+      Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
       if (ret != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
-               memcpy_node->GetName().c_str());
-        return FAILED;
+        GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+        return ret;
       }
     }
   }
@@ -154,4 +144,42 @@ bool HcclMemcpyPass::NeedInsertMemcpyOp(const ge::ConstOpDescPtr &op_desc) const
   return (op_desc->GetType() == HCOMALLGATHER || op_desc->GetType() == HCOMALLREDUCE ||
           op_desc->GetType() == HCOMREDUCESCATTER);
 }
+
+///
+/// @brief Modify edge connection
+/// @param [in] ComputeGraphPtr graph
+/// @param [in] OutDataAnchorPtr src_out_anchor
+/// @param [in] InDataAnchorPtr hccl_in_anchor
+/// @return status
+///
+Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
+                                            const InDataAnchorPtr &hccl_in_anchor) {
+  GELOGI("The op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str());
+  NodePtr memcpy_node = CreateMemcpyNode(graph, src_out_anchor);
+  GE_CHECK_NOTNULL(memcpy_node);
+
+  Status ret1 = src_out_anchor->Unlink(hccl_in_anchor);
+  if (ret1 != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "The op %s Unlink anchor %s fail.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    return FAILED;
+  }
+  auto out_data_anchor_0 = memcpy_node->GetOutDataAnchor(kAnchorNum);
+  GE_CHECK_NOTNULL(out_data_anchor_0);
+  ret1 = out_data_anchor_0->LinkTo(hccl_in_anchor);
+  if (ret1 != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s  fail.", memcpy_node->GetName().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    return FAILED;
+  }
+
+  Status ret = src_out_anchor->LinkTo(memcpy_node->GetInDataAnchor(kAnchorNum));
+  if (ret != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
+           memcpy_node->GetName().c_str());
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 }  // namespace ge

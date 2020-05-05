@@ -85,6 +85,7 @@ bool TbeTask::Distribute() {
     GELOGE(RT_FAILED, "rtMalloc failed, ret: %d", static_cast<int32_t>(rt_ret));
     return false;
   }
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "task args data.", args_size)
 
   rt_ret = rtMemcpy(args_, args_size, reinterpret_cast<void *>(tensor_device_addrs.data()), args_size,
                     RT_MEMCPY_HOST_TO_DEVICE);

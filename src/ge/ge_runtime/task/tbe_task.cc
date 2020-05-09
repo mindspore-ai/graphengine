@@ -69,6 +69,7 @@ bool TbeTask::Distribute() {
     stub_func_ = nullptr;
     return false;
   }
+  GELOGI("TbeTask: stub_func = %s [%p].", task_info_->stub_func().c_str(), stub_func_);
 
   // Get args
   std::vector<void *> tensor_device_addrs;

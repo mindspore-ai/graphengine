@@ -42,13 +42,6 @@ class ModelUtils {
 
   ///
   /// @ingroup domi_ome
-  /// @brief Check is the Input need trans code.
-  /// @return bool
-  ///
-  static bool IsInputTensorNeedTrans(ConstOpDescPtr op_desc, size_t tensor_index);
-
-  ///
-  /// @ingroup domi_ome
   /// @brief Get input size.
   /// @return vector<uint32_t>
   ///

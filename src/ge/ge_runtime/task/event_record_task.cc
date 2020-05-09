@@ -43,6 +43,8 @@ EventRecordTask::EventRecordTask(const ModelContext &model_context,
 EventRecordTask::~EventRecordTask() {}
 
 bool EventRecordTask::Distribute() {
+  GELOGI("EventRecordTask Distribute start, stream: %p, event: %p, stream_id: %u, event_id: %u.", stream_, event_,
+         task_info_->stream_id(), task_info_->event_id());
   rtError_t rt_ret = rtEventRecord(event_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);

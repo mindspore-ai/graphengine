@@ -131,25 +131,6 @@ TEST_F(UtestNetOutput, true_is_output) {
   delete model_utils;
 }
 
-// test ModelUtils::IsInputTensorNeedTrans
-TEST_F(UtestNetOutput, success_is_output_tensor_need_trans) {
-  ModelUtils *model_utils = new ModelUtils();
-  std::shared_ptr<OpDesc> op_desc = std::make_shared<OpDesc>();
-  OmeTestOpDescBuilder builder(op_desc);
-  builder.SetType("NetOutput");
-  size_t tensor_index = 1;
-  vector<GeTensorDescPtr> outputs_desc;
-  std::shared_ptr<GeTensorDesc> desc = std::make_shared<GeTensorDesc>();
-  outputs_desc.push_back(desc);
-  op_desc->outputs_desc_ = outputs_desc;
-  op_desc->inputs_desc_ = outputs_desc;
-
-  bool ret = model_utils->IsInputTensorNeedTrans(op_desc, tensor_index);
-  EXPECT_EQ(false, ret);
-
-  delete model_utils;
-}
-
 // test ModelUtils::GetOutputSize
 TEST_F(UtestNetOutput, success_get_output_size) {
   vector<int64_t> v_output_size;

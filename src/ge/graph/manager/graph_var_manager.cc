@@ -64,6 +64,10 @@ ge::Status VarResource::GetVarAddr(const std::string &var_name, const ge::GeTens
   return SUCCESS;
 }
 
+void VarResource::GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map) {
+  var_addr_mgr_map = var_addr_mgr_map_;
+}
+
 void VarResource::SetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *dev_ptr,
                              rtMemType_t memory_type) {
   std::string var_key = VarKey(var_name, tensor_desc);
@@ -168,6 +172,14 @@ ge::Status VarResource::RenewCurVarDesc(const std::string &var_name, const ge::O
 
 void VarResource::SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info) {
   var_broad_cast_info_[graph_id][broad_cast_info.var_name] = broad_cast_info;
+}
+
+ge::Status VarResource::GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info) {
+  if (var_broad_cast_info_.count(graph_id) == 0 || var_broad_cast_info_[graph_id].count(var_name) == 0) {
+    return FAILED;
+  }
+  broad_cast_info = var_broad_cast_info_[graph_id][var_name];
+  return SUCCESS;
 }
 
 ge::Status VarResource::SyncVarData2BroadCast(uint32_t graph_id, const std::string &var_name,
@@ -282,10 +294,16 @@ Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uin
 
   // align 512 BYTE
   var_mem_size_ = var_mem_size_ + kSessionMemAlignSize;
+  GELOGI(
+    "[IMAS]AssignVarMem Set session_%lu name[%s] output[%d]"
+    "offset to [%zu] size[%lu] realsize[%lu].",
+    session_id, var_name.c_str(), 0, mem_offset, (var_mem_size_ - mem_offset), real_size);
   return SUCCESS;
 }
 
 int64_t MemResource::GetVarMemSize() const { return var_mem_size_; }
+
+void MemResource::UpdateVarMemSize(int64_t mem_size) { var_mem_size_ = mem_size; };
 
 VarManager::VarManager(uint64_t session_id)
     : version_(SessionVersion::OTHER_VERSION),
@@ -363,6 +381,21 @@ ge::Status VarManager::SetVarAddr(const std::string &var_name, const ge::GeTenso
   return ge::SUCCESS;
 }
 
+ge::Status VarManager::SaveVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *address,
+                                   rtMemType_t memory_type) {
+  GELOGI("VarManager::SaveVarAddr var_name = %s, data_type = %s, data_format = %s.", var_name.c_str(),
+         ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
+         ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str());
+
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (var_resource_ == nullptr) {
+    GELOGW("VarManager has not been init.");
+    return ge::INTERNAL_ERROR;
+  }
+  var_resource_->SaveVarAddr(var_name, tensor_desc, address, memory_type);
+  return ge::SUCCESS;
+}
+
 ge::Status VarManager::GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr,
                                   rtMemType_t &memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -388,6 +421,10 @@ ge::Status VarManager::GetVarAddr(const std::string &var_name, const ge::GeTenso
   return GetVarAddr(var_name, tensor_desc, dev_ptr, memory_type);
 }
 
+void VarManager::GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map) {
+  var_resource_->GetAllVarAddrMgr(var_addr_mgr_map);
+}
+
 int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   MemResource *mem_resource = nullptr;
@@ -405,14 +442,36 @@ int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
   return mem_resource->GetVarMemSize();
 }
 
+Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  MemResource *mem_resource = nullptr;
+  auto iter = mem_resource_map_.find(memory_type);
+  if (iter == mem_resource_map_.end()) {
+    mem_resource = new (std::nothrow) MemResource();
+    if (mem_resource == nullptr) {
+      GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
+      return ge::INTERNAL_ERROR;
+    } else {
+      mem_resource_map_[memory_type] = mem_resource;
+    }
+  } else {
+    mem_resource = iter->second;
+  }
+
+  if (mem_resource == nullptr) {
+    GELOGE(ge::INTERNAL_ERROR, "MemResource is invalid.");
+    return FAILED;
+  }
+  mem_resource->UpdateVarMemSize(mem_size);
+  return SUCCESS;
+}
+
 ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTensorDesc &tensor_desc,
                                     rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  GELOGI(
-    "VarManager::AssignVarMem var_name = %s, data_type = %s, data_format = "
-    "%s.",
-    var_name.c_str(), ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
-    ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str());
+  GELOGI("VarManager::AssignVarMem var_name = %s, data_type = %s, data_format = %s.", var_name.c_str(),
+         ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
+         ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str());
 
   int64_t tensor_desc_size = 0;
   size_t mem_offset = 0;
@@ -475,14 +534,13 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   if (cur_tensor_desc.GetFormat() != tensor_desc.GetFormat() ||
       cur_tensor_desc.GetDataType() != tensor_desc.GetDataType() ||
       cur_tensor_desc.GetShape().GetDims() != tensor_desc.GetShape().GetDims()) {
-    GELOGI(
-      "var %s assigned new memory (format, data type, shape)  (%s, %s, "
-      "%zu) from (%s, %s, %zu)",
-      var_name.c_str(), ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
-      ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(), tensor_desc.GetShape().GetDims().size(),
-      ge::TypeUtils::DataTypeToSerialString(cur_tensor_desc.GetDataType()).c_str(),
-      ge::TypeUtils::FormatToSerialString(cur_tensor_desc.GetFormat()).c_str(),
-      cur_tensor_desc.GetShape().GetDims().size());
+    GELOGI("var %s assigned new memory (format, data type, shape)  (%s, %s, %zu) from (%s, %s, %zu)", var_name.c_str(),
+           ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
+           ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
+           tensor_desc.GetShape().GetDims().size(),
+           ge::TypeUtils::DataTypeToSerialString(cur_tensor_desc.GetDataType()).c_str(),
+           ge::TypeUtils::FormatToSerialString(cur_tensor_desc.GetFormat()).c_str(),
+           cur_tensor_desc.GetShape().GetDims().size());
     var_resource_->SetVarAddr(var_name, tensor_desc,
                               reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
   }
@@ -548,6 +606,16 @@ ge::Status VarManager::SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastIn
   }
   var_resource_->SaveBroadCastInfo(graph_id, broad_cast_info);
   return SUCCESS;
+}
+
+ge::Status VarManager::GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info) {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+  if (var_resource_ == nullptr) {
+    GELOGW("VarManager has not been init.");
+    return ge::INTERNAL_ERROR;
+  }
+  return var_resource_->GetBroadCastInfo(graph_id, var_name, broad_cast_info);
 }
 
 ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPtr op_desc) {
@@ -672,6 +740,7 @@ Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "Parse graph memory manager malloc max size failed.");
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
+    GELOGI("The max size for graph mem is set to %zu", graph_mem_max_size_);
   }
 
   it = options.find(VARIABLE_MEMORY_MAX_SIZE);

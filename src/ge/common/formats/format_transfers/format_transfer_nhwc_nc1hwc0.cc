@@ -38,7 +38,7 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   }
   dst_shape.clear();
   dst_shape.push_back(src_shape.at(kNhwcN));
-  dst_shape.push_back((src_shape.at(kNhwcC) - 1) / c0 + 1);
+  dst_shape.push_back(Ceil(src_shape.at(kNhwcC), c0));
   dst_shape.push_back(src_shape.at(kNhwcH));
   dst_shape.push_back(src_shape.at(kNhwcW));
   dst_shape.push_back(c0);
@@ -119,8 +119,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
             int64_t dst_idx = c0_idx + w_head_addr;
             int64_t dst_offset = dst_idx * size;
             auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                      ? total_size - dst_offset
-                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                    ? total_size - dst_offset
+                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             int64_t c_idx = c0_idx + c1_idx * c0;
             int64_t src_idx = n_idx * hwc + h_idx * wc + w_idx * c + c_idx;
             auto src_offset = src_idx * size;
@@ -161,6 +161,12 @@ Status FormatTransferNhwcNc1hwc0::TransFormat(const TransArgs &args, TransResult
   int size = GetSizeByDataType(args.src_data_type);
   auto total_size = GetItemNumByShape(args.dst_shape) * size;
   if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
+
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;

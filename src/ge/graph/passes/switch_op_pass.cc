@@ -137,7 +137,7 @@ Status SwitchOpPass::ReplaceSwitchNode(ComputeGraphPtr &graph, NodePtr &switch_n
       NodePtr out_node = peer_in_anchor->GetOwnerNode();
       GE_CHK_STATUS_RET(GetOriginalType(out_node, type), "Get node type fail.");
       if ((type == MERGE) || (type == REFMERGE)) {
-        NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, peer_data_anchor);
+        NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, peer_data_anchor, false);
         GE_CHK_BOOL_EXEC(memcpy_node != nullptr, return FAILED, "Create memcpy_async node fail.");
         GE_CHK_STATUS(GraphUtils::AddEdge(peer_data_anchor, memcpy_node->GetInDataAnchor(0)),
                       "MemcpyAsync node add edge fail.");
@@ -234,16 +234,18 @@ Status SwitchOpPass::ReplaceMergeNode(ComputeGraphPtr &graph, NodePtr &merge_nod
     need_label_nodes_.emplace_back(stream_merge);
   }
 
+  bool multi_batch_flag = false;
   if (merge_op_desc->HasAttr(ATTR_INSERT_BY_MBATCH)) {
     if (!ge::AttrUtils::SetBool(op_desc, ATTR_INSERT_BY_MBATCH, true)) {
       GELOGE(FAILED, "Set attr ATTR_INSERT_BY_MBATCH fail, StreamMerge:%s.", node_name.c_str());
       return FAILED;
     }
+    multi_batch_flag = true;
   }
 
   (void)bypass_nodes_.insert(merge_node);
 
-  GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, stream_merge), "StreamMerge add memcpy node fail.");
+  GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, stream_merge, multi_batch_flag), "StreamMerge add memcpy node fail.");
 
   return SUCCESS;
 }
@@ -302,17 +304,20 @@ NodePtr SwitchOpPass::CreateStreamSwitchNode(ComputeGraphPtr &graph, const NodeP
 /// @brief Add MemcpyAsync Node
 /// @param [in] graph
 /// @param [in] in_node
+/// @param [in] multi_batch_flag
 /// @return ge::NodePtr
 ///
-NodePtr SwitchOpPass::CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+NodePtr SwitchOpPass::CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor,
+                                            bool multi_batch_flag) {
   GE_CHK_BOOL_EXEC(out_data_anchor != nullptr, return nullptr, "Param of input node is null.");
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "OpDesc of pre node is invalid.");
 
-  std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYASYNC;
+  std::string memcpy_type = multi_batch_flag ? MEMCPYADDRASYNC : MEMCPYASYNC;
+  std::string node_name = pre_op_desc->GetName() + "_" + memcpy_type;
   node_name = CheckDuplicateName(node_name);
   GELOGI("Create MemcpyAsync op:%s.", node_name.c_str());
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name, MEMCPYASYNC);
+  OpDescPtr op_desc = MakeShared<OpDesc>(node_name, memcpy_type);
   if (op_desc == nullptr) {
     GELOGE(FAILED, "Create op_desc fail, MemcpyAsync:%s.", node_name.c_str());
     return nullptr;
@@ -432,9 +437,10 @@ NodePtr SwitchOpPass::CreateActiveNode(ComputeGraphPtr &graph, NodePtr &node) {
 /// @brief Add MemcpyAsync Op as StreamMerge in_node
 /// @param [in] graph
 /// @param [in] node
+/// @param [in] multi_batch_flag
 /// @return Status
 ///
-Status SwitchOpPass::AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &node) {
+Status SwitchOpPass::AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &node, bool multi_batch_flag) {
   GE_CHK_BOOL_EXEC(node != nullptr, return FAILED, "Param of pre node is null.");
   for (InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
@@ -447,7 +453,7 @@ Status SwitchOpPass::AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &node) 
                     continue);
 
     GE_IF_BOOL_EXEC(type != MEMCPYASYNC, {
-      in_node = CreateMemcpyAsyncNode(graph, peer_out_anchor);
+      in_node = CreateMemcpyAsyncNode(graph, peer_out_anchor, multi_batch_flag);
       GE_CHK_BOOL_EXEC(in_node != nullptr, return FAILED, "Create MemcpyAsync node fail.");
       GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor), "MemcpyAsync node remove edge fail.");
       GE_CHK_STATUS(GraphUtils::AddEdge(peer_out_anchor, in_node->GetInDataAnchor(0)),

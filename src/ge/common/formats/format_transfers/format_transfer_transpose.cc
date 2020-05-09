@@ -27,22 +27,22 @@ namespace ge {
 namespace formats {
 namespace {
 std::map<Format, std::map<Format, std::vector<int64_t>>> perm_args{
-    {FORMAT_NCHW,
-     {{FORMAT_NHWC, std::vector<int64_t>({0, 2, 3, 1})},
-      {FORMAT_HWCN, std::vector<int64_t>({2, 3, 1, 0})},
-      {FORMAT_CHWN, std::vector<int64_t>({1, 2, 3, 0})}}},
-    {FORMAT_NHWC,
-     {{FORMAT_NCHW, std::vector<int64_t>({0, 3, 1, 2})},
-      {FORMAT_CHWN, std::vector<int64_t>({3, 1, 2, 0})},
-      {FORMAT_HWCN, std::vector<int64_t>({1, 2, 3, 0})}}},
-    {FORMAT_HWCN,
-     {{FORMAT_NCHW, std::vector<int64_t>({3, 2, 0, 1})},
-      {FORMAT_NHWC, std::vector<int64_t>({3, 0, 1, 2})},
-      {FORMAT_CHWN, std::vector<int64_t>({2, 0, 1, 3})}}},
-    {FORMAT_CHWN,
-     {{FORMAT_NCHW, std::vector<int64_t>({3, 0, 1, 2})},
-      {FORMAT_NHWC, std::vector<int64_t>({3, 1, 2, 0})},
-      {FORMAT_HWCN, std::vector<int64_t>({1, 2, 0, 3})}}},
+  {FORMAT_NCHW,
+   {{FORMAT_NHWC, std::vector<int64_t>({0, 2, 3, 1})},
+    {FORMAT_HWCN, std::vector<int64_t>({2, 3, 1, 0})},
+    {FORMAT_CHWN, std::vector<int64_t>({1, 2, 3, 0})}}},
+  {FORMAT_NHWC,
+   {{FORMAT_NCHW, std::vector<int64_t>({0, 3, 1, 2})},
+    {FORMAT_CHWN, std::vector<int64_t>({3, 1, 2, 0})},
+    {FORMAT_HWCN, std::vector<int64_t>({1, 2, 3, 0})}}},
+  {FORMAT_HWCN,
+   {{FORMAT_NCHW, std::vector<int64_t>({3, 2, 0, 1})},
+    {FORMAT_NHWC, std::vector<int64_t>({3, 0, 1, 2})},
+    {FORMAT_CHWN, std::vector<int64_t>({2, 0, 1, 3})}}},
+  {FORMAT_CHWN,
+   {{FORMAT_NCHW, std::vector<int64_t>({3, 0, 1, 2})},
+    {FORMAT_NHWC, std::vector<int64_t>({3, 1, 2, 0})},
+    {FORMAT_HWCN, std::vector<int64_t>({1, 2, 0, 3})}}},
 };
 
 bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<int64_t> &perm_arg) {
@@ -51,8 +51,8 @@ bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<in
     return false;
   }
   for (auto dim : src_shape) {
-    if (dim <= 0) {
-      GELOGE(PARAM_INVALID, "Failed to transpose, zero dim in src shape %s", ShapeToString(src_shape).c_str());
+    if (dim < 0) {
+      GELOGE(PARAM_INVALID, "Failed to transpose, negative dim in src shape %s", ShapeToString(src_shape).c_str());
       return false;
     }
   }
@@ -146,20 +146,24 @@ Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, Data
   int64_t dst_ele_num = GetItemNumByShape(dst_shape);
   int64_t data_size = GetSizeByDataType(src_data_type);
   int64_t dst_size = data_size * dst_ele_num;
-  std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
 
   GELOGD("Begin to transpose, src shape %s, perm arg %s, dst shape %s, data type %s", JoinToString(src_shape).c_str(),
          JoinToString(perm_arg).c_str(), JoinToString(dst_shape).c_str(),
          TypeUtils::DataTypeToSerialString(src_data_type).c_str());
+  if (dst_ele_num == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
 
+  std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   int64_t dst_index = 0;
   std::vector<int64_t> dst_indexes(dst_shape.size());
   while (dst_index < dst_ele_num) {
     auto src_offset = GenOffset(src_heads, dst_indexes) * data_size;
     auto dst_offset_bytes = dst_index * data_size;
     auto protected_size = dst_size - dst_offset_bytes < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                              ? dst_size - dst_offset_bytes
-                              : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                            ? dst_size - dst_offset_bytes
+                            : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
     auto ret = memcpy_s(dst.get() + dst_offset_bytes, static_cast<size_t>(protected_size), src + src_offset,
                         static_cast<size_t>(data_size));
     if (ret != EOK) {

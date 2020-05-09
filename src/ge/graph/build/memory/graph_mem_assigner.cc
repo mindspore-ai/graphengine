@@ -310,6 +310,11 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node)
     if (is_tensor_actual_size == 0) {
       AlignMemOffset(MEM_ALIGN_SIZE);
     }
+    GELOGI(
+      "[IMAS]Continuous input : Set %s name[%s] output[%d] offset to [%zu] stream_id[%ld] size[%zu] "
+      "real_size[%ld].",
+      node->GetOwnerComputeGraph()->GetName().c_str(), peer_op_desc->GetName().c_str(), peer_out_data_anchor->GetIdx(),
+      pre_mem_offset, peer_op_desc->GetStreamId(), (memory_offset_[0].mem_offset_ - pre_mem_offset), tensor_desc_size);
   }
 
   return SUCCESS;
@@ -340,6 +345,11 @@ Status GraphMemoryAssigner::AssignContinuousOutputMemory(const ge::NodePtr &node
     memory_offset_[0].mem_offset_ += tensor_desc_size;
 
     AlignMemOffset(MEM_ALIGN_SIZE);
+    GELOGI(
+      "[IMAS]Continuous output : Set %s name[%s] output[%d] offset to [%zu] stream_id[%ld] size[%zu] "
+      "real_size[%ld].",
+      node->GetOwnerComputeGraph()->GetName().c_str(), out_op_desc->GetName().c_str(), out_data_anchor->GetIdx(),
+      pre_mem_offset, out_op_desc->GetStreamId(), (memory_offset_[0].mem_offset_ - pre_mem_offset), tensor_desc_size);
   }
 
   out_op_desc->SetOutputOffset(output_list);
@@ -413,8 +423,10 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousInputMemory() {
           pre_mem_offset, peer_op_desc->GetStreamId(), out_size, output_mem_size);
       }
       memory_offset_[0].mem_offset_ += extra_memory_size;
-      GELOGI("After reassign virtual input node[name:%s, type:%s] memory, memory offset = %zu.",
-             op_desc->GetName().c_str(), op_desc->GetType().c_str(), memory_offset_[0].mem_offset_);
+      size_t after_mem_offset = memory_offset_[0].mem_offset_;
+      AlignMemOffset(MEM_ALIGN_SIZE);
+      GELOGI("After reassign virtual input node[name:%s, type:%s] memory, memory offset = %zu, align memory = %zu.",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), after_mem_offset, memory_offset_[0].mem_offset_);
     }
   }
   return SUCCESS;
@@ -499,8 +511,10 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousOutputMemory() {
       }
       op_desc->SetOutputOffset(output_list);
       memory_offset_[0].mem_offset_ += extra_memory_size;
-      GELOGI("After reassign virtual output node[name:%s, type:%s] memory, memory offset = %zu.",
-             op_desc->GetName().c_str(), op_desc->GetType().c_str(), memory_offset_[0].mem_offset_);
+      size_t after_mem_offset = memory_offset_[0].mem_offset_;
+      AlignMemOffset(MEM_ALIGN_SIZE);
+      GELOGI("After reassign virtual output node[name:%s, type:%s] memory, memory offset = %zu, align memory = %zu.",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), after_mem_offset, memory_offset_[0].mem_offset_);
     }
   }
   return SUCCESS;
@@ -567,6 +581,11 @@ Status GraphMemoryAssigner::ReAssignMergeMemory() {
 
       output_list[index] = data_output_offset;
       src_node->GetOpDesc()->SetOutputOffset(output_list);
+      GELOGI(
+        "[IMAS]ReAssignMergeMemory : Set %s name[%s] output[%d] offset to [%ld] stream_id[%ld] size[%ld] "
+        "real_size[%ld].",
+        n->GetOwnerComputeGraph()->GetName().c_str(), src_node->GetOpDesc()->GetName().c_str(), index,
+        data_output_offset, src_node->GetOpDesc()->GetStreamId(), max_output_size, max_output_size);
       input_list.emplace_back(data_output_offset);
     }
 
@@ -897,6 +916,9 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
     }
 
     output_list[output_index] = memory_offset_[0].mem_offset_;
+    GELOGI("[IMAS]Atomic output : Set %s name[%s] output[%ld] offset to [%zu] stream_id[%ld] size[%ld] real_size[%ld].",
+           compute_graph_->GetName().c_str(), op_desc->GetName().c_str(), output_index, memory_offset_[0].mem_offset_,
+           op_desc->GetStreamId(), size, size);
 
     memory_offset_[0].mem_offset_ += size;
     AlignMemOffset(MEM_ALIGN_SIZE);
@@ -933,6 +955,11 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
       }
 
       workspace_vector[workspace_index] = memory_offset_[0].mem_offset_;
+      GELOGI(
+        "[IMAS]Atomic ordinary workspace : Set %s name[%s] workspace[%lu] offset to [%zu] stream_id[%ld] "
+        "size[%ld] real_size[%ld].",
+        compute_graph_->GetName().c_str(), op_desc->GetName().c_str(), workspace_index, memory_offset_[0].mem_offset_,
+        op_desc->GetStreamId(), workspace_size, workspace_size);
 
       memory_offset_[0].mem_offset_ += workspace_size;
     }
@@ -958,6 +985,11 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
       auto workspace_size = info_iter.second;
 
       size_t workspace_offset = memory_offset_[0].mem_offset_;
+      GELOGI(
+        "[IMAS]Atomic fusion workspace : Set %s name[%s] workspace[%lu] offset to [%zu] stream_id[%ld] size[%ld] "
+        "real_size[%ld].",
+        compute_graph_->GetName().c_str(), op_desc->GetName().c_str(), workspace_index, memory_offset_[0].mem_offset_,
+        op_desc->GetStreamId(), workspace_size, workspace_size);
 
       memory_offset_[0].mem_offset_ += workspace_size;
       index_offset.insert(std::make_pair(workspace_index, workspace_offset));
@@ -1005,7 +1037,8 @@ ge::Status GraphMemoryAssigner::SetInputOffset() {
     GELOGE(FAILED, "memory_offset_ is empty.");
     return FAILED;
   }
-  GEEVENT("[IMAS]AfterAssignMemory : %s", compute_graph_->GetName().c_str());
+  GEEVENT("[IMAS]AfterAssignMemory : %s memoffset[%zu]", compute_graph_->GetName().c_str(),
+          memory_offset_[0].mem_offset_);
   for (const ge::NodePtr &node : compute_graph_->GetDirectNode()) {
     if (UpdateOpInputOffset(node) != ge::SUCCESS) {
       GELOGE(ge::FAILED, "Update op input offset failed");
@@ -1166,6 +1199,12 @@ ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &n, int64_t ato
       GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_MEM_SIZE, mem_size_vector),
                        GELOGE(FAILED, "SetListInt failed.");
                        return FAILED);
+
+      GELOGI(
+        "[IMAS]SetAtomicCleanAttr : Set %s name[%s] output[%d] offset to [%ld] streamid[%ld] size[%ld] "
+        "realsize[%ld].",
+        node->GetOwnerComputeGraph()->GetName().c_str(), node_op_desc->GetName().c_str(), 0, atomic_mem_start,
+        node->GetOpDesc()->GetStreamId(), atomic_mem_size, atomic_mem_size);
     }
   }
   return SUCCESS;

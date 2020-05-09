@@ -29,6 +29,7 @@ namespace ge {
 class KernelUtils {
  public:
   KernelUtils() = delete;
+  ~KernelUtils() = delete;
   static Status CheckDimensionNodeInfo(const NodePtr &node_ptr);
   static bool CheckFormatSupported(const NodePtr &node_ptr);
   static bool CheckSizeForTransOp(const ConstGeTensorPtr &const_weight_ptr, const OpDescPtr &op_desc_ptr);
@@ -41,7 +42,7 @@ class KernelUtils {
    * @param [out] output the tensor for save sequence of numbers
    * @author
    */
-  template<typename T>
+  template <typename T>
   static Status GenData(const int64_t data_num, const T value, const GeTensorPtr &output) {
     if (data_num > 0) {
       if (!CheckInt64MulOverflow(data_num, static_cast<int64_t>(sizeof(T)))) {
@@ -69,12 +70,12 @@ class KernelUtils {
   }
 
   /**
-  * Calculate dimension
-  * @param [in] dims save the tensor of the dimension
-  * @param [in] vec_dim results of each dimension
-  * @param [out] data_num total size of data
-  * @author
-  */
+   * Calculate dimension
+   * @param [in] dims save the tensor of the dimension
+   * @param [in] vec_dim results of each dimension
+   * @param [out] data_num total size of data
+   * @author
+   */
   template <typename T>
   static Status CalcDims(const ConstGeTensorPtr dims, std::vector<int64_t> &vec_dim, int64_t &data_num) {
     data_num = 1;

@@ -101,6 +101,8 @@ class VarResource {
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr,
                         rtMemType_t &memory_type);
 
+  void GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map);
+
   void SetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *dev_ptr,
                   rtMemType_t rtMemType_t);
 
@@ -112,6 +114,8 @@ class VarResource {
   ge::Status RenewCurVarDesc(const std::string &var_name, const ge::OpDescPtr &op_desc);
 
   void SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
+
+  ge::Status GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info);
 
   ge::Status SyncVarData2BroadCast(uint32_t graph_id, const std::string &var_name,
                                    const ge::ConstOpDescPtr &var_op_desc, uint8_t *base_ptr);
@@ -175,6 +179,8 @@ class MemResource {
 
   int64_t GetVarMemSize() const;
 
+  void UpdateVarMemSize(int64_t mem_size);
+
  private:
   uint64_t total_size_;
   uint64_t var_mem_size_;
@@ -196,8 +202,13 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
   ge::Status SetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *dev_ptr,
                         rtMemType_t memory_type);
 
+  ge::Status SaveVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t *address,
+                         rtMemType_t memory_type);
+
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr,
                         rtMemType_t &memory_type);
+
+  void GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map);
 
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr);
 
@@ -205,6 +216,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
                          uint8_t *base_ptr);
 
   ge::Status SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
+
+  ge::Status GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info);
 
   ge::Status SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name, ge::ConstOpDescPtr var_op_desc,
                                    uint8_t *base_ptr);
@@ -250,6 +263,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
   const uint64_t &JobId() const;
 
   int64_t GetVarMemSize(rtMemType_t memory_type);
+
+  Status UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size);
 
   bool IsVarExist(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
 

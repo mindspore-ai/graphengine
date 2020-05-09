@@ -142,7 +142,7 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
 
 bool IsAllDimsPositive(const std::vector<int64_t> &dims) {
   for (auto dim : dims) {
-    if (dim <= 0) {
+    if (dim < 0) {
       return false;
     }
   }

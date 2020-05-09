@@ -53,7 +53,7 @@ class GraphBuilder {
  private:
   Status CalcOpParam(const ge::ComputeGraphPtr &graph);
   Status GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr &model_ptr, ComputeGraphPtr &comp_graph,
-                     std::vector<SubGraphInfoPtr> &subgraph_ptr_list, uint64_t session_id = INVALID_SESSION_ID);
+                     Graph2SubGraphInfoList &subgraph_map, uint64_t session_id = INVALID_SESSION_ID);
   Status SetInputSize(const ge::NodePtr &node_ptr);
   Status UpdateDataInputSize(const ge::NodePtr &node_ptr);
   Status SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list);

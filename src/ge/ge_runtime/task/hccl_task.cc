@@ -101,6 +101,7 @@ bool HcclTask::Distribute() {
 
   char *private_def = reinterpret_cast<char *>(const_cast<char unsigned *>(task_info_->private_def().data()));
   auto private_def_len = static_cast<uint32_t>(task_info_->private_def().size());
+  GELOGI("the first address of the custom info, privateDef=%p", private_def);
 
   GELOGI("hcclStreamNum =%ld", task_info_->hccl_stream_num());
   for (int64_t i = 0; i < task_info_->hccl_stream_num(); ++i) {
@@ -117,6 +118,7 @@ bool HcclTask::Distribute() {
       return false;
     }
 
+    GELOGI("hccl_stream addr is=%p", stream);
     slave_stream_list_.push_back(stream);
   }
 

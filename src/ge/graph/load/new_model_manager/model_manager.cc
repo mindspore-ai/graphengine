@@ -358,26 +358,17 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<Tensor
   input_data.timestamp = 0;
   input_data.index = 0;
 
-  std::size_t index = 0;
-  for (const auto &op : model->GetDataList()) {
-    GE_CHECK_NOTNULL(op);
-    GE_CHECK_GE(inputs.size(), 1);
-    GE_CHECK_GE(inputs.size() - 1, index);
-
+  for (size_t i = 0; i < inputs.size(); ++i) {
     DataBuffer data;
-    data.data = inputs[index].data.data;
-    data.length = inputs[index].data.length;
+    data.data = inputs[i].data.data;
+    data.length = inputs[i].data.length;
     input_data.blobs.push_back(data);
-    index++;
   }
-
-  CHECK_FALSE_EXEC(input_data.blobs.size() >= inputs.size(),
-                   GELOGW("cur_inputs size = %zu, inputs size = %zu.", input_data.blobs.size(), inputs.size()););
 
   OutputData output_data;
   output_data.model_id = model_id;
   output_data.index = 0;
-  for (size_t i = 0; i < outputs.size(); i++) {
+  for (size_t i = 0; i < outputs.size(); ++i) {
     DataBuffer data;
     data.data = outputs[i].data.data;
     data.length = outputs[i].data.length;
@@ -675,6 +666,15 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       break;
     }
     davinci_model->SetId(model_id);
+
+    int32_t device_id = 0;
+    rtError_t rt_ret = rtGetDevice(&device_id);
+    if (rt_ret != RT_ERROR_NONE || device_id < 0) {
+      GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+      return FAILED;
+    }
+    davinci_model->SetDeviceId(device_id);
+
     ret = davinci_model->Init(dev_ptr, mem_size, weight_ptr, weight_size);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "DavinciInit failed.");
 

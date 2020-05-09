@@ -124,22 +124,21 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
     if (node->GetType() != DATA) {
       continue;
     }
-
+    size_t next_nodes_cnt = 0;
     std::vector<NodePtr> aippNodes;
     for (const auto &anchor : node->GetAllOutDataAnchors()) {
       for (const auto &inAnchor : anchor->GetPeerInDataAnchors()) {
         const std::string &nodeType = inAnchor->GetOwnerNode()->GetType();
-
-        GE_CHK_BOOL_RET_STATUS(aippNodes.size() == 0 || nodeType == AIPP, PARAM_INVALID,
-                               "Can not config part of outputs of Data node to support AIPP, config all of the "
-                               "outputs of Data to support AIPP, or config none of them");
-
+        next_nodes_cnt++;
         if (nodeType == AIPP) {
           aippNodes.push_back(inAnchor->GetOwnerNode());
           continue;
         }
       }
     }
+    GE_CHK_BOOL_RET_STATUS((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), PARAM_INVALID,
+                           "Can not config part of outputs of Data node to support AIPP, config all "
+                           "of the outputs of Data to support AIPP, or config none of them");
 
     std::unique_ptr<domi::AippOpParams> aippParams(new (std::nothrow) domi::AippOpParams());
     GE_CHECK_NOTNULL(aippParams);

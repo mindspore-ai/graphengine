@@ -176,7 +176,7 @@ cd ${BASEPATH}
 mkdir -p output/plugin/nnengine/ge_config/
 find output/ -name graphengine_lib.tar -exec rm {} \;
 cp src/ge/engine_manager/engine_conf.json output/plugin/nnengine/ge_config/
-find output/ -maxdepth 1 -name libengine.so -exec mv {} output/plugin/nnengine/ \;
+find output/ -maxdepth 1 -name libengine.so -exec mv -f {} output/plugin/nnengine/ \;
 tar -cf graphengine_lib.tar output/*
 mv -f graphengine_lib.tar output
 echo "---------------- GraphEngine package archive generated ----------------"

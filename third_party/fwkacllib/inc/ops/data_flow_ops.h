@@ -259,7 +259,7 @@ match this name to the matching Unstage Op.
 REG_OP(Stage)
     .DYNAMIC_INPUT(values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, \
         DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-        DT_DOUBLE}))
+        DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(capacity, Int, 0)
     .ATTR(memory_limit, Int, 0)
     .ATTR(container, String, "")
@@ -312,7 +312,7 @@ REG_OP(StagePeek)
     .INPUT(index, TensorType({DT_INT32}))
     .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                     DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                    DT_DOUBLE}))
+                    DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(capacity, Int, 0)
     .ATTR(memory_limit, Int, 0)
     .ATTR(container, String, "")
@@ -363,7 +363,7 @@ REG_OP(StackPop)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .OUTPUT(element, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                      DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                     DT_DOUBLE}))
+                     DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .REQUIRED_ATTR(elem_type, Type)
     .OP_END_FACTORY_REG(StackPop)
 
@@ -388,10 +388,10 @@ REG_OP(StackPush)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .INPUT(element, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                      DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                     DT_DOUBLE}))
+                     DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                      DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                     DT_DOUBLE}))
+                     DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(swap_memory, Bool, false)
     .OP_END_FACTORY_REG(StackPush)
 
@@ -540,7 +540,7 @@ REG_OP(ParallelDynamicStitch)
 *@par Attributes:An optional int that is >= 0. Defaults to "0".
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
-*@li dtypes: A list of tf.DTypes.
+*@li dtypes: A list of DTypes.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -563,7 +563,7 @@ REG_OP(MapClear)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
-*@li dtypes: A list of tf.DTypes.
+*@li dtypes: A list of DTypes.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -602,7 +602,7 @@ REG_OP(MapIncompleteSize)
 REG_OP(Unstage)
     .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
             DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-            DT_DOUBLE}))
+            DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(capacity, Int, 0)
     .ATTR(memory_limit, Int, 0)
     .ATTR(container, String, "")
@@ -630,7 +630,7 @@ DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32.
 Maximum number of elements in the Staging Area. If > 0, \n
 inserts on the container will block when the capacity is reached.
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
-*@li dtypes: A list of tf.DTypes.
+*@li dtypes: A list of DTypes.
 *@li container: An optional string. Defaults to "". \n
 If non-empty, this queue is placed in the given container. \n
 Otherwise, a default container is used.
@@ -752,7 +752,7 @@ REG_OP(MapUnstageNoKey)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
-*@li dtypes: A list of tf.DTypes that has length >= 1.
+*@li dtypes: A list of DTypes that has length >= 1.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -789,7 +789,7 @@ REG_OP(MapPeek)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
-*@li dtypes: A list of tf.DTypes.
+*@li dtypes: A list of DTypes.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -1183,7 +1183,7 @@ REG_OP(PaddingFIFOQueue)
 *@brief A queue that produces elements sorted by the first component value.
 
 *@par Attributes:
-*@li component_types: An optional list of tf.DTypes. Defaults to {}. \n
+*@li component_types: An optional list of DTypes. Defaults to {}. \n
 The type of each component in a value.
 *@li shapes: A list of shapes for each component of a queue element.
 The length of this attr must be either 0 or the same as the length of \n
@@ -1451,7 +1451,7 @@ REG_OP(OrderedMapUnstageNoKey)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
-*@li dtypes: A list of tf.DTypes that has length >= 1.
+*@li dtypes: A list of DTypes that has length >= 1.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -1876,7 +1876,7 @@ REG_OP(SparseAccumulatorApplyGradient)
     .INPUT(local_step, TensorType({DT_INT64}))
     .INPUT(indices, TensorType({DT_INT64}))
     .INPUT(values, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT，DT_FLOAT16, DT_UINT32, \
+        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_UINT32, \
         DT_UINT64, DT_COMPLEX64, DT_COMPLEX128, DT_QINT16, DT_QUINT16, \
         DT_QINT8, DT_QUINT8, DT_QINT32}))
     .INPUT(shape, TensorType({DT_INT64}))

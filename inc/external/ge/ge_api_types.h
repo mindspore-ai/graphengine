@@ -40,6 +40,8 @@ const char *const OPTION_EXEC_EXTERN_PLUGIN_PATH = "ge.soLoadPath";
 const char *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
 const char *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
+const char *const OPTION_EXEC_ENABLE_INCRE_BUILD = "ge.exec.enableIncreBuild";
+const char *const OPTION_EXEC_INCRE_BUILD_CACHE_PATH = "ge.exec.increBuildCachePath";
 // Hccl flag, if ge.exec.hcclFlag =1, it means load plugin for opskernel, else:ge.exec.hcclFlag =0
 const char *const OPTION_EXEC_HCCL_FLAG = "ge.exec.hcclFlag";
 const char *const OPTION_EXEC_ATOMIC_FLAG = "ge.exec.enable_atomic";

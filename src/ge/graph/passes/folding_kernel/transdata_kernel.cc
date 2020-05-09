@@ -48,8 +48,9 @@ Status TransdataKernel::ValidateInput(const OpDescPtr &op_desc_ptr, const std::v
     GELOGE(PARAM_INVALID, "Input const_weight_ptr is nullptr.");
     return PARAM_INVALID;
   }
-  const uint8_t *src_data = const_weight_ptr->GetData().data();
-  if (op_desc_ptr == nullptr || src_data == nullptr) {
+
+  // src_data == nullptr is supported
+  if (op_desc_ptr == nullptr) {
     GELOGE(PARAM_INVALID, "Input opDescPtr is nullptr.");
     return PARAM_INVALID;
   }

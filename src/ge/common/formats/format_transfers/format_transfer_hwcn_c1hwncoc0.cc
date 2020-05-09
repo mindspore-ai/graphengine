@@ -35,7 +35,7 @@ Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<in
                                  std::vector<int64_t> &dst_shape) {
   auto cube_size = GetCubeSizeByDataType(data_type);
   dst_shape.clear();
-  dst_shape.push_back((src_shape.at(kHwcnC) - 1) / cube_size + 1);
+  dst_shape.push_back(Ceil(src_shape.at(kHwcnC), static_cast<int64_t>(cube_size)));
   dst_shape.push_back(src_shape.at(kHwcnH));
   dst_shape.push_back(src_shape.at(kHwcnW));
   dst_shape.push_back(src_shape.at(kHwcnN));
@@ -169,6 +169,12 @@ Status FormatTransferHwcnC1hwncoc0::TransFormat(const TransArgs &args, TransResu
   int size = GetSizeByDataType(args.src_data_type);
   auto total_size = GetItemNumByShape(args.dst_shape) * size;
   if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
+
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;

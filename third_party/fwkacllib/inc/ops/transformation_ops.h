@@ -400,13 +400,44 @@ REG_OP(Unpack)
 * "ksizes", "strides" and "rates" are lists of integers.
 */
 REG_OP(ExtractImagePatches)
-    .INPUT(x, TensorType::REALNUMBERTYPE())
-    .OUTPUT(y, TensorType::REALNUMBERTYPE())
+    .INPUT(x, TensorType::RealNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
     .REQUIRED_ATTR(ksizes, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(rates, ListInt)
     .REQUIRED_ATTR(padding, String)
     .OP_END_FACTORY_REG(ExtractImagePatches)
+
+/**
+* @brief Extract "patches" from "input" and put them in the "depth"
+* dimension of the output.
+
+* @par Inputs:
+* x: A 5D Tensor with shape [batch, in_planes, in_rows, in_cols, depth].
+
+* @par Attributes:
+* @li ksizes: A required list or tuple. The size of the sliding window for each
+* dimension of "x".
+* @li strides: A required list or tuple. How far the centers of two consecutive
+* patches are in "x". Must be: [1, stride_planes, stride_rows, stride_cols, 1].
+* @li padding: A required string. The type of padding algorithm to use.
+
+* @par Outputs:
+* Output: A 5D Tensor with shape [batch, out_planes, out_rows, out_cols, ksize_planes * \n
+* ksize_rows * ksize_cols * depth] containing patches with size (ksize_rows * ksize_cols\n
+* * depth) vectorized in the "depth" dimension. Note "out_planes", "out_rows" and "out_cols"\n
+* are the dimensions of the output patches.
+
+* @attention Constraints:
+* "ksizes" and "strides" are lists of integers.
+*/
+REG_OP(ExtractVolumePatches)
+    .INPUT(x, TensorType::REALNUMBERTYPE())
+    .OUTPUT(y, TensorType::REALNUMBERTYPE())
+    .REQUIRED_ATTR(ksizes, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(padding, String)
+    .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**
 *@brief Confuse reshape and transpose.
@@ -466,7 +497,7 @@ REG_OP(ConfusionTranspose)
 *y: The flattened ND tensor. All data types are supported.
 
 *@attention Constraints:
-* "axis" and "end_axis" must be within the dimension range of the input.
+* "axis" and "end_axis" must be within the dimension range of the input. This operator cannot be directly called by the acllopExecute API.
 */
 REG_OP(FlattenV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,

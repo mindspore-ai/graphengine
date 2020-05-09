@@ -196,7 +196,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
   GE_CHK_BOOL_EXEC(!directory_path.empty(), return -1, "directory path is empty.");
   auto dir_path_len = directory_path.length();
   if (dir_path_len >= PATH_MAX) {
-    GELOGE(ge::FAILED, "Directory path is too long.");
+    GELOGW("Directory path is too long.");
     return -1;
   }
   char tmp_dir_path[PATH_MAX] = {0};
@@ -207,7 +207,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
         int32_t ret = mmMkdir(tmp_dir_path, S_IRUSR | S_IWUSR | S_IXUSR);  // 700
         if (ret != 0) {
           if (errno != EEXIST) {
-            GELOGE(ge::FAILED, "Cannot create directory %s. Make sure that the directory exists and writable.",
+            GELOGW("Cannot create directory %s. Make sure that the directory exists and writable.",
                    directory_path.c_str());
             return ret;
           }
@@ -218,8 +218,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
   int32_t ret = mmMkdir(const_cast<char *>(directory_path.c_str()), S_IRUSR | S_IWUSR | S_IXUSR);  // 700
   if (ret != 0) {
     if (errno != EEXIST) {
-      GELOGE(ge::FAILED, "Cannot create directory %s. Make sure that the directory exists and writable.",
-             directory_path.c_str());
+      GELOGW("Cannot create directory %s. Make sure that the directory exists and writable.", directory_path.c_str());
       return ret;
     }
   }
@@ -339,7 +338,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const std::string &file_path) {
   // The specified path is empty
   if (file_path.empty()) {
-    GELOGE(ge::FAILED, "Path is empty.");
+    GELOGW("Path is empty.");
     return false;
   }
 
@@ -358,23 +357,23 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   std::string real_path = RealPath(file_path.c_str());
   // Unable to get absolute path (does not exist or does not have permission to access)
   if (real_path.empty()) {
-    GELOGE(ge::FAILED, "Can not get real path for %s, %s", file_path.c_str(), strerror(errno));
+    GELOGW("Can not get real path for %s, %s", file_path.c_str(), strerror(errno));
     return false;
   }
 
   // The absolute path points to a file that is not readable
   if (access(real_path.c_str(), R_OK) != 0) {
-    GELOGE(ge::FAILED, "Can not read file in %s, %s", file_path.c_str(), strerror(errno));
+    GELOGW("Can not read file in %s, %s", file_path.c_str(), strerror(errno));
     return false;
   }
 
   return true;
 }
 
-FMK_FUNC_HOST_VISIBILITY bool CheckOutputPathValid(const std::string &file_path) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const std::string &file_path) {
   // The specified path is empty
   if (file_path.empty()) {
-    GELOGE(ge::FAILED, "Path is empty.");
+    GELOGW("Path is empty.");
     return false;
   }
 
@@ -394,8 +393,8 @@ FMK_FUNC_HOST_VISIBILITY bool CheckOutputPathValid(const std::string &file_path)
   // Can get absolute path (file exists)
   if (!real_path.empty()) {
     // File is not readable or writable
-    if (access(real_path.c_str(), R_OK | W_OK | F_OK) != 0) {
-      GELOGE(ge::FAILED, "Path[ %s ] exists, but can not be write, %s", file_path.c_str(), strerror(errno));
+    if (access(real_path.c_str(), W_OK | F_OK) != 0) {
+      GELOGW("Path[ %s ] exists, but can not be write, %s", file_path.c_str(), strerror(errno));
       return false;
     }
   } else {
@@ -413,7 +412,7 @@ FMK_FUNC_HOST_VISIBILITY bool CheckOutputPathValid(const std::string &file_path)
       std::string prefix_path = std::string(file_path).substr(0, static_cast<size_t>(path_split_pos));
       // Determine whether the specified path is valid by creating the path
       if (CreateDirectory(prefix_path) != 0) {
-        GELOGE(ge::FAILED, "Can not create prefix path for path[ %s ].", file_path.c_str());
+        GELOGW("Can not create prefix path for path[ %s ].", file_path.c_str());
         return false;
       }
     }

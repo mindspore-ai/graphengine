@@ -16,8 +16,8 @@
 
 #include "init/gelib.h"
 
-#include <cstdlib>
 #include <dlfcn.h>
+#include <cstdlib>
 #include <mutex>
 #include <set>
 #include <sstream>
@@ -142,6 +142,35 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   return SUCCESS;
 }
 
+void GELib::SetIncreBuild(const map<string, string> &options) {
+  auto iter = options.find(OPTION_EXEC_ENABLE_INCRE_BUILD);
+  if (iter != options.end()) {
+    const std::string enable_incre_build = "true";
+    const std::string disable_incre_build = "false";
+    if (iter->second == enable_incre_build) {
+      is_incre_build_ = true;
+      GELOGI("Enable incre build.");
+      auto path_iter = options.find(OPTION_EXEC_INCRE_BUILD_CACHE_PATH);
+      if (path_iter != options.end()) {
+        std::string cache_path = path_iter->second;
+        if (!cache_path.empty() && cache_path[cache_path.size() - 1] != '/') {
+          cache_path += "/";
+        }
+        incre_build_cache_path_ = cache_path;
+      } else {
+        incre_build_cache_path_ = ".ge_cache/";
+      }
+      GELOGD("Using incre build cache path: %s.", incre_build_cache_path_.c_str());
+    } else if (iter->second == disable_incre_build) {
+      is_incre_build_ = false;
+      GELOGI("Disable incre build.");
+    } else {
+      is_incre_build_ = false;
+      GELOGW("Invalid ENABLE_INCRE_BUILD option, it should be true or false.");
+    }
+  }
+}
+
 Status GELib::SystemInitialize(const map<string, string> &options) {
   Status status = FAILED;
   auto iter = options.find(OPTION_GRAPH_RUN_MODE);
@@ -174,6 +203,8 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
       PropertiesManager::Instance().SetDumpStep(dump_step);
     }
   }
+  // check incre build flag
+  SetIncreBuild(options);
 
   if (is_train_mode_) {
     InitOptions(options);
@@ -258,8 +289,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
   options.physical_device_id = options.device_id;
 
-  // The physical ID is transferred to the logical ID. FMK receives physical ID
-  // and needs to be converted
+  // The physical ID is transferred to the logical ID. FMK receives physical ID and needs to be converted
   uint32_t dev_logic_index = 0;
   rtError_t rt_ret = rtGetDeviceIndexByPhyId(static_cast<uint32_t>(options.device_id), &dev_logic_index);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
@@ -273,8 +303,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
 
   GE_CHK_RT_RET(rtSetDevice(options.device_id));
 
-  // In the scenario that the automatic add fusion is set, but there is no
-  // cleanaddr operator, maybe need to check it
+  // In the scenario that the automatic add fusion is set, but there is no cleanaddr operator,
+  // maybe need to check it
   is_system_inited = true;
   is_shutdown = false;
 
@@ -287,10 +317,10 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
   GELOGI("Training finalize GELib begin.");
 
   std::lock_guard<std::mutex> lock(status_mutex_);
-  GE_IF_BOOL_EXEC(is_shutdown || !is_system_inited, GELOGW("System Shutdown with options is already is_shutdown "
-                                                           "or system does not inited. "
-                                                           "is_shutdown:%d is_omm_inited:%d",
-                                                           is_shutdown, is_system_inited);
+  GE_IF_BOOL_EXEC(is_shutdown || !is_system_inited,
+                  GELOGW("System Shutdown with options is already is_shutdown or system does not inited. "
+                         "is_shutdown:%d is_omm_inited:%d",
+                         is_shutdown, is_system_inited);
                   return SUCCESS);
 
   GE_CHK_RT(rtDeviceReset(options.device_id));
@@ -324,9 +354,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithout
 
   static bool is_inited = false;
   if (is_inited) {
-    GELOGW(
-      "System init without options is already inited,  don't need to init "
-      "again.");
+    GELOGW("System init without options is already inited,  don't need to init again.");
     return SUCCESS;
   }
   is_inited = true;

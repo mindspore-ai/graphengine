@@ -45,12 +45,10 @@ namespace ge {
 
 REG_OP(RaggedGather)
     .DYNAMIC_INPUT(params_nested_splits, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(params_dense_values, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
-            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .INPUT(params_dense_values, TensorType({DT_INT32, DT_INT64}))
     .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
     .DYNAMIC_OUTPUT(output_nested_splits, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(output_dense_values, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
-            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(output_dense_values, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(Tsplits, Type)
     .ATTR(PARAMS_RAGGED_RANK, Int, 1)
     .ATTR(OUTPUT_RAGGED_RANK, Int, 0)

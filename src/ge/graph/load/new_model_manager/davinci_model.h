@@ -340,13 +340,6 @@ class DavinciModel {
                                            vector<InputOutputDescInfo> &output_desc,
                                            std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &output_formats);
 
-  ///
-  /// @ingroup domi_ome
-  /// @brief copy input data to model
-  /// @return Status
-  ///
-  Status CopyInputDataToModel(const std::vector<DataBuffer> &data, uint32_t data_op_index, bool device_data);
-
   Status ReturnResult(uint32_t data_id, const bool rslt_flg, const bool seq_end_flg, OutputData *output_data);
 
   Status ReturnNoOutput(uint32_t data_id);
@@ -412,20 +405,6 @@ class DavinciModel {
   /// @return  device id
   ///
   uint32_t GetDeviceId() const { return device_id_; }
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Set Train Mode
-  /// @return void
-  ///
-  void SetTrainMode(bool mode) { is_train_mode_ = mode; }
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Get Train Mode
-  /// @return bool true
-  ///
-  bool GetTrainMode() { return is_train_mode_; }
 
   GeModelPtr GetGeModel() { return ge_model_; }
 
@@ -519,15 +498,14 @@ class DavinciModel {
   ///
   /// @ingroup ge
   /// @brief Copy Data addr to model for direct use.
-  /// @param [in] const vector<void *> &addrs: model input memory addr list.
-  /// @param [in] const vector<uint32_t> &sizes: model input memory size list.
+  /// @param [in] const std::map<uint32_t, std::pair<int64_t, void *>> &data_info: model memory addr/size list.
   /// @param [in] const std::vector<DataBuffer> &blobs: user input data list.
   /// @param [in] bool is_dynamic_input: whether is dynamic input, true: is dynamic input; false: not is dynamic input
   /// @param [in] ZeroCopyMode zero_copy_mode: input zero copy or output zero copy
   /// @param [in] string batch_label: batch label for multi-batch scenes
   /// @return SUCCESS handle successfully / others handle failed
   ///
-  Status ZeroCopyBlobs(const std::vector<void *> &addr_list, const std::vector<int64_t> &size_list,
+  Status ZeroCopyBlobs(const std::map<uint32_t, std::pair<int64_t, void *>> &data_info,
                        const std::vector<DataBuffer> &blobs, bool is_dynamic_input, ZeroCopyMode zero_copy_mode,
                        string batch_label);
 
@@ -610,11 +588,9 @@ class DavinciModel {
   /// @brief Data Op Initialize.
   /// @param [in] NodePtr: Data Op.
   /// @param [in/out] data_op_index: NetOutput addr size info.
-  /// @param [in/out] input_data_info: Data index and addr info {index, {size, addr}}.
   /// @return Status
   ///
-  Status InitDataOp(const NodePtr &node, uint32_t &data_op_index,
-                    std::map<uint32_t, std::pair<int64_t, void *>> &input_data_info);
+  Status InitDataOp(const NodePtr &node, uint32_t &data_op_index);
 
   ///
   /// @ingroup ge
@@ -633,19 +609,27 @@ class DavinciModel {
   Status InitNetOutput(const OpDescPtr &op_desc);
 
   ///
-  /// @ingroup ge
-  /// @brief Make Input and Output addr for feature use.
-  /// @param [in] input_data_info: Data index and addr info {index, {size, addr}}.
-  /// @return Status
-  ///
-  Status CombineDataInfo(const std::map<uint32_t, std::pair<int64_t, void *>> &input_data_info);
-
-  ///
   /// @ingroup domi_ome
   /// @brief Constant Op Init.
   /// @return Status
   ///
-  Status InitConstant(const ConstOpDescPtr &op_desc) const;
+  Status InitConstant(const OpDescPtr &op_desc);
+
+  Status InitVariable(const OpDescPtr &op_desc);
+
+  Status InitEndGraph(const OpDescPtr &op_desc);
+
+  /// @ingroup ge
+  /// @brief LabelSet Op Initialize.
+  /// @param [in] op_desc: LabelSet Op descriptor.
+  /// @return Status
+  Status InitLabelSet(const OpDescPtr &op_desc);
+
+  Status InitStreamSwitch(const OpDescPtr &op_desc);
+
+  Status InitStreamActive(const OpDescPtr &op_desc);
+
+  Status InitStreamSwitchN(const OpDescPtr &op_desc);
 
   ///
   /// @ingroup domi_ome
@@ -662,7 +646,7 @@ class DavinciModel {
   /// @brief Init model stream for NN model.
   /// @return Status
   ///
-  Status InitModelStream(rtStream_t stream, bool async_mode);
+  Status InitModelStream(rtStream_t stream);
 
   ///
   /// @ingroup ge
@@ -678,12 +662,16 @@ class DavinciModel {
   ///
   Status BindInputQueue();
 
+  Status CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
+                              std::map<const void *, std::vector<void *>> &outside_addrs);
+
   ///
   /// @ingroup ge
   /// @brief ACL, Bind NetOutput Op addr to output queue.
   /// @return: 0 for success / others for fail
   ///
   Status BindOutputQueue();
+  Status CpuModelPrepareOutput(uintptr_t addr, uint32_t size);
 
   ///
   /// @ingroup ge
@@ -693,13 +681,6 @@ class DavinciModel {
   Status BindActiveStream();
 
   ///
-  /// @ingroup domi_ome
-  /// @brief insert active_stream_indication_
-  /// @return Status
-  ///
-  Status MarkActiveStream(const OpDescPtr &op_desc);
-
-  ///
   /// @ingroup ge
   /// @brief definiteness queue schedule, bind input queue to task.
   /// @param [in] queue_id: input queue id from user.
@@ -707,7 +688,7 @@ class DavinciModel {
   /// @param [in] size: Data Op output tensor size.
   /// @return: 0 for success / others for fail
   ///
-  Status CpuModelDequeue(uint32_t queue_id, uintptr_t addr, uint32_t size);
+  Status CpuModelDequeue(uint32_t queue_id);
 
   ///
   /// @ingroup ge
@@ -734,6 +715,8 @@ class DavinciModel {
   ///
   Status CpuWaitEndGraph();
 
+  Status BindEnqueue();
+  Status CpuModelEnqueue(uint32_t queue_id, uintptr_t out_mbuf);
   ///
   /// @ingroup ge
   /// @brief definiteness queue schedule, repeat run model.
@@ -783,10 +766,8 @@ class DavinciModel {
 
   vector<OpDescPtr> variable_op_list_;
 
-  vector<int64_t> output_size_list_;  // Init by NetOutput Input Tensor
-  vector<void *> output_addr_list_;   // Init by NetOutput Input Tensor
-  vector<int64_t> input_size_list_;   // Init by Data Output Tensor
-  vector<void *> input_addr_list_;    // Init by Data Output Tensor
+  std::map<uint32_t, std::pair<int64_t, void *>> input_data_info_;   // Init by Data Output Tensor
+  std::map<uint32_t, std::pair<int64_t, void *>> output_data_info_;  // Init by NetOutput Input Tensor
 
   // output op: save cce op actual needed memory size
   vector<int64_t> output_memory_size_list_;
@@ -813,6 +794,7 @@ class DavinciModel {
   vector<rtEvent_t> event_list_;
 
   vector<rtLabel_t> label_list_;
+  set<uint32_t> label_id_indication_;
 
   std::mutex outside_addrs_mutex_;
   std::map<const void *, std::vector<void *>> input_outside_addrs_;
@@ -830,6 +812,8 @@ class DavinciModel {
 
   bool is_inner_model_stream_;
 
+  bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
+
   // ACL queue schedule, save queue ids for Init.
   std::vector<TaskInfoPtr> cpu_task_list_;
   std::vector<uint32_t> input_queue_ids_;    // input queue ids created by caller.
@@ -846,8 +830,6 @@ class DavinciModel {
   uint64_t session_id_;
 
   uint32_t device_id_;
-
-  bool is_train_mode_;
 
   std::mutex flowctrl_op_index_internal_map_mutex_;
   std::map<uint32_t, uint32_t> flowctrl_op_index_internal_map_;

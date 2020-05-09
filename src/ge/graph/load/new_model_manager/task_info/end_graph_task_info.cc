@@ -38,6 +38,7 @@ Status EndGraphTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   }
 
   model_ = davinci_model->GetRtModelHandle();
+  GELOGI("InitEndGraphTaskInfo Init Success, model:%p, stream:%p", model_, stream_);
   return SUCCESS;
 }
 

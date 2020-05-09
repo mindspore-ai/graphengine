@@ -125,6 +125,7 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
       return RT_FAILED;
     }
 
+    GELOGD("hccl_stream addr is=%p", stream);
     hccl_stream_list_.push_back(stream);
     davinci_model->PushHcclStream(stream);
   }
@@ -245,6 +246,8 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
         GELOGE(RT_FAILED, "Call rtMemcpy Fail, ret = 0x%X.", ret);
         return;
       }
+
+      GELOGI("The first address of the custom info, privateDef=%p.", private_def_);
     }
   }
 }

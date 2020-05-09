@@ -41,11 +41,11 @@ namespace ge {
 */
 
 REG_OP(RaggedRange)
-    .INPUT(starts, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
-    .INPUT(limits, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
-    .INPUT(deltas, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
+    .INPUT(starts, TensorType({DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
+    .INPUT(limits, TensorType({DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
+    .INPUT(deltas, TensorType({DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
     .OUTPUT(rt_nested_splits, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(rt_dense_values, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
+    .OUTPUT(rt_dense_values, TensorType({DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64}))
     .REQUIRED_ATTR(Tsplits, Type)
     .OP_END_FACTORY_REG(RaggedRange)
 

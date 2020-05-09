@@ -69,11 +69,11 @@ bool IsShapeValid(const std::vector<int64_t> &shape) {
   }
   int64_t num = 1;
   for (auto dim : shape) {
-    if (dim < 1) {
-      GELOGE(PARAM_INVALID, "Invalid zero dim in the shape %s", ShapeToString(shape).c_str());
+    if (dim < 0) {
+      GELOGE(PARAM_INVALID, "Invalid negative dim in the shape %s", ShapeToString(shape).c_str());
       return false;
     }
-    if (kShapeItemNumMAX / dim < num) {
+    if (dim != 0 && kShapeItemNumMAX / dim < num) {
       GELOGE(PARAM_INVALID, "Shape overflow, the total count should be less than %ld!", kShapeItemNumMAX);
       return false;
     }

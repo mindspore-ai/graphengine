@@ -39,13 +39,12 @@ struct SingleOpModelParam {
   uint8_t *weight_base = nullptr;
 
   std::map<uintptr_t, int> addr_mapping_;
+  int64_t core_type = 0;
 };
 
 class SingleOpModel {
  public:
-  SingleOpModel(const std::string &model_name,
-                const void *model_data,
-                uint32_t model_size);
+  SingleOpModel(const std::string &model_name, const void *model_data, uint32_t model_size);
   ~SingleOpModel() = default;
 
   Status Init();

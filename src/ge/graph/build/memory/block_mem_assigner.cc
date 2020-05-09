@@ -805,6 +805,9 @@ void SetOffsetSize(const NodeTypeIndex &node_type_index, int64_t offset, size_t 
       }
     }
     op_desc->SetOutputOffset(output_list);
+    GELOGI("[IMAS]Set %s name[%s] output[%d] offset to [%ld] streamid[%ld] size[%zu] realsize[%zu].",
+           graph_name.c_str(), op_desc->GetName().c_str(), node_type_index.index, offset, op_desc->GetStreamId(), size,
+           real_size);
   } else if (node_type_index.mem_type == kWorkspace) {
     vector<int64_t> workspace_list;
     workspace_list = op_desc->GetWorkspace();
@@ -821,6 +824,9 @@ void SetOffsetSize(const NodeTypeIndex &node_type_index, int64_t offset, size_t 
       workspace_list.at(node_type_index.index) = offset;
     }
     op_desc->SetWorkspace(workspace_list);
+    GELOGI("[IMAS]Set %s name[%s] workspace[%u] offset to [%ld] streamid[%ld] size[%zu] realsize[%zu].",
+           graph_name.c_str(), op_desc->GetName().c_str(), node_type_index.index, offset, op_desc->GetStreamId(), size,
+           real_size);
   }
 }
 

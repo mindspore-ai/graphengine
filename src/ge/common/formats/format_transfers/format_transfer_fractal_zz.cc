@@ -117,6 +117,11 @@ Status CheckShapeRelation(const TransArgs &args, ShapeVector &hw_shape) {
 Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, const ShapeVector &hw_shape) {
   int size = GetSizeByDataType(args.src_data_type);
   int64_t dst_size = GetItemNumByShape(args.dst_shape) * size;
+  if (dst_size == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
+
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size](), std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
@@ -153,8 +158,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto src_offset = (src_h_head + w1_idx * w0) * size;
           auto dst_offset = (h0_head + w1_idx * h0w0) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
@@ -169,8 +174,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto src_offset = (src_h_head + src_w_idx) * size;
           auto dst_offset = (w0_head + w0_idx) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
@@ -189,6 +194,11 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
 Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, const ShapeVector &dst_hw_shape) {
   int size = GetSizeByDataType(args.src_data_type);
   int64_t dst_size = GetItemNumByShape(args.dst_shape) * size;
+  if (dst_size == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
+
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size](), std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
@@ -226,8 +236,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto src_offset = (h0_head + w1_idx * h0w0) * size;
           auto dst_offset = (dst_h_head + w1_idx * w0) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
@@ -242,8 +252,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto dst_w_idx = w1_head + w0_idx;
           auto dst_offset = (dst_h_head + dst_w_idx) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {

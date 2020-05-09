@@ -63,6 +63,8 @@ Status StreamActiveTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
 
   active_stream_ = davinci_model->GetStreamList()[active_stream_index_list[internal_index]];
   active_stream_id_ = stream_active_def.active_stream_id();
+  GELOGI("InitStreamActiveTaskInfo Init Success, index:%u, activeStream:%p, activeStreamID:%u.", internal_index,
+         active_stream_, active_stream_id_);
 
   return SUCCESS;
 }
@@ -74,6 +76,8 @@ Status StreamActiveTaskInfo::Distribute() {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+
+  GELOGI("StreamActiveTaskInfo Distribute Success. activeStreamID:%p.", active_stream_);
   return SUCCESS;
 }
 

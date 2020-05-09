@@ -76,7 +76,7 @@ bool Output::CopyRslt(OutputData *rslt, uint32_t data_begin, uint32_t &data_inde
     DataBuffer data_buf = rslt->blobs[data_begin + data_count];
     bool ret = SetDataBuf(data_buf, data_begin, data_count, i, support_mem_share);
     if (!ret) {
-      GELOGE(FAILED, "Copy data to host error. index: %lu", i);
+      GELOGE(FAILED, "Copy data to host error. index: %lu, addr: %p", i, v_input_data_addr_[i]);
       return ret;
     }
     data_index = data_begin + data_count;

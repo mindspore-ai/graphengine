@@ -43,7 +43,6 @@ include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/common)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
@@ -492,7 +491,7 @@ file(GLOB_RECURSE OTHERS_TEST_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 list(APPEND COMMON_SHARED_LIBRARIES
     omg_stub
-    ${c_sec}
+    graphengine::securec
     slog_stub
     cce_ge_stub
     runtime_stub

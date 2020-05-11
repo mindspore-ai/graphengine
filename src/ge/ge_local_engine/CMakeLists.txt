@@ -35,7 +35,6 @@ include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 

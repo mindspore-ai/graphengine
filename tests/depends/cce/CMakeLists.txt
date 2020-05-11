@@ -29,10 +29,8 @@ include_directories(${GE_SOURCE_DIR}/src/common/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
     "${GE_SOURCE_DIR}/src/proto/om.proto"
     "${GE_SOURCE_DIR}/src/proto/ge_ir.proto"

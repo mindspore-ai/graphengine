@@ -25,7 +25,6 @@ include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/inc)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/external)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 
 add_library(mmpa_stub SHARED ${SRCS})
 target_link_libraries(mmpa_stub protobuf::protobuf)

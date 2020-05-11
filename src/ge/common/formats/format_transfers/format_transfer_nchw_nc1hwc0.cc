@@ -40,7 +40,7 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   }
   dst_shape.clear();
   dst_shape.push_back(src_shape.at(kNchwN));
-  dst_shape.push_back((src_shape.at(kNchwC) - 1) / c0 + 1);
+  dst_shape.push_back(Ceil(src_shape.at(kNchwC), c0));
   dst_shape.push_back(src_shape.at(kNchwH));
   dst_shape.push_back(src_shape.at(kNchwW));
   dst_shape.push_back(c0);
@@ -74,25 +74,8 @@ Status CheckArgsForNchwToNc1hwc0(const TransArgs &args) {
 
   return SUCCESS;
 }
-}  // namespace
 
-Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult &result) {
-  if (CheckArgsForNchwToNc1hwc0(args) != SUCCESS) {
-    return PARAM_INVALID;
-  }
-  // Guarantee the validity of parameters in check function
-  int size = GetSizeByDataType(args.src_data_type);
-  auto total_size = GetItemNumByShape(args.dst_shape) * size;
-  if (total_size <= 0) {
-    GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
-           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
-    return PARAM_INVALID;
-  }
-  GELOGD(
-      "Begin to trans format from NCHW to NC1HWC0, src shape %s, data type "
-      "%s, dst shape %s memory size %ld",
-      ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-      ShapeToString(args.dst_shape).c_str(), total_size);
+Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const int size, const int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY,
@@ -132,8 +115,8 @@ Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult
             int64_t dst_index = c0_idx + w_head_addr;
             int64_t dst_offset = dst_index * size;
             auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                      ? total_size - dst_offset
-                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                    ? total_size - dst_offset
+                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             int64_t cIdx = c0_idx + c1_idx * c0;
             int64_t srcIdx = n_idx * chw + cIdx * hw + h_idx * w + w_idx;
             auto src_offset = srcIdx * size;
@@ -150,7 +133,7 @@ Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult
               }
             } else {
               auto ret =
-                  memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
+                memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
               if (ret != EOK) {
                 GELOGE(INTERNAL_ERROR,
                        "Failed to set to 0 to "
@@ -167,6 +150,39 @@ Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult
 
   result.data = dst;
   result.length = static_cast<size_t>(total_size);
+  return SUCCESS;
+}
+}  // namespace
+
+Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult &result) {
+  if (CheckArgsForNchwToNc1hwc0(args) != SUCCESS) {
+    return PARAM_INVALID;
+  }
+  // Guarantee the validity of parameters in check function
+  int size = GetSizeByDataType(args.src_data_type);
+  auto total_size = GetItemNumByShape(args.dst_shape) * size;
+  if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
+
+    GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
+           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+    return PARAM_INVALID;
+  }
+  GELOGD(
+    "Begin to trans format from NCHW to NC1HWC0, src shape %s, data type "
+    "%s, dst shape %s memory size %ld",
+    ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+    ShapeToString(args.dst_shape).c_str(), total_size);
+  if (GetDstDataAfterTrans(args, result, size, total_size) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
+           ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+           ShapeToString(args.dst_shape).c_str(), total_size);
+    return INTERNAL_ERROR;
+  }
   return SUCCESS;
 }
 

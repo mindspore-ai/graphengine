@@ -134,6 +134,11 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
   int size = GetSizeByDataType(args.src_data_type);
   int64_t total_size = GetItemNumByShape(args.dst_shape) * size;
   if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;

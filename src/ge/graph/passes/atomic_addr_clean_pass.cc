@@ -200,7 +200,18 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(op_desc->GetType());
   for (const auto &op_info : op_info_vec) {
     if (op_info.isAtomic) {
-      GELOGI("Recognized atomic op %s from HCCL engine.", op_desc->GetName().c_str());
+      GELOGI("Recognized atomic op %s from DNN_HCCL engine.", op_desc->GetName().c_str());
+      // check peer input is DATA
+      for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+        if (in_data_anchor->GetPeerOutAnchor() != nullptr &&
+            in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
+          auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
+          if (peer_in_node->GetType() == DATA) {
+            GELOGI("Recognized atomic op %s from DNN_HCCL engine and input is DATA.", op_desc->GetName().c_str());
+            return false;
+          }
+        }
+      }
       hcom_node_vec_.push_back(node);
       return true;
     }

@@ -17,9 +17,7 @@
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
 
-/*lint -e7*/
 #include <stddef.h>
-/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"
@@ -77,6 +75,8 @@ typedef enum tagRtMemcpyKind {
   RT_MEMCPY_DEVICE_TO_HOST,    // device to host
   RT_MEMCPY_DEVICE_TO_DEVICE,  // device to device, 1P && P2P
   RT_MEMCPY_MANAGED,           // managed memory
+  RT_MEMCPY_ADDR_DEVICE_TO_DEVICE,
+  RT_MEMCPY_HOST_TO_DEVICE_EX, // host  to device ex (only used for 8 bytes)
   RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
 

@@ -164,6 +164,9 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
     return ret;
   }
 
+  GELOGI("CreateRunContext: data_mem_base_ = %p, weight_mem_base_ = %p, memory_size = %lu, weight_size = %lu",
+         data_mem_base_, weight_mem_base_, data_mem_size_, weight_mem_size_);
+
   run_context_ = {rt_model_,        nullptr, session_id,   data_mem_size_, data_mem_base_, weight_mem_size_,
                   weight_mem_base_, buffer,  stream_list_, event_list_,    label_list_};
   return SUCCESS;

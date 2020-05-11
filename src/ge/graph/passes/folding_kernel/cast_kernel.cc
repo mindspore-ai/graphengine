@@ -49,9 +49,11 @@ Status CastKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstG
     GELOGE(PARAM_INVALID, "Input const_weight_ptr is nullptr.");
     return PARAM_INVALID;
   }
+
   const uint8_t *src_data = const_weight_ptr->GetData().data();
-  if (op_desc_ptr == nullptr || src_data == nullptr) {
-    GELOGE(PARAM_INVALID, "Parameter's invalid, Input opDescPtr or src_data is nullptr.");
+  // src_data == nullptr is supported
+  if (op_desc_ptr == nullptr) {
+    GELOGE(PARAM_INVALID, "Parameter's invalid, Input opDescPtr is nullptr.");
     return PARAM_INVALID;
   }
   GeTensorDesc op_desc = op_desc_ptr->GetOutputDesc(0);
@@ -73,7 +75,7 @@ Status CastKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstG
     TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
     TypeUtils::DataTypeToSerialString(data_type).c_str());
 
-  GE_CHECK_SIZE(const_weight_ptr->GetData().GetSize());
+  // const_weight_ptr->GetData().GetSize() == 0 is supported
   auto src_data_size = src_shape.GetShapeSize();
   if (src_data_size == 0 &&
       static_cast<int>(const_weight_ptr->GetData().GetSize()) == GetSizeByDataType(src_data_type)) {
@@ -113,7 +115,6 @@ Status CastKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstG
   }
   if (output_ptr->SetData(trans_result.data.get(), trans_result.length) != SUCCESS) {
     GELOGW("Compute: SetData failed");
-    return FAILED;
   }
   v_output.push_back(output_ptr);
   return SUCCESS;

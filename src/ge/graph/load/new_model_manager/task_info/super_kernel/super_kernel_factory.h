@@ -31,12 +31,12 @@ class SuperKernelFactory {
   const char *use_physical_address_ = getenv("GE_USE_PHYSICAL_ADDRESS");
   bool is_init_ = false;
   SuperKernelFactory(){};
+  ~SuperKernelFactory(){};
 
  public:
   SuperKernelFactory(SuperKernelFactory const &) = delete;
   void operator=(SuperKernelFactory const &) = delete;
   static SuperKernelFactory &GetInstance();
-  SuperKernelFactory(const std::string &sk_stub_name_, const std::string &bin_file);
   Status Init();
   Status Uninitialize();
   Status FuseKernels(const std::vector<void *> &stub_func_list, const std::vector<void *> &args_addr_list,

@@ -28,6 +28,7 @@
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
+#include "graph/ge_context.h"
 #include "graph/ge_error_codes.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
@@ -39,7 +40,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "graph/ge_context.h"
 #include "init/gelib.h"
 #include "memory/memory_assigner.h"
 #include "omg/version.h"
@@ -78,15 +78,16 @@ bool IsGeLocalOp(const ge::ConstOpDescPtr &op_desc) {
     ge::GeTensorDesc output_desc = op_desc->GetOutputDesc(0);
     return !(output_desc.GetDataType() == ge::DT_STRING);
   }
-  const set<string> ge_local_set = {
-    ge::STREAMMERGE, ge::MEMCPYASYNC, ge::STREAMACTIVE, ge::STREAMSWITCH,  ge::VARIABLE,         ge::NOOP, ge::CONSTANT,
-    ge::ENTER,       ge::REFENTER,    ge::LOOPCOND,     ge::NEXTITERATION, ge::REFNEXTITERATION, ge::EXIT, ge::REFEXIT};
+  const set<string> ge_local_set = {ge::STREAMMERGE, ge::MEMCPYASYNC, ge::STREAMACTIVE,   ge::STREAMSWITCH,
+                                    ge::VARIABLE,    ge::NOOP,        ge::CONSTANT,       ge::ENTER,
+                                    ge::REFENTER,    ge::LOOPCOND,    ge::NEXTITERATION,  ge::REFNEXTITERATION,
+                                    ge::EXIT,        ge::REFEXIT,     ge::MEMCPYADDRASYNC};
   return (ge_local_set.find(type) != ge_local_set.end());
 }
 }  // namespace
 
 namespace ge {
-ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const vector<SubGraphInfoPtr> &subgraphs,
+ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const Graph2SubGraphInfoList &subgraphs,
                            const map<string, int> &stream_max_parallel_num, bool hcom_parallel, int mode)
     : mem_offset_(0),
       weight_offset_(kWeightsStartOffset),
@@ -224,6 +225,25 @@ Status ModelBuilder::SetInputOutputDesc() {
 
     if (!is_loop_graph_ && node_op_desc->GetType() == LOOPCOND) {
       is_loop_graph_ = true;
+    }
+    // if user set input node format ND, the expected node for data and netoutput format is ND in
+    // final graph.
+    if ((domi::GetContext().format == domi::DOMI_TENSOR_ND) &&
+        ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
+      GELOGI("The node [%s] format should be set ND.", node_op_desc->GetName().c_str());
+      auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
+      auto outputDescsPtr = node_op_desc->GetAllOutputsDescPtr();
+      ge::Format format = ge::FORMAT_ND;
+      for (auto &inputDescPtr : inputDescsPtr) {
+        GE_CHECK_NOTNULL(inputDescPtr);
+        inputDescPtr->SetFormat(format);
+        inputDescPtr->SetOriginFormat(format);
+      }
+      for (auto &outputDescPtr : outputDescsPtr) {
+        GE_CHECK_NOTNULL(outputDescPtr);
+        outputDescPtr->SetFormat(format);
+        outputDescPtr->SetOriginFormat(format);
+      }
     }
 
     if (node_op_desc->GetType() == DATA_TYPE || node_op_desc->GetType() == AIPP_DATA_TYPE) {

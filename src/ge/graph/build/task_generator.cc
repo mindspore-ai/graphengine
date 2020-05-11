@@ -221,10 +221,8 @@ Status TaskGenerator::SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_f
     if (call_check) {
       auto input_group_id = *input_group_ids.begin();
       if (group_id != input_group_id) {
-        GELOGE(INTERNAL_ERROR,
-               "L1Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
+        GELOGW("L1Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
                name.c_str(), type.c_str(), group_id, input_group_id);
-        return INTERNAL_ERROR;
       }
     }
   }

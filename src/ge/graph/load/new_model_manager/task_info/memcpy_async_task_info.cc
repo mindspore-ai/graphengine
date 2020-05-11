@@ -51,6 +51,9 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
 
   count_ = memcpy_async_def.count();
   kind_ = memcpy_async_def.kind();
+  GELOGI("MemcpyAsyncTaskInfo Init Success, logic_src:%p, logic_dst:%p, src:%p, dst:%p",
+         reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(logic_src)),
+         reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(logic_dst)), src_, dst_);
 
   return SUCCESS;
 }

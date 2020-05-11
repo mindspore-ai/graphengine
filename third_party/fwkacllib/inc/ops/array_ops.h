@@ -595,6 +595,9 @@ REG_OP(ExpandDims)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Attention:
+*This operator cannot be directly called by the acllopExecute API.
 */
 REG_OP(Reshape)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
@@ -848,7 +851,7 @@ REG_OP(Copy)
 `farmhash::fingerprint64`.
 
 *@par Outputs:
-y: A two-dimensional `Tensor` of type `tf.uint8`. The first dimension equals to \n
+y: A two-dimensional `Tensor` of type `uint8`. The first dimension equals to \n
 `data`'s first dimension, and the second dimension size depends on the \n
 fingerprint algorithm.
 

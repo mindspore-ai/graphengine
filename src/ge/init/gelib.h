@@ -65,6 +65,12 @@ class GELib {
   // add head stream to model
   bool HeadStream() const { return head_stream_; }
 
+  // get incre build flag
+  bool IsIncreBuild() const { return is_incre_build_; }
+
+  // get incre build cache path
+  const std::string &GetIncreBuildCachePath() const { return incre_build_cache_path_; }
+
   Status InitSystemWithoutOptions();
   Status InitSystemWithOptions(Options &options);
   Status SystemShutdownWithOptions(const Options &options);
@@ -76,6 +82,7 @@ class GELib {
   Status SystemInitialize(const map<string, string> &options);
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
+  void SetIncreBuild(const map<string, string> &options);
 
   DNNEngineManager engineManager_;
   OpsKernelManager opsManager_;
@@ -87,8 +94,9 @@ class GELib {
   bool is_system_inited = false;
   bool is_shutdown = false;
   bool is_use_hcom = false;
-
+  bool is_incre_build_ = false;
   bool head_stream_ = false;
+  std::string incre_build_cache_path_;
 };
 }  // namespace ge
 

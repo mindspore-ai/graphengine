@@ -172,24 +172,6 @@ REG_OP(SigmoidGrad)
     .OUTPUT(z, TensorType(UnaryDataType))
     .OP_END_FACTORY_REG(SigmoidGrad)
 
-REG_OP(Activation)
-    .INPUT(x, TensorType::ALL())
-    .OUTPUT(y, TensorType::ALL())
-    /*
-       0: sigmod, 1: relu, 2: tanh, 3: clipped ReLU, 4: Elu,
-       5: leaky relu, 6: abs, 7: relu1, 8: softsign, 9: softplus
-    */
-    .ATTR(mode, Int, 1)
-    .ATTR(coef, Float, 0)
-    .OP_END_FACTORY_REG(Activation)
-
-REG_OP(ActivationGrad)
-    .INPUT(dy, TensorType{DT_FLOAT})
-    .INPUT(x, TensorType{DT_FLOAT})
-    .OUTPUT(dx, TensorType{DT_FLOAT})
-    .ATTR(mode, Int, 1)
-    .OP_END_FACTORY_REG(ActivationGrad)
-
 /**
 *@brief Computes the binomial normal log likelihood (BNLL) output:\n
 *if x>0, x+log(1+exp(-x)); otherwise log(1+exp(x)).

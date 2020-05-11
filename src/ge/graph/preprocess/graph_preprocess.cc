@@ -736,6 +736,35 @@ Status ProcessNetoutputNode(NodePtr &node, std::string &output_type) {
   }
   return SUCCESS;
 }
+
+Status CheckIfNeedSetNdFormat(const NodePtr &node_ptr) {
+  auto op = node_ptr->GetOpDesc();
+  GE_CHECK_NOTNULL(op);
+  auto inputDescsPtr = op->GetAllInputsDescPtr();
+  auto outputDescsPtr = op->GetAllOutputsDescPtr();
+  ge::Format format = ge::FORMAT_ND;
+  // if user set shape larger than 4, inferformat may set NCHW or NHWC, GE should set ND before FE
+  // process, otherwise fe will insert transdata.
+  for (auto &inputDescPtr : inputDescsPtr) {
+    GE_CHECK_NOTNULL(inputDescPtr);
+    if ((inputDescPtr->GetShape().GetDims().size() > ge::DIM_DEFAULT_SIZE) &&
+        ((inputDescPtr->GetFormat() == ge::FORMAT_NCHW) || (inputDescPtr->GetFormat() == ge::FORMAT_NHWC))) {
+      GELOGI("The node inputdesc [%s] format need to be set ND", op->GetName().c_str());
+      inputDescPtr->SetFormat(format);
+      inputDescPtr->SetOriginFormat(format);
+    }
+  }
+  for (auto &outputDescPtr : outputDescsPtr) {
+    GE_CHECK_NOTNULL(outputDescPtr);
+    if ((outputDescPtr->GetShape().GetDims().size() > ge::DIM_DEFAULT_SIZE) &&
+        ((outputDescPtr->GetFormat() == ge::FORMAT_NCHW) || (outputDescPtr->GetFormat() == ge::FORMAT_NHWC))) {
+      GELOGI("The node outputdesc [%s] format need to be set ND", op->GetName().c_str());
+      outputDescPtr->SetFormat(format);
+      outputDescPtr->SetOriginFormat(format);
+    }
+  }
+  return SUCCESS;
+}
 }  // namespace
 
 GraphPrepare::GraphPrepare() : compute_graph_(nullptr) {}
@@ -826,9 +855,12 @@ Status GraphPrepare::CheckGraph() {
 
 Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &input_name,
                                        const std::unordered_set<NodePtr> &ref_nodes) {
+  // Acceptable input types should be ref node, variable or Switch operator, which is issued by ME for dynamic
+  // lossscale and would be optimized in SwitchOpPass. Since ME dont differentiate between RefSwitch and Switch,
+  // and only issue Switch.
   static std::unordered_set<std::string> acceptable_types = {ge::VARIABLE,         ge::VARIABLEV2, ge::VARHANDLEOP,
                                                              ge::REFSWITCH,        ge::REFMERGE,   ge::REFENTER,
-                                                             ge::REFNEXTITERATION, ge::REFEXIT};
+                                                             ge::REFNEXTITERATION, ge::REFEXIT,    ge::SWITCH};
   GE_CHECK_NOTNULL(node);
   const auto &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
@@ -972,7 +1004,7 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       int64_t desc_shape = desc.GetShape().GetShapeSize();
       FMK_INT64_UINT32_MULCHECK(desc_shape, length);
       int64_t shape_size = desc_shape * length;
-      GE_IF_BOOL_EXEC(shape_size == 0, shape_size = static_cast<int64_t>(length));
+      GE_IF_BOOL_EXEC(shape_size == 0 && desc.GetShape().GetDimNum() == 0, shape_size = static_cast<int64_t>(length));
       int64_t size = 0;
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc, size) != GRAPH_SUCCESS,
                       GELOGE(INTERNAL_ERROR, "TensorUtils GetSize failed");
@@ -1106,6 +1138,10 @@ Status GraphPrepare::OptimizeAfterInfershapeByAtcParams() {
   GE_RETURN_IF_ERROR(InsertNewOpUtil::Instance().UpdateDataNodeByAipp(compute_graph_));
   for (auto &node_ptr : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(node_ptr);
+    if (CheckIfNeedSetNdFormat(node_ptr) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Set node [%s] format ND failed", node_ptr->GetName().c_str());
+      return FAILED;
+    }
     if (node_ptr->GetType() == DATA) {
       if (ProcessDataNode(node_ptr) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Process data node failed");
@@ -1416,9 +1452,17 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   FMK_INT64_UINT32_MULCHECK(shape_size, length);
   GELOGI("Const real value Size:%zu, op_desc Shape Size:%ld, data_type:%s.", data_size, shape_size * length,
          TypeUtils::DataTypeToSerialString(data_type).c_str());
-  if ((shape_size != 0) || (data_size / length != 1)) {
-    GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0,
-                     return GRAPH_PARAM_INVALID, "Const input data size is not equal with tensor desc shape");
+  if (shape_size == 0) {
+    if (ge_tensor_desc.GetShape().GetDims().size() == 0) {
+      // shape = [], means it's a sclar tensor.
+      GE_CHK_BOOL_EXEC(data_size / length == 1, return PARAM_INVALID, "Const is invalid scalar tensor.");
+    } else {
+      // shape = [x, y, 0,...], means it's a vector tensor that value is [].
+      GE_CHK_BOOL_EXEC(data_size == 0, return PARAM_INVALID, "Const is invalid vector scalar.");
+    }
+  } else {
+    GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0, return PARAM_INVALID,
+                     "Const input data size is not equal with tensor desc shape");
   }
   return SUCCESS;
 }
@@ -1448,8 +1492,8 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
       GeTensorDesc desc(user_input[index].GetTensorDesc());
 
       for (size_t i = 0; i < desc.GetShape().GetDimNum(); ++i) {
-        if (desc.GetShape().GetDim(i) <= 0) {
-          GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need > 0, real:%ld.", i,
+        if (desc.GetShape().GetDim(i) < 0) {
+          GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need >= 0, real:%ld.", i,
                  desc.GetShape().GetDim(i));
           return GE_GRAPH_INIT_FAILED;
         }
@@ -1472,8 +1516,6 @@ Status GraphPrepare::InferShapeForPreprocess() {
   }
   InferShapePass infer_shape_pass;
   names_to_passes.emplace_back("InferShapePass", &infer_shape_pass);
-  ReplaceWithEmptyConstPass replace_with_empty_const_pass;
-  names_to_passes.emplace_back("ReplaceWithEmptyConstPass", &replace_with_empty_const_pass);
   DimensionComputePass dimension_compute_pass;
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   ConstantFoldingPass constant_folding_pass;

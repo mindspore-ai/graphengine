@@ -238,6 +238,14 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
     return FAILED;
   }
   GE_TIMESTAMP_END(MergeGraphTopologicalSorting, "GraphPartitioner::MergeGraphTopologicalSorting");
+  // flush all nodes' engine of merged graph
+  GE_TIMESTAMP_START(MergeGraphEnginePlacerRun);
+  graph_info_.engine_placer_.SetComputeGraph(output_merged_compute_graph);
+  if (graph_info_.engine_placer_.Run() != SUCCESS) {
+    GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: engine_placer run failed");
+    return FAILED;
+  }
+  GE_TIMESTAMP_END(MergeGraphEnginePlacerRun, "GraphPartitioner::MergeGraphEnginePlacerRun");
   GELOGI("Graph merge ends.");
   return SUCCESS;
 }

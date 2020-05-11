@@ -41,6 +41,7 @@ include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/framework/common)
 include_directories(${GE_SOURCE_DIR}/inc/runtime)
+include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
@@ -55,6 +56,7 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/formats/utils/formats_trans_utils.cc"
         "common/fp16_t.cc"
         "common/ge/plugin_manager.cc"
+        "common/helper/model_cache_helper.cc"
         "common/profiling/profiling_manager.cc"
         "engine_manager/dnnengine_manager.cc"
         "ge_local_engine/engine/host_cpu_engine.cc"
@@ -92,6 +94,7 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/load/new_model_manager/task_info/kernel_task_info.cc"
         "graph/load/new_model_manager/task_info/label_goto_task_info.cc"
         "graph/load/new_model_manager/task_info/label_set_task_info.cc"
+        "graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
         "graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
         "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
@@ -269,6 +272,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/formats/utils/formats_trans_utils.cc"
         "common/fp16_t.cc"
         "common/ge/plugin_manager.cc"
+        "common/helper/model_cache_helper.cc"
         "common/profiling/profiling_manager.cc"
         "engine_manager/dnnengine_manager.cc"
         "ge_local_engine/engine/host_cpu_engine.cc"
@@ -305,6 +309,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/load/new_model_manager/task_info/kernel_task_info.cc"
         "graph/load/new_model_manager/task_info/label_goto_task_info.cc"
         "graph/load/new_model_manager/task_info/label_set_task_info.cc"
+        "graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
         "graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
         "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
@@ -470,7 +475,7 @@ target_link_libraries(ge_compiler
         ${slog}
         ${mmpa}
         ${msprof}
-        ${runtime}
+        ${runtime_compiler}
         ${resouce}
         rt
         dl)

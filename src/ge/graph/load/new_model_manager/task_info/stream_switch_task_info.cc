@@ -95,6 +95,10 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
     }
     data_type_ = static_cast<rtSwitchDataType_t>(data_type);
   }
+
+  GELOGI("InitStreamSwitchTaskInfo Init Success, cond:%d, trueStream:%p, trueStreamID:%u, datatype:%d.", cond_,
+         true_stream_, true_stream_id_, data_type_);
+
   return SUCCESS;
 }
 
@@ -105,6 +109,8 @@ Status StreamSwitchTaskInfo::Distribute() {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+
+  GELOGI("StreamSwitchTaskInfo Distribute Success. cond:%d, stream:%p, datatype:%d.", cond_, true_stream_, data_type_);
   return SUCCESS;
 }
 

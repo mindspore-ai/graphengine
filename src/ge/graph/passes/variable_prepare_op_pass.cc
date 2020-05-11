@@ -22,11 +22,14 @@
 #include "common/ge/ge_util.h"
 #include "external/graph/graph.h"
 #include "framework/common/debug/ge_log.h"
+#include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/node.h"
 #include "graph/utils/tensor_utils.h"
 
 namespace ge {
+std::map<std::string, std::map<int, int>> VariablePrepareOpPass::ref_node_without_prototype_map_{
+  {REFSWITCH, {{0, 0}, {0, 1}}}};
 Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   for (const auto &node : graph->GetDirectNode()) {
@@ -43,9 +46,7 @@ Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
 
   for (auto &node : graph->GetDirectNode()) {
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
-    bool is_variable = node->GetOpDesc()->GetType() == VARIABLE;
-    bool is_deal = has_dealed_variable_.find(node->GetName()) == has_dealed_variable_.end();
-    if (is_variable && is_deal) {
+    if (node->GetOpDesc()->GetType() == VARIABLE) {
       Status ret = DealVariableNode(node);
       if (ret != SUCCESS) {
         GELOGE(ret, "variable add back edge failed");
@@ -149,7 +150,7 @@ NodePtr VariablePrepareOpPass::GetFinalWritableNode(ge::NodePtr &writable_node, 
       }
     }
     if (!found_writeable_node) {
-      GELOGI("final writable node is %s", current_node->GetName().c_str());
+      GELOGD("final writable node is %s", current_node->GetName().c_str());
       return current_node;
     }
   }
@@ -159,53 +160,54 @@ Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, g
   GE_CHECK_NOTNULL(final_writable_node);
   GE_CHECK_NOTNULL(var_node);
 
-  NodePtr var_ref_node = CreatVariableRef(final_writable_node, var_node);
-  GE_CHECK_NOTNULL(var_ref_node);
-  // add  control anchor between var_ref_node and final peer node
-  // var_ref_node need to execute before other nodes
+  if (final_writable_node->GetType() == FRAMEWORKOP) {
+    GELOGD("No need to add variable_ref for frameworkop");
+    return SUCCESS;
+  }
+  std::stringstream variable_ref_name;
+  variable_ref_name << "_TO_" << final_writable_node->GetName() << "_REF_" << index;
+  ge::NodePtr find_node = var_node->GetOwnerComputeGraph()->FindNode(var_node->GetName() + variable_ref_name.str());
+  if (find_node != nullptr) {
+    GELOGD("The corresponding variable_ref [%s] has been added to this connection.", find_node->GetName().c_str());
+    return SUCCESS;
+  }
+  NodePtr variable_ref_node = CreatVariableRef(var_node->GetName() + variable_ref_name.str(), var_node);
+
+  GELOGI("Add variable_ref between [%s] and [%s]", var_node->GetName().c_str(), variable_ref_node->GetName().c_str());
+  GE_CHECK_NOTNULL(variable_ref_node);
+  // add  control anchor between  variable_ref and final peer node
+  // variable_ref_node need to execute before other nodes
   auto final_writable_outAnchors = final_writable_node->GetAllOutAnchors();
   for (auto &final_writable_outAnchor : final_writable_outAnchors) {
     GE_CHECK_NOTNULL(final_writable_outAnchor);
     for (auto &final_writable_peerAnchor : final_writable_outAnchor->GetPeerAnchors()) {
       GE_CHECK_NOTNULL(final_writable_peerAnchor);
       NodePtr peer_node = final_writable_peerAnchor->GetOwnerNode();
-      graphStatus ret = ge::GraphUtils::AddEdge(var_ref_node->GetOutControlAnchor(), peer_node->GetInControlAnchor());
+      graphStatus ret =
+        ge::GraphUtils::AddEdge(variable_ref_node->GetOutControlAnchor(), peer_node->GetInControlAnchor());
       if (ret != GRAPH_SUCCESS) {
-        GELOGE(FAILED, "add  control anchor between var_ref_node and final_writable peer_node failed");
+        GELOGE(FAILED, "add control anchor between  variable_ref and final_writable peer node failed");
         return FAILED;
       }
     }
   }
-  // add edge final node:index ---> var_ref_node:0
   graphStatus ret =
-    ge::GraphUtils::AddEdge(final_writable_node->GetOutDataAnchor(index), var_ref_node->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(final_writable_node->GetOutDataAnchor(index), variable_ref_node->GetInDataAnchor(0));
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "add  data anchor between var_ref_node and final_writable peer_node failed");
+    GELOGE(FAILED, "add data anchor between  variable_ref and final_writable peer node failed");
     return FAILED;
   }
   return SUCCESS;
 }
 
-ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_node, ge::NodePtr &var_node) {
-  if ((final_writable_node == nullptr) || (var_node == nullptr) || (var_node->GetOwnerComputeGraph() == nullptr)) {
-    GELOGE(FAILED, "parameter ptr is null.");
-    return nullptr;
-  }
-  GELOGD("Create VarRef Op: final_writable_node: [%s] var_node: [%s]>>>>", final_writable_node->GetName().c_str(),
-         var_node->GetName().c_str());
-
-  static uint32_t var_ref_count = 0;
-  std::stringstream var_ref_name;
-  var_ref_name << "_to_" << final_writable_node->GetName() << "_REF_" << var_ref_count++;
-
+ge::NodePtr VariablePrepareOpPass::CreatVariableRef(const std::string &variable_ref_name, ge::NodePtr &var_node) {
   OpDescPtr var_op_desc = var_node->GetOpDesc();
   if (var_op_desc == nullptr) {
     GELOGE(FAILED, "get var opdesc is nullptr");
     return nullptr;
   }
 
-  OpDescPtr var_ref_op_desc =
-    MakeShared<OpDesc>(var_node->GetName() + var_ref_name.str().c_str(), var_op_desc->GetType());
+  OpDescPtr var_ref_op_desc = MakeShared<OpDesc>(variable_ref_name.c_str(), var_op_desc->GetType());
   if (var_ref_op_desc == nullptr) {
     GELOGE(FAILED, "var_ref opdesc is nullptr");
     return nullptr;
@@ -217,15 +219,15 @@ ge::NodePtr VariablePrepareOpPass::CreatVariableRef(ge::NodePtr &final_writable_
   GE_IF_BOOL_EXEC(var_ref_op_desc->AddInputDesc(var_op_desc->GetOutputDesc(0)) != SUCCESS,
                   GELOGW("add input desc edge failed");
                   return nullptr);
-  NodePtr var_ref_node = var_node->GetOwnerComputeGraph()->AddNode(var_ref_op_desc);
-  GE_IF_BOOL_EXEC(var_ref_node == nullptr, GELOGW("var_ref_node is null"); return nullptr);
-  has_dealed_variable_.insert(var_node->GetName());
+  NodePtr variable_ref_node = var_node->GetOwnerComputeGraph()->AddNode(var_ref_op_desc);
+  GE_IF_BOOL_EXEC(variable_ref_node == nullptr, GELOGW("variable_ref_node is null"); return nullptr);
 
   bool is_set_str = ge::AttrUtils::SetStr(var_ref_op_desc, REF_VAR_SRC_VAR_NAME, var_op_desc->GetName());
   if (is_set_str) {
-    GELOGD("Set node [%s] REF_VAR_SRC_VAR_NAME [%s]", var_ref_node->GetName().c_str(), var_op_desc->GetName().c_str());
+    GELOGD("Set node [%s] REF_VAR_SRC_VAR_NAME [%s]", variable_ref_node->GetName().c_str(),
+           var_op_desc->GetName().c_str());
   }
-  return var_ref_node;
+  return variable_ref_node;
 }
 
 int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int input_index) {
@@ -240,16 +242,13 @@ int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int inpu
     }
   }
 
-  auto node_iter = ref_input_output_map_.find(node_type);
-  if (node_iter == ref_input_output_map_.end()) {
-    return -1;
+  if (node_type == FRAMEWORKOP) {
+    std::string original_type;
+    GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("Get node original type fail"));
+    GELOGI("find frameworkop: [%s], original type is %s", node->GetName().c_str(), original_type.c_str());
+    return FindRefOutIndex(original_type, input_index, ref_node_without_prototype_map_);
   }
-
-  auto index_iter = node_iter->second.find(input_index);
-  if (index_iter == node_iter->second.end()) {
-    return -1;
-  }
-  return index_iter->second;
+  return FindRefOutIndex(node_type, input_index, ref_input_output_map_);
 }
 
 void VariablePrepareOpPass::GenerateRefTypeAndInputOutputMap(const NodePtr &node) {
@@ -300,5 +299,19 @@ Status VariablePrepareOpPass::UpdateAssignOpDesc(const ge::NodePtr &node) {
     return FAILED;
   }
   return SUCCESS;
+}
+
+int VariablePrepareOpPass::FindRefOutIndex(const std::string &node_type, int input_index,
+                                           const std::map<std::string, std::map<int, int>> &ref_map) {
+  auto node_iter = ref_map.find(node_type);
+  if (node_iter == ref_map.end()) {
+    return -1;
+  }
+
+  auto index_iter = node_iter->second.find(input_index);
+  if (index_iter == node_iter->second.end()) {
+    return -1;
+  }
+  return index_iter->second;
 }
 }  // namespace ge

@@ -27,6 +27,7 @@
 
 #include "common/blocking_queue.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/helper/model_cache_helper.h"
 #include "external/graph/types.h"
 #include "ge/ge_api_types.h"
 #include "graph/build/graph_builder.h"
@@ -211,7 +212,8 @@ class GraphManager {
 
   Status SummaryHandle(const GraphId &graph_id, std::vector<GeTensor> &outputs);
 
-  Status CheckpointHandle(const GraphId &graph_id, const std::vector<GeTensor> &outputs);
+  Status CheckpointHandle(const GraphId &graph_id, const ComputeGraphPtr &compute_graph,
+                          const std::vector<GeTensor> &outputs);
 
   // call the callback function of ME to push summary result data to ME
   Status PushSummaryData2ME(const GraphId &graph_id, const std::map<std::string, ge::Tensor> &summary_data);
@@ -260,6 +262,13 @@ class GraphManager {
 
   bool IsGraphNeedBuild(const GraphNodePtr &graph_node);
 
+  Status LoadFromCache(const GraphNodePtr &graph_node, const ModelCacheHelperPtr &cache_helper, GeModelPtr &ge_model);
+  Status SaveCacheBeforeBuild(uint32_t graph_id, const ModelCacheHelperPtr &cache_helper);
+  Status SaveCacheAfterBuild(uint32_t graph_id, ComputeGraphPtr graph, GeModelPtr &ge_model);
+  void AddModelCacheHelperToMap(const GraphId &graph_id, uint64_t session_id, ComputeGraphPtr &compute_graph);
+  Status IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_model);
+  void RemoveModelCacheHelper(const GraphId &graph_id);
+
   static void PreRunThread(GraphManager *graph_manager);
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);
@@ -273,6 +282,8 @@ class GraphManager {
   std::thread run_thread_;
 
   std::map<GraphId, GraphNodePtr> graph_map_;
+
+  std::map<GraphId, ModelCacheHelperPtr> cache_helper_map_;
 
   // for run graph synchronous return
   std::mutex sync_run_mutex_;

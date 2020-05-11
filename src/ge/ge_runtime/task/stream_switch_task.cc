@@ -62,6 +62,9 @@ bool StreamSwitchTask::Distribute() {
   rtStream_t true_stream = stream_list_[task_info_->true_stream_id()];
   rtSwitchDataType_t data_type = static_cast<rtSwitchDataType_t>(task_info_->data_type());
 
+  GELOGI("InitStreamSwitchTask, cond:%d, trueStream:%p, trueStreamID:%ld, datatype:%ld.", cond, true_stream,
+         task_info_->true_stream_id(), task_info_->data_type());
+
   GELOGI("StreamSwitchTask Distribute Start.");
   rtError_t rt_ret = rtStreamSwitchEx(input, cond, value, true_stream, stream_, data_type);
   if (rt_ret != RT_ERROR_NONE) {
@@ -69,6 +72,7 @@ bool StreamSwitchTask::Distribute() {
     return false;
   }
 
+  GELOGI("Distribute StreamSwitch, cond:%d, trueStream:%p, datatype:%ld.", cond, true_stream, task_info_->data_type());
   return true;
 }
 

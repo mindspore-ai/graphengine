@@ -492,7 +492,7 @@ REG_OP(DiagPart)
 *@brief Also known as a "fully-connected" layer, computes an inner product with a set of learned weights, and (optionally) adds biases.
 
 *@par Inputs:
-* Two inputs, including:
+* Four inputs, including:
 *@li x: A Tensor of type float16, int8.
 *@li w: A weight matrix of type float16, int8.
 *@li b: A Tensor of type float16, int32.
@@ -501,14 +501,13 @@ REG_OP(DiagPart)
 *@par Attributes:
 *@li num_output: Reserved.
 *@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
-*@li bias_term: A bool, specifying whether to learn and apply a set of additive biases to the filter outputs, either "true" or "false". Defaults to "true".
-*@li axis: only support axis is 1. Defaults to "1".
-*@li offset_a: A type of Int, Defaults to "1".
+*@li axis: Reserved.
+*@li offset_x: Reserved.
 
 *@par Outputs:
 *y: The result tensor of type float16, int8.
 */
-REG_OP(InnerProduct)
+REG_OP(FullyConnection)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
     .INPUT(w, TensorType({DT_FLOAT16, DT_INT8}))
     .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32}))
@@ -516,10 +515,9 @@ REG_OP(InnerProduct)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
     .REQUIRED_ATTR(num_output, Int)
     .ATTR(transpose, Bool, false)
-    .ATTR(bias_term, Bool, true)
     .ATTR(axis, Int, 1)
-    .ATTR(offset_a, Int, 0)
-    .OP_END_FACTORY_REG(InnerProduct)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(FullyConnection)
 
 /**
 *@brief Computes the confusion matrix from predictions and labels.

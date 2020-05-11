@@ -18,8 +18,8 @@
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
 #include "common/opskernel/ops_kernel_info_types.h"
-#include "graph/build/stream_graph_optimizer.h"
 #include "graph/build/run_context.h"
+#include "graph/build/stream_graph_optimizer.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
@@ -98,8 +98,10 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
 
   Status ret = SecondPartition(comp_graph, subgraph_ptr_list);
   GE_CHK_STATUS_RET(ret, "Graph second partition Failed.");
+  auto subgraph_map = graph_partitioner_.GetSubGraphMap();
+
   GE_TIMESTAMP_START(BuildSubgraph);
-  ge::ModelBuilder builder(comp_graph, subgraph_ptr_list, stream_max_parallel_num_, hcom_parallel_, build_mode_);
+  ge::ModelBuilder builder(comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
 
   GELOGI("[Build] invoke the other opskernel to generate task.");
 
@@ -135,7 +137,7 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
   }
 
   GE_TIMESTAMP_START(GetTaskInfo);
-  ret = GetTaskInfo(builder, model_ptr, comp_graph, subgraph_ptr_list, session_id);
+  ret = GetTaskInfo(builder, model_ptr, comp_graph, subgraph_map, session_id);
   GE_TIMESTAMP_END(GetTaskInfo, "GraphBuilder::GetTaskInfo");
 
   GraphUtils::DumpGEGraph(comp_graph, "AfterGetTask");
@@ -155,7 +157,7 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
 }
 
 Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr &model_ptr,
-                                 ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+                                 ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map,
                                  uint64_t session_id) {
   GE_CHECK_NOTNULL(model_ptr);
   GE_CHECK_NOTNULL(comp_graph);
@@ -190,7 +192,7 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
   }
 
   StreamGraphOptimizer stream_optimizer;
-  ret = stream_optimizer.OptimizeStreamedSubGraph(comp_graph, subgraph_ptr_list, run_context.GetRunContext());
+  ret = stream_optimizer.OptimizeStreamedSubGraph(comp_graph, subgraph_map, run_context.GetRunContext());
   if (ret != SUCCESS) {
     GELOGE(ret, "Optimize streamed subGraph fail.");
     return ret;

@@ -134,6 +134,10 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
                   GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", total_ele_cnt, size);
                   return INTERNAL_ERROR);
   int64_t dst_size = total_ele_cnt * size;
+  if (dst_size == 0) {
+    result.length = 0;
+    return SUCCESS;
+  }
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
@@ -219,6 +223,10 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
                   return INTERNAL_ERROR);
 
   int64_t dst_size = total_ele_cnt * size;
+  if (dst_size == 0) {
+    return SUCCESS;
+  }
+
   dst.reset(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",

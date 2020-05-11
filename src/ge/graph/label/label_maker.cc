@@ -172,7 +172,7 @@ NodePtr LabelMaker::AddLabelSetLeave(const ComputeGraphPtr &graph, const std::st
 
   GELOGI("LabelSet: Create node %s.", op_desc->GetName().c_str());
   (void)AttrUtils::SetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, index);
-  NodePtr label_set = graph->AddNodeFront(op_desc);
+  NodePtr label_set = graph->AddNode(op_desc);
   GE_CHECK_NOTNULL_EXEC(label_set, return nullptr);
 
   // Link control edge to graph tail.
@@ -202,7 +202,7 @@ NodePtr LabelMaker::AddLabelGotoEnter(const ComputeGraphPtr &graph, const std::s
     return nullptr;
   }
 
-  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTO);
+  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTOEX);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
   SetStreamIdEnter(graph, op_desc);
 
@@ -238,7 +238,7 @@ NodePtr LabelMaker::AddLabelGotoLeave(const ComputeGraphPtr &graph, const std::s
   const NodePtr &node = *it;
   GE_CHECK_NOTNULL_EXEC(node, return nullptr);
 
-  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTO);
+  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTOEX);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
   SetStreamIdLeave(graph, op_desc);
 
@@ -366,6 +366,7 @@ NodePtr LabelMaker::AddLabelSwitchIndex(const ComputeGraphPtr &graph, const std:
 
   OpDescPtr op_desc = MakeShared<OpDesc>(name, DATA);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
+  op_desc->SetStreamId(kInvalidStreamId);
 
   GELOGI("Data: Create node %s.", op_desc->GetName().c_str());
   if (op_desc->AddOutputDesc(desc) != GRAPH_SUCCESS) {

@@ -113,12 +113,26 @@ bool KernelUtils::CheckSizeForTransOp(const ge::ConstGeTensorPtr &const_weight_p
 
   GELOGI("Const real value Size:%zu, op_desc Shape Size:%ld, data_type:%s.", data_size, cal_size,
          TypeUtils::DataTypeToSerialString(data_type).c_str());
-  if ((shape_size != 0) || (length != 0 && (data_size / static_cast<size_t>(length) != 1))) {
-    if (!(data_size == static_cast<size_t>(cal_size) && data_size != 0)) {
+  if (shape_size != 0) {
+    // Standard tensor
+    if (data_size != static_cast<size_t>(cal_size) || data_size == 0) {
+      GELOGW("Const input data size is not equal with tensor desc shape");
+      return false;
+    }
+  } else if (data_shape.GetDimNum() != 0) {
+    // Empty tensor, has zero in shape vector
+    if (data_size != 0) {
+      GELOGW("Const input data size is not equal with tensor desc shape");
+      return false;
+    }
+  } else {
+    // Scalar tensor, has only one element in tensor
+    if (length != 0 && (data_size / static_cast<size_t>(length) != 1)) {
       GELOGW("Const input data size is not equal with tensor desc shape");
       return false;
     }
   }
+
   return true;
 }
 

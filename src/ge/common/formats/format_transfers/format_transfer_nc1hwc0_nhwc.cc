@@ -58,7 +58,7 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
   }
   if (src_shape.at(kNc1hwc0H) != dst_shape.at(kNhwcH) || src_shape.at(kNc1hwc0W) != dst_shape.at(kNhwcW) ||
       src_shape.at(kNc1hwc0N) != dst_shape.at(kNhwcN) || src_shape.at(kNc1hwc0C0) != c0 ||
-      src_shape.at(kNc1hwc0C1) != (dst_shape.at(kNhwcC) - 1) / c0 + 1) {
+      src_shape.at(kNc1hwc0C1) != (Ceil(dst_shape.at(kNhwcC), c0))) {
     GELOGE(PARAM_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     return PARAM_INVALID;
@@ -102,8 +102,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
           auto src_offset = src_idx * size;
           auto dst_offset = dst_idx * size;
           auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? total_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? total_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
@@ -130,6 +130,12 @@ Status FormatTransferNc1hwc0Nhwc::TransFormat(const TransArgs &args, TransResult
   int size = GetSizeByDataType(args.src_data_type);
   auto total_size = GetItemNumByShape(args.dst_shape) * size;
   if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
+
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;

@@ -35,11 +35,11 @@ class StreamGraphOptimizer {
 
   virtual ~StreamGraphOptimizer();
 
-  Status OptimizeStreamedSubGraph(const ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+  Status OptimizeStreamedSubGraph(const ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map,
                                   struct RunContext &run_context);
 
  private:
-  void RefreshNodeId(const ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list);
+  void RefreshNodeId(const ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map);
 
   bool IsSameStreamId(const ComputeGraphPtr &comp_graph);
 };

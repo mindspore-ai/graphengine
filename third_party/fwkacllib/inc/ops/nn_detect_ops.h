@@ -311,6 +311,357 @@ REG_OP(PSROIPooling)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(PSROIPooling)
 
+/**
+*@brief Returns detection result.
+
+*@par Inputs:
+* Four inputs, including:
+*@li rois: An NCHW tensor of type floa16 or float32, output from operator proposal_d at the preceding layer, used as the input of operator FSRDetectionOutput.
+*@li prior_box: An NCHWC0 tensor of type floa16 or float32, specifying the prediction offset, used to update the coordinates [x1, y1, x2, y2] of each ROI.
+*@li score: An NCHWC0 tensor of type floa16 or float32, specifying the probability of each class. Class 0 is the background class.
+*@li actual_rois_num: An NCHW tensor of type int32, specifying the number of valid boxes per batch.
+*@par Attributes:
+*@li batch_rois: An optional int32, specifying the number of images to be predicted. Defaults to "1024". The value range is [1, 1024].
+*@li im_info: An optional list of two ints. Defaults to (375, 1024). The value range is [1, 1024].
+*@li num_classes: An optional int32, specifying the number of classes to be predicted. Defaults to "80". The value must be greater than 0.
+*@li max_rois_num: An optional int32, specifying the maximum number of ROIs per batch. Defaults to "1024". The value must be a multiple of 16.
+*@li score_thresh: An optional float32, specifying the threshold for box filtering. Defaults to 0.45. The value range is [0.0, 1.0].
+*@li nms_thresh: An optional float32, specifying the confidence threshold for box filtering, which is the output "obj" of operator Region. Defaults to 0.7. The value range is (0.0, 1.0).
+*@li bbox_reg_weights: An optional list of four ints. Defaults to (1, 1, 1, 1). Must not have value "0".
+*@li post_nms_topn: An optional int, specifying the number of output boxes. Defaults to "304". The value must be less than or equal to 1024 and must be a multiple of 16.
+*@li kernel_name: An optional string, specifying the operator name. Defaults to "fsr_detection_output".
+*@par Outputs:
+*box: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+*actual_bbox_num: An NCHW tensor of type int32, specifying the number of output boxes.
+
+*@attention Constraints:\n
+*@li totalnum < max_rois_num * batch_rois.
+*@li "score" must be with shape (total_num, (num_classes+15)//16, 1, 1, 16), where "total_num" indicates the number of valid input boxes of all images.
+*@li "prior_box" must be with shape (total_num, (num_classes*4+15)//16, 1, 1, 16), where "total_num" indicates the number of valid input boxes of all images.
+*/
+REG_OP(FSRDetectionOutput)
+    .INPUT(rois, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(prior_box, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(score, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(actual_rois_num, TensorType({DT_INT32}))
+    .OUTPUT(actual_bbox_num, TensorType({DT_INT32}))
+    .OUTPUT(box, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(batch_rois, Int, 1024)
+    .ATTR(im_info, ListInt, {375,1024})
+    .ATTR(num_classes, Int, 80)
+    .ATTR(max_rois_num, Int, 1024)
+    .ATTR(score_thresh, Float, 0.45)
+    .ATTR(nms_thresh, Float, 0.7)
+    .ATTR(bbox_reg_weights, ListInt, {1,1,1,1})
+    .ATTR(post_nms_topn, Int, 304)
+    .OP_END_FACTORY_REG(FSRDetectionOutput)
+
+/**
+*@brief Normalizes data. It is called Region on YOLO v2 and Yolo on YOLO v3.
+
+*@par Inputs:
+*x: An NCHW tensor of type float16 or float32. The data is with shape (N, boxes*(coords+obj+classes), H, W),where, "obj" indicates the confidence of an object, and only one confidence is supported. Boxes are arranged as xx...xyy...yww...whh...hbb...bc0c0..c0c1c1...c1......cncn...cn.
+
+*@par Attributes:
+*@li boxes: A required int32, specifying the number of anchor boxes. Defaults to "5" for V2 or "3" for V3.
+*@li coords: An int32, specifying the number of parameters required for locating an object. The value is fixed at "4", corresponding to (x,y,w,h).
+*@li classes: An int32, specifying the number of prediction classes. Defaults to "80". The value range is [1, 1024].
+*@li yolo_version: A string, specifying the YOLO version, either "V2" or "V3".
+*@li softmax: A bool, specifying whether to perform softmax, valid only when "yolo_version = V2".
+*@li background: A bool, specifying the operation types of the obj and classes, used in conjunction with "softmax" and valid only when "yolo_version = V2".
+*@li background: A bool.
+
+*@par Outputs:
+*@li coord_data: A float16 or float32 with shape [N, boxes*coords, ceilx(height*width*2+32, 32)/2], where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the coordinates of a detected box.
+*@li obj_prob: A float16 or float32 with shape [N, ceilx(boxes*height*width *2+32, 32)/2], where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the confidence.
+*@li classes_prob: A float16 or float32 with shape [N, classes, ceilx(boxes*height*width *2+32, 32)/2], where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the prediction classes.
+
+*@attention Constraints:
+*@li This operator applies to YOLO v2 and v3 networks.
+*@li The succeeding layer of the Yolo operator must be operator Yolov3DetectionOutput.
+*/
+REG_OP(Yolo)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(obj_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(classes_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(boxes, Int, 3)
+    .ATTR(coords, Int, 4)
+    .ATTR(classes, Int, 80)
+    .ATTR(yolo_version, String, "V3")
+    .ATTR(softmax, Bool, false)
+    .ATTR(background, Bool, false)
+    .ATTR(softmaxtree, Bool, false)
+    .OP_END_FACTORY_REG(Yolo)
+
+/**
+*@brief Performs YOLO V2 detection.
+
+*@par Inputs:
+* Four inputs, including:
+*@li The outputs of operator Yolo at the preceding layer (that is, one Yolo operator on YOLO v2) are used as the inputs of operator Yolov3DetectionOutput. \n
+Each Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+*@li imginfo: A float16, describing the image information including the required image height and width \n
+and the actual image height and width.
+*
+*@par Attributes:
+*@li biases: A required float. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
+*@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
+*@li coords: Specifies the number of coordinate parameters. Must be 4.
+*@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 80].
+*@li relative: An optional bool. Defaults to and must be "true".
+*@li obj_threshold: A required float, specifying the confidence threshold for box filtering, which is the output "obj" of operator Yolo). The value range is [0.0, 1.0].
+
+*@li post_nms_topn: An optional int32. This attribute is reserved.
+*@li score_threshold: A required float, specifying the class score threshold for box filtering, which is the output "class" of operator Yolo). The value range is [0.0, 1.0].
+*@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].\n
+*@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "1024".
+*
+*@par Outputs:
+*@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+*@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+
+*@attention Constraints:\n
+*@li This operator applies only to the YOLO v2 network.
+*@li The preceding layer of operator Yolov2DetectionOutput must be one Yolo operator.
+
+*@see Yolo()
+*/
+REG_OP(YoloV2DetectionOutput)
+    .INPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .REQUIRED_ATTR(biases, ListFloat)
+    .ATTR(boxes, Int, 5)
+    .ATTR(coords, Int, 4)
+    .ATTR(classes, Int, 80)
+    .ATTR(relative, Bool, true)
+    .ATTR(obj_threshold, Float, 0.5)
+    .ATTR(post_nms_topn, Int, 1024)
+    .ATTR(score_threshold, Float, 0.5)
+    .ATTR(iou_threshold, Float, 0.45)
+    .ATTR(pre_nms_topn, Int, 512)
+    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out_num, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(YoloV2DetectionOutput)
+
+/**
+*@brief Performs YOLO V2 detection.
+
+*@par Inputs:
+*Six inputs, including:
+*@li The outputs of operator Yolo at the preceding layer (that is, one Yolo operator on YOLO v2) are used as the inputs of operator Yolov2DetectionOutput. \n
+Each Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+*@li imginfo: A float16, describing the image information including the required image height and width \n
+and the actual image height and width.
+*@li windex: A windex tensor with shape [height, weight]. Has the same type as the inputs. [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed. \n
+
+*@li hindex: A hindex tensor with shape [height, weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]]. \n
+
+*
+*@par Attributes:
+*@li biases: A required float. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
+*@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
+*@li coords: Specifies the number of coordinate parameters. Must be 4.
+*@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 80].
+*@li relative: An optional bool. Defaults to and must be "true".
+*@li obj_threshold: A required float, specifying the confidence threshold for box filtering, which is the output "obj" of operator Yolo). The value range is [0.0, 1.0].
+*@li post_nms_topn: An optional int32. This attribute is reserved.
+*@li score_threshold: A required float, specifying the class score threshold for box filtering, which is the output "class" of operator Yolo). The value range is [0.0, 1.0].
+
+*@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].\n
+*@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "1024".
+*
+*@par Outputs:
+*@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+*@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+*
+*@attention Constraints:\n
+*@li This operator applies only to the YOLO v2 network.
+*@li The preceding layer of operator Yolov2DetectionOutput must be one Yolo operator.
+
+*@see Yolo()
+*/
+REG_OP(YoloV2DetectionOutputD)
+    .INPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(windex, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(hindex, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .REQUIRED_ATTR(biases, ListFloat)
+    .ATTR(boxes, Int, 5)
+    .ATTR(coords, Int, 4)
+    .ATTR(classes, Int, 80)
+    .ATTR(relative, Bool, true)
+    .ATTR(obj_threshold, Float, 0.5)
+    .ATTR(post_nms_topn, Int, 1024)
+    .ATTR(score_threshold, Float, 0.5)
+    .ATTR(iou_threshold, Float, 0.45)
+    .ATTR(pre_nms_topn, Int, 512)
+    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out_num, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(YoloV2DetectionOutputD)
+
+/**
+*@brief Performs YOLO V3 detection.
+
+*@par Inputs:
+*Ten inputs, including:
+*@li Operator Yolov3DetectionOutput takes the outputs of operator Yolo as its inputs. A Yolo operator has three outputs: "coords", "obj", and "class". \n
+There are three Yolo operators at Yolov3DetectionOutput's preceding layer on Yolo v3. For details, see the description of operator Yolo.
+*@li imginfo: A float16, describing the image information including the required image height and width \n
+and the actual image height and width.
+*
+*@par Attributes:
+*@li biases: A required float. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
+*@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
+*@li coords: Specifies the number of coordinate parameters. Must be 4.
+*@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 80].
+*@li relative: An optional bool. Defaults to and must be "true".
+*@li obj_threshold: A required float, specifying the confidence threshold for box filtering, which is the output "obj" of operator Yolo). The value range is [0.0, 1.0].
+
+*@li post_nms_topn: An optional int32. This attribute is reserved.
+*@li score_threshold: A required float, specifying the class score threshold for box filtering, which is the output "class" of operator Yolo). The value range is [0.0, 1.0].
+
+*@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].\n
+
+*@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "1024".
+*
+*@par Outputs:
+*@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+*@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+
+*@attention Constraints:\n
+*@li This operator applies only to the YOLO v3 network.
+*@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
+
+*@see Yolo()
+*/
+REG_OP(YoloV3DetectionOutput)
+    .INPUT(coord_data_low, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data_high, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .REQUIRED_ATTR(biases_low, ListFloat)
+    .REQUIRED_ATTR(biases_mid, ListFloat)
+    .REQUIRED_ATTR(biases_high, ListFloat)
+    .ATTR(boxes, Int, 3)
+    .ATTR(coords, Int, 4)
+    .ATTR(classes, Int, 80)
+    .ATTR(relative, Bool, true)
+    .ATTR(obj_threshold, Float, 0.5)
+    .ATTR(post_nms_topn, Int, 1024)
+    .ATTR(score_threshold, Float, 0.5)
+    .ATTR(iou_threshold, Float, 0.45)
+    .ATTR(pre_nms_topn, Int, 512)
+    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out_num, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(YoloV3DetectionOutput)
+
+/**
+*@brief Performs YOLO V3 detection.
+
+*@par Inputs:
+*16 Input, including:
+*@li The outputs of operator Yolo at the preceding layer (that is, three Yolo operators on YOLO v3) are used as the inputs of operator Yolov3DetectionOutput. \n
+A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+*@li imginfo: A float16, describing the image information including the required image height and width \n
+and the actual image height and width.
+*@li windex: A windex tensor with shape [height,weight]. Has the same type as the inputs. [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed for the three Yolo outputs, respectively.
+
+*@li hindex: A hindex tensor with shape [height,weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively.
+
+*
+*@par Attributes:
+*@li biases: A required float32. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
+*@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
+*@li coords: Specifies the number of coordinate parameters. Must be 4.
+*@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 80].
+*@li relative: An optional bool. Defaults to and must be "true".
+*@li obj_threshold: A required float, specifying the confidence threshold for box filtering, which is the output "obj" of operator Yolo). The value range is [0.0, 1.0].
+*@li post_nms_topn: An optional int32. This attribute is reserved.
+*@li score_threshold: A required float, specifying the class score threshold for box filtering, which is the output "class" of operator Yolo). The value range is [0.0, 1.0].
+*@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].\n
+*@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "1024".
+*
+*@par Outputs:
+*@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+*@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+
+*@attention Constraints:\n
+*@li This operator applies only to the YOLO v3 network.
+*@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
+*@see Yolo()
+*/
+REG_OP(YoloV3DetectionOutputD)
+    .INPUT(coord_data_low, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data_high, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(obj_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(classes_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(windex1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(windex2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(windex3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(hindex1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(hindex2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(hindex3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .REQUIRED_ATTR(biases_low, ListFloat)
+    .REQUIRED_ATTR(biases_mid, ListFloat)
+    .REQUIRED_ATTR(biases_high, ListFloat)
+    .ATTR(boxes, Int, 3)
+    .ATTR(coords, Int, 4)
+    .ATTR(classes, Int, 80)
+    .ATTR(relative, Bool, true)
+    .ATTR(obj_threshold, Float, 0.5)
+    .ATTR(post_nms_topn, Int, 1024)
+    .ATTR(score_threshold, Float, 0.5)
+    .ATTR(iou_threshold, Float, 0.45)
+    .ATTR(pre_nms_topn, Int, 512)
+    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out_num, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(YoloV3DetectionOutputD)
+
+/**
+*@brief Spatial Pyramid Pooling, multi-level pooling.
+* Pooling out(n, sigma(c*2^i*2^i)) tensor, i in range[0,pyramid_height).
+
+*@par Inputs:
+*x: An NCHW tensor, support float16 or float32 type.
+
+*@par Attributes:
+* @li pyramid_height: An required int32.
+* Multi-level pooling out from 2^0 to 2^(pyramid_height-1).
+* @li pool_method: An optional int32, pooling method: 0-MAX, 1-AVE.
+* Defaults to "0".
+
+*@par Outputs:
+*y: A NCHW tensor, support float16 or float32 type.
+
+*@attention Constraints:
+* @li pyramid_height: pyramid_heigjt should be in range [0,7).
+* @li feature_size:input feture map h and w should be [1, 510].
+
+*/
+REG_OP(SPP)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(pyramid_height, Int)
+    .ATTR(pool_method, Int, 0)
+    .OP_END_FACTORY_REG(SPP)
+
 }  // namespace ge
 
 #endif  // GE_OP_NN_DETECT_OPS_H_

@@ -54,17 +54,34 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY size_t ComputeGraph::GetAllNodesS
   return s;
 }
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::Vistor<NodePtr> ComputeGraph::GetAllNodes() const {
-  vector<NodePtr> all_nodes(nodes_.size());
-  (void)std::copy(nodes_.begin(), nodes_.end(), all_nodes.begin());
-  for (const auto &sub_graph : sub_graph_) {
-    if (sub_graph == nullptr) {
-      GELOGW("sub graph is nullptr");
+  if (sub_graph_.empty()) {
+    return Vistor<NodePtr>(shared_from_this(), nodes_);
+  }
+
+  std::vector<NodePtr> all_nodes;
+  std::deque<NodePtr> candidates;
+
+  candidates.insert(candidates.begin(), nodes_.begin(), nodes_.end());
+
+  while (!candidates.empty()) {
+    NodePtr node = candidates.front();
+    all_nodes.emplace_back(node);
+    candidates.pop_front();
+
+    OpDescPtr op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
       continue;
     }
-    for (const auto &node : sub_graph->GetAllNodes()) {
-      all_nodes.push_back(node);
+
+    const auto &subgraph_names = op_desc->GetSubgraphInstanceNames();
+    for (auto name_iter = subgraph_names.rbegin(); name_iter != subgraph_names.rend(); ++name_iter) {
+      auto subgraph = GetSubgraph(*name_iter);
+      if (subgraph != nullptr) {
+        candidates.insert(candidates.begin(), subgraph->nodes_.begin(), subgraph->nodes_.end());
+      }
     }
   }
+
   return Vistor<NodePtr>(shared_from_this(), all_nodes);
 }
 size_t ComputeGraph::GetDirectNodesSize() const { return nodes_.size(); }
@@ -602,7 +619,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::InsertE
 graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
                                                 std::map<NodePtr, uint32_t> &map_in_edge_num,
                                                 std::vector<NodePtr> &stack) {
-  GELOGI("Runing_Dfs_Sort");
+  GELOGI("Runing_Dfs_Sort: %s", name_.c_str());
   // Record the number of non data nodes but no input nodes
   GE_CHK_BOOL_EXEC(SortNodes(stack, map_in_edge_num) == GRAPH_SUCCESS, return GRAPH_FAILED, "sort nodes failed");
 
@@ -647,7 +664,7 @@ graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
 graphStatus ComputeGraph::BFSTopologicalSorting(std::vector<NodePtr> &node_vec,
                                                 std::map<NodePtr, uint32_t> &map_in_edge_num,
                                                 std::deque<NodePtr> &stack) {
-  GELOGI("Runing_Bfs_Sort");
+  GELOGI("Runing_Bfs_Sort: %s", name_.c_str());
   std::vector<NodePtr> stack_input;
   std::map<string, NodePtr> breadth_node_map;
   // Record the number of non data nodes but no input nodes
@@ -735,7 +752,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::Topolog
       use_BFS = true;
     }
   } else {
-    GELOGW("Get OPTION_GRAPH_RUN_MODE failed, use BFSTopologicalSorting by default.");
+    GELOGW("OPTION_GRAPH_RUN_MODE not set, use BFSTopologicalSorting by default.");
   }
 
   if (use_BFS) {

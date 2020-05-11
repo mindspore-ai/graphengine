@@ -40,7 +40,7 @@ const uint32_t kMaxSwitchStreamNum = 1;
 
 namespace ge {
 Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &max_parallel_num, bool hcom_parallel) {
-  GELOGI("AssignLogicalStreams start.");
+  GELOGI("Assign logical streams start.");
   GE_CHECK_NOTNULL(whole_graph_);
   GraphUtils::DumpGEGraph(whole_graph_, "BeforeAssignedLogicalStreams");
   GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "BeforeAssignedLogicalStreams");
@@ -52,7 +52,6 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
   }
 
   const map<string, SchedulerConf> &scheduler_confs = gelib->DNNEngineManagerObj().GetSchedulers();
-
   LogicalStreamAllocator logical_allocator(scheduler_confs, max_parallel_num, hcom_parallel);
   Status status = logical_allocator.Assign(whole_graph_, subgraphs_, stream_num_);
   if (status != SUCCESS) {
@@ -62,7 +61,7 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
 
   GraphUtils::DumpGEGraph(whole_graph_, "AfterAssignedLogicalStreams");
   GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "AfterAssignedLogicalStreams");
-  GELOGI("AssignLogicalStreams success.");
+  GELOGI("Assign logical streams success.");
 
   return SUCCESS;
 }
@@ -136,7 +135,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
     GELOGI("None of nodes need to assign stream, stream num is 0, it will cause error, so change it to 1");
     stream_num_ = 1;
   }
-  GELOGI("stream_num_: %ld, event_num_: %u.", stream_num_, event_num_);
+  GELOGI("stream num: %ld, event num: %u.", stream_num_, event_num_);
   GELOGI("RefreshRealStream successfully.");
 
   stream_num = stream_num_;
@@ -148,7 +147,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
 // Split the stream according to the maximum number of nodes in the stream.
 Status StreamAllocator::SplitStreams() {
   if (stream_num_ == 0) {
-    GELOGI("stream_num_ is 0");
+    GELOGI("The number of streams is 0 and no need to split.");
     return SUCCESS;
   }
 

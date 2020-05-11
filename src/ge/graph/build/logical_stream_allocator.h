@@ -60,7 +60,7 @@ class LogicalStreamPass {
   };
 
   struct Context {
-    // Next stream id.
+    int64_t parent_stream = kInvalidStream;
     int64_t next_stream = 0;
     bool hcom_parallel = false;
   };
@@ -71,7 +71,7 @@ class LogicalStreamPass {
   virtual ~LogicalStreamPass() = default;
 
   const std::string &GetName() const;
-  virtual Status Run(ComputeGraphPtr whole_graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) = 0;
+  virtual Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) = 0;
 
  protected:
   bool IsEngineSkip(const Subgraph &subgraph) const;
@@ -93,21 +93,21 @@ using LogicalStreamPassPtr = std::shared_ptr<LogicalStreamPass>;
 class AssignByLabelPass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(AssignByLabelPass);
-  Status Run(ComputeGraphPtr whole_graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 };
 
 // Engines such as hccl require independent Stream.
 class IndependentStreamPass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(IndependentStreamPass);
-  Status Run(ComputeGraphPtr whole_graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 };
 
 // Reuse streams or assign new streams based on dependencies.
 class AssignByDependencyPass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(AssignByDependencyPass);
-  Status Run(ComputeGraphPtr whole_graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 
  private:
   void InitEndSubgraphMap(const std::vector<SubgraphPtr> &subgraphs, std::map<NodePtr, SubgraphPtr> &end_subgraph_map);
@@ -132,7 +132,7 @@ class AssignByDependencyPass : public LogicalStreamPass {
   std::map<std::string, int64_t> engine_stream_num_;
 
   // Subgraphs of assign stream by engine
-  std::set<SubgraphPtr> assigned_subgraphs_;
+  std::vector<SubgraphPtr> assigned_subgraphs_;
 
   // <current subgraph, reused subgraph>
   std::vector<std::pair<SubgraphPtr, SubgraphPtr>> reused_subgraphs_;
@@ -142,7 +142,7 @@ class AssignByDependencyPass : public LogicalStreamPass {
 class NodeStreamUpdatePass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(NodeStreamUpdatePass);
-  Status Run(ComputeGraphPtr whole_graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 
  private:
   /// Optimize for case like:
@@ -150,19 +150,18 @@ class NodeStreamUpdatePass : public LogicalStreamPass {
   /// To case:
   ///  NodeA(stream1) -> Const(stream1) -> NodeB(stream1)
   /// Which could reduce event number (Const could be other type which belong to skipped engine subgraph)
-  Status UpdateForSkippedEngine(const ComputeGraphPtr &whole_graph, const std::vector<SubgraphPtr> &subgraphs);
+  Status UpdateForSkippedEngine(const ComputeGraphPtr &graph, const std::vector<SubgraphPtr> &subgraphs);
 
   int64_t GetSingleInoutStream(const NodePtr &node) const;
   // Judge if all predecessors' streams of node are INVALID_STREAM
   bool AreAllPredStreamsInvalid(const NodePtr &node) const;
-  void RefreshContinuousStreams(ComputeGraphPtr whole_graph, Context &context) const;
 };
 
 // AllReduce and backward operators execute in parallel.
 class AllReduceParallelPass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(AllReduceParallelPass);
-  Status Run(ComputeGraphPtr whole_graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 };
 
 // Assign logical streams which is not limited by the number of tasks.
@@ -178,13 +177,16 @@ class LogicalStreamAllocator {
   LogicalStreamAllocator &operator=(const LogicalStreamAllocator &) = delete;
   ~LogicalStreamAllocator() = default;
 
-  Status Assign(const ComputeGraphPtr &whole_graph, const std::vector<SubGraphInfoPtr> &subgraphs, int64_t &stream_num);
+  Status Assign(const ComputeGraphPtr &whole_graph, const Graph2SubGraphInfoList &subgraph_map, int64_t &stream_num);
 
  private:
+  Status DoAssign(const ComputeGraphPtr &graph, const Graph2SubGraphInfoList &subgraph_map,
+                  const map<string, EngineConfPtr> &engine_confs);
   Status ConvertSubgraphs(const std::vector<SubGraphInfoPtr> &subgraph_infos,
                           const std::map<std::string, EngineConfPtr> &engine_confs,
                           std::vector<SubgraphPtr> &subgraphs);
-  Status RunPasses(const ComputeGraphPtr &whole_graph, const std::vector<SubgraphPtr> &subgraphs, int64_t &stream_num);
+  Status RunPasses(const ComputeGraphPtr &graph, const std::vector<SubgraphPtr> &subgraphs);
+  void RefreshContinuousStreams(const ComputeGraphPtr &graph);
 
   const std::map<std::string, SchedulerConf> &scheduler_confs_;
   const std::map<std::string, int> &max_parallel_num_;

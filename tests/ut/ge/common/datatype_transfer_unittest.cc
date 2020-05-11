@@ -368,14 +368,20 @@ TEST_F(UtestDataTypeTransfer, invalid_src_data_type) {
   EXPECT_EQ(transfer.TransDataType(args, result), UNSUPPORTED);
 }
 
-TEST_F(UtestDataTypeTransfer, src_shape_empry) {
-  uint8_t data[1 * 4 * 4 * 1] = {0};
+TEST_F(UtestDataTypeTransfer, src_shape_empty) {
+  uint8_t data[1*4*4*1] = {0};
+  constexpr int64_t kShapeItemNumMAX = 1024UL * 1024UL * 1024UL * 1024UL;
 
   DataTypeTransfer transfer;
-  CastArgs args{reinterpret_cast<uint8_t *>(data), 0, DT_UINT8, DT_INT32};
+  CastArgs args {
+      reinterpret_cast<uint8_t *>(data),
+      0,
+      DT_UINT8,
+      DT_INT32
+  };
 
   TransResult result;
-  EXPECT_EQ(transfer.TransDataType(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
 }
 
 TEST_F(UtestDataTypeTransfer, unsupprot_trans) {

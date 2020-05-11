@@ -168,6 +168,7 @@ enum {
   DSS,
   PROCMGR,     // Process Manager, Base Platform
   BBOX,
+  AIVECTOR,
   INVLID_MOUDLE_ID
 };
 
@@ -241,6 +242,7 @@ static DCODE g_moduleIdName[] = {SET_MOUDLE_ID_MAP_NAME(SLOG),
                                  SET_MOUDLE_ID_MAP_NAME(DSS),
                                  SET_MOUDLE_ID_MAP_NAME(PROCMGR),
                                  SET_MOUDLE_ID_MAP_NAME(BBOX),
+                                 SET_MOUDLE_ID_MAP_NAME(AIVECTOR),
                                  { NULL, -1 }};
 #endif // MODULE_ID_NAME
 

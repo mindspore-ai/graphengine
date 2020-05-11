@@ -82,6 +82,7 @@ bool CceTask::Distribute() {
     stub_func_ = nullptr;
     return false;
   }
+  GELOGI("CCETask: stub_func = %s [%p].", task_info_->stub_func().c_str(), stub_func_);
 
   // Flowtable
   if (is_flowtable_) {

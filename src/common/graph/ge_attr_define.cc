@@ -955,11 +955,8 @@ const std::string ATTR_NAME_DATA_DUMP_ORIGIN_FORMAT = "_datadump_origin_format";
 const std::string ATTR_NAME_DATA_DUMP_ORIGIN_DATA_TYPE = "_datadump_origin_data_type";
 
 // functional ops attr
-const std::string ATTR_NAME_TCOND = "Tcond";
-const std::string ATTR_NAME_TIN = "Tin";
-const std::string ATTR_NAME_TOUT = "Tout";
-const std::string ATTR_NAME_THEN_BRANCH = "then_branch";
-const std::string ATTR_NAME_ELSE_BRANCH = "else_branch";
+const std::string ATTR_NAME_WHILE_COND = "cond";
+const std::string ATTR_NAME_WHILE_BODY = "body";
 
 // used for label switch
 const std::string ATTR_NAME_LABEL_SWITCH_INDEX = "_label_switch_index";

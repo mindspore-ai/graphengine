@@ -253,8 +253,8 @@ class HcclTaskInfo : public TaskInfo {
   HcclTaskInfo(uint32_t stream_id, const std::string hccl_type, void *input_data_addr, void *output_data_addr,
                void *workspace_addr, int64_t workspace_size, int64_t hccl_stream_num,
                const std::vector<uint8_t> &private_def, void *ops_kernel_store, int32_t count, int64_t root_id,
-               int64_t op_type, int64_t data_type, std::function<bool(void *, void *)> hcom_bind_model,
-               std::function<bool(void *)> hcom_unbind_model,
+               int64_t op_type, int64_t data_type, std::string group,
+               std::function<bool(void *, void *)> hcom_bind_model, std::function<bool(void *)> hcom_unbind_model,
                std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task)
       : TaskInfo(stream_id, TaskInfoType::HCCL),
         hccl_type_(hccl_type),
@@ -269,6 +269,7 @@ class HcclTaskInfo : public TaskInfo {
         root_id_(root_id),
         op_type_(op_type),
         data_type_(data_type),
+        group_(group),
         hcom_bind_model_(hcom_bind_model),
         hcom_unbind_model_(hcom_unbind_model),
         hcom_distribute_task_(hcom_distribute_task) {}
@@ -286,6 +287,7 @@ class HcclTaskInfo : public TaskInfo {
   int64_t root_id() const { return root_id_; }
   int64_t op_type() const { return op_type_; }
   int64_t data_type() const { return data_type_; }
+  std::string group() const { return group_; }
   std::function<bool(void *, void *)> hcom_bind_model() const { return hcom_bind_model_; }
   std::function<bool(void *)> hcom_unbind_model() const { return hcom_unbind_model_; }
   std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task() const {
@@ -305,6 +307,7 @@ class HcclTaskInfo : public TaskInfo {
   int64_t root_id_;
   int64_t op_type_;
   int64_t data_type_;
+  std::string group_;
   std::function<bool(void *, void *)> hcom_bind_model_;
   std::function<bool(void *)> hcom_unbind_model_;
   std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task_;

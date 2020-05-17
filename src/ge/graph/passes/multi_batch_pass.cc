@@ -29,6 +29,14 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
+using domi::ATTR_NAME_STREAM_LABEL;
+
+using domi::NETOUTPUT;
+using domi::STREAMACTIVE;
+using domi::STREAMMERGE;
+using domi::STREAMSWITCHN;
+using domi::SWITCHN;
+
 namespace ge {
 Status MultiBatchPass::Run(ComputeGraphPtr graph) {
   GELOGD("MultiBatchPass Enter");

@@ -62,7 +62,7 @@ namespace ge {
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
 * Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
-* stride_h + 32 * filter_h) * ceil(Wi, 16) â‰¤ l1_size and Hf*Wf â‰¤ l0b_size/512.\n
+* stride_h + 32 * filter_h) * ceil(Wi, 16) â‰?l1_size and Hf*Wf â‰?l0b_size/512.\n
 */
 REG_OP(DepthwiseConv2DBackpropFilter)
     .INPUT(input, TensorType({float16}))
@@ -115,7 +115,7 @@ REG_OP(DepthwiseConv2DBackpropFilter)
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
 * Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
-* stride_h + 32 * filter_h) * ceil(Wi, 16) â‰¤ l1_size and Hf*Wf â‰¤ l0b_size/512.\n
+* stride_h + 32 * filter_h) * ceil(Wi, 16) â‰?l1_size and Hf*Wf â‰?l0b_size/512.\n
 */
 REG_OP(DepthwiseConv2DBackpropFilterD)
     .INPUT(input, TensorType({float16}))
@@ -170,7 +170,7 @@ REG_OP(DepthwiseConv2DBackpropFilterD)
 * Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 â‰¥ C0, where max_h_in_l1 = (l1_size - Hf *
+* Limited by Tiling: max_h_in_l1 â‰?C0, where max_h_in_l1 = (l1_size - Hf *
 * Wf * C0 * C0 * 2) / (2 * Wo *C0).\n
 */
 REG_OP(DepthwiseConv2DBackpropInput)
@@ -223,7 +223,7 @@ REG_OP(DepthwiseConv2DBackpropInput)
 * Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 â‰¥ C0, where max_h_in_l1 = (l1_size - Hf *
+* Limited by Tiling: max_h_in_l1 â‰?C0, where max_h_in_l1 = (l1_size - Hf *
 * Wf * C0 * C0 * 2) / (2 * Wo *C0).\n
 */
 REG_OP(DepthwiseConv2DBackpropInputD)
@@ -439,17 +439,13 @@ REG_OP(Conv2DBackpropInputD)
  * One optional input:
  * @li bias: An optional tensor of type int8
 *@par Attributes:
- * Five attributes:
+ * Three attributes:
  * @li strides: A tuple or list of 2 integers. The stride of the sliding window
  * for H/W dimension.
  * @li pads: A tuple or list of 4 integers. The [top, bottom, left, right]
  * padding on the feature map
  * @li dilations: A tuple or list of 4 integers. The dilation factor for each
  * dimension of input. Must be [1, 1, 1, 1].
- * @li groups: Number of blocked connections from input channels to \n
- output channels.
- * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to "NHWC".\n
-  Specify the data format of the input and output data.
 *@par Outputs:
  * y: A Tensor. Has the same type as "filter". 4D tensor with shape
  * [batch, height, width, channels] or [batch, channels, height, width].
@@ -462,8 +458,6 @@ REG_OP(Deconvolution)
     .ATTR(strides, ListInt, {1, 1, 1, 1})
     .ATTR(pads, ListInt, {0, 0, 0, 0})
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
-    .ATTR(groups, Int, 1)
-    .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(Deconvolution)
 /**
 *@brief Computes the gradients of convolution with respect to the filter
@@ -637,6 +631,7 @@ REG_OP(Conv2D)
 *@par Attributes:
 *@li strides: A list of 5 ints. Specifies the stride of the sliding window for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
 *@li pads: A list of 6 ints. Supports only padding along the D, H and W dimensions in sequence of head, tail, top, bottom, left and right.
+*@li padding_mode: An optional string from: "zeros", "circular". Defaults to "zeros".
 *@li data_format: An optional string from: "NDHWC", "NCDHW". Defaults to "NDHWC". Specify the data format of the input and output data.
 *@li dilations: A list of 5 ints. Specifies the dilation factor for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
 
@@ -654,6 +649,7 @@ REG_OP(Conv3D)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .ATTR(strides, ListInt, {1, 1, 1, 1, 1})
     .ATTR(pads, ListInt, {0, 0, 0, 0, 0, 0})
+    .ATTR(padding_mode, String, "zeros")
     .ATTR(data_format, String, "NDHWC")
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
     .OP_END_FACTORY_REG(Conv3D)
@@ -675,7 +671,7 @@ REG_OP(Conv3D)
  * @li data_format: An optional string from: "NDHWC", "NCHWD". Defaults to "NDHWC". Specify the data format of the input and output data.
 *@par Outputs:
  * y: A Tensor. Has the same type as filter,and has same format as input_size
-*/
+*/ 
 REG_OP(Conv3DBackpropInput)
     .INPUT(input_sizes, TensorType({DT_INT32, DT_INT64}))
     .INPUT(filters, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -702,7 +698,7 @@ REG_OP(Conv3DBackpropInput)
  * @li data_format: An optional string from: "NDHWC", "NCHWD". Defaults to "NDHWC". Specify the data format of the input and output data.
 *@par Outputs:
  * y: A Tensor. Has the same type as filter
-*/
+*/ 
 REG_OP(Conv3DBackpropInputD)
     .INPUT(filters, TensorType({DT_FLOAT16}))
     .INPUT(grads, TensorType({DT_FLOAT16}))

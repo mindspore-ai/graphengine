@@ -220,7 +220,7 @@ static constexpr int32_t OM_PROTO_VERSION = 2;
  */
 #define CEIL(N, n) (((N) + (n)-1) / (n))
 
-namespace ge {
+namespace domi {
 using google::protobuf::Message;
 
 ///
@@ -390,6 +390,6 @@ bool CheckOutputPathValid(const std::string &file_path);
 /// @param [out] result
 ///
 bool ValidateStr(const std::string &filePath, const std::string &mode);
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_UTIL_H_

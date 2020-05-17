@@ -23,12 +23,16 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
+
+using domi::ATTR_NAME_INPUT_DATATYPE;
+using domi::ATTR_NAME_OUTPUT_DATATYPE;
+using domi::CAST;
+using domi::TRANSLATE;
 
 namespace ge {
 bool CastTranslatePass::CheckInAndOutDataAnchor(NodePtr &node) const {

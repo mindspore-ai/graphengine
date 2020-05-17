@@ -302,8 +302,8 @@ Status ModelManager::UnloadModeldef(uint32_t model_id) {
 Status ModelManager::DataInput(const InputData &input_data, OutputData &output_data) {
   GELOGI("calling the DataInput");
 
-  SysMode mode = DavinciModel::GetSysMode();
-  if ((mode == RESET) || (mode == STOP)) {
+  domi::SysMode mode = DavinciModel::GetSysMode();
+  if ((mode == domi::RESET) || (mode == domi::STOP)) {
     GELOGE(domi::MODEL_NOT_READY, "System mode is reset or stop");
     return domi::MODEL_NOT_READY;
   }
@@ -344,8 +344,8 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 ///
 Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<TensorInfo> &inputs,
                                      std::vector<TensorInfo> &outputs) {
-  SysMode mode = DavinciModel::GetSysMode();
-  if ((mode == RESET) || (mode == STOP)) {
+  domi::SysMode mode = DavinciModel::GetSysMode();
+  if ((mode == domi::RESET) || (mode == domi::STOP)) {
     GELOGE(domi::MODEL_NOT_READY, "System mode is reset or stop");
     return domi::MODEL_NOT_READY;
   }
@@ -358,17 +358,26 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<Tensor
   input_data.timestamp = 0;
   input_data.index = 0;
 
-  for (size_t i = 0; i < inputs.size(); ++i) {
+  std::size_t index = 0;
+  for (const auto &op : model->GetDataList()) {
+    GE_CHECK_NOTNULL(op);
+    GE_CHECK_GE(inputs.size(), 1);
+    GE_CHECK_GE(inputs.size() - 1, index);
+
     DataBuffer data;
-    data.data = inputs[i].data.data;
-    data.length = inputs[i].data.length;
+    data.data = inputs[index].data.data;
+    data.length = inputs[index].data.length;
     input_data.blobs.push_back(data);
+    index++;
   }
+
+  CHECK_FALSE_EXEC(input_data.blobs.size() >= inputs.size(),
+                   GELOGW("cur_inputs size = %zu, inputs size = %zu.", input_data.blobs.size(), inputs.size()););
 
   OutputData output_data;
   output_data.model_id = model_id;
   output_data.index = 0;
-  for (size_t i = 0; i < outputs.size(); ++i) {
+  for (size_t i = 0; i < outputs.size(); i++) {
     DataBuffer data;
     data.data = outputs[i].data.data;
     data.length = outputs[i].data.length;
@@ -463,7 +472,7 @@ Status ModelManager::HandleAclProfilingCommand(const Command &command) {
 
   std::string map_key = command.cmd_params[0];
   std::string value = command.cmd_params[1];
-  if (map_key == PROFILE_CONFIG) {
+  if (map_key == domi::PROFILE_CONFIG) {
     ProfilingManager::Instance().SetProfilingConfig(value);
   }
 
@@ -481,17 +490,18 @@ Status ModelManager::HandleProfileCommand(const Command &command) {
 
   GELOGI("Profiling mode, Command key:%s , value:%s ", map_key.c_str(), value.c_str());
 
-  auto iter = PROFILE_COMPONENT_MAP.find(map_key);
-  if (iter != PROFILE_COMPONENT_MAP.end()) {
+  auto iter = domi::PROFILE_COMPONENT_MAP.find(map_key);
+  if (iter != domi::PROFILE_COMPONENT_MAP.end()) {
     std::string property_value = (value == "on") ? "1" : "0";
     PropertiesManager::Instance().SetPropertyValue(iter->second, property_value);
   }
 
-  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
+  if ((map_key == domi::PROFILER_JOBCTX || map_key == domi::PROFILER_TARGET_PATH ||
+       map_key == domi::RTS_PROFILE_PATH)) {
     PropertiesManager::Instance().SetPropertyValue(map_key, value);
   }
 
-  if ((map_key == PROFILE_STOP_KEY) && (value == PROFILE_STOP_VALUE)) {
+  if ((map_key == domi::PROFILE_STOP_KEY) && (value == domi::PROFILE_STOP_VALUE)) {
     rtError_t rt_ret = rtProfilerStop();
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(PARAM_INVALID, "Call rtProfilerStop ret:%d", rt_ret);
@@ -512,6 +522,7 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
   std::string dump_model(DUMP_ALL_MODEL);
   std::string dump_path("/");
   std::set<std::string> dump_layers;
+  std::string dump_layer_count;
 
   auto iter_dump_status = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_STATUS);
   if (iter_dump_status != command.cmd_params.end()) {
@@ -666,15 +677,6 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       break;
     }
     davinci_model->SetId(model_id);
-
-    int32_t device_id = 0;
-    rtError_t rt_ret = rtGetDevice(&device_id);
-    if (rt_ret != RT_ERROR_NONE || device_id < 0) {
-      GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
-      return FAILED;
-    }
-    davinci_model->SetDeviceId(device_id);
-
     ret = davinci_model->Init(dev_ptr, mem_size, weight_ptr, weight_size);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "DavinciInit failed.");
 
@@ -714,7 +716,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
   GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0, PARAM_INVALID,
                          "input key file path is not valid, %s", strerror(errno));
 
-  ModelHelper model_helper;
+  domi::ModelHelper model_helper;
   Status ret = model_helper.LoadModel(model_data);
   if (ret != SUCCESS) {
     GELOGE(ret, "load model failed.");
@@ -805,17 +807,17 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
   Status ret = DavinciModelParser::ParseModelContent(model, model_data, model_len);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "parse model content failed!");
 
-  OmFileLoadHelper om_file_helper;
+  domi::OmFileLoadHelper om_file_helper;
   ret = om_file_helper.Init(model_data, model_len);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "om file helperInit failed!");
 
-  auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
+  auto partition_table = reinterpret_cast<domi::ModelPartitionTable *>(model_data);
   if (partition_table->num == 1) {
     GELOGE(FAILED, "om model is error,please use executable om model");
     return FAILED;
   }
-  ModelPartition task_partition;
-  if (om_file_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
+  domi::ModelPartition task_partition;
+  if (om_file_helper.GetModelPartition(domi::ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
     GELOGE(FAILED, "get task model partition failed.");
     return FAILED;
   }
@@ -825,14 +827,14 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
     return FAILED;
   }
   if (task_partition.size != 0) {
-    if (!ReadProtoFromArray(task_partition.data, static_cast<int>(task_partition.size), model_task_def.get())) {
+    if (!domi::ReadProtoFromArray(task_partition.data, static_cast<int>(task_partition.size), model_task_def.get())) {
       GELOGE(FAILED, "ReadProtoFromArray failed.");
       return FAILED;
     }
   }
 
-  ModelPartition partition_weight;
-  ret = om_file_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition_weight);
+  domi::ModelPartition partition_weight;
+  ret = om_file_helper.GetModelPartition(domi::ModelPartitionType::WEIGHTS_DATA, partition_weight);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Get weight partition failed. ret = %u", ret);
 
   mem_size = model_task_def->memory_size();
@@ -853,4 +855,5 @@ void ModelManager::GenModelId(uint32_t *id) {
     free_model_id_.pop_back();
   }
 }
+
 }  // namespace ge

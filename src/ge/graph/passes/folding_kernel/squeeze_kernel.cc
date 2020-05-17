@@ -23,6 +23,8 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::SQUEEZE;
+
 namespace {
 constexpr uint32_t kInputDescIndex = 0;
 constexpr uint32_t kOutputDescIndex = 0;

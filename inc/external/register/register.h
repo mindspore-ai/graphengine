@@ -116,5 +116,27 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpReceiver {
 namespace ge {
 using OpRegistrationData = domi::OpRegistrationData;
 using OpReceiver = domi::OpReceiver;
+
+class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY HostCpuOp {
+ public:
+  HostCpuOp() = default;
+  virtual ~HostCpuOp() = default;
+
+  virtual graphStatus Compute(Operator &op, const std::map<std::string, const Tensor> &inputs,
+                              std::map<std::string, Tensor> &outputs) = 0;
+};
+
+class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY HostCpuOpRegistrar {
+ public:
+  HostCpuOpRegistrar(const char *op_type, HostCpuOp *(*create_fn)());
+};
+
+#define REGISTER_HOST_CPU_OP_BUILDER(name, op) REGISTER_HOST_CPU_OP_BUILDER_UNIQ_HELPER(__COUNTER__, name, op)
+
+#define REGISTER_HOST_CPU_OP_BUILDER_UNIQ_HELPER(ctr, name, op) REGISTER_HOST_CPU_OP_BUILDER_UNIQ(ctr, name, op)
+
+#define REGISTER_HOST_CPU_OP_BUILDER_UNIQ(ctr, name, op)                              \
+  static ::ge::HostCpuOpRegistrar register_host_cpu_op##ctr __attribute__((unused)) = \
+    ::ge::HostCpuOpRegistrar(name, []() -> ::ge::HostCpuOp * { return new (std::nothrow) op(); })
 }  // namespace ge
 #endif  // INC_EXTERNAL_REGISTER_REGISTER_H_

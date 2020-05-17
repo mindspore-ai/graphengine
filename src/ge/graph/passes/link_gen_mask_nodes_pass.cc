@@ -17,6 +17,8 @@
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 
 #include <set>
+#include <string>
+#include <vector>
 
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
@@ -25,6 +27,10 @@
 
 using std::set;
 using std::vector;
+
+using domi::CONSTANT;
+using domi::CONSTANTOP;
+using domi::DROPOUTDOMASK;
 
 namespace ge {
 namespace {
@@ -68,8 +74,8 @@ Status LinkGenMaskNodesPass::Run(ComputeGraphPtr graph) {
     auto dest_anchor = dest_node->GetInControlAnchor();
     GE_CHECK_NOTNULL(dest_anchor);
 
-    graphStatus status_link_to = src_anchor->LinkTo(dest_anchor);
-    if (status_link_to != GRAPH_SUCCESS) {
+    graphStatus status = src_anchor->LinkTo(dest_anchor);
+    if (status != GRAPH_SUCCESS) {
       GELOGE(FAILED, "Link from %s to %s failed.", src_node->GetName().c_str(), dest_node->GetName().c_str());
       return FAILED;
     }

@@ -20,6 +20,9 @@
 #include "common/types.h"
 #include "common/util.h"
 
+using domi::SUCCESS;
+using domi::TO_BE_OUTPUT;
+
 namespace ge {
 Status IsolatedOpRemovePass::Run(ge::ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);

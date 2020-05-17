@@ -91,9 +91,9 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
 }
 
 bool IsTransSupport(const TransNodeInfo &trans_info) {
-  if (trans_info.node_type == RESHAPE || trans_info.node_type == REFORMAT) {
+  if (trans_info.node_type == domi::RESHAPE || trans_info.node_type == domi::REFORMAT) {
     return true;
-  } else if (trans_info.node_type == TRANSDATA) {
+  } else if (trans_info.node_type == domi::TRANSDATA) {
     formats::TransArgs args{nullptr,
                             trans_info.input.GetFormat(),
                             trans_info.output.GetFormat(),
@@ -101,7 +101,7 @@ bool IsTransSupport(const TransNodeInfo &trans_info) {
                             trans_info.output.GetShape().GetDims(),
                             trans_info.input.GetDataType()};
     return formats::IsTransFormatSupport(args);
-  } else if (trans_info.node_type == CAST) {
+  } else if (trans_info.node_type == domi::CAST) {
     formats::CastArgs datatype_args{nullptr, static_cast<size_t>(trans_info.input.GetShape().GetShapeSize()),
                                     trans_info.input.GetDataType(), trans_info.output.GetDataType()};
     return formats::IsTransDataTypeSupport(datatype_args);
@@ -423,11 +423,11 @@ Status VariableOpPass::GenerateVariableVariableRefMap(const ComputeGraphPtr &com
   std::map<std::string, std::set<NodePtr>> names_to_refs;
   GE_CHECK_NOTNULL(compute_graph);
   for (auto &node : compute_graph->GetAllNodes()) {
-    if (node->GetType() != VARIABLE) {
+    if (node->GetType() != domi::VARIABLE) {
       continue;
     }
     std::string ref_var_name;
-    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_name)) {
+    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_name)) {
       names_to_var[node->GetName()] = node;
     } else {
       names_to_refs[ref_var_name].insert(node);
@@ -583,8 +583,8 @@ Status VariableOpPass::RenewVarDesc(ge::ComputeGraphPtr &graph) {
   // renew var manager desc
   Status ret = SUCCESS;
   for (auto &node : graph->GetDirectNode()) {
-    bool is_var_node =
-      (node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2) || (node->GetType() == VARHANDLEOP);
+    bool is_var_node = (node->GetType() == domi::VARIABLE) || (node->GetType() == domi::VARIABLEV2) ||
+                       (node->GetType() == domi::VARHANDLEOP);
     if (is_var_node) {
       if (!ge::VarManager::Instance(graph->GetSessionID())->IsVarExist(node->GetName())) {
         GELOGD("var manager does not exist var node[%s]", node->GetName().c_str());

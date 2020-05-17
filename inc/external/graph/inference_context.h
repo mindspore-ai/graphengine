@@ -69,7 +69,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InferenceContext {
   static std::unique_ptr<InferenceContext> Create();
 
  private:
-  explicit InferenceContext(std::unique_ptr<InferenceContextImpl> &impl);
+  InferenceContext(std::unique_ptr<InferenceContextImpl> &impl);
   std::shared_ptr<InferenceContextImpl> inference_context_impl_;
 };
 }  // namespace ge

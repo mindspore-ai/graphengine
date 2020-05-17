@@ -20,7 +20,7 @@
 #include <gflags/gflags.h>
 #include <string>
 
-namespace ge {
+namespace domi {
 class GflagsUtils {
  public:
   static bool IsSetCommandTrue(const char *name) {
@@ -66,6 +66,6 @@ class GflagsUtils {
     }
   }
 };
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_GFLAGS_UTIL_H_

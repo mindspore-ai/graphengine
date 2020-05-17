@@ -25,7 +25,11 @@
 #include "graph/ge_attr_value.h"
 #include "graph/graph.h"
 
+namespace domi {
+class ModelHelper;
+}
 namespace ge {
+using domi::ModelHelper;
 using std::map;
 using std::string;
 using std::vector;

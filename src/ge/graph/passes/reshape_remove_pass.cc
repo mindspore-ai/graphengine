@@ -28,7 +28,7 @@ Status ReshapeRemovePass::Run(NodePtr &node) {
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
-  if (node->GetType() != RESHAPE) {
+  if (node->GetType() != domi::RESHAPE) {
     return SUCCESS;
   }
   GELOGD("Remove reshape node %s", node->GetName().c_str());

@@ -27,7 +27,6 @@
 #include <string>
 
 #include "framework/common/debug/log.h"
-#include "framework/common/util.h"
 
 namespace ge {
 static const int kMaxNumOfSo = 64;
@@ -101,7 +100,7 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     }
 
     std::string file_name = single_path.substr(single_path.rfind('/') + 1, string::npos);
-    string file_path_dlopen = RealPath(single_path.c_str());
+    string file_path_dlopen = domi::RealPath(single_path.c_str());
     if (file_path_dlopen.empty()) {
       GELOGW("Failed to get realpath of %s!", single_path.c_str());
       continue;
@@ -226,7 +225,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
     }
 
     std::string canonical_path_str = (std::string(canonical_path) + "/" + file_name);
-    string file_path_dlopen = RealPath(canonical_path_str.c_str());
+    string file_path_dlopen = domi::RealPath(canonical_path_str.c_str());
     if (file_path_dlopen.empty()) {
       GELOGW("failed to get realpath of %s", canonical_path_str.c_str());
       continue;

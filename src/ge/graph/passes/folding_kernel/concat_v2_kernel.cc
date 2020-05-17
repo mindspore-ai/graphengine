@@ -28,6 +28,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::CONCATV2;
+
 namespace ge {
 namespace {
 const size_t kConcatV2InputNum = 3;

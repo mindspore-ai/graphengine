@@ -23,7 +23,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <string>
 #include <vector>
 #include "cce/aicpu_engine_struct.h"
 #include "common/types.h"

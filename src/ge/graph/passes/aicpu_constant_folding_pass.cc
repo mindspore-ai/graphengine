@@ -571,8 +571,8 @@ void AicpuConstantFoldingPass::ReleaseMemory(const vector<AddrAndType> &input_ad
 bool AicpuConstantFoldingPass::IsSkipFold(const ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   string type = node->GetType();
-  if (type == ge::FRAMEWORKOP) {
-    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), ge::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
+  if (type == domi::FRAMEWORKOP) {
+    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
       GELOGW("Skip aicpu constant folding on frameworkop node [%s]", node->GetName().c_str());
       return true;
     }

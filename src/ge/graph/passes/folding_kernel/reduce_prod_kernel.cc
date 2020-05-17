@@ -28,6 +28,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::REDUCEPROD;
+
 namespace ge {
 namespace {
 const size_t kReduceProdDataIndex = 0;
@@ -63,7 +65,10 @@ Status ReduceProdKernel::ReduceProdCheck(const ge::OpDescPtr &op_desc_ptr,
     GELOGE(PARAM_INVALID, "Axis must be at most rank 1, node node: %s", op_desc_ptr->GetName().c_str());
     return PARAM_INVALID;
   }
-
+  if (data_tensor->GetData().size() == 0 || axis_tensor->GetData().size() == 0) {
+    GELOGE(PARAM_INVALID, "ReduceProdKernel data size of inputs is 0, node node: %s", op_desc_ptr->GetName().c_str());
+    return PARAM_INVALID;
+  }
   DataType data_type = data_tensor->GetTensorDesc().GetDataType();
   if (kReduceProdSupportedType.find(data_type) == kReduceProdSupportedType.end()) {
     GELOGE(PARAM_INVALID, "ReduceProdKernel data type %s not support, node name: %s",
@@ -148,6 +153,7 @@ Status ReduceProdKernel::DataCal(const std::vector<ge::ConstGeTensorPtr> &input,
                                         static_cast<size_t>(head_dim_ * end_dim_ * sizeof(int32_t))) != GRAPH_SUCCESS,
                     GELOGW("set data failed");
                     return INTERNAL_ERROR);
+    output_ptr->MutableTensorDesc().SetDataType(data_dtype);
   }
   return SUCCESS;
 }
@@ -256,32 +262,19 @@ Status ReduceProdKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vec
     if (ret != SUCCESS) {
       return NOT_CHANGED;
     }
-  } else if (input.at(kReduceProdAxisIndex)->GetData().size() == 0) {
-    // axis tensor value is [], means no process for input
-    output_ptr->MutableTensorDesc().SetShape(input.at(kReduceProdDataIndex)->GetTensorDesc().GetShape());
-    output_ptr->MutableTensorDesc().SetDataType(input.at(kReduceProdDataIndex)->GetTensorDesc().GetDataType());
-    if (output_ptr->SetData(input.at(kReduceProdDataIndex)->GetData()) != GRAPH_SUCCESS) {
-      GELOGW("Compute: SetData failed");
-    }
   } else {
     // calculate axis to reduce
     ret = AxisCal(input);
     if (ret != SUCCESS) {
       return NOT_CHANGED;
     }
-    // calculate and set shape
-    ShapeCal(op_desc_ptr, input, output_ptr);
-    // set data type
-    output_ptr->MutableTensorDesc().SetDataType(input.at(kReduceProdDataIndex)->GetTensorDesc().GetDataType());
-
-    // data size == 0 means input tensor has zero in shape, and tensor value is [].
-    if (input.at(kReduceProdDataIndex)->GetData().size() != 0) {
-      // calculate data and data type
-      ret = DataCal(input, output_ptr);
-      if (ret != SUCCESS) {
-        return NOT_CHANGED;
-      }
+    // calculate data and data type
+    ret = DataCal(input, output_ptr);
+    if (ret != SUCCESS) {
+      return NOT_CHANGED;
     }
+    // calculate shape
+    ShapeCal(op_desc_ptr, input, output_ptr);
   }
 
   // print output tensor information, and will be deleted

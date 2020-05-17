@@ -23,5 +23,6 @@ file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
+include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 
 add_library(runtime_stub SHARED ${SRCS})

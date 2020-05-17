@@ -47,13 +47,6 @@ struct PrepareOutputInfo {
   uintptr_t out_mbuf;   // output mbuf addr
 };
 
-// For AICPU task "modelZeroCopy"
-struct AddrMapInfo {
-  uint32_t addr_num = 0;
-  uint64_t src_addr_list;
-  uint64_t dst_addr_list;
-};
-
 ///
 /// @ingroup ge
 /// @brief CpuTask base, inherit from TaskInfo used for manage.
@@ -85,21 +78,17 @@ class CpuTaskModelDequeue : public CpuTaskInfo {
 
 ///
 /// @ingroup ge
-/// @brief definiteness queue schedule, zero copy.
+/// @brief definiteness queue schedule, bind output queue to task.
 ///
-class CpuTaskZeroCopy : public CpuTaskInfo {
+class CpuTaskPrepareInput : public CpuTaskInfo {
  public:
-  explicit CpuTaskZeroCopy(rtStream_t stream) : CpuTaskInfo(stream) {}
-  ~CpuTaskZeroCopy() override;
+  explicit CpuTaskPrepareInput(rtStream_t stream) : CpuTaskInfo(stream) {}
+  ~CpuTaskPrepareInput() override {}
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override { return SUCCESS; }
-  Status Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, std::vector<void *>> &outside_addrs);
+  Status Init(uintptr_t addr, uint32_t size, uintptr_t in_mbuf);
 
   Status Distribute() override;
-
- private:
-  void *src_addr_ = nullptr;
-  void *dst_addr_ = nullptr;
 };
 
 ///

@@ -45,8 +45,7 @@ typedef enum tagModelTaskType {
   RT_MODEL_TASK_EVENT_RESET = 18,
   RT_MODEL_TASK_MODEL_END_GRAPH,
   RT_MODEL_TASK_STREAM_SWITCH_N,
-  RT_MODEL_TASK_RDMA_DB_SEND,
-  RT_MODEL_TASK_MEMCPY_ADDR_ASYNC
+  RT_MODEL_TASK_RDMA_DB_SEND
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType { 

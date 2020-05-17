@@ -29,6 +29,10 @@
 #include "common/ge/ge_util.h"
 #include "graph/debug/ge_attr_define.h"
 
+using domi::ENDGRAPH;
+using domi::NODE_NAME_END_GRAPH;
+using domi::NODE_NAME_NET_OUTPUT;
+
 namespace ge {
 Status EndGraphPass::Run(ge::ComputeGraphPtr graph) {
   GELOGI("EndGraphPass Run.");
@@ -53,7 +57,7 @@ Status EndGraphPass::Run(ge::ComputeGraphPtr graph) {
   OpDescPtr op_desc = MakeShared<OpDesc>(NODE_NAME_END_GRAPH, ENDGRAPH);
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("Create EndGraph op:%s.", op_desc->GetName().c_str());
-  (void) AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>()));
+  (void)AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>()));
   NodePtr end_graph_node = graph->AddNode(op_desc);
   if (end_graph_node == nullptr) {
     GELOGI("Add EndGraph:%s node to Graph fail.", op_desc->GetName().c_str());
@@ -69,4 +73,3 @@ Status EndGraphPass::Run(ge::ComputeGraphPtr graph) {
   return SUCCESS;
 }
 }  // namespace ge
-

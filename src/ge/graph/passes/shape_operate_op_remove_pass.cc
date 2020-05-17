@@ -20,6 +20,7 @@
 #include "common/util.h"
 #include "graph/utils/attr_utils.h"
 
+using domi::ATTR_TO_BE_DELETED;
 using domi::SUCCESS;
 
 namespace ge {

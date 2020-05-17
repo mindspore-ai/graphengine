@@ -17,6 +17,7 @@
 #include "common/auth/file_saver.h"
 
 #include <fcntl.h>
+
 #include <securec.h>
 #include <unistd.h>
 #include <cstdlib>
@@ -28,6 +29,8 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
 
+using domi::CreateDirectory;
+using domi::ModelEncryptType;
 using ge::ModelBufferData;
 
 namespace {
@@ -267,4 +270,4 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(co
   }
   return ret;
 }
-}  //  namespace ge
+}  // namespace ge

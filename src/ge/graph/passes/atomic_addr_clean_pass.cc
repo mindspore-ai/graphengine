@@ -28,6 +28,11 @@
 #include "graph/debug/ge_attr_define.h"
 #include "init/gelib.h"
 
+using domi::ATOMICADDRCLEAN;
+using domi::ATTR_NAME_STREAM_LABEL;
+using domi::LOOPCOND;
+using domi::NODE_NAME_ATOMIC_ADDR_CLEAN;
+
 namespace {
 bool is_loop_graph = false;
 }
@@ -200,18 +205,7 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(op_desc->GetType());
   for (const auto &op_info : op_info_vec) {
     if (op_info.isAtomic) {
-      GELOGI("Recognized atomic op %s from DNN_HCCL engine.", op_desc->GetName().c_str());
-      // check peer input is DATA
-      for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
-        if (in_data_anchor->GetPeerOutAnchor() != nullptr &&
-            in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
-          auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
-          if (peer_in_node->GetType() == DATA) {
-            GELOGI("Recognized atomic op %s from DNN_HCCL engine and input is DATA.", op_desc->GetName().c_str());
-            return false;
-          }
-        }
-      }
+      GELOGI("Recognized atomic op %s from HCCL engine.", op_desc->GetName().c_str());
       hcom_node_vec_.push_back(node);
       return true;
     }

@@ -73,13 +73,13 @@ class GraphPass : public Pass<ge::ComputeGraph> {
 
   static bool IsConstNode(const ge::NodePtr &node) {
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, GELOGE(FAILED, "Node GetOpDesc is nullptr"); return false);
-    if (node->GetOpDesc()->GetType() == CONSTANTOP) {
+    if (node->GetOpDesc()->GetType() == domi::CONSTANTOP) {
       return true;
-    } else if (node->GetOpDesc()->GetType() == FRAMEWORKOP) {
+    } else if (node->GetOpDesc()->GetType() == domi::FRAMEWORKOP) {
       string type;
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type),
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::GetStr(node->GetOpDesc(), domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type),
                        return false, "Get original_type for op %s fail!", node->GetName().c_str());
-      GE_IF_BOOL_EXEC(type == CONSTANT, GELOGI("Is const op"); return true);
+      GE_IF_BOOL_EXEC(type == domi::CONSTANT, GELOGI("Is const op"); return true);
       return false;
     } else {
       return false;

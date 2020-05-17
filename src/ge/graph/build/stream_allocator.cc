@@ -17,6 +17,7 @@
 #include "graph/build/stream_allocator.h"
 #include <memory>
 #include "common/ge/ge_util.h"
+#include "common/op/attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/types.h"
@@ -26,6 +27,15 @@
 
 #include "graph/build/logical_stream_allocator.h"
 
+using domi::ATTR_NAME_STREAM_LABEL;
+using domi::HCOMALLGATHER;
+using domi::HCOMALLREDUCE;
+using domi::HCOMBROADCAST;
+using domi::HCOMREDUCESCATTER;
+using domi::RECV;
+using domi::SEND;
+using domi::STREAMACTIVE;
+using domi::STREAMSWITCH;
 using std::map;
 using std::set;
 using std::string;
@@ -40,7 +50,7 @@ const uint32_t kMaxSwitchStreamNum = 1;
 
 namespace ge {
 Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &max_parallel_num, bool hcom_parallel) {
-  GELOGI("Assign logical streams start.");
+  GELOGI("AssignLogicalStreams start.");
   GE_CHECK_NOTNULL(whole_graph_);
   GraphUtils::DumpGEGraph(whole_graph_, "BeforeAssignedLogicalStreams");
   GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "BeforeAssignedLogicalStreams");
@@ -52,6 +62,7 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
   }
 
   const map<string, SchedulerConf> &scheduler_confs = gelib->DNNEngineManagerObj().GetSchedulers();
+
   LogicalStreamAllocator logical_allocator(scheduler_confs, max_parallel_num, hcom_parallel);
   Status status = logical_allocator.Assign(whole_graph_, subgraphs_, stream_num_);
   if (status != SUCCESS) {
@@ -61,7 +72,7 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
 
   GraphUtils::DumpGEGraph(whole_graph_, "AfterAssignedLogicalStreams");
   GraphUtils::DumpGEGraphToOnnx(*whole_graph_, "AfterAssignedLogicalStreams");
-  GELOGI("Assign logical streams success.");
+  GELOGI("AssignLogicalStreams success.");
 
   return SUCCESS;
 }
@@ -135,7 +146,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
     GELOGI("None of nodes need to assign stream, stream num is 0, it will cause error, so change it to 1");
     stream_num_ = 1;
   }
-  GELOGI("stream num: %ld, event num: %u.", stream_num_, event_num_);
+  GELOGI("stream_num_: %ld, event_num_: %u.", stream_num_, event_num_);
   GELOGI("RefreshRealStream successfully.");
 
   stream_num = stream_num_;
@@ -147,7 +158,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
 // Split the stream according to the maximum number of nodes in the stream.
 Status StreamAllocator::SplitStreams() {
   if (stream_num_ == 0) {
-    GELOGI("The number of streams is 0 and no need to split.");
+    GELOGI("stream_num_ is 0");
     return SUCCESS;
   }
 

@@ -23,6 +23,10 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
+using domi::_WHILE;
+using domi::STATELESSWHILE;
+using domi::WHILE;
+
 namespace ge {
 constexpr uint8_t kCondOutputNum = 1;
 constexpr uint8_t kCondOutputIndex = 0;
@@ -84,7 +88,7 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
     return FAILED;
   }
 
-  NodePtr cond_out_node = cond_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr cond_out_node = cond_graph->FindNode(domi::NODE_NAME_NET_OUTPUT);
   GE_CHECK_NOTNULL(cond_out_node);
   OpDescPtr cond_out_desc = cond_out_node->GetOpDesc();
   GE_CHECK_NOTNULL(cond_out_desc);

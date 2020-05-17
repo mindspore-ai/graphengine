@@ -18,7 +18,7 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
 
-namespace ge {
+namespace domi {
 #define DEFINE_SET_ATTR_VALUE_ONE(ARG_TYPE, FIELD)                        \
   FMK_FUNC_DEV_VISIBILITY void SetAttrDef(ARG_TYPE value, AttrDef *out) { \
     GE_CHECK_NOTNULL_JUST_RETURN(out);                                    \
@@ -312,4 +312,4 @@ DEFINE_GET_ATTR_LIST_SIZE(const std::string &, uint32_t, u);
 DEFINE_GET_ATTR_LIST_SIZE(const std::string &, float, f);
 DEFINE_GET_ATTR_LIST_SIZE(const std::string &, double, f);
 DEFINE_GET_ATTR_LIST_SIZE(const std::string &, bool, b);
-}  // namespace ge
+}  // namespace domi

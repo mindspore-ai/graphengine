@@ -47,7 +47,7 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
   auto op_desc = davinci_model->GetOpList()[op_index];
   GE_CHECK_NOTNULL(op_desc);
   auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-  if (!input_data_addr.empty() && input_data_addr.size() >= STREAM_SWITCH_INPUT_NUM) {
+  if (!input_data_addr.empty() && input_data_addr.size() >= domi::STREAM_SWITCH_INPUT_NUM) {
     input_ptr_ = input_data_addr[0];
     value_ptr_ = input_data_addr[1];
   }
@@ -60,9 +60,9 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
   cond_ = static_cast<rtCondition_t>(cond);
 
   size_t input_size = op_desc->GetInputsSize();
-  if (input_data_addr.size() != STREAM_SWITCH_INPUT_NUM || input_size != STREAM_SWITCH_INPUT_NUM) {
-    GELOGE(INTERNAL_ERROR, "Input num should be %u. inputAddr size:%zu, inputDesc size:%zu.", STREAM_SWITCH_INPUT_NUM,
-           input_data_addr.size(), input_size);
+  if (input_data_addr.size() != domi::STREAM_SWITCH_INPUT_NUM || input_size != domi::STREAM_SWITCH_INPUT_NUM) {
+    GELOGE(INTERNAL_ERROR, "Input num should be %u inputAddr size:%zu, inputDesc size:%zu.",
+           domi::STREAM_SWITCH_INPUT_NUM, input_data_addr.size(), input_size);
     return INTERNAL_ERROR;
   }
 

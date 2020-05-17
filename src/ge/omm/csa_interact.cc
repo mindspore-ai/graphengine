@@ -25,6 +25,8 @@
 #include "mmpa/mmpa_api.h"
 #include "nlohmann/json.hpp"
 
+using domi::CurrentTimeInStr;
+
 namespace ge {
 namespace {
 const char FMK_STATUS_FILE_DIR_ENV[] = "FMK_STATUS_FILE_DIR";

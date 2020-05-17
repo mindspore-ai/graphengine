@@ -25,6 +25,8 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::EXPANDDIMS;
+
 namespace ge {
 namespace {
 const int kExpandDimsIndexZero = 0;
@@ -50,8 +52,7 @@ Status ExpanddimsKernel::Compute(const NodePtr &node_ptr) {
   GELOGI("Expanddims dimension kernel success.");
   return SUCCESS;
 }
-Status ExpanddimsKernel::Compute(const ge::OpDescPtr op_desc_ptr,
-                                 const std::vector<ge::ConstGeTensorPtr> &input,
+Status ExpanddimsKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge::ConstGeTensorPtr> &input,
                                  std::vector<ge::GeTensorPtr> &v_output) {
   GELOGI("Expanddims folding kernel in.");
   if (op_desc_ptr == nullptr) {

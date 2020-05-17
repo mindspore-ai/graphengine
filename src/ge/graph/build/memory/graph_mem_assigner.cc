@@ -18,6 +18,7 @@
 #include <cstring>
 #include <set>
 #include "common/math/math_util.h"
+#include "common/op/attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/var_mem_assign_util.h"
@@ -27,6 +28,19 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+
+using domi::AIPP_DATA_TYPE;
+using domi::ATOMICADDRCLEAN;
+using domi::ATTR_NAME_AUTOMIC_ADD_MEM_SIZE;
+using domi::ATTR_NAME_AUTOMIC_ADD_START;
+using domi::CONCAT;
+using domi::CONSTANTOP;
+using domi::DATA_TYPE;
+using domi::HCOMBROADCAST;
+using domi::LABELSWITCHBYINDEX;
+using domi::NODE_NAME_NET_OUTPUT;
+using domi::STREAMMERGE;
+using domi::VARIABLE;
 
 namespace {
 const int kDataOutputIndex = 0;
@@ -423,10 +437,8 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousInputMemory() {
           pre_mem_offset, peer_op_desc->GetStreamId(), out_size, output_mem_size);
       }
       memory_offset_[0].mem_offset_ += extra_memory_size;
-      size_t after_mem_offset = memory_offset_[0].mem_offset_;
-      AlignMemOffset(MEM_ALIGN_SIZE);
-      GELOGI("After reassign virtual input node[name:%s, type:%s] memory, memory offset = %zu, align memory = %zu.",
-             op_desc->GetName().c_str(), op_desc->GetType().c_str(), after_mem_offset, memory_offset_[0].mem_offset_);
+      GELOGI("After reassign virtual input node[name:%s, type:%s] memory, memory offset = %zu.",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), memory_offset_[0].mem_offset_);
     }
   }
   return SUCCESS;
@@ -511,10 +523,8 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousOutputMemory() {
       }
       op_desc->SetOutputOffset(output_list);
       memory_offset_[0].mem_offset_ += extra_memory_size;
-      size_t after_mem_offset = memory_offset_[0].mem_offset_;
-      AlignMemOffset(MEM_ALIGN_SIZE);
-      GELOGI("After reassign virtual output node[name:%s, type:%s] memory, memory offset = %zu, align memory = %zu.",
-             op_desc->GetName().c_str(), op_desc->GetType().c_str(), after_mem_offset, memory_offset_[0].mem_offset_);
+      GELOGI("After reassign virtual output node[name:%s, type:%s] memory, memory offset = %zu.",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), memory_offset_[0].mem_offset_);
     }
   }
   return SUCCESS;

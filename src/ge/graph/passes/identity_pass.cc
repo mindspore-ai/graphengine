@@ -23,6 +23,9 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
 
+using domi::IDENTITY;
+using domi::IDENTITYN;
+
 namespace ge {
 namespace {
 ///
@@ -38,7 +41,7 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
       GELOGE(ret, "Failed to get node type from node %s", node->GetName().c_str());
       return ret;
     }
-    if ((node_type != SWITCH) && (node_type != REFSWITCH)) {
+    if ((node_type != domi::SWITCH) && (node_type != domi::REFSWITCH)) {
       GELOGD("skip identity %s connected to switch", node->GetName().c_str());
       break;
     }
@@ -54,7 +57,7 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
       GELOGE(ret, "Failed to get node type from node %s", node->GetName().c_str());
       return ret;
     }
-    if ((node_type != MERGE) && (node_type != REFMERGE)) {
+    if ((node_type != domi::MERGE) && (node_type != domi::REFMERGE)) {
       GELOGD("skip identity %s connected to merge", node->GetName().c_str());
       break;
     }

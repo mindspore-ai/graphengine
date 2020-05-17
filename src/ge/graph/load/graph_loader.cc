@@ -196,13 +196,13 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
                                      ModelData &model_data) {
   Status ret;
   try {
-    if (!CheckInputPathValid(path)) {
+    if (!domi::CheckInputPathValid(path)) {
       GELOGE(PARAM_INVALID, "model path is invalid: %s", path.c_str());
       return PARAM_INVALID;
     }
 
     GELOGI("Load model begin, model path is: %s", path.c_str());
-    if (!key_path.empty() && !CheckInputPathValid(key_path)) {
+    if (!key_path.empty() && !domi::CheckInputPathValid(key_path)) {
       GELOGE(PARAM_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
       return PARAM_INVALID;
     }

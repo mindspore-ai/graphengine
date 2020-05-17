@@ -22,6 +22,8 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
+using domi::CAST;
+
 namespace ge {
 Status CastRemovePass::Run(NodePtr &node) {
   if (node == nullptr) {

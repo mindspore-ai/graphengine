@@ -41,7 +41,6 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
         "formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
         "formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
-        "formats/format_transfers/format_transfer_nchw_fz_c04.cc"
         "formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
         "formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
         "formats/format_transfers/format_transfer_transpose.cc"
@@ -80,6 +79,7 @@ include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 

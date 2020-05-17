@@ -47,7 +47,6 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../graph/load/new_model_manager/task_info/kernel_task_info.cc"
         "../graph/load/new_model_manager/task_info/label_goto_task_info.cc"
         "../graph/load/new_model_manager/task_info/label_set_task_info.cc"
-        "../graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
         "../graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
         "../graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "../graph/load/new_model_manager/task_info/stream_active_task_info.cc"
@@ -86,6 +85,7 @@ include_directories(${GE_SOURCE_DIR}/inc)
 include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 

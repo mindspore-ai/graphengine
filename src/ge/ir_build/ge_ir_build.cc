@@ -36,11 +36,13 @@
 #include "framework/omg/omg_inner_types.h"
 
 using domi::GetContext;
+using domi::StringUtils;
 using ge::FileSaver;
 using ge::GRAPH_PARAM_INVALID;
 using ge::GRAPH_SUCCESS;
 using ge::ParseInputShape;
 using std::string;
+
 using namespace std;
 
 namespace ge {
@@ -89,9 +91,9 @@ class Impl {
     GetContext().user_out_nodes.clear();
     GetContext().net_format = domi::DOMI_TENSOR_RESERVED;
     GetContext().type = domi::FRAMEWORK_RESERVED;
-    GetContext().run_mode = ONLY_PRE_CHECK;
+    GetContext().run_mode = domi::ONLY_PRE_CHECK;
     GetContext().train_flag = false;
-    GetContext().fp16_high_precision = HIGH_PRECISION_DEFAULT;
+    GetContext().fp16_high_precision = domi::HIGH_PRECISION_DEFAULT;
     GetContext().output_type.clear();
     GetContext().net_name.clear();
     GetContext().is_dynamic_input = false;
@@ -187,7 +189,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
-    if (op->GetType() == DATA) {
+    if (op->GetType() == domi::DATA) {
       GELOGI("Data op inputDesc size is: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();

@@ -21,7 +21,6 @@
 #define protected public
 #define private public
 #include "graph/manager/graph_manager_utils.h"
-#include "common/op/attr_value_util.h"
 #undef protected
 #undef private
 
@@ -190,20 +189,18 @@ class UtestLogicalStreamAllocator : public testing::Test {
   bool ExpectStreamEq(SubGraphInfoPtr subgraph, int64_t expect) { return GetStream(subgraph) == expect; }
 
   bool ExpectStreamNe(SubGraphInfoPtr subgraph, int64_t expect) { return GetStream(subgraph) != expect; }
-  Status AssignLogicalStreams(Graph2SubGraphInfoList &subgraph_map, vector<EngineConfPtr> &confs,
+  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, vector<EngineConfPtr> &confs,
                               std::map<std::string, int> &max_parallel_num, ComputeGraphPtr &whole_graph) {
     SchedulerConf scheduler_conf;
     if (confs.empty()) {
-      for (const auto &subgraph_pair : subgraph_map) {
-        for (const auto &subgraph : subgraph_pair.second) {
-          EngineConfPtr conf = make_shared<EngineConf>();
-          conf->id = subgraph->GetEngineName();
-          if (conf->id == "ge_local") {
-            conf->skip_assign_stream = true;
-            conf->attach = true;
-          }
-          scheduler_conf.cal_engines[conf->id] = conf;
+      for (const auto &subgraph : subgraphs) {
+        EngineConfPtr conf = make_shared<EngineConf>();
+        conf->id = subgraph->GetEngineName();
+        if (conf->id == "ge_local") {
+          conf->skip_assign_stream = true;
+          conf->attach = true;
         }
+        scheduler_conf.cal_engines[conf->id] = conf;
       }
     } else {
       for (auto &conf : confs) {
@@ -220,33 +217,24 @@ class UtestLogicalStreamAllocator : public testing::Test {
     scheduler_confs["scheduler"] = scheduler_conf;
     LogicalStreamAllocator allocator(scheduler_confs, max_parallel_num);
     int64_t stream_num = 0;
-    return allocator.Assign(whole_graph, subgraph_map, stream_num);
+    return allocator.Assign(whole_graph, subgraphs, stream_num);
   }
 
-  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs,
-                              vector<EngineConfPtr> &confs,
-                              std::map<std::string, int> &max_parallel_num,
-                              ComputeGraphPtr &whole_graph) {
-    Graph2SubGraphInfoList subgraph_map;
-    subgraph_map[whole_graph] = subgraphs;
-    return AssignLogicalStreams(subgraph_map, confs, max_parallel_num, whole_graph);
-  }
-
-  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, vector<EngineConfPtr>& confs,
-                              std::map<std::string, int>& max_parallel_num) {
-    ComputeGraphPtr whole_graph = make_shared < ComputeGraph > ("whole_graph");
+  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, std::map<std::string, int> &max_parallel_num,
+                              vector<EngineConfPtr> &confs) {
+    ComputeGraphPtr whole_graph = make_shared<ComputeGraph>("whole_graph");
     return AssignLogicalStreams(subgraphs, confs, max_parallel_num, whole_graph);
   }
 
   Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs,
                               vector<EngineConfPtr> confs = vector<EngineConfPtr>()) {
     std::map<std::string, int> max_parallel_num;
-    return AssignLogicalStreams(subgraphs, confs, max_parallel_num);
+    return AssignLogicalStreams(subgraphs, max_parallel_num, confs);
   }
 
-  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, std::map<std::string, int>& max_parallel_num) {
-    vector < EngineConfPtr > confs;
-    return AssignLogicalStreams(subgraphs, confs, max_parallel_num);
+  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, std::map<std::string, int> &max_parallel_num) {
+    vector<EngineConfPtr> confs;
+    return AssignLogicalStreams(subgraphs, max_parallel_num, confs);
   }
 
   /// typical case
@@ -306,8 +294,8 @@ class UtestLogicalStreamAllocator : public testing::Test {
     max_parallel_num["aicpu"] = parallel_num;
 
     Status status = AssignLogicalStreams({const1, const2, get_next, genmask1, genmask2, domask, subgraph4, subgraph5,
-                                          subgraph6, allreduce1, allreduce2, apply1, apply2}, confs,
-                                         max_parallel_num);
+                                          subgraph6, allreduce1, allreduce2, apply1, apply2},
+                                         max_parallel_num, confs);
     EXPECT_EQ(status, ge::SUCCESS);
 
     EXPECT_EQ(GetStream(get_next), 0);
@@ -336,7 +324,7 @@ class UtestLogicalStreamAllocator : public testing::Test {
   ///                   E --> F(AllReduce) --- G
   ///  stream id:       2     2                2
   ///
-  void MakeGraphWithAllreduce(ge::ComputeGraphPtr graph) {
+  void make_graph_with_allreduce(ge::ComputeGraphPtr graph) {
     ge::OpDescPtr op_a = make_shared<ge::OpDesc>("A", DATA);
     auto desc_temp_ptr = make_shared<ge::GeTensorDesc>();
     auto desc_temp = *desc_temp_ptr;
@@ -348,7 +336,6 @@ class UtestLogicalStreamAllocator : public testing::Test {
     op_b->AddOutputDesc(desc_temp);
 
     ge::OpDescPtr op_c = make_shared<ge::OpDesc>("C", "HcomAllReduce");
-    op_c->AddInputDesc(desc_temp);
     op_c->AddInputDesc(desc_temp);
     op_c->AddOutputDesc(desc_temp);
 
@@ -362,20 +349,11 @@ class UtestLogicalStreamAllocator : public testing::Test {
 
     ge::OpDescPtr op_f = make_shared<ge::OpDesc>("F", "HcomAllReduce");
     op_f->AddInputDesc(desc_temp);
-    op_f->AddInputDesc(desc_temp);
     op_f->AddOutputDesc(desc_temp);
 
     ge::OpDescPtr op_g = make_shared<ge::OpDesc>("G", "testa");
     op_g->AddInputDesc(desc_temp);
     op_g->AddOutputDesc(desc_temp);
-
-    ge::OpDescPtr op_h = make_shared<ge::OpDesc>("H", "testa");
-    op_h->AddInputDesc(desc_temp);
-    op_h->AddOutputDesc(desc_temp);
-
-    ge::OpDescPtr op_i = make_shared<ge::OpDesc>("I", "testa");
-    op_i->AddInputDesc(desc_temp);
-    op_i->AddOutputDesc(desc_temp);
 
     // add node
     ge::NodePtr node_a = graph->AddNode(op_a);
@@ -385,18 +363,14 @@ class UtestLogicalStreamAllocator : public testing::Test {
     ge::NodePtr node_e = graph->AddNode(op_e);
     ge::NodePtr node_f = graph->AddNode(op_f);
     ge::NodePtr node_g = graph->AddNode(op_g);
-    ge::NodePtr node_h = graph->AddNode(op_h);
-    ge::NodePtr node_i = graph->AddNode(op_i);
 
     // add edge
-    node_a->GetOutDataAnchor(0)->LinkTo(node_b->GetInDataAnchor(0));
-    node_a->GetOutDataAnchor(0)->LinkTo(node_e->GetInDataAnchor(0));
-    node_b->GetOutDataAnchor(0)->LinkTo(node_c->GetInDataAnchor(0));
-    node_c->GetOutDataAnchor(0)->LinkTo(node_d->GetInDataAnchor(0));
-    node_e->GetOutDataAnchor(0)->LinkTo(node_f->GetInDataAnchor(0));
-    node_f->GetOutDataAnchor(0)->LinkTo(node_g->GetInDataAnchor(0));
-    node_h->GetOutDataAnchor(0)->LinkTo(node_c->GetInDataAnchor(1));
-    node_i->GetOutDataAnchor(0)->LinkTo(node_f->GetInDataAnchor(1));
+    ge::GraphUtils::AddEdge(node_a->GetOutDataAnchor(0), node_b->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_a->GetOutDataAnchor(0), node_e->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_b->GetOutDataAnchor(0), node_c->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_c->GetOutDataAnchor(0), node_d->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_e->GetOutDataAnchor(0), node_f->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_f->GetOutDataAnchor(0), node_g->GetInDataAnchor(0));
 
     // add stream id
     node_a->GetOpDesc()->SetStreamId(0);
@@ -406,14 +380,6 @@ class UtestLogicalStreamAllocator : public testing::Test {
     node_e->GetOpDesc()->SetStreamId(2);
     node_f->GetOpDesc()->SetStreamId(2);
     node_g->GetOpDesc()->SetStreamId(2);
-
-    // add stream label
-    string stream_label1 = "1";
-    (void) AttrUtils::SetStr(node_c->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label1);
-    (void) AttrUtils::SetStr(node_d->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label1);
-    string stream_label2 = "2";
-    (void) AttrUtils::SetStr(node_f->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label2);
-    (void) AttrUtils::SetStr(node_g->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label2);
   }
 };
 
@@ -686,7 +652,7 @@ TEST_F(UtestLogicalStreamAllocator, test_independent) {
   vector<EngineConfPtr> confs = {conf1, conf2};
 
   Status status =
-      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, confs, max_parallel_num);
+      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, max_parallel_num, confs);
   EXPECT_EQ(status, ge::SUCCESS);
   EXPECT_EQ(GetStream(subgraph1), 0);
   EXPECT_EQ(GetStream(subgraph2), 0);
@@ -729,7 +695,7 @@ TEST_F(UtestLogicalStreamAllocator, test_independent_switch_label) {
   vector<EngineConfPtr> confs = {conf1, conf2, conf3};
 
   Status status =
-      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, confs, max_parallel_num);
+      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, max_parallel_num, confs);
   EXPECT_EQ(status, ge::SUCCESS);
   EXPECT_EQ(GetStream(subgraph1), 4);
   EXPECT_EQ(GetStream(subgraph2), 0);
@@ -867,9 +833,9 @@ TEST_F(UtestLogicalStreamAllocator, test_reassign_stream) {
   auto node1_1 = whole_graph->AddNode(node1->GetOpDesc());
   auto node1_2 = whole_graph->AddNode(node2->GetOpDesc());
   auto node1_3 = whole_graph->AddNode(node3->GetOpDesc());
-  node1_1->GetOutControlAnchor()->LinkTo(node1_2->GetInControlAnchor());
-  node1_2->GetOutDataAnchor(0)->LinkTo(node1_3->GetInDataAnchor(0));
-  node1->GetOutControlAnchor()->LinkTo(node2->GetInControlAnchor());
+  GraphUtils::AddEdge(node1_1->GetOutControlAnchor(), node1_2->GetInControlAnchor());
+  GraphUtils::AddEdge(node1_2->GetOutDataAnchor(0), node1_3->GetInDataAnchor(0));
+  GraphUtils::AddEdge(node1->GetOutControlAnchor(), node2->GetInControlAnchor());
 
   std::map<std::string, int> max_parallel_num;
   vector<SubGraphInfoPtr> subgraphs = {subgraph1, const2, subgraph3};
@@ -887,7 +853,7 @@ TEST_F(UtestLogicalStreamAllocator, test_all_reduce_parallel_pass) {
 
   ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
   graph->SetName("TestAllReduceParallelPass");
-  MakeGraphWithAllreduce(graph);
+  make_graph_with_allreduce(graph);
 
   std::map<std::string, int> max_parallel_num;
   LogicalStreamPass::Context context;
@@ -897,13 +863,7 @@ TEST_F(UtestLogicalStreamAllocator, test_all_reduce_parallel_pass) {
   LogicalStreamPassPtr allreduce_pass = std::make_shared<AllReduceParallelPass>();
   ret = allreduce_pass->Run(graph, subgraphs, context);
 
-  EXPECT_EQ(ret, SUCCESS);
-
-  ge::NodePtr node_d = graph->FindNode("D");
-  ge::NodePtr node_g = graph->FindNode("G");
-  int64_t stream_d = node_d->GetOpDesc()->GetStreamId();
-  int64_t stream_g = node_g->GetOpDesc()->GetStreamId();
-  EXPECT_EQ(stream_d + stream_g, 11);
+  EXPECT_EQ(ret, NOT_CHANGED);
 }
 
 }  // namespace ge

@@ -21,8 +21,8 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
+#include "common/op/attr_define.h"
 #include "common/string_util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/compute_graph.h"
 #include "graph/op_desc.h"
 #include "graph/optimize/common/params.h"
@@ -148,7 +148,7 @@ bool HasCalcOp(const ComputeGraphPtr &graph) {
     return false;
   }
 
-  static const std::set<std::string> calc_op_type = {CONVOLUTION, DECONVOLUTION, FULL_CONNECTION};
+  static const std::set<std::string> calc_op_type = {domi::CONVOLUTION, domi::DECONVOLUTION, domi::FULL_CONNECTION};
 
   for (const auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
@@ -167,15 +167,15 @@ Status ParseOutNodes(const string &out_nodes) {
       domi::GetContext().out_nodes_map.clear();
       domi::GetContext().user_out_nodes.clear();
 
-      vector<string> nodes_v = StringUtils::Split(out_nodes, ';');
+      vector<string> nodes_v = domi::StringUtils::Split(out_nodes, ';');
       for (const string &node : nodes_v) {
-        vector<string> key_value_v = StringUtils::Split(node, ':');
+        vector<string> key_value_v = domi::StringUtils::Split(node, ':');
         if (key_value_v.size() != 2) {  // must contain 2 items
           GELOGE(GE_GRAPH_PARAM_NULLPTR, "Invalid outNodes: %s", node.c_str());
           return GE_GRAPH_PARAM_NULLPTR;
         }
         auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
-        int32_t index = std::stoi(StringUtils::Trim(key_value_v[1]));
+        int32_t index = std::stoi(domi::StringUtils::Trim(key_value_v[1]));
         if (iter != domi::GetContext().out_nodes_map.end()) {
           iter->second.emplace_back(index);
         } else {

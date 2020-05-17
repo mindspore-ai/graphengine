@@ -16,7 +16,6 @@
 
 #include "graph/execute/graph_execute.h"
 
-#include <memory>
 #include <string>
 
 #include "common/ge_inner_error_codes.h"

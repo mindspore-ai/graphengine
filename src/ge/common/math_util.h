@@ -26,7 +26,7 @@
 #include "framework/common/util.h"
 #include "mmpa/mmpa_api.h"
 
-namespace ge {
+namespace domi {
 
 /**
  * @ingroup domi_calibration
@@ -68,6 +68,6 @@ Status NnSet(const int32_t n, const Dtype alpha, Dtype *output) {
   return SUCCESS;
 }
 
-}  // end namespace ge
+}  // end namespace domi
 
 #endif  //  GE_COMMON_MATH_UTIL_H_

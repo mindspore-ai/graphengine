@@ -21,17 +21,11 @@
 #include <unordered_map>
 #include <string>
 
+#include "common/op/attr_define.h"
 #include "common/types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "proto/om.pb.h"
 
-using domi::AttrDef;
-using domi::AttrDef_ListValue;
-using domi::ModelDef;
-using domi::NamedAttrs;
-using domi::OpDef;
-
-namespace ge {
+namespace domi {
 using AttrDefMap = ::google::protobuf::Map<::std::string, ::domi::AttrDef>;
 using AttrDefPair = ::google::protobuf::MapPair<std::string, domi::AttrDef>;
 
@@ -156,6 +150,6 @@ bool GetAttrDefListValue(const std::string &key, int idx, int32_t *value, const 
 bool GetAttrDefListValue(const std::string &key, int idx, uint32_t *value, const AttrDefMap &attr);
 bool GetAttrDefListValue(const std::string &key, int idx, float *value, const AttrDefMap &attr);
 bool GetAttrDefListValue(const std::string &key, int idx, double *value, const AttrDefMap &attr);
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_OP_ATTR_VALUE_UTIL_H_

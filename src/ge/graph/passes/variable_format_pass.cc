@@ -26,7 +26,7 @@ Status VariableFormatPass::Run(ge::ComputeGraphPtr graph) {
 
   for (auto &node : graph->GetDirectNode()) {
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
-    GE_IF_BOOL_EXEC(node->GetOpDesc()->GetType() != VARIABLE, continue);
+    GE_IF_BOOL_EXEC(node->GetOpDesc()->GetType() != domi::VARIABLE, continue);
 
     ge::NodePtr use_node = nullptr;
     if (GetApplyMomentumOpByVariableInput(node, use_node)) {
@@ -79,7 +79,7 @@ Status VariableFormatPass::UpdateVariableOutFormat(const ge::NodePtr &var_node, 
   NodePtr in_node = use_node->GetInDataAnchor(0)->GetPeerOutAnchor()->GetOwnerNode();
   if (in_node != nullptr) {
     string in_op_type = in_node->GetType();
-    if ((in_op_type == VARIABLE) && (in_node->GetOpDesc() != nullptr) &&
+    if ((in_op_type == domi::VARIABLE) && (in_node->GetOpDesc() != nullptr) &&
         (in_node->GetOpDesc()->MutableOutputDesc(0) != nullptr)) {
       ge::Format format = in_node->GetOpDesc()->MutableOutputDesc(0)->GetFormat();
       ge::OpDescPtr cur_op_desc_ptr = var_node->GetOpDesc();
@@ -104,7 +104,7 @@ Status VariableFormatPass::UpdateApplyMomentumInputFormat(const ge::NodePtr &nod
   NodePtr in_node = node->GetInDataAnchor(0)->GetPeerOutAnchor()->GetOwnerNode();
   if (in_node != nullptr) {
     string in_op_type = in_node->GetType();
-    if ((in_op_type == VARIABLE) && (in_node->GetOpDesc() != nullptr)) {
+    if ((in_op_type == domi::VARIABLE) && (in_node->GetOpDesc() != nullptr)) {
       ge::Format format = in_node->GetOpDesc()->MutableOutputDesc(0)->GetFormat();
       op_desc_ptr->MutableInputDesc(0)->SetFormat(format);
       op_desc_ptr->MutableInputDesc(0)->SetOriginFormat(format);

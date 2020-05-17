@@ -30,7 +30,7 @@
 namespace ge {
 class StreamAllocator {
  public:
-  StreamAllocator(ComputeGraphPtr whole_graph, const Graph2SubGraphInfoList &subgraphs)
+  StreamAllocator(ComputeGraphPtr whole_graph, const std::vector<SubGraphInfoPtr> &subgraphs)
       : whole_graph_(std::move(whole_graph)), subgraphs_(subgraphs) {}
   StreamAllocator(const StreamAllocator &) = delete;
   StreamAllocator &operator=(const StreamAllocator &) = delete;
@@ -75,7 +75,7 @@ class StreamAllocator {
   bool IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr, const NodePtr &recv_node_ptr) const;
 
   ComputeGraphPtr whole_graph_;
-  const Graph2SubGraphInfoList &subgraphs_;
+  const std::vector<SubGraphInfoPtr> &subgraphs_;
 
   int64_t stream_num_{0};
   uint32_t event_num_{0};

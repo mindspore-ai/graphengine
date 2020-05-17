@@ -59,7 +59,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::Init(co
 // Load file contents
 bool PropertiesManager::LoadFileContent(const std::string &file_path) {
   // Normalize the path
-  string resolved_file_path = RealPath(file_path.c_str());
+  string resolved_file_path = domi::RealPath(file_path.c_str());
   if (resolved_file_path.empty()) {
     DOMI_LOGE("Invalid input file path [%s], make sure that the file path is correct.", file_path.c_str());
     return false;

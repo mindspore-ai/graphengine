@@ -29,6 +29,7 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::GATHERV2;
 using ge::fp16_t;
 
 namespace ge {
@@ -176,7 +177,7 @@ Status GatherV2Kernel::GenData(const int64_t data_num, ConstGeTensorPtr tensor_x
   if (data_num <= 0) {
     return PARAM_INVALID;
   }
-  if (!CheckInt64MulOverflow(data_num, sizeof(T))) {
+  if (!domi::CheckInt64MulOverflow(data_num, sizeof(T))) {
     GELOGE(PARAM_INVALID, "Int64MulOverflow, data_num:%ld, type_len:%zu.", data_num, sizeof(T));
     return PARAM_INVALID;
   }
@@ -220,7 +221,7 @@ Status GatherV2Kernel::CalcStride(std::vector<int64_t> &stride, std::vector<int6
   i--;
   while (i >= 0) {
     size_t index = static_cast<size_t>(i) + kGatherV2DimOne;
-    if (!CheckInt64MulOverflow(stride[index], dims[index])) {
+    if (!domi::CheckInt64MulOverflow(stride[index], dims[index])) {
       GELOGE(PARAM_INVALID, "Int64MulOverflow, data_num(%ld) type_len(%ld)", stride[index], dims[index]);
       return PARAM_INVALID;
     }

@@ -20,7 +20,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <unordered_set>
 
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/graph_utils.h"
@@ -28,6 +27,7 @@
 #include "inc/kernel.h"
 #include "inc/kernel_factory.h"
 #include "graph/debug/ge_attr_define.h"
+#include "framework/common/op/attr_define.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
 
 namespace ge {
@@ -39,8 +39,8 @@ shared_ptr<Kernel> GetKernelByType(const NodePtr &node) {
   }
   KernelFactory &factory = KernelFactory::Instance();
   string type = node->GetType();
-  if (type == FRAMEWORKOP) {
-    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
+  if (type == domi::FRAMEWORKOP) {
+    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
       return nullptr;
     }
   }
@@ -49,7 +49,7 @@ shared_ptr<Kernel> GetKernelByType(const NodePtr &node) {
 }
 bool IsNoNeedConstantFolding(const NodePtr &node) {
   auto node_desc = node->GetOpDesc();
-  return node_desc == nullptr || node_desc->HasAttr(ATTR_NO_NEED_CONSTANT_FOLDING);
+  return node_desc == nullptr || node_desc->HasAttr(domi::ATTR_NO_NEED_CONSTANT_FOLDING);
 }
 }  // namespace folding_pass
 
@@ -100,7 +100,7 @@ NodePtr AddIdentityNodeToGraph(const std::string &name, const GeTensorDesc &tens
   }
 
   desc->SetName(name);
-  desc->SetType(IDENTITY);
+  desc->SetType(domi::IDENTITY);
   auto ret = desc->AddInputDesc(tensor);
   auto ret2 = desc->AddOutputDesc(tensor);
   if ((ret != GRAPH_SUCCESS) || (ret2 != GRAPH_SUCCESS)) {
@@ -170,7 +170,7 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
     if (in_node == nullptr) {
       continue;
     }
-    if ((in_node->GetType() == SWITCH) || (in_node->GetType() == REFSWITCH)) {
+    if ((in_node->GetType() == domi::SWITCH) || (in_node->GetType() == domi::REFSWITCH)) {
       GELOGI("The in_node name is %s, and node type is %s.", in_node->GetName().c_str(), in_node->GetType().c_str());
       auto ret = in_node_anchor->Unlink(in_data_anchor);
       if (ret != SUCCESS) {
@@ -257,9 +257,9 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
     }
     GE_CHECK_NOTNULL(node->GetOpDesc());
     std::string stream_label;
-    if (AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
+    if (AttrUtils::GetStr(node->GetOpDesc(), domi::ATTR_NAME_STREAM_LABEL, stream_label)) {
       GE_CHECK_NOTNULL(const_node->GetOpDesc());
-      if (!AttrUtils::SetStr(const_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
+      if (!AttrUtils::SetStr(const_node->GetOpDesc(), domi::ATTR_NAME_STREAM_LABEL, stream_label)) {
         GELOGE(INTERNAL_ERROR, "Failed to set stream label on dynamic const node %s, with stream label:%s.",
                const_node->GetName().c_str(), stream_label.c_str());
         return INTERNAL_ERROR;

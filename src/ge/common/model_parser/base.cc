@@ -22,9 +22,15 @@
 #include <memory>
 #include <string>
 
-#include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
+#include "framework/common/debug/ge_log.h"
+
+using domi::GetFileLength;
+using domi::MODEL_FILE_MAGIC_NUM;
+using domi::ModelEncryptType;
+using domi::ModelFileHeader;
+using domi::RealPath;
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelParserBase::ModelParserBase() {}

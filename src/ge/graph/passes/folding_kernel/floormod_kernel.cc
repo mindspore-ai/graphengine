@@ -27,6 +27,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::FLOORMOD;
+
 namespace ge {
 namespace {
 const size_t kFloorModInputX = 0;

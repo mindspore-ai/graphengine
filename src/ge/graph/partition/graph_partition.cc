@@ -22,14 +22,29 @@
 #include <vector>
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
+#include "framework/common/op/attr_define.h"
 #include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
+
+using domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE;
+using domi::ATTR_NAME_SESSION_GRAPH_ID;
+using domi::ATTR_NAME_STREAM_LABEL;
+using domi::END;
+using domi::NCHW_DIM_C;
+using domi::NCHW_DIM_H;
+using domi::NCHW_DIM_N;
+using domi::NCHW_DIM_W;
+using domi::NHWC_DIM_C;
+using domi::NHWC_DIM_H;
+using domi::NHWC_DIM_N;
+using domi::NHWC_DIM_W;
+using domi::PERMUTE_ATTR_ORDER;
+using domi::PLACEHOLDER;
 
 namespace {
 const char *const kEngineDefaultData = "ENGINE_DEFAULT_DATA";
@@ -50,6 +65,12 @@ Status ge::GraphPartitioner::CheckIfEnd2PldEmpty(ge::ComputeGraphPtr &output_mer
       return FAILED;
     }
     output_merged_compute_graph = partition.first;
+    // flush all nodes' engine of merged graph
+    graph_info_.engine_placer_.SetComputeGraph(output_merged_compute_graph);
+    if (graph_info_.engine_placer_.Run() != SUCCESS) {
+      GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: engine_placer run failed");
+      return FAILED;
+    }
   } else {  // if placeholder to end map is empty, it should be an exception condition
     GELOGE(GE_GRAPH_EMPTY_PARTITION, "[GraphPartitioner]: placeholder to end map is empty, partitions size is not 1.");
     return FAILED;
@@ -510,8 +531,9 @@ void ge::GraphPartitioner::AddNewGraphToPartition(ge::ComputeGraphPtr &input_gra
 }
 
 bool ge::GraphPartitioner::IsDataLike(ge::NodePtr node) {
-  return (node->GetType() == CONSTANT) || (node->GetType() == DATA) || (node->GetType() == AIPPDATA) ||
-         (node->GetType() == CONSTANTOP) || (node->GetType() == VARIABLE);
+  return (node->GetType() == domi::CONSTANT) || (node->GetType() == domi::DATA) ||
+         (node->GetType() == domi::AIPPDATA) || (node->GetType() == domi::CONSTANTOP) ||
+         (node->GetType() == domi::VARIABLE);
 }
 
 bool ge::GraphPartitioner::HasNoInput(ge::NodePtr node) {

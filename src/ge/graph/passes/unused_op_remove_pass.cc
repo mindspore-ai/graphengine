@@ -29,7 +29,13 @@
 #include "inc/pass_manager.h"
 #include "graph/passes/isolated_op_remove_pass.h"
 
+using domi::ASSERT;
+using domi::ATTENTIONDECODER;
+using domi::DROPOUT;
+;
+using domi::PERMUTE;
 using domi::SUCCESS;
+using domi::UNUSEDCONST;
 
 namespace ge {
 const std::set<std::string> kRemoveOpSet = {DROPOUT, PERMUTE, UNUSEDCONST, ASSERT};

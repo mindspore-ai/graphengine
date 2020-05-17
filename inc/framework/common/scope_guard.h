@@ -25,10 +25,10 @@
 /// MAKE_GUARD([&] { Release Resource 1 })
 /// Acquire Resource 2
 // MAKE_GUARD([&] { Release Resource 2 })
-#define GE_MAKE_GUARD(var, callback) ScopeGuard make_guard_##var(callback)
+#define GE_MAKE_GUARD(var, callback) domi::ScopeGuard make_guard_##var(callback)
 #define GE_DISMISS_GUARD(var) make_guard_##var.Dismiss()
 
-namespace ge {
+namespace domi {
 class ScopeGuard {
  public:
   // Noncopyable
@@ -55,6 +55,6 @@ class ScopeGuard {
   std::function<void()> on_exit_scope_;
   bool dismissed_;
 };
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_SCOPE_GUARD_H_

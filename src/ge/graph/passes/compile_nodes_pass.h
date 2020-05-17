@@ -19,9 +19,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
-#include <unordered_map>
-
 #include "inc/graph_pass.h"
 #include "init/gelib.h"
 

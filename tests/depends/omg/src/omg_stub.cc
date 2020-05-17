@@ -122,7 +122,6 @@ struct OmFileContext {
 
 class SubGraphInfo;
 using SubGraphInfoPtr = std::shared_ptr<ge::SubGraphInfo>;
-using Graph2SubGraphInfoList = std::unordered_map<ComputeGraphPtr, std::vector<SubGraphInfoPtr>>;
 
 using GeModelPartitionPtr = std::shared_ptr<GeModelPartition>;
 using ModelPtr = std::shared_ptr<ge::Model>;
@@ -221,7 +220,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OmFileSaveHelper::AddParti
 }
 class ModelBuilder {
  public:
-  ModelBuilder(ge::ComputeGraphPtr compute_graph, const Graph2SubGraphInfoList &subgraphs,
+  ModelBuilder(ge::ComputeGraphPtr compute_graph, const std::vector<SubGraphInfoPtr> &subgraphs,
                const std::map<std::string, int> &stream_max_parallel_num, bool hcom_parallel, int mode);
   virtual ~ModelBuilder();
   Status BuildModel(ge::Model &model_def);
@@ -236,7 +235,7 @@ class ModelBuilder {
   ge::Buffer weight_buffer_;
 };
 
-ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const Graph2SubGraphInfoList &subgraphs,
+ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const std::vector<SubGraphInfoPtr> &subgraphs,
                            const std::map<std::string, int> &stream_max_parallel_num, bool hcom_parallel, int mode) {
   weight_buffer_ = ge::Buffer(4100000);
 }

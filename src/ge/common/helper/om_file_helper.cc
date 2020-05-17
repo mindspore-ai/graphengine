@@ -25,10 +25,11 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 
+using ge::FileSaver;
 using ge::ModelBufferData;
 using std::string;
 
-namespace ge {
+namespace domi {
 // For Load
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(const ge::ModelData &model) {
   if (CheckModelValid(model) != SUCCESS) {
@@ -225,4 +226,4 @@ Status OmFileSaveHelper::SaveModelToFile(const char *output_file, ModelBufferDat
   return SUCCESS;
 #endif
 }
-}  // namespace ge
+}  // namespace domi

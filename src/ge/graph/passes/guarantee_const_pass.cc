@@ -25,6 +25,8 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 
+using domi::GUARANTEECONST;
+
 namespace ge {
 namespace {
 const uint32_t kGuaranteeConstInputsSize = 1;

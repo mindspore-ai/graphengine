@@ -17,7 +17,6 @@
 #include "graph/build/model_builder.h"
 #include <iostream>
 #include <set>
-#include <unordered_map>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
@@ -28,7 +27,6 @@
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
-#include "graph/ge_context.h"
 #include "graph/ge_error_codes.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
@@ -40,11 +38,46 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/ge_context.h"
 #include "init/gelib.h"
 #include "memory/memory_assigner.h"
 #include "omg/version.h"
 #include "register/op_registry.h"
 
+using domi::AIPP_CONV_FLAG;
+using domi::AIPP_DATA_FLAG;
+using domi::AIPP_DATA_TYPE;
+using domi::AippOpParams;
+using domi::ATOMICADDRCLEAN;
+using domi::ATTR_NAME_AUTOMIC_ADD_MEM_SIZE;
+using domi::ATTR_NAME_AUTOMIC_ADD_START;
+using domi::CAST;
+using domi::CHW_DIM_H;
+using domi::CHW_DIM_W;
+using domi::CONCAT;
+using domi::CONSTANT;
+using domi::CONSTANTOP;
+using domi::CONVOLUTION;
+using domi::DATA;
+using domi::DATA_TYPE;
+using domi::DEFAULT_FORMAT;
+using domi::DIM_DEFAULT_SIZE;
+using domi::DOMI_TENSOR_NC1HWC0;
+using domi::HWC_DIM_H;
+using domi::HWC_DIM_W;
+using domi::LOOPCOND;
+using domi::MODEL_ATTR_TASKS;
+using domi::ModelTaskDef;
+using domi::NCHW_DIM_H;
+using domi::NCHW_DIM_N;
+using domi::NCHW_DIM_W;
+using domi::NETOUTPUT;
+using domi::NHWC_DIM_H;
+using domi::NHWC_DIM_W;
+using domi::PlatformVersionManager;
+using domi::STREAMMERGE;
+using domi::VARIABLE;
+using domi::XRGB_CHN_NUM;
 using ge::FAILED;
 using ge::PARAM_INVALID;
 using ge::SUCCESS;
@@ -69,25 +102,25 @@ const char *const kVectorCore = "VectorCore";
 const char *const kCoreType = "ge.engineType";
 const std::string kEnableL1Fusion = "ge.l1Fusion";
 
-const set<string> adjust_layer_type_ = {ge::CONVOLUTION};
+const set<string> adjust_layer_type_ = {CONVOLUTION};
 
 bool IsGeLocalOp(const ge::ConstOpDescPtr &op_desc) {
   auto type = op_desc->GetType();
-  if (type == ge::CONSTANTOP) {
+  if (type == CONSTANTOP) {
     // constant op just has one output
     ge::GeTensorDesc output_desc = op_desc->GetOutputDesc(0);
     return !(output_desc.GetDataType() == ge::DT_STRING);
   }
-  const set<string> ge_local_set = {ge::STREAMMERGE, ge::MEMCPYASYNC, ge::STREAMACTIVE,   ge::STREAMSWITCH,
-                                    ge::VARIABLE,    ge::NOOP,        ge::CONSTANT,       ge::ENTER,
-                                    ge::REFENTER,    ge::LOOPCOND,    ge::NEXTITERATION,  ge::REFNEXTITERATION,
-                                    ge::EXIT,        ge::REFEXIT,     ge::MEMCPYADDRASYNC};
+  const set<string> ge_local_set = {domi::STREAMMERGE, domi::MEMCPYASYNC, domi::STREAMACTIVE,  domi::STREAMSWITCH,
+                                    domi::VARIABLE,    domi::NOOP,        domi::CONSTANT,      domi::ENTER,
+                                    domi::REFENTER,    domi::LOOPCOND,    domi::NEXTITERATION, domi::REFNEXTITERATION,
+                                    domi::EXIT,        domi::REFEXIT};
   return (ge_local_set.find(type) != ge_local_set.end());
 }
 }  // namespace
 
 namespace ge {
-ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const Graph2SubGraphInfoList &subgraphs,
+ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const vector<SubGraphInfoPtr> &subgraphs,
                            const map<string, int> &stream_max_parallel_num, bool hcom_parallel, int mode)
     : mem_offset_(0),
       weight_offset_(kWeightsStartOffset),
@@ -189,7 +222,7 @@ void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
     }
   }
 
-  std::string input_const_info = ToString(is_input_const);
+  std::string input_const_info = domi::ToString(is_input_const);
   GELOGD("update opdesc:%s InputConst:%s", node_op_desc->GetName().c_str(), input_const_info.c_str());
   node_op_desc->SetIsInputConst(is_input_const);
 }
@@ -225,25 +258,6 @@ Status ModelBuilder::SetInputOutputDesc() {
 
     if (!is_loop_graph_ && node_op_desc->GetType() == LOOPCOND) {
       is_loop_graph_ = true;
-    }
-    // if user set input node format ND, the expected node for data and netoutput format is ND in
-    // final graph.
-    if ((domi::GetContext().format == domi::DOMI_TENSOR_ND) &&
-        ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
-      GELOGI("The node [%s] format should be set ND.", node_op_desc->GetName().c_str());
-      auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
-      auto outputDescsPtr = node_op_desc->GetAllOutputsDescPtr();
-      ge::Format format = ge::FORMAT_ND;
-      for (auto &inputDescPtr : inputDescsPtr) {
-        GE_CHECK_NOTNULL(inputDescPtr);
-        inputDescPtr->SetFormat(format);
-        inputDescPtr->SetOriginFormat(format);
-      }
-      for (auto &outputDescPtr : outputDescsPtr) {
-        GE_CHECK_NOTNULL(outputDescPtr);
-        outputDescPtr->SetFormat(format);
-        outputDescPtr->SetOriginFormat(format);
-      }
     }
 
     if (node_op_desc->GetType() == DATA_TYPE || node_op_desc->GetType() == AIPP_DATA_TYPE) {
@@ -525,7 +539,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     return INTERNAL_ERROR;
   }
   int byte_size = static_cast<int>(task_def_bytes.GetSize());
-  std::shared_ptr<domi::ModelTaskDef> task = ge::MakeShared<domi::ModelTaskDef>();
+  std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
   GE_CHECK_NOTNULL(task);
   GE_CHK_BOOL_EXEC(ReadProtoFromArray(task_def_bytes.GetData(), byte_size, task.get()), return INTERNAL_ERROR,
                    "ReadProtoFromArray failed.");
@@ -571,18 +585,18 @@ Status ModelBuilder::PreBuildModel() {
 Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_CHK_STATUS_RET(AdjustInputTensorFlag(), "AdjustInputTensorFlag failed!");
 
+  // Assign functional op labels.
+  GE_TIMESTAMP_START(AssignFunctionalLabels);
+  LabelAllocator label_allocator(compute_graph_);
+  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
+  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
+
   // Assign logical streams.
   StreamAllocator stream_allocator(compute_graph_, subgraphs_);
   GE_TIMESTAMP_START(AssignLogicalStreams);
   GE_CHK_STATUS_RET(stream_allocator.AssignLogicalStreams(stream_max_parallel_num_, hcom_parallel_),
                     "Assign logical streams failed.");
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
-
-  // Assign functional op labels.
-  GE_TIMESTAMP_START(AssignFunctionalLabels);
-  LabelAllocator label_allocator(compute_graph_);
-  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
-  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
 
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);

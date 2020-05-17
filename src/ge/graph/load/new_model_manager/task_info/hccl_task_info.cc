@@ -67,13 +67,13 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   GE_CHECK_NOTNULL(op_desc);
 
   Status dmrt = HcomOmeUtil::GetHcomDataType(op_desc, data_type);
-  if (dmrt != SUCCESS) {
+  if (dmrt != domi::SUCCESS) {
     GELOGE(FAILED, "davinci_model: GetHcomDataType fail! domi error: %u", dmrt);
     return FAILED;
   }
 
-  dmrt = HcomOmeUtil::GetHcomCount(op_desc, data_type, (hccl_type == HCOMALLGATHER), count);
-  if (dmrt != SUCCESS) {
+  dmrt = HcomOmeUtil::GetHcomCount(op_desc, data_type, (hccl_type == domi::HCOMALLGATHER), count);
+  if (dmrt != domi::SUCCESS) {
     GELOGE(FAILED, "davinci_model: GetHcomCount fail! domi error: %u", dmrt);
     return FAILED;
   }
@@ -170,28 +170,28 @@ Status HcclTaskInfo::SetAddrs(const std::string &hccl_type, const std::shared_pt
     output_data_addr = output_data_addr_list[0];
   }
 
-  if (hccl_type == HCOMBROADCAST) {
+  if (hccl_type == domi::HCOMBROADCAST) {
     int64_t root_id;
     dmrt = HcomOmeUtil::GetHcomRootId(op_desc, root_id);
-    if (dmrt != SUCCESS) {
+    if (dmrt != domi::SUCCESS) {
       GELOGE(FAILED, "davinci_model: GetHcomRootId fail! domi error: %u", dmrt);
       return FAILED;
     }
     root_id_ = root_id;
-  } else if (hccl_type == HCOMALLGATHER || hccl_type == HCOMRECEIVE) {
+  } else if (hccl_type == domi::HCOMALLGATHER || hccl_type == domi::HCOMRECEIVE) {
     output_data_addr_ = output_data_addr;
-  } else if (hccl_type == HCOMALLREDUCE) {
+  } else if (hccl_type == domi::HCOMALLREDUCE) {
     dmrt = HcomOmeUtil::GetHcomOperationType(op_desc, op_type);
-    if (dmrt != SUCCESS) {
+    if (dmrt != domi::SUCCESS) {
       GELOGE(FAILED, "davinci_model: GetHcomOperationType fail! domi error: %u", dmrt);
       return FAILED;
     }
 
     output_data_addr_ = output_data_addr;
     op_type_ = op_type;
-  } else if (hccl_type == HCOMREDUCESCATTER) {
+  } else if (hccl_type == domi::HCOMREDUCESCATTER) {
     dmrt = HcomOmeUtil::GetHcomOperationType(op_desc, op_type);
-    if (dmrt != SUCCESS) {
+    if (dmrt != domi::SUCCESS) {
       GELOGE(FAILED, "davinci_model: GetHcomOperationType fail! domi error: %u", dmrt);
       return FAILED;
     }

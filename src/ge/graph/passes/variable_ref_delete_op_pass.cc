@@ -18,6 +18,10 @@
 #include <string>
 #include "framework/common/debug/ge_log.h"
 
+using domi::REF_VAR_PRE_PEER_OUT_INDEX;
+using domi::REF_VAR_SRC_VAR_NAME;
+using domi::VARIABLE;
+
 namespace ge {
 Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(VariableRefDeleteOpPass);
@@ -31,8 +35,8 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
   for (auto &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     std::string ref_var_src_var_name;
-    bool is_variable_ref = (node->GetOpDesc()->GetType() == VARIABLE) &&
-                           (ge::AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name));
+    bool is_variable_ref = (node->GetOpDesc()->GetType() == domi::VARIABLE) &&
+                           (ge::AttrUtils::GetStr(node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name));
     if (!is_variable_ref) {
       continue;
     }
@@ -83,7 +87,7 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
 
   // add attr [REF_VAR_SRC_VAR_NAME] to the previous node of the variable_ref
   GE_CHECK_NOTNULL(peer_node->GetOpDesc());
-  bool is_set_str = ge::AttrUtils::SetStr(peer_node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
+  bool is_set_str = ge::AttrUtils::SetStr(peer_node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
 
   ge::NodePtr var_ref_src_var = graph->FindNode(ref_var_src_var_name);
   if (var_ref_src_var == nullptr) {
@@ -92,7 +96,7 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   }
 
   GE_CHECK_NOTNULL(var_ref_src_var->GetOpDesc());
-  bool is_set_index = ge::AttrUtils::SetInt(var_ref_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, index);
+  bool is_set_index = ge::AttrUtils::SetInt(var_ref_src_var->GetOpDesc(), domi::REF_VAR_PRE_PEER_OUT_INDEX, index);
   if (is_set_str && is_set_index) {
     GELOGI("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
     GELOGI("[%s]: add attr [ REF_VAR_PRE_PEER_OUT_INDEX: %d ]", var_ref_src_var->GetName().c_str(), index);

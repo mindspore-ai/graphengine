@@ -28,6 +28,11 @@
 #include "graph/utils/graph_utils.h"
 #include "model/ge_model.h"
 
+using domi::DATA;
+using domi::ModelHelper;
+using domi::NETOUTPUT;
+using domi::NODE_NAME_NET_OUTPUT;
+using domi::SaveParam;
 using ge::ModelBufferData;
 using std::map;
 using std::string;
@@ -101,7 +106,7 @@ static void GetOpsProtoPath(string &opsproto_path) {
   const char *path_env = std::getenv("ASCEND_OPP_PATH");
   if (path_env != nullptr) {
     string path = path_env;
-    string file_path = RealPath(path.c_str());
+    string file_path = domi::RealPath(path.c_str());
     if (file_path.empty()) {
       GELOGE(FAILED, "File path %s is invalid.", path.c_str());
       return;
@@ -143,7 +148,7 @@ Status GeGenerator::Initialize(const map<string, string> &options) {
   GELOGI("opsproto_path is %s", opsproto_path.c_str());
   OpsProtoManager *manager = OpsProtoManager::Instance();
   map<string, string> option_tmp;
-  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
+  option_tmp.insert(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
   (void)manager->Initialize(option_tmp);
 
   Status ret = impl_->graph_manager_.Initialize(options);
@@ -258,7 +263,7 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
   map<string, GeAttrValue> op_attrs = op_desc->GetAllAttrs();
 
   // 1. Create ComputeGraph.
-  string name = ge::CurrentTimeInStr() + "_" + model_file_name;
+  string name = domi::CurrentTimeInStr() + "_" + model_file_name;
   ge::ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(name);
   if (compute_graph == nullptr) {
     return INTERNAL_ERROR;

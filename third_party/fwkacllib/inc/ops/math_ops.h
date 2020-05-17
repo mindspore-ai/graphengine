@@ -23,29 +23,6 @@
 namespace ge {
 
 /**
-*@brief Computes the output as (shift + scale * x) ^ power.
-
-*@par Inputs:
-* x: A Tensor of type float16 or float32.
-
-*@par Attributes:
-*@li power: Optional. Defaults to 1.0.
-*@li scale: Optional. Defaults to 1.0.
-*@li shift: Optional. Defaults to 0.0.
-
-*@par Outputs:
-* y: A Tensor. Has the same type and shape as "x".
-*/
-
-REG_OP(Power)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .ATTR(power, Float, 1.0)
-    .ATTR(scale, Float, 1.0)
-    .ATTR(shift, Float, 0.0)
-    .OP_END_FACTORY_REG(Power);
-
-/**
 *@brief Compute the lower regularized incomplete Gamma function P(a, x).
 
 *@par Inputs:

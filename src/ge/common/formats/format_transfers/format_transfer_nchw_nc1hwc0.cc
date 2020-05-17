@@ -40,7 +40,7 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   }
   dst_shape.clear();
   dst_shape.push_back(src_shape.at(kNchwN));
-  dst_shape.push_back(Ceil(src_shape.at(kNchwC), c0));
+  dst_shape.push_back((src_shape.at(kNchwC) - 1) / c0 + 1);
   dst_shape.push_back(src_shape.at(kNchwH));
   dst_shape.push_back(src_shape.at(kNchwW));
   dst_shape.push_back(c0);
@@ -74,8 +74,25 @@ Status CheckArgsForNchwToNc1hwc0(const TransArgs &args) {
 
   return SUCCESS;
 }
+}  // namespace
 
-Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const int size, const int64_t total_size) {
+Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult &result) {
+  if (CheckArgsForNchwToNc1hwc0(args) != SUCCESS) {
+    return PARAM_INVALID;
+  }
+  // Guarantee the validity of parameters in check function
+  int size = GetSizeByDataType(args.src_data_type);
+  auto total_size = GetItemNumByShape(args.dst_shape) * size;
+  if (total_size <= 0) {
+    GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
+           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+    return PARAM_INVALID;
+  }
+  GELOGD(
+    "Begin to trans format from NCHW to NC1HWC0, src shape %s, data type "
+    "%s, dst shape %s memory size %ld",
+    ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+    ShapeToString(args.dst_shape).c_str(), total_size);
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY,
@@ -150,39 +167,6 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
 
   result.data = dst;
   result.length = static_cast<size_t>(total_size);
-  return SUCCESS;
-}
-}  // namespace
-
-Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult &result) {
-  if (CheckArgsForNchwToNc1hwc0(args) != SUCCESS) {
-    return PARAM_INVALID;
-  }
-  // Guarantee the validity of parameters in check function
-  int size = GetSizeByDataType(args.src_data_type);
-  auto total_size = GetItemNumByShape(args.dst_shape) * size;
-  if (total_size <= 0) {
-    int64_t src_size = GetItemNumByShape(args.src_shape);
-    if (total_size == 0 && src_size == 0) {
-      result.length = static_cast<size_t>(total_size);
-      return SUCCESS;
-    }
-
-    GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
-           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
-    return PARAM_INVALID;
-  }
-  GELOGD(
-    "Begin to trans format from NCHW to NC1HWC0, src shape %s, data type "
-    "%s, dst shape %s memory size %ld",
-    ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-    ShapeToString(args.dst_shape).c_str(), total_size);
-  if (GetDstDataAfterTrans(args, result, size, total_size) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
-           ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           ShapeToString(args.dst_shape).c_str(), total_size);
-    return INTERNAL_ERROR;
-  }
   return SUCCESS;
 }
 

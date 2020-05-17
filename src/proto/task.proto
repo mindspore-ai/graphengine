@@ -31,7 +31,7 @@ message ModelTaskDef {
 
     repeated bytes op = 15; // input/output opdef in bytes
 
-    uint64 base_addr = 16;    // base addr
+    uint64 base_addr = 16;    // base addr 
     uint64 weight_addr = 17;  // weight addr
     uint32 batch_num = 18;
 }
@@ -58,10 +58,6 @@ message TaskDef {
     bytes private_def = 34;
     uint64 ops_kernel_store_ptr = 35;      // adjustments to other fields in the future
     StreamSwitchNDef stream_switch_n = 36;
-
-    LabelSetDef label_set = 37;
-    LabelGotoExDef label_goto_ex = 38;
-    LabelSwitchByIndexDef label_switch_by_index = 39;
 }
 
 message KernelDef {
@@ -123,7 +119,6 @@ message MemcpyAsyncDef {
     uint64 src = 3;
     uint64 count = 4;
     uint32 kind = 5;
-    uint32 op_index = 6;
 }
 
 message StreamSwitchDef {
@@ -146,21 +141,4 @@ message StreamSwitchNDef {
     repeated uint32 true_stream_id = 4;
     uint32 element_size = 5;
     uint32 data_type = 6;
-}
-
-message LabelSetDef {
-    uint32 op_index = 1;
-    uint32 label_id = 2;
-    uint32 model_id = 3;
-}
-
-message LabelGotoExDef {
-    uint32 op_index = 1;
-    uint32 label_id = 2;
-    uint32 model_id = 3;
-}
-
-message LabelSwitchByIndexDef {
-    uint32 op_index = 1;
-    uint32 label_max = 2;
 }

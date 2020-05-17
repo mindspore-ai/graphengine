@@ -50,43 +50,5 @@ REG_OP(RaggedTensorToSparse)
     .ATTR(RAGGED_RANK, Int, 1)
     .ATTR(Tsplits, Type, DT_INT64)
     .OP_END_FACTORY_REG(RaggedTensorToSparse)
-
-/**
-*@brief Create a dense tensor from a ragged tensor, possibly altering its shape.
-
-*@par Inputs:
-*Six inputs, including:
-*@li shape:A `Tensor`. Must be one of the following types: `int64`, `int32`.
-*@li values:A 1D tensor representing the values of the ragged tensor.
-*@li default_value:A `Tensor`. Must have the same type as `values`.
-*@li row_partition_tensors:A list of at least 1 `Tensor` objects with the same \n
-type in: `int64`, `int32`.
-
-*@par Attributes:
-*@li num_row_partition_tensors:Numbers of row partition tensors.
-*@li row_partition_types: A list of `strings`. \n
-The types of the row partition tensors. At present, these can be: \n
-* "ROW_SPLITS": the row_splits tensor from the ragged tensor. \n
-* "VALUE_ROWIDS": the value_rowids tensor from the ragged tensor. \n
-* "FIRST_DIM_SIZE": if value_rowids is used for the first dimension, then it \n
-is preceeded by "FIRST_DIM_SIZE".
-
-*@par Outputs:
-*@li result: A `Tensor`. Has the same type as `values`.
-*/
-REG_OP(RaggedTensorToTensor)
-    .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
-    .INPUT(values, TensorType({DT_BOOL, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                          DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
-    .INPUT(default_value, TensorType({DT_BOOL, DT_INT8, DT_UINT8, DT_INT16,
-              DT_UINT16, DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
-    .DYNAMIC_INPUT(row_partition_tensors, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(result, TensorType({DT_BOOL, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
-                          DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))
-    .REQUIRED_ATTR(num_row_partition_tensors, Int)
-    .REQUIRED_ATTR(row_partition_types, ListString)
-    .OP_END_FACTORY_REG(RaggedTensorToTensor)
-
-
 } // namespace ge
 #endif // GE_OP_RAGGED_CONVERSION_OPS_H

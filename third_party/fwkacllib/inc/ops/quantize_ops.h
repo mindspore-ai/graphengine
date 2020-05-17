@@ -19,6 +19,22 @@
 #include "../graph/operator_reg.h"
 
 namespace ge {
+REG_OP(QuantizedInnerProduct)
+    .INPUT(x, TensorType({DT_UINT8}))
+    .INPUT(w, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(b, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(scale_q, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(offset_q, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(scale_deq_req, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(offset_req, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(quant_algo, ListInt)
+    .REQUIRED_ATTR(scale_sqrt, ListInt)
+    .REQUIRED_ATTR(num_output, Int)
+    .ATTR(transpose, Bool, false)
+    .ATTR(bias_term, Bool, false)
+    .ATTR(axis, Int, 1)
+    .OP_END_FACTORY_REG(QuantizedInnerProduct)
 
 /**
 * @brief Dequantizes the input tensor into a float tensor.\n

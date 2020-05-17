@@ -38,7 +38,7 @@ Status AssertPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
   std::string op_type = node->GetOpDesc()->GetType();
-  if (op_type == ASSERT) {
+  if (op_type == domi::ASSERT) {
     GELOGD("op type is assert.");
 
     std::vector<NodePtr> nodes_unused;
@@ -71,8 +71,8 @@ void AssertPass::CollectUnusedNode(const NodePtr &assert_node, vector<NodePtr> &
       if (src_node != nullptr && src_node->GetOpDesc() != nullptr) {
         auto size = ++invalid_outdata_info[src_node.get()];
         // src_node need to be deleted
-        if (src_node->GetOutDataNodesSize() == size && src_node->GetOpDesc()->GetType() != DATA &&
-            src_node->GetOpDesc()->GetType() != AIPPDATA) {
+        if (src_node->GetOutDataNodesSize() == size && src_node->GetOpDesc()->GetType() != domi::DATA &&
+            src_node->GetOpDesc()->GetType() != domi::AIPPDATA) {
           node_queue.push(src_node);
         }
       }

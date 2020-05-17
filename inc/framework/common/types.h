@@ -26,7 +26,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/fmk_types.h"
 #include "framework/common/op_types.h"
@@ -47,7 +46,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_A
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_STATUS;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_LAYER;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMP_FILE_PATH;
+}  // namespace ge
 
+namespace domi {
 // Supported public properties name
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_START_TIME;  // Start time
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROP_OME_DUMP_PATH;   // Dump path
@@ -66,6 +67,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFIL
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_STOP_VALUE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::map<std::string, std::string> PROFILE_COMPONENT_MAP;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_CONFIG;
+
+/// @brief Data structure definition related to task sinking
+/// Build model
+enum BuildMode {
+  GEN_TASK_WITHOUT_L2FUSION = 3,  // Carrying task data (L2 convergence function disabled)
+  GEN_TASK_WITHOUT_FUSION = 4,    // Carrying task data (all convergence functions disabled)
+  GEN_TASK_WITH_FUSION = 5        // Carrying task data (with UB/L1/L2 enabled for all convergence functions)
+};
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASKS;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR;
@@ -333,7 +342,7 @@ REGISTER_OPTYPE_DECLARE(BASICLSTMCELL, "BasicLSTMCell");
 REGISTER_OPTYPE_DECLARE(GETNEXT, "GetNext");
 REGISTER_OPTYPE_DECLARE(INITDATA, "InitData");
 
-// ANN dedicated operator
+/***************ANN dedicated operator *************************/
 REGISTER_OPTYPE_DECLARE(ANN_MEAN, "AnnMean");
 REGISTER_OPTYPE_DECLARE(ANN_CONVOLUTION, "AnnConvolution");
 REGISTER_OPTYPE_DECLARE(ANN_DEPCONVOLUTION, "AnnDepthConv");
@@ -350,7 +359,7 @@ REGISTER_OPTYPE_DECLARE(ANN_QUANTIZE, "AnnQuant");
 REGISTER_OPTYPE_DECLARE(ANN_PAD, "AnnPad");
 REGISTER_OPTYPE_DECLARE(ANN_RESIZE_BILINEAR, "AnnResizeBilinear");
 
-// Training operator
+/********************Training operator ***********************/
 REGISTER_OPTYPE_DECLARE(GATHERV2, "GatherV2");
 REGISTER_OPTYPE_DECLARE(CONVGRADFILTER, "Conv2DBackpropFilter");
 REGISTER_OPTYPE_DECLARE(CONV2D, "Conv2D");
@@ -434,7 +443,6 @@ REGISTER_OPTYPE_DECLARE(STREAMSWITCH, "StreamSwitch");
 REGISTER_OPTYPE_DECLARE(STREAMSWITCHN, "StreamSwitchN");
 REGISTER_OPTYPE_DECLARE(STREAMACTIVE, "StreamActive");
 REGISTER_OPTYPE_DECLARE(MEMCPYASYNC, "MemcpyAsync");
-REGISTER_OPTYPE_DECLARE(MEMCPYADDRASYNC, "MemcpyAddrAsync");
 REGISTER_OPTYPE_DECLARE(STREAMMERGE, "StreamMerge");
 REGISTER_OPTYPE_DECLARE(ENDGRAPH, "EndGraph");
 REGISTER_OPTYPE_DECLARE(SEND, "Send");
@@ -442,7 +450,6 @@ REGISTER_OPTYPE_DECLARE(RECV, "Recv");
 
 REGISTER_OPTYPE_DECLARE(LABELSET, "LabelSet");
 REGISTER_OPTYPE_DECLARE(LABELGOTO, "LabelGoto");
-REGISTER_OPTYPE_DECLARE(LABELGOTOEX, "LabelGotoEx");
 REGISTER_OPTYPE_DECLARE(LABELSWITCH, "LabelSwitch");
 REGISTER_OPTYPE_DECLARE(LABELSWITCHBYINDEX, "LabelSwitchByIndex");
 
@@ -821,6 +828,9 @@ static constexpr int32_t PARTITION_TYPE_TASK_INFO = 2;
 // number of partitions in the current model
 static constexpr uint32_t PARTITION_SIZE = 4;
 
+#define SIZE_OF_MODEL_PARTITION_TABLE(table) \
+  (sizeof(domi::ModelPartitionTable) + sizeof(domi::ModelPartitionMemInfo) * (table).num)
+
 enum ModelPartitionType { MODEL_DEF = 0, WEIGHTS_DATA, TASK_INFO, TBE_KERNELS };
 
 struct ModelPartitionMemInfo {
@@ -833,8 +843,6 @@ struct ModelPartitionTable {
   uint32_t num;
   ModelPartitionMemInfo partition[0];
 };
-
-#define SIZE_OF_MODEL_PARTITION_TABLE(table) (sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * (table).num)
 
 static constexpr int32_t PTHREAD_CREAT_SUCCESS = 0;  // pthread_creat success
 
@@ -967,8 +975,8 @@ typedef enum tagDomiNanPropagation {
 
 // mode of cropandresize
 typedef enum tagDomiCropAndResizeMode {
-  DOMI_RESIZE_METHOD_BILINEAR = 0,  // resize bilinear
-  DOMI_RESIZE_METHOD_NEAREST,       // resize nearest
+  DOMI_RESIZE_METHOD_BILINEAR = 0, /**< resize bilinear */
+  DOMI_RESIZE_METHOD_NEAREST,      /**< resize nearest */
   DOMI_RESIZE_RESERVED
 } domiCropAndResizeMode_t;
 
@@ -1055,15 +1063,6 @@ struct BasicInfo {
   uint32_t total_size;       // total memory size
 };
 #pragma pack()  // Cancels single-byte alignment
-}  // namespace ge
-
-namespace domi {
-/// @brief Data structure definition related to task sinking
-enum BuildMode {
-  GEN_TASK_WITHOUT_L2FUSION = 3,  // Carrying task data (L2 convergence function disabled)
-  GEN_TASK_WITHOUT_FUSION = 4,    // Carrying task data (all convergence functions disabled)
-  GEN_TASK_WITH_FUSION = 5        // Carrying task data (with UB/L1/L2 enabled for all convergence functions)
-};
 }  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_TYPES_H_

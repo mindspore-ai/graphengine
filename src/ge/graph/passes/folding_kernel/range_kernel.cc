@@ -28,6 +28,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::RANGE;
+
 namespace ge {
 namespace {
 constexpr size_t kRangeInputNum = 3;

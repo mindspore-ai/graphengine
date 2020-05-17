@@ -55,11 +55,6 @@ class LabelMaker {
  protected:
   NodePtr parent_node_;
   ComputeGraphPtr parent_graph_;
-
- private:
-  Status AddCtrlLink2Data(const ComputeGraphPtr &graph, const NodePtr &node);
-  void SetStreamIdEnter(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
-  void SetStreamIdLeave(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_LABEL_MAKER_H_

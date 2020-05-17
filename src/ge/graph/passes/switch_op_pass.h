@@ -103,13 +103,13 @@ class SwitchOpPass : public GraphPass {
   NodePtr CreateStreamSwitchNode(ComputeGraphPtr &graph, const NodePtr &switch_node, const std::string &suffix,
                                  OutDataAnchorPtr &peer_cond_anchor);
 
-  NodePtr CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag);
+  NodePtr CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor);
 
   Status CombineSwitchNode(ComputeGraphPtr &graph);
 
   NodePtr CreateActiveNode(ComputeGraphPtr &graph, NodePtr &node);
 
-  Status AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &stream_merge_node, bool multi_batch_flag);
+  Status AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &stream_merge_node);
 
   Status BypassSwitchNode(NodePtr &switch_node, OutDataAnchorPtr &peer_data_anchor, OutDataAnchorPtr &peer_cond_anchor);
 

@@ -23,10 +23,23 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
+using domi::_IF;
+using domi::IF;
+using domi::STATELESSIF;
+
 namespace ge {
 constexpr uint8_t kIfPredIndex = 0;
 constexpr uint8_t kThenBranchIndex = 0;
 constexpr uint8_t kElseBranchIndex = 1;
+
+// All ---> Node ---> If ---> Node --->
+//                    |
+//                    V
+//  { Data ---> Node ---> Node ---> NetOutput }
+//
+// All ---> Node ---> If ---> Node --->
+//             \              /
+//            { Node ---> Node }
 
 /**
  * @ingroup ge
@@ -63,8 +76,7 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   const std::string else_enter_name = parent_node_->GetName() + "/ElseLabelSet";   // rtLabelSet(1)
   const std::string else_leave_name = parent_node_->GetName() + "/LeaveLabelSet";  // rtLabelSet
 
-  NodePtr then_enter_label = AddLabelSetEnter(then_sub_graph, then_label_name, then_enter_index);
-  if (then_enter_label == nullptr) {
+  if (AddLabelSetEnter(then_sub_graph, then_label_name, then_enter_index) == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
@@ -92,12 +104,6 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   NodePtr switch_node = AddLabelSwitchEnter(then_sub_graph, then_enter_name, cond_desc, switch_labels);
   if (switch_node == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", then_sub_graph->GetName().c_str());
-    return FAILED;
-  }
-
-  // Link control edge to then branch head.
-  if (GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), then_enter_label->GetInControlAnchor()) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add ctrl edge to %s failed.", then_enter_label->GetName().c_str());
     return FAILED;
   }
 

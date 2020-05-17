@@ -19,17 +19,17 @@
 
 namespace ge {
 namespace skt {
-Status SuperKernel::Launch(rtStream_t stream, uint32_t dump_flag) {
+Status SuperKernel::Launch(rtStream_t stream, bool dump_flag) {
   const void *func_stub_ = this->GetFuncStub();
 
-  const void *args[] = {this->GetNavTablePtr(),
-                        reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(this->GetNavTableSize()))};
+  const void *args[] = {this->GetNavTablePtr(), (const void *)this->GetNavTableSize()};
 
-  rtError_t rt_ret = rtMalloc((void **)&(device_args_addr_), sizeof(args), RT_MEMORY_HBM);
+  void *device_args_addr = nullptr;
+  rtError_t rt_ret = rtMalloc((void **)&(device_args_addr), sizeof(args), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc failied. error: 0x%X", rt_ret); return FAILED;)
-  rt_ret = rtMemcpy((void *)device_args_addr_, sizeof(args), (void *)args, sizeof(args), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy((void *)device_args_addr, sizeof(args), (void *)args, sizeof(args), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy failied. error: 0x%X", rt_ret); return FAILED;)
-  rt_ret = rtKernelLaunchWithFlag((void *const)func_stub_, block_dim_, device_args_addr_, sizeof(args), NULL, stream,
+  rt_ret = rtKernelLaunchWithFlag((void *const)func_stub_, block_dim_, device_args_addr, sizeof(args), NULL, stream,
                                   dump_flag);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtKernelLaunchWithFlag failied. error: 0x%X", rt_ret);
                   return FAILED;)

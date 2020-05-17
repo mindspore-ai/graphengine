@@ -116,11 +116,6 @@ Status CheckShapeRelation(const TransArgs &args, ShapeVector &hw_shape) {
 Status TransFormatFromNdToFracNz(const TransArgs &args, TransResult &result, const ShapeVector &hw_shape) {
   int size = GetSizeByDataType(args.src_data_type);
   int64_t dst_size = GetItemNumByShape(args.dst_shape) * size;
-  if (dst_size == 0) {
-    result.length = static_cast<size_t>(dst_size);
-    return SUCCESS;
-  }
-
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size](), std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
@@ -189,11 +184,6 @@ Status TransFormatFromNdToFracNz(const TransArgs &args, TransResult &result, con
 Status TransFormatFromFracNzToNd(const TransArgs &args, TransResult &result, const ShapeVector &dst_hw_shape) {
   int size = GetSizeByDataType(args.src_data_type);
   int64_t dst_size = GetItemNumByShape(args.dst_shape) * size;
-  if (dst_size == 0) {
-    result.length = static_cast<size_t>(dst_size);
-    return SUCCESS;
-  }
-
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",

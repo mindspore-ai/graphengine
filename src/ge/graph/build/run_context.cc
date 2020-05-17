@@ -17,6 +17,7 @@
 #include "graph/build/run_context.h"
 
 #include "common/util.h"
+#include "framework/common/op/attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 
@@ -169,6 +170,7 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
 
   run_context_ = {rt_model_,        nullptr, session_id,   data_mem_size_, data_mem_base_, weight_mem_size_,
                   weight_mem_base_, buffer,  stream_list_, event_list_,    label_list_};
+
   return SUCCESS;
 }
 

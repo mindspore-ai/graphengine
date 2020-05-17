@@ -25,10 +25,10 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/op/attr_define.h"
 #include "framework/common/op/attr_value_util.h"
 #include "framework/common/util.h"
 #include "graph/anchor.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
@@ -68,8 +68,6 @@ const uint32_t FOR_START_INPUT = 0;
 const uint32_t FOR_LIMIT_INPUT = 1;
 const uint32_t FOR_DELTA_INPUT = 2;
 const uint32_t FOR_DATA_INPUT = 3;
-
-const int NORMAL_TENSOR_SIZE = 4;
 
 // Get the value of key from attr
 #define AIPP_GET_ATTR_VALUE(KEY, ATTR_TYPE)                          \
@@ -179,7 +177,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::TransferDim(con
   for (auto dim_temp : dim) {
     new_dim_list.push_back(dim_temp);
   }
-  if (input_shape_size > DIM_DEFAULT_SIZE) {
+  if (input_shape_size > domi::DIM_DEFAULT_SIZE) {
     dim_vector = dim;
     GELOGI("Dim_vector size is %zu, do not to transfer dim", input_shape_size);
     return SUCCESS;

@@ -103,17 +103,17 @@ using cce::ccStatus_t;
   } while (0);
 
 // If expr is not true, print the log and return the specified status
-#define GE_CHK_BOOL_RET_STATUS(expr, _status, ...)                                                         \
-  do {                                                                                                     \
-    bool b = (expr);                                                                                       \
-    if (!b) {                                                                                              \
-      std::string msg;                                                                                     \
-      (void)msg.append(ge::StringUtils::FormatString(__VA_ARGS__));                                        \
-      (void)msg.append(                                                                                    \
-        ge::StringUtils::FormatString(" Error Code:0x%X(%s)", _status, GET_ERRORNO_STR(_status).c_str())); \
-      DOMI_LOGE("%s", msg.c_str());                                                                        \
-      return _status;                                                                                      \
-    }                                                                                                      \
+#define GE_CHK_BOOL_RET_STATUS(expr, _status, ...)                                                           \
+  do {                                                                                                       \
+    bool b = (expr);                                                                                         \
+    if (!b) {                                                                                                \
+      std::string msg;                                                                                       \
+      (void)msg.append(domi::StringUtils::FormatString(__VA_ARGS__));                                        \
+      (void)msg.append(                                                                                      \
+        domi::StringUtils::FormatString(" Error Code:0x%X(%s)", _status, GET_ERRORNO_STR(_status).c_str())); \
+      DOMI_LOGE("%s", msg.c_str());                                                                          \
+      return _status;                                                                                        \
+    }                                                                                                        \
   } while (0);
 
 // If expr is not true, print the log and return the specified status

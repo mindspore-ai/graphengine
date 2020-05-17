@@ -15,19 +15,18 @@
  */
 
 #include "graph/load/new_model_manager/data_dumper.h"
-#include <map>
-#include <vector>
-#include <utility>
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/attr_utils.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "model_utils.h"
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping_info.pb.h"
 #include "runtime/mem.h"
+
+using domi::ENDGRAPH;
 
 namespace {
 const uint32_t kAicpuLoadFlag = 1;

@@ -24,6 +24,10 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 
+using domi::AIPPDATA;
+using domi::DATA;
+using domi::NETOUTPUT;
+
 namespace ge {
 Status PrunePass::Run(ge::ComputeGraphPtr graph) {
   GELOGD("PrunePass Start");

@@ -29,6 +29,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::MUL;
+
 namespace ge {
 namespace {
 const std::set<DataType> kMulSupportedType = {DT_INT8,   DT_INT16,  DT_INT32,   DT_INT64, DT_UINT8, DT_UINT16,

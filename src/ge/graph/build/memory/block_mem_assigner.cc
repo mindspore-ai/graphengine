@@ -29,6 +29,7 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 
+#include "common/op/attr_define.h"
 #include "graph/debug/ge_attr_define.h"
 
 #include "graph/optimize/common/params.h"
@@ -46,6 +47,29 @@ const int kReuseMaxCharNum = 2000;
 }  // namespace
 
 namespace ge {
+using domi::AIPP_DATA_TYPE;
+using domi::AIPPDATA;
+using domi::ANN_DATA_TYPE;
+using domi::APPLYMOMENTUM;
+using domi::ASSIGN;
+using domi::ASSIGNADD;
+using domi::ASSIGNSUB;
+using domi::CONSTANT;
+using domi::CONSTANTOP;
+using domi::DATA;
+using domi::DATA_TYPE;
+using domi::ENTER;
+using domi::FASTRCNNPREDICTIONS;
+using domi::HCOMALLREDUCE;
+using domi::HCOMBROADCAST;
+using domi::MULTISHAPE;
+using domi::NETOUTPUT;
+using domi::NEXTITERATION;
+using domi::PROPOSAL;
+using domi::REFENTER;
+using domi::REFNEXTITERATION;
+using domi::VARIABLE;
+using domi::ZEROSLIKE;
 using std::map;
 using std::pair;
 using std::string;
@@ -134,7 +158,7 @@ string ToString(ge::NodeTypeIndex &x) {
 string MemoryBlock::String() {
   stringstream ss;
   ss << "Block size: " << Size() << " from " << HeadOffset() << " to " << TailOffset() << "";
-  ss << "real_size_list: " << ToString(real_size_list_) << "";
+  ss << "real_size_list: " << domi::ToString(real_size_list_) << "";
   ss << "ref_count: " << ref_count_ << "";
   ss << "members: ";
   for (auto x : NodeTypeIndexList()) {
@@ -175,7 +199,7 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
     all_memory_size.insert(all_memory_size.end(), temp.begin(), temp.end());
   }
   sort(all_memory_size.begin(), all_memory_size.end());
-  GELOGI("All memory size: %s", ToString(all_memory_size).c_str());
+  GELOGI("All memory size: %s", domi::ToString(all_memory_size).c_str());
 
   for (auto iter = all_memory_size.begin(); iter != all_memory_size.end();) {
     if (*iter == 0) {

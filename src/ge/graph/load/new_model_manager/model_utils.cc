@@ -53,6 +53,27 @@ bool ModelUtils::IsOutput(ConstOpDescPtr op_desc) {
 
 ///
 /// @ingroup domi_ome
+/// @brief Check is the Input need trans code.
+/// @return bool
+///
+bool ModelUtils::IsInputTensorNeedTrans(ConstOpDescPtr op_desc, size_t tensor_index) {
+  GE_CHECK_NOTNULL_EXEC(op_desc, return false);
+  const auto &input_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(tensor_index));
+  const auto &output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(tensor_index));
+  GE_CHECK_NOTNULL_EXEC(input_desc, return false);
+  GE_CHECK_NOTNULL_EXEC(output_desc, return false);
+
+  if ((output_desc->GetFormat() == FORMAT_NC1HWC0) && (output_desc->GetDataType() == DT_INT8)) {
+    // AIPP input, add attribute in data op to tag aipp
+    return false;
+  }
+
+  return (input_desc->GetFormat() != output_desc->GetFormat()) ||
+         (input_desc->GetDataType() != output_desc->GetDataType());
+}
+
+///
+/// @ingroup domi_ome
 /// @brief Get input size.
 /// @return vector<uint32_t>
 ///
@@ -64,7 +85,7 @@ vector<int64_t> ModelUtils::GetInputSize(ConstOpDescPtr op_desc) {
 
   const vector<bool> v_is_input_const = op_desc->GetIsInputConst();
   for (size_t i = 0; i < inputs_size; ++i) {
-    if ((i < v_is_input_const.size()) && v_is_input_const[i] && (op_type != NETOUTPUT)) {
+    if ((i < v_is_input_const.size()) && v_is_input_const[i] && (op_type != domi::NETOUTPUT)) {
       // TBE: add weights size to input
       GE_IF_BOOL_EXEC(
         true, GeTensorDesc tensor_desc = op_desc->GetInputDesc(i); int64_t tensor_size = 0;
@@ -368,7 +389,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     return v_input_data_addr;
   }
   for (size_t i = 0; i < inputs_size; ++i) {
-    if ((i < v_is_input_const.size()) && v_is_input_const[i] && (op_type != NETOUTPUT)) {
+    if ((i < v_is_input_const.size()) && v_is_input_const[i] && (op_type != domi::NETOUTPUT)) {
       // TBE: add weights address to input
       GE_IF_BOOL_EXEC(
         true, GeTensorDesc tensor_desc = op_desc->GetInputDesc(i); int64_t tensor_size = 0;
@@ -405,7 +426,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     uint8_t *mem_addr = nullptr;
     // l1 fusion
     if (has_mem_type_attr && v_memory_type[i] != RT_MEMORY_HBM) {
-      mem_addr = reinterpret_cast<uint8_t *>(reinterpret_cast<intptr_t>(input_offset));
+      mem_addr = reinterpret_cast<uint8_t *>(input_offset);
       v_input_data_addr.push_back(mem_addr);
     } else {
       mem_addr = static_cast<uint8_t *>(mem_base + input_offset - logic_mem_base);
@@ -473,7 +494,7 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
     uint8_t *mem_addr = nullptr;
     // l1 fusion
     if (has_mem_type_attr && v_memory_type[i] != RT_MEMORY_HBM) {
-      mem_addr = reinterpret_cast<uint8_t *>(reinterpret_cast<intptr_t>(v_output_offset[i]));
+      mem_addr = reinterpret_cast<uint8_t *>(v_output_offset[i]);
       v_output_data_addr.push_back(mem_addr);
     } else {
       mem_addr = static_cast<uint8_t *>(mem_base + v_output_offset[i] - logic_mem_base);
@@ -518,7 +539,7 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
     if (has_mem_type_attr && v_memory_type[i] != RT_MEMORY_HBM) {
       v_workspace_data_addr.push_back(reinterpret_cast<uint8_t *>(v_workspace_offset[i]));
       GELOGI("L1Fusion: op: %s, GetWorkspaceDataAddrs mem_addr[workspace index %zu]:%p", op_desc->GetName().c_str(), i,
-             reinterpret_cast<uint8_t *>(reinterpret_cast<intptr_t>(v_workspace_offset[i])));
+             reinterpret_cast<uint8_t *>(v_workspace_offset[i]));
     } else {
       int64_t workspace_offset = v_workspace_offset[i];
       int64_t workspace_bytes = v_workspace_bytes[i];

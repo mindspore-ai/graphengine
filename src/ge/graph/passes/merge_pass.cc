@@ -28,6 +28,8 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
 
+using domi::CONSTANT;
+using domi::MERGE;
 using domi::PARAM_INVALID;
 using domi::SUCCESS;
 
@@ -43,7 +45,7 @@ Status MergePass::Run(NodePtr &node) {
 
   std::string op_type;
   GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "get original type failed");
-  if (op_type != MERGE) {
+  if (op_type != domi::MERGE) {
     return SUCCESS;
   }
 
@@ -97,9 +99,9 @@ bool MergePass::IsNeedChangeIndexToConstant(NodePtr &node) const {
   for (const auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
     if (peer_in_anchor != nullptr && peer_in_anchor->GetOwnerNode() != nullptr) {
       GELOGI(
-          "[%s] MergePass, value_index link to other node, "
-          "change it to be Constant.",
-          node->GetName().c_str());
+        "[%s] MergePass, value_index link to other node, "
+        "change it to be Constant.",
+        node->GetName().c_str());
       return true;
     }
   }
@@ -159,14 +161,15 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
 
   // 3. create attr value of Constant, is a tensor
   GeTensorPtr const_tensor_ptr =
-      MakeShared<GeTensor>(original_out_tensor_desc, reinterpret_cast<uint8_t *>(&value_index), sizeof(int));
+    MakeShared<GeTensor>(original_out_tensor_desc, reinterpret_cast<uint8_t *>(&value_index), sizeof(int));
   if (const_tensor_ptr == nullptr) {
     GELOGE(FAILED, "[%s] Make shared of Constant tensor failed.", constant_name.c_str());
     return FAILED;
   }
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, const_tensor_ptr),
-                    GELOGE(FAILED, "get ATTR_NAME_WEIGHTS failed"); return FAILED);
+                  GELOGE(FAILED, "get ATTR_NAME_WEIGHTS failed");
+                  return FAILED);
 
   // 4. set Constant output desc
   GE_CHK_STATUS_RET(op_desc->AddOutputDesc(original_out_tensor_desc), "add out put desc failed");

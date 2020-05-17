@@ -74,10 +74,9 @@ class TbeTaskBuilder {
   Status SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param);
   Status GetSmDesc(void **sm_desc, const SingleOpModelParam &param) const;
 
-  Status RegisterKernel(TbeOpTask &task, const SingleOpModelParam &param);
-  Status DoRegisterKernel(const OpKernelBin &kernel_bin, const char *bin_file_key, void **bin_handle,
-                          const SingleOpModelParam &param);
-  Status DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle, const SingleOpModelParam &param) const;
+  Status RegisterKernel(TbeOpTask &task);
+  Status DoRegisterKernel(const OpKernelBin &kernel_bin, const char *bin_file_key, void **bin_handle);
+  Status DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle) const;
   Status DoRegisterMeta(void *bin_handle);
 
   static Status DoRegisterFunction(void *bin_handle, const char *stub_name, const char *kernel_name);

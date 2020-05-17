@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace ge {
+namespace domi {
 class StringUtils {
  public:
   static std::string &Ltrim(std::string &s) {
@@ -151,6 +151,6 @@ class StringUtils {
     return ret > 0 ? buffer : "";
   }
 };
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_STRING_UTIL_H_

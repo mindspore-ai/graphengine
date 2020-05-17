@@ -315,7 +315,7 @@ TEST_F(UtestModelManagerDavinciModel, success_GetInputOutputDescInfo_without_net
   auto node = compute_graph->AddNode(op_desc);
 
   model.data_op_list_.push_back(op_desc);
-  model.output_data_info_[0] = {32, (void *)0x70002010};
+  model.output_size_list_.push_back(32);
 
   model.op_list_[0] = op_desc;
 
@@ -419,7 +419,7 @@ TEST_F(UtestModelManagerDavinciModel, success_get_input_output_descInfo_with_net
   model.op_list_[0] = op_desc;
 
   model.output_op_list_.push_back(op_desc);
-  model.output_data_info_[0] = {32, (void *)0x70002010};
+  model.output_size_list_.push_back(32);
 
   vector<InputOutputDescInfo> input_shapes;
   vector<InputOutputDescInfo> output_shapes;
@@ -463,7 +463,7 @@ TEST_F(UtestModelManagerDavinciModel, success_get_input_output_desc_info_for_zer
   model.op_list_[0] = op_desc;
 
   model.output_op_list_.push_back(op_desc);
-  model.output_data_info_[0] = {32, (void *)0x70002010};
+  model.output_size_list_.push_back(32);
   model.output_memory_size_list_.push_back(64);
 
   vector<InputOutputDescInfo> input_shapes;
@@ -508,7 +508,7 @@ TEST_F(UtestModelManagerDavinciModel, success_get_input_output_desc_info_dim_siz
   model.op_list_[0] = op_desc;
 
   model.output_op_list_.push_back(op_desc);
-  model.output_data_info_[0] = {32, (void *)0x70002010};
+  model.output_size_list_.push_back(32);
 
   vector<InputOutputDescInfo> input_shapes;
   vector<InputOutputDescInfo> output_shapes;
@@ -1282,7 +1282,7 @@ TEST_F(UtestModelManagerDavinciModel, success_get_output_desc_info_with_netoutpu
   model.op_list_[0] = op_desc;
 
   model.output_op_list_.push_back(op_desc);
-  model.output_data_info_[0] = {32, (void *)0x70002010};
+  model.output_size_list_.push_back(32);
   model.output_memory_size_list_.push_back(64);
 
   vector<InputOutputDescInfo> output_shapes;

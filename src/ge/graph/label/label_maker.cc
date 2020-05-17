@@ -23,92 +23,12 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
+using domi::DATA;
+using domi::LABELGOTO;
+using domi::LABELSET;
+using domi::LABELSWITCHBYINDEX;
+
 namespace ge {
-constexpr static int64_t kInvalidStreamId = -1;
-
-/**
- * @ingroup ge
- * @brief Set stream id for head node.
- * @param [in] graph: graph for add node.
- * @param [in] op_desc: OpDesc for set logical stream id.
- * @return: void
- */
-void LabelMaker::SetStreamIdEnter(const ComputeGraphPtr &graph, const OpDescPtr &op_desc) {
-  int64_t stream_id = kInvalidStreamId;
-  const auto &node_list = graph->GetDirectNode();
-  for (size_t i = 0; i < node_list.size(); ++i) {
-    const auto &node = node_list.at(i);
-    GE_CHECK_NOTNULL_EXEC(node, continue);
-
-    stream_id = node->GetOpDesc()->GetStreamId();
-    if (stream_id != kInvalidStreamId) {
-      break;
-    }
-  }
-
-  GELOGI("SetStreamId: Node %s assign stream is %ld.", op_desc->GetName().c_str(), stream_id);
-  op_desc->SetStreamId(stream_id);
-}
-
-/**
- * @ingroup ge
- * @brief Set stream id for tail node.
- * @param [in] graph: graph for add node.
- * @param [in] op_desc: OpDesc for set logical stream id.
- * @return: void
- */
-void LabelMaker::SetStreamIdLeave(const ComputeGraphPtr &graph, const OpDescPtr &op_desc) {
-  int64_t stream_id = kInvalidStreamId;
-  const auto &node_list = graph->GetDirectNode();
-  for (size_t i = node_list.size(); i > 0; --i) {
-    const auto &node = node_list.at(i - 1);  // i from list size, need shift 1.
-    GE_CHECK_NOTNULL_EXEC(node, continue);
-
-    stream_id = node->GetOpDesc()->GetStreamId();
-    if (stream_id != kInvalidStreamId) {
-      break;
-    }
-  }
-
-  GELOGI("SetStreamId: Node %s assign stream is %ld.", op_desc->GetName().c_str(), stream_id);
-  op_desc->SetStreamId(stream_id);
-}
-
-/**
- * @ingroup ge
- * @brief Link Node to Graph head.
- * @param [in] graph: graph for add node.
- * @param [in] lb_node: Node for set link to head.
- * @return: SUCCESS / FAILED
- */
-Status LabelMaker::AddCtrlLink2Data(const ComputeGraphPtr &graph, const NodePtr &node) {
-  GE_CHECK_NOTNULL(graph);
-  GE_CHECK_NOTNULL(node);
-
-  std::set<NodePtr> linked_nodes;
-  for (const NodePtr &n : graph->GetDirectNode()) {
-    GE_CHECK_NOTNULL(n);
-    if (n->GetType() != DATA) {
-      continue;
-    }
-
-    // Link control edge to graph head.
-    for (const NodePtr &out_node : n->GetOutAllNodes()) {
-      if (linked_nodes.count(out_node) > 0) {
-        continue;
-      }
-
-      (void)linked_nodes.insert(out_node);
-      if (GraphUtils::AddEdge(node->GetOutControlAnchor(), out_node->GetInControlAnchor()) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "LabelSet: Add ctrl edge to %s failed.", node->GetName().c_str());
-        return FAILED;
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
 /**
  * @ingroup ge
  * @brief Add LabelSet node at graph front.
@@ -119,6 +39,8 @@ Status LabelMaker::AddCtrlLink2Data(const ComputeGraphPtr &graph, const NodePtr 
  */
 NodePtr LabelMaker::AddLabelSetEnter(const ComputeGraphPtr &graph, const std::string &name, uint32_t index) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   const auto &node_list = graph->GetDirectNode();
   auto it = node_list.begin();
@@ -126,10 +48,11 @@ NodePtr LabelMaker::AddLabelSetEnter(const ComputeGraphPtr &graph, const std::st
     GELOGE(INTERNAL_ERROR, "LabelSet: Graph %s node is empty.", graph->GetName().c_str());
     return nullptr;
   }
+  const NodePtr &node = *it;
+  GE_CHECK_NOTNULL_EXEC(node, return nullptr);
 
   OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELSET);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  SetStreamIdEnter(graph, op_desc);
 
   GELOGI("LabelSet: Create node %s.", op_desc->GetName().c_str());
   (void)AttrUtils::SetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, index);
@@ -137,8 +60,8 @@ NodePtr LabelMaker::AddLabelSetEnter(const ComputeGraphPtr &graph, const std::st
   GE_CHECK_NOTNULL_EXEC(label_set, return nullptr);
 
   // Link control edge to graph head.
-  if (AddCtrlLink2Data(graph, label_set) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "LabelSet: Add ctrl edge to %s failed.", graph->GetName().c_str());
+  if (GraphUtils::AddEdge(label_set->GetOutControlAnchor(), node->GetInControlAnchor()) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "LabelSet: Add ctrl edge to %s failed.", node->GetName().c_str());
     return nullptr;
   }
 
@@ -155,6 +78,8 @@ NodePtr LabelMaker::AddLabelSetEnter(const ComputeGraphPtr &graph, const std::st
  */
 NodePtr LabelMaker::AddLabelSetLeave(const ComputeGraphPtr &graph, const std::string &name, uint32_t index) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   const auto &node_list = graph->GetDirectNode();
   auto it = node_list.end();
@@ -168,11 +93,10 @@ NodePtr LabelMaker::AddLabelSetLeave(const ComputeGraphPtr &graph, const std::st
 
   OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELSET);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  SetStreamIdLeave(graph, op_desc);
 
   GELOGI("LabelSet: Create node %s.", op_desc->GetName().c_str());
   (void)AttrUtils::SetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, index);
-  NodePtr label_set = graph->AddNode(op_desc);
+  NodePtr label_set = graph->AddNodeFront(op_desc);
   GE_CHECK_NOTNULL_EXEC(label_set, return nullptr);
 
   // Link control edge to graph tail.
@@ -194,6 +118,8 @@ NodePtr LabelMaker::AddLabelSetLeave(const ComputeGraphPtr &graph, const std::st
  */
 NodePtr LabelMaker::AddLabelGotoEnter(const ComputeGraphPtr &graph, const std::string &name, uint32_t index) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   const auto &node_list = graph->GetDirectNode();
   auto it = node_list.begin();
@@ -201,16 +127,20 @@ NodePtr LabelMaker::AddLabelGotoEnter(const ComputeGraphPtr &graph, const std::s
     GELOGE(INTERNAL_ERROR, "LabelGoto: Graph %s node is empty.", graph->GetName().c_str());
     return nullptr;
   }
+  const NodePtr &node = *it;
+  GE_CHECK_NOTNULL_EXEC(node, return nullptr);
 
-  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTOEX);
+  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTO);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  SetStreamIdEnter(graph, op_desc);
 
   GELOGI("LabelGoto: Create node %s.", op_desc->GetName().c_str());
   (void)AttrUtils::SetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, index);
   NodePtr label_goto = graph->AddNodeFront(op_desc);
-  if (label_goto == nullptr) {
-    GELOGE(INTERNAL_ERROR, "LabelGoto: Add to graph %s failed.", graph->GetName().c_str());
+  GE_CHECK_NOTNULL_EXEC(label_goto, return nullptr);
+
+  // Link control edge to graph head.
+  if (GraphUtils::AddEdge(label_goto->GetOutControlAnchor(), node->GetInControlAnchor()) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "LabelGoto: Add ctrl edge to %s failed.", node->GetName().c_str());
     return nullptr;
   }
 
@@ -227,6 +157,8 @@ NodePtr LabelMaker::AddLabelGotoEnter(const ComputeGraphPtr &graph, const std::s
  */
 NodePtr LabelMaker::AddLabelGotoLeave(const ComputeGraphPtr &graph, const std::string &name, uint32_t index) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   const auto &node_list = graph->GetDirectNode();
   auto it = node_list.end();
@@ -238,9 +170,8 @@ NodePtr LabelMaker::AddLabelGotoLeave(const ComputeGraphPtr &graph, const std::s
   const NodePtr &node = *it;
   GE_CHECK_NOTNULL_EXEC(node, return nullptr);
 
-  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTOEX);
+  OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELGOTO);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  SetStreamIdLeave(graph, op_desc);
 
   GELOGI("LabelGoto: Create node %s.", op_desc->GetName().c_str());
   (void)AttrUtils::SetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, index);
@@ -268,6 +199,8 @@ NodePtr LabelMaker::AddLabelGotoLeave(const ComputeGraphPtr &graph, const std::s
 NodePtr LabelMaker::AddLabelSwitchEnter(const ComputeGraphPtr &graph, const std::string &name, const GeTensorDesc &desc,
                                         const std::vector<uint32_t> &labels) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   const auto &node_list = graph->GetDirectNode();
   auto it = node_list.begin();
@@ -275,10 +208,11 @@ NodePtr LabelMaker::AddLabelSwitchEnter(const ComputeGraphPtr &graph, const std:
     GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Graph %s node is empty.", graph->GetName().c_str());
     return nullptr;
   }
+  const NodePtr &node = *it;
+  GE_CHECK_NOTNULL_EXEC(node, return nullptr);
 
   OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELSWITCHBYINDEX);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  SetStreamIdEnter(graph, op_desc);
 
   GELOGI("LabelSwitchByIndex: Create node %s.", op_desc->GetName().c_str());
   if (op_desc->AddInputDesc(desc) != GRAPH_SUCCESS) {
@@ -292,8 +226,11 @@ NodePtr LabelMaker::AddLabelSwitchEnter(const ComputeGraphPtr &graph, const std:
   }
 
   NodePtr label_switch = graph->AddNodeFront(op_desc);
-  if (label_switch == nullptr) {
-    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add to graph %s failed.", graph->GetName().c_str());
+  GE_CHECK_NOTNULL_EXEC(label_switch, return nullptr);
+
+  // Link control edge to graph head.
+  if (GraphUtils::AddEdge(label_switch->GetOutControlAnchor(), node->GetInControlAnchor()) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add ctrl edge to %s failed.", node->GetName().c_str());
     return nullptr;
   }
 
@@ -312,6 +249,8 @@ NodePtr LabelMaker::AddLabelSwitchEnter(const ComputeGraphPtr &graph, const std:
 NodePtr LabelMaker::AddLabelSwitchLeave(const ComputeGraphPtr &graph, const std::string &name, const GeTensorDesc &desc,
                                         const std::vector<uint32_t> &labels) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   const auto &node_list = graph->GetDirectNode();
   auto it = node_list.end();
@@ -325,7 +264,6 @@ NodePtr LabelMaker::AddLabelSwitchLeave(const ComputeGraphPtr &graph, const std:
 
   OpDescPtr op_desc = MakeShared<OpDesc>(name, LABELSWITCHBYINDEX);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  SetStreamIdLeave(graph, op_desc);
 
   GELOGI("LabelSwitchByIndex: Create node %s.", op_desc->GetName().c_str());
   if (op_desc->AddInputDesc(desc) != GRAPH_SUCCESS) {
@@ -363,10 +301,11 @@ NodePtr LabelMaker::AddLabelSwitchLeave(const ComputeGraphPtr &graph, const std:
 NodePtr LabelMaker::AddLabelSwitchIndex(const ComputeGraphPtr &graph, const std::string &name, const GeTensorDesc &desc,
                                         const NodePtr &sw_node, uint32_t parent_index) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_node_, return nullptr);
+  GE_CHECK_NOTNULL_EXEC(parent_graph_, return nullptr);
 
   OpDescPtr op_desc = MakeShared<OpDesc>(name, DATA);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
-  op_desc->SetStreamId(kInvalidStreamId);
 
   GELOGI("Data: Create node %s.", op_desc->GetName().c_str());
   if (op_desc->AddOutputDesc(desc) != GRAPH_SUCCESS) {

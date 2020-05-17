@@ -24,6 +24,8 @@
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::SHAPEN;
+
 namespace ge {
 Status ShapeNKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_output) {
   GELOGD("ShapeN kernel in");

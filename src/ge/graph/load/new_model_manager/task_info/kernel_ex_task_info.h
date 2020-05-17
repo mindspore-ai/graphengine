@@ -25,7 +25,6 @@ class KernelExTaskInfo : public TaskInfo {
  public:
   KernelExTaskInfo()
       : task_id_(0),
-        stream_id_(0),
         dump_flag_(RT_KERNEL_DEFAULT),
         kernel_buf_size_(0),
         davinci_model_(nullptr),

@@ -19,6 +19,8 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 
+using domi::UNUSEDCONST;
+
 namespace ge {
 ///
 /// run pass
@@ -36,7 +38,7 @@ Status UnusedConstPass::Run(NodePtr &node) {
   }
 
   std::string op_type = node->GetOpDesc()->GetType();
-  if (op_type == UNUSEDCONST) {
+  if (op_type == domi::UNUSEDCONST) {
     GELOGD("op type is unused const.");
     return IsolateAndDeleteNode(node, {-1});
   }

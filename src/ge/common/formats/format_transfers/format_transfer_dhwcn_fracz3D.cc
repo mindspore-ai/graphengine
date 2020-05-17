@@ -88,11 +88,6 @@ Status TransFormatDhwckToFz3D(const TransArgs &args, TransResult &result) {
     dst_size *= dim;
   }
   dst_size *= data_size;
-  if (dst_size == 0) {
-    result.length = static_cast<size_t>(dst_size);
-    return SUCCESS;
-  }
-
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",

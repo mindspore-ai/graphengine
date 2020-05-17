@@ -26,6 +26,8 @@
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::BROADCASTARGS;
+
 namespace ge {
 namespace {
 const size_t kBCastArgsInputsSize = 2;

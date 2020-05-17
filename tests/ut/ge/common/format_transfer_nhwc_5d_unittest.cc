@@ -701,7 +701,7 @@ TEST_F(UtestFormatTransferNhwc5d, invalid_src_shape2) {
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, SUCCESS);
+  EXPECT_EQ(status, PARAM_INVALID);
 }
 
 TEST_F(UtestFormatTransferNhwc5d, invalid_src_format) {

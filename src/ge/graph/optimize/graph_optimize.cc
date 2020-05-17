@@ -26,6 +26,8 @@
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
 
+using domi::ATTR_NAME_FRAMEWORK_FWK_TYPE;
+using domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE;
 using ge::ComputeGraph;
 using ge::OpDesc;
 
@@ -77,7 +79,7 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
       src_index_list.emplace_back(peer_out_anchor->GetIdx());
       node_op_desc->SetSrcName(src_name_list);
       node_op_desc->SetSrcIndex(src_index_list);
-      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && domi::GetContext().type == domi::FMK_TYPE_T),
+      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == domi::NETOUTPUT && domi::GetContext().type == domi::FMK_TYPE_T),
                       ge::NodePtr peer_owner_node = peer_out_anchor->GetOwnerNode();
                       input_name_list = node_op_desc->GetInputName(); input_name_list.emplace_back(
                         peer_owner_node->GetName() +

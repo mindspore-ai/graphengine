@@ -26,6 +26,15 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/common/transop_util.h"
 
+using domi::CAST;
+using domi::EXPANDDIMS;
+using domi::REFORMAT;
+using domi::RESHAPE;
+using domi::SQUEEZE;
+using domi::TRANSDATA;
+using domi::TRANSPOSE;
+using domi::TRANSPOSED;
+
 namespace ge {
 graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(TransOpDepthFusionPass);

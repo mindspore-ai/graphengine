@@ -35,14 +35,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelInfoParser(const Mo
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, GE_CHK_RT(rtDeviceReset(0)); return ret, "Parse model failed");
 
-    auto *file_header = reinterpret_cast<ModelFileHeader *>(model.model_data);
+    domi::ModelFileHeader *file_header = (domi::ModelFileHeader *)model.model_data;
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(file_header == nullptr, GE_CHK_RT(rtDeviceReset(0));
                                    return PARAM_INVALID, "file_header is null.");
 
     model_info.version = file_header->version;
     model_info.is_encrypt = false;
-    GE_IF_BOOL_EXEC(ENCRYPTED == file_header->is_encrypt, model_info.is_encrypt = true);
+    GE_IF_BOOL_EXEC(domi::ENCRYPTED == file_header->is_encrypt, model_info.is_encrypt = true);
 
     std::shared_ptr<DavinciModel> davinci_model =
       std::shared_ptr<DavinciModel>(new (std::nothrow) DavinciModel(model.priority, nullptr));

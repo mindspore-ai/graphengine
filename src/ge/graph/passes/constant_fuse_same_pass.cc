@@ -29,6 +29,9 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 
+using domi::CONSTANT;
+using domi::CONSTANTOP;
+
 namespace ge {
 namespace {
 const size_t kCorrectNum = 1;

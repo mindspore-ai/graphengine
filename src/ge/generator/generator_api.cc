@@ -116,7 +116,7 @@ Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int 
   CHECK_PARAM_NOT_NULL(om_file);
   const std::string om_file_name(om_file);
 
-  std::string op_name = std::string(op_type) + "_" + std::to_string(ge::GetCurrentTimestap());
+  std::string op_name = std::string(op_type) + "_" + std::to_string(domi::GetCurrentTimestap());
   ge::OpDescPtr op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type);
   if (op_desc == nullptr) {
     return ge::FAILED;

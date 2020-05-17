@@ -215,7 +215,7 @@ REG_OP(SparseDenseCwiseMul)
 REG_OP(AddSparseToTensorsMap)
     .INPUT(indices, TensorType({DT_INT64}))
     .INPUT(values, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, \
-        DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE, \
+        DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE \
         DT_COMPLEX64, DT_COMPLEX128, DT_RESOURCE, DT_STRING}))
     .INPUT(shape, TensorType({DT_INT64}))
     .OUTPUT(handle, TensorType({DT_INT64}))
@@ -410,6 +410,7 @@ REG_OP(SparseToDense)
 * @li y_indices:A `Tensor` of type `int64`.
 * @li y_values:A `Tensor`. Has the same type as `values`.
 * @li y_shape:A `Tensor` of type `int64`.
+
 */
 REG_OP(SparseConcat)
     .DYNAMIC_INPUT(indices, TensorType({DT_INT64}))
@@ -450,6 +451,7 @@ REG_OP(SparseConcat)
 * @li sum_indices:A `Tensor` of type `int64`.
 * @li sum_values:A `Tensor`. Has the same type as `x1_values`.
 * @li sum_shape:A `Tensor` of type `int64`.
+
 */
 REG_OP(SparseAdd)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -485,6 +487,7 @@ REG_OP(SparseAdd)
 * @li y_values:A `Tensor`. Has the same type as `values`.
 * @li empty_row_indicator:A `Tensor` of type `bool`.
 * @li reverse_index_map:A `Tensor` of type `int64`.
+
 */
 REG_OP(SparseFillEmptyRows)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -523,6 +526,7 @@ REG_OP(SparseFillEmptyRows)
 *@par Outputs:
 * @li y_indices:A `Tensor` of type `int64`.
 * @li y_values:A `Tensor`. Has the same type as `x1_values`.
+
 */
 REG_OP(SparseSparseMaximum)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -556,6 +560,7 @@ REG_OP(SparseSparseMaximum)
 *@par Outputs:
 * @li y_indices:A `Tensor` of type `int64`.
 * @li y_values:A `Tensor`. Has the same type as `x1_values`.
+
 */
 REG_OP(SparseSparseMinimum)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -594,6 +599,7 @@ REG_OP(SparseSparseMinimum)
 
 *@par Outputs:
 * y:A `Tensor`. Has the same type as `input_values`.
+
 */
 REG_OP(SparseReduceMax)
     .INPUT(x_indices, TensorType({DT_INT64}))
@@ -628,6 +634,7 @@ REG_OP(SparseReduceMax)
 * @li y_indices:A `Tensor` of type `int64`.
 * @li y_values:A `Tensor`. Has the same type as `input_values`.
 * @li y_shape:A `Tensor` of type `int64`.
+
 */
 REG_OP(SparseReduceMaxSparse)
     .INPUT(x_indices, TensorType({DT_INT64}))
@@ -840,7 +847,6 @@ REG_OP(AddManySparseToTensorsMap)
 * The "N" serialized SparseTensor objects.
 
 *@par Attributes:
-* @li dtype: A DType. The "dtype" of the SparseTensor objects stored in the "SparseTensorsMap".
 * @li container: An optional string. Defaults to "". \n
 *The container name for the "SparseTensorsMap" read by this op.
 * @li shared_name: An optional string. Defaults to "". \n

@@ -68,57 +68,6 @@ REG_OP(ApplyAdaMax)
     .OP_END_FACTORY_REG(ApplyAdaMax)
 
 /**
-*@brief Updates "var" according to the AdaMax algorithm.\n
-*  t-1 mean previous period.
-*  m_t <- beta1 * m{t-1} + (1 - beta1) * grad\n
-*  v_t <- max(beta2 * v{t-1}, abs(grad))\n
-*  var <- var - lr / (1 - beta1^t) * m_t / (v_t + epsilon)
-*
-*@attention Constraints:\n
-*  the input tensors must have the same shape.
-*
-*@par Inputs:
-*@li var: A mutable tensor. Must be one of the following types: TensorType::NumberType().
-*     Should be from a Variable().
-*@li m: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li v: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li beta1_power: A scalar. Has the same type as "var".
-*@li lr: learning_rate. A scalar. Has the same type as "var".
-*@li beta1: A scalar. Has the same type as "var".
-*@li beta2: A scalar. Has the same type as "var".
-*@li epsilon: A scalar. Has the same type as "var".
-*@li grad: A tensor for the gradient. Has the same type as "var".
-*
-*@par Attributes:\n
-* use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", "ms", and "mom" tensors is protected
-*     by a lock; otherwise the behavior is undefined, but may exhibit less
-*     contention.
-*
-*@par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
-*
-*
-*/
-REG_OP(ApplyAdaMaxD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(m, TensorType::NumberType())
-    .INPUT(v, TensorType::NumberType())
-    .INPUT(beta1_power, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(beta1, TensorType::NumberType())
-    .INPUT(beta2, TensorType::NumberType())
-    .INPUT(epsilon, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(m, TensorType::NumberType())
-    .OUTPUT(v, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAdaMaxD)
-
-/**
 *@brief Updates relevant entries in "var" and "accum" according to the adagrad scheme.
 
 *@par Inputs:
@@ -164,8 +113,7 @@ REG_OP(SparseApplyAdagrad)
 *@li update_slots: An optional bool. Defaults to "True". If "True", the calcution will be different as "False".
 
 *@par Outputs:
-*@li var: A Tensor. Has the same type and format as input "var".
-*@li accum: A Tensor. Has the same type and format as input "var".
+*var: A Tensor. Has the same type and format as input "var".
 
 */
 REG_OP(SparseApplyAdagradD)
@@ -174,7 +122,6 @@ REG_OP(SparseApplyAdagradD)
     .INPUT(grad, TensorType({DT_FLOAT}))
     .INPUT(indices, TensorType({DT_INT32}))
     .OUTPUT(var, TensorType({DT_FLOAT}))
-    .OUTPUT(accum, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(lr, Float)
     .ATTR(use_locking, Bool, false)
     .ATTR(update_slots, Bool, true)
@@ -184,7 +131,7 @@ REG_OP(SparseApplyAdagradD)
 *@brief Updates relevant entries in "var" and "accum" according to the adagrad scheme.
 
 *@par Inputs:
-*Six inputs, including:
+* Five inputs, including:
 *@li var: An NCHW, NHWC, or ND Tensor of type float32.
 *@li accum: An NCHW, NHWC, or ND Tensor of type float32.
 *@li lr: An NCHW, NHWC, or ND Tensor of type float32.
@@ -216,7 +163,7 @@ REG_OP(SparseApplyAdagradV2)
 *@brief Updates relevant entries in "var" and "accum" according to the adagrad scheme.
 
 *@par Inputs:
-*Four inputs, including:
+* Four inputs, including:
 *@li var: An NCHW, NHWC, or ND Tensor of type float32.
 *@li accum: An NCHW, NHWC, or ND Tensor of type float32.
 *@li grad: An NCHW, NHWC, or ND Tensor of type float32.
@@ -229,8 +176,8 @@ REG_OP(SparseApplyAdagradV2)
 *@li update_slots: An optional bool. Defaults to "True". If "True", the calcution will be different as "False".
 
 *@par Outputs:
-*@li var: A Tensor. Has the same type and format as input "var".
-*@li accum: A Tensor. Has the same type and format as input "accum".
+*var: A Tensor. Has the same type and format as input "var".
+*accum: A Tensor. Has the same type and format as input "accum".
 
 */
 REG_OP(SparseApplyAdagradV2D)
@@ -301,51 +248,6 @@ REG_OP(ApplyMomentumCCE)
     .OP_END_FACTORY_REG(ApplyMomentumCCE)
 
 /**
-*@brief Updates "var" according to the momentum scheme. Set use_nesterov = True if you
-*   want to use Nesterov momentum.\n
-*  computing process: \n
-*  accum = accum * momentum + grad\n
-*  var -= lr * accum
-*
-*@attention Constraints:\n
-*  the input tensors must have the same shape.
-*
-*@par Inputs:
-*@li var: A mutable tensor. Should be from a Variable().
-*@li accum: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li lr: A scalar. Has the same type as "var".
-*@li grad: A tensor for the gradient. Has the same type as "var".
-*
-*@par Attributes:
-*@li use_nesterov: An optional bool. Defaults to "False".
-*     If "True", the tensor passed to compute grad will be
-*     var - lr * momentum * accum, so in the end, the var you get is actually
-*     var - lr * momentum * accum.
-*
-*@li use_locking: An optional bool. Defaults to "False".\n
-*     If "True", updating of the "var", "ms", and "mom" tensors is protected by a lock;
-*     otherwise the behavior is undefined, but may exhibit less contention.
-*
-*@par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
-* accum: A mutable tensor. Has the same type as input "accum".
-*
-*/
-
-REG_OP(ApplyMomentumD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(momentum, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .ATTR(use_nesterov, Bool, false)
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyMomentumD)
-
-/**
 *@brief Updates "var" according to the AddSign update.\n
 *  t-1 mean previous period.
 *  m_t <- beta1 * m_{t-1} + (1 - beta1) * grad\n
@@ -386,51 +288,6 @@ REG_OP(ApplyPowerSign)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyPowerSign)
-
-/**
-*@brief Updates "var" according to the AddSign update.\n
-*  t-1 mean previous period.
-*  m_t <- beta1 * m_{t-1} + (1 - beta1) * grad\n
-*  update <- exp(logbase * sign_decay * sign(grad) * sign(m_t)) * grad\n
-*  var <- var - lr * update
-*
-*@attention Constraints:\n
-*  the input tensors must have the same shape.
-*
-*@par Inputs:
-*@li var: A mutable tensor. Should be from a Variable().
-*@li m: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li lr: A scalar. Has the same type as "var".
-*@li logbase: A scalar. Has the same type as "var".
-*@li sign_decay: A scalar. Has the same type as "var".
-*@li beta: A scalar. Has the same type as "var".
-*@li grad: A tensor for the gradient. Has the same type as "var".
-*
-*@par Attributes:
-* use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", "ms", and "mom" tensors is protected
-*     by a lock; otherwise the behavior is undefined, but may exhibit less
-*     contention.
-*
-*@par Outputs:
-*@li var: A mutable tensor. Has the same type as input "var".
-*@li m: A mutable tensor. Has the same type as input "var".
-*
-*
-*/
-REG_OP(ApplyPowerSignD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(m, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(logbase, TensorType::NumberType())
-    .INPUT(sign_decay, TensorType::NumberType())
-    .INPUT(beta, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(m, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyPowerSignD)
 
 /**
 *@brief Updates "var" as FOBOS algorithm with fixed learning rate.\n
@@ -505,46 +362,6 @@ REG_OP(ApplyAddSign)
     .OP_END_FACTORY_REG(ApplyAddSign)
 
 /**
-*@brief Updates "var" according to the AddSign update.
-
-*@par Inputs:
-*Seven inputs, including:
-* @li var: A mutable Tensor of type TensorType::NumberType().
-*     Should be a Variable Tensor.
-* @li m: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-* @li alpha: A Tensor of the same type as "var". Must be a scalar.
-* @li sign_decay: A Tensor of the same type as "var". Must be a scalar.
-* @li beta: A Tensor of the same type as "var". Must be a scalar.
-* @li grad: A Tensor of the same type as "var", for the gradient.
-
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var" and "m" tensors will be
-*     protected by a lock; otherwise the behavior is undefined,
-*     but may exhibit less contention.
-
-*@par Outputs:
-*@li var: A mutable Tensor. Has the same type as "var".
-*@li m: A mutable Tensor. Has the same type as "m".
-
-*/
-REG_OP(ApplyAddSignD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(m, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(alpha, TensorType::NumberType())
-    .INPUT(sign_decay, TensorType::NumberType())
-    .INPUT(beta, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(m, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAddSignD)
-
-/**
 *@brief Updates "var" according to the centered RMSProp algorithm.\n
 *  The centered RMSProp algorithm uses an estimate of the centered second moment
 *  (i.e., the variance) for normalization, as opposed to regular RMSProp, which
@@ -600,70 +417,6 @@ REG_OP(ApplyCenteredRMSProp)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyCenteredRMSProp)
-	
-/**
-*@brief Updates "var" according to the centered RMSProp algorithm.\n
-*  The centered RMSProp algorithm uses an estimate of the centered second moment
-*  (i.e., the variance) for normalization, as opposed to regular RMSProp, which
-*  uses the (uncentered) second moment. This often helps with training, but is
-*  slightly more expensive in terms of computation and memory.
-*
-*  t-1 mean previous period.
-*  mg <- rho * mg{t-1} + (1-rho) * grad\n
-*  ms <- rho * ms{t-1} + (1-rho) * grad * grad\n
-*  mom <- momentum * mom{t-1} + lr * grad / sqrt(ms - mg * mg + epsilon)\n
-*  var <- var - mom\n
-*
-*@attention Constraints:\n
-*@li in dense implementation of this algorithm, mg, ms, and mom will
-*    update even if the grad is zero, but in this sparse implementation, mg, ms,
-*    and mom will not update in iterations during which the grad is zero.
-*@li the input tensors must have the same shape.
-*
-*@par Inputs:
-*@li var: A mutable tensor. Should be from a Variable().
-*@li mg: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li ms: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li mom: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li lr: A scalar. Has the same type as "var".
-*@li rho: A scalar. Has the same type as "var".
-*@li momentum: A tensor. Has the same type as "var".
-*@li epsilon: A scalar. Has the same type as "var".
-*@li grad: A tensor for the gradient. Has the same type as "var".
-*
-*@par Attributes:
-* use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", "ms", and "mom" tensors is protected
-*     by a lock; otherwise the behavior is undefined, but may exhibit less
-*     contention.
-*
-*@par Outputs:
-*@li var: A mutable Tensor. Has the same type as "var".
-*@li mg: A mutable Tensor. Has the same type as "mg".
-*@li ms: A mutable Tensor. Has the same type as "ms".
-*@li mom: A mutable Tensor. Has the same type as "mom".
-
-*
-*/
-REG_OP(ApplyCenteredRMSPropD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(mg, TensorType::NumberType())
-    .INPUT(ms, TensorType::NumberType())
-    .INPUT(mom, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(rho, TensorType::NumberType())
-    .INPUT(momentum, TensorType::NumberType())
-    .INPUT(epsilon, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(mg, TensorType::NumberType())
-    .OUTPUT(ms, TensorType::NumberType())
-    .OUTPUT(mom, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyCenteredRMSPropD)
 
 /**
 *@brief Updates "var" by subtracting 'alpha' * 'delta' from it.\n
@@ -731,72 +484,33 @@ REG_OP(ApplyAdagrad)
     .OP_END_FACTORY_REG(ApplyAdagrad)
 
 /**
-*@brief Updates "var" according to the adagrad scheme.\n
-*   accum += grad * grad\n
-*   var -= lr * grad * (1 / sqrt(accum))
-*
-*@attention Constraints:\n
-*  the input tensors must have the same shape.
-*
-*@par Inputs:
-*@li var: A mutable tensor. Should be from a Variable().
-*@li accum: A mutable tensor. Has the same type as "var".
-*     Should be from a Variable().
-*@li lr: A scalar. Has the same type as "var".
-*@li grad: A tensor for the gradient. Has the same type as "var".
-*
-*@par Attributes:
-* use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", "ms", and "mom" tensors is protected
-*     by a lock; otherwise the behavior is undefined, but may exhibit less
-*     contention.
-*
-*@par Outputs:
-*@li var: A mutable tensor. Has the same type as input "var".
-*@li accum: A mutable tensor. Has the same type as input "var".
-*
-*
-*/
-REG_OP(ApplyAdagradD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .ATTR(update_slots, Bool, true)
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAdagradD)
-
-/**
 * @brief Updates "var" according to the adagradv2 scheme.\n
 *   accum += grad * grad \n
 *   var -= lr * grad * (1 / sqrt(accum) + epsilon)
 *
+* @attention Constraints:
+*  the input tensors must have the same shape.
+*
 * @par Inputs:
 * @li var: A mutable tensor. Must be one of the data types defined in
-* TensorType::NumberType(). Should be from a Variable().
+*     TensorType::NumberType(). Should be from a Variable().
 * @li accum: A mutable tensor. Has the same type as "var". Should be from a
-* Variable().
+*     Variable().
 * @li lr: A tensor for the learning rate. Has the same type as "var". Should be
-* from a Variable().
+*     from a Variable().
 * @li grad: A tensor for the gradient. Has the same type as "var". Should be
-* from a Variable().
+*     from a Variable().
 * @li epsilon: A scalar. Has the same type as "var".
 *
 * @par Attributes:
 * @li update_slots: An optional bool. Defaults to "True".
-* If "True", accum will be updated
+*     If "True", accum will be updated
 * @li use_locking: An optional bool. Defaults to "False".
-* If "True", updating of the "var" tensor is protected by a lock;
-* otherwise the behavior is undefined, but may exhibit less contention.
+*     If "True", updating of the "var" tensor is protected by a lock;
+*     otherwise the behavior is undefined, but may exhibit less contention.
 *
 * @par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
-*
-* @attention Constraints:
-* The input tensors must have the same shape.
-*
+*  var: A mutable tensor. Has the same type as input "var".
 *
 */
 REG_OP(ApplyAdagradV2)
@@ -813,33 +527,32 @@ REG_OP(ApplyAdagradV2)
 
 /**
 * @brief Updates "var" according to the adagradv2 scheme.\n
-* accum += grad * grad \n
-* var -= lr * grad * (1 / sqrt(accum) + epsilon)
+*   accum += grad * grad \n
+*   var -= lr * grad * (1 / sqrt(accum) + epsilon)
+*
+* @attention Constraints:
+*  the input tensors must have the same shape.
 *
 * @par Inputs:
 * @li var: A mutable tensor. Must be one of the data types defined in
-* TensorType::NumberType(). Should be from a Variable().
+*     TensorType::NumberType(). Should be from a Variable().
 * @li accum: A mutable tensor. Has the same type as "var". Should be from a
-* Variable().
+*     Variable().
 * @li lr: A tensor for the learning rate. Has the same type as "var". Should be
-* from a Variable().
+*     from a Variable().
 * @li grad: A tensor for the gradient. Has the same type as "var". Should be
-* from a Variable().
+*     from a Variable().
 *
 * @par Attributes:
 * @li epsilon: A scalar. Has the same type as "var".
 * @li update_slots: An optional bool. Defaults to "True".
-* If "True", accum will be updated
+*     If "True", accum will be updated
 * @li use_locking: An optional bool. Defaults to "False".
-* If "True", updating of the "var" tensor is protected by a lock;
-* otherwise the behavior is undefined, but may exhibit less contention.
+*     If "True", updating of the "var" tensor is protected by a lock;
+*     otherwise the behavior is undefined, but may exhibit less contention.
 *
 * @par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
-*
-* @attention Constraints:
-* The input tensors must have the same shape.
-*
+*  var: A mutable tensor. Has the same type as input "var".
 *
 */
 REG_OP(ApplyAdagradV2D)
@@ -896,54 +609,6 @@ REG_OP(ApplyAdagradDA)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyAdagradDA)
-
-/**
-*@brief Updates "var" according to the proximal adagrad scheme.
-
-*@par Inputs:
-*Eight inputs, including:
-* @li var: A mutable Tensor. Must be one of the following types:
-*     TensorType::NumberType(). Should be a Variable Tensor.
-* @li gradient_accumulator: A mutable Tensor. Must have the same
-*     type as "var". Should be a Variable Tensor.
-* @li gradient_squared_accumulator: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li grad: A Tensor of the same type as "var", for the gradient.
-* @li lr: A Tensor of the same type as "var".
-*     Scaling factor. Must be a scalar.
-* @li l1: A Tensor of the same type as "var".
-*     L1 regulariation. Must be a scalar.
-* @li l2: A Tensor of the same type as "var".
-*     L2 regulariation. Must be a scalar.
-* @li global_step: A Tensor of type int32 or int64.
-*     Training step number. Must be a scalar.
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the var and accum tensors will be
-*     protected by a lock; otherwise the behavior is undefined,
-*     but may exhibit less contention.
-
-*@par Outputs:
-*var: A mutable Tensor. Has the same type as "var".
-*gradient_accumulator: A mutable Tensor. Has the same type as "var".
-*gradient_squared_accumulator: A mutable Tensor. Has the same type as "var".
-
-*/
-REG_OP(ApplyAdagradDAD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(gradient_accumulator, TensorType::NumberType())
-    .INPUT(gradient_squared_accumulator, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(l1, TensorType::NumberType())
-    .INPUT(l2, TensorType::NumberType())
-    .INPUT(global_step, TensorType({DT_INT32, DT_INT64}))
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(gradient_accumulator, TensorType::NumberType())
-    .OUTPUT(gradient_squared_accumulator, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAdagradDAD)
 
 /**
 *@brief Returns the dimension index in the destination data format given the one in
@@ -1133,9 +798,7 @@ REG_OP(ApplyRMSPropD)
 *use_locking: An optional bool. Defaults to "False". If "True", updating of the "var" and "accum" *tensors will be protected by a lock; otherwise the behavior is undefined, but may exhibit less *contention.
 
 *@par Outputs:
-* @li var: A mutable tensor. Must have the same type as input "var".
-* @li ms:  A mutable tensor. Must have the same type as input "ms".
-* @li mom: A mutable tensor. Must have the same type as input "mom".
+*var: A mutable Tensor. Has the same type as "var".
 */
 REG_OP(ApplyProximalAdagrad)
     .INPUT(var, TensorType::NumberType())
@@ -1147,39 +810,6 @@ REG_OP(ApplyProximalAdagrad)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyProximalAdagrad)
-
-/**
-*@brief Update "var" and "accum" according to FOBOS with Adagrad learning rate.
-
-*@par Inputs:
-*Six inputs, including:
-* @li var: A mutable Tensor of type TensorType::NumberType().
-*    Should be from a Variable().
-* @li accum: A mutable Tensor of the same type as "var". Should be from a Variable().
-* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
-* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
-* @li grad: A Tensor of the same type as "var", for the gradient.
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False". If "True", updating of the "var" and "accum" *tensors will be protected by a lock; otherwise the behavior is undefined, but may exhibit less *contention.
-
-*@par Outputs:
-* @li var: A mutable Tensor. Has the same type as "var".
-* @li accum: A mutable Tensor. Has the same type as "var".
-
-*/
-REG_OP(ApplyProximalAdagradD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(l1, TensorType::NumberType())
-    .INPUT(l2, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyProximalAdagradD)
 
 /**
 *@brief Updates entries in 'var' and 'accum' according to the Proximal Adagrad algorithm.\ n
@@ -1224,51 +854,6 @@ REG_OP(SparseApplyProximalAdagrad)
     .OP_END_FACTORY_REG(SparseApplyProximalAdagrad)
 
 /**
-*@brief Updates entries in 'var' and 'accum' according to the Proximal Adagrad algorithm.\ n
-* Compared with op ApplyProximalAdagrad, an additional index tensor is input,
-* Only the indices into the first dimensions of "var" and "accum" are updated.
-
-*@par Inputs:
-* Seven inputs, including:\n
-* @li var: A mutable Tensor.\n
-*     TensorType::NumberType(). Should be a Variable Tensor.
-* @li accum: A mutable Tensor of the same type as "var".\n
-*     Should be a Variable Tensor.
-* @li lr: A Tensor of the same type as "var".\n
-*     Scaling factor. Must be a scalar.
-* @li l1: A Tensor of the same type as "var".\n
-*     L1 regulariation. Must be a scalar.
-* @li l2: A Tensor of the same type as "var".\n
-*     L2 regulariation. Must be a scalar.
-* @li grad: A Tensor. Has the same type as "var". \n
-*     The gradient.
-* @li indices: A vector of indices into the first dimension of "var" and "accum".\n
-*     TensorType::IndexNumberType().
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".\n
-*     If "True", updating of the var and accum tensors will be protected by a lock; \n
-*     If "False", the behavior is undefined, but may exhibit less contention.
-
-*@par Outputs:
-*@li var: A mutable Tensor. Has the same type as "var".
-*@li accum:  A mutable Tensor. Has the same type as "var".
-
-*/
-REG_OP(SparseApplyProximalAdagradD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(l1, TensorType::NumberType())
-    .INPUT(l2, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(indices, TensorType::IndexNumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(SparseApplyProximalAdagradD)
-
-/**
 *@brief Updates "var" according to the Ftrl-proximal scheme.
 
 *@par Inputs:
@@ -1308,50 +893,6 @@ REG_OP(ApplyFtrl)
     .OP_END_FACTORY_REG(ApplyFtrl)
 
 /**
-*@brief Updates "var" according to the Ftrl-proximal scheme.
-
-*@par Inputs:
-*Eight inputs, including:
-* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
-*     Should be a Variable Tensor.
-* @li accum: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li linear: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li grad: A Tensor of the same type as "var", for the gradient.
-* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
-* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
-* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var" and "accum" tensors will be
-*     protected by a lock; otherwise the behavior is undefined,
-*     but may exhibit less contention.
-
-*@par Outputs:
-*@li var: A mutable Tensor. Has the same type as "var".
-*@li accum: A mutable Tensor. Has the same type as "accum".
-*@li linear: A mutable Tensor. Has the same type as "linear".
-
-*/
-REG_OP(ApplyFtrlD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(linear, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(l1, TensorType::NumberType())
-    .INPUT(l2, TensorType::NumberType())
-    .INPUT(lr_power, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .OUTPUT(linear, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyFtrlD)
-
-/**
 *@brief Update "var" according to the Ftrl-proximal scheme.
 
 *@par Inputs:
@@ -1377,6 +918,7 @@ REG_OP(ApplyFtrlD)
 
 *@par Outputs:
 *var: A mutable Tensor. Has the same type as "var".
+
 */
 REG_OP(ApplyFtrlV2)
     .INPUT(var, TensorType::NumberType())
@@ -1391,52 +933,6 @@ REG_OP(ApplyFtrlV2)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyFtrlV2)
-
-/**
-*@brief Update "var" according to the Ftrl-proximal scheme.
-
-*@par Inputs:
-*Nine inputs, including:
-* @li var: A mutable Tensor. Must be of type TensorType::NumberType().
-*     Should be a Variable Tensor.
-* @li accum: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li linear: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li grad: A Tensor of the same type as "var", for the gradient.
-* @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-* @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
-* @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
-* @li l2_shrinkage: A Tensor of the same type as "var".
-* @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var" and "accum" tensors will be
-*     protected by a lock; otherwise the behavior is undefined,
-*     but may exhibit less contention.
-
-*@par Outputs:
-*var: A mutable Tensor. Has the same type as "var".
-*accum: A mutable Tensor. Has the same type as "accum".
-*linear: A mutable Tensor. Has the same type as "linear".
-
-*/
-REG_OP(ApplyFtrlV2D)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(linear, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(l1, TensorType::NumberType())
-    .INPUT(l2, TensorType::NumberType())
-    .INPUT(l2_shrinkage, TensorType::NumberType())
-    .INPUT(lr_power, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .OUTPUT(linear, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyFtrlV2D)
 
 /**
 *@brief Updates "var" according to the Adam algorithm.\n
@@ -1486,66 +982,11 @@ REG_OP(ApplyAdam)
     .INPUT(epsilon, TensorType::NumberType())
     .INPUT(grad, TensorType::NumberType())
     .OUTPUT(var, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .ATTR(use_nesterov, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAdam)
-
-/**
-*@brief Updates "var" according to the Adam algorithm.\n
-*  lr_t <- text{learning\_rate} * sqrt{1 - beta_2^t} / (1 - beta_1^t)\n
-*  m_t <- beta_1 * m_{t-1} + (1 - beta_1) * g\n
-*  v_t <- max(beta2 * v{t-1}, abs(g))\n
-*  variable <- variable - lr_t * m_t / (sqrt{v_t} + epsilon)
-*
-*@attention Constraints:\n
-*  *The input tensors must have the same shape.*
-*
-*@par Inputs:
-*@li var: A mutable Tensor of the type TensorType::NumberType().
-*     Should be from a Variable().
-*@li m: A mutable Tensor of the same type as "var".
-*     Should be from a Variable().
-*@li v: A mutable Tensor of the same type as "var".
-*     Should be from a Variable().
-*@li beta1_power: A scalar of the same type as "var".
-*@li beta2_power: A scalar of the same type as "var".
-*@li lr: learning_rate. A scalar of the same type as "var".
-*@li beta1: A scalar of the same type as "var".
-*@li beta2: A scalar of the same type as "var".
-*@li epsilon: A scalar of the same type as "var".
-*@li grad: A Tensor of the same type as "var", for the gradient.
-*
-*@par Attributes:\n
-*@li use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", m", and "v" tensors will be protected
-*     by a lock; otherwise the behavior is undefined, but may exhibit less
-*     contention.
-*@li use_nesterov: An optional bool. Defaults to "False".
-      If "True", uses the nesterov update.
-*
-*@par Outputs:
-*@li var: A mutable tensor. Has the same type as input "var".
-*@li m: A mutable tensor. Has the same type as input "m".
-*@li v: A mutable tensor. Has the same type as input "v".
-
-*/
-REG_OP(ApplyAdamD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(m, TensorType::NumberType())
-    .INPUT(v, TensorType::NumberType())
-    .INPUT(beta1_power, TensorType::NumberType())
-    .INPUT(beta2_power, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(beta1, TensorType::NumberType())
-    .INPUT(beta2, TensorType::NumberType())
-    .INPUT(epsilon, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
     .OUTPUT(m, TensorType::NumberType())
     .OUTPUT(v, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .ATTR(use_nesterov, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAdamD)
+    .OP_END_FACTORY_REG(ApplyAdam)
 
 /**
 *@brief Updates "var" according to the proximal adadelta scheme.
@@ -1583,48 +1024,6 @@ REG_OP(ApplyAdadelta)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyAdadelta)
-
-/**
-*@brief Updates "var" according to the proximal adadelta scheme.
-
-*@par Inputs:
-*Seven inputs, including:
-* @li var: A mutable Tensor of type TensorType::NumberType().
-*     Should be a Variable Tensor.
-* @li accum: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li accum_update: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li lr: A scalar of the same type as "var", for the scaling factor.
-* @li rho: A scalar of the same type as "var", for the decay factor.
-* @li epsilon: A scalar of the same type as "var", for the constant factor.
-* @li grad: A Tensor of the same type as "var", for the gradient.
-
-*@par Attributes:
-*use_locking: An optional bool. Defaults to "False".
-*     If "True", updating of the "var", "accum" and "accum_update" tensors will be
-*     protected by a lock; otherwise the behavior is undefined,
-*     but may exhibit less contention.
-
-*@par Outputs:
-*@li var: A mutable Tensor. Has the same type as "var".
-*@li accum: A mutable Tensor. Has the same type as "var".
-*@li accum_update: A mutable Tensor. Has the same type as "var".
-
-*/
-REG_OP(ApplyAdadeltaD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(accum_update, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(rho, TensorType::NumberType())
-    .INPUT(epsilon, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(accum, TensorType::NumberType())
-    .OUTPUT(accum_update, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyAdadeltaD)
 
 /**
 * @brief Updates "var" according to the ApplyMomentum algorithm. \n
@@ -1794,11 +1193,11 @@ REG_OP(LarsV2Update)
 * @par Inputs:
 * Nine inputs, including:
 * @li var: A mutable Tensor. Must be of type TensorType::NumberType().
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li accum: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li linear: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li grad: A Tensor of the same type as "var", for the gradient.
 * @li indices: A vector of indices into the first dimension of var and accum.
 * @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
@@ -1808,9 +1207,9 @@ REG_OP(LarsV2Update)
 
 * @par Attributes:
 * use_locking: An optional bool. Defaults to "False".
-* If "True", updating of the "var" and "accum" tensors will be
-* protected by a lock; otherwise the behavior is undefined,
-* but may exhibit less contention.
+*     If "True", updating of the "var" and "accum" tensors will be
+*     protected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
 
 * @par Outputs:
 * var: A Tensor. Has the same type and format as input "var".
@@ -1834,13 +1233,13 @@ REG_OP(SparseApplyFtrl)
 * @brief Update relevant entries in '*var' according to the Ftrl-proximal scheme.
 
 * @par Inputs:
-* Five inputs, including:
+* Nine inputs, including:
 * @li var: A mutable Tensor. Must be of type TensorType::NumberType().
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li accum: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li linear: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li grad: A Tensor of the same type as "var", for the gradient.
 * @li indices: A vector of indices into the first dimension of var and accum.
 * @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
@@ -1850,14 +1249,14 @@ REG_OP(SparseApplyFtrl)
 
 * @par Attributes:
 * use_locking: An optional bool. Defaults to "False".
-* If "True", updating of the "var" and "accum" tensors will be
-* protected by a lock; otherwise the behavior is undefined,
-* but may exhibit less contention.
+*     If "True", updating of the "var" and "accum" tensors will be
+*     protected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
 
 * @par Outputs:
-* @li var: A Tensor. Has the same type and format as input "var".
-* @li accum: A Tensor. Has the same type and format as input "accum".
-* @li linear: A Tensor. Has the same type and format as input "linear".
+* var: A Tensor. Has the same type and format as input "var".
+* accum: A Tensor. Has the same type and format as input "accum".
+* linear: A Tensor. Has the same type and format as input "linear".
 
 */
 REG_OP(SparseApplyFtrlD)
@@ -1926,13 +1325,13 @@ REG_OP(SparseApplyFtrlV2)
 * That is for rows we have grad for, we update var, accum and linear
 
 * @par Inputs:
-* Five inputs, including:
+* Ten inputs, including:
 * @li var: A mutable Tensor. Must be of type TensorType::NumberType().
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li accum: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li linear: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+*     Should be a Variable Tensor.
 * @li grad: A Tensor of the same type as "var", for the gradient.
 * @li indices: A vector of indices into the first dimension of var and accum.
 
@@ -1943,14 +1342,14 @@ REG_OP(SparseApplyFtrlV2)
 * @li l2_shrinkage: A Tensor of the same type as "var", L2 shrinkage regulariation. Must be a scalar.
 * @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
 * @li use_locking: An optional bool. Defaults to "False".
-* If "True", updating of the "var" and "accum" tensors will be
-* rotected by a lock; otherwise the behavior is undefined,
-* but may exhibit less contention.
+*     If "True", updating of the "var" and "accum" tensors will be
+*     rotected by a lock; otherwise the behavior is undefined,
+*     but may exhibit less contention.
 
 * @par Outputs:
-* @li var: A Tensor. Has the same type and format as input "var".
-* @li accum: A Tensor. Has the same type and format as input "accum".
-* @li linear: A Tensor. Has the same type and format as input "linear".
+* var: A Tensor. Has the same type and format as input "var".
+* accum: A Tensor. Has the same type and format as input "accum".
+* linear: A Tensor. Has the same type and format as input "linear".
 
 */
 REG_OP(SparseApplyFtrlV2D)
@@ -1969,109 +1368,6 @@ REG_OP(SparseApplyFtrlV2D)
     .REQUIRED_ATTR(lr_power, Float)
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(SparseApplyFtrlV2D)
-
-/**
-* @brief Updates "var" in specified index according to the RMSProp algorithm.
-*    mean_square = decay * mean_square + (1-decay) * gradient ** 2\n
-*    Delta = learning_rate * gradient / sqrt(mean_square + epsilon)\n
-*    ms <- rho * ms_{t-1} + (1-rho) * grad * grad\n
-*    mom <- momentum * mom_{t-1} + lr * grad / sqrt(ms + epsilon)\n
-*    var <- var - mom\n
-*
-* @par Inputs:
-* @li var: A mutable tensor. Must be one of the data types defined in\n
-* TensorType::NumberType(). Should be from a Variable().
-* @li ms: A mutable tensor. Must have the same type as "var". Should be from a
-* Variable().
-* @li mom: A mutable tensor. Must have the same type as "var". Should be from a
-* Variable().
-* @li lr: A scalar. Must have the same type as "var".
-* @li rho: A scalar. Must have the same type as "var".
-* @li momentum: A scalar. Must have the same type as "var".
-* @li epsilon: A scalar. Must have the same type as "var".
-* @li grad: A tensor, specifying the gradient.
-* @li indices: A vector of indices into the first dimension of var, mom and ms.
-*
-* @par Attributes:
-* use_locking: An optional "bool". Defaults to "False". If "True", updating of
-* the "var", "ms", and "mom" tensors will be protected by a lock; otherwise the
-* behavior is undefined, but may exhibit less contention.
-*
-* @par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
-*
-* @attention Constraints:
-* @li Note that in this sparse implementation, "ms" and "mom" will not update
-* in iterations during which "grad" is 0.
-* @li The input tensors "var", "ms", "mom" must have the same shape.
-*
-*/
-REG_OP(SparseApplyRMSProp)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(ms, TensorType::NumberType())
-    .INPUT(mom, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(rho, TensorType::NumberType())
-    .INPUT(momentum, TensorType::NumberType())
-    .INPUT(epsilon, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(indices, TensorType::IndexNumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(SparseApplyRMSProp)
-
-/**
-* @brief Updates "var" in specified index according to the RMSProp algorithm.
-* a const input will be considered as an attribute.\n
-*     mean_square = decay * mean_square + (1-decay) * gradient ** 2\n
-*     Delta = learning_rate * gradient / sqrt(mean_square + epsilon)\n
-*     ms <- rho * ms_{t-1} + (1-rho) * grad * grad\n
-*     mom <- momentum * mom_{t-1} + lr * grad / sqrt(ms + epsilon)\n
-*     var <- var - mom
-*
-* @par Inputs:
-* @li var: A mutable tensor. Must be one of the data types defined in
-* TensorType::NumberType(). Should be from a Variable().
-* @li ms: A mutable tensor. Must have the same type as "var". Should be from a
-* Variable().
-* @li mom: A mutable tensor. Must have the same type as "var". Should be from a
-* Variable().
-* @li lr: A scalar. Must have the same type as "var".
-* @li grad: A tensor, specifying the gradient.
-*
-* @par Attributes:
-* @li use_locking: An optional "bool". Defaults to "False". If "True",
-* updating of the "var", "ms", and "mom" tensors will be protected by a lock;
-* otherwise the behavior is undefined, but may exhibit less contention.
-* @li rho: A required scalar. Must have the same type as "var".
-* @li momentum: A required scalar. Must have the same type as "var".
-* @li epsilon: A required scalar. Must have the same type as "var".
-*
-* @par Outputs:
-* @li var: A mutable tensor. Must have the same type as input "var".
-* @li ms:  A mutable tensor. Must have the same type as input "ms".
-* @li mom: A mutable tensor. Must have the same type as input "mom".
-*
-* @attention Constraints:
-* @li Note that in this sparse implementation, "ms" and "mom" will not update
-* in iterations during which "grad" is 0.
-* @li The input tensors "var", "ms" and "mom" must have the same shape.
-*/
-REG_OP(SparseApplyRMSPropD)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(ms, TensorType::NumberType())
-    .INPUT(mom, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(indices, TensorType::IndexNumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .OUTPUT(ms, TensorType::NumberType())
-    .OUTPUT(mom, TensorType::NumberType())
-    .REQUIRED_ATTR(rho, Float)
-    .REQUIRED_ATTR(momentum, Float)
-    .REQUIRED_ATTR(epsilon, Float)
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(SparseApplyRMSPropD)
 
 /**
 *@brief Clean memory of workspace list.

@@ -886,10 +886,7 @@ REG_OP(BesselI1e)
 * y: A Tensor of type UnaryDataType.
 
 * @attention Constraints:
-* @li "base" is supposed to be greater than 0. Retaining the default \n
-* value "-1" sets "base" to "e".
-* @li If the input value of operator Log is within the range (0, 0.01] or \n
-* [0.95, 1.05], the output accuracy is subject to change.
+* @li base > 0 or if base is set to default (-1), base is set to e;
 */
 REG_OP(Log)
     .INPUT(x, TensorType::UnaryDataType())
@@ -2059,7 +2056,6 @@ REG_OP(ArgMinWithValue)
 *    "0": product, "1": sum, "2": max.
 *@li coeff: A required attribute. Must met all of following rules:
 *    size of "coeff" must be equal to len("x") or is null.
-*    the absolute value of “coeff” must less than or equal to 1.
 */
 REG_OP(Eltwise)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

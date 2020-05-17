@@ -22,6 +22,8 @@
 #include "graph/debug/ge_attr_define.h"
 #include "inc/kernel_factory.h"
 
+using domi::UNPACK;
+
 namespace ge {
 namespace {
 const size_t kUnpackInputNum = 1;

@@ -23,6 +23,11 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
 
+using domi::CONSTANT;
+using domi::CONSTANTOP;
+using domi::ENTER;
+using domi::REFENTER;
+
 namespace ge {
 Status EnterPass::Run(NodePtr &node) {
   GELOGD("EnterPass running");
@@ -50,17 +55,16 @@ Status EnterPass::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  bool need_remove_flag = in_node->GetInControlNodes().empty() &&
-                          node->GetInControlNodes().empty() &&
-                          node->GetOutDataNodes().empty();
+  bool need_remove_flag =
+    in_node->GetInControlNodes().empty() && node->GetInControlNodes().empty() && node->GetOutDataNodes().empty();
   if (need_remove_flag) {
     for (auto &out_ctrl_node : node->GetOutControlNodes()) {
       if (out_ctrl_node == nullptr) {
         continue;
       }
       if (GraphUtils::RemoveEdge(node->GetOutControlAnchor(), out_ctrl_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s",
-               node->GetName().c_str(), out_ctrl_node->GetName().c_str());
+        GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s", node->GetName().c_str(),
+               out_ctrl_node->GetName().c_str());
         return FAILED;
       }
     }

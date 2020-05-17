@@ -28,7 +28,6 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
-#include <queue>
 
 #include "./ge_context.h"
 #include "debug/ge_util.h"
@@ -2000,60 +1999,4 @@ void PartialGraphBuilder::BuildExistNodes(graphStatus &error_code, std::string &
 
   GELOGD("Build exist nodes succ.");
 }
-
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
-GraphUtils::TopologicalSortingByName(const ge::ComputeGraphPtr &compute_graph, vector<NodePtr> &node_vec) {
-  std::vector<NodePtr> stack_input;
-  std::map<NodePtr, uint32_t> map_in_edge_num;
-  graphStatus ret = compute_graph->SortNodes(stack_input, map_in_edge_num);
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "Sort nodes failed.");
-    return GRAPH_FAILED;
-  }
-  const size_t non_user_input_index = stack_input.size() - compute_graph->inputs_order_.size() - 1;
-  std::sort(stack_input.begin(), stack_input.begin() + non_user_input_index,
-            [](const NodePtr &a, const NodePtr &b) -> bool { return (a->GetName() > b->GetName()); });
-
-  std::queue<NodePtr> stack;
-  NodePtr cur_node = nullptr;
-  std::map<string, NodePtr> name_node_map;
-  vector<string> nodes_name;
-  while (!stack_input.empty() || !stack.empty()) {
-    if (!stack.empty()) {
-      cur_node = stack.front();
-      stack.pop();
-    } else {
-      cur_node = stack_input.back();
-      stack_input.pop_back();
-    }
-    node_vec.emplace_back(cur_node);
-    compute_graph->CollectBreadthOutNode(cur_node, map_in_edge_num, name_node_map);
-    for (const auto &iter : name_node_map) {
-      nodes_name.emplace_back(iter.first);
-    }
-    std::sort(nodes_name.begin(), nodes_name.end());
-    for (const auto &iter : nodes_name) {
-      stack.push(name_node_map[iter]);
-    }
-    name_node_map.clear();
-    nodes_name.clear();
-  }
-  // If they are not equal, there is a closed loop
-  if (node_vec.size() != compute_graph->nodes_.size()) {
-    std::set<Node *> itered_nodes_set;
-    for (auto &node : node_vec) {
-      itered_nodes_set.insert(node.get());
-    }
-    GE_LOGE("Failed to do topo sorting total %zu, itered %zu, exist closed loop in graph.",
-            compute_graph->nodes_.size(), node_vec.size());
-    for (auto &node : compute_graph->nodes_) {
-      if (itered_nodes_set.count(node.get()) == 0) {
-        GE_LOGE("The node %s does not itered when topological sorting", node->GetName().c_str());
-      }
-    }
-    return GRAPH_FAILED;
-  }
-  return GRAPH_SUCCESS;
-}
-
 }  // namespace ge

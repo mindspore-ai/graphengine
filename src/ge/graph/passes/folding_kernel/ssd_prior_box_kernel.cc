@@ -24,12 +24,25 @@
 #include "common/math/math_util.h"
 #include "common/math_util.h"
 #include "common/types.h"
+#include "framework/common/op/attr_define.h"
 #include "framework/common/util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/attr_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::NnSet;
+using domi::SSD_PRIOR_BOX_ATTR_ASPECT_RATIO;
+using domi::SSD_PRIOR_BOX_ATTR_CLIP;
+using domi::SSD_PRIOR_BOX_ATTR_FLIP;
+using domi::SSD_PRIOR_BOX_ATTR_IMG_H;
+using domi::SSD_PRIOR_BOX_ATTR_IMG_W;
+using domi::SSD_PRIOR_BOX_ATTR_MAX_SIZE;
+using domi::SSD_PRIOR_BOX_ATTR_MIN_SIZE;
+using domi::SSD_PRIOR_BOX_ATTR_OFFSET;
+using domi::SSD_PRIOR_BOX_ATTR_STEP_H;
+using domi::SSD_PRIOR_BOX_ATTR_STEP_W;
+using domi::SSD_PRIOR_BOX_ATTR_VARIANCE;
+using domi::SSDPRIORBOX;
 namespace ge {
 namespace {
 const float kMinistBias = 1e-6;

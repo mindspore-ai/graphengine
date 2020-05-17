@@ -37,7 +37,7 @@ char const *GetOutputNameFromIndex(int index) {
   return "UNKNOWN";
 }
 
-inline bool IsSwitch(const std::string &type) { return type == SWITCH || type == REFSWITCH; }
+inline bool IsSwitch(const std::string &type) { return type == domi::SWITCH || type == domi::REFSWITCH; }
 
 Status GetPredNode(const NodePtr &switch_node, PredNodeAndOut &pred_node_index) {
   GE_CHECK_NOTNULL(switch_node);

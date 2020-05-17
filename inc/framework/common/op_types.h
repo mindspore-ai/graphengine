@@ -20,7 +20,7 @@
 #include <set>
 #include <string>
 
-namespace ge {
+namespace domi {
 class OpTypeContainer {
  public:
   static OpTypeContainer *Instance() {
@@ -57,6 +57,6 @@ class OpTypeRegistrar {
   const OpTypeRegistrar g_##var_name##_reg(str_name);
 
 #define IS_OPTYPE_EXISTING(str_name) (OpTypeContainer::Instance()->IsExisting(str_name))
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_COMMON_OP_TYPES_H_

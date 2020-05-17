@@ -23,6 +23,7 @@
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/ge_context.h"
 
+using domi::ATTR_NAME_SESSION_GRAPH_ID;
 using std::map;
 using std::string;
 using std::vector;

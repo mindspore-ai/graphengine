@@ -18,8 +18,8 @@
 #define GE_GRAPH_PASSES_PRINT_OP_PASS_H_
 
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/op/attr_define.h"
 #include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/common/omg_util.h"
 #include "graph/graph.h"
 #include "graph/passes/base_pass.h"

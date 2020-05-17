@@ -39,7 +39,7 @@ Status DropOutPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
   std::string op_type = node->GetOpDesc()->GetType();
-  if (op_type == DROPOUT) {
+  if (op_type == domi::DROPOUT) {
     GELOGD("op type is dropout.");
     return IsolateAndDeleteNode(node, {0});
   }

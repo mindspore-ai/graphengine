@@ -66,6 +66,7 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
   anchor_points.clear();
   // Get all anchor point nodes and switch nodes
   for (const auto &node_ptr : graph->GetAllNodes()) {
+    std::vector<bool> is_node_set_format;
     if (node_ptr == nullptr) {
       return GRAPH_FAILED;
     }

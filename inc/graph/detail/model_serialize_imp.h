@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 #include "graph/anchor.h"
-#include "graph/detail/attributes_holder.h"
+#include "detail/attributes_holder.h"
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/node.h"

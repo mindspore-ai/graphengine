@@ -26,6 +26,7 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::SLICED;
 using ge::fp16_t;
 
 namespace ge {

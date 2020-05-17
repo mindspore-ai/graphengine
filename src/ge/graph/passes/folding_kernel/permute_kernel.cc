@@ -33,6 +33,13 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "framework/common/ge_inner_error_codes.h"
 
+using domi::PARAM_INVALID;
+using domi::PERMUTE;
+using domi::Status;
+using domi::SUCCESS;
+using domi::TRANSPOSE;
+using domi::TRANSPOSED;
+
 namespace ge {
 namespace {
 const char *const kAttrOrder = "order";

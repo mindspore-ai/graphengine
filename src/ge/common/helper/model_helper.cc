@@ -26,17 +26,15 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::ModelTaskDef;
 using ge::ModelBufferData;
 using ge::TBEKernelPtr;
 using ge::TBEKernelStore;
 using std::string;
-
 namespace {
 const int64_t kOriginalOmPartitionNum = 1;
 }
 
-namespace ge {
+namespace domi {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelHelper::~ModelHelper() { (void)ReleaseLocalModelData(); }
 
 Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, ModelPartitionType type,
@@ -508,4 +506,4 @@ Status ModelHelper::ReleaseLocalModelData() noexcept {
   }
   return result;
 }
-}  // namespace ge
+}  // namespace domi

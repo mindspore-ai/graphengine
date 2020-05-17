@@ -447,11 +447,8 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
       /// The logic of GetShapeSize is wrong, the scaler tensor's GetShapeSize is zero
       /// and that of unknown shape is zero too.
       /// Unknown shape will not appear here, so we can use zero judge a tensor is scaler or not.
-      int64_t elem_num = constant->weight_tensors[0].GetShapeSize();
-      if (elem_num == 0 && constant->weight_tensors[0].size == 0) {
-        elem_num = 1;
-      }
-
+      int64_t elem_num =
+        (constant->weight_tensors[0].GetShapeSize() == 0) ? 1 : constant->weight_tensors[0].GetShapeSize();
       if (constant->weight_data.size() < sizeof(uint64_t)) {
         GELOGE(FAILED, "weight_data size is smaller than sizeof(uint64_t)");
         return false;

@@ -26,7 +26,7 @@
 #include "common/string_util.h"
 #include "framework/common/debug/ge_log.h"
 
-namespace ge {
+namespace domi {
 class PlatformVersionManager {
  public:
   PlatformVersionManager() = delete;
@@ -40,6 +40,6 @@ class PlatformVersionManager {
     return SUCCESS;
   }
 };  // class PlatformManager
-}  // namespace ge
+}  // namespace domi
 
 #endif  // INC_FRAMEWORK_OMG_VERSION_H_

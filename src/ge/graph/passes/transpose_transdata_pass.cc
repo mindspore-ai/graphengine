@@ -26,6 +26,10 @@
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
 
+using domi::TRANSDATA;
+using domi::TRANSPOSE;
+using domi::TRANSPOSED;
+
 namespace {
 const char *const kAttrNameSrcFormat = "src_format";
 }  // namespace

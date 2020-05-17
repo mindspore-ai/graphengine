@@ -64,9 +64,6 @@ bool IsShapeEqual(const GeShape &src, const GeShape &dst);
 
 template <typename T>
 T Ceil(T n1, T n2) {
-  if (n1 == 0) {
-    return 0;
-  }
   return (n2 != 0) ? (n1 - 1) / n2 + 1 : 0;
 }
 

@@ -32,6 +32,14 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 
+using domi::ATTR_NAME_INPUT_FORMAT;
+using domi::ATTR_NAME_OUTPUT_FORMAT;
+using domi::CAST;
+using domi::RESHAPE;
+using domi::TRANSDATA;
+using domi::TRANSPOSE;
+using domi::TRANSPOSED;
+
 namespace {
 const char *const kRemainNode = "node_remain";
 const int kInvalidFusionOpCount = -1;

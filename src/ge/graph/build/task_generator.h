@@ -104,7 +104,7 @@ class TaskGenerator {
                              RunContext &run_context);
 
   // Mark first and last node according to the same stream and engine
-  Status MarkNodeAndSetIndex(ComputeGraphPtr &graph);
+  Status MarkFirstAndLastNode(ComputeGraphPtr &graph);
 
   // profiling interface
   Status FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &ppoint,

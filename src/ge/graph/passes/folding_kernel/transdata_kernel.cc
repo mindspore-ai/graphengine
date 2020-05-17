@@ -33,6 +33,11 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::PARAM_INVALID;
+using domi::Status;
+using domi::SUCCESS;
+using domi::TRANSDATA;
+
 namespace ge {
 namespace {
 const size_t kTransdataInputSize = 1;
@@ -48,9 +53,8 @@ Status TransdataKernel::ValidateInput(const OpDescPtr &op_desc_ptr, const std::v
     GELOGE(PARAM_INVALID, "Input const_weight_ptr is nullptr.");
     return PARAM_INVALID;
   }
-
-  // src_data == nullptr is supported
-  if (op_desc_ptr == nullptr) {
+  const uint8_t *src_data = const_weight_ptr->GetData().data();
+  if (op_desc_ptr == nullptr || src_data == nullptr) {
     GELOGE(PARAM_INVALID, "Input opDescPtr is nullptr.");
     return PARAM_INVALID;
   }

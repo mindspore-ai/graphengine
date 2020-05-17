@@ -50,11 +50,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void ReportProfilingData(const std::vector<TaskDescInfo> &task_desc_info,
                            const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
 
-  void Report(const int32_t &device_id, const string &data, Msprof::Engine::Reporter &reporter,
+  void Report(const size_t &idx, const string &data, Msprof::Engine::Reporter &reporter,
               Msprof::Engine::ReporterData &reporter_data);
-  void ProfilingTaskDescInfo(const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id);
-  void ProfilingGraphDescInfo(const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
-                              const int32_t &device_id);
+  void ProfilingTaskDescInfo(const std::vector<TaskDescInfo> &task_desc_info);
+  void ProfilingGraphDescInfo(const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
   void SetProfilingConfig(const string &profiling_cfg);
   vector<int32_t> GetProfilingDeviceId() const { return device_id_; }
 

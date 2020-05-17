@@ -29,6 +29,23 @@
 
 namespace ge {
 // when namespace change to ge, please delete the using code.
+using domi::NODE_NAME_FLOWCTRL_LOOP_ASSIGN;
+using domi::NODE_NAME_FLOWCTRL_LOOP_ASSIGNADD;
+using domi::NODE_NAME_FLOWCTRL_LOOP_COND;
+using domi::NODE_NAME_FLOWCTRL_LOOP_INCREMENT;
+using domi::NODE_NAME_FLOWCTRL_LOOP_PER_ITER;
+using domi::NODE_NAME_FLOWCTRL_LOOP_RESETVALUE;
+using domi::NODE_NAME_STREAM_SWITCH;
+
+using domi::ATTR_NAME_STREAM_CYCLE_EVENT_FLAG;
+using domi::TRUE_STREAM_ID;
+
+using domi::ASSIGN;
+using domi::ASSIGNADD;
+using domi::STREAMACTIVE;
+using domi::STREAMSWITCH;
+using domi::VARIABLE;
+
 Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
 
@@ -188,9 +205,9 @@ NodePtr FlowCtrlPass::AddVariableNode(ComputeGraphPtr &compute_graph, const stri
 }
 
 Status FlowCtrlPass::AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph) {
-  NodePtr output_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr output_node = compute_graph->FindNode(domi::NODE_NAME_NET_OUTPUT);
   if (output_node == nullptr) {
-    GELOGD("Node %s can't be found in graph %u", NODE_NAME_NET_OUTPUT.c_str(), compute_graph->GetGraphID());
+    GELOGD("Node %s can't be found in graph %u", domi::NODE_NAME_NET_OUTPUT.c_str(), compute_graph->GetGraphID());
     return SUCCESS;
   }
 
@@ -203,16 +220,17 @@ Status FlowCtrlPass::AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph) {
     return SUCCESS;
   }
 
-  NodePtr exist_node = compute_graph->FindNode(NODE_NAME_GLOBAL_STEP);
+  NodePtr exist_node = compute_graph->FindNode(domi::NODE_NAME_GLOBAL_STEP);
   if (exist_node != nullptr) {
-    GELOGD("Node %s already exist, no need add.", NODE_NAME_GLOBAL_STEP.c_str());
+    GELOGD("Node %s already exist, no need add.", domi::NODE_NAME_GLOBAL_STEP.c_str());
     return SUCCESS;
   }
   // set global step tensor desc
   GeTensorDesc tensor_desc(GeShape({1}), FORMAT_ND, DT_UINT64);
   std::vector<GeTensorDesc> input_desc_list = {};
   std::vector<GeTensorDesc> output_desc_list = {tensor_desc};
-  NodePtr global_step = InsertOp(compute_graph, VARIABLE, NODE_NAME_GLOBAL_STEP, input_desc_list, output_desc_list);
+  NodePtr global_step =
+    InsertOp(compute_graph, VARIABLE, domi::NODE_NAME_GLOBAL_STEP, input_desc_list, output_desc_list);
   if (global_step == nullptr) {
     GELOGE(FAILED, "Add global_step node failed, global_step is null.");
     return FAILED;

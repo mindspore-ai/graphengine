@@ -262,8 +262,6 @@ class GraphUtils {
   static graphStatus MoveOutCtrlEdges(NodePtr &src_node, NodePtr &dst_node);
 
   static ComputeGraphPtr FindRootGraph(ComputeGraphPtr graph);
-
-  static graphStatus TopologicalSortingByName(const ge::ComputeGraphPtr &compute_graph, vector<NodePtr> &node_vec);
 };
 
 class ComputeGraphBuilder {

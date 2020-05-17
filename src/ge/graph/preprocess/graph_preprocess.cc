@@ -18,7 +18,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <utility>
 #include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
 #include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
 #include "common/helper/model_helper.h"
@@ -72,7 +71,6 @@
 #include "graph/passes/var_is_initialized_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
 #include "graph/passes/common_subexpression_elimination_pass.h"
-#include "graph/passes/replace_with_empty_const_pass.h"
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
 #include "graph/types.h"
 #include "graph/utils/tensor_utils.h"
@@ -82,6 +80,13 @@
 #include "multi_batch_copy_graph.h"
 #include "runtime/dev.h"
 
+using domi::AIPP;
+using domi::AIPPDATA;
+using domi::ASSIGN;
+using domi::CAST;
+using domi::DATA;
+using domi::MULTIPLY;
+using domi::StringUtils;
 using ge::CheckInt64Uint32MulOverflow;
 
 namespace ge {
@@ -132,7 +137,7 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
 void AddTransNodeAttr(const std::string &node_type, const GeTensorDesc &input, const GeTensorDesc &output,
                       OpDescPtr &op_desc) {
   // For format transfer node, the IR definition has src/dst format attrs
-  if (node_type == TRANSDATA) {
+  if (node_type == domi::TRANSDATA) {
     GE_IF_BOOL_EXEC(
       !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_SRC_FORMAT, TypeUtils::FormatToSerialString(input.GetFormat())),
       GELOGW("SetStr FORMAT_TRANSFER_SRC_FORMAT failed");)
@@ -141,7 +146,7 @@ void AddTransNodeAttr(const std::string &node_type, const GeTensorDesc &input, c
       GELOGW("SetStr FORMAT_TRANSFER_DST_FORMAT failed");)
   }
   // For cast node, the IR definition has src/dst attrs
-  if (node_type == CAST) {
+  if (node_type == domi::CAST) {
     GE_IF_BOOL_EXEC(!AttrUtils::SetInt(op_desc, CAST_ATTR_SRCT, static_cast<int64_t>(input.GetDataType())),
                     GELOGW("SetInt CAST_ATTR_SRCT failed");)
     GE_IF_BOOL_EXEC(!AttrUtils::SetInt(op_desc, CAST_ATTR_DSTT, static_cast<int64_t>(output.GetDataType())),
@@ -196,7 +201,7 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
   AddTransNodeAttr(node_type, input, output, op_desc);
 
   NodePtr shape_node = nullptr;
-  if (node_type == RESHAPE) {
+  if (node_type == domi::RESHAPE) {
     auto shape_desc = CreateTensorShape(output);
     if (shape_desc == nullptr) {
       GELOGE(INTERNAL_ERROR, "Failed to add shape for reshape %s, can not create the shape input",
@@ -222,7 +227,7 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
     return nullptr;
   }
 
-  if (node_type == RESHAPE) {
+  if (node_type == domi::RESHAPE) {
     if (GraphUtils::AddEdge(shape_node->GetOutDataAnchor(0), trans_node->GetInDataAnchor(1)) != GRAPH_SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Failed to add shape node for reshape %s, can not add the edge", name.c_str());
       return nullptr;
@@ -377,10 +382,10 @@ VarNamesToRefs CollectVarNamesToRefs(const ComputeGraphPtr &graph) {
     return names_to_refs;
   }
   for (auto &node : graph->GetAllNodes()) {
-    if (node->GetType() != VARIABLE) {
+    if (node->GetType() != domi::VARIABLE) {
       continue;
     }
-    if (AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, var_name)) {
+    if (AttrUtils::GetStr(node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, var_name)) {
       (void)names_to_refs[var_name].insert(node);
     }
   }
@@ -422,7 +427,7 @@ NodePtr CreateCastOp(const ge::GeShape &shape, const ge::DataType input_data_typ
   output.SetOriginDataType(output_data_type);
   ge::TensorUtils::SetRealDimCnt(output, static_cast<uint32_t>(shape.GetDims().size()));
 
-  auto cast_node = CreateTransNode(name, CAST, input, output, node);
+  auto cast_node = CreateTransNode(name, domi::CAST, input, output, node);
   GELOGD("Create cast node success.");
   return cast_node;
 }
@@ -487,7 +492,7 @@ NodePtr CreateTransdataNode(const ge::GeShape &in_shape, const ge::Format input_
   output.SetOriginShape(out_shape);
   output.SetOriginDataType(dt);
 
-  return CreateTransNode(name, TRANSDATA, input, output, node);
+  return CreateTransNode(name, domi::TRANSDATA, input, output, node);
 }
 
 Status TransferShape2NC1HWC0(Format src_format, const std::vector<int64_t> &src_shape, DataType dt, Format dst_format,
@@ -736,35 +741,6 @@ Status ProcessNetoutputNode(NodePtr &node, std::string &output_type) {
   }
   return SUCCESS;
 }
-
-Status CheckIfNeedSetNdFormat(const NodePtr &node_ptr) {
-  auto op = node_ptr->GetOpDesc();
-  GE_CHECK_NOTNULL(op);
-  auto inputDescsPtr = op->GetAllInputsDescPtr();
-  auto outputDescsPtr = op->GetAllOutputsDescPtr();
-  ge::Format format = ge::FORMAT_ND;
-  // if user set shape larger than 4, inferformat may set NCHW or NHWC, GE should set ND before FE
-  // process, otherwise fe will insert transdata.
-  for (auto &inputDescPtr : inputDescsPtr) {
-    GE_CHECK_NOTNULL(inputDescPtr);
-    if ((inputDescPtr->GetShape().GetDims().size() > ge::DIM_DEFAULT_SIZE) &&
-        ((inputDescPtr->GetFormat() == ge::FORMAT_NCHW) || (inputDescPtr->GetFormat() == ge::FORMAT_NHWC))) {
-      GELOGI("The node inputdesc [%s] format need to be set ND", op->GetName().c_str());
-      inputDescPtr->SetFormat(format);
-      inputDescPtr->SetOriginFormat(format);
-    }
-  }
-  for (auto &outputDescPtr : outputDescsPtr) {
-    GE_CHECK_NOTNULL(outputDescPtr);
-    if ((outputDescPtr->GetShape().GetDims().size() > ge::DIM_DEFAULT_SIZE) &&
-        ((outputDescPtr->GetFormat() == ge::FORMAT_NCHW) || (outputDescPtr->GetFormat() == ge::FORMAT_NHWC))) {
-      GELOGI("The node outputdesc [%s] format need to be set ND", op->GetName().c_str());
-      outputDescPtr->SetFormat(format);
-      outputDescPtr->SetOriginFormat(format);
-    }
-  }
-  return SUCCESS;
-}
 }  // namespace
 
 GraphPrepare::GraphPrepare() : compute_graph_(nullptr) {}
@@ -782,7 +758,7 @@ Status GraphPrepare::UpdateVariableFormats(ComputeGraphPtr &graph) {
     if (node == nullptr) {
       continue;
     }
-    if (node->GetType() != VARIABLE) {
+    if (node->GetType() != domi::VARIABLE) {
       continue;
     }
     auto trans_road = VarManager::Instance(graph->GetSessionID())->GetTransRoad(node->GetName());
@@ -855,12 +831,9 @@ Status GraphPrepare::CheckGraph() {
 
 Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &input_name,
                                        const std::unordered_set<NodePtr> &ref_nodes) {
-  // Acceptable input types should be ref node, variable or Switch operator, which is issued by ME for dynamic
-  // lossscale and would be optimized in SwitchOpPass. Since ME dont differentiate between RefSwitch and Switch,
-  // and only issue Switch.
-  static std::unordered_set<std::string> acceptable_types = {ge::VARIABLE,         ge::VARIABLEV2, ge::VARHANDLEOP,
-                                                             ge::REFSWITCH,        ge::REFMERGE,   ge::REFENTER,
-                                                             ge::REFNEXTITERATION, ge::REFEXIT,    ge::SWITCH};
+  static std::unordered_set<std::string> acceptable_types = {
+    domi::VARIABLE, domi::VARIABLEV2, domi::VARHANDLEOP,      domi::REFSWITCH,
+    domi::REFMERGE, domi::REFENTER,   domi::REFNEXTITERATION, domi::REFEXIT};
   GE_CHECK_NOTNULL(node);
   const auto &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
@@ -879,7 +852,7 @@ Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &i
     return SUCCESS;
   }
   auto input_type = input_op_desc->GetType();
-  if (input_type == ge::FRAMEWORKOP) {
+  if (input_type == domi::FRAMEWORKOP) {
     if (!ge::AttrUtils::GetStr(input_op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, input_type)) {
       GELOGE(PARAM_INVALID, "Get original type failed.");
       return PARAM_INVALID;
@@ -971,7 +944,7 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
     GE_CHECK_NOTNULL(input_node);
     OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
-    if (op->GetType() == DATA) {
+    if (op->GetType() == domi::DATA) {
       GeAttrValue::INT index = 0;
       if ((!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) || (domi::GetContext().is_dynamic_input)) {
         GELOGW("Get index from data attr failed");
@@ -1004,7 +977,7 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       int64_t desc_shape = desc.GetShape().GetShapeSize();
       FMK_INT64_UINT32_MULCHECK(desc_shape, length);
       int64_t shape_size = desc_shape * length;
-      GE_IF_BOOL_EXEC(shape_size == 0 && desc.GetShape().GetDimNum() == 0, shape_size = static_cast<int64_t>(length));
+      GE_IF_BOOL_EXEC(shape_size == 0, shape_size = static_cast<int64_t>(length));
       int64_t size = 0;
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc, size) != GRAPH_SUCCESS,
                       GELOGE(INTERNAL_ERROR, "TensorUtils GetSize failed");
@@ -1138,10 +1111,6 @@ Status GraphPrepare::OptimizeAfterInfershapeByAtcParams() {
   GE_RETURN_IF_ERROR(InsertNewOpUtil::Instance().UpdateDataNodeByAipp(compute_graph_));
   for (auto &node_ptr : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(node_ptr);
-    if (CheckIfNeedSetNdFormat(node_ptr) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Set node [%s] format ND failed", node_ptr->GetName().c_str());
-      return FAILED;
-    }
     if (node_ptr->GetType() == DATA) {
       if (ProcessDataNode(node_ptr) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Process data node failed");
@@ -1149,7 +1118,7 @@ Status GraphPrepare::OptimizeAfterInfershapeByAtcParams() {
       }
     }
 
-    if (node_ptr->GetType() == ge::NETOUTPUT) {
+    if (node_ptr->GetType() == domi::NETOUTPUT) {
       if (ProcessNetoutputNode(node_ptr, options_.output_datatype) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Process netoutput node failed");
         return FAILED;
@@ -1408,10 +1377,10 @@ Status GraphPrepare::Prepare(ConstGraphPtr graph, const std::vector<GeTensor> &u
 Status GraphPrepare::CheckConstOp() {
   for (auto &node_ptr : compute_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node_ptr);
-    if (node_ptr->GetType() == CONSTANT) {
+    if (node_ptr->GetType() == domi::CONSTANT) {
       Status ret = VerifyConstOp(node_ptr);
       GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "Const Op Check failed");
-    } else if (node_ptr->GetType() == FRAMEWORKOP) {
+    } else if (node_ptr->GetType() == domi::FRAMEWORKOP) {
       auto op_desc = node_ptr->GetOpDesc();
       if (op_desc == nullptr) {
         GELOGE(PARAM_INVALID, "Get op desc failed");
@@ -1421,7 +1390,7 @@ Status GraphPrepare::CheckConstOp() {
       GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, original_type),
                       GELOGI("Get FrameWorkOp original type [%s]", original_type.c_str()));
       GELOGI("original type is %s", original_type.c_str());
-      if (original_type == CONSTANT) {
+      if (original_type == domi::CONSTANT) {
         Status ret = VerifyConstOp(node_ptr);
         GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "Const Op Check failed");
       }
@@ -1452,17 +1421,9 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   FMK_INT64_UINT32_MULCHECK(shape_size, length);
   GELOGI("Const real value Size:%zu, op_desc Shape Size:%ld, data_type:%s.", data_size, shape_size * length,
          TypeUtils::DataTypeToSerialString(data_type).c_str());
-  if (shape_size == 0) {
-    if (ge_tensor_desc.GetShape().GetDims().size() == 0) {
-      // shape = [], means it's a sclar tensor.
-      GE_CHK_BOOL_EXEC(data_size / length == 1, return PARAM_INVALID, "Const is invalid scalar tensor.");
-    } else {
-      // shape = [x, y, 0,...], means it's a vector tensor that value is [].
-      GE_CHK_BOOL_EXEC(data_size == 0, return PARAM_INVALID, "Const is invalid vector scalar.");
-    }
-  } else {
-    GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0, return PARAM_INVALID,
-                     "Const input data size is not equal with tensor desc shape");
+  if ((shape_size != 0) || (data_size / length != 1)) {
+    GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0,
+                     return GRAPH_PARAM_INVALID, "Const input data size is not equal with tensor desc shape");
   }
   return SUCCESS;
 }
@@ -1478,7 +1439,7 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
     OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     node_num++;
-    if (op->GetType() == DATA || op->GetType() == AIPPDATA) {
+    if (op->GetType() == domi::DATA || op->GetType() == domi::AIPPDATA) {
       data_num++;
       GeAttrValue::INT index = 0;
       if (!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) {
@@ -1492,8 +1453,8 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
       GeTensorDesc desc(user_input[index].GetTensorDesc());
 
       for (size_t i = 0; i < desc.GetShape().GetDimNum(); ++i) {
-        if (desc.GetShape().GetDim(i) < 0) {
-          GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need >= 0, real:%ld.", i,
+        if (desc.GetShape().GetDim(i) <= 0) {
+          GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need > 0, real:%ld.", i,
                  desc.GetShape().GetDim(i));
           return GE_GRAPH_INIT_FAILED;
         }
@@ -1659,8 +1620,8 @@ Status GraphPrepare::OptimizeForPreprocess() {
   if (options_.train_graph_flag) {
     for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {
       // This can ensure that n is not a null pointer
-      if (n->GetOpDesc()->GetType() == CONSTANT) {
-        n->GetOpDesc()->SetType(CONSTANTOP);
+      if (n->GetOpDesc()->GetType() == domi::CONSTANT) {
+        n->GetOpDesc()->SetType(domi::CONSTANTOP);
       }
     }
   }

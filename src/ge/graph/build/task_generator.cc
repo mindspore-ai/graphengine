@@ -21,6 +21,7 @@
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 
+#include "framework/common/op/attr_define.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/manager/graph_var_manager.h"
@@ -30,8 +31,14 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 
+using domi::CONSTANT;
+using domi::HCOMALLREDUCE;
 using domi::LogTimeStampDef;
+using domi::MODEL_ATTR_TASK_GEN_BASE_ADDR;
+using domi::MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
+using domi::MODEL_ATTR_TASKS;
 using domi::ModelTaskDef;
+using domi::NETOUTPUT;
 using domi::TaskDef;
 using std::map;
 using std::string;
@@ -221,8 +228,10 @@ Status TaskGenerator::SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_f
     if (call_check) {
       auto input_group_id = *input_group_ids.begin();
       if (group_id != input_group_id) {
-        GELOGW("L1Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
+        GELOGE(INTERNAL_ERROR,
+               "L1Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
                name.c_str(), type.c_str(), group_id, input_group_id);
+        return INTERNAL_ERROR;
       }
     }
   }
@@ -237,7 +246,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GenerateTask failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
-  GE_CHK_STATUS_RET(MarkNodeAndSetIndex(graph), "MarkFirstAndLastNode failed.");
+  GE_CHK_STATUS_RET(MarkFirstAndLastNode(graph), "MarkFirstAndLastNode failed.");
   ProfilingPoint ppoint;
   vector<uint32_t> ar_ppoint;
   GE_CHK_STATUS_RET(FindProfilingTaskIndex(graph, ppoint, ar_ppoint));
@@ -258,6 +267,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
+    op_desc->SetId(node_index);
     node_index++;
     string name = node->GetName();
     string type = node->GetType();
@@ -483,26 +493,23 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
+Status TaskGenerator::MarkFirstAndLastNode(ComputeGraphPtr &graph) {
   std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
   if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  int64_t node_index = 0;
   map<string, map<int64_t, std::pair<NodePtr, NodePtr>>> engine_stream_stat;
   for (auto &node : graph->GetAllNodes()) {
-    const OpDescPtr &op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    string op_kernel_lib_name = op_desc->GetOpKernelLibName();
-    int64_t stream_id = op_desc->GetStreamId();
-    op_desc->SetId(node_index++);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    string op_kernel_lib_name = node->GetOpDesc()->GetOpKernelLibName();
+    int64_t stream_id = node->GetOpDesc()->GetStreamId();
 
     if (op_kernel_lib_name.empty()) {
       // Reset op kernel lib
-      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(op_desc);
-      op_kernel_lib_name = op_desc->GetOpKernelLibName();
+      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(node->GetOpDesc());
+      op_kernel_lib_name = node->GetOpDesc()->GetOpKernelLibName();
       if (op_kernel_lib_name.empty()) {
         GELOGE(INTERNAL_ERROR, "node:%s(%s) get op kernel lib failed.", node->GetName().c_str(),
                node->GetType().c_str());

@@ -21,7 +21,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "graph/operator.h"
-#include "inc/register/register.h"
+#include "register/register.h"
 
 namespace ge {
 class HostCpuEngine {

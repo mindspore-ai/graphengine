@@ -27,6 +27,8 @@
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::BROADCASTGRADIENTARGS;
+
 namespace ge {
 namespace {
 const size_t kBCastGradArgsInputsSize = 2;
@@ -42,12 +44,13 @@ Status BroadcastGradientArgsKernel::Compute(const OpDescPtr op_desc_ptr, const s
   }
   // check input size
   bool size_check_fail =
-      (op_desc_ptr->GetAllInputsDesc().size() != kBCastGradArgsInputsSize || input.size() != kBCastGradArgsInputsSize ||
-       op_desc_ptr->GetAllOutputsDesc().size() != kBCastGradArgsOutputsSize);
+    (op_desc_ptr->GetAllInputsDesc().size() != kBCastGradArgsInputsSize || input.size() != kBCastGradArgsInputsSize ||
+     op_desc_ptr->GetAllOutputsDesc().size() != kBCastGradArgsOutputsSize);
   if (size_check_fail) {
-    GELOGW("input/output size error. InDesc size:%zu,"
-           "OutDesc size:%zu, in size:%zu ",
-           op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
+    GELOGW(
+      "input/output size error. InDesc size:%zu,"
+      "OutDesc size:%zu, in size:%zu ",
+      op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
     return NOT_CHANGED;
   }
 

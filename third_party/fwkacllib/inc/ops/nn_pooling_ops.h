@@ -487,6 +487,34 @@ REG_OP(Upsample)
    .ATTR(stride_h, Int, 2)
    .ATTR(stride_w, Int, 2)
    .OP_END_FACTORY_REG(Upsample)
+
+/**
+*@brief Spatial Pyramid Pooling, multi-level pooling.
+* Pooling out(n, sigma(c*2^i*2^i)) tensor, i in range[0,pyramid_height).
+
+*@par Inputs:
+*x: An NCHW tensor, support float16 or float32 type.
+
+*@par Attributes:
+* @li pyramid_height: An required int32.
+* Multi-level pooling out from 2^0 to 2^(pyramid_height-1).
+* @li pool_method: An optional int32, pooling method: 0-MAX, 1-AVE.
+* Defaults to "0".
+
+*@par Outputs:
+*y: A NCHW tensor, support float16 or float32 type.
+
+*@attention Constraints:
+* @li pyramid_height: pyramid_heigjt should be in range [0,7).
+* @li feature_size:input feture map h and w should be [1, 510].
+
+*/
+REG_OP(SPP)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(pyramid_height, Int)
+    .ATTR(pool_method, Int, 0)
+    .OP_END_FACTORY_REG(SPP)
 }  // namespace ge
 
 #endif  // GE_OP_NN_POOLING_OPS_H

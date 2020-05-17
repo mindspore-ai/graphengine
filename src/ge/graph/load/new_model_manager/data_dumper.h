@@ -17,10 +17,8 @@
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DATA_DUMPER_H_
 
-#include <map>
-#include <memory>
 #include <string>
-#include <vector>
+#include <memory>
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"

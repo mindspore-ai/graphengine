@@ -32,6 +32,8 @@
 
 using domi::GetContext;
 using domi::OpRegistry;
+using domi::RealPath;
+using domi::StringUtils;
 using std::map;
 using std::string;
 using std::vector;

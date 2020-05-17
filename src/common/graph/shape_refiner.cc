@@ -21,8 +21,9 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
+#include "framework/common/types.h"
 #include "graph/utils/graph_utils.h"
+
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "external/graph/operator.h"

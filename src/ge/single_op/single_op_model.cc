@@ -29,9 +29,19 @@
 #include "runtime/rt.h"
 #include "task/tbe_task_builder.h"
 
-using domi::TaskDef;
 using std::unique_ptr;
 using std::vector;
+
+using domi::AIPP_DATA_TYPE;
+using domi::ALLOC_MEMORY_MAX_SIZE;
+using domi::DATA_TYPE;
+using domi::MODEL_ATTR_TASK_GEN_BASE_ADDR;
+using domi::MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
+using domi::ModelFileHeader;
+using domi::ModelHelper;
+using domi::NETOUTPUT;
+using domi::OmFileLoadHelper;
+using domi::TaskDef;
 
 namespace ge {
 namespace {
@@ -76,11 +86,8 @@ void SingleOpModel::ParseOpModelParams(ModelHelper &model_helper, SingleOpModelP
   param.base_addr = ret ? static_cast<uint64_t>(value) : 0;
   ret = ge::AttrUtils::GetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, value);
   param.weight_addr = ret ? static_cast<uint64_t>(value) : 0;
-  ret = ge::AttrUtils::GetInt(model, ATTR_MODEL_CORE_TYPE, value);
-  param.core_type = ret ? value : 0;
 
-  GELOGI("ParseOpModelParams(), memory_size:%lu, weight_size:%lu. core_type = %lu", param.memory_size,
-         param.weight_size, param.core_type);
+  GELOGI("ParseOpModelParams(), memory_size:%lu, weight_size:%lu.", param.memory_size, param.weight_size);
 }
 
 Status SingleOpModel::InitModelMem(StreamResource &res) {

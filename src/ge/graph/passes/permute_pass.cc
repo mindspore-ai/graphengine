@@ -25,9 +25,18 @@
 #include "inc/kernel_factory.h"
 #include "framework/omg/omg_inner_types.h"
 
+using domi::ATTR_NAME_FORMAT;
+using domi::ATTR_NAME_PRED_PERMUTE_DELETED;
+using domi::CONVOLUTION;
+using domi::DECONVOLUTION;
+using domi::DEPCONVOLUTION;
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_NHWC;
 using domi::GetContext;
+using domi::INTERNAL_ERROR;
+using domi::PAD;
+using domi::PERMUTE;
+using domi::PERMUTE_ATTR_ORDER;
 using domi::SUCCESS;
 
 namespace ge {

@@ -525,7 +525,8 @@ REG_OP(ResizeBilinearV2)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
                                DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .INPUT(size, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
+                           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
     .OP_END_FACTORY_REG(ResizeBilinearV2)
@@ -924,7 +925,7 @@ images[3] <= 2048.
 */
 REG_OP(ResizeBilinearV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
     .REQUIRED_ATTR(size, ListInt)

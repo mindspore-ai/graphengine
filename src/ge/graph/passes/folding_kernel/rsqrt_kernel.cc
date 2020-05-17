@@ -28,6 +28,10 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::PARAM_INVALID;
+using domi::RSQRT;
+using domi::SUCCESS;
+
 namespace ge {
 namespace {
 const size_t kRsqrtInputSize = 1;

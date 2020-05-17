@@ -40,6 +40,7 @@
 #include "runtime/kernel.h"
 
 using Json = nlohmann::json;
+using domi::StringUtils;
 
 namespace ge {
 namespace {
@@ -142,35 +143,6 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   return SUCCESS;
 }
 
-void GELib::SetIncreBuild(const map<string, string> &options) {
-  auto iter = options.find(OPTION_EXEC_ENABLE_INCRE_BUILD);
-  if (iter != options.end()) {
-    const std::string enable_incre_build = "true";
-    const std::string disable_incre_build = "false";
-    if (iter->second == enable_incre_build) {
-      is_incre_build_ = true;
-      GELOGI("Enable incre build.");
-      auto path_iter = options.find(OPTION_EXEC_INCRE_BUILD_CACHE_PATH);
-      if (path_iter != options.end()) {
-        std::string cache_path = path_iter->second;
-        if (!cache_path.empty() && cache_path[cache_path.size() - 1] != '/') {
-          cache_path += "/";
-        }
-        incre_build_cache_path_ = cache_path;
-      } else {
-        incre_build_cache_path_ = ".ge_cache/";
-      }
-      GELOGD("Using incre build cache path: %s.", incre_build_cache_path_.c_str());
-    } else if (iter->second == disable_incre_build) {
-      is_incre_build_ = false;
-      GELOGI("Disable incre build.");
-    } else {
-      is_incre_build_ = false;
-      GELOGW("Invalid ENABLE_INCRE_BUILD option, it should be true or false.");
-    }
-  }
-}
-
 Status GELib::SystemInitialize(const map<string, string> &options) {
   Status status = FAILED;
   auto iter = options.find(OPTION_GRAPH_RUN_MODE);
@@ -203,8 +175,6 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
       PropertiesManager::Instance().SetDumpStep(dump_step);
     }
   }
-  // check incre build flag
-  SetIncreBuild(options);
 
   if (is_train_mode_) {
     InitOptions(options);
@@ -396,7 +366,7 @@ Status GELib::Finalize() {
   }
 
   GELOGI("VarManagerPool finalization.");
-  VarManagerPool::Instance().Destroy();
+  VarManagerPool::Instance().Destory();
 
   GELOGI("MemManager finalization.");
   MemManager::Instance().Finalize();
@@ -438,6 +408,6 @@ void GELib::RollbackInit() {
     (void)sessionManager_.Finalize();
   }
   MemManager::Instance().Finalize();
-  VarManagerPool::Instance().Destroy();
+  VarManagerPool::Instance().Destory();
 }
 }  // namespace ge

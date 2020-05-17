@@ -24,8 +24,8 @@ const int kInvalidTransopDataIndex = -1;
 
 namespace ge {
 TransOpUtil::TransOpUtil() {
-  transop_index_map_ = {{TRANSDATA, 0}, {TRANSPOSE, 0}, {TRANSPOSED, 0}, {RESHAPE, 0},
-                        {REFORMAT, 0},  {CAST, 0},      {SQUEEZE, 0},    {EXPANDDIMS, 0}};
+  transop_index_map_ = {{domi::TRANSDATA, 0}, {domi::TRANSPOSE, 0}, {domi::TRANSPOSED, 0}, {domi::RESHAPE, 0},
+                        {domi::REFORMAT, 0},  {domi::CAST, 0},      {domi::SQUEEZE, 0},    {domi::EXPANDDIMS, 0}};
 }
 
 TransOpUtil::~TransOpUtil() {}

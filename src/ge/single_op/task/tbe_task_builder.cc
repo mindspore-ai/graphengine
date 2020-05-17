@@ -22,12 +22,14 @@
 
 #include "common/helper/model_helper.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/op/attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/task_info/task_info.h"
 #include "graph/manager/graph_var_manager.h"
 #include "runtime/rt.h"
 #include "single_op/task/build_task_utils.h"
+
+using domi::TVM_ATTR_NAME_METADATA;
 
 namespace ge {
 namespace {
@@ -89,17 +91,16 @@ TbeTaskBuilder::TbeTaskBuilder(const std::string &model_name, const OpDescPtr &o
                                const domi::KernelDef &kernel_def)
     : op_desc_(op_desc), kernel_def_(kernel_def), stub_name_(model_name + "/" + op_desc->GetName() + "_tvmbin") {}
 
-Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle,
-                                        const SingleOpModelParam &param) const {
+Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle) const {
   rtDevBinary_t binary;
   binary.version = 0;
   binary.data = kernel_bin.GetBinData();
   binary.length = kernel_bin.GetBinDataSize();
-  binary.magic = param.core_type == 0 ? RT_DEV_BINARY_MAGIC_ELF : RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+  binary.magic = RT_DEV_BINARY_MAGIC_ELF;
   auto ret = rtDevBinaryRegister(&binary, bin_handle);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtDevBinaryRegister failed, bin key = %s, core_type = %ld, rt ret = %d", stub_name_.c_str(),
-           param.core_type, static_cast<int>(ret));
+    GELOGE(RT_FAILED, "rtDevBinaryRegister failed, bin key = %s, rt ret = %d", stub_name_.c_str(),
+           static_cast<int>(ret));
     return RT_FAILED;
   }
 
@@ -133,13 +134,13 @@ Status TbeTaskBuilder::DoRegisterFunction(void *bin_handle, const char *stub_nam
   return SUCCESS;
 }
 
-Status TbeTaskBuilder::DoRegisterKernel(const ge::OpKernelBin &tbe_kernel, const char *bin_file_key, void **bin_handle,
-                                        const SingleOpModelParam &param) {
+Status TbeTaskBuilder::DoRegisterKernel(const ge::OpKernelBin &tbe_kernel, const char *bin_file_key,
+                                        void **bin_handle) {
   std::string kernel_name;
   GetKernelName(op_desc_, kernel_name);
 
   void *handle = nullptr;
-  auto ret = DoRegisterBinary(tbe_kernel, &handle, param);
+  auto ret = DoRegisterBinary(tbe_kernel, &handle);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -161,7 +162,7 @@ Status TbeTaskBuilder::DoRegisterKernel(const ge::OpKernelBin &tbe_kernel, const
   return SUCCESS;
 }
 
-Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task, const SingleOpModelParam &param) {
+Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task) {
   KernelBinRegistry &registry = KernelBinRegistry::GetInstance();
   // check if already registered
   const char *stub_func = registry.GetStubFunc(stub_name_);
@@ -191,7 +192,7 @@ Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task, const SingleOpModelParam 
     }
 
     void *bin_handle = nullptr;
-    auto ret = DoRegisterKernel(*tbe_kernel, stub_func, &bin_handle, param);
+    auto ret = DoRegisterKernel(*tbe_kernel, stub_func, &bin_handle);
     if (ret == SUCCESS) {
       holder->SetBinHandle(bin_handle);
       if (!registry.AddKernel(stub_name_, holder)) {
@@ -286,7 +287,7 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
     return ret;
   }
 
-  ret = RegisterKernel(task, param);
+  ret = RegisterKernel(task);
   if (ret != SUCCESS) {
     return ret;
   }

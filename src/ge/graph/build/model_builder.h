@@ -37,7 +37,7 @@
 namespace ge {
 class ModelBuilder {
  public:
-  ModelBuilder(ge::ComputeGraphPtr whole_graph, const Graph2SubGraphInfoList &subgraphs,
+  ModelBuilder(ge::ComputeGraphPtr whole_graph, const std::vector<SubGraphInfoPtr> &subgraphs,
                const std::map<std::string, int> &stream_max_parallel_num, bool hcom_parallel,
                int mode = static_cast<int>(domi::BuildMode::GEN_TASK_WITHOUT_FUSION));
 
@@ -85,7 +85,7 @@ class ModelBuilder {
 
   ge::ComputeGraphPtr compute_graph_;
 
-  const Graph2SubGraphInfoList &subgraphs_;
+  const std::vector<SubGraphInfoPtr> &subgraphs_;
 
   int64_t stream_num_;
 

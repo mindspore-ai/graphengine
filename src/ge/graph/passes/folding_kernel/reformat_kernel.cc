@@ -26,6 +26,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
+using domi::REFORMAT;
+
 namespace ge {
 namespace {
 const size_t kReFormatInputSize = 1;

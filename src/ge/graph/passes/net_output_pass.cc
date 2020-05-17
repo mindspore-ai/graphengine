@@ -30,6 +30,14 @@
 #include "graph/utils/type_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
+using domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE;
+using domi::ATTR_NAME_NET_OUTPUT_DATATYPE;
+using domi::ATTR_NAME_NET_OUTPUT_FORMAT;
+using domi::ATTR_NAME_TRUE_BRANCH_STREAM;
+using domi::NETOUTPUT;
+using domi::NODE_NAME_NET_OUTPUT;
+using domi::RETVAL_ATTR_NAME_INDEX;
+
 namespace ge {
 Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
                                           std::map<int32_t, std::pair<ge::NodePtr, int32_t>> &retval_node_index_map) {

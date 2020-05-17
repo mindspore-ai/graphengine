@@ -26,10 +26,8 @@
 #include "framework/common/ge_types.h"
 
 using ProcParam = struct PROC_PARAM;
-using std::string;
-using std::vector;
 
-namespace ge {
+namespace domi {
 struct ModelPartition {
   ModelPartitionType type;
   uint8_t *data = 0;
@@ -90,5 +88,5 @@ class OmFileSaveHelper {
   ModelFileHeader model_header_;
   OmFileContext context_;
 };
-}  // namespace ge
+}  // namespace domi
 #endif  // INC_FRAMEWORK_COMMON_HELPER_OM_FILE_HELPER_H_

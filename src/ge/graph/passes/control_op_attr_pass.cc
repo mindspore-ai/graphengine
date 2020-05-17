@@ -30,6 +30,12 @@
 #include "graph/utils/graph_utils.h"
 #include "init/gelib.h"
 
+using domi::ATTR_NAME_STREAM_LABEL;
+
+using domi::STREAMACTIVE;
+using domi::STREAMSWITCH;
+using domi::STREAMSWITCHN;
+
 namespace {
 const uint32_t kMaxNodeNum = 350;
 }  // namespace

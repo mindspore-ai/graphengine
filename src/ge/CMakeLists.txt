@@ -41,9 +41,9 @@ include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/framework/common)
 include_directories(${GE_SOURCE_DIR}/inc/runtime)
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
@@ -55,7 +55,6 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/formats/utils/formats_trans_utils.cc"
         "common/fp16_t.cc"
         "common/ge/plugin_manager.cc"
-        "common/helper/model_cache_helper.cc"
         "common/profiling/profiling_manager.cc"
         "engine_manager/dnnengine_manager.cc"
         "ge_local_engine/engine/host_cpu_engine.cc"
@@ -93,7 +92,6 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/load/new_model_manager/task_info/kernel_task_info.cc"
         "graph/load/new_model_manager/task_info/label_goto_task_info.cc"
         "graph/load/new_model_manager/task_info/label_set_task_info.cc"
-        "graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
         "graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
         "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
@@ -196,7 +194,6 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/prevent_gradient_pass.cc"
         "graph/passes/print_op_pass.cc"
         "graph/passes/prune_pass.cc"
-        "graph/passes/replace_with_empty_const_pass.cc"
         "graph/passes/reshape_remove_pass.cc"
         "graph/passes/resource_pair_add_control_pass.cc"
         "graph/passes/resource_pair_remove_control_pass.cc"
@@ -271,7 +268,6 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/formats/utils/formats_trans_utils.cc"
         "common/fp16_t.cc"
         "common/ge/plugin_manager.cc"
-        "common/helper/model_cache_helper.cc"
         "common/profiling/profiling_manager.cc"
         "engine_manager/dnnengine_manager.cc"
         "ge_local_engine/engine/host_cpu_engine.cc"
@@ -308,7 +304,6 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/load/new_model_manager/task_info/kernel_task_info.cc"
         "graph/load/new_model_manager/task_info/label_goto_task_info.cc"
         "graph/load/new_model_manager/task_info/label_set_task_info.cc"
-        "graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
         "graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
         "graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
         "graph/load/new_model_manager/task_info/stream_active_task_info.cc"
@@ -409,7 +404,6 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/passes/prevent_gradient_pass.cc"
         "graph/passes/print_op_pass.cc"
         "graph/passes/prune_pass.cc"
-        "graph/passes/replace_with_empty_const_pass.cc"
         "graph/passes/reshape_remove_pass.cc"
         "graph/passes/resource_pair_add_control_pass.cc"
         "graph/passes/resource_pair_remove_control_pass.cc"
@@ -474,7 +468,7 @@ target_link_libraries(ge_compiler
         ${slog}
         ${mmpa}
         ${msprof}
-        ${runtime_compiler}
+        ${runtime}
         ${resouce}
         rt
         dl)

@@ -33,15 +33,13 @@ class VariablePrepareOpPass : public GraphPass {
   Status DealWritableNode(ge::NodePtr &writable_node, ge::NodePtr &var_node, int out_index);
   NodePtr GetFinalWritableNode(ge::NodePtr &writable_node, int &out_index);
   Status AddVariableRef(ge::NodePtr &node, ge::NodePtr &var_node, int index);
-  NodePtr CreatVariableRef(const std::string &variable_ref_name, ge::NodePtr &var_node);
+  NodePtr CreatVariableRef(ge::NodePtr &final_ref_type_node, ge::NodePtr &var_node);
   int GetWritableNodeOutIndex(const NodePtr &node, int input_index);
   Status UpdateAssignOpDesc(const ge::NodePtr &node);
   void GenerateRefTypeAndInputOutputMap(const NodePtr &node);
-  int FindRefOutIndex(const std::string &node_type, int input_index,
-                      const std::map<std::string, std::map<int, int>> &ref_map);
 
   std::map<std::string, std::map<int, int>> ref_input_output_map_;
-  static std::map<std::string, std::map<int, int>> ref_node_without_prototype_map_;
+  std::unordered_set<string> has_dealed_variable_{};
 };
 }  // namespace ge
 

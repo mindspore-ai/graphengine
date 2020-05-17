@@ -193,8 +193,15 @@ Status GeExecutor::Initialize() {
   }
 
   // Start profiling
+  int32_t device_id = 0;
+  rtError_t rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "runtime get device_id failed, current device_id:%d", device_id);
+    return FAILED;
+  }
+  GELOGI("current device_id:%d", device_id);
   Options profiling_options;
-  profiling_options.device_id = 0;
+  profiling_options.device_id = device_id;
   profiling_options.job_id = "";
   ProfilingManager::Instance().Init(profiling_options);
 
@@ -345,7 +352,7 @@ Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path,
     return GE_EXEC_NOT_INIT;
   }
 
-  string filePath = RealPath(path.c_str());
+  string filePath = domi::RealPath(path.c_str());
   if (filePath.empty()) {
     GELOGE(ge::FAILED, "fileath is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;
@@ -396,6 +403,10 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     return GE_EXEC_NOT_INIT;
   }
 
+  // stop profiling
+  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
+    ProfilingManager::Instance().StopProfiling();
+  }
   return GraphLoader::UnloadModel(model_id);
 }
 
@@ -554,7 +565,7 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
     return GE_EXEC_NOT_INIT;
   }
 
-  string filePath = RealPath(path.c_str());
+  string filePath = domi::RealPath(path.c_str());
   if (filePath.empty()) {
     GELOGE(ge::FAILED, "filePath is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;

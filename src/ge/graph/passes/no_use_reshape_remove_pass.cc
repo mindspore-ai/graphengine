@@ -40,7 +40,7 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
     GELOGE(PARAM_INVALID, "NoUseReshapeRemovePass enter. OpDesc is null.");
     return PARAM_INVALID;
   }
-  if (op_desc_ptr->GetType() != RESHAPE) {
+  if (op_desc_ptr->GetType() != domi::RESHAPE) {
     return SUCCESS;
   }
   GELOGI("NoUseReshapeRemovePass enter.");

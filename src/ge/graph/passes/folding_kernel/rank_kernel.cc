@@ -25,6 +25,7 @@
 #include "inc/kernel_factory.h"
 #include "omg/omg_inner_types.h"
 
+using domi::RANK;
 using ge::Status;
 
 namespace {

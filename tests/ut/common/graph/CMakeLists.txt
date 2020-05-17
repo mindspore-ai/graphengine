@@ -35,6 +35,7 @@ include_directories(${GE_SOURCE_DIR}/inc/external)
 include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/inc/common)
+include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${CMAKE_BINARY_DIR})
@@ -93,4 +94,4 @@ file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(ut_libgraph graphengine::gtest graphengine::gtest_main slog_stub protobuf::protobuf graphengine::securec rt dl)
+target_link_libraries(ut_libgraph graphengine::gtest graphengine::gtest_main slog_stub protobuf::protobuf ${c_sec} rt dl)

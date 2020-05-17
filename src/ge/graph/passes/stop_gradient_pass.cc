@@ -17,6 +17,8 @@
 #include "graph/passes/stop_gradient_pass.h"
 #include <string>
 
+using domi::STOPGRADIENT;
+
 namespace ge {
 Status StopGradientPass::Run(NodePtr &node) {
   if (node == nullptr) {

@@ -30,6 +30,8 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
 
+using domi::MEMCPYASYNC;
+
 namespace ge {
 const char *const kGetNext = "GetNext";
 

@@ -23,6 +23,8 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
+using domi::CASE;
+
 namespace ge {
 constexpr uint32_t kCasePredIndex = 0;
 constexpr uint32_t kMinCaseBranch = 1;
@@ -55,8 +57,6 @@ Status CaseOpLabelMaker::Run(uint32_t &label_index) {
     return SUCCESS;
   }
 
-  NodePtr first_label = nullptr;
-  ComputeGraphPtr first_graph = nullptr;
   std::vector<uint32_t> switch_labels;
   uint32_t last_label_index = label_index++;
   for (uint32_t index = 0; index < graph_num; ++index) {
@@ -66,16 +66,11 @@ Status CaseOpLabelMaker::Run(uint32_t &label_index) {
     // all branch, add label node to head.
     uint32_t curr_label_index = label_index++;
     std::string label_set_name = parent_node_->GetName() + "/LabelSet_" + std::to_string(index);  // rtLabelSet
-    NodePtr label = AddLabelSetEnter(graph, label_set_name, curr_label_index);
-    if (label == nullptr) {
+    if (AddLabelSetEnter(graph, label_set_name, curr_label_index) == nullptr) {
       GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", graph->GetName().c_str());
       return FAILED;
     }
     switch_labels.emplace_back(curr_label_index);
-    if (index == 0) {  // save first subgraph node for switch.
-      first_label = label;
-      first_graph = graph;
-    }
 
     if (index + 1 < graph_num) {
       // middle node, add goto node to tail.
@@ -95,7 +90,7 @@ Status CaseOpLabelMaker::Run(uint32_t &label_index) {
   }
 
   // Add Switch node for first branch.
-  GE_CHECK_NOTNULL(first_label);
+  ComputeGraphPtr first_graph = parent_graph_->GetSubgraph(graph_names[0]);
   GE_CHECK_NOTNULL(first_graph);
 
   GeTensorDesc pred_desc = case_desc->GetInputDesc(kCasePredIndex);
@@ -106,12 +101,6 @@ Status CaseOpLabelMaker::Run(uint32_t &label_index) {
   NodePtr switch_node = AddLabelSwitchEnter(first_graph, label_switch_name, cond_desc, switch_labels);
   if (switch_node == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", first_graph->GetName().c_str());
-    return FAILED;
-  }
-
-  // Link control edge to then branch head.
-  if (GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), first_label->GetInControlAnchor()) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add ctrl edge to %s failed.", first_label->GetName().c_str());
     return FAILED;
   }
 

@@ -127,7 +127,6 @@ include: \n
 *inputs are trusted or unimportant. There is a risk of adversaries\n
 *constructing inputs that all hash to the same bucket.\n
 *To prevent this problem, use a strong hash function with\n
-*string_to_hash_bucket_strong.
 
 *@see Substr()
 
@@ -155,7 +154,6 @@ include: \n
 *This function may be used when CPU time is scarce and inputs are trusted or\n
 *unimportant. There is a risk of adversaries constructing inputs that all hash\n
 *to the same bucket. To prevent this problem, use a strong hash function with\n
-*string_to_hash_bucket_strong.
 
 *@see StringToHashBucketFast()
 
@@ -187,7 +185,6 @@ include: \n
 * hash value distribution over buckets. This requires that the hash function\
 *is seeded by a high-entropy (random) "key" unknown to the adversary.
 *@li The additional robustness comes at a cost of roughly 4x higher\n
-*compute time than string_to_hash_bucket_fast.
 
 *@see StringToHashBucketStrong()
 

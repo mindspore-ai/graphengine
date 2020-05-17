@@ -30,7 +30,7 @@ Status AddNPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
 
-  if (node->GetType() == ADDN) {
+  if (node->GetType() == domi::ADDN) {
     if (node->GetOpDesc() == nullptr) {
       GELOGE(PARAM_INVALID, "Param [node] op desc is null.");
       return PARAM_INVALID;

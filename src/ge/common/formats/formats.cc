@@ -24,7 +24,6 @@
 #include <string>
 #include <vector>
 
-#include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/type_utils.h"
@@ -39,13 +38,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
            TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return UNSUPPORTED;
   }
-
-  auto src_shape_size = GetItemNumByShape(args.src_shape);
-  if (args.data == nullptr && src_shape_size != 0) {
+  if (args.data == nullptr) {
     GELOGE(PARAM_INVALID, "Invalid input null data");
     return PARAM_INVALID;
   }
-
   return transfer->TransFormat(args, result);
 }
 
@@ -75,12 +71,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransDataType(const CastAr
            TypeUtils::DataTypeToSerialString(args.dst_data_type).c_str());
     return UNSUPPORTED;
   }
-
-  if (args.data == nullptr && args.src_data_size != 0) {
-    GELOGE(PARAM_INVALID, "Invalid input null data");
-    return PARAM_INVALID;
-  }
-
   return transfer->TransDataType(args, result);
 }
 

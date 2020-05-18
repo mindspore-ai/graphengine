@@ -26,7 +26,6 @@ include_directories(${GE_SOURCE_DIR}/inc/framework/common)
 include_directories(${GE_SOURCE_DIR}/inc/framework/ge_runtime)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 

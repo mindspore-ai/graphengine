@@ -29,7 +29,6 @@ include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/src/ge)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
-include_directories(${GE_SOURCE_DIR}/third_party/securec/include)
 file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "${GE_SOURCE_DIR}/src/proto/om.proto"
         "${GE_SOURCE_DIR}/src/proto/task.proto"

@@ -47,7 +47,7 @@ void MemoryAllocator::Finalize(uint32_t device_id) {
   memory_base_map_.clear();
 }
 
-uint8_t *MemoryAllocator::MallocMemory(uint64_t memory_size, uint32_t device_id) const {
+uint8_t *MemoryAllocator::MallocMemory(const string &purpose, uint64_t memory_size, uint32_t device_id) const {
   uint8_t *memory_addr = nullptr;
 
   if (rtMalloc(reinterpret_cast<void **>(&memory_addr), memory_size, memory_type_) != RT_ERROR_NONE) {
@@ -60,7 +60,7 @@ uint8_t *MemoryAllocator::MallocMemory(uint64_t memory_size, uint32_t device_id)
   }
 
   GELOGI("MemoryAllocator::MallocMemory device_id = %u, size= %lu", device_id, memory_size);
-  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "malloc function.", memory_size)
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, purpose.c_str(), memory_size)
   return memory_addr;
 }
 
@@ -74,14 +74,15 @@ Status MemoryAllocator::FreeMemory(uint8_t *memory_addr, uint32_t device_id) con
   return ge::SUCCESS;
 }
 
-uint8_t *MemoryAllocator::MallocMemory(const string &memory_key, uint64_t memory_size, uint32_t device_id) {
+uint8_t *MemoryAllocator::MallocMemory(const string &purpose, const string &memory_key, uint64_t memory_size,
+                                       uint32_t device_id) {
   auto it = memory_base_map_.find(memory_key);
   if (it != memory_base_map_.end()) {
     it->second.memory_used_num_++;
     return it->second.memory_addr_;
   }
 
-  uint8_t *memory_addr = MallocMemory(memory_size, device_id);
+  uint8_t *memory_addr = MallocMemory(purpose, memory_size, device_id);
 
   if (memory_addr == nullptr) {
     GELOGE(ge::INTERNAL_ERROR,

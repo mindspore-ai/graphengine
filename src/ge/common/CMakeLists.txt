@@ -28,7 +28,6 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "debug/memory_dumper.cc"
         "fmk_error_codes.cc"
         "formats/format_transfers/datatype_transfer.cc"
-        "formats/format_transfers/format_transfer.cc"
         "formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
         "formats/format_transfers/format_transfer_dhwcn_fracz3D.cc"
         "formats/format_transfers/format_transfer_dhwnc_fracz3D_transpose.cc"
@@ -41,6 +40,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
         "formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
         "formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
+        "formats/format_transfers/format_transfer_nchw_fz_c04.cc"
         "formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
         "formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
         "formats/format_transfers/format_transfer_transpose.cc"
@@ -54,6 +54,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "helper/om_file_helper.cc"
         "math/fp16_math.cc"
         "model_parser/base.cc"
+        "model_saver.cc"
         "op/attr_value_util.cc"
         "op/ge_op_utils.cc"
         "properties_manager.cc"
@@ -61,9 +62,6 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "thread_pool.cc"
         "types.cc"
         "util.cc"
-        "model_saver.cc"
-        ###############################
-        "op/attr_define.cc"
         )
 
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -73,6 +71,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/op)
 include_directories(${GE_SOURCE_DIR}/src/ge)
 include_directories(${GE_SOURCE_DIR}/inc)
+include_directories(${GE_SOURCE_DIR}/inc/common/util)
 include_directories(${GE_SOURCE_DIR}/inc/external)
 include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
@@ -96,5 +95,6 @@ target_link_libraries(ge_common
         ${slog}
         ${mmpa}
         ${resource}
+        ${error_manager}
         rt
         dl)

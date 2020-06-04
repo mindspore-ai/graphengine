@@ -469,7 +469,7 @@ OpDescUtils::SetWeights(ge::Node &node, const vector<ge::GeTensorPtr> &weights) 
     return GRAPH_PARAM_INVALID;
   }
 
-  ge::GeAttrValue::NamedAttrs named_attrs;
+  ge::GeAttrValue::NAMED_ATTRS named_attrs;
   (void)ge::AttrUtils::SetListTensor(named_attrs, "key", weights);
   vector<ge::GeTensorPtr> copy_weights;
   (void)ge::AttrUtils::MutableListTensor(named_attrs, "key", copy_weights);
@@ -578,7 +578,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDescUtils::ClearWei
 /// @return OpDescBuilder
 ///
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddInput(const std::string &name) {
-  inputs_.emplace_back(name);
+  inputs_.emplace_back(std::make_pair(name, GeTensorDesc()));
+  return *this;
+}
+
+///
+/// @brief Add input
+/// @param [in] name
+/// @param [in] tensor
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddInput(const std::string &name,
+                                                                                      const GeTensorDesc &tensor) {
+  inputs_.emplace_back(std::make_pair(name, tensor));
   return *this;
 }
 
@@ -591,7 +603,22 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::Add
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddDynamicInput(const std::string &name,
                                                                                              uint32_t num) {
   for (uint32_t i = 0; i < num; i++) {
-    inputs_.emplace_back(name + std::to_string(i));
+    inputs_.emplace_back(std::make_pair(name + std::to_string(i), GeTensorDesc()));
+  }
+  return *this;
+}
+
+///
+/// @brief Add dynamic input
+/// @param [in] name
+/// @param [in] num
+/// @param [in] tensor
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddDynamicInput(
+  const std::string &name, uint32_t num, const GeTensorDesc &tensor) {
+  for (uint32_t i = 0; i < num; i++) {
+    inputs_.emplace_back(std::make_pair(name + std::to_string(i), tensor));
   }
   return *this;
 }
@@ -602,7 +629,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::Add
 /// @return OpDescBuilder
 ///
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddOutput(const std::string &name) {
-  outputs_.emplace_back(name);
+  outputs_.emplace_back(std::make_pair(name, GeTensorDesc()));
+  return *this;
+}
+
+///
+/// @brief Add output
+/// @param [in] name
+/// @param [in] tensor
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddOutput(const std::string &name,
+                                                                                       const GeTensorDesc &tensor) {
+  outputs_.emplace_back(std::make_pair(name, tensor));
   return *this;
 }
 
@@ -615,7 +654,22 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::Add
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddDynamicOutput(const std::string &name,
                                                                                               uint32_t num) {
   for (uint32_t i = 0; i < num; i++) {
-    outputs_.emplace_back(name + std::to_string(i));
+    outputs_.emplace_back(std::make_pair(name + std::to_string(i), GeTensorDesc()));
+  }
+  return *this;
+}
+
+///
+/// @brief Add dynamic output
+/// @param [in] name
+/// @param [in] num
+/// @param [in] tensor
+/// @return OpDescBuilder
+///
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescBuilder &OpDescBuilder::AddDynamicOutput(
+  const std::string &name, uint32_t num, const GeTensorDesc &tensor) {
+  for (uint32_t i = 0; i < num; i++) {
+    outputs_.emplace_back(std::make_pair(name + std::to_string(i), tensor));
   }
   return *this;
 }
@@ -632,19 +686,34 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr OpDescBuilder::Build() 
   }
 
   for (auto &input : inputs_) {
-    if (op_desc->AddInputDesc(input, GeTensorDesc()) != GRAPH_SUCCESS) {
+    if (op_desc->AddInputDesc(input.first, input.second) != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "Add input_desc failed.");
       return nullptr;
     }
   }
 
   for (auto &output : outputs_) {
-    if (op_desc->AddOutputDesc(output, GeTensorDesc()) != GRAPH_SUCCESS) {
+    if (op_desc->AddOutputDesc(output.first, output.second) != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "Add output_desc failed.");
       return nullptr;
     }
   }
 
   return op_desc;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDescUtils::SetSubgraphInstanceName(
+  const std::string &subgraph_name, const std::string &subgraph_instance_name, OpDescPtr &op_desc) {
+  const auto &subgraph_names_to_index = op_desc->GetSubgraphNameIndexes();
+  auto iter = subgraph_names_to_index.find(subgraph_name);
+  if (iter == subgraph_names_to_index.end()) {
+    GELOGE(GRAPH_PARAM_INVALID,
+           "Failed to set subgraph instance %s for node %s type %s, the subgraph name %s does not exists",
+           subgraph_instance_name.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+           subgraph_name.c_str());
+    return GRAPH_PARAM_INVALID;
+  }
+
+  return op_desc->SetSubgraphInstanceName(iter->second, subgraph_instance_name);
 }
 }  // namespace ge

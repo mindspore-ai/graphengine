@@ -29,20 +29,9 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
-using domi::ATTR_NAME_STREAM_LABEL;
-
-using domi::NETOUTPUT;
-using domi::STREAMACTIVE;
-using domi::STREAMMERGE;
-using domi::STREAMSWITCHN;
-using domi::SWITCHN;
-
 namespace ge {
 Status MultiBatchPass::Run(ComputeGraphPtr graph) {
   GELOGD("MultiBatchPass Enter");
-
-  GraphUtils::DumpGEGraph(graph, "BeforeMultiBatchPass");
-  GraphUtils::DumpGEGraphToOnnx(*graph, "BeforeMultiBatchPass");
 
   OutDataAnchorPtr pred_value = nullptr;
   Status ret = FindPredValue(graph, pred_value);
@@ -74,9 +63,6 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
       return FAILED;
     }
   }
-
-  GraphUtils::DumpGEGraph(graph, "AfterMultiBatchPass");
-  GraphUtils::DumpGEGraphToOnnx(*graph, "AfterMultiBatchPass");
 
   GELOGD("MultiBatchPass Leave");
   return SUCCESS;
@@ -463,7 +449,7 @@ Status MultiBatchPass::AttachBatchLabel(uint32_t batch_idx) {
       OpDescPtr op_desc = out_node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
       const std::string type = op_desc->GetType();
-      if ((type == STREAMMERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
+      if ((type == MERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
         continue;
       }
       if (type == NETOUTPUT) {

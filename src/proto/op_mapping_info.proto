@@ -30,6 +30,15 @@ message Output {
     int32 original_output_index = 6;
     int32 original_output_data_type = 7;
     int32 original_output_format = 8;
+    uint64 size = 9;
+};
+
+message Input {
+    int32 data_type =1;
+    int32 format = 2;
+    Shape shape = 3;
+    uint64 address = 4;
+    uint64 size = 5;
 };
 
 message Op {
@@ -43,6 +52,7 @@ message Task {
     Op op = 3;
     repeated Output output = 4;
     bool end_graph = 5;
+    repeated Input input = 6;
 };
 
 message OpMappingInfo {

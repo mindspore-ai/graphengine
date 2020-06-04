@@ -40,6 +40,12 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
   }
 
   auto stream_switchn_def = task_def.stream_switch_n();
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(stream_switchn_def.op_index());
+  if (op_desc == nullptr) {
+    GELOGE(FAILED, "Index is out of range, index: %u", stream_switchn_def.op_index());
+    return FAILED;
+  }
+
   // set size_
   input_size_ = stream_switchn_def.size();
   if (input_size_ != kDynamicBtachParamNum && input_size_ != kDynamicResolutionParamNum) {
@@ -59,21 +65,6 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
   }
   value_ptr_ = &value_list_[0];
 
-  uint32_t op_index = stream_switchn_def.op_index();
-
-  // get StreamSwitchN op
-  auto op_list = davinci_model->GetOpList();
-  auto iter = op_list.find(op_index);
-  if (iter == op_list.end()) {
-    GELOGE(FAILED, "Index is out of range, index: %u", op_index);
-    return FAILED;
-  }
-  OpDescPtr op_desc = iter->second;
-  if (op_desc == nullptr) {
-    GELOGE(FAILED, "SwitchN op is nullptr.");
-    return FAILED;
-  }
-
   // set element_size_
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_BATCH_NUM, element_size_)) {
     GELOGE(FAILED, "Get ATTR_NAME_BATCH_NUM of switchN op failed.");
@@ -92,6 +83,7 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
     return FAILED;
   }
   input_ptr_ = input_data_addr[0];
+  davinci_model->DisableZeroCopy(input_ptr_);
   GELOGI("StreamSwitchNTaskInfo Init Success, inputSize:%u, elementSize:%d, trueStreamID:%ld.", input_size_,
          element_size_, op_desc->GetStreamId());
 

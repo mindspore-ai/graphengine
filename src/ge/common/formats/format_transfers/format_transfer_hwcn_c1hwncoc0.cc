@@ -27,16 +27,20 @@
 namespace ge {
 namespace formats {
 namespace {
-bool CheckDataTypeSupported(const DataType &data_type) { return (data_type == DT_FLOAT || data_type == DT_FLOAT16); }
+bool CheckDataTypeSupported(const DataType &data_type) {
+  return (data_type == DT_FLOAT || data_type == DT_FLOAT16 || data_type == DT_INT8);
+}
 
-Status TransShapeHwcnToC1hwncoc0(const std::vector<int64_t> &src_shape, std::vector<int64_t> &dst_shape) {
+Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<int64_t> &src_shape,
+                                 std::vector<int64_t> &dst_shape) {
+  auto cube_size = GetCubeSizeByDataType(data_type);
   dst_shape.clear();
-  dst_shape.push_back((src_shape.at(kHwcnC) - 1) / kCubeSize + 1);
+  dst_shape.push_back(Ceil(src_shape.at(kHwcnC), static_cast<int64_t>(cube_size)));
   dst_shape.push_back(src_shape.at(kHwcnH));
   dst_shape.push_back(src_shape.at(kHwcnW));
   dst_shape.push_back(src_shape.at(kHwcnN));
-  dst_shape.push_back(kCubeSize);
-  dst_shape.push_back(kCubeSize);
+  dst_shape.push_back(cube_size);
+  dst_shape.push_back(cube_size);
   if (!CheckShapeValid(dst_shape, kC1hwncoc0DimsNum)) {
     GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
     return PARAM_INVALID;
@@ -65,7 +69,7 @@ Status CheckArgsForHwcnToC1hwncoc0(const TransArgs &args) {
     return PARAM_INVALID;
   }
   std::vector<int64_t> expect_dst_shape;
-  auto ret = TransShapeHwcnToC1hwncoc0(args.src_shape, expect_dst_shape);
+  auto ret = TransShapeHwcnToC1hwncoc0(args.src_data_type, args.src_shape, expect_dst_shape);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -165,6 +169,12 @@ Status FormatTransferHwcnC1hwncoc0::TransFormat(const TransArgs &args, TransResu
   int size = GetSizeByDataType(args.src_data_type);
   auto total_size = GetItemNumByShape(args.dst_shape) * size;
   if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
+
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;
@@ -188,7 +198,7 @@ Status FormatTransferHwcnC1hwncoc0::TransShape(Format src_format, const std::vec
       GELOGE(PARAM_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
       return PARAM_INVALID;
     }
-    return TransShapeHwcnToC1hwncoc0(src_shape, dst_shape);
+    return TransShapeHwcnToC1hwncoc0(data_type, src_shape, dst_shape);
   } else {
     return UNSUPPORTED;
   }

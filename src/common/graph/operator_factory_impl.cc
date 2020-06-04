@@ -96,7 +96,6 @@ VerifyFunc OperatorFactoryImpl::GetVerifyFunc(const std::string &operator_type) 
 
 graphStatus OperatorFactoryImpl::RegisterOperatorCreator(const string &operator_type, OpCreator const &op_creator) {
   if (operator_creators_ == nullptr) {
-    GELOGI("operator_creators_ init");
     operator_creators_.reset(new (std::nothrow) std::map<string, OpCreator>());
   }
   auto it = operator_creators_->find(operator_type);

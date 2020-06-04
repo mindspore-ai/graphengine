@@ -29,7 +29,7 @@ namespace {
 constexpr int kMaxRePassTimes = 1000;
 constexpr size_t kMaxOneInNodes = 1000;
 // Each iteration, we take about 0.3k memory on the stack, we should change the recursion to loop later
-constexpr int kMaxRecursiveDepth = 10;
+constexpr int kMaxRecursiveDepth = 20;
 
 void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::queue<NodePtr> &input_edge_nodes,
                             std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_last) {

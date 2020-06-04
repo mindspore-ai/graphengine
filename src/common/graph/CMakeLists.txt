@@ -34,13 +34,12 @@ ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 ge_protobuf_generate(ge PROTO_ONNX_SRCS PROTO_ONNX_HDRS ${ONNX_PROTO_LIST})
 
 # need to remove dependencies on pb files later
-file(GLOB_RECURSE SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "*.cc"
         "utils/*.cc"
         "opsproto/*.cc"
         "detail/*.cc"
         "debug/*.cc"
-        "op_imp.cc"
         "option/*.cc"
         )
 

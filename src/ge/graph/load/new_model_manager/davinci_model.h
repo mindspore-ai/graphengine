@@ -27,13 +27,14 @@
 #include "common/ge_types.h"
 #include "common/helper/model_helper.h"
 #include "common/helper/om_file_helper.h"
-#include "common/op/attr_define.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/types.h"
 #include "framework/common/util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/data_dumper.h"
 #include "graph/load/new_model_manager/data_inputer.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/new_model_manager/zero_copy_task.h"
 #include "graph/model.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
@@ -44,19 +45,7 @@
 #include "proto/task.pb.h"
 #include "task_info/task_info.h"
 
-#define WEIGHTS_ADDR_TO_CCE(var)
-
 namespace ge {
-using domi::CONSTANTOP;
-using domi::ENDGRAPH;
-using domi::NETOUTPUT;
-using domi::VARIABLE;
-using std::vector;
-enum ZeroCopyMode {
-  kInputZeroCopy,
-  kOutputZeroCopy,
-};
-
 typedef enum tagModelProcStage {
   MODEL_LOAD_START = 1,
   MODEL_LOAD_END,
@@ -83,27 +72,27 @@ struct timeInfo {
 class DavinciModel {
  public:
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief DavinciModel constructor
   /// @author
   ///
   DavinciModel(int32_t priority, const std::shared_ptr<ModelListener> &listener);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief DavinciModel desctructor, free Parse and Init resources
   /// @author
   ///
   ~DavinciModel();
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief apply model to model_def_
   ///
   Status Assign(const GeModelPtr &ge_model);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief DavinciModel initialization, including Stream, ccHandle, Event, DataInputer, etc
   /// @return execute result
   /// @author
@@ -120,14 +109,14 @@ class DavinciModel {
   Status SetQueIds(const std::vector<uint32_t> &input_queue_ids, const std::vector<uint32_t> &output_queue_ids);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Get DataInputer
   /// @return model ID
   ///
   uint32_t Id() const { return model_id_; }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Get DataInputer
   /// @return model ID
   ///
@@ -136,7 +125,7 @@ class DavinciModel {
   static void *Run(DavinciModel *model_pointer);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief NnExecute
   /// @param [in] stream   execute stream
   /// @param [in] async_mode  is asynchronize mode.
@@ -146,35 +135,21 @@ class DavinciModel {
   Status NnExecute(rtStream_t stream, bool async_mode, const InputData &input_data, OutputData &output_data);
 
   ///
-  /// @ingroup domi_ome
-  /// @brief get sys mode
-  /// @return SysMode
-  ///
-  static domi::SysMode GetSysMode();
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief set sys mode
-  /// @return Status
-  ///
-  static Status SetSysMode(domi::SysMode mode);
-
-  ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief lock mutex run flag
   /// @author
   ///
   void LockRunFlg() { mux_run_flg_.lock(); }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief unlock mutex run flag
   /// @author
   ///
   void UnlockRunFlg() { mux_run_flg_.unlock(); }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief get DataInputer
   /// @return DataInputer pointer
   ///
@@ -195,9 +170,9 @@ class DavinciModel {
   // get session id
   uint64_t SessionId() const { return runtime_param_.session_id; }
 
-  vector<ge::OpDescPtr> GetOpDesc() {
-    vector<ge::OpDescPtr> opDescVector;
-    GE_IF_BOOL_EXEC(ge::AttrUtils::GetListOpDesc(GetGeModel(), domi::MODEL_ATTR_FUSION_MODEL_DEF, opDescVector),
+  vector<OpDescPtr> GetOpDesc() {
+    vector<OpDescPtr> opDescVector;
+    GE_IF_BOOL_EXEC(AttrUtils::GetListOpDesc(GetGeModel(), MODEL_ATTR_FUSION_MODEL_DEF, opDescVector),
                     GELOGI("get opDesc of opDescVector"));
     return opDescVector;
   }
@@ -240,9 +215,9 @@ class DavinciModel {
   const vector<OpDescPtr> &GetDataList() const { return data_op_list_; }
 
   // get Op
-  map<uint32_t, OpDescPtr> GetOpList() const { return op_list_; }
+  const map<uint32_t, OpDescPtr> &GetOpList() const { return op_list_; }
 
-  OpDescPtr GetOpByIndex(uint32_t index) {
+  OpDescPtr GetOpByIndex(uint32_t index) const {
     if (op_list_.find(index) == op_list_.end()) {
       return nullptr;
     }
@@ -264,11 +239,11 @@ class DavinciModel {
   std::vector<TaskInfoPtr> GetTaskList() { return task_list_; }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief get model input and output format
   /// @return ccTensorFormat_t current model input and output format
   ///
-  ge::Format GetFormat();
+  Format GetFormat();
 
   rtModel_t GetRtModelHandle() {
     rtModel_t res = rt_model_handle_;
@@ -285,17 +260,17 @@ class DavinciModel {
 
   void PushHcclStream(rtStream_t value);
 
-  bool IsBroadCastOpData(const ge::NodePtr &var_node);
+  bool IsBroadCastOpData(const NodePtr &var_node);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief For TVM Op, avoid Addr Reuse.
   /// @return void*
   ///
   static const char *GetRegisterStub(const string &tvm_binfile_key, const string &session_graph_model_id = "");
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief get model input and output desc info
   /// @param [out] input_shape  model input size
   /// @param [out] output_shape model output size
@@ -307,7 +282,7 @@ class DavinciModel {
                                 std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &output_formats);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Get dynamic batch_info
   /// @param [out] batch_info
   /// @return execute result
@@ -315,14 +290,14 @@ class DavinciModel {
   Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Get model_id.
   /// @return model_id
   ///
   uint32_t GetModelId() const { return model_id_; }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief get unique identification for op when load two or more models
   /// @param [in] op_desc : current op.
   /// @param [in] string identification: unique identification for current op.
@@ -331,32 +306,22 @@ class DavinciModel {
   void GetUniqueId(const OpDescPtr &op_desc, std::string &unique_identification);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief get model input and output desc for zero copy
   /// @param [out] input_shape  model input size
   /// @param [out] output_shape model output size
   /// @return execute result
   ///
   Status GetInputOutputDescInfoForZeroCopy(vector<InputOutputDescInfo> &input_desc,
-                                           vector<InputOutputDescInfo> &output_desc);
-
-  Status GetInputOutputDescInfoForZeroCopy(vector<InputOutputDescInfo> &input_desc,
                                            vector<InputOutputDescInfo> &output_desc,
                                            std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &output_formats);
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief copy input data to model
-  /// @return Status
-  ///
-  Status CopyInputDataToModel(const std::vector<DataBuffer> &data, uint32_t data_op_index, bool device_data);
 
   Status ReturnResult(uint32_t data_id, const bool rslt_flg, const bool seq_end_flg, OutputData *output_data);
 
   Status ReturnNoOutput(uint32_t data_id);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief dump all op input and output information
   /// @param [in] op_list model_id
   /// @return Status
@@ -364,7 +329,7 @@ class DavinciModel {
   Status DumpOpInputOutput();
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief dump single op input and output information
   /// @param [in] dump_op model_id
   /// @return Status
@@ -374,14 +339,14 @@ class DavinciModel {
   Status ModelRunStart();
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief stop run model
   /// @return Status
   ///
   Status ModelRunStop();
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief model run flag
   /// @return Status
   ///
@@ -390,46 +355,32 @@ class DavinciModel {
   Status GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Set Session Id
   /// @return void
   ///
   void SetSessionId(uint64_t session_id) { session_id_ = session_id; }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Get Session Id
   /// @return sessionID
   ///
   uint64_t GetSessionId() const { return session_id_; }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief SetDeviceId
   /// @return void
   ///
   void SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Get device Id
   /// @return  device id
   ///
   uint32_t GetDeviceId() const { return device_id_; }
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Set Train Mode
-  /// @return void
-  ///
-  void SetTrainMode(bool mode) { is_train_mode_ = mode; }
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Get Train Mode
-  /// @return bool true
-  ///
-  bool GetTrainMode() { return is_train_mode_; }
 
   GeModelPtr GetGeModel() { return ge_model_; }
 
@@ -438,15 +389,18 @@ class DavinciModel {
   int32_t GetDataInputTid() const { return dataInputTid; }
   void SetDataInputTid(int32_t data_input_tid) { dataInputTid = data_input_tid; }
 
+  void DisableZeroCopy(const void *addr);
+
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Save outside address of Data or NetOutput used info for ZeroCopy.
   /// @param [in] const OpDescPtr &op_desc: current op desc
   /// @param [in] const std::vector<void *> &outside_addrs: address of task
   /// @param [in] const void *args_offset: arguments address save the address.
   /// @return None.
   ///
-  void SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<void *> &outside_addrs_, void *args_offset);
+  void SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<void *> &outside_addrs, const void *info, void *args,
+                       size_t size, size_t offset);
 
   bool GetL1FusionEnableOption() { return is_l1_fusion_enable_; }
 
@@ -456,17 +410,22 @@ class DavinciModel {
 
   int64_t GetLoadEndTime() { return load_end_time_; }
 
-  Status SinkModelProfile(std::shared_ptr<DavinciModel> &model);
+  Status SinkModelProfile();
 
   Status SinkTimeProfile(const InputData &current_data);
 
-  void SaveDumpTask(uint32_t task_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args) {
-    data_dumper_.SaveDumpTask(task_id, op_desc, args);
+  void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args) {
+    data_dumper_.SaveDumpTask(task_id, stream_id, op_desc, args);
   }
 
+  void SetEndGraphId(uint32_t task_id, uint32_t stream_id);
   DavinciModel &operator=(const DavinciModel &model) = delete;
 
   DavinciModel(const DavinciModel &model) = delete;
+
+  const vector<std::pair<rtStream_t, int64_t>> &GetHcclFolowStream() { return capacity_of_stream_; }
+  void CreateHcclFollowStream(rtStream_t stream, int64_t remain_cap);
+  void ReuseHcclFollowStream(int64_t remain_cap, int64_t &index);
 
  private:
   // memory address of weights
@@ -484,8 +443,19 @@ class DavinciModel {
   struct timeInfo time_info_;
   int32_t dataInputTid;
 
+  void InitZeroCopyUtil(bool is_dynamic_batch, bool &input_zero_copy, bool &output_zero_copy);
+
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
+  /// @brief Save Batch label Info.
+  /// @param [in] const OpDescPtr &op_desc
+  /// @param [in] uintptr_t addr: address value in args block.
+  /// @return None.
+  ///
+  void SetBatchLabelAddr(const OpDescPtr &op_desc, uintptr_t addr);
+
+  ///
+  /// @ingroup ge
   /// @brief Save Data address info for ZeroCopy.
   /// @param [in] const std::vector<void *> &outside_addrs
   /// @return None.
@@ -493,7 +463,7 @@ class DavinciModel {
   void SetInputOutsideAddr(const std::vector<void *> &outside_addrs);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Save NetOutput address info for ZeroCopy.
   /// @param [in] const std::vector<void *> &outside_addrs
   /// @return None.
@@ -505,69 +475,35 @@ class DavinciModel {
   /// @brief Copy Check input size and model op size.
   /// @param [in] const int64_t &input_size: input size.
   /// @param [in] const int64_t &op_size: model op size.
-  /// @param [in] is_dynamic_input: dynamic batch input flag.
+  /// @param [in] is_dynamic: dynamic batch input flag.
   /// @return true if success
   ///
-  bool CheckInputAndModelSize(const int64_t &input_size, const int64_t &op_size, bool is_dynamic_input);
+  bool CheckInputAndModelSize(const int64_t &input_size, const int64_t &op_size, bool is_dynamic);
 
   ///
   /// @ingroup ge
   /// @brief Copy Input/Output to model for direct use.
   /// @param [in] const InputData &input_data: user input data info.
   /// @param [in/out] OutputData &output_data: user output data info.
-  /// @param [in] bool is_dynamic_input: whether is dynamic input, true: is dynamic input; false: not is dynamic input
+  /// @param [in] bool is_dynamic: whether is dynamic input, true: is dynamic input; false: not is dynamic input
   /// @return SUCCESS handle successfully / others handle failed
   ///
-  Status CopyModelData(const InputData &input_data, OutputData &output_data, bool is_dynamic_input);
+  Status CopyModelData(const InputData &input_data, OutputData &output_data, bool is_dynamic);
 
   ///
   /// @ingroup ge
   /// @brief Copy Data addr to model for direct use.
-  /// @param [in] const vector<void *> &addrs: model input memory addr list.
-  /// @param [in] const vector<uint32_t> &sizes: model input memory size list.
-  /// @param [in] const std::vector<DataBuffer> &blobs: user input data list.
-  /// @param [in] bool is_dynamic_input: whether is dynamic input, true: is dynamic input; false: not is dynamic input
-  /// @param [in] ZeroCopyMode zero_copy_mode: input zero copy or output zero copy
-  /// @param [in] string batch_label: batch label for multi-batch scenes
+  /// @param [in] data_info: model memory addr/size map { data_index, { tensor_size, tensor_addr } }.
+  /// @param [in] is_input: input data or output data
+  /// @param [in] blobs: user input/output data list.
+  /// @param [in] is_dynamic: whether is dynamic input, true: is dynamic input; false: not is dynamic input
+  /// @param [in] batch_label: batch label for multi-batch scenes
   /// @return SUCCESS handle successfully / others handle failed
   ///
-  Status ZeroCopyBlobs(const std::vector<void *> &addr_list, const std::vector<int64_t> &size_list,
-                       const std::vector<DataBuffer> &blobs, bool is_dynamic_input, ZeroCopyMode zero_copy_mode,
-                       string batch_label);
+  Status UpdateIoTaskArgs(const map<uint32_t, pair<int64_t, void *>> &data_info, bool is_input,
+                          const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label);
 
-  ///
-  /// @ingroup ge
-  /// @brief Copy input addr to model for direct use.
-  /// @param [in] void *addr: model input memory addr.
-  /// @param [in] uint32_t size: model input memory size.
-  /// @param [in] const DataBuffer &data_buffer: user input data.
-  /// @param [in] bool is_dynamic_input: whether is dynamic input, true: is dynamic input; false: not is dynamic input
-  /// @param [in] ZeroCopyMode zero_copy_mode: input zero copy or output zero copy
-  /// @param [in] string batch_label: batch label for multi-batch scenes
-  /// @return SUCCESS handle successfully / others handle failed
-  ///
-  Status ZeroCopyInputBlobs(void *addr, int64_t size, const DataBuffer &data_buffer, ZeroCopyMode zero_copy_mode,
-                            string batch_label);
-
-  ///
-  /// @ingroup ge
-  /// @brief Copy address to args_ space for direct use.
-  /// @param [in] const void *src_addr: source address of the Op.
-  /// @param [in] const void *dst_addr: destination address of user data.
-  /// @param [in] ZeroCopyMode zero_copy_mode: input zero copy or output zero copy
-  /// @param [in] string batch_label: batch label for multi-batch scenes
-  /// @return SUCCESS handle successfully / others handle failed
-  ///
-  Status ZeroCopyImpl(const void *src_addr, const DataBuffer &data_buf, ZeroCopyMode zero_copy_mode,
-                      string batch_label);
-
-  Status CopyInputData(const InputData &current_data, bool device_data = false);
-
-  Status CopyTransData(const std::vector<DataBuffer> &data, uint32_t data_index, uint32_t data_op_index,
-                       const std::vector<GeAttrValue::INT> &outputs);
-
-  Status CopyPlainData(const std::vector<DataBuffer> &data, uint32_t data_index, uint32_t data_op_index,
-                       const std::vector<GeAttrValue::INT> &outputs, rtMemcpyKind_t kind);
+  Status CopyInputData(const InputData &input_data, bool device_data = false);
 
   Status CopyOutputData(uint32_t data_id, OutputData &output_data);
 
@@ -612,11 +548,9 @@ class DavinciModel {
   /// @brief Data Op Initialize.
   /// @param [in] NodePtr: Data Op.
   /// @param [in/out] data_op_index: NetOutput addr size info.
-  /// @param [in/out] input_data_info: Data index and addr info {index, {size, addr}}.
   /// @return Status
   ///
-  Status InitDataOp(const NodePtr &node, uint32_t &data_op_index,
-                    std::map<uint32_t, std::pair<int64_t, void *>> &input_data_info);
+  Status InitDataOp(const NodePtr &node, uint32_t &data_op_index);
 
   ///
   /// @ingroup ge
@@ -629,28 +563,42 @@ class DavinciModel {
   ///
   /// @ingroup ge
   /// @brief NetOutput Op Initialize.
-  /// @param [in] op_desc: NetOutput Op descriptor.
+  /// @param [in] NodePtr: NetOutput Op.
   /// @return Status
   ///
-  Status InitNetOutput(const OpDescPtr &op_desc);
+  Status InitNetOutput(const NodePtr &node);
 
   ///
   /// @ingroup ge
-  /// @brief Make Input and Output addr for feature use.
-  /// @param [in] input_data_info: Data index and addr info {index, {size, addr}}.
+  /// @brief output zero copy node Initialize.
+  /// @param [in] NodePtr: Data Op.
   /// @return Status
   ///
-  Status CombineDataInfo(const std::map<uint32_t, std::pair<int64_t, void *>> &input_data_info);
+  Status InitOutputZeroCopyNodes(const NodePtr &node);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief Constant Op Init.
   /// @return Status
   ///
-  Status InitConstant(const ConstOpDescPtr &op_desc) const;
+  Status InitConstant(const OpDescPtr &op_desc);
+
+  Status InitVariable(const OpDescPtr &op_desc);
+
+  /// @ingroup ge
+  /// @brief LabelSet Op Initialize.
+  /// @param [in] op_desc: LabelSet Op descriptor.
+  /// @return Status
+  Status InitLabelSet(const OpDescPtr &op_desc);
+
+  Status InitStreamSwitch(const OpDescPtr &op_desc);
+
+  Status InitStreamActive(const OpDescPtr &op_desc);
+
+  Status InitStreamSwitchN(const OpDescPtr &op_desc);
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
   /// @brief TVM Op Init.
   /// @return Status
   ///
@@ -660,11 +608,18 @@ class DavinciModel {
   void CleanTbeHandle();
 
   ///
-  /// @ingroup domi_ome
+  /// @ingroup ge
+  /// @brief Make active stream list and bind to model.
+  /// @return: 0 for success / others for fail
+  ///
+  Status BindModelStream();
+
+  ///
+  /// @ingroup ge
   /// @brief Init model stream for NN model.
   /// @return Status
   ///
-  Status InitModelStream(rtStream_t stream, bool async_mode);
+  Status InitModelStream(rtStream_t stream);
 
   ///
   /// @ingroup ge
@@ -680,26 +635,16 @@ class DavinciModel {
   ///
   Status BindInputQueue();
 
+  Status CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
+                              std::map<const void *, std::vector<void *>> &outside_addrs);
+
   ///
   /// @ingroup ge
   /// @brief ACL, Bind NetOutput Op addr to output queue.
   /// @return: 0 for success / others for fail
   ///
   Status BindOutputQueue();
-
-  ///
-  /// @ingroup ge
-  /// @brief ACL, Make active stream for S0.
-  /// @return: 0 for success / others for fail
-  ///
-  Status BindActiveStream();
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief insert active_stream_indication_
-  /// @return Status
-  ///
-  Status MarkActiveStream(const OpDescPtr &op_desc);
+  Status CpuModelPrepareOutput(uintptr_t addr, uint32_t size);
 
   ///
   /// @ingroup ge
@@ -709,7 +654,7 @@ class DavinciModel {
   /// @param [in] size: Data Op output tensor size.
   /// @return: 0 for success / others for fail
   ///
-  Status CpuModelDequeue(uint32_t queue_id, uintptr_t addr, uint32_t size);
+  Status CpuModelDequeue(uint32_t queue_id);
 
   ///
   /// @ingroup ge
@@ -736,6 +681,8 @@ class DavinciModel {
   ///
   Status CpuWaitEndGraph();
 
+  Status BindEnqueue();
+  Status CpuModelEnqueue(uint32_t queue_id, uintptr_t out_mbuf);
   ///
   /// @ingroup ge
   /// @brief definiteness queue schedule, repeat run model.
@@ -769,6 +716,9 @@ class DavinciModel {
 
   void SetDataDumperArgs();
 
+  Status GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data_index, OutputData *output_data,
+                             std::vector<ge::OutputTensorInfo> &outputs);
+
   bool is_model_has_inited_;
   uint32_t model_id_;
   uint32_t runtime_model_id_;
@@ -785,10 +735,8 @@ class DavinciModel {
 
   vector<OpDescPtr> variable_op_list_;
 
-  vector<int64_t> output_size_list_;  // Init by NetOutput Input Tensor
-  vector<void *> output_addr_list_;   // Init by NetOutput Input Tensor
-  vector<int64_t> input_size_list_;   // Init by Data Output Tensor
-  vector<void *> input_addr_list_;    // Init by Data Output Tensor
+  std::map<uint32_t, std::pair<int64_t, void *>> input_data_info_;   // Virtual address from Data output.
+  std::map<uint32_t, std::pair<int64_t, void *>> output_data_info_;  // Virtual address from NetOutput input.
 
   // output op: save cce op actual needed memory size
   vector<int64_t> output_memory_size_list_;
@@ -801,10 +749,6 @@ class DavinciModel {
 
   std::mutex mux_run_flg_;
 
-  static domi::SysMode mode_;
-
-  static std::mutex mutex_mode_;
-
   int32_t priority_;
 
   vector<rtStream_t> stream_list_;
@@ -812,17 +756,25 @@ class DavinciModel {
   std::mutex all_hccl_stream_list_mutex_;
   vector<rtStream_t> all_hccl_stream_list_;
 
+  // for reuse hccl_follow_stream
+  std::mutex capacity_of_stream_mutex_;
+  std::vector<std::pair<rtStream_t, int64_t>> capacity_of_stream_;
+
   vector<rtEvent_t> event_list_;
 
   vector<rtLabel_t> label_list_;
+  set<uint32_t> label_id_indication_;
 
   std::mutex outside_addrs_mutex_;
-  std::map<const void *, std::vector<void *>> input_outside_addrs_;
-  std::map<const void *, std::vector<void *>> output_outside_addrs_;
+  std::vector<ZeroCopyTask> zero_copy_tasks_;  // Task used Data or NetOutput addr.
+  std::set<const void *> copy_only_addrs_;     // Address need copy to original place.
+  // {node_addr, {addr_in_task_args}}
+  std::map<const void *, std::vector<void *>> input_outside_addrs_;   // Key is virtual address from Data.
+  std::map<const void *, std::vector<void *>> output_outside_addrs_;  // Key is virtual address from NetOutput.
   // {op_id, batch_label}
-  map<int64_t, std::string> zero_copy_op_id_batch_label_;
+  std::map<int64_t, std::string> zero_copy_op_id_batch_label_;
   // {batch_label, addrs}
-  map<std::string, std::vector<void *>> zero_copy_batch_label_addrs_;
+  std::map<std::string, std::set<uintptr_t>> zero_copy_batch_label_addrs_;
 
   std::vector<TaskInfoPtr> task_list_;
   // rt_moodel_handle
@@ -831,6 +783,8 @@ class DavinciModel {
   rtStream_t rt_model_stream_;
 
   bool is_inner_model_stream_;
+
+  bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
 
   // ACL queue schedule, save queue ids for Init.
   std::vector<TaskInfoPtr> cpu_task_list_;
@@ -843,16 +797,14 @@ class DavinciModel {
   std::map<std::string, ConstGeTensorDescPtr> data_op_input_tensor_desc_map_;
   std::map<std::string, ConstGeTensorDescPtr> data_op_output_tensor_desc_map_;
 
-  bool support_mem_shared_flag_;
-
   uint64_t session_id_;
 
   uint32_t device_id_;
 
-  bool is_train_mode_;
-
   std::mutex flowctrl_op_index_internal_map_mutex_;
   std::map<uint32_t, uint32_t> flowctrl_op_index_internal_map_;
+
+  std::vector<rtStream_t> active_stream_list_;
   std::set<uint32_t> active_stream_indication_;
 
   std::shared_ptr<domi::ModelTaskDef> model_task_def_;
@@ -873,18 +825,8 @@ class DavinciModel {
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
-  bool input_use_zero_copy_;
-  bool output_use_zero_copy_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
-
-  uint32_t end_graph_id_;
-  OpDescPtr end_graph_op_;
 };
-
-#define TIME_LOG_HEAD_FMT "       OP_ID   OP_NAME                OP_TYPE           ELAPSED TIME(ms)"
-#define OP_TIME_LOG_FMT "%d_%-5d %-5d | %-20s | %-15s | %10f | %10d"
-#define MODEL_TIME_LOG_FMT "******** Model %d ends, elapsed time: %f ms ********"
-const size_t INPUT_OUTPUT_NAME_MAX_LEN = 256;
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

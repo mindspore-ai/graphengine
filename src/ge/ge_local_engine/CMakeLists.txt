@@ -15,13 +15,14 @@
 
 # libge_local_engine.so
 # add all proto files, generate corresponding .h and .cc files
-file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/task.proto"
         )
 
-file(GLOB_RECURSE SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "engine/ge_local_engine.cc"
         "ops_kernel_store/*.cc"
+        "ops_kernel_store/op/*.cc"
         )
 
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -34,6 +35,7 @@ include_directories(${GE_SOURCE_DIR}/inc/external)
 include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/graph)
+include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)

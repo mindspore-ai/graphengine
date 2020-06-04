@@ -18,10 +18,10 @@
 #include <set>
 #include "./model_context.h"
 #include "./task/task.h"
-#include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "common/util.h"
+#include "framework/common/debug/ge_log.h"
 #include "framework/common/op/op_parser_util.h"
 #include "graph/types.h"
 #include "task/task_factory.h"
@@ -202,7 +202,8 @@ bool RuntimeModel::LoadTask() {
     }
 
     uint32_t task_id = 0;
-    rtError_t rt_ret = rtModelGetTaskId(rt_model_handle_, &task_id);
+    uint32_t stream_id = 0;
+    rtError_t rt_ret = rtModelGetTaskId(rt_model_handle_, &task_id, &stream_id);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X.", rt_ret);
       return false;

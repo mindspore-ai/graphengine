@@ -51,8 +51,8 @@ bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<in
     return false;
   }
   for (auto dim : src_shape) {
-    if (dim <= 0) {
-      GELOGE(PARAM_INVALID, "Failed to transpose, zero dim in src shape %s", ShapeToString(src_shape).c_str());
+    if (dim < 0) {
+      GELOGE(PARAM_INVALID, "Failed to transpose, negative dim in src shape %s", ShapeToString(src_shape).c_str());
       return false;
     }
   }
@@ -146,12 +146,16 @@ Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, Data
   int64_t dst_ele_num = GetItemNumByShape(dst_shape);
   int64_t data_size = GetSizeByDataType(src_data_type);
   int64_t dst_size = data_size * dst_ele_num;
-  std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
 
   GELOGD("Begin to transpose, src shape %s, perm arg %s, dst shape %s, data type %s", JoinToString(src_shape).c_str(),
          JoinToString(perm_arg).c_str(), JoinToString(dst_shape).c_str(),
          TypeUtils::DataTypeToSerialString(src_data_type).c_str());
+  if (dst_ele_num == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
 
+  std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   int64_t dst_index = 0;
   std::vector<int64_t> dst_indexes(dst_shape.size());
   while (dst_index < dst_ele_num) {

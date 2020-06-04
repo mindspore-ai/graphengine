@@ -50,6 +50,14 @@ enum FWKOperateType {
   FWK_ADPT_SINGLE_OP_RUN
 };
 
+// Extend Info type for task
+enum FWKTaskExtInfoType {
+  FWK_ADPT_EXT_SHAPE_TYPE = 0,
+  FWK_ADPT_EXT_INPUT_SHAPE,
+  FWK_ADPT_EXT_OUTPUT_SHAPE,
+  FWK_ADPT_EXT_INVALID
+};
+
 // API Parameter Structure
 struct StrFWKKernel {
   FWKOperateType opType;
@@ -66,9 +74,19 @@ struct StrFWKKernel {
   uint64_t inputOutputBuf;     // InputOutput shap protobuf addr, need convert to void*
   uint64_t workspaceBaseAddr;  // Workspace base addr, need convert to void*
   uint64_t inputOutputAddr;    // InputOutput addr, need convert to void*
+
+  uint64_t extInfoNum;         // extend info number
+  uint64_t extInfoAddr;        // extend info addr list, ExtInfo structure, num equal to extInfoNum
 } __attribute__((packed));
 
 typedef StrFWKKernel FWKOperateParam;
+
+// Extend info structure for extInfoAddr
+struct ExtInfo{
+  int32_t  infoType;
+  uint32_t infoLen;
+  uint64_t infoAddr;
+} __attribute__((packed));
 
 struct ResultSummary {
   uint64_t shape_data_ptr;   // shape data addr, need convert to void*

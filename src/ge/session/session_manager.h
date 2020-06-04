@@ -110,11 +110,10 @@ class SessionManager {
   /// @param [in] session_id session id
   /// @param [in] graph_id graph id
   /// @param [in] inputs input data
-  /// @param [out] outputs output data
   /// @return Status result of function
   ///
-  Status RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<TensorInfo> &inputs,
-                       std::vector<TensorInfo> &outputs, std::function<void(Status)> callback);
+  Status RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+                       RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph

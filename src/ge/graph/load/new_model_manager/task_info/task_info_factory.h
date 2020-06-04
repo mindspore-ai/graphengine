@@ -86,6 +86,5 @@ class TaskInfoFactory {
     return ptr;                              \
   }                                          \
   TaskInfoFactory::Registerar g_##type##_Task_Info_Creator(type, Creator_##type##_Task_Info);
-};  // namespace ge
+};      // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_TASK_INFO_FACTORY_H_
-

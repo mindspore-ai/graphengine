@@ -18,12 +18,12 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include "graph/load/new_model_manager/model_manager.h"
+#include "common/util.h"
+#include "framework/common/debug/ge_log.h"
+#include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/ge_local_context.h"
-#include "graph/ge_context.h"
-#include "framework/common/debug/ge_log.h"
-#include "common/util.h"
+#include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_adapter.h"
 #include "runtime/mem.h"
@@ -180,11 +180,11 @@ Status InnerSession::RegisterCallBackFunc(
   return SUCCESS;
 }
 
-Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<TensorInfo> &inputs,
-                                   std::vector<TensorInfo> &outputs, std::function<void(Status)> callback) {
+Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+                                   RunAsyncCallback callback) {
   UpdateThreadContext(graph_id);
   GELOGI("[InnerSession:%lu] run graph on session, graph_id=%u.", session_id_, graph_id);
-  Status ret = graph_manager_.RunGraphAsync(graph_id, inputs, outputs, session_id_, callback);
+  Status ret = graph_manager_.RunGraphAsync(graph_id, inputs, session_id_, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] run graph failed, graph_id=%u.", session_id_, graph_id);
     return ret;

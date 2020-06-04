@@ -19,14 +19,14 @@
 #include <string>
 #include <vector>
 
+#include "common/op/ge_op_utils.h"
 #include "external/graph/types.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/op/ge_op_utils.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "graph/passes/pass_utils.h"
 
 namespace ge {
 namespace {
@@ -40,7 +40,7 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
     GELOGE(PARAM_INVALID, "NoUseReshapeRemovePass enter. OpDesc is null.");
     return PARAM_INVALID;
   }
-  if (op_desc_ptr->GetType() != domi::RESHAPE) {
+  if (op_desc_ptr->GetType() != RESHAPE) {
     return SUCCESS;
   }
   GELOGI("NoUseReshapeRemovePass enter.");
@@ -59,6 +59,11 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   GE_CHECK_NOTNULL(output_desc);
   std::vector<int64_t> input_4dims = input_desc->GetShape().GetDims();
   std::vector<int64_t> output_4dims = output_desc->GetShape().GetDims();
+
+  if (input_desc->GetShape().IsUnknownShape() || output_desc->GetShape().IsUnknownShape()) {
+    GELOGI("Current Reshape %s is unkown shape which should be kept.", op_desc_ptr->GetName().c_str());
+    return SUCCESS;
+  }
 
   if (input_4dims.size() != output_4dims.size()) {
     GELOGI("Input and output dim size is not equal.Keep this reshape op.");

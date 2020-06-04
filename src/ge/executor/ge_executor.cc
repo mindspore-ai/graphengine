@@ -165,12 +165,13 @@ namespace ge {
 bool GeExecutor::isInit_ = false;
 class ModelListenerAdapter : public ModelListener {
  public:
-  domi::Status OnComputeDone(uint32_t model_id, uint32_t dataIndex, uint32_t resultCode) {
+  domi::Status OnComputeDone(uint32_t model_id, uint32_t dataIndex, uint32_t resultCode,
+                             std::vector<ge::OutputTensorInfo> &outputs) {
     if (listener == nullptr) {
       GELOGE(ge::FAILED, "listener is null.");
       return FAILED;
     }
-    return listener->OnComputeDone(model_id, dataIndex, resultCode);
+    return listener->OnComputeDone(model_id, dataIndex, resultCode, outputs);
   }
 
   std::shared_ptr<ge::ModelListener> listener;
@@ -193,15 +194,8 @@ Status GeExecutor::Initialize() {
   }
 
   // Start profiling
-  int32_t device_id = 0;
-  rtError_t rt_ret = rtGetDevice(&device_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "runtime get device_id failed, current device_id:%d", device_id);
-    return FAILED;
-  }
-  GELOGI("current device_id:%d", device_id);
   Options profiling_options;
-  profiling_options.device_id = device_id;
+  profiling_options.device_id = 0;
   profiling_options.job_id = "";
   ProfilingManager::Instance().Init(profiling_options);
 
@@ -218,7 +212,11 @@ Status GeExecutor::Finalize() {
   }
 
   // Stop profiling
-  ProfilingManager::Instance().StopProfiling();
+  if (ProfilingManager::Instance().ProfilingOn()) {
+    ProfilingManager::Instance().StopProfiling();
+    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+  }
+
   GELOGI("Uninit ge_executor over.");
   return ge::SUCCESS;
 }
@@ -352,7 +350,7 @@ Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path,
     return GE_EXEC_NOT_INIT;
   }
 
-  string filePath = domi::RealPath(path.c_str());
+  string filePath = RealPath(path.c_str());
   if (filePath.empty()) {
     GELOGE(ge::FAILED, "fileath is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;
@@ -402,10 +400,10 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
     return GE_EXEC_NOT_INIT;
   }
-
-  // stop profiling
-  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().StopProfiling();
+  Status ret = GraphLoader::DestroyAicpuSessionForInfer(model_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed.");
+    return FAILED;
   }
   return GraphLoader::UnloadModel(model_id);
 }
@@ -565,7 +563,7 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
     return GE_EXEC_NOT_INIT;
   }
 
-  string filePath = domi::RealPath(path.c_str());
+  string filePath = RealPath(path.c_str());
   if (filePath.empty()) {
     GELOGE(ge::FAILED, "filePath is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;

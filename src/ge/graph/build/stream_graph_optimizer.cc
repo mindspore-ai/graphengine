@@ -17,7 +17,6 @@
 #include "stream_graph_optimizer.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
-
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "init/gelib.h"
@@ -25,24 +24,26 @@
 using std::vector;
 
 namespace {
-static const int64_t kInvalidStream = -1;
+const int64_t kInvalidStream = -1;
 }  // namespace
 namespace ge {
 StreamGraphOptimizer::~StreamGraphOptimizer() {}
 
-void StreamGraphOptimizer::RefreshNodeId(const ComputeGraphPtr &comp_graph, vector<SubGraphInfoPtr> &subgraph_infos) {
+void StreamGraphOptimizer::RefreshNodeId(const ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map) {
   size_t node_size = comp_graph->GetDirectNodesSize();
   GELOGI("Refresh placeholder and end nodeId start from node num: %zu", node_size);
-  for (const auto &sub_graph_info : subgraph_infos) {
-    ComputeGraphPtr sub_graph = sub_graph_info->GetSubGraph();
-    if (sub_graph == nullptr) {
-      continue;
-    }
-    for (ge::NodePtr &node : sub_graph->GetDirectNode()) {
-      GE_CHECK_NOTNULL_EXEC(node->GetOpDesc(), return );
-      if ((node->GetType() == domi::END) || (node->GetType() == domi::PLACEHOLDER)) {
-        node->GetOpDesc()->SetId(static_cast<int64_t>(node_size));
-        node_size++;
+  for (const auto &subgraph_pair : subgraph_map) {
+    for (const auto &subgraph_info : subgraph_pair.second) {
+      ComputeGraphPtr subgraph = subgraph_info->GetSubGraph();
+      if (subgraph == nullptr) {
+        continue;
+      }
+      for (ge::NodePtr &node : subgraph->GetDirectNode()) {
+        GE_CHECK_NOTNULL_EXEC(node->GetOpDesc(), return );
+        if ((node->GetType() == END) || (node->GetType() == PLACEHOLDER)) {
+          node->GetOpDesc()->SetId(static_cast<int64_t>(node_size));
+          node_size++;
+        }
       }
     }
   }
@@ -72,67 +73,75 @@ bool StreamGraphOptimizer::IsSameStreamId(const ComputeGraphPtr &comp_graph) {
 }
 
 Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &comp_graph,
-                                                      vector<SubGraphInfoPtr> &subgraph_infos,
+                                                      Graph2SubGraphInfoList &subgraph_map,
                                                       struct RunContext &run_context) {
-  Status ret = SUCCESS;
-  GELOGI("Begin to Get optimize streamed subgraph.");
+  GELOGI("Optimize streamed subgraph start.");
 
-  RefreshNodeId(comp_graph, subgraph_infos);
+  RefreshNodeId(comp_graph, subgraph_map);
 
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
   GE_CHECK_NOTNULL(instance);
 
-  for (auto &sub_graph_info : subgraph_infos) {
-    ComputeGraphPtr sub_graph = sub_graph_info->GetSubGraph();
-    if (sub_graph == nullptr) {
-      continue;
-    }
+  for (const auto &subgraph_pair : subgraph_map) {
+    for (const auto &subgraph_info : subgraph_pair.second) {
+      ComputeGraphPtr subgraph = subgraph_info->GetSubGraph();
+      GE_CHECK_NOTNULL(subgraph);
 
-    std::string engine_name = sub_graph_info->GetEngineName();
+      GELOGI("Optimize subgraph %s", subgraph->GetName().c_str());
 
-    vector<GraphOptimizerPtr> graph_optimizers;
-    if (instance->DNNEngineManagerObj().IsEngineRegistered(engine_name)) {
-      instance->OpsKernelManagerObj().GetGraphOptimizerByEngine(engine_name, graph_optimizers);
-      GELOGI("Subgraph: %s start optimize streamed graph. engineName: %s, subgraph num: %zu, graph Optimizer num: %zu.",
-             sub_graph->GetName().c_str(), engine_name.c_str(), subgraph_infos.size(), graph_optimizers.size());
+      std::string engine_name = subgraph_info->GetEngineName();
 
-      auto nodes = sub_graph->GetDirectNode();
-      if (nodes.empty()) {
-        continue;
-      }
-      if (!IsSameStreamId(sub_graph)) {
-        GELOGI("There are more than one stream in subgraph %s", sub_graph->GetName().c_str());
-        continue;
-      }
-      OpDescPtr op_desc = nodes.at(0)->GetOpDesc();
-      GE_CHECK_NOTNULL(op_desc);
-      int64_t stream_id = op_desc->GetStreamId();
-      if (static_cast<size_t>(stream_id) >= run_context.graphStreamList.size()) {
-        GELOGE(FAILED, "stream_id is bigger than run_context.graphStreamList.size()");
-        return FAILED;
-      }
-      run_context.stream = run_context.graphStreamList[stream_id];
-      GELOGD("Subgraph has same stream id, subgraph: %s, engine_name: %s, stream_id: %ld, rtstream: %lu.",
-             sub_graph->GetName().c_str(), engine_name.c_str(), stream_id,
-             static_cast<uint64_t>(reinterpret_cast<uintptr_t>(run_context.stream)));
-      for (auto iter = graph_optimizers.begin(); iter != graph_optimizers.end(); ++iter) {
-        GE_CHECK_NOTNULL(*iter);
-        ret = (*iter)->OptimizeStreamGraph(*sub_graph, run_context);
-        if (ret != SUCCESS) {
-          GELOGE(ret,
-                 "[optimizeStreamedSubGraph]: optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
-                 "Optimizer num: %zu, ret: %u",
-                 sub_graph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size(), ret);
-          return ret;
+      vector<GraphOptimizerPtr> graph_optimizers;
+      if (instance->DNNEngineManagerObj().IsEngineRegistered(engine_name)) {
+        instance->OpsKernelManagerObj().GetGraphOptimizerByEngine(engine_name, graph_optimizers);
+        GELOGI("Subgraph: %s start optimize streamed graph. engineName: %s, graph Optimizer num: %zu.",
+               subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size());
+
+        auto nodes = subgraph->GetDirectNode();
+        if (nodes.empty()) {
+          continue;
         }
-        GELOGI(
-          "[optimizeStreamedSubGraph]: optimize streamed subgraph success, subgraph: %s, engine_name: %s, graph "
-          "Optimizer num: %zu!",
-          sub_graph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size());
+
+        const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
+        if (buffer_optimize_on == nullptr) {
+          if (!IsSameStreamId(subgraph)) {
+            GELOGI("There are more than one stream in subgraph %s", subgraph->GetName().c_str());
+            continue;
+          }
+        }
+        OpDescPtr op_desc = nodes.at(0)->GetOpDesc();
+        GE_CHECK_NOTNULL(op_desc);
+        int64_t stream_id = op_desc->GetStreamId();
+        if (static_cast<size_t>(stream_id) >= run_context.graphStreamList.size()) {
+          GELOGE(FAILED, "stream_id %ld is bigger than run_context.graphStreamList.size() %zu", stream_id,
+                 run_context.graphStreamList.size());
+          return FAILED;
+        }
+        run_context.stream = run_context.graphStreamList[stream_id];
+        GELOGD("Subgraph has same stream id, subgraph: %s, engine_name: %s, stream_id: %ld, rtstream: %lu.",
+               subgraph->GetName().c_str(), engine_name.c_str(), stream_id,
+               static_cast<uint64_t>(reinterpret_cast<uintptr_t>(run_context.stream)));
+        for (auto iter = graph_optimizers.begin(); iter != graph_optimizers.end(); ++iter) {
+          GE_CHECK_NOTNULL(*iter);
+          Status ret = (*iter)->OptimizeStreamGraph(*subgraph, run_context);
+          if (ret != SUCCESS) {
+            GELOGE(
+              ret,
+              "[optimizeStreamedSubGraph]: optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
+              "Optimizer num: %zu, ret: %u",
+              subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size(), ret);
+            return ret;
+          }
+          GELOGI(
+            "[optimizeStreamedSubGraph]: optimize streamed subgraph success, subgraph: %s, engine_name: %s, graph "
+            "Optimizer num: %zu!",
+            subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size());
+        }
       }
     }
   }
 
-  return ret;
+  GELOGI("Optimize streamed subgraph success.");
+  return SUCCESS;
 }
 }  // namespace ge

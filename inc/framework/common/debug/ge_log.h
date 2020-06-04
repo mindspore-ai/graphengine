@@ -51,24 +51,24 @@ inline pid_t GetTid() {
   return tid;
 }
 
-#define GE_TIMESTAMP_START(stage) uint64_t startUsec_##stage = domi::GetCurrentTimestap()
+#define GE_TIMESTAMP_START(stage) uint64_t startUsec_##stage = ge::GetCurrentTimestap()
 
 #define GE_TIMESTAMP_END(stage, stage_name)                                           \
   do {                                                                                \
-    uint64_t endUsec_##stage = domi::GetCurrentTimestap();                            \
+    uint64_t endUsec_##stage = ge::GetCurrentTimestap();                              \
     GEEVENT("[GEPERFTRACE] The time cost of %s is [%lu] micro second.", (stage_name), \
             (endUsec_##stage - startUsec_##stage));                                   \
   } while (0);
 
-#define GE_TIMESTAMP_CALLNUM_START(stage)                  \
-  uint64_t startUsec_##stage = domi::GetCurrentTimestap(); \
-  uint64_t call_num_of##stage = 0;                         \
+#define GE_TIMESTAMP_CALLNUM_START(stage)                \
+  uint64_t startUsec_##stage = ge::GetCurrentTimestap(); \
+  uint64_t call_num_of##stage = 0;                       \
   uint64_t time_of##stage = 0
 
-#define GE_TIMESTAMP_RESTART(stage) (startUsec_##stage = domi::GetCurrentTimestap())
+#define GE_TIMESTAMP_RESTART(stage) (startUsec_##stage = ge::GetCurrentTimestap())
 
-#define GE_TIMESTAMP_ADD(stage)                                     \
-  time_of##stage += domi::GetCurrentTimestap() - startUsec_##stage; \
+#define GE_TIMESTAMP_ADD(stage)                                   \
+  time_of##stage += ge::GetCurrentTimestap() - startUsec_##stage; \
   call_num_of##stage++
 
 #define GE_TIMESTAMP_CALLNUM_END(stage, stage_name)                                                                 \

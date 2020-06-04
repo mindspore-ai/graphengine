@@ -33,13 +33,6 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "framework/common/ge_inner_error_codes.h"
 
-using domi::PARAM_INVALID;
-using domi::PERMUTE;
-using domi::Status;
-using domi::SUCCESS;
-using domi::TRANSPOSE;
-using domi::TRANSPOSED;
-
 namespace ge {
 namespace {
 const char *const kAttrOrder = "order";
@@ -139,6 +132,5 @@ Status PermuteKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Con
 }
 
 REGISTER_KERNEL(PERMUTE, PermuteKernel);
-REGISTER_KERNEL(TRANSPOSE, PermuteKernel);
 REGISTER_KERNEL(TRANSPOSED, PermuteKernel);
 }  // namespace ge

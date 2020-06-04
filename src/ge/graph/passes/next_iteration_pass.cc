@@ -30,15 +30,6 @@
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 
-using domi::ENTER;
-using domi::LOOPCOND;
-using domi::MERGE;
-using domi::NEXTITERATION;
-using domi::REFENTER;
-using domi::REFMERGE;
-using domi::STREAMACTIVE;
-using domi::SWITCH;
-
 namespace ge {
 Status NextIterationPass::Run(ComputeGraphPtr graph) {
   GELOGD("NextIterationPass Enter");

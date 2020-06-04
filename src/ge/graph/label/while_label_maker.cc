@@ -23,10 +23,6 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::_WHILE;
-using domi::STATELESSWHILE;
-using domi::WHILE;
-
 namespace ge {
 constexpr uint8_t kCondOutputNum = 1;
 constexpr uint8_t kCondOutputIndex = 0;
@@ -62,18 +58,32 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   const uint32_t cond_enter_index = label_index++;
   const uint32_t body_enter_index = label_index++;
   const uint32_t body_leave_index = label_index++;
-  const std::string cond_enter_name = parent_node_->GetName() + "/CondLabelSet";   // rtLabelSet
-  const std::string cond_leave_name = parent_node_->GetName() + "/LabelSwitch";    // rtLabelSwitchByIndex
-  const std::string body_enter_name = parent_node_->GetName() + "/EnterLabelSet";  // rtLabelSet
-  const std::string goto_leave_name = parent_node_->GetName() + "/LabelGoto";      // rtLabelGoto
-  const std::string body_leave_name = parent_node_->GetName() + "/LeaveLabelSet";  // rtLabelSet
+  const std::string cond_enter_name = parent_node_->GetName() + "/CondLabelSet";        // rtLabelSet
+  const std::string cond_active_name = parent_node_->GetName() + "/CondStreamActive";   // rtStreamActive
+  const std::string cond_leave_name = parent_node_->GetName() + "/LabelSwitch";         // rtLabelSwitchByIndex
+  const std::string body_enter_name = parent_node_->GetName() + "/EnterLabelSet";       // rtLabelSet
+  const std::string body_active_name = parent_node_->GetName() + "/EnterStreamActive";  // rtStreamActive
+  const std::string goto_leave_name = parent_node_->GetName() + "/LabelGoto";           // rtLabelGoto
+  const std::string body_leave_name = parent_node_->GetName() + "/LeaveLabelSet";       // rtLabelSet
 
-  if (AddLabelSetEnter(cond_graph, cond_enter_name, cond_enter_index) == nullptr) {
+  NodePtr cond_stream_active = AddStreamActive(cond_graph, cond_active_name);
+  if (cond_stream_active == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", cond_graph->GetName().c_str());
+    return FAILED;
+  }
+
+  if (AddLabelSetEnter(cond_graph, cond_enter_name, cond_enter_index, cond_stream_active) == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", cond_graph->GetName().c_str());
     return FAILED;
   }
 
-  if (AddLabelSetEnter(body_graph, body_enter_name, body_enter_index) == nullptr) {
+  NodePtr body_stream_active = AddStreamActive(body_graph, body_active_name);
+  if (body_stream_active == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", body_graph->GetName().c_str());
+    return FAILED;
+  }
+
+  if (AddLabelSetEnter(body_graph, body_enter_name, body_enter_index, body_stream_active) == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", body_graph->GetName().c_str());
     return FAILED;
   }
@@ -88,7 +98,7 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
     return FAILED;
   }
 
-  NodePtr cond_out_node = cond_graph->FindNode(domi::NODE_NAME_NET_OUTPUT);
+  NodePtr cond_out_node = cond_graph->FindNode(NODE_NAME_NET_OUTPUT);
   GE_CHECK_NOTNULL(cond_out_node);
   OpDescPtr cond_out_desc = cond_out_node->GetOpDesc();
   GE_CHECK_NOTNULL(cond_out_desc);

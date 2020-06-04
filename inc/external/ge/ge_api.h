@@ -82,14 +82,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
   /// @brief run graph in the session with specific session id asynchronously
   /// @param [in] graphId: graph id
   /// @param [in] inputs: input data
-  /// @param [out] outputs: output data
   /// @param [out] callback: callback while runing graph has been finished.
   ///                        The callback function will not be checked.
   ///                        Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
-  Status RunGraphAsync(uint32_t graphId, const std::vector<ge::TensorInfo> &inputs,
-                       std::vector<ge::TensorInfo> &outputs, std::function<void(Status)> callback);
+  Status RunGraphAsync(uint32_t graphId, const std::vector<ge::InputTensorInfo> &inputs, RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph

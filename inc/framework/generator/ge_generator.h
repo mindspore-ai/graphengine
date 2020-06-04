@@ -47,6 +47,8 @@ class GeGenerator {
 
   Status GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ge::ModelBufferData &model);
 
+  Status GenerateInfershapeGraph(const Graph &graph);
+
   ///
   /// @ingroup ge
   /// @brief: Build single OP in Model.

@@ -17,8 +17,8 @@
 #include "common/ge/plugin_manager.h"
 
 #include <dirent.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -27,13 +27,15 @@
 #include <string>
 
 #include "framework/common/debug/log.h"
+#include "framework/common/util.h"
 
+namespace {
+const int kMaxNumOfSo = 64;
+const int kMaxSizeOfSo = 209100800;        // = 200M(unit is Byte)
+const int kMaxSizeOfLoadedSo = 522752000;  // = 500M(unit is Byte)
+const char *const kExt = ".so";            // supported extension of shared object
+}  // namespace
 namespace ge {
-static const int kMaxNumOfSo = 64;
-static const int kMaxSizeOfSo = 209100800;        // = 200M(unit is Byte)
-static const int kMaxSizeOfLoadedSo = 522752000;  // = 500M(unit is Byte)
-static const char *const kExt = ".so";            // supported extension of shared object
-
 void PluginManager::ClearHandles_() noexcept {
   for (const auto &handle : handles_) {
     if (dlclose(handle.second) != 0) {
@@ -100,7 +102,7 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     }
 
     std::string file_name = single_path.substr(single_path.rfind('/') + 1, string::npos);
-    string file_path_dlopen = domi::RealPath(single_path.c_str());
+    string file_path_dlopen = RealPath(single_path.c_str());
     if (file_path_dlopen.empty()) {
       GELOGW("Failed to get realpath of %s!", single_path.c_str());
       continue;
@@ -120,8 +122,6 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
       GELOGE(GE_PLGMGR_PATH_INVALID, "Failed to dlopen %s!", dlerror());
       continue;
     }
-
-    GELOGW("The shared library will not be checked. Please ensure the source of the shared library is trusted.");
 
     // load continue when so is invalid
     bool is_valid = true;
@@ -145,10 +145,17 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     handles_[string(file_name)] = handle;
     num_of_loaded_so++;
   }
+
+  GELOGI("load so total num %u", num_of_loaded_so);
+  for (auto name : so_list_) {
+    GELOGI("load %s successfully", name.c_str());
+  }
+
   if (num_of_loaded_so == 0) {
     GELOGW("Failed to find any valid so in path %s!", path.c_str());
     return SUCCESS;
   }
+
   return SUCCESS;
 }
 
@@ -225,7 +232,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
     }
 
     std::string canonical_path_str = (std::string(canonical_path) + "/" + file_name);
-    string file_path_dlopen = domi::RealPath(canonical_path_str.c_str());
+    string file_path_dlopen = RealPath(canonical_path_str.c_str());
     if (file_path_dlopen.empty()) {
       GELOGW("failed to get realpath of %s", canonical_path_str.c_str());
       continue;

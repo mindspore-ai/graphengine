@@ -17,7 +17,7 @@
 #ifndef GE_OP_NN_NORM_OPS_H
 #define GE_OP_NN_NORM_OPS_H
 
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 namespace ge {
 
 /**
@@ -685,6 +685,100 @@ REG_OP(LRNGrad)
     .ATTR(alpha, Float, 1.0)
     .ATTR(beta, Float, 0.5)
     .OP_END_FACTORY_REG(LRNGrad)
+
+ /**
+ *@brief Calculates the RNNT Loss (log probability) for each batch entry. \n
+ Also calculates the gradient.
+
+ *@par Inputs:
+ *@li acts: 4-D, shape: `(batch x seqLength x labelLength x outputDim)`, the logits.
+ *@li labels: 2-D Tensor containing all the targets of the batch with zero padded.
+ *@li input_lengths: Tensor of size (batch) containing size of each output sequence.
+ *@li label_lengths: Tensor of (batch) containing label length of each example.
+
+ *@par Outputs:
+ *@li costs: 1-D Tensor, the cost of each example in the batch.
+ *@li grads: A Tensor. Has the same type as acts.
+
+ *@par Attributes:
+ *@li blank_label: An optional attribute. Defaults to 0.
+
+ */
+REG_OP(RNNTLoss)
+    .INPUT(acts, TensorType({DT_FLOAT}))
+    .INPUT(labels, TensorType({DT_INT32}))
+    .INPUT(input_lengths, TensorType({DT_INT32}))
+    .INPUT(label_lengths, TensorType({DT_INT32}))
+    .ATTR(blank_label, Int, 0)
+    .OUTPUT(costs, TensorType({DT_FLOAT}))
+    .OUTPUT(grads, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(RNNTLoss)
+
+/**
+*@brief Performs group normalization.
+
+*@par Inputs:\n
+* Five inputs, including: (NHWC, NCHW supported)
+*@li x: A 4D Tensor of type float16 or float32, with format NHWC or \n
+NCHW for 4D.
+*@li scale: A Tensor of type float32. Must be 1D if input "x" is with format \n
+NHWC or NCHW. Specifies the scaling factor.
+*@li offset: A Tensor of type float32. Must be 1D if input "x" is with \n
+format NHWC or NCHW. Specifies the offset.
+*@li mean: A Tensor of type float32. Must be 1D if input "x" is with format \n
+NHWC or NCHW. Reserved. Mu
+st be "None" if the operation is used for training.
+*@li variance: A Tensor of type float32. Must be 1D if input "x" is with \n
+format NHWC or NCHW. Specifies the variance used for inference. Reserved.
+
+*@par Attributes:
+*@li epsilon: An optional float32, specifying the small value added to \n
+variance to avoid dividing by zero. Defaults to "0.0001".
+*@li data_format: An optional string, specifying the format of "x". \n
+Defaults to "NHWC".
+*@li is_training: An optional bool, specifying if the operation is used for \n
+training or inference. Defaults to "True".
+
+*@par Outputs:\n
+* Five outputs, including: (NHWC, NCHW supported)
+*@li y: A 4D Tensor of type float16 or float32 for the normalized "x", \n
+with format NHWC or NCHW for 4D.
+*@li batch_mean: A Tensor of type float32. Must be 1D if input "x" is with \n
+format NHWC or NCHW. Specifies the mean of "x".
+*@li batch_variance: A Tensor of type float32. Must be 1D if input "x" is \n
+with format NHWC or NCHW. Specifies the variance of "x".
+*@li reserve_space_1: An optional Tensor of type float32. Must be 1D if \n
+input "x" is with format NHWC or NCHW. Specifies the mean o
+f "x" for gradient computation. Pass "None" to skip this output.
+*@li reserve_space_2: An optional Tensor of type float32. Must be 1D if \n
+input "x" is with format NHWC or NCHW. Specifies the varian
+ce of "x" for gradient computation. Pass "None" to skip this output.
+
+*@attention Constraints:
+*@li If the operation is used for inference and outputs "reserve_space_1" \n
+and "reserve_space_2" are available, then "reserve_space_1" has the same \n
+value as "mean" and "reserve_spa
+ce_2" has the same value as "variance".
+*@li For Ascend 310, the result accuracy fails  due to the square root \n
+instruction.
+
+*/
+REG_OP(GroupNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(scale, TensorType({DT_FLOAT,}))
+    .INPUT(offset, TensorType({DT_FLOAT,}))
+    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OUTPUT(reserve_space_1, TensorType({DT_FLOAT}))
+    .OUTPUT(reserve_space_2, TensorType({DT_FLOAT}))
+    .ATTR(epsilon, Float, 0.0001)
+    .ATTR(data_format, String, "NHWC")
+    .ATTR(is_training, Bool, true)
+    .ATTR(num_groups, Int, 2)
+    .OP_END_FACTORY_REG(GroupNorm)
 
 }  // namespace ge
 

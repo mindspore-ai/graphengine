@@ -17,6 +17,7 @@
 #ifndef GE_GRAPH_PASSES_AICPU_CONSTANT_FOLDING_PASS_H_
 #define GE_GRAPH_PASSES_AICPU_CONSTANT_FOLDING_PASS_H_
 
+#include <string>
 #include <vector>
 
 #include "common/opskernel/ops_kernel_info_store.h"

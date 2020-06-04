@@ -27,21 +27,12 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "runtime/rt.h"
+#include "task/aicpu_task_builder.h"
 #include "task/tbe_task_builder.h"
 
+using domi::TaskDef;
 using std::unique_ptr;
 using std::vector;
-
-using domi::AIPP_DATA_TYPE;
-using domi::ALLOC_MEMORY_MAX_SIZE;
-using domi::DATA_TYPE;
-using domi::MODEL_ATTR_TASK_GEN_BASE_ADDR;
-using domi::MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
-using domi::ModelFileHeader;
-using domi::ModelHelper;
-using domi::NETOUTPUT;
-using domi::OmFileLoadHelper;
-using domi::TaskDef;
 
 namespace ge {
 namespace {
@@ -80,14 +71,19 @@ void SingleOpModel::ParseOpModelParams(ModelHelper &model_helper, SingleOpModelP
   GE_CHECK_NOTNULL_JUST_RETURN(model);
   ret = ge::AttrUtils::GetInt(model, ATTR_MODEL_MEMORY_SIZE, value);
   param.memory_size = ret ? static_cast<uint64_t>(value) : 0;
+  ret = ge::AttrUtils::GetInt(model, ATTR_MODEL_ZERO_COPY_MEMORY_SIZE, value);
+  param.zero_copy_mem_size = ret ? static_cast<uint64_t>(value) : 0;
   ret = ge::AttrUtils::GetInt(model, ATTR_MODEL_WEIGHT_SIZE, value);
   param.weight_size = ret ? static_cast<uint64_t>(value) : 0;
   ret = ge::AttrUtils::GetInt(model, MODEL_ATTR_TASK_GEN_BASE_ADDR, value);
   param.base_addr = ret ? static_cast<uint64_t>(value) : 0;
   ret = ge::AttrUtils::GetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, value);
   param.weight_addr = ret ? static_cast<uint64_t>(value) : 0;
+  ret = ge::AttrUtils::GetInt(model, ATTR_MODEL_CORE_TYPE, value);
+  param.core_type = ret ? value : 0;
 
-  GELOGI("ParseOpModelParams(), memory_size:%lu, weight_size:%lu.", param.memory_size, param.weight_size);
+  GELOGI("ParseOpModelParams(), total_memory_size:%lu, zero_copy_size:%lu, weight_size:%lu. core_type = %lu",
+         param.memory_size, param.zero_copy_mem_size, param.weight_size, param.core_type);
 }
 
 Status SingleOpModel::InitModelMem(StreamResource &res) {
@@ -99,14 +95,17 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
   }
 
   if (model_params_.memory_size > 0) {
-    model_params_.mem_base = res.MallocMemory(model_params_.memory_size);
+    const string purpose("malloc feature map memory on model execute.");
+    GELOGI("total memory: %lu, zero_copy_mem: %lu", model_params_.memory_size, model_params_.zero_copy_mem_size);
+    model_params_.mem_base = res.MallocMemory(purpose, model_params_.memory_size - model_params_.zero_copy_mem_size);
     if (model_params_.mem_base == nullptr) {
       return RT_FAILED;
     }
   }
 
   if (model_params_.weight_size > 0) {
-    model_params_.weight_base = res.MallocWeight(model_params_.weight_size);
+    const string purpose("malloc weights memory on model execute.");
+    model_params_.weight_base = res.MallocWeight(purpose, model_params_.weight_size);
     if (model_params_.weight_base == nullptr) {
       // no need to free memory, for that was handled by StreamResources
       return RT_FAILED;
@@ -235,6 +234,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
     if (task_type == RT_MODEL_TASK_KERNEL) {
+      GELOGD("Building TBE task");
       OpTask *task = nullptr;
       auto ret = BuildKernelTask(task_def.kernel(), single_op, &task);
       if (ret != SUCCESS) {
@@ -243,8 +243,13 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
 
       single_op.tasks_.emplace_back(task);
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
-      GELOGD("BuildKernelExTask is not supported. modelName = %s", model_name_.c_str());
-      return UNSUPPORTED;
+      GELOGD("Building AICPU task");
+      OpTask *task = nullptr;
+      auto ret = BuildKernelExTask(task_def.kernel_ex(), single_op, &task);
+      if (ret != SUCCESS) {
+        return ret;
+      }
+      single_op.tasks_.emplace_back(task);
     } else {
       // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
@@ -306,6 +311,29 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, SingleO
   ParseArgTable(tbe_task, single_op);
 
   *task = tbe_task;
+  return SUCCESS;
+}
+
+Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, SingleOp &single_op, OpTask **task) {
+  auto iter = op_list_.find(kernel_def.op_index());
+  if (iter == op_list_.end()) {
+    GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
+    return INTERNAL_ERROR;
+  }
+
+  std::unique_ptr<AiCpuTask> aicpu_task(new (std::nothrow) AiCpuTask());
+  if (aicpu_task == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "create aicpu op task failed");
+    return MEMALLOC_FAILED;
+  }
+  auto builder = AiCpuTaskBuilder(iter->second, kernel_def);
+  auto ret = builder.BuildTask(*aicpu_task, model_params_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "build aicpu op task failed");
+    return ret;
+  }
+
+  *task = aicpu_task.release();
   return SUCCESS;
 }
 

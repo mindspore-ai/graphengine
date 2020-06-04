@@ -23,8 +23,6 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::CASE;
-
 namespace ge {
 constexpr uint32_t kCasePredIndex = 0;
 constexpr uint32_t kMinCaseBranch = 1;
@@ -57,20 +55,35 @@ Status CaseOpLabelMaker::Run(uint32_t &label_index) {
     return SUCCESS;
   }
 
+  NodePtr first_label = nullptr;
+  ComputeGraphPtr first_graph = nullptr;
   std::vector<uint32_t> switch_labels;
   uint32_t last_label_index = label_index++;
   for (uint32_t index = 0; index < graph_num; ++index) {
     ComputeGraphPtr graph = parent_graph_->GetSubgraph(graph_names[index]);
     GE_CHECK_NOTNULL(graph);
 
-    // all branch, add label node to head.
+    // all branch, add label and stream active nodes to head.
+    std::string stream_active_name =
+      parent_node_->GetName() + "/StreamActive_" + std::to_string(index);  // rtStreamActive
+    NodePtr stream_active = AddStreamActive(graph, stream_active_name);
+    if (stream_active == nullptr) {
+      GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", graph->GetName().c_str());
+      return FAILED;
+    }
+
     uint32_t curr_label_index = label_index++;
     std::string label_set_name = parent_node_->GetName() + "/LabelSet_" + std::to_string(index);  // rtLabelSet
-    if (AddLabelSetEnter(graph, label_set_name, curr_label_index) == nullptr) {
+    NodePtr label = AddLabelSetEnter(graph, label_set_name, curr_label_index, stream_active);
+    if (label == nullptr) {
       GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", graph->GetName().c_str());
       return FAILED;
     }
     switch_labels.emplace_back(curr_label_index);
+    if (index == 0) {  // save first subgraph node for switch.
+      first_label = label;
+      first_graph = graph;
+    }
 
     if (index + 1 < graph_num) {
       // middle node, add goto node to tail.
@@ -90,23 +103,27 @@ Status CaseOpLabelMaker::Run(uint32_t &label_index) {
   }
 
   // Add Switch node for first branch.
-  ComputeGraphPtr first_graph = parent_graph_->GetSubgraph(graph_names[0]);
+  GE_CHECK_NOTNULL(first_label);
   GE_CHECK_NOTNULL(first_graph);
-
-  GeTensorDesc pred_desc = case_desc->GetInputDesc(kCasePredIndex);
-  GeTensorDesc cond_desc(GeShape(pred_desc.GetShape().GetDims()), pred_desc.GetFormat(), DT_UINT32);
 
   // first case, add switch node to head.
   const std::string label_switch_name = parent_node_->GetName() + "/LabelSwitch";  // rtLabelSwitchByIndex
-  NodePtr switch_node = AddLabelSwitchEnter(first_graph, label_switch_name, cond_desc, switch_labels);
+  const GeTensorDesc &pred_desc = case_desc->GetInputDesc(kCasePredIndex);
+  NodePtr switch_node = AddLabelSwitchEnter(first_graph, label_switch_name, pred_desc, switch_labels);
   if (switch_node == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", first_graph->GetName().c_str());
     return FAILED;
   }
 
+  // Link control edge to then branch head.
+  if (GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), first_label->GetInControlAnchor()) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add ctrl edge to %s failed.", first_label->GetName().c_str());
+    return FAILED;
+  }
+
   uint32_t parent_index = 0;  // Case cond input is first.
   const std::string data_name = parent_node_->GetName() + "/SwitchIndexData";
-  if (AddLabelSwitchIndex(first_graph, data_name, cond_desc, switch_node, parent_index) == nullptr) {
+  if (AddLabelSwitchIndex(first_graph, data_name, pred_desc, switch_node, parent_index) == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add switch input failed.", first_graph->GetName().c_str());
     return FAILED;
   }

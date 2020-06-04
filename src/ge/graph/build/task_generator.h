@@ -38,8 +38,8 @@ struct ProfilingPoint {
   uint32_t bp_index = 0;
   uint32_t end_index = 0;
 };
-// Describes infos needed by generate task for l1 fusion node
-struct L1FusionTaskInfo {
+// Describes infos needed by generate task for fusion node
+struct FusionTaskInfo {
   RunContext &run_context;
   ComputeGraphPtr &graph;
   NodePtr &node;
@@ -49,8 +49,8 @@ struct L1FusionTaskInfo {
   const OpsKernelManager &ops_kernel_manager;
   std::vector<domi::TaskDef> &task_def_list;
   std::map<uint32_t, string> &op_name_map;
-  ProfilingPoint &ppoint;
-  vector<uint32_t> ar_ppoint;
+  ProfilingPoint &profiling_point;
+  vector<uint32_t> all_reduce_nodes;
 };
 
 class TaskGenerator {
@@ -103,32 +103,44 @@ class TaskGenerator {
   Status AddModelTaskToModel(const domi::ModelTaskDef &model_task_def, uint64_t session_id, Model &model_def,
                              RunContext &run_context);
 
-  // Mark first and last node according to the same stream and engine
-  Status MarkFirstAndLastNode(ComputeGraphPtr &graph);
+  Status MarkNodeAndSetIndex(ComputeGraphPtr &graph);
+
+  // Mark first and last op according to the same stream and engine
+  Status MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_single_stream) const;
 
   // profiling interface
-  Status FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &ppoint,
-                                std::vector<uint32_t> &ar_ppoint) const;
-  Status InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &ppoint,
-                                   std::vector<uint32_t> &ar_ppoint, uint32_t node_index,
+  Status AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point) const;
+  Status AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                           vector<uint32_t> &all_reduce_nodes) const;
+
+  Status FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,
+                     ProfilingPoint &profiling_point) const;
+  Status FindBpOfEnv(const ComputeGraphPtr &graph, const std::string &bp_point_str, ProfilingPoint &profiling_point,
+                     vector<uint32_t> &all_reduce_nodes) const;
+
+  Status FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                                std::vector<uint32_t> &all_reduce_nodes) const;
+  Status InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
+                                   std::vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
                                    std::vector<domi::TaskDef> &task_def_list);
-  Status InsertProfilingTaskAfter(const OpDescPtr &op_desc, const ProfilingPoint &ppoint,
-                                  std::vector<uint32_t> &ar_ppoint, uint32_t node_index,
+  Status InsertProfilingTaskAfter(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
+                                  std::vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
                                   std::vector<domi::TaskDef> &task_def_list);
 
   static bool IsProfPoint(const OpDescPtr &op, const std::string &name);
-  /// call engine to generate task for l1 fusion node.
-  /// @param L1FusionTaskInfo
-  /// @param l1_fusion_nodes: nodes in graph with groud_id attr which means l1 fusion node
-  /// @param l1_fusion_nodes_seen: l1 fusion node has been called generate task
+
+  /// call engine to generate task for fusion node.
+  /// @param FusionTaskInfo
+  /// @param fusion_nodes: nodes in graph with groud_id attr which means fusion node
+  /// @param fusion_nodes_seen: fusion node has been called generate task
   /// @return SUCCESS:seccess
   ///         Other: failed
   ///
-  Status GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_info,
-                                     std::map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes,
-                                     std::unordered_set<Node *> &l1_fusion_nodes_seen);
+  Status GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info,
+                                   std::map<int64_t, std::vector<NodePtr>> &fusion_nodes,
+                                   std::unordered_set<Node *> &fusion_nodes_seen);
 
-  Status SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes, ComputeGraphPtr &graph);
+  Status SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion_nodes, ComputeGraphPtr &graph);
 
   uint8_t *var_mem_base_ = nullptr;
   uint64_t var_mem_size_ = 0;

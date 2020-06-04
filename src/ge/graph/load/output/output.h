@@ -21,15 +21,14 @@
 #include <vector>
 
 #include "common/debug/log.h"
-#include "common/op/attr_define.h"
 #include "common/op/attr_value_util.h"
 #include "common/op/ge_op_utils.h"
-#include "common/op/op_parser_util.h"
 #include "common/types.h"
 #include "common/util.h"
 #include "common/ge_types.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/op_desc.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 using std::string;

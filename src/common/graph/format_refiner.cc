@@ -15,11 +15,14 @@
  */
 
 #include "format_refiner.h"
+
 #include <deque>
 #include <iostream>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "graph/ref_relation.h"
 #include "./compute_graph.h"
 #include "./ge_error_codes.h"
 #include "./graph/ge_tensor.h"
@@ -34,13 +37,40 @@
 #include "utils/tensor_utils.h"
 #include "utils/type_utils.h"
 
+using namespace ge;
+using namespace std;
 namespace ge {
 namespace {
 static const std::unordered_set<string> kChangeDimNodes = {RESHAPE, PERMUTE, EXPANDDIMS, SQUEEZE};
 static bool net_format_is_nd = true;
 static Format g_user_set_format = FORMAT_ND;
 static bool is_first_infer = true;
+static RefRelations reflection_builder;
 }  // namespace
+
+graphStatus ReflectionProcess(const std::unordered_set<RefCell, RefCellHash> &reflection,
+                              std::deque<ge::NodePtr> &nodes, ge::Format to_be_set_format) {
+  for (const auto &cell : reflection) {
+    auto node = cell.node;
+    auto in_out_idx = cell.in_out_idx;
+    GE_CHECK_NOTNULL(node);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    if (cell.in_out == ge::NODE_IN) {
+      auto desc = node->GetOpDesc()->GetInputDesc(static_cast<uint32_t>(in_out_idx));
+      desc.SetOriginFormat(to_be_set_format);
+      desc.SetFormat(to_be_set_format);
+      (void)node->GetOpDesc()->UpdateInputDesc(static_cast<uint32_t>(in_out_idx), desc);
+    } else {
+      auto desc = node->GetOpDesc()->GetOutputDesc(static_cast<uint32_t>(in_out_idx));
+      desc.SetOriginFormat(to_be_set_format);
+      desc.SetFormat(to_be_set_format);
+      (void)node->GetOpDesc()->UpdateOutputDesc(static_cast<uint32_t>(in_out_idx), desc);
+    }
+    nodes.push_back(cell.node);
+  }
+
+  return GRAPH_SUCCESS;
+}
 
 graphStatus FormatRefiner::RefreshConstantOutProcess(const OpDescPtr &op_desc) {
   GE_CHECK_NOTNULL(op_desc);
@@ -66,7 +96,6 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
   anchor_points.clear();
   // Get all anchor point nodes and switch nodes
   for (const auto &node_ptr : graph->GetAllNodes()) {
-    std::vector<bool> is_node_set_format;
     if (node_ptr == nullptr) {
       return GRAPH_FAILED;
     }
@@ -86,7 +115,7 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
     for (uint32_t i = 0; i < input_size; i++) {
       // Operator pre-set format but not origin format
       auto input_format = op_desc->MutableInputDesc(i)->GetFormat();
-      // Pre-save data node and default infer fail
+      // Pre-save data node (only main graph data) and default infer fail
       if (node_ptr->GetType() == DATA) {
         data_nodes.push_back(node_ptr);
       }
@@ -163,6 +192,16 @@ graphStatus FormatRefiner::BackInferProcess(std::deque<ge::NodePtr> &nodes, ge::
     }
     // Check format whether have been set
     int idx = peer_out_data_anchor->GetIdx();
+    // do peer_out_node name and index as key to lookup reflections
+    ge::RefCell key(peer_out_data_node->GetName(), peer_out_data_node, ge::NODE_OUT, idx);
+    std::unordered_set<RefCell, RefCellHash> reflection;
+    auto status = reflection_builder.LookUpRefRelations(key, reflection);
+    if (status != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "LookUpRefRelations failed!Node is [%s],the %d out edge",
+             (peer_out_data_node->GetName()).c_str(), idx);
+      return GRAPH_FAILED;
+    }
+
     auto ge_tensor_desc = peer_out_data_node->GetOpDesc()->GetOutputDesc(static_cast<uint32_t>(idx));
     if (ge_tensor_desc.GetOriginFormat() == FORMAT_ND) {
       auto dim_num = ge_tensor_desc.GetShape().GetDimNum();
@@ -181,18 +220,26 @@ graphStatus FormatRefiner::BackInferProcess(std::deque<ge::NodePtr> &nodes, ge::
         continue;
       }
 
-      ge_tensor_desc.SetOriginFormat(to_be_set_format);
-      ge_tensor_desc.SetFormat(to_be_set_format);
-      (void)peer_out_data_node->GetOpDesc()->UpdateOutputDesc(static_cast<uint32_t>(idx), ge_tensor_desc);
+      if (reflection.empty()) {
+        ge_tensor_desc.SetOriginFormat(to_be_set_format);
+        ge_tensor_desc.SetFormat(to_be_set_format);
+        (void)peer_out_data_node->GetOpDesc()->UpdateOutputDesc(static_cast<uint32_t>(idx), ge_tensor_desc);
 
-      // Call operator infer format api (forward) to get out format
-      GELOGD("call infer format func[Back]!Node is [%s] ", (peer_out_data_node->GetName()).c_str());
-      graphStatus status = peer_out_data_node->InferOriginFormat();
-      if (status != GRAPH_SUCCESS) {
-        GELOGE(GRAPH_FAILED, "Node[%s] infer format failed", (peer_out_data_node->GetName()).c_str());
-        return GRAPH_FAILED;
+        // Call operator infer format api (forward) to get out format
+        GELOGD("call infer format func[Back]!Node is [%s] ", (peer_out_data_node->GetName()).c_str());
+        status = peer_out_data_node->InferOriginFormat();
+        if (status != GRAPH_SUCCESS) {
+          GELOGE(GRAPH_FAILED, "Node[%s] infer format failed", (peer_out_data_node->GetName()).c_str());
+          return GRAPH_FAILED;
+        }
+        nodes.push_back(peer_out_data_node);
+      } else {
+        auto status = ReflectionProcess(reflection, nodes, to_be_set_format);
+        if (status != GRAPH_SUCCESS) {
+          GELOGE(GRAPH_FAILED, "reflection process failed!");
+          return GRAPH_FAILED;
+        }
       }
-      nodes.push_back(peer_out_data_node);
     }
   }
   return GRAPH_SUCCESS;
@@ -213,17 +260,23 @@ graphStatus FormatRefiner::ForwardInferProcess(std::deque<ge::NodePtr> &nodes, g
       continue;
     }
     for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-      if (peer_in_data_anchor == nullptr) {
-        GELOGW("Node[%s] some peer_in_anchor is null", (node->GetName()).c_str());
-        continue;
-      }
+      GE_IF_BOOL_EXEC(peer_in_data_anchor == nullptr, continue);
+
       auto peer_in_data_node = peer_in_data_anchor->GetOwnerNode();
-      if (peer_in_data_node == nullptr || peer_in_data_node->GetOpDesc() == nullptr) {
-        GELOGW("Node[%s] peer_in_data_node or peer_in_data_node desc is null", node->GetName().c_str());
-        continue;
-      }
+      GE_IF_BOOL_EXEC(peer_in_data_node == nullptr, continue);
+      GE_IF_BOOL_EXEC(peer_in_data_node->GetOpDesc() == nullptr, continue);
+
       // Check format whether have been set
       int idx = peer_in_data_anchor->GetIdx();
+      // do peer_out_node name and index as key to lookup reflections
+      ge::RefCell key(peer_in_data_node->GetName(), peer_in_data_node, ge::NODE_IN, idx);
+      std::unordered_set<RefCell, RefCellHash> reflection;
+      auto status = reflection_builder.LookUpRefRelations(key, reflection);
+      if (status != GRAPH_SUCCESS) {
+        GELOGE(GRAPH_FAILED, "LookUpRefRelations failed!Node is [%s],the %d input edge",
+               (peer_in_data_node->GetName()).c_str(), idx);
+        return GRAPH_FAILED;
+      }
       auto ge_tensor_desc = peer_in_data_node->GetOpDesc()->GetInputDesc(static_cast<uint32_t>(idx));
       if (ge_tensor_desc.GetOriginFormat() == FORMAT_ND) {
         auto dim_num = ge_tensor_desc.GetShape().GetDimNum();
@@ -240,24 +293,33 @@ graphStatus FormatRefiner::ForwardInferProcess(std::deque<ge::NodePtr> &nodes, g
           GELOGD("Node[%s] is change dim node. do not infer origin format", (peer_in_data_node->GetName()).c_str());
           continue;
         }
-        ge_tensor_desc.SetOriginFormat(to_be_set_format);
-        ge_tensor_desc.SetFormat(to_be_set_format);
-        (void)peer_in_data_node->GetOpDesc()->UpdateInputDesc(idx, ge_tensor_desc);
 
-        /// Because netoutput node added before infer format ,so netoutput is end condition
-        /// must set netoutput format , because saved result depend on format
-        if (peer_in_data_node_type == NETOUTPUT) {
-          continue;
-        }
+        if (reflection.empty()) {
+          ge_tensor_desc.SetOriginFormat(to_be_set_format);
+          ge_tensor_desc.SetFormat(to_be_set_format);
+          (void)peer_in_data_node->GetOpDesc()->UpdateInputDesc(static_cast<uint32_t>(idx), ge_tensor_desc);
 
-        // Call operator infer format api (forward) to get out format
-        GELOGD("call infer format func[Forward]!Node is [%s] ", (peer_in_data_node->GetName()).c_str());
-        graphStatus status = peer_in_data_node->InferOriginFormat();
-        if (status != GRAPH_SUCCESS) {
-          GELOGE(GRAPH_FAILED, "Node[%s] infer format failed", (peer_in_data_node->GetName()).c_str());
-          return GRAPH_FAILED;
+          /// Because netoutput node added before infer format ,so netoutput is end condition
+          /// must set netoutput format , because saved result depend on format
+          if (peer_in_data_node_type == NETOUTPUT) {
+            continue;
+          }
+
+          // Call operator infer format api (forward) to get out format
+          GELOGD("call infer format func[Back]!Node is [%s] ", (peer_in_data_node->GetName()).c_str());
+          status = peer_in_data_node->InferOriginFormat();
+          if (status != GRAPH_SUCCESS) {
+            GELOGE(GRAPH_FAILED, "Node[%s] infer format failed", (peer_in_data_node->GetName()).c_str());
+            return GRAPH_FAILED;
+          }
+          nodes.push_back(peer_in_data_node);
+        } else {
+          auto status = ReflectionProcess(reflection, nodes, to_be_set_format);
+          if (status != GRAPH_SUCCESS) {
+            GELOGE(GRAPH_FAILED, "reflection process failed!");
+            return GRAPH_FAILED;
+          }
         }
-        nodes.push_back(peer_in_data_node);
       }
     }
   }
@@ -355,8 +417,15 @@ graphStatus FormatRefiner::InferOrigineFormat(const ge::ComputeGraphPtr &graph) 
     GELOGE(GRAPH_FAILED, "input graph is null");
     return GRAPH_FAILED;
   }
+  // build reflection relations of boundary
+  (void)reflection_builder.Clear();
+  auto status = reflection_builder.BuildRefRelations(*graph);
+  if (status != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "build reflection relations failed for main and subgraph!");
+    return GRAPH_FAILED;
+  }
   // User set global net format
-  graphStatus status = GetAnchorPoints(graph, anchor_points, data_nodes, node_status);
+  status = GetAnchorPoints(graph, anchor_points, data_nodes, node_status);
   if (status != GRAPH_SUCCESS) {
     GELOGE(GRAPH_FAILED, "GetAnchorPoints Process Faild!");
     return GRAPH_FAILED;

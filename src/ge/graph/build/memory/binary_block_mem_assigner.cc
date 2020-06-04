@@ -100,13 +100,13 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
 
   GELOGD("Origin ranges:");
   for (auto &v : ranges) {
-    GELOGD("__%s", domi::ToString(v).c_str());
+    GELOGD("__%s", ToString(v).c_str());
   }
 
   PlanRanges(range_number_limit, ranges);
   GELOGD("Origin ranges:");
   for (auto &v : ranges) {
-    GELOGD("__%s", domi::ToString(v).c_str());
+    GELOGD("__%s", ToString(v).c_str());
   }
 
   for (auto &range : ranges) {
@@ -115,7 +115,7 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
       range_ceils.push_back(range.back());
     }
   }
-  GELOGI("Range ceils: %s", domi::ToString(range_ceils).c_str());
+  GELOGI("Range ceils: %s", ToString(range_ceils).c_str());
 
   return SUCCESS;
 }

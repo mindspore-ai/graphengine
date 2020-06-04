@@ -25,24 +25,32 @@
 #include "graph/op_kernel_bin.h"
 
 namespace ge {
+enum OpTaskType {
+  OP_TASK_TBE = 0,
+  OP_TASK_AICPU,
+  OP_TASK_INVALID,
+};
+
 class OpTask {
  public:
   OpTask() = default;
   virtual ~OpTask() = default;
   virtual Status LaunchKernel(rtStream_t stream) = 0;
+  virtual OpTaskType GetOpTaskType() = 0;
 };
 
 class TbeOpTask : public OpTask {
  public:
   ~TbeOpTask() override;
   Status LaunchKernel(rtStream_t stream) override;
+  OpTaskType GetOpTaskType() override { return OP_TASK_TBE; }
 
   void SetSmDesc(void *sm_desc);
   void SetStubFunc(const std::string &name, const void *stub_func);
   void SetKernelArgs(void *args, size_t arg_size, uint32_t block_dim);
-  const void* GetArgs() const;
+  const void *GetArgs() const;
   size_t GetArgSize() const;
-  const std::string& GetStubName() const;
+  const std::string &GetStubName() const;
 
  private:
   const void *stub_func_ = nullptr;
@@ -51,6 +59,25 @@ class TbeOpTask : public OpTask {
   uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   std::string stub_name_;
+};
+
+class AiCpuTask : public OpTask {
+ public:
+  AiCpuTask() = default;
+  ~AiCpuTask() override;
+
+  Status LaunchKernel(rtStream_t stream) override;
+  OpTaskType GetOpTaskType() override { return OP_TASK_AICPU; }
+  void *GetIOAddr();
+
+ private:
+  friend class AiCpuTaskBuilder;
+  void *workspace_addr_ = nullptr;
+  std::string task_info_;
+  void *args_ = nullptr;
+  size_t arg_size_ = 0;
+  std::string op_type_;
+  void *io_addr_ = nullptr;
 };
 }  // namespace ge
 

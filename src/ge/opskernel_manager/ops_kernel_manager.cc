@@ -21,9 +21,13 @@
 #include <iostream>
 #include <utility>
 
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <google/protobuf/text_format.h>
 #include "../init/gelib.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge/ge_api.h"
+#include "proto/optimizer_priority.pb.h"
 
 namespace {
 const char *const kInitialize = "Initialize";
@@ -74,10 +78,11 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
       plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr> &>(kGetOpsKernelInfoStores, ops_kernel_store_);
     Status rst2 =
       plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr> &>(kGetGraphOptimizerObjs, graph_optimizers_);
-    if ((rst0 != SUCCESS) || (rst1 != SUCCESS) || (rst2 != SUCCESS)) {
+    if ((rst0 != SUCCESS) && (rst1 != SUCCESS) && (rst2 != SUCCESS)) {
       GELOGE(GE_OPS_GET_NO_VALID_SO);
       return GE_OPS_GET_NO_VALID_SO;
     }
+
     ret = CheckPluginPtr();
     if (ret != SUCCESS) {
       return ret;
@@ -89,6 +94,11 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     InitOpsKernelInfo();
     ret = InitGraphOptimzers(options);
     if (ret != SUCCESS) {
+      return ret;
+    }
+    ret = InitGraphOptimizerPriority();
+    if ((ret != SUCCESS)) {
+      GELOGE(ret, "Init graph optimizer priority failed.");
       return ret;
     }
     init_flag_ = true;
@@ -365,6 +375,39 @@ bool OpsKernelManager::GetEnableFeFlag() const { return enable_fe_flag_; }
 bool OpsKernelManager::GetEnableAICPUFlag() const { return enable_aicpu_flag_; }
 
 bool OpsKernelManager::GetEnablePluginFlag() const { return (enable_fe_flag_ || enable_aicpu_flag_); }
+
+Status OpsKernelManager::InitGraphOptimizerPriority() {
+  string priority_conf_path = "plugin/opskernel/optimizer_priority.pbtxt";
+  string path = PluginManager::GetPath();
+  path.append(priority_conf_path);
+
+  optimizers::Priority optimizerPriority;
+  bool ret = ReadProtoFromText(path.c_str(), &optimizerPriority);
+  if (!ret) {
+    GELOGW("Read priority file failed. Follow loading sequence.");
+    return SUCCESS;
+  }
+  auto priorities = optimizerPriority.optimizer();
+  if (priorities.empty()) {
+    GELOGI("No priority file config. Follow loading sequence.");
+    return SUCCESS;
+  }
+  // sort optimizer map by priority
+  map<string, GraphOptimizerPtr> original_optimizers(graph_optimizers_);
+  graph_optimizers_.clear();
+  std::stringstream priority_seq;
+  for (const auto optimizer_name : priorities) {
+    auto name_to_optimizer_pair = original_optimizers.find(optimizer_name);
+    if (name_to_optimizer_pair != original_optimizers.end()) {
+      graph_optimizers_.emplace(*name_to_optimizer_pair);
+      priority_seq << optimizer_name.c_str() << ' ';
+    } else {
+      GELOGW("Unknown optimizer %s show up in priority config file. Please check.", optimizer_name.c_str());
+    }
+  }
+  GELOGI("Graph Optimizers priority initialized. The sequence will follow : %s.", priority_seq.str().c_str());
+  return SUCCESS;
+}
 
 Status OpsKernelManager::FinalizeOpsKernel() {
   GELOGI("ge invoke ops kernal finalize.");

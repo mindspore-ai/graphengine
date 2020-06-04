@@ -81,6 +81,9 @@ class OpDescUtils {
 
   static OpDescPtr CreateConstOp(const GeTensorPtr& tensor_ptr);
 
+  static graphStatus SetSubgraphInstanceName(const std::string& subgraph_name,
+                                             const std::string& subgraph_instance_name, OpDescPtr& op_desc);
+
  private:
   static GeTensorPtr MutableWeights(ge::OpDesc& op_desc);
   static GeTensorPtr MutableWeights(ge::OpDescPtr op_desc);
@@ -105,6 +108,14 @@ class OpDescBuilder {
   OpDescBuilder& AddInput(const std::string& name);
 
   ///
+  /// @brief Add input
+  /// @param [in] name
+  /// @param [in] tensor
+  /// @return OpDescBuilder
+  ///
+  OpDescBuilder& AddInput(const std::string& name, const GeTensorDesc& tensor);
+
+  ///
   /// @brief Add dynamic input
   /// @param [in] name
   /// @param [in] num
@@ -113,11 +124,28 @@ class OpDescBuilder {
   OpDescBuilder& AddDynamicInput(const std::string& name, uint32_t num);
 
   ///
+  /// @brief Add dynamic input
+  /// @param [in] name
+  /// @param [in] num
+  /// @param [in] tensor
+  /// @return OpDescBuilder
+  ///
+  OpDescBuilder& AddDynamicInput(const std::string& name, uint32_t num, const GeTensorDesc& tensor);
+
+  ///
   /// @brief Add output
   /// @param [in] name
   /// @return OpDescBuilder
   ///
   OpDescBuilder& AddOutput(const std::string& name);
+
+  ///
+  /// @brief Add output
+  /// @param [in] name
+  /// @param [in] tensor
+  /// @return OpDescBuilder
+  ///
+  OpDescBuilder& AddOutput(const std::string& name, const GeTensorDesc& tensor);
 
   ///
   /// @brief Add dynamic output
@@ -128,6 +156,15 @@ class OpDescBuilder {
   OpDescBuilder& AddDynamicOutput(const std::string& name, uint32_t num);
 
   ///
+  /// @brief Add dynamic output
+  /// @param [in] name
+  /// @param [in] num
+  /// @param [in] tensor
+  /// @return OpDescBuilder
+  ///
+  OpDescBuilder& AddDynamicOutput(const std::string& name, uint32_t num, const GeTensorDesc& tensor);
+
+  ///
   /// @brief Build op_desc
   /// @return OpDescPtr
   ///
@@ -136,8 +173,8 @@ class OpDescBuilder {
  private:
   std::string name_;
   std::string type_;
-  std::vector<std::string> inputs_;
-  std::vector<std::string> outputs_;
+  std::vector<std::pair<std::string, GeTensorDesc>> inputs_;
+  std::vector<std::pair<std::string, GeTensorDesc>> outputs_;
 };
 }  // namespace ge
 

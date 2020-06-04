@@ -27,7 +27,6 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::SUB;
 namespace ge {
 namespace {
 const size_t kSubFirstInput = 0;

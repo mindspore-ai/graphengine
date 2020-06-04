@@ -29,6 +29,7 @@ namespace ge {
 class KernelUtils {
  public:
   KernelUtils() = delete;
+  ~KernelUtils() = delete;
   static Status CheckDimensionNodeInfo(const NodePtr &node_ptr);
   static bool CheckFormatSupported(const NodePtr &node_ptr);
   static bool CheckSizeForTransOp(const ConstGeTensorPtr &const_weight_ptr, const OpDescPtr &op_desc_ptr);
@@ -44,7 +45,7 @@ class KernelUtils {
   template <typename T>
   static Status GenData(const int64_t data_num, const T value, const GeTensorPtr &output) {
     if (data_num > 0) {
-      if (!domi::CheckInt64MulOverflow(data_num, static_cast<int64_t>(sizeof(T)))) {
+      if (!CheckInt64MulOverflow(data_num, static_cast<int64_t>(sizeof(T)))) {
         GELOGE(PARAM_INVALID, "Int64MulOverflow, data_num(%ld) type_len(%zu)", data_num, sizeof(T));
         return PARAM_INVALID;
       }
@@ -92,7 +93,7 @@ class KernelUtils {
         vec_dim.clear();
         break;
       }
-      if (!domi::CheckInt64MulOverflow(data_num, dim)) {
+      if (!CheckInt64MulOverflow(data_num, dim)) {
         GELOGE(PARAM_INVALID, "Int64MulOverflow, data_num(%ld) dim(%ld)", data_num, static_cast<int64_t>(dim));
         return PARAM_INVALID;
       }

@@ -17,7 +17,7 @@
 #ifndef GE_OP_TRANSFORMATION_OPS_H
 #define GE_OP_TRANSFORMATION_OPS_H
 
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 REG_OP(DepthwiseWeight4DTo6D)
@@ -30,6 +30,8 @@ REG_OP(DepthwiseWeight6DTo4D)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))
     .ATTR(channel_size, Int, 16)
     .OP_END_FACTORY_REG(DepthwiseWeight6DTo4D)
+
+
 
 /**
 *@brief Permutes the dimensions according to perm.\n
@@ -45,8 +47,10 @@ REG_OP(DepthwiseWeight6DTo4D)
 *y: A Tensor. Has the same type as "x".
 */
 REG_OP(TransposeD)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
+                        DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
+                         DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(perm, ListInt)
     .OP_END_FACTORY_REG(TransposeD)
 
@@ -400,13 +404,44 @@ REG_OP(Unpack)
 * "ksizes", "strides" and "rates" are lists of integers.
 */
 REG_OP(ExtractImagePatches)
-    .INPUT(x, TensorType::REALNUMBERTYPE())
-    .OUTPUT(y, TensorType::REALNUMBERTYPE())
+    .INPUT(x, TensorType::RealNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
     .REQUIRED_ATTR(ksizes, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(rates, ListInt)
     .REQUIRED_ATTR(padding, String)
     .OP_END_FACTORY_REG(ExtractImagePatches)
+
+/**
+* @brief Extract "patches" from "input" and put them in the "depth"
+* dimension of the output.
+
+* @par Inputs:
+* x: A 5D Tensor with shape [batch, in_planes, in_rows, in_cols, depth].
+
+* @par Attributes:
+* @li ksizes: A required list or tuple. The size of the sliding window for each
+* dimension of "x".
+* @li strides: A required list or tuple. How far the centers of two consecutive
+* patches are in "x". Must be: [1, stride_planes, stride_rows, stride_cols, 1].
+* @li padding: A required string. The type of padding algorithm to use.
+
+* @par Outputs:
+* Output: A 5D Tensor with shape [batch, out_planes, out_rows, out_cols, ksize_planes * \n
+* ksize_rows * ksize_cols * depth] containing patches with size (ksize_rows * ksize_cols\n
+* * depth) vectorized in the "depth" dimension. Note "out_planes", "out_rows" and "out_cols"\n
+* are the dimensions of the output patches.
+
+* @attention Constraints:
+* "ksizes" and "strides" are lists of integers.
+*/
+REG_OP(ExtractVolumePatches)
+    .INPUT(x, TensorType::REALNUMBERTYPE())
+    .OUTPUT(y, TensorType::REALNUMBERTYPE())
+    .REQUIRED_ATTR(ksizes, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(padding, String)
+    .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**
 *@brief Confuse reshape and transpose.
@@ -423,8 +458,10 @@ REG_OP(ExtractImagePatches)
 *y: A Tensor. Has the same type as "x".
 */
 REG_OP(ConfusionTransposeD)
-    .INPUT(x, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
+                        DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
+                         DT_UINT16, DT_UINT32, DT_UINT64, DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(perm, ListInt)
     .REQUIRED_ATTR(shape, ListInt)
     .REQUIRED_ATTR(transpose_first, Bool)
@@ -466,7 +503,7 @@ REG_OP(ConfusionTranspose)
 *y: The flattened ND tensor. All data types are supported.
 
 *@attention Constraints:
-* "axis" and "end_axis" must be within the dimension range of the input.
+* "axis" and "end_axis" must be within the dimension range of the input. This operator cannot be directly called by the acllopExecute API.
 */
 REG_OP(FlattenV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,
@@ -481,6 +518,13 @@ REG_OP(DeConvTrans)
     .INPUT(x, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_INT8}))
     .OP_END_FACTORY_REG(DeConvTrans)
+
+REG_OP(Compress)
+    .INPUT(weight, TensorType({DT_INT8, DT_FLOAT16}))
+    .OUTPUT(weight_compress, TensorType({DT_INT8, DT_FLOAT16}))
+    .OUTPUT(compress_index, TensorType({DT_INT8}))
+    .REQUIRED_ATTR(compress_parameters, ListInt)
+    .OP_END_FACTORY_REG(Compress)
 }  // namespace ge
 
 #endif  // GE_OP_TRANSFORMATION_OPS_H

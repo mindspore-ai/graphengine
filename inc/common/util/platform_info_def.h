@@ -65,6 +65,10 @@ typedef struct tagAiCoreSpec {
   uint64_t ubbankNum;
   uint64_t ubburstInOneBlock;
   uint64_t ubbankGroupNum;
+  uint32_t unzipEngines;
+  uint32_t unzipMaxRatios;
+  uint32_t unzipChannels;
+  uint8_t unzipIsTight;
 } AiCoreSpec;
 
 typedef struct tagAiCoreMemoryRates {

@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_OUTPUT_H_
-#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_OUTPUT_H_
-
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
-#include "common/ge_types.h"
-#include "graph/op_desc.h"
+#ifndef GE_GRAPH_PASSES_PARALLEL_CONCAT_START_OP_PASS_H_
+#define GE_GRAPH_PASSES_PARALLEL_CONCAT_START_OP_PASS_H_
+#include "graph/passes/folding_pass.h"
 
 namespace ge {
-class DavinciModel;
-
-class ModelOutput {
+class ParallelConcatStartOpPass : public FoldingPass {
  public:
-  static Status CopyResult(DavinciModel *model, OpDescPtr op_desc, OutputData &rslt, uint32_t &data_index,
-                           bool support_mem_share);
+  Status Run(NodePtr &node) override;
 };
 }  // namespace ge
-
-#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_OUTPUT_H_
+#endif  // GE_GRAPH_PASSES_PARALLEL_CONCAT_START_OP_PASS_H_

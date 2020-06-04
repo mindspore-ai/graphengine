@@ -26,6 +26,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "runtime/mem.h"
+#include "graph/build/memory/hybrid_mem_assigner.h"
 
 namespace ge {
 struct MemoryOffset {
@@ -67,10 +68,13 @@ class VariableMemoryAssigner {
 };
 
 using VariableMemoryAssignerPtr = std::shared_ptr<VariableMemoryAssigner>;
+using BlockMemAssignerPtr = std::shared_ptr<BlockMemAssigner>;
+using HybridMemAssignerPtr = std::shared_ptr<HybridMemAssigner>;
 
 class GraphMemoryAssigner {
  public:
-  explicit GraphMemoryAssigner(ge::ComputeGraphPtr compute_graph) : compute_graph_(std::move(compute_graph)) {}
+  explicit GraphMemoryAssigner(ge::ComputeGraphPtr compute_graph)
+      : compute_graph_(std::move(compute_graph)), mem_assigner_(nullptr) {}
 
   GraphMemoryAssigner(const GraphMemoryAssigner &) = delete;
 
@@ -93,17 +97,17 @@ class GraphMemoryAssigner {
   ///
   ge::Status AssignVarAttr2Nodes();
 
-  ge::Status AssignSubgraphInputsMemory();
-
-  ge::Status AssignSubgraphOutputsMemory();
-
   ge::Status ReAssignMemory(bool is_loop_graph, size_t &mem_offset);
+
+  ge::Status AssignZeroCopyMemory(size_t &mem_offset, size_t &zero_mem_copy_size);
 
   ge::Status SetInputOffset();
 
   ge::Status UpdateOpInputOffset(const NodePtr &node) const;
 
   ge::Status CheckOffset();
+
+  ge::Status AssignReferenceMemory();
 
  private:
   ///
@@ -117,18 +121,24 @@ class GraphMemoryAssigner {
 
   ge::Status ReAssignReuseAndNoPaddingContinuousOutputMemory();
 
+  ge::Status ReAssignVirtualInputNodeMemory(NodePtr node, size_t &mem_offset_reuse);
+
+  ge::Status ReAssignVirtualOutputNodeMemory(NodePtr node, size_t &mem_offset_reuse);
+
+  ge::Status ReAssignVirtualNodesMemory(map<string, vector<NodePtr>> &mem_reuse_nodes_map, int32_t mem_reuse_model);
+
+  ge::Status GetMaxBatchLabel(const map<string, vector<NodePtr>> &mem_reuse_virtual_nodes_map, int32_t mem_reuse_model,
+                              string &max_batch_label);
+
   ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &output_desc, int64_t dim_index,
                                                int64_t &output_mem_size, int64_t &batch_dim_num, int64_t &out_size);
 
-  ge::Status ReAssignMergeMemory();
-
   ge::Status ReAssignAtomicMemory(bool is_loop_graph);
 
-  ge::Status AssignContinuousInputMemory(const ge::NodePtr &node);
+  ge::Status AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
+                                         int64_t &continuous_mem_size);
 
   ge::Status AssignContinuousOutputMemory(const ge::NodePtr &node);
-
-  ge::Status AssignReferenceMemory(const ge::NodePtr &node);
 
   ///
   /// @brief check the input of node whether support atomic attr
@@ -158,8 +168,11 @@ class GraphMemoryAssigner {
 
   ge::Status UpdateOpInputOffset(const NodePtr &node, vector<int64_t> &input_list) const;
 
+  ge::Status UpdateConstArgsOffset(const NodePtr &node, vector<int64_t> &input_list) const;
+
   MemoryOffsetList memory_offset_;
   ge::ComputeGraphPtr compute_graph_;
+  HybridMemAssignerPtr mem_assigner_;
 };
 }  // namespace ge
 

@@ -29,7 +29,6 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::PACK;
 namespace {
 const int64_t kShapeItemNumMAX = 2000000000;
 }  // namespace
@@ -68,8 +67,8 @@ Status PackKernel::ValidateKernelParams(const ge::OpDescPtr &op_desc_ptr,
     return PARAM_INVALID;
   }
   if (!(AttrUtils::GetInt(op_desc_ptr, PACK_ATTR_NAME_NUM, n_))) {
-    GELOGE(PARAM_INVALID, "Attr %s is not exist.", PACK_ATTR_NAME_NUM.c_str());
-    return PARAM_INVALID;
+    n_ = 0;
+    GELOGD("Attr %s is not set, default value %ld is used.", PACK_ATTR_NAME_NUM.c_str(), n_);
   }
   if (!(AttrUtils::GetInt(op_desc_ptr, ATTR_NAME_AXIS, axis_))) {
     GELOGE(PARAM_INVALID, "Attr %s is not exist.", ATTR_NAME_AXIS.c_str());
@@ -106,11 +105,7 @@ Status PackKernel::ValidateInputs(const ge::OpDescPtr &op_desc_ptr, const std::v
       GELOGW("Input %ld of pack kernel %s is null.", i, op_desc_ptr->GetName().c_str());
       return PARAM_INVALID;
     }
-    // check if tensor contains data
-    if (input[i]->GetData().size() == 0) {
-      GELOGW("Inputs %ld do not have value.", i);
-      return NOT_CHANGED;
-    }
+
     if (i == 0) {
       // get first input shape
       shape = input[0]->GetTensorDesc().GetShape();
@@ -128,8 +123,8 @@ Status PackKernel::ValidateInputs(const ge::OpDescPtr &op_desc_ptr, const std::v
     auto dst_shape = tensor_desc.GetShape();
     int64_t num = 1;
     for (auto dim : dst_shape.GetDims()) {
-      if (dim < 1) {
-        GELOGW("Invalid zero dim in the shape %s", formats::ShapeToString(shape).c_str());
+      if (dim < 0) {
+        GELOGW("Invalid dim ld% in the shape %s", dim, formats::ShapeToString(shape).c_str());
         return NOT_CHANGED;
       }
       num *= dim;
@@ -140,6 +135,12 @@ Status PackKernel::ValidateInputs(const ge::OpDescPtr &op_desc_ptr, const std::v
     }
     if (!formats::IsShapeEqual(shape, dst_shape)) {
       GELOGW("Shape of input %ld is not equal wiht input 0.", i);
+      return NOT_CHANGED;
+    }
+
+    // check tensor data size is zero ot not
+    if (input[i]->GetData().size() == 0 && num != 0) {
+      GELOGW("Inputs %ld do not have value.", i);
       return NOT_CHANGED;
     }
   }
@@ -168,6 +169,13 @@ void PackKernel::ExpandDims(const int64_t axis, const std::vector<ge::ConstGeTen
 
 Status PackKernel::CopyOutputData(const GeShape &final_shape, const std::vector<ge::ConstGeTensorPtr> &input,
                                   ge::GeTensorPtr &output_ptr) {
+  output_ptr->MutableTensorDesc().SetShape(final_shape);
+  output_ptr->MutableTensorDesc().SetDataType(DataType(data_type_));
+  if (final_shape.GetShapeSize() == 0 && final_shape.GetDims().size() != 0) {
+    // means has zero in shape list, output tnesor data is [].
+    return SUCCESS;
+  }
+
   int64_t times = 1;
   int64_t unit = 1;
   // calculate data unit
@@ -211,8 +219,6 @@ Status PackKernel::CopyOutputData(const GeShape &final_shape, const std::vector<
   if (output_ptr->SetData(buf.get(), static_cast<size_t>(output_size * data_size)) != GRAPH_SUCCESS) {
     GELOGW("CopyOutputData: SetData failed");
   }
-  output_ptr->MutableTensorDesc().SetShape(final_shape);
-  output_ptr->MutableTensorDesc().SetDataType(DataType(data_type_));
   return SUCCESS;
 }
 

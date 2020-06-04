@@ -31,9 +31,7 @@ void TbeOpTask::SetKernelArgs(void *args, size_t arg_size, uint32_t block_dim) {
   block_dim_ = block_dim;
 }
 
-void TbeOpTask::SetSmDesc(void *sm_desc) {
-  sm_desc_ = sm_desc;
-}
+void TbeOpTask::SetSmDesc(void *sm_desc) { sm_desc_ = sm_desc; }
 
 TbeOpTask::~TbeOpTask() {
   if (args_ != nullptr) {
@@ -45,22 +43,14 @@ TbeOpTask::~TbeOpTask() {
   }
 }
 
-const void* TbeOpTask::GetArgs() const {
-  return args_;
-}
+const void *TbeOpTask::GetArgs() const { return args_; }
 
-size_t TbeOpTask::GetArgSize() const {
-  return arg_size_;
-}
+size_t TbeOpTask::GetArgSize() const { return arg_size_; }
 
-const std::string& TbeOpTask::GetStubName() const {
-  return stub_name_;
-}
+const std::string &TbeOpTask::GetStubName() const { return stub_name_; }
 
 Status TbeOpTask::LaunchKernel(rtStream_t stream) {
-  GELOGD("To invoke rtKernelLaunch. task = %s, block_dim = %u",
-         this->stub_name_.c_str(),
-         block_dim_);
+  GELOGD("To invoke rtKernelLaunch. task = %s, block_dim = %u", this->stub_name_.c_str(), block_dim_);
   auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
   auto ret = rtKernelLaunch(stub_func_, block_dim_, args_, static_cast<uint32_t>(arg_size_), sm_desc, stream);
   if (ret != RT_ERROR_NONE) {
@@ -69,6 +59,37 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   }
 
   GELOGD("Invoke rtKernelLaunch succeeded. task = %s", this->stub_name_.c_str());
+  return SUCCESS;
+}
+
+AiCpuTask::~AiCpuTask() {
+  if (args_ != nullptr) {
+    rtFree(args_);
+  }
+
+  if (io_addr_ != nullptr) {
+    (void)rtFree(io_addr_);
+  }
+}
+
+void *AiCpuTask::GetIOAddr() { return io_addr_; }
+
+Status AiCpuTask::LaunchKernel(rtStream_t stream) {
+  auto ret = rtMemcpyAsync(workspace_addr_, task_info_.size(), task_info_.data(), task_info_.size(),
+                           RT_MEMCPY_HOST_TO_DEVICE, stream);
+  if (ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtMemcpyAsync workspace data failed. ret = %d, task = %s", ret, this->op_type_.c_str());
+    return RT_FAILED;
+  }
+
+  GELOGD("To invoke rtKernelLaunchEx. task = %s", this->op_type_.c_str());
+  ret = rtKernelLaunchEx(args_, arg_size_, 0, stream);
+  if (ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->op_type_.c_str());
+    return RT_FAILED;
+  }
+
+  GELOGD("Invoke rtKernelLaunch succeeded. task = %s", this->op_type_.c_str());
   return SUCCESS;
 }
 }  // namespace ge

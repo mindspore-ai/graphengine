@@ -34,11 +34,13 @@ struct SingleOpModelParam {
   uint64_t memory_size = 0;
   uint64_t weight_addr = 0;
   uint64_t weight_size = 0;
+  uint64_t zero_copy_mem_size = 0;
 
   uint8_t *mem_base = nullptr;
   uint8_t *weight_base = nullptr;
 
   std::map<uintptr_t, int> addr_mapping_;
+  int64_t core_type = 0;
 };
 
 class SingleOpModel {
@@ -61,15 +63,16 @@ class SingleOpModel {
 
   Status BuildTaskList(SingleOp &single_op);
   Status BuildKernelTask(const domi::KernelDef &kernel_def, SingleOp &single_op, OpTask **task);
+  Status BuildKernelExTask(const domi::KernelExDef &kernel_def, SingleOp &single_op, OpTask **task);
 
-  static void ParseOpModelParams(domi::ModelHelper &model_helper, SingleOpModelParam &param);
+  static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(TbeOpTask *task, SingleOp &op);
 
   std::string model_name_;
   const void *ori_model_data_;
   uint32_t ori_model_size_;
 
-  domi::ModelHelper model_helper_;
+  ModelHelper model_helper_;
 
   map<uint32_t, OpDescPtr> op_list_;
   SingleOpModelParam model_params_;

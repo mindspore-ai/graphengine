@@ -94,6 +94,8 @@ class PropertiesManager {
   std::string GetDumpOutputPath();
   void SetDumpStep(const std::string &dump_step);
   std::string GetDumpStep();
+  void SetDumpMode(const std::string &dump_mode);
+  std::string GetDumpMode();
 
  private:
   // Private construct, destructor
@@ -120,6 +122,7 @@ class PropertiesManager {
   std::string output_mode_;
   std::string output_path_;
   std::string dump_step_;
+  std::string dump_mode_;
   std::map<std::string, std::set<std::string>> model_dump_properties_map_;  // model_dump_layers_map_
   std::mutex dump_mutex_;
 };

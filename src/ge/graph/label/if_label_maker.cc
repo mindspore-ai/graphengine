@@ -23,23 +23,10 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::_IF;
-using domi::IF;
-using domi::STATELESSIF;
-
 namespace ge {
 constexpr uint8_t kIfPredIndex = 0;
 constexpr uint8_t kThenBranchIndex = 0;
 constexpr uint8_t kElseBranchIndex = 1;
-
-// All ---> Node ---> If ---> Node --->
-//                    |
-//                    V
-//  { Data ---> Node ---> Node ---> NetOutput }
-//
-// All ---> Node ---> If ---> Node --->
-//             \              /
-//            { Node ---> Node }
 
 /**
  * @ingroup ge
@@ -70,13 +57,22 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   const uint32_t then_enter_index = label_index++;
   const uint32_t else_enter_index = label_index++;
   const uint32_t else_leave_index = label_index++;
-  const std::string then_enter_name = parent_node_->GetName() + "/LabelSwitch";    // rtLabelSwitchByIndex
-  const std::string then_label_name = parent_node_->GetName() + "/ThenLabelSet";   // rtLabelSet(0)
-  const std::string then_leave_name = parent_node_->GetName() + "/LabelGoto";      // rtLabelGoto
-  const std::string else_enter_name = parent_node_->GetName() + "/ElseLabelSet";   // rtLabelSet(1)
-  const std::string else_leave_name = parent_node_->GetName() + "/LeaveLabelSet";  // rtLabelSet
+  const std::string then_enter_name = parent_node_->GetName() + "/LabelSwitch";        // rtLabelSwitchByIndex
+  const std::string then_label_name = parent_node_->GetName() + "/ThenLabelSet";       // rtLabelSet(0)
+  const std::string then_active_name = parent_node_->GetName() + "/ThenStreamActive";  // rtStreamActive
+  const std::string then_leave_name = parent_node_->GetName() + "/LabelGoto";          // rtLabelGoto
+  const std::string else_enter_name = parent_node_->GetName() + "/ElseLabelSet";       // rtLabelSet(1)
+  const std::string else_active_name = parent_node_->GetName() + "/ElseStreamActive";  // rtStreamActive
+  const std::string else_leave_name = parent_node_->GetName() + "/LeaveLabelSet";      // rtLabelSet
 
-  if (AddLabelSetEnter(then_sub_graph, then_label_name, then_enter_index) == nullptr) {
+  NodePtr then_stream_active = AddStreamActive(then_sub_graph, then_active_name);
+  if (then_stream_active == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", then_sub_graph->GetName().c_str());
+    return FAILED;
+  }
+
+  NodePtr then_enter_label = AddLabelSetEnter(then_sub_graph, then_label_name, then_enter_index, then_stream_active);
+  if (then_enter_label == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
@@ -86,7 +82,13 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
     return FAILED;
   }
 
-  if (AddLabelSetEnter(else_sub_graph, else_enter_name, else_enter_index) == nullptr) {
+  NodePtr else_stream_active = AddStreamActive(else_sub_graph, else_active_name);
+  if (else_stream_active == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", else_sub_graph->GetName().c_str());
+    return FAILED;
+  }
+
+  if (AddLabelSetEnter(else_sub_graph, else_enter_name, else_enter_index, else_stream_active) == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", else_sub_graph->GetName().c_str());
     return FAILED;
   }
@@ -99,17 +101,22 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   // true  ==> 1 ==> switch_labels[1] ==> then_enter_index
   const std::vector<uint32_t> switch_labels = {else_enter_index, then_enter_index};
 
-  GeTensorDesc pred_desc = if_desc->GetInputDesc(kIfPredIndex);
-  GeTensorDesc cond_desc(GeShape(pred_desc.GetShape().GetDims()), pred_desc.GetFormat(), DT_UINT32);
-  NodePtr switch_node = AddLabelSwitchEnter(then_sub_graph, then_enter_name, cond_desc, switch_labels);
+  const GeTensorDesc &pred_desc = if_desc->GetInputDesc(kIfPredIndex);
+  NodePtr switch_node = AddLabelSwitchEnter(then_sub_graph, then_enter_name, pred_desc, switch_labels);
   if (switch_node == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
 
+  // Link control edge to then branch head.
+  if (GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), then_enter_label->GetInControlAnchor()) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add ctrl edge to %s failed.", then_enter_label->GetName().c_str());
+    return FAILED;
+  }
+
   uint32_t parent_index = 0;  // If cond input is first.
   const std::string data_name = parent_node_->GetName() + "/SwitchIndexData";
-  if (AddLabelSwitchIndex(then_sub_graph, data_name, cond_desc, switch_node, parent_index) == nullptr) {
+  if (AddLabelSwitchIndex(then_sub_graph, data_name, pred_desc, switch_node, parent_index) == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add switch input failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }

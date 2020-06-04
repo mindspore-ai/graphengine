@@ -16,11 +16,12 @@
 
 #include "external/graph/graph.h"
 #include "debug/ge_util.h"
-#include "external/graph/operator.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/ge_attr_value.h"
+#include "graph/debug/ge_attr_define.h"
+#include "graph/debug/ge_op_types.h"
 #include "graph/model.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/op_desc_utils.h"
 
 using std::map;
 using std::pair;
@@ -214,6 +215,23 @@ class GraphImpl {
     return GRAPH_SUCCESS;
   }
 
+  graphStatus FindOpByType(const string &type, std::vector<ge::Operator> &ops) const {
+    for (auto &op : op_list_) {
+      auto op_type = op.second.GetOpType();
+      if (op_type == type) {
+        ops.push_back(op.second);
+        continue;
+      }
+      if (op_type == ge::FRAMEWORKOP) {
+        op.second.GetAttr(ge::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, op_type);
+        if (op_type == type) {
+          ops.push_back(op.second);
+        }
+      }
+    }
+    return GRAPH_SUCCESS;
+  }
+
   void SetNeedIteration(bool need_iteration) {
     if (compute_graph_ == nullptr) {
       GELOGE(GRAPH_FAILED, "Set need iteration failed, as compute graph is null.");
@@ -221,6 +239,8 @@ class GraphImpl {
     }
     compute_graph_->SetNeedIteration(need_iteration);
   }
+
+  const std::string &GetName() const { return name_; }
 
  private:
   std::string name_;
@@ -253,6 +273,11 @@ graphStatus Graph::FindOpByName(const std::string &name, Operator &op) const {
   GE_CHK_BOOL_EXEC(impl_ != nullptr, return GRAPH_FAILED,
                    "FindOpByName failed: graph can not be used, impl is nullptr.");
   return impl_->FindOpByName(name, op);
+}
+
+graphStatus Graph::FindOpByType(const string &type, std::vector<ge::Operator> &ops) const {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->FindOpByType(type, ops);
 }
 
 Graph &Graph::SetInputs(const vector<ge::Operator> &inputs) {
@@ -331,6 +356,8 @@ graphStatus Graph::LoadFromFile(const string &file_name) {
   return GRAPH_SUCCESS;
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY const std::string &Graph::GetName() const { return impl_->GetName(); }
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph
 GraphUtils::CreateGraphFromComputeGraph(const ge::ComputeGraphPtr compute_graph) {
   GE_CHK_BOOL_EXEC_NOLOG(compute_graph != nullptr, return Graph(""));
@@ -342,5 +369,16 @@ GraphUtils::CreateGraphFromComputeGraph(const ge::ComputeGraphPtr compute_graph)
   graph.impl_->compute_graph_ = compute_graph;
 
   return graph;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::RecoverGraphOperators(const Graph &graph) {
+  GE_CHECK_NOTNULL(graph.impl_);
+  GE_CHECK_NOTNULL(graph.impl_->compute_graph_);
+
+  graph.impl_->op_list_.clear();
+  for (const auto &node : graph.impl_->compute_graph_->GetDirectNode()) {
+    graph.impl_->op_list_[node->GetName()] = OpDescUtils::CreateOperatorFromNode(node);
+  }
+  return SUCCESS;
 }
 }  // namespace ge

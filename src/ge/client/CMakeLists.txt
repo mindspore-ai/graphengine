@@ -13,21 +13,21 @@
 # limitations under the License.
 # ============================================================================
 
-# libge_client.so & libge_client_train.so
+# libge_client.so
 # add all proto files, generate corresponding .h and .cc files
 set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
-file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/ge_api.proto"
         )
 
-file(GLOB_RECURSE PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/ge_ir.proto"
         "../../proto/task.proto"
         "../../proto/om.proto"
         "../../proto/insert_op.proto"
         )
 
-file(GLOB_RECURSE SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ge_api.cc"
         )
 
@@ -49,30 +49,9 @@ include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
-######### libge_client_train.so #############
-add_library(ge_client_train SHARED ${SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HDRS})
-target_compile_definitions(ge_client_train PRIVATE
-        Werror
-        PROTOBUF_INLINE_NOT_IN_HEADERS=0
-        REUSE_MEMORY=1
-        PLATFORM_CLOUD
-        DAVINCI_CLOUD)
-target_link_libraries(ge_client_train
-        graph
-        ge_train
-        ge_common
-        ${PROTOBUF_LIBRARY}
-        ${register}
-        ${c_sec}
-        ${slog}
-        ${mmpa}
-        ${runtime}
-        rt
-        dl)
-
 ############ libge_client.so ################
 add_library(ge_client SHARED ${SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HDRS})
-target_compile_definitions(ge_client_train PRIVATE
+target_compile_definitions(ge_client PRIVATE
         Werror
         PROTOBUF_INLINE_NOT_IN_HEADERS=0
         REUSE_MEMORY=1

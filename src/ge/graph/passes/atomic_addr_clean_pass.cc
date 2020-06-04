@@ -26,28 +26,65 @@
 #include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/utils/node_utils.h"
 #include "init/gelib.h"
-
-using domi::ATOMICADDRCLEAN;
-using domi::ATTR_NAME_STREAM_LABEL;
-using domi::LOOPCOND;
-using domi::NODE_NAME_ATOMIC_ADDR_CLEAN;
 
 namespace {
 bool is_loop_graph = false;
 }
 namespace ge {
+namespace {
+bool GraphShouldBeSkip(const ge::ComputeGraphPtr &graph) {
+  // Internal function, guaranteeing graph non-null
+  auto parent = graph->GetParentGraph();
+  if (parent == nullptr) {
+    return false;
+  }
+  for (NodePtr &node : graph->GetDirectNode()) {
+    bool is_unknown = false;
+    auto ret_status = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+    if (ret_status != GRAPH_SUCCESS) {
+      GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
+             node->GetType().c_str());
+      continue;
+    }
+    if (is_unknown) {
+      GELOGI("Node %s, type %s is unknown shape, sub graph %s should be skip.", node->GetName().c_str(),
+             node->GetType().c_str(), graph->GetName().c_str());
+      return true;
+    }
+  }
+  GELOGI("Sub graph %s does not have unknown shape node, run the pass.", graph->GetName().c_str());
+  return false;
+}
+}  // namespace
+
 Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(AtomicAddrCleanPass);
   if (graph == nullptr) {
     GELOGE(PARAM_INVALID, "param [graph] must not be null.");
     return PARAM_INVALID;
   }
+  if (GraphShouldBeSkip(graph)) {
+    return SUCCESS;
+  }
   GELOGD("AtomicAddrCleanPass begin.");
   // 1.Recoginze atomic and loop mark
   vector<NodePtr> atomic_node_vec;
   for (NodePtr &node : graph->GetDirectNode()) {
     if (IsAtomicOp(node)) {
+      bool is_unknown = false;
+      auto ret_status = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+      if (ret_status != GRAPH_SUCCESS) {
+        GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
+               node->GetType().c_str());
+        continue;
+      }
+      if (is_unknown) {
+        GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
+               node->GetType().c_str());
+        continue;
+      }
       atomic_node_vec.push_back(node);
     }
     if (!is_loop_graph && node->GetType() == LOOPCOND) {
@@ -205,7 +242,18 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(op_desc->GetType());
   for (const auto &op_info : op_info_vec) {
     if (op_info.isAtomic) {
-      GELOGI("Recognized atomic op %s from HCCL engine.", op_desc->GetName().c_str());
+      GELOGI("Recognized atomic op %s from DNN_HCCL engine.", op_desc->GetName().c_str());
+      // check peer input is DATA
+      for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+        if (in_data_anchor->GetPeerOutAnchor() != nullptr &&
+            in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
+          auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
+          if (peer_in_node->GetType() == DATA) {
+            GELOGI("Recognized atomic op %s from DNN_HCCL engine and input is DATA.", op_desc->GetName().c_str());
+            return false;
+          }
+        }
+      }
       hcom_node_vec_.push_back(node);
       return true;
     }

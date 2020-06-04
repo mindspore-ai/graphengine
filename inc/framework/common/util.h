@@ -30,12 +30,12 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "mmpa/mmpa_api.h"
 
-#define GE_CHECK_POSITIVE_SIZE_RANGE(size)              \
-  do {                                                  \
-    if (size <= 0) {                                    \
-      DOMI_LOGE(param[#size] is not a positive number); \
-      return PARAM_INVALID;                             \
-    }                                                   \
+#define GE_CHECK_POSITIVE_SIZE_RANGE(size)                    \
+  do {                                                        \
+    if (size <= 0) {                                          \
+      DOMI_LOGE("param[%s] is not a positive number", #size); \
+      return PARAM_INVALID;                                   \
+    }                                                         \
   } while (0)
 
 #define CHECK_FALSE_EXEC(expr, exec_expr, ...) \
@@ -44,7 +44,7 @@
     if (!b) {                                  \
       exec_expr;                               \
     }                                          \
-  };
+  }
 
 // new ge marco
 // Encapsulate common resource releases
@@ -113,101 +113,101 @@
   } while (0)
 
 // Check if the parameter is null. If yes, return PARAM_INVALID and record the error
-#define GE_CHECK_NOTNULL(val)                   \
-  do {                                          \
-    if (val == nullptr) {                       \
-      DOMI_LOGE(param[#val] must not be null.); \
-      return ge::PARAM_INVALID;                 \
-    }                                           \
+#define GE_CHECK_NOTNULL(val)                         \
+  do {                                                \
+    if (val == nullptr) {                             \
+      DOMI_LOGE("param[%s] must not be null.", #val); \
+      return ge::PARAM_INVALID;                       \
+    }                                                 \
   } while (0)
 
 // Check if the parameter is null. If yes, just return and record the error
-#define GE_CHECK_NOTNULL_JUST_RETURN(val)       \
-  do {                                          \
-    if (val == nullptr) {                       \
-      DOMI_LOGE(param[#val] must not be null.); \
-      return;                                   \
-    }                                           \
+#define GE_CHECK_NOTNULL_JUST_RETURN(val)             \
+  do {                                                \
+    if (val == nullptr) {                             \
+      DOMI_LOGE("param[%s] must not be null.", #val); \
+      return;                                         \
+    }                                                 \
   } while (0)
 
 // Check whether the parameter is null. If so, execute the exec_expr expression and record the error log
-#define GE_CHECK_NOTNULL_EXEC(val, exec_expr)   \
-  do {                                          \
-    if (val == nullptr) {                       \
-      DOMI_LOGE(param[#val] must not be null.); \
-      exec_expr;                                \
-    }                                           \
+#define GE_CHECK_NOTNULL_EXEC(val, exec_expr)         \
+  do {                                                \
+    if (val == nullptr) {                             \
+      DOMI_LOGE("param[%s] must not be null.", #val); \
+      exec_expr;                                      \
+    }                                                 \
   } while (0)
 
 // Check whether the parameter is null. If yes, return directly and record the error log
-#define GE_RT_VOID_CHECK_NOTNULL(val)           \
-  do {                                          \
-    if (val == nullptr) {                       \
-      DOMI_LOGE(param[#val] must not be null.); \
-      return;                                   \
-    }                                           \
+#define GE_RT_VOID_CHECK_NOTNULL(val)                 \
+  do {                                                \
+    if (val == nullptr) {                             \
+      DOMI_LOGE("param[%s] must not be null.", #val); \
+      return;                                         \
+    }                                                 \
   } while (0)
 
 // Check if the parameter is null. If yes, return false and record the error log
-#define GE_RT_FALSE_CHECK_NOTNULL(val)          \
-  do {                                          \
-    if (val == nullptr) {                       \
-      DOMI_LOGE(param[#val] must not be null.); \
-      return false;                             \
-    }                                           \
+#define GE_RT_FALSE_CHECK_NOTNULL(val)                \
+  do {                                                \
+    if (val == nullptr) {                             \
+      DOMI_LOGE("param[%s] must not be null.", #val); \
+      return false;                                   \
+    }                                                 \
   } while (0)
 
 // Check if the parameter is out of bounds
-#define GE_CHECK_SIZE(size)                    \
-  do {                                         \
-    if (size == 0) {                           \
-      DOMI_LOGE(param[#size] is out of range); \
-      return ge::PARAM_INVALID;                \
-    }                                          \
+#define GE_CHECK_SIZE(size)                          \
+  do {                                               \
+    if (size == 0) {                                 \
+      DOMI_LOGE("param[%s] is out of range", #size); \
+      return ge::PARAM_INVALID;                      \
+    }                                                \
   } while (0)
 
 // Check if the container is empty
-#define GE_CHECK_VECTOR_NOT_EMPTY(vector)   \
-  do {                                      \
-    if (vector.empty()) {                   \
-      DOMI_LOGE(param[#vector] is empty !); \
-      return ge::FAILED;                    \
-    }                                       \
-  } while (0)
-
-// Check if the value on the left is greater than or equal to the value on the right
-#define GE_CHECK_GE(lhs, rhs)                    \
+#define GE_CHECK_VECTOR_NOT_EMPTY(vector)        \
   do {                                           \
-    if (lhs < rhs) {                             \
-      DOMI_LOGE(param[#lhs] is less than[#rhs]); \
-      return ge::PARAM_INVALID;                  \
+    if (vector.empty()) {                        \
+      DOMI_LOGE("param[%s] is empty!", #vector); \
+      return ge::FAILED;                         \
     }                                            \
   } while (0)
 
+// Check if the value on the left is greater than or equal to the value on the right
+#define GE_CHECK_GE(lhs, rhs)                              \
+  do {                                                     \
+    if (lhs < rhs) {                                       \
+      DOMI_LOGE("param[%s] is less than[%s]", #lhs, #rhs); \
+      return ge::PARAM_INVALID;                            \
+    }                                                      \
+  } while (0)
+
 // Check if the value on the left is less than or equal to the value on the right
-#define GE_CHECK_LE(lhs, rhs)                       \
-  do {                                              \
-    if (lhs > rhs) {                                \
-      DOMI_LOGE(param[#lhs] is greater than[#rhs]); \
-      return ge::PARAM_INVALID;                     \
-    }                                               \
+#define GE_CHECK_LE(lhs, rhs)                                 \
+  do {                                                        \
+    if (lhs > rhs) {                                          \
+      DOMI_LOGE("param[%s] is greater than[%s]", #lhs, #rhs); \
+      return ge::PARAM_INVALID;                               \
+    }                                                         \
   } while (0)
 
 #define GE_DELETE_NEW_SINGLE(var) \
-  {                               \
+  do {                            \
     if (var != nullptr) {         \
       delete var;                 \
       var = nullptr;              \
     }                             \
-  };
+  } while (0)
 
 #define GE_DELETE_NEW_ARRAY(var) \
-  {                              \
+  do {                           \
     if (var != nullptr) {        \
       delete[] var;              \
       var = nullptr;             \
     }                            \
-  };
+  } while (0)
 
 /**
  * @ingroup domi_common
@@ -220,7 +220,7 @@ static constexpr int32_t OM_PROTO_VERSION = 2;
  */
 #define CEIL(N, n) (((N) + (n)-1) / (n))
 
-namespace domi {
+namespace ge {
 using google::protobuf::Message;
 
 ///
@@ -373,7 +373,7 @@ std::string RealPath(const char *path);
 /// @param [in] file_path path of input file
 /// @param [out] result
 ///
-bool CheckInputPathValid(const std::string &file_path);
+bool CheckInputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
 ///
 /// @ingroup domi_common
@@ -381,7 +381,7 @@ bool CheckInputPathValid(const std::string &file_path);
 /// @param [in] file_path path of output file
 /// @param [out] result
 ///
-bool CheckOutputPathValid(const std::string &file_path);
+bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
 ///
 /// @ingroup domi_common
@@ -390,6 +390,6 @@ bool CheckOutputPathValid(const std::string &file_path);
 /// @param [out] result
 ///
 bool ValidateStr(const std::string &filePath, const std::string &mode);
-}  // namespace domi
+}  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_UTIL_H_

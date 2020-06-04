@@ -23,14 +23,6 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 
-using domi::HCOM_ATTR_DATA_TYPE;
-using domi::HCOM_ATTR_RANK_SIZE;
-using domi::HCOM_ATTR_REDUCE_TYPE;
-using domi::HCOM_ATTR_ROOT_RANK;
-using domi::HCOM_ATTR_SHAPE;
-using domi::HCOMRECEIVE;
-using domi::HCOMREDUCESCATTER;
-
 namespace ge {
 Status HcomOmeUtil::GetHcomDataType(const ge::ConstOpDescPtr &op_desc, hcclDataType_t &data_type) {
   GE_CHECK_NOTNULL(op_desc);

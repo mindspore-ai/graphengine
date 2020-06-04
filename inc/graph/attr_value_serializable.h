@@ -86,16 +86,16 @@ class _GeSerializable {
   }
 
   template <class T, class... Args>
-  static void SaveItem(GeAttrValue::NamedAttrs &namedAttrs, string itemName, T &item, Args &... args) {
+  static void SaveItem(GeAttrValue::NAMED_ATTRS &namedAttrs, string itemName, T &item, Args &... args) {
     GeAttrValue itemVal = SaveItemAsAttrValue(item);
     (void)namedAttrs.SetAttr(itemName, itemVal);
     SaveItem(namedAttrs, args...);
   }
 
-  static void SaveItem(GeAttrValue::NamedAttrs &namedAttrs __attribute__((__unused__))) {}
+  static void SaveItem(GeAttrValue::NAMED_ATTRS &namedAttrs __attribute__((__unused__))) {}
 
   template <class T, class... Args>
-  static graphStatus LoadItem(GeAttrValue::NamedAttrs &namedAttrs, string itemName, T &item, Args &... args) {
+  static graphStatus LoadItem(GeAttrValue::NAMED_ATTRS &namedAttrs, string itemName, T &item, Args &... args) {
     auto itemVal = namedAttrs.GetItem(itemName);
     auto status = LoadItemFromAttrValue(item, itemVal);
     if (status != GRAPH_SUCCESS) {
@@ -104,7 +104,9 @@ class _GeSerializable {
     return LoadItem(namedAttrs, args...);
   }
 
-  static graphStatus LoadItem(GeAttrValue::NamedAttrs &namedAttrs __attribute__((__unused__))) { return GRAPH_SUCCESS; }
+  static graphStatus LoadItem(GeAttrValue::NAMED_ATTRS &namedAttrs __attribute__((__unused__))) {
+    return GRAPH_SUCCESS;
+  }
 };
 
 #define _GE_FI(a) #a, a
@@ -171,13 +173,13 @@ class _GeSerializable {
                                                                                       \
  private:                                                                             \
   ge::graphStatus Save(GeAttrValue &ar) const {                                       \
-    GeAttrValue::NamedAttrs named_attrs;                                              \
+    GeAttrValue::NAMED_ATTRS named_attrs;                                             \
     _GeSerializable::SaveItem(named_attrs, _GE_INVOKE_VAR_MACRO(__VA_ARGS__));        \
-    return ar.SetValue<GeAttrValue::NamedAttrs>(named_attrs);                         \
+    return ar.SetValue<GeAttrValue::NAMED_ATTRS>(named_attrs);                        \
   }                                                                                   \
   ge::graphStatus Load(const GeAttrValue &ar) {                                       \
-    GeAttrValue::NamedAttrs named_attrs;                                              \
-    ge::graphStatus status = ar.GetValue<GeAttrValue::NamedAttrs>(named_attrs);       \
+    GeAttrValue::NAMED_ATTRS named_attrs;                                             \
+    ge::graphStatus status = ar.GetValue<GeAttrValue::NAMED_ATTRS>(named_attrs);      \
     if (status != GRAPH_SUCCESS) {                                                    \
       return status;                                                                  \
     }                                                                                 \

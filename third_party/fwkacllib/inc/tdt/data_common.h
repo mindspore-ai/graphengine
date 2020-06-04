@@ -72,5 +72,27 @@ struct DataItem {
   uint64_t dataLen_;              /**< Input data type length*/
   std::shared_ptr<void> dataPtr_; /**< Data  pointer*/
 };
+
+/**
+ * @ingroup  Tsdclient.
+ *
+ * tsdclient func type;
+ */
+enum TsdCmdType {
+    TSDCLOSE = 0,
+    TSDOPEN = 1
+};
+
+/**
+ * @ingroup  Tsdclient.
+ *
+ * tsdclient func input value object.
+ */
+enum InputItem {
+    OPEN_DEVICEID = 0,
+    OPEN_RANKSIZE,
+    CLOSE_DEVICEID
+};
+
 }  // namespace tdt
 #endif  // HOST_INNER_INC_DATA_COMMON_H_

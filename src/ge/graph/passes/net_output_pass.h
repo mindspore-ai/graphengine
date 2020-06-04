@@ -26,6 +26,12 @@
 #include "inc/graph_pass.h"
 
 namespace ge {
+struct RetvalInfo {
+  NodePtr output_node;
+  int32_t node_output_index;
+  int parent_node_index;
+};
+
 class NetOutputPass : public GraphPass {
  public:
   ///
@@ -47,8 +53,7 @@ class NetOutputPass : public GraphPass {
   /// @return OTHERS:  Execution failed
   /// @author
   ///
-  Status GetRetvalOutputInfo(const ge::NodePtr &node,
-                             std::map<int32_t, std::pair<ge::NodePtr, int32_t>> &retval_node_index_map);
+  Status GetRetvalOutputInfo(const ge::NodePtr &node, std::map<int32_t, RetvalInfo> &retval_node_index_map);
 
   ///
   /// Get the output node of the graph
@@ -58,8 +63,7 @@ class NetOutputPass : public GraphPass {
   /// @return OTHERS:  Execution failed
   /// @author
   ///
-  Status GetOutputNode(const ge::ComputeGraphPtr &graph,
-                       std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);
+  Status GetOutputNode(const ge::ComputeGraphPtr &graph, std::vector<RetvalInfo> &output_nodes_info);
 
   ///
   /// Check if the network output node is legal
@@ -69,7 +73,7 @@ class NetOutputPass : public GraphPass {
   /// @return OTHERS:  Execution failed
   /// @author
   ///
-  Status CheckOutputNodeInfo(const ComputeGraphPtr &graph, const std::vector<std::pair<ge::NodePtr, int32_t>> &outputs);
+  Status CheckOutputNodeInfo(const ComputeGraphPtr &graph, const std::vector<RetvalInfo> &outputs);
 
   ///
   /// Set input and output for the NetOutput node
@@ -129,7 +133,7 @@ class NetOutputPass : public GraphPass {
   /// @author
   ///
   Status AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, const ge::NodePtr &net_out_node,
-                              const std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);
+                              const std::vector<RetvalInfo> &output_nodes_info);
   ///
   /// Add ctrl edges for leaf node
   /// @param [in] graph: Input ComputeGraph

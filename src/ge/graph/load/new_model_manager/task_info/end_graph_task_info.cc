@@ -44,6 +44,7 @@ Status EndGraphTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 
 Status EndGraphTaskInfo::Distribute() {
   GELOGI("EndGraphTaskInfo Distribute Start.");
+  GE_CHECK_NOTNULL(davinci_model_);
   auto all_dump_model = PropertiesManager::Instance().GetAllDumpModel();
   if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
       all_dump_model.find(davinci_model_->Name()) != all_dump_model.end()) {
@@ -63,15 +64,17 @@ Status EndGraphTaskInfo::Distribute() {
   }
 
   uint32_t task_id = 0;
-  GE_CHECK_NOTNULL(davinci_model_);
-  rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id);
+  uint32_t stream_id = 0;
+  rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
   task_id_ = task_id;
+  stream_id_ = stream_id;
+  davinci_model_->SetEndGraphId(task_id, stream_id);
 
-  GELOGI("EndGraphTaskInfo Distribute Success, task id is %u", task_id);
+  GELOGI("EndGraphTaskInfo Distribute Success, task id is %u, stream id is %u", task_id, stream_id);
   return SUCCESS;
 }
 

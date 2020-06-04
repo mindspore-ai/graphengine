@@ -28,6 +28,7 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <queue>
 
 #include "./ge_context.h"
 #include "debug/ge_util.h"
@@ -390,8 +391,8 @@ GraphUtils::InsertNodeBefore(const OutDataAnchorPtr &src, const std::vector<InDa
       return GRAPH_FAILED;
     }
 
-    if ((RemoveEdge(src, dst) != GRAPH_SUCCESS) ||
-        (AddEdge(insert_node->GetOutDataAnchor(output_index), dst) != GRAPH_SUCCESS)) {
+    (void)RemoveEdge(src, dst);
+    if (AddEdge(insert_node->GetOutDataAnchor(output_index), dst) != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "ReplaceEdge from %s->%s to %s->%s failed.", src_node->GetName().c_str(),
              dst_node->GetName().c_str(), insert_node->GetName().c_str(), dst_node->GetName().c_str());
       return GRAPH_FAILED;
@@ -399,7 +400,7 @@ GraphUtils::InsertNodeBefore(const OutDataAnchorPtr &src, const std::vector<InDa
 
     OutControlAnchorPtr new_out_ctrl_anchor = insert_node->GetOutControlAnchor();
     GE_CHECK_NOTNULL(new_out_ctrl_anchor);
-    for (InControlAnchorPtr peer_in_ctrl_anchor : src_out_ctrl_anchor->GetPeerInControlAnchors()) {
+    for (const InControlAnchorPtr &peer_in_ctrl_anchor : src_out_ctrl_anchor->GetPeerInControlAnchors()) {
       if ((RemoveEdge(src_out_ctrl_anchor, peer_in_ctrl_anchor) != GRAPH_SUCCESS) ||
           (AddEdge(new_out_ctrl_anchor, peer_in_ctrl_anchor) != GRAPH_SUCCESS)) {
         GELOGE(GRAPH_FAILED, "ReplaceEdge from %s->%s to %s->%s failed.", src_node->GetName().c_str(),
@@ -706,7 +707,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraphToOnn
     GELOGE(GRAPH_FAILED, "File name is too longer!");
     return;
   }
-  std::unique_ptr<char> real_path(new (std::nothrow) char[PATH_MAX]{0});
+  std::unique_ptr<char[]> real_path(new (std::nothrow) char[PATH_MAX]{0});
   if (real_path == nullptr) {
     GELOGE(GRAPH_FAILED, "New real_path failed.");
     return;
@@ -1276,6 +1277,423 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraphPtr GraphUtils::FindR
 }
 
 ///
+/// Get reference-mapping of all data_anchors in graph
+/// @param [in] graph
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::GetRefMapping(const ComputeGraphPtr &graph,
+                                      std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                      std::map<std::string, std::string> &anchor_to_symbol) {
+  GE_CHECK_NOTNULL(graph);
+  for (auto &node : graph->GetAllNodes()) {
+    // in_data_anchor
+    if (HandleInAnchorMapping(node, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+      GE_LOGE("Find ref_mapping for in_data_anchors of node %s failed.", node->GetName().c_str());
+      return GRAPH_FAILED;
+    }
+
+    // out_data_anchor
+    if (HandleOutAnchorMapping(node, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+      GE_LOGE("Find ref_mapping for out_data_anchors of node %s failed.", node->GetName().c_str());
+      return GRAPH_FAILED;
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Get reference-mapping for in_data_anchors of node
+/// @param [in] node
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::HandleInAnchorMapping(const NodePtr &node,
+                                              std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                              std::map<std::string, std::string> &anchor_to_symbol) {
+  GE_CHECK_NOTNULL(node);
+
+  if (NodeUtils::IsSubgraphOutput(node)) {
+    return HandleSubgraphOutput(node, symbol_to_anchors, anchor_to_symbol);
+  }
+
+  if (NodeUtils::IsSubgraphInput(node)) {
+    return HandleSubgraphInput(node, symbol_to_anchors, anchor_to_symbol);
+  }
+
+  std::string type = node->GetType();
+  if ((type == MERGE) || (type == STREAMMERGE)) {
+    return HandleMergeInput(node, symbol_to_anchors, anchor_to_symbol);
+  }
+
+  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+    NodeIndexIO cur_node_info = NodeIndexIO(node, in_data_anchor->GetIdx(), kIn);
+    OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+    if (peer_out_anchor == nullptr) {
+      std::string symbol = cur_node_info.ToString();
+      GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
+      symbol_to_anchors[symbol] = {cur_node_info};
+      anchor_to_symbol[symbol] = symbol;
+    } else {
+      NodeIndexIO exist_node_info = NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
+      if (UpdateRefMapping(cur_node_info, exist_node_info, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+        GE_LOGE("Update symbol mapping failed.");
+        return GRAPH_FAILED;
+      }
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Get reference-mapping for out_data_anchors of node
+/// @param [in] node
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::HandleOutAnchorMapping(const NodePtr &node,
+                                               std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                               std::map<std::string, std::string> &anchor_to_symbol) {
+  GE_CHECK_NOTNULL(node);
+  for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
+    NodeIndexIO cur_node_info = NodeIndexIO(node, out_data_anchor->GetIdx(), kOut);
+    if (anchor_to_symbol.find(cur_node_info.ToString()) != anchor_to_symbol.end()) {
+      continue;
+    }
+
+    int32_t reuse_in_index = -1;
+    if (IsRefFromInput(out_data_anchor, reuse_in_index)) {
+      NodeIndexIO exist_node_info = NodeIndexIO(node, reuse_in_index, kIn);
+      if (UpdateRefMapping(cur_node_info, exist_node_info, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+        GE_LOGE("Update symbol mapping failed.");
+        return GRAPH_FAILED;
+      }
+    } else {
+      std::string symbol = cur_node_info.ToString();
+      GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
+      symbol_to_anchors.emplace(std::make_pair(symbol, std::vector<NodeIndexIO>{cur_node_info}));
+      anchor_to_symbol.emplace(std::make_pair(symbol, symbol));
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Handle input of subgraph
+/// @param [in] node
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::HandleSubgraphInput(const NodePtr &node,
+                                            std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                            std::map<std::string, std::string> &anchor_to_symbol) {
+  GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+
+  // Data in subgraph
+  uint32_t index = 0;
+  if (!ge::AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, index)) {
+    GE_LOGE("Get attr ATTR_NAME_PARENT_NODE_INDEX failed, node:%s.", node->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+  NodePtr parent_node = node->GetOwnerComputeGraph()->GetParentNode();
+  GE_CHECK_NOTNULL(parent_node);
+  InDataAnchorPtr parent_in_anchor = parent_node->GetInDataAnchor(index);
+  GE_CHECK_NOTNULL(parent_in_anchor);
+  OutDataAnchorPtr peer_out_anchor = parent_in_anchor->GetPeerOutAnchor();
+  if (peer_out_anchor != nullptr) {
+    // Data has and only has one input
+    NodeIndexIO cur_node_info = NodeIndexIO(node, 0, kIn);
+    NodeIndexIO exist_node_info = NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
+    if (UpdateRefMapping(cur_node_info, exist_node_info, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+      GE_LOGE("Update symbol mapping failed.");
+      return GRAPH_FAILED;
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Handle input of Merge op
+/// @param [in] node
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
+                                         std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                         std::map<std::string, std::string> &anchor_to_symbol) {
+  GE_CHECK_NOTNULL(node);
+  std::vector<NodeIndexIO> exist_node_infos;
+  std::vector<NodeIndexIO> cur_node_infos;
+  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+    auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+    if (peer_out_anchor == nullptr) {
+      std::string next_name;
+      if (AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_NEXT_ITERATION, next_name) && !next_name.empty()) {
+        ComputeGraphPtr graph = node->GetOwnerComputeGraph();
+        GE_CHECK_NOTNULL(graph);
+        ge::NodePtr next_node = graph->FindNode(next_name);
+        GE_CHECK_NOTNULL(next_node);
+        // NextIteration has and only has one output
+        peer_out_anchor = next_node->GetOutDataAnchor(0);
+        GE_CHECK_NOTNULL(peer_out_anchor);
+        cur_node_infos.emplace_back(NodeIndexIO(node, in_data_anchor->GetIdx(), kIn));
+        cur_node_infos.emplace_back(NodeIndexIO(next_node, peer_out_anchor->GetIdx(), kOut));
+      }
+    } else {
+      cur_node_infos.emplace_back(NodeIndexIO(node, in_data_anchor->GetIdx(), kIn));
+      exist_node_infos.emplace_back(NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut));
+    }
+  }
+
+  size_t anchor_nums = 0;
+  NodeIndexIO max_node_index_io(nullptr, 0, kOut);
+  for (auto &temp_node_info : exist_node_infos) {
+    auto iter1 = anchor_to_symbol.find(temp_node_info.ToString());
+    if (iter1 != anchor_to_symbol.end()) {
+      std::string temp_symbol = iter1->second;
+      auto iter2 = symbol_to_anchors.find(temp_symbol);
+      if (iter2 != symbol_to_anchors.end()) {
+        if (iter2->second.size() > anchor_nums) {
+          max_node_index_io = temp_node_info;
+          anchor_nums = iter2->second.size();
+        }
+      }
+    }
+  }
+
+  std::string symbol;
+  for (auto &temp_node_info : exist_node_infos) {
+    if ((UnionSymbolMapping(max_node_index_io, temp_node_info, symbol_to_anchors, anchor_to_symbol, symbol) !=
+         GRAPH_SUCCESS) ||
+        symbol.empty()) {
+      GE_LOGE("Union symbol map anchor1:%s & anchor2:%s.", max_node_index_io.ToString().c_str(),
+              temp_node_info.ToString().c_str());
+      return GRAPH_FAILED;
+    }
+  }
+
+  auto iter = symbol_to_anchors.find(symbol);
+  if (iter != symbol_to_anchors.end()) {
+    for (auto &temp_node_info : cur_node_infos) {
+      GELOGD("Add anchor %s, symbol %s.", temp_node_info.ToString().c_str(), symbol.c_str());
+      iter->second.emplace_back(temp_node_info);
+      anchor_to_symbol.emplace(std::make_pair(temp_node_info.ToString(), symbol));
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Handle output of subgraph
+/// @param [in] node
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
+                                             std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                             std::map<std::string, std::string> &anchor_to_symbol) {
+  GE_CHECK_NOTNULL(node);
+  ComputeGraphPtr owner_graph = node->GetOwnerComputeGraph();
+  GE_CHECK_NOTNULL(owner_graph);
+  NodePtr parent_node = owner_graph->GetParentNode();
+  GE_CHECK_NOTNULL(parent_node);
+
+  OpDescPtr op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+    OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out_anchor);
+
+    GeTensorDesc in_tensor = op_desc->GetInputDesc(in_data_anchor->GetIdx());
+    uint32_t index = 0;
+    if (!ge::AttrUtils::GetInt(in_tensor, ATTR_NAME_PARENT_NODE_INDEX, index)) {
+      continue;
+    }
+    GE_CHECK_NOTNULL(parent_node->GetOutDataAnchor(index));
+    // Union symbol of peer_out_anchor & parent_out_anchor
+    NodeIndexIO peer_node_info = NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
+    NodeIndexIO parent_node_info = NodeIndexIO(parent_node, index, kOut);
+    std::string symbol;
+    if ((UnionSymbolMapping(peer_node_info, parent_node_info, symbol_to_anchors, anchor_to_symbol, symbol) !=
+         GRAPH_SUCCESS) ||
+        symbol.empty()) {
+      GE_LOGE("Union symbol map anchor1:%s, anchor2:%s.", peer_node_info.ToString().c_str(),
+              parent_node_info.ToString().c_str());
+      return GRAPH_FAILED;
+    }
+
+    NodeIndexIO cur_node_info = NodeIndexIO(node, in_data_anchor->GetIdx(), kIn);
+    GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
+    symbol_to_anchors[symbol].emplace_back(cur_node_info);
+    anchor_to_symbol.emplace(std::make_pair(cur_node_info.ToString(), symbol));
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Union ref-mapping
+/// @param [in] exist_node_info1
+/// @param [in] exist_node_info2
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @param [out] symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::UnionSymbolMapping(const NodeIndexIO &exist_node_info1, const NodeIndexIO &exist_node_info2,
+                                           std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                           std::map<std::string, std::string> &anchor_to_symbol, std::string &symbol) {
+  std::string symbol1 = anchor_to_symbol[exist_node_info1.ToString()];
+  std::string symbol2 = anchor_to_symbol[exist_node_info2.ToString()];
+  if (symbol1 == symbol2) {
+    symbol = symbol1;
+    GELOGI("no need to union.");
+    return GRAPH_SUCCESS;
+  }
+
+  auto iter1 = symbol_to_anchors.find(symbol1);
+  auto iter2 = symbol_to_anchors.find(symbol2);
+  if ((iter1 == symbol_to_anchors.end()) || (iter2 == symbol_to_anchors.end())) {
+    GE_LOGE("symbol %s or %s not exist.", symbol1.c_str(), symbol2.c_str());
+    return GRAPH_FAILED;
+  }
+
+  auto &max_iter = (iter1->second.size() > iter2->second.size() ? iter1 : iter2);
+  auto &min_iter = (iter1->second.size() > iter2->second.size() ? iter2 : iter1);
+  symbol = (iter1->second.size() > iter2->second.size() ? symbol1 : symbol2);
+  std::string min_symbol = (iter1->second.size() > iter2->second.size() ? symbol2 : symbol1);
+  for (auto &node_index_io : min_iter->second) {
+    GELOGD("Update anchor %s, symbol %s.", node_index_io.ToString().c_str(), symbol.c_str());
+    max_iter->second.emplace_back(node_index_io);
+    auto iter = anchor_to_symbol.find(node_index_io.ToString());
+    if (iter == anchor_to_symbol.end()) {
+      GE_LOGE("anchor %s not exist.", node_index_io.ToString().c_str());
+      return GRAPH_FAILED;
+    }
+    if (iter->second != min_symbol) {
+      GELOGW("not expected symbol of anchor %s, expect %s but %s exactly.", iter->first.c_str(), min_symbol.c_str(),
+             iter->second.c_str());
+    }
+    iter->second = symbol;
+  }
+
+  GELOGI("Union symbol %s and %s succ.", symbol.c_str(), min_symbol.c_str());
+  symbol_to_anchors.erase(min_iter);
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Update symbol mapping with a new reference pair
+/// @param [in] cur_node_info
+/// @param [in] exist_node_info
+/// @param [out] symbol_to_anchors
+/// @param [out] anchor_to_symbol
+/// @return success: GRAPH_SUCESS
+///
+graphStatus GraphUtils::UpdateRefMapping(const NodeIndexIO &cur_node_info, const NodeIndexIO &exist_node_info,
+                                         std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                         std::map<std::string, std::string> &anchor_to_symbol) {
+  auto iter1 = anchor_to_symbol.find(exist_node_info.ToString());
+  if (iter1 == anchor_to_symbol.end()) {
+    GE_LOGE("data_anchor %s is not visible before data_anchor %s, maybe TopoSorting is missing.",
+            exist_node_info.ToString().c_str(), cur_node_info.ToString().c_str());
+    return GRAPH_FAILED;
+  }
+
+  std::string symbol = iter1->second;
+  auto iter2 = symbol_to_anchors.find(symbol);
+  if (iter2 == symbol_to_anchors.end()) {
+    GE_LOGE("symbol %s not found.", symbol.c_str());
+    return GRAPH_FAILED;
+  }
+  GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
+  iter2->second.emplace_back(cur_node_info);
+  anchor_to_symbol.emplace(std::make_pair(cur_node_info.ToString(), symbol));
+
+  return GRAPH_SUCCESS;
+}
+
+///
+/// Check if out_data_anchor is reference of input
+/// @param [in] out_data_anchor
+/// @param [out] reuse_in_index
+/// @return bool
+///
+bool GraphUtils::IsRefFromInput(const OutDataAnchorPtr &out_data_anchor, int32_t &reuse_in_index) {
+  if (out_data_anchor == nullptr) {
+    GELOGW("out_data_anchor is NULL.");
+    return false;
+  }
+  int32_t output_index = out_data_anchor->GetIdx();
+
+  // pass-through op
+  NodePtr node = out_data_anchor->GetOwnerNode();
+  std::string type = node->GetType();
+  const std::set<std::string> pass_through_set = {NETOUTPUT, WHILE, _WHILE, STATELESSWHILE};
+  if ((pass_through_set.count(type) > 0) || (NodeUtils::IsSubgraphInput(node))) {
+    reuse_in_index = output_index;
+    GELOGI("Pass-Through node name[%s] index[%u].", node->GetName().c_str(), reuse_in_index);
+    return true;
+  }
+
+  // Merge op 0th output
+  if ((type == MERGE) && (output_index == 0)) {
+    reuse_in_index = 0;
+    GELOGI("Merge name[%s] output_index[0].", node->GetName().c_str());
+    return true;
+  }
+
+  // ref op
+  OpDescPtr op_desc = node->GetOpDesc();
+  if (op_desc == nullptr) {
+    GELOGW("op_desc is NULL.");
+    return false;
+  }
+  bool is_ref = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_REFERENCE, is_ref);
+  if (is_ref) {
+    const string &output_name = op_desc->GetOutputNameByIndex(output_index);
+    for (const auto &input_name : op_desc->GetAllInputNames()) {
+      if (!input_name.empty() && (output_name == input_name)) {
+        reuse_in_index = op_desc->GetInputIndexByName(input_name);
+        GELOGI("Reference name[%s] output[%s][%u] ref to input[%s][%d].", op_desc->GetName().c_str(),
+               output_name.c_str(), output_index, input_name.c_str(), reuse_in_index);
+        return true;
+      }
+    }
+  }
+
+  // reuse input
+  auto output_op_desc = op_desc->GetOutputDescPtr(output_index);
+  bool reuse_input = false;
+  if (output_op_desc != nullptr) {
+    if ((TensorUtils::GetReuseInput(*output_op_desc, reuse_input) == GRAPH_SUCCESS) && reuse_input) {
+      uint32_t reuse_input_index = 0;
+      if (TensorUtils::GetReuseInputIndex(*output_op_desc, reuse_input_index) == GRAPH_SUCCESS) {
+        reuse_in_index = static_cast<int32_t>(reuse_input_index);
+        GELOGI("ReuseInput name[%s] output[%u] reuse input[%d].", op_desc->GetName().c_str(), output_index,
+               reuse_in_index);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+///
 /// @brief Add node to graph
 /// @param [in] op_desc
 /// @return ComputeGraphBuilder
@@ -1561,13 +1979,14 @@ CompleteGraphBuilder &CompleteGraphBuilder::SetOutputMapping(const std::map<uint
 ///
 ComputeGraphPtr CompleteGraphBuilder::Build(graphStatus &error_code, std::string &error_msg) {
   owner_graph_ = shared_ptr<ComputeGraph>(new (std::nothrow) ComputeGraph(name_));
-  if (owner_graph_ == nullptr) {
+  if ((owner_graph_ == nullptr) || (parent_node_ == nullptr)) {
     error_code = GRAPH_FAILED;
-    error_msg = "graph is NULL.";
+    error_msg = "graph / parent_node is NULL.";
     return nullptr;
   }
 
   owner_graph_->SetParentNode(parent_node_);
+  owner_graph_->SetParentGraph(parent_node_->GetOwnerComputeGraph());
 
   BuildNodes(error_code, error_msg);
   if (error_code != GRAPH_SUCCESS) {
@@ -1584,41 +2003,58 @@ ComputeGraphPtr CompleteGraphBuilder::Build(graphStatus &error_code, std::string
     return nullptr;
   }
 
-  BuildInputs(error_code, error_msg);
+  AddDataNodes(error_code, error_msg);
   if (error_code != GRAPH_SUCCESS) {
     return nullptr;
   }
 
-  BuildOutputs(error_code, error_msg);
+  AddRetValNodes(error_code, error_msg);
   if (error_code != GRAPH_SUCCESS) {
     return nullptr;
   }
 
-  if (AddNetOutputNode(error_code, error_msg) == nullptr) {
+  // ATTR_NAME_SESSION_GRAPH_ID
+  std::string graph_id;
+  if (!AttrUtils::GetStr(parent_node_->GetOwnerComputeGraph(), ATTR_NAME_SESSION_GRAPH_ID, graph_id)) {
+    error_code = GRAPH_FAILED;
+    error_msg = "Get attr session_graph_id failed.";
     return nullptr;
+  }
+  if (!AttrUtils::SetStr(owner_graph_, ATTR_NAME_SESSION_GRAPH_ID, graph_id)) {
+    error_code = GRAPH_FAILED;
+    error_msg = "Set attr session_graph_id failed.";
+    return nullptr;
+  }
+
+  // refresh node name
+  for (const NodePtr &node : owner_graph_->GetDirectNode()) {
+    if ((node->GetOpDesc() == nullptr) || (node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2)) {
+      continue;
+    }
+    node->GetOpDesc()->SetName(owner_graph_->GetName() + "/" + node->GetName());
   }
 
   return owner_graph_;
 }
 
 ///
-/// @brief Build inputs
+/// @brief Add data nodes
 /// @param [out] error_code
 /// @param [out] error_msg
 /// @return void
 ///
-void CompleteGraphBuilder::BuildInputs(graphStatus &error_code, std::string &error_msg) {
+void CompleteGraphBuilder::AddDataNodes(graphStatus &error_code, std::string &error_msg) {
   for (auto &input : graph_inputs_) {
-    NodePtr data_node = AddDateNode(input.first, error_code, error_msg);
+    NodePtr data_node = AddDataNode(input.first, error_code, error_msg);
     if (data_node == nullptr) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildInputs failed: add node Data:" + std::to_string(input.first) + +" failed.";
+      error_msg = "AddDataNodes failed: add node Data:" + std::to_string(input.first) + +" failed.";
       return;
     }
 
     if (owner_graph_->AddInputNode(data_node) == nullptr) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildInputs failed: add input node Data:" + std::to_string(input.first) + +" failed.";
+      error_msg = "AddDataNodes failed: add input node Data:" + std::to_string(input.first) + +" failed.";
       return;
     }
 
@@ -1627,7 +2063,7 @@ void CompleteGraphBuilder::BuildInputs(graphStatus &error_code, std::string &err
     std::vector<uint32_t> anchor_indes = input.second.second;
     if (input_names.size() != anchor_indes.size()) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildInputs failed: num of input_names and indexs not equal.";
+      error_msg = "AddDataNodes failed: num of input_names and indexs not equal.";
       return;
     }
     if (input_names.empty()) {
@@ -1641,29 +2077,29 @@ void CompleteGraphBuilder::BuildInputs(graphStatus &error_code, std::string &err
       auto iter = node_names_.find(input_name);
       if (iter == node_names_.end()) {
         error_code = GRAPH_FAILED;
-        error_msg = "BuildInputs failed: node " + input_name + " not exist in graph.";
+        error_msg = "AddDataNodes failed: node " + input_name + " not exist in graph.";
         return;
       }
 
       NodePtr in_node = node_names_[input_name];
       if (in_node == nullptr) {
         error_code = GRAPH_FAILED;
-        error_msg = "BuildInputs failed: node " + input_name + " is NULL.";
+        error_msg = "AddDataNodes failed: node " + input_name + " is NULL.";
         return;
       }
 
       if (GraphUtils::AddEdge(data_node->GetOutDataAnchor(0), in_node->GetInDataAnchor(ind)) != GRAPH_SUCCESS) {
         error_code = GRAPH_FAILED;
-        error_msg = "BuildInputs failed: add data-edge Data:" + std::to_string(input.first) + ":0->" + input_name +
+        error_msg = "AddDataNodes failed: add data-edge Data:" + std::to_string(input.first) + ":0->" + input_name +
                     ":" + std::to_string(ind) + " failed.";
         return;
       }
     }
 
-    GELOGD("BuildInputs : Add %u input succ.", input.first);
+    GELOGD("AddDataNodes : Add %u input succ.", input.first);
   }
 
-  GELOGD("BuildInputs succ.");
+  GELOGD("AddDataNodes succ.");
 }
 
 ///
@@ -1673,13 +2109,13 @@ void CompleteGraphBuilder::BuildInputs(graphStatus &error_code, std::string &err
 /// @param [out] error_msg
 /// @return void
 ///
-NodePtr CompleteGraphBuilder::AddDateNode(uint32_t index, graphStatus &error_code, std::string &error_msg) {
+NodePtr CompleteGraphBuilder::AddDataNode(uint32_t index, graphStatus &error_code, std::string &error_msg) {
   std::string data_name = "Data_" + std::to_string(index);
   OpDescBuilder op_desc_builder(data_name, "Data");
   OpDescPtr op_desc = op_desc_builder.AddInput("x").AddOutput("y").Build();
   if (op_desc == nullptr) {
     error_code = GRAPH_FAILED;
-    error_msg = "BuildInputs failed: create op_desc " + data_name + " failed.";
+    error_msg = "AddDataNode failed: create op_desc " + data_name + " failed.";
     return nullptr;
   }
 
@@ -1687,7 +2123,7 @@ NodePtr CompleteGraphBuilder::AddDateNode(uint32_t index, graphStatus &error_cod
   if (index_iter != input_mapping_.end()) {
     if (!ge::AttrUtils::SetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, index_iter->second)) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildInputs failed: set attr ATTR_NAME_PARENT_NODE_INDEX for " + data_name + " failed.";
+      error_msg = "AddDataNode failed: set attr ATTR_NAME_PARENT_NODE_INDEX for " + data_name + " failed.";
       return nullptr;
     }
   }
@@ -1695,189 +2131,83 @@ NodePtr CompleteGraphBuilder::AddDateNode(uint32_t index, graphStatus &error_cod
   NodePtr data_node = owner_graph_->AddNode(op_desc);
   if (data_node == nullptr) {
     error_code = GRAPH_FAILED;
-    error_msg = "BuildInputs failed: add node " + data_name + " failed.";
+    error_msg = "AddDataNode failed: add node " + data_name + " failed.";
     return nullptr;
   }
+  node_names_[data_name] = data_node;
 
   return data_node;
 }
 
 ///
-/// @brief Build outputs
+/// @brief Add RetVal nodes
 /// @param [out] error_code
 /// @param [out] error_msg
 /// @return void
 ///
-void CompleteGraphBuilder::BuildOutputs(graphStatus &error_code, std::string &error_msg) {
-  std::map<std::string, std::vector<int32_t>> out_nodes_map;
-  std::vector<std::pair<NodePtr, int32_t>> out_nodes_info;
-  for (auto &pair : graph_outputs_) {
-    std::string output = pair.first;
-    int32_t ind = pair.second;
-    auto out_iter = node_names_.find(output);
+void CompleteGraphBuilder::AddRetValNodes(graphStatus &error_code, std::string &error_msg) {
+  size_t output_num = graph_outputs_.size();
+  for (size_t i = 0; i < output_num; i++) {
+    int32_t index = graph_outputs_[i].second;
+    auto out_iter = node_names_.find(graph_outputs_[i].first);
     if (out_iter == node_names_.end()) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildOutputs failed: node " + output + " not exist in graph.";
+      error_msg = "AddRetValNode failed: node " + graph_outputs_[i].first + " not exist in graph.";
       return;
     }
-
-    NodePtr out_node = node_names_[output];
-    if (out_node == nullptr) {
+    NodePtr node = out_iter->second;
+    if ((node == nullptr) || (node->GetOpDesc() == nullptr)) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildOutputs failed: node " + output + " is NULL.";
+      error_msg = "AddRetValNode failed: node is NULL.";
       return;
     }
 
-    OutDataAnchorPtr out_anchor = out_node->GetOutDataAnchor(ind);
-    if (out_anchor == nullptr) {
+    std::string name = node->GetName() + "_RetVal";
+    OpDescPtr ret_val_desc = shared_ptr<OpDesc>(new (std::nothrow) OpDesc(name, FRAMEWORKOP));
+    if (ret_val_desc == nullptr) {
       error_code = GRAPH_FAILED;
-      error_msg = "BuildOutputs failed: anchor " + output + ":" + std::to_string(ind) + " is NULL.";
+      error_msg = "AddRetValNode " + name + " failed: op_desc is NULL.";
+      return;
+    }
+    ge::GeTensorDesc tensor = node->GetOpDesc()->GetOutputDesc(index);
+    if ((ret_val_desc->AddInputDesc(tensor) != GRAPH_SUCCESS) ||
+        (ret_val_desc->AddOutputDesc(tensor) != GRAPH_SUCCESS)) {
+      error_code = GRAPH_FAILED;
+      error_msg = "AddRetValNode " + name + " failed: add input_desc / output_desc failed.";
       return;
     }
 
-    auto iter = out_nodes_map.find(output);
-    if (iter == out_nodes_map.end()) {
-      std::vector<int32_t> vec = {ind};
-      out_nodes_map[output] = vec;
-    } else {
-      out_nodes_map[output].emplace_back(ind);
+    if (!(ge::AttrUtils::SetStr(ret_val_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, "_RetVal") &&
+          ge::AttrUtils::SetInt(ret_val_desc, RETVAL_ATTR_NAME_INDEX, i))) {
+      error_code = GRAPH_FAILED;
+      error_msg = "AddRetValNode " + name + " failed: set FRAMEWORK_ORIGINAL_TYPE / RETVAL_ATTR_NAME_INDEX failed.";
+      return;
     }
-    out_nodes_info.emplace_back(std::make_pair(out_node, ind));
-
-    GELOGD("BuildOutputs : AddOutputAnchor %s:%u succ.", output.c_str(), ind);
-  }
-
-  owner_graph_->SetGraphOutNodes(out_nodes_map);
-  owner_graph_->SetGraphOutNodesInfo(out_nodes_info);
-  GELOGD("BuildOutputs succ.");
-}
-
-///
-/// @brief Add NetOutput node
-/// @param [out] error_code
-/// @param [out] error_msg
-/// @return NodePtr
-///
-NodePtr CompleteGraphBuilder::AddNetOutputNode(graphStatus &error_code, std::string &error_msg) {
-  std::string log_msg = "AddNetOutputNode name:" + std::string(kNodeNameNetOutput) + ", type:" + NETOUTPUT;
-  OpDescPtr net_output_desc = shared_ptr<OpDesc>(new (std::nothrow) OpDesc(kNodeNameNetOutput, NETOUTPUT));
-  if (net_output_desc == nullptr) {
-    error_code = GRAPH_FAILED;
-    error_msg = log_msg + " failed: op_desc is NULL.";
-    return nullptr;
-  }
-
-  std::vector<std::pair<NodePtr, int32_t>> out_nodes_info = owner_graph_->GetGraphOutNodesInfo();
-  error_code = BuildInOutForNetOutput(out_nodes_info, net_output_desc);
-  if (error_code != GRAPH_SUCCESS) {
-    error_msg = log_msg + " failed: add input/output tensor failed.";
-    return nullptr;
-  }
-
-  NodePtr net_output_node = owner_graph_->AddNode(net_output_desc);
-  if (net_output_node == nullptr) {
-    error_code = GRAPH_FAILED;
-    error_msg = log_msg + " failed: add node failed.";
-    return nullptr;
-  }
-
-  error_code = AddEdgeForNetOutput(out_nodes_info, net_output_node);
-  if (error_code != GRAPH_SUCCESS) {
-    error_msg = log_msg + " failed: link edge failed.";
-    return nullptr;
-  }
-
-  GELOGD("%s succ.", log_msg.c_str());
-  return net_output_node;
-}
-
-///
-/// @brief Add input/output tensor for NetOutput node
-/// @param [in] out_nodes_info
-/// @param [out] net_output_desc
-/// @return graphStatus
-///
-graphStatus CompleteGraphBuilder::BuildInOutForNetOutput(const std::vector<std::pair<NodePtr, int32_t>> &out_nodes_info,
-                                                         OpDescPtr &net_output_desc) {
-  size_t output_num = out_nodes_info.size();
-  for (size_t i = 0; i < output_num; i++) {
-    NodePtr src_node = out_nodes_info[i].first;
-    uint32_t src_index = out_nodes_info[i].second;
-    if ((src_node == nullptr) || (src_node->GetOpDesc() == nullptr)) {
-      GE_LOGE("AddInOutForNetOutputOp failed: src_node is NULL.");
-      return GRAPH_FAILED;
-    }
-
-    ge::GeTensorDesc in_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
     auto iter = output_mapping_.find(i);
     if (iter != output_mapping_.end()) {
-      if (!ge::AttrUtils::SetInt(in_desc, ATTR_NAME_PARENT_NODE_INDEX, iter->second)) {
-        GE_LOGE("AddInOutForNetOutputOp failed: set attr ATTR_NAME_PARENT_NODE_INDEX failed.");
-        return GRAPH_FAILED;
+      if (!ge::AttrUtils::SetInt(ret_val_desc, ATTR_NAME_PARENT_NODE_INDEX, iter->second)) {
+        error_code = GRAPH_FAILED;
+        error_msg = "AddRetValNode " + name + " failed: set attr PARENT_NODE_INDEX failed.";
+        return;
       }
     }
 
-    if (net_output_desc->AddInputDesc(in_desc) != SUCCESS) {
-      GE_LOGE("AddInOutForNetOutputOp failed: add input_desc failed.");
-      return GRAPH_FAILED;
+    NodePtr ret_val_node = owner_graph_->AddNode(ret_val_desc);
+    if (ret_val_node == nullptr) {
+      error_code = GRAPH_FAILED;
+      error_msg = "AddRetValNode " + name + " failed: add node failed.";
+      return;
     }
 
-    ge::GeTensorDesc out_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
-    TensorUtils::SetOutputTensor(out_desc, true);
-    if (net_output_desc->AddOutputDesc(out_desc) != SUCCESS) {
-      GE_LOGE("AddInOutForNetOutputOp failed: add output_desc failed.");
-      return GRAPH_FAILED;
-    }
-  }
-
-  GELOGD("Add input/output tensor for NetOutput node succ.");
-  return GRAPH_SUCCESS;
-}
-
-///
-/// @brief Add edge for NetOutput node
-/// @param [in] out_nodes_info
-/// @param [out] net_output_node
-/// @return graphStatus
-///
-graphStatus CompleteGraphBuilder::AddEdgeForNetOutput(const std::vector<std::pair<NodePtr, int32_t>> &out_nodes_info,
-                                                      const NodePtr &net_output_node) {
-  if (net_output_node == nullptr) {
-    GE_LOGE("AddEdgeForNetOutputOp failed: NetOutput is NULL.");
-    return GRAPH_FAILED;
-  }
-
-  size_t out_num = out_nodes_info.size();
-  for (size_t i = 0; i < out_num; i++) {
-    NodePtr src_node = out_nodes_info[i].first;
-    uint32_t ind = out_nodes_info[i].second;
-    if (src_node == nullptr) {
-      GE_LOGE("AddEdgeForNetOutputOp failed: src_node is NULL.");
-      return GRAPH_FAILED;
-    }
-
-    if (GraphUtils::AddEdge(src_node->GetOutDataAnchor(ind), net_output_node->GetInDataAnchor(i)) != GRAPH_SUCCESS) {
-      GE_LOGE("Add data-edge %s:%u->%s:%zu failed.", src_node->GetName().c_str(), ind,
-              net_output_node->GetName().c_str(), i);
-      return GRAPH_FAILED;
+    if (GraphUtils::AddEdge(node->GetOutDataAnchor(index), ret_val_node->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+      error_code = GRAPH_FAILED;
+      error_msg = "AddRetValNode " + name + " failed: add data-edge " + node->GetName() + ":" + std::to_string(index) +
+                  "->" + ret_val_node->GetName() + ":0 failed.";
+      return;
     }
   }
 
-  std::vector<NodePtr> leaf_nodes;
-  for (auto &node : owner_graph_->GetDirectNode()) {
-    if (node->GetOutNodes().empty()) {
-      leaf_nodes.emplace_back(node);
-    }
-  }
-  for (auto &node : leaf_nodes) {
-    if (GraphUtils::AddEdge(node->GetOutControlAnchor(), net_output_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-      GE_LOGE("Add ctrl-edge %s->%s failed.", node->GetName().c_str(), net_output_node->GetName().c_str());
-      return GRAPH_FAILED;
-    }
-  }
-
-  GELOGD("Add edge for NetOutput node succ.");
-  return GRAPH_SUCCESS;
+  GELOGD("AddRetValNodes succ.");
 }
 
 ///
@@ -1999,4 +2329,60 @@ void PartialGraphBuilder::BuildExistNodes(graphStatus &error_code, std::string &
 
   GELOGD("Build exist nodes succ.");
 }
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
+GraphUtils::TopologicalSortingByName(const ge::ComputeGraphPtr &compute_graph, vector<NodePtr> &node_vec) {
+  std::vector<NodePtr> stack_input;
+  std::map<NodePtr, uint32_t> map_in_edge_num;
+  graphStatus ret = compute_graph->SortNodes(stack_input, map_in_edge_num);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Sort nodes failed.");
+    return GRAPH_FAILED;
+  }
+  const size_t non_user_input_index = stack_input.size() - compute_graph->inputs_order_.size() - 1;
+  std::sort(stack_input.begin(), stack_input.begin() + non_user_input_index,
+            [](const NodePtr &a, const NodePtr &b) -> bool { return (a->GetName() > b->GetName()); });
+
+  std::queue<NodePtr> stack;
+  NodePtr cur_node = nullptr;
+  std::map<string, NodePtr> name_node_map;
+  vector<string> nodes_name;
+  while (!stack_input.empty() || !stack.empty()) {
+    if (!stack.empty()) {
+      cur_node = stack.front();
+      stack.pop();
+    } else {
+      cur_node = stack_input.back();
+      stack_input.pop_back();
+    }
+    node_vec.emplace_back(cur_node);
+    compute_graph->CollectBreadthOutNode(cur_node, map_in_edge_num, name_node_map);
+    for (const auto &iter : name_node_map) {
+      nodes_name.emplace_back(iter.first);
+    }
+    std::sort(nodes_name.begin(), nodes_name.end());
+    for (const auto &iter : nodes_name) {
+      stack.push(name_node_map[iter]);
+    }
+    name_node_map.clear();
+    nodes_name.clear();
+  }
+  // If they are not equal, there is a closed loop
+  if (node_vec.size() != compute_graph->nodes_.size()) {
+    std::set<Node *> itered_nodes_set;
+    for (auto &node : node_vec) {
+      itered_nodes_set.insert(node.get());
+    }
+    GE_LOGE("Failed to do topo sorting total %zu, itered %zu, exist closed loop in graph.",
+            compute_graph->nodes_.size(), node_vec.size());
+    for (auto &node : compute_graph->nodes_) {
+      if (itered_nodes_set.count(node.get()) == 0) {
+        GE_LOGE("The node %s does not itered when topological sorting", node->GetName().c_str());
+      }
+    }
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
 }  // namespace ge

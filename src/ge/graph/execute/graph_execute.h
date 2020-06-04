@@ -49,8 +49,8 @@ class GraphExecutor {
   Status ExecuteGraph(GraphId graph_id, const GeModelPtr &ge_model, const std::vector<GeTensor> &input_tensor,
                       std::vector<GeTensor> &output_tensor);
 
-  Status ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_model, const std::vector<TensorInfo> &input_tensor,
-                           std::vector<TensorInfo> &output_tensor);
+  Status ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_model,
+                           const std::vector<InputTensorInfo> &input_tensor);
 
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
 
@@ -92,8 +92,7 @@ class GraphExecutor {
   Status SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                           std::vector<GeTensor> &output_tensor);
 
-  Status AsyncExecuteModel(uint32_t model_id, const std::vector<TensorInfo> &input_tensor,
-                           std::vector<TensorInfo> &output_tensor);
+  Status AsyncExecuteModel(uint32_t model_id, const std::vector<InputTensorInfo> &input_tensor);
 
   void InitModelIdInfo(std::vector<uint32_t> &out_model_id_info, std::vector<SubGraphInfoPtr> &sub_graph_vec,
                        uint32_t output_size);

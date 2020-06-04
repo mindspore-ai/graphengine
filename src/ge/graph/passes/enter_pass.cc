@@ -23,11 +23,6 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::CONSTANT;
-using domi::CONSTANTOP;
-using domi::ENTER;
-using domi::REFENTER;
-
 namespace ge {
 Status EnterPass::Run(NodePtr &node) {
   GELOGD("EnterPass running");

@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 #include "graph/anchor.h"
-#include "detail/attributes_holder.h"
+#include "graph/detail/attributes_holder.h"
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/node.h"
@@ -77,6 +77,8 @@ class ModelSerializeImp {
   void SetProtobufOwner(const ProtoMsgOwner &bufferProtobufOnwer) { protobuf_owner_ = bufferProtobufOnwer; }
 
  private:
+  bool RebuildOwnership(ComputeGraphPtr &compute_graph, std::map<std::string, ComputeGraphPtr> &subgraphs);
+
   std::vector<NodeNameGraphReq> graph_input_node_names_;
   std::vector<NodeNameGraphReq> graph_output_node_names_;
   std::vector<NodeNameNodeReq> node_input_node_names_;

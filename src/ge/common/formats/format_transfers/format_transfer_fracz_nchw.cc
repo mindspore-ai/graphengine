@@ -133,6 +133,12 @@ Status FormatTransferFracZNchw::TransFormat(const TransArgs &args, TransResult &
   int size = GetSizeByDataType(args.src_data_type);
   auto total_size = GetItemNumByShape(args.dst_shape) * size;
   if (total_size <= 0) {
+    int64_t src_size = GetItemNumByShape(args.src_shape);
+    if (total_size == 0 && src_size == 0) {
+      result.length = static_cast<size_t>(total_size);
+      return SUCCESS;
+    }
+
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;
@@ -140,6 +146,7 @@ Status FormatTransferFracZNchw::TransFormat(const TransArgs &args, TransResult &
   GELOGD("Begin to trans format from FracZ to NCHW, src shape %s, data type %s, dst shape %s, memory size %ld",
          ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
          ShapeToString(args.dst_shape).c_str(), total_size);
+
   if (GetDstDataAfterTrans(args, result, size, total_size) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),

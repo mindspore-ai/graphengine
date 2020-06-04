@@ -41,8 +41,7 @@ class InnerSession {
 
   Status RemoveGraph(uint32_t graph_id);
 
-  Status RunGraphAsync(uint32_t graph_id, const std::vector<TensorInfo> &inputs, std::vector<TensorInfo> &outputs,
-                       std::function<void(Status)> callback);
+  Status RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs, RunAsyncCallback callback);
 
   Status Finalize();
 

@@ -24,13 +24,13 @@
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/l2_cache_optimize.h"
+#include "graph/debug/ge_attr_define.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/model_utils.h"
-#include "graph/debug/ge_attr_define.h"
 #include "runtime/kernel.h"
-#include "graph/debug/ge_attr_define.h"
-#include "super_kernel/super_kernel_factory.h"
 #include "super_kernel/super_kernel.h"
+#include "super_kernel/super_kernel_factory.h"
 
 namespace {
 const uint8_t kL2LoadToDdr = 1;
@@ -42,11 +42,12 @@ constexpr uint32_t kSKTMaxSizeLimit = 20000;
 const char *kIsLastNode = "is_last_node";
 const char *kIsFirstNode = "is_first_node";
 const int64_t kCloseSkt = 100;
+const uint32_t kAddrLen = sizeof(void *);
 }  // namespace
 
 namespace ge {
 KernelTaskInfo::SuperKernelTaskInfo KernelTaskInfo::skt_info_ = {
-  0, 0, 0, nullptr, nullptr, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
+  0, 0, 0, 0, nullptr, nullptr, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
 
 Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   if (davinci_model == nullptr) {
@@ -57,7 +58,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   is_l1_fusion_enable_ = davinci_model_->GetL1FusionEnableOption();
   GELOGD("KernelTaskInfo Init Start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
 
-  Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
+  Status ret = SetStream(task_def.stream_id(), davinci_model_->GetStreamList());
   if (ret != SUCCESS) {
     return ret;
   }
@@ -70,14 +71,14 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   // get kernel_type
   kernel_type_ = static_cast<cce::ccKernelType>(context.kernel_type());
   // get opdesc
-  op_desc_ = davinci_model->GetOpByIndex(context.op_index());
+  op_desc_ = davinci_model_->GetOpByIndex(context.op_index());
   if (op_desc_ == nullptr) {
     GELOGE(INTERNAL_ERROR, "Get op_desc failed, index is out of range!");
     return INTERNAL_ERROR;
   }
   (void)AttrUtils::GetBool(*op_desc_, ATTR_N_BATCH_SPILT, is_n_batch_spilt_);
   GELOGD("node[%s] is_n_batch_spilt %d", op_desc_->GetName().c_str(), is_n_batch_spilt_);
-  (void)AttrUtils::GetInt(*op_desc_, ATTR_NAME_L1_FUSION_GROUP_KEY, group_key_);
+  (void)AttrUtils::GetInt(*op_desc_, ATTR_NAME_FUSION_GROUP_KEY, group_key_);
   has_group_key_ = (group_key_ != kInvalidGroupKey);
   GELOGD("node[%s] has_group_key_ %ld, group key is [%ld]", op_desc_->GetName().c_str(), has_group_key_, group_key_);
 
@@ -89,7 +90,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
                   fusion_op_info_.op_name = op_desc_->GetName());
 
   string session_graph_model_id;
-  davinci_model->GetUniqueId(op_desc_, session_graph_model_id);
+  davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
   // get bin_file_key
   const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
@@ -124,17 +125,17 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
       return FAILED;
     }
 
-    ret = InitTVMTask(davinci_model, args_offset_tmp[0], kernel_def);
+    ret = InitTVMTask(args_offset_tmp[0], kernel_def);
   } else if (kernel_type_ == cce::ccKernelType::CUSTOMIZED) {
-    ret = InitAICPUCustomTask(davinci_model->GetOpList(), context.op_index(), kernel_def);
+    ret = InitAICPUCustomTask(context.op_index(), kernel_def);
   } else if (kernel_type_ == cce::ccKernelType::AI_CPU) {
-    ret = InitAicpuTask(davinci_model->GetOpList(), context.op_index(), kernel_def);
+    ret = InitAicpuTask(context.op_index(), kernel_def);
   } else {
     if (kernel_def.args().empty() || args_size_ == 0) {
       GELOGE(FAILED, "args is null.");
       return FAILED;
     }
-    ret = InitCceTask(davinci_model, kernel_def);
+    ret = InitCceTask(kernel_def);
   }
 
   GELOGD("KernelTaskInfo Init finish, result=%u.", ret);
@@ -143,36 +144,40 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
 
 Status KernelTaskInfo::SaveSKTDumpInfo() {
   GE_CHECK_NOTNULL(davinci_model_);
-  davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_op, skt_info_.last_dump_args);
+  davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_stream_id, skt_info_.last_op,
+                               skt_info_.last_dump_args);
   return SUCCESS;
 }
 
 void KernelTaskInfo::UpdateSKTTaskId() {
   uint32_t task_id = 0;
+  uint32_t stream_id = 0;
   if (davinci_model_ != nullptr) {
-    rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id);
+    rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return;
     }
     skt_info_.last_task_id = task_id;
+    skt_info_.last_stream_id = stream_id;
     skt_id_ = skt_info_.last_task_id;
-    GELOGI("UpdateTaskId:UpdateSKTTaskId [%u]", task_id);
+
+    GELOGI("UpdateTaskId:UpdateSKTTaskId [%u],stream id [%u]", task_id, stream_id);
   }
 }
 
 void KernelTaskInfo::UpdateTaskId() {
   uint32_t task_id = 0;
-  uint32_t stream_id = UINT32_MAX;  //  default value, wait for rts
+  uint32_t stream_id = 0;  //  for profiling
   if (davinci_model_ != nullptr) {
-    rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id);
+    rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return;
     }
     task_id_ = task_id;
     stream_id_ = stream_id;
-    GELOGI("UpdateTaskId:UpdateTaskId [%u]", task_id);
+    GELOGI("UpdateTaskId:UpdateTaskId [%u], stream id [%u]:", task_id, stream_id);
   }
 }
 
@@ -221,13 +226,13 @@ Status KernelTaskInfo::SuperKernelLaunch() {
     return RT_FAILED;
   }
   // Call the fuse API
-  skt::SuperKernel *superKernel;
+  skt::SuperKernel *superKernel = nullptr;
   if (factory->FuseKernels(skt_kernel_list, skt_arg_list, skt_info_.last_block_dim, superKernel) != SUCCESS) {
     GELOGE(RT_FAILED, "SuperKernelLaunch: fuse call failed");
     return RT_FAILED;
   }
   // Launch a super kernel
-  if (superKernel->Launch(skt_info_.last_stream, true) != SUCCESS) {
+  if (superKernel->Launch(skt_info_.last_stream, RT_KERNEL_DUMPFLAG) != SUCCESS) {
     GELOGE(RT_FAILED, "SuperKernelLaunch: launch failed");
     return RT_FAILED;
   }
@@ -341,6 +346,7 @@ Status KernelTaskInfo::Distribute() {
   rtError_t rt_ret = RT_ERROR_NONE;
   char *skt_enable_env = getenv("SKT_ENABLE");
   int64_t env_flag = (skt_enable_env != nullptr) ? strtol(skt_enable_env, nullptr, 10) : 0;
+  bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
   if (kernel_type_ == cce::ccKernelType::AI_CPU) {
     // blockDim is reserved parameter, set to 1
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
@@ -348,11 +354,10 @@ Status KernelTaskInfo::Distribute() {
                                        nullptr, stream_, dump_flag_);
   } else {
     /* default: not skt launch */
-    bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
     GELOGI(
-      "KernelTaskInfo Distribute Start, sktenable:%ld taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
+      "KernelTaskInfo Distribute Start, sktenable:%d taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
       "stubfunc:%p blockdim:%u stream:%p",
-      env_flag, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
+      call_skt, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
     // l1 fusion enable and env flag open (kCloseSkt for skt debug)
     if (call_skt && (env_flag != kCloseSkt)) {
       GE_RETURN_IF_ERROR(SuperKernelDistribute());
@@ -371,7 +376,7 @@ Status KernelTaskInfo::Distribute() {
   GELOGI(
     "KernelTaskInfo Distribute Success. sktenable:%d taskid:%d sktid:%d stubfunc_name:%s stubfunc:%p "
     "blockdim:%d stream:%p",
-    env_flag, task_id_, skt_id_, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
+    call_skt, task_id_, skt_id_, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
   return SUCCESS;
 }
 
@@ -399,13 +404,48 @@ Status KernelTaskInfo::Release() {
   return SUCCESS;
 }
 
-Status KernelTaskInfo::InitTVMTask(DavinciModel *davinci_model, uint16_t offset, const domi::KernelDef &kernel_def) {
+Status KernelTaskInfo::UpdateL2Data(const domi::KernelDef &kernel_def) {
+  string sm_desc = kernel_def.sm_desc();
+  if (sm_desc.empty()) {
+    return SUCCESS;
+  }
+
+  char *sm_contrl = const_cast<char *>(sm_desc.data());
+  rtL2Ctrl_t *l2_ctrl_info = reinterpret_cast<rtL2Ctrl_t *>(sm_contrl);
+  uint64_t gen_base_addr = davinci_model_->GetRtBaseAddr();
+
+  // There is no weight for te op now. Update L2_mirror_addr by data memory base.
+  uint64_t data_base_addr = (uint64_t)(uintptr_t)davinci_model_->MemBase() - (uint64_t)gen_base_addr;
+  const uint32_t l2_ctrl_info_data_count = 8;
+  for (uint32_t data_index = 0; data_index < l2_ctrl_info_data_count; ++data_index) {
+    if (l2_ctrl_info->data[data_index].L2_mirror_addr != 0) {
+      l2_ctrl_info->data[data_index].L2_mirror_addr += data_base_addr;
+      l2_ctrl_info->data[data_index].L2_load_to_ddr = IsL2CpToDDR(l2_ctrl_info->data[data_index].L2_load_to_ddr);
+    }
+  }
+
+  rtError_t rt_ret = rtMemAllocManaged(&sm_desc_, sm_desc.size(), RT_MEMORY_SPM);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    return RT_FAILED;
+  }
+
+  rt_ret = rtMemcpy(sm_desc_, sm_desc.size(), sm_desc.data(), sm_desc.size(), RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    return RT_FAILED;
+  }
+
+  return SUCCESS;
+}
+
+Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kernel_def) {
   GELOGD("Do InitTVMTask.");
-  GE_CHECK_NOTNULL(davinci_model);
+  GE_CHECK_NOTNULL(davinci_model_);
   // get tvm op desc
-  OpDescPtr op_desc = davinci_model->GetOpByIndex(ctx_.opIndex);
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(ctx_.opIndex);
   if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "InitTVMTaskInfo error, index is out of range!");
+    GELOGE(INTERNAL_ERROR, "InitTVMTaskInfo error, index:%u out of range!", ctx_.opIndex);
     return INTERNAL_ERROR;
   }
 
@@ -414,21 +454,19 @@ Status KernelTaskInfo::InitTVMTask(DavinciModel *davinci_model, uint16_t offset,
   // and does not need to be modified.
   // When inferencing, stub_func_ is different from dynamic-registration to runtime, and needs to be modified.
   string session_graph_model_id;
-  const char *bin_file_key;
-  davinci_model->GetUniqueId(op_desc, session_graph_model_id);
-  bin_file_key = DavinciModel::GetRegisterStub(op_desc->GetName(), session_graph_model_id);
-  rtError_t rt_ret;
-  rt_ret = rtQueryFunctionRegistered(const_cast<char *>(bin_file_key));
+  davinci_model_->GetUniqueId(op_desc, session_graph_model_id);
+  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc->GetName(), session_graph_model_id);
+  rtError_t rt_ret = rtQueryFunctionRegistered(const_cast<char *>(bin_file_key));
   if (rt_ret != RT_ERROR_NONE) {
     stub_func_ = const_cast<char *>(bin_file_key);
   }
 
-  const vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-  const vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-  const vector<void *> workspace_data_addrs =
-    ModelUtils::GetWorkspaceDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-  vector<void *> tensor_device_addrs;
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
+  const vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
+  const vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
+  const vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc);
 
+  vector<void *> tensor_device_addrs;
   tensor_device_addrs.insert(tensor_device_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
   tensor_device_addrs.insert(tensor_device_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
   tensor_device_addrs.insert(tensor_device_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
@@ -441,81 +479,67 @@ Status KernelTaskInfo::InitTVMTask(DavinciModel *davinci_model, uint16_t offset,
   }
 
   // copy orign args
-  rt_ret = rtMemcpy(args_, args_size_, static_cast<void *>(const_cast<char *>(kernel_def.args().data())), args_size_,
-                    RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(args_, args_size_, kernel_def.args().data(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  vector<uint8_t> args_info(args_size_);
+  errno_t sec_ret = memcpy_s(args_info.data(), args_size_, kernel_def.args().data(), args_size_);
+  if (sec_ret != EOK) {
+    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
+    return FAILED;
+  }
 
-  if (args_size_ <= static_cast<uint32_t>(offset) ||
-      args_size_ - static_cast<uint32_t>(offset) < static_cast<uint32_t>(sizeof(void *) * tensor_device_addrs.size())) {
+  if ((args_size_ <= offset) || (args_size_ - offset < kAddrLen * tensor_device_addrs.size())) {
     GELOGE(FAILED, "offset >= kernelInfo.argsSize or copy content beyond applied memory.");
     return FAILED;
   }
 
   // copy args
-  rt_ret = rtMemcpy(static_cast<char *>(args_) + offset, sizeof(void *) * tensor_device_addrs.size(),
-                    tensor_device_addrs.data(), sizeof(void *) * tensor_device_addrs.size(), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(static_cast<char *>(args_) + offset, args_size_ - offset, tensor_device_addrs.data(),
+                    kAddrLen * tensor_device_addrs.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  sec_ret = memcpy_s(args_info.data() + offset, args_size_ - offset, tensor_device_addrs.data(),
+                     kAddrLen * tensor_device_addrs.size());
+  if (sec_ret != EOK) {
+    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
+    return FAILED;
+  }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model->Name(), op_desc->GetName())) {
+  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
-    dump_args_ =
-      reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_) + offset + sizeof(void *) * input_data_addrs.size());
+    dump_args_ = static_cast<char *>(args_) + offset + kAddrLen * input_data_addrs.size();
   }
 
-  davinci_model_->SetZeroCopyAddr(op_desc, tensor_device_addrs, static_cast<char *>(args_) + offset);
   // update origin l2 data
-  string sm_desc = kernel_def.sm_desc();
-  char *sm_contrl = nullptr;
-  rtL2Ctrl_t *l2_ctrl_info = nullptr;
-  if (!sm_desc.empty()) {
-    sm_contrl = const_cast<char *>(sm_desc.data());
-    l2_ctrl_info = reinterpret_cast<rtL2Ctrl_t *>(sm_contrl);
-
-    uint64_t gen_base_addr = davinci_model->GetRtBaseAddr();
-
-    // There is no weight for te op now. Update L2_mirror_addr by data memory base.
-    uint64_t data_base_addr = (uint64_t)(uintptr_t)davinci_model->MemBase() - (uint64_t)gen_base_addr;
-    const uint32_t l2_ctrl_info_data_count = 8;
-    for (uint32_t data_index = 0; data_index < l2_ctrl_info_data_count; ++data_index) {
-      if (l2_ctrl_info->data[data_index].L2_mirror_addr != 0) {
-        l2_ctrl_info->data[data_index].L2_mirror_addr += data_base_addr;
-        l2_ctrl_info->data[data_index].L2_load_to_ddr = IsL2CpToDDR(l2_ctrl_info->data[data_index].L2_load_to_ddr);
-      }
-    }
-
-    rt_ret = rtMemAllocManaged(&sm_desc_, sm_desc.size(), RT_MEMORY_SPM);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
-    }
-
-    rt_ret = rtMemcpy(sm_desc_, sm_desc.size(), sm_desc.data(), sm_desc.size(), RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
-    }
+  if (UpdateL2Data(kernel_def) != SUCCESS) {
+    return RT_FAILED;
   }
+
+  vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
+  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
+  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
+  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
+  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
+  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_info.data(), args_, args_size_, offset);
+
   GELOGD("Do InitTVMTask end");
   return SUCCESS;
 }
 
-Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_ptr<OpDesc>> &op_list,
-                                           uint32_t op_index, const domi::KernelDef &kernel_def) {
+Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::KernelDef &kernel_def) {
   GELOGI("Do InitAICPUCustomTask");
-
-  auto iter = op_list.find(op_index);
-  if (iter == op_list.end()) {
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
+  if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "index is out of range, index: %u", op_index);
     return INTERNAL_ERROR;
   }
 
-  auto op_desc = iter->second;
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
 
   const domi::KernelContext &context = kernel_def.context();
   const uint32_t kCustomAicpuArgsLen = 5;
@@ -534,11 +558,8 @@ Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_
     ctx_.argsOffset[i] = (reinterpret_cast<uint16_t *>(const_cast<char *>(context.args_offset().data())))[i];
   }
 
-  const std::vector<void *> input_data_addrs =
-    ModelUtils::GetInputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
-  const std::vector<void *> output_data_addrs =
-    ModelUtils::GetOutputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
-
+  const std::vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
+  const std::vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
   Status ret = StoreInputOutputTensor(input_data_addrs, output_data_addrs, ModelUtils::GetInputDescs(op_desc),
                                       ModelUtils::GetOutputDescs(op_desc));
 
@@ -549,7 +570,7 @@ Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_
 
   // attrHandle
   Buffer buffer;
-  if (!AttrUtils::GetBytes(op_desc, domi::ATTR_NAME_OPATTR, buffer)) {
+  if (!AttrUtils::GetBytes(op_desc, ATTR_NAME_OPATTR, buffer)) {
     GELOGE(FAILED, "can't find opattr bytes!.");
     return FAILED;
   }
@@ -583,15 +604,15 @@ Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_
     }
   }
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[0])) =
-    reinterpret_cast<uint64_t>(custom_info_.input_descs);  // arg 0
+    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_descs));  // arg 0
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[1])) =
-    reinterpret_cast<uint64_t>(custom_info_.input_addrs);  // arg 1
+    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_addrs));  // arg 1
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[2])) =
-    reinterpret_cast<uint64_t>(custom_info_.output_descs);  // arg 2
+    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_descs));  // arg 2
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[3])) =
-    reinterpret_cast<uint64_t>(custom_info_.output_addrs);  // arg 3
+    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_addrs));  // arg 3
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[4])) =
-    reinterpret_cast<uint64_t>(custom_info_.attr_handle);  // arg 4
+    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.attr_handle));  // arg 4
 
   rt_ret = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
@@ -606,14 +627,18 @@ Status KernelTaskInfo::InitAICPUCustomTask(const std::map<uint32_t, std::shared_
     return RT_FAILED;
   }
 
-  davinci_model_->SetZeroCopyAddr(op_desc, input_data_addrs, custom_info_.input_addrs);
-  davinci_model_->SetZeroCopyAddr(op_desc, output_data_addrs, custom_info_.output_addrs);
+  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
+  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
+  davinci_model_->SetZeroCopyAddr(op_desc, virtual_in_addrs, input_data_addrs.data(), custom_info_.input_addrs,
+                                  virtual_in_addrs.size() * kAddrLen, 0);
+  davinci_model_->SetZeroCopyAddr(op_desc, virtual_out_addrs, output_data_addrs.data(), custom_info_.output_addrs,
+                                  output_data_addrs.size() * kAddrLen, 0);
   return SUCCESS;
 }
 
-Status KernelTaskInfo::InitCceTask(DavinciModel *davinci_model, const domi::KernelDef &kernel_def) {
+Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
   GELOGI("Do InitCCETask");
-  if (davinci_model == nullptr) {
+  if (davinci_model_ == nullptr) {
     GELOGE(PARAM_INVALID, "davinci_model is null!");
     return PARAM_INVALID;
   }
@@ -639,15 +664,15 @@ Status KernelTaskInfo::InitCceTask(DavinciModel *davinci_model, const domi::Kern
   uint64_t sm_contrl_size = sm_desc.empty() ? 0 : sizeof(rtSmDesc_t);
 
   // Passing the memory info when the offline-model-generated to the CCE, which uses this info for address refresh
-  ctx_.genDataBaseAddr = davinci_model->GetRtBaseAddr();
-  ctx_.genDataBaseSize = davinci_model->TotalMemSize();
-  ctx_.genWeightBaseAddr = davinci_model->GetRtWeightAddr();
-  ctx_.genWeightBaseSize = davinci_model->TotalWeightsMemSize();
-  ctx_.genVariableBaseAddr = davinci_model->GetRtVarAddr();
-  ctx_.genVariableBaseSize = davinci_model->TotalVarMemSize();
+  ctx_.genDataBaseAddr = davinci_model_->GetRtBaseAddr();
+  ctx_.genDataBaseSize = davinci_model_->TotalMemSize();
+  ctx_.genWeightBaseAddr = davinci_model_->GetRtWeightAddr();
+  ctx_.genWeightBaseSize = davinci_model_->TotalWeightsMemSize();
+  ctx_.genVariableBaseAddr = davinci_model_->GetRtVarAddr();
+  ctx_.genVariableBaseSize = davinci_model_->TotalVarMemSize();
   ctx_.l2ctrlSize = sm_contrl_size;
 
-  if (UpdateCceArgs(sm_desc, flowtable, davinci_model, kernel_def) != SUCCESS) {
+  if (UpdateCceArgs(sm_desc, flowtable, kernel_def) != SUCCESS) {
     GELOGE(ret, "update cce args fail");
     return ret;
   }
@@ -691,14 +716,13 @@ Status KernelTaskInfo::InitCceTask(DavinciModel *davinci_model, const domi::Kern
   return SUCCESS;
 }
 
-Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_list, uint32_t op_index,
-                                     const domi::KernelDef &kernel_def) {
+Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &kernel_def) {
   GELOGI("Do InitAicpuTask");
   so_name_ = kernel_def.so_name();
   kernel_name_ = kernel_def.kernel_name();
 
-  auto iter = op_list.find(op_index);
-  if (iter == op_list.end()) {
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
+  if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "index is out of range, index: %u", op_index);
     return INTERNAL_ERROR;
   }
@@ -706,25 +730,24 @@ Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_lis
   // copy args to new host memory
   std::unique_ptr<uint8_t[]> args_addr(new (std::nothrow) uint8_t[args_size_]);
   GE_PRINT_DYNAMIC_MEMORY(new, "cce task physical memory.", sizeof(uint8_t) * args_size_)
-  errno_t sec_ret = memcpy_s(static_cast<void *>(args_addr.get()), args_size_,
-                             static_cast<const void *>(kernel_def.args().data()), args_size_);
+  errno_t sec_ret = memcpy_s(args_addr.get(), args_size_, kernel_def.args().data(), args_size_);
   if (sec_ret != EOK) {
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
     return FAILED;
   }
 
-  OpDescPtr op_desc = iter->second;
-  vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
-  vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
+
+  vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
+  vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
   vector<void *> io_addrs;
   io_addrs.insert(io_addrs.end(), input_addrs.begin(), input_addrs.end());
   io_addrs.insert(io_addrs.end(), output_addrs.begin(), output_addrs.end());
   if (!io_addrs.empty()) {
     // refresh io addrs
-    uintptr_t io_addr =
-      reinterpret_cast<uintptr_t>(args_addr.get()) + static_cast<uintptr_t>(sizeof(aicpu::AicpuParamHead));
-    auto addrs_size = sizeof(uint64_t) * (io_addrs.size());
-    sec_ret = memcpy_s(reinterpret_cast<void *>(io_addr), addrs_size, static_cast<void *>(io_addrs.data()), addrs_size);
+    uintptr_t io_addr = reinterpret_cast<uintptr_t>(args_addr.get()) + sizeof(aicpu::AicpuParamHead);
+    auto addrs_size = sizeof(uint64_t) * io_addrs.size();
+    sec_ret = memcpy_s(reinterpret_cast<void *>(io_addr), addrs_size, io_addrs.data(), addrs_size);
     if (sec_ret != EOK) {
       GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
       return FAILED;
@@ -740,7 +763,7 @@ Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_lis
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "cce task physical memory.", args_size_)
 
   // copy args to device
-  rt_ret = rtMemcpy(args_, args_size_, static_cast<void *>(args_addr.get()), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(args_, args_size_, args_addr.get(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
@@ -748,11 +771,17 @@ Status KernelTaskInfo::InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_lis
 
   if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
-    dump_args_ = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_) + sizeof(aicpu::AicpuParamHead) +
-                                          sizeof(void *) * input_addrs.size());
+    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead) + kAddrLen * input_addrs.size();
   }
 
-  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead));
+  vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
+  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
+  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
+  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
+  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
+  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_addr.get(), args_, args_size_,
+                                  sizeof(aicpu::AicpuParamHead));
+
   return SUCCESS;
 }
 
@@ -787,8 +816,8 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
   }
 
   if (!input_data_addrs.empty()) {
-    rt_ret = rtMemcpy(custom_info_.input_addrs, sizeof(void *) * input_size, &input_data_addrs[0],
-                      sizeof(void *) * input_size, RT_MEMCPY_HOST_TO_DEVICE);
+    rt_ret = rtMemcpy(custom_info_.input_addrs, kAddrLen * input_size, &input_data_addrs[0], kAddrLen * input_size,
+                      RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return RT_FAILED;
@@ -818,8 +847,8 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
   }
 
   if (!output_data_addrs.empty()) {
-    rt_ret = rtMemcpy(custom_info_.output_addrs, sizeof(void *) * output_size, &output_data_addrs[0],
-                      sizeof(void *) * output_size, RT_MEMCPY_HOST_TO_DEVICE);
+    rt_ret = rtMemcpy(custom_info_.output_addrs, kAddrLen * output_size, &output_data_addrs[0], kAddrLen * output_size,
+                      RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return RT_FAILED;
@@ -872,17 +901,14 @@ void KernelTaskInfo::FreeRtMem(void **ptr) {
   *ptr = nullptr;
 }
 
-Status KernelTaskInfo::UpdateCceArgs(std::string &sm_desc, std::string &flowtable, DavinciModel *davinci_model,
-                                     const domi::KernelDef &kernel_def) {
-  GE_CHECK_NOTNULL(davinci_model);
+Status KernelTaskInfo::UpdateCceArgs(std::string &sm_desc, std::string &flowtable, const domi::KernelDef &kernel_def) {
+  GE_CHECK_NOTNULL(davinci_model_);
   const domi::KernelContext &context = kernel_def.context();
 
-  uint64_t data_base_addr =
-    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->MemBase())) - davinci_model->GetRtBaseAddr();
-  uint64_t weight_base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->WeightsMemBase())) -
-                              davinci_model->GetRtWeightAddr();
-  uint64_t var_base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->VarMemBase())) -
-                           davinci_model->GetRtVarAddr();
+  uint64_t data_base_addr = reinterpret_cast<uintptr_t>(davinci_model_->MemBase()) - davinci_model_->GetRtBaseAddr();
+  uint64_t weight_base_addr =
+    reinterpret_cast<uintptr_t>(davinci_model_->WeightsMemBase()) - davinci_model_->GetRtWeightAddr();
+  uint64_t var_base_addr = reinterpret_cast<uintptr_t>(davinci_model_->VarMemBase()) - davinci_model_->GetRtVarAddr();
 
   Status status =
     CceUpdateKernelArgs(context, data_base_addr, weight_base_addr, var_base_addr, sm_desc, flowtable, kernel_def);
@@ -904,7 +930,7 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
   std::string file_name = "libcce.so";
   std::string path = PluginManager::GetPath();
   path.append(file_name);
-  string canonicalPath = domi::RealPath(path.c_str());
+  string canonicalPath = RealPath(path.c_str());
   if (canonicalPath.empty()) {
     GELOGW("failed to get realpath of %s", path.c_str());
     return FAILED;
@@ -977,7 +1003,7 @@ Status KernelTaskInfo::SetFlowtable(std::string &flowtable, const domi::KernelDe
 
     *(reinterpret_cast<uint64_t *>(
       args + (reinterpret_cast<uint16_t *>(const_cast<char *>(context.args_offset().data())))[0])) =
-      reinterpret_cast<uint64_t>(flowtable_);
+      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(flowtable_));
   }
   return SUCCESS;
 }

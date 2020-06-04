@@ -259,6 +259,50 @@ RTS_API rtError_t rtLabelGoto(rtLabel_t label, rtStream_t stream);
  * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
  */
 RTS_API rtError_t rtNameLabel(rtLabel_t label, const char *name);
+
+/**
+ * @ingroup dvrt_base
+ * @brief label switch by index
+ * @param [in] ptr  index value ptr
+ * @param [in] max  index max value
+ * @param [in] labelInfoPtr  label content info ptr
+ * @param [in] stream  set stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ */
+RTS_API rtError_t rtLabelSwitchByIndex(void *ptr, uint32_t max, void *labelInfoPtr, rtStream_t stream);
+
+/**
+ * @ingroup dvrt_base
+ * @brief stream goto label
+ * @param [in] label  goto label
+ * @param [in] stream  stream  to submit label_goto task
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ */
+RTS_API rtError_t rtLabelGotoEx(rtLabel_t label, rtStream_t stream);
+
+/**
+ * @ingroup dvrt_base
+ * @brief labels to dev info
+ * @param [in] label  model label list
+ * @param [in] labelNumber  label number
+ * @param [in] dst  device ptr
+ * @param [in] dstMax  dst size
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ */
+RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *dst, uint32_t dstMax);
+
+/**
+ * @ingroup dvrt_base
+ * @brief labels to dev info
+ * @param [out] label  created label handle
+ * @param [in] stream  label bind stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ */
+RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
 #ifdef __cplusplus
 }
 #endif

@@ -28,17 +28,10 @@
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
-
-using domi::ATTR_NAME_INPUT_FORMAT;
-using domi::ATTR_NAME_OUTPUT_FORMAT;
-using domi::CAST;
-using domi::RESHAPE;
-using domi::TRANSDATA;
-using domi::TRANSPOSE;
-using domi::TRANSPOSED;
 
 namespace {
 const char *const kRemainNode = "node_remain";
@@ -745,9 +738,21 @@ graphStatus TransOpWithoutReshapeFusionPass::Run(ComputeGraphPtr graph) {
     return GRAPH_SUCCESS;
   }
 
-  for (const auto &node : graph->GetAllNodes()) {
+  for (const auto &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node);
     if (IsTransOp(node)) {
+      continue;
+    }
+    bool is_unknown = false;
+    auto ret = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+    if (ret != GRAPH_SUCCESS) {
+      GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
+             node->GetType().c_str());
+      continue;
+    }
+    if (is_unknown) {
+      GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
+             node->GetType().c_str());
       continue;
     }
     GELOGI("Current normal node name: %s, type: %s.", node->GetName().c_str(), node->GetType().c_str());

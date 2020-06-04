@@ -41,11 +41,12 @@ class StreamResource {
 
   SingleOp *GetOperator(const void *key);
 
-  uint8_t *MallocMemory(size_t size);
-  uint8_t *MallocWeight(size_t size);
+  uint8_t *MallocMemory(const std::string &purpose, size_t size);
+  uint8_t *MallocWeight(const std::string &purpose, size_t size);
 
  private:
-  static uint8_t *DoMallocMemory(size_t size, size_t &max_allocated, std::vector<uint8_t *> &allocated);
+  static uint8_t *DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
+                                 std::vector<uint8_t *> &allocated);
 
   size_t max_memory_size_ = 0;
   size_t max_weight_size_ = 0;

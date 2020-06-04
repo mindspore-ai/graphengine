@@ -26,15 +26,6 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/common/transop_util.h"
 
-using domi::CAST;
-using domi::EXPANDDIMS;
-using domi::REFORMAT;
-using domi::RESHAPE;
-using domi::SQUEEZE;
-using domi::TRANSDATA;
-using domi::TRANSPOSE;
-using domi::TRANSPOSED;
-
 namespace ge {
 graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(TransOpDepthFusionPass);
@@ -42,7 +33,7 @@ graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
   }
-  for (const auto &node : graph->GetAllNodes()) {
+  for (const auto &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node);
     if (TransOpUtil::IsTransOp(node)) {
       continue;

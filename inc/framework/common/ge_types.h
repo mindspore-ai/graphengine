@@ -25,6 +25,7 @@
 #include "common/fmk_error_codes.h"
 #include "ge/ge_api_error_codes.h"
 #include "external/graph/types.h"
+#include "external/ge/ge_api_types.h"
 
 namespace ge {
 enum RuntimeType { HOST = 0, DEVICE = 1 };
@@ -130,7 +131,8 @@ class ModelListener {
   /// @param [in] data_index Index of the input_data
   /// @param [in] resultCode Execution results
   ///
-  virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code) = 0;
+  virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
+                               std::vector<ge::OutputTensorInfo> &outputs) = 0;
 };
 
 // OMM configuration item
@@ -147,6 +149,8 @@ struct Options {
   std::string rankTableFile;
   int32_t ge_hccl_flag = 0;
   int32_t physical_device_id;
+  std::string profiling_mode;
+  std::string profiling_options;
 };
 
 // Profiling info of task

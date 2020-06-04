@@ -22,8 +22,6 @@
 #include "graph/debug/ge_attr_define.h"
 #include "inc/kernel_factory.h"
 
-using domi::UNPACK;
-
 namespace ge {
 namespace {
 const size_t kUnpackInputNum = 1;
@@ -63,15 +61,16 @@ Status UnpackKernel::Compute(const OpDescPtr attr, const std::vector<ge::ConstGe
 
   ConstGeTensorPtr dims = input[0];
   GE_CHECK_NOTNULL(dims);
+
+  if (dims->GetTensorDesc().GetShape().GetDimNum() != 1) {
+    GELOGW("input tensor not 1 dim");
+    return NOT_CHANGED;
+  }
+
   ge::DataType data_type;
   GE_CHK_BOOL_RET_STATUS(AttrUtils::GetDataType(attr, ATTR_NAME_T, data_type), PARAM_INVALID, "get T attr failed.");
   // data_type must be FLOAT or INT32
   GE_CHK_BOOL_RET_STATUS((data_type == DT_FLOAT || data_type == DT_INT32), PARAM_INVALID, "T must be float or int32.");
-
-  // input dim size must = 1
-  GE_RT_PARAM_INVALID_WITH_LOG_IF_FALSE((dims->GetTensorDesc().GetShape().GetDimNum() == 1),
-                                        "input tensor must be 1 dim, real is %zu.",
-                                        dims->GetTensorDesc().GetShape().GetDimNum());
 
   int64_t num = 0;
   GE_CHK_BOOL_RET_STATUS(AttrUtils::GetInt(attr, UNPACK_ATTR_NAME_NUM, num), PARAM_INVALID, "get num attr failed.");

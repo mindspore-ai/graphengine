@@ -27,16 +27,24 @@ class SuperKernelFactory {
  private:
   void *func_stub_ = nullptr;
   void *func_ptr_ = nullptr;
+  void *handle_ = nullptr;
   std::string sk_stub_name_ = "_Z21super_kernel_templatePmm";
   const char *use_physical_address_ = getenv("GE_USE_PHYSICAL_ADDRESS");
   bool is_init_ = false;
   SuperKernelFactory(){};
+  ~SuperKernelFactory() {
+    if (handle_ != nullptr) {
+      GELOGI("SKT: SKT LIB PATH release.");
+      if (dlclose(handle_) != 0) {
+        GELOGW("failed to close handle, message: %s", dlerror());
+      }
+    }
+  };
 
  public:
   SuperKernelFactory(SuperKernelFactory const &) = delete;
   void operator=(SuperKernelFactory const &) = delete;
   static SuperKernelFactory &GetInstance();
-  SuperKernelFactory(const std::string &sk_stub_name_, const std::string &bin_file);
   Status Init();
   Status Uninitialize();
   Status FuseKernels(const std::vector<void *> &stub_func_list, const std::vector<void *> &args_addr_list,

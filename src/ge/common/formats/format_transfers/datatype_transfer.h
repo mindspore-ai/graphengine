@@ -21,7 +21,7 @@
 #include <memory>
 #include <vector>
 
-#include "common/formats/format_transfers/format_transfer.h"
+#include "register/register_format_transfer.h"
 #include "external/graph/types.h"
 #include "framework/common/ge_inner_error_codes.h"
 

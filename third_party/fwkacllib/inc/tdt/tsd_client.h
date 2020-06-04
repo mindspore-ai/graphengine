@@ -22,6 +22,7 @@
 #include <memory>
 #include <mutex>
 #include "tdt/status.h"
+#include "tdt/data_common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +69,87 @@ TDT_StatusT TsdOpen(const uint32_t phyDeviceId, const uint32_t rankSize);
 */
 TDT_StatusT TsdClose(const uint32_t phyDeviceId);
 
+/**
+* @ingroup CreateCmdParameterObj
+* @brief creat tsdclient func parameter obj.
+*
+* @par Function
+* creat tsdclient func parameter obj.
+*
+* @param type [IN] type tdt::TsdCmdType, tsd func type.
+* @param cmdParameterObj [IN] type void *, func parameter obj.
+* @retval TDT_OK Success
+* @retval TDT_INTERFACE_NOT_SUPPORT
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li data_common.h: Header file where tdt::TsdCmdType and tdt::InputItem defined.
+* @li status.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_StatusT CreateCmdParameterObj(tdt::TsdCmdType type, void **cmdParameterObj);
+
+/**
+* @ingroup SetCmdParameterObjAttribute
+* @brief set cmdParameterObj input value.
+*
+* @par Function
+* set cmdParameterObj input value.
+*
+* @param type [IN] type tdt::TsdCmdType, tsd func type.
+* @param cmdParameterObj [IN] type void *, func parameter obj.
+* @param itemType [IN] type tdt::InputItem, func input type.
+* @param valuePtr [IN] type const void *, input value.
+* @param valueLength [IN] type int, input value length.
+* @retval TDT_OK Success
+* @retval TDT_INTERFACE_NOT_SUPPORT
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li data_common.h: Header file where tdt::TsdCmdType and tdt::InputItem defined.
+* @li status.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_StatusT SetCmdParameterObjAttribute(tdt::TsdCmdType type, void *cmdParameterObj, tdt::InputItem itemType, const void *valuePtr, int valueLength);
+
+/**
+* @ingroup GetCmdParameterObjAttribute
+* @brief set cmdParameterObj input value.
+*
+* @par Function
+* set cmdParameterObj input value.
+*
+* @param type [IN] type tdt::TsdCmdType, tsd func type.
+* @param cmdParameterObj [IN] type void *, func parameter obj.
+* @param itemType [IN] type tdt::InputItem, func input type.
+* @param valuePtr [IN] type const void *, input value.
+* @param valueLength [IN] type int, input value length.
+* @retval TDT_OK Success
+* @retval TDT_INTERFACE_NOT_SUPPORT
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li data_common.h: Header file where tdt::TsdCmdType and tdt::InputItem defined.
+* @li status.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_StatusT GetCmdParameterObjAttribute(tdt::TsdCmdType type, void *cmdParameterObj, tdt::InputItem itemType, void *valuePtr, int &valueLength);
+
+/**
+* @ingroup TsdClientCmd
+* @brief creat tsdclient func parameter obj.
+*
+* @par Function
+* creat tsdclient func parameter obj.
+*
+* @param type [IN] type tdt::TsdCmdType, tsd func type.
+* @param cmdParameterObj [IN] type void *, func parameter obj.
+* @retval TDT_OK Success
+* @retval TDT_INTERFACE_NOT_SUPPORT
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li data_common.h: Header file where tdt::TsdCmdType and tdt::InputItem defined.
+* @li status.h: Header file where 'TDT_StatusT' defined
+*/
+TDT_StatusT TsdClientCmd(tdt::TsdCmdType cmd, void *cmdParameterObj);
 
 namespace tdt {
 /**

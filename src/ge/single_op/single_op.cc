@@ -19,6 +19,7 @@
 #include "common/fmk_types.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/util.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/mem.h"
 
@@ -75,7 +76,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   return SUCCESS;
 }
 
-Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
+Status SingleOp::GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
   size_t arg_index = 0;
   if (use_physical_addr_) {
     for (auto &input : inputs) {
@@ -108,7 +109,14 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       args_[arg_index++] = reinterpret_cast<uintptr_t>(output.data);
     }
   }
+  return SUCCESS;
+}
 
+Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
+  Status ret = GetArgs(inputs, outputs);
+  if (ret != SUCCESS) {
+    return ret;
+  }
   size_t num_args = arg_table_.size();
   for (size_t i = 0; i < num_args; ++i) {
     std::vector<uintptr_t *> &ptr_to_arg_in_tasks = arg_table_[i];
@@ -121,7 +129,19 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       *arg_addr = args_[i];
     }
   }
-
+  for (auto &task : tasks_) {
+    if (task->GetOpTaskType() == OP_TASK_AICPU) {
+      GELOGD("Update aicpu task args");
+      AiCpuTask *task_aicpu = dynamic_cast<AiCpuTask *>(task);
+      GE_CHECK_NOTNULL(task_aicpu);
+      auto rt_ret = rtMemcpyAsync(task_aicpu->GetIOAddr(), sizeof(uint64_t) * args_.size(), &args_[0],
+                                  sizeof(uint64_t) * args_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream_);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGE(RT_FAILED, "rtMemcpyAsync addresses failed, ret = %d", rt_ret);
+        return RT_FAILED;
+      }
+    }
+  }
   return SUCCESS;
 }
 

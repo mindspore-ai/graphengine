@@ -26,11 +26,6 @@
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
 
-using domi::ATTR_NAME_FRAMEWORK_FWK_TYPE;
-using domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE;
-using ge::ComputeGraph;
-using ge::OpDesc;
-
 namespace {
 const char *const kVectorCore = "VectorCore";
 const char *const kVectorEngine = "VectorEngine";
@@ -73,15 +68,14 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
         peer_out_anchor == nullptr, GELOGW("peer_out_anchor is nullptr! node: %s", node->GetName().c_str()); continue);
 
       ge::NodePtr src_node = peer_out_anchor->GetOwnerNode();
-      src_name_list = node_op_desc->GetSrcName();
       src_index_list = node_op_desc->GetSrcIndex();
       src_name_list.emplace_back(src_node->GetName());
       src_index_list.emplace_back(peer_out_anchor->GetIdx());
       node_op_desc->SetSrcName(src_name_list);
       node_op_desc->SetSrcIndex(src_index_list);
-      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == domi::NETOUTPUT && domi::GetContext().type == domi::FMK_TYPE_T),
+      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && domi::GetContext().type == domi::FMK_TYPE_T),
                       ge::NodePtr peer_owner_node = peer_out_anchor->GetOwnerNode();
-                      input_name_list = node_op_desc->GetInputName(); input_name_list.emplace_back(
+                      input_name_list.emplace_back(
                         peer_owner_node->GetName() +
                         (peer_out_anchor->GetIdx() == 0 ? "" : ": " + to_string(peer_out_anchor->GetIdx())));
                       node_op_desc->SetInputName(input_name_list);)
@@ -153,6 +147,47 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
       ret = (iter->second)->OptimizeOriginalGraph(*compute_graph);
       if (ret != SUCCESS) {
         GELOGE(ret, "[OptimizeOriginalGraph]: graph optimize failed, ret:%d", ret);
+        return ret;
+      }
+    }
+  }
+  return ret;
+}
+
+Status GraphOptimize::NewOptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
+  GELOGD("NewOptimizeOriginalGraph in");
+  if (compute_graph == nullptr) {
+    GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeOriginalGraph]: compute_graph is nullptr.");
+    return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
+  }
+
+  Status ret = SUCCESS;
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeOriginalGraph failed.");
+    return GE_CLI_GE_NOT_INITIALIZED;
+  }
+
+  std::map<string, GraphOptimizerPtr> graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjs();
+  GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
+         graph_optimizer.size());
+  string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
+  GELOGD("[OptimizeOriginalGraph]: engine type will exclude: %s", exclude_core_Type.c_str());
+  if (graph_optimizer.size() != 0) {
+    for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
+      if (iter->first == exclude_core_Type) {
+        continue;
+      }
+      ret = (iter->second)->OptimizeOriginalGraph(*compute_graph);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "[OptimizeOriginalGraph]: graph optimize failed, ret:%d", ret);
+        return ret;
+      }
+
+      // call fe
+      ret = (iter->second)->OptimizeOriginalGraphJudgeInsert(*compute_graph);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "[OptimizeOriginalGraphForInsert]: graph optimize failed, ret:%d", ret);
         return ret;
       }
     }

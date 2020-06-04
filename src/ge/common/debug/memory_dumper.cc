@@ -28,7 +28,9 @@
 
 using std::string;
 
-static const int kInvalidFd = (-1);
+namespace {
+const int kInvalidFd = (-1);
+}  // namespace
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY MemoryDumper::MemoryDumper() : fd_(kInvalidFd) {}

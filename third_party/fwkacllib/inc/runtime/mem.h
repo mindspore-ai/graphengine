@@ -37,7 +37,12 @@ extern "C" {
 #define RT_MEMORY_P2P_HBM ((uint32_t)0x10)  // HBM memory on other 4P device
 #define RT_MEMORY_P2P_DDR ((uint32_t)0x11)  // DDR memory on other device
 #define RT_MEMORY_DDR_NC ((uint32_t)0x20)   // DDR memory of non-cache
-#define RT_MEMORY_RESERVED ((uint32_t)0x40)
+#define RT_MEMORY_TS_4G ((uint32_t)0x40)
+#define RT_MEMORY_TS ((uint32_t)0x80)
+#define RT_MEMORY_RESERVED ((uint32_t)0x100)
+
+#define RT_MEMORY_L1 ((uint32_t)0x1<<16)
+#define RT_MEMORY_L2 ((uint32_t)0x1<<17)
 
 /**
  * @ingroup dvrt_mem
@@ -75,6 +80,8 @@ typedef enum tagRtMemcpyKind {
   RT_MEMCPY_DEVICE_TO_HOST,    // device to host
   RT_MEMCPY_DEVICE_TO_DEVICE,  // device to device, 1P && P2P
   RT_MEMCPY_MANAGED,           // managed memory
+  RT_MEMCPY_ADDR_DEVICE_TO_DEVICE,
+  RT_MEMCPY_HOST_TO_DEVICE_EX, // host  to device ex (only used for 8 bytes)
   RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
 
@@ -85,6 +92,8 @@ typedef enum tagRtRecudeKind {
 
 typedef enum tagRtDataType {
   RT_DATA_TYPE_FP32 = 0,  // fp32
+  RT_DATA_TYPE_FP16 = 1,  // fp16
+  RT_DATA_TYPE_INT16 = 2, // int16
   RT_DATA_TYPE_END
 } rtDataType_t;
 

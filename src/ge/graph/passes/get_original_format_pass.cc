@@ -19,26 +19,18 @@
 #include <vector>
 
 #include "common/debug/log.h"
-#include "framework/common/debug/ge_log.h"
 #include "common/types.h"
 #include "common/util.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/omg/omg_inner_types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/op_desc_utils.h"
-#include "framework/omg/omg_inner_types.h"
 
-using domi::AIPP_DATA_TYPE;
-using domi::ATTR_NAME_FORMAT;
-using domi::ATTR_NAME_IGNORE_PRED_FORMAT;
-using domi::ATTR_NAME_INFERRED_FORMAT;
-using domi::BIASADD;
-using domi::DATA_TYPE;
 using domi::DOMI_TENSOR_NCHW;
 using domi::DOMI_TENSOR_NHWC;
 using domi::DOMI_TENSOR_RESERVED;
 using domi::FAILED;
 using domi::PARAM_INVALID;
-using domi::PERMUTE;
-using domi::PERMUTE_ATTR_ORDER;
 using domi::SUCCESS;
 
 using domi::GetContext;
@@ -70,8 +62,8 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
     GE_CHECK_NOTNULL(desc_ptr);
     auto is_data = (desc_ptr->GetType() == DATA_TYPE || desc_ptr->GetType() == AIPP_DATA_TYPE);
     if (is_data) {
-      GELOGI("Data node: %s,format :%d", node_ptr->GetName().c_str(), GetContext().format);
-      ori_format = static_cast<int64_t>(GetContext().format);
+      GELOGI("Data node: %s,format :%d", node_ptr->GetName().c_str(), domi::GetContext().format);
+      ori_format = static_cast<int64_t>(domi::GetContext().format);
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(desc_ptr, ATTR_NAME_FORMAT, ori_format),
                       GELOGE(FAILED, "set ATTR_NAME_FORMAT failed");
                       return FAILED);

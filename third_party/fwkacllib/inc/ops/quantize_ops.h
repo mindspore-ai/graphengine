@@ -16,25 +16,9 @@
 
 #ifndef GE_OP_QUANTIZE_OPS_H
 #define GE_OP_QUANTIZE_OPS_H
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
-REG_OP(QuantizedInnerProduct)
-    .INPUT(x, TensorType({DT_UINT8}))
-    .INPUT(w, TensorType({DT_INT8}))
-    .OPTIONAL_INPUT(b, TensorType({DT_INT32}))
-    .OPTIONAL_INPUT(scale_q, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(offset_q, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(scale_deq_req, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(offset_req, TensorType({DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
-    .REQUIRED_ATTR(quant_algo, ListInt)
-    .REQUIRED_ATTR(scale_sqrt, ListInt)
-    .REQUIRED_ATTR(num_output, Int)
-    .ATTR(transpose, Bool, false)
-    .ATTR(bias_term, Bool, false)
-    .ATTR(axis, Int, 1)
-    .OP_END_FACTORY_REG(QuantizedInnerProduct)
 
 /**
 * @brief Dequantizes the input tensor into a float tensor.\n
@@ -117,6 +101,40 @@ REG_OP(AscendDequant)
     .ATTR(relu_flag, Bool, false)
     .ATTR(dtype, Int, DT_FLOAT)
     .OP_END_FACTORY_REG(AscendDequant)
+
+REG_OP(AscendAntiQuant)
+    .INPUT(x, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(scale, Float)
+    .REQUIRED_ATTR(offset, Float)
+    .ATTR(dtype, Int, DT_FLOAT)
+    .ATTR(sqrt_mode, Bool, false)
+    .OP_END_FACTORY_REG(AscendAntiQuant)
+
+REG_OP(AscendDequantS16)
+  .INPUT(x0, TensorType({DT_INT32}))
+  .INPUT(deq_scale, TensorType({DT_UINT64}))
+  .OPTIONAL_INPUT(x1, TensorType({DT_INT16}))
+  .OUTPUT(y, TensorType({DT_INT16}))
+  .ATTR(relu_flag, Bool, false)
+  .OP_END_FACTORY_REG(AscendDequantS16)
+
+REG_OP(AscendRequant)
+  .INPUT(x, TensorType({DT_INT32}))
+  .INPUT(req_scale, TensorType({DT_UINT64}))
+  .OUTPUT(y, TensorType({DT_INT8}))
+  .ATTR(relu_flag, Bool, false)
+  .OP_END_FACTORY_REG(AscendRequant)
+
+REG_OP(AscendRequantS16)
+  .INPUT(x, TensorType({DT_INT16}))
+  .INPUT(req_scale, TensorType({DT_UINT64}))
+  .OPTIONAL_INPUT(x1, TensorType({DT_INT16}))
+  .OUTPUT(y, TensorType({DT_INT8}))
+  .OUTPUT(y1, TensorType({DT_INT16}))
+  .ATTR(dual_output, Bool, false)
+  .ATTR(relu_flag, Bool, false)
+  .OP_END_FACTORY_REG(AscendRequantS16)
 
 } // namespace ge
 

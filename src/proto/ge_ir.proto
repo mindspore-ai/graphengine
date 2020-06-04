@@ -176,6 +176,7 @@ message OpDef
     repeated bool is_input_const = 32;
     repeated TensorDescriptor input_desc = 33;
     repeated TensorDescriptor output_desc = 34;
+    repeated string subgraph_name = 35;
 }
 
 // Graph definition
@@ -187,7 +188,7 @@ message GraphDef
     repeated string output = 5;  // Graph output
 
     repeated OpDef op      = 6;  // List of operators
-	
+
 	map<string, AttrDef> attr = 11;  // Extended field
 }
 
@@ -197,7 +198,7 @@ message ModelDef
 	string name         = 1;  // name
 	uint32 version      = 2;  // IR Proto verion
 	string custom_version = 3;  // User model version number, passed in by user
-    
+
     repeated GraphDef graph = 7;  // Graph definition，graph[0] represents the main diagram in modeldef
 
     map<string, AttrDef> attr = 11;  // Extended field

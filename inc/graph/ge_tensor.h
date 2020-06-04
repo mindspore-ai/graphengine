@@ -87,6 +87,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDesc : public AttrH
   GeShape &MutableShape();
   void SetShape(GeShape shape);
 
+  // set shape with -2, it stand for unknown shape
+  void SetUnknownDimNumShape();
+  // for unknown shape
+  graphStatus SetShapeRange(const std::vector<std::pair<int64_t, int64_t>> &range);
+  graphStatus GetShapeRange(std::vector<std::pair<int64_t, int64_t>> &range) const;
+
   GeShape GetOriginShape() const;
   void SetOriginShape(const GeShape &originShape);
 

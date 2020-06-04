@@ -83,6 +83,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   // AddNode with NodePtr
   NodePtr AddNode(NodePtr node);
   NodePtr AddNode(OpDescPtr op);
+  NodePtr AddNode(OpDescPtr op, int64_t id);  // for unserialize.
   NodePtr AddNodeFront(NodePtr node);
   NodePtr AddNodeFront(const OpDescPtr &op);
   NodePtr AddInputNode(NodePtr node);
@@ -236,8 +237,9 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
                                     std::deque<NodePtr> &stack);
   graphStatus CollectBreadthOutNode(const NodePtr &node, std::map<NodePtr, uint32_t> &map_in_edge_num,
                                     std::map<string, NodePtr> &breadth_node_map);
-  graphStatus TopologicalSortingSubgraph();
+  graphStatus TopologicalSortingGraph();
   graphStatus SortNodes(std::vector<NodePtr> &stack, std::map<NodePtr, uint32_t> &mapInEdgeNum);
+  Vistor<NodePtr> AllGraphNodes(std::vector<std::shared_ptr<ComputeGraph>> &subgraphs) const;
   size_t GetInEdgeSize(const NodePtr &node);
   size_t GetOutEdgeSize(const NodePtr &node);
   graphStatus RemoveExtraOutEdge(const NodePtr &node);

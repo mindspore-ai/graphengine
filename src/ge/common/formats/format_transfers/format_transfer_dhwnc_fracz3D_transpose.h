@@ -18,7 +18,7 @@
 #define GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_DHWNC_FRACTAL_Z_3D_TRANSPOSE_H_
 
 #include <vector>
-#include "common/formats/format_transfers/format_transfer.h"
+#include "register/register_format_transfer.h"
 
 namespace ge {
 namespace formats {

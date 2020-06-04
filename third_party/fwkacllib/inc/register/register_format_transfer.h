@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_H_
-#define GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_H_
+#ifndef INC_REGISTER_REGISTER_FORMAT_TRANSFER_H_
+#define INC_REGISTER_REGISTER_FORMAT_TRANSFER_H_
 
 #include <functional>
 #include <memory>
 #include <vector>
 
 #include "external/graph/types.h"
-#include "framework/common/ge_inner_error_codes.h"
-#include "common/ge/ge_util.h"
+#include "ge/ge_api_error_codes.h"
 
 namespace ge {
 namespace formats {
@@ -65,19 +64,16 @@ class FormatTransferRegister {
 #define REGISTER_FORMAT_TRANSFER(TransferClass, format1, format2)                    \
   namespace {                                                                        \
   FormatTransferRegister format_transfer_register_##TransferClass##format1##format2( \
-      []() { return ge::MakeShared<TransferClass>(); }, format1, format2);           \
+      []() { return std::make_shared<TransferClass>(); }, format1, format2);         \
   }
 
-/**
- * Build a formattransfer according to 'args'
- * @param args
- * @param result
- * @return
- */
+/// Build a formattransfer according to 'args'
+/// @param args
+/// @param result
+/// @return
 std::shared_ptr<FormatTransfer> BuildFormatTransfer(const TransArgs &args);
 
 bool FormatTransferExists(const TransArgs &args);
-
 }  // namespace formats
 }  // namespace ge
-#endif  // GE_COMMON_FORMATS_FORMAT_TRANSFERS_FORMAT_TRANSFER_H_
+#endif  // INC_REGISTER_REGISTER_FORMAT_TRANSFER_H_

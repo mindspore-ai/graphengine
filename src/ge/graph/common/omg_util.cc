@@ -18,16 +18,9 @@
 
 #include <algorithm>
 
-#include "common/op/attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
-
-using domi::ATTR_NAME_STREAM_CYCLE_EVENT_FLAG;
-using domi::ATTR_NAME_STREAM_LABEL;
-using domi::FRAMEWORKOP;
-using ge::AttrUtils;
-using ge::OpDescPtr;
 
 namespace ge {
 ///
@@ -61,7 +54,7 @@ Status SetStreamLabel(const ge::NodePtr &node, const std::string &label) {
   OpDescPtr tmp_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(tmp_desc);
 
-  if (!AttrUtils::SetStr(tmp_desc, ATTR_NAME_STREAM_LABEL, label)) {
+  if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_STREAM_LABEL, label)) {
     GELOGE(FAILED, "Op: %s set ATTR_NAME_STREAM_LABEL failed", node->GetName().c_str());
     return FAILED;
   }
@@ -78,7 +71,7 @@ Status SetCycleEvent(const ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   OpDescPtr tmp_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(tmp_desc);
-  if (!AttrUtils::SetBool(tmp_desc, ATTR_NAME_STREAM_CYCLE_EVENT_FLAG, true)) {
+  if (!AttrUtils::SetBool(tmp_desc, ge::ATTR_NAME_STREAM_CYCLE_EVENT_FLAG, true)) {
     GELOGE(FAILED, "Op: %s set ATTR_NAME_STREAM_CYCLE_EVENT_FLAG failed", node->GetName().c_str());
     return FAILED;
   }

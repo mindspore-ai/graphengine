@@ -16,6 +16,7 @@
 
 #include "graph/execute/graph_execute.h"
 
+#include <memory>
 #include <string>
 
 #include "common/ge_inner_error_codes.h"
@@ -180,12 +181,11 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
     const GeTensor *in_tensor = &input_tensor[i];
     GE_CHECK_NOTNULL(in_tensor);
     if ((addrVec[i] != nullptr) && (in_tensor->GetData().data() != nullptr)) {
-      errno_t s_ret = memcpy_s(addrVec[i], bufferSizeVec[i], in_tensor->GetData().data(), in_tensor->GetData().size());
-      if (s_ret != 0) {
-        GELOGE(GE_GRAPH_EXECUTE_FAILED,
-               "[GraphExecutor] memcpy input data failed, errno: %d, dst size: %u, src size: %zu.", s_ret,
-               bufferSizeVec[i], in_tensor->GetData().size());
-        return GE_GRAPH_EXECUTE_FAILED;
+      rtError_t rt_ret = rtMemcpy(addrVec[i], bufferSizeVec[i], in_tensor->GetData().data(),
+                                  in_tensor->GetData().size(), RT_MEMCPY_HOST_TO_HOST);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+        return RT_FAILED;
       }
     }
 
@@ -275,8 +275,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
       return FAILED;
     }
     GE_PRINT_DYNAMIC_MEMORY(new, "the output memory of data on training.", sizeof(uint8_t) * outputDataTmp.length)
-    rtError_t ret_value = rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length,
-                                   RT_MEMCPY_DEVICE_TO_HOST);
+    rtError_t ret_value =
+      rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length, RT_MEMCPY_HOST_TO_HOST);
     CHECK_FALSE_EXEC(ret_value == RT_ERROR_NONE,
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Call rt api rtMemcpy failed, ret: 0x%X", ret);
                      return GE_GRAPH_EXECUTE_FAILED);
@@ -289,7 +289,7 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
     GeShape outShape(shapeDims);
     outTensor.MutableTensorDesc().SetShape(outShape);
     outTensor.MutableTensorDesc().SetDataType((DataType)output_desc[i].data_type);
-    outTensor.SetData(outBufTmp.get(), outputDataTmp.length);
+    (void)outTensor.SetData(outBufTmp.get(), outputDataTmp.length);
     output_tensor.push_back(outTensor);
   }
 
@@ -344,8 +344,7 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeModelPtr &ge_model,
 }
 
 Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_model,
-                                        const std::vector<TensorInfo> &input_tensor,
-                                        std::vector<TensorInfo> &output_tensor) {
+                                        const std::vector<InputTensorInfo> &input_tensor) {
   GELOGI("[GraphExecutor] Start to async execute graph, graph_id=%u", graph_id);
   if (graph_id != last_graph_id_) {
     auto ret = FreeExecuteMemory();
@@ -355,7 +354,7 @@ Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_m
   }
   last_graph_id_ = graph_id;
   GE_CHECK_NOTNULL_EXEC(ge_model, return FAILED);
-  Status ret = AsyncExecuteModel(ge_model->GetModelId(), input_tensor, output_tensor);
+  Status ret = AsyncExecuteModel(ge_model->GetModelId(), input_tensor);
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_SYNC_MODEL_FAILED, "[GraphExecutor] AsyncExecuteModel Error!");
     return GE_GRAPH_SYNC_MODEL_FAILED;
@@ -365,14 +364,13 @@ Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_m
   return SUCCESS;
 }
 
-Status GraphExecutor::AsyncExecuteModel(uint32_t model_id, const std::vector<TensorInfo> &inputs,
-                                        std::vector<TensorInfo> &outputs) {
+Status GraphExecutor::AsyncExecuteModel(uint32_t model_id, const std::vector<InputTensorInfo> &inputs) {
   try {
     auto model_manager = ge::ModelManager::GetInstance();
     GE_CHECK_NOTNULL(model_manager);
     GELOGI("RunAsync begin.model_id %u", model_id);
 
-    Status ret = model_manager->DataInputTensor(model_id, inputs, outputs);
+    Status ret = model_manager->DataInputTensor(model_id, inputs);
     if (ret != SUCCESS) {
       GELOGE(ret, "RunAsync: DataInput fail");
       return ret;

@@ -17,7 +17,7 @@
 #ifndef GE_OP_NN_BATCH_NORM_OPS_H
 #define GE_OP_NN_BATCH_NORM_OPS_H
 
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 

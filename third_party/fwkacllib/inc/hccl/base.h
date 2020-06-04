@@ -100,6 +100,12 @@ struct model_feature {
     float *gradient_time;    /**< The BP compution time of each gradient */
 };
 
+enum GradSplitForceMode {
+    FORCE_NONE,     /**< no force */
+    FORCE_SIZE,     /**< force split gradient by size */
+    FORCE_RESERVED  /**< reserved */
+};
+
 /**
 * @brief stream handle.
 */

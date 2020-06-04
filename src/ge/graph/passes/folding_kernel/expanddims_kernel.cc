@@ -25,8 +25,6 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::EXPANDDIMS;
-
 namespace ge {
 namespace {
 const int kExpandDimsIndexZero = 0;

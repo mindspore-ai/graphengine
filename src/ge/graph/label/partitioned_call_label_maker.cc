@@ -22,9 +22,6 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::PARTITIONEDCALL;
-using domi::STATEFULPARTITIONEDCALL;
-
 namespace ge {
 constexpr int32_t kSubGraphIndex = 0;
 

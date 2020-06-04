@@ -23,6 +23,29 @@
 namespace ge {
 
 /**
+*@brief Computes the output as (shift + scale * x) ^ power.
+
+*@par Inputs:
+* x: A Tensor of type float16 or float32.
+
+*@par Attributes:
+*@li power: Optional. Defaults to 1.0.
+*@li scale: Optional. Defaults to 1.0.
+*@li shift: Optional. Defaults to 0.0.
+
+*@par Outputs:
+* y: A Tensor. Has the same type and shape as "x".
+*/
+
+REG_OP(Power)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(power, Float, 1.0)
+    .ATTR(scale, Float, 1.0)
+    .ATTR(shift, Float, 0.0)
+    .OP_END_FACTORY_REG(Power);
+
+/**
 *@brief Compute the lower regularized incomplete Gamma function P(a, x).
 
 *@par Inputs:
@@ -420,11 +443,127 @@ REG_OP(NextAfter)
  *
  * */
 REG_OP(IsFinite)
-    .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64,
-                          DT_UINT8, DT_UINT16, DT_UINT32, DT_UINT64,
-                          DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_BOOL}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsFinite)
+
+/**
+ * *@brief Computes the complex absolute value of a tensor.
+ *
+ * *@par Inputs:
+ * *x:A Tensor.
+ *
+ * *@par Outputs:
+ * *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
+ *
+ * */
+REG_OP(ComplexAbs)
+    .INPUT(x, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(ComplexAbs)
+
+/**
+ * *@brief Returns which elements of x are NaN.
+ *
+ * *@par Inputs:
+ * *x:A Tensor.
+ *
+ * *@par Outputs:
+ * *y:A Tensor. Has the same shape as x.
+ *
+ * */
+REG_OP(IsNan)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_BOOL}))
+    .OP_END_FACTORY_REG(IsNan)
+
+/**
+ * *@brief Returns the real part of a complex number.
+ *
+ * *@par Inputs:
+ * *input:A Tensor.
+ *
+ * *@par Outputs:
+ * *output:A Tensor. Has the same shape as input.
+ *
+ * */
+REG_OP(Real)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Real)
+
+/**
+ * *@brief Returns the complex conjugate of a complex number.
+ *
+ * *@par Inputs:
+ * *input:A Tensor.
+ *
+ * *@par Outputs:
+ * *output:A Tensor. Has the same shape as input.
+ *
+ * */
+REG_OP(Conj)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OP_END_FACTORY_REG(Conj)
+
+/**
+ * *@brief The negative log likelihood loss.
+ *
+ * *@par Inputs:
+ * *The input x and weight must have the same type. Inputs include: \n
+ * *@li x:A Tensor. Must be the type: float32.
+ * *@li target:A Tensor. Must be the type: int32.
+ * *@li weight:A Tensor. Must be the type: float32.
+ *
+ * *@par Attributes:
+ * *@li reduction: An optional attribute. Defaults to "mean".
+ *
+ * *@par Outputs:
+ * *Two outputs, including:
+ * *@li y: A Tensor. Must be the following type: float32.
+ * *@li total_weight: A Tensor. Must be the type: float32.
+ *
+ * */
+REG_OP(NLLLoss)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(weight, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OUTPUT(total_weight, TensorType({DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(NLLLoss)
+
+/**
+ * *@brief The negative log likelihood loss grad.
+
+ * *@par Inputs:
+ * *Inputs include:
+ * *@li x:A Tensor. Must be the type: float32.
+ * *@li y_grad:A Tensor. Must be the type: float32.
+ * *@li target:A Tensor. Must be the type: int32.
+ * *@li weight:A Tensor. Must be the type: float32.
+ * *@li total_weight:A Tensor. Must be the type: float32.
+ *
+ * *@par Attributes:
+ * *@li reduction: An optional attribute. Defaults to "mean".
+ *
+ * *@par Outputs:
+ * *One outputs, including:
+ * *@li x_grad: A Tensor. Must be the following type: float32.
+ *
+ * */
+REG_OP(NLLLossGrad)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(y_grad, TensorType({DT_FLOAT}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .INPUT(weight, TensorType({DT_FLOAT}))
+    .INPUT(total_weight, TensorType({DT_FLOAT}))
+    .OUTPUT(x_grad, TensorType({DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(NLLLossGrad)
 }  // namespace ge
 
 #endif  // GE_OP_MATH_OPS_H_

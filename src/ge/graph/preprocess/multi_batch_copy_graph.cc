@@ -46,9 +46,7 @@ const int kMergeDataOutIndex = 0;
 const size_t kMaxShapesCount = 100;
 const size_t kMinShapesCount = 2;
 
-inline bool IsDataLikeType(const std::string &node_type) {
-  return (node_type == domi::DATA) || (node_type == domi::AIPP);
-}
+inline bool IsDataLikeType(const std::string &node_type) { return (node_type == DATA) || (node_type == AIPP); }
 
 NodePtr InsertMergeNodeToGraph(const std::string &name, size_t input_num, const ComputeGraphPtr &graph) {
   OpDescPtr desc = MakeShared<OpDesc>();
@@ -57,7 +55,7 @@ NodePtr InsertMergeNodeToGraph(const std::string &name, size_t input_num, const 
     return nullptr;
   }
   desc->SetName(name);
-  desc->SetType(domi::MERGE);
+  desc->SetType(MERGE);
   GeTensorDesc tensor_desc;
   for (size_t i = 0; i < input_num; ++i) {
     auto ret = desc->AddInputDesc("x" + std::to_string(i), tensor_desc);
@@ -144,7 +142,7 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
 
 bool IsAllDimsPositive(const std::vector<int64_t> &dims) {
   for (auto dim : dims) {
-    if (dim <= 0) {
+    if (dim < 0) {
       return false;
     }
   }
@@ -158,7 +156,7 @@ NodePtr InsertConst(const std::string &name, const ComputeGraphPtr &graph) {
     return nullptr;
   }
   desc->SetName(name);
-  desc->SetType(domi::CONSTANT);
+  desc->SetType(CONSTANT);
   GeTensor tensor;
   tensor.SetData(std::vector<uint8_t>({0}));
   if (!AttrUtils::SetTensor(desc, ATTR_NAME_WEIGHTS, tensor)) {
@@ -178,7 +176,7 @@ NodePtr InsertConst(const std::string &name, const ComputeGraphPtr &graph) {
 
 bool IsOnlyOutputToAipp(const NodePtr &node) {
   for (const auto &out_node : node->GetOutDataNodes()) {
-    if (out_node->GetType() != domi::AIPP) {
+    if (out_node->GetType() != AIPP) {
       return false;
     }
   }
@@ -188,7 +186,7 @@ bool IsOnlyOutputToAipp(const NodePtr &node) {
 Status CheckDataShape(const std::vector<NodePtr> &nodes) {
   size_t unknown_shape_count = 0;
   for (const auto &node : nodes) {
-    if (node->GetType() != domi::DATA) {
+    if (node->GetType() != DATA) {
       continue;
     }
     for (auto dim : NodeUtils::GetOutputDesc(*node, kDataOutIndex).GetShape().GetDims()) {
@@ -290,7 +288,7 @@ Status MultiBatchGraphCopyer::CreateNewNodes() {
   return SUCCESS;
 }
 NodeStatus MultiBatchGraphCopyer::GetNodeStatus(const NodePtr &node) {
-  if (node->GetType() == domi::NETOUTPUT) {
+  if (node->GetType() == NETOUTPUT) {
     return kNodeOutBatchBranch;
   }
   if (IsDataLikeType(node->GetType()) && !IsOnlyOutputToAipp(node)) {
@@ -429,7 +427,7 @@ NodePtr MultiBatchGraphCopyer::InsertShapeDataNode() {
     return nullptr;
   }
   desc->SetName("ascend_mbatch_shape_data");
-  desc->SetType(domi::DATA);
+  desc->SetType(DATA);
 
   GeTensorDesc tensor_desc;
   tensor_desc.SetFormat(FORMAT_ND);
@@ -612,6 +610,8 @@ Status MultiBatchGraphCopyer::UpdateMaxShapeToData(const NodePtr &data) {
 }
 Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
   auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
+  (void)AttrUtils::SetListInt(data->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
+
   if (IsAllDimsPositive(data_shape.GetDims())) {
     GELOGI("The shape of data %s are positive(%s), skip the multi batch process", data->GetName().c_str(),
            data_shape.ToString().c_str());
@@ -624,7 +624,7 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
     return OUT_OF_MEMORY;
   }
   switchn_desc->SetName(data->GetName() + "_ascend_mbatch_switchn");
-  switchn_desc->SetType(domi::SWITCHN);
+  switchn_desc->SetType(SWITCHN);
 
   GeTensorDesc tensor(NodeUtils::GetOutputDesc(*data, kDataOutIndex));
   if (switchn_desc->AddInputDesc(tensor) != GRAPH_SUCCESS) {  // data
@@ -874,7 +874,7 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
   std::vector<std::vector<int64_t>> shapes;
   if (!domi::GetContext().dynamic_batch_size.empty()) {
     GELOGD("Found dynamic batch option, value %s", domi::GetContext().dynamic_batch_size.c_str());
-    std::vector<std::string> dims = domi::StringUtils::Split(domi::GetContext().dynamic_batch_size, ',');
+    std::vector<std::string> dims = ge::StringUtils::Split(domi::GetContext().dynamic_batch_size, ',');
     for (const auto &dim : dims) {
       if (dim.empty()) {
         continue;
@@ -885,13 +885,13 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
   }
   if (!domi::GetContext().dynamic_image_size.empty()) {
     GELOGD("Found dynamic image size option, value %s", domi::GetContext().dynamic_image_size.c_str());
-    std::vector<std::string> shape_strs = domi::StringUtils::Split(domi::GetContext().dynamic_image_size, ';');
+    std::vector<std::string> shape_strs = ge::StringUtils::Split(domi::GetContext().dynamic_image_size, ';');
     for (const auto &shape_str : shape_strs) {
       if (shape_str.empty()) {
         continue;
       }
       std::vector<int64_t> shape;
-      std::vector<std::string> dims = domi::StringUtils::Split(shape_str, ',');
+      std::vector<std::string> dims = ge::StringUtils::Split(shape_str, ',');
       for (const auto &dim : dims) {
         if (dim.empty()) {
           continue;

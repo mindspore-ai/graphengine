@@ -16,32 +16,41 @@
 
 #include "graph/load/new_model_manager/task_info/label_set_task_info.h"
 
-#include "framework/common/debug/ge_log.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 Status LabelSetTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("LabelSetTaskInfo Init Start.");
-  if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
-    return PARAM_INVALID;
+  GE_CHECK_NOTNULL(davinci_model);
+
+  if (SetStream(task_def.stream_id(), davinci_model->GetStreamList()) != SUCCESS) {
+    return FAILED;
   }
 
-  Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
-  if (ret != SUCCESS) {
-    return ret;
+  // Get LabelSet task def
+  const domi::LabelSetDef &label_set = task_def.label_set();
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(label_set.op_index());
+  if (op_desc == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range!", label_set.op_index());
+    return INTERNAL_ERROR;
   }
 
-  uint32_t label_id = task_def.label_id();
-  if (label_id > davinci_model->BatchNum()) {
-    GELOGE(PARAM_INVALID, "labelId is invalid! labelId=%u, labelListSize=%u", label_id, davinci_model->BatchNum());
-    return PARAM_INVALID;
+  uint32_t label_index = 0;
+  if (!AttrUtils::GetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, label_index)) {
+    GELOGE(INTERNAL_ERROR, "LabelSetTaskInfo: %s attr [%s] not exist.", op_desc->GetName().c_str(),
+           ATTR_NAME_LABEL_SWITCH_INDEX.c_str());
+    return INTERNAL_ERROR;
   }
 
-  if (!davinci_model->GetLabelList().empty()) {
-    label_ = davinci_model->GetLabelList()[label_id];
+  const vector<rtLabel_t> &label_list = davinci_model->GetLabelList();
+  if (label_index >= label_list.size()) {
+    GELOGE(INTERNAL_ERROR, "LabelSetTaskInfo: Invalid label id:%u, label size:%zu", label_index, label_list.size());
+    return INTERNAL_ERROR;
   }
+  label_ = label_list[label_index];
 
+  GELOGI("LabelSetTaskInfo Init success, label id:%u, label:%p.", label_index, label_);
   return SUCCESS;
 }
 

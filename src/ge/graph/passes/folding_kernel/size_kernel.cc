@@ -30,7 +30,6 @@
 #include "inc/kernel_factory.h"
 #include "omg/omg_inner_types.h"
 
-using domi::SIZE;
 namespace ge {
 namespace {
 const size_t kSizeInputSize = 1;
@@ -63,7 +62,7 @@ Status SizeKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_outp
   int64_t size = 1;
   // Calculate the number of elements of the sensor
   for (int64_t dim : op_desc->GetInputDesc(0).GetShape().GetDims()) {
-    if (!domi::CheckInt64MulOverflow(size, dim)) {
+    if (!CheckInt64MulOverflow(size, dim)) {
       GELOGE(INTERNAL_ERROR, "int64 overflow!");
       return INTERNAL_ERROR;
     }

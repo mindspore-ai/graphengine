@@ -62,9 +62,8 @@ void ThreadPool::ThreadFunc(ThreadPool *thread_pool) {
     std::function<void()> task;
     {
       std::unique_lock<std::mutex> lock{thread_pool->m_lock_};
-      thread_pool->cond_var_.wait(lock, [thread_pool] {
-        return thread_pool->is_stoped_.load() || !thread_pool->tasks_.empty();
-      });
+      thread_pool->cond_var_.wait(
+        lock, [thread_pool] { return thread_pool->is_stoped_.load() || !thread_pool->tasks_.empty(); });
       if (thread_pool->is_stoped_ && thread_pool->tasks_.empty()) {
         return;
       }

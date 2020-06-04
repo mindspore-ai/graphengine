@@ -37,6 +37,13 @@ extern "C" {
 #define RT_STREAM_HEAD (0x20)
 
 /**
+ * @ingroup stream_type
+ * @brief stream type
+ */
+#define RT_NORMAL_STREAM    (0x00)
+#define RT_HUGE_STREAM      (0x01)
+
+/**
  * priority level default value when create a stream
  */
 #define RT_STREAM_PRIORITY_DEFAULT (0)
@@ -114,12 +121,13 @@ RTS_API rtError_t rtGetStreamId(rtStream_t stream, int32_t *streamId);
 /**
  * @ingroup dvrt_stream
  * @brief inquire max stream count and max task count per stream
+ * @param [in] streamType   Stream Type
  * @param [in] MaxStrCount   Max stream count
  * @param [in] MaxTaskCount   max task count per stream
  * @return RT_ERROR_NONE for complete
  * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input stream handle
  */
-RTS_API rtError_t rtGetMaxStreamAndTask(uint32_t *MaxStrCount, uint32_t *MaxTaskCount);
+RTS_API rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *MaxStrCount, uint32_t *MaxTaskCount);
 
 /**
  * @ingroup dvrt_stream

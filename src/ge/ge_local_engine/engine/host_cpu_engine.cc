@@ -237,7 +237,7 @@ Status HostCpuEngine::LoadLib(const std::string &lib_path) {
 }
 
 Status HostCpuEngine::GetRealPath(std::string &path) {
-  std::string real_path = domi::RealPath(path.c_str());
+  std::string real_path = RealPath(path.c_str());
   if (real_path.empty()) {
     GELOGW("File path %s is invalid.", path.c_str());
     return INTERNAL_ERROR;

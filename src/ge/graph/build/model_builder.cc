@@ -17,6 +17,7 @@
 #include "graph/build/model_builder.h"
 #include <iostream>
 #include <set>
+#include <unordered_map>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
@@ -27,6 +28,7 @@
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
+#include "graph/ge_context.h"
 #include "graph/ge_error_codes.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
@@ -38,49 +40,11 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "graph/ge_context.h"
 #include "init/gelib.h"
 #include "memory/memory_assigner.h"
 #include "omg/version.h"
 #include "register/op_registry.h"
 
-using domi::AIPP_CONV_FLAG;
-using domi::AIPP_DATA_FLAG;
-using domi::AIPP_DATA_TYPE;
-using domi::AippOpParams;
-using domi::ATOMICADDRCLEAN;
-using domi::ATTR_NAME_AUTOMIC_ADD_MEM_SIZE;
-using domi::ATTR_NAME_AUTOMIC_ADD_START;
-using domi::CAST;
-using domi::CHW_DIM_H;
-using domi::CHW_DIM_W;
-using domi::CONCAT;
-using domi::CONSTANT;
-using domi::CONSTANTOP;
-using domi::CONVOLUTION;
-using domi::DATA;
-using domi::DATA_TYPE;
-using domi::DEFAULT_FORMAT;
-using domi::DIM_DEFAULT_SIZE;
-using domi::DOMI_TENSOR_NC1HWC0;
-using domi::HWC_DIM_H;
-using domi::HWC_DIM_W;
-using domi::LOOPCOND;
-using domi::MODEL_ATTR_TASKS;
-using domi::ModelTaskDef;
-using domi::NCHW_DIM_H;
-using domi::NCHW_DIM_N;
-using domi::NCHW_DIM_W;
-using domi::NETOUTPUT;
-using domi::NHWC_DIM_H;
-using domi::NHWC_DIM_W;
-using domi::PlatformVersionManager;
-using domi::STREAMMERGE;
-using domi::VARIABLE;
-using domi::XRGB_CHN_NUM;
-using ge::FAILED;
-using ge::PARAM_INVALID;
-using ge::SUCCESS;
 using std::map;
 using std::set;
 using std::string;
@@ -102,25 +66,25 @@ const char *const kVectorCore = "VectorCore";
 const char *const kCoreType = "ge.engineType";
 const std::string kEnableL1Fusion = "ge.l1Fusion";
 
-const set<string> adjust_layer_type_ = {CONVOLUTION};
+const set<string> adjust_layer_type_ = {ge::CONVOLUTION};
 
 bool IsGeLocalOp(const ge::ConstOpDescPtr &op_desc) {
   auto type = op_desc->GetType();
-  if (type == CONSTANTOP) {
+  if (type == ge::CONSTANTOP) {
     // constant op just has one output
     ge::GeTensorDesc output_desc = op_desc->GetOutputDesc(0);
     return !(output_desc.GetDataType() == ge::DT_STRING);
   }
-  const set<string> ge_local_set = {domi::STREAMMERGE, domi::MEMCPYASYNC, domi::STREAMACTIVE,  domi::STREAMSWITCH,
-                                    domi::VARIABLE,    domi::NOOP,        domi::CONSTANT,      domi::ENTER,
-                                    domi::REFENTER,    domi::LOOPCOND,    domi::NEXTITERATION, domi::REFNEXTITERATION,
-                                    domi::EXIT,        domi::REFEXIT};
+  const set<string> ge_local_set = {ge::STREAMMERGE, ge::MEMCPYASYNC, ge::STREAMACTIVE,  ge::STREAMSWITCH,
+                                    ge::VARIABLE,    ge::NOOP,        ge::CONSTANT,      ge::ENTER,
+                                    ge::REFENTER,    ge::LOOPCOND,    ge::NEXTITERATION, ge::REFNEXTITERATION,
+                                    ge::EXIT,        ge::REFEXIT,     ge::MERGE,         ge::MEMCPYADDRASYNC};
   return (ge_local_set.find(type) != ge_local_set.end());
 }
 }  // namespace
 
 namespace ge {
-ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const vector<SubGraphInfoPtr> &subgraphs,
+ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const Graph2SubGraphInfoList &subgraphs,
                            const map<string, int> &stream_max_parallel_num, bool hcom_parallel, int mode)
     : mem_offset_(0),
       weight_offset_(kWeightsStartOffset),
@@ -133,6 +97,7 @@ ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const vector<SubGr
       hcom_parallel_(hcom_parallel),
       build_mode_(mode),
       max_mem_offset_(0),
+      zero_copy_mem_size_(0),
       platform_type_(0),
       is_loop_graph_(false),
       is_l1_fusion_enable_(false) {}
@@ -171,12 +136,40 @@ Status ModelBuilder::CalcOutputSize(const ge::NodePtr &n) {
   return SUCCESS;
 }
 
+bool ModelBuilder::SetInputConst(const OpDescPtr &op_desc, const NodePtr &src_node, size_t index,
+                                 vector<bool> &is_input_const) {
+  GELOGI("SetIsInputConst const: %s", op_desc->GetName().c_str());
+  for (size_t i = is_input_const.size(); i <= index; ++i) {
+    is_input_const.push_back(false);
+  }
+  is_input_const[index] = true;
+
+  vector<GeTensorPtr> weights = OpDescUtils::MutableWeights(src_node);
+  if (weights.empty()) {
+    GELOGW("SetInputIsConst weights is empty");
+    return false;
+  }
+  GeTensorPtr weight = weights[0];
+  GE_IF_BOOL_EXEC(weight == nullptr, return true);
+  GeTensorDesc &tensor_desc = weight->MutableTensorDesc();
+  int64_t data_offset = 0;
+  if (TensorUtils::GetDataOffset(tensor_desc, data_offset) != GRAPH_SUCCESS) {
+    GELOGW("Get Offset from weight failed");
+    return false;
+  }
+  auto input_tensor = op_desc->MutableInputDesc(static_cast<uint32_t>(index));
+  if (input_tensor == nullptr) {
+    GELOGW("Get input_tensor failed");
+    return false;
+  }
+  TensorUtils::SetDataOffset(*input_tensor, data_offset);
+  return true;
+}
+
 void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
   auto node_op_desc = n->GetOpDesc();
-  if (node_op_desc == nullptr) {
-    GELOGW("node_op_desc is nullptr!");
-    return;
-  }
+  GE_CHECK_NOTNULL_JUST_RETURN(node_op_desc);
+
   auto is_input_const = node_op_desc->GetIsInputConst();
 
   // must set all true input_const to false
@@ -190,39 +183,35 @@ void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     const auto &src_node = peer_out_anchor->GetOwnerNode();
     if (src_node->GetType() == CONSTANT) {
-      GELOGI("SetIsInputConst const");
-      for (size_t i = is_input_const.size(); i <= index; ++i) {
-        is_input_const.push_back(false);
-      }
-      is_input_const[index] = true;
-
-      vector<GeTensorPtr> weights = OpDescUtils::MutableWeights(src_node);
-      if (weights.empty()) {
-        GELOGW("SetInputIsConst weights is empty");
+      if (!SetInputConst(node_op_desc, src_node, index, is_input_const)) {
         return;
       }
-      GeTensorPtr weight = weights[0];
-      GE_IF_BOOL_EXEC(weight == nullptr, continue);
-      GeTensorDesc &tensor_desc = weight->MutableTensorDesc();
-      int64_t data_offset = 0;
-      if (TensorUtils::GetDataOffset(tensor_desc, data_offset) != GRAPH_SUCCESS) {
-        GELOGW("Get Offset from weight failed");
-        return;
-      }
-      auto input_tensor = node_op_desc->MutableInputDesc(static_cast<uint32_t>(index));
-      if (input_tensor == nullptr) {
-        GELOGW("Get input_tensor failed");
-        return;
-      }
-      TensorUtils::SetDataOffset(*input_tensor, data_offset);
     } else if (src_node->GetType() == CONSTANTOP) {
       if ((index < is_input_const.size()) && is_input_const[index]) {
         is_input_const[index] = false;
       }
+    } else if (src_node->GetType() == DATA) {
+      uint32_t parent_index = 0;
+      if (!AttrUtils::GetInt(src_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+        continue;
+      }
+
+      // Subgraph Data Node, check for constant input.
+      std::string op_type;
+      const NodePtr in_node = NodeUtils::GetParentInput(src_node);
+      if (!NodeUtils::GetConstOpType(in_node, op_type)) {
+        continue;  // not constant input.
+      }
+
+      if (op_type == CONSTANT) {
+        if (!SetInputConst(node_op_desc, in_node, index, is_input_const)) {
+          return;
+        }
+      }
     }
   }
 
-  std::string input_const_info = domi::ToString(is_input_const);
+  std::string input_const_info = ToString(is_input_const);
   GELOGD("update opdesc:%s InputConst:%s", node_op_desc->GetName().c_str(), input_const_info.c_str());
   node_op_desc->SetIsInputConst(is_input_const);
 }
@@ -252,12 +241,31 @@ Status ModelBuilder::SetInputOutputDesc() {
   Status ret;
   GELOGI("Start to SetInputOutputDesc.");
 
-  for (const ge::NodePtr &n : compute_graph_->GetDirectNode()) {
+  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
 
     if (!is_loop_graph_ && node_op_desc->GetType() == LOOPCOND) {
       is_loop_graph_ = true;
+    }
+    // if user set input node format ND, the expected node for data and netoutput format is ND in
+    // final graph.
+    if ((domi::GetContext().format == domi::DOMI_TENSOR_ND) &&
+        ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
+      GELOGI("The node [%s] format should be set ND.", node_op_desc->GetName().c_str());
+      auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
+      auto outputDescsPtr = node_op_desc->GetAllOutputsDescPtr();
+      ge::Format format = ge::FORMAT_ND;
+      for (auto &inputDescPtr : inputDescsPtr) {
+        GE_CHECK_NOTNULL(inputDescPtr);
+        inputDescPtr->SetFormat(format);
+        inputDescPtr->SetOriginFormat(format);
+      }
+      for (auto &outputDescPtr : outputDescsPtr) {
+        GE_CHECK_NOTNULL(outputDescPtr);
+        outputDescPtr->SetFormat(format);
+        outputDescPtr->SetOriginFormat(format);
+      }
     }
 
     if (node_op_desc->GetType() == DATA_TYPE || node_op_desc->GetType() == AIPP_DATA_TYPE) {
@@ -282,7 +290,7 @@ Status ModelBuilder::SetInputOutputDesc() {
 }
 
 void ModelBuilder::AddNodeInputProperty() {
-  for (const ge::NodePtr &node : compute_graph_->GetDirectNode()) {
+  for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
     auto node_op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     vector<string> src_name_list;
@@ -309,7 +317,7 @@ void ModelBuilder::AddNodeInputProperty() {
     node_op_desc->SetSrcIndex(src_index_list);
   }
 
-  for (const ge::NodePtr &node : compute_graph_->GetDirectNode()) {
+  for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
     auto node_op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     GE_IF_BOOL_EXEC(node_op_desc->GetType() == NETOUTPUT, continue);
@@ -347,7 +355,7 @@ void ModelBuilder::AddNodeInputProperty() {
 
 Status ModelBuilder::AdjustInputTensorFlag() {
   GELOGI("Start to AdjustInputTensorFlag.");
-  for (const ge::NodePtr &n : compute_graph_->GetDirectNode()) {
+  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
     if ((n->GetType() == DATA_TYPE) || (n->GetType() == AIPP_DATA_TYPE)) {
       GELOGD("Data node: %s.", n->GetName().c_str());
       for (const auto &anchor : n->GetAllOutDataAnchors()) {
@@ -369,11 +377,11 @@ Status ModelBuilder::AdjustInputTensorFlag() {
   return SUCCESS;
 }
 void ModelBuilder::InitL1FusionOption() {
-  string is_l1_fusion_enable = "false";
-  graphStatus ret = ge::GetContext().GetOption(kEnableL1Fusion, is_l1_fusion_enable);
+  string buffer_optimize = "off_optimize";
+  graphStatus ret = ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
   if (ret == GRAPH_SUCCESS) {
-    is_l1_fusion_enable_ = is_l1_fusion_enable == "true";
-    GELOGD("The value of %s is %s.", kEnableL1Fusion.c_str(), is_l1_fusion_enable.c_str());
+    is_l1_fusion_enable_ = (buffer_optimize == "l1_optimize");
+    GELOGD("The value of %s is %s.", BUFFER_OPTIMIZE.c_str(), buffer_optimize.c_str());
   } else {
     GELOGW("The value of %s is empty.", kEnableL1Fusion.c_str());
   }
@@ -386,18 +394,27 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_MEMORY_SIZE, max_mem_offset_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_MEMORY_SIZE failed.");
                    return FAILED);
-  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_STREAM_NUM, stream_num_),
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_STREAM_NUM failed.");
-                   return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_WEIGHT_SIZE, weight_offset_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_WEIGHT_SIZE failed.");
+                   return FAILED);
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_STREAM_NUM, stream_num_),
+                   GELOGE(FAILED, "SetInt of ATTR_MODEL_STREAM_NUM failed.");
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_EVENT_NUM, event_num_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_EVENT_NUM failed.");
                    return FAILED);
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(&model, ATTR_MODEL_HUGE_STREAM_LIST, huge_streams_),
+                   GELOGE(FAILED, "SetInt of ATTR_MODEL_HUGE_STREAM_LIST failed.");
+                   return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_LABEL_NUM, label_num_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_LABEL_NUM failed.");
                    return FAILED);
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_ZERO_COPY_MEMORY_SIZE, zero_copy_mem_size_),
+                   GELOGE(FAILED, "SetInt of ATTR_MODEL_ZERO_COPY_MEMORY_SIZE failed.");
+                   return FAILED);
+
+  GELOGI("For model, max_mem_offset_: %zu, zero_copy_mem_size_: %zu", max_mem_offset_, zero_copy_mem_size_);
+
   string ge_core_type;
   Status ret = ge::GetContext().GetOption(kCoreType, ge_core_type);
   if (ret != SUCCESS) {
@@ -428,7 +445,7 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
 }
 
 void ModelBuilder::ClearOriginalFormat() {
-  for (const ge::NodePtr &n : compute_graph_->GetDirectNode()) {
+  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
     auto node_op_desc = n->GetOpDesc();
     if (node_op_desc != nullptr) {
       if (node_op_desc->HasAttr(ATTR_NAME_FORMAT)) {
@@ -518,11 +535,17 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
   ge_model.SetWeight(weight_buffer_);
 
   // Add TBE Kernels
-  for (const ge::NodePtr &n : compute_graph_->GetDirectNode()) {
+  std::set<std::string> name_set;
+  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
     TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
     GE_IF_BOOL_EXEC(tbe_kernel == nullptr, continue);
+    if (name_set.count(tbe_kernel->GetName()) > 0) {
+      GELOGE(FAILED, "tbe_kernel name %s can't be the same", tbe_kernel->GetName().c_str());
+      return FAILED;
+    }
+    name_set.insert(tbe_kernel->GetName());
     tbe_kernel_store_.AddTBEKernel(tbe_kernel);
     GELOGD("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
   }
@@ -539,7 +562,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     return INTERNAL_ERROR;
   }
   int byte_size = static_cast<int>(task_def_bytes.GetSize());
-  std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
+  std::shared_ptr<domi::ModelTaskDef> task = ge::MakeShared<domi::ModelTaskDef>();
   GE_CHECK_NOTNULL(task);
   GE_CHK_BOOL_EXEC(ReadProtoFromArray(task_def_bytes.GetData(), byte_size, task.get()), return INTERNAL_ERROR,
                    "ReadProtoFromArray failed.");
@@ -585,12 +608,6 @@ Status ModelBuilder::PreBuildModel() {
 Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_CHK_STATUS_RET(AdjustInputTensorFlag(), "AdjustInputTensorFlag failed!");
 
-  // Assign functional op labels.
-  GE_TIMESTAMP_START(AssignFunctionalLabels);
-  LabelAllocator label_allocator(compute_graph_);
-  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
-  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
-
   // Assign logical streams.
   StreamAllocator stream_allocator(compute_graph_, subgraphs_);
   GE_TIMESTAMP_START(AssignLogicalStreams);
@@ -598,9 +615,16 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
                     "Assign logical streams failed.");
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
+  // Assign functional op labels.
+  GE_TIMESTAMP_START(AssignFunctionalLabels);
+  LabelAllocator label_allocator(compute_graph_);
+  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
+  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
+
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);
-  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_offset_), "Assign Memory Failed!");
+  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_offset_, zero_copy_mem_size_),
+                    "Assign Memory Failed!");
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 
   // Compile single op in graph build stage
@@ -611,6 +635,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   // Refresh real streams and insert event nodes.
   GE_TIMESTAMP_START(RefreshRealStream);
   GE_CHK_STATUS_RET(stream_allocator.RefreshRealStream(stream_num_, event_num_), "RefreshRealStream failed.");
+  huge_streams_ = stream_allocator.GetHugeStreams();
   GE_TIMESTAMP_END(RefreshRealStream, "GraphBuilder::RefreshRealStream");
 
   GE_TIMESTAMP_START(MergeWeights);

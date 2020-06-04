@@ -55,7 +55,8 @@ SingleOp *StreamResource::GetOperator(const void *key) {
   return it->second;
 }
 
-uint8_t *StreamResource::DoMallocMemory(size_t size, size_t &max_allocated, std::vector<uint8_t *> &allocated) {
+uint8_t *StreamResource::DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
+                                        std::vector<uint8_t *> &allocated) {
   if (size <= max_allocated && !allocated.empty()) {
     GELOGD("reuse last memory");
     return allocated.back();
@@ -67,7 +68,7 @@ uint8_t *StreamResource::DoMallocMemory(size_t size, size_t &max_allocated, std:
     GELOGE(RT_FAILED, "rtMalloc failed, size = %zu, ret = %d", size, ret);
     return nullptr;
   }
-  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "malloc function.", size)
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, purpose.c_str(), size)
 
   ret = rtMemset(buffer, size, 0U, size);
   if (ret != RT_ERROR_NONE) {
@@ -83,15 +84,15 @@ uint8_t *StreamResource::DoMallocMemory(size_t size, size_t &max_allocated, std:
   return buffer;
 }
 
-uint8_t *StreamResource::MallocMemory(size_t size) {
+uint8_t *StreamResource::MallocMemory(const std::string &purpose, size_t size) {
   GELOGD("To Malloc memory, size = %zu", size);
-  uint8_t *buffer = DoMallocMemory(size, max_memory_size_, memory_list_);
+  uint8_t *buffer = DoMallocMemory(purpose, size, max_memory_size_, memory_list_);
   return buffer;
 }
 
-uint8_t *StreamResource::MallocWeight(size_t size) {
+uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
   GELOGD("To Malloc weight, size = %zu", size);
-  uint8_t *buffer = DoMallocMemory(size, max_weight_size_, weight_list_);
+  uint8_t *buffer = DoMallocMemory(purpose, size, max_weight_size_, weight_list_);
   return buffer;
 }
 }  // namespace ge

@@ -32,17 +32,18 @@
 
 using domi::GetContext;
 using domi::OpRegistry;
-using domi::RealPath;
-using domi::StringUtils;
 using std::map;
 using std::string;
 using std::vector;
 
-namespace ge {
-static const int32_t kMaxStrLen = 128;
+namespace {
+const int32_t kMaxStrLen = 128;
+}
+
 static bool kGeInitialized = false;
 static std::mutex kGeReleaseMutex;  // GEFinalize and ~Session use
 
+namespace ge {
 void GetOpsProtoPath(std::string &opsproto_path) {
   GELOGI("Enter get ops proto path schedule");
   const char *path_env = std::getenv("ASCEND_OPP_PATH");
@@ -394,8 +395,8 @@ Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc
   return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, key, callback);
 }
 
-Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<TensorInfo> &inputs,
-                              std::vector<TensorInfo> &outputs, std::function<void(Status)> callback) {
+Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+                              RunAsyncCallback callback) {
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
@@ -405,8 +406,7 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<TensorInfo> &
   GELOGW(
     "The callback function will not be checked. Please ensure that the implementation of the function is trusted.");
 
-  Status ret =
-    ge::GELib::GetInstance()->SessionManagerObj().RunGraphAsync(sessionId_, graph_id, inputs, outputs, callback);
+  Status ret = ge::GELib::GetInstance()->SessionManagerObj().RunGraphAsync(sessionId_, graph_id, inputs, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "SessionManager RunGraphAsync failed");
     return FAILED;

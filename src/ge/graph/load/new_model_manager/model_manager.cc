@@ -154,6 +154,20 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
   }
 }
 
+ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
+  GELOGI("Destroy aicpu session for infer, model id is %u.", model_id);
+  std::lock_guard<std::mutex> lock(map_mutex_);
+  auto it = model_map_.find(model_id);
+  if (it == model_map_.end()) {
+    GELOGE(PARAM_INVALID, "model id %u does not exists.", model_id);
+    return PARAM_INVALID;
+  }
+  uint64_t session_id = it->second->GetSessionId();
+  GELOGI("Destroy aicpu session for infer, session id is %u.", session_id);
+  DestroyAicpuSession(session_id);
+  return SUCCESS;
+}
+
 ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
   std::lock_guard<std::mutex> lock(sess_ids_mutex_);
@@ -205,10 +219,12 @@ Status ModelManager::SetDevice(int32_t deviceId) const {
 /// @brief load model online
 /// @return Status run result
 ///
-Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &model,
+Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::GeModel> &ge_model,
                                      std::shared_ptr<ModelListener> listener) {
   GE_CHK_BOOL_RET_STATUS(listener.get() != nullptr, PARAM_INVALID, "Param incorrect, listener is null");
-  GenModelId(&model_id);
+  if (model_id == INVALID_MODEL_ID) {
+    GenModelId(&model_id);
+  }
 
   GE_CHK_STATUS_RET(SetDevice(static_cast<int32_t>(GetContext().DeviceId())), "Set device failed, model id:%u.",
                     model_id);
@@ -224,9 +240,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &
 
   Status ret = SUCCESS;
   do {
-    GeModelPtr ge_model;
-    GE_IF_BOOL_EXEC(
-      ModelHelper::TransModelToGeModel(model, ge_model) != SUCCESS, GELOGW("trans model to ge_model failed."); break;);
     GE_TIMESTAMP_START(Assign);
     GE_IF_BOOL_EXEC(SUCCESS != (ret = davinci_model->Assign(ge_model)), GELOGW("assign model to modeldef failed.");
                     break;);
@@ -244,7 +257,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, shared_ptr<ge::Model> &
       davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
                                                        timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
       davinci_model->SetProfileTime(MODEL_LOAD_END);
-      if (davinci_model->SinkModelProfile(davinci_model) != SUCCESS) {
+      if (davinci_model->SinkModelProfile() != SUCCESS) {
         GELOGW("Sink model profile failed.");
       }
     }
@@ -271,7 +284,6 @@ Status ModelManager::DeleteModel(uint32_t id) {
   }
 
   (void)model_map_.erase(it);
-  free_model_id_.push_back(id);
   return SUCCESS;
 }
 
@@ -301,13 +313,6 @@ Status ModelManager::UnloadModeldef(uint32_t model_id) {
 
 Status ModelManager::DataInput(const InputData &input_data, OutputData &output_data) {
   GELOGI("calling the DataInput");
-
-  domi::SysMode mode = DavinciModel::GetSysMode();
-  if ((mode == domi::RESET) || (mode == domi::STOP)) {
-    GELOGE(domi::MODEL_NOT_READY, "System mode is reset or stop");
-    return domi::MODEL_NOT_READY;
-  }
-
   shared_ptr<InputDataWrapper> data_wrap(new (std::nothrow) InputDataWrapper());
   GE_CHECK_NOTNULL(data_wrap);
 
@@ -339,16 +344,10 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 
 ///
 /// @ingroup domi_ome
-/// @brief load Input and output TensorInfor for Model
+/// @brief load Input and output TensorInfo for Model
 /// @return Status run result
 ///
-Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<TensorInfo> &inputs,
-                                     std::vector<TensorInfo> &outputs) {
-  domi::SysMode mode = DavinciModel::GetSysMode();
-  if ((mode == domi::RESET) || (mode == domi::STOP)) {
-    GELOGE(domi::MODEL_NOT_READY, "System mode is reset or stop");
-    return domi::MODEL_NOT_READY;
-  }
+Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs) {
   std::shared_ptr<DavinciModel> model = GetModel(model_id);
   GE_CHECK_NOTNULL(model);
 
@@ -358,31 +357,16 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<Tensor
   input_data.timestamp = 0;
   input_data.index = 0;
 
-  std::size_t index = 0;
-  for (const auto &op : model->GetDataList()) {
-    GE_CHECK_NOTNULL(op);
-    GE_CHECK_GE(inputs.size(), 1);
-    GE_CHECK_GE(inputs.size() - 1, index);
-
+  for (size_t i = 0; i < inputs.size(); ++i) {
     DataBuffer data;
-    data.data = inputs[index].data.data;
-    data.length = inputs[index].data.length;
+    data.data = inputs[i].data;
+    data.length = static_cast<uint32_t>(inputs[i].length);
     input_data.blobs.push_back(data);
-    index++;
   }
-
-  CHECK_FALSE_EXEC(input_data.blobs.size() >= inputs.size(),
-                   GELOGW("cur_inputs size = %zu, inputs size = %zu.", input_data.blobs.size(), inputs.size()););
 
   OutputData output_data;
   output_data.model_id = model_id;
   output_data.index = 0;
-  for (size_t i = 0; i < outputs.size(); i++) {
-    DataBuffer data;
-    data.data = outputs[i].data.data;
-    data.length = outputs[i].data.length;
-    output_data.blobs.push_back(data);
-  }
 
   shared_ptr<InputDataWrapper> data_wrap(new (std::nothrow) InputDataWrapper());
   GE_CHECK_NOTNULL(data_wrap);
@@ -472,7 +456,7 @@ Status ModelManager::HandleAclProfilingCommand(const Command &command) {
 
   std::string map_key = command.cmd_params[0];
   std::string value = command.cmd_params[1];
-  if (map_key == domi::PROFILE_CONFIG) {
+  if (map_key == PROFILE_CONFIG) {
     ProfilingManager::Instance().SetProfilingConfig(value);
   }
 
@@ -490,18 +474,17 @@ Status ModelManager::HandleProfileCommand(const Command &command) {
 
   GELOGI("Profiling mode, Command key:%s , value:%s ", map_key.c_str(), value.c_str());
 
-  auto iter = domi::PROFILE_COMPONENT_MAP.find(map_key);
-  if (iter != domi::PROFILE_COMPONENT_MAP.end()) {
+  auto iter = PROFILE_COMPONENT_MAP.find(map_key);
+  if (iter != PROFILE_COMPONENT_MAP.end()) {
     std::string property_value = (value == "on") ? "1" : "0";
     PropertiesManager::Instance().SetPropertyValue(iter->second, property_value);
   }
 
-  if ((map_key == domi::PROFILER_JOBCTX || map_key == domi::PROFILER_TARGET_PATH ||
-       map_key == domi::RTS_PROFILE_PATH)) {
+  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
     PropertiesManager::Instance().SetPropertyValue(map_key, value);
   }
 
-  if ((map_key == domi::PROFILE_STOP_KEY) && (value == domi::PROFILE_STOP_VALUE)) {
+  if ((map_key == PROFILE_STOP_KEY) && (value == PROFILE_STOP_VALUE)) {
     rtError_t rt_ret = rtProfilerStop();
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(PARAM_INVALID, "Call rtProfilerStop ret:%d", rt_ret);
@@ -509,6 +492,19 @@ Status ModelManager::HandleProfileCommand(const Command &command) {
     }
   }
 
+  return SUCCESS;
+}
+
+static Status ParserPara(const Command &command, const string &dump_key, string &dump_value) {
+  auto iter = std::find(command.cmd_params.begin(), command.cmd_params.end(), dump_key);
+  if (iter != command.cmd_params.end()) {
+    ++iter;
+    if (iter == command.cmd_params.end()) {
+      GELOGE(PARAM_INVALID, "Invalid access.");
+      return PARAM_INVALID;
+    }
+    dump_value = *iter;
+  }
   return SUCCESS;
 }
 
@@ -521,32 +517,22 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
   std::string dump_status("off");
   std::string dump_model(DUMP_ALL_MODEL);
   std::string dump_path("/");
+  std::string dump_mode("output");
   std::set<std::string> dump_layers;
-  std::string dump_layer_count;
 
-  auto iter_dump_status = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_STATUS);
-  if (iter_dump_status != command.cmd_params.end()) {
-    ++iter_dump_status;
-    if (iter_dump_status == command.cmd_params.end()) {
-      GELOGE(PARAM_INVALID, "Invalid access.");
-      return PARAM_INVALID;
-    }
-
-    dump_status = *iter_dump_status;
-    GELOGI("dump status = %s.", dump_status.c_str());
+  auto ret = ParserPara(command, DUMP_STATUS, dump_status);
+  if (ret != SUCCESS) {
+    GELOGE(PARAM_INVALID, "parser dump status failed");
+    return FAILED;
   }
+  GELOGI("dump status = %s.", dump_status.c_str());
 
-  auto iter_dump_model = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_MODEL);
-  if (iter_dump_model != command.cmd_params.end()) {
-    ++iter_dump_model;
-    if (iter_dump_model == command.cmd_params.end()) {
-      GELOGE(PARAM_INVALID, "Invalid access.");
-      return PARAM_INVALID;
-    }
-
-    dump_model = *iter_dump_model;
-    GELOGI("dump model = %s.", dump_model.c_str());
+  ret = ParserPara(command, DUMP_MODEL, dump_model);
+  if (ret != SUCCESS) {
+    GELOGE(PARAM_INVALID, "parser dump model failed");
+    return FAILED;
   }
+  GELOGI("dump status = %s.", dump_model.c_str());
 
   if (dump_status == "off" || dump_status == "OFF") {
     PropertiesManager::Instance().DeleteDumpPropertyValue(dump_model);
@@ -560,24 +546,37 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
     }
   }
 
-  auto iter_dump_path = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_FILE_PATH);
-  if (iter_dump_path != command.cmd_params.end()) {
-    ++iter_dump_path;
-    if (iter_dump_path == command.cmd_params.end()) {
+  ret = ParserPara(command, DUMP_FILE_PATH, dump_path);
+  if (ret != SUCCESS) {
+    GELOGE(PARAM_INVALID, "parser dump path failed");
+    return FAILED;
+  }
+  if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
+    dump_path += "/";
+  }
+  GELOGI("dump status = %s.", dump_path.c_str());
+
+  ret = ParserPara(command, DUMP_MODE, dump_mode);
+  if (ret != SUCCESS) {
+    GELOGE(PARAM_INVALID, "parser dump mode failed");
+    return FAILED;
+  }
+  GELOGI("dump mode = %s", dump_mode.c_str());
+
+  auto iter_dump_mode = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_MODE);
+  if (iter_dump_mode != command.cmd_params.end()) {
+    ++iter_dump_mode;
+    if (iter_dump_mode == command.cmd_params.end()) {
       GELOGE(PARAM_INVALID, "Invalid access.");
       return PARAM_INVALID;
     }
-
-    dump_path = *iter_dump_path;
-
-    if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
-      dump_path += "/";
-    }
-    GELOGI("dump path = %s.", dump_path.c_str());
+    dump_mode = *iter_dump_mode;
+    GELOGI("dump mode = %s", dump_mode.c_str());
   }
 
   PropertiesManager::Instance().AddDumpPropertyValue(dump_model, dump_layers);
   PropertiesManager::Instance().SetDumpOutputPath(dump_path);
+  PropertiesManager::Instance().SetDumpMode(dump_mode);
   return SUCCESS;
 }
 
@@ -597,15 +596,6 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
                          "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
 
   return davinci_model->GetInputOutputDescInfo(input_desc, output_desc);
-}
-
-Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
-                                                       vector<InputOutputDescInfo> &output_desc) {
-  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
-
-  return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc);
 }
 
 Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
@@ -677,6 +667,15 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       break;
     }
     davinci_model->SetId(model_id);
+
+    int32_t device_id = 0;
+    rtError_t rt_ret = rtGetDevice(&device_id);
+    if (rt_ret != RT_ERROR_NONE || device_id < 0) {
+      GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+      return FAILED;
+    }
+    davinci_model->SetDeviceId(device_id);
+
     ret = davinci_model->Init(dev_ptr, mem_size, weight_ptr, weight_size);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "DavinciInit failed.");
 
@@ -689,7 +688,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
                                                        timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
       davinci_model->SetProfileTime(MODEL_LOAD_END);
-      if (davinci_model->SinkModelProfile(davinci_model) != SUCCESS) {
+      if (davinci_model->SinkModelProfile() != SUCCESS) {
         GELOGW("Sink model profile failed.");
       }
     }
@@ -716,7 +715,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
   GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0, PARAM_INVALID,
                          "input key file path is not valid, %s", strerror(errno));
 
-  domi::ModelHelper model_helper;
+  ModelHelper model_helper;
   Status ret = model_helper.LoadModel(model_data);
   if (ret != SUCCESS) {
     GELOGE(ret, "load model failed.");
@@ -807,17 +806,17 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
   Status ret = DavinciModelParser::ParseModelContent(model, model_data, model_len);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "parse model content failed!");
 
-  domi::OmFileLoadHelper om_file_helper;
+  OmFileLoadHelper om_file_helper;
   ret = om_file_helper.Init(model_data, model_len);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "om file helperInit failed!");
 
-  auto partition_table = reinterpret_cast<domi::ModelPartitionTable *>(model_data);
+  auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
   if (partition_table->num == 1) {
     GELOGE(FAILED, "om model is error,please use executable om model");
     return FAILED;
   }
-  domi::ModelPartition task_partition;
-  if (om_file_helper.GetModelPartition(domi::ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
+  ModelPartition task_partition;
+  if (om_file_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
     GELOGE(FAILED, "get task model partition failed.");
     return FAILED;
   }
@@ -827,14 +826,14 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
     return FAILED;
   }
   if (task_partition.size != 0) {
-    if (!domi::ReadProtoFromArray(task_partition.data, static_cast<int>(task_partition.size), model_task_def.get())) {
+    if (!ReadProtoFromArray(task_partition.data, static_cast<int>(task_partition.size), model_task_def.get())) {
       GELOGE(FAILED, "ReadProtoFromArray failed.");
       return FAILED;
     }
   }
 
-  domi::ModelPartition partition_weight;
-  ret = om_file_helper.GetModelPartition(domi::ModelPartitionType::WEIGHTS_DATA, partition_weight);
+  ModelPartition partition_weight;
+  ret = om_file_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition_weight);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Get weight partition failed. ret = %u", ret);
 
   mem_size = model_task_def->memory_size();
@@ -848,12 +847,6 @@ void ModelManager::GenModelId(uint32_t *id) {
   }
 
   std::lock_guard<std::mutex> lock(map_mutex_);
-  if (free_model_id_.empty()) {
-    *id = ++max_model_id_;
-  } else {
-    *id = free_model_id_.back();
-    free_model_id_.pop_back();
-  }
+  *id = ++max_model_id_;
 }
-
 }  // namespace ge

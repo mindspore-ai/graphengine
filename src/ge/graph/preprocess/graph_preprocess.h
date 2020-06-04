@@ -30,6 +30,7 @@
 #include "common/util.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
+#include "graph/manager/util/variable_accelerate_ctrl.h"
 #include "graph/model.h"
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
@@ -45,8 +46,11 @@ class GraphPrepare {
   GraphPrepare(const GraphPrepare &in) = delete;
   GraphPrepare &operator=(const GraphPrepare &in) = delete;
   Status Prepare(ConstGraphPtr graph, const std::vector<GeTensor> &user_input, ge::ComputeGraphPtr &compute_graph,
-                 uint64_t session_id = 0);
+                 VarAccelerateCtrl &var_acc_ctrl, uint64_t session_id = 0);
+  Status PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
+                         ge::ComputeGraphPtr &compute_graph, uint64_t session_id = 0);
   void SetOptions(const GraphManagerOptions &options);
+  Status GenerateInfershapeGraph(ConstGraphPtr graph);
 
  private:
   Status Init(const ge::Graph &graph, uint64_t session_id = 0);
@@ -58,21 +62,40 @@ class GraphPrepare {
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
   Status UpdateInput(const std::vector<GeTensor> &user_input);
+  Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input);
   Status CheckConstOp();
   Status VerifyConstOp(const NodePtr &node);
   Status CheckUserInput(const std::vector<GeTensor> &user_input);
   Status OptimizeForPreprocess();
+  Status PrepareOptimize();
   Status InferShapeForPreprocess();
   Status TryDoAipp();
   Status OptimizeAfterInfershapeByAtcParams();
   Status UpdateVariableFormats(ComputeGraphPtr &graph);
+  Status UpdateVariableFormatsDynShape(ComputeGraphPtr &graph);
   Status FormatAndShapeProcess();
   Status ResourcePairProcess(const std::string &action);
   void ProcessCCEFormat();
   Status OptimizeBeforeInfershape();
   Status OptimizeGraphBeforeSubGraph();
-  void SaveOriginalGraphToOmModel();
+  Status NewOptimizeGraphBeforeSubGraph(VarAccelerateCtrl &var_acc_ctrl);
+  Status SaveOriginalGraphToOmModel();
   Status ProcessNetOutput();
+  Status UpdateInputOutputByOptions();
+  bool IsBroadCastOpData(const ge::NodePtr &var_node);
+
+  void AdjustBroadCastOpData(const ge::NodePtr &var_node);
+
+  bool IsAssignOpData(const ge::NodePtr &var_node);
+
+  void AdjustAssignOpData(const ge::NodePtr &var_node);
+
+  bool ConfirmUseOpAndIndexByAnchor(const ge::InDataAnchorPtr &in_anchor, const map<string, std::set<int>> &confirm_ops,
+                                    ge::NodePtr &use_node);
+
+  bool ConfirmUseOpAndIndexByNode(const ge::NodePtr &var_node, const map<string, std::set<int>> &confirm_ops,
+                                  ge::NodePtr &use_node);
+
   ge::ComputeGraphPtr compute_graph_;
   GraphManagerOptions options_;
 };

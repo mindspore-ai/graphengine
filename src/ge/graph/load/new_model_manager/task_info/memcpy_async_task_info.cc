@@ -44,6 +44,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     return ret;
   }
   src_ = reinterpret_cast<uint8_t *>(update_base_addr + logic_src);
+  davinci_model->DisableZeroCopy(src_);
 
   uint64_t mem_base = reinterpret_cast<uint64_t>(davinci_model->MemBase());
   uint64_t logic_mem_base = davinci_model->GetRtBaseAddr();
@@ -52,7 +53,8 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   count_ = memcpy_async_def.count();
   kind_ = memcpy_async_def.kind();
   GELOGI("MemcpyAsyncTaskInfo Init Success, logic_src:%p, logic_dst:%p, src:%p, dst:%p",
-         reinterpret_cast<uint8_t *>(logic_src), reinterpret_cast<uint8_t *>(logic_dst), src_, dst_);
+         reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(logic_src)),
+         reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(logic_dst)), src_, dst_);
 
   return SUCCESS;
 }

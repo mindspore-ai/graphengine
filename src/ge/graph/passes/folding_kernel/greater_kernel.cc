@@ -29,10 +29,8 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::GREATER;
 using domi::Status;
 using domi::SUCCESS;
-using ge::fp16_t;
 
 namespace ge {
 namespace {

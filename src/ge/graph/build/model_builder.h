@@ -37,7 +37,7 @@
 namespace ge {
 class ModelBuilder {
  public:
-  ModelBuilder(ge::ComputeGraphPtr whole_graph, const std::vector<SubGraphInfoPtr> &subgraphs,
+  ModelBuilder(ge::ComputeGraphPtr whole_graph, const Graph2SubGraphInfoList &subgraphs,
                const std::map<std::string, int> &stream_max_parallel_num, bool hcom_parallel,
                int mode = static_cast<int>(domi::BuildMode::GEN_TASK_WITHOUT_FUSION));
 
@@ -61,6 +61,8 @@ class ModelBuilder {
   Status MergeWeights();
 
  private:
+  bool SetInputConst(const OpDescPtr &op_desc, const NodePtr &src_node, size_t index, vector<bool> &is_input_const);
+
   void SetInputIsConst(const ge::NodePtr &n);
 
   void SetModelVersion(ge::Model &model);
@@ -85,11 +87,11 @@ class ModelBuilder {
 
   ge::ComputeGraphPtr compute_graph_;
 
-  const std::vector<SubGraphInfoPtr> &subgraphs_;
+  const Graph2SubGraphInfoList &subgraphs_;
 
   int64_t stream_num_;
-
   int64_t event_num_;
+  vector<int64_t> huge_streams_;
 
   uint32_t label_num_;
 
@@ -100,6 +102,7 @@ class ModelBuilder {
 
   int build_mode_;
   size_t max_mem_offset_;
+  size_t zero_copy_mem_size_;
 
   TBEKernelStore tbe_kernel_store_;
 

@@ -102,6 +102,16 @@ REG_OP(IsVariableInitialized)
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsVariableInitialized)
 
+/**
+*@brief Checks whether a tensor has been initialized. Outputs boolean scalar indicating whether the tensor has been initialized.
+
+*@par Inputs:
+*x: A tensor.
+
+*@par Outputs:
+*y: A tensor, indicating whether "x" has been initialized, and the data type is boolean.
+
+*/
 REG_OP(VarIsInitializedOp)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
                           DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))

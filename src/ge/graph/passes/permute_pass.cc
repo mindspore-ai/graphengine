@@ -25,18 +25,10 @@
 #include "inc/kernel_factory.h"
 #include "framework/omg/omg_inner_types.h"
 
-using domi::ATTR_NAME_FORMAT;
-using domi::ATTR_NAME_PRED_PERMUTE_DELETED;
-using domi::CONVOLUTION;
-using domi::DECONVOLUTION;
-using domi::DEPCONVOLUTION;
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_NHWC;
+using domi::FMK_TYPE_T;
 using domi::GetContext;
-using domi::INTERNAL_ERROR;
-using domi::PAD;
-using domi::PERMUTE;
-using domi::PERMUTE_ATTR_ORDER;
 using domi::SUCCESS;
 
 namespace ge {
@@ -44,7 +36,7 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(PermutePass);
   GE_CHECK_NOTNULL(graph);
   std::vector<NodePtr> isolate_nodes;
-  for (NodePtr &node : graph->GetAllNodes()) {
+  for (NodePtr &node : graph->GetDirectNode()) {
     OpDescPtr op_desc_ptr = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc_ptr);
     GE_IF_BOOL_EXEC(
@@ -55,7 +47,7 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
         GetContext().format != DOMI_TENSOR_ND,
         // Get input origin foramt
         for (NodePtr &n
-             : graph->GetAllNodes()) {
+             : graph->GetDirectNode()) {
           GE_IF_BOOL_EXEC(
             n->GetOpDesc()->GetType() == PERMUTE, std::queue<NodePtr> q_node; q_node.push(n); bool jump_out = false;
             while (!q_node.empty()) {

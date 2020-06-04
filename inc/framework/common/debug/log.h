@@ -22,7 +22,6 @@
 #include "cce/cce_def.hpp"
 #include "common/string_util.h"
 #include "common/util.h"
-#include "dlog/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge/ge_api_error_codes.h"
 
@@ -30,7 +29,7 @@ using cce::CC_STATUS_SUCCESS;
 using cce::ccStatus_t;
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
-#define DOMI_LOGE(...) DAV_LOGE("DOMI", __VA_ARGS__)
+#define DOMI_LOGE(...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, __VA_ARGS__)
 #else
 #include <android/log.h>
 #if defined(BUILD_VERSION_PERF)
@@ -103,17 +102,17 @@ using cce::ccStatus_t;
   } while (0);
 
 // If expr is not true, print the log and return the specified status
-#define GE_CHK_BOOL_RET_STATUS(expr, _status, ...)                                                           \
-  do {                                                                                                       \
-    bool b = (expr);                                                                                         \
-    if (!b) {                                                                                                \
-      std::string msg;                                                                                       \
-      (void)msg.append(domi::StringUtils::FormatString(__VA_ARGS__));                                        \
-      (void)msg.append(                                                                                      \
-        domi::StringUtils::FormatString(" Error Code:0x%X(%s)", _status, GET_ERRORNO_STR(_status).c_str())); \
-      DOMI_LOGE("%s", msg.c_str());                                                                          \
-      return _status;                                                                                        \
-    }                                                                                                        \
+#define GE_CHK_BOOL_RET_STATUS(expr, _status, ...)                                                         \
+  do {                                                                                                     \
+    bool b = (expr);                                                                                       \
+    if (!b) {                                                                                              \
+      std::string msg;                                                                                     \
+      (void)msg.append(ge::StringUtils::FormatString(__VA_ARGS__));                                        \
+      (void)msg.append(                                                                                    \
+        ge::StringUtils::FormatString(" Error Code:0x%X(%s)", _status, GET_ERRORNO_STR(_status).c_str())); \
+      DOMI_LOGE("%s", msg.c_str());                                                                        \
+      return _status;                                                                                      \
+    }                                                                                                      \
   } while (0);
 
 // If expr is not true, print the log and return the specified status

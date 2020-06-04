@@ -23,17 +23,18 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 #include "cce/aicpu_engine_struct.h"
-#include "common/types.h"
-#include "common/ge_types.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/ge_types.h"
 #include "common/helper/model_helper.h"
 #include "common/helper/om_file_helper.h"
+#include "common/types.h"
+#include "ge/ge_api_types.h"
+#include "graph/ge_context.h"
 #include "graph/model.h"
 #include "runtime/base.h"
-#include "graph/ge_context.h"
-#include "ge/ge_api_types.h"
 
 namespace ge {
 
@@ -68,7 +69,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @return Status run result
   /// @author @
   ///
-  ge::Status LoadModelOnline(uint32_t &model_id, std::shared_ptr<ge::Model> &model,
+  ge::Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeModel> &model,
                              std::shared_ptr<ModelListener> listener);
 
   ///
@@ -116,8 +117,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   ge::Status DataInput(const InputData &input_data, OutputData &output_data);
 
-  ge::Status DataInputTensor(uint32_t model_id, const std::vector<TensorInfo> &inputs,
-                             std::vector<TensorInfo> &outputs);
+  ge::Status DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs);
 
   ///
   /// @ingroup domi_ome
@@ -194,9 +194,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @return PARAM_INVALID    parameter invalid
   ///
   ge::Status GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
-                                               std::vector<InputOutputDescInfo> &output_desc);
-
-  ge::Status GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
                                                std::vector<InputOutputDescInfo> &output_desc,
                                                std::vector<uint32_t> &inputFormats,
                                                std::vector<uint32_t> &outputFormats);
@@ -220,6 +217,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
 
   ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id);
+
+  ge::Status DestroyAicpuSessionForInfer(uint32_t model_id);
 
  private:
   ///
@@ -250,7 +249,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
   std::map<std::string, std::vector<uint64_t>> model_aicpu_kernel_;
-  std::vector<uint32_t> free_model_id_;
   uint32_t max_model_id_;
   std::mutex map_mutex_;
   std::mutex sess_ids_mutex_;

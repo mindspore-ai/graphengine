@@ -17,16 +17,16 @@
 #ifndef GE_GRAPH_PREPROCESS_INSERT_OP_BASE_INSERT_OP_H_
 #define GE_GRAPH_PREPROCESS_INSERT_OP_BASE_INSERT_OP_H_
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
 #include "common/fmk_error_codes.h"
 #include "common/types.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
-#include "proto/om.pb.h"
 #include "proto/insert_op.pb.h"
+#include "proto/om.pb.h"
 
 namespace ge {
 class InsertOpBase {

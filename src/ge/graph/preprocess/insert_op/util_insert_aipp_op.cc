@@ -18,7 +18,6 @@
 #include <fstream>
 #include <utility>
 #include "common/ge/ge_util.h"
-#include "common/op/attr_define.h"
 #include "common/op/ge_op_utils.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
@@ -32,18 +31,10 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "inc/common/dynamic_aipp.h"
+#include "common/dynamic_aipp.h"
 #include "common/formats/utils/formats_trans_utils.h"
 
-using domi::AIPPDATA;
 using domi::AippOpParams;
-using domi::DATA;
-using domi::DEFAULT_FORMAT;
-using domi::DIM_DEFAULT_SIZE;
-using domi::NCHW_DIM_C;
-using domi::NCHW_DIM_H;
-using domi::NCHW_DIM_N;
-using domi::NCHW_DIM_W;
 
 namespace ge {
 namespace {
@@ -130,25 +121,24 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
   domi::AippOpParams::AippMode aippMode = domi::AippOpParams::undefined;
 
   for (const auto &node : graph->GetDirectNode()) {
-    if (node->GetType() != domi::DATA) {
+    if (node->GetType() != DATA) {
       continue;
     }
-
+    size_t next_nodes_cnt = 0;
     std::vector<NodePtr> aippNodes;
     for (const auto &anchor : node->GetAllOutDataAnchors()) {
       for (const auto &inAnchor : anchor->GetPeerInDataAnchors()) {
         const std::string &nodeType = inAnchor->GetOwnerNode()->GetType();
-
-        GE_CHK_BOOL_RET_STATUS(aippNodes.size() == 0 || nodeType == domi::AIPP, PARAM_INVALID,
-                               "Can not config part of outputs of Data node to support AIPP, config all of the "
-                               "outputs of Data to support AIPP, or config none of them");
-
-        if (nodeType == domi::AIPP) {
+        next_nodes_cnt++;
+        if (nodeType == AIPP) {
           aippNodes.push_back(inAnchor->GetOwnerNode());
           continue;
         }
       }
     }
+    GE_CHK_BOOL_RET_STATUS((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), PARAM_INVALID,
+                           "Can not config part of outputs of Data node to support AIPP, config all "
+                           "of the outputs of Data to support AIPP, or config none of them");
 
     std::unique_ptr<domi::AippOpParams> aippParams(new (std::nothrow) domi::AippOpParams());
     GE_CHECK_NOTNULL(aippParams);
@@ -184,10 +174,10 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
 
 Status InsertNewOpUtil::GetAippParams(const std::unique_ptr<domi::AippOpParams> &aippParams, const NodePtr &aipp_node) {
   GE_CHECK_NOTNULL(aipp_node);
-  ge::GeAttrValue::NamedAttrs aipp_attr;
+  ge::GeAttrValue::NAMED_ATTRS aipp_attr;
   const OpDescPtr tmpOpPtr = aipp_node->GetOpDesc();
   GE_CHECK_NOTNULL(tmpOpPtr);
-  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(tmpOpPtr, domi::ATTR_NAME_AIPP, aipp_attr), FAILED,
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(tmpOpPtr, ATTR_NAME_AIPP, aipp_attr), FAILED,
                          "Aipp node should contain param aipp!");
   GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aippParams.get()), "get aipp params failed");
 
@@ -198,13 +188,13 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
   std::set<NodePtr> updated_switchn;
 
   for (auto &node : graph->GetDirectNode()) {
-    if (node->GetType() == domi::DATA) {
+    if (node->GetType() == DATA) {
       std::string switchn_name;
       if (AttrUtils::GetStr(node->GetOpDesc(), kMbatchSwitchnName, switchn_name)) {
         switchn_names_to_data[switchn_name] = node;
       }
     }
-    if (node->GetType() == domi::AIPP) {
+    if (node->GetType() == AIPP) {
       GE_RETURN_IF_ERROR(UpdatePrevNodeByAipp(node, updated_switchn));
     }
   }
@@ -253,6 +243,7 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
   aipp_input->SetOriginDataType(aipp_dt);
   DataType aipp_origni_dt = aipp_input->GetOriginDataType();
   GeShape aipp_shape = aipp_input->GetShape();
+  Format aipp_format = aipp_input->GetFormat();
   GELOGI("Aipp [%s] input datatype is %s, origin datatype is %s, input shape is %s", aipp_op_desc->GetName().c_str(),
          TypeUtils::DataTypeToSerialString(aipp_dt).c_str(), TypeUtils::DataTypeToSerialString(aipp_origni_dt).c_str(),
          ge::formats::ShapeToString(aipp_shape.GetDims()).c_str());
@@ -263,6 +254,8 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
   input->SetOriginDataType(aipp_origni_dt);
   input->SetShape(aipp_shape);
   input->SetOriginShape(aipp_shape);
+  input->SetFormat(aipp_format);
+  input->SetOriginFormat(aipp_format);
   ge::TensorUtils::SetSize(*input, size);
 
   const GeTensorDescPtr &output = src_op->MutableOutputDesc(peer_out_anchor->GetIdx());
@@ -271,8 +264,10 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
   output->SetOriginDataType(aipp_origni_dt);
   output->SetShape(aipp_shape);
   output->SetOriginShape(aipp_shape);
+  output->SetFormat(aipp_format);
+  output->SetOriginFormat(aipp_format);
   ge::TensorUtils::SetSize(*output, size);
-  if (src_node->GetType() == domi::SWITCHN) {
+  if (src_node->GetType() == SWITCHN) {
     switchns.insert(src_node);
   }
   GELOGI("Set node %s output %d size %ld by aipp.", src_node->GetName().c_str(), peer_out_anchor->GetIdx(), size);
@@ -304,6 +299,8 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
   input_desc->SetOriginDataType(output_desc->GetOriginDataType());
   input_desc->SetShape(output_desc->GetShape());
   input_desc->SetOriginShape(output_desc->GetOriginShape());
+  input_desc->SetFormat(output_desc->GetFormat());
+  input_desc->SetOriginFormat(output_desc->GetOriginFormat());
   TensorUtils::SetSize(*input_desc, max_size);
 
   auto data_opdesc = data->GetOpDesc();

@@ -20,13 +20,12 @@
 #include "common/util.h"
 #include "graph/utils/attr_utils.h"
 
-using domi::ATTR_TO_BE_DELETED;
 using domi::SUCCESS;
 
 namespace ge {
 Status ShapeOperateOpRemovePass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
-  for (auto &node : graph->GetAllNodes()) {
+  for (auto &node : graph->GetDirectNode()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
     bool to_be_deleted = false;

@@ -41,7 +41,7 @@ Status StreamActiveTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
   uint32_t internal_index = davinci_model->GetFlowctrlIndex(op_index);
 
   // get StreamActive op
-  auto op_desc = davinci_model->GetOpList()[op_index];
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(op_index);
   GE_CHECK_NOTNULL(op_desc);
   std::vector<uint32_t> active_stream_index_list;
   if (!AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_index_list)) {

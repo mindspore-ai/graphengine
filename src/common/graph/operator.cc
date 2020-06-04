@@ -15,6 +15,7 @@
  */
 
 #include "external/graph/operator.h"
+#include "external/graph/operator_factory.h"
 #include <stdint.h>
 #include <algorithm>
 #include <mutex>
@@ -38,6 +39,11 @@
 #include "utils/tensor_adapter.h"
 #include "utils/tensor_utils.h"
 #include "utils/type_utils.h"
+#include <algorithm>
+#include <mutex>
+#include <queue>
+#include <set>
+#include <stdint.h>
 
 using std::enable_shared_from_this;
 using std::make_pair;
@@ -343,15 +349,71 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
 
   InferenceContextPtr GetInferenceContext() const { return inference_context_; }
 
+  void SubgraphRegister(const std::string &name, bool dynamic) {
+    op_desc_->RegisterSubgraphIrName(name, dynamic ? kDynamic : kStatic);
+  }
+
+  void SubgraphCountRegister(const std::string &name, uint32_t count) {
+    if (op_desc_->GetSubgraphTypeByIrName(name) == kStatic) {
+      op_desc_->AddSubgraphName(name);
+    } else {
+      for (uint32_t i = 0; i < count; ++i) {
+        op_desc_->AddSubgraphName(name + std::to_string(i));
+      }
+    }
+
+    subgraph_names_to_builders_[name].resize(count, nullptr);
+  }
+
+  void SetSubgraphBuilder(const std::string &name, uint32_t index, const SubgraphBuilder &builder) {
+    auto iter = subgraph_names_to_builders_.find(name);
+    if (iter == subgraph_names_to_builders_.end()) {
+      GELOGE(PARAM_INVALID, "Failed to set subgraph builder for name %s index %u, invalid name", name.c_str(), index);
+      return;
+    }
+    if (iter->second.size() <= index) {
+      GELOGE(PARAM_INVALID, "Failed to set subgraph builder for name %s index %u, excceds the max size %zu",
+             name.c_str(), index, iter->second.size());
+      return;
+    }
+    iter->second[index] = builder;
+  }
+
+  SubgraphBuilder GetSubgraphBuilder(const std::string &name, uint32_t index) const {
+    auto iter = subgraph_names_to_builders_.find(name);
+    if (iter == subgraph_names_to_builders_.end()) {
+      GELOGE(PARAM_INVALID, "Failed to get subgraph builder for name %s index %u, invalid name", name.c_str(), index);
+      return nullptr;
+    }
+    if (iter->second.size() <= index) {
+      GELOGE(PARAM_INVALID, "Failed to get subgraph builder for name %s index %u, excceds the max size %zu",
+             name.c_str(), index, iter->second.size());
+      return nullptr;
+    }
+    return iter->second[index];
+  }
+
+  std::vector<std::string> GetSubgraphNames() const {
+    std::vector<std::string> names;
+    for (const auto &subgraph_name_to_type : op_desc_->GetSubgraphIrNames()) {
+      names.emplace_back(subgraph_name_to_type.first);
+    }
+    return names;
+  }
+
+  size_t GetSubgraphNamesCount() const { return op_desc_->GetSubgraphIrNames().size(); }
+
   OpDescPtr op_desc_ = nullptr;
 
  private:
   ge::ConstNodePtr node_{nullptr};
   ge::InferenceContextPtr inference_context_;
+  GraphBuilderCallback graph_builder_callback_;
   std::map<string, std::vector<OpIO>> output_links_{};
   std::map<string, OpIO> input_link_{};
   std::vector<std::weak_ptr<OperatorImpl>> control_input_link_{};
   std::vector<std::weak_ptr<OperatorImpl>> control_output_link_{};
+  std::map<std::string, std::vector<SubgraphBuilder>> subgraph_names_to_builders_;
 };
 
 // Used to manage OperatorImpl instances created by ge api.
@@ -559,7 +621,6 @@ InferenceContextPtr Operator::GetInferenceContext() const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return nullptr, "operator impl is nullptr.");
   return operator_impl_->GetInferenceContext();
 }
-
 TensorDesc Operator::GetInputDesc(uint32_t index) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "operator impl is nullptr.");
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(index));
@@ -698,7 +759,7 @@ const std::map<std::string, std::string> Operator::GetAllAttrNamesAndTypes() con
 void Operator::InputRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
-  operator_impl_->GetOpDescImpl()->AddInputDesc(name, GeTensorDesc());
+  (void)operator_impl_->GetOpDescImpl()->AddInputDesc(name, GeTensorDesc());
 }
 
 void Operator::OptionalInputRegister(const string &name) {
@@ -743,6 +804,12 @@ void Operator::DynamicInputRegister(const string &name, const unsigned int num, 
   GE_CHK_BOOL_EXEC(AttrUtils::SetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_INPUT_TD_NUM(name), num), return,
                    "set int failed");
   (void)operator_impl_->GetOpDescImpl()->AddDynamicInputDesc(name, num, is_push_back);
+}
+
+void Operator::DynamicInputRegisterByIndex(const string &name, const unsigned int num, size_t index) {
+  GE_CHK_BOOL_EXEC(!!operator_impl_, return, "operator impl is nullptr.");
+  GE_CHK_BOOL_EXEC(nullptr != operator_impl_->GetOpDescImpl(), return, "GetOpDescImpl is nullptr.");
+  operator_impl_->GetOpDescImpl()->AddDynamicInputDescByIndex(name, num, index);
 }
 
 int Operator::GetDynamicInputNum(const string &name) const {
@@ -896,6 +963,11 @@ OP_ATTR_GET_IMP(string &, Str)
 OP_ATTR_SET_IMP(const vector<string> &, ListStr)
 OP_ATTR_GET_IMP(vector<string> &, ListStr)
 
+OP_ATTR_SET_IMP(const GeAttrValue::NAMED_ATTRS &, NamedAttrs)
+OP_ATTR_GET_IMP(GeAttrValue::NAMED_ATTRS &, NamedAttrs)
+OP_ATTR_SET_IMP(const vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
+OP_ATTR_GET_IMP(vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
+
 OP_ATTR_REG_IMP(int64_t, Int)
 OP_ATTR_REG_IMP(const vector<int64_t> &, ListInt)
 OP_ATTR_REG_IMP(float, Float)
@@ -905,6 +977,8 @@ OP_ATTR_REG_IMP(const vector<string> &, ListStr)
 OP_ATTR_REG_IMP(bool, Bool)
 OP_ATTR_REG_IMP(const vector<bool> &, ListBool)
 OP_ATTR_REG_IMP(const vector<vector<int64_t>> &, ListListInt)
+OP_ATTR_REG_IMP(const GeAttrValue::NAMED_ATTRS &, NamedAttrs)
+OP_ATTR_REG_IMP(const vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
 
 #undef OP_ATTR_SET_IMP
 #undef OP_ATTR_GET_IMP
@@ -1112,6 +1186,95 @@ void Operator::AttrRegister(const string &name, const OpBytes &attr_value) {
                                    Buffer::CopyFrom(attr_value.data(), attr_value.size()))) {
     GELOGW("reg attr name %s failed.", name.c_str());
   }
+}
+
+void Operator::SubgraphRegister(const std::string &name, bool dynamic) {
+  if (operator_impl_ == nullptr) {
+    GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
+    return;
+  }
+  operator_impl_->SubgraphRegister(name, dynamic ? kDynamic : kStatic);
+}
+
+void Operator::SubgraphCountRegister(const std::string &name, uint32_t count) {
+  if (operator_impl_ == nullptr) {
+    GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
+    return;
+  }
+  operator_impl_->SubgraphCountRegister(name, count);
+}
+
+void Operator::SetSubgraphBuilder(const std::string &name, uint32_t index, const SubgraphBuilder &builder) {
+  if (operator_impl_ == nullptr) {
+    GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
+    return;
+  }
+  operator_impl_->SetSubgraphBuilder(name, index, builder);
+}
+
+std::vector<std::string> Operator::GetSubgraphNames() const { return operator_impl_->GetSubgraphNames(); }
+
+SubgraphBuilder Operator::GetDynamicSubgraphBuilder(const string &name, uint32_t index) const {
+  if (operator_impl_ == nullptr) {
+    GELOGE(GRAPH_FAILED, "operator impl is nullptr.");
+    return nullptr;
+  }
+  return operator_impl_->GetSubgraphBuilder(name, index);
+}
+
+SubgraphBuilder Operator::GetSubgraphBuilder(const string &name) const { return GetDynamicSubgraphBuilder(name, 0); }
+
+Graph Operator::GetSubgraph(const string &name) const {
+  if (operator_impl_ == nullptr) {
+    GE_LOGE("Failed to get subgraph %s, the operator impl is null", name.c_str());
+    return Graph("");
+  }
+  auto op_desc = OpDescUtils::GetOpDescFromOperator(*this);
+  if (op_desc == nullptr) {
+    GE_LOGE("Failed to get subgraph %s, the op_desc is null", name.c_str());
+    return Graph("");
+  }
+  const auto &subgraph_names_to_index = op_desc->GetSubgraphNameIndexes();
+  auto iter = subgraph_names_to_index.find(name);
+  if (iter == subgraph_names_to_index.end()) {
+    GE_LOGE("Failed to get subgraph %s, the name may be invalid", name.c_str());
+    return Graph("");
+  }
+  auto subgraph_instance_name = op_desc->GetSubgraphInstanceName(iter->second);
+  if (subgraph_instance_name.empty()) {
+    GE_LOGE("Failed to get subgraph %s index %u, the subgraph may not be added", name.c_str(), iter->second);
+    return Graph("");
+  }
+
+  auto node = operator_impl_->GetNode();
+  if (node == nullptr) {
+    GE_LOGE("Failed to get subgraph %s, the node is null", name.c_str());
+    return Graph("");
+  }
+  auto root_graph = GraphUtils::FindRootGraph(node->GetOwnerComputeGraph());
+  if (root_graph == nullptr) {
+    GE_LOGE("Failed to get subgraph %s, can not find the root graph", name.c_str());
+    return Graph("");
+  }
+  auto subgraph = root_graph->GetSubgraph(subgraph_instance_name);
+  if (subgraph == nullptr) {
+    GE_LOGE("Failed to get subgraph %s index %u, can not find the instance %s from the root graph", name.c_str(),
+            iter->second, subgraph_instance_name.c_str());
+    return Graph("");
+  }
+  return GraphUtils::CreateGraphFromComputeGraph(subgraph);
+}
+
+Graph Operator::GetDynamicSubgraph(const string &name, uint32_t index) const {
+  return GetSubgraph(name + std::to_string(index));
+}
+
+size_t Operator::GetSubgraphNamesCount() const {
+  if (operator_impl_ == nullptr) {
+    GE_LOGE("Failed to get subgraph names count, the operator impl is null");
+    return 0;
+  }
+  return operator_impl_->GetSubgraphNamesCount();
 }
 
 class GraphBuilderImpl {

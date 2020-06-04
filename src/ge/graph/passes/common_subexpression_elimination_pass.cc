@@ -66,8 +66,20 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
   GELOGD("Begin to run the CSE process on the graph");
   GE_CHECK_NOTNULL(graph);
   std::map<std::string, NodePtr> keys_to_node;
-  for (const auto &node : graph->GetAllNodes()) {
+  for (const auto &node : graph->GetDirectNode()) {
     if (!IsNodeSupportCse(node)) {
+      continue;
+    }
+    bool is_unknown = false;
+    auto ret = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+    if (ret != GRAPH_SUCCESS) {
+      GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
+             node->GetType().c_str());
+      continue;
+    }
+    if (is_unknown) {
+      GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
+             node->GetType().c_str());
       continue;
     }
     auto key = GetCseKey(node);
@@ -88,7 +100,7 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
       output_map[i] = i;
     }
 
-    auto ret = GraphUtils::ReplaceNodeAnchors(iter->second, node, {}, output_map);
+    ret = GraphUtils::ReplaceNodeAnchors(iter->second, node, {}, output_map);
     if (ret != GRAPH_SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Failed to replace node %s by node %s error node %u", node->GetName().c_str(),
              iter->second->GetName().c_str(), ret);

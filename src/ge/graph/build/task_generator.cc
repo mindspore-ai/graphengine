@@ -17,11 +17,11 @@
 #include "graph/build/task_generator.h"
 #include <string>
 #include <utility>
-#include "common/util.h"
 #include "common/types.h"
+#include "common/util.h"
+#include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
 
-#include "framework/common/op/attr_define.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/manager/graph_var_manager.h"
@@ -31,16 +31,11 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 
-using domi::CONSTANT;
-using domi::HCOMALLREDUCE;
 using domi::LogTimeStampDef;
-using domi::MODEL_ATTR_TASK_GEN_BASE_ADDR;
-using domi::MODEL_ATTR_TASK_GEN_WEIGHT_ADDR;
-using domi::MODEL_ATTR_TASKS;
 using domi::ModelTaskDef;
-using domi::NETOUTPUT;
 using domi::TaskDef;
 using std::map;
+using std::set;
 using std::string;
 using std::vector;
 
@@ -58,7 +53,7 @@ const uint64_t kProfilingBpEndLogid = 2;
 const uint64_t kProfilingArStartLogid = 3;
 const uint64_t kProfilingArEndLogid = 4;
 const uint64_t kProfilingIterEndLogid = 255;
-const int64_t kMaxNodeNumInNormalStream = 350;
+const int64_t kHashFactor = 100000;
 const int64_t kInvalidGroupId = -1;
 }  // namespace
 namespace ge {
@@ -188,7 +183,7 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
   return SUCCESS;
 }
 
-Status TaskGenerator::SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes, ComputeGraphPtr &graph) {
+Status TaskGenerator::SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion_nodes, ComputeGraphPtr &graph) {
   std::map<NodePtr, int64_t> nodes_with_group_attr;
   for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
@@ -196,17 +191,19 @@ Status TaskGenerator::SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_f
     int64_t group_id = kInvalidGroupId;
     string name = node->GetName();
     string type = node->GetType();
-    // For l1 fusion ddb pass, task def must be continuous.
+    // For fusion ddb pass, task def must be continuous.
     // Part1: store
     // If op_desc have this tag, store it in the map firstly,
     // call the elements in the map GenerateTask at last
-    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id)) {
+    // l1 and l2 is for now
+    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id) ||
+        ge::AttrUtils::GetInt(op_desc, ATTR_NAME_L2_FUSION_GROUP_ID, group_id)) {
       auto stream_id = op_desc->GetStreamId();
-      auto group_key = group_id + stream_id * kMaxNodeNumInNormalStream;
-      (void)ge::AttrUtils::SetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_KEY, group_key);
-      GELOGI("L1Fusion: store node[name:%s(%s), group id:%ld, group key:%ld, stream_id:%ld] task.", name.c_str(),
+      auto group_key = group_id + stream_id * kHashFactor;
+      (void)ge::AttrUtils::SetInt(op_desc, ATTR_NAME_FUSION_GROUP_KEY, group_key);
+      GELOGD("Fusion: store node[name:%s(%s), group id:%ld, group key:%ld, stream_id:%ld] task.", name.c_str(),
              type.c_str(), group_id, group_key, op_desc->GetStreamId());
-      l1_fusion_nodes[group_key].push_back(node);
+      fusion_nodes[group_key].push_back(node);
       nodes_with_group_attr.insert({node, group_id});
     }
 
@@ -228,14 +225,12 @@ Status TaskGenerator::SaveL1fusionNodes(map<int64_t, std::vector<NodePtr>> &l1_f
     if (call_check) {
       auto input_group_id = *input_group_ids.begin();
       if (group_id != input_group_id) {
-        GELOGE(INTERNAL_ERROR,
-               "L1Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
+        GELOGW("Fusion: node[name:%s(%s) with group id:%ld and diff from it's input nodes's group id:%ld ",
                name.c_str(), type.c_str(), group_id, input_group_id);
-        return INTERNAL_ERROR;
       }
     }
   }
-  GELOGI("L1Fusion: get fusion group numbers [%zu].", l1_fusion_nodes.size());
+  GELOGI("Fusion: get fusion group numbers [%zu].", fusion_nodes.size());
   return SUCCESS;
 }
 
@@ -246,28 +241,26 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GenerateTask failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
-  GE_CHK_STATUS_RET(MarkFirstAndLastNode(graph), "MarkFirstAndLastNode failed.");
-  ProfilingPoint ppoint;
-  vector<uint32_t> ar_ppoint;
-  GE_CHK_STATUS_RET(FindProfilingTaskIndex(graph, ppoint, ar_ppoint));
+  GE_CHK_STATUS_RET(MarkNodeAndSetIndex(graph), "MarkNodeAndSetIndex failed.");
+  ProfilingPoint profiling_point;
+  vector<uint32_t> all_reduce_nodes;
+  GE_CHK_STATUS_RET(FindProfilingTaskIndex(graph, profiling_point, all_reduce_nodes));
 
   const OpsKernelManager &ops_kernel_manager = ge_lib->OpsKernelManagerObj();
 
   GE_TIMESTAMP_CALLNUM_START(GenerateTask);
-  // map store l1 fusion nodes
-  map<int64_t, std::vector<NodePtr>> l1_fusion_nodes;
-  string is_l1_fusion_enable = "false";
-  graphStatus ret = ge::GetContext().GetOption("ge.l1Fusion", is_l1_fusion_enable);
-  if ((ret == GRAPH_SUCCESS) && (is_l1_fusion_enable == "true")) {
-    GE_CHK_STATUS_RET(SaveL1fusionNodes(l1_fusion_nodes, graph));
+  // map store fusion nodes
+  map<int64_t, std::vector<NodePtr>> fusion_nodes;
+  const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
+  if (buffer_optimize_on != nullptr) {
+    GE_CHK_STATUS_RET(SaveFusionNodes(fusion_nodes, graph));
   }
-  std::unordered_set<Node *> l1_fusion_nodes_seen;
-  int64_t group_id;
+  std::unordered_set<Node *> fusion_nodes_seen;
+  int64_t group_key;
   uint32_t node_index = 0;
   for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    op_desc->SetId(node_index);
     node_index++;
     string name = node->GetName();
     string type = node->GetType();
@@ -279,17 +272,16 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
 
     GE_CHK_STATUS_RET(UpdateOpIsVarAttr(op_desc, graph->GetSessionID()));
     string op_kernel_lib_name = op_desc->GetOpKernelLibName();
-    // For l1 fusion ddb pass, task def must be continuous.
+    // For fusion ddb pass, task def must be continuous.
     // Part2: Call
-    auto l1_fusion_task_info =
-      L1FusionTaskInfo{run_context,        graph,         node,        op_desc, node_index, ge_lib,
-                       ops_kernel_manager, task_def_list, op_name_map, ppoint,  ar_ppoint};
-    GE_CHK_STATUS_RET(GenerateTaskForL1FusionNode(l1_fusion_task_info, l1_fusion_nodes, l1_fusion_nodes_seen),
-                      "Call GenerateTaskForL1FusionNode node:%s(%s) failed", name.c_str(), type.c_str());
+    auto fusion_task_info =
+      FusionTaskInfo{run_context,        graph,         node,        op_desc,         node_index,      ge_lib,
+                     ops_kernel_manager, task_def_list, op_name_map, profiling_point, all_reduce_nodes};
+    GE_CHK_STATUS_RET(GenerateTaskForFusionNode(fusion_task_info, fusion_nodes, fusion_nodes_seen),
+                      "Call GenerateTaskForFusionNode node:%s(%s) failed", name.c_str(), type.c_str());
     // continue directly
-    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id)) {
-      GELOGI("L1Fusion not %s to generate node[name:%s(%s) task again.", op_kernel_lib_name.c_str(), name.c_str(),
-             type.c_str());
+    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_FUSION_GROUP_KEY, group_key)) {
+      GELOGI("Fusion node[name:%s, type:%s] do not need generate task again.", name.c_str(), type.c_str());
       continue;
     }
     if (op_kernel_lib_name.empty()) {
@@ -315,7 +307,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
 
     // Profiling task
     size_t task_list_size_before = task_def_list.size();
-    GE_CHK_STATUS_RET(InsertProfilingTaskBefore(op_desc, ppoint, ar_ppoint, node_index, task_def_list));
+    GE_CHK_STATUS_RET(InsertProfilingTaskBefore(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
     run_context.stream = run_context.graphStreamList[stream_id];
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task.", op_kernel_lib_name.c_str(),
            name.c_str(), type.c_str(), op_id, stream_id);
@@ -328,7 +320,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
       return ret;
     }
     // Profiling task
-    GE_CHK_STATUS_RET(InsertProfilingTaskAfter(op_desc, ppoint, ar_ppoint, node_index, task_def_list));
+    GE_CHK_STATUS_RET(InsertProfilingTaskAfter(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
 
     size_t task_list_size_after = task_def_list.size();
     // If tasks is reduced
@@ -358,11 +350,11 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   return SUCCESS;
 }
 
-Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_info,
-                                                  std::map<int64_t, std::vector<NodePtr>> &l1_fusion_nodes,
-                                                  std::unordered_set<Node *> &l1_fusion_nodes_seen) {
+Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info,
+                                                std::map<int64_t, std::vector<NodePtr>> &fusion_nodes,
+                                                std::unordered_set<Node *> &fusion_nodes_seen) {
   Status ret = SUCCESS;
-  int64_t group_id;
+  int64_t group_key;
   auto &run_context = fusion_task_info.run_context;
   auto &graph = fusion_task_info.graph;
   auto &node = fusion_task_info.node;
@@ -371,15 +363,13 @@ Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_
   const auto &ops_kernel_manager = fusion_task_info.ops_kernel_manager;
   auto &task_def_list = fusion_task_info.task_def_list;
   auto &op_name_map = fusion_task_info.op_name_map;
-  auto &ppoint = fusion_task_info.ppoint;
-  auto &ar_ppoint = fusion_task_info.ar_ppoint;
-  auto stream_id = fusion_op_desc->GetStreamId();
-  // If op_desc have this attr, call nodes with same group id in a stream together
-  if (ge::AttrUtils::GetInt(fusion_op_desc, ATTR_NAME_L1_FUSION_GROUP_ID, group_id) &&
-      (l1_fusion_nodes_seen.count(node.get()) == 0)) {
-    auto group_key = group_id + stream_id * kMaxNodeNumInNormalStream;
-    GELOGI("L1Fusion: start fusion group index[%ld], nodes size[%ld].", group_key, l1_fusion_nodes[group_key].size());
-    for (auto &fusion_node : l1_fusion_nodes[group_key]) {
+  auto &profiling_point = fusion_task_info.profiling_point;
+  auto &all_reduce_nodes = fusion_task_info.all_reduce_nodes;
+  // If op_desc have this attr, call nodes with same group key in a stream together
+  if (ge::AttrUtils::GetInt(fusion_op_desc, ATTR_NAME_FUSION_GROUP_KEY, group_key) &&
+      (fusion_nodes_seen.count(node.get()) == 0)) {
+    GELOGI("Fusion: start fusion group index[%ld], nodes size[%zu].", group_key, fusion_nodes[group_key].size());
+    for (auto &fusion_node : fusion_nodes[group_key]) {
       OpDescPtr op_desc = fusion_node->GetOpDesc();
 
       UpdateOpIsVarAttr(op_desc, graph->GetSessionID());
@@ -387,7 +377,7 @@ Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_
       std::string fusion_node_type = fusion_node->GetType();
       std::string op_kernel_lib_name = op_desc->GetOpKernelLibName();
       if (op_kernel_lib_name.empty()) {
-        GELOGI("L1Fusion: fusion_node[name:%s(%s)] task no need to generate task.", fusion_node_name.c_str(),
+        GELOGI("Fusion: fusion_node[name:%s(%s)] task no need to generate task.", fusion_node_name.c_str(),
                fusion_node_type.c_str());
         continue;
       }
@@ -395,14 +385,14 @@ Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_
       size_t task_list_size_before = task_def_list.size();
       OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
       if (kernel_info_store == nullptr) {
-        GELOGE(INTERNAL_ERROR, "L1Fusion: No ops kernel store found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
+        GELOGE(INTERNAL_ERROR, "Fusion: No ops kernel store found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
                fusion_node_name.c_str(), fusion_node_type.c_str(), op_kernel_lib_name.c_str());
         return INTERNAL_ERROR;
       }
 
       ret = UpdateAnchorStatus(fusion_node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "L1Fusion: Call UpdateAnchorStatus fusion_node:%s(%s) failed", fusion_node_name.c_str(),
+        GELOGE(ret, "Fusion: Call UpdateAnchorStatus fusion_node:%s(%s) failed", fusion_node_name.c_str(),
                fusion_node_type.c_str());
         return ret;
       }
@@ -410,30 +400,30 @@ Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_
       int64_t op_id = op_desc->GetId();
       int64_t stream_id = op_desc->GetStreamId();
       if (stream_id < 0 || stream_id >= (int64_t)run_context.graphStreamList.size()) {
-        GELOGE(INTERNAL_ERROR, "L1Fusion: fusion_node[name:%s(%s), id:%ld] stream id is invalid, stream list size=%zu",
+        GELOGE(INTERNAL_ERROR, "Fusion: fusion_node[name:%s(%s), id:%ld] stream id is invalid, stream list size=%zu",
                fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, run_context.graphStreamList.size());
         return INTERNAL_ERROR;
       }
       // profiling task
-      (void)InsertProfilingTaskBefore(op_desc, ppoint, ar_ppoint, node_index, task_def_list);
+      (void)InsertProfilingTaskBefore(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list);
       run_context.stream = run_context.graphStreamList[stream_id];
-      GELOGI("L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld] task.",
+      GELOGI("Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld] task.",
              op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
       ret = kernel_info_store->GenerateTask(*fusion_node, run_context, task_def_list);
       if (ret != SUCCESS) {
         GELOGE(ret,
-               "L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
+               "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
                "id:%ld, stream_id:%ld] task failed.",
                op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
         return ret;
       }
       // profiling task
-      (void)InsertProfilingTaskAfter(op_desc, ppoint, ar_ppoint, node_index, task_def_list);
+      (void)InsertProfilingTaskAfter(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list);
       size_t task_list_size_after = task_def_list.size();
       // if tasks is reduced
       if (task_list_size_after < task_list_size_before) {
         GELOGE(FAILED,
-               "L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
+               "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
                "id:%ld, stream_id:%ld] task. but task num from %zu to %zu.",
                op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
                task_list_size_before, task_list_size_after);
@@ -451,13 +441,13 @@ Status TaskGenerator::GenerateTaskForL1FusionNode(L1FusionTaskInfo &fusion_task_
       }
 
       GELOGI(
-        "L1Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
+        "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
         " task finished, generate %u task(s).",
         op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
         task_list_size_after - task_list_size_before);
 
       // record nodes which have call generate task successfully
-      l1_fusion_nodes_seen.insert(fusion_node.get());
+      fusion_nodes_seen.insert(fusion_node.get());
       node_index++;
     }
   }
@@ -493,85 +483,231 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status TaskGenerator::MarkFirstAndLastNode(ComputeGraphPtr &graph) {
-  std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
+Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
+  auto ge_lib = GELib::GetInstance();
   if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  map<string, map<int64_t, std::pair<NodePtr, NodePtr>>> engine_stream_stat;
-  for (auto &node : graph->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node->GetOpDesc());
-    string op_kernel_lib_name = node->GetOpDesc()->GetOpKernelLibName();
-    int64_t stream_id = node->GetOpDesc()->GetStreamId();
+  const auto all_nodes = graph->GetAllNodes();
 
-    if (op_kernel_lib_name.empty()) {
-      // Reset op kernel lib
-      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(node->GetOpDesc());
-      op_kernel_lib_name = node->GetOpDesc()->GetOpKernelLibName();
-      if (op_kernel_lib_name.empty()) {
-        GELOGE(INTERNAL_ERROR, "node:%s(%s) get op kernel lib failed.", node->GetName().c_str(),
-               node->GetType().c_str());
-        return INTERNAL_ERROR;
-      }
+  int64_t node_index = 0;
+  for (auto &node : all_nodes) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    op_desc->SetId(node_index++);
+  }
+
+  map<int64_t, vector<OpDescPtr>> all_stream_ops;
+  for (auto &node : all_nodes) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+
+    // Reset op kernel lib name
+    if (op_desc->GetOpKernelLibName().empty()) {
+      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(op_desc);
     }
 
-    auto it = engine_stream_stat.find(op_kernel_lib_name);
-    if (it == engine_stream_stat.end()) {
-      map<int64_t, std::pair<NodePtr, NodePtr>> stream_map;
-      std::pair<NodePtr, NodePtr> node_pair(node, node);
-      (void)stream_map.emplace(stream_id, node_pair);
-      (void)engine_stream_stat.emplace(op_kernel_lib_name, stream_map);
-    } else {
-      auto stream_it = it->second.find(stream_id);
-      if (stream_it == it->second.end()) {
-        std::pair<NodePtr, NodePtr> node_pair(node, node);
-        (void)it->second.emplace(stream_id, node_pair);
-      } else {
-        stream_it->second.second = node;
-      }
+    all_stream_ops[op_desc->GetStreamId()].emplace_back(op_desc);
+  }
+
+  bool is_single_stream = all_stream_ops.size() == 1;
+  for (const auto &stream_ops : all_stream_ops) {
+    Status status = MarkFirstAndLastOps(stream_ops.second, is_single_stream);
+    if (status != SUCCESS) {
+      GELOGE(status, "Mark first and last nodes failed.");
+      return status;
     }
   }
 
-  for (auto &it : engine_stream_stat) {
-    for (auto &stream_it : it.second) {
-      NodePtr &first_node = stream_it.second.first;
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(first_node->GetOpDesc(), kIsFirstNode, true),
-                       GELOGE(FAILED, "SetBool failed.");
-                       return FAILED);
-      NodePtr &last_node = stream_it.second.second;
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(last_node->GetOpDesc(), kIsLastNode, true),
-                       GELOGE(FAILED, "SetBool failed.");
-                       return FAILED);
-    }
-  }
   return SUCCESS;
 }
 
-Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &ppoint,
-                                             vector<uint32_t> &ar_ppoint) const {
-  GE_CHECK_NOTNULL(graph);
-  const char *is_profiling = std::getenv(kProfilingMode);
-  if (is_profiling == nullptr) {
+Status TaskGenerator::MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_single_stream) const {
+  vector<vector<OpDescPtr>> continuous_op_lists(1);
+  const set<string> label_op_types({LABELSET, LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX});
+  for (auto &op_desc : ops) {
+    string op_type = op_desc->GetType();
+    if (!is_single_stream && (!op_desc->GetSubgraphInstanceNames().empty() || label_op_types.count(op_type) != 0)) {
+      continuous_op_lists.emplace_back(vector<OpDescPtr>());
+    } else {
+      continuous_op_lists.back().emplace_back(op_desc);
+    }
+  }
+  GELOGI("Number of continuous node lists is %zu.", continuous_op_lists.size());
+
+  for (const auto &continuous_ops : continuous_op_lists) {
+    map<string, std::pair<OpDescPtr, OpDescPtr>> first_and_last_ops;
+    for (auto &op_desc : continuous_ops) {
+      string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+      if (op_kernel_lib_name.empty()) {
+        GELOGE(INTERNAL_ERROR, "node:%s(%s) get op kernel lib failed.", op_desc->GetName().c_str(),
+               op_desc->GetType().c_str());
+        return INTERNAL_ERROR;
+      }
+
+      auto it = first_and_last_ops.find(op_kernel_lib_name);
+      if (it == first_and_last_ops.end()) {
+        first_and_last_ops.emplace(op_kernel_lib_name, std::make_pair(op_desc, op_desc));
+      } else {
+        it->second.second = op_desc;
+      }
+    }
+
+    for (auto &it : first_and_last_ops) {
+      auto &op_pair = it.second;
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_pair.first, kIsFirstNode, true), GELOGE(FAILED, "SetBool failed.");
+                       return FAILED);
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_pair.second, kIsLastNode, true), GELOGE(FAILED, "SetBool failed.");
+                       return FAILED);
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status TaskGenerator::AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point) const {
+  GELOGI("Start AutoFindFpOpIndex");
+  OpDescPtr fp_op_desc = nullptr;
+  uint32_t current_idx = 0;
+  uint32_t first_fp = 0;
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+    if (op_kernel_lib_name.empty()) {
+      continue;
+    }
+
+    if (op_desc->GetType() == GETNEXT || op_desc->GetType() == DATA) {
+      auto out_anchor = node->GetOutDataAnchor(0);
+      for (auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
+        GE_CHECK_NOTNULL(peer_in_anchor);
+        auto in_node_desc = peer_in_anchor->GetOwnerNode()->GetOpDesc();
+        GE_CHECK_NOTNULL(in_node_desc);
+        if (fp_op_desc == nullptr || ((in_node_desc->GetId()) < (fp_op_desc->GetId()))) {
+          fp_op_desc = in_node_desc;
+        }
+      }
+      GELOGI("Find fp_op_desc is %s, id is %ld", fp_op_desc->GetName().c_str(), fp_op_desc->GetId());
+      break;
+    }
+  }
+
+  if (fp_op_desc == nullptr) {
+    GELOGW("not find fp_op_desc.");
     return SUCCESS;
   }
-  const char *fp_point = std::getenv(kProfilingFpPoint);
-  if (fp_point == nullptr) {
-    GELOGW("first forward profiling op name not set.");
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    current_idx++;
+    if (op_desc->GetName() == fp_op_desc->GetName()) {
+      first_fp = current_idx;
+      GELOGI("First fp name is %s, idx is %u", op_desc->GetName().c_str(), first_fp);
+      break;
+    }
+  }
+  profiling_point.fp_index = first_fp;
+  return SUCCESS;
+}
+
+Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                                        vector<uint32_t> &all_reduce_nodes) const {
+  GELOGI("Start AutoFindBpOpIndex");
+  NodePtr bp_node = nullptr;
+  uint32_t last_bp = 0;
+  uint32_t iter_end = 0;
+  uint32_t current_idx = 0;
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    current_idx++;
+    string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+    if (op_kernel_lib_name.empty()) {
+      continue;
+    }
+
+    if (op_desc->GetType() == HCOMALLREDUCE) {
+      bp_node = node;
+      all_reduce_nodes.emplace_back(current_idx);
+      GELOGI("Allreduce name %s, idx %u", op_desc->GetName().c_str(), current_idx);
+    }
+    if (op_desc->GetType() == NETOUTPUT) {
+      if (bp_node == nullptr) {
+        bp_node = node;
+      }
+      iter_end = current_idx;
+      GELOGI("Iter end name %s, idx %u", op_desc->GetName().c_str(), iter_end);
+    }
+  }
+  profiling_point.end_index = iter_end;
+
+  if (bp_node == nullptr) {
+    GELOGW("not find bp_node.");
     return SUCCESS;
   }
-  string fp_point_str = string(fp_point);
-  const char *bp_point = std::getenv(kProfilingBpPoint);
-  if (bp_point == nullptr) {
-    GELOGW("last backward profiling op name not set.");
-    return SUCCESS;
+  OpDescPtr bp_op_desc = nullptr;
+  for (auto &in_anchor : bp_node->GetAllInDataAnchors()) {
+    auto out_anchor = in_anchor->GetPeerOutAnchor();
+    if (out_anchor == nullptr || out_anchor->GetOwnerNode() == nullptr) {
+      continue;
+    }
+    auto out_node_desc = out_anchor->GetOwnerNode()->GetOpDesc();
+    GE_CHECK_NOTNULL(out_node_desc);
+    if (bp_op_desc == nullptr || ((out_node_desc->GetId()) > (bp_op_desc->GetId()))) {
+      bp_op_desc = out_node_desc;
+    }
+    GELOGI("bp_op_desc is %s, id is %ld", bp_op_desc->GetName().c_str(), bp_op_desc->GetId());
   }
-  string bp_point_str = string(bp_point);
+
+  GE_CHECK_NOTNULL(bp_op_desc);
+  current_idx = 0;
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    current_idx++;
+    if (op_desc->GetName() == bp_op_desc->GetName()) {
+      last_bp = current_idx;
+      GELOGI("First bp name %s, idx %u", op_desc->GetName().c_str(), last_bp);
+      break;
+    }
+  }
+  profiling_point.bp_index = last_bp;
+  return SUCCESS;
+}
+
+Status TaskGenerator::FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,
+                                  ProfilingPoint &profiling_point) const {
+  GELOGI("Start FindFpOfEnv");
+  uint32_t current_idx = 0;
+  uint32_t first_fp = 0;
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    current_idx++;
+    string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+    if (op_kernel_lib_name.empty()) {
+      continue;
+    }
+
+    if (first_fp == 0 && IsProfPoint(op_desc, fp_point_str)) {
+      first_fp = current_idx;
+      GELOGI("First fp name from env is %s, idx %u", op_desc->GetName().c_str(), first_fp);
+    }
+  }
+
+  profiling_point.fp_index = first_fp;
+  return SUCCESS;
+}
+
+Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::string &bp_point_str,
+                                  ProfilingPoint &profiling_point, vector<uint32_t> &all_reduce_nodes) const {
+  GELOGI("Start FindBpOfEnv");
   uint32_t current_idx = 0;
   uint32_t iter_end = 0;
   uint32_t last_bp = 0;
-  uint32_t first_fp = 0;
   for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(node->GetOpDesc());
@@ -585,43 +721,87 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
       iter_end = current_idx;
       GELOGI("Iter end name %s, idx %u", op_desc->GetName().c_str(), iter_end);
     }
-
     if (op_desc->GetType() == HCOMALLREDUCE) {
-      ar_ppoint.emplace_back(current_idx);
+      all_reduce_nodes.emplace_back(current_idx);
       GELOGI("Allreduce name %s, idx %u", op_desc->GetName().c_str(), current_idx);
     }
-
-    if (first_fp == 0 && IsProfPoint(op_desc, fp_point_str)) {
-      first_fp = current_idx;
-      GELOGI("First fp name %s, idx %u", op_desc->GetName().c_str(), first_fp);
-    }
-
     if (IsProfPoint(op_desc, bp_point_str)) {
       last_bp = current_idx;
-      GELOGI("Last bp name %s, idx %u", op_desc->GetName().c_str(), last_bp);
+      GELOGI("Last bp name from env is %s, idx %u", op_desc->GetName().c_str(), last_bp);
     }
   }
-  ppoint.fp_index = first_fp;
-  ppoint.bp_index = last_bp;
-  ppoint.end_index = iter_end;
+
+  profiling_point.bp_index = last_bp;
+  profiling_point.end_index = iter_end;
+  return SUCCESS;
+}
+
+Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                                             vector<uint32_t> &all_reduce_nodes) const {
+  GELOGI("Start FindProfilingTaskIndex.");
+  GE_CHECK_NOTNULL(graph);
+  const char *profiling_mode = std::getenv(kProfilingMode);
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  if (!is_profiling) {
+    return SUCCESS;
+  }
+
+  const char *fp_point = std::getenv(kProfilingFpPoint);
+  Status ret;
+  if (fp_point == nullptr) {
+    ret = AutoFindFpOpIndex(graph, profiling_point);
+    if (ret != SUCCESS) {
+      GELOGW("First forward profiling op_index not set and FindFpOpIndex failed.");
+      return SUCCESS;
+    }
+  }
+
+  const char *bp_point = std::getenv(kProfilingBpPoint);
+  if (bp_point == nullptr) {
+    ret = AutoFindBpOpIndex(graph, profiling_point, all_reduce_nodes);
+    if (ret != SUCCESS) {
+      GELOGW("Last backward profiling op_index not set and FindBpOpIndex failed.");
+      return SUCCESS;
+    }
+  }
+
+  if (fp_point != nullptr) {
+    string fp_point_str = string(fp_point);
+    ret = FindFpOfEnv(graph, fp_point_str, profiling_point);
+    if (ret != SUCCESS) {
+      GELOGW("First backward profiling op name set but FindFpOfEnv failed.");
+      return SUCCESS;
+    }
+  }
+  if (bp_point != nullptr) {
+    string bp_point_str = string(bp_point);
+    ret = FindBpOfEnv(graph, bp_point_str, profiling_point, all_reduce_nodes);
+    if (ret != SUCCESS) {
+      GELOGW("Last backward profiling op name set but FindBpOfEnv failed.");
+      return SUCCESS;
+    }
+  }
+
   bool train_graph = graph->GetNeedIteration();
-  if (ppoint.fp_index == 0 && train_graph) {
+  if (profiling_point.fp_index == 0 && train_graph) {
     GELOGE(FAILED, "First forward op name can't be found in graph for training trace.");
   }
-  if (ppoint.bp_index == 0 && train_graph) {
+  if (profiling_point.bp_index == 0 && train_graph) {
     GELOGE(FAILED, "Last backward op name can't be found in graph for training trace.");
   }
   return SUCCESS;
 }
 
-Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &ppoint,
-                                                vector<uint32_t> &ar_ppoint, uint32_t node_index,
+Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
+                                                vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
                                                 vector<domi::TaskDef> &task_def_list) {
-  const char *is_profiling = std::getenv(kProfilingMode);
-  if ((is_profiling == nullptr) || (ppoint.fp_index == 0) || (ppoint.bp_index == 0) || (ppoint.end_index == 0)) {
+  const char *profiling_mode = std::getenv(kProfilingMode);
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  if (!is_profiling || (profiling_point.fp_index == 0) || (profiling_point.bp_index == 0) ||
+      (profiling_point.end_index == 0)) {
     return SUCCESS;
   }
-  if (ppoint.fp_index == node_index) {
+  if (profiling_point.fp_index == node_index) {
     uint64_t jobid_log_id = ge::GetContext().TraceId();
     GELOGI("The first FP operator is %s, idx %u, job_id %lu", op_desc->GetName().c_str(), node_index, jobid_log_id);
 
@@ -645,8 +825,8 @@ Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const 
     task_def_list.emplace_back(fp_task_def);
   }
 
-  for (size_t i = 0; i < ar_ppoint.size(); i++) {
-    if (ar_ppoint[i] != node_index) {
+  for (size_t i = 0; i < all_reduce_nodes.size(); i++) {
+    if (all_reduce_nodes[i] != node_index) {
       continue;
     }
     GELOGI("The start allreduce operator is %s, idx %u", op_desc->GetName().c_str(), node_index);
@@ -667,15 +847,17 @@ Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const 
   return SUCCESS;
 }
 
-Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const ProfilingPoint &ppoint,
-                                               vector<uint32_t> &ar_ppoint, uint32_t node_index,
+Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
+                                               vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
                                                vector<domi::TaskDef> &task_def_list) {
   GE_CHECK_NOTNULL(op_desc);
-  const char *is_profiling = std::getenv(kProfilingMode);
-  if ((is_profiling == nullptr) || (ppoint.fp_index == 0) || (ppoint.bp_index == 0) || (ppoint.end_index == 0)) {
+  const char *profiling_mode = std::getenv(kProfilingMode);
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  if (!is_profiling || (profiling_point.fp_index == 0) || (profiling_point.bp_index == 0) ||
+      (profiling_point.end_index == 0)) {
     return SUCCESS;
   }
-  if (ppoint.bp_index == node_index) {
+  if (profiling_point.bp_index == node_index) {
     GELOGI("The last BP operator is %s, idx %u", op_desc->GetName().c_str(), node_index);
     TaskDef bp_task_def;
     bp_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
@@ -686,7 +868,7 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
     bp_log_def->set_notify(false);
     task_def_list.emplace_back(bp_task_def);
   }
-  if (ppoint.end_index == node_index) {
+  if (profiling_point.end_index == node_index) {
     GELOGI("The iteration end operator is %s, idx %u", op_desc->GetName().c_str(), node_index);
     TaskDef end_task_def;
     end_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
@@ -698,8 +880,8 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
     task_def_list.emplace_back(end_task_def);
   }
 
-  for (size_t i = 0; i < ar_ppoint.size(); i++) {
-    if (ar_ppoint[i] != node_index) {
+  for (size_t i = 0; i < all_reduce_nodes.size(); i++) {
+    if (all_reduce_nodes[i] != node_index) {
       continue;
     }
     GELOGI("The end allreduce operator is %s, idx %u", op_desc->GetName().c_str(), node_index);

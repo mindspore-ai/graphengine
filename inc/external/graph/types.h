@@ -23,7 +23,9 @@
 
 namespace ge {
 static const int64_t UNKNOWN_DIM = -1;
+static const int64_t UNKNOWN_DIM_NUM = -2;
 static const std::vector<int64_t> UNKNOWN_SHAPE = {0};
+static const std::vector<int64_t> UNKNOWN_RANK = {-2};
 
 #ifdef HOST_VISIBILITY
 #define GE_FUNC_HOST_VISIBILITY __attribute__((visibility("default")))
@@ -140,8 +142,17 @@ enum Format {
   FORMAT_NC,
   FORMAT_DHWNC,
   FORMAT_FRACTAL_Z_3D_TRANSPOSE,  // 3D filter(transpose) input tensor format
+  FORMAT_FRACTAL_ZN_LSTM,
   FORMAT_RESERVED,
   FORMAT_ALL
+};
+
+// for unknown shape op type
+enum UnknowShapeOpType {
+  DEPEND_IN_SHAPE = 1,     // op out shape get by input shape
+  DEPEND_CONST_VALUE = 2,  // op out shape get by const op value
+  DEPEND_SHAPE_RANGE = 3,  // op out shape get by range
+  DEPEND_COMPUTE = 4       // op out shape get by totally computing
 };
 
 struct TensorDescInfo {

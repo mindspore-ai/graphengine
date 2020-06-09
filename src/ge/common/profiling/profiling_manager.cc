@@ -50,6 +50,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager &ProfilingMana
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::Init(const Options &options) {
 #ifdef DAVINCI_SUPPORT_PROFILING
+  vector<int32_t>().swap(device_id_);
   device_id_.push_back(options.device_id);
   job_id_ = options.job_id;
 
@@ -58,7 +59,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     GELOGI("Profiling json config from acl:%s", recv_profiling_config_.c_str());
     ret = InitFromAclCfg(recv_profiling_config_);
   } else {
-    ret = InitFromEnv(options);
+    ret = InitFromOptions(options);
   }
   if (ret != SUCCESS) {
     GELOGE(ret, "Failed to init profiling.");
@@ -67,8 +68,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
 
   if (is_profiling_) {
     // register Framework to profiling
-    const ProfilingEngineImpl engine_0;
-    int result = Msprof::Engine::RegisterEngine("Framework", &engine_0);
+    int result = Msprof::Engine::Init(GE_PROFILING_MODULE, &engine_);
     if (result != 0) {
       GELOGE(FAILED, "Register profiling engine failed.");
       return FAILED;
@@ -172,21 +172,30 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   return ge::SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::InitFromEnv(const Options &options) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::InitFromOptions(const Options &options) {
 #ifdef DAVINCI_SUPPORT_PROFILING
-  const char *is_profiling = std::getenv("PROFILING_MODE");
+  // enable profiling support two ways: env and front end
+  const char *profiling_mode = std::getenv("PROFILING_MODE");
   const char *prof_options = std::getenv("PROFILING_OPTIONS");
-  if ((is_profiling == nullptr) || (strcmp("true", is_profiling) != 0) || (prof_options == nullptr)) {
-    // default training trace on
+  if ((profiling_mode == nullptr) || (strcmp("true", profiling_mode) != 0) || (prof_options == nullptr)) {
     is_profiling_ = false;
-    return SUCCESS;
   } else {
     std::string prof_options_str = std::string(prof_options);
-    profiling_opts_ = domi::StringUtils::Split(prof_options_str, ':');
+    profiling_opts_ = StringUtils::Split(prof_options_str, ':');
     is_profiling_ = true;
+    GELOGI("The profiling in env is %s, %s", profiling_mode, prof_options);
   }
-  GELOGI("The profiling in options is %s, %s", is_profiling, prof_options);
-
+  if (!is_profiling_) {
+    const std::string enable_profiling = "1";
+    if (options.profiling_mode != enable_profiling || options.profiling_options.empty()) {
+      is_profiling_ = false;
+      return SUCCESS;
+    } else {
+      profiling_opts_ = StringUtils::Split(options.profiling_options, ':');
+      is_profiling_ = true;
+      GELOGI("The profiling in options is %s, %s", options.profiling_mode.c_str(), options.profiling_options.c_str());
+    }
+  }
   // features:'training_trace', 'task_trace' or 'op_trace'  etc
   if (!profiling_opts_.empty()) {
     if (profiling_opts_[0] == "op_trace") {
@@ -314,122 +323,119 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingTaskDescInfo(
-  const std::vector<TaskDescInfo> &task_desc_info) {
+  const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
   if (reporter == nullptr) {
     GELOGI("Profiling report is nullptr!");
     return;
   }
+
   std::string data;
-  for (size_t i = 0; i < device_id_.size(); ++i) {
-    for (const auto &task : task_desc_info) {
-      std::string op_name = task.op_name;
-      uint32_t block_dim = task.block_dim;
-      uint32_t task_id = task.task_id;
-      uint32_t stream_id = task.stream_id;
-      data = op_name.append(" ").append(std::to_string(block_dim)
-                                          .append(" ")
-                                          .append(std::to_string(task_id))
-                                          .append(" ")
-                                          .append(std::to_string(stream_id))
-                                          .append("\n"));
+  for (const auto &task : task_desc_info) {
+    std::string op_name = task.op_name;
+    uint32_t block_dim = task.block_dim;
+    uint32_t task_id = task.task_id;
+    uint32_t stream_id = task.stream_id;
+    data = op_name.append(" ").append(std::to_string(block_dim)
+                                        .append(" ")
+                                        .append(std::to_string(task_id))
+                                        .append(" ")
+                                        .append(std::to_string(stream_id))
+                                        .append("\n"));
 
-      Msprof::Engine::ReporterData reporter_data{};
-      reporter_data.deviceId = device_id_[i];
-      reporter_data.data = (unsigned char *)data.c_str();
-      reporter_data.dataLen = data.size();
-      int ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "task_desc_info", sizeof("task_desc_info"));
-      if (ret != EOK) {
-        GELOGE(ret, "Report data tag of task_desc_info memcpy error!");
-        return;
-      }
-
-      ret = reporter->Report(&reporter_data);
-      if (ret != SUCCESS) {
-        GELOGE(ret, "Reporter data of task_desc_info fail!");
-        return;
-      }
+    Msprof::Engine::ReporterData reporter_data{};
+    reporter_data.deviceId = device_id;
+    reporter_data.data = (unsigned char *)data.c_str();
+    reporter_data.dataLen = data.size();
+    int ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "task_desc_info", sizeof("task_desc_info"));
+    if (ret != EOK) {
+      GELOGE(ret, "Report data tag of task_desc_info memcpy error!");
+      return;
     }
+
+    ret = reporter->Report(&reporter_data);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Reporter data of task_desc_info fail!");
+      return;
+    }
+  }
+
+  data.clear();
+#endif
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingGraphDescInfo(
+  const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info, const int32_t &device_id) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
+  GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return;);
+
+  std::string data;
+  for (const auto &graph : compute_graph_desc_info) {
+    data.append("op_name:").append(graph.op_name).append(" op_type:").append(graph.op_type);
+    for (size_t i = 0; i < graph.input_format.size(); ++i) {
+      data.append(" input_id:")
+        .append(std::to_string(i))
+        .append(" input_format:")
+        .append(std::to_string(graph.input_format.at(i)))
+        .append(" input_data_type:")
+        .append(std::to_string(graph.input_data_type.at(i)))
+        .append(" input_shape:\"");
+      size_t input_shape_len = graph.input_shape.at(i).size();
+      if (input_shape_len == 0) {
+        data.append("");
+      } else if (input_shape_len == 1) {
+        data.append(std::to_string(graph.input_shape.at(i).at(0)));
+      } else {
+        for (size_t j = 0; j < input_shape_len - 1; ++j) {
+          data.append(std::to_string(graph.input_shape.at(i).at(j))).append(",");
+        }
+        data.append(std::to_string(graph.input_shape.at(i).at(input_shape_len - 1)));
+      }
+
+      data.append("\"");
+    }
+
+    for (size_t i = 0; i < graph.output_format.size(); ++i) {
+      data.append(" output_id:")
+        .append(std::to_string(i))
+        .append(" output_format:")
+        .append(std::to_string(graph.output_format.at(i)))
+        .append(" output_data_type:")
+        .append(std::to_string(graph.output_data_type.at(i)))
+        .append(" output_shape:\"");
+      size_t output_shape_len = graph.output_shape.at(i).size();
+      if (output_shape_len == 0) {
+        data.append("");
+      } else if (output_shape_len == 1) {
+        data.append(std::to_string(graph.output_shape.at(i).at(0)));
+      } else {
+        for (size_t j = 0; j < output_shape_len - 1; ++j) {
+          data.append(std::to_string(graph.output_shape.at(i).at(j))).append(",");
+        }
+        data.append(std::to_string(graph.output_shape.at(i).at(output_shape_len - 1)));
+      }
+      data.append("\"");
+    }
+
+    data.append("\n");
+
+    Msprof::Engine::ReporterData reporter_data{};
+    Report(device_id, data, *reporter, reporter_data);
 
     data.clear();
   }
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingGraphDescInfo(
-  const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info) {
-#ifdef DAVINCI_SUPPORT_PROFILING
-  Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
-  GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return;);
-
-  std::string data;
-  for (size_t idx = 0; idx < device_id_.size(); ++idx) {
-    for (const auto &graph : compute_graph_desc_info) {
-      data.append("op_name:").append(graph.op_name).append(" op_type:").append(graph.op_type);
-      for (size_t i = 0; i < graph.input_format.size(); ++i) {
-        data.append(" input_id:")
-          .append(std::to_string(i))
-          .append(" input_format:")
-          .append(std::to_string(graph.input_format.at(i)))
-          .append(" input_data_type:")
-          .append(std::to_string(graph.input_data_type.at(i)))
-          .append(" input_shape:\"");
-        size_t input_shape_len = graph.input_shape.at(i).size();
-        if (input_shape_len == 0) {
-          data.append("");
-        } else if (input_shape_len == 1) {
-          data.append(std::to_string(graph.input_shape.at(i).at(0)));
-        } else {
-          for (size_t j = 0; j < input_shape_len - 1; ++j) {
-            data.append(std::to_string(graph.input_shape.at(i).at(j))).append(",");
-          }
-          data.append(std::to_string(graph.input_shape.at(i).at(input_shape_len - 1)));
-        }
-
-        data.append("\"");
-      }
-
-      for (size_t i = 0; i < graph.output_format.size(); ++i) {
-        data.append(" output_id:")
-          .append(std::to_string(i))
-          .append(" output_format:")
-          .append(std::to_string(graph.output_format.at(i)))
-          .append(" output_data_type:")
-          .append(std::to_string(graph.output_data_type.at(i)))
-          .append(" output_shape:\"");
-        size_t output_shape_len = graph.output_shape.at(i).size();
-        if (output_shape_len == 0) {
-          data.append("");
-        } else if (output_shape_len == 1) {
-          data.append(std::to_string(graph.output_shape.at(i).at(0)));
-        } else {
-          for (size_t j = 0; j < output_shape_len - 1; ++j) {
-            data.append(std::to_string(graph.output_shape.at(i).at(j))).append(",");
-          }
-          data.append(std::to_string(graph.output_shape.at(i).at(output_shape_len - 1)));
-        }
-        data.append("\"");
-      }
-
-      data.append("\n");
-
-      Msprof::Engine::ReporterData reporter_data{};
-      Report(idx, data, *reporter, reporter_data);
-
-      data.clear();
-    }
-  }
-#endif
-}
-
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Report(
-  const size_t &idx, const string &data, Msprof::Engine::Reporter &reporter,
+  const int32_t &device_id, const string &data, Msprof::Engine::Reporter &reporter,
   Msprof::Engine::ReporterData &reporter_data) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   size_t index = data.size() / kReportMaxLen;
   if (index >= 1) {
-    reporter_data.deviceId = device_id_[idx];
+    reporter_data.deviceId = device_id;
     int ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "graph_desc_info", sizeof("graph_desc_info"));
     GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag of graph_desc_info memcpy error!"); return;);
     for (size_t i = 0; i < index; ++i) {
@@ -445,7 +451,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Report(
       GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "Reporter data of graph_desc_info fail!"); return;);
     }
   } else {
-    reporter_data.deviceId = device_id_[idx];
+    reporter_data.deviceId = device_id;
     reporter_data.data = (unsigned char *)data.c_str();
     reporter_data.dataLen = data.size();
     int ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "graph_desc_info", sizeof("graph_desc_info"));
@@ -457,13 +463,36 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Report(
 #endif
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUnInit(const std::string &module) const {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  int ret = Msprof::Engine::UnInit(module);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "profiling plugin uninit failed, ret:%d", ret);
+  }
+#endif
+}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportProfilingData(
   const std::vector<TaskDescInfo> &task_desc_info, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info) {
 #ifdef DAVINCI_SUPPORT_PROFILING
+  int32_t device_id = 0;
+  rtError_t rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "runtime get device_id failed, current device_id:%d", device_id);
+    return;
+  }
+  GELOGI("current device_id:%d", device_id);
+
+  auto ret = std::find(device_id_.begin(), device_id_.end(), device_id);
+  if (ret == device_id_.end()) {
+    GELOGE(FAILED, "get valid device_id failed, profiling report failed.");
+    return;
+  }
+
   GELOGI("start ProfilingTaskDescInfo.");
-  ProfilingTaskDescInfo(task_desc_info);
+  ProfilingTaskDescInfo(task_desc_info, device_id);
   GELOGI("start ProfilingGraphDescInfo.");
-  ProfilingGraphDescInfo(compute_graph_desc_info);
+  ProfilingGraphDescInfo(compute_graph_desc_info, device_id);
   GELOGI("Report profiling data for GE end.");
 #endif
 }
@@ -495,7 +524,7 @@ int PluginImpl::UnInit() {
 
 Msprof::Engine::PluginIntf *ProfilingEngineImpl::CreatePlugin() {
   GELOGI(" Create Plugin");
-  return new (std::nothrow) PluginImpl("Framework");
+  return new (std::nothrow) PluginImpl(GE_PROFILING_MODULE);
 }
 
 int ProfilingEngineImpl::ReleasePlugin(Msprof::Engine::PluginIntf *plugin) {

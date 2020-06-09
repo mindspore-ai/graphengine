@@ -25,9 +25,6 @@
 #include "inc/kernel_factory.h"
 #include "omg/omg_inner_types.h"
 
-using domi::RANK;
-using ge::Status;
-
 namespace {
 const size_t kRankInputSize = 1;
 const uint32_t kRankDataInputIndex = 0;

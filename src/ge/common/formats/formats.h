@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "common/formats/format_transfers/datatype_transfer.h"
-#include "common/formats/format_transfers/format_transfer.h"
+#include "register/register_format_transfer.h"
 #include "external/graph/types.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/ge_tensor.h"
@@ -36,8 +36,8 @@ namespace formats {
  */
 Status TransFormat(const TransArgs &args, TransResult &result);
 
-Status TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type,
-                  Format dst_format, std::vector<int64_t> &dst_shape);
+Status TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type, Format dst_format,
+                  std::vector<int64_t> &dst_shape);
 
 Status TransDataType(const CastArgs &args, TransResult &result);
 

@@ -23,8 +23,6 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::RESHAPE;
-
 namespace ge {
 namespace {
 const int kReshapeDataIndex = 0;

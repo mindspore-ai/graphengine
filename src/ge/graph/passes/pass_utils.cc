@@ -27,8 +27,8 @@
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
-#include "framework/common/op/attr_define.h"
 #include "graph/common/omg_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/graph_utils.h"
@@ -111,7 +111,7 @@ bool PassUtils::IsConstant(const ConstNodePtr &node) {
   }
 
   auto src_node_type = node->GetType();
-  bool is_constant = (src_node_type == domi::CONSTANT) || (src_node_type == domi::CONSTANTOP);
+  bool is_constant = (src_node_type == CONSTANT) || (src_node_type == CONSTANTOP);
   return is_constant;
 }
 
@@ -203,7 +203,7 @@ Status PassUtils::RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete
         auto dst_node = dst_in_anchor->GetOwnerNode();
         std::string node_type;
         GE_CHK_STATUS_RET(GetOriginalType(dst_node, node_type), "get original type failed");
-        if (node_type == domi::NETOUTPUT) {
+        if (node_type == NETOUTPUT) {
           if (dst_in_anchor->IsTypeOf<InDataAnchor>()) {
             GELOGE(INTERNAL_ERROR,
                    "[%s] Inactive branch connected to "
@@ -215,7 +215,7 @@ Status PassUtils::RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete
             GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(src_out_anchor, dst_in_anchor), "remove edge failed");
             end_nodes.push_back(dst_node);
           }
-        } else if (node_type == domi::MERGE) {
+        } else if (node_type == MERGE) {
           /// Unlink connection between the inactive branch and Merge/NetOutput.
           /// The removal of inactive nodes will be handled in PrunePass
           GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(src_out_anchor, dst_in_anchor), "remove edge failed");
@@ -254,7 +254,7 @@ bool PassUtils::IsNeedTrainIteFlowCtrl(const ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
     return false;
   }
-  if (!ge::VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(domi::NODE_NAME_FLOWCTRL_LOOP_PER_ITER)) {
+  if (!ge::VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(NODE_NAME_FLOWCTRL_LOOP_PER_ITER)) {
     return false;
   }
   return compute_graph->GetNeedIteration();
@@ -319,7 +319,7 @@ Status PassUtils::RemoveInactiveBranchToMerge(const OutDataAnchorPtr &inactive_o
     if (dst_node != nullptr) {
       std::string dst_node_type;
       GE_CHK_STATUS_RET(GetOriginalType(dst_node, dst_node_type), "get original type failed");
-      if (dst_node_type == domi::MERGE) {
+      if (dst_node_type == MERGE) {
         GELOGD("[%s] Switch connected directly to Merge", inactive_output_anchor->GetOwnerNode()->GetName().c_str());
         GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(inactive_output_anchor, dst_anchor), "remove edge failed");
         continue;

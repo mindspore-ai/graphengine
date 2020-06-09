@@ -36,9 +36,7 @@ typedef struct tagRTDeviceInfo {
   uint32_t ai_core_id;
   uint32_t aicpu_occupy_bitmap;
   uint32_t hardware_version;
-#ifdef DRIVER_NEW_API
   uint32_t ts_num;
-#endif
 } rtDeviceInfo_t;
 
 typedef enum tagRtRunMode {
@@ -213,6 +211,13 @@ RTS_API rtError_t rtSetTSDevice(uint32_t tsId);
  * @return RT_ERROR_DRV_ERR for can not get run mode
  */
 RTS_API rtError_t rtGetRunMode(rtRunMode *mode);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief set chipType
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtSetSocVersion(const char *version);
 #ifdef __cplusplus
 }
 #endif

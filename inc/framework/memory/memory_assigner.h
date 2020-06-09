@@ -33,7 +33,7 @@ class MemoryAssigner {
 
   MemoryAssigner &operator=(const MemoryAssigner &) = delete;
 
-  Status AssignMemory(bool is_loop_graph, size_t &mem_offset);
+  Status AssignMemory(bool is_loop_graph, size_t &mem_offset, size_t &zero_copy_mem_size);
 
  private:
   ge::ComputeGraphPtr compute_graph_;

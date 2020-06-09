@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_END_GRAPH_PASS_H_
-#define GE_GRAPH_PASSES_END_GRAPH_PASS_H_
+#ifndef GE_GRAPH_PASSES_REPLACE_WITH_EMPTY_CONST_PASS_H_
+#define GE_GRAPH_PASSES_REPLACE_WITH_EMPTY_CONST_PASS_H_
 
-#include "graph/types.h"
-#include "inc/graph_pass.h"
+#include "graph/passes/base_pass.h"
 
 namespace ge {
-class EndGraphPass : public GraphPass {
+class ReplaceWithEmptyConstPass : public BaseNodePass {
  public:
-  ///
-  /// Entry of the NetOutputPass optimizer
-  /// @param [in] graph: Input ComputeGraph
-  /// @return SUCCESS: Execution succeed
-  /// @return OTHERS:  Execution failed
-  /// @author
-  ///
-  Status Run(ge::ComputeGraphPtr graph) override;
+  Status Run(NodePtr &node) override;
+
+ private:
+  Status ReplaceWithEmptyConst(NodePtr &node_to_replace);
+  Status InsertEmptyConst(const GeTensorDesc &out_desc, NodePtr &const_node, ComputeGraphPtr &graph);
+  bool IsEmptyTenor(const GeShape &shape) const;
+  std::string GetDimStr(const GeShape &shape);
 };
 }  // namespace ge
-#endif  // GE_GRAPH_PASSES_END_GRAPH_PASS_H_
-
+#endif  // GE_GRAPH_PASSES_REPLACE_WITH_EMPTY_CONST_PASS_H_

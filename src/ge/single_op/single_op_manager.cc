@@ -23,19 +23,17 @@
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
-SingleOpManager::~SingleOpManager() {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOpManager::~SingleOpManager() {
   for (auto &it : stream_resources_) {
     delete it.second;
     it.second = nullptr;
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
-Status SingleOpManager::GetOpFromModel(const std::string &model_name,
-                                       const ModelData &model_data,
-                                       void *stream,
-                                       SingleOp **single_op) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFromModel(const std::string &model_name,
+                                                                                        const ModelData &model_data,
+                                                                                        void *stream,
+                                                                                        SingleOp **single_op) {
   if (single_op == nullptr) {
     GELOGE(PARAM_INVALID, "single op is null");
     return PARAM_INVALID;
@@ -57,14 +55,13 @@ Status SingleOpManager::GetOpFromModel(const std::string &model_name,
     resource_id = reinterpret_cast<uintptr_t>(stream);
   }
 
-  GELOGI("GetOpFromModel in. model name = %s, resource id = 0x%lx",
-         model_name.c_str(),
+  GELOGI("GetOpFromModel in. model name = %s, resource id = 0x%lx", model_name.c_str(),
          static_cast<uint64_t>(resource_id));
 
   StreamResource *res = GetResource(resource_id);
   if (res == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "GetResource failed");
-      return MEMALLOC_FAILED;
+    GELOGE(MEMALLOC_FAILED, "GetResource failed");
+    return MEMALLOC_FAILED;
   }
 
   SingleOp *op = res->GetOperator(model_data.model_data);
@@ -81,7 +78,7 @@ Status SingleOpManager::GetOpFromModel(const std::string &model_name,
     return ret;
   }
 
-  auto *new_op = new(std::nothrow)SingleOp();
+  auto *new_op = new (std::nothrow) SingleOp();
   if (new_op == nullptr) {
     GELOGE(MEMALLOC_FAILED, "new SingleOp failed");
     return MEMALLOC_FAILED;
@@ -90,10 +87,8 @@ Status SingleOpManager::GetOpFromModel(const std::string &model_name,
   GELOGI("To build operator: %s", model_name.c_str());
   ret = model.BuildOp(*res, *new_op);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Build op failed. op = %s, resource id = 0x%lx, ret = %u",
-           model_name.c_str(),
-           static_cast<uint64_t>(resource_id),
-           ret);
+    GELOGE(ret, "Build op failed. op = %s, resource id = 0x%lx, ret = %u", model_name.c_str(),
+           static_cast<uint64_t>(resource_id), ret);
     delete new_op;
     new_op = nullptr;
     return ret;
@@ -106,8 +101,7 @@ Status SingleOpManager::GetOpFromModel(const std::string &model_name,
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
-Status SingleOpManager::ReleaseResource(void *stream) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::ReleaseResource(void *stream) {
   auto resource_id = reinterpret_cast<uintptr_t>(stream);
   GELOGI("ReleaseResource in. resource id = 0x%lx", static_cast<uint64_t>(resource_id));
   std::lock_guard<std::mutex> lock(mutex_);
@@ -126,7 +120,7 @@ StreamResource *SingleOpManager::GetResource(uintptr_t resource_id) {
   auto it = stream_resources_.find(resource_id);
   StreamResource *res = nullptr;
   if (it == stream_resources_.end()) {
-    res = new (std::nothrow)StreamResource();
+    res = new (std::nothrow) StreamResource();
     if (res != nullptr) {
       stream_resources_.emplace(resource_id, res);
     }

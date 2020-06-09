@@ -16,7 +16,7 @@
 
 #include "common/formats/format_transfers/datatype_transfer.h"
 
-#include <stdint.h>
+#include <cstdint>
 #include <map>
 #include <utility>
 
@@ -26,8 +26,6 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/type_utils.h"
 #include "securec.h"
-
-using ge::fp16_t;
 
 namespace ge {
 namespace formats {
@@ -134,10 +132,6 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
   }
   auto trans_mode = iter->second;
 
-  if (args.src_data_size == 0) {
-    GELOGE(PARAM_INVALID, "Invalid src data size %zu", args.src_data_size);
-    return PARAM_INVALID;
-  }
   int size = GetSizeByDataType(args.dst_data_type);
   if (size <= 0) {
     GELOGE(PARAM_INVALID, "Failed to calc size from data type %s",
@@ -149,6 +143,12 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
     return PARAM_INVALID;
   }
   size_t total_size = static_cast<size_t>(args.src_data_size * size);
+  result.length = total_size;
+  if (total_size == 0) {
+    GELOGI("In TransDataType, total_size is zero, has no data.");
+    return SUCCESS;
+  }
+
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to alloc the memory for dst buf %zu, data size %zu", total_size, args.src_data_size);
@@ -162,7 +162,6 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
     return INTERNAL_ERROR;
   }
   result.data = dst;
-  result.length = total_size;
   return SUCCESS;
 }
 

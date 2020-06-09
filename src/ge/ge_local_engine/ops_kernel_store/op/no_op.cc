@@ -41,9 +41,9 @@ REGISTER_OP_CREATOR(Constant, NoOp);
 
 REGISTER_OP_CREATOR(Const, NoOp);
 
-REGISTER_OP_CREATOR(NetOutput, NoOp);
-
 REGISTER_OP_CREATOR(ControlTrigger, NoOp);
+
+REGISTER_OP_CREATOR(Merge, NoOp);
 
 // Functional Op.
 REGISTER_OP_CREATOR(If, NoOp);

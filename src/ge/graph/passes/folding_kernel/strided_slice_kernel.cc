@@ -27,13 +27,6 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::STRIDE_SLICE_ATTR_BEGIN_MASK;
-using domi::STRIDE_SLICE_ATTR_ELLIPSIS_MASK;
-using domi::STRIDE_SLICE_ATTR_END_MASK;
-using domi::STRIDE_SLICE_ATTR_NEW_AXIS_MASK;
-using domi::STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK;
-using domi::STRIDEDSLICE;
-
 namespace ge {
 namespace {
 const int32_t kNumOne = 1;
@@ -181,7 +174,7 @@ Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<g
   Attr args;
   Status ret = CheckAndGetAttr(attr, input, args);
   if (ret != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Check And Get Attr failed.");
+    GELOGW("Check And Get Attr failed.");
     return NOT_CHANGED;
   }
 

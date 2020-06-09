@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include "graph/operator_reg.h"
+#include "graph/operator.h"
 
 namespace ge {
 
@@ -259,7 +260,7 @@ match this name to the matching Unstage Op.
 REG_OP(Stage)
     .DYNAMIC_INPUT(values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, \
         DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-        DT_DOUBLE}))
+        DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(capacity, Int, 0)
     .ATTR(memory_limit, Int, 0)
     .ATTR(container, String, "")
@@ -312,7 +313,7 @@ REG_OP(StagePeek)
     .INPUT(index, TensorType({DT_INT32}))
     .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                     DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                    DT_DOUBLE}))
+                    DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(capacity, Int, 0)
     .ATTR(memory_limit, Int, 0)
     .ATTR(container, String, "")
@@ -363,7 +364,7 @@ REG_OP(StackPop)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .OUTPUT(element, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                      DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                     DT_DOUBLE}))
+                     DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .REQUIRED_ATTR(elem_type, Type)
     .OP_END_FACTORY_REG(StackPop)
 
@@ -388,10 +389,10 @@ REG_OP(StackPush)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .INPUT(element, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                      DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                     DT_DOUBLE}))
+                     DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
                      DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-                     DT_DOUBLE}))
+                     DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(swap_memory, Bool, false)
     .OP_END_FACTORY_REG(StackPush)
 
@@ -600,7 +601,7 @@ REG_OP(MapIncompleteSize)
 REG_OP(Unstage)
     .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT16, \
             DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, \
-            DT_DOUBLE}))
+            DT_DOUBLE, DT_UINT32, DT_UINT64}))
     .ATTR(capacity, Int, 0)
     .ATTR(memory_limit, Int, 0)
     .ATTR(container, String, "")
@@ -1869,7 +1870,7 @@ REG_OP(SparseAccumulatorApplyGradient)
     .INPUT(local_step, TensorType({DT_INT64}))
     .INPUT(indices, TensorType({DT_INT64}))
     .INPUT(values, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT，DT_FLOAT16, DT_UINT32, \
+        DT_INT32, DT_INT64, DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_UINT32, \
         DT_UINT64, DT_COMPLEX64, DT_COMPLEX128, DT_QINT16, DT_QUINT16, \
         DT_QINT8, DT_QUINT8, DT_QINT32}))
     .INPUT(shape, TensorType({DT_INT64}))
@@ -1905,6 +1906,145 @@ REG_OP(SparseAccumulatorTakeGradient)
     .OUTPUT(shape, TensorType({DT_INT64}))
     .REQUIRED_ATTR(dtype, Type)
     .OP_END_FACTORY_REG(SparseAccumulatorTakeGradient)
-}  // namespace ge
+
+/**
+*@brief A conditional accumulator for aggregating gradients.
+
+*@par Attributes:
+* @li dtype: The type of the value being accumulated.
+* @li shape: The shape of the values, can be [], in which case shape is unknown.
+* @li container: If non-empty, this accumulator is placed in the given container. \n
+Otherwise, a default container is used.
+* @li shared_name: If non-empty, this accumulator will be shared under the given \n
+name across multiple sessions.
+* @li reduction_type: reduction operator type, default "MEAN".
+
+*@par Outputs:
+*handle: A Tensor of type DT_RESOURCE. The handle to the accumulator.
+
+*@attention Constraints:
+*ResourceConditionalAccumulator runs on the Ascend AI CPU, which delivers poor performance.
+
+*/
+
+REG_OP(ResourceConditionalAccumulator)
+    .OUTPUT(handle, TensorType({DT_RESOURCE}))
+    .REQUIRED_ATTR(dtype, Type)
+    .REQUIRED_ATTR(shape, ListInt)
+    .ATTR(container, String, "")
+    .ATTR(shared_name, String, "")
+    .ATTR(reduction_type, String, "MEAN")
+    .OP_END_FACTORY_REG(ResourceConditionalAccumulator)
+
+/**
+*@brief Applies a gradient to a given accumulator. \n
+Does not add if "local_step" is lesser than the accumulator's "global_step".
+
+*@par Inputs:
+* @li handle: The handle to an accumulator.
+* @li local_step: The "local_step" value at which the gradient was computed.
+* @li gradient: A tensor of the gradient to be accumulated. \n
+Must be one of the following types: \n
+DT_FLOAT16, DT_FLOAT, DT_DOUBLE
+
+*@attention Constraints:
+*ResourceAccumulatorApplyGradient runs on the Ascend AI CPU, which delivers poor performance.
+
+*/
+
+REG_OP(ResourceAccumulatorApplyGradient)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .INPUT(local_step, TensorType({DT_INT64}))
+    .INPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(ResourceAccumulatorApplyGradient)
+
+/**
+*@brief Returns the number of gradients aggregated in the given accumulators.
+
+*@par Inputs:
+*handle: The handle to an accumulator.
+
+*@par Outputs:
+*num_accumulated: The number of gradients aggregated in the given accumulator.
+
+*@attention Constraints:
+*ResourceAccumulatorNumAccumulated runs on the Ascend AI CPU, which delivers poor performance.
+
+*/
+
+REG_OP(ResourceAccumulatorNumAccumulated)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .OUTPUT(num_accumulated, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(ResourceAccumulatorNumAccumulated)
+
+/**
+*@brief Updates the accumulator with a new value for "global_step".
+
+*@par Inputs:
+* @li handle: The handle to an accumulator.
+* @li new_global_step: The new "global_step" value to set.
+
+*@attention Constraints:
+*ResourceAccumulatorSetGlobalStep runs on the Ascend AI CPU, which delivers poor performance.
+
+*/
+
+REG_OP(ResourceAccumulatorSetGlobalStep)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .INPUT(new_global_step, TensorType({DT_INT64}))
+    .OP_END_FACTORY_REG(ResourceAccumulatorSetGlobalStep)
+
+/**
+*@brief Extracts the average gradient in the given ConditionalAccumulator.
+
+*@par Inputs:
+* @li handle: The handle to an accumulator.
+* @li num_required: Number of gradients required before an aggregate is returned.
+
+*@par Attributes:
+*dtype: The data type of accumulated gradients. \n
+Needs to correspond to the type of the accumulator.
+
+*@par Outputs:
+*average: The average of the accumulated gradients. \n
+Must be one of the following types: \n
+DT_FLOAT16, DT_FLOAT, DT_DOUBLE.
+
+*@attention Constraints:
+*ResourceAccumulatorTakeGradient runs on the Ascend AI CPU, which delivers poor performance.
+
+*/
+
+REG_OP(ResourceAccumulatorTakeGradient)
+    .INPUT(handle, TensorType({DT_RESOURCE}))
+    .INPUT(num_required, TensorType({DT_INT32}))
+    .OUTPUT(average, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(dtype, Type)
+    .OP_END_FACTORY_REG(ResourceAccumulatorTakeGradient)
+
+/**
+*@brief Enqueue a Tensor on the computation outfeed.
+
+*@par Inputs:
+*Inputs include: \n
+*x: A Tensor. Must be one of the following types: float16, float32, \n
+float64, int8, int16, uint16, uint8, int32, int64, uint32, uint64, \n
+bool, double, string.
+
+*@par Attributes:
+*channel_name: name of operator channel, default "".
+
+*@attention Constraints:\n
+*-The implementation for OutfeedEnqueueOp on Ascend uses AICPU, with bad performance.\n
+
+*/
+REG_OP(OutfeedEnqueueOp)
+  .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8,
+      DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_UINT32,
+      DT_UINT64, DT_BOOL, DT_DOUBLE, DT_STRING}))
+  .ATTR(channel_name, String, "")
+  .OP_END_FACTORY_REG(OutfeedEnqueueOp)
+
+}   // namespace ge
 
 #endif  // GE_OP_DATA_FLOW_OPS_H_

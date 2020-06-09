@@ -83,6 +83,12 @@ size_t GeShape::GetDimNum() const {
   auto proto_msg = shape_def_.GetProtoMsg();
   if (proto_msg != nullptr) {
     if (proto_msg->dim_size() >= 0) {
+      // check whether contain -2, if true, return -1
+      for (auto i : proto_msg->dim()) {
+        if (i == UNKNOWN_DIM_NUM) {
+          return 0;
+        }
+      }
       return proto_msg->dim_size();
     } else {
       return 0;
@@ -157,6 +163,10 @@ int64_t GeShape::GetShapeSize() const {
       return 0;
     }
     for (auto i : proto_msg->dim()) {
+      // if unknown shape, return -1
+      if (i == UNKNOWN_DIM || i == UNKNOWN_DIM_NUM) {
+        return UNKNOWN_DIM;
+      }
       res *= i;
     }
   }
@@ -209,6 +219,7 @@ const string TENSOR_UTILS_RC = "rc";
 const string TENSOR_UTILS_ORIGIN_SHAPE = "origin_shape";
 const string TENSOR_UTILS_ORIGIN_FORMAT = "origin_format";
 const string TENSOR_UTILS_ORIGIN_DATA_TYPE = "origin_data_type";
+const string TENSOR_UTILS_SHAPE_RANGE = "shape_range";
 
 GeShape::GeShape(const ProtoMsgOwner &proto_owner, proto::ShapeDef *proto_msg) : shape_def_(proto_owner, proto_msg) {}
 
@@ -395,6 +406,35 @@ GeShape GeTensorDesc::GetShape() const { return ShapeReference(); }
 GeShape &GeTensorDesc::MutableShape() { return ShapeReference(); }
 
 void GeTensorDesc::SetShape(GeShape shape) { ShapeReference() = std::move(shape); }
+
+// set shape with -2, it stand for unknown shape
+void GeTensorDesc::SetUnknownDimNumShape() { SetShape(GeShape({UNKNOWN_DIM_NUM})); }
+
+// for unknown shape
+graphStatus GeTensorDesc::SetShapeRange(const std::vector<std::pair<int64_t, int64_t>> &range) {
+  std::vector<vector<int64_t>> shape_range;
+  for (const auto &ele : range) {
+    shape_range.emplace_back(std::vector<int64_t>({ele.first, ele.second}));
+  }
+  auto ret = AttrUtils::SetListListInt(this, TENSOR_UTILS_SHAPE_RANGE, shape_range);
+  return ret ? GRAPH_SUCCESS : GRAPH_FAILED;
+}
+graphStatus GeTensorDesc::GetShapeRange(std::vector<std::pair<int64_t, int64_t>> &range) const {
+  std::vector<vector<int64_t>> shape_range;
+  (void)AttrUtils::GetListListInt(this, TENSOR_UTILS_SHAPE_RANGE, shape_range);
+
+  for (const auto &ele : shape_range) {
+    // here must be only two elemenet because pair
+    if (ele.size() != 2) {
+      GELOGE(GRAPH_FAILED, "shape_range must contain only 2 value but really is %lu", ele.size());
+      return GRAPH_FAILED;
+    }
+    std::pair<int64_t, int64_t> pair({ele[0], ele[1]});
+    range.push_back(pair);
+  }
+
+  return GRAPH_SUCCESS;
+}
 
 GeShape GeTensorDesc::GetOriginShape() const {
   vector<int64_t> origin_shape;

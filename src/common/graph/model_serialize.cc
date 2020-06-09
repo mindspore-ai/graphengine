@@ -16,7 +16,10 @@
 
 #include "graph/model_serialize.h"
 #include <google/protobuf/text_format.h>
+
+#include <queue>
 #include <iostream>
+
 #include "debug/ge_attr_define.h"
 #include "debug/ge_log.h"
 #include "debug/ge_util.h"
@@ -26,6 +29,7 @@
 #include "utils/graph_utils.h"
 #include "debug/ge_op_types.h"
 
+using std::map;
 using std::string;
 
 namespace ge {
@@ -121,6 +125,11 @@ bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::Op
         }
       }
     }
+
+    op_def_proto->set_id(op_desc->GetId());
+    for (const std::string &name : op_desc->GetSubgraphInstanceNames()) {
+      op_def_proto->add_subgraph_name(name);
+    }
   }
   return true;
 }
@@ -196,6 +205,14 @@ bool ModelSerializeImp::SerializeModel(const Model &model, proto::ModelDef *mode
     GELOGE(GRAPH_FAILED, "SerializeGraph fail");
     return false;
   }
+
+  for (auto subgraph : compute_graph->GetAllSubgraphs()) {
+    if (!SerializeGraph(subgraph, model_proto->add_graph(), is_dump)) {
+      GELOGE(GRAPH_FAILED, "Serialize subgraph failed");
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -228,6 +245,14 @@ bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_d
     GE_CHK_BOOL_RET_STATUS(temp_value != nullptr, false, "temp_value is nullptr");
     op_desc->outputs_desc_.push_back(temp_value);
   }
+
+  op_desc->SetId(op_def_proto.id());
+  uint32_t graph_index = 0;
+  for (const std::string &name : op_def_proto.subgraph_name()) {
+    op_desc->AddSubgraphName(name);
+    op_desc->SetSubgraphInstanceName(graph_index++, name);
+  }
+
   return true;
 }
 
@@ -238,7 +263,7 @@ bool ModelSerializeImp::UnserializeNode(ComputeGraphPtr &graph, proto::OpDef &op
     GELOGW("UnserializeOpDesc error.");
   }
 
-  NodePtr node = graph->AddNode(op_desc);
+  NodePtr node = graph->AddNode(op_desc, op_desc->GetId());
   GE_CHK_BOOL_EXEC(node != nullptr, return false, "node is nullptr.");
 
   // Inputs
@@ -319,6 +344,35 @@ bool ModelSerializeImp::HandleNodeNameRef() {
   return true;
 }
 
+bool ModelSerializeImp::RebuildOwnership(ComputeGraphPtr &compute_graph, map<string, ComputeGraphPtr> &subgraphs) {
+  std::queue<ComputeGraphPtr> all_graphs;
+  all_graphs.emplace(compute_graph);
+  while (!all_graphs.empty()) {
+    ComputeGraphPtr graph = all_graphs.front();
+    all_graphs.pop();
+
+    for (const NodePtr &node : graph->GetDirectNode()) {
+      const OpDescPtr op_desc = node->GetOpDesc();
+      for (const std::string &name : op_desc->GetSubgraphInstanceNames()) {
+        auto it = subgraphs.find(name);
+        if (it == subgraphs.end()) {
+          GELOGE(GRAPH_FAILED, "Node:%s, Subgraph:%s not found, num:%zu.", op_desc->GetName().c_str(), name.c_str(),
+                 subgraphs.size());
+          return false;
+        }
+
+        ComputeGraphPtr &subgraph = it->second;
+        subgraph->SetParentGraph(graph);
+        subgraph->SetParentNode(node);
+        compute_graph->AddSubgraph(subgraph->GetName(), subgraph);
+        all_graphs.emplace(subgraph);
+      }
+    }
+  }
+
+  return true;
+}
+
 bool ModelSerializeImp::UnserializeModel(Model &model, proto::ModelDef &model_proto) {
   model.name_ = model_proto.name();
   model.version_ = model_proto.version();
@@ -332,7 +386,31 @@ bool ModelSerializeImp::UnserializeModel(Model &model, proto::ModelDef &model_pr
     if (UnserializeGraphWithoutEdge(compute_graph_ptr, graph_proto)) {
       model.graph_ = GraphUtils::CreateGraphFromComputeGraph(compute_graph_ptr);
     }
+
+    // 0 is main graph, following is subgraph.
+    map<string, ComputeGraphPtr> subgraphs;
+    for (int idx = 1; idx < graphs_proto.size(); ++idx) {
+      ComputeGraphPtr subgraph;
+      ModelSerializeImp impl;
+      if (!impl.UnserializeGraphWithoutEdge(subgraph, graphs_proto[idx])) {
+        GELOGE(GRAPH_FAILED, "UnserializeGraphWithoutEdge failed");
+        return false;
+      }
+
+      if (!impl.HandleNodeNameRef()) {
+        GELOGE(GRAPH_FAILED, "HandleNodeNameRef failed");
+        return false;
+      }
+
+      subgraphs[subgraph->GetName()] = subgraph;
+    }
+
+    if (!RebuildOwnership(compute_graph_ptr, subgraphs)) {
+      GELOGE(GRAPH_FAILED, "Rebuild graph ownership failed");
+      return false;
+    }
   }
+
   if (!HandleNodeNameRef()) {
     GELOGE(GRAPH_FAILED, "HandleNodeNameRef failed");
     return false;

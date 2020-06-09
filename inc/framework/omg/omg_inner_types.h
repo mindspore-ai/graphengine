@@ -28,21 +28,27 @@
 #include "framework/common/types.h"
 #include "register/register_fmk_types.h"
 
+using domi::DOMI_TENSOR_ND;
+using domi::DOMI_TENSOR_RESERVED;
+using domi::domiTensorFormat_t;
+using domi::FMK_TYPE_RESERVED;
+using domi::FrameworkType;
 using std::map;
 using std::string;
 using std::unordered_map;
 using std::vector;
 
-namespace domi {
+namespace ge {
 /**
  * @ingroup domi_omg
  * @brief run model
  */
 enum RunMode {
-  GEN_OM_MODEL = 0,    // generate offline model file
-  MODEL_TO_JSON = 1,   // convert to JSON file
-  ONLY_PRE_CHECK = 3,  // only for pre-check
-  PBTXT_TO_JSON = 5    // pbtxt to json
+  GEN_OM_MODEL = 0,              // generate offline model file
+  MODEL_TO_JSON = 1,             // convert to JSON file
+  MODEL_TO_JSON_WITH_SHAPE = 2,  // convert to json file with shape
+  ONLY_PRE_CHECK = 3,            // only for pre-check
+  PBTXT_TO_JSON = 5              // pbtxt to json
 };
 
 ///
@@ -93,7 +99,7 @@ struct OmgContext {
   std::string ddk_version;
   // preferential format used by the entire network
   domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
-  FrameworkType type = FMK_TYPE_RESERVED;
+  domi::FrameworkType type = domi::FMK_TYPE_RESERVED;
   RunMode run_mode = ONLY_PRE_CHECK;
   bool train_flag = false;
   // whether to use FP16 high precision
@@ -102,23 +108,25 @@ struct OmgContext {
   std::string output_type;
 
   // Save the name of the entire network: Some special operators are used to determine a network. Some operators in the
-  // network require special processing based on the specific network.
-  // e.g：faster-rcnn, the FirstStageProcessor module is determined as the Faster-R-CNN network based on the scope
-  // fusion. Then, the conv+reshape operators in the FirstStageBoxPredictor/BoxEncodingPredictor scope are combined. The
-  // convolution kernel rearrangement reshape operator needs to be deleted for the convolution kernel.
+  // network require special processing based on the specific network. e.g：faster-rcnn, the FirstStageProcessor module
+  // is determined as the Faster-R-CNN network based on the scope fusion. Then, the conv+reshape operators in the
+  // FirstStageBoxPredictor/BoxEncodingPredictor scope are combined. The convolution kernel rearrangement reshape
+  // operator needs to be deleted for the convolution kernel.
   std::string net_name;
   // Whether to use dynamic batch size or dynamic image size
   bool is_dynamic_input = false;
   std::string dynamic_batch_size;
   std::string dynamic_image_size;
 };
+}  // namespace ge
 
+namespace domi {
 /**
  * @ingroup domi_omg
  * @brief get OMG context
  * @return OmgContext context
  */
-OmgContext &GetContext();
+ge::OmgContext &GetContext();
 
 struct TEBinInfo {
   // It is obsolete. It will be automatically obtained from the binfilename field of the JSON file later.

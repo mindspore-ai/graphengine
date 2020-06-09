@@ -43,30 +43,31 @@ using ComputeGraphPtr = std::shared_ptr<ComputeGraph>;
 using ConstComputeGraphPtr = std::shared_ptr<const ComputeGraph>;
 
 class GeTensorDesc;
-
+class GeAttrValue;
 class GeAttrValueImp;
+
+class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NamedAttrs : public AttrHolder {
+ public:
+  NamedAttrs();
+  virtual ~NamedAttrs() = default;
+  void SetName(const std::string &name);
+  string GetName() const;
+  GeAttrValue GetItem(const string &key) const;
+
+ protected:
+  ProtoAttrMapHelper MutableAttrMap() override;
+  ConstProtoAttrMapHelper GetAttrMap() const override;
+
+ private:
+  // Create namedAttrs from protobuf obj
+  NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *protoMsg);
+  GeIrProtoHelper<proto::NamedAttrs> named_attrs_;
+  friend class GeAttrValueImp;
+  friend class GeAttrValue;
+};
 
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeAttrValue {
  public:
-  class NamedAttrs : public AttrHolder {
-   public:
-    NamedAttrs();
-    virtual ~NamedAttrs() = default;
-    void SetName(const std::string &name);
-    string GetName() const;
-    GeAttrValue GetItem(const string &key) const;
-
-   protected:
-    ProtoAttrMapHelper MutableAttrMap() override;
-    ConstProtoAttrMapHelper GetAttrMap() const override;
-
-   private:
-    // Create namedAttrs from protobuf obj
-    NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *protoMsg);
-    GeIrProtoHelper<proto::NamedAttrs> named_attrs_;
-    friend class GeAttrValueImp;
-  };
-
   using INT = int64_t;
   using FLOAT = float;
   using BOOL = bool;
@@ -75,7 +76,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeAttrValue {
   using TENSOR_DESC = GeTensorDesc;
   using GRAPH = ComputeGraphPtr;
   using BYTES = Buffer;
-  using NAMED_ATTRS = NamedAttrs;
+  using NAMED_ATTRS = ge::NamedAttrs;
   using DATA_TYPE = ge::DataType;
 
   using LIST_INT = vector<INT>;
@@ -89,6 +90,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeAttrValue {
   using LIST_NAMED_ATTRS = vector<NAMED_ATTRS>;
   using LIST_LIST_INT = vector<vector<int64_t>>;
   using LIST_DATA_TYPE = vector<ge::DataType>;
+
+  using NamedAttrs = ge::NamedAttrs;  // for cce use (ge::GeAttrValue::NamedAttrs).
 
   enum ValueType {
     VT_NONE = 0,

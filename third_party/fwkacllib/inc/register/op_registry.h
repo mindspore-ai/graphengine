@@ -61,6 +61,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistry {
 
   domi::FusionParseParamFunc GetFusionParseParamFunc(const std::string &op_type);
 
+  domi::ParseSubgraphFunc GetParseSubgraphPostFunc(const std::string &op_type);
+
   domi::ImplyType GetImplyTypeByOriOpType(const std::string &ori_optype);
 
   const std::vector<RemoveInputConfigure> &GetRemoveInputConfigure(const std::string &ori_optype) const;
@@ -70,6 +72,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistry {
   std::unordered_map<std::string, domi::ImplyType> op_run_mode_map_;
   std::unordered_map<std::string, ParseParamFunc> opParseParamsFnMap_;
   std::unordered_map<std::string, FusionParseParamFunc> fusionOpParseParamsFnMap_;
+  std::unordered_map<std::string, ParseSubgraphFunc> op_types_to_parse_subgraph_post_func_;
   std::unordered_map<std::string, std::vector<RemoveInputConfigure>> remove_input_configure_map_;
   std::unordered_map<std::string, std::string> originOpType2OmOpType_;
 };

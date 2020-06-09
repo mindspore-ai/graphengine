@@ -282,6 +282,7 @@ static graphStatus CalcTensorElementCnt(const std::vector<int64_t> &dims, Format
     case FORMAT_FRACTAL_Z_3D:
     case FORMAT_FRACTAL_Z_3D_TRANSPOSE:
     case FORMAT_NDC1HWC0:
+    case FORMAT_FRACTAL_Z_C04:
       graph_status = CalcElementCntByDims(dims, element_cnt);
       break;
     default:

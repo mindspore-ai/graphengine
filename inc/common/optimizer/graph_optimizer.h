@@ -44,6 +44,9 @@ class GraphOptimizer {
   // optimize original graph, using in graph preparation stage
   virtual Status OptimizeOriginalGraph(ComputeGraph &graph) = 0;
 
+  // optimize original graph, using for conversion operator insert in graph preparation stage
+  virtual Status OptimizeOriginalGraphJudgeInsert(ComputeGraph &graph) { return SUCCESS; }
+
   // optimize fused graph
   virtual Status OptimizeFusedGraph(ComputeGraph &graph) = 0;
 

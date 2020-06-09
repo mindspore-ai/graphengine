@@ -68,7 +68,7 @@ class AippOp : public InsertOpBase {
   AippOp &operator=(const AippOp &aipp_op);
   AippOp(const AippOp &aipp_op);
 
-  void ConvertParamToAttr(ge::GeAttrValue::NamedAttrs &aipp_attrs);
+  void ConvertParamToAttr(ge::GeAttrValue::NAMED_ATTRS &aipp_attrs);
   void SetCscDefaultValue();
   void SetDtcDefaultValue();
   NodePtr FindDataByIndex(const ComputeGraphPtr &graph, int rank);

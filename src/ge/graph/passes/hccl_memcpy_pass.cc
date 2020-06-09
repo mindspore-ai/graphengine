@@ -25,9 +25,6 @@
 #include "framework/common/types.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::CONSTANTOP;
-using domi::DATA;
-
 namespace {
 const int32_t kAnchorSize = 1;
 const int kAnchorNum = 0;
@@ -56,7 +53,7 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
         NodePtr src_node = src_out_anchor->GetOwnerNode();
         std::string src_type = src_node->GetType();
         bool check_src_type = (src_type == CONSTANTOP) || (src_type == DATA);
-        if (check_src_type && node->GetType() == domi::HCOMALLREDUCE) {
+        if (check_src_type && node->GetType() == HCOMALLREDUCE) {
           Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
           if (ret != SUCCESS) {
             GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
@@ -91,9 +88,9 @@ NodePtr HcclMemcpyPass::CreateMemcpyNode(const ComputeGraphPtr &graph, const Out
     return nullptr;
   }
 
-  std::string node_name = pre_node->GetName() + "_" + domi::MEMCPYASYNC;
+  std::string node_name = pre_node->GetName() + "_" + MEMCPYASYNC;
   node_name = CheckDuplicateName(node_name);
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), domi::MEMCPYASYNC);
+  OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), MEMCPYASYNC);
   if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "Create MemcpyAsync op: MakeShared op_desc fail.");
     return nullptr;
@@ -144,8 +141,8 @@ std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
 /// @return bool
 ///
 bool HcclMemcpyPass::NeedInsertMemcpyOp(const ge::ConstOpDescPtr &op_desc) const {
-  return (op_desc->GetType() == domi::HCOMALLGATHER || op_desc->GetType() == domi::HCOMALLREDUCE ||
-          op_desc->GetType() == domi::HCOMREDUCESCATTER);
+  return (op_desc->GetType() == HCOMALLGATHER || op_desc->GetType() == HCOMALLREDUCE ||
+          op_desc->GetType() == HCOMREDUCESCATTER);
 }
 
 ///

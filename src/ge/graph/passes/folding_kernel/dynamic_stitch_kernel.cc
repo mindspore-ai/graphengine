@@ -28,9 +28,6 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::ATTR_NAME_N;
-using domi::DYNAMICSTITCH;
-
 namespace ge {
 namespace {
 const int kDoubleAttrN = 2;
@@ -143,7 +140,7 @@ Status DynamicStitchKernel::GenData(const vector<ConstGeTensorPtr> &input, GeTen
   auto output_size = merged_shape.GetShapeSize();
   int64_t data_size = GetSizeByDataType(data_type);
   auto step = merged_shape.GetDim(kMergedShapeSecondDim);
-  if (!domi::CheckInt64MulOverflow(output_size, data_size) || !domi::CheckInt64MulOverflow(step, data_size)) {
+  if (!CheckInt64MulOverflow(output_size, data_size) || !CheckInt64MulOverflow(step, data_size)) {
     GELOGW("Check int64 mul overflow failed. Output_size is %ld, data_size is %ld, step is %ld.", output_size,
            data_size, step);
     return NOT_CHANGED;
@@ -196,7 +193,7 @@ Status DynamicStitchKernel::StitchDataFollowIndices(int64_t data_unit, const vec
         allowance += data_unit;
       }
       indices_set.insert(input_indices[j]);
-      if (!domi::CheckInt64MulOverflow(input_indices[j], data_unit)) {
+      if (!CheckInt64MulOverflow(input_indices[j], data_unit)) {
         GELOGW("Check int64 mul overflow failed. Indices is %ld, data_unit is %ld.", input_indices[j], data_unit);
         return NOT_CHANGED;
       }

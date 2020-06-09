@@ -24,6 +24,13 @@
 #include "graph/load/new_model_manager/model_utils.h"
 
 namespace ge {
+namespace {
+const uint32_t kMaxTaskOfStream = 200;
+}
+
+uint32_t HcclTaskInfo::max_node_of_hccl_stream_ = 0;
+std::mutex HcclTaskInfo::hccl_follow_stream_mutex_;
+
 HcclTaskInfo::~HcclTaskInfo() {
   if (private_def_ != nullptr) {
     rtError_t ret = rtFreeHost(private_def_);
@@ -38,6 +45,7 @@ HcclTaskInfo::~HcclTaskInfo() {
   ops_kernel_store_ = nullptr;
   output_data_addr_ = nullptr;
   workspace_addr_ = nullptr;
+  max_node_of_hccl_stream_ = 0;
 }
 
 Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
@@ -63,17 +71,17 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   std::string hccl_type = hccl_def.hccl_type();
 
   // Get HCCL op
-  auto op_desc = davinci_model->GetOpList()[op_index];
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(op_index);
   GE_CHECK_NOTNULL(op_desc);
 
   Status dmrt = HcomOmeUtil::GetHcomDataType(op_desc, data_type);
-  if (dmrt != domi::SUCCESS) {
+  if (dmrt != SUCCESS) {
     GELOGE(FAILED, "davinci_model: GetHcomDataType fail! domi error: %u", dmrt);
     return FAILED;
   }
 
-  dmrt = HcomOmeUtil::GetHcomCount(op_desc, data_type, (hccl_type == domi::HCOMALLGATHER), count);
-  if (dmrt != domi::SUCCESS) {
+  dmrt = HcomOmeUtil::GetHcomCount(op_desc, data_type, (hccl_type == HCOMALLGATHER), count);
+  if (dmrt != SUCCESS) {
     GELOGE(FAILED, "davinci_model: GetHcomCount fail! domi error: %u", dmrt);
     return FAILED;
   }
@@ -109,7 +117,49 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
     GELOGI("op_desc has no attr used_stream_num!");
   }
 
-  for (int64_t i = 0; i < hccl_stream_num; ++i) {
+  std::lock_guard<std::mutex> lock(hccl_follow_stream_mutex_);
+  if (max_node_of_hccl_stream_ == 0) {
+    uint32_t max_stream_count;
+    uint32_t max_task_count;
+    ret = rtGetMaxStreamAndTask(RT_NORMAL_STREAM, &max_stream_count, &max_task_count);
+    if (ret != RT_ERROR_NONE) {
+      GELOGE(FAILED, "Get max stream and task count by rts failed.");
+      return FAILED;
+    }
+    max_node_of_hccl_stream_ = max_task_count / kMaxTaskOfStream;
+  }
+
+  if (static_cast<size_t>(hccl_stream_num) <= davinci_model->GetHcclFolowStream().size()) {
+    GELOGI("capacity of follow stream is enough to be reused.");
+    ReuseStream(hccl_stream_num, davinci_model);
+  } else {
+    GELOGI("need to reuse follow stream and create new follow stream.");
+    size_t created_stream_num = davinci_model->GetHcclFolowStream().size();
+    ReuseStream(created_stream_num, davinci_model);
+    ret = CreateStream(hccl_stream_num - created_stream_num, davinci_model);
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Create hccl stream failed.");
+      return FAILED;
+    }
+  }
+
+  GELOGI("HcclTaskInfo Init Success, hcclStreamNum =%ld", hccl_stream_num);
+  return SUCCESS;
+}
+
+void HcclTaskInfo::ReuseStream(int64_t stream_num, DavinciModel *davinci_model) {
+  GELOGI("Start to reuse %ld follow stream.", stream_num);
+  int64_t index = 0;
+  for (int64_t i = 0; i < stream_num; i++) {
+    hccl_stream_list_.emplace_back(davinci_model->GetHcclFolowStream().at(index).first);
+    int64_t remain_cap = davinci_model->GetHcclFolowStream().at(index).second - 1;
+    davinci_model->ReuseHcclFollowStream(remain_cap, index);
+  }
+}
+
+Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_model) {
+  GELOGI("Start to create %ld hccl stream.", stream_num);
+  for (int64_t i = 0; i < stream_num; ++i) {
     rtStream_t stream = nullptr;
     rtError_t rt_ret =
       rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
@@ -126,11 +176,13 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
     }
 
     GELOGD("hccl_stream addr is=%p", stream);
-    hccl_stream_list_.push_back(stream);
+    int64_t remain_cap = max_node_of_hccl_stream_ - 1;
+    davinci_model->CreateHcclFollowStream(stream, remain_cap);
+
+    hccl_stream_list_.emplace_back(stream);
     davinci_model->PushHcclStream(stream);
   }
-
-  GELOGI("HcclTaskInfo Init Success, hcclStreamNum =%ld", hccl_stream_num);
+  GELOGI("CreateStream success.");
   return SUCCESS;
 }
 
@@ -170,28 +222,28 @@ Status HcclTaskInfo::SetAddrs(const std::string &hccl_type, const std::shared_pt
     output_data_addr = output_data_addr_list[0];
   }
 
-  if (hccl_type == domi::HCOMBROADCAST) {
+  if (hccl_type == HCOMBROADCAST) {
     int64_t root_id;
     dmrt = HcomOmeUtil::GetHcomRootId(op_desc, root_id);
-    if (dmrt != domi::SUCCESS) {
+    if (dmrt != SUCCESS) {
       GELOGE(FAILED, "davinci_model: GetHcomRootId fail! domi error: %u", dmrt);
       return FAILED;
     }
     root_id_ = root_id;
-  } else if (hccl_type == domi::HCOMALLGATHER || hccl_type == domi::HCOMRECEIVE) {
+  } else if (hccl_type == HCOMALLGATHER || hccl_type == HCOMRECEIVE) {
     output_data_addr_ = output_data_addr;
-  } else if (hccl_type == domi::HCOMALLREDUCE) {
+  } else if (hccl_type == HCOMALLREDUCE) {
     dmrt = HcomOmeUtil::GetHcomOperationType(op_desc, op_type);
-    if (dmrt != domi::SUCCESS) {
+    if (dmrt != SUCCESS) {
       GELOGE(FAILED, "davinci_model: GetHcomOperationType fail! domi error: %u", dmrt);
       return FAILED;
     }
 
     output_data_addr_ = output_data_addr;
     op_type_ = op_type;
-  } else if (hccl_type == domi::HCOMREDUCESCATTER) {
+  } else if (hccl_type == HCOMREDUCESCATTER) {
     dmrt = HcomOmeUtil::GetHcomOperationType(op_desc, op_type);
-    if (dmrt != domi::SUCCESS) {
+    if (dmrt != SUCCESS) {
       GELOGE(FAILED, "davinci_model: GetHcomOperationType fail! domi error: %u", dmrt);
       return FAILED;
     }
@@ -200,6 +252,7 @@ Status HcclTaskInfo::SetAddrs(const std::string &hccl_type, const std::shared_pt
     op_type_ = op_type;
   }
 
+  davinci_model_->DisableZeroCopy(input_data_addr_);
   return SUCCESS;
 }
 

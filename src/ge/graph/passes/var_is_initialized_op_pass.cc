@@ -26,10 +26,6 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 
-using domi::CONSTANT;
-using domi::VARIABLE;
-using domi::VARISINITIALIZEDOP;
-
 namespace ge {
 namespace {
 const int kAssignVarRefIndex = 0;
@@ -284,7 +280,7 @@ bool VarIsInitializedOpPass::IsVarInitedOnTheGraphAndNode(const NodePtr &node, i
 Status VarIsInitializedOpPass::CheckAndSetVarInited(const NodePtr &node, bool &inited, int64_t &inited_var) {
   GE_CHECK_NOTNULL(node);
   inited = false;
-  if (node->GetType() != domi::ASSIGN) {
+  if (node->GetType() != ASSIGN) {
     return SUCCESS;
   }
   auto ref_in_anchor = node->GetInDataAnchor(kAssignVarRefIndex);

@@ -57,7 +57,9 @@ REG_OP(HcomAllGather)
  * @li group: A required string identifying the group name of ranks 
  * participating in the op.
  * @li fusion: An optional integer identifying the fusion flag of the op. \n
- * 0: no fusion; 1 (default): fusion.
+ * 0: no fusion; 1 (default): fusion; 2: fusion the ops by fusion id.
+ * @li fusion_id: An optional integer identifying the fusion id of the op.
+ * The HcomAllReduce ops with the same fusion id will be fused.
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
  * @attention Constraints: \n
@@ -70,6 +72,7 @@ REG_OP(HcomAllReduce)
     .REQUIRED_ATTR(reduction, String)
     .REQUIRED_ATTR(group, String)
     .ATTR(fusion, Int, 1)
+    .ATTR(fusion_id, Int, -1)
     .ATTR(alpha, Float, 1.0)
     .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomAllReduce)

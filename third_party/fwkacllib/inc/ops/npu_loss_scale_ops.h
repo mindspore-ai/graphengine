@@ -16,7 +16,7 @@
 
 #ifndef GE_OP_NN_LOSS_SCALE_OPS_H
 #define GE_OP_NN_LOSS_SCALE_OPS_H
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 REG_OP(NPUAllocFloatStatusOperator)

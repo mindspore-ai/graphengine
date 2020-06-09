@@ -28,8 +28,6 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
 
-using domi::CONSTANT;
-using domi::MERGE;
 using domi::PARAM_INVALID;
 using domi::SUCCESS;
 
@@ -45,7 +43,7 @@ Status MergePass::Run(NodePtr &node) {
 
   std::string op_type;
   GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "get original type failed");
-  if (op_type != domi::MERGE) {
+  if (op_type != MERGE) {
     return SUCCESS;
   }
 

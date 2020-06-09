@@ -18,7 +18,7 @@
 #define GE_OP_LINALG_OPS_H_
 
 #include "graph/operator_reg.h"
-#include "../graph/operator.h"
+#include "graph/operator.h"
 
 namespace ge {
 

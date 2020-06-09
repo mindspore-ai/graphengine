@@ -28,7 +28,7 @@ Status TransOpNearbyAllreduceFusionPass::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  if (node->GetType() == domi::HCOMALLREDUCE) {
+  if (node->GetType() == HCOMALLREDUCE) {
     GELOGI("found allreduce op %s", node->GetName().c_str());
     Status ret = RemoveNearbyPairedTransOps(node);
     if (ret != SUCCESS) {
@@ -46,7 +46,7 @@ bool TransOpNearbyAllreduceFusionPass::IsSymmetricTransOps(const NodePtr &node1,
     return false;
   }
 
-  if (node1->GetType() != domi::TRANSDATA || node2->GetType() != domi::TRANSDATA) {
+  if (node1->GetType() != TRANSDATA || node2->GetType() != TRANSDATA) {
     return false;
   }
 

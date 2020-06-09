@@ -21,8 +21,6 @@
 #include "graph/utils/node_utils.h"
 #include "omg/omg_inner_types.h"
 
-using domi::SUCCESS;
-
 namespace ge {
 const vector<GraphPass *> &PassManager::GraphPasses() const { return graph_passes_; }
 

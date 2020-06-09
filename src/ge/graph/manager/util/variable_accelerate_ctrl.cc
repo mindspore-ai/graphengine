@@ -23,7 +23,7 @@
 namespace ge {
 namespace {
 inline bool IsVariable(const std::string &node_type) {
-  return node_type == domi::VARIABLE || node_type == domi::VARIABLEV2 || node_type == domi::VARHANDLEOP;
+  return node_type == VARIABLE || node_type == VARIABLEV2 || node_type == VARHANDLEOP;
 }
 }  // namespace
 

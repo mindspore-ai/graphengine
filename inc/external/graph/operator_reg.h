@@ -22,10 +22,11 @@
 #include <string>
 #include <vector>
 
-#include "./operator.h"
-#include "./operator_factory.h"
-#include "./tensor.h"
-#include "./types.h"
+#include "graph/operator.h"
+#include "graph/operator_factory.h"
+#include "graph/tensor.h"
+#include "graph/types.h"
+#include "graph/graph.h"
 
 namespace ge {
 using std::function;
@@ -45,6 +46,10 @@ class OpReg {
   OpReg &OPTIONAL_INPUT() { return *this; }
 
   OpReg &OUTPUT() { return *this; }
+
+  OpReg &GRAPH() { return *this; }
+
+  OpReg &DYNAMIC_GRAPH() { return *this; }
 
   OpReg &INFER_SHAPE_AND_TYPE() { return *this; }
 };
@@ -191,6 +196,10 @@ class OpReg {
     Operator::DynamicInputRegister(#x, num, isPushBack);                                                               \
     return *this;                                                                                                      \
   }                                                                                                                    \
+  _THIS_TYPE &create_dynamic_input_byindex_##x(unsigned int num, size_t index) {                                       \
+    Operator::DynamicInputRegisterByIndex(#x, num, index);                                                             \
+    return *this;                                                                                                      \
+  }                                                                                                                    \
   TensorDesc get_dynamic_input_desc_##x(unsigned int index) const { return Operator::GetDynamicInputDesc(#x, index); } \
   graphStatus update_dynamic_input_desc_##x(unsigned int index, const TensorDesc &tensorDesc) {                        \
     return Operator::UpdateDynamicInputDesc(#x, index, tensorDesc);                                                    \
@@ -227,6 +236,51 @@ class OpReg {
                                                                                                  \
  private:                                                                                        \
   void __dy_output_##x() {                                                                       \
+    (void)OpReg()
+
+#define GRAPH(x)                                                                                \
+  N();                                                                                          \
+  __graph_##x();                                                                                \
+  }                                                                                             \
+                                                                                                \
+ public:                                                                                        \
+  static const string name_graph_##x() { return #x; }                                           \
+  SubgraphBuilder get_subgraph_builder_##x() const { return Operator::GetSubgraphBuilder(#x); } \
+  _THIS_TYPE &set_subgraph_builder_##x(const SubgraphBuilder &v) {                              \
+    Operator::SetSubgraphBuilder(#x, 0, v);                                                     \
+    return *this;                                                                               \
+  }                                                                                             \
+  Graph get_subgraph_##x() const { return Operator::GetSubgraph(#x); }                          \
+                                                                                                \
+ private:                                                                                       \
+  void __graph_##x() {                                                                          \
+    Operator::SubgraphRegister(#x, false);                                                      \
+    Operator::SubgraphCountRegister(#x, 1);                                                     \
+    (void)OpReg()
+
+#define DYNAMIC_GRAPH(x)                                                                                       \
+  N();                                                                                                         \
+  __graph_##x();                                                                                               \
+  }                                                                                                            \
+                                                                                                               \
+ public:                                                                                                       \
+  static const string name_graph_##x() { return #x; }                                                          \
+  _THIS_TYPE &create_dynamic_subgraph_##x(unsigned int num) {                                                  \
+    Operator::SubgraphCountRegister(#x, num);                                                                  \
+    return *this;                                                                                              \
+  }                                                                                                            \
+  SubgraphBuilder get_dynamic_subgraph_builder_##x(unsigned int index) const {                                 \
+    return Operator::GetDynamicSubgraphBuilder(#x, index);                                                     \
+  }                                                                                                            \
+  Graph get_dynamic_subgraph_##x(unsigned int index) const { return Operator::GetDynamicSubgraph(#x, index); } \
+  _THIS_TYPE &set_dynamic_subgraph_builder_##x(unsigned int index, const SubgraphBuilder &v) {                 \
+    Operator::SetSubgraphBuilder(#x, index, v);                                                                \
+    return *this;                                                                                              \
+  }                                                                                                            \
+                                                                                                               \
+ private:                                                                                                      \
+  void __graph_##x() {                                                                                         \
+    Operator::SubgraphRegister(#x, true);                                                                      \
     (void)OpReg()
 
 #define PASTE(g_register, y) g_register##y

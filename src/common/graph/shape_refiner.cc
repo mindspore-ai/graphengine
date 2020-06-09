@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "framework/common/types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 
 #include "debug/ge_log.h"
@@ -37,7 +37,6 @@
 
 namespace ge {
 namespace {
-constexpr const char *kRefIndex = "parent_node_index";
 graphStatus UpdateSubGraphDataNodes(const ConstNodePtr &node) {
   auto op_desc = node->GetOpDesc();
   auto sub_graph_names = op_desc->GetSubgraphInstanceNames();
@@ -47,6 +46,10 @@ graphStatus UpdateSubGraphDataNodes(const ConstNodePtr &node) {
 
   auto root_graph = GraphUtils::FindRootGraph(node->GetOwnerComputeGraph());
   for (const auto &name : sub_graph_names) {
+    if (name.empty()) {
+      GELOGW("The node %s contains empty subgraph instance name", node->GetName().c_str());
+      continue;
+    }
     auto sub_graph = root_graph->GetSubgraph(name);
     if (sub_graph == nullptr) {
       GE_LOGE("Can node find the subgrpah %s for node %s", name.c_str(), node->GetName().c_str());
@@ -63,7 +66,7 @@ graphStatus UpdateSubGraphDataNodes(const ConstNodePtr &node) {
                 node->GetName().c_str());
         return GRAPH_FAILED;
       }
-      if (!AttrUtils::GetInt(node_sub->GetOpDesc(), kRefIndex, ref_i)) {
+      if (!AttrUtils::GetInt(node_sub->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, ref_i)) {
         GE_LOGE("Invalid data node on the sub graph %s parent node %s, no ref-index attribute", name.c_str(),
                 node->GetName().c_str());
         return GRAPH_FAILED;
@@ -76,7 +79,10 @@ graphStatus UpdateSubGraphDataNodes(const ConstNodePtr &node) {
           ref_i, node_sub->GetName().c_str(), name.c_str(), node->GetName().c_str(), node->GetAllOutDataAnchorsSize());
         return GRAPH_FAILED;
       }
+      GELOGI("Ref index is %d, input_desc dtype is %d, node name is %s", ref_i, input_desc->GetDataType(),
+             node->GetName().c_str());
       auto ret = data_opdesc->UpdateInputDesc(0, *input_desc);
+
       if (ret != GRAPH_SUCCESS) {
         GE_LOGE("Failed to update input desc of data %s on the sub graph %s parent node %s",
                 node_sub->GetName().c_str(), name.c_str(), node->GetName().c_str());
@@ -101,6 +107,10 @@ graphStatus UpdateParentNodeOutTensor(const ConstNodePtr &node) {
 
   auto root_graph = GraphUtils::FindRootGraph(node->GetOwnerComputeGraph());
   for (const auto &name : sub_graph_names) {
+    if (name.empty()) {
+      GELOGW("The node %s contains empty subgraph instance name", node->GetName().c_str());
+      continue;
+    }
     auto sub_graph = root_graph->GetSubgraph(name);
     if (sub_graph == nullptr) {
       GE_LOGE("Can node find the subgrpah %s for node %s", name.c_str(), node->GetName().c_str());
@@ -132,11 +142,14 @@ graphStatus UpdateParentNodeOutTensor(const ConstNodePtr &node) {
                 node->GetName().c_str(), edge_anchor->GetIdx());
         return GRAPH_FAILED;
       }
+      GELOGI("Netoutput in anchor index is %zu, input tensor dim is %zu", edge_anchor->GetIdx(),
+             edge_desc->GetShape().GetDimNum());
       int ref_i;
-      if (!AttrUtils::GetInt(edge_desc, kRefIndex, ref_i)) {
+      if (!AttrUtils::GetInt(edge_desc, ATTR_NAME_PARENT_NODE_INDEX, ref_i)) {
         // if there is no ref index on the TensorDesc, it means the output data will be ignored outer.
         continue;
       }
+      GELOGI("Parent node index of edge desc is %d", ref_i);
       auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(ref_i));
       if (output_desc == nullptr) {
         GE_LOGE(

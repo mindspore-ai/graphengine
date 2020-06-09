@@ -16,7 +16,7 @@
 
 #ifndef GE_OP_SPLIT_COMBINATION_OPS_H
 #define GE_OP_SPLIT_COMBINATION_OPS_H
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 /**

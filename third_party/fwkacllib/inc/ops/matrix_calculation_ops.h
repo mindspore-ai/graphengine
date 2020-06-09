@@ -17,7 +17,7 @@
 #ifndef GE_OP_MATRIX_CALCULATION_OPS_H
 #define GE_OP_MATRIX_CALCULATION_OPS_H
 
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 
@@ -303,6 +303,32 @@ REG_OP(ScatterNdUpdate)
     .OP_END_FACTORY_REG(ScatterNdUpdate)
 
 /**
+*@brief Applies sparse addition to individual values or slices in a Variable.
+
+*@par Inputs:
+* Three inputs, including:
+*@li x: An ND Tensor. \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+*@li indices: An ND Tensor. \n
+
+*Must be one of the following types: int32
+*@li updates: An ND Tensor. \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "x".
+
+*/
+REG_OP(TensorScatterUpdate)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OP_END_FACTORY_REG(TensorScatterUpdate)
+
+/**
 *@brief Adds sparse "updates" to a variable reference.
 
 *@par Inputs:
@@ -394,6 +420,32 @@ REG_OP(ScatterNdAdd)
     .OP_END_FACTORY_REG(ScatterNdAdd)
 
 /**
+*@brief Applies sparse addition to individual values or slices in a Variable.
+
+*@par Inputs:
+* Three inputs, including:
+*@li x: An ND Tensor. \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+*@li indices: An ND Tensor. \n
+
+*Must be one of the following types: int32
+*@li updates: An ND Tensor. \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "x".
+
+*/
+REG_OP(TensorScatterAdd)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OP_END_FACTORY_REG(TensorScatterAdd)
+
+/**
 *@brief Applies sparse subtraction to individual values or slices in a Variable.
 
 *@par Inputs:
@@ -422,6 +474,32 @@ REG_OP(ScatterNdSub)
     .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterNdSub)
+
+/**
+*@brief Applies sparse addition to individual values or slices in a Variable.
+
+*@par Inputs:
+* Three inputs, including:
+*@li x: An ND Tensor. \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+*@li indices: An ND Tensor. \n
+
+*Must be one of the following types: int32
+*@li updates: An ND Tensor. \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "x".
+
+*/
+REG_OP(TensorScatterSub)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OP_END_FACTORY_REG(TensorScatterSub)
 
 /**
 *@brief Subtracts sparse updates to a variable reference.
@@ -492,34 +570,35 @@ REG_OP(DiagPart)
 *@brief Also known as a "fully-connected" layer, computes an inner product with a set of learned weights, and (optionally) adds biases.
 
 *@par Inputs:
-* Two inputs, including:
+* Four inputs, including:
 *@li x: A Tensor of type float16, int8.
 *@li w: A weight matrix of type float16, int8.
-*@li b: A Tensor of type float16, int32.
+*@li b: A Tensor of type float16, int32, float32.
 *@li offset_w: A Tensor of type int8.
 
 *@par Attributes:
 *@li num_output: Reserved.
 *@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
-*@li bias_term: A bool, specifying whether to learn and apply a set of additive biases to the filter outputs, either "true" or "false". Defaults to "true".
-*@li axis: only support axis is 1. Defaults to "1".
-*@li offset_a: A type of Int, Defaults to "1".
+*@li axis: Reserved.
+*@li offset_x: Reserved.
 
 *@par Outputs:
-*y: The result tensor of type float16, int8.
+*y: The result tensor of type float16, int8, float32.
+
+*@par Quantization supported or not
+* Yes
 */
-REG_OP(InnerProduct)
+REG_OP(FullyConnection)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
     .INPUT(w, TensorType({DT_FLOAT16, DT_INT8}))
-    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32}))
+    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32}))
     .REQUIRED_ATTR(num_output, Int)
     .ATTR(transpose, Bool, false)
-    .ATTR(bias_term, Bool, true)
     .ATTR(axis, Int, 1)
-    .ATTR(offset_a, Int, 0)
-    .OP_END_FACTORY_REG(InnerProduct)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(FullyConnection)
 
 /**
 *@brief Computes the confusion matrix from predictions and labels.
@@ -672,6 +751,96 @@ REG_OP(ScatterUpdate)
     .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterUpdate)
+
+/**
+*@brief Returns a tensor with the `k[0]`-th to `k[1]`-th diagonals of the batched `input`.
+
+*@par Inputs:
+* Three inputs, including:
+*@li input: Rank `r` tensor where `r >= 2`. \n
+
+*@li k: \n
+*Diagonal offset(s). Positive value means superdiagonal, 0 refers to the main \n
+*diagonal, and negative value means subdiagonals. `k` can be a single integer \n
+*(for a single diagonal) or a pair of integers specifying the low and high ends \n
+*of a matrix band. `k[0]` must not be larger than `k[1]`. \n
+
+*@li padding_value: The value to fill the area outside the specified diagonal band with. \n
+
+*@par Outputs:
+*diagonal: The extracted diagonal(s).
+
+*/
+REG_OP(MatrixDiagPartV2)
+    .INPUT(input, TensorType::BasicType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .INPUT(padding_value, TensorType::BasicType())
+    .OUTPUT(diagonal, TensorType::BasicType())
+    .OP_END_FACTORY_REG(MatrixDiagPartV2)
+
+/**
+*@brief Returns a batched matrix tensor with new batched diagonal values.
+
+*@par Inputs:
+* Three inputs, including:
+*@li input: "Rank `r+1`, where `r >= 1`. \n
+
+*@li diagonal: Rank `r` when `k` is an integer or `k[0] == k[1]`. Otherwise, it has rank `r+1`. \n
+
+*@li k:
+*Diagonal offset(s). Positive value means superdiagonal, 0 refers to the main \n
+*diagonal, and negative value means subdiagonals. `k` can be a single integer \n
+*(for a single diagonal) or a pair of integers specifying the low and high ends \n
+*of a matrix band. `k[0]` must not be larger than `k[1]`. \n
+
+*@par Outputs:
+*output: Rank `r+1`, with `output.shape = input.shape`.
+
+*/
+REG_OP(MatrixSetDiagV2)
+    .INPUT(input, TensorType::BasicType())
+    .INPUT(diagonal, TensorType::BasicType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .OUTPUT(output, TensorType::BasicType())
+    .OP_END_FACTORY_REG(MatrixSetDiagV2)
+
+/**
+*@brief Returns a batched diagonal tensor with given batched diagonal values.
+
+*@par Inputs:
+* Five inputs, including:
+*@li diagonal: Rank `r`, where `r >= 1` \n
+
+*@li k:
+*Diagonal offset(s). Positive value means superdiagonal, 0 refers to the main \n
+*diagonal, and negative value means subdiagonals. `k` can be a single integer \n
+*(for a single diagonal) or a pair of integers specifying the low and high ends \n
+*of a matrix band. `k[0]` must not be larger than `k[1]`. \n
+
+*@li num_rows:
+*The number of rows of the output matrix. If it is not provided, the op assumes \n
+*the output matrix is a square matrix and infers the matrix size from k and the \n
+*innermost dimension of `diagonal`. \n
+
+*@li num_cols: An NCHW, NHWC, or ND Tensor.
+*The number of columns of the output matrix. If it is not provided, the op \n
+*assumes the output matrix is a square matrix and infers the matrix size from \n
+*k and the innermost dimension of `diagonal`. \n
+
+*@li padding_value: The number to fill the area outside the specified diagonal band with. \n
+
+*@par Outputs:
+*output: Has rank `r+1` when `k` is an integer or `k[0] == k[1]`, rank `r` otherwise.
+
+*/
+REG_OP(MatrixDiagV2)
+    .INPUT(diagonal, TensorType::BasicType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .INPUT(num_rows, TensorType({DT_INT32}))
+    .INPUT(num_cols, TensorType({DT_INT32}))
+    .INPUT(padding_value, TensorType::BasicType())
+    .OUTPUT(output, TensorType::BasicType())
+    .OP_END_FACTORY_REG(MatrixDiagV2)
 
 }  // namespace ge
 

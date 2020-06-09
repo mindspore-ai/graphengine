@@ -16,7 +16,6 @@
 
 #include "graph/build/memory/var_mem_assign_util.h"
 #include <vector>
-#include "common/op/attr_define.h"
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/common/transop_util.h"
@@ -50,11 +49,11 @@ Status VarMemAssignUtil::AssignMemory2VariableNode(ge::ComputeGraphPtr &compute_
 
 Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_graph) {
   GE_IF_BOOL_EXEC(compute_graph == nullptr, return FAILED);
-  for (const ge::NodePtr &n : compute_graph->GetDirectNode()) {
-    GE_IF_BOOL_EXEC((n->GetType() != domi::VARIABLE) && (n->GetType() != domi::CONSTANTOP), continue);
+  for (const ge::NodePtr &n : compute_graph->GetAllNodes()) {
+    GE_IF_BOOL_EXEC((n->GetType() != VARIABLE) && (n->GetType() != CONSTANTOP), continue);
     string ref_var_src_var_name;
     GE_CHECK_NOTNULL(n->GetOpDesc());
-    GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(n->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name), continue);
+    GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(n->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name), continue);
     string node_name = n->GetName();
     GE_IF_BOOL_EXEC(n->GetOpDesc()->GetAllOutputsDesc().empty(),
                     GELOGE(FAILED, "node:%s has no OutputDesc.", n->GetName().c_str());
@@ -64,7 +63,7 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
     if (!VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(node_name, *tensor_desc)) {
       GE_CHK_STATUS_RET(
         VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, RT_MEMORY_HBM));
-      GE_IF_BOOL_EXEC(n->GetType() == domi::VARIABLE,
+      GE_IF_BOOL_EXEC(n->GetType() == VARIABLE,
                       GE_CHK_STATUS_RET(AssignData2Fp32Var(n, compute_graph->GetSessionID())));
       GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
                           ->SetAllocatedGraphId(node_name, compute_graph->GetGraphID()));
@@ -85,7 +84,7 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
 Status VarMemAssignUtil::AssignData2Fp32Var(const ge::NodePtr &node, uint64_t session_id) {
   string src_var_name;
   GE_CHECK_NOTNULL(node->GetOpDesc());
-  if (ge::AttrUtils::GetStr(node->GetOpDesc(), domi::VAR_ATTR_SRC_VAR_NAME, src_var_name)) {
+  if (ge::AttrUtils::GetStr(node->GetOpDesc(), VAR_ATTR_SRC_VAR_NAME, src_var_name)) {
     ge::GeTensorDesc cur_tensor_desc;
     uint8_t *dev_ptr = nullptr;
     rtMemType_t memory_type = RT_MEMORY_HBM;
@@ -99,12 +98,11 @@ Status VarMemAssignUtil::AssignData2Fp32Var(const ge::NodePtr &node, uint64_t se
 }
 
 Status VarMemAssignUtil::AssignVarAttr2Nodes(ge::ComputeGraphPtr &compute_graph) {
-  for (const ge::NodePtr &node : compute_graph->GetDirectNode()) {
-    GE_IF_BOOL_EXEC(node->GetType() != domi::VARIABLE, continue);
+  for (const ge::NodePtr &node : compute_graph->GetAllNodes()) {
+    GE_IF_BOOL_EXEC(node->GetType() != VARIABLE, continue);
     string ref_var_src_var_name;
     GE_CHECK_NOTNULL(node->GetOpDesc());
-    GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name),
-                    continue);
+    GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name), continue);
     GE_CHK_STATUS_RET(DealVariableNode(compute_graph->GetGraphID(), node, compute_graph->GetSessionID()));
   }
   return SUCCESS;
@@ -142,8 +140,7 @@ Status VarMemAssignUtil::DealExportVariableNode(const ge::NodePtr &node, const g
   GE_IF_BOOL_EXEC(var_out_anchor == nullptr, return FAILED);
   for (const ge::InDataAnchorPtr &dst_in_var_anchor : var_out_anchor->GetPeerInDataAnchors()) {
     ge::NodePtr dst_node = dst_in_var_anchor->GetOwnerNode();
-    if ((dst_node->GetType() == domi::ASSIGN) || (dst_node->GetType() == domi::ASSIGNADD) ||
-        (dst_node->GetType() == domi::ASSIGNSUB)) {
+    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
       if (dst_in_var_anchor == dst_node->GetInDataAnchor(0)) {
         GE_CHK_STATUS_RET(DealExportVariableNode(dst_node, var_node, session_id));
       }
@@ -211,20 +208,19 @@ Status VarMemAssignUtil::DealVariableNode(uint32_t graph_id, const ge::NodePtr &
   for (const ge::OutDataAnchorPtr &var_out_data_anchor : node->GetAllOutDataAnchors()) {
     for (const ge::InDataAnchorPtr &dst_in_data_anchor : var_out_data_anchor->GetPeerInDataAnchors()) {
       ge::NodePtr dst_node = dst_in_data_anchor->GetOwnerNode();
-      if (dst_node->GetType() == domi::HCOMBROADCAST) {
+      if (dst_node->GetType() == HCOMBROADCAST) {
         GE_CHK_STATUS_RET(DealBroadCastNode(graph_id, dst_node, dst_in_data_anchor, node, session_id));
         continue;
       }
 
-      if ((dst_node->GetType() == domi::ASSIGN) || (dst_node->GetType() == domi::ASSIGNADD) ||
-          (dst_node->GetType() == domi::ASSIGNSUB)) {
+      if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
         if (dst_in_data_anchor == dst_node->GetInDataAnchor(0)) {
           GE_CHK_STATUS_RET(DealExportVariableNode(dst_node, node, session_id));
         }
       }
       auto dst_type = dst_node->GetType();
-      bool is_trans_node = (dst_type == domi::TRANSDATA) || (dst_type == domi::CAST) || (dst_type == domi::TRANSPOSE) ||
-                           (dst_type == domi::PERMUTE);
+      bool is_trans_node =
+        (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
       if (is_trans_node) {
         NodePtr final_trans_node = GetFinalTransNode(dst_node);
         GE_CHK_STATUS_RET(DealTransNode(final_trans_node));
@@ -241,8 +237,8 @@ ge::NodePtr VarMemAssignUtil::GetFinalTransNode(const ge::NodePtr &trans_node) {
   for (const auto &dst_in_anchor : trans_out_data_anchor->GetPeerInDataAnchors()) {
     NodePtr dst_node = dst_in_anchor->GetOwnerNode();
     auto dst_type = dst_node->GetType();
-    bool is_trans_node = (dst_type == domi::TRANSDATA) || (dst_type == domi::CAST) || (dst_type == domi::TRANSPOSE) ||
-                         (dst_type == domi::PERMUTE);
+    bool is_trans_node =
+      (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
     if (is_trans_node && (dst_in_anchor->GetIdx() == 0)) {
       final_ref_node = GetFinalTransNode(dst_node);
     }
@@ -256,8 +252,7 @@ Status VarMemAssignUtil::DealTransNode(const ge::NodePtr &final_trans_node) {
   GE_IF_BOOL_EXEC(final_trans_out_anchor == nullptr, return SUCCESS);
   for (const ge::InDataAnchorPtr &dst_in_var_anchor : final_trans_out_anchor->GetPeerInDataAnchors()) {
     ge::NodePtr dst_node = dst_in_var_anchor->GetOwnerNode();
-    if ((dst_node->GetType() == domi::ASSIGN) || (dst_node->GetType() == domi::ASSIGNADD) ||
-        (dst_node->GetType() == domi::ASSIGNSUB)) {
+    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
       GE_CHK_STATUS_RET(DealExportTransNode(dst_node, final_trans_node));
     }
   }
@@ -269,8 +264,7 @@ Status VarMemAssignUtil::DealExportTransNode(const ge::NodePtr &node, const ge::
   GE_CHECK_NOTNULL(node_out_anchor);
   for (const ge::InDataAnchorPtr &dst_in_var_anchor : node_out_anchor->GetPeerInDataAnchors()) {
     ge::NodePtr dst_node = dst_in_var_anchor->GetOwnerNode();
-    if ((dst_node->GetType() == domi::ASSIGN) || (dst_node->GetType() == domi::ASSIGNADD) ||
-        (dst_node->GetType() == domi::ASSIGNSUB)) {
+    if ((dst_node->GetType() == ASSIGN) || (dst_node->GetType() == ASSIGNADD) || (dst_node->GetType() == ASSIGNSUB)) {
       GE_CHK_STATUS_RET(DealExportTransNode(dst_node, final_trans_node));
     }
   }
@@ -303,10 +297,10 @@ Status VarMemAssignUtil::SetOutTransNodeToAssign(const ge::NodePtr &node, const 
 }
 
 Status VarMemAssignUtil::AssignMemory2HasRefAttrNode(ge::ComputeGraphPtr &compute_graph) {
-  for (const ge::NodePtr &n : compute_graph->GetDirectNode()) {
+  for (const ge::NodePtr &n : compute_graph->GetAllNodes()) {
     string ref_var_src_var_name;
     GE_CHECK_NOTNULL(n->GetOpDesc());
-    bool is_ref = ge::AttrUtils::GetStr(n->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
+    bool is_ref = ge::AttrUtils::GetStr(n->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
     GE_IF_BOOL_EXEC(is_ref,
                     GE_CHK_STATUS_RET(AssignData2VarRef(n, ref_var_src_var_name, compute_graph->GetSessionID())));
   }
@@ -329,7 +323,7 @@ Status VarMemAssignUtil::AssignData2VarRef(const ge::NodePtr &has_ref_attr_node,
   GE_CHECK_SIZE(ref_attr_node_output_list.size());
 
   int out_index = 0;
-  bool is_get = ge::AttrUtils::GetInt(var_ref_src_var->GetOpDesc(), domi::REF_VAR_PRE_PEER_OUT_INDEX, out_index);
+  bool is_get = ge::AttrUtils::GetInt(var_ref_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, out_index);
   if (!is_get) {
     GELOGI("%s failed to get attr [REF_VAR_PRE_PEER_OUT_INDEX]", var_ref_src_var->GetName().c_str());
   }

@@ -27,10 +27,8 @@
 #include "graph/common/omg_util.h"
 #include "graph/graph.h"
 #include "graph/node.h"
-#include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
-
-using domi::MEMCPYASYNC;
+#include "graph/utils/graph_utils.h"
 
 namespace ge {
 const char *const kGetNext = "GetNext";

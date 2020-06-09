@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INC_EXTERNAL_GRAPH_USR_TYPES_H_
-#define INC_EXTERNAL_GRAPH_USR_TYPES_H_
+#ifndef INC_GRAPH_USR_TYPES_H_
+#define INC_GRAPH_USR_TYPES_H_
 
 #include <atomic>
 #include <memory>
@@ -130,4 +130,4 @@ struct UsrQuantizeFactorParams {
 #undef USR_TYPE_BYTES_DEC
 }  // namespace ge
 
-#endif  // INC_EXTERNAL_GRAPH_USR_TYPES_H_
+#endif  // INC_GRAPH_USR_TYPES_H_

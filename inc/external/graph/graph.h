@@ -55,11 +55,15 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus FindOpByName(const string &name, ge::Operator &op) const;
 
+  graphStatus FindOpByType(const string &type, std::vector<ge::Operator> &ops) const;
+
   graphStatus GetAllOpName(std::vector<string> &op_name) const;
 
   graphStatus SaveToFile(const string &file_name) const;
 
   graphStatus LoadFromFile(const string &file_name);
+
+  const std::string &GetName() const;
 
   ///
   /// Set is need train iteration.

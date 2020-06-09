@@ -97,6 +97,10 @@ class OpsKernelManager {
 
   Status ParsePluginOptions(const map<string, string> &options, const string &plugin_name, bool &enable_flag);
 
+  Status LoadGEGraphOptimizer(map<string, GraphOptimizerPtr> &graphOptimizer);
+
+  Status InitGraphOptimizerPriority();
+
   PluginManager plugin_manager_;
   // opsKernelInfoStore
   map<string, OpsKernelInfoStorePtr> ops_kernel_store_{};

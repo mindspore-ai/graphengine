@@ -23,9 +23,12 @@
 #include "graph/utils/tensor_utils.h"
 #include "omg/omg_inner_types.h"
 
+namespace {
+const char *const kSummary = "Summary";
+const int kMaxMapSize = 10000;
+}  // namespace
+
 namespace ge {
-static const char *const kSummary = "Summary";
-static const int kMaxMapSize = 10000;
 Status GraphOptimize::HandleSummaryOp(ComputeGraphPtr &compute_graph) {
   GELOGI("[HandleSummaryOp] HandleSummaryOp start!");
   if (summary_output_indexes_.size() >= kMaxMapSize) {

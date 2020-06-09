@@ -44,10 +44,15 @@
 
 namespace ge {
 class OperatorImpl;
-
+class NamedAttrs;
+class Graph;
 class AttrValue;
 
+using SubgraphBuilder = std::function<Graph(const std::string &name)>;
 using OperatorImplPtr = std::shared_ptr<OperatorImpl>;
+
+class Graph;
+using GraphBuilderCallback = std::function<Graph()>;
 
 class OpIO;
 using OutHandler = std::shared_ptr<OpIO>;
@@ -69,6 +74,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   using OpBool = bool;
   using OpTensor = Tensor;
   using OpType = ge::DataType;
+  using OpNamedAttrs = ge::NamedAttrs;
   using OpListInt = std::vector<int64_t>;
   using OpListFloat = std::vector<float>;
   using OpListString = std::vector<string>;
@@ -77,6 +83,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   using OpBytes = std::vector<uint8_t>;
   using OpListListInt = std::vector<std::vector<int64_t>>;
   using OpListType = std::vector<ge::DataType>;
+  using OpListNamedAttrs = std::vector<ge::NamedAttrs>;
 
   Operator() {}
 
@@ -131,6 +138,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
 
   void SetInferenceContext(const InferenceContextPtr &inference_context);
   InferenceContextPtr GetInferenceContext() const;
+
+  void SetGraphBuilder(const GraphBuilderCallback &builder);
+  graphStatus GetGraphBuilder(GraphBuilderCallback &builder) const;
+
+  void AddSubgraphName(const string &name);
+  string GetSubgraphName(int index) const;
 
   graphStatus VerifyAllAttr(bool disable_common_verifier = false);
 
@@ -190,7 +203,20 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   Operator &SetAttr(const string &name, const ge::DataType &attr_value);
   graphStatus GetAttr(const string &name, ge::DataType &attr_value) const;
 
+  // func type
+  Operator &SetAttr(const string &name, const ge::NamedAttrs &attr_value);
+  graphStatus GetAttr(const string &name, ge::NamedAttrs &attr_value) const;
+  Operator &SetAttr(const string &name, const std::vector<ge::NamedAttrs> &attr_value);
+  graphStatus GetAttr(const string &name, std::vector<ge::NamedAttrs> &attr_value) const;
+
   void BreakConnect() const;
+
+  size_t GetSubgraphNamesCount() const;
+  std::vector<std::string> GetSubgraphNames() const;
+  SubgraphBuilder GetSubgraphBuilder(const string &name) const;
+  Graph GetSubgraph(const string &name) const;
+  SubgraphBuilder GetDynamicSubgraphBuilder(const string &name, uint32_t index) const;
+  Graph GetDynamicSubgraph(const string &name, uint32_t index) const;
 
  protected:
   void AttrRegister(const string &name, float attr_value);
@@ -207,6 +233,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   void AttrRegister(const string &name, const std::vector<std::vector<int64_t>> &attr_value);
   void AttrRegister(const string &name, const std::vector<ge::DataType> &attr_value);
   void AttrRegister(const string &name, const ge::DataType &attr_value);
+  void AttrRegister(const string &name, const ge::NamedAttrs &attr_value);
+  void AttrRegister(const string &name, const std::vector<ge::NamedAttrs> &attr_value);
 
   explicit Operator(OperatorImplPtr &&op_impl);
 
@@ -224,6 +252,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
 
   void DynamicInputRegister(const string &name, const unsigned int num, bool is_push_back = true);
 
+  void DynamicInputRegisterByIndex(const string &name, const unsigned int num, size_t index);
+
   void DynamicOutputRegister(const string &name, const unsigned int num, bool is_push_back = true);
 
   void RequiredAttrRegister(const string &name);
@@ -234,6 +264,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
   Operator &SetInput(const string &dst_name, uint32_t dst_index, const Operator &src_oprt);
 
   Operator &SetInput(const string &dst_name, uint32_t dst_index, const Operator &src_oprt, const string &name);
+
+  void SubgraphRegister(const std::string &name, bool dynamic);
+  void SubgraphCountRegister(const std::string &name, uint32_t count);
+  void SetSubgraphBuilder(const std::string &name, uint32_t index, const SubgraphBuilder &builder);
 
  private:
   Operator &SetInput(const string &dst_name, const OutHandler &out_handler);

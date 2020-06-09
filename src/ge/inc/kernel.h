@@ -24,9 +24,9 @@
 #include "graph/graph.h"
 #include "graph/op_desc.h"
 
-using std::vector;
-using std::unique_ptr;
 using std::shared_ptr;
+using std::unique_ptr;
+using std::vector;
 
 namespace ge {
 ///
@@ -48,20 +48,6 @@ class Kernel {
     (void)op_desc_ptr;
     (void)input;
     (void)v_output;
-    return NOT_CHANGED;
-  }
-
-  ///
-  /// Data description transformation interface
-  /// @param [in] op_desc_ptr Operator related parameters
-  /// @param [in] input Data description（include dimension、format、data type etc.）
-  /// @param [inout] output save the transformation result
-  /// @author
-  ///
-  virtual Status Compute(const ge::OpDescPtr op_desc_ptr, const ge::GeTensorDescPtr input, ge::GeTensorDescPtr output) {
-    (void)op_desc_ptr;
-    (void)input;
-    (void)output;
     return NOT_CHANGED;
   }
 

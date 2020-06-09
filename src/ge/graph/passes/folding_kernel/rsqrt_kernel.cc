@@ -28,10 +28,6 @@
 #include "graph/passes/folding_kernel/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::PARAM_INVALID;
-using domi::RSQRT;
-using domi::SUCCESS;
-
 namespace ge {
 namespace {
 const size_t kRsqrtInputSize = 1;
@@ -49,6 +45,10 @@ Status RsqrtKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
 
   ConstGeTensorPtr input_ = input.at(kRsqrtInputIndex0);
   GE_CHECK_NOTNULL(input_);
+  if (input_->GetTensorDesc().GetDataType() != DT_FLOAT) {
+    GELOGW("input data type must be FP32.");
+    return NOT_CHANGED;
+  }
   const GeShape &x_shape = input_->GetTensorDesc().GetShape();
 
   size_t data_size = input_->GetData().size();

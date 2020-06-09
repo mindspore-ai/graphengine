@@ -18,18 +18,15 @@
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
 #include "common/opskernel/ops_kernel_info_types.h"
-#include "graph/build/stream_graph_optimizer.h"
 #include "graph/build/run_context.h"
+#include "graph/build/stream_graph_optimizer.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "model/ge_model.h"
 
-using domi::ATTR_MODEL_MEMORY_SIZE;
-using domi::ATTR_MODEL_WEIGHT_SIZE;
 using domi::BuildMode;
-using domi::DATA;
 
 namespace {
 const int32_t kInvalidPerfLevel = -1;
@@ -101,8 +98,10 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
 
   Status ret = SecondPartition(comp_graph, subgraph_ptr_list);
   GE_CHK_STATUS_RET(ret, "Graph second partition Failed.");
+  auto subgraph_map = graph_partitioner_.GetSubGraphMap();
+
   GE_TIMESTAMP_START(BuildSubgraph);
-  ge::ModelBuilder builder(comp_graph, subgraph_ptr_list, stream_max_parallel_num_, hcom_parallel_, build_mode_);
+  ge::ModelBuilder builder(comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
 
   GELOGI("[Build] invoke the other opskernel to generate task.");
 
@@ -133,12 +132,8 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
   GraphUtils::DumpGEGraph(comp_graph, "AfterBuildModel");
   GraphUtils::DumpGEGraphToOnnx(*comp_graph, "AfterBuildModel");
 
-  for (auto graph : comp_graph->GetAllSubgraphs()) {
-    GraphUtils::DumpGEGraphToOnnx(*graph, "SubgraphGetTask");
-  }
-
   GE_TIMESTAMP_START(GetTaskInfo);
-  ret = GetTaskInfo(builder, model_ptr, comp_graph, subgraph_ptr_list, session_id);
+  ret = GetTaskInfo(builder, model_ptr, comp_graph, subgraph_map, session_id);
   GE_TIMESTAMP_END(GetTaskInfo, "GraphBuilder::GetTaskInfo");
 
   GraphUtils::DumpGEGraph(comp_graph, "AfterGetTask");
@@ -147,6 +142,11 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
     GELOGE(ret, "Builder GetTaskInfo() return fail.");
     return ret;
   }
+
+  for (auto graph : comp_graph->GetAllSubgraphs()) {
+    GraphUtils::DumpGEGraphToOnnx(*graph, "SubgraphGetTask");
+  }
+
   ge_model_ptr = MakeShared<ge::GeModel>();
   if (ge_model_ptr == nullptr) {
     return MEMALLOC_FAILED;
@@ -158,7 +158,7 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
 }
 
 Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr &model_ptr,
-                                 ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+                                 ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map,
                                  uint64_t session_id) {
   GE_CHECK_NOTNULL(model_ptr);
   GE_CHECK_NOTNULL(comp_graph);
@@ -173,7 +173,8 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
     GELOGE(INTERNAL_ERROR, "Get weight memory size fail.");
     return INTERNAL_ERROR;
   }
-  auto *get_mem_base = reinterpret_cast<uint8_t *>(ge::VarManager::Instance(0)->GetVarMemMaxSize());
+  auto *get_mem_base =
+    reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(ge::VarManager::Instance(0)->GetVarMemMaxSize()));
   uint8_t *get_weight_mem_base = get_mem_base;
   if (weight_size > 0) {
     get_weight_mem_base = get_mem_base + memory_size;
@@ -193,7 +194,7 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
   }
 
   StreamGraphOptimizer stream_optimizer;
-  ret = stream_optimizer.OptimizeStreamedSubGraph(comp_graph, subgraph_ptr_list, run_context.GetRunContext());
+  ret = stream_optimizer.OptimizeStreamedSubGraph(comp_graph, subgraph_map, run_context.GetRunContext());
   if (ret != SUCCESS) {
     GELOGE(ret, "Optimize streamed subGraph fail.");
     return ret;
@@ -202,7 +203,8 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
   GraphUtils::DumpGEGraph(comp_graph, "AfterOptimizeStreamedSubGraph");
   GraphUtils::DumpGEGraphToOnnx(*comp_graph, "AfterOptimizeStreamedSubGraph");
 
-  auto *get_var_mem_base = reinterpret_cast<uint8_t *>(ge::VarManager::Instance(0)->GetVarMemLogicBase());
+  auto *get_var_mem_base =
+    reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(ge::VarManager::Instance(0)->GetVarMemLogicBase()));
   uint64_t var_size = (ge::VarManager::Instance(session_id)->GetVarMemSize(RT_MEMORY_HBM) > 0)
                         ? ge::VarManager::Instance(0)->GetVarMemMaxSize()
                         : 0;

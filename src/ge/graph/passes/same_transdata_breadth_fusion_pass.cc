@@ -28,13 +28,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "init/gelib.h"
 
-using domi::ATTR_NAME_STREAM_LABEL;
-using domi::CAST;
-using domi::RESHAPE;
-using domi::TRANSDATA;
-using domi::TRANSPOSE;
-using domi::TRANSPOSED;
-
 namespace {
 const char *const kRemainNode = "node_remain";
 const int kNoTransOp = 1;
@@ -351,7 +344,7 @@ graphStatus SameTransdataBreadthFusionPass::Run(ComputeGraphPtr graph) {
     return GRAPH_SUCCESS;
   }
 
-  for (auto &node : graph->GetAllNodes()) {
+  for (auto &node : graph->GetDirectNode()) {
     if (IsTransOp(node) || node->GetOutDataNodes().size() <= 1) {
       continue;
     }

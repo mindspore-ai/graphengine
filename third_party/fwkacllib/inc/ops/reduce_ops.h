@@ -17,7 +17,7 @@
 #ifndef GE_OP_REDUCE_OPS_H
 #define GE_OP_REDUCE_OPS_H
 
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 /**
@@ -630,6 +630,55 @@ REG_OP(Reduction)
     .ATTR(axis, Int, 0)
     .ATTR(coeff, Float, 1.0)
     .OP_END_FACTORY_REG(Reduction);
+
+/**
+*@brief Computes the euclidean norm of elements across dimensions of a tensor.
+
+*@par Inputs:
+*@li input_tensor: A Tensor. Must be one of the following types: float16, float32, int32.
+*@li axes: A Tensor of type int8 or int32. Specifies the dimensions to reduce. Defaults to "None".
+
+*@par Attributes:\n
+*keep_dims: An optional bool. If "True", reduced dimensions will be retained. Defaults to "False".
+
+*@par Outputs:\n
+*output_tensor: A Tensor. Must be one of the following types: float16, float32, int32.
+
+*@attention Constraints:\n
+* If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)).
+
+*/
+REG_OP(EuclideanNorm)
+    .INPUT(x, TensorType::NumberType())
+    .INPUT(axes, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::NumberType())
+    .ATTR(keep_dims, Bool, false)
+    .OP_END_FACTORY_REG(EuclideanNorm)
+
+/**
+*@brief Computes the euclidean norm of elements across dimensions of a tensor.
+
+*@par Inputs:\n
+*input_min: A Tensor. Must be one of the following types: float16, float32, int32.
+
+*@par Attributes:
+*@li axes: An optional int32, list, tuple, or NoneType value. Specifies the dimensions to reduce. Defaults to "None".
+*@li keep_dims: An optional bool or NoneType value. If "True", reduced dimensions will be retained. Defaults to "None" (equivalent to "False").
+
+*@par Outputs:\n
+*output_min: A Tensor. Must be one of the following types: float16, float32, int32.
+
+*@attention Constraints:\n
+* If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)).
+
+*/
+REG_OP(EuclideanNormD)
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))
+    .ATTR(axes, ListInt, {})
+    .ATTR(keep_dims, Bool, false)
+    .OP_END_FACTORY_REG(EuclideanNormD)
+
 } //namespace ge
 
 

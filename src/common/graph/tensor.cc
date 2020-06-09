@@ -29,6 +29,7 @@ namespace {
 /// Extra 1 byte store '\0'
 const int EXTRA_STORE_POINTER_FOR_STRING = 8;
 const int EXTRA_STORE_POINTER_FOR_STRING_AND_END_SYMBOL = 9;
+const int64_t UNKNOWN_DIM_SIZE = -1;
 }  // namespace
 
 namespace ge {
@@ -65,6 +66,7 @@ class TensorDescImpl {
   TensorDescImpl(const Shape &shape, Format format, DataType dt) : shape_(shape), format_(format), data_type_(dt) {}
 
   Shape shape_;
+  std::vector<std::pair<int64_t, int64_t>> range_;
   Format format_ = FORMAT_ND;
   Format origin_format_ = FORMAT_ND;
   DataType data_type_ = DT_FLOAT;
@@ -94,7 +96,16 @@ class ShapeImpl {
  public:
   ShapeImpl() = default;
   ~ShapeImpl() = default;
-  explicit ShapeImpl(const std::vector<int64_t> &dims) : dims_(dims) {}
+  explicit ShapeImpl(const std::vector<int64_t> &dims) {
+    bool is_unknown_dim_num = false;
+    for (const auto &dim : dims) {
+      if (dim == UNKNOWN_DIM_NUM) {
+        is_unknown_dim_num = true;
+        break;
+      }
+    }
+    dims_ = is_unknown_dim_num ? std::vector<int64_t>({UNKNOWN_DIM_NUM}) : dims;
+  }
 
   std::vector<int64_t> dims_;
 };
@@ -105,6 +116,11 @@ Shape::Shape(const std::vector<int64_t> &dims) { impl_ = ComGraphMakeShared<Shap
 
 size_t Shape::GetDimNum() const {
   if (impl_ != nullptr) {
+    for (auto i : impl_->dims_) {
+      if (i == UNKNOWN_DIM_NUM) {
+        return 0;
+      }
+    }
     return impl_->dims_.size();
   }
   return 0;
@@ -146,6 +162,10 @@ int64_t Shape::GetShapeSize() const {
     }
     int64_t size = 1;
     for (auto i : impl_->dims_) {
+      if (i == UNKNOWN_DIM_NUM || i == UNKNOWN_DIM) {
+        return UNKNOWN_DIM_SIZE;
+      }
+
       if (!Int64MulNotOverflow(size, i)) {
         GELOGE(GRAPH_FAILED, "mul overflow: %ld, %ld", size, i);
         size = 0;
@@ -215,6 +235,34 @@ void TensorDesc::SetShape(const Shape &shape) {
   if (impl != nullptr) {
     impl->shape_ = shape;
   }
+}
+
+// set shape with -2, it stand for unknown shape
+graphStatus TensorDesc::SetUnknownDimNumShape() {
+  if (impl != nullptr) {
+    impl->shape_ = Shape({UNKNOWN_DIM_NUM});
+    return GRAPH_SUCCESS;
+  }
+  GELOGE(GRAPH_FAILED, "Set unknown shape failed,because no impl class!");
+  return GRAPH_FAILED;
+}
+
+// for unknown shape
+graphStatus TensorDesc::SetShapeRange(const std::vector<std::pair<int64_t, int64_t>> &range) {
+  if (impl != nullptr) {
+    impl->range_ = range;
+    return GRAPH_SUCCESS;
+  }
+  GELOGE(GRAPH_FAILED, "SetShapeRange failed!impl is nullptr!");
+  return GRAPH_FAILED;
+}
+graphStatus TensorDesc::GetShapeRange(std::vector<std::pair<int64_t, int64_t>> &range) const {
+  if (impl != nullptr) {
+    range = impl->range_;
+    return GRAPH_SUCCESS;
+  }
+  GELOGE(GRAPH_FAILED, "impl is nullptr!");
+  return GRAPH_FAILED;
 }
 
 Shape TensorDesc::GetOriginShape() const {
@@ -541,6 +589,17 @@ GeTensorDesc TensorAdapter::TensorDesc2GeTensorDesc(const TensorDesc &tensor_des
                               tensor_desc.GetDataType());
   ge_tensor_desc.SetOriginShape(GeShape(tensor_desc.GetOriginShape().GetDims()));
   ge_tensor_desc.SetOriginFormat(tensor_desc.GetOriginFormat());
+  std::vector<std::pair<int64_t, int64_t>> shape_range;
+  auto status = tensor_desc.GetShapeRange(shape_range);
+  if (status != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Get shape range failed!");
+    return ge_tensor_desc;
+  }
+  status = ge_tensor_desc.SetShapeRange(shape_range);
+  if (status != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Set shape range failed!");
+    return ge_tensor_desc;
+  }
   auto size = tensor_desc.GetSize();
   TensorUtils::SetSize(ge_tensor_desc, size);
 
@@ -554,6 +613,17 @@ TensorDesc TensorAdapter::GeTensorDesc2TensorDesc(const GeTensorDesc &ge_tensor_
                          ge_tensor_desc.GetDataType());
   tensor_desc.SetOriginShape(Shape(ge_tensor_desc.GetOriginShape().GetDims()));
   tensor_desc.SetOriginFormat(ge_tensor_desc.GetOriginFormat());
+  std::vector<std::pair<int64_t, int64_t>> shape_range;
+  auto status = ge_tensor_desc.GetShapeRange(shape_range);
+  if (status != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Get shape range failed!");
+    return tensor_desc;
+  }
+  status = tensor_desc.SetShapeRange(shape_range);
+  if (status != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Set shape range failed!");
+    return tensor_desc;
+  }
   int64_t size = 0;
   (void)TensorUtils::GetSize(ge_tensor_desc, size);
   tensor_desc.SetSize(size);

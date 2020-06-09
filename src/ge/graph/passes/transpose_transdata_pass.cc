@@ -23,12 +23,9 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/type_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
-
-using domi::TRANSDATA;
-using domi::TRANSPOSE;
-using domi::TRANSPOSED;
 
 namespace {
 const char *const kAttrNameSrcFormat = "src_format";
@@ -51,6 +48,17 @@ Status TransposeTransDataPass::Run(NodePtr &node) {
   }
   if (CheckOneInAndOneOutDataAnchor(node) != SUCCESS) {
     return FAILED;
+  }
+  bool is_unknown = false;
+  auto ret = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(), node->GetType().c_str());
+    return INTERNAL_ERROR;
+  }
+  if (is_unknown) {
+    GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
+           node->GetType().c_str());
+    return SUCCESS;
   }
   GELOGD("[%s] TransposeTransDataPass in.", node->GetName().c_str());
 

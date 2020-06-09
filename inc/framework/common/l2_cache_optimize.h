@@ -30,7 +30,7 @@
 
 using std::vector;
 
-namespace domi {
+namespace ge {
 // Size of RC memory alignment, 2M
 constexpr size_t ALIGN_SIZE = 2097152;
 
@@ -118,6 +118,6 @@ class L2CacheOptimize {
   bool Cross(const RCMemoryBlock &l_block, const RCMemoryBlock &r_block);
   bool Connect(const RCMemoryBlock &l_block, const RCMemoryBlock &r_block);
 };
-}  // namespace domi
+}  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_L2_CACHE_OPTIMIZE_H_

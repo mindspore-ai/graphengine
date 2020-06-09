@@ -19,12 +19,15 @@
 
 #include <memory>
 #include "graph/build/memory/mem_assigner.h"
+#include "graph/build/memory/block_mem_assigner.h"
 #include "graph/compute_graph.h"
 
 #include "common/types.h"
 #include "common/util.h"
 
 namespace ge {
+using BlockMemAssignerPtr = std::shared_ptr<BlockMemAssigner>;
+
 class BlockMemAssigner;
 
 class HybridMemAssigner : public MemAssigner {
@@ -41,12 +44,16 @@ class HybridMemAssigner : public MemAssigner {
 
   size_t GetMemOffset() const { return mem_offset_; }
 
+  BlockMemAssignerPtr GetPriorityAssinger() const { return priority_assigner_; }
+
  private:
   Status AssignMemory(std::unique_ptr<BlockMemAssigner> &block_assigner, size_t &mem_size);
 
   size_t mem_offset_;
 
   ge::ComputeGraphPtr compute_graph_;
+
+  BlockMemAssignerPtr priority_assigner_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MEMORY_HYBRID_MEM_ASSIGNER_H_

@@ -17,32 +17,26 @@
 #include "external/ge/ge_ir_build.h"
 
 #include <vector>
-#include "generator/ge_generator.h"
-#include "model/ge_model.h"
-#include "graph/ge_tensor.h"
-#include "init/gelib.h"
-#include "ge/ge_api_types.h"
-#include "graph/compute_graph.h"
-#include "graph/utils/type_utils.h"
-#include "external/register/register_types.h"
 #include "common/auth/file_saver.h"
-#include "offline/atc_ir_common.h"
+#include "external/register/register_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "framework/omg/omg_inner_types.h"
+#include "framework/common/string_util.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
-#include "framework/common/string_util.h"
 #include "framework/omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
+#include "ge/ge_api_types.h"
+#include "generator/ge_generator.h"
+#include "graph/compute_graph.h"
+#include "graph/ge_tensor.h"
+#include "graph/utils/type_utils.h"
+#include "init/gelib.h"
+#include "ir_build/atc_ir_common.h"
+#include "model/ge_model.h"
 
 using domi::GetContext;
-using domi::StringUtils;
-using ge::FileSaver;
-using ge::GRAPH_PARAM_INVALID;
-using ge::GRAPH_SUCCESS;
-using ge::ParseInputShape;
 using std::string;
-
 using namespace std;
 
 namespace ge {
@@ -90,10 +84,10 @@ class Impl {
     GetContext().out_nodes_map.clear();
     GetContext().user_out_nodes.clear();
     GetContext().net_format = domi::DOMI_TENSOR_RESERVED;
-    GetContext().type = domi::FRAMEWORK_RESERVED;
-    GetContext().run_mode = domi::ONLY_PRE_CHECK;
+    GetContext().type = domi::FMK_TYPE_RESERVED;
+    GetContext().run_mode = ONLY_PRE_CHECK;
     GetContext().train_flag = false;
-    GetContext().fp16_high_precision = domi::HIGH_PRECISION_DEFAULT;
+    GetContext().fp16_high_precision = HIGH_PRECISION_DEFAULT;
     GetContext().output_type.clear();
     GetContext().net_name.clear();
     GetContext().is_dynamic_input = false;
@@ -132,17 +126,6 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "user input options is not illegal!Please check!");
     return ret;
-  }
-
-  auto iter = options_.find(ge::ir_option::OP_NAME_MAP);
-  if (iter != options_.end()) {
-    // divided by ":"
-    PropertiesManager::Instance().SetPropertyDelimiter(IR_OP_CONF_DELIMITER);
-    // Parsing the op_conf configuration item file
-    GE_RETURN_WITH_LOG_IF_FALSE(PropertiesManager::Instance().Init(iter->second), "op_name_map init failed!");
-    // Return map and put it into ATC global variable
-    GetContext().op_conf_map.clear();
-    GetContext().op_conf_map = PropertiesManager::Instance().GetPropertyMap();
   }
 
   string input_shape = options_.find("input_shape") == options_.end() ? "" : options_["input_shape"];
@@ -189,7 +172,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
-    if (op->GetType() == domi::DATA) {
+    if (op->GetType() == DATA) {
       GELOGI("Data op inputDesc size is: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();
@@ -289,6 +272,7 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
     GELOGE(GRAPH_PARAM_INVALID, "input model is not illegal");
     return GRAPH_PARAM_INVALID;
   }
-  return FileSaver::SaveToFile((output_file + ".om"), (void *)model.data.get(), static_cast<uint32_t>(model.length));
+  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
+                               static_cast<uint32_t>(model.length));
 }
 }  // namespace ge

@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "common/opskernel/ge_task_info.h"
 #include "graph/load/new_model_manager/task_info/task_info.h"
@@ -59,6 +60,10 @@ class HcclTaskInfo : public TaskInfo {
 
   void GetPrivateDefByTaskDef(const domi::TaskDef &task);
 
+  void ReuseStream(int64_t stream_num, DavinciModel *davinci_model);
+
+  ge::Status CreateStream(int64_t stream_num, DavinciModel *davinci_model);
+
   DavinciModel *davinci_model_;
   string hccl_type_;
   void *input_data_addr_;
@@ -74,6 +79,8 @@ class HcclTaskInfo : public TaskInfo {
   void *ops_kernel_store_;
   void *private_def_;
   uint32_t private_def_len_;
+  static std::mutex hccl_follow_stream_mutex_;
+  static uint32_t max_node_of_hccl_stream_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_HCCL_TASK_INFO_H_

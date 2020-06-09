@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "graph/utils/node_utils.h"
 
 namespace ge {
 namespace {
@@ -47,6 +48,17 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
   KernelFactory &factory = KernelFactory::Instance();
   shared_ptr<Kernel> op_kernel = factory.Create(type);
   if (op_kernel == nullptr) {
+    return SUCCESS;
+  }
+  bool is_unknown = false;
+  auto ret_status = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+  if (ret_status != GRAPH_SUCCESS) {
+    GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(), node->GetType().c_str());
+    return INTERNAL_ERROR;
+  }
+  if (is_unknown) {
+    GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
+           node->GetType().c_str());
     return SUCCESS;
   }
 

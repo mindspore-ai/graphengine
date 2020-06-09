@@ -40,7 +40,6 @@
 #include "runtime/kernel.h"
 
 using Json = nlohmann::json;
-using domi::StringUtils;
 
 namespace ge {
 namespace {
@@ -58,10 +57,15 @@ Status GELib::Initialize(const map<string, string> &options) {
     GELOGE(GE_CLI_INIT_FAILED, "GeLib initialize failed, malloc shared_ptr failed.");
     return GE_CLI_INIT_FAILED;
   }
+  Status ret = instancePtr_->SetRTSocVersion(options);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GeLib initial failed.");
+    return ret;
+  }
   GetMutableGlobalOptions().insert(options.begin(), options.end());
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GE_TIMESTAMP_START(Init);
-  Status ret = instancePtr_->InnerInitialize(options);
+  ret = instancePtr_->InnerInitialize(options);
   if (ret != SUCCESS) {
     GELOGE(ret, "GeLib initial failed.");
     instancePtr_ = nullptr;
@@ -143,6 +147,35 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   return SUCCESS;
 }
 
+void GELib::SetIncreBuild(const map<string, string> &options) {
+  auto iter = options.find(OPTION_EXEC_ENABLE_INCRE_BUILD);
+  if (iter != options.end()) {
+    const std::string enable_incre_build = "true";
+    const std::string disable_incre_build = "false";
+    if (iter->second == enable_incre_build) {
+      is_incre_build_ = true;
+      GELOGI("Enable incre build.");
+      auto path_iter = options.find(OPTION_EXEC_INCRE_BUILD_CACHE_PATH);
+      if (path_iter != options.end()) {
+        std::string cache_path = path_iter->second;
+        if (!cache_path.empty() && cache_path[cache_path.size() - 1] != '/') {
+          cache_path += "/";
+        }
+        incre_build_cache_path_ = cache_path;
+      } else {
+        incre_build_cache_path_ = ".ge_cache/";
+      }
+      GELOGD("Using incre build cache path: %s.", incre_build_cache_path_.c_str());
+    } else if (iter->second == disable_incre_build) {
+      is_incre_build_ = false;
+      GELOGI("Disable incre build.");
+    } else {
+      is_incre_build_ = false;
+      GELOGW("Invalid ENABLE_INCRE_BUILD option, it should be true or false.");
+    }
+  }
+}
+
 Status GELib::SystemInitialize(const map<string, string> &options) {
   Status status = FAILED;
   auto iter = options.find(OPTION_GRAPH_RUN_MODE);
@@ -174,7 +207,15 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
       GELOGD("Get dump step %s successfully", dump_step.c_str());
       PropertiesManager::Instance().SetDumpStep(dump_step);
     }
+    auto mode_iter = options.find(OPTION_EXEC_DUMP_MODE);
+    if (mode_iter != options.end()) {
+      std::string dump_mode = mode_iter->second;
+      GELOGD("Get dump mode %s successfully", dump_mode.c_str());
+      PropertiesManager::Instance().SetDumpMode(dump_mode);
+    }
   }
+  // check incre build flag
+  SetIncreBuild(options);
 
   if (is_train_mode_) {
     InitOptions(options);
@@ -183,6 +224,17 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
     status = InitSystemWithoutOptions();
   }
   return status;
+}
+
+Status GELib::SetRTSocVersion(const map<string, string> &options) {
+  GELOGI("start SetRTSocVersion");
+  auto it = options.find(ge::SOC_VERSION);
+  if (it != options.end()) {
+    GE_CHK_RT_RET(rtSetSocVersion(it->second.c_str()));
+  } else {
+    GELOGW("options not find SOC_VERSION");
+  }
+  return SUCCESS;
 }
 
 void GELib::InitOptions(const map<string, string> &options) {
@@ -210,12 +262,18 @@ void GELib::InitOptions(const map<string, string> &options) {
   if (iter != options.end()) {
     std::istringstream(iter->second) >> this->options_.deployMode;
   }
-
   iter = options.find(OPTION_EXEC_POD_NAME);
   if (iter != options.end()) {
     this->options_.podName = iter->second.c_str();
   }
-
+  iter = options.find(OPTION_EXEC_PROFILING_MODE);
+  if (iter != options.end()) {
+    this->options_.profiling_mode = iter->second.c_str();
+  }
+  iter = options.find(OPTION_EXEC_PROFILING_OPTIONS);
+  if (iter != options.end()) {
+    this->options_.profiling_options = iter->second.c_str();
+  }
   iter = options.find(OPTION_EXEC_RANK_ID);
   if (iter != options.end()) {
     this->options_.rankId = std::strtoll(iter->second.c_str(), nullptr, kDecimal);
@@ -302,7 +360,9 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
   if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
     ProfilingManager::Instance().StopProfiling();
   }
-
+  if (ProfilingManager::Instance().ProfilingOn()) {
+    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+  }
   is_system_inited = false;
   is_shutdown = true;
 
@@ -383,6 +443,8 @@ Status GELib::Finalize() {
     }
   }
   is_train_mode_ = false;
+
+  GetMutableGlobalOptions().erase(ENABLE_SINGLE_STREAM);
 
   instancePtr_ = nullptr;
   init_flag_ = false;

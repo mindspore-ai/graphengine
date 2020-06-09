@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <functional>
+#include <memory>
 
 namespace ge {
 // Option key: graph run mode
@@ -40,6 +42,12 @@ const char *const OPTION_EXEC_EXTERN_PLUGIN_PATH = "ge.soLoadPath";
 const char *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
 const char *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
+const char *const OPTION_EXEC_DUMP_MODE = "ge.exec.dumpMode";
+const char *const OPTION_EXEC_ENABLE_INCRE_BUILD = "ge.exec.enableIncreBuild";
+const char *const OPTION_EXEC_INCRE_BUILD_CACHE_PATH = "ge.exec.increBuildCachePath";
+// profiling flag
+const char *const OPTION_EXEC_PROFILING_MODE = "ge.exec.profilingMode";
+const char *const OPTION_EXEC_PROFILING_OPTIONS = "ge.exec.profilingOptions";
 // Hccl flag, if ge.exec.hcclFlag =1, it means load plugin for opskernel, else:ge.exec.hcclFlag =0
 const char *const OPTION_EXEC_HCCL_FLAG = "ge.exec.hcclFlag";
 const char *const OPTION_EXEC_ATOMIC_FLAG = "ge.exec.enable_atomic";
@@ -173,6 +181,9 @@ const std::string AICORE_NUM = "ge.aicoreNum";
 // Configure L1FUSION
 const std::string L1_FUSION = "ge.l1Fusion";
 
+// Configure l1,l2,and others optimize option
+const std::string BUFFER_OPTIMIZE = "ge.bufferOptimize";
+
 // Configure Small Channel flag
 const std::string ENABLE_SMALL_CHANNEL = "ge.enableSmallChannel";
 
@@ -188,6 +199,9 @@ const std::string SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
 // Save original model file name
 const std::string ORIGINAL_MODEL_FILE = "ge.originalModelFile";
 
+// FE enable quant optimize
+const std::string QUANT_OPTIMIZE = "ge.quantOptimize";
+
 const char *const OPTION_GE_MAX_DUMP_FILE_NUM = "ge.maxDumpFileNum";
 const char *const OPTION_GE_MAX_DUMP_FILE_SIZE = "ge.maxDumpFileSize";
 const char *const OPTION_GE_MAX_DUMP_OP_NUM = "ge.maxDumpOpNum";
@@ -196,36 +210,49 @@ const char *const OPTION_GE_MAX_DUMP_OP_NUM = "ge.maxDumpOpNum";
 // Its value should be "0" or "1", default value is "1"
 const char *const ENABLE_PRINT_OP_PASS = "ge.enablePrintOpPass";
 
+// Configure whether to use single stream.
+// Its value should be "true" or "false", default value is "false"
+const char *const ENABLE_SINGLE_STREAM = "ge.enableSingleStream";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
-// Data description
-struct DataDesc {
-  void *data = nullptr;  // data address
-  uint32_t length = 0;   // data size
-  bool isDataSupportMemShare = false;
-};
-
-// Input/Output shape description
-struct ShapeDesc {
-  int64_t num = 0;
-  int64_t channel = 0;
-  int64_t height = 0;
-  int64_t width = 0;
-  std::vector<int64_t> dims;
-};
-
 // Input/Output tensor info
-struct TensorInfo {
-  uint32_t dataType;    // data type
-  DataDesc data;        // tensor data
-  ShapeDesc shapeInfo;  // tensor shape
+struct InputTensorInfo {
+  uint32_t data_type;         // data type
+  std::vector<int64_t> dims;  // shape description
+  void *data;                 // tensor data
+  int64_t length;             // tensor length
 };
+
+struct OutputTensorInfo {
+  uint32_t data_type;               // data type
+  std::vector<int64_t> dims;        // shape description
+  std::unique_ptr<uint8_t[]> data;  // tensor data
+  int64_t length;                   // tensor length
+  OutputTensorInfo() : data_type(0), dims({}), data(nullptr), length(0) {}
+  OutputTensorInfo(OutputTensorInfo &&out)
+      : data_type(out.data_type), dims(out.dims), data(std::move(out.data)), length(out.length) {}
+
+  OutputTensorInfo &operator=(OutputTensorInfo &&out) {
+    if (this != &out) {
+      data_type = out.data_type;
+      dims = out.dims;
+      data = std::move(out.data);
+      length = out.length;
+    }
+    return *this;
+  }
+  OutputTensorInfo(const OutputTensorInfo &) = delete;
+  OutputTensorInfo &operator=(const OutputTensorInfo &) = delete;
+};
+
+using Status = uint32_t;
+using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensorInfo> &)>;
 // for ir build
 namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";
 static const char *const INPUT_SHAPE = "input_shape";
-static const char *const OP_NAME_MAP = "op_name_map";
 static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
 static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
 static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
@@ -235,13 +262,15 @@ static const char *const HEAD_STREAM = ge::HEAD_STREAM.c_str();
 static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
 static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
 static const char *const SOC_VERSION = ge::SOC_VERSION.c_str();
+static const char *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
+
 // for interface: aclgrphBuildModel
-const std::set<std::string> ir_builder_suppported_options = {
-  INPUT_FORMAT,       INPUT_SHAPE,    OP_NAME_MAP,    DYNAMIC_BATCH_SIZE,
-  DYNAMIC_IMAGE_SIZE, INSERT_OP_FILE, PRECISION_MODE, EXEC_DISABLE_REUSED_MEMORY,
-  AUTO_TUNE_MODE};
+const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT, INPUT_SHAPE, DYNAMIC_BATCH_SIZE,
+                                                             DYNAMIC_IMAGE_SIZE, INSERT_OP_FILE};
 // for interface: aclgrphBuildInitialize
-const std::set<std::string> global_options = {HEAD_STREAM, CORE_TYPE, SOC_VERSION};
+const std::set<std::string> global_options = {
+  HEAD_STREAM,    CORE_TYPE,           SOC_VERSION, PRECISION_MODE, EXEC_DISABLE_REUSED_MEMORY,
+  AUTO_TUNE_MODE, ENABLE_SINGLE_STREAM};
 }  // namespace ir_option
 }  // namespace ge
 

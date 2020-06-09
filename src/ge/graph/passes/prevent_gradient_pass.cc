@@ -21,8 +21,6 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
 
-using domi::PREVENTGRADIENT;
-
 namespace ge {
 Status PreventGradientPass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);

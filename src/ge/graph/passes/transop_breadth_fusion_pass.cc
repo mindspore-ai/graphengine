@@ -24,15 +24,6 @@
 #include "graph/common/transop_util.h"
 #include "graph/utils/node_utils.h"
 
-using domi::ATTR_NAME_STREAM_LABEL;
-using domi::CAST;
-using domi::FAILED;
-using domi::RESHAPE;
-using domi::SUCCESS;
-using domi::TRANSDATA;
-using domi::TRANSPOSE;
-using domi::TRANSPOSED;
-
 namespace ge {
 Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(TransOpBreadthFusionPass);
@@ -40,7 +31,7 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
     return SUCCESS;
   }
 
-  for (auto const &node : graph->GetAllNodes()) {
+  for (auto const &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node);
     auto ids_to_trans_nodes = GetOutputTransOpNodes(node);
     for (auto const &id_to_trans_nodes : ids_to_trans_nodes) {

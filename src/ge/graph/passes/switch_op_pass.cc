@@ -31,35 +31,9 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
-using domi::ATTR_NAME_STREAM_LABEL;
-using domi::ATTR_NAME_WEIGHTS;
-using domi::CAST_ATTR_DSTT;
-using domi::CAST_ATTR_SRCT;
-
-using domi::CAST;
-using domi::CONSTANT;
-using domi::ENTER;
-using domi::EXIT;
-using domi::MEMCPYASYNC;
-using domi::MERGE;
-using domi::NETOUTPUT;
-using domi::NEXTITERATION;
-using domi::REFENTER;
-using domi::REFEXIT;
-using domi::REFMERGE;
-using domi::REFNEXTITERATION;
-using domi::REFSWITCH;
-using domi::STREAMACTIVE;
-using domi::STREAMMERGE;
-using domi::STREAMSWITCH;
-using domi::SWITCH;
-
 namespace ge {
 Status SwitchOpPass::Run(ComputeGraphPtr graph) {
   GELOGD("SwitchOpPass Enter");
-
-  GraphUtils::DumpGEGraph(graph, "BeforeSwitchOpPass");
-  GraphUtils::DumpGEGraphToOnnx(*graph, "BeforeSwitchOpPass");
 
   GE_CHK_STATUS_RET(CheckCycleDependence(graph), "CheckCycleDependence fail.");
 
@@ -68,7 +42,14 @@ Status SwitchOpPass::Run(ComputeGraphPtr graph) {
   }
 
   for (auto &merge_node : merge_nodes_) {
-    GE_CHK_STATUS_RET(ReplaceMergeNode(graph, merge_node), "Add StreamMerge node fail.");
+    OpDescPtr merge_op_desc = merge_node->GetOpDesc();
+    GE_CHECK_NOTNULL(merge_op_desc);
+    if (merge_op_desc->HasAttr(ATTR_INSERT_BY_MBATCH)) {
+      GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, merge_node, true), "Merge add memcpy node fail.");
+      GE_CHK_STATUS_RET(SetStreamLabel(merge_node, merge_node->GetName()), "Set stream label failed");
+    } else {
+      GE_CHK_STATUS_RET(ReplaceMergeNode(graph, merge_node), "Add StreamMerge node fail.");
+    }
   }
 
   GE_CHK_STATUS_RET(CombineSwitchNode(graph), "Combine StreamSwitch nodes fail.");
@@ -93,9 +74,6 @@ Status SwitchOpPass::Run(ComputeGraphPtr graph) {
   }
 
   GE_CHK_STATUS_RET(UpdateEnterNode(), "UpdateEnterNode fail.");
-
-  GraphUtils::DumpGEGraph(graph, "AfterSwitchOpPass");
-  GraphUtils::DumpGEGraphToOnnx(*graph, "AfterSwitchOpPass");
 
   GELOGD("SwitchOpPass Leave");
   return SUCCESS;
@@ -160,7 +138,7 @@ Status SwitchOpPass::ReplaceSwitchNode(ComputeGraphPtr &graph, NodePtr &switch_n
       NodePtr out_node = peer_in_anchor->GetOwnerNode();
       GE_CHK_STATUS_RET(GetOriginalType(out_node, type), "Get node type fail.");
       if ((type == MERGE) || (type == REFMERGE)) {
-        NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, peer_data_anchor);
+        NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, peer_data_anchor, false);
         GE_CHK_BOOL_EXEC(memcpy_node != nullptr, return FAILED, "Create memcpy_async node fail.");
         GE_CHK_STATUS(GraphUtils::AddEdge(peer_data_anchor, memcpy_node->GetInDataAnchor(0)),
                       "MemcpyAsync node add edge fail.");
@@ -257,16 +235,9 @@ Status SwitchOpPass::ReplaceMergeNode(ComputeGraphPtr &graph, NodePtr &merge_nod
     need_label_nodes_.emplace_back(stream_merge);
   }
 
-  if (merge_op_desc->HasAttr(ATTR_INSERT_BY_MBATCH)) {
-    if (!ge::AttrUtils::SetBool(op_desc, ATTR_INSERT_BY_MBATCH, true)) {
-      GELOGE(FAILED, "Set attr ATTR_INSERT_BY_MBATCH fail, StreamMerge:%s.", node_name.c_str());
-      return FAILED;
-    }
-  }
-
   (void)bypass_nodes_.insert(merge_node);
 
-  GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, stream_merge), "StreamMerge add memcpy node fail.");
+  GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, stream_merge, false), "StreamMerge add memcpy node fail.");
 
   return SUCCESS;
 }
@@ -325,17 +296,20 @@ NodePtr SwitchOpPass::CreateStreamSwitchNode(ComputeGraphPtr &graph, const NodeP
 /// @brief Add MemcpyAsync Node
 /// @param [in] graph
 /// @param [in] in_node
+/// @param [in] multi_batch_flag
 /// @return ge::NodePtr
 ///
-NodePtr SwitchOpPass::CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+NodePtr SwitchOpPass::CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor,
+                                            bool multi_batch_flag) {
   GE_CHK_BOOL_EXEC(out_data_anchor != nullptr, return nullptr, "Param of input node is null.");
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "OpDesc of pre node is invalid.");
 
-  std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYASYNC;
+  std::string memcpy_type = multi_batch_flag ? MEMCPYADDRASYNC : MEMCPYASYNC;
+  std::string node_name = pre_op_desc->GetName() + "_" + memcpy_type;
   node_name = CheckDuplicateName(node_name);
   GELOGI("Create MemcpyAsync op:%s.", node_name.c_str());
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name, MEMCPYASYNC);
+  OpDescPtr op_desc = MakeShared<OpDesc>(node_name, memcpy_type);
   if (op_desc == nullptr) {
     GELOGE(FAILED, "Create op_desc fail, MemcpyAsync:%s.", node_name.c_str());
     return nullptr;
@@ -455,9 +429,10 @@ NodePtr SwitchOpPass::CreateActiveNode(ComputeGraphPtr &graph, NodePtr &node) {
 /// @brief Add MemcpyAsync Op as StreamMerge in_node
 /// @param [in] graph
 /// @param [in] node
+/// @param [in] multi_batch_flag
 /// @return Status
 ///
-Status SwitchOpPass::AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &node) {
+Status SwitchOpPass::AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &node, bool multi_batch_flag) {
   GE_CHK_BOOL_EXEC(node != nullptr, return FAILED, "Param of pre node is null.");
   for (InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
@@ -470,7 +445,7 @@ Status SwitchOpPass::AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &node) 
                     continue);
 
     GE_IF_BOOL_EXEC(type != MEMCPYASYNC, {
-      in_node = CreateMemcpyAsyncNode(graph, peer_out_anchor);
+      in_node = CreateMemcpyAsyncNode(graph, peer_out_anchor, multi_batch_flag);
       GE_CHK_BOOL_EXEC(in_node != nullptr, return FAILED, "Create MemcpyAsync node fail.");
       GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor), "MemcpyAsync node remove edge fail.");
       GE_CHK_STATUS(GraphUtils::AddEdge(peer_out_anchor, in_node->GetInDataAnchor(0)),
@@ -682,7 +657,7 @@ Status SwitchOpPass::UpdateCondBranch(NodePtr &node) {
   std::stack<NodePtr> nodes;
   nodes.push(node);
 
-  static const std::set<std::string> end_type_set = {STREAMSWITCH, STREAMMERGE};
+  static const std::set<std::string> end_type_set = {STREAMSWITCH, STREAMMERGE, MERGE};
   bool merge_flag = false;
   bool exit_flag = false;
   bool net_output_flag = false;

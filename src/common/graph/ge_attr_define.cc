@@ -18,6 +18,12 @@
 
 namespace ge {
 // Public attribute
+const std::string ATTR_NAME_IS_UNKNOWN_SHAPE = "_is_unknown_shape";
+
+const std::string ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED = "_dynamic_shape_partitioned";
+
+const std::string ATTR_NAME_UNKNOWN_SHAPE_TYPE = "_unknown_shape_type";
+
 const std::string ATTR_NAME_NAME = "name";
 
 const std::string ATTR_NAME_TYPE = "type";
@@ -41,6 +47,8 @@ const std::string ATTR_NAME_FILTER = "filter";
 const std::string ATTR_NAME_BIAS = "bias";
 
 const std::string ATTR_NAME_BIAS_TERM = "bias_term";
+
+const std::string ATTR_NAME_HAS_BIAS_VALUE = "has_bias_value";
 
 const std::string ATTR_NAME_PAD = "pad";
 
@@ -83,6 +91,7 @@ const std::string ATTR_NAME_LRN_BETA = "lrn_beta";
 const std::string ATTR_NAME_AXIS = "axis";
 const std::string ATTR_NAME_BROADCAST = "broadcast";
 
+const std::string ATTR_NAME_OUTPUT = "output";
 const std::string ATTR_NAME_OUTPUT_NUM = "output_num";
 const std::string ATTR_NAME_TIDX = "t_idx";
 
@@ -103,6 +112,13 @@ const std::string ATTR_NAME_TSHAPE = "Tshape";
 const std::string ATTR_NAME_NAN_OPT = "nan_opt";
 
 const std::string ATTR_NAME_AIPP = "aipp";
+const std::string NEW_AIPP_CONV_OP = "new_conv_op_for_aipp";
+
+const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
+
+const std::string ATTR_NAME_MULTISHAPE_BATCHLIST = "multi_shape_batchlist";
+const std::string ATTR_NAME_MULTISHAPE_BATCHLIST_SIZE = "multi_shape_batchlist_size";
+const std::string ATTR_MODEL_BATCH_NUM = "batch_num";
 
 const std::string ATTR_NAME_INPUT_FORMAT = "input_format";
 const std::string ATTR_NAME_OUTPUT_FORMAT = "output_format";
@@ -111,6 +127,7 @@ const std::string ATTR_NAME_FRAMEWORK_NODE_DEF = "node_def";
 const std::string ATTR_NAME_FRAMEWORK_OP_DEF = "op_def";
 const std::string ATTR_NAME_FRAMEWORK_FWK_TYPE = "framework_type";
 const std::string ATTR_NAME_FRAMEWORK_FUNC_DEF = "func_def";
+const std::string ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE = "original_type";
 
 const std::string ATTR_NAME_INPUT_TENSOR_DESC = "input_tensor_desc";
 const std::string ATTR_NAME_OUTPUT_TENSOR_DESC = "output_tensor_desc";
@@ -122,9 +139,12 @@ const std::string ATTR_NAME_WEIGHTS = "value";
 const std::string ATTR_NAME_WEIGHTS_DATA = "weights_data";
 const std::string ATTR_NAME_BROACAST_REAL_DIM_CNT = "broacast_real_dim_cnt";
 const std::string ATTR_NAME_DIM_ALIGN = "dim_align";
-const std::string ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE = "original_type";
-
-const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
+const std::string ATTR_NAME_STREAM_LABEL = "_stream_label";
+const std::string ATTR_NAME_CONTINUOUS_STREAM_LABEL = "_continuous_stream_label";
+const std::string ATTR_NAME_STREAM_CYCLE_EVENT_FLAG = "need_stream_cycle_event";
+const std::string ATTR_NAME_RTSWITCH_RECV_EVENT_ID = "rtswitch_event_id";
+const std::string ATTR_NAME_AUTOMIC_ADD_START = "automic_add_addr_start";
+const std::string ATTR_NAME_AUTOMIC_ADD_MEM_SIZE = "automic_add_mem_size";
 
 // To be deleted
 const std::string ATTR_TO_BE_DELETED = "to_be_deleted";
@@ -138,15 +158,13 @@ const std::string SSD_MBOX_OCR_FUSION = "permute_flatten_ocr_fusion";
 const std::string SSD_MBOX_FUSION_BOX_TYPE_NUM = "ssd_mbox_fusion_box_type_num";
 const std::string SSD_RESHAPE_SLICE_CONCAT_FUSION = "reshape_slice_concat_fusion";
 
-const std::string SSD_PRIORBOX_CONCAT = "ssd_mbox_conf_priorbox_concat_flag";
-
 // Refinedet
 const std::string REFINEDET_MBOX_LOC_FUSION = "permute_flatten_fusion";
-const std::string REFINEDET_RESHAPE_SLICE_CONCAT_FUSION = "reshape_slice_concat_fusion";
+
 const std::string REFINEDET_MBOX_CONF_FUSION = "permute_flatten_reshape_flatten_fusion";
 const std::string REFINEDET_MBOX_FUSION_BOX_TYPE_NUM = "ssd_mbox_fusion_box_type_num";
-const std::string REFINEDET_PRIOR_BOX_ATTR_VARIANCE = "variance";
-const std::string REFINEDET_PRIOR_BOX_ATTR_VARIANCE_NUM = "variance_num";
+const std::string REFINEDET_RESHAPE_SLICE_CONCAT_FUSION = "reshape_slice_concat_fusion";
+const std::string SSD_PRIORBOX_CONCAT = "ssd_mbox_conf_priorbox_concat_flag";
 
 // _Arg
 const std::string ATTR_NAME_INDEX = "index";
@@ -236,6 +254,30 @@ const std::string BATCHNORM_ATTR_ESTIMATED_MEAN = "estimated_mean";
 const std::string BATCHNORM_ATTR_ESTIMATED_VARIANCE = "estimated_variance";
 const std::string BATCHNORM_ATTR_SCALE = "scale";
 const std::string BATCHNORM_ATTR_BIAS = "bias";
+const std::string BATCHNORM_ATTR_DATA_FORMAT = "data_format";
+const std::string BATCHNORM_ATTR_IS_TRAINING = "is_training";
+const std::string BATCHNORM_ATTR_IS_TRAINING_FUSION = "is_training_fusion";
+
+// huberloss
+const std::string HUBER_LOSS_ATTR_DELTA = "delta";
+
+// SSDRealDivTileMul
+const std::string SSD_REAL_DIV_TILE_MUL_ATTR_TILE_PARA = "tilepara";
+
+// SSDSumMulRealDivMean
+const std::string SSD_SUM_MUL_REALDIV_MEAN_ATTR_REDUCTION_INDICES = "reduction_indices";
+const std::string SSD_SUM_MUL_REALDIV_MEAN_ATTR_AXIS = "axis";
+const std::string SSD_SUM_MUL_REALDIV_MEAN_ATTR_MEAN_PARA = "mean_para";
+const std::string SSD_SUM_MUL_REALDIV_MEAN_ATTR_HAS_SUM = "has_sum";
+
+// ConcatFive2Four
+// ConcatFour2Five
+const std::string SSD_BOX_TYPE_NUM = "box_type_num";
+const std::string SSD_CLASS_NUM = "class_num";
+const std::string TRANS_FOR_LOSS_MODE = "trans_for_loss_mode";
+const std::string SSD_FEATURE_MAP_SIZE = "feature_map_size";
+const std::string SSD_FEATURE_MAP_HIGH = "feature_map_high";
+const std::string SSD_FEATURE_MAP_WIDTH = "feature_map_width";
 
 // Scale
 const std::string SCALE_ATTR_SCALE = "scale";
@@ -340,6 +382,7 @@ const std::string SOFTMAX_ATTR_AXIS = "axis";
 
 // Permute
 const std::string PERMUTE_ATTR_ORDER = "order";
+const std::string PERMUTE_ATTR_PERM = "perm";
 
 // SSD Normalize
 const std::string SSDNORMALIZE_ATTR_ACCROSS_SPATIAL = "across_spatial";
@@ -367,6 +410,10 @@ const std::string SSD_PRIOR_BOX_ATTR_ASPECT_RATIO_NUM = "aspect_ratio_num";
 const std::string SSD_PRIOR_BOX_ATTR_VARIANCE = "variance";
 const std::string SSD_PRIOR_BOX_ATTR_VARIANCE_NUM = "variance_num";
 
+//  RefinedetDetectionOutput
+const std::string REFINEDET_PRIOR_BOX_ATTR_VARIANCE_NUM = "variance_num";
+const std::string REFINEDET_PRIOR_BOX_ATTR_VARIANCE = "variance";
+
 // PRelu
 const std::string PRELU_ATTR_CHANNEL_SHARED = "channel_shared";
 
@@ -380,11 +427,16 @@ const std::string POWER_ATTR_NAME_POWER = "power";
 const std::string POWER_ATTR_NAME_SCALE = "scale";
 const std::string POWER_ATTR_NAME_SHIFT = "shift";
 
+// log
+const std::string LOG_ATTR_NAME_SCALE = "scale";
+const std::string LOG_ATTR_NAME_SHIFT = "shift";
+const std::string LOG_ATTR_NAME_BASE = "base";
 // Pack
 const std::string PACK_ATTR_NAME_NUM = "N";
 
 // Unpack
 const std::string UNPACK_ATTR_NAME_NUM = "num";
+const std::string DYNAMIC_STITCH_ATTR_NAME_NUM = "DynamicStitchN_";
 // Gathernd
 const std::string GATHERND_ATTR_NAME_TINDICES = "Tindices";
 const std::string GATHERND_ATTR_NAME_TPARAMS = "Tparams";
@@ -394,6 +446,13 @@ const std::string ARGMAX_ATTR_NAME_TOPK = "topk";
 const std::string ARGMAX_ATTR_NAME_REDUCESIZE = "reduce_size";
 const std::string ARGMAX_ATTR_NAME_REDUCESTRIDE = "reduce_stride";
 const std::string ARGMAX_ATTR_NAME_OUTMAX = "outmaxval";
+const std::string ARGMAX_ATTR_NAME_AXIS = "axis";
+const std::string ARGMAX_ATTR_NAME_AXISTYPE = "axis_type";
+const std::string ARGMAX_ATTR_NAME_KEEPDIMS = "keep_dims";
+
+// upsample
+const std::string UPSAMPLE_ATTR_NAME_SCALE_H = "scale_h";
+const std::string UPSAMPLE_ATTR_NAME_SCALE_W = "scale_w";
 
 // Relu
 const std::string ATTR_NAME_NEGATIVE_SLOPE = "negative_slope";
@@ -531,19 +590,41 @@ const std::string CONV_GRAD_FILTER_OUTPUT_SHAPE = "conv_grad_filter_output_shape
 const std::string CONV_GRAD_INPUT_OUTPUT_SHAPE = "conv_grad_input_output_shape";
 
 // Rnn
-const std::string RNN_MODE_ = "rnn_";
-const std::string CNN_RNN = "cnn_rnn";
+const std::string RNN_MODE_STATIC = "rnn_static";
 const std::string MUTI_RNN = "multi_rnn";
+const std::string CNN_RNN = "cnn_rnn";
+const std::string RNN_MODE_ = "rnn_";
+
 const std::string CELL_MODE = "mode";
 const std::string LSTM_CELL = "lstm_cell";
 const std::string GRU_CELL = "gru_cell";
 const std::string RNN_HT = "ht";
 const std::string RNN_XT_HT = "xt_ht";
 const std::string RNN_BATCH_SIZE = "batch_size";
+const std::string LSTM_CELL_CLIP = "lstm_cell_clip";
+const std::string LSTM_PROJ_CLIP = "lstm_proj_clip";
+const std::string LSTM_ACTIVATE = "lstm_activate";
+const std::string LSTM_OUT_MAP = "lstm_out_map";
+const std::string LSTM_OUT_MODE = "lstm_out_mode";
+const std::string LSTM_STATE_OUT_MODE = "lstm_state_out_mode";
+const std::string LSTM_TIME_MAJOR = "lstm_time_major";
+const std::string LSTM_IS_INPUT_PRE_PROCESS = "lstm_is_input_pre_process";
 
 // Upsample
 const std::string UPSAMPLE_ATTR_NAME_SCALE = "scale";
 
+// PadV2
+const std::string PADV2_ATTR_NAME_MODE = "mode";
+const std::string PADV2_ATTR_NAME_PADS = "paddings";
+const std::string PADV2_ATTR_NAME_T = "T";
+const std::string PADV2_ATTR_NAME_PAD_FORMAT = "pad_format";
+const std::string PADV2_ATTR_NAME_CONST_VALUE = "const_value";
+
+// MirrorPad
+const std::string MIRRORPAD_ATTR_NAME_MODE = "mode";
+const std::string MIRRORPAD_ATTR_NAME_PADS = "paddings";
+const std::string MIRRORPAD_ATTR_NAME_PAD_FORMAT = "pad_format";
+const std::string MIRRORPAD_ATTR_NAME_CONST_VALUE = "const_value";
 // Filler
 const std::string FILLER_TYPE = "filler_type";
 const std::string FILLER_VALUE = "filler_value";
@@ -553,9 +634,6 @@ const std::string SHUFFLE_CHANNEL_GROUP = "group";
 
 // TopKV2
 const std::string TOPKV2_ATTR_K = "k";
-
-const std::string DEPTH_SPACE_ATTR_BLOCK_SIZE = "block_size";
-const std::string L2_NORMALIZE_ATTR_EPS = "eps";
 
 // Calibaration
 const std::string STRIDE_H_INDEX = "STRIDE_H_INDEX";
@@ -611,9 +689,13 @@ const std::string ATTR_MODEL_STREAM_NUM = "stream_num";
 
 const std::string ATTR_MODEL_EVENT_NUM = "event_num";
 
+const std::string ATTR_MODEL_HUGE_STREAM_LIST = "huge_stream_list";
+
 const std::string ATTR_MODEL_LABEL_NUM = "label_num";
 
 const std::string ATTR_MODEL_MEMORY_SIZE = "memory_size";
+
+const std::string ATTR_MODEL_ZERO_COPY_MEMORY_SIZE = "zero_copy_memory_size";
 
 const std::string ATTR_MODEL_WEIGHT_SIZE = "weight_size";
 
@@ -660,7 +742,124 @@ const std::string TARGET_TYPE_TINY = "TINY";
 
 const std::string TARGET_TYPE_LITE = "LITE";
 
+// l2_normalize
+const std::string L2_NORMALIZE_ATTR_AXIS = "axis";
+const std::string L2_NORMALIZE_ATTR_EPS = "eps";
+
+const std::string POOL_PARAMA_ATTR_WINDOW = "window";
+const std::string POOL_PARAMA_ATTR_CEIL_MODE = "ceil_mode";
+const std::string POOL_PARAMA_ATTR_DATA_MODE = "data_mode";
+const std::string POOL_PARAMA_ATTR_GLOBAL_POOLING = "global_pooling";
+const std::string POOL_PARAMA_ATTR_NAN_OP = "nan_opt";
+const std::string POOL_PARAMA_ATTR_PAD_MOD = "pad_mode";
+
+// HCOM
+const std::string HCOM_ATTR_ROOT_RANK = "root_rank";
+const std::string HCOM_ATTR_RANK_SIZE = "rank_size";
+
+const std::string HCOM_ATTR_REDUCE_TYPE = "reduction";
+const std::string HCOM_ATTR_GROUP = "group";
+const std::string HCOM_ATTR_SR_TAG = "sr_tag";
+const std::string HCOM_ATTR_SRC_RANK = "src_rank";
+const std::string HCOM_ATTR_DEST_RANK = "dest_rank";
+const std::string HCOM_ATTR_FUSION = "fusion";
+const std::string HCOM_ATTR_SHAPE = "shape";
+const std::string HCOM_ATTR_DATA_TYPE = "dtype";
+
+// SpaceToDepth/DepthToSpace
+const std::string ATTR_NAME_BLOCK_SIZE = "block_size";
+
+// SparseSoftmaxCrossEntropyWithLogits
+const std::string SPARSE_SOFT_MAX_ATTR_TLABLES = "Tlabels";
+
+// MaxPoolGradWithArgmax
+const std::string MAX_POOL_GRAD_OUTPUT_SHAPE = "max_pool_grad_output_shape";
+
+// AvgPoolGrad
+const std::string AVG_POOL_GRAD_OUTPUT_SHAPE = "avg_pool_grad_output_shape";
+
+// Pad
+const std::string ATTR_PAD_FORMAT = "attr_pad_format";
+
+// Varible
+const std::string VAR_ATTR_FORMAT = "_var_format";
+const std::string VAR_ATTR_NAME = "var_name";
+const std::string VAR_ATTR_FRACTALZ_FORMAT = "FZ";
+const std::string VAR_ATTR_4D_FORMAT = "4D";
+const std::string VAR_ATTR_5D_FORMAT = "5D";
+const std::string VAR_ATTR_DATA_TYPE = "data_format";
+const std::string VAR_ATTR_VAR_IN_NAME = "var_in_name";
+const std::string VAR_ATTR_VAR_IN_INDEX = "var_in_index";
+const std::string VAR_ATTR_VAR_OUT_INDEX = "var_out_index";
+const std::string VAR_ATTR_SHAPE = "shape";
+const std::string HALF_VAR_NAME_END = "_fp16";
+const std::string VAR_ATTR_INITED = "var_is_inited";
+
+const std::string VAR_ATTR_CONTAINER = "container";
+const std::string VAR_ATTR_SHARED_NAME = "shared_name";
+const std::string VAR_ATTR_DTYPE = "dtype";
+
+const std::string VAR_ATTR_SRC_VAR_NAME = "_src_var_name";
+const std::string VAR_ATTR_VAR_IS_SAVE = "_var_is_save";
+const std::string VAR_ATTR_VAR_IS_RESTORE = "_var_is_restore";
+const std::string VAR_ATTR_VAR_IS_BROADCAST = "_var_is_broadcast";
+const std::string REF_VAR_SRC_VAR_NAME = "ref_var_src_var_name";
+const std::string REF_VAR_PRE_PEER_OUT_INDEX = "ref_var_pre_peer_out_index";
+
+// Assign
+const std::string ASSIGN_VALIDATE_SHAPE = "validate_shape";
+
+//  space2bacth batch2space
+const std::string BATCH_SPACE_ATTR_BLOCK = "block";
+const std::string BATCH_SPACE_ATTR_PADDING = "padding";
+
+// depth_to_space space_to_depth
+const std::string DEPTH_SPACE_ATTR_BLOCK_SIZE = "block_size";
+
+// FakeQuantWithMinMaxVars
+const std::string FakeQuantWithMinMaxVars_ATTR_MAX = "max";
+const std::string FakeQuantWithMinMaxVars_ATTR_MIN = "min";
+
+// mobilenet_ssd_conv_fusion
+const std::string SSD_BOXPREDICTOR_BOXES_FUSION = "ssd_boxpredictor_boxes_fusion";
+const std::string SSD_BOXPREDICTOR_SCORES_FUSION = "ssd_boxpredictor_scores_fusion";
+const std::string SSD_BOXPREDICTOR_FUSION_BOX_TYPE_NUM = "ssd_boxpredictor_fusion_box_type_num";
+
+// lsh project
+const std::string LSH_PROJ_TYPE = "lsh_project_type";
+
+//  log time stamp
+const std::string LOG_TIME_STAMP_LOGID = "logid";
+const std::string LOG_TIME_STAMP_NOTIFY = "notify";
+
+// ShapeN
+const std::string SHAPEN_ATTR_N = "N";
+const std::string SHAPEN_ATTR_IN_TYPE = "in_type";
+const std::string SHAPEN_ATTR_OUT_TYPE = "dtype";
+
+//  GatherV2 attr def
+const std::string GATHERV2_ATTR_NAME_TAXIS = "Taxis";
+const std::string GATHERV2_ATTR_NAME_TINDICES = "Tindices";
+const std::string GATHERV2_ATTR_NAME_TPARAMS = "Tparams";
+
+//  Reshape attr def
+const std::string RESHAPE_ATTR_NAME_INPUT_DESC = "input_desc_reshape";
+const std::string RESHAPE_ATTR_NAME_OUTPUT_DESC = "output_desc_reshape";
+
+//  axis attr def
+const std::string ATTR_NAME_AXIS_ORG_OP = "axis_org_op";
+
+const std::string ATTR_NAME_LINK_WITH_SPARE = "link_with_sparse";
+
+const std::string ATTR_NAME_NET_OUTPUT_FORMAT = "net_output_format";
+const std::string ATTR_NAME_NET_OUTPUT_DATATYPE = "net_output_datatype";
+
+//  For constant folding
+const std::string ATTR_NO_NEED_CONSTANT_FOLDING = "no_need_constant_folding";
+
 const std::string ATTR_NAME_CONTINUOUS_INPUT = "continuous_input";
+
+const std::string ATTR_NAME_CONTINUOUS_INPUT_ALLOC = "continuous_input_alloc";
 
 const std::string ATTR_NAME_CONTINUOUS_OUTPUT = "continuous_output";
 
@@ -694,6 +893,8 @@ const std::string ATTR_NAME_STREAM_SWITCH_COND = "switch_condition";
 const std::string ATTR_NAME_TRUE_BRANCH_STREAM = "true_branch_stream";
 const std::string ATTR_NAME_ACTIVE_STREAM_LIST = "active_stream_list";
 const std::string ATTR_NAME_SWITCHN_PRED_VALUE = "switch_pred_value";
+const std::string ATTR_NAME_ITERATORS_PER_LOOP = "iterations_per_loop";
+const std::string ATTR_NAME_FLOW_CTRL_NODE_FLAG = "is_flow_ctrl_node";
 
 const std::string ATTR_NAME_SWITCH_BRANCH_NODE_LABEL = "_switch_branch_node_label";
 const std::string ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG = "_switch_true_branch_flag";
@@ -705,6 +906,7 @@ const std::string ATTR_NAME_NEXT_ITERATION = "_next_iteration_node";
 
 // Function Op
 const std::string ATTR_NAME_PARENT_NODE_INDEX = "_parent_node_index";
+const std::string ATTR_NAME_PARENT_CONST_TYPE = "_parent_const_type";
 
 // Used for mark the active node is for loop, type:bool
 const std::string ATTR_NAME_IS_LOOP_ACTIVE = "is_loop_active";
@@ -719,6 +921,7 @@ const std::string MODEL_ATTR_SESSION_ID = "session_id";
 
 // l1 fusion and other fusion in future
 const std::string ATTR_NAME_L1_FUSION_GROUP_ID = "_l1_fusion_group_id";
+const std::string ATTR_NAME_FUSION_GROUP_KEY = "_fusion_group_key";
 const std::string ATTR_NAME_L1_FUSION_GROUP_KEY = "_l1_fusion_group_key";
 const std::string ATTR_NAME_FUSION_VIRTUAL_OP = "_fusion_virtual_op";
 const std::string ATTR_NAME_FUSION_GROUP_TYPE = "_fusion_group_type";
@@ -730,6 +933,9 @@ const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_L1_FUSION = "_output_offset_for_l1
 const std::string ATTR_NAME_SWITCH_FOR_L1_FUSION = "_enable_l1_fusion";
 const std::string ATTR_N_BATCH_SPILT = "_is_n_batch_split";
 const std::string ATTR_NO_TASK_AND_DUMP_NEEDED = "_no_task_and_dump_needed";
+const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_BUFFER_FUSION = "_output_offset_for_buffer_fusion";
+const std::string ATTR_NAME_L2_FUSION_GROUP_ID = "_l2_fusion_group_id";
+const std::string ATTR_NAME_SWITCH_FOR_L2_FUSION = "_enable_l2_fusion";
 
 // Atomic addr clean attrs
 const std::string ATOMIC_ATTR_INPUT_INDEX = "atomic_input_index";
@@ -748,6 +954,8 @@ const std::string ATTR_NEED_COMPILE = "_node_need_compile";
 
 const std::string ATTR_INSERT_BY_MBATCH = "mbatch-inserted-node";
 
+const std::string ATTR_MBATCH_ORIGIN_INPUT_DIMS = "_mbatch_origin_input_dims";
+
 // For inserted op
 const std::string ATTR_INSERTED_BY_GE = "_inserted_by_ge";
 
@@ -764,7 +972,22 @@ const std::string ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX = "_datadump_origin_ou
 const std::string ATTR_NAME_DATA_DUMP_ORIGIN_FORMAT = "_datadump_origin_format";
 const std::string ATTR_NAME_DATA_DUMP_ORIGIN_DATA_TYPE = "_datadump_origin_data_type";
 
+// functional ops attr
+const std::string ATTR_NAME_WHILE_COND = "cond";
+const std::string ATTR_NAME_WHILE_BODY = "body";
+
 // used for label switch
 const std::string ATTR_NAME_LABEL_SWITCH_INDEX = "_label_switch_index";
 const std::string ATTR_NAME_LABEL_SWITCH_LIST = "_label_switch_list";
+
+const std::string ATTR_NAME_INPUT_DATATYPE = "input_datatype";
+const std::string ATTR_NAME_OUTPUT_DATATYPE = "output_datatype";
+
+// used for LX tiling
+const std::string ATTR_NAME_OP_L1_SPACE = "_l1_space";
+const std::string ATTR_NAME_FUSION_TYPE_LIST = "_fusion_type_list";
+const std::string ATTR_NAME_VALID_INPUT_SHAPE_LIST_LIST = "_valid_input_shape_list_list";
+const std::string ATTR_NAME_VALID_OUTPUT_SHAPE_LIST_LIST = "_valid_output_shape_list_list";
+const std::string ATTR_NAME_SLICE_INPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
+const std::string ATTR_NAME_SLICE_OUTPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
 }  // namespace ge

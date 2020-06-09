@@ -18,7 +18,8 @@
 #define INC_REGISTER_OP_KERNEL_REGISTRY_H_
 #include <memory>
 #include <string>
-#include "register/register.h"
+#include "register/register_types.h"
+#include "register.h"
 
 namespace ge {
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpKernelRegistry {

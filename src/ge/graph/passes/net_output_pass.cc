@@ -30,17 +30,9 @@
 #include "graph/utils/type_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
-using domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE;
-using domi::ATTR_NAME_NET_OUTPUT_DATATYPE;
-using domi::ATTR_NAME_NET_OUTPUT_FORMAT;
-using domi::ATTR_NAME_TRUE_BRANCH_STREAM;
-using domi::NETOUTPUT;
-using domi::NODE_NAME_NET_OUTPUT;
-using domi::RETVAL_ATTR_NAME_INDEX;
-
 namespace ge {
 Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
-                                          std::map<int32_t, std::pair<ge::NodePtr, int32_t>> &retval_node_index_map) {
+                                          std::map<int32_t, RetvalInfo> &retval_node_index_map) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
   int64_t output_index = 0;
@@ -52,13 +44,16 @@ Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
     GELOGE(PARAM_INVALID, "Retval has duplicate index.");
     return PARAM_INVALID;
   }
+  int parent_node_index = -1;
+  (void)AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_node_index);
   InDataAnchorPtr in_data_anchor = node->GetInDataAnchor(0);
   GE_CHECK_NOTNULL(in_data_anchor);
   GE_CHECK_NOTNULL(in_data_anchor->GetPeerOutAnchor());
   int32_t src_node_index = in_data_anchor->GetPeerOutAnchor()->GetIdx();
   NodePtr src_node_ptr = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
-  retval_node_index_map[output_index] = std::make_pair(src_node_ptr, src_node_index);
+  retval_node_index_map[output_index] = {src_node_ptr, src_node_index, parent_node_index};
   // if user targets include retval node,delete it from set and insert its input node instead
+  // better to GetInNodes here
   auto iter = targets_.find(node);
   if (iter != targets_.end()) {
     targets_.erase(iter);
@@ -69,9 +64,8 @@ Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
   return SUCCESS;
 }
 
-Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph,
-                                    std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info) {
-  std::map<int32_t, std::pair<ge::NodePtr, int32_t>> retval_node_index_map;
+Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph, std::vector<RetvalInfo> &output_nodes_info) {
+  std::map<int32_t, RetvalInfo> retval_node_index_map;
   for (NodePtr &node : graph->GetDirectNode()) {
     Status ret = SUCCESS;
     if ((node->GetOpDesc() != nullptr) && (node->GetOpDesc()->HasAttr(RETVAL_ATTR_NAME_INDEX))) {
@@ -85,21 +79,21 @@ Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph,
     }
   }
   GELOGI("Get retval node size:%zu.", retval_node_index_map.size());
-  std::vector<std::pair<ge::NodePtr, int32_t>> out_nodes_tmp;
+  std::vector<RetvalInfo> out_nodes_tmp;
   /// The Netoutput output is determined by Retval, and the input order
   /// of Netoutput is sorted according to the index value of Retval.
-  for (auto it = retval_node_index_map.begin(); it != retval_node_index_map.end(); ++it) {
-    out_nodes_tmp.push_back(it->second);
+  for (auto &it : retval_node_index_map) {
+    out_nodes_tmp.push_back(it.second);
   }
 
   // when user set targets, mean that no output result
   for (auto &ele : graph->GetGraphOutNodesInfo()) {
     auto iter = targets_.find(ele.first);
     if (iter != targets_.end()) {
-      GELOGI("user set out node [%s] is found in user def targets, out node is prio!", (ele.first)->GetName().c_str());
+      GELOGI("user set out node [%s] is found in user def targets, out node is prio!", ele.first->GetName().c_str());
       targets_.erase(iter);
     }
-    output_nodes_info.push_back(ele);
+    output_nodes_info.push_back({ele.first, ele.second, -1});
   }
   GELOGI("Output node set by user or leaf node, size:%zu.", output_nodes_info.size());
   for (auto &ele : out_nodes_tmp) {
@@ -115,10 +109,9 @@ Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph,
   return SUCCESS;
 }
 
-Status NetOutputPass::CheckOutputNodeInfo(const ComputeGraphPtr &graph,
-                                          const std::vector<std::pair<ge::NodePtr, int32_t>> &outputs) {
+Status NetOutputPass::CheckOutputNodeInfo(const ComputeGraphPtr &graph, const std::vector<RetvalInfo> &outputs) {
   for (auto &item : outputs) {
-    NodePtr node = item.first;
+    NodePtr node = item.output_node;
     if (node == nullptr) {
       GELOGE(PARAM_INVALID, "Node in outputs is null.");
       return PARAM_INVALID;
@@ -129,7 +122,7 @@ Status NetOutputPass::CheckOutputNodeInfo(const ComputeGraphPtr &graph,
       }
       GE_CHECK_NOTNULL(node->GetOpDesc());
       int32_t out_size = node->GetOpDesc()->GetOutputsSize();
-      int32_t index = item.second;
+      int32_t index = item.node_output_index;
       if (index < 0 || index >= out_size) {
         GELOGE(PARAM_INVALID,
                "User declared out node (%s) output index:%d must be smaller "
@@ -152,8 +145,6 @@ void NetOutputPass::AddInOutForNetOutputOp(const ge::ComputeGraphPtr &graph, con
   }
   ge::GeTensorDesc out_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
   GE_IF_BOOL_EXEC(net_output_desc->AddInputDesc(out_desc) != SUCCESS, GELOGW("add input desc failed"); return );
-  TensorUtils::SetOutputTensor(out_desc, true);
-  GE_IF_BOOL_EXEC(net_output_desc->AddOutputDesc(out_desc) != SUCCESS, GELOGW("add output desc failed"); return );
 }
 
 Status NetOutputPass::RemoveUnusedNode(const ge::ComputeGraphPtr &graph) {
@@ -211,11 +202,6 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
       GELOGE(INTERNAL_ERROR, "Update input desc failed, index:%u.", index);
       return INTERNAL_ERROR;
     }
-    TensorUtils::SetOutputTensor(output_in_desc, true);
-    if (net_output_desc->UpdateOutputDesc(index, output_in_desc) != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Update output desc failed, index:%u.", index);
-      return INTERNAL_ERROR;
-    }
     GELOGD("Update desc, format:%s, data type:%s, index:%u.",
            TypeUtils::FormatToSerialString(output_in_desc.GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(output_in_desc.GetDataType()).c_str(), index);
@@ -260,20 +246,33 @@ void NetOutputPass::SaveAndRemoveTargets(const ge::ComputeGraphPtr &graph) {
 }
 
 Status NetOutputPass::AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, const ge::NodePtr &net_out_node,
-                                           const std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info) {
+                                           const std::vector<RetvalInfo> &output_nodes_info) {
   int32_t net_input_index = 0;
   for (auto &item : output_nodes_info) {
-    NodePtr src_node = item.first;
+    NodePtr src_node = item.output_node;
     GE_CHECK_NOTNULL(src_node);
-    graphStatus status =
-      GraphUtils::AddEdge(src_node->GetOutDataAnchor(item.second), net_out_node->GetInDataAnchor(net_input_index));
+    graphStatus status = GraphUtils::AddEdge(src_node->GetOutDataAnchor(item.node_output_index),
+                                             net_out_node->GetInDataAnchor(net_input_index));
     if (status != GRAPH_SUCCESS) {
       GELOGE(INTERNAL_ERROR, "AddEdge failed, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(),
-             item.second, net_input_index);
+             item.node_output_index, net_input_index);
       return INTERNAL_ERROR;
     }
-    GELOGD("AddEdge to output node, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(), item.second,
-           net_input_index);
+    GELOGD("AddEdge to output node, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(),
+           item.node_output_index, net_input_index);
+    if (item.parent_node_index >= 0) {
+      GELOGI("Add parent node index %d for the netoutput input %d on graph %s", item.parent_node_index, net_input_index,
+             graph->GetName().c_str());
+      auto input_desc = net_out_node->GetOpDesc()->MutableInputDesc(net_input_index);
+      if (input_desc == nullptr) {
+        GELOGE(INTERNAL_ERROR, "Can not find intput tensor desc from NetOutput, index %d", net_input_index);
+        return INTERNAL_ERROR;
+      }
+      if (!AttrUtils::SetInt(input_desc, ATTR_NAME_PARENT_NODE_INDEX, item.parent_node_index)) {
+        GELOGE(INTERNAL_ERROR, "Failed to add parent index to  NetOutput, index %d", net_input_index);
+        return INTERNAL_ERROR;
+      }
+    }
     net_input_index++;
   }
   if (RemoveUnusedNode(graph) != SUCCESS) {
@@ -438,7 +437,7 @@ Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
   GELOGI("NetOutputPass Run.");
   NodePtr output_node = graph->FindNode(NODE_NAME_NET_OUTPUT);
   OpDescPtr net_output_desc = nullptr;
-  std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes_info;
+  std::vector<RetvalInfo> output_nodes_info;
 
   // save user targets node
   SaveAndRemoveTargets(graph);
@@ -486,11 +485,11 @@ Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
     }
     std::vector<bool> is_input_const;
     for (auto iter = output_nodes_info.begin(); iter != output_nodes_info.end();) {
-      ge::NodePtr src_node = (*iter).first;
+      ge::NodePtr src_node = iter->output_node;
       if (src_node == nullptr) {
         continue;
       }
-      int32_t src_index = (*iter).second;
+      int32_t src_index = iter->node_output_index;
       // if src_node is in targets_, no need to Add in and out for netoutput
       auto it = targets_.find(src_node);
       if (it != targets_.end()) {

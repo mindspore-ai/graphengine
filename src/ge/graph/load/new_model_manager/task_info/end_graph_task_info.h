@@ -16,6 +16,7 @@
 
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_END_GRAPH_TASK_INFO_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_END_GRAPH_TASK_INFO_H_
+
 #include "graph/load/new_model_manager/task_info/task_info.h"
 
 namespace ge {
@@ -31,11 +32,13 @@ class EndGraphTaskInfo : public TaskInfo {
 
   uint32_t GetTaskID() override { return task_id_; }
 
+  uint32_t GetStreamId() override { return stream_id_; }
+
  private:
   rtModel_t model_;
   DavinciModel *davinci_model_;
   uint32_t task_id_;
+  uint32_t stream_id_;
 };
-
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_END_GRAPH_TASK_INFO_H_

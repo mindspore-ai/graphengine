@@ -40,12 +40,6 @@ class GraphLoader {
 
   GraphLoader &operator=(const GraphLoader &in) = delete;
 
-  Status LoadGraph(const std::shared_ptr<ge::GeModel> &ge_model_ptr,
-                   const std::shared_ptr<GraphModelListener> &model_listener, ModelIdInfo &model_id_info);
-
-  Status LoadGraphAsync(const std::shared_ptr<ge::GeModel> &ge_model_ptr,
-                        const std::shared_ptr<RunAsyncListener> &model_async_listener, ModelIdInfo &model_id_info);
-
   static Status UnloadModel(uint32_t model_id);
 
   static Status GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size);
@@ -75,8 +69,9 @@ class GraphLoader {
 
   static Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
 
- private:
-  static Status LoadModelOnline(uint32_t &model_id, std::shared_ptr<ge::Model> &model,
+  static Status DestroyAicpuSessionForInfer(uint32_t model_id);
+
+  static Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeModel> &model,
                                 const std::shared_ptr<ModelListener> &listener);
 };
 }  // namespace ge

@@ -247,7 +247,7 @@ hcclResult_t hcom_receive(const char *tag, void *outputPtr, u64 count, hcclDataT
  * @return hcclResult_t 
  */
 hcclResult_t hcom_get_split_strategy(const char *group, const struct model_feature *feature, 
-    u32 maxSegmentNum, u32 *segmentNum, u32 *segmentIdx);
+    u32 maxSegmentNum, u32 *segmentNum, u32 *segmentIdx, GradSplitForceMode force = FORCE_NONE);
 
 /**
  * @brief Set the gradient split strategy with in the group, according to gradient index.

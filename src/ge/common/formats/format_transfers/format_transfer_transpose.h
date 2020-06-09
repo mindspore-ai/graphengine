@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 
-#include "common/formats/format_transfers/format_transfer.h"
+#include "register/register_format_transfer.h"
 
 namespace ge {
 namespace formats {

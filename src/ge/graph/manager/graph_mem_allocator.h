@@ -83,11 +83,12 @@ class MemoryAllocator {
   ///
   /// @ingroup ge_graph
   /// @brief malloc memory
+  /// @param [in] purpose memory usage
   /// @param [in] size memory size
   /// @param [in] device_id device id
   /// @return  memory address
   ///
-  uint8_t *MallocMemory(uint64_t memory_size, uint32_t device_id = 0) const;
+  uint8_t *MallocMemory(const string &purpose, uint64_t memory_size, uint32_t device_id = 0) const;
 
   ///
   /// @ingroup ge_graph
@@ -101,12 +102,13 @@ class MemoryAllocator {
   ///
   /// @ingroup ge_graph
   /// @brief malloc memory
+  /// @param [in] purpose memory usage
   /// @param [in] memory_key memory key
   /// @param [in] size memory size
   /// @param [in] device_id device id
   /// @return memory address
   ///
-  uint8_t *MallocMemory(const string &memory_key, uint64_t memory_size, uint32_t device_id = 0);
+  uint8_t *MallocMemory(const string &purpose, const string &memory_key, uint64_t memory_size, uint32_t device_id = 0);
 
   ///
   /// @ingroup ge_graph

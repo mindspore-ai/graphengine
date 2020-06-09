@@ -39,6 +39,7 @@ class SingleOp {
  private:
   Status ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   Status UpdateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
+  Status GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
 
   friend class SingleOpModel;
   rtStream_t stream_ = nullptr;

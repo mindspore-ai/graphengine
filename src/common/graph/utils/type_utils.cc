@@ -56,6 +56,7 @@ static const std::map<Format, std::string> kFormatToStringMap = {
   {FORMAT_FRACTAL_NZ, "FRACTAL_NZ"},
   {FORMAT_CN, "CN"},
   {FORMAT_NC, "NC"},
+  {FORMAT_FRACTAL_ZN_LSTM, "FRACTAL_ZN_LSTM"},
   {FORMAT_RESERVED, "FORMAT_RESERVED"},
   {FORMAT_ALL, "ALL"}};
 
@@ -76,7 +77,8 @@ static const std::unordered_set<std::string> kInternalFormat = {"NC1HWC0",
                                                                 "FRACTAL_NZ",
                                                                 "NDC1HWC0",
                                                                 "FORMAT_FRACTAL_Z_3D",
-                                                                "FORMAT_FRACTAL_Z_3D_TRANSPOSE"};
+                                                                "FORMAT_FRACTAL_Z_3D_TRANSPOSE"
+                                                                "FORMAT_FRACTAL_ZN_LSTM"};
 
 static const std::map<std::string, Format> kDataFormatMap = {
   {"NCHW", FORMAT_NCHW}, {"NHWC", FORMAT_NHWC}, {"NDHWC", FORMAT_NDHWC}, {"NCDHW", FORMAT_NCDHW}, {"ND", FORMAT_ND}};
@@ -119,6 +121,7 @@ static const std::map<std::string, Format> kStringToFormatMap = {
   {"FRACTAL_Z_3D_TRANSPOSE", FORMAT_FRACTAL_Z_3D_TRANSPOSE},
   {"CN", FORMAT_CN},
   {"NC", FORMAT_NC},
+  {"FRACTAL_ZN_LSTM", FORMAT_FRACTAL_ZN_LSTM},
   {"FORMAT_RESERVED", FORMAT_RESERVED},
   {"ALL", FORMAT_ALL}};
 

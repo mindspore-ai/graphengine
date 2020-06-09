@@ -20,8 +20,6 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
 
-using domi::SNAPSHOT;
-
 namespace ge {
 Status SnapshotPass::Run(NodePtr &node) {
   if (node == nullptr) {

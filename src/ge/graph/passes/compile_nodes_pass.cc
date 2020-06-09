@@ -45,7 +45,7 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
   std::unordered_map<string, vector<NodePtr>> kernel_to_compile_nodes;
-  for (auto &node : graph->GetAllNodes()) {
+  for (auto &node : graph->GetDirectNode()) {
     if (node == nullptr) {
       continue;
     }

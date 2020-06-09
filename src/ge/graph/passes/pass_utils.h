@@ -26,6 +26,7 @@ namespace ge {
 class PassUtils {
  public:
   PassUtils() = delete;
+  ~PassUtils() = delete;
 
   static NodePtr GetInDataNode(const ConstNodePtr &node, int index);
 

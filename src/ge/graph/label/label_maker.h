@@ -35,7 +35,10 @@ class LabelMaker {
 
   virtual Status Run(uint32_t &label_index) = 0;
 
-  NodePtr AddLabelSetEnter(const ComputeGraphPtr &graph, const std::string &name, uint32_t index);
+  NodePtr AddStreamActive(const ComputeGraphPtr &graph, const std::string &name);
+
+  NodePtr AddLabelSetEnter(const ComputeGraphPtr &graph, const std::string &name, uint32_t index,
+                           NodePtr &stream_active);
   NodePtr AddLabelSetLeave(const ComputeGraphPtr &graph, const std::string &name, uint32_t index);
 
   NodePtr AddLabelGotoEnter(const ComputeGraphPtr &graph, const std::string &name, uint32_t index);
@@ -55,6 +58,12 @@ class LabelMaker {
  protected:
   NodePtr parent_node_;
   ComputeGraphPtr parent_graph_;
+
+ private:
+  Status AddCtrlLink2Data(const ComputeGraphPtr &graph, const NodePtr &node);
+  void SetStreamIdEnter(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
+  void SetStreamIdLeave(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
+  void SetStreamIdOwner(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_LABEL_MAKER_H_

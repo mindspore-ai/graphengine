@@ -24,8 +24,6 @@
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::SHAPE;
-
 namespace ge {
 namespace {
 const size_t kShapeInputSize = 1;

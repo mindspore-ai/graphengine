@@ -22,10 +22,6 @@
 #include "common/singleton.h"
 #include "common/types.h"
 
-using domi::TARGET_TYPE_LTTE_8BIT;
-using domi::TARGET_TYPE_MINI_8BIT;
-using domi::TARGET_TYPE_TINY_8BIT;
-
 namespace ge {
 class Params : public Singleton<Params> {
  public:

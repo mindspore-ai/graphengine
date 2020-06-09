@@ -14,24 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_TASK_INFO_H_
-#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_TASK_INFO_H_
+#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
+#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
 
 #include "graph/load/new_model_manager/task_info/task_info.h"
 
 namespace ge {
-class LabelGotoTaskInfo : public TaskInfo {
+class LabelSwitchByIndexTaskInfo : public TaskInfo {
  public:
-  LabelGotoTaskInfo() : label_(nullptr) {}
+  LabelSwitchByIndexTaskInfo() : index_value_(nullptr), branch_max_(0), args_(nullptr), args_size_(0) {}
 
-  ~LabelGotoTaskInfo() override { label_ = nullptr; }
+  ~LabelSwitchByIndexTaskInfo() override;
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
   Status Distribute() override;
 
  private:
-  void *label_;
+  void *index_value_;    // switch index input.
+  uint32_t branch_max_;  // max branch count.
+  void *args_;           // label info memory.
+  uint32_t args_size_;   // label info length.
+
+  std::vector<rtLabel_t> label_list_;
 };
 }  // namespace ge
-#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_TASK_INFO_H_
+#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_

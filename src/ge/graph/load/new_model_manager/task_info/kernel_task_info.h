@@ -88,15 +88,13 @@ class KernelTaskInfo : public TaskInfo {
   FusionOpInfo fusion_op_info_;
 
  private:
-  Status InitTVMTask(DavinciModel *davinci_model, uint16_t offset, const domi::KernelDef &kernel_def);
+  Status InitTVMTask(uint16_t offset, const domi::KernelDef &kernel_def);
 
-  Status InitAICPUCustomTask(const std::map<uint32_t, std::shared_ptr<OpDesc>> &op_list, uint32_t op_index,
-                             const domi::KernelDef &kernel_def);
+  Status InitAICPUCustomTask(uint32_t op_index, const domi::KernelDef &kernel_def);
 
-  Status InitCceTask(DavinciModel *davinci_model, const domi::KernelDef &kernel_def);
+  Status InitCceTask(const domi::KernelDef &kernel_def);
 
-  Status InitAicpuTask(const std::map<uint32_t, OpDescPtr> &op_list, uint32_t op_index,
-                       const domi::KernelDef &kernel_def);
+  Status InitAicpuTask(uint32_t op_index, const domi::KernelDef &kernel_def);
 
   Status StoreInputOutputTensor(const std::vector<void *> &input_data_addrs,
                                 const std::vector<void *> &output_data_addrs,
@@ -105,13 +103,14 @@ class KernelTaskInfo : public TaskInfo {
 
   Status SetContext(const domi::KernelDef &kernel_def);
 
-  Status UpdateCceArgs(std::string &sm_desc, std::string &flowtable, DavinciModel *davinci_model,
-                       const domi::KernelDef &kernel_def);
+  Status UpdateCceArgs(std::string &sm_desc, std::string &flowtable, const domi::KernelDef &kernel_def);
   Status CceUpdateKernelArgs(const domi::KernelContext &context, uint64_t &data_base_addr, uint64_t &weight_base_addr,
                              uint64_t &var_base_addr, std::string &sm_desc, std::string &flowtable,
                              const domi::KernelDef &kernel_def);
 
   Status SetFlowtable(std::string &flowtable, const domi::KernelDef &kernel_def);
+
+  Status UpdateL2Data(const domi::KernelDef &kernel_def);
 
   uint8_t IsL2CpToDDR(uint8_t origain_L2_load_to_ddr);
 
@@ -169,6 +168,7 @@ class KernelTaskInfo : public TaskInfo {
     uint32_t last_block_dim;
     uint32_t last_args_size;
     uint32_t last_task_id;
+    uint32_t last_stream_id;
     void *last_stream;
     void *last_sm_desc;
     std::vector<void *> kernel_list;

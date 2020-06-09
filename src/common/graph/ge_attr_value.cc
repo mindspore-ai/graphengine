@@ -31,19 +31,18 @@ using std::string;
 using std::vector;
 
 namespace ge {
-GeAttrValue::NamedAttrs::NamedAttrs() { named_attrs_.InitDefault(); }
+NamedAttrs::NamedAttrs() { named_attrs_.InitDefault(); }
 
-GeAttrValue::NamedAttrs::NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *proto_msg)
-    : named_attrs_(owner, proto_msg) {}
+NamedAttrs::NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *proto_msg) : named_attrs_(owner, proto_msg) {}
 
-void GeAttrValue::NamedAttrs::SetName(const std::string &name) {
+void NamedAttrs::SetName(const std::string &name) {
   auto proto_msg = named_attrs_.GetProtoMsg();
   if (proto_msg != nullptr) {
     proto_msg->set_name(name);
   }
 }
 
-string GeAttrValue::NamedAttrs::GetName() const {
+string NamedAttrs::GetName() const {
   auto proto_msg = named_attrs_.GetProtoMsg();
   if (proto_msg != nullptr) {
     return proto_msg->name();
@@ -51,13 +50,13 @@ string GeAttrValue::NamedAttrs::GetName() const {
   return string();
 }
 
-GeAttrValue GeAttrValue::NamedAttrs::GetItem(const string &key) const {
+GeAttrValue NamedAttrs::GetItem(const string &key) const {
   GeAttrValue value;
-  GetAttr(key, value);
+  (void)GetAttr(key, value);
   return value;
 }
 
-ProtoAttrMapHelper GeAttrValue::NamedAttrs::MutableAttrMap() {
+ProtoAttrMapHelper NamedAttrs::MutableAttrMap() {
   auto proto_msg = named_attrs_.GetProtoMsg();
   if (proto_msg != nullptr) {
     return ProtoAttrMapHelper(named_attrs_.GetProtoOwner(), proto_msg->mutable_attr());
@@ -65,7 +64,7 @@ ProtoAttrMapHelper GeAttrValue::NamedAttrs::MutableAttrMap() {
   return ProtoAttrMapHelper(named_attrs_.GetProtoOwner(), nullptr);
 }
 
-ConstProtoAttrMapHelper GeAttrValue::NamedAttrs::GetAttrMap() const {
+ConstProtoAttrMapHelper NamedAttrs::GetAttrMap() const {
   auto proto_msg = named_attrs_.GetProtoMsg();
   if (proto_msg != nullptr) {
     return ConstProtoAttrMapHelper(named_attrs_.GetProtoOwner(), &proto_msg->attr());
@@ -515,7 +514,7 @@ bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const vector<GeAtt
   return true;
 }
 
-bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const GeAttrValue::NamedAttrs &value) {
+bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const GeAttrValue::NAMED_ATTRS &value) {
   if (!AttrUtilsHelper::SetValueCheckType(proto_attr_val, proto::AttrDef::kFunc)) {
     return false;
   }
@@ -528,7 +527,7 @@ bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const GeAttrValue:
   return true;
 }
 
-bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const vector<GeAttrValue::NamedAttrs> &value) {
+bool GeAttrValueImp::SetValue(proto::AttrDef &proto_attr_val, const vector<GeAttrValue::NAMED_ATTRS> &value) {
   if (!AttrUtilsHelper::SetValueCheckAndSetListType(proto_attr_val,
                                                     proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS)) {
     return false;
@@ -739,7 +738,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
 }
 
 bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoMsgOwner &,
-                              GeAttrValue::NamedAttrs &value) {
+                              GeAttrValue::NAMED_ATTRS &value) {
   if (!AttrUtilsHelper::GetValueCheckType(proto_attr_val, proto::AttrDef::kFunc)) {
     return false;
   }
@@ -752,7 +751,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
 }
 
 bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoMsgOwner &,
-                              vector<GeAttrValue::NamedAttrs> &value) {
+                              vector<GeAttrValue::NAMED_ATTRS> &value) {
   value.clear();
   if (!AttrUtilsHelper::GetValueCheckListType(
         proto_attr_val, proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS, ListValueItemCheck(na))) {
@@ -760,7 +759,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
   }
   auto &list = proto_attr_val.list();
   for (const auto &item : list.na()) {
-    value.emplace_back(GeAttrValue::NamedAttrs());
+    value.emplace_back(GeAttrValue::NAMED_ATTRS());
     if (value.empty()) {
       return false;
     }
@@ -967,7 +966,7 @@ ATTR_UTILS_SET_GET_IMP(TensorDesc, GeTensorDesc)
 ATTR_UTILS_SET_IMP(Tensor, GeTensorPtr)
 ATTR_UTILS_SET_IMP(Tensor, ConstGeTensorPtr)
 ATTR_UTILS_SET_IMP(Tensor, GeTensor)
-ATTR_UTILS_SET_GET_IMP(NamedAttrs, GeAttrValue::NamedAttrs)
+ATTR_UTILS_SET_GET_IMP(NamedAttrs, GeAttrValue::NAMED_ATTRS)
 ATTR_UTILS_SET_GET_IMP(Bytes, Buffer)
 ATTR_UTILS_SET_GET_IMP(Graph, ComputeGraphPtr)
 ATTR_UTILS_SET_GET_IMP(ListListInt, vector<vector<int64_t>>)
@@ -982,7 +981,7 @@ ATTR_UTILS_SET_GET_IMP(ListTensorDesc, vector<GeTensorDesc>)
 ATTR_UTILS_SET_IMP(ListTensor, vector<GeTensorPtr>)
 ATTR_UTILS_SET_IMP(ListTensor, vector<ConstGeTensorPtr>)
 ATTR_UTILS_SET_IMP(ListTensor, vector<GeTensor>)
-ATTR_UTILS_SET_GET_IMP(ListNamedAttrs, vector<GeAttrValue::NamedAttrs>)
+ATTR_UTILS_SET_GET_IMP(ListNamedAttrs, vector<GeAttrValue::NAMED_ATTRS>)
 ATTR_UTILS_SET_GET_IMP(ListBytes, vector<Buffer>)
 ATTR_UTILS_SET_GET_IMP(ListGraph, vector<ComputeGraphPtr>)
 ATTR_UTILS_SET_GET_IMP(ListDataType, vector<ge::DataType>)

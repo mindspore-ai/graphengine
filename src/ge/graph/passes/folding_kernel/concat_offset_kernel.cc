@@ -25,8 +25,6 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::CONCATOFFSET;
-
 namespace ge {
 namespace {
 const size_t kConcatOffsetInputIndexZero = 0;
@@ -66,6 +64,10 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   }
   GELOGI("Output shape size is %ld", output_size);
   int32_t offset = 0;
+  if (output_size < 0) {
+    GELOGE(FAILED, "Index is negative.");
+    return FAILED;
+  }
   unique_ptr<int32_t[]> buf(new (std::nothrow) int32_t[output_size]());
   if (buf == nullptr) {
     GELOGE(MEMALLOC_FAILED, "new buf failed");

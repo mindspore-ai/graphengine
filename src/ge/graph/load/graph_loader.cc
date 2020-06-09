@@ -33,63 +33,6 @@ GraphLoader::GraphLoader() = default;
 
 GraphLoader::~GraphLoader() = default;
 
-Status GraphLoader::LoadGraph(const std::shared_ptr<ge::GeModel> &ge_model_ptr,
-                              const std::shared_ptr<GraphModelListener> &model_listener, ModelIdInfo &model_id_info) {
-  if (ge_model_ptr == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_ptr is nullptr.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  if (model_listener == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_listener is nullptr.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  std::shared_ptr<ge::Model> model_ptr;
-  if (ModelHelper::TransGeModelToModel(ge_model_ptr, model_ptr) != SUCCESS) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph ge_model_ptr trans to ModelPtr failed.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-  GELOGI("[LoadGraph] GE load graph via new ome begin.");
-  Status ret = LoadModelOnline(model_id_info.model_id, model_ptr, model_listener);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[LoadGraph] GE load graph  LoadGraph() return fail. err: %u", ret);
-    return ret;
-  }
-  GELOGI("[LoadGraph] GE load graph success. modelId: %u", model_id_info.model_id);
-  return ret;
-}
-
-Status GraphLoader::LoadGraphAsync(const std::shared_ptr<ge::GeModel> &ge_model_ptr,
-                                   const std::shared_ptr<RunAsyncListener> &model_async_listener,
-                                   ModelIdInfo &model_id_info) {
-  if (ge_model_ptr == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraphAsync] GE load graph model_ptr is nullptr.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  if (model_async_listener == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraphAsync] GE load graph model_listener is nullptr.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  std::shared_ptr<ge::Model> model_ptr;
-  if (ModelHelper::TransGeModelToModel(ge_model_ptr, model_ptr) != SUCCESS) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph ge_model_ptr trans to ModelPtr failed.");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-
-  GELOGI("[LoadGraphAsync] GE load graph begin.");
-  Status ret = LoadModelOnline(model_id_info.model_id, model_ptr, model_async_listener);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[LoadGraphAsync] GE load graph  LoadGraphAsync() return fail. err: %u", ret);
-    return ret;
-  }
-
-  GELOGI("[LoadGraphAsync] GE load graph success. modelId: %u", model_id_info.model_id);
-  return ret;
-}
-
 Status GraphLoader::UnloadModel(uint32_t model_id) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
@@ -110,73 +53,56 @@ Status GraphLoader::UnloadModel(uint32_t model_id) {
   return SUCCESS;
 }
 
-Status GraphLoader::LoadModelOnline(uint32_t &model_id, std::shared_ptr<ge::Model> &model,
+Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeModel> &ge_model_ptr,
                                     const std::shared_ptr<ModelListener> &listener) {
+  GELOGI("Load model online begin.");
   rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_LOAD);
     return RT_FAILED;
   }
+  if (ge_model_ptr == nullptr) {
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_ptr is nullptr.");
+    return GE_GRAPH_PARAM_NULLPTR;
+  }
+  model_id = ge_model_ptr->GetModelId();
 
-  try {
-    GELOGI("Load begin, model_id:%u.", model_id);
-    auto model_manager = ModelManager::GetInstance();
-    GE_CHECK_NOTNULL(model_manager);
-    Status ret = model_manager->LoadModelOnline(model_id, model, listener);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
-      CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_LOAD);
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->LoadModelOnline(model_id, ge_model_ptr, listener);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
+    CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_LOAD);
 
-      rt_ret = rtDeviceReset(GetContext().DeviceId());
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      }
-      return ret;
-    }
-
-    ret = model_manager->Start(model_id);
-    if (ret != SUCCESS) {
-      if (model_manager->Unload(model_id) != SUCCESS) {
-        GELOGE(ret, "LoadModel: Unload failed while trying to unload after a failed start.");
-      }
-
-      rt_ret = rtDeviceReset(GetContext().DeviceId());
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      }
-
-      GELOGE(ret, "LoadModel: Start failed.");
-      CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
-      return ret;
-    }
-
-    GELOGI("Load model success, model_id:%u.", model_id);
-  } catch (std::bad_alloc &) {
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     }
-
-    GELOGE(MEMALLOC_FAILED, "Load model failed, bad memory allocation occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_LOAD);
-    return MEMALLOC_FAILED;
-  } catch (...) {
-    rt_ret = rtDeviceReset(GetContext().DeviceId());
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    }
-
-    GELOGE(FAILED, "Load failed, some exceptions occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_LOAD);
-    return FAILED;
+    return ret;
   }
 
+  ret = model_manager->Start(model_id);
+  if (ret != SUCCESS) {
+    if (model_manager->Unload(model_id) != SUCCESS) {
+      GELOGE(ret, "LoadModel: Unload failed while trying to unload after a failed start.");
+    }
+
+    rt_ret = rtDeviceReset(GetContext().DeviceId());
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    }
+
+    GELOGE(ret, "LoadModel: Start failed.");
+    CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
+    return ret;
+  }
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
+  GELOGI("Load model online success, model_id:%u.", model_id);
 
   return SUCCESS;
 }
@@ -196,13 +122,13 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
                                      ModelData &model_data) {
   Status ret;
   try {
-    if (!domi::CheckInputPathValid(path)) {
+    if (!CheckInputPathValid(path)) {
       GELOGE(PARAM_INVALID, "model path is invalid: %s", path.c_str());
       return PARAM_INVALID;
     }
 
     GELOGI("Load model begin, model path is: %s", path.c_str());
-    if (!key_path.empty() && !domi::CheckInputPathValid(key_path)) {
+    if (!key_path.empty() && !CheckInputPathValid(key_path)) {
       GELOGE(PARAM_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
       return PARAM_INVALID;
     }
@@ -435,6 +361,17 @@ Status GraphLoader::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   Status ret = model_manager->DestroyAicpuKernel(session_id, model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "Destroy aicpu kernel failed.");
+    return ret;
+  }
+  return SUCCESS;
+}
+
+Status GraphLoader::DestroyAicpuSessionForInfer(uint32_t model_id) {
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->DestroyAicpuSessionForInfer(model_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Destroy aicpu serrion for infer failed.");
     return ret;
   }
   return SUCCESS;

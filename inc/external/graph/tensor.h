@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "./ge_error_codes.h"
 #include "./types.h"
@@ -62,6 +63,11 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
   void Update(const Shape &shape, Format format = FORMAT_ND, DataType dt = DT_FLOAT);
   Shape GetShape() const;
   void SetShape(const Shape &shape);
+  // set shape with -2, it stand for unknown shape
+  graphStatus SetUnknownDimNumShape();
+  // for unknown shape
+  graphStatus SetShapeRange(const std::vector<std::pair<int64_t, int64_t>> &range);
+  graphStatus GetShapeRange(std::vector<std::pair<int64_t, int64_t>> &range) const;
 
   Format GetFormat() const;
   void SetFormat(Format format);

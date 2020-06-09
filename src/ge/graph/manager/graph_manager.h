@@ -27,6 +27,7 @@
 
 #include "common/blocking_queue.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/helper/model_cache_helper.h"
 #include "external/graph/types.h"
 #include "ge/ge_api_types.h"
 #include "graph/build/graph_builder.h"
@@ -128,12 +129,11 @@ class GraphManager {
   /// @brief run graph async on session with specific session id
   /// @param [in] graph_id graph id
   /// @param [in] inputs input data
-  /// @param [out] outputs output data
   /// @param [out] callback: callback while run graph async finish
   /// @return Status result of function
   ///
-  Status RunGraphAsync(const GraphId &graph_id, const std::vector<ge::TensorInfo> &inputs,
-                       std::vector<ge::TensorInfo> &outputs, uint64_t session_id, std::function<void(Status)> callback);
+  Status RunGraphAsync(const GraphId &graph_id, const std::vector<ge::InputTensorInfo> &inputs, uint64_t session_id,
+                       RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph
@@ -149,26 +149,26 @@ class GraphManager {
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
 
+  Status GenerateInfershapeGraph(GraphId &graph_id);
+
   const std::map<std::string, std::string> *GetGraphOptions(uint32_t graph_id);
 
  private:
   struct PreRunArgs {
     GraphId graph_id;
-    std::vector<ge::TensorInfo> input_tensor;
-    std::vector<ge::TensorInfo> output_tensor;
+    std::vector<ge::InputTensorInfo> input_tensor;
     uint64_t session_id;
     GEThreadLocalContext context;
-    std::function<void(Status)> callback;
+    RunAsyncCallback callback;
   };
 
   struct RunArgs {
     GraphNodePtr graph_node;
     GraphId graph_id;
-    std::vector<TensorInfo> input_tensor;
-    std::vector<TensorInfo> output_tensor;
+    std::vector<ge::InputTensorInfo> input_tensor;
     GeModelPtr ge_model;
     GEThreadLocalContext context;
-    std::function<void(Status)> callback;
+    RunAsyncCallback callback;
   };
 
   Status GetGraphNode(const GraphId &graph_id, GraphNodePtr &out);
@@ -179,6 +179,14 @@ class GraphManager {
                                                 uint64_t session_id, const GEThreadLocalContext &ge_context);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, vector<GeModelPtr> &ge_models,
                 GeModelPtr &ge_model, uint64_t session_id = INVALID_SESSION_ID);
+
+  Status PreRunDynShape(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
+                        vector<GeModelPtr> &ge_models, GeModelPtr &ge_model, uint64_t session_id = INVALID_SESSION_ID);
+
+  Status OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, uint64_t session_id);
+
+  Status Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, vector<GeModelPtr> &ge_models,
+               GeModelPtr &ge_model, uint64_t session_id);
 
   Status StartForRunGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
                           vector<GeModelPtr> &ge_models, uint64_t session_id = INVALID_SESSION_ID);
@@ -211,7 +219,8 @@ class GraphManager {
 
   Status SummaryHandle(const GraphId &graph_id, std::vector<GeTensor> &outputs);
 
-  Status CheckpointHandle(const GraphId &graph_id, const std::vector<GeTensor> &outputs);
+  Status CheckpointHandle(const GraphId &graph_id, const ComputeGraphPtr &compute_graph,
+                          const std::vector<GeTensor> &outputs);
 
   // call the callback function of ME to push summary result data to ME
   Status PushSummaryData2ME(const GraphId &graph_id, const std::map<std::string, ge::Tensor> &summary_data);
@@ -250,21 +259,33 @@ class GraphManager {
 
   Status RemoveIsolatedConst(ge::ComputeGraphPtr &compute_graph);
 
+  Status OptimizeStage1(ComputeGraphPtr &compute_graph);
+  Status OptimizeStage2(ComputeGraphPtr &compute_graph);
   Status OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph);
+
+  Status NewOptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph);
 
   Status LoadGraphAsync(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
 
   Status CheckAndReleaseMemory(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
 
+  bool CheckModelLoad(const GeModelPtr &ge_model, bool load_flag);
+
   Status LoadGraph(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
 
   bool IsGraphNeedBuild(const GraphNodePtr &graph_node);
 
+  Status LoadFromCache(const GraphNodePtr &graph_node, const ModelCacheHelperPtr &cache_helper, GeModelPtr &ge_model);
+  Status SaveCacheBeforeBuild(uint32_t graph_id, const ModelCacheHelperPtr &cache_helper);
+  Status SaveCacheAfterBuild(uint32_t graph_id, ComputeGraphPtr graph, GeModelPtr &ge_model);
+  void AddModelCacheHelperToMap(const GraphId &graph_id, uint64_t session_id, ComputeGraphPtr &compute_graph);
+  Status IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_model);
+  void RemoveModelCacheHelper(const GraphId &graph_id);
+
   static void PreRunThread(GraphManager *graph_manager);
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);
-  static void ReturnError(GraphManager *graph_manager, std::function<void(Status)> callback, Status ret,
-                          const string &log);
+  static void ReturnError(GraphManager *graph_manager, RunAsyncCallback callback, Status ret, const string &log);
 
   std::atomic_bool thread_run_flag_;
   BlockingQueue<PreRunArgs> prerun_args_q_{};
@@ -273,6 +294,8 @@ class GraphManager {
   std::thread run_thread_;
 
   std::map<GraphId, GraphNodePtr> graph_map_;
+
+  std::map<GraphId, ModelCacheHelperPtr> cache_helper_map_;
 
   // for run graph synchronous return
   std::mutex sync_run_mutex_;

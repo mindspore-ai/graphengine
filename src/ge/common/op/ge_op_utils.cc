@@ -25,16 +25,15 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "framework/common/op/attr_define.h"
 #include "framework/common/op/attr_value_util.h"
 #include "framework/common/util.h"
 #include "graph/anchor.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "mmpa/mmpa_api.h"
 
-using ge::fp16_t;
 using std::vector;
 
 namespace ge {
@@ -68,6 +67,8 @@ const uint32_t FOR_START_INPUT = 0;
 const uint32_t FOR_LIMIT_INPUT = 1;
 const uint32_t FOR_DELTA_INPUT = 2;
 const uint32_t FOR_DATA_INPUT = 3;
+
+const int NORMAL_TENSOR_SIZE = 4;
 
 // Get the value of key from attr
 #define AIPP_GET_ATTR_VALUE(KEY, ATTR_TYPE)                          \
@@ -110,7 +111,7 @@ const uint32_t FOR_DATA_INPUT = 3;
 #define AIPP_CONVERT_LIST_FLOAT(KEY, REQUIRED) AIPP_CONVERT_LIST_FORMAT(KEY, float, REQUIRED, GeAttrValue::FLOAT)
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params) {
+OpUtils::ConvertAippParams(const GeAttrValue::NAMED_ATTRS &aipp_attr, domi::AippOpParams *aipp_params) {
   GE_CHECK_NOTNULL(aipp_params);
   AIPP_CONVERT_FORMAT_EX(aipp_mode, domi::AippOpParams::AippMode, int32_t, GeAttrValue::INT);
 
@@ -177,7 +178,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::TransferDim(con
   for (auto dim_temp : dim) {
     new_dim_list.push_back(dim_temp);
   }
-  if (input_shape_size > domi::DIM_DEFAULT_SIZE) {
+  if (input_shape_size > DIM_DEFAULT_SIZE) {
     dim_vector = dim;
     GELOGI("Dim_vector size is %zu, do not to transfer dim", input_shape_size);
     return SUCCESS;

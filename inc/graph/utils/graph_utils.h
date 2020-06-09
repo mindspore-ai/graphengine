@@ -95,11 +95,34 @@
   };
 
 namespace ge {
+enum IOType { kIn, kOut };
+
+struct NodeIndexIO {
+  NodeIndexIO(ge::NodePtr node, uint32_t index, IOType io_type)
+      : node(std::move(node)), index(index), io_type(io_type) {}
+  NodeIndexIO(ge::NodePtr node, int index, IOType io_type)
+      : node(std::move(node)), index(static_cast<uint32_t>(index)), io_type(io_type) {}
+  ~NodeIndexIO() {}
+
+  NodePtr node = nullptr;
+  uint32_t index = 0;
+  IOType io_type = kOut;
+
+  std::string ToString() const {
+    if ((node == nullptr) || (node->GetOwnerComputeGraph() == nullptr)) {
+      return "";
+    }
+    return node->GetName() + (io_type == kOut ? "_out_" : "_in_") + std::to_string(index);
+  }
+};
+
 class GraphUtils {
  public:
   static ComputeGraphPtr GetComputeGraph(const Graph &graph);
 
   static Graph CreateGraphFromComputeGraph(const ComputeGraphPtr compute_graph);
+
+  static graphStatus RecoverGraphOperators(const Graph &graph);
 
   static ComputeGraphPtr CreateGraphFromOperator(const string &name, const std::vector<Operator> &inputs);
 
@@ -262,6 +285,108 @@ class GraphUtils {
   static graphStatus MoveOutCtrlEdges(NodePtr &src_node, NodePtr &dst_node);
 
   static ComputeGraphPtr FindRootGraph(ComputeGraphPtr graph);
+
+  static graphStatus TopologicalSortingByName(const ge::ComputeGraphPtr &compute_graph, vector<NodePtr> &node_vec);
+
+  ///
+  /// Get reference-mapping of all data_anchors in graph
+  /// @param [in] graph
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus GetRefMapping(const ComputeGraphPtr &graph,
+                                   std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                   std::map<std::string, std::string> &anchor_to_symbol);
+
+ private:
+  ///
+  /// Get reference-mapping for in_data_anchors of node
+  /// @param [in] node
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus HandleInAnchorMapping(const NodePtr &node,
+                                           std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                           std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Get reference-mapping for out_data_anchors of node
+  /// @param [in] node
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus HandleOutAnchorMapping(const NodePtr &node,
+                                            std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                            std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Handle input of subgraph
+  /// @param [in] node
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus HandleSubgraphInput(const NodePtr &node,
+                                         std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                         std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Handle input of Merge op
+  /// @param [in] node
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus HandleMergeInput(const NodePtr &node,
+                                      std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                      std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Handle output of subgraph
+  /// @param [in] node
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus HandleSubgraphOutput(const NodePtr &node,
+                                          std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                          std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Union ref-mapping
+  /// @param [in] exist_node_info1
+  /// @param [in] exist_node_info2
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @param [out] symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus UnionSymbolMapping(const NodeIndexIO &exist_node_info1, const NodeIndexIO &exist_node_info2,
+                                        std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                        std::map<std::string, std::string> &anchor_to_symbol, std::string &symbol);
+
+  ///
+  /// Update symbol mapping with a new reference pair
+  /// @param [in] cur_node_info
+  /// @param [in] exist_node_info
+  /// @param [out] symbol_to_anchors
+  /// @param [out] anchor_to_symbol
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus UpdateRefMapping(const NodeIndexIO &cur_node_info, const NodeIndexIO &exist_node_info,
+                                      std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                      std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Check if out_data_anchor is reference of input
+  /// @param [in] out_data_anchor
+  /// @param [out] reuse_in_index
+  /// @return bool
+  ///
+  static bool IsRefFromInput(const OutDataAnchorPtr &out_data_anchor, int32_t &reuse_in_index);
 };
 
 class ComputeGraphBuilder {
@@ -441,12 +566,12 @@ class CompleteGraphBuilder : public ComputeGraphBuilder {
 
  private:
   ///
-  /// @brief Build inputs
+  /// @brief Add data nodes
   /// @param [out] error_code
   /// @param [out] error_msg
   /// @return void
   ///
-  void BuildInputs(graphStatus &error_code, std::string &error_msg);
+  void AddDataNodes(graphStatus &error_code, std::string &error_msg);
 
   ///
   /// @brief Add data node
@@ -455,41 +580,15 @@ class CompleteGraphBuilder : public ComputeGraphBuilder {
   /// @param [out] error_msg
   /// @return void
   ///
-  NodePtr AddDateNode(uint32_t index, graphStatus &error_code, std::string &error_msg);
+  NodePtr AddDataNode(uint32_t index, graphStatus &error_code, std::string &error_msg);
 
   ///
-  /// @brief Build outputs
+  /// @brief Add RetVal nodes
   /// @param [out] error_code
   /// @param [out] error_msg
   /// @return void
   ///
-  void BuildOutputs(graphStatus &error_code, std::string &error_msg);
-
-  ///
-  /// @brief Add NetOutput node
-  /// @param [out] error_code
-  /// @param [out] error_msg
-  /// @return NodePtr
-  ///
-  NodePtr AddNetOutputNode(graphStatus &error_code, std::string &error_msg);
-
-  ///
-  /// @brief Add input/output tensor for NetOutput node
-  /// @param [in] out_nodes_info
-  /// @param [out] net_output_desc
-  /// @return graphStatus
-  ///
-  graphStatus BuildInOutForNetOutput(const std::vector<std::pair<NodePtr, int32_t>> &out_nodes_info,
-                                     OpDescPtr &net_output_desc);
-
-  ///
-  /// @brief Add edge for NetOutput node
-  /// @param [in] out_nodes_info
-  /// @param [out] net_output_node
-  /// @return graphStatus
-  ///
-  graphStatus AddEdgeForNetOutput(const std::vector<std::pair<NodePtr, int32_t>> &out_nodes_info,
-                                  const NodePtr &net_output_node);
+  void AddRetValNodes(graphStatus &error_code, std::string &error_msg);
 
   std::string name_;
   NodePtr parent_node_;

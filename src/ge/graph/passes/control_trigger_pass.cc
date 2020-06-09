@@ -27,25 +27,9 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
-using domi::ATTR_NAME_WEIGHTS;
-
-using domi::CONSTANT;
-using domi::CONTROLTRIGGER;
-using domi::ENTER;
-using domi::IDENTITY;
-using domi::LOOPCOND;
-using domi::MERGE;
-using domi::REFENTER;
-using domi::REFMERGE;
-using domi::REFSWITCH;
-using domi::SWITCH;
-
 namespace ge {
 Status ControlTriggerPass::Run(ComputeGraphPtr graph) {
   GELOGD("ControlTriggerPass Enter");
-
-  GraphUtils::DumpGEGraph(graph, "BeforeControlTriggerPass");
-  GraphUtils::DumpGEGraphToOnnx(*graph, "BeforeControlTriggerPass");
 
   for (NodePtr &node : graph->GetDirectNode()) {
     if (node->GetType() != CONTROLTRIGGER) {
@@ -60,9 +44,6 @@ Status ControlTriggerPass::Run(ComputeGraphPtr graph) {
       }
     }
   }
-
-  GraphUtils::DumpGEGraph(graph, "AfterControlTriggerPass");
-  GraphUtils::DumpGEGraphToOnnx(*graph, "AfterControlTriggerPass");
 
   GELOGD("ControlTriggerPass Leave");
   return SUCCESS;

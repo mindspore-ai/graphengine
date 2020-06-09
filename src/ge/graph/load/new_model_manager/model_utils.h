@@ -35,20 +35,6 @@ class ModelUtils {
 
   ///
   /// @ingroup domi_ome
-  /// @brief Check is Output Op.
-  /// @return bool
-  ///
-  static bool IsOutput(ConstOpDescPtr op_desc);
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Check is the Input need trans code.
-  /// @return bool
-  ///
-  static bool IsInputTensorNeedTrans(ConstOpDescPtr op_desc, size_t tensor_index);
-
-  ///
-  /// @ingroup domi_ome
   /// @brief Get input size.
   /// @return vector<uint32_t>
   ///
@@ -81,14 +67,6 @@ class ModelUtils {
   /// @return vector<ConstGeTensorPtr>
   ///
   static vector<ConstGeTensorPtr> GetWeights(ConstOpDescPtr op_desc);
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Save Output tensor info to vector.
-  /// @return Status
-  ///
-  static Status GetOutputSize(ConstOpDescPtr op_desc, vector<int64_t> &output_size_list,
-                              vector<int64_t> &output_memory_size_list);
 
   ///
   /// @ingroup domi_ome

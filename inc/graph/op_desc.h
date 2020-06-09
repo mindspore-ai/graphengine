@@ -50,6 +50,8 @@ class GeAttrValue;
 
 using ConstOpDesc = const OpDesc;
 
+enum SubgraphType { kStatic, kDynamic, kSubgraphTypeEnd };
+
 class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
  public:
   template <class T>
@@ -82,6 +84,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   graphStatus AddInputDesc(uint32_t index, const ge::GeTensorDesc &input_desc);
 
   graphStatus AddInputDescForward(const string &name, const unsigned int num);
+
+  graphStatus AddInputDescMiddle(const string &name, const unsigned int num, size_t index);
 
   graphStatus AddOutputDescForward(const string &name, const unsigned int num);
 
@@ -140,6 +144,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   ConstGeTensorDescPtr GetInputDescPtr(const string &name) const;
 
   graphStatus AddDynamicInputDesc(const string &name, const unsigned int num, bool isPushBack = true);
+
+  graphStatus AddDynamicInputDescByIndex(const string &name, const unsigned int num, size_t index);
 
   graphStatus AddDynamicOutputDesc(const string &name, const unsigned int num, bool isPushBack = true);
 
@@ -214,6 +220,9 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   void SetIsInputConst(const vector<bool> &is_input_const);
   vector<bool> GetIsInputConst() const;
 
+  void SetOpInferDepends(const vector<string> &depend_names);
+  vector<string> GetOpInferDepends() const;
+
   string GetInputNameByIndex(uint32_t index) const;
 
   int GetInputIndexByName(const string &name) const;
@@ -236,12 +245,23 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   std::string GetOpEngineName() const;
 
+  void RegisterSubgraphIrName(const std::string &name, SubgraphType type);
+  const std::map<std::string, SubgraphType> &GetSubgraphIrNames() const;
+  SubgraphType GetSubgraphTypeByIrName(const std::string &name) const;
+
   graphStatus AddSubgraphName(const std::string &name);
   const std::map<std::string, uint32_t> &GetSubgraphNameIndexes() const;
 
   std::string GetSubgraphInstanceName(uint32_t index) const;
   const std::vector<std::string> &GetSubgraphInstanceNames() const;
-  void AddSubgraphInstanceName(std::string name);
+  /// Does not provide functions `AddSubgraphInstance` or `AppendSubgraphInstance`,
+  /// because this kind of functions will only append a new subgraph instance name
+  /// at the tail of `subgraph_instance_names_` and ignore the synchronous change of `subgraph_names_to_index_`.
+  /// If we want to append a new subgraph instance name, the function `AddSubgraphName` should be called first.
+  /// \param index
+  /// \param name
+  /// \return
+  graphStatus SetSubgraphInstanceName(uint32_t index, const std::string &name);
   void RemoveSubgraphInstanceName(const std::string &name);
 
  protected:
@@ -256,7 +276,23 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   GeIrProtoHelper<ge::proto::OpDef> op_def_;
   std::vector<std::string> subgraph_instance_names_;
+
+  // subgraph names to index, for a `if` operator:
+  // then_branch: 0
+  // else_branch: 1
+  // or for a `case` node:
+  // branches0: 0
+  // branches1: 1
+  // branches2: 2
   std::map<std::string, uint32_t> subgraph_names_to_index_;
+
+  // subgraph ir names to type, for a `if` operator:
+  // then_branch: static
+  // else_branch: dynamic
+  // or for a `case` op:
+  // branches: dynamic
+  std::map<std::string, SubgraphType> subgraph_ir_names_to_type_;
+
   vector<GeTensorDescPtr> inputs_desc_{};
   vector<GeTensorDescPtr> outputs_desc_{};
   map<string, uint32_t> output_name_idx_{};

@@ -14,7 +14,7 @@
 # ============================================================================
 
 # libengine.so
-file(GLOB_RECURSE SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "*.cc"
         )
 

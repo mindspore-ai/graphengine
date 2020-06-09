@@ -61,6 +61,8 @@ const std::string ATTR_NAME_WORKSPACE_BYTES = "workspace_bytes";
 
 const std::string ATTR_NAME_IS_INPUT_CONST = "is_input_const";
 
+const std::string ATTR_NAME_OP_INFER_DEPENDS = "_op_infer_depends";
+
 const std::string ATTR_NAME_OPT_INPUT = "_opt_input";
 
 const std::string ATTR_NAME_INPUT_NAME_IDX_KEY = "_input_name_idx_key";
@@ -227,6 +229,40 @@ graphStatus OpDesc::AddInputDesc(const string &name, const ge::GeTensorDesc &inp
   }
 }
 
+graphStatus OpDesc::AddInputDescMiddle(const string &name, const unsigned int num, size_t index) {
+  auto input_name_idx = GetAllInputName();
+  for (unsigned int i = 0; i < num; i++) {
+    string input_name = name + std::to_string(i);
+    GE_CHK_BOOL_RET_STATUS((input_name_idx.find(input_name) == input_name_idx.end()), GRAPH_FAILED,
+                           "Add input tensor_desc is existed. name[%s]", input_name.c_str());
+
+    std::shared_ptr<GeTensorDesc> in_desc = ComGraphMakeShared<GeTensorDesc>(GeTensorDesc());
+    if (in_desc == nullptr) {
+      GELOGE(GRAPH_FAILED, "AddInputDescMiddle failed, malloc shared_ptr failed.");
+      return GRAPH_FAILED;
+    }
+
+    if (index > inputs_desc_.size()) {
+      GELOGE(GRAPH_FAILED, "AddInputDescMiddle failed, insert index should not more than inputs size.");
+      return GRAPH_FAILED;
+    }
+
+    (void)inputs_desc_.insert(inputs_desc_.begin() + index + i, in_desc);
+
+    // Update index in input_name_idx
+    for (auto it = input_name_idx.begin(); it != input_name_idx.end(); ++it) {
+      if (it->second >= (index + i)) {
+        it->second += 1;
+      }
+    }
+
+    (void)input_name_idx.insert(make_pair(input_name, i + index));
+  }
+  SetAllInputName(input_name_idx);
+
+  return GRAPH_SUCCESS;
+}
+
 graphStatus OpDesc::AddInputDescForward(const string &name, const unsigned int num) {
   auto input_name_idx = GetAllInputName();
   for (unsigned int i = 0; i < num; i++) {
@@ -239,7 +275,6 @@ graphStatus OpDesc::AddInputDescForward(const string &name, const unsigned int n
       GELOGE(GRAPH_FAILED, "AddInputDescForward failed, malloc shared_ptr failed.");
       return GRAPH_FAILED;
     }
-
     (void)inputs_desc_.insert(inputs_desc_.begin(), in_desc);
 
     // Update index in input_name_idx
@@ -630,6 +665,13 @@ graphStatus OpDesc::AddDynamicInputDesc(const string &name, const unsigned int n
     }
   } else {
     if (AddInputDescForward(name, num) != GRAPH_SUCCESS) return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
+graphStatus OpDesc::AddDynamicInputDescByIndex(const string &name, const unsigned int num, size_t index) {
+  if (AddInputDescMiddle(name, num, index) != GRAPH_SUCCESS) {
+    return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;
 }
@@ -1054,6 +1096,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<string> OpDesc::GetDstName
   return dst_name;
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::SetOpInferDepends(const vector<string> &depend_names) {
+  auto ret = AttrUtils::SetListStr(this, ATTR_NAME_OP_INFER_DEPENDS, depend_names);
+  if (ret != true) {
+    GELOGE(GRAPH_FAILED, "set op_infer_depends fail.");
+  }
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<string> OpDesc::GetOpInferDepends() const {
+  vector<string> depend_names;
+  (void)AttrUtils::GetListStr(this, ATTR_NAME_OP_INFER_DEPENDS, depend_names);
+  return depend_names;
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::SetDstIndex(const vector<int64_t> &dst_index) {
   auto proto_msg = op_def_.GetProtoMsg();
   if (proto_msg != nullptr) {
@@ -1199,20 +1254,17 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY const std::vector<std::string> &O
   return subgraph_instance_names_;
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::AddSubgraphInstanceName(std::string name) {
-  subgraph_instance_names_.emplace_back(std::move(name));
-}
-
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::RemoveSubgraphInstanceName(const std::string &name) {
   for (auto iter = subgraph_instance_names_.begin(); iter != subgraph_instance_names_.end(); ++iter) {
     if (*iter == name) {
-      subgraph_instance_names_.erase(iter);
+      *iter = "";
       return;
     }
   }
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDesc::AddSubgraphName(const std::string &name) {
+  GELOGI("Add subgraph name is %s", name.c_str());
   auto iter = subgraph_names_to_index_.find(name);
   if (iter != subgraph_names_to_index_.end()) {
     GELOGW("The subgraph name %s exists, index %u", name.c_str(), iter->second);
@@ -1220,11 +1272,42 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDesc::AddSubgraphNa
   }
   auto size = subgraph_names_to_index_.size();
   subgraph_names_to_index_[name] = size;
+  subgraph_instance_names_.resize(size + 1);
   return GRAPH_SUCCESS;
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY const std::map<std::string, uint32_t> &OpDesc::GetSubgraphNameIndexes()
   const {
   return subgraph_names_to_index_;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDesc::SetSubgraphInstanceName(uint32_t index,
+                                                                                           const std::string &name) {
+  GELOGI("Add sub graph instans name is %s, index is %u", name.c_str(), index);
+  if (index >= subgraph_instance_names_.size()) {
+    GE_LOGE("The index %u exceeds the max instance coutn %zu", index, subgraph_instance_names_.size());
+    return GRAPH_PARAM_INVALID;
+  }
+  subgraph_instance_names_[index] = name;
+  return GRAPH_SUCCESS;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::RegisterSubgraphIrName(const string &name,
+                                                                                   SubgraphType type) {
+  subgraph_ir_names_to_type_[name] = type;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY const std::map<std::string, SubgraphType> &OpDesc::GetSubgraphIrNames()
+  const {
+  return subgraph_ir_names_to_type_;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY SubgraphType
+OpDesc::GetSubgraphTypeByIrName(const std::string &name) const {
+  auto iter = subgraph_ir_names_to_type_.find(name);
+  if (iter == subgraph_ir_names_to_type_.end()) {
+    return kSubgraphTypeEnd;
+  }
+  return iter->second;
 }
 }  // namespace ge

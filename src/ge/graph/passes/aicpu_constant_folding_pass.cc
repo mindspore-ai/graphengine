@@ -322,6 +322,8 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
   STR_FWK_OP_KERNEL aicpu_task;
   aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoNum = 0;
   std::string task_info;
   Status ret = kernel_info->GenSingleOpRunTask(node, aicpu_task, task_info);
   if (ret != SUCCESS) {
@@ -375,6 +377,8 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
   STR_FWK_OP_KERNEL aicpu_task;
   aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoNum = 0;
   std::string task_info;
   Status ret = kernel_info->GenMemCopyTask(data_infos.size(), aicpu_task, task_info);
   if (ret != SUCCESS) {
@@ -571,8 +575,8 @@ void AicpuConstantFoldingPass::ReleaseMemory(const vector<AddrAndType> &input_ad
 bool AicpuConstantFoldingPass::IsSkipFold(const ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   string type = node->GetType();
-  if (type == domi::FRAMEWORKOP) {
-    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
+  if (type == ge::FRAMEWORKOP) {
+    if (!ge::AttrUtils::GetStr(node->GetOpDesc(), ge::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) {
       GELOGW("Skip aicpu constant folding on frameworkop node [%s]", node->GetName().c_str());
       return true;
     }

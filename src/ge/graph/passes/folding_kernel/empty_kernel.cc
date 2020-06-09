@@ -28,8 +28,6 @@
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 
-using domi::EMPTY;
-
 namespace ge {
 namespace {
 const size_t kEmptyFirstInput = 0;

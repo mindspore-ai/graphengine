@@ -15,22 +15,26 @@
  */
 
 #include "graph/load/new_model_manager/data_dumper.h"
+#include <map>
+#include <utility>
+#include <vector>
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/load/new_model_manager/model_utils.h"
 #include "graph/utils/attr_utils.h"
-#include "model_utils.h"
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping_info.pb.h"
 #include "runtime/mem.h"
 
-using domi::ENDGRAPH;
-
 namespace {
 const uint32_t kAicpuLoadFlag = 1;
 const uint32_t kAicpuUnloadFlag = 0;
+const char *const kDumpOutput = "output";
+const char *const kDumpInput = "input";
+const char *const kDumpAll = "all";
 }  // namespace
 
 static int32_t GetIrDataType(ge::DataType data_type) {
@@ -122,14 +126,20 @@ void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
   }
 }
 
-void DataDumper::SaveDumpTask(uint32_t task_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args) {
+void DataDumper::SaveEndGraphId(uint32_t task_id, uint32_t stream_id) {
+  end_graph_task_id_ = task_id;
+  end_graph_stream_id_ = stream_id;
+}
+
+void DataDumper::SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc,
+                              uintptr_t args) {
   if (op_desc == nullptr) {
     GELOGE(PARAM_INVALID, "Opdesc is nullptr");
     return;
   }
 
-  GELOGI("Save dump task %s, id: %u.", op_desc->GetName().c_str(), task_id);
-  op_list_.push_back({task_id, op_desc, args, true});
+  GELOGI("Save dump task %s, task id: %u, stream id: %u", op_desc->GetName().c_str(), task_id, stream_id);
+  op_list_.push_back({task_id, stream_id, op_desc, args, true});
 
   for (auto iter = input_map_.equal_range(op_desc->GetName()); iter.first != iter.second; ++iter.first) {
     InnerInputMapping &inner_input_mapping = iter.first->second;
@@ -149,7 +159,7 @@ void DataDumper::SaveDumpTask(uint32_t task_id, const std::shared_ptr<OpDesc> &o
     uintptr_t data_addr = args - sizeof(void *) * op_desc->GetInputOffset().size() +
                           sizeof(void *) * static_cast<uint32_t>(inner_input_mapping.input_anchor_index);
     GELOGI("Save input dump task %s, id: %u.", data_op->GetName().c_str(), task_id);
-    op_list_.push_back({task_id, data_op, data_addr, false, inner_input_mapping.input_anchor_index,
+    op_list_.push_back({task_id, stream_id, data_op, data_addr, false, inner_input_mapping.input_anchor_index,
                         inner_input_mapping.output_anchor_index, input_tensor->GetShape().GetDims()});
   }
 }
@@ -178,99 +188,107 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   }
 }
 
-Status DataDumper::LoadDumpInfo() {
-  PrintCheckLog();
-
-  if (op_list_.empty()) {
-    return SUCCESS;
-  }
-
-  aicpu::dump::OpMappingInfo op_mapping_info;
-  op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + std::to_string(device_id_) + "/");
-  op_mapping_info.set_model_name(model_name_);
-  op_mapping_info.set_model_id(model_id_);
-  op_mapping_info.set_flag(kAicpuLoadFlag);
-  op_mapping_info.set_dump_step(PropertiesManager::Instance().GetDumpStep());
-  SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGD("Dump step in load dump info is %s", PropertiesManager::Instance().GetDumpStep().c_str());
-
-  for (const auto &op_iter : op_list_) {
-    aicpu::dump::Task task;
-    auto op_desc = op_iter.op;
-    task.set_end_graph(op_desc->GetType() == ENDGRAPH);
-    task.set_task_id(op_iter.task_id);
-    task.mutable_op()->set_op_name(op_desc->GetName());
-    task.mutable_op()->set_op_type(op_desc->GetType());
-
-    if (op_iter.is_task) {
-      // tbe or aicpu op
-      const auto &output_descs = op_iter.op->GetAllOutputsDesc();
-      const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_iter.op, false);
-      if (output_descs.size() != output_addrs.size()) {
-        GELOGE(PARAM_INVALID, "Invalid output desc addrs size %zu, op %s has %zu output desc.", output_addrs.size(),
-               op_iter.op->GetName().c_str(), output_descs.size());
-        return PARAM_INVALID;
-      }
-
-      for (size_t i = 0; i < output_descs.size(); ++i) {
-        aicpu::dump::Output output;
-        output.set_data_type(static_cast<int32_t>(GetIrDataType(output_descs.at(i).GetDataType())));
-        output.set_format(static_cast<int32_t>(output_descs.at(i).GetFormat()));
-
-        for (auto dim : output_descs.at(i).GetShape().GetDims()) {
-          output.mutable_shape()->add_dim(dim);
-        }
-
-        std::string origin_name;
-        int32_t origin_output_index = -1;
-        (void)AttrUtils::GetStr(&output_descs.at(i), ATTR_NAME_DATA_DUMP_ORIGIN_NAME, origin_name);
-        (void)AttrUtils::GetInt(&output_descs.at(i), ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX, origin_output_index);
-        output.set_original_name(origin_name);
-        output.set_original_output_index(origin_output_index);
-        output.set_original_output_format(static_cast<int32_t>(output_descs.at(i).GetOriginFormat()));
-        output.set_original_output_data_type(static_cast<int32_t>(output_descs.at(i).GetOriginDataType()));
-        // due to lhisi virtual addr bug, cannot use args now
-        output.set_address(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(output_addrs[i])));
-
-        task.mutable_output()->Add(std::move(output));
-      }
-      op_mapping_info.mutable_task()->Add(std::move(task));
-      continue;
-    }
-
-    // else data, const or variable op
-    aicpu::dump::Output output;
-    auto output_tensor = op_iter.op->GetOutputDescPtr(op_iter.output_anchor_index);
-    const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_iter.op, false);
-    if (output_tensor == nullptr) {
-      GELOGE(PARAM_INVALID, "output_tensor is null, index: %d, size: %zu.", op_iter.output_anchor_index,
-             op_iter.op->GetOutputsSize());
+Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
+  GELOGI("Start dump output");
+  if (inner_dump_info.is_task) {
+    // tbe or aicpu op
+    const auto &output_descs = inner_dump_info.op->GetAllOutputsDesc();
+    const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, inner_dump_info.op, false);
+    if (output_descs.size() != output_addrs.size()) {
+      GELOGE(PARAM_INVALID, "Invalid output desc addrs size %zu, op %s has %zu output desc.", output_addrs.size(),
+             inner_dump_info.op->GetName().c_str(), output_descs.size());
       return PARAM_INVALID;
     }
 
-    output.set_data_type(static_cast<int32_t>(GetIrDataType(output_tensor->GetDataType())));
-    output.set_format(static_cast<int32_t>(output_tensor->GetFormat()));
+    for (size_t i = 0; i < output_descs.size(); ++i) {
+      aicpu::dump::Output output;
+      output.set_data_type(static_cast<int32_t>(GetIrDataType(output_descs.at(i).GetDataType())));
+      output.set_format(static_cast<int32_t>(output_descs.at(i).GetFormat()));
 
-    for (auto dim : op_iter.dims) {
-      output.mutable_shape()->add_dim(dim);
+      for (auto dim : output_descs.at(i).GetShape().GetDims()) {
+        output.mutable_shape()->add_dim(dim);
+      }
+
+      std::string origin_name;
+      int32_t origin_output_index = -1;
+      (void)AttrUtils::GetStr(&output_descs.at(i), ATTR_NAME_DATA_DUMP_ORIGIN_NAME, origin_name);
+      (void)AttrUtils::GetInt(&output_descs.at(i), ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX, origin_output_index);
+      output.set_original_name(origin_name);
+      output.set_original_output_index(origin_output_index);
+      output.set_original_output_format(static_cast<int32_t>(output_descs.at(i).GetOriginFormat()));
+      output.set_original_output_data_type(static_cast<int32_t>(output_descs.at(i).GetOriginDataType()));
+      // due to lhisi virtual addr bug, cannot use args now
+      output.set_address(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(output_addrs[i])));
+
+      task.mutable_output()->Add(std::move(output));
     }
-
-    std::string origin_name;
-    int32_t origin_output_index = -1;
-    (void)AttrUtils::GetStr(output_tensor, ATTR_NAME_DATA_DUMP_ORIGIN_NAME, origin_name);
-    (void)AttrUtils::GetInt(output_tensor, ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX, origin_output_index);
-    output.set_original_name(origin_name);
-    output.set_original_output_index(origin_output_index);
-    output.set_original_output_format(static_cast<int32_t>(output_tensor->GetOriginFormat()));
-    output.set_original_output_data_type(static_cast<int32_t>(output_tensor->GetOriginDataType()));
-    // due to lhisi virtual addr bug, cannot use args now
-    output.set_address(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(output_addrs[op_iter.output_anchor_index])));
-
-    task.mutable_output()->Add(std::move(output));
-
-    op_mapping_info.mutable_task()->Add(std::move(task));
+    return SUCCESS;
   }
 
+  // else data, const or variable op
+  aicpu::dump::Output output;
+  auto output_tensor = inner_dump_info.op->GetOutputDescPtr(inner_dump_info.output_anchor_index);
+  const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, inner_dump_info.op, false);
+  if (output_tensor == nullptr) {
+    GELOGE(PARAM_INVALID, "output_tensor is null, index: %d, size: %zu.", inner_dump_info.output_anchor_index,
+           inner_dump_info.op->GetOutputsSize());
+    return PARAM_INVALID;
+  }
+
+  output.set_data_type(static_cast<int32_t>(GetIrDataType(output_tensor->GetDataType())));
+  output.set_format(static_cast<int32_t>(output_tensor->GetFormat()));
+
+  for (auto dim : inner_dump_info.dims) {
+    output.mutable_shape()->add_dim(dim);
+  }
+
+  std::string origin_name;
+  int32_t origin_output_index = -1;
+  (void)AttrUtils::GetStr(output_tensor, ATTR_NAME_DATA_DUMP_ORIGIN_NAME, origin_name);
+  (void)AttrUtils::GetInt(output_tensor, ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX, origin_output_index);
+  output.set_original_name(origin_name);
+  output.set_original_output_index(origin_output_index);
+  output.set_original_output_format(static_cast<int32_t>(output_tensor->GetOriginFormat()));
+  output.set_original_output_data_type(static_cast<int32_t>(output_tensor->GetOriginDataType()));
+  // due to lhisi virtual addr bug, cannot use args now
+  if (inner_dump_info.output_anchor_index >= static_cast<int>(output_addrs.size())) {
+    GELOGE(FAILED, "Index is out of range.");
+    return FAILED;
+  }
+  output.set_address(
+    static_cast<uint64_t>(reinterpret_cast<uintptr_t>(output_addrs[inner_dump_info.output_anchor_index])));
+
+  task.mutable_output()->Add(std::move(output));
+
+  return SUCCESS;
+}
+
+Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
+  GELOGI("Start dump input");
+  const auto &input_descs = inner_dump_info.op->GetAllInputsDesc();
+  const std::vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(runtime_param_, inner_dump_info.op, false);
+  if (input_descs.size() != input_addrs.size()) {
+    GELOGE(PARAM_INVALID, "Invalid input desc addrs size %zu, op %s has %zu input desc.", input_addrs.size(),
+           inner_dump_info.op->GetName().c_str(), input_descs.size());
+    return PARAM_INVALID;
+  }
+
+  for (size_t i = 0; i < input_descs.size(); ++i) {
+    aicpu::dump::Input input;
+    input.set_data_type(static_cast<int32_t>(GetIrDataType(input_descs.at(i).GetDataType())));
+    input.set_format(static_cast<int32_t>(input_descs.at(i).GetFormat()));
+
+    for (auto dim : input_descs.at(i).GetShape().GetDims()) {
+      input.mutable_shape()->add_dim(dim);
+    }
+
+    input.set_address(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_addrs[i])));
+    task.mutable_input()->Add(std::move(input));
+  }
+  return SUCCESS;
+}
+
+Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
   std::string proto_str;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
@@ -308,23 +326,7 @@ Status DataDumper::LoadDumpInfo() {
   return SUCCESS;
 }
 
-Status DataDumper::UnloadDumpInfo() {
-  if (!load_flag_) {
-    GELOGI("No need to UnloadDumpInfo.");
-    load_flag_ = false;
-    return SUCCESS;
-  }
-
-  GELOGI("UnloadDumpInfo start.");
-  aicpu::dump::OpMappingInfo op_mapping_info;
-  op_mapping_info.set_model_id(model_id_);
-  op_mapping_info.set_flag(kAicpuUnloadFlag);
-
-  for (const auto &op_iter : op_list_) {
-    aicpu::dump::Task task;
-    task.set_task_id(op_iter.task_id);
-    op_mapping_info.mutable_task()->Add(std::move(task));
-  }
+Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
   std::string proto_str;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
@@ -358,6 +360,117 @@ Status DataDumper::UnloadDumpInfo() {
   }
   load_flag_ = false;
   GELOGI("UnloadDumpInfo success, proto size: %zu.", proto_size);
+  return SUCCESS;
+}
+Status DataDumper::LoadDumpInfo() {
+  PrintCheckLog();
+
+  if (op_list_.empty()) {
+    return SUCCESS;
+  }
+
+  aicpu::dump::OpMappingInfo op_mapping_info;
+  op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + std::to_string(device_id_) + "/");
+  op_mapping_info.set_model_name(model_name_);
+  op_mapping_info.set_model_id(model_id_);
+  op_mapping_info.set_flag(kAicpuLoadFlag);
+  op_mapping_info.set_dump_step(PropertiesManager::Instance().GetDumpStep());
+  SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
+  GELOGD("Dump step in load dump info is %s", PropertiesManager::Instance().GetDumpStep().c_str());
+
+  for (const auto &op_iter : op_list_) {
+    aicpu::dump::Task task;
+    auto op_desc = op_iter.op;
+    task.set_end_graph(false);
+    task.set_task_id(op_iter.task_id);
+    task.set_stream_id(op_iter.stream_id);
+    task.mutable_op()->set_op_name(op_desc->GetName());
+    task.mutable_op()->set_op_type(op_desc->GetType());
+
+    if (PropertiesManager::Instance().GetDumpMode() == kDumpOutput) {
+      if (DumpOutput(op_iter, task) != SUCCESS) {
+        GELOGE(FAILED, "Dump output failed");
+        return FAILED;
+      }
+      op_mapping_info.mutable_task()->Add(std::move(task));
+      continue;
+    }
+    if (PropertiesManager::Instance().GetDumpMode() == kDumpInput) {
+      if (op_iter.is_task) {
+        if (DumpInput(op_iter, task) != SUCCESS) {
+          GELOGE(FAILED, "Dump input failed");
+          return FAILED;
+        }
+      }
+      op_mapping_info.mutable_task()->Add(std::move(task));
+      continue;
+    }
+    if (PropertiesManager::Instance().GetDumpMode() == kDumpAll) {
+      auto ret = DumpOutput(op_iter, task);
+      if (ret != SUCCESS) {
+        GELOGE(FAILED, "Dump output failed when in dumping all");
+        return FAILED;
+      }
+      if (op_iter.is_task) {
+        ret = DumpInput(op_iter, task);
+        if (ret != SUCCESS) {
+          GELOGE(FAILED, "Dump input failed when in dumping all");
+          return FAILED;
+        }
+      }
+      op_mapping_info.mutable_task()->Add(std::move(task));
+      continue;
+    }
+  }
+
+  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
+
+  auto ret = ExecuteLoadDumpInfo(op_mapping_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Execute load dump info failed");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
+                                      aicpu::dump::OpMappingInfo &op_mapping_info) {
+  if (PropertiesManager::Instance().GetDumpMode() == kDumpOutput ||
+      PropertiesManager::Instance().GetDumpMode() == kDumpInput ||
+      PropertiesManager::Instance().GetDumpMode() == kDumpAll) {
+    GELOGI("add end_graph_info to aicpu, task_id is %u, stream_id is %u", end_graph_task_id_, end_graph_stream_id_);
+    aicpu::dump::Task task;
+    task.set_end_graph(true);
+    task.set_task_id(end_graph_task_id_);
+    task.set_stream_id(end_graph_stream_id_);
+    task.mutable_op()->set_op_name(NODE_NAME_END_GRAPH);
+    task.mutable_op()->set_op_type(ENDGRAPH);
+    op_mapping_info.mutable_task()->Add(std::move(task));
+  }
+}
+
+Status DataDumper::UnloadDumpInfo() {
+  if (!load_flag_) {
+    GELOGI("No need to UnloadDumpInfo.");
+    load_flag_ = false;
+    return SUCCESS;
+  }
+
+  GELOGI("UnloadDumpInfo start.");
+  aicpu::dump::OpMappingInfo op_mapping_info;
+  op_mapping_info.set_model_id(model_id_);
+  op_mapping_info.set_flag(kAicpuUnloadFlag);
+
+  for (const auto &op_iter : op_list_) {
+    aicpu::dump::Task task;
+    task.set_task_id(op_iter.task_id);
+    op_mapping_info.mutable_task()->Add(std::move(task));
+  }
+  auto ret = ExecuteUnLoadDumpInfo(op_mapping_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Execute unload dump info failed");
+    return FAILED;
+  }
   return SUCCESS;
 }
 

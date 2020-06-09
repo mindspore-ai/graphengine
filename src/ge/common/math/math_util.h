@@ -26,7 +26,6 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
 
-using ge::fp16_t;
 namespace ge {
 /// @ingroup math_util
 /// @brief check whether int32 addition can result in overflow

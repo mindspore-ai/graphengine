@@ -20,7 +20,7 @@
 #include "graph/build/memory/graph_mem_assigner.h"
 
 namespace ge {
-Status MemoryAssigner::AssignMemory(bool is_loop_graph, size_t &mem_offset) {
+Status MemoryAssigner::AssignMemory(bool is_loop_graph, size_t &mem_offset, size_t &zero_copy_mem_size) {
   GraphMemoryAssigner graph_mem_assigner(compute_graph_);
 
   if (graph_mem_assigner.AssignMemory() != ge::SUCCESS) {
@@ -34,25 +34,26 @@ Status MemoryAssigner::AssignMemory(bool is_loop_graph, size_t &mem_offset) {
     return ge::FAILED;
   }
 
+  // Assign memory (block and offset) for zero copy nodes
+  if (graph_mem_assigner.AssignZeroCopyMemory(mem_offset, zero_copy_mem_size) != ge::SUCCESS) {
+    GELOGE(ge::FAILED, "Zero copy memory assigner failed");
+    return ge::FAILED;
+  }
+
+  // Assign memory for reference
+  if (graph_mem_assigner.AssignReferenceMemory() != ge::SUCCESS) {
+    GELOGE(ge::FAILED, "Assign reference memory failed!");
+    return ge::FAILED;
+  }
+
   // Must do variable attr assign after all the memory assigned
   if (graph_mem_assigner.AssignVarAttr2Nodes() != SUCCESS) {
     GELOGE(FAILED, "Variable Memory assigner failed");
     return FAILED;
   }
-
   if (graph_mem_assigner.SetInputOffset() != ge::SUCCESS) {
     GELOGE(ge::FAILED, "SetInputOffset Fail!");
     return ge::FAILED;
-  }
-
-  if (graph_mem_assigner.AssignSubgraphInputsMemory() != SUCCESS) {
-    GELOGE(FAILED, "Assign subgraph inputs memory failed");
-    return FAILED;
-  }
-
-  if (graph_mem_assigner.AssignSubgraphOutputsMemory() != SUCCESS) {
-    GELOGE(FAILED, "Assign subgraph inputs memory failed");
-    return FAILED;
   }
 
   if (graph_mem_assigner.CheckOffset() != SUCCESS) {

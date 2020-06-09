@@ -448,7 +448,7 @@ RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stream);
  * @param [in] stream   subscribed stream
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtStream_t stream);
+RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtStream_t stream, bool isBlock);
 
 /**
  * @ingroup rt_kernel

@@ -22,29 +22,14 @@
 #include <vector>
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
-#include "framework/common/op/attr_define.h"
 #include "framework/common/types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
-
-using domi::ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE;
-using domi::ATTR_NAME_SESSION_GRAPH_ID;
-using domi::ATTR_NAME_STREAM_LABEL;
-using domi::END;
-using domi::NCHW_DIM_C;
-using domi::NCHW_DIM_H;
-using domi::NCHW_DIM_N;
-using domi::NCHW_DIM_W;
-using domi::NHWC_DIM_C;
-using domi::NHWC_DIM_H;
-using domi::NHWC_DIM_N;
-using domi::NHWC_DIM_W;
-using domi::PERMUTE_ATTR_ORDER;
-using domi::PLACEHOLDER;
 
 namespace {
 const char *const kEngineDefaultData = "ENGINE_DEFAULT_DATA";
@@ -65,12 +50,6 @@ Status ge::GraphPartitioner::CheckIfEnd2PldEmpty(ge::ComputeGraphPtr &output_mer
       return FAILED;
     }
     output_merged_compute_graph = partition.first;
-    // flush all nodes' engine of merged graph
-    graph_info_.engine_placer_.SetComputeGraph(output_merged_compute_graph);
-    if (graph_info_.engine_placer_.Run() != SUCCESS) {
-      GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: engine_placer run failed");
-      return FAILED;
-    }
   } else {  // if placeholder to end map is empty, it should be an exception condition
     GELOGE(GE_GRAPH_EMPTY_PARTITION, "[GraphPartitioner]: placeholder to end map is empty, partitions size is not 1.");
     return FAILED;
@@ -203,8 +182,12 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
       GELOGE(FAILED, "Find corresponding node failed, parent node name is %s", parent_node->GetName().c_str());
       return FAILED;)
     auto corresponding_node = graph_info.corresponding_node_in_partitions_[parent_node];
+    GE_IF_BOOL_EXEC(corresponding_node == nullptr,
+                    GELOGE(FAILED, "Get null node, node name is %s", parent_node->GetName().c_str());
+                    return FAILED;);
     merged_sub_graph->SetParentNode(corresponding_node);
-    merged_sub_graph->SetParentGraph(output_merged_compute_graph);
+    auto subgraph_parent_graph = corresponding_node->GetOwnerComputeGraph();
+    merged_sub_graph->SetParentGraph(subgraph_parent_graph);
     ret = output_merged_compute_graph->AddSubgraph(sub_graph->GetName(), merged_sub_graph);
     GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, return ret;)
   }
@@ -286,20 +269,23 @@ Status ge::GraphPartitioner::UpdatePldOpDesc(const NodePtr &src_node, int output
     GELOGE(GE_GRAPH_ADD_PLC_END_FAILED, "[GraphPartitioner]: pld_op_desc is null.");
     return FAILED;
   }
-  // flush pld data type as original data type
-  if (output_desc.GetOriginDataType() != DT_UNDEFINED) {
-    pld_op_desc->MutableOutputDesc(0)->SetDataType(output_desc.GetOriginDataType());
-  } else {
-    GELOGW("Original data type of %s is undefined![data type is %s]", src_node->GetName().c_str(),
-           TypeUtils::DataTypeToSerialString(output_desc.GetDataType()).c_str());
-  }
-  // flush pld format as original format
-  if (output_desc.GetOriginFormat() != FORMAT_RESERVED) {
-    pld_op_desc->MutableOutputDesc(0)->SetFormat(output_desc.GetOriginFormat());
-    pld_op_desc->MutableOutputDesc(0)->SetShape(output_desc.GetOriginShape());
-  } else {
-    GELOGW("Original format of %s is undefined![format is %s]", src_node->GetName().c_str(),
-           TypeUtils::FormatToSerialString(output_desc.GetFormat()).c_str());
+  const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
+  if (buffer_optimize_on == nullptr) {
+    // flush pld data type as original data type
+    if (output_desc.GetOriginDataType() != DT_UNDEFINED) {
+      pld_op_desc->MutableOutputDesc(0)->SetDataType(output_desc.GetOriginDataType());
+    } else {
+      GELOGW("Original data type of %s is undefined![data type is %s]", src_node->GetName().c_str(),
+             TypeUtils::DataTypeToSerialString(output_desc.GetDataType()).c_str());
+    }
+    // flush pld format as original format
+    if (output_desc.GetOriginFormat() != FORMAT_RESERVED) {
+      pld_op_desc->MutableOutputDesc(0)->SetFormat(output_desc.GetOriginFormat());
+      pld_op_desc->MutableOutputDesc(0)->SetShape(output_desc.GetOriginShape());
+    } else {
+      GELOGW("Original format of %s is undefined![format is %s]", src_node->GetName().c_str(),
+             TypeUtils::FormatToSerialString(output_desc.GetFormat()).c_str());
+    }
   }
   return SUCCESS;
 }
@@ -319,20 +305,23 @@ Status ge::GraphPartitioner::UpdateEndOpDesc(const NodePtr &dst_node, int input_
     GELOGE(GE_GRAPH_ADD_PLC_END_FAILED, "[GraphPartitioner]: pld_op_desc is null.");
     return FAILED;
   }
-  // flush end data type as original data type
-  if (input_desc.GetOriginDataType() != DT_UNDEFINED) {
-    end_op_desc->MutableInputDesc(0)->SetDataType(input_desc.GetOriginDataType());
-  } else {
-    GELOGI("Original data type of %s is undefined![data type is %s]", dst_node->GetName().c_str(),
-           TypeUtils::DataTypeToSerialString(input_desc.GetDataType()).c_str());
-  }
-  // flush end format as original format
-  if (input_desc.GetOriginFormat() != FORMAT_RESERVED) {
-    end_op_desc->MutableInputDesc(0)->SetFormat(input_desc.GetOriginFormat());
-    end_op_desc->MutableInputDesc(0)->SetShape(input_desc.GetOriginShape());
-  } else {
-    GELOGW("Original format of %s is undefined![format is %s]", dst_node->GetName().c_str(),
-           TypeUtils::FormatToSerialString(input_desc.GetFormat()).c_str());
+  const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
+  if (buffer_optimize_on == nullptr) {
+    // flush end data type as original data type
+    if (input_desc.GetOriginDataType() != DT_UNDEFINED) {
+      end_op_desc->MutableInputDesc(0)->SetDataType(input_desc.GetOriginDataType());
+    } else {
+      GELOGI("Original data type of %s is undefined![data type is %s]", dst_node->GetName().c_str(),
+             TypeUtils::DataTypeToSerialString(input_desc.GetDataType()).c_str());
+    }
+    // flush end format as original format
+    if (input_desc.GetOriginFormat() != FORMAT_RESERVED) {
+      end_op_desc->MutableInputDesc(0)->SetFormat(input_desc.GetOriginFormat());
+      end_op_desc->MutableInputDesc(0)->SetShape(input_desc.GetOriginShape());
+    } else {
+      GELOGW("Original format of %s is undefined![format is %s]", dst_node->GetName().c_str(),
+             TypeUtils::FormatToSerialString(input_desc.GetFormat()).c_str());
+    }
   }
   return SUCCESS;
 }
@@ -531,9 +520,8 @@ void ge::GraphPartitioner::AddNewGraphToPartition(ge::ComputeGraphPtr &input_gra
 }
 
 bool ge::GraphPartitioner::IsDataLike(ge::NodePtr node) {
-  return (node->GetType() == domi::CONSTANT) || (node->GetType() == domi::DATA) ||
-         (node->GetType() == domi::AIPPDATA) || (node->GetType() == domi::CONSTANTOP) ||
-         (node->GetType() == domi::VARIABLE);
+  return (node->GetType() == CONSTANT) || (node->GetType() == DATA) || (node->GetType() == AIPPDATA) ||
+         (node->GetType() == CONSTANTOP) || (node->GetType() == VARIABLE);
 }
 
 bool ge::GraphPartitioner::HasNoInput(ge::NodePtr node) {

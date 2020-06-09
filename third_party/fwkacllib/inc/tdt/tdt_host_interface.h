@@ -81,6 +81,24 @@ int32_t TdtHostPushData(const std::string &channelName, const std::vector<DataIt
 int32_t TdtHostDestroy();
 
 /**
+* @ingroup TdtHostPreparePopData
+* @brief Prepare pop data from Tdt data storage queue
+*
+* @par Function
+* Prepare pop data from Tdt data storage queue
+*
+* @param NA
+* @retval 0 Success
+* @retval OtherValues 0 Fail
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tdt_host_interface.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'DataItem' defined
+*/
+int32_t TdtHostPreparePopData();
+
+/**
 * @ingroup TdtHostPopData
 * @brief POP data from Tdt data storage queue
 *

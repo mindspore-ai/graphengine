@@ -18,10 +18,6 @@
 #include <string>
 #include "framework/common/debug/ge_log.h"
 
-using domi::REF_VAR_PRE_PEER_OUT_INDEX;
-using domi::REF_VAR_SRC_VAR_NAME;
-using domi::VARIABLE;
-
 namespace ge {
 Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(VariableRefDeleteOpPass);
@@ -35,8 +31,8 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
   for (auto &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     std::string ref_var_src_var_name;
-    bool is_variable_ref = (node->GetOpDesc()->GetType() == domi::VARIABLE) &&
-                           (ge::AttrUtils::GetStr(node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name));
+    bool is_variable_ref = (node->GetOpDesc()->GetType() == VARIABLE) &&
+                           (ge::AttrUtils::GetStr(node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name));
     if (!is_variable_ref) {
       continue;
     }
@@ -58,13 +54,7 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
 
 Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::NodePtr &variable_ref,
                                                 const std::string &ref_var_src_var_name) {
-  GE_CHECK_NOTNULL(graph);
   GE_CHECK_NOTNULL(variable_ref);
-  // remove variable_ref all out anchor
-  for (auto &variable_ref_outAnchor : variable_ref->GetAllOutAnchors()) {
-    variable_ref_outAnchor->UnlinkAll();
-  }
-
   auto inAnchor0 = variable_ref->GetInDataAnchor(0);
   if (inAnchor0 == nullptr) {
     GELOGE(FAILED, "variable_ref [%s] no input", variable_ref->GetName().c_str());
@@ -78,30 +68,34 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   // get previous node of variable_ref
   NodePtr peer_node = inAnchor0->GetPeerOutAnchor()->GetOwnerNode();
 
-  // remove in anchor [0] of variable_ref
-  inAnchor0->UnlinkAll();
-  if (ge::GraphUtils::RemoveJustNode(graph, variable_ref) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "remove variable_ref failed");
-    return FAILED;
-  }
-
   // add attr [REF_VAR_SRC_VAR_NAME] to the previous node of the variable_ref
   GE_CHECK_NOTNULL(peer_node->GetOpDesc());
-  bool is_set_str = ge::AttrUtils::SetStr(peer_node->GetOpDesc(), domi::REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
+  bool is_set_str = ge::AttrUtils::SetStr(peer_node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
 
-  ge::NodePtr var_ref_src_var = graph->FindNode(ref_var_src_var_name);
-  if (var_ref_src_var == nullptr) {
-    GELOGE(FAILED, "get var_ref_src_var failed");
+  ge::NodePtr ref_var_src_var = graph->FindNode(ref_var_src_var_name);
+  if (ref_var_src_var == nullptr) {
+    GELOGE(FAILED, "get ref_var_src_var failed");
     return FAILED;
   }
 
-  GE_CHECK_NOTNULL(var_ref_src_var->GetOpDesc());
-  bool is_set_index = ge::AttrUtils::SetInt(var_ref_src_var->GetOpDesc(), domi::REF_VAR_PRE_PEER_OUT_INDEX, index);
+  GE_CHECK_NOTNULL(ref_var_src_var->GetOpDesc());
+  bool is_set_index = ge::AttrUtils::SetInt(ref_var_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, index);
   if (is_set_str && is_set_index) {
     GELOGI("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
-    GELOGI("[%s]: add attr [ REF_VAR_PRE_PEER_OUT_INDEX: %d ]", var_ref_src_var->GetName().c_str(), index);
+    GELOGI("[%s]: add attr [REF_VAR_PRE_PEER_OUT_INDEX: %d]", ref_var_src_var->GetName().c_str(), index);
   }
 
+  // remove variable_ref
+  if (GraphUtils::IsolateNode(variable_ref, {0}) != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", variable_ref->GetName().c_str(),
+           variable_ref->GetType().c_str());
+    return FAILED;
+  }
+  if (GraphUtils::RemoveNodeWithoutRelink(graph, variable_ref) != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Remove node: %s, type: %s without relink failed", variable_ref->GetName().c_str(),
+           variable_ref->GetType().c_str());
+    return FAILED;
+  }
   return SUCCESS;
 }
 }  // namespace ge

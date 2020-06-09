@@ -16,7 +16,7 @@
 
 #ifndef GE_OP_ELEWISE_CALCULATION_OPS_H
 #define GE_OP_ELEWISE_CALCULATION_OPS_H
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 /**
@@ -112,8 +112,7 @@ REG_OP(MinimumGrad)
    int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 
 *@par Attributes:
-*@li dst_type: An required attribute of type int32, specifying the dst data type.
-*@li truncate: An optional attribute of type bool, specifying the src data type. Defaults to "false".
+*dst_type: An required attribute of type int32, specifying the dst data type.
 
 *@par Outputs:
 *y:A `Tensor`. Has the same type as `x`.
@@ -126,7 +125,6 @@ REG_OP(Cast)
                            DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
                            DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
     .REQUIRED_ATTR(dst_type, Int)
-    .ATTR(truncate, Bool, false)
     .OP_END_FACTORY_REG(Cast)
 
 /**
@@ -886,7 +884,10 @@ REG_OP(BesselI1e)
 * y: A Tensor of type UnaryDataType.
 
 * @attention Constraints:
-* @li base > 0 or if base is set to default (-1), base is set to e;
+* @li "base" is supposed to be greater than 0. Retaining the default \n
+* value "-1" sets "base" to "e".
+* @li If the input value of operator Log is within the range (0, 0.01] or \n
+* [0.95, 1.05], the output accuracy is subject to change.
 */
 REG_OP(Log)
     .INPUT(x, TensorType::UnaryDataType())
@@ -911,7 +912,6 @@ REG_OP(Log)
 * uint8, int8, uint16, int16, int32, int64, complex64, complex128.
 
 * @attention Constraints:
-* @li "x1" and "x2" have incompatible shapes or types.
 */
 REG_OP(Mul)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
@@ -1272,12 +1272,8 @@ REG_OP(Greater)
 * The output has the same shape and type as the input.
 */
 REG_OP(ZerosLike)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,
-                          DT_UINT8, DT_INT16, DI_UINT16, DT_INT32,
-                          DT_INT64, DT_COMPLEX128, DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,
-                           DT_UINT8, DT_INT16, DI_UINT16, DT_INT32,
-                           DT_INT64, DT_COMPLEX128, DT_BOOL}))
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(ZerosLike)
 
 /**
@@ -2056,6 +2052,7 @@ REG_OP(ArgMinWithValue)
 *    "0": product, "1": sum, "2": max.
 *@li coeff: A required attribute. Must met all of following rules:
 *    size of "coeff" must be equal to len("x") or is null.
+*    the absolute value of “coeff” must less than or equal to 1.
 */
 REG_OP(Eltwise)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -2526,9 +2523,102 @@ REG_OP(ArgMaxWithK)
      .OUTPUT(values, TensorType({DT_FLOAT, DT_FLOAT16}))
      .ATTR(axis, Int, 10000)
      .ATTR(out_max_val, Bool, false)
-     .ATTR(top_k, Int, 1)
+     .ATTR(topk, Int, 1)
      .OP_END_FACTORY_REG(ArgMaxWithK)
 
+/**
+*@brief Multiply tensor with scale.
+
+*@par Inputs:
+*Five inputs, including:
+* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
+* @li x2: A scale. Must be float.
+
+*@par Outputs:
+*@li y: A Tensor. Has the same type and shape as "x1".
+
+*/
+REG_OP(Muls)
+     .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
+     .OUTPUT(y, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
+     .REQUIRED_ATTR(value, Float)
+     .OP_END_FACTORY_REG(Muls)
+
+/**
+*@brief Fill tensor with scale.
+
+*@par Inputs:
+*Five inputs, including:
+* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
+* @li x2: A scale. Must be float.
+
+*@par Outputs:
+*@li y: A Tensor. Has the same type and shape as "x1".
+
+*/
+REG_OP(Fills)
+     .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
+     .OUTPUT(y, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
+     .REQUIRED_ATTR(value,Float)
+     .OP_END_FACTORY_REG(Fills)
+
+/**
+*@brief Add tensor with scale.
+
+*@par Inputs:
+*Five inputs, including:
+* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
+* @li x2: A scale. Must be float.
+
+*@par Outputs:
+*@li y: A Tensor. Has the same type and shape as "x1".
+
+*/
+ REG_OP(Adds)
+     .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
+     .OUTPUT(y, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
+     .REQUIRED_ATTR(value,Float)
+     .OP_END_FACTORY_REG(Adds)
+
+ REG_OP(MulNoNan)
+     .INPUT(x1, TensorType::NumberType()) /* "First operand." */
+     .INPUT(x2, TensorType::NumberType()) /* "Second operand." */
+     .OUTPUT(y, TensorType::NumberType())  /* "Result, has same element type as two inputs" */
+     .OP_END_FACTORY_REG(MulNoNan)
+
+REG_OP(Axpy)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))
+    .REQUIRED_ATTR(alpha, Float)
+    .OP_END_FACTORY_REG(Axpy)
+
+/**
+*@brief Creates a criterion that measures the loss given input tensors x1 x2 and a Tensor label y with values 1 or -1.
+
+*@par Inputs:
+*@li x1: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
+*@li x2: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
+*@li target: A ND Tensor with one of the following types: int8, int32, float16, float32.
+
+*@par Attributes:
+*@li margin: A optional float32. Defaults to "0.0".
+*@li reduction: A optional string. Defaults to "mean".
+
+*@par Outputs:
+*@li y: A ND Tensor with Must be float32.
+*/
+REG_OP(CosineEmbeddingLoss)
+    .INPUT(x1, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x2, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(target, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(margin, Float, 0)
+    .ATTR(reduction, String, "mean")
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(CosineEmbeddingLoss)
+
 }  // namespace ge
+
+
 
 #endif  // GE_OP_ELEWISE_CALCULATION_OPS_H

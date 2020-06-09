@@ -58,12 +58,18 @@ Status AutoMappingFn(const google::protobuf::Message *op_src, ge::Operator &op);
 Status AutoMappingFnDynamic(const google::protobuf::Message *op_src, ge::Operator &op,
                             std::map<std::string, std::pair<std::string, std::string>> dynamic_name_attr_value,
                             int in_pos = -1, int out_pos = -1);
+Status AutoMappingSubgraphIndex(const ge::Graph &graph, const std::function<int(int data_index)> &input,
+                                const std::function<int(int netoutput_index)> &output);
+Status AutoMappingSubgraphIndex(const ge::Graph &graph,
+                                const std::function<Status(int data_index, int &parent_input_index)> &input,
+                                const std::function<Status(int netoutput_index, int &parent_output_index)> &output);
 using google::protobuf::Message;
 class OpRegistrationDataImpl;
 
 using ParseParamFunc = std::function<domi::Status(const google::protobuf::Message *, ge::Operator &)>;
 using FusionParseParamFunc =
   std::function<domi::Status(const std::vector<const google::protobuf::Message *>, ge::Operator &)>;
+using ParseSubgraphFunc = std::function<Status(const std::string &subgraph_name, const ge::Graph &graph)>;
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
  public:
@@ -81,6 +87,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
 
   OpRegistrationData &FusionParseParamsFn(const FusionParseParamFunc &fusionParseParamFn);
 
+  OpRegistrationData &ParseSubgraphPostFn(const ParseSubgraphFunc &subgraph_post_fn);
+
   OpRegistrationData &ImplyType(const domi::ImplyType &imply_type);
 
   OpRegistrationData &DelInputWithCond(int inputIdx, const std::string &attrName, bool attrValue);
@@ -93,6 +101,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
   domi::FrameworkType GetFrameworkType() const;
   ParseParamFunc GetParseParamFn() const;
   FusionParseParamFunc GetFusionParseParamFn() const;
+  ParseSubgraphFunc GetParseSubgraphPostFn() const;
 
  private:
   std::shared_ptr<OpRegistrationDataImpl> impl_;
@@ -116,27 +125,5 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpReceiver {
 namespace ge {
 using OpRegistrationData = domi::OpRegistrationData;
 using OpReceiver = domi::OpReceiver;
-
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY HostCpuOp {
- public:
-  HostCpuOp() = default;
-  virtual ~HostCpuOp() = default;
-
-  virtual graphStatus Compute(Operator &op, const std::map<std::string, const Tensor> &inputs,
-                              std::map<std::string, Tensor> &outputs) = 0;
-};
-
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY HostCpuOpRegistrar {
- public:
-  HostCpuOpRegistrar(const char *op_type, HostCpuOp *(*create_fn)());
-};
-
-#define REGISTER_HOST_CPU_OP_BUILDER(name, op) REGISTER_HOST_CPU_OP_BUILDER_UNIQ_HELPER(__COUNTER__, name, op)
-
-#define REGISTER_HOST_CPU_OP_BUILDER_UNIQ_HELPER(ctr, name, op) REGISTER_HOST_CPU_OP_BUILDER_UNIQ(ctr, name, op)
-
-#define REGISTER_HOST_CPU_OP_BUILDER_UNIQ(ctr, name, op)                              \
-  static ::ge::HostCpuOpRegistrar register_host_cpu_op##ctr __attribute__((unused)) = \
-    ::ge::HostCpuOpRegistrar(name, []() -> ::ge::HostCpuOp * { return new (std::nothrow) op(); })
 }  // namespace ge
 #endif  // INC_EXTERNAL_REGISTER_REGISTER_H_

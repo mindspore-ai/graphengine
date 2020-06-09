@@ -25,10 +25,6 @@
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::MERGE;
-using domi::REFSWITCH;
-using domi::SWITCH;
-
 namespace ge {
 namespace {
 const std::vector<int>::size_type kDataInputIndex = 0;

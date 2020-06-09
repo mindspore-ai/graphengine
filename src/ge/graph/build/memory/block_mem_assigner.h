@@ -28,6 +28,7 @@
 #include "common/util.h"
 #include "graph/build/memory/mem_assigner.h"
 #include "graph/compute_graph.h"
+#include "graph/utils/graph_utils.h"
 
 namespace ge {
 enum MemoryType { kOutput, kWorkspace };
@@ -48,6 +49,10 @@ class MemoryBlock {
         stream_id_(0),
         deleted_block_(false),
         reuse_mem_(reuse_mem),
+        input_index_(0),
+        continuous_block_(false),
+        last_continuous_block_(false),
+        is_zero_copy_(false),
         block_size_(block_size),
         head_offset_(0),
         tail_offset_(0) {}
@@ -56,7 +61,10 @@ class MemoryBlock {
 
   MemoryBlock &operator=(const MemoryBlock &) = delete;
 
-  ~MemoryBlock() { node_type_index_list_.clear(); }
+  ~MemoryBlock() {
+    node_type_index_list_.clear();
+    symbol_list_.clear();
+  }
 
   void Init(size_t real_size, MemoryType type, const ge::NodePtr &node, uint32_t out_index) {
     real_size_list_.emplace_back(real_size);
@@ -77,7 +85,10 @@ class MemoryBlock {
     real_size_list_.emplace_back(real_size);
   }
 
+  void AddSymbol(const std::string &symbol) { symbol_list_.emplace_back(symbol); }
+
   const std::vector<NodeTypeIndex> &NodeTypeIndexList() const { return node_type_index_list_; }
+  const std::vector<std::string> &SymbolList() const { return symbol_list_; }
   const std::vector<size_t> &RealSizeList() const { return real_size_list_; }
 
   void Resize();
@@ -90,6 +101,10 @@ class MemoryBlock {
   int64_t stream_id_;
   bool deleted_block_;
   bool reuse_mem_;
+  uint32_t input_index_;
+  bool continuous_block_;
+  bool last_continuous_block_;
+  bool is_zero_copy_;
 
  private:
   size_t block_size_;
@@ -97,6 +112,7 @@ class MemoryBlock {
   size_t head_offset_;
   size_t tail_offset_;
   std::vector<NodeTypeIndex> node_type_index_list_;
+  std::vector<std::string> symbol_list_;
 };
 
 class BlockMemAssigner : public MemAssigner {
@@ -111,7 +127,11 @@ class BlockMemAssigner : public MemAssigner {
 
   Status Assign() override;
 
-  size_t GetMemOffset() const { return mem_offset_; }
+  size_t GetMemOffset() const { return mem_offset_; };
+
+  int64_t GetAtomicAddrCleanId() const { return atomic_addr_clean_id_; };
+
+  std::vector<MemoryBlock *> GetMemoryBlocks() const { return memory_blocks_; };
 
   ///
   /// @ingroup domi
@@ -128,7 +148,7 @@ class BlockMemAssigner : public MemAssigner {
   ///
   void AssignMemoryWithReuse(std::vector<int64_t> &ranges);
 
-  void SetOpMemOffset();
+  void SetOpMemOffset(bool is_zero_copy);
 
  protected:
   ///
@@ -175,12 +195,61 @@ class BlockMemAssigner : public MemAssigner {
 
   ///
   /// @ingroup GE
+  /// @brief Find dependent link between parent_graph and sub_graph
+  /// @param [in] pre_node
+  /// @param [out] out_nodes
+  /// @return void
+  /// @author
+  ///
+  void FindDependentStreamBetweenGraphs(const NodePtr &pre_node, std::vector<NodePtr> &out_nodes);
+
+  ///
+  /// @ingroup GE
   /// @brief Determine whether it is the type of zero memory node.
   /// @param [in] node type.
   /// @return bool true: is zero memory node; false: is not zero memory node
   /// @author
   ///
   bool CheckIsZeroMemNodeType(const std::string &node_type) const;
+
+  ///
+  /// @ingroup GE
+  /// @brief Check pre_reuse flag & post_reuse glag for each symbol
+  /// @return void
+  ///
+  void InitReuseFlag();
+
+  ///
+  /// @ingroup GE
+  /// @brief get pre_reuse flag
+  /// @param [in] node
+  /// @param [in] out_index
+  /// @return bool
+  ///
+  bool IsPreReuse(const NodePtr &node, uint32_t out_index) const;
+
+  ///
+  /// @ingroup GE
+  /// @brief get post_reuse flag
+  /// @param [in] mem_block
+  /// @return bool
+  ///
+  bool IsPostReuse(const MemoryBlock *mem_block) const;
+
+  ///
+  /// @ingroup GE
+  /// @brief check if symbol of cur node_index_io has block
+  /// @param [in] node_index_io
+  /// @return bool
+  ///
+  bool IsSymbolExist(const NodeIndexIO &node_index_io);
+
+  ///
+  /// @ingroup GE
+  /// @brief Print symbol
+  /// @return void
+  ///
+  void PrintSymbolMap();
 
   size_t mem_offset_;
 
@@ -189,6 +258,13 @@ class BlockMemAssigner : public MemAssigner {
   std::vector<MemoryBlock *> memory_blocks_;
 
   std::vector<NodeTypeIndex> zero_memory_list_;
+
+  // ref mapping
+  std::map<std::string, std::vector<NodeIndexIO>> symbol_to_anchors_;
+  std::map<std::string, std::string> anchor_to_symbol_;
+  std::map<std::string, bool> pre_reuse_flag_;
+  std::map<std::string, bool> post_reuse_flag_;
+  std::map<std::string, size_t> symbol_size_;
 
  private:
   ///
@@ -201,7 +277,7 @@ class BlockMemAssigner : public MemAssigner {
   /// @author
   ///
   MemoryBlock *ApplyOutMemory(const ge::NodePtr &n, uint32_t index, const std::vector<int64_t> &ranges,
-                              const bool is_op_reuse_mem);
+                              const bool is_op_reuse_mem, const bool continuous);
 
   Status AssignOutputMemoryWithReuse(const NodePtr &node, vector<int64_t> &ranges);
   ///
@@ -218,7 +294,7 @@ class BlockMemAssigner : public MemAssigner {
   ///
   MemoryBlock *ApplyMemory(size_t block_size, size_t real_size, MemoryType mem_type, const ge::NodePtr &n,
                            uint32_t out_index, const std::vector<bool> &workspace_reuse_flag,
-                           const bool is_op_reuse_mem);
+                           const bool is_op_reuse_mem, const bool continuous);
 
   ///
   /// @ingroup GE
@@ -273,6 +349,11 @@ class BlockMemAssigner : public MemAssigner {
   ///
   void MergeDynamicBatchBlocks();
 
+  void AssignContinuousBlocks();
+
+  bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
+                                   uint32_t &peer_input_index);
+
   std::vector<MemoryBlock *> reusable_blocks_;
 
   std::map<std::string, uint64_t> reusable_block_counts_;
@@ -280,6 +361,12 @@ class BlockMemAssigner : public MemAssigner {
   std::unordered_map<int64_t, std::vector<MemoryBlock *>> stream_workspace_blocks_;
 
   std::unordered_map<std::string, std::vector<MemoryBlock *>> node_out_blocks_;
+
+  std::unordered_map<std::string, MemoryBlock *> symbol_blocks_;
+
+  std::unordered_map<std::string, std::unordered_map<uint32_t, MemoryBlock *>> node_continuous_input_blocks_;
+
+  std::unordered_map<std::string, uint32_t> node_continuous_input_counts_;
 
   // save stream_id and reusable stream_ids
   std::unordered_map<int64_t, std::unordered_set<int64_t>> reusable_streams_map_;
@@ -292,6 +379,8 @@ class BlockMemAssigner : public MemAssigner {
   std::string ge_disable_reuse_mem_env_ = "0";
 
   bool is_op_reuse_mem_ = true;
+
+  int64_t atomic_addr_clean_id_ = 0;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MEMORY_BLOCK_MEM_ASSIGNER_H_

@@ -168,6 +168,7 @@ enum {
   DSS,
   PROCMGR,     // Process Manager, Base Platform
   BBOX,
+  AIVECTOR,
   INVLID_MOUDLE_ID
 };
 
@@ -241,6 +242,7 @@ static DCODE g_moduleIdName[] = {SET_MOUDLE_ID_MAP_NAME(SLOG),
                                  SET_MOUDLE_ID_MAP_NAME(DSS),
                                  SET_MOUDLE_ID_MAP_NAME(PROCMGR),
                                  SET_MOUDLE_ID_MAP_NAME(BBOX),
+                                 SET_MOUDLE_ID_MAP_NAME(AIVECTOR),
                                  { NULL, -1 }};
 #endif // MODULE_ID_NAME
 
@@ -253,22 +255,33 @@ extern void dlog_init(void);
 
 /**
  * @ingroup slog
- * @brief dlog_getlevel: get module level
+ * @brief dlog_getlevel: get module loglevel and enableEvent
  *
- * @param [in]moduleId: module id, eg: CCE
+ * @param [in]moduleId: moudule id(see slog.h, eg: CCE), others: invalid
  * @param [out]enableEvent: 1: enable; 0: disable
  * @return: module level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
  */
 extern int dlog_getlevel(int moduleId, int *enableEvent);
 
 /**
-* @ingroup slog
-* @brief CheckLogLevel: check module level enable or not
-*
-* @param [in]moduleId: module id, eg: CCE
-* @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
-* @return: 1:enable, 0:disable
-*/
+ * @ingroup slog
+ * @brief dlog_setlevel: set module loglevel and enableEvent
+ *
+ * @param [in]moduleId: moudule id(see slog.h, eg: CCE), -1: all modules, others: invalid
+ * @param [in]level: log level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
+ * @param [in]enableEvent: 1: enable; 0: disable, others:invalid
+ * @return: 0: SUCCEED, others: FAILED
+ */
+extern int dlog_setlevel(int moduleId, int level, int enableEvent);
+
+/**
+ * @ingroup slog
+ * @brief CheckLogLevel: check module level enable or not
+ *
+ * @param [in]moduleId: module id, eg: CCE
+ * @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
+ * @return: 1:enable, 0:disable
+ */
 extern int CheckLogLevel(int moduleId, int logLevel);
 
 /**

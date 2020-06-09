@@ -17,13 +17,12 @@
 #include "session/session_manager.h"
 #include <memory>
 #include <utility>
-#include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
-#include "graph/manager/util/rt_context_util.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
+#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/manager/util/rt_context_util.h"
 
-using domi::ATTR_NAME_SESSION_GRAPH_ID;
 using std::map;
 using std::string;
 using std::vector;
@@ -157,11 +156,15 @@ Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const G
       innerSession = it->second;
     }
     auto compute_graph = GraphUtils::GetComputeGraph(graph);
+    GE_CHECK_NOTNULL(compute_graph);
     std::string session_graph_id = std::to_string(session_id) + "_" + std::to_string(graph_id);
     if (!AttrUtils::SetStr(*compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
       GELOGW("Set graph session_graph_id attr failed.");
     } else {
       GELOGD("Set graph session_graph_id attr to [%s]", session_graph_id.c_str());
+    }
+    for (auto graph : compute_graph->GetAllSubgraphs()) {
+      AttrUtils::SetStr(*graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
     }
   }
   return innerSession->AddGraph(graph_id, graph, options);
@@ -243,8 +246,8 @@ Status SessionManager::RegisterCallBackFunc(
   return innerSession->RegisterCallBackFunc(key, callback);
 }
 
-Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<TensorInfo> &inputs,
-                                     std::vector<TensorInfo> &outputs, std::function<void(Status)> callback) {
+Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id,
+                                     const std::vector<InputTensorInfo> &inputs, RunAsyncCallback callback) {
   if (!init_flag_) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);
     return GE_SESSION_MANAGER_NOT_INIT;
@@ -259,7 +262,7 @@ Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id, co
       innerSession = it->second;
     }
   }
-  return innerSession->RunGraphAsync(graph_id, inputs, outputs, callback);
+  return innerSession->RunGraphAsync(graph_id, inputs, callback);
 }
 bool SessionManager::IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id) {
   if (!init_flag_) {

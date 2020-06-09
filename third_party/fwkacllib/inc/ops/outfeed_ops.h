@@ -17,35 +17,7 @@
 #ifndef GE_OP_OUTFEED_OPS_H
 #define GE_OP_OUTFEED_OPS_H
 
-#include "graph/operator.h"
-#include "graph/operator_reg.h"
-
-namespace ge {
-
-/**
-*@brief Enqueue a Tensor on the computation outfeed.
-
-*@par Inputs:
-*Inputs include: \n
-*x: A Tensor. Must be one of the following types: float16, float32, \n
-float64, int8, int16, uint16, uint8, int32, int64, uint32, uint64, \n
-bool, double, string.
-
-*@par Attributes:
-*channel_name: name of operator channel, default "".
-
-*@attention Constraints:\n
-*-The implementation for OutfeedEnqueueOp on Ascend uses AICPU, with bad performance.\n
-
-*/
-REG_OP(OutfeedEnqueueOp)
-  .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8,
-      DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_UINT32,
-      DT_UINT64, DT_BOOL, DT_DOUBLE, DT_STRING}))
-  .ATTR(channel_name, String, "")
-  .OP_END_FACTORY_REG(OutfeedEnqueueOp)
-
-}  // namespace ge
+#include "data_flow_ops.h"
 
 #endif  // GE_OP_OUTFEED_OPS_H
 

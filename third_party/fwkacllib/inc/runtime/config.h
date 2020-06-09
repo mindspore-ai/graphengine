@@ -39,6 +39,8 @@ typedef enum tagRtChipType {
   CHIP_BEGIN = 0,
   CHIP_MINI = CHIP_BEGIN,
   CHIP_CLOUD,
+  CHIP_MDC,
+  CHIP_LHISI,
   CHIP_OTHER_PHN,
   CHIP_OTHER_OLD,
   CHIP_END,

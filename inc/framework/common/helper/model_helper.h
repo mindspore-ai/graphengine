@@ -26,7 +26,7 @@
 #include "graph/model.h"
 #include "model/ge_model.h"
 
-namespace domi {
+namespace ge {
 class ModelHelper {
  public:
   ModelHelper() = default;
@@ -38,7 +38,7 @@ class ModelHelper {
   Status LoadModel(const ge::ModelData& model_data);
   Status GetModelBufferData(ge::ModelBufferData& model);
 
-  ModelFileHeader* GetFileHeader() { return file_header_; }
+  const ModelFileHeader* GetFileHeader() const { return file_header_; }
 
   GeModelPtr GetGeModel();
   void SetSaveMode(bool val) { is_offline_ = val; }
@@ -65,9 +65,8 @@ class ModelHelper {
   Status LoadTask(OmFileLoadHelper& om_load_helper);
   Status LoadTBEKernelStore(OmFileLoadHelper& om_load_helper);
   Status ReleaseLocalModelData() noexcept;
-
   Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper>& om_file_save_helper, ModelPartitionType type,
                             const uint8_t* data, size_t size);
 };
-}  // namespace domi
+}  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_MODEL_HELPER_H_

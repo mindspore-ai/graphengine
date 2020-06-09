@@ -15,6 +15,7 @@
  */
 
 #include "graph/passes/reshape_remove_pass.h"
+#include "framework/common/util.h"
 #include "graph/passes/pass_utils.h"
 
 namespace ge {
@@ -24,19 +25,20 @@ const int kReshapeShapeIndex = 1;
 }  // namespace
 
 Status ReshapeRemovePass::Run(NodePtr &node) {
-  if (node == nullptr) {
-    GELOGE(FAILED, "parameter is null.");
-    return FAILED;
-  }
-  if (node->GetType() != domi::RESHAPE) {
+  GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  if (node->GetType() != RESHAPE && node->GetType() != REFORMAT) {
     return SUCCESS;
   }
-  GELOGD("Remove reshape node %s", node->GetName().c_str());
-  auto ret = PassUtils::UnlinkNodeWithControlCopy(node, kReshapeShapeIndex);
-  if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed unlink shape edge for reshape node %s", node->GetName().c_str());
-    return ret;
+  auto op_desc = node->GetOpDesc();
+  auto output_desc = op_desc->GetOutputDescPtr(kReshapeDataIndex);
+  GE_CHECK_NOTNULL(output_desc);
+  if (output_desc->GetShape().IsUnknownShape()) {
+    GELOGD("Reshape node %s is unknown shape. It should be remained.", node->GetName().c_str());
+    return SUCCESS;
   }
+
+  GELOGD("Remove %s node %s", node->GetType().c_str(), node->GetName().c_str());
   return IsolateAndDeleteNode(node, {kReshapeDataIndex});
 }
 }  // namespace ge

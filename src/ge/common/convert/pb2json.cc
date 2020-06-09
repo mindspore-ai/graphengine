@@ -155,7 +155,7 @@ string Pb2Json::TypeBytes2String(string &field_name, string &type_bytes) {
 void Pb2Json::RepeatedMessage2Json(const ProtobufMsg &message, const ProtobufFieldDescriptor *field,
                                    const ProtobufReflection *reflection, const set<string> &black_fields, Json &json,
                                    bool enum2str) {
-  if (nullptr == field || nullptr == reflection) {
+  if ((field == nullptr) || (reflection == nullptr)) {
     Message2Json(message, black_fields, json, enum2str);
     return;
   }

@@ -17,7 +17,7 @@
 #ifndef GE_OP_NONLINEAR_FUC_OPS_H
 #define GE_OP_NONLINEAR_FUC_OPS_H
 
-#include "../graph/operator_reg.h"
+#include "graph/operator_reg.h"
 
 namespace ge {
 /**
@@ -171,24 +171,6 @@ REG_OP(SigmoidGrad)
     .INPUT(dy, TensorType(UnaryDataType))
     .OUTPUT(z, TensorType(UnaryDataType))
     .OP_END_FACTORY_REG(SigmoidGrad)
-
-REG_OP(Activation)
-    .INPUT(x, TensorType::ALL())
-    .OUTPUT(y, TensorType::ALL())
-    /*
-       0: sigmod, 1: relu, 2: tanh, 3: clipped ReLU, 4: Elu,
-       5: leaky relu, 6: abs, 7: relu1, 8: softsign, 9: softplus
-    */
-    .ATTR(mode, Int, 1)
-    .ATTR(coef, Float, 0)
-    .OP_END_FACTORY_REG(Activation)
-
-REG_OP(ActivationGrad)
-    .INPUT(dy, TensorType{DT_FLOAT})
-    .INPUT(x, TensorType{DT_FLOAT})
-    .OUTPUT(dx, TensorType{DT_FLOAT})
-    .ATTR(mode, Int, 1)
-    .OP_END_FACTORY_REG(ActivationGrad)
 
 /**
 *@brief Computes the binomial normal log likelihood (BNLL) output:\n
@@ -433,7 +415,7 @@ REG_OP(EluGrad)
 
 *@par Inputs:
 * One input:
-* x: A Tensor. Must be one of the following types: float32, float16, int32, int8, double.
+* x: A Tensor. Must be one of the following types: float32, float16, double.
 *
 *@par Attributes:
 *negative_slope: A float32. Defaults to "0.0".
@@ -442,31 +424,42 @@ REG_OP(EluGrad)
 *y: A Tensor. Has the same type as "x".
 */
 REG_OP(LeakyRelu)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
     .ATTR(negative_slope, Float, 0.0)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
     .OP_END_FACTORY_REG(LeakyRelu)
 
 /**
-*@brief Computes the output as g if x > 0 and negative_slope * g if x <= 0.
+*@brief Computes the output as gradients if features > 0 and negative_slope * gradients if features <= 0.
 
 *@par Inputs:
 * Two inputs, including:
-* @li g: A Tensor. Must be one of the following types: float16, float32, double.
-* @li x: A Tensor. Has the same type as "g".
+* @li gradients: A Tensor. Must be one of the following types: float16, float32, double.
+* @li features: A Tensor. Has the same type as "gradients".
 
 *@par Attributes:
 *negative_slope: A float32. Defaults to "0.0".
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "g".
+*backprops: A Tensor. Has the same type as "gradients".
 */
 REG_OP(LeakyReluGrad)
-.INPUT(g, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-.INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-.ATTR(negative_slope, Float, 0.0)
-.OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-.OP_END_FACTORY_REG(LeakyReluGrad)
+    .INPUT(gradients, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(negative_slope, Float, 0.0)
+    .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(LeakyReluGrad)
+
+REG_OP(threshold_grad_v2_d)
+    .INPUT(input_x, TensorType({DT_INT32, DT_FLOAT16}))
+    .INPUT(input_y, TensorType({DT_INT32, DT_FLOAT16}))
+    .OUTPUT(output_z, TensorType({DT_INT32, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(threshold_grad_v2_d)
+
+REG_OP(ThresholdV2D)
+    .INPUT(x, TensorType::RealNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
+    .OP_END_FACTORY_REG(ThresholdV2D)
 
 } // namespace ge
 

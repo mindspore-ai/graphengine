@@ -398,6 +398,24 @@ REG_OP(ListDiff)
     .OP_END_FACTORY_REG(ListDiff)
 
 /**
+*@brief Create an empty tensor, using the shape and dtype specified in attributes.
+
+*@par Attributes:
+*@li dtype: Specify the data type of the empty tensor.
+*@li shape: Specify the shape of the empty tensor.
+
+*@par Outputs:
+*y: The empty constant tensor.
+
+*/
+REG_OP(_ParallelConcatStart)
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
+                          DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .ATTR(dtype, Type, DT_INT32)
+    .ATTR(shape, ListInt, {})
+    .OP_END_FACTORY_REG(_ParallelConcatStart)
+
+/**
 *@brief Creates a constant tensor from a tensor-like object. This operator is used for inference. \n
 Operator Const has the same definition as operator Constant.
 
@@ -595,6 +613,9 @@ REG_OP(ExpandDims)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Attention:
+*This operator cannot be directly called by the acllopExecute API.
 */
 REG_OP(Reshape)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
@@ -701,6 +722,47 @@ REG_OP(PlaceHolder)
     .ATTR(anchorIndex, Int, 0)  // check if these node are from save anchor
     .OP_END_FACTORY_REG(PlaceHolder)
 
+/**
+*@brief Inserts a placeholder with default value for a tensor.
+
+*@par Inputs:
+*x: A tensor.
+
+*@par Attributes:
+*@li dtype: data type of tensor.
+*@li shape: tensor shape.
+
+*@par Outputs:
+*y: The created placeholder tensor.
+
+*/
+REG_OP(PlaceholderWithDefault)
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
+    .REQUIRED_ATTR(shape, ListInt)
+    .OP_END_FACTORY_REG(PlaceholderWithDefault)
+
+/**
+*@brief Reads and returns the value of the input variable tensor.
+
+*@par Inputs:
+*x: A tensor.
+
+*@par Attributes:
+*dtype: An optional int32 or int64. The output data type. Defaults to int32.
+
+*@par Outputs:
+*y: A tensor.
+
+*/
+REG_OP(ReadVariableOp)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
+                          DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
+                           DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
+    .ATTR(dtype, Int, DT_INT32)
+    .OP_END_FACTORY_REG(ReadVariableOp)
+
 REG_OP(End)
     .INPUT(x, TensorType::ALL())
     .OUTPUT(y, TensorType::ALL())
@@ -719,7 +781,7 @@ REG_OP(Summary)
 *x: A tensor.
 
 *@par Attributes:
-*out_type: An optional int32 or int64. The output data type. Defaults to int32.
+*dtype: An optional int32 or int64. The output data type. Defaults to int32.
 
 *@par Outputs:
 *y: A tensor. The shape of the input tensor.
@@ -738,7 +800,7 @@ REG_OP(Shape)
 *x: A list of input tensors.
 
 *@par Attributes:
-*out_type: An optional int32 or int64. The output data type. Defaults to "int32".
+*dtype: An optional int32 or int64. The output data type. Defaults to "int32".
 
 *@par Outputs:
 *y: A list of tensors with the same length as the input list of tensors.
@@ -829,14 +891,17 @@ REG_OP(Where)
 *The Split node is removed from the graph after the split operation is completed.
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, int32.
+*x: A Tensor. Must be one of the following types: \n
+fp16, fp32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".It's required and the value should equal to output_num.
 */
 REG_OP(Copy)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
     .OP_END_FACTORY_REG(Copy);
 
 /**
@@ -859,6 +924,26 @@ REG_OP(Fingerprint)
     .INPUT(method, TensorType({DT_STRING}))
     .OUTPUT(y, TensorType({DT_UINT8}))
     .OP_END_FACTORY_REG(Fingerprint)
+
+/**
+*@brief Change the shape of output according to the attr outShape
+*
+
+*@par Inputs:
+*x: A Tensor.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".It's required and the value should equal to output_num.
+
+*@par Attributes:
+*outShape: The shape of output will be inferred according to the attribute
+*/
+REG_OP(TransShape)
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
+    .ATTR(outShape,ListInt ,{})
+    .OP_END_FACTORY_REG(TransShape);
+
 }  // namespace ge
 
 #endif  // GE_OP_ARRAY_OPS_H_

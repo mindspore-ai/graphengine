@@ -47,6 +47,9 @@ class GraphOptimize {
   // original graph optimize
   Status OptimizeOriginalGraph(ComputeGraphPtr &compute_graph);
 
+  // new original graph optimize
+  Status NewOptimizeOriginalGraph(ComputeGraphPtr &compute_graph);
+
   // for fe prepare optimize in quantize scene
   Status OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_graph);
 

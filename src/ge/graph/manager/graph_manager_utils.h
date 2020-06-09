@@ -37,6 +37,7 @@
 #include "graph/model.h"
 #include "model/ge_model.h"
 #include "register/register_fmk_types.h"
+#include "external/ge/ge_api_types.h"
 
 namespace ge {
 // state for graph task in life cycle
@@ -122,13 +123,14 @@ class RunAsyncListener : public ge::ModelListener {
 
   ~RunAsyncListener() = default;
 
-  void SetCallback(const std::function<void(Status)> &callback);
+  void SetCallback(const RunAsyncCallback &callback);
 
   // callback
-  Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result) override;
+  Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
+                       std::vector<ge::OutputTensorInfo> &outputs) override;
 
  private:
-  std::function<void(Status)> callback_;
+  RunAsyncCallback callback_;
   BlockingQueue<uint8_t> sem_;
 };
 
@@ -190,7 +192,8 @@ class GraphModelListener : public ge::ModelListener {
   ~GraphModelListener() = default;
 
   // callback
-  Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result) override;
+  Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
+                       std::vector<ge::OutputTensorInfo> &outputs) override;
 
   Status ResetResult();
 

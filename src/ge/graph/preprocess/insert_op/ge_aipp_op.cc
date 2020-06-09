@@ -39,8 +39,6 @@
 #include "external/graph/operator_factory.h"
 #include "base_insert_op.h"
 
-using domi::AIPP;
-
 #define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                       \
   do {                                                                                       \
     (void)aipp_attrs.SetAttr(#KEY, GeAttrValue::CreateFrom<SAVE_TYPE>(aipp_params_->KEY())); \
@@ -84,7 +82,7 @@ const float DEFAULT_VAR_RECI_CHN = 1.0;
 namespace ge {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
-const char *const kAippConfigPath = "aipp_config_route";
+const char *const kAippConfigPath = "aipp_config_path";
 const char *const kCurrentAippIndex = "current_aipp_index";
 const char *const kDynamicAippData = "ascend_dynamic_aipp_data";
 const uint64_t kMinTransferShape = 3;
@@ -100,13 +98,13 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
     batch = 1;
     return SUCCESS;
   }
-  if (shape.size() == domi::DIM_DEFAULT_SIZE) {
+  if (shape.size() == DIM_DEFAULT_SIZE) {
     switch (format) {
       case FORMAT_NCHW:
-        batch = shape[domi::NCHW_DIM_N];
+        batch = shape[NCHW_DIM_N];
         return SUCCESS;
       case FORMAT_NHWC:
-        batch = shape[domi::NHWC_DIM_N];
+        batch = shape[NHWC_DIM_N];
         return SUCCESS;
       default:
         GELOGE(PARAM_INVALID, "Not support data format: %s", TypeUtils::FormatToSerialString(format).c_str());
@@ -210,21 +208,16 @@ NodePtr AippOp::CreateAipp(const ComputeGraphPtr &graph, const OutDataAnchorPtr 
                            const std::string &aippConfigPath, const uint32_t &index) {
   std::string current_name =
     out_anchor->GetOwnerNode()->GetName() + "_" + std::to_string(out_anchor->GetIdx()) + "_huawei_aipp";
-  auto aipp_opdesc_ptr = MakeShared<OpDesc>(current_name, domi::AIPP);
+  auto aipp_opdesc_ptr = MakeShared<OpDesc>(current_name, AIPP);
   if (aipp_opdesc_ptr == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to alloc aipp desc, name %s", current_name.c_str());
     return nullptr;
   }
 
   // Update attributes
-  GeAttrValue::NamedAttrs aipp_attr;
+  GeAttrValue::NAMED_ATTRS aipp_attr;
   ConvertParamToAttr(aipp_attr);
-  // a useless attr but defined in IR, we use `aipp_config_route` actrually
-  if (!AttrUtils::SetStr(aipp_opdesc_ptr, "aipp_config_path", "./aipp.cfg")) {
-    GELOGE(INTERNAL_ERROR, "Set config file path attr for aipp node failed");
-    return nullptr;
-  }
-  if (!AttrUtils::SetNamedAttrs(aipp_opdesc_ptr, domi::ATTR_NAME_AIPP, aipp_attr)) {
+  if (!AttrUtils::SetNamedAttrs(aipp_opdesc_ptr, ATTR_NAME_AIPP, aipp_attr)) {
     GELOGE(INTERNAL_ERROR, "Set name attrs for aipp node failed");
     return nullptr;
   }
@@ -291,7 +284,7 @@ domi::AippOpParams::AippMode AippOp::GetAippMode() { return aipp_params_->aipp_m
 NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
   int64_t data_index = 0;
   for (auto &node : graph->GetDirectNode()) {
-    if (node->GetType() != domi::DATA) {
+    if (node->GetType() != DATA) {
       continue;
     }
     // There is no `index` attribute on the `Data` node when compile in inference scene
@@ -536,7 +529,7 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
 
   static int op_idx = 0;
   op_desc->SetName(std::string("aipp_node").append(std::to_string(op_idx++)));
-  op_desc->SetType(domi::AIPP);
+  op_desc->SetType(AIPP);
 
   // Add two InputDesc, add the second after the first one is added successfully.
   if ((op_desc->AddInputDesc(GeTensorDesc()) != GRAPH_SUCCESS) ||
@@ -549,17 +542,17 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
     GELOGE(FAILED, "add output desc failed.");
     return FAILED;
   }
-  GeAttrValue::NamedAttrs aipp_attrs;
+  GeAttrValue::NAMED_ATTRS aipp_attrs;
   ConvertParamToAttr(aipp_attrs);
 
-  GE_IF_BOOL_EXEC(!AttrUtils::SetNamedAttrs(op_desc, domi::ATTR_NAME_AIPP, aipp_attrs),
+  GE_IF_BOOL_EXEC(!AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attrs),
                   GELOGE(FAILED, "failed to set ATTR_NAME_AIPP");
                   return FAILED);
 
   return SUCCESS;
 }
 
-void AippOp::ConvertParamToAttr(GeAttrValue::NamedAttrs &aipp_attrs) {
+void AippOp::ConvertParamToAttr(GeAttrValue::NAMED_ATTRS &aipp_attrs) {
   GE_CHECK_NOTNULL_JUST_RETURN(aipp_params_);
   SAVE_AIPP_ATTR(aipp_mode, GeAttrValue::INT);
 
@@ -654,7 +647,7 @@ Status AippOp::CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp_
   TensorUtils::SetSize(input_tensor, max_dynamic_aipp_size);
 
   // new add aipp_data ops for dynamic aipp param input
-  OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(kDynamicAippData, domi::AIPPDATA);
+  OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(kDynamicAippData, AIPPDATA);
   GE_CHECK_NOTNULL(op_desc_ptr_data);
   auto stat1 = op_desc_ptr_data->AddInputDesc(input_tensor);
 

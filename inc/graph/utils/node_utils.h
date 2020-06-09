@@ -55,11 +55,44 @@ class NodeUtils {
   static GeTensorDesc GetInputDesc(const Node &node, uint32_t index);
   static graphStatus UpdateOutputShape(const Node &node, uint32_t index, const GeShape &shape);
   static graphStatus UpdateInputShape(const Node &node, uint32_t index, const GeShape &shape);
+  // check node whether unknown shape.If node shape contain -1 or -2,out param "is_unknow" will be true;
+  // for func op, it will check subgraph yet, if some node shape of subgraph contain -1 or -2,
+  // the out param "is_unknow" will be true too
+  static graphStatus GetNodeUnknownShapeStatus(const Node &node, bool &is_unknow);
 
   static std::string GetNodeType(const Node &node);
 
   static ComputeGraphPtr GetSubgraph(const Node &node, uint32_t index);
-  static graphStatus AddSubgraph(Node &node, const ComputeGraphPtr &subgraph);
+  static graphStatus SetSubgraph(Node &node, uint32_t index, const ComputeGraphPtr &subgraph);
+
+  ///
+  /// Check if node is input of subgraph
+  /// @param [in] node
+  /// @return bool
+  ///
+  static bool IsSubgraphInput(const NodePtr &node);
+
+  ///
+  /// Check if node is output of subgraph
+  /// @param [in] node
+  /// @return bool
+  ///
+  static bool IsSubgraphOutput(const NodePtr &node);
+
+  ///
+  /// @brief Get subgraph original input node.
+  /// @param [in] node
+  /// @return Node
+  ///
+  static NodePtr GetParentInput(const NodePtr &node);
+
+  ///
+  /// @brief Get subgraph input is constant.
+  /// @param [in] node
+  /// @param [out] string
+  /// @return bool
+  ///
+  static bool GetConstOpType(const NodePtr &in_node, std::string &op_type);
 
  private:
   static std::map<NodePtr, std::vector<uint32_t>> map_send_info_;

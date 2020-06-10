@@ -177,37 +177,44 @@ class AicpuTaskInfo : public TaskInfo {
   std::vector<void *> output_data_addrs_;
 };
 
-class LabelTaskInfo : public TaskInfo {
+class LabelSetTaskInfo : public TaskInfo {
  public:
+  LabelSetTaskInfo(uint32_t stream_id, uint32_t label_id)
+      : TaskInfo(stream_id, TaskInfoType::LABEL_SET), label_id_(label_id) {}
+  ~LabelSetTaskInfo() override {}
   uint32_t label_id() const { return label_id_; }
 
- protected:
-  LabelTaskInfo(uint32_t stream_id, TaskInfoType type, uint32_t label_id)
-      : TaskInfo(stream_id, type), label_id_(label_id) {}
-  virtual ~LabelTaskInfo() override {}
-
+ private:
   uint32_t label_id_;
 };
 
-class LabelSetTaskInfo : public LabelTaskInfo {
- public:
-  LabelSetTaskInfo(uint32_t stream_id, uint32_t label_id)
-      : LabelTaskInfo(stream_id, TaskInfoType::LABEL_SET, label_id) {}
-  ~LabelSetTaskInfo() override {}
-};
-
-class LabelSwitchTaskInfo : public LabelTaskInfo {
- public:
-  LabelSwitchTaskInfo(uint32_t stream_id, uint32_t label_id)
-      : LabelTaskInfo(stream_id, TaskInfoType::LABEL_SWITCH, label_id) {}
-  ~LabelSwitchTaskInfo() override {}
-};
-
-class LabelGotoTaskInfo : public LabelTaskInfo {
+class LabelGotoTaskInfo : public TaskInfo {
  public:
   LabelGotoTaskInfo(uint32_t stream_id, uint32_t label_id)
-      : LabelTaskInfo(stream_id, TaskInfoType::LABEL_GOTO, label_id) {}
+      : TaskInfo(stream_id, TaskInfoType::LABEL_GOTO), label_id_(label_id) {}
   ~LabelGotoTaskInfo() override {}
+  uint32_t label_id() const { return label_id_; }
+
+ private:
+  uint32_t label_id_;
+};
+
+class LabelSwitchTaskInfo : public TaskInfo {
+ public:
+  LabelSwitchTaskInfo(uint32_t stream_id, uint32_t label_size, const std::vector<uint32_t> &label_list, void *cond)
+      : TaskInfo(stream_id, TaskInfoType::LABEL_SWITCH),
+        label_size_(label_size),
+        label_list_(label_list),
+        cond_(cond) {}
+  ~LabelSwitchTaskInfo() override {}
+  uint32_t label_size() { return label_size_; };
+  const std::vector<uint32_t> &label_list() { return label_list_; };
+  void *cond() { return cond_; };
+
+ private:
+  uint32_t label_size_;
+  std::vector<uint32_t> label_list_;
+  void *cond_;
 };
 
 class EventTaskInfo : public TaskInfo {

@@ -48,7 +48,7 @@ class RuntimeModel {
   bool LoadTask();
   bool InitStream(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitEvent(uint32_t event_num);
-  bool InitLabel(uint32_t batch_num);
+  bool InitLabel(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitDataInfo(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitOutputInfo(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model);

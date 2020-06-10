@@ -116,23 +116,34 @@ bool RuntimeModel::InitEvent(uint32_t event_num) {
   return true;
 }
 
-bool RuntimeModel::InitLabel(uint32_t batch_num) {
-  GELOGI("batch number:%u.", batch_num);
-  for (uint32_t i = 0; (batch_num != 0 && i <= batch_num); ++i) {
-    rtLabel_t rt_lLabel = nullptr;
-    rtError_t rt_ret = rtLabelCreate(&rt_lLabel);
+bool RuntimeModel::InitLabel(std::shared_ptr<DavinciModel> &davinci_model) {
+  GELOGI("batch number:%u.", davinci_model->GetBatchNum());
+  label_list_.resize(davinci_model->GetBatchNum());
+  for (auto &task_info : davinci_model->GetTaskInfoList()) {
+    if (task_info == nullptr) {
+      GELOGE(PARAM_INVALID, "task_info is null.");
+      continue;
+    }
+
+    if (task_info->type() != TaskInfoType::LABEL_SET) {
+      continue;
+    }
+    auto label_set_task_info = std::static_pointer_cast<LabelSetTaskInfo>(task_info);
+
+    if (label_set_task_info->stream_id() >= stream_list_.size()) {
+      GELOGE(PARAM_INVALID, "Invalid stream id.");
+      return false;
+    }
+
+    rtLabel_t rt_label = nullptr;
+    rtError_t rt_ret = rtLabelCreateEx(&rt_label, stream_list_[label_set_task_info->stream_id()]);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, i; %u; ret: 0x%X", i, rt_ret);
+      GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, ret: 0x%X", rt_ret);
       return false;
     }
-
-    if (rt_lLabel == nullptr) {
-      GELOGE(RT_FAILED, "rtLabel is nullptr!");
-      return false;
-    }
-
-    label_list_.emplace_back(rt_lLabel);
+    label_list_[label_set_task_info->label_id()] = rt_label;
   }
+
   return true;
 }
 
@@ -164,7 +175,7 @@ bool RuntimeModel::InitResource(std::shared_ptr<DavinciModel> &davinci_model) {
     return false;
   }
 
-  if (!InitLabel(davinci_model->GetBatchNum())) {
+  if (!InitLabel(davinci_model)) {
     return false;
   }
 

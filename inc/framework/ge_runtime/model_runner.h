@@ -38,6 +38,8 @@ class ModelRunner {
 
   const std::vector<uint32_t> &GetTaskIdList(uint32_t model_id) const;
 
+  const std::vector<uint32_t> &GetStreamIdList(uint32_t model_id) const;
+
   bool UnloadModel(uint32_t model_id);
 
   bool RunModel(uint32_t model_id, const InputData &input_data, OutputData *output_data);

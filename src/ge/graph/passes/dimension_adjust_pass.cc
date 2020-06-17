@@ -45,6 +45,7 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     GELOGE(ret, "DimensionAdjustPass get originnal type fail.");
     return ret;
   }
+
   KernelFactory &factory = KernelFactory::Instance();
   shared_ptr<Kernel> op_kernel = factory.Create(type);
   if (op_kernel == nullptr) {

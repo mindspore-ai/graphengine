@@ -78,7 +78,7 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unorder
       continue;
     }
 
-    GELOGD("Begin to run pass %s", name_to_pass.first.c_str());
+    GELOGD("Begin to run pass %s for node %s", name_to_pass.first.c_str(), node->GetName().c_str());
     name_to_pass.second->init();
     auto result = name_to_pass.second->Run(node);
     if (result != SUCCESS) {

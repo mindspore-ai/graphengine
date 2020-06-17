@@ -254,6 +254,14 @@ bool PassUtils::IsNeedTrainIteFlowCtrl(const ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
     return false;
   }
+  if (compute_graph->GetParentGraph() != nullptr) {
+    GELOGI("Subgraph %s no need flow ctrl.", compute_graph->GetName().c_str());
+    return false;
+  }
+  if (GraphUtils::IsUnknownShapeGraph(compute_graph)) {
+    GELOGI("Unknown shape graph %s no need flow ctrl.", compute_graph->GetName().c_str());
+    return false;
+  }
   if (!ge::VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(NODE_NAME_FLOWCTRL_LOOP_PER_ITER)) {
     return false;
   }

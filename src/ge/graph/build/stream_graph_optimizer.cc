@@ -30,7 +30,7 @@ namespace ge {
 StreamGraphOptimizer::~StreamGraphOptimizer() {}
 
 void StreamGraphOptimizer::RefreshNodeId(const ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map) {
-  size_t node_size = comp_graph->GetDirectNodesSize();
+  size_t node_size = comp_graph->GetAllNodesSize();
   GELOGI("Refresh placeholder and end nodeId start from node num: %zu", node_size);
   for (const auto &subgraph_pair : subgraph_map) {
     for (const auto &subgraph_info : subgraph_pair.second) {

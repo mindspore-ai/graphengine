@@ -44,11 +44,10 @@ namespace ge {
  * @brief run model
  */
 enum RunMode {
-  GEN_OM_MODEL = 0,              // generate offline model file
-  MODEL_TO_JSON = 1,             // convert to JSON file
-  MODEL_TO_JSON_WITH_SHAPE = 2,  // convert to json file with shape
-  ONLY_PRE_CHECK = 3,            // only for pre-check
-  PBTXT_TO_JSON = 5              // pbtxt to json
+  GEN_OM_MODEL = 0,    // generate offline model file
+  MODEL_TO_JSON = 1,   // convert to JSON file
+  ONLY_PRE_CHECK = 3,  // only for pre-check
+  PBTXT_TO_JSON = 5    // pbtxt to json
 };
 
 ///
@@ -93,6 +92,8 @@ struct OmgContext {
   std::map<std::string, std::vector<int32_t>> out_nodes_map;
   // user-designate out nodes (this is used for determing the orders)
   std::vector<std::pair<std::string, int32_t>> user_out_nodes;
+  // net out nodes (where user_out_nodes or leaf nodes)
+  std::vector<std::string> net_out_nodes;
   // path for the aicpu custom operator so_file
   std::vector<std::string> aicpu_op_run_paths;
   // ddk version

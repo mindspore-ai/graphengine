@@ -36,6 +36,75 @@
 namespace ge {
 namespace {
 const size_t OUTPUT_PARAM_SIZE = 2;
+bool IsUseBFS() {
+  string run_mode;
+  const int base = 10;
+  if (ge::GetContext().GetOption(ge::OPTION_GRAPH_RUN_MODE, run_mode) == GRAPH_SUCCESS && !run_mode.empty()) {
+    if (GraphRunMode(std::strtol(run_mode.c_str(), nullptr, base)) >= TRAIN) {
+      return true;
+    }
+  } else {
+    GELOGW("OPTION_GRAPH_RUN_MODE not set, use BFSTopologicalSorting by default.");
+  }
+  return false;
+}
+bool IsTailingOptimization() {
+  string is_tailing_optimization_option;
+  auto ret = GetContext().GetOption(ge::OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION, is_tailing_optimization_option);
+  if (ret == GRAPH_SUCCESS) {
+    GELOGI("Option ge.exec.isTailingOptimization is %s", is_tailing_optimization_option.c_str());
+    // "1" means it's True from frontend option
+    return is_tailing_optimization_option == "1";
+  }
+  GELOGW("OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION not set, use BFSTopologicalSorting by default.");
+  return false;
+}
+bool IsFusedNode(const NodePtr &node) {
+  bool is_fused_node = false;
+  AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_FLAG, is_fused_node);
+  return is_fused_node;
+}
+string GetGroupId(const NodePtr &node) {
+  string group_id;
+  AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, group_id);
+  return group_id;
+}
+bool IsGroupEnd(const NodePtr &node) {
+  if (GetGroupId(node).empty()) {
+    return false;
+  }
+  if (node->GetOutDataNodesSize() == 0) {
+    return true;
+  }
+  for (const auto &out_data_node : node->GetOutDataNodes()) {
+    if (IsFusedNode(out_data_node)) {
+      return true;
+    }
+  }
+  return false;
+}
+void SplitNodeToStack(const std::map<string, NodePtr> &breadth_node_map, string current_group_id,
+                      std::vector<NodePtr> &stack_input, std::deque<NodePtr> &group_stack, std::deque<NodePtr> &stack) {
+  for (const auto &name_node : breadth_node_map) {
+    // group first
+    string group_id;
+    if (AttrUtils::GetStr(name_node.second->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, group_id)) {
+      GELOGI("current node %s, group id: %s , current group id %s", name_node.second->GetName().c_str(),
+             group_id.c_str(), current_group_id.c_str());
+      if (!current_group_id.empty() && group_id != current_group_id) {
+        GELOGI("node go to input_stack back: %s", name_node.second->GetName().c_str());
+        (void)stack_input.insert(stack_input.begin(), name_node.second);
+      } else {
+        current_group_id = group_id;
+        GELOGI("node go to group_stack: %s", name_node.second->GetName().c_str());
+        (void)group_stack.push_front(name_node.second);
+      }
+      continue;
+    }
+    GELOGI("node go to stack: %s ", name_node.second->GetName().c_str());
+    (void)stack.push_front(name_node.second);
+  }
+}
 }  // namespace
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::ComputeGraph(const std::string &name)
@@ -546,24 +615,21 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ComputeGraph::SetParentNode(
 ///
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 ComputeGraph::UpdateInputMapping(const std::map<uint32_t, uint32_t> &input_mapping) {
-  size_t update_num = 0;
   for (auto &input : nodes_) {
-    if (update_num >= input_mapping.size()) {
-      break;
+    if (input->GetType() == DATA) {
+      uint32_t cur_index = 0;
+      if (!ge::AttrUtils::GetInt(input->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, cur_index)) {
+        continue;
+      }
+      auto iter = input_mapping.find(cur_index);
+      if (iter == input_mapping.end()) {
+        continue;
+      }
+      if (!ge::AttrUtils::SetInt(input->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, iter->second)) {
+        GE_LOGE("UpdateInputMapping failed: set attr ATTR_NAME_PARENT_NODE_INDEX failed.");
+        return GRAPH_FAILED;
+      }
     }
-    uint32_t cur_index = 0;
-    if (!ge::AttrUtils::GetInt(input->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, cur_index)) {
-      continue;
-    }
-    auto iter = input_mapping.find(cur_index);
-    if (iter == input_mapping.end()) {
-      continue;
-    }
-    if (!ge::AttrUtils::SetInt(input->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, iter->second)) {
-      GE_LOGE("UpdateInputMapping failed: set attr ATTR_NAME_PARENT_NODE_INDEX failed.");
-      return GRAPH_FAILED;
-    }
-    update_num++;
   }
 
   return GRAPH_SUCCESS;
@@ -719,10 +785,10 @@ graphStatus ComputeGraph::BFSTopologicalSorting(std::vector<NodePtr> &node_vec,
       node = stack_input.back();
       stack_input.pop_back();
     }
+
     node_vec.push_back(node);
     GE_CHECK_NOTNULL(node->GetOpDesc());
     GELOGD("node_vec.push_back %s", node->GetOpDesc()->GetName().c_str());
-
     CollectBreadthOutNode(node, map_in_edge_num, breadth_node_map);
 
     for (const auto &name_node : breadth_node_map) {
@@ -730,7 +796,65 @@ graphStatus ComputeGraph::BFSTopologicalSorting(std::vector<NodePtr> &node_vec,
     }
     breadth_node_map.clear();
   }
+  return GRAPH_SUCCESS;
+}
 
+graphStatus ComputeGraph::BFSTopologicalSortingWithGroup(std::vector<NodePtr> &node_vec,
+                                                         std::map<NodePtr, uint32_t> &map_in_edge_num,
+                                                         std::deque<NodePtr> &stack) {
+  GELOGI("Runing_Bfs_Sort_With_Group");
+  std::string current_group_id;
+  std::vector<NodePtr> stack_input;
+  std::deque<NodePtr> group_stack;
+  std::deque<NodePtr> fused_node_stack;
+  std::map<string, NodePtr> breadth_node_map;
+  // Record the number of non data nodes but no input nodes
+  GE_CHK_BOOL_EXEC(SortNodes(stack_input, map_in_edge_num) == GRAPH_SUCCESS, return GRAPH_FAILED, "sort nodes failed");
+
+  // Only data nodes here
+  while (!stack_input.empty() || !stack.empty() || !group_stack.empty()) {
+    NodePtr node = nullptr;
+    if (!group_stack.empty()) {
+      // Traversal node in group has priority
+      node = group_stack.back();
+      group_stack.pop_back();
+    } else if (!stack.empty()) {
+      node = stack.back();
+      stack.pop_back();
+    } else {
+      node = stack_input.back();
+      stack_input.pop_back();
+    }
+
+    if (IsFusedNode(node) && current_group_id.empty()) {
+      current_group_id = node->GetName();
+    }
+    if (GetGroupId(node).empty() || GetGroupId(node) == current_group_id) {
+      node_vec.push_back(node);
+      GE_CHECK_NOTNULL(node->GetOpDesc());
+      GELOGI("node_vec.push_back %s", node->GetOpDesc()->GetName().c_str());
+    } else {
+      if (current_group_id.empty()) {
+        current_group_id = GetGroupId(node);
+        node_vec.push_back(node);
+        GE_CHECK_NOTNULL(node->GetOpDesc());
+        GELOGI("node_vec.push_back %s", node->GetOpDesc()->GetName().c_str());
+      } else {
+        GELOGI("current group id is %s ,node go to input_stack back: %s", current_group_id.c_str(),
+               node->GetName().c_str());
+        (void)stack_input.insert(stack_input.begin(), node);
+        continue;
+      }
+    }
+    CollectBreadthOutNode(node, map_in_edge_num, breadth_node_map);
+    SplitNodeToStack(breadth_node_map, current_group_id, stack_input, group_stack, stack);
+    breadth_node_map.clear();
+    // check the end of group
+    if (IsGroupEnd(node)) {
+      GELOGI("Current node %s is end of group %s.", node->GetName().c_str(), current_group_id.c_str());
+      current_group_id = "";
+    }
+  }
   return GRAPH_SUCCESS;
 }
 
@@ -751,15 +875,14 @@ graphStatus ComputeGraph::CollectBreadthOutNode(const NodePtr &node, std::map<No
       }
     }
   }
-
-  GE_IF_BOOL_EXEC(
-    node->GetOutControlAnchor() != nullptr, for (AnchorPtr peer_in_anchor
-                                                 : node->GetOutControlAnchor()->GetPeerAnchors()) {
+  if (node->GetOutControlAnchor() != nullptr) {
+    for (AnchorPtr peer_in_anchor : node->GetOutControlAnchor()->GetPeerAnchors()) {
       auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
       if (iter != map_in_edge_num.end() && 0 == --iter->second) {
         (void)breadth_node_map.emplace(peer_in_anchor->GetOwnerNode()->GetName(), peer_in_anchor->GetOwnerNode());
       }
-    })
+    }
+  }
   return GRAPH_SUCCESS;
 }
 
@@ -796,21 +919,18 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::Topolog
 graphStatus ComputeGraph::TopologicalSortingGraph() {
   std::vector<NodePtr> node_vec;
   std::map<NodePtr, uint32_t> map_in_edge_num;
-  bool use_BFS = false;
-  string run_mode;
-  const int base = 10;
-  if (ge::GetContext().GetOption(ge::OPTION_GRAPH_RUN_MODE, run_mode) == GRAPH_SUCCESS && !run_mode.empty()) {
-    if (GraphRunMode(std::strtol(run_mode.c_str(), nullptr, base)) >= TRAIN) {
-      use_BFS = true;
-    }
-  } else {
-    GELOGW("OPTION_GRAPH_RUN_MODE not set, use BFSTopologicalSorting by default.");
-  }
-
+  bool use_BFS = IsUseBFS();
+  bool is_tailing_optimization = IsTailingOptimization();
   if (use_BFS) {
     std::deque<NodePtr> stack;
-    if (BFSTopologicalSorting(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
-      return GRAPH_FAILED;
+    if (is_tailing_optimization) {
+      if (BFSTopologicalSortingWithGroup(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
+        return GRAPH_FAILED;
+      }
+    } else {
+      if (BFSTopologicalSorting(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
+        return GRAPH_FAILED;
+      }
     }
   } else {
     std::vector<NodePtr> stack;

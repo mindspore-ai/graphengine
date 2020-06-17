@@ -53,7 +53,7 @@ Status GraphLoader::UnloadModel(uint32_t model_id) {
   return SUCCESS;
 }
 
-Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeModel> &ge_model_ptr,
+Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeRootModel> &ge_root_model_ptr,
                                     const std::shared_ptr<ModelListener> &listener) {
   GELOGI("Load model online begin.");
   rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
@@ -62,15 +62,15 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
     CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_LOAD);
     return RT_FAILED;
   }
-  if (ge_model_ptr == nullptr) {
+  if (ge_root_model_ptr == nullptr) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_ptr is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
-  model_id = ge_model_ptr->GetModelId();
+  model_id = ge_root_model_ptr->GetModelId();
 
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->LoadModelOnline(model_id, ge_model_ptr, listener);
+  Status ret = model_manager->LoadModelOnline(model_id, ge_root_model_ptr, listener);
   if (ret != SUCCESS) {
     GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
     CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_LOAD);

@@ -49,8 +49,10 @@ class GraphPrepare {
                  VarAccelerateCtrl &var_acc_ctrl, uint64_t session_id = 0);
   Status PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
                          ge::ComputeGraphPtr &compute_graph, uint64_t session_id = 0);
+  Status PrepareRunningFormatRefiner();
   void SetOptions(const GraphManagerOptions &options);
   Status GenerateInfershapeGraph(ConstGraphPtr graph);
+  Status SwitchOpOptimize(ComputeGraphPtr &compute_graph);
 
  private:
   Status Init(const ge::Graph &graph, uint64_t session_id = 0);
@@ -81,6 +83,7 @@ class GraphPrepare {
   Status NewOptimizeGraphBeforeSubGraph(VarAccelerateCtrl &var_acc_ctrl);
   Status SaveOriginalGraphToOmModel();
   Status ProcessNetOutput();
+  Status ProcessBeforeInfershape();
   Status UpdateInputOutputByOptions();
   bool IsBroadCastOpData(const ge::NodePtr &var_node);
 
@@ -95,7 +98,7 @@ class GraphPrepare {
 
   bool ConfirmUseOpAndIndexByNode(const ge::NodePtr &var_node, const map<string, std::set<int>> &confirm_ops,
                                   ge::NodePtr &use_node);
-
+  Status GraphEquivalentTransformation();
   ge::ComputeGraphPtr compute_graph_;
   GraphManagerOptions options_;
 };

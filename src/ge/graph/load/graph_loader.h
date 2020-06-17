@@ -71,7 +71,7 @@ class GraphLoader {
 
   static Status DestroyAicpuSessionForInfer(uint32_t model_id);
 
-  static Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeModel> &model,
+  static Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeRootModel> &ge_root_model,
                                 const std::shared_ptr<ModelListener> &listener);
 };
 }  // namespace ge

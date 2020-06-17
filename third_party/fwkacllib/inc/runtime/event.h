@@ -24,6 +24,13 @@ extern "C" {
 #endif
 
 /**
+ * @ingroup event_flags
+ * @brief event op bit flags
+ */
+#define RT_EVENT_DEFAULT (0x00)
+#define RT_EVENT_WITH_FLAG (0x01)
+
+/**
  * @ingroup dvrt_event
  * @brief create event instance
  * @param [in|out] event   created event
@@ -31,6 +38,15 @@ extern "C" {
  * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
  */
 RTS_API rtError_t rtEventCreate(rtEvent_t *event);
+
+/**
+ * @ingroup dvrt_event
+ * @brief create event instance with flag
+ * @param [in|out] event   created event  flag event op flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ */
+RTS_API rtError_t rtEventCreateWithFlag(rtEvent_t *event, uint32_t flag);
 
 /**
  * @ingroup dvrt_event

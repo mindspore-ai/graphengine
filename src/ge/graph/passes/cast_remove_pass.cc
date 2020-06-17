@@ -124,7 +124,7 @@ Status CastRemovePass::RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to
   return SUCCESS;
 }
 
-NodePtr CastRemovePass::GetTheEndNode(NodePtr &begin_node, std::vector<NodePtr> &nodes_to_fuse) {
+NodePtr CastRemovePass::GetTheEndNode(NodePtr begin_node, std::vector<NodePtr> &nodes_to_fuse) {
   while (begin_node->GetOutDataNodes().size() == 1) {
     auto out_node = begin_node->GetOutDataNodes().at(0);
     if (!TransOpUtil::IsTransOp(out_node)) {

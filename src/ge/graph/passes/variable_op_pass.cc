@@ -96,7 +96,7 @@ bool IsTransSupport(const TransNodeInfo &trans_info) {
   }
   if (trans_info.node_type == RESHAPE || trans_info.node_type == REFORMAT) {
     return true;
-  } else if (trans_info.node_type == TRANSDATA) {
+  } else if (trans_info.node_type == TRANSDATA || trans_info.node_type == TRANSPOSED) {
     formats::TransArgs args{nullptr,
                             trans_info.input.GetFormat(),
                             trans_info.output.GetFormat(),

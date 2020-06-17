@@ -24,6 +24,7 @@
 #include "graph/ge_error_codes.h"
 #include "graph/types.h"
 #include "graph/usr_types.h"
+#include "register/register_types.h"
 
 namespace ge {
 class TypeUtils {
@@ -37,6 +38,7 @@ class TypeUtils {
   static std::string FormatToSerialString(Format format);
   static Format SerialStringToFormat(const std::string &str);
   static Format DataFormatToFormat(const std::string &str);
+  static Format DomiFormatToFormat(domi::domiTensorFormat_t domi_format);
 
   static graphStatus Usr2DefQuantizeFactorParams(const UsrQuantizeFactorParams &usr, QuantizeFactorParams &def);
   static graphStatus Def2UsrQuantizeFactorParams(const QuantizeFactorParams &def, UsrQuantizeFactorParams &usr);

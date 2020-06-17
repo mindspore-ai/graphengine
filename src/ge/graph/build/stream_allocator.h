@@ -40,41 +40,47 @@ class StreamAllocator {
   const vector<int64_t> &GetHugeStreams() const { return huge_streams_; }
 
  private:
-  Status SplitStreams(std::vector<std::set<int64_t>> &split_streams);
-
   Status AssignSingleStream();
+
   Status SetActiveStreamsByLabel();
-  Status UpdateActiveStreams(const std::vector<std::set<int64_t>> &splited_streams);
-  void UpdateLabelStreams(const std::vector<std::set<int64_t>> &split_streams);
-  Status SetActiveStreamsForSubgraph();
-  Status SetActiveStreamsForLoop();
-  Status CheckStreamActived() const;
-  Status GetMaxStreamAndTask(bool huge_stream, uint32_t &max_stream_count, uint32_t &max_task_count);
-  int64_t GetMaxNodeNumPerStream(const NodePtr &node, uint32_t max_node_num_one_stream);
+  Status SetActiveStreamsForSubgraphs();
 
   Status InsertSyncEvents();
   Status InsertOneEventInTwoNodes(const NodePtr &cur_node_ptr, const NodePtr &next_node_ptr);
+  Status InsertEventsForSubgraph();
 
   Status OptimizeSyncEvents();
   Status OptimizeBySendEvents(const std::map<int64_t, std::vector<NodePtr>> &stream_nodes);
   Status OptimizeByRecvEvents(const std::map<int64_t, std::vector<NodePtr>> &stream_nodes);
   Status OptimizeByStreamActivate();
+  // Determine if the successor node of RecvNode is directly or indirectly activated by the SendNode precursor node
+  bool IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr, const NodePtr &recv_node_ptr) const;
 
-  Status RefreshContinuousEvents();
-  Status InsertSyncEventNodes();
-  Status ReorderEventNodes() const;
+  Status SplitStreams(std::vector<std::set<int64_t>> &split_streams);
+  bool NeedSpiltNewStream(int64_t stream_node_num, int64_t max_node_num_one_stream, const OpDescPtr &op_desc) const;
 
+  Status UpdateActiveStreams(const std::vector<std::set<int64_t>> &splited_streams);
+  void UpdateLabelStreams(const std::vector<std::set<int64_t>> &split_streams);
   Status InsertActiveNodesAfterSwitch(NodePtr &switch_node);
   Status InsertActiveNodesAfterSwitch(NodePtr &switch_nodes, std::vector<NodePtr> &switch_active_nodes);
-  Status SetActiveStreamList(NodePtr &active_node, const std::string &active_label);
-  Status AddActiveNodes(NodePtr &switch_node, const std::vector<std::string> &ori_active_label_list,
-                        std::vector<std::string> &active_label_list, std::vector<NodePtr> &added_active_nodes);
+  Status UpdateActiveStreamsForSubgraphs() const;
+  Status SetActiveStreamsForLoop();
+  Status CheckStreamActived() const;
 
   Status AddActiveEntryStream();
   Status CollectDeactiveStream(const OpDescPtr &op_desc, std::set<uint32_t> &deactive_streams) const;
   Status InsertActiveEntryStream(const std::vector<uint32_t> &active_streams, int64_t stream_id);
 
-  Status AddEventId(const NodePtr &pre_node, const NodePtr &not_cur, const NodePtr &cur_node, bool not_use_cur);
+  Status RefreshContinuousEvents();
+
+  Status InsertSyncEventNodes();
+  Status ReorderEventNodes() const;
+
+  void DumpEvents();
+
+  Status GetMaxStreamAndTask(bool huge_stream, uint32_t &max_stream_count, uint32_t &max_task_count);
+  int64_t GetMaxNodeNumPerStream(const NodePtr &node, uint32_t max_node_num_one_stream);
+
   void AddSendEventId(const NodePtr &node, uint32_t event_id);
   void AddRecvEventId(const NodePtr &node, uint32_t event_id);
   void RmvSendEventId(const NodePtr &node, uint32_t event_id);
@@ -83,10 +89,11 @@ class StreamAllocator {
   void GetRecvEventIdList(const NodePtr &node, std::vector<uint32_t> &recv_list) const;
   NodePtr GetNodeFromSendEventId(uint32_t send_event_id) const;
   NodePtr GetNodeFromRecvEventId(uint32_t recv_event_id) const;
+  Status AddEventId(const NodePtr &pre_node, const NodePtr &not_cur, const NodePtr &cur_node, bool not_use_cur);
 
-  void DumpEvents();
-  // Determine if the successor node of RecvNode is directly or indirectly activated by the SendNode precursor node
-  bool IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr, const NodePtr &recv_node_ptr) const;
+  Status AddActiveNodes(NodePtr &switch_node, const std::vector<std::string> &ori_active_label_list,
+                        std::vector<std::string> &active_label_list, std::vector<NodePtr> &added_active_nodes);
+  Status SetActiveStreamList(NodePtr &active_node, const std::string &active_label);
 
   ComputeGraphPtr whole_graph_;
   const Graph2SubGraphInfoList &subgraphs_;
@@ -101,6 +108,9 @@ class StreamAllocator {
   std::map<std::string, std::set<NodePtr>> specific_activated_labels_;
   std::set<int64_t> specific_activated_streams_;
   std::map<int64_t, std::set<NodePtr>> specific_activated_streams_nodes_map_;
+
+  std::map<NodePtr, int64_t> node_split_stream_map_;
+  std::map<ComputeGraphPtr, NodePtr> subgraph_first_active_node_map_;
 
   // send events corresponding to the node
   std::map<NodePtr, std::vector<uint32_t>> node_to_send_events_;

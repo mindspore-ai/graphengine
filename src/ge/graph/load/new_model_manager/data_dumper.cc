@@ -15,9 +15,12 @@
  */
 
 #include "graph/load/new_model_manager/data_dumper.h"
+
+#include <ctime>
 #include <map>
 #include <utility>
 #include <vector>
+
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
@@ -32,6 +35,7 @@
 namespace {
 const uint32_t kAicpuLoadFlag = 1;
 const uint32_t kAicpuUnloadFlag = 0;
+const uint32_t kTimeBufferLen = 80;
 const char *const kDumpOutput = "output";
 const char *const kDumpInput = "input";
 const char *const kDumpAll = "all";
@@ -156,10 +160,8 @@ void DataDumper::SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::s
       return;
     }
 
-    uintptr_t data_addr = args - sizeof(void *) * op_desc->GetInputOffset().size() +
-                          sizeof(void *) * static_cast<uint32_t>(inner_input_mapping.input_anchor_index);
     GELOGI("Save input dump task %s, id: %u.", data_op->GetName().c_str(), task_id);
-    op_list_.push_back({task_id, stream_id, data_op, data_addr, false, inner_input_mapping.input_anchor_index,
+    op_list_.push_back({task_id, stream_id, data_op, args, false, inner_input_mapping.input_anchor_index,
                         inner_input_mapping.output_anchor_index, input_tensor->GetShape().GetDims()});
   }
 }
@@ -188,11 +190,24 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   }
 }
 
+static std::string GetCurrentTime() {
+  std::time_t now = std::time(nullptr);
+  std::tm *ptm = std::localtime(&now);
+  if (ptm == nullptr) {
+    return "";
+  }
+  char buffer[kTimeBufferLen] = {0};
+  // format: 20171122042550
+  std::strftime(buffer, kTimeBufferLen, "%Y%m%d%H%M%S", ptm);
+  return std::string(buffer);
+}
+
 Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
   GELOGI("Start dump output");
   if (inner_dump_info.is_task) {
     // tbe or aicpu op
     const auto &output_descs = inner_dump_info.op->GetAllOutputsDesc();
+    const auto input_size = inner_dump_info.op->GetAllInputsDesc().size();
     const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, inner_dump_info.op, false);
     if (output_descs.size() != output_addrs.size()) {
       GELOGE(PARAM_INVALID, "Invalid output desc addrs size %zu, op %s has %zu output desc.", output_addrs.size(),
@@ -217,8 +232,7 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
       output.set_original_output_index(origin_output_index);
       output.set_original_output_format(static_cast<int32_t>(output_descs.at(i).GetOriginFormat()));
       output.set_original_output_data_type(static_cast<int32_t>(output_descs.at(i).GetOriginDataType()));
-      // due to lhisi virtual addr bug, cannot use args now
-      output.set_address(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(output_addrs[i])));
+      output.set_address(static_cast<uint64_t>(inner_dump_info.args + (i + input_size) * sizeof(void *)));
 
       task.mutable_output()->Add(std::move(output));
     }
@@ -255,8 +269,8 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
     GELOGE(FAILED, "Index is out of range.");
     return FAILED;
   }
-  output.set_address(
-    static_cast<uint64_t>(reinterpret_cast<uintptr_t>(output_addrs[inner_dump_info.output_anchor_index])));
+  auto data_addr = inner_dump_info.args + sizeof(void *) * static_cast<uint32_t>(inner_dump_info.input_anchor_index);
+  output.set_address(static_cast<uint64_t>(data_addr));
 
   task.mutable_output()->Add(std::move(output));
 
@@ -282,7 +296,7 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
       input.mutable_shape()->add_dim(dim);
     }
 
-    input.set_address(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_addrs[i])));
+    input.set_address(static_cast<uint64_t>(inner_dump_info.args + sizeof(void *) * i));
     task.mutable_input()->Add(std::move(input));
   }
   return SUCCESS;
@@ -370,7 +384,10 @@ Status DataDumper::LoadDumpInfo() {
   }
 
   aicpu::dump::OpMappingInfo op_mapping_info;
-  op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + std::to_string(device_id_) + "/");
+  std::string time_now = GetCurrentTime();
+  GELOGI("Time is %s now", time_now.c_str());
+  op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + time_now + "/" +
+                                std::to_string(device_id_) + "/");
   op_mapping_info.set_model_name(model_name_);
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuLoadFlag);

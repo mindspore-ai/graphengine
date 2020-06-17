@@ -250,6 +250,11 @@ class DavinciModel {
     return res;
   }
 
+  rtStream_t GetRtModelStream() {
+    rtModel_t res = rt_model_stream_;
+    return res;
+  }
+
   uint64_t GetRtBaseAddr() const { return runtime_param_.logic_mem_base; }
 
   uint64_t GetRtWeightAddr() const { return runtime_param_.logic_weight_base; }
@@ -427,6 +432,26 @@ class DavinciModel {
   void CreateHcclFollowStream(rtStream_t stream, int64_t remain_cap);
   void ReuseHcclFollowStream(int64_t remain_cap, int64_t &index);
 
+  void InitRuntimeParams();
+  Status InitVariableMem();
+
+  void UpdateMemBase(uint8_t *mem_base) {
+    runtime_param_.mem_base = mem_base;
+    mem_base_ = mem_base;
+  }
+  void SetTotalArgsSize(uint32_t args_size) { total_args_size_ += args_size; }
+  uint32_t GetTotalArgsSize() { return total_args_size_; }
+  void *GetCurrentArgsAddr(uint32_t offset) {
+    void *cur_args = static_cast<char *>(args_) + offset;
+    return cur_args;
+  }
+  void SetKnownNode(bool known_node) { known_node_ = known_node; }
+  bool IsKnownNode() { return known_node_; }
+  Status MallocKnownArgs();
+  Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
+  Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
+  Status UpdateKnownZeroCopyAddr(vector<void *> &io_addrs, uint32_t args_offset);
+
  private:
   // memory address of weights
   uint8_t *weights_mem_base_;
@@ -523,9 +548,9 @@ class DavinciModel {
 
   Status DistributeTask();
 
-  uint8_t *MallocFeatureMapMem(uint64_t data_size);
+  uint8_t *MallocFeatureMapMem(size_t data_size);
 
-  uint8_t *MallocWeightsMem(uint32_t weights_size);
+  uint8_t *MallocWeightsMem(size_t weights_size);
 
   void FreeFeatureMapMem();
 
@@ -690,8 +715,6 @@ class DavinciModel {
   ///
   Status CpuModelRepeat();
 
-  void InitRuntimeParams();
-
   ///
   /// @ingroup ge
   /// @brief set ts device.
@@ -709,7 +732,6 @@ class DavinciModel {
 
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
   Status CopyVarData(ComputeGraphPtr &graph);
-  Status CopyTensorFromSrcVarNode(const NodePtr &var_src, const NodePtr &var_dst);
 
   // get desc info of graph for profiling
   Status GetComputeGraphInfo(vector<ComputeGraphDescInfo> &compute_graph_desc_info);
@@ -827,6 +849,13 @@ class DavinciModel {
   DataDumper data_dumper_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
+
+  bool known_node_ = false;
+  uint32_t total_args_size_ = 0;
+  void *args_ = nullptr;
+  void *args_host_ = nullptr;
+  std::map<const void *, void *> knonw_input_data_info_;
+  std::map<const void *, void *> knonw_output_data_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

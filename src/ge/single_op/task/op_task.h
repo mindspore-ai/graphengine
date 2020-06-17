@@ -68,7 +68,7 @@ class AiCpuTask : public OpTask {
 
   Status LaunchKernel(rtStream_t stream) override;
   OpTaskType GetOpTaskType() override { return OP_TASK_AICPU; }
-  void *GetIOAddr();
+  const void *GetIOAddr() const;
 
  private:
   friend class AiCpuTaskBuilder;

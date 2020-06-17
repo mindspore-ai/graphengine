@@ -33,6 +33,7 @@ const char *const OPTION_EXEC_SESSION_ID = "ge.exec.sessionId";
 const char *const OPTION_EXEC_DEVICE_ID = "ge.exec.deviceId";
 const char *const OPTION_EXEC_JOB_ID = "ge.exec.jobId";
 const char *const OPTION_EXEC_IS_USEHCOM = "ge.exec.isUseHcom";
+const char *const OPTION_EXEC_IS_USEHVD = "ge.exec.isUseHvd";
 const char *const OPTION_EXEC_RANK_ID = "ge.exec.rankId";
 const char *const OPTION_EXEC_POD_NAME = "ge.exec.podName";
 const char *const OPTION_EXEC_DEPLOY_MODE = "ge.exec.deployMode";
@@ -52,6 +53,7 @@ const char *const OPTION_EXEC_PROFILING_OPTIONS = "ge.exec.profilingOptions";
 const char *const OPTION_EXEC_HCCL_FLAG = "ge.exec.hcclFlag";
 const char *const OPTION_EXEC_ATOMIC_FLAG = "ge.exec.enable_atomic";
 const char *const OPTION_EXEC_DISABLE_REUSED_MEMORY = "ge.exec.disableReuseMemory";
+const char *const OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION = "ge.exec.isTailingOptimization";
 
 // Option key: memory init
 const char *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
@@ -153,7 +155,7 @@ const std::string STREAM_MAX_PARALLEL_NUM = "ge.streamMaxParallelNum";
 const std::string OUTPUT_DATATYPE = "ge.outputDatatype";
 
 // congigure opSelectImplmode to setting op select implmode
-const std::string kOpSelectImplmode = "ge.opSelectImplmode";
+const std::string OP_SELECT_IMPL_MODE = "ge.opSelectImplmode";
 
 // configure whether to enable hcom parallel by session constructor options param,
 // its value should be "0" or "1", default value is "0"
@@ -214,6 +216,9 @@ const char *const ENABLE_PRINT_OP_PASS = "ge.enablePrintOpPass";
 // Its value should be "true" or "false", default value is "false"
 const char *const ENABLE_SINGLE_STREAM = "ge.enableSingleStream";
 
+// Configure input fp16 nodes
+const std::string INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -263,14 +268,37 @@ static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
 static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
 static const char *const SOC_VERSION = ge::SOC_VERSION.c_str();
 static const char *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
+static const char *const AICORE_NUM = ge::AICORE_NUM.c_str();
+static const char *const FUSION_SWITCH_FILE = ge::FUSION_SWITCH_FILE.c_str();
+static const char *const ENABLE_SMALL_CHANNEL = ge::ENABLE_SMALL_CHANNEL.c_str();
+static const char *const QUANT_OPTIMIZE = ge::QUANT_OPTIMIZE.c_str();
+static const char *const OP_SELECT_IMPL_MODE = ge::OP_SELECT_IMPL_MODE.c_str();
+static const char *const OUTPUT_TYPE = ge::OUTPUT_DATATYPE.c_str();
+static const char *const BUFFER_OPTIMIZE = ge::BUFFER_OPTIMIZE.c_str();
+static const char *const ENABLE_COMPRESS_WEIGHT = ge::ENABLE_COMPRESS_WEIGHT.c_str();
+static const char *const COMPRESS_WEIGHT_CONF = "compress_weight_conf";
+static const char *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
+static const char *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
+static const char *const LOG_LEVEL = "log";
 
 // for interface: aclgrphBuildModel
-const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT, INPUT_SHAPE, DYNAMIC_BATCH_SIZE,
-                                                             DYNAMIC_IMAGE_SIZE, INSERT_OP_FILE};
+const std::set<std::string> ir_builder_suppported_options = {
+  INPUT_FORMAT,         INPUT_SHAPE, DYNAMIC_BATCH_SIZE, DYNAMIC_IMAGE_SIZE,
+  INSERT_OP_FILE,       OUTPUT_TYPE, BUFFER_OPTIMIZE,    ENABLE_COMPRESS_WEIGHT,
+  COMPRESS_WEIGHT_CONF, OUT_NODES,   INPUT_FP16_NODES,   LOG_LEVEL};
 // for interface: aclgrphBuildInitialize
-const std::set<std::string> global_options = {
-  HEAD_STREAM,    CORE_TYPE,           SOC_VERSION, PRECISION_MODE, EXEC_DISABLE_REUSED_MEMORY,
-  AUTO_TUNE_MODE, ENABLE_SINGLE_STREAM};
+const std::set<std::string> global_options = {HEAD_STREAM,
+                                              CORE_TYPE,
+                                              SOC_VERSION,
+                                              PRECISION_MODE,
+                                              EXEC_DISABLE_REUSED_MEMORY,
+                                              AUTO_TUNE_MODE,
+                                              ENABLE_SINGLE_STREAM,
+                                              AICORE_NUM,
+                                              FUSION_SWITCH_FILE,
+                                              ENABLE_SMALL_CHANNEL,
+                                              QUANT_OPTIMIZE,
+                                              OP_SELECT_IMPL_MODE};
 }  // namespace ir_option
 }  // namespace ge
 

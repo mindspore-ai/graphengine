@@ -343,6 +343,10 @@ Status KernelTaskInfo::SuperKernelDistribute() {
 
 Status KernelTaskInfo::Distribute() {
   GELOGD("KernelTaskInfo Distribute Start.");
+  if (davinci_model_->IsKnownNode()) {
+    args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
+    GELOGI("Known node %s args addr %p, offset %u.", op_desc_->GetName().c_str(), args_, args_offset_);
+  }
   rtError_t rt_ret = RT_ERROR_NONE;
   char *skt_enable_env = getenv("SKT_ENABLE");
   int64_t env_flag = (skt_enable_env != nullptr) ? strtol(skt_enable_env, nullptr, 10) : 0;
@@ -380,7 +384,29 @@ Status KernelTaskInfo::Distribute() {
   return SUCCESS;
 }
 
+Status KernelTaskInfo::UpdateArgs() {
+  GELOGI("KernelTaskInfo::UpdateArgs in.");
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
+  vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc_);
+  vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc_);
+  vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc_);
+
+  vector<void *> io_addrs;
+  io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+  io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+  io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+
+  GE_CHK_STATUS_RET(davinci_model_->UpdateKnownZeroCopyAddr(io_addrs, args_offset_),
+                    "update known node %s zero copy addr failed.", op_desc_->GetName().c_str());
+
+  GELOGI("KernelTaskInfo::UpdateArgs success.");
+  return SUCCESS;
+}
+
 Status KernelTaskInfo::Release() {
+  if (davinci_model_ != nullptr && davinci_model_->IsKnownNode()) {
+    return SUCCESS;
+  }
   FreeRtMem(&args_);
   FreeRtMem(&flowtable_);
   FreeRtMem(&custom_info_.input_descs);
@@ -439,6 +465,15 @@ Status KernelTaskInfo::UpdateL2Data(const domi::KernelDef &kernel_def) {
   return SUCCESS;
 }
 
+Status KernelTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
+  domi::KernelDef kernel_def = task_def.kernel();
+  uint32_t args_size = kernel_def.args_size();
+  args_offset_ = davinci_model->GetTotalArgsSize();
+  davinci_model->SetTotalArgsSize(args_size);
+  GELOGI("kernel task name , args_size %u, args_offset %u", args_size, args_offset_);
+  return SUCCESS;
+}
+
 Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kernel_def) {
   GELOGD("Do InitTVMTask.");
   GE_CHECK_NOTNULL(davinci_model_);
@@ -447,6 +482,9 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "InitTVMTaskInfo error, index:%u out of range!", ctx_.opIndex);
     return INTERNAL_ERROR;
+  }
+  if (davinci_model_->IsKnownNode()) {
+    return SUCCESS;
   }
 
   // Update Stub
@@ -512,7 +550,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
 
   if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
-    dump_args_ = static_cast<char *>(args_) + offset + kAddrLen * input_data_addrs.size();
+    dump_args_ = static_cast<char *>(args_) + offset;
   }
 
   // update origin l2 data
@@ -771,7 +809,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
 
   if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
-    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead) + kAddrLen * input_addrs.size();
+    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
 
   vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.

@@ -199,6 +199,23 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::
     auto in_node = out_anchor->GetOwnerNode();
     if ((in_node->GetType() == CONSTANT) || (in_node->GetType() == CONSTANTOP)) {
       ret.push_back(in_node);
+    } else if (in_node->GetType() == DATA) {
+      const ComputeGraphPtr &graph = node.GetOwnerComputeGraph();
+      GE_CHK_BOOL_EXEC(graph != nullptr, continue, "Owner graph is null");
+
+      const NodePtr &parent_node = graph->GetParentNode();
+      if (parent_node == nullptr) {
+        continue;  // Root graph.
+      }
+
+      if (kWhileOpTypes.count(parent_node->GetType()) > 0) {
+        continue;  // Subgraph of While cond or body.
+      }
+
+      NodePtr input_node = NodeUtils::GetParentInput(in_node);
+      if ((input_node != nullptr) && ((input_node->GetType() == CONSTANT) || (input_node->GetType() == CONSTANTOP))) {
+        ret.push_back(input_node);
+      }
     }
   }
   return ret;

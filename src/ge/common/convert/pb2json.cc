@@ -22,6 +22,7 @@
 #include <string>
 #include "securec.h"
 #include "framework/common/fmk_types.h"
+#include "framework/common/debug/ge_log.h"
 
 using std::set;
 using std::string;
@@ -146,7 +147,10 @@ string Pb2Json::TypeBytes2String(string &field_name, string &type_bytes) {
     uint8_t *value = 0;
     value = reinterpret_cast<uint8_t *>(&temp_value);
     char str[kSignificantDigits];
-    sprintf_s(str, kSignificantDigits, "%d", *value);
+    if (sprintf_s(str, kSignificantDigits, "%d", *value) == -1) {
+      GELOGW("Convert bytes to string fail, filed name:%s", field_name.c_str());
+      continue;
+    }
     result += str;
   }
   return result;

@@ -31,6 +31,8 @@
 #include "graph/utils/graph_utils.h"
 
 namespace ge {
+const size_t kMaxLifeTime = 0xffffffff;
+
 enum MemoryType { kOutput, kWorkspace };
 
 struct NodeTypeIndex {
@@ -40,6 +42,15 @@ struct NodeTypeIndex {
   ge::NodePtr node = nullptr;
   MemoryType mem_type = kOutput;
   uint32_t index = 0;
+  size_t life_time_end = kMaxLifeTime;
+  const string GetMemType() const {
+    if (mem_type == kOutput) {
+      return "output";
+    } else if (mem_type == kWorkspace) {
+      return "workspace";
+    }
+    return "unknown";
+  }
 };
 
 class MemoryBlock {
@@ -55,7 +66,8 @@ class MemoryBlock {
         is_zero_copy_(false),
         block_size_(block_size),
         head_offset_(0),
-        tail_offset_(0) {}
+        tail_offset_(0),
+        child_offset_(0) {}
 
   MemoryBlock(const MemoryBlock &) = delete;
 
@@ -66,23 +78,25 @@ class MemoryBlock {
     symbol_list_.clear();
   }
 
-  void Init(size_t real_size, MemoryType type, const ge::NodePtr &node, uint32_t out_index) {
+  void Init(size_t real_size, MemoryType type, const ge::NodePtr &node, uint32_t out_index, size_t no_align_size) {
     real_size_list_.emplace_back(real_size);
+    no_align_size_list_.emplace_back(no_align_size);
     node_type_index_list_.emplace_back(node, type, out_index);
   }
   size_t Size() const { return block_size_; }
 
-  void SetHeadOffset(size_t offset) { head_offset_ = offset; }
+  void SetHeadOffset(size_t offset);
 
-  void SetTailOffset(size_t offset) { tail_offset_ = offset; }
+  void SetTailOffset(size_t offset);
 
   size_t HeadOffset() const { return head_offset_; }
 
   size_t TailOffset() const { return tail_offset_; }
 
-  void AddNodeTypeIndex(const NodeTypeIndex &node_type_index, size_t real_size) {
+  void AddNodeTypeIndex(const NodeTypeIndex &node_type_index, size_t real_size, size_t no_align_size) {
     node_type_index_list_.emplace_back(node_type_index);
     real_size_list_.emplace_back(real_size);
+    no_align_size_list_.emplace_back(no_align_size);
   }
 
   void AddSymbol(const std::string &symbol) { symbol_list_.emplace_back(symbol); }
@@ -90,12 +104,22 @@ class MemoryBlock {
   const std::vector<NodeTypeIndex> &NodeTypeIndexList() const { return node_type_index_list_; }
   const std::vector<std::string> &SymbolList() const { return symbol_list_; }
   const std::vector<size_t> &RealSizeList() const { return real_size_list_; }
+  const std::vector<MemoryBlock *> &ChildBlockList() const { return child_blocks_; }
+  const std::vector<size_t> &NoAlignSizeList() const { return no_align_size_list_; }
 
   void Resize();
 
   std::string String();
 
   bool IsSameLabel(std::string &first_batch_label);
+
+  void AddLifeReuseBlock(MemoryBlock *block);
+
+  void SetLifeTimeEnd(size_t time);
+
+  size_t GetLifeBegin();
+
+  size_t GetLifeEnd();
 
   int ref_count_;
   int64_t stream_id_;
@@ -109,10 +133,13 @@ class MemoryBlock {
  private:
   size_t block_size_;
   std::vector<size_t> real_size_list_;
+  std::vector<size_t> no_align_size_list_;
   size_t head_offset_;
   size_t tail_offset_;
+  size_t child_offset_;
   std::vector<NodeTypeIndex> node_type_index_list_;
   std::vector<std::string> symbol_list_;
+  std::vector<MemoryBlock *> child_blocks_;
 };
 
 class BlockMemAssigner : public MemAssigner {
@@ -292,8 +319,8 @@ class BlockMemAssigner : public MemAssigner {
   /// @return MemoryBlock*
   /// @author
   ///
-  MemoryBlock *ApplyMemory(size_t block_size, size_t real_size, MemoryType mem_type, const ge::NodePtr &n,
-                           uint32_t out_index, const std::vector<bool> &workspace_reuse_flag,
+  MemoryBlock *ApplyMemory(size_t block_size, size_t real_size, size_t no_align_size, MemoryType mem_type,
+                           const ge::NodePtr &n, uint32_t out_index, const std::vector<bool> &workspace_reuse_flag,
                            const bool is_op_reuse_mem, const bool continuous);
 
   ///
@@ -354,6 +381,17 @@ class BlockMemAssigner : public MemAssigner {
   bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
                                    uint32_t &peer_input_index);
 
+  ///
+  /// @ingroup GE
+  /// @|+++++++++block1++++++++|                               |+++++++++block1++++++++|
+  /// @|+++++++++block1++++++++||++block2++|                   |+++++++++block1++++++++||++block2++|
+  /// @                         |++block2++||++block3++|  ==>  |++block3++|             |++block2++|
+  /// @                                     |++block3++|       |++block3++|
+  /// @return void
+  /// @author
+  ///
+  void ReuseBlocksByLifeTime();
+
   std::vector<MemoryBlock *> reusable_blocks_;
 
   std::map<std::string, uint64_t> reusable_block_counts_;
@@ -379,6 +417,8 @@ class BlockMemAssigner : public MemAssigner {
   std::string ge_disable_reuse_mem_env_ = "0";
 
   bool is_op_reuse_mem_ = true;
+
+  size_t life_time_;
 
   int64_t atomic_addr_clean_id_ = 0;
 };

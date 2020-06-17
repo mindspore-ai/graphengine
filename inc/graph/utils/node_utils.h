@@ -17,10 +17,23 @@
 #ifndef INC_GRAPH_UTILS_NODE_UTILS_H_
 #define INC_GRAPH_UTILS_NODE_UTILS_H_
 
+#include <set>
 #include <map>
 #include <vector>
 #include "graph/node.h"
+
 namespace ge {
+// Op types of Const like Opps.
+extern const std::set<std::string> kConstOpTypes;
+// Op types of If like Opps.
+extern const std::set<std::string> kIfOpTypes;
+// Op types of While like Opps.
+extern const std::set<std::string> kWhileOpTypes;
+// Op types of Case like Opps.
+extern const std::set<std::string> kCaseOpTypes;
+// Op types of For like Opps.
+extern const std::set<std::string> kForOpTypes;
+
 class NodeUtils {
  public:
   static graphStatus AddSendEventId(const NodePtr &node, const uint32_t &event_id);
@@ -93,6 +106,13 @@ class NodeUtils {
   /// @return bool
   ///
   static bool GetConstOpType(const NodePtr &in_node, std::string &op_type);
+
+  ///
+  /// @brief Remove node-related subgraphs, including subgraphs of nodes in the subgraph.
+  /// @param [in] node
+  /// @return return GRAPH_SUCCESS if remove successfully, other for failed.
+  ///
+  static graphStatus RemoveSubgraphsOnNode(const NodePtr &node);
 
  private:
   static std::map<NodePtr, std::vector<uint32_t>> map_send_info_;

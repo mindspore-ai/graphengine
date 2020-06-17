@@ -23,6 +23,7 @@
 #include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "graph/utils/node_utils.h"
 
 namespace ge {
 Status PrunePass::Run(ge::ComputeGraphPtr graph) {
@@ -79,6 +80,8 @@ Status PrunePass::Run(ge::ComputeGraphPtr graph) {
              node_ptr->GetOpDesc()->GetName().c_str(), out_nodes[0]->GetOpDesc()->GetName().c_str());
       continue;
     }
+    // Remove subgraphs on the node before remove it in graph.
+    (void)NodeUtils::RemoveSubgraphsOnNode(node_ptr);
     /// Common function:[RemoveNode] will delete not only input node but its constant input node also will be deleted
     (void)graph->RemoveNode(node_ptr);
     GELOGI("[PrunePass] remove graph node [%s]!", node_ptr->GetOpDesc()->GetName().c_str());

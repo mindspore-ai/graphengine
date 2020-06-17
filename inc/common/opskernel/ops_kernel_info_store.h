@@ -73,7 +73,7 @@ class OpsKernelInfoStore {
 
   // only call fe engine interface to compile single op
   virtual Status CompileOp(vector<ge::NodePtr> &node_vec) { return SUCCESS; }
-
+  virtual Status CompileOpRun(vector<ge::NodePtr> &node_vec) { return SUCCESS; }
   // load task for op
   virtual Status LoadTask(GETaskInfo &task) { return SUCCESS; }
 

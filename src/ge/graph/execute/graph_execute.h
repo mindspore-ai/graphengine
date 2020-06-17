@@ -46,11 +46,11 @@ class GraphExecutor {
 
   virtual ~GraphExecutor();
 
-  Status ExecuteGraph(GraphId graph_id, const GeModelPtr &ge_model, const std::vector<GeTensor> &input_tensor,
+  Status ExecuteGraph(GraphId graph_id, const GeRootModelPtr &ge_root_model, const std::vector<GeTensor> &input_tensor,
                       std::vector<GeTensor> &output_tensor);
 
-  Status ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_model,
-                           const std::vector<InputTensorInfo> &input_tensor);
+  ge::Status ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
+                               const std::vector<InputTensorInfo> &input_tensor);
 
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
 

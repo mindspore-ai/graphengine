@@ -45,6 +45,7 @@ class GraphPass : public Pass<ge::ComputeGraph> {
   /// @author
   ///
   virtual Status Run(ge::ComputeGraphPtr graph) = 0;
+  virtual Status ClearStatus() { return SUCCESS; };
   static void RecordOriginalNames(std::vector<ge::NodePtr> original_nodes, const ge::NodePtr &node) {
     GE_CHECK_NOTNULL_JUST_RETURN(node);
     std::vector<std::string> original_names;

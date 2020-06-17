@@ -258,7 +258,7 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
 
     // Run graph return
     uint32_t result_code = graph_run_listener_->GetResultCode();
-    if (result_code != SUCCESS) {
+    if (result_code != SUCCESS && result_code != END_OF_SEQUENCE) {
       GELOGE(GE_GRAPH_EXECUTE_FAILED, "[GraphExecutor] execute model failed, ret=%u, modelId=%u.", result_code,
              model_id);
       return GE_GRAPH_EXECUTE_FAILED;
@@ -319,7 +319,7 @@ Status GraphExecutor::FreeExecuteMemory() {
   return SUCCESS;
 }
 
-Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeModelPtr &ge_model,
+Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeRootModelPtr &ge_root_model,
                                    const std::vector<GeTensor> &input_tensor, std::vector<GeTensor> &output_tensor) {
   if (graph_id != last_graph_id_) {
     auto ret = FreeExecuteMemory();
@@ -333,8 +333,8 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeModelPtr &ge_model,
     GELOGE(GE_GRAPH_EXECUTE_NOT_INIT, "[GraphExecutor] AI Core Engine without calling SetCondition!");
     return GE_GRAPH_EXECUTE_NOT_INIT;
   }
-  GE_CHECK_NOTNULL_EXEC(ge_model, return FAILED);
-  Status ret = SyncExecuteModel(ge_model->GetModelId(), input_tensor, output_tensor);
+  GE_CHECK_NOTNULL_EXEC(ge_root_model, return FAILED);
+  Status ret = SyncExecuteModel(ge_root_model->GetModelId(), input_tensor, output_tensor);
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_SYNC_MODEL_FAILED, "[GraphExecutor] SyncExecuteModel Error!");
     return GE_GRAPH_SYNC_MODEL_FAILED;
@@ -343,7 +343,7 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeModelPtr &ge_model,
   return SUCCESS;
 }
 
-Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_model,
+Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
                                         const std::vector<InputTensorInfo> &input_tensor) {
   GELOGI("[GraphExecutor] Start to async execute graph, graph_id=%u", graph_id);
   if (graph_id != last_graph_id_) {
@@ -353,8 +353,8 @@ Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeModelPtr &ge_m
     }
   }
   last_graph_id_ = graph_id;
-  GE_CHECK_NOTNULL_EXEC(ge_model, return FAILED);
-  Status ret = AsyncExecuteModel(ge_model->GetModelId(), input_tensor);
+  GE_CHECK_NOTNULL_EXEC(ge_root_model, return FAILED);
+  Status ret = AsyncExecuteModel(ge_root_model->GetModelId(), input_tensor);
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_SYNC_MODEL_FAILED, "[GraphExecutor] AsyncExecuteModel Error!");
     return GE_GRAPH_SYNC_MODEL_FAILED;

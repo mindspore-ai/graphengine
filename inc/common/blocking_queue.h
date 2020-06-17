@@ -42,7 +42,7 @@ class BlockingQueue {
       return false;
     }
 
-    item = queue_.front();
+    item = std::move(queue_.front());
     queue_.pop_front();
 
     full_cond_.notify_one();
@@ -65,6 +65,27 @@ class BlockingQueue {
     }
 
     queue_.push_back(item);
+
+    empty_cond_.notify_one();
+
+    return true;
+  }
+
+  bool Push(T &&item, bool is_wait = true) {
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    while (queue_.size() >= max_size_ && !is_stoped_) {
+      if (!is_wait) {
+        return false;
+      }
+      full_cond_.wait(lock);
+    }
+
+    if (is_stoped_) {
+      return false;
+    }
+
+    queue_.emplace_back(std::move(item));
 
     empty_cond_.notify_one();
 

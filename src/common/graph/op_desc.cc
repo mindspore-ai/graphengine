@@ -878,7 +878,7 @@ graphStatus OpDesc::CommonVerify() const {
     // Checking shape of all inputs
     vector<int64_t> ishape = GetInputDescPtr(iname)->GetShape().GetDims();
     for (int64_t dim : ishape) {
-      GE_CHK_BOOL_RET_STATUS(dim >= -1, GRAPH_FAILED, "operator input %s shape contains negative or zero dimension.",
+      GE_CHK_BOOL_RET_STATUS(dim >= -2, GRAPH_FAILED, "operator input %s shape contains negative or zero dimension.",
                              iname.c_str());
     }
   }
@@ -1310,4 +1310,25 @@ OpDesc::GetSubgraphTypeByIrName(const std::string &name) const {
   }
   return iter->second;
 }
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
+OpDesc::GetSubgraphNameByInstanceName(const std::string &instance_name, std::string &subgraph_name) const {
+  for (size_t idx = 0; idx < subgraph_instance_names_.size(); ++idx) {
+    if (subgraph_instance_names_[idx] != instance_name) {  // find subgraph index.
+      continue;
+    }
+
+    for (auto name_to_index : subgraph_names_to_index_) {
+      if (name_to_index.second != idx) {  // find subgraph name.
+        continue;
+      }
+
+      subgraph_name = name_to_index.first;
+      return GRAPH_SUCCESS;
+    }
+  }
+
+  return GRAPH_PARAM_INVALID;
+}
+
 }  // namespace ge

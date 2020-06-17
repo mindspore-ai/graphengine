@@ -61,6 +61,7 @@ const char *const kDumpGraphLevel = "DUMP_GRAPH_LEVEL";
 const char *const kDumpStrBuild = "Build";
 const char *const kDumpStrPartition = "partition";
 const char *const kDumpStrOptimizeSubgraph = "OptimizeSubGraph";
+const char *const kDumpStrSubgraphFunc = "sub_graph";
 const char *const kDumpStrAicpu = "Aicpu";
 };  // namespace
 
@@ -203,6 +204,58 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::InsertNod
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
+GraphUtils::RemoveSubgraphRecursively(const ComputeGraphPtr &compute_graph, const NodePtr &remove_node) {
+  GE_CHECK_NOTNULL(compute_graph);
+  if (remove_node == nullptr) {
+    GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
+    return GRAPH_FAILED;
+  }
+
+  // Check if this node is belong to this compute graph, maybe a little slow
+  const auto &all_nodes_in_graph = compute_graph->GetDirectNode();
+  if (std::find(all_nodes_in_graph.begin(), all_nodes_in_graph.end(), remove_node) == all_nodes_in_graph.end()) {
+    GELOGE(GRAPH_FAILED, "Can not find node %s in graph %s.", remove_node->GetName().c_str(),
+           compute_graph->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+  // Find all subgraph of this node
+  const auto &root_graph = GraphUtils::FindRootGraph(compute_graph);
+  std::vector<ComputeGraphPtr> subgraphs;
+  std::vector<NodePtr> all_nodes;
+  std::deque<NodePtr> candidates;
+  NodePtr remove_node_new = remove_node;
+  candidates.emplace_back(remove_node_new);
+  while (!candidates.empty()) {
+    const NodePtr node = candidates.front();
+    all_nodes.emplace_back(node);
+    candidates.pop_front();
+
+    OpDescPtr op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+
+    const auto &subgraph_names = op_desc->GetSubgraphInstanceNames();
+    for (auto name_iter = subgraph_names.rbegin(); name_iter != subgraph_names.rend(); ++name_iter) {
+      auto subgraph = root_graph->GetSubgraph(*name_iter);
+      if (subgraph != nullptr) {
+        subgraphs.emplace_back(subgraph);
+        candidates.insert(candidates.begin(), subgraph->nodes_.begin(), subgraph->nodes_.end());
+      }
+    }
+  }
+  // Remove all subgraph
+  for (const auto &remove_graph : subgraphs) {
+    if (root_graph->RemoveSubGraph(remove_graph) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Remove subgraph failed, sub graph name is %s, compute graph is %s.",
+             remove_node->GetName().c_str(), compute_graph->GetName().c_str());
+      return GRAPH_FAILED;
+    }
+  }
+  return GRAPH_SUCCESS;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 GraphUtils::RemoveNodeWithoutRelink(const ComputeGraphPtr &compute_graph, const NodePtr &node) {
   GE_CHECK_NOTNULL(compute_graph);
   if (node == nullptr) {
@@ -217,12 +270,10 @@ GraphUtils::RemoveNodeWithoutRelink(const ComputeGraphPtr &compute_graph, const 
   (void)compute_graph->RemoveOutputNode(node);
 
   // If the node has sub-graphs, delete them
-  auto sub_graph_names = node->GetOpDesc()->GetSubgraphInstanceNames();
-  if (!sub_graph_names.empty()) {
-    auto root_graph = FindRootGraph(compute_graph);
-    for (const auto &name : sub_graph_names) {
-      root_graph->RemoveSubgraph(name);
-    }
+  auto ret = RemoveSubgraphRecursively(compute_graph, node);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Remove subgraph recursively failed.");
+    return GRAPH_FAILED;
   }
 
   auto iter = find(compute_graph->nodes_.begin(), compute_graph->nodes_.end(), node);
@@ -484,9 +535,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::MatchDumpStr(con
     return false;
   }
 
-  if (dump_graph_level == kDumpLevel2 && ((suffix.find(kDumpStrPartition) != std::string::npos) ||
-                                          (suffix.find(kDumpStrOptimizeSubgraph) != std::string::npos) ||
-                                          (suffix.find(kDumpStrAicpu) != std::string::npos))) {
+  if (dump_graph_level == kDumpLevel2 &&
+      ((suffix.find(kDumpStrPartition) != std::string::npos) ||
+       (suffix.find(kDumpStrOptimizeSubgraph) != std::string::npos) ||
+       (suffix.find(kDumpStrAicpu) != std::string::npos) || (suffix.find(kDumpStrSubgraphFunc) != std::string::npos))) {
     return true;
   }
 
@@ -1026,9 +1078,9 @@ graphStatus ReplaceControlAnchors(const NodePtr &new_node, const NodePtr &old_no
   GE_CHECK_NOTNULL(old_out_control_anchor);
   auto peer_in_anchors = old_out_control_anchor->GetPeerAnchors();
   auto new_out_control_anchor = new_node->GetOutControlAnchor();
+  GE_CHECK_NOTNULL(new_out_control_anchor);
   auto exists_in_anchors = new_out_control_anchor->GetPeerAnchors();
   auto exists_in_anchors_set = std::set<AnchorPtr>(exists_in_anchors.begin(), exists_in_anchors.end());
-  GE_CHECK_NOTNULL(new_out_control_anchor);
   for (const auto &peer_in_anchor : peer_in_anchors) {
     if (peer_in_anchor != nullptr) {
       if (exists_in_anchors_set.count(peer_in_anchor) > 0) {
@@ -1302,6 +1354,26 @@ graphStatus GraphUtils::GetRefMapping(const ComputeGraphPtr &graph,
   }
 
   return GRAPH_SUCCESS;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr GraphUtils::FindNodeFromAllNodes(ComputeGraphPtr &graph,
+                                                                                        const std::string &name) {
+  auto root_graph = FindRootGraph(graph);
+  if (root_graph == nullptr) {
+    GE_LOGE("Failed find node %s, null root graph", name.c_str());
+    return nullptr;
+  }
+
+  for (const auto &node : root_graph->GetAllNodes()) {
+    if (node == nullptr) {
+      continue;
+    }
+    if (node->GetName() == name) {
+      return node;
+    }
+  }
+
+  return nullptr;
 }
 
 ///
@@ -1668,7 +1740,7 @@ bool GraphUtils::IsRefFromInput(const OutDataAnchorPtr &out_data_anchor, int32_t
     for (const auto &input_name : op_desc->GetAllInputNames()) {
       if (!input_name.empty() && (output_name == input_name)) {
         reuse_in_index = op_desc->GetInputIndexByName(input_name);
-        GELOGI("Reference name[%s] output[%s][%u] ref to input[%s][%d].", op_desc->GetName().c_str(),
+        GELOGI("Reference name[%s] output[%s][%d] ref to input[%s][%d].", op_desc->GetName().c_str(),
                output_name.c_str(), output_index, input_name.c_str(), reuse_in_index);
         return true;
       }
@@ -1690,6 +1762,43 @@ bool GraphUtils::IsRefFromInput(const OutDataAnchorPtr &out_data_anchor, int32_t
     }
   }
 
+  return false;
+}
+
+///
+/// Determine if the graph is a UNKNOWN_SHAPE graph based on whether the graph and all subgraphs
+/// of the graph have UNKNOWN_SHAPE operators or not.
+/// Note: This function will only look 'down' from the graph, not 'up'. For example, the following
+/// scenario (K for known shape, U for unknown shape), ROOT graph is UNKNOWN_SHAPE while SUB graph is KNOWN_SHAPE
+/// ROOT graph:      A -----> B -----> C
+///                  K    subgraph     U
+///                           |
+///                           V
+/// SUB graph:          D --> E --> F
+///                     K     K     K
+/// @param [in] graph
+/// @return bool
+///
+bool GraphUtils::IsUnknownShapeGraph(const ComputeGraphPtr &graph) {
+  if (graph == nullptr) {
+    GELOGW("Input graph is nullptr.");
+    return false;
+  }
+  for (const auto &node : graph->GetDirectNode()) {
+    bool is_unknown = false;
+    auto ret = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
+    if (ret != GRAPH_SUCCESS) {
+      GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
+             node->GetType().c_str());
+      continue;
+    }
+    if (is_unknown) {
+      GELOGD("Node %s, type %s is unknown shape in graph %s.", node->GetName().c_str(), node->GetType().c_str(),
+             graph->GetName().c_str());
+      return true;
+    }
+  }
+  GELOGD("Graph %s does not have unknown shape node.", graph->GetName().c_str());
   return false;
 }
 
@@ -1868,6 +1977,17 @@ NodePtr ComputeGraphBuilder::GetNode(const std::string &name) {
   return iter->second;
 }
 
+/// @brief Get all nodes
+/// @return std::vector<NodePtr>
+///
+std::vector<NodePtr> ComputeGraphBuilder::GetAllNodes() {
+  std::vector<NodePtr> nodes;
+  for (const auto &iter : node_names_) {
+    nodes.emplace_back(iter.second);
+  }
+  return nodes;
+}
+
 ///
 /// @brief Add node to graph
 /// @param [in] op_desc
@@ -1934,6 +2054,16 @@ CompleteGraphBuilder &CompleteGraphBuilder::SetUselessInput(uint32_t index) {
 ///
 CompleteGraphBuilder &CompleteGraphBuilder::AddOutput(const std::string &owner_node_name, uint32_t anchor_ind) {
   graph_outputs_.emplace_back(std::make_pair(owner_node_name, anchor_ind));
+  return *this;
+}
+
+///
+/// @brief Add target for graph
+/// @param [in] target_name
+/// @return CompleteGraphBuilder
+///
+CompleteGraphBuilder &CompleteGraphBuilder::AddTarget(const std::string &target_name) {
+  graph_targets_.emplace_back(target_name);
   return *this;
 }
 
@@ -2009,6 +2139,11 @@ ComputeGraphPtr CompleteGraphBuilder::Build(graphStatus &error_code, std::string
   }
 
   AddRetValNodes(error_code, error_msg);
+  if (error_code != GRAPH_SUCCESS) {
+    return nullptr;
+  }
+
+  BuildGraphTargets(error_code, error_msg);
   if (error_code != GRAPH_SUCCESS) {
     return nullptr;
   }
@@ -2208,6 +2343,27 @@ void CompleteGraphBuilder::AddRetValNodes(graphStatus &error_code, std::string &
   }
 
   GELOGD("AddRetValNodes succ.");
+}
+
+///
+/// @brief Build target-nodes for graph
+/// @param [out] error_code
+/// @param [out] error_msg
+/// @return void
+///
+void CompleteGraphBuilder::BuildGraphTargets(graphStatus &error_code, std::string &error_msg) {
+  std::vector<NodePtr> target_nodes;
+  for (const std::string &target_name : graph_targets_) {
+    auto target_iter = node_names_.find(target_name);
+    if ((target_iter == node_names_.end()) || (target_iter->second == nullptr)) {
+      error_code = GRAPH_FAILED;
+      error_msg = "BuildGraphTargets failed: target_node " + target_name + " not exist in graph.";
+      return;
+    }
+    target_nodes.emplace_back(target_iter->second);
+  }
+  owner_graph_->SetGraphTargetNodesInfo(target_nodes);
+  return;
 }
 
 ///

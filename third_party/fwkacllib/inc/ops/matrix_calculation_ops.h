@@ -51,6 +51,38 @@ REG_OP(MatMul)
     .OP_END_FACTORY_REG(MatMul)
 
 /**
+*@brief Multiplies matrix "a" by matrix "b", producing "a * b".
+
+*@par Inputs:
+*Two inputs, including:
+* @li x1: A matrix Tensor. 2D. Must be one of the following types: float16,
+* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
+* @li x2: A matrix Tensor. 2D. Must be one of the following types: float16,
+* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
+* @li bias: A 1D Tensor. Must be one of the following types: float16,
+* float32, int32. Has format [ND, NHWC].
+
+*@par Attributes:
+*@li transpose_a: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
+*@li transpose_b: A bool. If True, changes the shape of "x2" from [M, K] to [K, M].
+
+*@par Outputs:
+*y: The result matrix Tensor. 2D. Must be one of the following types: float16,
+* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
+*/
+REG_OP(MatMulV2)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .ATTR(transpose_x1, Bool, false)
+    .ATTR(transpose_x2, Bool, false)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(MatMulV2)
+
+
+/**
 *@brief Performs Matrix-to-matrix Multiply, producing c=alpha[0]*a*b+beta[0]*c.
 
 *@par Inputs:
@@ -309,23 +341,23 @@ REG_OP(ScatterNdUpdate)
 * Three inputs, including:
 *@li x: An ND Tensor. \n
 
-*Must be one of the following types: float16, float32, int32, int8, uint8
+*Must be one of the following types: float16, float32, bool, int8, uint8
 *@li indices: An ND Tensor. \n
 
 *Must be one of the following types: int32
 *@li updates: An ND Tensor. \n
 
-*Must be one of the following types: float16, float32, int32, int8, uint8
+*Must be one of the following types: float16, float32, bool, int8, uint8
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x".
 
 */
 REG_OP(TensorScatterUpdate)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(x, TensorType::BasicType())
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(TensorScatterUpdate)
 
 /**

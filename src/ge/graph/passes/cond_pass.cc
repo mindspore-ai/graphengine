@@ -18,17 +18,15 @@
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/utils/node_utils.h"
 
 namespace {
-const std::set<std::string> kIfTypes = {ge::IF, ge::_IF, ge::STATELESSIF};
-const std::set<std::string> kWhileTypes = {ge::WHILE, ge::_WHILE, ge::STATELESSWHILE};
 const std::string kStringLength = "StringLength";
 const size_t kScalarDimNum = 1;
 }  // namespace
 
 namespace ge {
 Status CondPass::Run(NodePtr &node) {
-  GE_CHECK_NOTNULL(node);
   ComputeGraphPtr graph = nullptr;
   OutDataAnchorPtr cond_out_anchor = nullptr;
   InDataAnchorPtr cond_in_anchor = nullptr;
@@ -41,7 +39,7 @@ Status CondPass::Run(NodePtr &node) {
   }
 
   /// cond
-  /// 1. NonScalar: cond->Shape->Shape(int32)->If / NetOutput(while)
+  /// 1. NonScalar: cond->Size(int32)->If / NetOutput(while)
   /// 2. String Scalar: cond->StringLength(int32)->If / NetOutput(while)
   /// 3. bool / float / double / uint8 / int16 / int8 / int64 Scalar: cond->Cast(2int32)->If / NetOutput(while)
   /// 4. Int32 Scalar: cond->If / NetOutput(while)
@@ -100,18 +98,18 @@ Status CondPass::GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, OutDat
                              InDataAnchorPtr &cond_in_anchor) {
   GE_CHECK_NOTNULL(node);
   std::string type = node->GetType();
-  if (kIfTypes.count(type) != 0) {
+  if (kIfOpTypes.count(type) != 0) {
     if (GetCondInfoForIf(node, graph, cond_out_anchor, cond_in_anchor) != SUCCESS) {
       GELOGE(FAILED, "Get cond_info for if node failed.");
       return FAILED;
     }
-  } else if (kWhileTypes.count(type) != 0) {
+  } else if (kWhileOpTypes.count(type) != 0) {
     if (GetCondInfoForWhile(node, graph, cond_out_anchor, cond_in_anchor) != SUCCESS) {
       GELOGE(FAILED, "Get cond_info for while node failed.");
       return FAILED;
     }
   } else {
-    GELOGI("no need cond_pass for node %s.", node->GetName().c_str());
+    GELOGD("no need cond_pass for node %s.", node->GetName().c_str());
     return NOT_CHANGED;
   }
 
@@ -180,7 +178,7 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
 }
 
 ///
-/// @brief Process Cond Op with non-scalar cond_input: cond->Shape->Shape->If / NetOutput(while)
+/// @brief Process Cond Op with non-scalar cond_input: cond->Size->If / NetOutput(while)
 /// @param [in] graph
 /// @param [in] out_anchor: peer_cond_anchor
 /// @param [in] in_anchor: cond_input
@@ -188,17 +186,8 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
 ///
 Status CondPass::HandleNonScalarCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
                                      const InDataAnchorPtr &in_anchor) {
-  if (InsertNode(graph, out_anchor, in_anchor, SHAPE) != SUCCESS) {
-    GELOGE(FAILED, "Insert first Shape node failed.");
-    return FAILED;
-  }
-
-  if (InsertNode(graph, in_anchor->GetPeerOutAnchor(), in_anchor, SHAPE) != SUCCESS) {
-    GELOGE(FAILED, "Insert second Shape node failed.");
-    return FAILED;
-  }
-
-  return SUCCESS;
+  GELOGI("Handle cond with non-scalar cond-input.");
+  return InsertNode(graph, out_anchor, in_anchor, SIZE);
 }
 
 ///
@@ -266,17 +255,8 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   GeTensorDesc out_tensor = in_anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(out_anchor->GetIdx());
   out_tensor.SetDataType(DT_INT32);
   out_tensor.SetOriginDataType(DT_INT32);
-  if (type == SHAPE) {
-    int64_t size = static_cast<int64_t>(in_tensor.GetShape().GetDimNum());
-    if (size == kScalarDimNum) {
-      out_tensor.SetShape(GeShape());
-      out_tensor.SetOriginShape(GeShape());
-    } else {
-      std::vector<int64_t> size_v{size};
-      out_tensor.SetShape(GeShape(size_v));
-      out_tensor.SetOriginShape(GeShape(size_v));
-    }
-  }
+  out_tensor.SetShape(GeShape());
+  out_tensor.SetOriginShape(GeShape());
 
   OpDescBuilder op_desc_builder(out_anchor->GetOwnerNode()->GetName() + "_" + type, type);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_tensor).AddOutput("y", out_tensor).Build();

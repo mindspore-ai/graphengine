@@ -29,6 +29,13 @@ namespace ge {
 std::map<NodePtr, std::vector<uint32_t>> NodeUtils::map_send_info_{};
 std::map<NodePtr, std::vector<uint32_t>> NodeUtils::map_recv_info_{};
 
+const std::set<std::string> kConstOpTypes = {"Const", "Constant"};
+
+const std::set<std::string> kIfOpTypes = {"If", "_If", "StatelessIf"};
+const std::set<std::string> kWhileOpTypes = {"While", "_While", "StatelessWhile"};
+const std::set<std::string> kCaseOpTypes = {"Case"};
+const std::set<std::string> kForOpTypes = {"For"};
+
 bool OpShapeIsUnknown(const OpDescPtr &desc) {
   for (const auto &ptr : desc->GetAllInputsDescPtr()) {
     auto ge_shape = ptr->GetShape();
@@ -315,6 +322,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
       peer_input_desc->SetOriginShape(output_tensor.GetOriginShape());
       peer_input_desc->SetDataType(output_tensor.GetDataType());
       peer_input_desc->SetOriginDataType(output_tensor.GetOriginDataType());
+      std::vector<std::pair<int64_t, int64_t>> shape_range;
+      (void)output_tensor.GetShapeRange(shape_range);
+      peer_input_desc->SetShapeRange(shape_range);
       ge::TensorUtils::SetRealDimCnt(*peer_input_desc,
                                      static_cast<uint32_t>(output_tensor.GetShape().GetDims().size()));
       GELOGI("Peer input opdesc name is %s, shape size is %zu, datatype is %d, original datatype is %d",
@@ -477,6 +487,14 @@ bool NodeUtils::IsSubgraphInput(const NodePtr &node) {
     return false;
   }
 
+  auto parent_op_desc = node->GetOwnerComputeGraph()->GetParentNode()->GetOpDesc();
+  if (parent_op_desc == nullptr) {
+    return false;
+  }
+  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
+    return false;
+  }
+
   return node->GetOpDesc()->HasAttr(ATTR_NAME_PARENT_NODE_INDEX);
 }
 
@@ -488,6 +506,14 @@ bool NodeUtils::IsSubgraphInput(const NodePtr &node) {
 bool NodeUtils::IsSubgraphOutput(const NodePtr &node) {
   if ((node == nullptr) || (node->GetOpDesc() == nullptr) ||
       (node->GetOwnerComputeGraph()->GetParentNode() == nullptr) || (node->GetType() != NETOUTPUT)) {
+    return false;
+  }
+
+  auto parent_op_desc = node->GetOwnerComputeGraph()->GetParentNode()->GetOpDesc();
+  if (parent_op_desc == nullptr) {
+    return false;
+  }
+  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
     return false;
   }
 
@@ -556,5 +582,59 @@ bool NodeUtils::GetConstOpType(const NodePtr &in_node, std::string &op_type) {
   }
 
   return false;
+}
+
+///
+/// @brief Remove node-related subgraphs, including subgraphs of nodes in the subgraph.
+/// @param [in] node
+/// @return return GRAPH_SUCCESS if remove successfully, other for failed.
+///
+Status NodeUtils::RemoveSubgraphsOnNode(const NodePtr &node) {
+  GE_CHECK_NOTNULL(node);
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  auto subgraph_names = op_desc->GetSubgraphInstanceNames();
+  if (subgraph_names.empty()) {
+    return GRAPH_SUCCESS;
+  } else {
+    auto owner_graph = node->GetOwnerComputeGraph();
+    GE_CHECK_NOTNULL(owner_graph);
+    auto root_graph = GraphUtils::FindRootGraph(owner_graph);
+    GE_CHECK_NOTNULL(root_graph);
+
+    std::unordered_set<std::string> subgraph_to_remove;
+    for (auto &subgraph_name : subgraph_names) {
+      std::deque<std::string> queue;
+      queue.push_back(subgraph_name);
+      subgraph_to_remove.insert(subgraph_name);
+      op_desc->RemoveSubgraphInstanceName(subgraph_name);
+      while (!queue.empty()) {
+        auto graph_name = queue.front();
+        queue.pop_front();
+
+        auto subgraph = root_graph->GetSubgraph(graph_name);
+        GE_CHECK_NOTNULL(subgraph);
+        for (const auto &sub_node : subgraph->GetDirectNode()) {
+          auto sub_op_desc = sub_node->GetOpDesc();
+          GE_CHECK_NOTNULL(sub_op_desc);
+          auto sub_names = sub_op_desc->GetSubgraphInstanceNames();
+          // Subgraph and all nodes in it will be removed later,
+          // no need to remove 'SubgraphInstanceName' in op desc here.
+          for (auto &name : sub_names) {
+            if (subgraph_to_remove.insert(name).second) {
+              queue.push_back(name);
+            }
+          }
+        }
+      }
+    }
+    // Remove subgraph from root_graph
+    for (const auto &name : subgraph_to_remove) {
+      GELOGI("Remove subgraph:%s.", name.c_str());
+      root_graph->RemoveSubgraph(name);
+    }
+  }
+
+  return GRAPH_SUCCESS;
 }
 }  // namespace ge

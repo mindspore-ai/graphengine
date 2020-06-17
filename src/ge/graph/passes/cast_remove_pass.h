@@ -28,7 +28,7 @@ class CastRemovePass : public BaseNodePass {
  private:
   bool HasSameDataType(OpDescPtr &begin_op_desc, OpDescPtr &end_op_desc, DataType &type) const;
   Status RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to_fuse);
-  NodePtr GetTheEndNode(NodePtr &begin_node, std::vector<NodePtr> &nodes_to_fuse);
+  NodePtr GetTheEndNode(NodePtr begin_node, std::vector<NodePtr> &nodes_to_fuse);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_CAST_REMOVE_PASS_H_

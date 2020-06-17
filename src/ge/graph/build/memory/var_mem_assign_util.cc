@@ -208,7 +208,7 @@ Status VarMemAssignUtil::DealVariableNode(uint32_t graph_id, const ge::NodePtr &
   for (const ge::OutDataAnchorPtr &var_out_data_anchor : node->GetAllOutDataAnchors()) {
     for (const ge::InDataAnchorPtr &dst_in_data_anchor : var_out_data_anchor->GetPeerInDataAnchors()) {
       ge::NodePtr dst_node = dst_in_data_anchor->GetOwnerNode();
-      if (dst_node->GetType() == HCOMBROADCAST) {
+      if (dst_node->GetType() == HCOMBROADCAST || dst_node->GetType() == HVDCALLBACKBROADCAST) {
         GE_CHK_STATUS_RET(DealBroadCastNode(graph_id, dst_node, dst_in_data_anchor, node, session_id));
         continue;
       }

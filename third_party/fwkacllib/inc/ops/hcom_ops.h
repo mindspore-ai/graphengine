@@ -23,7 +23,7 @@ namespace ge {
 /**
  * @brief Outputs a tensor gathering all input tensors.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int32, float16, 
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
  * float32.
  * @par Attributes:
  * @li rank_size: A required integer identifying the number of ranks 
@@ -37,8 +37,8 @@ namespace ge {
  * as the name of a world group.
  */
 REG_OP(HcomAllGather)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(rank_size, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(alpha, Float, 1.0)
@@ -49,7 +49,7 @@ REG_OP(HcomAllGather)
  * @brief Outputs a tensor containing the reduction across all input tensors 
  * passed to op.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int32, float16, 
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
  * float32.
  * @par Attributes:
  * @li reduction: A required string identifying the reduction operation to 
@@ -67,8 +67,8 @@ REG_OP(HcomAllGather)
  * as the name of a world group.
  */
 REG_OP(HcomAllReduce)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(reduction, String)
     .REQUIRED_ATTR(group, String)
     .ATTR(fusion, Int, 1)
@@ -81,7 +81,7 @@ REG_OP(HcomAllReduce)
  * @brief Broadcasts the input tensor in root rank to all ranks.
  * @par Inputs:
  * x: A list of dynamic input tensor. Must be one of the following types: 
- * int8, int32, float16, float32.
+ * int8, int16, int32, float16, float32.
  * @par Attributes:
  * @li root_rank: A required integer identifying the root rank in the op 
  * input of this rank will be broadcast to other ranks.
@@ -94,8 +94,8 @@ REG_OP(HcomAllReduce)
  * as the name of a world group.
  */
 REG_OP(HcomBroadcast)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(root_rank, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(alpha, Float, 1.0)
@@ -107,7 +107,7 @@ REG_OP(HcomBroadcast)
  * blocks among ranks, each rank getting a chunk of data based on its rank 
  * index.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int32, float16, 
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
  * float32.
  * @par Attributes:
  * @li reduction: A required string identifying the reduction operation to 
@@ -123,8 +123,8 @@ REG_OP(HcomBroadcast)
  * as the name of a world group.
  */
 REG_OP(HcomReduceScatter)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(reduction, String)
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(rank_size, Int)
@@ -135,7 +135,7 @@ REG_OP(HcomReduceScatter)
 /**
  * @brief Sends the input tensor to destination rank.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int32, float16, 
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
  * float32.
  * @par Attributes:
  * @li sr_tag: A required integer identifying the send/recv message tag. The 
@@ -152,7 +152,7 @@ REG_OP(HcomReduceScatter)
  * @see HcomReceive
 */
 REG_OP(HcomSend)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(dest_rank, Int)
@@ -168,12 +168,12 @@ REG_OP(HcomSend)
  * @li sr_tag: A required integer identifying the send/recv message tag. The 
  * message will be send by the HcomSend op with the same "sr_tag".
  * @li src_rank: A required integer identifying the source rank.
- * @li group: A required string identifying the group name of ranks 
+ * @li group: A required string identifying the group name of ranks
  * participating in the op.
  * @li shape: A required list identifying the shape of the tensor to be 
  * received.
  * @li dtype: A required integer identifying the type of the tensor to be 
- * received. The supported types are: int8, int32, float16, float32.
+ * received. The supported types are: int8, int16, int32, float16, float32.
  * @par Outputs:
  * y: A tensor with type identified in "dtype".
  * @attention Constraints:\n
@@ -185,7 +185,7 @@ REG_OP(HcomSend)
  * @see HcomSend
 */
 REG_OP(HcomReceive)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(src_rank, Int)

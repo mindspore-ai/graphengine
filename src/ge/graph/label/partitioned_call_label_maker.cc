@@ -50,6 +50,21 @@ Status PartitionedCallLabelMaker::Run(uint32_t &label_index) {
     return FAILED;
   }
 
+  const std::string stream_active_name = parent_node_->GetName() + "/StreamActive";  // rtStreamActive
+  NodePtr stream_active = AddStreamActive(sub_graph, stream_active_name);
+  if (stream_active == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active node failed.", sub_graph->GetName().c_str());
+    return FAILED;
+  }
+
+  for (auto &node : sub_graph->GetDirectNode()) {
+    if (node->GetType() == NETOUTPUT) {
+      auto op_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      (void)AttrUtils::SetBool(op_desc, ATTR_NAME_SUBGRAPH_END_NODE, true);
+    }
+  }
+
   return SUCCESS;
 }
 

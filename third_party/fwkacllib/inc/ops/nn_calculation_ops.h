@@ -439,10 +439,11 @@ REG_OP(Conv2DBackpropInputD)
  * 4D with shape [filter_height, filter_width, in_channels, out_channels],
  * or [out_channels, filter_height, filter_width, in_channels],
  * or [out_channels, in_channel, filter_height, filter_width].
- * One optional input:
+ * Two optional inputs:
  * @li bias: An optional tensor of type int8
+ * @li offset_w: An optional 1D tensor for quantized deconvolution. Reserved.\n
 *@par Attributes:
- * Five attributes:
+ * Six attributes:
  * @li strides: A tuple or list of 2 integers. The stride of the sliding window
  * for H/W dimension.
  * @li pads: A tuple or list of 4 integers. The [top, bottom, left, right]
@@ -453,6 +454,7 @@ REG_OP(Conv2DBackpropInputD)
  output channels.
  * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to "NHWC".\n
   Specify the data format of the input and output data.
+ * @li offset_x: An optional integer for quantized deconvolution.
 *@par Outputs:
  * y: A Tensor. Has the same type as "filter". 4D tensor with shape
  * [batch, height, width, channels] or [batch, channels, height, width].
@@ -461,12 +463,14 @@ REG_OP(Deconvolution)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
     .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
     .ATTR(strides, ListInt, {1, 1, 1, 1})
     .ATTR(pads, ListInt, {0, 0, 0, 0})
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NHWC")
+    .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(Deconvolution)
 /**
 *@brief Computes the gradients of convolution with respect to the filter

@@ -24,6 +24,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "model/ge_root_model.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -68,8 +69,6 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
                       GE_CHK_RT(rtFree(aicpu_kernel_addr)); return FAILED;)
       uint64_t kernel_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(aicpu_kernel_addr));
       param_base.fwkKernelBase.fwk_kernel.kernelID = kernel_id_addr;
-      // Remove model key from map
-      model_aicpu_kernel_.erase(iter);
     }
   }
 
@@ -214,16 +213,36 @@ Status ModelManager::SetDevice(int32_t deviceId) const {
   return SUCCESS;
 }
 
+ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const shared_ptr<ge::GeRootModel> &ge_root_model,
+                                                 const shared_ptr<ModelListener> &listener) {
+  auto hybrid_model = hybrid::HybridDavinciModel::Create(ge_root_model);
+  GE_CHECK_NOTNULL(hybrid_model);
+  hybrid_model->SetListener(listener);
+  hybrid_model->SetModelId(model_id);
+  hybrid_model->SetDeviceId(GetContext().DeviceId());
+  GE_CHK_STATUS_RET(hybrid_model->Init(), "Failed to init hybrid model. model_id = %u", model_id);
+  auto shared_model = std::shared_ptr<hybrid::HybridDavinciModel>(hybrid_model.release());
+  InsertModel(model_id, shared_model);
+  return SUCCESS;
+}
+
 ///
 /// @ingroup domi_ome
 /// @brief load model online
 /// @return Status run result
 ///
-Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::GeModel> &ge_model,
+Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::GeRootModel> &ge_root_model,
                                      std::shared_ptr<ModelListener> listener) {
   GE_CHK_BOOL_RET_STATUS(listener.get() != nullptr, PARAM_INVALID, "Param incorrect, listener is null");
   if (model_id == INVALID_MODEL_ID) {
     GenModelId(&model_id);
+  }
+
+  bool is_shape_unknown = false;
+  GE_CHK_STATUS_RET(ge_root_model->CheckIsUnknownShape(is_shape_unknown), "CheckIsUnknownShape failed, model id:%u",
+                    model_id);
+  if (is_shape_unknown) {
+    return DoLoadHybridModelOnline(model_id, ge_root_model, listener);
   }
 
   GE_CHK_STATUS_RET(SetDevice(static_cast<int32_t>(GetContext().DeviceId())), "Set device failed, model id:%u.",
@@ -238,6 +257,11 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   davinci_model->SetId(model_id);
   davinci_model->SetDeviceId(GetContext().DeviceId());
 
+  auto root_graph = ge_root_model->GetRootGraph();
+  GE_CHECK_NOTNULL(root_graph);
+  string root_model_name = root_graph->GetName();
+  auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
+  GeModelPtr ge_model = name_to_model[root_model_name];
   Status ret = SUCCESS;
   do {
     GE_TIMESTAMP_START(Assign);
@@ -274,16 +298,26 @@ void ModelManager::InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davin
   model_map_[id] = davinci_model;
 }
 
+void ModelManager::InsertModel(uint32_t id, shared_ptr<hybrid::HybridDavinciModel> &hybrid_model) {
+  GE_CHK_BOOL_EXEC(hybrid_model != nullptr, return, "hybrid_model ptr is null, id: %u", id);
+  std::lock_guard<std::mutex> lock(map_mutex_);
+  hybrid_model_map_[id] = hybrid_model;
+}
+
 Status ModelManager::DeleteModel(uint32_t id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
-  if (it == model_map_.end()) {
+  auto hybrid_model_it = hybrid_model_map_.find(id);
+  if (it != model_map_.end()) {
+    (void)model_map_.erase(it);
+  } else if (hybrid_model_it != hybrid_model_map_.end()) {
+    (void)hybrid_model_map_.erase(hybrid_model_it);
+  } else {
     GELOGE(PARAM_INVALID, "model id %u does not exists.", id);
     return PARAM_INVALID;
   }
 
-  (void)model_map_.erase(it);
   return SUCCESS;
 }
 
@@ -292,6 +326,13 @@ std::shared_ptr<DavinciModel> ModelManager::GetModel(uint32_t id) {
 
   auto it = model_map_.find(id);
   return (it == model_map_.end()) ? nullptr : it->second;
+}
+
+std::shared_ptr<hybrid::HybridDavinciModel> ModelManager::GetHybridModel(uint32_t id) {
+  std::lock_guard<std::mutex> lock(map_mutex_);
+
+  auto it = hybrid_model_map_.find(id);
+  return (it == hybrid_model_map_.end()) ? nullptr : it->second;
 }
 
 Status ModelManager::Unload(uint32_t model_id) {
@@ -349,7 +390,10 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 ///
 Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs) {
   std::shared_ptr<DavinciModel> model = GetModel(model_id);
-  GE_CHECK_NOTNULL(model);
+  auto hybrid_model = GetHybridModel(model_id);
+  if (hybrid_model == nullptr) {
+    GE_CHECK_NOTNULL(model);
+  }
 
   InputData input_data;
   input_data.model_id = model_id;
@@ -374,6 +418,12 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
   GE_CHK_STATUS_EXEC(data_wrap->Init(input_data, output_data), return domi::PUSH_DATA_FAILED,
                      "Init InputDataWrapper failed,input data model_id is : %u.", model_id);
 
+  if (hybrid_model != nullptr) {
+    GE_CHK_STATUS_RET(hybrid_model->EnqueueData(data_wrap), "Data queue is full, please call again later, model_id %u ",
+                      model_id);
+    return SUCCESS;
+  }
+
   GE_CHK_BOOL_RET_STATUS(model != nullptr, PARAM_INVALID, "Invalid Model ID %u in InputData! ", model_id);
 
   DataInputer *inputer = model->GetDataInputer();
@@ -395,6 +445,13 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
 /// @author
 ///
 Status ModelManager::Start(uint32_t model_id) {
+  auto hybrid_model = GetHybridModel(model_id);
+  if (hybrid_model != nullptr) {
+    GE_CHK_STATUS_RET_NOLOG(hybrid_model->ModelRunStart());
+    GELOGI("Start hybrid model %u success.", model_id);
+    return SUCCESS;
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
 
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid Model ID %u to start! ", model_id);
@@ -416,6 +473,13 @@ Status ModelManager::Start(uint32_t model_id) {
 /// @author
 ///
 Status ModelManager::Stop(uint32_t model_id) {
+  auto hybrid_model = GetHybridModel(model_id);
+  if (hybrid_model != nullptr) {
+    GE_CHK_STATUS_RET_NOLOG(hybrid_model->ModelRunStop());
+    GELOGI("Stop hybrid model %u success.", model_id);
+    return SUCCESS;
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid Model ID %u to stop!", model_id);
 
@@ -581,6 +645,13 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
 }
 
 Status ModelManager::GetMaxUsedMemory(const uint32_t model_id, uint64_t &max_size) {
+  auto hybrid_model = GetHybridModel(model_id);
+  if (hybrid_model != nullptr) {
+    // TODO hybrid use dynamic memory allocation
+    max_size = 0;
+    return SUCCESS;
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetMaxUsedMemory Failed, Invalid Model ID %u !",
                          model_id);

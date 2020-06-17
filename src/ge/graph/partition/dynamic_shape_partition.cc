@@ -43,39 +43,44 @@
 #define REQUIRE_SUCCESS(cond, ...) REQUIRE(((cond) == SUCCESS), __VA_ARGS__)
 #define REQUIRE_GRAPH_SUCCESS(cond, ...) REQUIRE(((cond) == GRAPH_SUCCESS), __VA_ARGS__)
 
-namespace {
-const bool kDebugging = (std::getenv("DEBUG_DYNAMIC_PARTITION") != nullptr);
-}  // namespace
+bool IsExperimental() {
+  const static bool kIsExperimental = (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") != nullptr);
+  return kIsExperimental;
+}
 
-#define DLOG() \
-  if (kDebugging) std::cerr
 namespace ge {
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
 Status DynamicShapePartitioner::Partition() {
   REQUIRE_NOT_NULL(root_graph_, "Graph is nullptr.");
-  DLOG() << "Start dynamic shape partition graph " << root_graph_->GetName() << std::endl;
-  REQUIRE_SUCCESS(MarkUnknowShapeNodes(), "Failed mark unknow shape nodes.");
-  if (unknown_shape_nodes_.empty()) {
-    DLOG() << "Skip dynamic shape partition of graph " << root_graph_->GetName() << " as all nodes are known shape."
-           << std::endl;
-    REQUIRE(AttrUtils::SetBool(*root_graph_, "_dynamic_shape_partitioned", false),
+  if (!IsExperimental()) {
+    GELOGD("Skip dynamic shape partition as not in experimental mode.");
+    REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
             "Failed set dynamic shape partitioned flag on root graph.");
     return SUCCESS;
   }
-  REQUIRE(AttrUtils::SetBool(*root_graph_, "_dynamic_shape_partitioned", true),
+
+  GELOGD("Start dynamic shape partition graph %s.", root_graph_->GetName().c_str());
+  REQUIRE_SUCCESS(MarkUnknownShapeNodes(), "Failed mark unknown shape nodes.");
+  if (unknown_shape_nodes_.empty()) {
+    GELOGD("Skip dynamic shape partition of graph %s as all nodes are known shape.", root_graph_->GetName().c_str());
+    REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
+            "Failed set dynamic shape partitioned flag on root graph.");
+    return SUCCESS;
+  }
+  REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, true),
           "Failed set dynamic shape partitioned flag on root graph.");
+
   DumpGraph("_Before_DSP");
   auto status = PartitionImpl();
-  DLOG() << DebugString() << std::endl;
+  GELOGD("%s.", DebugString().c_str());
   if (status != SUCCESS) {
     GELOGE(status, "Failed dynamic shape partition graph: %s, status:\n %s", root_graph_->GetName().c_str(),
            DebugString().c_str());
   }
   DumpGraph("_After_DSP");
-  DLOG() << (status == SUCCESS ? "Succeed" : "Failed") << " dynamic shape partition graph " << root_graph_->GetName()
-         << std::endl;
+  GELOGD("Finish dynamic shape partition graph %s.", root_graph_->GetName().c_str());
   ClearResource();
   return status;
 }
@@ -122,36 +127,36 @@ Status DynamicShapePartitioner::BuildPartitionSubgraph() {
   return SUCCESS;
 }
 
-std::string DynamicShapePartitioner::DebugString() {
-  size_t unknow = 0;
-  size_t know = 0;
+std::string DynamicShapePartitioner::DebugString() const {
+  size_t unknown = 0;
+  size_t known = 0;
   size_t data = 0;
   size_t netoutput = 0;
   std::stringstream ss;
-  ss << "All unknow shape nodes:" << std::endl;
+  ss << "All unknown shape nodes:" << std::endl;
   for (auto node : unknown_shape_nodes_) {
     ss << "  [" << node->GetName() << "](" << node->GetType() << ")" << std::endl;
   }
   for (auto cluster : unique_clusters_) {
-    if (cluster->IsUnknowShape()) {
-      unknow++;
-    } else if (cluster->IsKnowShape()) {
-      know++;
+    if (cluster->IsUnknownShape()) {
+      unknown++;
+    } else if (cluster->IsKnownShape()) {
+      known++;
     } else if (cluster->IsData()) {
       data++;
     } else if (cluster->IsNetOutput()) {
       netoutput++;
     }
   }
-  ss << "All clusters:" << unique_clusters_.size() << ", data:" << data << ", know:" << know << ", unknow:" << unknow
-     << ", netoutput:" << netoutput << std::endl;
+  ss << "All clusters:" << unique_clusters_.size() << ", data:" << data << ", known:" << known
+     << ", unknown:" << unknown << ", netoutput:" << netoutput << std::endl;
   for (auto cluster : unique_clusters_) {
     ss << "  " << cluster->DebugString() << std::endl;
   }
   return ss.str();
 }
 
-void DynamicShapePartitioner::DumpGraph(std::string suffix) {
+void DynamicShapePartitioner::DumpGraph(const std::string &suffix) {
   GraphUtils::DumpGEGraphToOnnx(*root_graph_, root_graph_->GetName() + suffix);
   for (auto sub_graph : root_graph_->GetAllSubgraphs()) {
     GraphUtils::DumpGEGraphToOnnx(*sub_graph, sub_graph->GetName() + suffix);
@@ -169,10 +174,10 @@ void DynamicShapePartitioner::ClearResource() {
   root_graph_.reset();
 }
 
-Status DynamicShapePartitioner::MarkUnknowShapeNodes() {
+Status DynamicShapePartitioner::MarkUnknownShapeNodes() {
   auto graph = root_graph_;
   for (auto &node : graph->GetDirectNode()) {
-    REQUIRE_SUCCESS(CollectSpreadUnknowShapeNodes(node), "Failed collect spread unknow shape nodes %s.",
+    REQUIRE_SUCCESS(CollectSpreadUnknownShapeNodes(node), "Failed collect spread unknown shape nodes %s.",
                     node->GetName().c_str());
   }
   return SUCCESS;
@@ -188,14 +193,14 @@ Status DynamicShapePartitioner::InitClusters() {
     } else if (node->GetType() == NETOUTPUT) {
       type = Cluster::NETOUTPUT;
     } else if (unknown_shape_nodes_.count(node) > 0) {
-      type = Cluster::UNKNOW_SHAPE;
+      type = Cluster::UNKNOWN_SHAPE;
     } else {
-      type = Cluster::KNOW_SHAPE;
+      type = Cluster::KNOWN_SHAPE;
     }
     auto cluster = MakeShared<Cluster>(rank++, type, node, this);
     REQUIRE_NOT_NULL(cluster, "Failed new memory for cluster.");
     node_2_cluster_[node] = cluster;
-    if (cluster->IsUnknowShape()) {
+    if (cluster->IsUnknownShape()) {
       ordered_cluster_.push_back(cluster);
     }
     // Already sorted topologically, so access to the parent cluster is safe
@@ -203,18 +208,15 @@ Status DynamicShapePartitioner::InitClusters() {
       cluster->AddInput(node_2_cluster_[parent]);
     }
   }
-  if (kDebugging) {
-    for (const auto node : graph->GetDirectNode()) {
-      DLOG() << "Make cluster for node :" << node->GetName() << ":" << node_2_cluster_[node]->DebugString()
-             << std::endl;
-    }
+  for (const auto node : graph->GetDirectNode()) {
+    GELOGD("Make cluster for node %s : %s.", node->GetName().c_str(), node_2_cluster_[node]->DebugString().c_str());
   }
   return SUCCESS;
 }
 
 Status DynamicShapePartitioner::TopologicalSortClusters() {
   ordered_cluster_.clear();
-  // BFS topological sort clusters for know shape cluster
+  // BFS topological sort clusters for known shape cluster
   std::queue<ClusterPtr> ready_clusters;
   std::unordered_map<ClusterPtr, size_t> cluster_pending_count;
   std::unordered_set<ClusterPtr> seen_clusters;
@@ -231,16 +233,17 @@ Status DynamicShapePartitioner::TopologicalSortClusters() {
       cluster_pending_count[cluster] = pending_count;
     }
   }
+
   size_t rank = 0;
   while (!ready_clusters.empty()) {
     auto cluster = ready_clusters.front();
     ready_clusters.pop();
     cluster->UpdateRank(rank++);
-    if (cluster->IsKnowShape()) {
+    if (cluster->IsKnownShape()) {
       ordered_cluster_.push_back(cluster);
     }
     for (auto out_cluster : cluster->Outputs()) {
-      if (--cluster_pending_count[out_cluster] == 0) {
+      if (cluster_pending_count[out_cluster] > 0 && --cluster_pending_count[out_cluster] == 0) {
         ready_clusters.push(out_cluster);
       }
     }
@@ -252,49 +255,58 @@ Status DynamicShapePartitioner::TopologicalSortClusters() {
 }
 
 namespace {
-template <typename T>
-static std::string ToString(T vec) {
-  if (vec.empty()) {
+static std::string ToString(const std::vector<ClusterPtr> &clusters) {
+  if (clusters.empty()) {
     return "()";
   }
   std::stringstream ss;
   ss << "(";
-  auto iter = vec.begin();
-  for (size_t i = 0; i < vec.size() - 1; i++) {
-    ss << (*iter++)->Id() << ",";
+  auto iter = clusters.begin();
+  for (size_t i = 0; i < clusters.size() - 1; i++) {
+    ss << (*iter)->Id() << ",";
+    iter++;
   }
-  ss << (*iter++)->Id() << ").";
+  ss << (*iter)->Id() << ").";
   return ss.str();
 }
 }  // namespace
 
 Status DynamicShapePartitioner::MergeClusters() {
-  // Merge unknow shape clusters
+  // Merge unknown shape clusters
   for (auto cluster : ordered_cluster_) {
     for (auto in_cluster : cluster->Inputs()) {
-      if (in_cluster->IsUnknowShape()) {
-        auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);
-        DLOG() << "Merge all path cluster from " << in_cluster->Id() << " to " << cluster->Id()
-               << ToString(merged_clusters) << std::endl;
-        for (auto merged_cluster : merged_clusters) {
-          for (auto node : merged_cluster->Nodes()) {
-            node_2_cluster_[node] = cluster;
-          }
+      if (!in_cluster->IsUnknownShape()) {
+        continue;
+      }
+      auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);
+      GELOGD("Merge all path cluster from %lu to %lu %s.", in_cluster->Id(), cluster->Id(),
+             ToString(merged_clusters).c_str());
+      for (auto merged_cluster : merged_clusters) {
+        for (auto node : merged_cluster->Nodes()) {
+          node_2_cluster_[node] = cluster;
         }
       }
     }
   }
-  REQUIRE_SUCCESS(TopologicalSortClusters(), "Failed topological sort clusters after merge unknow shape clusters.");
-  // Merge know shape clusters
+
+  REQUIRE_SUCCESS(TopologicalSortClusters(), "Failed topological sort clusters after merge unknown shape clusters.");
+  // Merge known shape clusters
   for (auto cluster : ordered_cluster_) {
+    if (cluster->IsRefVariable() && cluster->Inputs().size() == 1) {
+      auto in_cluster = *(cluster->Inputs().begin());
+      in_cluster->Merge(cluster);
+      node_2_cluster_[*(cluster->Nodes().begin())] = in_cluster;
+      continue;
+    }
+
     for (auto in_cluster : cluster->Inputs()) {
-      if (in_cluster->IsKnowShape()) {
-        if (cluster->TryMerge(in_cluster)) {
-          DLOG() << "Success merge known shape cluster " << in_cluster->Id() << " to " << cluster->Id() << "."
-                 << std::endl;
-          for (auto node : in_cluster->Nodes()) {
-            node_2_cluster_[node] = cluster;
-          }
+      if (!in_cluster->IsKnownShape()) {
+        continue;
+      }
+      if (cluster->TryMerge(in_cluster)) {
+        GELOGD("Success merge known shape cluster from %lu to %lu.", in_cluster->Id(), cluster->Id());
+        for (auto node : in_cluster->Nodes()) {
+          node_2_cluster_[node] = cluster;
         }
       }
     }
@@ -302,23 +314,30 @@ Status DynamicShapePartitioner::MergeClusters() {
   return SUCCESS;
 }
 
-Status DynamicShapePartitioner::CollectSpreadUnknowShapeNodes(NodePtr node) {
+Status DynamicShapePartitioner::CollectSpreadUnknownShapeNodes(NodePtr node) {
   if (unknown_shape_nodes_.count(node) > 0) {
     return SUCCESS;
   }
   auto opdesc = node->GetOpDesc();
+  // One can set 'ATTR_NAME_IS_UNKNOWN_SHAPE=true' on node so as to forcing the node flow into the unknown subgraph,
+  // ignore the actual shape.
+  bool is_forced_unknown = false;
+  if (AttrUtils::GetBool(opdesc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_forced_unknown) && is_forced_unknown) {
+    GELOGD("Collect node %s as unknown as it was marked unknown forcibly.", node->GetName().c_str());
+    unknown_shape_nodes_.insert(node);
+    return SUCCESS;
+  }
   size_t anchor_index = 0;
-  bool is_unknow = false;
+  bool is_unknown = false;
   for (auto &out_tensor : opdesc->GetAllOutputsDesc()) {
-    if (IsUnknowShapeTensor(out_tensor)) {
-      DLOG() << "Collect node " << node->GetName() << " as unknown as output " << anchor_index << " is unknown"
-             << std::endl;
-      is_unknow = true;
+    if (IsUnknownShapeTensor(out_tensor)) {
+      GELOGD("Collect node %s as unknown as output %lu is unknown.", node->GetName().c_str(), anchor_index);
+      is_unknown = true;
       auto anchor = node->GetOutDataAnchor(anchor_index);
       for (const auto peer_anchor : anchor->GetPeerInDataAnchors()) {
         if (peer_anchor != nullptr) {
-          DLOG() << "Collect node " << peer_anchor->GetOwnerNode()->GetName() << " as has unknown input from "
-                 << node->GetName() << ":" << anchor_index << std::endl;
+          GELOGD("Collect node %s as has unknown input from %s:%lu.", peer_anchor->GetOwnerNode()->GetName().c_str(),
+                 node->GetName().c_str(), anchor_index);
           unknown_shape_nodes_.insert(peer_anchor->GetOwnerNode());
         }
       }
@@ -327,21 +346,20 @@ Status DynamicShapePartitioner::CollectSpreadUnknowShapeNodes(NodePtr node) {
   }
   anchor_index = 0;
   for (auto &in_tensor : opdesc->GetAllInputsDesc()) {
-    if (IsUnknowShapeTensor(in_tensor)) {
-      DLOG() << "Collect node " << node->GetName() << " as unknown as input " << anchor_index << " is unknown"
-             << std::endl;
-      is_unknow = true;
+    if (IsUnknownShapeTensor(in_tensor)) {
+      GELOGD("Collect node %s as unknown as input %lu is unknown.", node->GetName().c_str(), anchor_index);
+      is_unknown = true;
       auto anchor = node->GetInDataAnchor(anchor_index);
       const auto peer_anchor = anchor->GetPeerOutAnchor();
       if (peer_anchor != nullptr) {
-        DLOG() << "Collect node " << peer_anchor->GetOwnerNode()->GetName() << " as has unknown output to "
-               << node->GetName() << ":" << anchor_index << std::endl;
+        GELOGD("Collect node %s as has unknown output to %s:%lu.", peer_anchor->GetOwnerNode()->GetName().c_str(),
+               node->GetName().c_str(), anchor_index);
         unknown_shape_nodes_.insert(peer_anchor->GetOwnerNode());
       }
     }
     anchor_index++;
   }
-  if (is_unknow) {
+  if (is_unknown) {
     unknown_shape_nodes_.insert(node);
   } else {
     auto graph = root_graph_;
@@ -350,11 +368,10 @@ Status DynamicShapePartitioner::CollectSpreadUnknowShapeNodes(NodePtr node) {
       REQUIRE_NOT_NULL(subgraph, "Failed get subgraph %s of node %s on root graph.", subgraph_name.c_str(),
                        node->GetName().c_str());
       bool is_graph_unknow = false;
-      REQUIRE_SUCCESS(IsUnknowShapeGraph(subgraph, is_graph_unknow), "Failed check subgraph %s shape of node %s.",
+      REQUIRE_SUCCESS(IsUnknownShapeGraph(subgraph, is_graph_unknow), "Failed check subgraph %s shape of node %s.",
                       subgraph_name.c_str(), node->GetName().c_str());
       if (is_graph_unknow) {
-        DLOG() << "Collect node " << node->GetName() << " as its subgraph " << subgraph->GetName() << " is unknown."
-               << std::endl;
+        GELOGD("Collect node %s as its subgraph %s is unknown.", node->GetName().c_str(), subgraph->GetName().c_str());
         unknown_shape_nodes_.insert(node);
         break;
       }
@@ -363,20 +380,20 @@ Status DynamicShapePartitioner::CollectSpreadUnknowShapeNodes(NodePtr node) {
   return SUCCESS;
 }
 
-Status DynamicShapePartitioner::IsUnknowShapeNode(NodePtr node, bool &is_unknow) {
+Status DynamicShapePartitioner::IsUnknownShapeNode(NodePtr node, bool &is_unknown) {
   auto opdesc = node->GetOpDesc();
   auto graph = root_graph_;
   for (auto &out_tensor : opdesc->GetAllOutputsDesc()) {
-    if (IsUnknowShapeTensor(out_tensor)) {
-      DLOG() << "Mark node " << node->GetName() << " unknown because unknown output " << std::endl;
-      is_unknow = true;
+    if (IsUnknownShapeTensor(out_tensor)) {
+      GELOGD("Mark node %s unknown as unknown output.", node->GetName().c_str());
+      is_unknown = true;
       return SUCCESS;
     }
   }
   for (auto &in_tensor : opdesc->GetAllInputsDesc()) {
-    if (IsUnknowShapeTensor(in_tensor)) {
-      DLOG() << "Mark node " << node->GetName() << " unknown because unknown intput " << std::endl;
-      is_unknow = true;
+    if (IsUnknownShapeTensor(in_tensor)) {
+      GELOGD("Mark node %s unknown as unknown intput.", node->GetName().c_str());
+      is_unknown = true;
       return SUCCESS;
     }
   }
@@ -384,30 +401,30 @@ Status DynamicShapePartitioner::IsUnknowShapeNode(NodePtr node, bool &is_unknow)
     auto subgraph = graph->GetSubgraph(subgraph_name);
     REQUIRE_NOT_NULL(subgraph, "Failed get subgraph %s of node %s on root graph.", subgraph_name.c_str(),
                      node->GetName().c_str());
-    REQUIRE_SUCCESS(IsUnknowShapeGraph(subgraph, is_unknow), "Failed check subgraph %s shape of node %s.",
+    REQUIRE_SUCCESS(IsUnknownShapeGraph(subgraph, is_unknown), "Failed check subgraph %s shape of node %s.",
                     subgraph_name.c_str(), node->GetName().c_str());
-    if (is_unknow) {
-      DLOG() << "Mark node " << node->GetName() << " unknown because unknown subgraph " << std::endl;
+    if (is_unknown) {
+      GELOGD("Mark node %s unknown as unknown subgraph.", node->GetName().c_str());
       return SUCCESS;
     }
   }
-  is_unknow = false;
+  is_unknown = false;
   return SUCCESS;
 }
 
-Status DynamicShapePartitioner::IsUnknowShapeGraph(ComputeGraphPtr graph, bool &is_unknow) {
+Status DynamicShapePartitioner::IsUnknownShapeGraph(ComputeGraphPtr graph, bool &is_unknown) {
   for (auto &node : graph->GetDirectNode()) {
-    REQUIRE_SUCCESS(IsUnknowShapeNode(node, is_unknow), "Failed check node %s shape on graph %s.",
+    REQUIRE_SUCCESS(IsUnknownShapeNode(node, is_unknown), "Failed check node %s shape on graph %s.",
                     node->GetName().c_str(), graph->GetName().c_str());
-    if (is_unknow) {
-      DLOG() << "Mark graph " << graph->GetName() << " unknown because unknown node " << node->GetName() << std::endl;
+    if (is_unknown) {
+      GELOGD("Mark graph %s unknown as contains unknown node %s.", graph->GetName().c_str(), node->GetName().c_str());
       return SUCCESS;
     }
   }
   return SUCCESS;
 }
 
-bool DynamicShapePartitioner::IsUnknowShapeTensor(GeTensorDesc &tensor) {
+bool DynamicShapePartitioner::IsUnknownShapeTensor(const GeTensorDesc &tensor) {
   const static int kUnknowShape = -1;
   const static int kUnknowRank = -2;
   for (auto dim_size : tensor.GetShape().GetDims()) {
@@ -418,7 +435,7 @@ bool DynamicShapePartitioner::IsUnknowShapeTensor(GeTensorDesc &tensor) {
   return false;
 }
 
-std::string Cluster::DebugString() {
+std::string Cluster::DebugString() const {
   std::stringstream ss;
   switch (type_) {
     case DATA:
@@ -427,10 +444,10 @@ std::string Cluster::DebugString() {
     case NETOUTPUT:
       ss << "NETOUTPUT";
       break;
-    case UNKNOW_SHAPE:
+    case UNKNOWN_SHAPE:
       ss << "UNKNOW";
       break;
-    case KNOW_SHAPE:
+    case KNOWN_SHAPE:
       ss << "KNOW";
       break;
   }
@@ -450,18 +467,22 @@ std::string Cluster::DebugString() {
   return ss.str();
 }
 
-size_t Cluster::Id() { return id_; }
+size_t Cluster::Id() const { return id_; }
 void Cluster::UpdateRank(size_t rank) {
   max_ = rank;
   min_ = rank;
 };
-bool Cluster::IsData() { return type_ == DATA; };
-bool Cluster::IsKnowShape() { return type_ == KNOW_SHAPE; };
-bool Cluster::IsUnknowShape() { return type_ == UNKNOW_SHAPE; };
-bool Cluster::IsNetOutput() { return type_ == NETOUTPUT; };
-bool Cluster::IsolatedConstant() {
-  return ((nodes_.size() == 1) && (nodes_[0]->GetType() == CONSTANTOP) && (out_clusters_.size() == 1) &&
-          (*out_clusters_.begin())->IsUnknowShape() && in_clusters_.empty());
+bool Cluster::IsData() const { return type_ == DATA; };
+bool Cluster::IsKnownShape() const { return type_ == KNOWN_SHAPE; };
+bool Cluster::IsUnknownShape() const { return type_ == UNKNOWN_SHAPE; };
+bool Cluster::IsNetOutput() const { return type_ == NETOUTPUT; };
+bool Cluster::IsRefVariable() const {
+  if ((nodes_.size() == 1) && ((nodes_[0]->GetType() == VARIABLE) || (nodes_[0]->GetType() == VARIABLEV2))) {
+    std::string ref_variable_name;
+    return (AttrUtils::GetStr(nodes_[0]->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_variable_name) &&
+            !ref_variable_name.empty());
+  }
+  return false;
 }
 void Cluster::AddInput(ClusterPtr in) {
   in_clusters_.insert(in);
@@ -562,9 +583,9 @@ std::vector<ClusterPtr> Cluster::MergeAllPathFrom(ClusterPtr other) {
   }
   return path_clusters;
 }
-std::unordered_set<ClusterPtr> Cluster::Inputs() { return in_clusters_; };
-std::unordered_set<ClusterPtr> Cluster::Outputs() { return out_clusters_; };
-std::vector<NodePtr> Cluster::Nodes() { return nodes_; };
+std::unordered_set<ClusterPtr> Cluster::Inputs() const { return in_clusters_; };
+std::unordered_set<ClusterPtr> Cluster::Outputs() const { return out_clusters_; };
+std::vector<NodePtr> Cluster::Nodes() const { return nodes_; };
 
 void Cluster::AddFrameInput(InDataAnchorPtr anchor) {
   inputs_index_[anchor] = inputs_.size();
@@ -589,7 +610,7 @@ InControlAnchorPtr Cluster::GetFrameInControlAnchor() { return partition_node_->
 OutControlAnchorPtr Cluster::GetFrameOutControlAnchor() { return partition_node_->GetOutControlAnchor(); };
 
 Status Cluster::BuildFrame() {
-  if (IsUnknowShape() || IsKnowShape()) {
+  if (IsUnknownShape() || IsKnownShape()) {
     return BuildPartitionFrame();
   } else {
     auto node = nodes_.front();
@@ -621,7 +642,7 @@ Status Cluster::BuildFrame() {
 
 Status Cluster::BuildPartitionFrame() {
   auto graph = partitioner_->root_graph_;
-  bool is_unknown_shape = IsUnknowShape();
+  bool is_unknown_shape = IsUnknownShape();
   std::string sub_graph_name =
     graph->GetName() + "_sub_" + std::to_string(unique_id_) + (is_unknown_shape ? "_unknow" : "_know");
   subgraph_ = MakeShared<ComputeGraph>(sub_graph_name);
@@ -727,6 +748,7 @@ Status Cluster::BuildPartitionSubgraph() {
     auto data_op = MakeShared<OpDesc>(std::string("Data_") + std::to_string(parent_node_index), ge::DATA);
     REQUIRE_NOT_NULL(data_op, "Failed new memory for data op.");
     auto input_desc = anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(anchor->GetIdx());
+    REQUIRE_GRAPH_SUCCESS(data_op->AddInputDesc(input_desc), "Failed add input desc.");
     REQUIRE_GRAPH_SUCCESS(data_op->AddOutputDesc(input_desc), "Failed add output desc.");
     REQUIRE(AttrUtils::SetInt(data_op, ATTR_NAME_PARENT_NODE_INDEX, parent_node_index),
             "Failed set parent_node_index on subgraph data node.");

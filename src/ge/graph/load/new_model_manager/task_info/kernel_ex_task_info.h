@@ -41,6 +41,10 @@ class KernelExTaskInfo : public TaskInfo {
 
   Status Release() override;
 
+  Status UpdateArgs() override;
+
+  Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
+
   uint32_t GetTaskID() override { return task_id_; }
 
   uint32_t GetStreamId() override { return stream_id_; }
@@ -61,6 +65,8 @@ class KernelExTaskInfo : public TaskInfo {
   void *kernel_buf_;
   void *input_output_addr_;
   void *dump_args_;
+  OpDescPtr op_desc_ = nullptr;
+  uint32_t args_offset_ = 0;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_EX_TASK_INFO_H_

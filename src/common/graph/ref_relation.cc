@@ -136,17 +136,11 @@ graphStatus RefRelations::Impl::BuildRefRelationsForBranch(
     out_ref_i_all_refs.emplace_back(cell_root);
     for (const auto &ele : ref_o_net_nodes) {
       RefCell cell_netoutput_in;
-      RefCell cell_netoutput_out;
       cell_netoutput_in.node_name = (ele.first)->GetName();
       cell_netoutput_in.node = ele.first;
       cell_netoutput_in.in_out = NODE_IN;
       cell_netoutput_in.in_out_idx = ele.second;
-      cell_netoutput_out.node_name = (ele.first)->GetName();
-      cell_netoutput_out.node = ele.first;
-      cell_netoutput_out.in_out = NODE_OUT;
-      cell_netoutput_out.in_out_idx = ele.second;
       out_ref_i_all_refs.emplace_back(cell_netoutput_in);
-      out_ref_i_all_refs.emplace_back(cell_netoutput_out);
     }
     node_refs.emplace_back(out_ref_i_all_refs);
     ref_o++;
@@ -155,6 +149,7 @@ graphStatus RefRelations::Impl::BuildRefRelationsForBranch(
 }
 
 graphStatus RefRelations::Impl::BuildLookUpTables() {
+  GELOGD("start to build look up table!");
   for (size_t i = 0; i < values_.size(); i++) {
     vector<vector<RefCell>> &val = values_[i];
     for (const auto &ele : val) {
@@ -216,12 +211,7 @@ graphStatus RefRelations::Impl::BuildRefRelationsForWhile(
       cell_netoutput_in.node = ele.first;
       cell_netoutput_in.in_out = NODE_IN;
       cell_netoutput_in.in_out_idx = ele.second;
-      cell_netoutput_out.node_name = (ele.first)->GetName();
-      cell_netoutput_out.node = ele.first;
-      cell_netoutput_out.in_out = NODE_OUT;
-      cell_netoutput_out.in_out_idx = ele.second;
       ref_i_all_refs.emplace_back(cell_netoutput_in);
-      ref_i_all_refs.emplace_back(cell_netoutput_out);
     }
     node_refs.emplace_back(ref_i_all_refs);
     ref_i++;
@@ -237,13 +227,10 @@ graphStatus RefRelations::Impl::BuildRelationsWithFuncNodeType(
   auto node_type = root_node->GetType();
 
   auto status = GRAPH_SUCCESS;
-  if (node_type == kIf || node_type == kCase) {
+  if (node_type != kWhile) {
     status = BuildRefRelationsForBranch(root_node, classed_data_nodes, classed_netoutput_nodes, node_refs);
-  } else if (node_type == kWhile) {
-    status = BuildRefRelationsForWhile(root_node, classed_data_nodes, classed_netoutput_nodes, node_refs);
   } else {
-    GELOGE(GRAPH_PARAM_INVALID, "Node type [%s] is not supported for build ref relations!", node_type.c_str());
-    status = GRAPH_PARAM_INVALID;
+    status = BuildRefRelationsForWhile(root_node, classed_data_nodes, classed_netoutput_nodes, node_refs);
   }
   return status;
 }
@@ -291,6 +278,7 @@ graphStatus RefRelations::Impl::GetRootGraph(ge::ComputeGraph &graph, ge::Comput
 
 graphStatus RefRelations::Impl::ProcessSubgraphDataNodes(vector<NodePtr> &data_nodes,
                                                          vector<vector<NodePtr>> &classed_data_nodes) {
+  GELOGD("start to process subgraph data nodes!");
   int max_ref_idx = 0;
   for (const auto &e : data_nodes) {
     int i;
@@ -315,6 +303,7 @@ graphStatus RefRelations::Impl::ProcessSubgraphDataNodes(vector<NodePtr> &data_n
 
 graphStatus RefRelations::Impl::ProcessSubgraphNetoutput(
   const vector<NodePtr> &netoutput_nodes, vector<vector<std::pair<NodePtr, size_t>>> &classed_netoutput_nodes) {
+  GELOGD("[RefRelations]Start to process subgraph netoutput!");
   for (const auto &sub_netoutput_node : netoutput_nodes) {
     auto op_desc = sub_netoutput_node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
@@ -340,6 +329,7 @@ graphStatus RefRelations::Impl::ProcessSubgraphNetoutput(
 }
 
 graphStatus RefRelations::Impl::BuildRefRelations(ge::ComputeGraph &graph) {
+  GELOGD("Start to build ref relations!");
   /* First Step: Get root graph */
   ge::ComputeGraph &root_graph = graph;
   auto status = GetRootGraph(graph, root_graph);
@@ -349,12 +339,12 @@ graphStatus RefRelations::Impl::BuildRefRelations(ge::ComputeGraph &graph) {
 
   for (const auto &node : graph.GetAllNodes()) {
     auto node_type = node->GetType();
-    if (function_op.find(node_type) == function_op.end()) {
-      continue;
-    }
     std::vector<NodePtr> ref_nodes;
     auto op_desc = node->GetOpDesc();
     auto sub_graph_names = op_desc->GetSubgraphInstanceNames();
+    if (sub_graph_names.empty()) {
+      continue;
+    }
     vector<NodePtr> data_nodes;
     vector<NodePtr> netoutput_nodes;
     // Get data and netoutput of sub_graph

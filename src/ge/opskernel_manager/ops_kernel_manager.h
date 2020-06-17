@@ -58,6 +58,9 @@ class OpsKernelManager {
   // get all graph_optimizer
   const map<string, GraphOptimizerPtr> &GetAllGraphOptimizerObjs() const;
 
+  // get all graph_optimizer by priority
+  const vector<pair<string, GraphOptimizerPtr>> &GetAllGraphOptimizerObjsByPriority() const;
+
   // get subgraphOptimizer by engine name
   void GetGraphOptimizerByEngine(const std::string &engine_name, vector<GraphOptimizerPtr> &graph_optimizer);
 
@@ -106,6 +109,8 @@ class OpsKernelManager {
   map<string, OpsKernelInfoStorePtr> ops_kernel_store_{};
   // graph_optimizer
   map<string, GraphOptimizerPtr> graph_optimizers_{};
+  // ordered graph_optimzer
+  vector<pair<string, GraphOptimizerPtr>> graph_optimizers_by_priority_{};
   // opsKernelInfo
   map<string, vector<OpInfo>> ops_kernel_info_{};
 

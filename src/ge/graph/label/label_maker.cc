@@ -96,42 +96,6 @@ void LabelMaker::SetStreamIdOwner(const ComputeGraphPtr &graph, const OpDescPtr 
 
 /**
  * @ingroup ge
- * @brief Link Node to Graph head.
- * @param [in] graph: graph for add node.
- * @param [in] lb_node: Node for set link to head.
- * @return: SUCCESS / FAILED
- */
-Status LabelMaker::AddCtrlLink2Data(const ComputeGraphPtr &graph, const NodePtr &node) {
-  GE_CHECK_NOTNULL(graph);
-  GE_CHECK_NOTNULL(node);
-
-  std::set<NodePtr> linked_nodes;
-  for (const NodePtr &n : graph->GetDirectNode()) {
-    GE_CHECK_NOTNULL(n);
-    if (n->GetType() != DATA) {
-      continue;
-    }
-
-    // Link control edge to graph head.
-    for (const NodePtr &out_node : n->GetOutAllNodes()) {
-      if (linked_nodes.count(out_node) > 0) {
-        continue;
-      }
-
-      (void)linked_nodes.insert(out_node);
-      if (GraphUtils::AddEdge(node->GetOutControlAnchor(), out_node->GetInControlAnchor()) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add ctrl edge from %s to %s failed.", node->GetName().c_str(),
-               out_node->GetName().c_str());
-        return FAILED;
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
-/**
- * @ingroup ge
  * @brief Add StreamActive node at graph front.
  * @param [in] graph: graph for add node.
  * @param [in] name: stream active node name.
@@ -154,14 +118,9 @@ NodePtr LabelMaker::AddStreamActive(const ComputeGraphPtr &graph, const std::str
   vector<uint32_t> active_streams;
   (void)AttrUtils::SetStr(op_desc, ATTR_NAME_SWITCH_BRANCH_NODE_LABEL, op_desc->GetName());
   (void)AttrUtils::SetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams);
+  (void)AttrUtils::SetBool(op_desc, ATTR_NAME_SUBGRAPH_FIRST_ACTIVE, true);
   NodePtr stream_active = graph->AddNodeFront(op_desc);
   GE_CHECK_NOTNULL_EXEC(stream_active, return nullptr);
-
-  // Link control edge to graph head.
-  if (AddCtrlLink2Data(graph, stream_active) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Add ctrl edge for graph %s failed.", graph->GetName().c_str());
-    return nullptr;
-  }
 
   return stream_active;
 }
@@ -230,6 +189,7 @@ NodePtr LabelMaker::AddLabelSetLeave(const ComputeGraphPtr &graph, const std::st
 
   GELOGI("LabelSet: Create node %s.", op_desc->GetName().c_str());
   (void)AttrUtils::SetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, index);
+  (void)AttrUtils::SetBool(op_desc, ATTR_NAME_SUBGRAPH_END_NODE, true);
   NodePtr label_set = graph->AddNode(op_desc);
   GE_CHECK_NOTNULL_EXEC(label_set, return nullptr);
 

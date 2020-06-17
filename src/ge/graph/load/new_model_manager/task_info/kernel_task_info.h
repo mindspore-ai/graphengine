@@ -67,6 +67,10 @@ class KernelTaskInfo : public TaskInfo {
 
   Status Distribute() override;
 
+  Status UpdateArgs() override;
+
+  Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
+
   Status Release() override;
 
   cce::ccOpContext *GetCtx() override { return &ctx_; }
@@ -146,6 +150,7 @@ class KernelTaskInfo : public TaskInfo {
   void *dump_args_;
   OpDescPtr op_desc_;
   DavinciModel *davinci_model_;
+  uint32_t args_offset_ = 0;
 
   // For super kernel
   uint32_t skt_id_;

@@ -108,7 +108,7 @@ Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam
   STR_FWK_OP_KERNEL fwk_op_kernel;
   ret = SetFmkOpKernel(io_addr, ws_addr_vec[0], fwk_op_kernel);
   if (ret != SUCCESS) {
-    rtFree(io_addr);
+    (void)rtFree(io_addr);
     return ret;
   }
   // Create session
@@ -119,7 +119,7 @@ Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam
                   return FAILED;)
   ret = SetKernelArgs(&task.args_, fwk_op_kernel);
   if (ret != SUCCESS) {
-    rtFree(io_addr);
+    (void)rtFree(io_addr);
     return ret;
   }
 

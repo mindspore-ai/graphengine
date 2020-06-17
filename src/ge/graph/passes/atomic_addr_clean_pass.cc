@@ -36,26 +36,10 @@ namespace ge {
 namespace {
 bool GraphShouldBeSkip(const ge::ComputeGraphPtr &graph) {
   // Internal function, guaranteeing graph non-null
-  auto parent = graph->GetParentGraph();
-  if (parent == nullptr) {
+  if (graph->GetParentGraph() == nullptr) {
     return false;
   }
-  for (NodePtr &node : graph->GetDirectNode()) {
-    bool is_unknown = false;
-    auto ret_status = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
-    if (ret_status != GRAPH_SUCCESS) {
-      GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
-             node->GetType().c_str());
-      continue;
-    }
-    if (is_unknown) {
-      GELOGI("Node %s, type %s is unknown shape, sub graph %s should be skip.", node->GetName().c_str(),
-             node->GetType().c_str(), graph->GetName().c_str());
-      return true;
-    }
-  }
-  GELOGI("Sub graph %s does not have unknown shape node, run the pass.", graph->GetName().c_str());
-  return false;
+  return GraphUtils::IsUnknownShapeGraph(graph);
 }
 }  // namespace
 
@@ -273,5 +257,13 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   }
   GELOGD("Recognized atomic op %s from FE engine.", op_desc->GetName().c_str());
   return true;
+}
+///
+/// @brief Clear Status, uesd for subgraph pass
+/// @return SUCCESS
+///
+Status AtomicAddrCleanPass::ClearStatus() {
+  hcom_node_vec_.clear();
+  return SUCCESS;
 }
 }  // namespace ge

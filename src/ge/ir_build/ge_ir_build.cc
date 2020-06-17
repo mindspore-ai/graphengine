@@ -40,14 +40,12 @@ using std::string;
 using namespace std;
 
 namespace ge {
-
-static std::map<std::string, domi::domiTensorFormat_t> input_format_str_to_geformat = {
-  {"ND", domi::DOMI_TENSOR_ND},     {"NCHW", domi::DOMI_TENSOR_NCHW},       {"NHWC", domi::DOMI_TENSOR_NHWC},
-  {"CHWN", domi::DOMI_TENSOR_CHWN}, {"NC1HWC0", domi::DOMI_TENSOR_NC1HWC0}, {"NHWC1C0", domi::DOMI_TENSOR_NHWC1C0},
-};
+namespace {
 const std::string IR_OPTION_TARGET = "target";
 const std::string IR_OPTION_MODE = "mode";
 const std::string IR_OP_CONF_DELIMITER = ":";
+const std::string IR_OPTION_LOG_LEVEL_DEFAULT = "default";
+}  // namespace
 
 graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
   GELOGD("Enter aclgrphInitialize start!");
@@ -116,7 +114,12 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
       GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!", ele.first.c_str());
       return GRAPH_PARAM_INVALID;
     }
-    options_.insert(ele);
+
+    if (ele.first == ge::ir_option::ENABLE_COMPRESS_WEIGHT) {
+      continue;  // this option will be set afer param check.
+    } else {
+      options_.insert(ele);
+    }
   }
   return GRAPH_SUCCESS;
 }
@@ -127,6 +130,10 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
     GELOGE(ret, "user input options is not illegal!Please check!");
     return ret;
   }
+  // set log level
+  std::string log = options_.find(ge::ir_option::LOG_LEVEL) == options_.end() ? IR_OPTION_LOG_LEVEL_DEFAULT
+                                                                              : options_[ge::ir_option::LOG_LEVEL];
+  GE_CHK_BOOL_RET_STATUS_NOLOG(ge::CheckLogParamValidAndSetLogLevel(log) == 0, GRAPH_PARAM_INVALID);
 
   string input_shape = options_.find("input_shape") == options_.end() ? "" : options_["input_shape"];
   string input_format = options_.find("input_format") == options_.end() ? "" : options_["input_format"];
@@ -148,6 +155,28 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
          dynamic_image_size.c_str());
   GetContext().dynamic_batch_size = dynamic_batch_size;
   GetContext().dynamic_image_size = dynamic_image_size;
+  // check output_type
+  std::string output_type =
+    options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end() ? "" : options_[ge::ir_option::OUTPUT_TYPE];
+  GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
+                   "check output type failed!");
+  // check buffer_optimize
+  std::string buffer_optimize =
+    options_.find(ge::ir_option::BUFFER_OPTIMIZE) == options_.end() ? "" : options_[ge::ir_option::BUFFER_OPTIMIZE];
+  GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(buffer_optimize) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
+                   "check buffer optimize failed!");
+  // check compress_weight
+  std::string enable_compress_weight = options_.find(ge::ir_option::ENABLE_COMPRESS_WEIGHT) == options_.end()
+                                         ? ""
+                                         : options_[ge::ir_option::ENABLE_COMPRESS_WEIGHT];
+  std::string compress_weight_conf = options_.find(ge::ir_option::COMPRESS_WEIGHT_CONF) == options_.end()
+                                       ? ""
+                                       : options_[ge::ir_option::COMPRESS_WEIGHT_CONF];
+  GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(enable_compress_weight, compress_weight_conf) == ge::SUCCESS,
+                   return ge::FAILED, "check compress weight failed!");
+  options_.insert(std::pair<std::string, std::string>(
+    std::string(ge::ir_option::ENABLE_COMPRESS_WEIGHT),
+    (enable_compress_weight == "true") ? ge::kEnableCompressWeightTrue : ge::kEnableCompressWeightFalse));
 
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
@@ -238,8 +267,8 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
   // the default value is ND
   GetContext().format = domi::DOMI_TENSOR_ND;
   if (!input_format.empty()) {
-    auto iter = input_format_str_to_geformat.find(input_format);
-    if (iter != input_format_str_to_geformat.end()) {
+    auto iter = ge::input_format_str_to_geformat.find(input_format);
+    if (iter != ge::input_format_str_to_geformat.end()) {
       GetContext().format = iter->second;
     } else {
       GELOGE(GRAPH_PARAM_INVALID, "Input format %s not support , expect ND/NCHW/NHWC/CHWN/NC1HWC0/NHWC1C0.",
@@ -275,4 +304,5 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
   return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
+
 }  // namespace ge

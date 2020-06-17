@@ -48,11 +48,8 @@ class NamedAttrs;
 class Graph;
 class AttrValue;
 
-using SubgraphBuilder = std::function<Graph(const std::string &name)>;
+using SubgraphBuilder = std::function<Graph()>;
 using OperatorImplPtr = std::shared_ptr<OperatorImpl>;
-
-class Graph;
-using GraphBuilderCallback = std::function<Graph()>;
 
 class OpIO;
 using OutHandler = std::shared_ptr<OpIO>;
@@ -138,12 +135,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
 
   void SetInferenceContext(const InferenceContextPtr &inference_context);
   InferenceContextPtr GetInferenceContext() const;
-
-  void SetGraphBuilder(const GraphBuilderCallback &builder);
-  graphStatus GetGraphBuilder(GraphBuilderCallback &builder) const;
-
-  void AddSubgraphName(const string &name);
-  string GetSubgraphName(int index) const;
 
   graphStatus VerifyAllAttr(bool disable_common_verifier = false);
 
@@ -265,9 +256,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator {
 
   Operator &SetInput(const string &dst_name, uint32_t dst_index, const Operator &src_oprt, const string &name);
 
-  void SubgraphRegister(const std::string &name, bool dynamic);
-  void SubgraphCountRegister(const std::string &name, uint32_t count);
-  void SetSubgraphBuilder(const std::string &name, uint32_t index, const SubgraphBuilder &builder);
+  void SubgraphRegister(const string &ir_name, bool dynamic);
+  void SubgraphCountRegister(const string &ir_name, uint32_t count);
+  void SetSubgraphBuilder(const string &ir_name, uint32_t index, const SubgraphBuilder &builder);
 
  private:
   Operator &SetInput(const string &dst_name, const OutHandler &out_handler);

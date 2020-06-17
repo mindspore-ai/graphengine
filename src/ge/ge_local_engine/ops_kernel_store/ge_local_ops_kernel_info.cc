@@ -20,6 +20,7 @@
 #include "common/ge/ge_util.h"
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
+#include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "op/op_factory.h"
@@ -68,6 +69,15 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
     GELOGE(FAILED, "CalcOpRunningParam failed, as op desc is null");
     return FAILED;
   }
+
+  bool is_shape_unknown = false;
+  if (NodeUtils::GetNodeUnknownShapeStatus(ge_node, is_shape_unknown) == GRAPH_SUCCESS) {
+    if (is_shape_unknown) {
+      GELOGI("op:%s is unknown shape, does not need to calc output size.", ge_node.GetName().c_str());
+      return SUCCESS;
+    }
+  }
+
   const string node_name = ge_node.GetName();
   const string node_type = ge_node.GetType();
   size_t output_size = op_desc->GetOutputsSize();
@@ -157,6 +167,13 @@ Status GeLocalOpsKernelInfoStore::CalcConstantStrMemSize(const OpDescPtr &op_des
 void GeLocalOpsKernelInfoStore::GetAllOpsKernelInfo(map<string, OpInfo> &infos) const { infos = op_info_map_; }
 
 Status GeLocalOpsKernelInfoStore::GenerateTask(const Node &node, RunContext &context, vector<TaskDef> &tasks) {
+  bool is_shape_unknown = false;
+  if (NodeUtils::GetNodeUnknownShapeStatus(node, is_shape_unknown) == GRAPH_SUCCESS) {
+    if (is_shape_unknown) {
+      GELOGI("op:%s is unknown shape, does not need to generate task", node.GetName().c_str());
+      return SUCCESS;
+    }
+  }
   string name = node.GetName();
   string type = node.GetType();
   GELOGD("Ge local generate task for node:%s(%s) begin, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());

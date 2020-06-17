@@ -328,4 +328,12 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
   }
   return SUCCESS;
 }
+///
+/// @brief Clear Status, uesd for subgraph pass
+/// @return SUCCESS
+///
+Status NextIterationPass::ClearStatus() {
+  loop_group_map_.clear();
+  return SUCCESS;
+}
 }  // namespace ge

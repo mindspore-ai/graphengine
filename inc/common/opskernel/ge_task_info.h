@@ -26,6 +26,7 @@ using std::string;
 namespace ge {
 // when need to eliminate GETaskKernelHcclInfo, so not need DAVINCI_TRAIN/DAVINCI_CLOUD
 struct GETaskKernelHcclInfo {
+  string input_name;
   string hccl_type;
   void *inputDataAddr;
   void *outputDataAddr;
@@ -35,6 +36,7 @@ struct GETaskKernelHcclInfo {
   int32_t opType;
   int64_t rootId;
   uint64_t workSpaceMemSize;
+  std::vector<int64_t> dims;
   std::vector<rtStream_t> hcclStreamList;
 };
 
@@ -48,7 +50,7 @@ struct GETaskInfo {
   uint32_t privateDefLen;
   void *opsKernelStorePtr;
 
-  GETaskKernelHcclInfo kernelHcclInfo;
+  std::vector<GETaskKernelHcclInfo> kernelHcclInfo;
 };
 }  // namespace ge
 #endif  // INC_COMMON_OPSKERNEL_GE_TASK_INFO_H_

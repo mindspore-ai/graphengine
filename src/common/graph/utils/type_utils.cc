@@ -17,6 +17,8 @@
 #include "graph/utils/type_utils.h"
 #include "debug/ge_util.h"
 
+using domi::domiTensorFormat_t;
+
 namespace ge {
 static const std::map<Format, std::string> kFormatToStringMap = {
   {FORMAT_NCHW, "NCHW"},
@@ -59,6 +61,25 @@ static const std::map<Format, std::string> kFormatToStringMap = {
   {FORMAT_FRACTAL_ZN_LSTM, "FRACTAL_ZN_LSTM"},
   {FORMAT_RESERVED, "FORMAT_RESERVED"},
   {FORMAT_ALL, "ALL"}};
+
+static const std::map<domiTensorFormat_t, Format> kDomiFormatToGeFormat = {
+  {domi::DOMI_TENSOR_NCHW, FORMAT_NCHW},
+  {domi::DOMI_TENSOR_NHWC, FORMAT_NHWC},
+  {domi::DOMI_TENSOR_ND, FORMAT_ND},
+  {domi::DOMI_TENSOR_NC1HWC0, FORMAT_NC1HWC0},
+  {domi::DOMI_TENSOR_FRACTAL_Z, FORMAT_FRACTAL_Z},
+  {domi::DOMI_TENSOR_NC1C0HWPAD, FORMAT_NC1C0HWPAD},
+  {domi::DOMI_TENSOR_NHWC1C0, FORMAT_NHWC1C0},
+  {domi::DOMI_TENSOR_FSR_NCHW, FORMAT_FSR_NCHW},
+  {domi::DOMI_TENSOR_FRACTAL_DECONV, FORMAT_FRACTAL_DECONV},
+  {domi::DOMI_TENSOR_BN_WEIGHT, FORMAT_BN_WEIGHT},
+  {domi::DOMI_TENSOR_CHWN, FORMAT_CHWN},
+  {domi::DOMI_TENSOR_FILTER_HWCK, FORMAT_FILTER_HWCK},
+  {domi::DOMI_TENSOR_NDHWC, FORMAT_NDHWC},
+  {domi::DOMI_TENSOR_NCDHW, FORMAT_NCDHW},
+  {domi::DOMI_TENSOR_DHWCN, FORMAT_DHWCN},
+  {domi::DOMI_TENSOR_DHWNC, FORMAT_DHWNC},
+  {domi::DOMI_TENSOR_RESERVED, FORMAT_RESERVED}};
 
 static const std::unordered_set<std::string> kInternalFormat = {"NC1HWC0",
                                                                 "FRACTAL_Z",
@@ -280,6 +301,15 @@ Format TypeUtils::DataFormatToFormat(const std::string &str) {
     GELOGE(GRAPH_FAILED, "Format not support %s", str.c_str());
     return FORMAT_RESERVED;
   }
+}
+
+Format TypeUtils::DomiFormatToFormat(domi::domiTensorFormat_t domi_format) {
+  auto it = kDomiFormatToGeFormat.find(domi_format);
+  if (it != kDomiFormatToGeFormat.end()) {
+    return it->second;
+  }
+  GELOGE(GRAPH_FAILED, "do not find domi Format %d from map", domi_format);
+  return FORMAT_RESERVED;
 }
 
 static inline void CopyDataFromBuffer(vector<uint8_t> &data, const Buffer &buffer) {

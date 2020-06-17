@@ -512,13 +512,14 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
   }
 
   GELOGI("AllReduceParallelPass is enabled.");
-  GraphUtils::DumpGEGraph(graph, "BeforeAllReduceParallel");
+  GE_DUMP(graph, "BeforeAllReduceParallel");
 
   // All successors of HcomAllReduce.
   set<NodePtr> all_reduce_succs;
 
   for (const NodePtr &node : graph->GetDirectNode()) {
-    if (node->GetType() != HCOMALLREDUCE || node->GetInDataNodes().size() <= 1) {
+    if ((node->GetType() != HCOMALLREDUCE && node->GetType() != HVDCALLBACKALLREDUCE) ||
+        node->GetInDataNodes().size() <= 1) {
       continue;
     }
 
@@ -534,7 +535,10 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
           string out_stream_label;
           GE_CHECK_NOTNULL(out_node->GetOpDesc());
           (void)AttrUtils::GetStr(out_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, out_stream_label);
-          if (out_stream_label == reduce_stream_label) {
+          // normally, Allreduce do not have streamLabel. when in horovod scenario Allreduce will have streamLabel
+          bool isSuccessorParallel =
+            (out_stream_label == reduce_stream_label) || (!reduce_stream_label.empty() && out_stream_label.empty());
+          if (isSuccessorParallel) {
             all_reduce_succs.emplace(out_node);
             all_out_data_nodes.emplace(out_node);
           }

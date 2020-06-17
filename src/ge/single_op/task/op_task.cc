@@ -64,7 +64,7 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
 
 AiCpuTask::~AiCpuTask() {
   if (args_ != nullptr) {
-    rtFree(args_);
+    (void)rtFree(args_);
   }
 
   if (io_addr_ != nullptr) {
@@ -72,11 +72,11 @@ AiCpuTask::~AiCpuTask() {
   }
 }
 
-void *AiCpuTask::GetIOAddr() { return io_addr_; }
+const void *AiCpuTask::GetIOAddr() const { return io_addr_; }
 
 Status AiCpuTask::LaunchKernel(rtStream_t stream) {
   auto ret = rtMemcpyAsync(workspace_addr_, task_info_.size(), task_info_.data(), task_info_.size(),
-                           RT_MEMCPY_HOST_TO_DEVICE, stream);
+                           RT_MEMCPY_HOST_TO_DEVICE_EX, stream);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpyAsync workspace data failed. ret = %d, task = %s", ret, this->op_type_.c_str());
     return RT_FAILED;

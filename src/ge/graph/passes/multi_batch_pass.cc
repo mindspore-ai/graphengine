@@ -32,7 +32,11 @@
 namespace ge {
 Status MultiBatchPass::Run(ComputeGraphPtr graph) {
   GELOGD("MultiBatchPass Enter");
-
+  GE_CHECK_NOTNULL(graph);
+  if (graph->GetParentGraph() != nullptr) {
+    GELOGI("Subgraph %s skip the MultiBatchPass.", graph->GetName().c_str());
+    return SUCCESS;
+  }
   OutDataAnchorPtr pred_value = nullptr;
   Status ret = FindPredValue(graph, pred_value);
   if (ret == NOT_CHANGED) {

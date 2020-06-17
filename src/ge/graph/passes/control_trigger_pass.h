@@ -30,6 +30,7 @@ enum ControlNodeType { kNotControlOp, kCondSwitch, kCondMerge, kLoopSwitchT, kLo
 class ControlTriggerPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
+  Status ClearStatus() override;
 
  private:
   Status HandleDynamicCtrlEdges(ComputeGraphPtr &graph, NodePtr &node, NodePtr &in_ctrl_node);

@@ -235,6 +235,8 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
                                     std::vector<NodePtr> &stack);
   graphStatus BFSTopologicalSorting(std::vector<NodePtr> &node_vec, std::map<NodePtr, uint32_t> &map_in_edge_num,
                                     std::deque<NodePtr> &stack);
+  graphStatus BFSTopologicalSortingWithGroup(std::vector<NodePtr> &node_vec,
+                                             std::map<NodePtr, uint32_t> &map_in_edge_num, std::deque<NodePtr> &stack);
   graphStatus CollectBreadthOutNode(const NodePtr &node, std::map<NodePtr, uint32_t> &map_in_edge_num,
                                     std::map<string, NodePtr> &breadth_node_map);
   graphStatus TopologicalSortingGraph();

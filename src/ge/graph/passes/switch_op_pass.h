@@ -94,6 +94,7 @@ namespace ge {
 class SwitchOpPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
+  Status ClearStatus() override;
 
  private:
   Status ReplaceSwitchNode(ComputeGraphPtr &graph, NodePtr &switch_node);
@@ -146,6 +147,8 @@ class SwitchOpPass : public GraphPass {
 
   void ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node);
 
+  int GetGroupId(const NodePtr &node);
+
   std::vector<NodePtr> switch_nodes_;
   std::vector<NodePtr> merge_nodes_;
   std::vector<NodePtr> enter_nodes_;
@@ -155,7 +158,7 @@ class SwitchOpPass : public GraphPass {
   std::set<NodePtr> branch_head_nodes_;
   std::vector<NodePtr> stream_switch_nodes_;
   std::vector<NodePtr> need_label_nodes_;
-  std::unordered_map<OutDataAnchorPtr, std::vector<std::list<NodePtr>>> cond_node_map_;
+  std::unordered_map<OutDataAnchorPtr, std::map<int64_t, std::vector<std::list<NodePtr>>>> cond_node_map_;
   std::unordered_map<NodePtr, std::set<std::string>> switch_node_map_;
   std::unordered_map<std::string, uint32_t> node_num_map_;
 };

@@ -62,6 +62,10 @@ class TaskInfo {
 
   virtual Status Distribute() = 0;
 
+  virtual Status UpdateArgs() { return SUCCESS; }
+
+  virtual Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) { return SUCCESS; }
+
   virtual Status Release() { return SUCCESS; }
 
   virtual cce::ccOpContext *GetCtx() { return nullptr; }

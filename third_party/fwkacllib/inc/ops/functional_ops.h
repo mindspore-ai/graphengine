@@ -19,7 +19,6 @@
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
-#include "graph/ge_attr_value.h"
 
 namespace ge {
 REG_OP(SymbolicGradient)

@@ -273,6 +273,9 @@ void OnnxUtils::AddAttrProtoForOpInAndOutDesc(onnx::NodeProto *node_proto, const
         auto data_type = TypeUtils::DataTypeToSerialString(input_desc->GetDataType());
         AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_STRING, "input_desc_dtype:" + std::to_string(i),
                      &data_type);
+        auto data_type_origin = TypeUtils::DataTypeToSerialString(input_desc->GetOriginDataType());
+        AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_STRING,
+                     "input_desc_origin_dtype:" + std::to_string(i), &data_type_origin);
         auto dims = input_desc->GetShape().GetDims();
         AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_INTS, "input_desc_shape:" + std::to_string(i),
                      &dims);
@@ -346,6 +349,9 @@ void OnnxUtils::AddAttrProtoForOpInAndOutDesc(onnx::NodeProto *node_proto, const
         auto data_type = TypeUtils::DataTypeToSerialString(output_desc->GetDataType());
         AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_STRING, "output_desc_dtype:" + std::to_string(i),
                      &data_type);
+        auto origin_data_type = TypeUtils::DataTypeToSerialString(output_desc->GetOriginDataType());
+        AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_STRING,
+                     "output_desc_origin_dtype:" + std::to_string(i), &origin_data_type);
         auto dims = output_desc->GetShape().GetDims();
         AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_INTS, "output_desc_shape:" + std::to_string(i),
                      &dims);

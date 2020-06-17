@@ -74,14 +74,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
       return FAILED;
     }
     // profiling startup first time
+    GELOGI("Begin to init profiling, device num %zu", device_id_.size());
     for (size_t i = 0; i < device_id_.size(); ++i) {
       ret = StartProfiling(0, device_id_[i]);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Profiling start failed.");
+        GELOGE(ret, "Profiling start failed on device %d.", device_id_[i]);
         return FAILED;
       }
-      GELOGI("Profiling init succ.");
+      GELOGI("Profiling init succ on device %d.", device_id_[i]);
     }
+  } else {
+    GELOGI("The profiling is off, skip the initialization");
   }
 #endif
   return SUCCESS;
@@ -164,7 +167,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     }
 
     is_profiling_ = true;
-  } catch (Json::parse_error &e) {
+  } catch (...) {
     GELOGE(FAILED, "Json conf is not invalid !");
     return ge::PARAM_INVALID;
   }
@@ -274,7 +277,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
       ss << start_cfg;
       send_profiling_config_ = ss.str();
       GELOGI("Profiling config %s\n", send_profiling_config_.c_str());
-    } catch (Json::parse_error &e) {
+    } catch (...) {
       GELOGE(FAILED, "Op trace json conf is not invalid !");
       return FAILED;
     }

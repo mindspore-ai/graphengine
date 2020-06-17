@@ -49,7 +49,7 @@ void GetOpsProtoPath(std::string &opsproto_path) {
   const char *path_env = std::getenv("ASCEND_OPP_PATH");
   if (path_env != nullptr) {
     std::string path = path_env;
-    opsproto_path = (path + "/op_proto/built-in/" + ":") + (path + "/op_proto/custom/");
+    opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
     GELOGI("Get opsproto so path from env: %s", path.c_str());
     return;
   }
@@ -57,7 +57,7 @@ void GetOpsProtoPath(std::string &opsproto_path) {
   GELOGI("path_base is %s", path_base.c_str());
   path_base = path_base.substr(0, path_base.rfind('/'));
   path_base = path_base.substr(0, path_base.rfind('/') + 1);
-  opsproto_path = (path_base + "ops/op_proto/built-in/" + ":") + (path_base + "ops/op_proto/custom/");
+  opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
 }
 
 Status CheckDumpAndReuseMemory(const std::map<string, string> &options) {
@@ -103,20 +103,6 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
   return SUCCESS;
 }
 
-void SaveDdkVersion(const std::map<string, string> &options) {
-  auto ddk_option = options.find(DDK_VERSION_FLAG);
-  if (ddk_option != options.end()) {
-    auto ddk_version = ddk_option->second;
-    if (!ddk_version.empty()) {
-      GELOGI("Input ddk version : %s.", ddk_version.c_str());
-      domi::GetContext().ddk_version = ddk_version;
-    }
-  } else {
-    GELOGW("No ddkVersion!");
-    return;
-  }
-}
-
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
   GELOGT(TRACE_INIT, "GEInitialize start");
@@ -146,9 +132,6 @@ Status GEInitialize(const std::map<string, string> &options) {
   }
   GE_TIMESTAMP_END(CheckOptionsValid, "GEInitialize::CheckOptionsValid");
 
-  GE_TIMESTAMP_START(InitPreparation);
-  SaveDdkVersion(options);
-  GE_TIMESTAMP_END(InitPreparation, "GEInitialize::InitPreparation");
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
   GE_TIMESTAMP_START(GELibInitialize);

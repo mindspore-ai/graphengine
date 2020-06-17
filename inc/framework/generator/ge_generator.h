@@ -23,6 +23,7 @@
 #include <vector>
 #include "ge/ge_ir_build.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/ge_types.h"
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/op_desc.h"
@@ -30,9 +31,13 @@
 namespace ge {
 class GeGenerator {
  public:
+  static GeGenerator &GetInstance() {
+    static GeGenerator Instance;
+    return Instance;
+  }
   GeGenerator() = default;
 
-  ~GeGenerator() = default;
+  ~GeGenerator() { (void)Finalize(); }
 
   GeGenerator(const GeGenerator &) = delete;
 
@@ -60,10 +65,25 @@ class GeGenerator {
   ///
   Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
                             const std::vector<GeTensor> &outputs, const std::string &model_file_name);
+  ///
+  /// @ingroup ge
+  /// @brief: Build single Op into model buff.
+  /// @param [in] op_desc: the OP description.
+  /// @param [in] inputs: input tensors.
+  /// @param [in] outputs: output tensors.
+  /// @param [in] engine_type: specific engine.
+  /// @param [out] model_buff: model buff of single op.
+  /// @return SUCCESS or FAILED
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
+                            OpEngineType engine_type, ModelBufferData &model_buff);
 
  private:
   Status GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                        ge::ModelBufferData &model, bool is_offline = true);
+  Status BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
+                       const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
+                       bool is_offline = true);
+
   class Impl;
 
   std::shared_ptr<Impl> impl_;

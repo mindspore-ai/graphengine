@@ -264,6 +264,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   graphStatus SetSubgraphInstanceName(uint32_t index, const std::string &name);
   void RemoveSubgraphInstanceName(const std::string &name);
 
+  graphStatus GetSubgraphNameByInstanceName(const std::string &instance_name, std::string &subgraph_name) const;
+
  protected:
   ProtoAttrMapHelper MutableAttrMap() override;
   ConstProtoAttrMapHelper GetAttrMap() const override;
@@ -288,7 +290,7 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   // subgraph ir names to type, for a `if` operator:
   // then_branch: static
-  // else_branch: dynamic
+  // else_branch: static
   // or for a `case` op:
   // branches: dynamic
   std::map<std::string, SubgraphType> subgraph_ir_names_to_type_;

@@ -22,10 +22,10 @@
 #include <utility>
 #include <vector>
 
-#include "graph/debug/ge_attr_define.h"
+#include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "common/ge/ge_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 
@@ -177,6 +177,8 @@ Status ConstantFuseSamePass::FuseConstNodes(ComputeGraphPtr &graph,
     auto first_node = nodes.at(0);
     for (size_t i = 1; i < len; ++i) {
       auto node = nodes.at(i);
+
+      GELOGI("Replace redundant const ndoe %s by %s", node->GetName().c_str(), first_node->GetName().c_str());
       // the const node which can be fused has none input(both data and control in)
       if (GraphUtils::MoveOutCtrlEdges(node, first_node) != SUCCESS) {
         return FAILED;

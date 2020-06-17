@@ -124,6 +124,25 @@ REG_OP(Relu6)
     .OP_END_FACTORY_REG(Relu6)
 
 /**
+* @brief Computes rectified linear 6*scale.
+* activations = min(max(x, 0), 6*scale).
+
+* @par Inputs:
+* x: A Tensor of type RealNumberType.
+
+* @par Attributes:
+* epsilon: A required scalar. The data type is float32.
+
+* @par Outputs:
+* y: A Tensor of type RealNumberType.
+*/
+REG_OP(Relu6D)
+    .INPUT(x, TensorType::RealNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
+    .ATTR(scale, Float, 1.0)
+    .OP_END_FACTORY_REG(Relu6D)
+
+/**
 * @brief Computes rectified linear 6 gradients for a Relu6 operation.
 *     backprops = gradients * (features > 0) * (features < 6).
 
@@ -450,15 +469,18 @@ REG_OP(LeakyReluGrad)
     .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(LeakyReluGrad)
 
-REG_OP(threshold_grad_v2_d)
-    .INPUT(input_x, TensorType({DT_INT32, DT_FLOAT16}))
-    .INPUT(input_y, TensorType({DT_INT32, DT_FLOAT16}))
-    .OUTPUT(output_z, TensorType({DT_INT32, DT_FLOAT16}))
-    .OP_END_FACTORY_REG(threshold_grad_v2_d)
+REG_OP(ThresholdGradV2D)
+    .INPUT(gradients, TensorType({DT_INT32, DT_FLOAT16}))
+    .INPUT(features, TensorType({DT_INT32, DT_FLOAT16}))
+    .OUTPUT(backprops, TensorType({DT_INT32, DT_FLOAT16}))
+    .REQUIRED_ATTR(threshold, Float)
+    .OP_END_FACTORY_REG(ThresholdGradV2D)
 
 REG_OP(ThresholdV2D)
     .INPUT(x, TensorType::RealNumberType())
     .OUTPUT(y, TensorType::RealNumberType())
+    .REQUIRED_ATTR(threshold, Float)
+    .REQUIRED_ATTR(value, Float)
     .OP_END_FACTORY_REG(ThresholdV2D)
 
 } // namespace ge

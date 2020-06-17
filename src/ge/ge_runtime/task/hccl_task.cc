@@ -128,17 +128,17 @@ bool HcclTask::Distribute() {
   ge_task.type = static_cast<uint16_t>(RT_MODEL_TASK_HCCL);
   ge_task.stream = stream_;
 
-  ge_task.kernelHcclInfo.hccl_type = task_info_->hccl_type();
-  ge_task.kernelHcclInfo.inputDataAddr = task_info_->input_data_addr();
-  ge_task.kernelHcclInfo.outputDataAddr = task_info_->output_data_addr();
-  ge_task.kernelHcclInfo.workSpaceAddr = task_info_->workspace_addr();
-  ge_task.kernelHcclInfo.workSpaceMemSize = task_info_->workspace_size();
-  ge_task.kernelHcclInfo.count = task_info_->count();
-  ge_task.kernelHcclInfo.dataType = static_cast<int32_t>(task_info_->data_type());
-  ge_task.kernelHcclInfo.opType = static_cast<int32_t>(task_info_->op_type());
-  ge_task.kernelHcclInfo.rootId = task_info_->root_id();
+  ge_task.kernelHcclInfo[0].hccl_type = task_info_->hccl_type();
+  ge_task.kernelHcclInfo[0].inputDataAddr = task_info_->input_data_addr();
+  ge_task.kernelHcclInfo[0].outputDataAddr = task_info_->output_data_addr();
+  ge_task.kernelHcclInfo[0].workSpaceAddr = task_info_->workspace_addr();
+  ge_task.kernelHcclInfo[0].workSpaceMemSize = task_info_->workspace_size();
+  ge_task.kernelHcclInfo[0].count = task_info_->count();
+  ge_task.kernelHcclInfo[0].dataType = static_cast<int32_t>(task_info_->data_type());
+  ge_task.kernelHcclInfo[0].opType = static_cast<int32_t>(task_info_->op_type());
+  ge_task.kernelHcclInfo[0].rootId = task_info_->root_id();
 
-  ge_task.kernelHcclInfo.hcclStreamList = slave_stream_list_;
+  ge_task.kernelHcclInfo[0].hcclStreamList = slave_stream_list_;
 
   ge_task.privateDef = private_def;
   ge_task.privateDefLen = private_def_len;

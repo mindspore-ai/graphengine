@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "common/debug/log.h"
+#include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
@@ -29,9 +31,14 @@
 #include "graph/node.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"
+#include "runtime/mem.h"
+#include "graph/manager/graph_var_manager.h"
+#include "graph/ge_context.h"
+#include "graph/manager/util/rt_context_util.h"
 
 namespace ge {
 const char *const kGetNext = "GetNext";
+const int kMaxIterationsPerLoop = INT32_MAX - 1;
 
 Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
   GELOGD("GetNextOpPass begin");
@@ -58,10 +65,128 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
                         node->GetName().c_str());
 
       GELOGI("Set independent loop for iterator node success");
+
+      int64_t loop_per_iter = 0;
+      ge::GeTensorDesc ge_tensor_desc;
+      Status status =
+        VarManager::Instance(graph->GetSessionID())->GetCurVarDesc(NODE_NAME_FLOWCTRL_LOOP_PER_ITER, ge_tensor_desc);
+      GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Fail to Get var_desc of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
+                      continue);
+
+      status =
+        GetVariableValue(graph->GetSessionID(), ge_tensor_desc, NODE_NAME_FLOWCTRL_LOOP_PER_ITER, &loop_per_iter);
+      GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Get variable value of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
+                      continue);
+      GELOGI("The value of NODE_NAME_FLOWCTRL_LOOP_PER_ITER is %ld", loop_per_iter);
+
+      if (loop_per_iter == kMaxIterationsPerLoop) {
+        ge::NodePtr end_of_sequence_node = InsertEndOfSequenceNode(node, memcpy_async_node, graph);
+        GE_CHECK_NOTNULL(end_of_sequence_node);
+        GE_CHK_STATUS_RET(SetStreamLabel(end_of_sequence_node, end_of_sequence_node->GetName()),
+                          "Set stream label fail, node:%s", node->GetName().c_str());
+        GELOGI("Insert EndOfSequence node success.");
+      }
     }
+    GELOGI("GetNextOpPass end");
   }
   GELOGD("GetNextOpPass end");
   return SUCCESS;
+}
+
+Status IteratorOpPass::GetVariableValue(uint64_t session_id, const ge::GeTensorDesc &tensor_desc,
+                                        const std::string &var_name, void *dest) {
+  // base_addr
+  uint8_t *var_mem_base = VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM);
+  GE_CHECK_NOTNULL(var_mem_base);
+  // offset
+  uint8_t *dev_ptr = nullptr;
+  GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, tensor_desc, &dev_ptr),
+                    "Get variable %s address failed.", var_name.c_str());
+  int64_t offset = static_cast<int64_t>(reinterpret_cast<intptr_t>(dev_ptr));
+  // logic_base_addr
+  auto logic_var_base = VarManager::Instance(session_id)->GetVarMemLogicBase();
+  // devcice_addr
+  uint8_t *variable_addr = static_cast<uint8_t *>(var_mem_base + offset - logic_var_base);
+  Status ret;
+  ret = SetRtContext(rtContext_t(), RT_CTX_NORMAL_MODE);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Set rt context RT_CTX_NORMAL_MODE failed.");
+    return ret;
+  }
+  GE_CHK_RT_RET(rtMemcpy(dest, sizeof(int64_t), variable_addr, sizeof(int64_t), RT_MEMCPY_DEVICE_TO_HOST));
+  ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Set rt context RT_CTX_GEN_MODE failed.");
+    return ret;
+  }
+  return SUCCESS;
+}
+
+///
+/// @brief insert EndOfSequence after GetNext
+///
+/// @param pre_node
+/// @param graph
+/// @return ge::NodePtr
+///
+ge::NodePtr IteratorOpPass::InsertEndOfSequenceNode(const ge::NodePtr &pre_node, const ge::NodePtr &memcpy_node,
+                                                    const ge::ComputeGraphPtr &graph) {
+  GELOGI("Start to insert EndOfSequence node.");
+  GE_CHK_BOOL_EXEC(pre_node != nullptr, GELOGW("Pre node is null."); return nullptr);
+  GE_CHK_BOOL_EXEC(graph != nullptr, GELOGW("graph is null."); return nullptr);
+  ge::OpDescPtr end_of_seq_op_desc = CreateEndOfSequenceOp(pre_node);
+  GE_CHK_BOOL_EXEC(end_of_seq_op_desc != nullptr, GELOGW("Create EndOfSequence op fail."); return nullptr);
+  ge::NodePtr end_of_seq_node = graph->AddNode(end_of_seq_op_desc);
+  GE_CHK_BOOL_EXEC(end_of_seq_node != nullptr, return nullptr, "Insert EndOfSequence node fail.");
+
+  // getnext(data) --> EOS
+  GE_CHK_BOOL_EXEC(pre_node->GetAllOutDataAnchorsSize() != 0, GELOGW("Pre node has no output."); return nullptr);
+  auto out_anchor = pre_node->GetOutDataAnchor(0);
+  ge::graphStatus status;
+  status = GraphUtils::AddEdge(out_anchor, end_of_seq_node->GetInDataAnchor(0));
+  GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr, "Graph add EndOfSequence op input edge fail, dst node: %s.",
+                   end_of_seq_node->GetName().c_str());
+  // EOS(control) --> subsequent of memcpy
+  OutControlAnchorPtr out_ctrl_anchor = end_of_seq_node->GetOutControlAnchor();
+  GE_CHK_BOOL_EXEC(out_ctrl_anchor != nullptr, GELOGW("out_ctrl_anchor is null."); return nullptr);
+  // add ctrl edge
+  for (const auto &out_node : memcpy_node->GetOutNodes()) {
+    auto in_ctrl_anchor = out_node->GetInControlAnchor();
+    if (in_ctrl_anchor == nullptr) {
+      continue;
+    }
+    status = GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor);
+    GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
+                     "Graph add EndOfSequence op out ctrl edge fail, dst node: %s.", out_node->GetName().c_str());
+    GELOGI("Graph add EndOfSequence op out ctrl edge, dst node: %s.", out_node->GetName().c_str());
+  }
+
+  return end_of_seq_node;
+}
+
+///
+/// @brief create EndOfSequence
+///
+/// @param pre_node
+/// @return ge::OpDescPtr
+///
+ge::OpDescPtr IteratorOpPass::CreateEndOfSequenceOp(const ge::NodePtr &pre_node) {
+  GELOGI("Start to create endOfSequence op.");
+  GE_CHK_BOOL_EXEC(pre_node != nullptr, return nullptr, "Input param invalid.");
+
+  string node_name = pre_node->GetName() + "_EndOfSequence";
+  ge::OpDescPtr op_desc = MakeShared<OpDesc>(node_name, ENDOFSEQUENCE);
+  if (op_desc == nullptr) {
+    GELOGE(FAILED, "MakeShared fail.");
+    return op_desc;
+  }
+  ge::OpDescPtr pre_node_op_desc = pre_node->GetOpDesc();
+  GE_CHK_BOOL_EXEC(pre_node_op_desc != nullptr, return nullptr, "OpDesc of pre_node is invalid.");
+
+  GELOGI("Create EndOfSequence op:%s.", op_desc->GetName().c_str());
+  GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(pre_node_op_desc->GetOutputDesc(0)) == GRAPH_SUCCESS, return nullptr,
+                   "Create EndOfSequence op:add input desc fail.");
+  return op_desc;
 }
 
 ///
@@ -152,5 +277,13 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
   }
 
   return op_desc;
+}
+
+Status IteratorOpPass::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode) {
+  GELOGI("set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
+  GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
+  GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
+  RtContextUtil::GetInstance().AddrtContext(rt_context);
+  return SUCCESS;
 }
 }  // namespace ge

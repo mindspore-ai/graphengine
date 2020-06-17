@@ -245,13 +245,14 @@ Status GraphMemoryAssigner::AssignZeroCopyMemory(size_t &mem_offset, size_t &zer
     memory_block->SetHeadOffset(mem_offset);
     mem_offset += memory_block->Size();
     memory_block->SetTailOffset(mem_offset - 1);
-    GELOGI("mem_offset_ include zero_copy_memory is %zu.", mem_offset);
   }
+  GELOGI("mem_offset_ include zero_copy_memory is %zu.", mem_offset);
 
   // set offset for zero copy nodes
   priority_assigner->SetOpMemOffset(true);
-
   zero_mem_copy_size = mem_offset - mem_offset_tmp;
+  memory_offset_[0].mem_offset_ = mem_offset;
+
   GELOGI("max_mem_offset:%zu, mem_offset:%zu, zero_mem_copy_size:%zu.", mem_offset, mem_offset_tmp, zero_mem_copy_size);
 
   return SUCCESS;
@@ -360,8 +361,11 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
                     return PARAM_INVALID;);
 
     vector<int64_t> output_list = peer_op_desc->GetOutputOffset();
+    std::vector<int64_t> offsets_for_fusion = {};
+    bool has_offset_attr =
+      AttrUtils::GetListInt(peer_op_desc, ATTR_NAME_OUTPUT_OFFSET_FOR_BUFFER_FUSION, offsets_for_fusion);
     if (peer_out_data_anchor->GetIdx() < static_cast<int>(output_list.size())) {
-      if (continuous_input_alloc) {
+      if (continuous_input_alloc && !has_offset_attr) {
         if (in_data_anchor->GetIdx() == 0) {
           continuous_mem_start = output_list.at(peer_out_data_anchor->GetIdx());
         }
@@ -391,9 +395,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     }
     peer_op_desc->SetOutputOffset(output_list);
     size_t pre_mem_offset = memory_offset_[0].mem_offset_;
-    std::vector<int64_t> offsets_for_fusion = {};
-    bool has_offset_attr =
-      AttrUtils::GetListInt(peer_op_desc, ATTR_NAME_OUTPUT_OFFSET_FOR_BUFFER_FUSION, offsets_for_fusion);
+
     int64_t tensor_desc_size = 0;
     if (has_offset_attr) {
       if (peer_out_data_anchor->GetIdx() < static_cast<int>(offsets_for_fusion.size())) {
@@ -1232,7 +1234,7 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
 ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node) const {
   GE_CHECK_NOTNULL(node->GetOpDesc());
   vector<int64_t> input_list;
-  if (node->GetType() == HCOMBROADCAST) {
+  if (node->GetType() == HCOMBROADCAST || node->GetType() == HVDCALLBACKBROADCAST) {
     for (const auto &anchor : node->GetAllInDataAnchors()) {
       vector<int64_t> output_list;
       auto peer_out_anchor = anchor->GetPeerOutAnchor();

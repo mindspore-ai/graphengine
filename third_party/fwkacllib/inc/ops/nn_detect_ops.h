@@ -328,7 +328,10 @@ REG_OP(PSROIPooling)
 *@li iou_threshold: An required float32, specifying the confidence threshold for box filtering, which is the output "obj" of operator Region. The value range is (0.0, 1.0).
 *@par Outputs:
 *box: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+Proposal of actual output, with shape [batch, numBoxes,8], 8 means [x1, y1, x2, y2, score, label, batchID, NULL], the maximum value of numBoxes is 1024.
+That is, take min (the maximum number of input boxes, 1024)
 *actual_bbox_num: An NCHW tensor of type int32, specifying the number of output boxes.
+With shape [bacth, num_classes], Actual number of bboxes output
 
 *@attention Constraints:\n
 *@li totalnum < max_rois_num * batch_rois.
@@ -348,6 +351,49 @@ REG_OP(FSRDetectionOutput)
     .REQUIRED_ATTR(score_threshold, Float)
     .REQUIRED_ATTR(iou_threshold, Float)
     .OP_END_FACTORY_REG(FSRDetectionOutput)
+
+/**
+*@brief Returns detection result.
+
+*@par Inputs:
+* Four inputs, including:
+*@li bbox_delta: An ND tensor of type floa16 or float32, specifying the box loc predictions, used as the input of operator SSDDetectionOutput.
+*@li score: An ND tensor of type floa16 or float32, specifying the box confidences data, used as the input of operator SSDDetectionOutput.
+*@li anchors: An ND tensor of type floa16 or float32, output from operator PriorBoxD, used as the input of operator SSDDetectionOutput.
+*@par Attributes:
+*@li num_classes: An optional int32, specifying the number of classes to be predicted. Defaults to "2". The value must be greater than 1 and lesser than 1025.
+*@li share_location: An option bool, specify the shared location. Defaults to True
+*@li background_label_id: An option int32, specify the background label id. Must be 0
+*@li iou_threshold: An option float32, specify the nms threshold
+*@li top_k: An option int32, specify the topk value. Defaults to 200
+*@li eta: An option float32, specify the eta value. Defaults to 1
+*@li variance_encoded_in_target: An option bool, specify whether variance encoded in target or not. Defaults to False
+*@li code_type: An option int32, specify the code type. Defaults to 1(only supports 2). The corner is 1, center_size is 2, corner_size is 3
+*@li keep_top_k: An option int32, specify the topk value after nms. Defaults to -1
+*@li confidence_threshold: An option float32, specify the topk filter threshold. Only consider detections with confidence greater than the threshold
+*@li kernel_name: An optional string, specifying the operator name. Defaults to "ssd_detection_output".
+*@par Outputs:
+*out_boxnum: An NCHW tensor of type int32, specifying the number of output boxes.
+*y: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+With shape [batch,keep_top_k，8], 8 means (batchID, label(classID), score (class probability), xmin, ymin, xmax, yman, null)
+*/
+REG_OP(SSDDetectionOutput)
+    .INPUT(bbox_delta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(score, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(anchors, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(out_boxnum, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(num_classes, Int, 2)
+    .ATTR(share_location, Bool, true)
+    .ATTR(background_label_id, Int, 0)
+    .ATTR(iou_threshold, Float, 0.3)
+    .ATTR(top_k, Int, 200)
+    .ATTR(eta, Float, 1.0)
+    .ATTR(variance_encoded_in_target, Bool, false)
+    .ATTR(code_type, Int, 1)
+    .ATTR(keep_top_k, Int, -1)
+    .ATTR(confidence_threshold, Float, 0.0)
+    .OP_END_FACTORY_REG(SSDDetectionOutput)
 
 /**
 *@brief Normalizes data. It is called Region on YOLO v2 and Yolo on YOLO v3.
@@ -412,12 +458,14 @@ and the actual image height and width.
 *
 *@par Outputs:
 *@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+With shape [batch,6,post_nms_topn], 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
-
+With shape [batch,8,1,1], means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v2 network.
 *@li The preceding layer of operator Yolov2DetectionOutput must be one Yolo operator.
-
+*
 *@see Yolo()
 */
 REG_OP(YoloV2DetectionOutput)
@@ -468,7 +516,9 @@ and the actual image height and width.
 *
 *@par Outputs:
 *@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+With shape [batch,6,post_nms_topn], 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+With shape [batch,8,1,1], means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
 *
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v2 network.
@@ -524,7 +574,9 @@ and the actual image height and width.
 *
 *@par Outputs:
 *@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+With shape [batch,6,post_nms_topn], 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+With shape [batch,8,1,1], means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
 
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v3 network.
@@ -587,7 +639,10 @@ and the actual image height and width.
 *
 *@par Outputs:
 *@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
+With shape [batch,6,post_nms_topn], 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
+With shape [batch,8,1,1], means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*
 
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v3 network.
@@ -713,6 +768,264 @@ REG_OP(ROIPooling)
     .REQUIRED_ATTR(spatial_scale_w, Float)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(ROIPooling)
+
+/**
+*@brief Computes decode bbox function.
+*
+*@par Inputs:
+*Inputs include:
+* @li box_predictions: A Tensor. Must be float16.
+* @li anchors: A Tensor. Must have the same type as box_predictions.
+*
+*@par Attributes:
+* @ decode_clip: required, float, threahold of decode process.
+*
+*@par Outputs:
+* @ decoded_boxes: A Tensor. Must have the same type as box_predictions.
+*                    N-D with shape [N, 4].
+*/
+REG_OP(DecodeBbox)
+    .INPUT(box_predictions, TensorType{DT_FLOAT16})
+    .INPUT(anchors, TensorType{DT_FLOAT16})
+    .OUTPUT(decoded_boxes, TensorType{DT_FLOAT16})
+    .REQUIRED_ATTR(decode_clip, Float)
+    .OP_END_FACTORY_REG(DecodeBbox)
+
+/**
+*@brief Computes ClipBoxes function.
+*
+*@par Inputs:
+*Inputs include:
+* @li boxes_input: A Tensor. Must be float16. N-D with shape [N, 4].
+* @li img_size: A Tensor. Must be int32. shape [H, W].
+*
+*@par Outputs:
+* @ boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
+*/
+REG_OP(ClipBoxes)
+    .INPUT(boxes_input, TensorType({DT_FLOAT16}))
+    .INPUT(img_size, TensorType({DT_INT32}))
+    .OUTPUT(boxes_output, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ClipBoxes)
+REG_OP(ClipBoxesD)
+    .INPUT(boxes_input, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(img_size, ListInt)
+    .OUTPUT(boxes_output, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(ClipBoxesD)
+
+/**
+*@brief Computes Fastrcnn Predictions function.
+*
+*@par Inputs:
+*Inputs include:
+* @li rois: A Tensor. Must be float16. N-D with shape [N*C, 4].
+* @li score: A Tensor. Must be float16. N-D with shape [N, C+1].
+*
+*@par Attributes:
+* @li nms_threshold: required, float, threahold of nms process.
+* @li score_threshold: required, float, threahold of topk process.
+* @li k: required, Int, threahold of topk process.
+*@par Outputs:
+* @li sorted_rois: A Tensor. Must be float16. N-D with shape [N, 4].
+* @li sorted_scores: A Tensor. Must be float16. N-D with shape [N, 1].
+* @li sorted_classes: A Tensor. Must be float16. N-D with shape [N, 1].
+*/
+REG_OP(FastrcnnPredictions)
+    .INPUT(rois, TensorType({DT_FLOAT16}))
+    .INPUT(score, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(nms_threshold, Float)
+    .REQUIRED_ATTR(score_threshold, Float)
+    .REQUIRED_ATTR(k, Int)
+    .OUTPUT(sorted_rois, TensorType({DT_FLOAT16}))
+    .OUTPUT(sorted_scores, TensorType({DT_FLOAT16}))
+    .OUTPUT(sorted_classes, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(FastrcnnPredictions)
+
+/**
+*@brief Computes Fastrcnn RpnProposals function.
+*
+*@par Inputs:
+*Inputs include:
+* @li rois: A Tensor. Must be float16. N-D with shape [N, 4].
+* @li cls_bg_prob: A Tensor. Must be float16. N-D with shape [N, 1].
+* @li img_size: A Tensor. Must be int32. shape [H, W].
+*
+*@par Attributes:
+* @li score_threshold: required, float, threahold of topk process.
+* @li k: required, Int, threahold of topk process.
+* @li min_size: required, float, threahold of nms process.
+* @li nms_threshold: required, float, threahold of nms process.
+* @li post_nms_num: required, float, threahold of nms process.
+* @li score_filter: bool, mark of score_filter. Defaults to "true"
+* @li box_filter: bool, mark of box_filter. Defaults to "true"
+* @li score_sigmoid: bool, mark of score_sigmoid. Defaults to "false"
+*@par Outputs:
+* @li sorted_rois: A Tensor. Must be float16. N-D with shape [N, 4].
+* @li sorted_scores: A Tensor. Must be float16. N-D with shape [N, 1].
+* @li sorted_classes: A Tensor. Must be float16. N-D with shape [N, 1].
+*/
+REG_OP(RpnProposals)
+    .INPUT(rois, TensorType({DT_FLOAT16}))
+    .INPUT(cls_bg_prob, TensorType({DT_FLOAT16}))
+    .INPUT(img_size, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(score_threshold, Float)
+    .REQUIRED_ATTR(k, Int)
+    .REQUIRED_ATTR(min_size, Float)
+    .REQUIRED_ATTR(nms_threshold, Float)
+    .REQUIRED_ATTR(post_nms_num, Int)
+    .ATTR(score_filter, Bool, true)
+    .ATTR(box_filter, Bool, true)
+    .ATTR(score_sigmoid, Bool, false)
+    .OUTPUT(sorted_box, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(RpnProposals)
+REG_OP(RpnProposalsD)
+    .INPUT(rois, TensorType({DT_FLOAT16}))
+    .INPUT(cls_bg_prob, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(img_size, ListInt)
+    .REQUIRED_ATTR(score_threshold, Float)
+    .REQUIRED_ATTR(k, Int)
+    .REQUIRED_ATTR(min_size, Float)
+    .REQUIRED_ATTR(nms_threshold, Float)
+    .REQUIRED_ATTR(post_nms_num, Int)
+    .ATTR(score_filter, Bool, true)
+    .ATTR(box_filter, Bool, true)
+    .ATTR(score_sigmoid, Bool, false)
+    .OUTPUT(sorted_box, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(RpnProposalsD)
+
+/**
+*@brief Computes Score Filte Pre-Sort function.
+*
+*@par Inputs:
+*Inputs include:
+* @li rois: A Tensor. Must be float16. N-D with shape [N, 4].
+* @li cls_bg_prob: A Tensor. Must be float16. N-D with shape [N, 1].
+*
+*@par Attributes:
+* @li score_threshold: required, float, threahold of topk process.
+* @li k: required, Int, threahold of topk process.
+* @li score_filter: bool, mark of score_filter. Defaults to "true"
+* @li core_max_num: int, max number of core. Defaults to "8"
+*@par Outputs:
+* @li sorted_proposal: A Tensor. Must be float16.
+*                      N-D with shape [8*6002, 8].
+* @li proposal_num: A Tensor. Must be uint32. N-D with shape [8, 8].
+*/
+
+REG_OP(ScoreFiltePreSort)
+    .INPUT(rois, TensorType({DT_FLOAT16}))
+    .INPUT(cls_bg_prob, TensorType({DT_FLOAT16}))
+    .OUTPUT(sorted_proposal, TensorType({ DT_FLOAT16}))
+    .OUTPUT(proposal_num, TensorType({ DT_UINT32}))
+    .REQUIRED_ATTR(score_threshold, Float)
+    .REQUIRED_ATTR(k, Int)
+    .ATTR(score_filter, Bool, true)
+    .ATTR(core_max_num, Int, 8)
+    .OP_END_FACTORY_REG(ScoreFiltePreSort)
+
+/**
+*@brief Computes Score Filte Pre-Sort function.
+*
+*@par Inputs:
+*Inputs include:
+* @li sorted_proposal: A Tensor. Must be float16.
+*                      N-D with shape [8*6002, 8].
+* @li proposal_num: A Tensor. Must be uint32. N-D with shape [8, 8].
+*
+*@par Attributes:
+* @li min_size: required, float, threahold of nms process.
+* @li score_threshold: required, float, threahold of topk process.
+* @li k: required, Int, threahold of topk process.
+* @li min_size: required, float, threahold of nms process.
+* @li nms_threshold: required, float, threahold of nms process.
+* @li post_nms_num: required, float, threahold of nms process.
+* @li box_filter: bool, mark of box_filter. Defaults to "true"
+* @li core_max_num: int, max number of core. Defaults to "8"
+*@par Outputs:
+* @li sorted_rois: A Tensor. Must be float16. N-D with shape [N, 4].
+* @li sorted_scores: A Tensor. Must be float16. N-D with shape [N, 1].
+* @li sorted_classes: A Tensor. Must be float16. N-D with shape [N, 1].
+*/
+REG_OP(RpnProposalPostProcessing)
+    .INPUT(sorted_proposal, TensorType({DT_FLOAT16}))
+    .INPUT(proposal_num, TensorType({DT_UINT32}))
+    .OUTPUT(sorted_box, TensorType({ DT_FLOAT16}))
+    .REQUIRED_ATTR(img_size, ListInt)
+    .REQUIRED_ATTR(score_threshold, Float)
+    .REQUIRED_ATTR(k, Int)
+    .REQUIRED_ATTR(min_size, Float)
+    .REQUIRED_ATTR(nms_threshold, Float)
+    .REQUIRED_ATTR(post_nms_num, Int)
+    .ATTR(box_filter, Bool, true)
+    .ATTR(core_max_num, Int, 8)
+    .OP_END_FACTORY_REG(RpnProposalPostProcessing)
+/**
+*@brief Computes DecodeBoundariesTarget function.
+*
+*@par Inputs:
+*Inputs include:
+* @li boundary_predictions: A Tensor. Must be float16.
+* @li anchors: A Tensor. Must be float16.
+*
+*@par Outputs:
+* @ boundary_encoded: A Tensor. Must be float16.
+*/
+REG_OP(DecodeBoundariesTarget)
+    .INPUT(boundary_predictions, TensorType({DT_FLOAT16}))
+    .INPUT(anchors, TensorType({DT_FLOAT16}))
+    .OUTPUT(boundary_encoded, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(DecodeBoundariesTarget)
+
+/**
+*@brief Computes DecodeCornerpointsTargetBG function.
+*
+*@par Inputs:
+*Inputs include:
+* @li keypoints_prediction: A Tensor. Must be float16.
+* @li anchors: A Tensor. Must be float16.
+*
+*@par Outputs:
+* @ keypoints_decoded: A Tensor. Must be float16.
+*/
+REG_OP(DecodeCornerpointsTargetBG)
+    .INPUT(keypoints_prediction, TensorType({DT_FLOAT16}))
+    .INPUT(anchors, TensorType({DT_FLOAT16}))
+    .OUTPUT(keypoints_decoded, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(DecodeCornerpointsTargetBG);
+
+/**
+*@brief Computes DecodeCornerpointsTargetWrtCenterV1 function.
+*
+*@par Inputs:
+*Inputs include:
+* @li keypoints_prediction: A Tensor. Must be float16.
+* @li anchors: A Tensor. Must be float16.
+*
+*@par Outputs:
+* @ keypoints_decoded: A Tensor. Must be float16.
+*/
+REG_OP(DecodeCornerpointsTargetWrtCenterV1)
+    .INPUT(keypoints_prediction, TensorType({DT_FLOAT16}))
+    .INPUT(anchors, TensorType({DT_FLOAT16}))
+    .OUTPUT(keypoints_decoded, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(DecodeCornerpointsTargetWrtCenterV1)
+
+/**
+*@brief Computes DecodeWheelsTarget function.
+*
+*@par Inputs:
+*Inputs include:
+* @li boundary_predictions: A Tensor. Must be float16.
+* @li anchors: A Tensor. Must be float16.
+*
+*@par Outputs:
+* @ boundary_encoded: A Tensor. Must be float16.
+*/
+REG_OP(DecodeWheelsTarget)
+    .INPUT(boundary_predictions, TensorType({DT_FLOAT16}))
+    .INPUT(anchors, TensorType({DT_FLOAT16}))
+    .OUTPUT(boundary_encoded, TensorType({DT_FLOAT16}))
+    .OP_END_FACTORY_REG(DecodeWheelsTarget)
 
 }  // namespace ge
 

@@ -99,7 +99,7 @@ class GraphManager {
   /// @param [out] models build result
   /// @return Status result of function
   ///
-  Status BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs, vector<GeModelPtr> &models);
+  ge::Status BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs, GeRootModelPtr &models);
 
   ///
   /// @ingroup ge_graph
@@ -153,6 +153,8 @@ class GraphManager {
 
   const std::map<std::string, std::string> *GetGraphOptions(uint32_t graph_id);
 
+  void SetOptionsRunGraphFlag(bool run_graph_flag);
+
  private:
   struct PreRunArgs {
     GraphId graph_id;
@@ -166,7 +168,7 @@ class GraphManager {
     GraphNodePtr graph_node;
     GraphId graph_id;
     std::vector<ge::InputTensorInfo> input_tensor;
-    GeModelPtr ge_model;
+    GeRootModelPtr ge_root_model;
     GEThreadLocalContext context;
     RunAsyncCallback callback;
   };
@@ -177,19 +179,16 @@ class GraphManager {
 
   static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, const SubGraphInfoPtr &sub_graph_info_ptr,
                                                 uint64_t session_id, const GEThreadLocalContext &ge_context);
-  Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, vector<GeModelPtr> &ge_models,
-                GeModelPtr &ge_model, uint64_t session_id = INVALID_SESSION_ID);
-
-  Status PreRunDynShape(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
-                        vector<GeModelPtr> &ge_models, GeModelPtr &ge_model, uint64_t session_id = INVALID_SESSION_ID);
+  Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, GeRootModelPtr &ge_root_model,
+                uint64_t session_id = INVALID_SESSION_ID);
 
   Status OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, uint64_t session_id);
 
-  Status Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, vector<GeModelPtr> &ge_models,
-               GeModelPtr &ge_model, uint64_t session_id);
+  Status Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, GeRootModelPtr &ge_root_model,
+               uint64_t session_id);
 
   Status StartForRunGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
-                          vector<GeModelPtr> &ge_models, uint64_t session_id = INVALID_SESSION_ID);
+                          GeRootModelPtr &ge_root_model, uint64_t session_id = INVALID_SESSION_ID);
 
   Status InnerRunGraph(GraphNodePtr &graph_node, const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                        std::vector<GeTensor> &outputs);
@@ -240,6 +239,8 @@ class GraphManager {
 
   Status SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph);
 
+  void SetAttrForHcomBroadCastOp(ge::ComputeGraphPtr &compute_graph);
+
   bool IsBroadCastOpData(const ge::NodePtr &var_node);
 
   void AdjustBroadCastOpData(const ge::NodePtr &var_node);
@@ -258,6 +259,7 @@ class GraphManager {
   std::shared_ptr<GraphContext> GetGraphContext() const { return graph_context_; }
 
   Status RemoveIsolatedConst(ge::ComputeGraphPtr &compute_graph);
+  Status RemoveIsolatedConstInThisGraph(ge::ComputeGraphPtr &compute_graph);
 
   Status OptimizeStage1(ComputeGraphPtr &compute_graph);
   Status OptimizeStage2(ComputeGraphPtr &compute_graph);
@@ -265,13 +267,13 @@ class GraphManager {
 
   Status NewOptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph);
 
-  Status LoadGraphAsync(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
+  Status LoadGraphAsync(const GeRootModelPtr &ge_root_model, const GraphNodePtr &graph_node);
 
   Status CheckAndReleaseMemory(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
 
-  bool CheckModelLoad(const GeModelPtr &ge_model, bool load_flag);
+  bool CheckModelLoad(const GeRootModelPtr &ge_model, bool load_flag);
 
-  Status LoadGraph(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
+  Status LoadGraph(const GeRootModelPtr &ge_root_model, const GraphNodePtr &graph_node);
 
   bool IsGraphNeedBuild(const GraphNodePtr &graph_node);
 
@@ -286,6 +288,8 @@ class GraphManager {
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);
   static void ReturnError(GraphManager *graph_manager, RunAsyncCallback callback, Status ret, const string &log);
+
+  void ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph);
 
   std::atomic_bool thread_run_flag_;
   BlockingQueue<PreRunArgs> prerun_args_q_{};

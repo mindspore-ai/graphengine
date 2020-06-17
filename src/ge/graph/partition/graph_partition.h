@@ -127,7 +127,7 @@ class GraphPartitioner {
   /// Split all sub graph and add placeholder, end according to marks
   /// traverse marked clusters and split them into sub-graphs
   Status SplitSubGraphs(ComputeGraphPtr compute_graph);
-  Status UpdateEndOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &end_op_desc);
+  Status UpdateEndOpDesc(const NodePtr &src_node, int output_index, OpDescPtr &end_op_desc);
   Status UpdatePldOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &end_op_desc);
 
   // Clear partition data

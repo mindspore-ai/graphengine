@@ -101,6 +101,7 @@ Status ReplaceWithEmptyConstPass::ReplaceWithEmptyConst(NodePtr &node_to_replace
              const_node->GetName().c_str());
       return FAILED;
     }
+    AddRePassNodesWithInOut(const_node);
     GELOGI("Node %s has been replaced by empty const %s.", node_to_replace->GetName().c_str(),
            const_node->GetName().c_str());
   }
@@ -115,14 +116,11 @@ Status ReplaceWithEmptyConstPass::ReplaceWithEmptyConst(NodePtr &node_to_replace
 }
 Status ReplaceWithEmptyConstPass::InsertEmptyConst(const GeTensorDesc &out_desc, NodePtr &const_node,
                                                    ComputeGraphPtr &graph) {
-  GeTensorPtr empty_tensor = MakeShared<ge::GeTensor>();
+  GeTensorPtr empty_tensor = MakeShared<ge::GeTensor>(out_desc);
   if (empty_tensor == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed create empty tensor.");
     return OUT_OF_MEMORY;
   }
-  empty_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());
-  empty_tensor->MutableTensorDesc().SetFormat(out_desc.GetFormat());
-  empty_tensor->MutableTensorDesc().SetShape(out_desc.GetShape());
   auto const_desc = OpDescUtils::CreateConstOp(empty_tensor);
   if (const_desc == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to get const desc from tensor");

@@ -46,6 +46,7 @@ struct TdtDataItem {
   TdtDataType dataType_;          /**< Input data type*/
   uint64_t label_;                /**< Input data label*/
   uint64_t dataLen_;              /**< Input data type length*/
+  uint64_t realDataLen_;          /**< Real Input data type length*/
   std::string tensorShape_;       /**< Tensor shape*/
   std::string tensorType_;        /**< Tensor type*/
   uint32_t cnt_;                  /**< Data  count*/

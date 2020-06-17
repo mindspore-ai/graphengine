@@ -15,6 +15,7 @@
  */
 
 #include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_caching_allocator.h"
 
 #include <set>
 #include <string>
@@ -47,7 +48,7 @@ void MemoryAllocator::Finalize(uint32_t device_id) {
   memory_base_map_.clear();
 }
 
-uint8_t *MemoryAllocator::MallocMemory(const string &purpose, uint64_t memory_size, uint32_t device_id) const {
+uint8_t *MemoryAllocator::MallocMemory(const string &purpose, size_t memory_size, uint32_t device_id) const {
   uint8_t *memory_addr = nullptr;
 
   if (rtMalloc(reinterpret_cast<void **>(&memory_addr), memory_size, memory_type_) != RT_ERROR_NONE) {
@@ -74,7 +75,7 @@ Status MemoryAllocator::FreeMemory(uint8_t *memory_addr, uint32_t device_id) con
   return ge::SUCCESS;
 }
 
-uint8_t *MemoryAllocator::MallocMemory(const string &purpose, const string &memory_key, uint64_t memory_size,
+uint8_t *MemoryAllocator::MallocMemory(const string &purpose, const string &memory_key, size_t memory_size,
                                        uint32_t device_id) {
   auto it = memory_base_map_.find(memory_key);
   if (it != memory_base_map_.end()) {
@@ -147,7 +148,7 @@ uint8_t *MemoryAllocator::GetMemoryAddr(const string &memory_key, uint32_t devic
   return it->second.memory_addr_;
 }
 
-MemManager::MemManager() : default_memory_allocator_(nullptr) {}
+MemManager::MemManager() {}
 
 MemManager::~MemManager() { Finalize(); }
 
@@ -159,7 +160,7 @@ MemManager &MemManager::Instance() {
 MemoryAllocator *MemManager::Instance(rtMemType_t memory_type) { return Instance().GetMemoryAllocator(memory_type); }
 
 Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
-  std::lock_guard<std::mutex> lock(allocator_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
   MemoryAllocator *memory_allocator = nullptr;
   for (unsigned int index : memory_type) {
     auto it = memory_allocator_map_.find(index);
@@ -184,34 +185,34 @@ Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
     }
   }
 
-  default_memory_allocator_ = new (std::nothrow) MemoryAllocator(RT_MEMORY_RESERVED);
-  if (default_memory_allocator_ == nullptr) {
-    GELOGE(ge::INTERNAL_ERROR, "Create MemoryAllocator failed.");
-    return ge::INTERNAL_ERROR;
-  }
-  return ge::SUCCESS;
+  return InitCachingAllocator(memory_type);
 }
 
 void MemManager::Finalize() noexcept {
   GELOGI("Finalize.");
-  std::lock_guard<std::mutex> lock(allocator_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
+  // caching allocator use memory allocator, so finalize it first
+  for (auto &caching_allocator : caching_allocator_map_) {
+    if (caching_allocator.second != nullptr) {
+      caching_allocator.second->Finalize();
+      delete caching_allocator.second;
+      caching_allocator.second = nullptr;
+    }
+  }
+  caching_allocator_map_.clear();
+
   for (auto &memory_allocator : memory_allocator_map_) {
     if (memory_allocator.second != nullptr) {
-      memory_allocator.second->Finalize(0);
+      memory_allocator.second->Finalize();
       delete memory_allocator.second;
       memory_allocator.second = nullptr;
     }
-  }
-
-  if (default_memory_allocator_ != nullptr) {
-    delete default_memory_allocator_;
-    default_memory_allocator_ = nullptr;
   }
   memory_allocator_map_.clear();
 }
 
 MemoryAllocator *MemManager::GetMemoryAllocator(rtMemType_t memory_type) {
-  std::lock_guard<std::mutex> lock(allocator_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
   MemoryAllocator *memory_allocator = nullptr;
   auto it = memory_allocator_map_.find(memory_type);
   if (it != memory_allocator_map_.end()) {
@@ -221,9 +222,60 @@ MemoryAllocator *MemManager::GetMemoryAllocator(rtMemType_t memory_type) {
   // Usually impossible
   if (memory_allocator == nullptr) {
     GELOGE(ge::INTERNAL_ERROR, "GetMemoryAllocator failed, memory type is %u.", memory_type);
-    return default_memory_allocator_;
+    static MemoryAllocator default_memory_allocator(RT_MEMORY_RESERVED);
+    return &default_memory_allocator;
   }
 
   return memory_allocator;
+}
+
+Status MemManager::InitCachingAllocator(const std::vector<rtMemType_t> &memory_type) {
+  CachingAllocator *caching_allocator = nullptr;
+  for (unsigned int index : memory_type) {
+    auto it = caching_allocator_map_.find(index);
+    if (it == caching_allocator_map_.end()) {
+      caching_allocator = new (std::nothrow) CachingAllocator(index);
+      if (caching_allocator != nullptr) {
+        caching_allocator_map_[index] = caching_allocator;
+        GELOGI("Create CachingAllocator memory type[%u] success.", index);
+      } else {
+        GELOGE(ge::INTERNAL_ERROR, "Alloc CachingAllocator failed.");
+      }
+    } else {
+      caching_allocator = it->second;
+    }
+
+    if (caching_allocator == nullptr) {
+      GELOGE(ge::INTERNAL_ERROR, "Create CachingAllocator failed.");
+      return ge::INTERNAL_ERROR;
+    } else {
+      if (caching_allocator->Initialize() != ge::SUCCESS) {
+        return ge::INTERNAL_ERROR;
+      }
+    }
+  }
+  return ge::SUCCESS;
+}
+
+CachingAllocator &MemManager::GetCachingAllocator(rtMemType_t memory_type) {
+  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
+  CachingAllocator *caching_allocator = nullptr;
+  auto it = caching_allocator_map_.find(memory_type);
+  if (it != caching_allocator_map_.end()) {
+    caching_allocator = it->second;
+  }
+
+  // Usually impossible
+  if (caching_allocator == nullptr) {
+    GELOGE(ge::INTERNAL_ERROR, "GetCachingAllocator failed, memory type is %u.", memory_type);
+    static CachingAllocator default_caching_allocator(RT_MEMORY_RESERVED);
+    return default_caching_allocator;
+    ;
+  }
+  return *caching_allocator;
+}
+
+CachingAllocator &MemManager::CachingInstance(rtMemType_t memory_type) {
+  return Instance().GetCachingAllocator(memory_type);
 }
 }  // namespace ge

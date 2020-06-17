@@ -24,7 +24,7 @@
 namespace ge {
 static const int64_t UNKNOWN_DIM = -1;
 static const int64_t UNKNOWN_DIM_NUM = -2;
-static const std::vector<int64_t> UNKNOWN_SHAPE = {0};
+static const std::vector<int64_t> UNKNOWN_SHAPE = {-1};
 static const std::vector<int64_t> UNKNOWN_RANK = {-2};
 
 #ifdef HOST_VISIBILITY

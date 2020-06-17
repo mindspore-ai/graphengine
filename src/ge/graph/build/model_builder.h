@@ -50,6 +50,7 @@ class ModelBuilder {
   Status SaveDataToModel(ge::Model &model, ge::GeModel &ge_model);
   Status PreBuildModel();
   Status BuildModelForGetTask(ge::Model &model_def);
+  ge::Status BuildModelForGetDynShapeTask(ge::Model &model_def);
 
   ge::Buffer GetWeightBuffer() const;
 

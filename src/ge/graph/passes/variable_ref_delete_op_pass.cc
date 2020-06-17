@@ -72,7 +72,7 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   GE_CHECK_NOTNULL(peer_node->GetOpDesc());
   bool is_set_str = ge::AttrUtils::SetStr(peer_node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
 
-  ge::NodePtr ref_var_src_var = graph->FindNode(ref_var_src_var_name);
+  ge::NodePtr ref_var_src_var = GraphUtils::FindNodeFromAllNodes(graph, ref_var_src_var_name);
   if (ref_var_src_var == nullptr) {
     GELOGE(FAILED, "get ref_var_src_var failed");
     return FAILED;

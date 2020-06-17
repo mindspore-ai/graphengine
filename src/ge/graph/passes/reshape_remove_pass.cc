@@ -17,12 +17,12 @@
 #include "graph/passes/reshape_remove_pass.h"
 #include "framework/common/util.h"
 #include "graph/passes/pass_utils.h"
+#include "graph/utils/node_utils.h"
 
 namespace ge {
 namespace {
 const int kReshapeDataIndex = 0;
-const int kReshapeShapeIndex = 1;
-}  // namespace
+}
 
 Status ReshapeRemovePass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
@@ -30,15 +30,16 @@ Status ReshapeRemovePass::Run(NodePtr &node) {
   if (node->GetType() != RESHAPE && node->GetType() != REFORMAT) {
     return SUCCESS;
   }
-  auto op_desc = node->GetOpDesc();
-  auto output_desc = op_desc->GetOutputDescPtr(kReshapeDataIndex);
-  GE_CHECK_NOTNULL(output_desc);
-  if (output_desc->GetShape().IsUnknownShape()) {
-    GELOGD("Reshape node %s is unknown shape. It should be remained.", node->GetName().c_str());
-    return SUCCESS;
+
+  bool is_shape_unknown = false;
+  if (NodeUtils::GetNodeUnknownShapeStatus(*node, is_shape_unknown) == GRAPH_SUCCESS) {
+    if (is_shape_unknown) {
+      GELOGI("op:%s is unknown shape, can not be deleted.", node->GetName().c_str());
+      return SUCCESS;
+    }
   }
 
-  GELOGD("Remove %s node %s", node->GetType().c_str(), node->GetName().c_str());
+  GELOGI("Remove %s node %s", node->GetType().c_str(), node->GetName().c_str());
   return IsolateAndDeleteNode(node, {kReshapeDataIndex});
 }
 }  // namespace ge

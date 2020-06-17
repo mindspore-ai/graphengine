@@ -29,27 +29,27 @@ class DynamicShapePartitioner {
  public:
   // An cluster means set of nodes that can be merged in same partition,
   // Corresponding relationship between cluster type and node:
-  // DATA:DATA, UNKNOW_SHAPE:unknowshape, KNOW_SHAPE:knowshape, NETOUTPUT:NETOUTPUT.
+  // DATA:DATA, UNKNOWN_SHAPE:unknowshape, KNOWN_SHAPE:knowshape, NETOUTPUT:NETOUTPUT.
   class Cluster : public std::enable_shared_from_this<Cluster> {
    public:
-    enum Type { DATA, NETOUTPUT, KNOW_SHAPE, UNKNOW_SHAPE };
-    explicit Cluster(size_t rank, Type type, NodePtr node, DynamicShapePartitioner *partitioner)
+    enum Type { DATA, NETOUTPUT, KNOWN_SHAPE, UNKNOWN_SHAPE };
+    Cluster(size_t rank, Type type, NodePtr node, DynamicShapePartitioner *partitioner)
         : id_(rank), min_(rank), max_(rank), type_(type), partitioner_(partitioner) {
       nodes_.push_back(node);
     }
     ~Cluster() = default;
-    std::string DebugString();
+    std::string DebugString() const;
     // Basic bean functions
-    size_t Id();
+    size_t Id() const;
     void UpdateRank(size_t rank);
-    bool IsData();
-    bool IsKnowShape();
-    bool IsUnknowShape();
-    bool IsNetOutput();
-    std::unordered_set<std::shared_ptr<Cluster>> Inputs();
-    std::unordered_set<std::shared_ptr<Cluster>> Outputs();
-    std::vector<NodePtr> Nodes();
-    bool IsolatedConstant();
+    bool IsData() const;
+    bool IsKnownShape() const;
+    bool IsUnknownShape() const;
+    bool IsNetOutput() const;
+    std::unordered_set<std::shared_ptr<Cluster>> Inputs() const;
+    std::unordered_set<std::shared_ptr<Cluster>> Outputs() const;
+    std::vector<NodePtr> Nodes() const;
+    bool IsRefVariable() const;
     // Cluster modify functions
     void AddInput(std::shared_ptr<Cluster> in);
     void RemoveInput(std::shared_ptr<Cluster> in);
@@ -110,16 +110,16 @@ class DynamicShapePartitioner {
   // Collect nodes that satisfy the unknowshape rules:
   // 1) The Tensor shape of any input or output is unknow shape(dim_size = -1) or unknow rank(dim_size=-2)
   // 2) Subgraphs of the node has an operator that satisfies rule 1)
-  Status MarkUnknowShapeNodes();
+  Status MarkUnknownShapeNodes();
   // For each node a Cluster structure, and connected according to the connection relationship of the nodes
   // An cluster means set of nodes that can be merged in same partition,
   // Corresponding relationship between cluster type and node:
-  // DATA:DATA, UNKNOW_SHAPE:unknowshape, KNOW_SHAPE:knowshape, NETOUTPUT:NETOUTPUT
+  // DATA:DATA, UNKNOWN_SHAPE:unknowshape, KNOWN_SHAPE:knowshape, NETOUTPUT:NETOUTPUT
   Status InitClusters();
   // Merge clusters according to the following rules:
-  // 1) Iterate through the UNKNOW_SHAPE clusters, if the input is UNKNOW_SHAPE,
+  // 1) Iterate through the UNKNOWN_SHAPE clusters, if the input is UNKNOWN_SHAPE,
   //    merge all the clusters in the path(s) between the two clusters
-  // 2) Iterate through the KNOW_SHAPE clusters, if the input is KNOW_SHAPE, and
+  // 2) Iterate through the KNOWN_SHAPE clusters, if the input is KNOWN_SHAPE, and
   //    and there's only one path between the two clusters , merge the two clusters
   Status MergeClusters();
   // Topological sort clusters after merge unknow shape clusters.
@@ -135,18 +135,18 @@ class DynamicShapePartitioner {
   // Clear resource and break circular dependency
   void ClearResource();
   // Debug functions
-  void DumpGraph(std::string suffix);
-  std::string DebugString();
+  void DumpGraph(const std::string &suffix);
+  std::string DebugString() const;
   // Util functions
-  Status CollectSpreadUnknowShapeNodes(NodePtr node);
-  Status IsUnknowShapeGraph(ge::ComputeGraphPtr graph, bool &is_unknow);
-  Status IsUnknowShapeNode(ge::NodePtr node, bool &is_unknow);
-  bool IsUnknowShapeTensor(ge::GeTensorDesc &tensor);
+  Status CollectSpreadUnknownShapeNodes(NodePtr node);
+  Status IsUnknownShapeGraph(ge::ComputeGraphPtr graph, bool &is_unknow);
+  Status IsUnknownShapeNode(ge::NodePtr node, bool &is_unknow);
+  bool IsUnknownShapeTensor(const ge::GeTensorDesc &tensor);
   ge::ComputeGraphPtr root_graph_;                                        // The original graph to partition
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // Record nodes and the cluster it belongs to
   // topological sorted clusters, this field will change with the splitting.
-  // When partitioning UNKNOW_SHAPE cluster, it is a collection of all topological sorted UNKNOW_SHAPE clusters
-  // When partitioning KNOW_SHAPE cluster, it is a collection of all topological sorted KNOW_SHAPE clusters
+  // When partitioning UNKNOWN_SHAPE cluster, it is a collection of all topological sorted UNKNOWN_SHAPE clusters
+  // When partitioning KNOWN_SHAPE cluster, it is a collection of all topological sorted KNOWN_SHAPE clusters
   std::vector<std::shared_ptr<Cluster>> ordered_cluster_;
   // Unique clusters left after merged clusters
   std::unordered_set<std::shared_ptr<Cluster>> unique_clusters_;

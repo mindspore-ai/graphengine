@@ -37,6 +37,7 @@ namespace ge {
 class NextIterationPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
+  Status ClearStatus() override;
 
  private:
   Status HandleEnterNode(const NodePtr &enter_node);

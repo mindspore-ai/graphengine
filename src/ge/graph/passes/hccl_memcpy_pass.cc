@@ -181,5 +181,12 @@ Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const 
   }
   return SUCCESS;
 }
-
+///
+/// @brief Clear Status, uesd for subgraph pass
+/// @return SUCCESS
+///
+Status HcclMemcpyPass::ClearStatus() {
+  node_num_map_.clear();
+  return SUCCESS;
+}
 }  // namespace ge

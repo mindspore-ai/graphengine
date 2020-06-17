@@ -35,14 +35,14 @@ class PassManager {
   /// get graph passes
   /// @author
   ///
-  const vector<GraphPass *> &GraphPasses() const;
+  const vector<std::pair<std::string, GraphPass *>> &GraphPasses() const;
 
   ///
   /// Add graph pass
   /// @param [in] pass  Pass to be added, it will be destroyed when pass manager destroys.
   /// @author
   ///
-  Status AddPass(GraphPass *pass);
+  Status AddPass(const string &pass_name, GraphPass *pass);
 
   ///
   /// Optimize graph with added pass
@@ -63,12 +63,12 @@ class PassManager {
   /// @return others optimized failed
   /// @author
   ///
-  static Status Run(const ge::ComputeGraphPtr &graph, vector<GraphPass *> &passes);
+  static Status Run(const ge::ComputeGraphPtr &graph, vector<std::pair<std::string, GraphPass *>> &passes);
 
   ~PassManager();
 
  private:
-  vector<GraphPass *> graph_passes_;
+  vector<std::pair<std::string, GraphPass *>> names_to_graph_passes_;
 };
 }  // namespace ge
 #endif  // GE_INC_PASS_MANAGER_H_

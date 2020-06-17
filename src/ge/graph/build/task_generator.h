@@ -82,7 +82,7 @@ class TaskGenerator {
   Status UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t session_id);
 
   ///
-  /// call engine to generate task.
+  /// call engine to generate known shape task.
   /// @param run_context run context
   /// @param graph compute graph
   /// @param task_def_list task def list generate by engine
@@ -92,6 +92,18 @@ class TaskGenerator {
   ///
   Status GenerateTask(RunContext &run_context, ComputeGraphPtr &graph, std::vector<domi::TaskDef> &task_def_list,
                       std::map<uint32_t, string> &op_name_map);
+
+  ///
+  /// call engine to generate unknown shape task.
+  /// @param run_context run context
+  /// @param graph compute graph
+  /// @param task_def_list task def list generate by engine
+  /// @param op_name_map relation of task index and op
+  /// @return SUCCESS:seccess
+  /// Other: failed
+  ///
+  Status GenerateUnknownShapeTask(RunContext &run_context, ComputeGraphPtr &graph,
+                                  std::vector<domi::TaskDef> &task_def_list, std::map<uint32_t, string> &op_name_map);
 
   ///
   /// AddModelTaskToModel

@@ -134,7 +134,8 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       GELOGD("Update aicpu task args");
       AiCpuTask *task_aicpu = dynamic_cast<AiCpuTask *>(task);
       GE_CHECK_NOTNULL(task_aicpu);
-      auto rt_ret = rtMemcpyAsync(task_aicpu->GetIOAddr(), sizeof(uint64_t) * args_.size(), &args_[0],
+      auto *dstIOAddr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task_aicpu->GetIOAddr()));
+      auto rt_ret = rtMemcpyAsync(dstIOAddr, sizeof(uint64_t) * args_.size(), &args_[0],
                                   sizeof(uint64_t) * args_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream_);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "rtMemcpyAsync addresses failed, ret = %d", rt_ret);

@@ -134,7 +134,7 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  std::map<string, GraphOptimizerPtr> graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjs();
+  auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
   GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
          graph_optimizer.size());
   string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
@@ -147,6 +147,37 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
       ret = (iter->second)->OptimizeOriginalGraph(*compute_graph);
       if (ret != SUCCESS) {
         GELOGE(ret, "[OptimizeOriginalGraph]: graph optimize failed, ret:%d", ret);
+        return ret;
+      }
+    }
+  }
+  return ret;
+}
+
+Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_graph) {
+  GELOGD("OptimizeOriginalGraphJudgeInsert in");
+  GE_CHECK_NOTNULL(compute_graph);
+  Status ret = SUCCESS;
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeOriginalGraph failed.");
+    return GE_CLI_GE_NOT_INITIALIZED;
+  }
+
+  auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
+  GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
+         graph_optimizer.size());
+  string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
+  if (graph_optimizer.size() != 0) {
+    for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
+      if (iter->first == exclude_core_Type) {
+        GELOGI("[OptimizeOriginalGraphJudgeInsert]: engine type will exclude: %s", exclude_core_Type.c_str());
+        continue;
+      }
+      GELOGI("Begin to refine running format by engine %s", iter->first.c_str());
+      ret = (iter->second)->OptimizeOriginalGraphJudgeInsert(*compute_graph);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "[OptimizeOriginalGraphJudgeInsert]: graph optimize failed, ret:%d", ret);
         return ret;
       }
     }
@@ -168,7 +199,7 @@ Status GraphOptimize::NewOptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  std::map<string, GraphOptimizerPtr> graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjs();
+  auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
   GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
          graph_optimizer.size());
   string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
@@ -207,7 +238,7 @@ Status GraphOptimize::OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  std::map<string, GraphOptimizerPtr> graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjs();
+  auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
   GELOGI("optimize by opskernel in original graph optimize quantize phase. num of graph_optimizer is %zu.",
          graph_optimizer.size());
   Status ret = SUCCESS;

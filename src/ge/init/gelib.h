@@ -83,7 +83,6 @@ class GELib {
   Status SetRTSocVersion(const map<string, string> &options);
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
-  void SetIncreBuild(const map<string, string> &options);
 
   DNNEngineManager engineManager_;
   OpsKernelManager opsManager_;

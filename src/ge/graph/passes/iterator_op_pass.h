@@ -29,9 +29,27 @@ class IteratorOpPass : public GraphPass {
 
   Status Run(ge::ComputeGraphPtr graph);
 
+  Status GetVariableValue(uint64_t session_id, const ge::GeTensorDesc &opdesc, const std::string &var_name, void *dest);
+
  private:
   ///
-  /// @brief inset memcpy node
+  /// @brief Insert EndOfSequence node
+  ///
+  /// @param preNode
+  /// @param graph
+  /// @return ge::NodePtr
+  ///
+  ge::NodePtr InsertEndOfSequenceNode(const ge::NodePtr &pre_node, const ge::NodePtr &memcpy_node,
+                                      const ge::ComputeGraphPtr &graph);
+  ///
+  /// @brief Create a EndOfSequence Op object
+  ///
+  /// @param preNode
+  /// @return ge::OpDescPtr
+  ///
+  ge::OpDescPtr CreateEndOfSequenceOp(const ge::NodePtr &pre_node);
+  ///
+  /// @brief Insert memcpy node
   ///
   /// @param preNode
   /// @param graph
@@ -45,6 +63,8 @@ class IteratorOpPass : public GraphPass {
   /// @return ge::OpDescPtr
   ///
   ge::OpDescPtr CreateMemcpyAsyncOp(const ge::NodePtr &pre_node);
+
+  Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_ITERATOR_OP_PASS_H_

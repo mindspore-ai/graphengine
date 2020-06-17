@@ -22,6 +22,9 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/ge_types.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/node.h"
+#include "runtime/context.h"
+#include "graph_var_manager.h"
 
 namespace ge {
 class TransVarDataUtils {
@@ -30,6 +33,11 @@ class TransVarDataUtils {
                                           uint8_t *dst_addr, int64_t dst_addr_size, uint64_t session_id_);
   static ge::Status SyncBroadCastData2Var(uint8_t *src_addr, int64_t src_addr_size, const string &var_name,
                                           const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id_);
+
+  static ge::Status TransAllVarData(const std::vector<NodePtr> &variable_nodes, uint64_t session_id,
+                                    rtContext_t context, uint32_t graph_id, uint32_t thread_num = 16);
+
+  static ge::Status CopyVarData(const ComputeGraphPtr &compute_graph, uint64_t session_id, uint32_t device_id);
 
  private:
   static ge::Status SyncTensorToHost(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,

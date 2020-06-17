@@ -34,11 +34,22 @@ struct ForInfo {
 };
 
 struct WhileInfo {
-  WhileInfo() : while_node(nullptr), sub_graph_node(nullptr), i(nullptr), n(nullptr), start(nullptr), delta(nullptr) {}
+  WhileInfo()
+      : while_node(nullptr),
+        sub_graph_node(nullptr),
+        i(nullptr),
+        abs_delta(nullptr),
+        range(nullptr),
+        start(nullptr),
+        delta(nullptr),
+        for_body(nullptr),
+        while_cond(nullptr),
+        while_body(nullptr) {}
   ge::NodePtr while_node;
   ge::NodePtr sub_graph_node;
   ge::OutDataAnchorPtr i;
-  ge::OutDataAnchorPtr n;
+  ge::OutDataAnchorPtr abs_delta;
+  ge::OutDataAnchorPtr range;
   ge::OutDataAnchorPtr start;
   ge::OutDataAnchorPtr delta;
   std::string for_body_name;
@@ -127,21 +138,15 @@ class ForPass : public BaseNodePass {
   static OpDescPtr CreateConstDesc(const std::string &name, int32_t value);
 
   ///
-  /// @brief Create loop_count input
+  /// @brief Create loop input
   /// @param [in] graph
   /// @param [in] for_info
-  /// @return OutDataAnchorPtr
+  /// @param [out] range_input
+  /// @param [out] abs_delta_input
+  /// @return Status
   ///
-  OutDataAnchorPtr CreateLoopCountInput(const ComputeGraphPtr &graph, const ForInfo &for_info);
-
-  ///
-  /// @brief Create cast op_desc
-  /// @param [in] name
-  /// @param [in] src_data_type
-  /// @param [in] dst_data_type
-  /// @return OpDescPtr
-  ///
-  static OpDescPtr CreateCastDesc(const std::string &name, DataType src, DataType dst);
+  Status CreateLoopInput(const ComputeGraphPtr &graph, const ForInfo &for_info, OutDataAnchorPtr &range_input,
+                         OutDataAnchorPtr &abs_delta_input);
 
   ///
   /// @brief Create op_desc
@@ -156,11 +161,13 @@ class ForPass : public BaseNodePass {
   /// @brief Build while-info
   /// @param [in] for_info
   /// @param [in] i_input
-  /// @param [in] n_input
+  /// @param [in] range_input
+  /// @param [in] abs_delta_input
   /// @param [out] while_info
   /// @return void
   ///
-  static void BuildWhileInfo(const ForInfo &for_info, const OutDataAnchorPtr &i_input, const OutDataAnchorPtr &n_input,
+  static void BuildWhileInfo(const ForInfo &for_info, const OutDataAnchorPtr &i_input,
+                             const OutDataAnchorPtr &range_input, const OutDataAnchorPtr &abs_delta_input,
                              WhileInfo &while_info);
 
   ///

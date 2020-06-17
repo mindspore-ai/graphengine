@@ -38,6 +38,7 @@
 #include "graph/partition/graph_partition.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "model/ge_root_model.h"
 
 namespace ge {
 class GraphBuilder {
@@ -46,8 +47,8 @@ class GraphBuilder {
   GraphBuilder(const GraphBuilder &in) = delete;
   GraphBuilder &operator=(const GraphBuilder &in) = delete;
   virtual ~GraphBuilder() = default;
-  Status Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list, GeModelPtr &ge_model_ptr,
-               uint64_t session_id = INVALID_SESSION_ID);
+  Status Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+               GeRootModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
   void SetOptions(const GraphManagerOptions &options);
 
  private:
@@ -56,8 +57,16 @@ class GraphBuilder {
                      Graph2SubGraphInfoList &subgraph_map, uint64_t session_id = INVALID_SESSION_ID);
   Status SetInputSize(const ge::NodePtr &node_ptr);
   Status UpdateDataInputSize(const ge::NodePtr &node_ptr);
+  Status UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph, ge::NodePtr &parent_node_ptr);
+  Status CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc);
   Status SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list);
-
+  Status BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+                                   GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
+                                   uint64_t session_id = INVALID_SESSION_ID);
+  Status BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+                                 GeModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
+  Status BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
+                                   uint64_t session_id = INVALID_SESSION_ID);
   int build_mode_;
 
   std::map<std::string, int> stream_max_parallel_num_;

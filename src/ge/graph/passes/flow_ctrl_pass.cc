@@ -38,7 +38,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   }
 
   if (!PassUtils::IsNeedTrainIteFlowCtrl(compute_graph)) {
-    GELOGI("No need FlowCtrl");
+    GELOGI("No need FlowCtrl for graph %u", compute_graph->GetGraphID());
     return NOT_CHANGED;
   }
 
@@ -251,6 +251,7 @@ NodePtr FlowCtrlPass::InsertAssignOp(ge::ComputeGraphPtr &compute_graph, const s
     GELOGE(FAILED, "Add value_node to %s edge failed, add_ret=%u.", node_name.c_str(), add_ret);
     return nullptr;
   }
+  (void)ge::AttrUtils::SetBool(assign_node->GetOpDesc(), ATTR_NEED_COMPILE, true);
 
   return assign_node;
 }

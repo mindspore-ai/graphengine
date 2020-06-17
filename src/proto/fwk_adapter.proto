@@ -31,12 +31,12 @@ message TensorDataInfo {
 
   // data point addr
   int64 data_addr = 3;
-};
+}
 
 message KernelRunParam {
   // input
   repeated TensorDataInfo input = 1;
   // output
   repeated TensorDataInfo output = 2;
-};
+}
 

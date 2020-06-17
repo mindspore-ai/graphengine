@@ -180,8 +180,7 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
     GELOGE(FAILED, "SaveModel fail for compute_graph null");
     return FAILED;
   }
-  ge::GraphUtils::DumpGEGraph(compute_graph, "OriginalGraph");
-  ge::GraphUtils::DumpGEGraphToOnnx(*compute_graph, "OriginalGraph");
+  GE_DUMP(compute_graph, "OriginalGraph");
   // Model
   ModelPtr model_ptr = ge::MakeShared<ge::Model>();
   GE_CHECK_NOTNULL_EXEC(model_ptr, return MEMALLOC_FAILED);

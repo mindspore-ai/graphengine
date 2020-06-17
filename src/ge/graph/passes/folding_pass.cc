@@ -142,6 +142,10 @@ Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
   for (auto iter = in_data_nodes_set.begin(); iter != in_data_nodes_set.end(); ++iter) {
     auto pre_node = *iter;
     if (pre_node->GetOutDataNodesSize() == 0) {
+      if (pre_node->GetType() == DATA) {
+        GELOGI("No need to remove data, node name:%s.", pre_node->GetName().c_str());
+        continue;
+      }
       if (IsolateAndDeleteNode(pre_node, {}) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Failed to isolate and delete in data node %s, type %s.", pre_node->GetName().c_str(),
                pre_node->GetType().c_str());

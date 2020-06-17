@@ -27,6 +27,7 @@ namespace ge {
 class HcclMemcpyPass : public GraphPass {
  public:
   Status Run(ge::ComputeGraphPtr graph);
+  Status ClearStatus() override;
 
  private:
   NodePtr CreateMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor);

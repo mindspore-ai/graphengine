@@ -21,6 +21,7 @@
 
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
@@ -199,6 +200,23 @@ Status TransposeWithShapeCheck(const uint8_t *data, const std::vector<int64_t> &
   return Transpose(data, src_shape, src_data_type, perm_arg, result);
 }
 
+Status GetPermByForamt(Format src_format, Format dst_format, std::vector<int64_t> &perm) {
+  auto dst_iter = perm_args.find(src_format);
+  if (dst_iter == perm_args.end()) {
+    GELOGE(UNSUPPORTED, "Failed to trans shape, do not support transpose from format %s to %s",
+           TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str());
+    return UNSUPPORTED;
+  }
+  auto iter = dst_iter->second.find(dst_format);
+  if (iter == dst_iter->second.end()) {
+    GELOGE(UNSUPPORTED, "Failed to trans shape, do not support transpose from format %s to %s",
+           TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str());
+    return UNSUPPORTED;
+  }
+  perm = iter->second;
+  return SUCCESS;
+}
+
 Status FormatTransferTranspose::TransFormat(const TransArgs &args, TransResult &result) {
   std::vector<int64_t> expected_shape;
   auto ret = TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, expected_shape);
@@ -218,23 +236,12 @@ Status FormatTransferTranspose::TransFormat(const TransArgs &args, TransResult &
 
 Status FormatTransferTranspose::TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type,
                                            Format dst_format, std::vector<int64_t> &dst_shape) {
-  auto dst_iter = perm_args.find(src_format);
-  if (dst_iter == perm_args.end()) {
-    GELOGE(UNSUPPORTED, "Failed to trans shape, do not support transpose from format %s to %s",
-           TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str());
-    return UNSUPPORTED;
-  }
-  auto iter = dst_iter->second.find(dst_format);
-  if (iter == dst_iter->second.end()) {
-    GELOGE(UNSUPPORTED, "Failed to trans shape, do not support transpose from format %s to %s",
-           TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str());
-    return UNSUPPORTED;
-  }
-
-  if (!IsShapeArgValid(src_shape, iter->second)) {
+  std::vector<int64_t> perm_arg;
+  GE_CHK_STATUS_RET_NOLOG(GetPermByForamt(src_format, dst_format, perm_arg));
+  if (!IsShapeArgValid(src_shape, perm_arg)) {
     return PARAM_INVALID;
   }
-  dst_shape = TransShapeByPerm(src_shape, iter->second);
+  dst_shape = TransShapeByPerm(src_shape, perm_arg);
   return SUCCESS;
 }
 

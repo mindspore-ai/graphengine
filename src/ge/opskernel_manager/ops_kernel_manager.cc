@@ -67,6 +67,12 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     options.emplace("ge.exec.isUseHcom", to_string(0));
   }
 
+  iter = options.find(OPTION_EXEC_IS_USEHVD);
+  if (iter == options.end()) {
+    GELOGI("OPTION_EXEC_IS_USEHVD is not set, default is single P");
+    options.emplace("ge.exec.isUseHvd", to_string(0));
+  }
+
   GetExternalEnginePath(extern_engine_path);
   GELOGI("OPTION_EXEC_EXTERN_PLUGIN_PATH=%s.", extern_engine_path.c_str());
 
@@ -74,13 +80,19 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
   if (ret == SUCCESS) {
     initialize_ = options;
     Status rst0 = plugin_manager_.InvokeAll<map<string, string> &, Status>(kInitialize, initialize_);
-    Status rst1 =
-      plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr> &>(kGetOpsKernelInfoStores, ops_kernel_store_);
-    Status rst2 =
-      plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr> &>(kGetGraphOptimizerObjs, graph_optimizers_);
-    if ((rst0 != SUCCESS) && (rst1 != SUCCESS) && (rst2 != SUCCESS)) {
+    if (rst0 == FAILED) {
       GELOGE(GE_OPS_GET_NO_VALID_SO);
       return GE_OPS_GET_NO_VALID_SO;
+    }
+    Status rst1 =
+      plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr> &>(kGetOpsKernelInfoStores, ops_kernel_store_);
+    if (rst1 != SUCCESS) {
+      GELOGW("Initialize OpsKernelInfo failed.");
+    }
+    Status rst2 =
+      plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr> &>(kGetGraphOptimizerObjs, graph_optimizers_);
+    if (rst2 != SUCCESS) {
+      GELOGW("Initialize GraphOptimizerObjs failed.");
     }
 
     ret = CheckPluginPtr();
@@ -260,6 +272,10 @@ void OpsKernelManager::InitOpsKernelInfo() {
 }
 
 Status OpsKernelManager::InitGraphOptimzers(const map<string, string> &options) {
+  GELOGI("Init graph optimizers options count %zu", options.size());
+  for (const auto &option : options) {
+    GELOGI("Init graph optimizers option %s: %s", option.first.c_str(), option.second.c_str());
+  }
   GELOGI("The number of GraphOptimzerObjs are %zu.", graph_optimizers_.size());
   for (const auto &it : graph_optimizers_) {
     GELOGI("GraphOptimzer name: %s.", (it.first).c_str());
@@ -280,7 +296,6 @@ Status OpsKernelManager::InitGraphOptimzers(const map<string, string> &options) 
       return GE_OPS_GRAPH_OPTIMIZER_INIT_FAILED;
     }
   }
-
   return SUCCESS;
 }
 
@@ -350,6 +365,10 @@ const map<string, OpsKernelInfoStorePtr> &OpsKernelManager::GetAllOpsKernelInfoS
 
 const map<string, GraphOptimizerPtr> &OpsKernelManager::GetAllGraphOptimizerObjs() const { return graph_optimizers_; }
 
+const vector<pair<string, GraphOptimizerPtr>> &OpsKernelManager::GetAllGraphOptimizerObjsByPriority() const {
+  return graph_optimizers_by_priority_;
+}
+
 void OpsKernelManager::GetGraphOptimizerByEngine(const std::string &engine_name,
                                                  vector<GraphOptimizerPtr> &graph_optimizer) {
   for (const auto &it : graph_optimizers_) {
@@ -393,13 +412,11 @@ Status OpsKernelManager::InitGraphOptimizerPriority() {
     return SUCCESS;
   }
   // sort optimizer map by priority
-  map<string, GraphOptimizerPtr> original_optimizers(graph_optimizers_);
-  graph_optimizers_.clear();
   std::stringstream priority_seq;
   for (const auto optimizer_name : priorities) {
-    auto name_to_optimizer_pair = original_optimizers.find(optimizer_name);
-    if (name_to_optimizer_pair != original_optimizers.end()) {
-      graph_optimizers_.emplace(*name_to_optimizer_pair);
+    auto name_to_optimizer_pair = graph_optimizers_.find(optimizer_name);
+    if (name_to_optimizer_pair != graph_optimizers_.end()) {
+      graph_optimizers_by_priority_.emplace_back(*name_to_optimizer_pair);
       priority_seq << optimizer_name.c_str() << ' ';
     } else {
       GELOGW("Unknown optimizer %s show up in priority config file. Please check.", optimizer_name.c_str());

@@ -22,11 +22,23 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <set>
+
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/omg/omg_inner_types.h"
 
 namespace ge {
+
+static std::set<std::string> caffe_support_input_format = {"NCHW", "ND", "NCDHW"};
+static std::set<std::string> tf_support_input_format = {"NCHW", "NHWC", "ND", "NCDHW", "NDHWC"};
+static std::map<std::string, domiTensorFormat_t> input_format_str_to_geformat = {
+  {"ND", domi::DOMI_TENSOR_ND},       {"NCHW", domi::DOMI_TENSOR_NCHW},       {"NHWC", domi::DOMI_TENSOR_NHWC},
+  {"CHWN", domi::DOMI_TENSOR_CHWN},   {"NC1HWC0", domi::DOMI_TENSOR_NC1HWC0}, {"NHWC1C0", domi::DOMI_TENSOR_NHWC1C0},
+  {"NCDHW", domi::DOMI_TENSOR_NCDHW}, {"NDHWC", domi::DOMI_TENSOR_NDHWC}};
+static const std::string kEnableCompressWeightTrue = "1";
+static const std::string kEnableCompressWeightFalse = "0";
+
 bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
                                           std::string &dynamic_batch_size);
 
@@ -39,5 +51,10 @@ Status CheckDynamicBatchSizeOrImageSizeParamValid(std::string &dynamic_batch_siz
 
 bool ParseInputShape(const std::string &input_shape, std::unordered_map<string, std::vector<int64_t>> &shape_map,
                      std::vector<std::pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input = false);
+
+Status CheckOutputTypeParamValid(const std::string output_type);
+Status CheckBufferOptimizeParamValid(const std::string buffer_optimize);
+Status CheckCompressWeightParamValid(const std::string enable_compress_weight, const std::string compress_weight_conf);
+int CheckLogParamValidAndSetLogLevel(const std::string log);
 }  // namespace ge
 #endif  // FRAMEWORK_DOMI_ATC_IR_COMMON_H_

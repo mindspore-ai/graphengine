@@ -60,7 +60,6 @@ class LabelMaker {
   ComputeGraphPtr parent_graph_;
 
  private:
-  Status AddCtrlLink2Data(const ComputeGraphPtr &graph, const NodePtr &node);
   void SetStreamIdEnter(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
   void SetStreamIdLeave(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
   void SetStreamIdOwner(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);

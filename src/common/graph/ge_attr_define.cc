@@ -76,6 +76,10 @@ const std::string ATTR_NAME_ALGO = "algo";
 
 const std::string ATTR_NAME_FORMAT = "format";
 
+const std::string ATTR_NAME_STORAGE_FORMAT = "storage_format";
+
+const std::string ATTR_NAME_STORAGE_SHAPE = "storage_shape";
+
 const std::string ATTR_NAME_FILTER_FORMAT = "filter_format";
 
 const std::string ATTR_NAME_LRN_K = "lrn_k";
@@ -115,6 +119,7 @@ const std::string ATTR_NAME_AIPP = "aipp";
 const std::string NEW_AIPP_CONV_OP = "new_conv_op_for_aipp";
 
 const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
+const std::string ATTR_NAME_PARENT_GRAPH_NAME = "_parent_graph_name";
 
 const std::string ATTR_NAME_MULTISHAPE_BATCHLIST = "multi_shape_batchlist";
 const std::string ATTR_NAME_MULTISHAPE_BATCHLIST_SIZE = "multi_shape_batchlist_size";
@@ -697,6 +702,8 @@ const std::string ATTR_MODEL_MEMORY_SIZE = "memory_size";
 
 const std::string ATTR_MODEL_ZERO_COPY_MEMORY_SIZE = "zero_copy_memory_size";
 
+const std::string ATTR_MODEL_OUT_NODES_NAME = "attr_model_out_nodes_name";
+
 const std::string ATTR_MODEL_WEIGHT_SIZE = "weight_size";
 
 const std::string ATTR_MODEL_TASK_GEN_BASE_ADDR = "task_gen_base_addr";
@@ -895,6 +902,7 @@ const std::string ATTR_NAME_ACTIVE_STREAM_LIST = "active_stream_list";
 const std::string ATTR_NAME_SWITCHN_PRED_VALUE = "switch_pred_value";
 const std::string ATTR_NAME_ITERATORS_PER_LOOP = "iterations_per_loop";
 const std::string ATTR_NAME_FLOW_CTRL_NODE_FLAG = "is_flow_ctrl_node";
+const std::string ATTR_NAME_SUBGRAPH_FIRST_ACTIVE = "subgraph_first_active";
 
 const std::string ATTR_NAME_SWITCH_BRANCH_NODE_LABEL = "_switch_branch_node_label";
 const std::string ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG = "_switch_true_branch_flag";
@@ -973,12 +981,15 @@ const std::string ATTR_NAME_DATA_DUMP_ORIGIN_FORMAT = "_datadump_origin_format";
 const std::string ATTR_NAME_DATA_DUMP_ORIGIN_DATA_TYPE = "_datadump_origin_data_type";
 
 // functional ops attr
+const std::string ATTR_NAME_IF_THEN_BRANCH = "then_branch";
+const std::string ATTR_NAME_IF_ELSE_BRANCH = "else_branch";
 const std::string ATTR_NAME_WHILE_COND = "cond";
 const std::string ATTR_NAME_WHILE_BODY = "body";
 
 // used for label switch
 const std::string ATTR_NAME_LABEL_SWITCH_INDEX = "_label_switch_index";
 const std::string ATTR_NAME_LABEL_SWITCH_LIST = "_label_switch_list";
+const std::string ATTR_NAME_SUBGRAPH_END_NODE = "_subgraph_end_node";
 
 const std::string ATTR_NAME_INPUT_DATATYPE = "input_datatype";
 const std::string ATTR_NAME_OUTPUT_DATATYPE = "output_datatype";
@@ -990,4 +1001,11 @@ const std::string ATTR_NAME_VALID_INPUT_SHAPE_LIST_LIST = "_valid_input_shape_li
 const std::string ATTR_NAME_VALID_OUTPUT_SHAPE_LIST_LIST = "_valid_output_shape_list_list";
 const std::string ATTR_NAME_SLICE_INPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
 const std::string ATTR_NAME_SLICE_OUTPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
+
+// used for Horovod
+const std::string ATTR_INTER_EVENT_IDENTIFY = "event_id";
+const std::string ATTR_HOROVOD_ATTR_REDUCE_TYPE = "reduce_op";
+// used for allreduce tailing optimization
+const std::string ATTR_NAME_HCCL_FUSED_GROUP = "_hccl_fused_group";
+const std::string ATTR_NAME_HCCL_FUSED_FLAG = "_hccl_fused_node";
 }  // namespace ge

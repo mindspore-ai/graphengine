@@ -254,74 +254,38 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
   return SUCCESS;
 }
 
-Status ge::GraphPartitioner::UpdatePldOpDesc(const NodePtr &src_node, int output_index, OpDescPtr &pld_op_desc) {
-  if (src_node == nullptr || pld_op_desc == nullptr || src_node->GetOpDesc() == nullptr) {
-    GELOGE(FAILED, "parameter ptr is null.");
-    return FAILED;
-  }
-  const auto &output_desc = src_node->GetOpDesc()->GetOutputDesc(static_cast<uint32_t>(output_index));
-  GE_IF_BOOL_EXEC(pld_op_desc->AddOutputDesc(output_desc) != GRAPH_SUCCESS, GELOGE(FAILED, "AddOutputDesc failed");
-                  return FAILED;)
-  if (pld_op_desc->MutableOutputDesc(0) != nullptr) {
-    ge::TensorUtils::SetRealDimCnt(*(pld_op_desc->MutableOutputDesc(0).get()),
-                                   static_cast<uint32_t>(output_desc.GetShape().GetDims().size()));
-  } else {
-    GELOGE(GE_GRAPH_ADD_PLC_END_FAILED, "[GraphPartitioner]: pld_op_desc is null.");
-    return FAILED;
-  }
-  const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
-  if (buffer_optimize_on == nullptr) {
-    // flush pld data type as original data type
-    if (output_desc.GetOriginDataType() != DT_UNDEFINED) {
-      pld_op_desc->MutableOutputDesc(0)->SetDataType(output_desc.GetOriginDataType());
-    } else {
-      GELOGW("Original data type of %s is undefined![data type is %s]", src_node->GetName().c_str(),
-             TypeUtils::DataTypeToSerialString(output_desc.GetDataType()).c_str());
-    }
-    // flush pld format as original format
-    if (output_desc.GetOriginFormat() != FORMAT_RESERVED) {
-      pld_op_desc->MutableOutputDesc(0)->SetFormat(output_desc.GetOriginFormat());
-      pld_op_desc->MutableOutputDesc(0)->SetShape(output_desc.GetOriginShape());
-    } else {
-      GELOGW("Original format of %s is undefined![format is %s]", src_node->GetName().c_str(),
-             TypeUtils::FormatToSerialString(output_desc.GetFormat()).c_str());
-    }
-  }
-  return SUCCESS;
-}
-
-Status ge::GraphPartitioner::UpdateEndOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &end_op_desc) {
-  if (dst_node == nullptr || end_op_desc == nullptr || dst_node->GetOpDesc() == nullptr) {
+Status ge::GraphPartitioner::UpdatePldOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &pld_op_desc) {
+  if (dst_node == nullptr || pld_op_desc == nullptr || dst_node->GetOpDesc() == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
   }
   const auto &input_desc = dst_node->GetOpDesc()->GetInputDesc(static_cast<uint32_t>(input_index));
-  GE_IF_BOOL_EXEC(end_op_desc->AddInputDesc(input_desc) != GRAPH_SUCCESS, GELOGE(FAILED, "AddInputDesc failed");
+  GE_IF_BOOL_EXEC(pld_op_desc->AddOutputDesc(input_desc) != GRAPH_SUCCESS, GELOGE(FAILED, "AddOutputDesc failed");
                   return FAILED;)
-  if (end_op_desc->MutableInputDesc(0) != nullptr) {
-    ge::TensorUtils::SetRealDimCnt(*(end_op_desc->MutableInputDesc(0).get()),
+  if (pld_op_desc->MutableOutputDesc(0) != nullptr) {
+    ge::TensorUtils::SetRealDimCnt(*(pld_op_desc->MutableOutputDesc(0).get()),
                                    static_cast<uint32_t>(input_desc.GetShape().GetDims().size()));
   } else {
     GELOGE(GE_GRAPH_ADD_PLC_END_FAILED, "[GraphPartitioner]: pld_op_desc is null.");
     return FAILED;
   }
-  const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
-  if (buffer_optimize_on == nullptr) {
-    // flush end data type as original data type
-    if (input_desc.GetOriginDataType() != DT_UNDEFINED) {
-      end_op_desc->MutableInputDesc(0)->SetDataType(input_desc.GetOriginDataType());
-    } else {
-      GELOGI("Original data type of %s is undefined![data type is %s]", dst_node->GetName().c_str(),
-             TypeUtils::DataTypeToSerialString(input_desc.GetDataType()).c_str());
-    }
-    // flush end format as original format
-    if (input_desc.GetOriginFormat() != FORMAT_RESERVED) {
-      end_op_desc->MutableInputDesc(0)->SetFormat(input_desc.GetOriginFormat());
-      end_op_desc->MutableInputDesc(0)->SetShape(input_desc.GetOriginShape());
-    } else {
-      GELOGW("Original format of %s is undefined![format is %s]", dst_node->GetName().c_str(),
-             TypeUtils::FormatToSerialString(input_desc.GetFormat()).c_str());
-    }
+  return SUCCESS;
+}
+
+Status ge::GraphPartitioner::UpdateEndOpDesc(const NodePtr &src_node, int output_index, OpDescPtr &end_op_desc) {
+  if (src_node == nullptr || end_op_desc == nullptr || src_node->GetOpDesc() == nullptr) {
+    GELOGE(FAILED, "parameter ptr is null.");
+    return FAILED;
+  }
+  const auto &output_desc = src_node->GetOpDesc()->GetOutputDesc(static_cast<uint32_t>(output_index));
+  GE_IF_BOOL_EXEC(end_op_desc->AddInputDesc(output_desc) != GRAPH_SUCCESS, GELOGE(FAILED, "AddInputDesc failed");
+                  return FAILED;)
+  if (end_op_desc->MutableInputDesc(0) != nullptr) {
+    ge::TensorUtils::SetRealDimCnt(*(end_op_desc->MutableInputDesc(0).get()),
+                                   static_cast<uint32_t>(output_desc.GetShape().GetDims().size()));
+  } else {
+    GELOGE(GE_GRAPH_ADD_PLC_END_FAILED, "[GraphPartitioner]: pld_op_desc is null.");
+    return FAILED;
   }
   return SUCCESS;
 }
@@ -350,18 +314,18 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(end_op_desc, "parentOpType", dst_node->GetType()),
                   GELOGW("SetStr parentOpType failed");)
   // replace input_desc of end with owner node's desc
-  int input_index = ge::AnchorUtils::GetIdx(peer_in_anchor);
-  bool is_need_update_desc = (input_index >= 0) && (graph_info_.mode_ == kPartitioning);
+  int output_index = ge::AnchorUtils::GetIdx(out_anchor);
+  bool is_need_update_desc = (output_index >= 0) && (graph_info_.mode_ == kPartitioning);
   if (is_need_update_desc) {
-    if (UpdateEndOpDesc(dst_node, input_index, end_op_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, input index %d, engine name is %s", input_index,
+    if (UpdateEndOpDesc(src_node, output_index, end_op_desc) != SUCCESS) {
+      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, input index %d, engine name is %s", output_index,
              engine_end_name.c_str());
       return FAILED;
     }
   } else {
     GeTensorDesc input_desc;
     if (end_op_desc->AddInputDesc(input_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "AddInputDesc failed, input index %d, engine name is %s", input_index,
+      GELOGE(GRAPH_PARAM_INVALID, "AddInputDesc failed, input index %d, engine name is %s", output_index,
              engine_end_name.c_str());
       return FAILED;
     }
@@ -402,11 +366,11 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   // do not care over flow
   graph_info_.num_of_pld_end_++;
   // replace output_desc of pld with input node's output desc
-  int output_index = ge::AnchorUtils::GetIdx(out_anchor);
-  is_need_update_desc = (output_index >= 0) && (graph_info_.mode_ == kPartitioning);
+  int input_index = ge::AnchorUtils::GetIdx(peer_in_anchor);
+  is_need_update_desc = (input_index >= 0) && (graph_info_.mode_ == kPartitioning);
   if (is_need_update_desc) {
-    if (UpdatePldOpDesc(src_node, output_index, pld_op_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, output index %d, engine name is %s", output_index,
+    if (UpdatePldOpDesc(dst_node, input_index, pld_op_desc) != SUCCESS) {
+      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, output index %d, engine name is %s", input_index,
              engine_pld_name.c_str());
       return FAILED;
     }
@@ -596,14 +560,14 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
       return FAILED;
     }
     auto &engine_name = graph_info_.partitions_.at(sub_graph);
-    GraphUtils::DumpGEGraph(sub_graph, sub_graph->GetName());
-    GraphUtils::DumpGEGraphToOnnx(*sub_graph, sub_graph->GetName());
+    GE_DUMP(sub_graph, sub_graph->GetName());
     if (!session_graph_id.empty()) {
       GE_IF_BOOL_EXEC(!AttrUtils::SetStr(sub_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
                       GELOGW("SetStr ATTR_NAME_SESSION_GRAPH_ID failed");)
     }
     // flush parent node of subgraph
     sub_graph->SetParentNode(compute_graph->GetParentNode());
+    (void)AttrUtils::SetStr(*sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
     if (engine_name != input_subgraph_name) {  // do not add Data subGraph into SubGraphInfo
       auto sgi = MakeShared<SubGraphInfo>();
       if (sgi == nullptr) {

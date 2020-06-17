@@ -30,7 +30,6 @@
 namespace ge {
 Status ControlTriggerPass::Run(ComputeGraphPtr graph) {
   GELOGD("ControlTriggerPass Enter");
-
   for (NodePtr &node : graph->GetDirectNode()) {
     if (node->GetType() != CONTROLTRIGGER) {
       continue;
@@ -442,6 +441,15 @@ Status ControlTriggerPass::FindPredInput(const NodePtr &switch_node) {
   }
 
   switch_cond_map_[switch_node] = pred_cond_anchor->GetOwnerNode();
+  return SUCCESS;
+}
+///
+/// @brief Clear Status, uesd for subgraph pass
+/// @return SUCCESS
+///
+Status ControlTriggerPass::ClearStatus() {
+  switch_cond_map_.clear();
+  control_trigger_map_.clear();
   return SUCCESS;
 }
 }  // namespace ge

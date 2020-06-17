@@ -329,7 +329,7 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
     auto switchn = graph->FindNode(related_node_name);
     if (switchn == nullptr) {
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node %s, but can not find it on the graph",
-             data_node->GetName().c_str(), switchn->GetName().c_str());
+             data_node->GetName().c_str(), related_node_name.c_str());
       return INTERNAL_ERROR;
     }
     target = switchn;

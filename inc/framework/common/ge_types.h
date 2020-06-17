@@ -40,6 +40,14 @@ enum FrameworkType {
   FMK_TYPE_RESERVED,
 };
 
+enum OpEngineType {
+  ENGINE_SYS = 0,  // default engine
+  ENGINE_AICORE = 1,
+  ENGINE_VECTOR = 2,
+  ENGINE_AICUBE = 3,   // not support
+  ENGINE_AIVECTOR = 4  // not support
+};
+
 const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 
 // Data cache, including data address and length
@@ -141,6 +149,7 @@ struct Options {
   int32_t device_id;
   std::string job_id;
   bool isUseHcom;
+  bool isUseHvd;
   bool deployMode;
   bool isAICPUMode;
   bool enable_atomic;

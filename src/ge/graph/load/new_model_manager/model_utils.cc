@@ -474,7 +474,7 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
       int64_t workspace_bytes = v_workspace_bytes[i];
       uint8_t *mem_addr = workspace_bytes == 0 ? nullptr : mem_base + workspace_offset;
       v_workspace_data_addr.push_back(mem_addr);
-      GELOGI("[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] output[%zu] offset[%ld] bytes[%ld] memaddr[%p]",
+      GELOGI("[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] workspace[%zu] offset[%ld] bytes[%ld] memaddr[%p]",
              model_param.graph_id, op_desc->GetName().c_str(), i, workspace_offset, workspace_bytes, mem_addr);
     }
   }

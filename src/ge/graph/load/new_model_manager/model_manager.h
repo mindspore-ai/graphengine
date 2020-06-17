@@ -25,6 +25,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <model/ge_root_model.h>
 #include "cce/aicpu_engine_struct.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/ge_types.h"
@@ -34,10 +35,10 @@
 #include "ge/ge_api_types.h"
 #include "graph/ge_context.h"
 #include "graph/model.h"
+#include "hybrid/hybrid_davinci_model.h"
 #include "runtime/base.h"
 
 namespace ge {
-
 class DavinciModel;
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
@@ -69,8 +70,11 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @return Status run result
   /// @author @
   ///
-  ge::Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeModel> &model,
+  ge::Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeRootModel> &ge_root_model,
                              std::shared_ptr<ModelListener> listener);
+
+  ge::Status DoLoadHybridModelOnline(uint32_t model_id, const shared_ptr<ge::GeRootModel> &ge_root_model,
+                                     const std::shared_ptr<ModelListener> &listener);
 
   ///
   /// @ingroup ge
@@ -206,6 +210,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   std::shared_ptr<DavinciModel> GetModel(uint32_t id);
 
+  std::shared_ptr<hybrid::HybridDavinciModel> GetHybridModel(uint32_t id);
+
   ge::Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id);
 
   ge::Status CreateAicpuSession(uint64_t session_id);
@@ -238,6 +244,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @brief insert new model into model manager set
   ///
   void InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davinci_model);
+  void InsertModel(uint32_t id, std::shared_ptr<hybrid::HybridDavinciModel> &hybrid_model);
 
   ///
   /// @ingroup domi_ome
@@ -248,6 +255,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   void GenModelId(uint32_t *id);
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
+  std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
   std::map<std::string, std::vector<uint64_t>> model_aicpu_kernel_;
   uint32_t max_model_id_;
   std::mutex map_mutex_;

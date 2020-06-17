@@ -37,6 +37,7 @@ namespace ge {
 class AtomicAddrCleanPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
+  Status ClearStatus() override;
 
  private:
   /**

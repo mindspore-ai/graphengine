@@ -90,7 +90,8 @@ bool TransOpSymmetryEliminationPass::DescAreSymmetry(const NodePtr &src_node, co
   const auto &dst_output_shape = dst_output_desc->GetShape().GetDims();
 
   if (src_node->GetType() == CAST && dst_node->GetType() == CAST) {
-    return (src_input_dtype == dst_output_dtype) && (src_input_format == dst_output_format);
+    bool is_format_symmetry = (src_input_format == dst_output_format) || (dst_output_format == FORMAT_ND);
+    return (src_input_dtype == dst_output_dtype) && is_format_symmetry;
   } else {
     return (src_input_dtype == dst_output_dtype) && (src_input_shape == dst_output_shape) &&
            (src_input_format == dst_output_format);

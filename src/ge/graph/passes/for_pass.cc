@@ -29,26 +29,26 @@
 
 namespace {
 const uint32_t kWhileIInputIndex = 0;
-const uint32_t kWhileNInputIndex = 1;
-const uint32_t kWhileStartInputIndex = 2;
-const uint32_t kWhileDeltaInputIndex = 3;
-const uint32_t kWhileDataInputIndex = 4;
+const uint32_t kWhileAbsDeltaInputIndex = 1;
+const uint32_t kWhileRangeInputIndex = 2;
+const uint32_t kWhileStartInputIndex = 3;
+const uint32_t kWhileDeltaInputIndex = 4;
+const uint32_t kWhileDataInputIndex = 5;
 const uint32_t kSubgraphLoopVarInputIndex = 0;
 const uint32_t kSubgraphInputIndex = 1;
-const uint32_t kWhileOutputIndex = 4;
+const uint32_t kWhileOutputIndex = 5;
 const std::string kAbs = "Abs";
 }  // namespace
 
 namespace ge {
 Status ForPass::Run(NodePtr &node) {
-  GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
   if (node->GetType() != FOR) {
+    GELOGD("no need for_pass for node %s.", node->GetName().c_str());
     return SUCCESS;
   }
 
   GELOGI("Begin to transfer for_op to while_op, node:%s.", node->GetName().c_str());
-
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   GE_CHECK_NOTNULL(graph);
   ComputeGraphPtr root_graph = GraphUtils::FindRootGraph(graph);
@@ -98,7 +98,7 @@ Status ForPass::BuildForInfo(const ComputeGraphPtr &root_graph, const NodePtr &n
   OutDataAnchorPtr limit = FindInputWithIndex(node, FOR_LIMIT_INPUT);
   OutDataAnchorPtr delta = FindInputWithIndex(node, FOR_DELTA_INPUT);
   if ((start == nullptr) || (limit == nullptr) || (delta == nullptr)) {
-    GELOGE(FAILED, "BuildForInfo for %s failed: start / limit / delta is NULL.", node->GetName().c_str());
+    GELOGE(FAILED, "BuildForInfo for %s failed: start/limit/delta is NULL.", node->GetName().c_str());
     return FAILED;
   }
 
@@ -107,7 +107,7 @@ Status ForPass::BuildForInfo(const ComputeGraphPtr &root_graph, const NodePtr &n
   std::vector<OutControlAnchorPtr> ctrl_inputs;
   std::vector<InControlAnchorPtr> ctrl_outputs;
   if (FindInputsAndOutputs(node, data_inputs, data_outputs, ctrl_inputs, ctrl_outputs) != SUCCESS) {
-    GELOGE(FAILED, "BuildForInfo for %s failed: find inputs /outputs failed.", node->GetName().c_str());
+    GELOGE(FAILED, "BuildForInfo for %s failed: find inputs/outputs failed.", node->GetName().c_str());
     return FAILED;
   }
   NodeUtils::UnlinkAll(*node);
@@ -235,20 +235,31 @@ Status ForPass::TranWhileInfo(const ComputeGraphPtr &graph, const ForInfo &for_i
   }
   AddRePassNode(i_node);
 
-  // Const node has and only has one output
-  OutDataAnchorPtr i_input = i_node->GetOutDataAnchor(0);
+  std::string identity_name = i_name + "_Identity";
+  NodePtr identity_node = graph->AddNode(CreateOpDesc(identity_name, IDENTITY, true));
+  // Const node has and only has one output, Identity node has and only has one input
+  if ((identity_node == nullptr) ||
+      (GraphUtils::AddEdge(i_node->GetOutDataAnchor(0), identity_node->GetInDataAnchor(0)) != GRAPH_SUCCESS)) {
+    GELOGE(FAILED, "TranWhileInfo failed: Add data-edge %s:0->%s:0 failed.", i_name.c_str(), identity_name.c_str());
+    return FAILED;
+  }
+  AddRePassNode(identity_node);
+
+  // Identity node has and only has one output
+  OutDataAnchorPtr i_input = identity_node->GetOutDataAnchor(0);
   if (i_input == nullptr) {
     GELOGE(FAILED, "TranWhileInfo failed: i_input is NULL.");
     return FAILED;
   }
 
-  OutDataAnchorPtr n_input = CreateLoopCountInput(graph, for_info);
-  if (n_input == nullptr) {
-    GELOGE(FAILED, "TranWhileInfo failed: n_input is NULL.");
+  OutDataAnchorPtr range_input = nullptr;
+  OutDataAnchorPtr abs_delta_input = nullptr;
+  if (CreateLoopInput(graph, for_info, range_input, abs_delta_input) != SUCCESS) {
+    GELOGE(FAILED, "TranWhileInfo failed: create loop input failed.");
     return FAILED;
   }
 
-  BuildWhileInfo(for_info, i_input, n_input, while_info);
+  BuildWhileInfo(for_info, i_input, range_input, abs_delta_input, while_info);
 
   if (InsertWhileNode(graph, for_name + "_While", while_info) != SUCCESS) {
     GELOGE(FAILED, "TranWhileInfo failed: insert while node failed.");
@@ -273,7 +284,7 @@ OpDescPtr ForPass::CreateConstDesc(const std::string &name, int32_t value) {
     return nullptr;
   }
 
-  GeTensorDesc data_desc(GeShape(), FORMAT_NCHW, DT_INT32);
+  GeTensorDesc data_desc(GeShape(), FORMAT_ND, DT_INT32);
   GeTensorPtr const_value = MakeShared<GeTensor>(data_desc, reinterpret_cast<uint8_t *>(&value), sizeof(int32_t));
   if (const_value == nullptr) {
     GELOGE(FAILED, "Create tensor failed, const:%s.", name.c_str());
@@ -294,12 +305,15 @@ OpDescPtr ForPass::CreateConstDesc(const std::string &name, int32_t value) {
 }
 
 ///
-/// @brief Create loop_count node
+/// @brief Create loop node
 /// @param [in] graph
 /// @param [in] for_info
-/// @return OutDataAnchorPtr
+/// @param [out] range_input
+/// @param [out] abs_delta_input
+/// @return Status
 ///
-OutDataAnchorPtr ForPass::CreateLoopCountInput(const ComputeGraphPtr &graph, const ForInfo &for_info) {
+Status ForPass::CreateLoopInput(const ComputeGraphPtr &graph, const ForInfo &for_info, OutDataAnchorPtr &range_input,
+                                OutDataAnchorPtr &abs_delta_input) {
   std::string for_name = for_info.for_node->GetName();
   GELOGD("Begin to create loop_count input, node:%s", for_name.c_str());
 
@@ -310,15 +324,8 @@ OutDataAnchorPtr ForPass::CreateLoopCountInput(const ComputeGraphPtr &graph, con
   std::string sub_name_0 = for_name + "_Sub_0";
   std::string abs_name_0 = for_name + "_Abs_0";
   std::string abs_name_1 = for_name + "_Abs_1";
-  std::string add_name_0 = for_name + "_Add_0";
-  std::string const_name = for_name + "_Const";
-  std::string sub_name_1 = for_name + "_Sub_1";
-  std::string cast_name_0 = for_name + "_Cast_0";
-  std::string cast_name_1 = for_name + "_Cast_1";
-  std::string div_name = for_name + "_RealDiv";
-  std::string cast_name_2 = for_name + "_Cast_2";
 
-  // n = cast(cast(abs(limit-start) + abs(delta) - 1, float) / cast(abs(delta), float), int32)
+  // i * |delta| < |limit-start|
   PartialGraphBuilder graph_builder;
   graph_builder.SetOwnerGraph(graph)
     .AddExistNode(for_info.start->GetOwnerNode())
@@ -327,78 +334,36 @@ OutDataAnchorPtr ForPass::CreateLoopCountInput(const ComputeGraphPtr &graph, con
     .AddNode(CreateOpDesc(sub_name_0, SUB, false))
     .AddNode(CreateOpDesc(abs_name_0, kAbs, true))
     .AddNode(CreateOpDesc(abs_name_1, kAbs, true))
-    .AddNode(CreateOpDesc(add_name_0, ADD, false))
-    .AddNode(CreateConstDesc(const_name, 1))
-    .AddNode(CreateOpDesc(sub_name_1, SUB, false))
-    .AddNode(CreateCastDesc(cast_name_0, DT_INT32, DT_FLOAT))
-    .AddNode(CreateCastDesc(cast_name_1, DT_INT32, DT_FLOAT))
-    .AddNode(CreateOpDesc(div_name, REALDIV, false))
-    .AddNode(CreateCastDesc(cast_name_2, DT_FLOAT, DT_INT32))
+    .AddDataLink(delta->GetOwnerNode()->GetName(), delta->GetIdx(), abs_name_0, 0)
     .AddDataLink(limit->GetOwnerNode()->GetName(), limit->GetIdx(), sub_name_0, 0)
     .AddDataLink(start->GetOwnerNode()->GetName(), start->GetIdx(), sub_name_0, 1)
-    .AddDataLink(sub_name_0, 0, abs_name_0, 0)
-    .AddDataLink(delta->GetOwnerNode()->GetName(), delta->GetIdx(), abs_name_1, 0)
-    .AddDataLink(abs_name_0, 0, add_name_0, 0)
-    .AddDataLink(abs_name_1, 0, add_name_0, 1)
-    .AddDataLink(add_name_0, 0, sub_name_1, 0)
-    .AddDataLink(const_name, 0, sub_name_1, 1)
-    .AddDataLink(sub_name_1, 0, cast_name_0, 0)
-    .AddDataLink(abs_name_1, 0, cast_name_1, 0)
-    .AddDataLink(cast_name_0, 0, div_name, 0)
-    .AddDataLink(cast_name_1, 0, div_name, 1)
-    .AddDataLink(div_name, 0, cast_name_2, 0);
+    .AddDataLink(sub_name_0, 0, abs_name_1, 0);
 
   graphStatus error_code = GRAPH_SUCCESS;
   std::string error_msg;
   if ((graph_builder.Build(error_code, error_msg) == nullptr) || (error_code != GRAPH_SUCCESS)) {
     GELOGE(FAILED, "Create loop_count node failed: error_code:%u, error_msg:%s.", error_code, error_msg.c_str());
-    return nullptr;
+    return FAILED;
   }
 
-  NodePtr loop_count_node = graph_builder.GetNode(cast_name_2);
-  if (loop_count_node == nullptr) {
-    GELOGE(FAILED, "Create loop_count node failed: node is NULL.");
-    return nullptr;
+  // Add repass_nodes
+  for (auto &node : graph_builder.GetAllNodes()) {
+    AddRePassNode(node);
   }
 
-  GELOGD("Create loop_count input succ, node:%s", for_name.c_str());
-  // loop_count_node is a Cast node, has and only has one output
-  return loop_count_node->GetOutDataAnchor(0);
-}
-
-///
-/// @brief Create cast op_desc
-/// @param [in] name
-/// @param [in] src_data_type
-/// @param [in] dst_data_type
-/// @return OpDescPtr
-///
-OpDescPtr ForPass::CreateCastDesc(const std::string &name, DataType src, DataType dst) {
-  OpDescPtr cast_desc = CreateOpDesc(name, CAST, true);
-  if (cast_desc == nullptr) {
-    GELOGE(FAILED, "Create cast op_desc failed, node: %s.", name.c_str());
-    return nullptr;
+  NodePtr abs_delta_node = graph_builder.GetNode(abs_name_0);
+  NodePtr loop_count_node = graph_builder.GetNode(abs_name_1);
+  if ((abs_delta_node == nullptr) || (loop_count_node == nullptr)) {
+    GELOGE(FAILED, "Create loop node failed: node is NULL.");
+    return FAILED;
   }
 
-  // cast node has and only has one input /output
-  GeTensorDesc in_tensor = cast_desc->GetInputDesc(0);
-  in_tensor.SetDataType(src);
-  GeTensorDesc out_tensor = cast_desc->GetOutputDesc(0);
-  out_tensor.SetDataType(dst);
-  if ((cast_desc->UpdateInputDesc(0, in_tensor) != GRAPH_SUCCESS) ||
-      (cast_desc->UpdateOutputDesc(0, out_tensor) != GRAPH_SUCCESS)) {
-    GELOGE(FAILED, "Update tensor failed.");
-    return nullptr;
-  }
+  GELOGD("Create loop_range input succ, node:%s", for_name.c_str());
+  // abs_node has and only has one output
+  abs_delta_input = abs_delta_node->GetOutDataAnchor(0);
+  range_input = loop_count_node->GetOutDataAnchor(0);
 
-  if (!(AttrUtils::SetInt(cast_desc, CAST_ATTR_SRCT, src) && AttrUtils::SetInt(cast_desc, CAST_ATTR_DSTT, dst) &&
-        AttrUtils::SetInt(cast_desc, CAST_ATTR_DST_TYPE, dst) &&
-        AttrUtils::SetBool(cast_desc, CAST_ATTR_TRUNCATE, false))) {
-    GELOGE(FAILED, "Set CAST_ATTR failed, node: %s.", name.c_str());
-    return nullptr;
-  }
-
-  return cast_desc;
+  return SUCCESS;
 }
 
 ///
@@ -423,20 +388,24 @@ OpDescPtr ForPass::CreateOpDesc(const std::string &name, const std::string &type
 /// @brief Build while-info
 /// @param [in] for_info
 /// @param [in] i_input
-/// @param [in] n_input
+/// @param [in] range_input
+/// @param [in] abs_delta_input
 /// @param [out] while_info
 /// @return void
 ///
-void ForPass::BuildWhileInfo(const ForInfo &for_info, const OutDataAnchorPtr &i_input, const OutDataAnchorPtr &n_input,
+void ForPass::BuildWhileInfo(const ForInfo &for_info, const OutDataAnchorPtr &i_input,
+                             const OutDataAnchorPtr &range_input, const OutDataAnchorPtr &abs_delta_input,
                              WhileInfo &while_info) {
   while_info.i = i_input;
-  while_info.n = n_input;
+  while_info.abs_delta = abs_delta_input;
+  while_info.range = range_input;
   while_info.start = for_info.start;
   while_info.delta = for_info.delta;
   while_info.for_body_name = for_info.body_name;
   while_info.for_body = for_info.for_body;
   while_info.data_inputs.emplace_back(while_info.i);
-  while_info.data_inputs.emplace_back(while_info.n);
+  while_info.data_inputs.emplace_back(while_info.abs_delta);
+  while_info.data_inputs.emplace_back(while_info.range);
   while_info.data_inputs.emplace_back(while_info.start);
   while_info.data_inputs.emplace_back(while_info.delta);
   for (auto &item : for_info.data_inputs) {
@@ -553,12 +522,15 @@ ComputeGraphPtr ForPass::BuildCondGraph(WhileInfo &while_info) {
   graph_builder.SetParentNode(while_info.while_node);
 
   // Add Node
+  const std::string mul_name = "Mul";
+  graph_builder.AddNode(CreateOpDesc(mul_name, MUL, false));
   const std::string less_name = "Less";
   graph_builder.AddNode(CreateOpDesc(less_name, LESS, false));
 
   // Set Input
-  graph_builder.SetInput(kWhileIInputIndex, {less_name}, {0})
-    .SetInput(kWhileNInputIndex, {less_name}, {1})
+  graph_builder.SetInput(kWhileIInputIndex, {mul_name}, {0})
+    .SetInput(kWhileAbsDeltaInputIndex, {mul_name}, {1})
+    .SetInput(kWhileRangeInputIndex, {less_name}, {1})
     .SetUselessInput(kWhileStartInputIndex)
     .SetUselessInput(kWhileDeltaInputIndex);
   size_t input_num = while_info.data_inputs.size();
@@ -568,6 +540,9 @@ ComputeGraphPtr ForPass::BuildCondGraph(WhileInfo &while_info) {
 
   // Add Output
   graph_builder.AddOutput(less_name, 0);
+
+  // Add Edges
+  graph_builder.AddDataLink(mul_name, 0, less_name, 0);
 
   // Add Input-Mapping
   std::map<uint32_t, uint32_t> input_mapping;
@@ -622,7 +597,8 @@ ComputeGraphPtr ForPass::BuildBodyGraph(WhileInfo &while_info) {
 
   // Set Input
   graph_builder.SetInput(kWhileIInputIndex, {add_name_0, mul_name}, {0, 0})
-    .SetUselessInput(kWhileNInputIndex)
+    .SetUselessInput(kWhileAbsDeltaInputIndex)
+    .SetUselessInput(kWhileRangeInputIndex)
     .SetInput(kWhileStartInputIndex, {add_name_1}, {0})
     .SetInput(kWhileDeltaInputIndex, {mul_name}, {1});
   for (uint32_t i = 0; i < input_num - kWhileDataInputIndex; i++) {
@@ -631,7 +607,7 @@ ComputeGraphPtr ForPass::BuildBodyGraph(WhileInfo &while_info) {
 
   // Add Outputs
   graph_builder.AddOutput(add_name_0, 0);
-  for (uint32_t i = kWhileNInputIndex; i < kWhileDataInputIndex; i++) {
+  for (uint32_t i = kWhileAbsDeltaInputIndex; i < kWhileDataInputIndex; i++) {
     graph_builder.AddOutput("Data_" + std::to_string(i), 0);
   }
   for (uint32_t i = 0; i < sub_graph_output_num; i++) {

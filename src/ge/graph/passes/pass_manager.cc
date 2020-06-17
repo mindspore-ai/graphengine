@@ -22,26 +22,29 @@
 #include "omg/omg_inner_types.h"
 
 namespace ge {
-const vector<GraphPass *> &PassManager::GraphPasses() const { return graph_passes_; }
+const vector<std::pair<std::string, GraphPass *>> &PassManager::GraphPasses() const { return names_to_graph_passes_; }
 
-Status PassManager::AddPass(GraphPass *pass) {
+Status PassManager::AddPass(const string &pass_name, GraphPass *pass) {
   GE_CHECK_NOTNULL(pass);
-  graph_passes_.push_back(pass);
+  names_to_graph_passes_.emplace_back(pass_name, pass);
   return SUCCESS;
 }
 
 Status PassManager::Run(const ComputeGraphPtr &graph) {
   GE_CHECK_NOTNULL(graph);
-  return Run(graph, graph_passes_);
+  return Run(graph, names_to_graph_passes_);
 }
 
-Status PassManager::Run(const ComputeGraphPtr &graph, vector<GraphPass *> &passes) {
+Status PassManager::Run(const ComputeGraphPtr &graph, vector<std::pair<std::string, GraphPass *>> &names_to_passes) {
   GE_CHECK_NOTNULL(graph);
   bool not_changed = true;
 
-  for (auto &pass : passes) {
+  for (auto &pass_pair : names_to_passes) {
+    const auto &pass = pass_pair.second;
+    const auto &pass_name = pass_pair.first;
     GE_CHECK_NOTNULL(pass);
 
+    GE_TIMESTAMP_START(PassRun);
     Status status = pass->Run(graph);
     if (status == SUCCESS) {
       not_changed = false;
@@ -51,7 +54,11 @@ Status PassManager::Run(const ComputeGraphPtr &graph, vector<GraphPass *> &passe
     }
     for (const auto &subgraph : graph->GetAllSubgraphs()) {
       GE_CHECK_NOTNULL(subgraph);
+      GE_CHK_STATUS_RET(pass->ClearStatus(), "pass clear status failed for subgraph %s", subgraph->GetName().c_str());
+      string subgraph_pass_name = pass_name + "::" + graph->GetName();
+      GE_TIMESTAMP_START(PassRunSubgraph);
       status = pass->Run(subgraph);
+      GE_TIMESTAMP_END(PassRunSubgraph, subgraph_pass_name.c_str());
       if (status == SUCCESS) {
         not_changed = false;
       } else if (status != NOT_CHANGED) {
@@ -59,13 +66,15 @@ Status PassManager::Run(const ComputeGraphPtr &graph, vector<GraphPass *> &passe
         return status;
       }
     }
+    GE_TIMESTAMP_END(PassRun, pass_name.c_str());
   }
 
   return not_changed ? NOT_CHANGED : SUCCESS;
 }
 
 PassManager::~PassManager() {
-  for (auto pass : graph_passes_) {
+  for (auto &pass_pair : names_to_graph_passes_) {
+    auto &pass = pass_pair.second;
     GE_DELETE_NEW_SINGLE(pass);
   }
 }

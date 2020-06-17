@@ -23,18 +23,19 @@
 #include <unordered_set>
 #include <utility>
 #include "common/ge/ge_util.h"
+#include "ge/ge_api_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/types.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/ge_context.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
 Status SwitchOpPass::Run(ComputeGraphPtr graph) {
   GELOGD("SwitchOpPass Enter");
-
   GE_CHK_STATUS_RET(CheckCycleDependence(graph), "CheckCycleDependence fail.");
 
   for (auto &switch_node : switch_nodes_) {
@@ -93,7 +94,7 @@ Status SwitchOpPass::ReplaceSwitchNode(ComputeGraphPtr &graph, NodePtr &switch_n
   OutDataAnchorPtr peer_data_anchor = nullptr;
   OutDataAnchorPtr peer_cond_anchor = nullptr;
   GE_CHK_BOOL_EXEC(BypassSwitchNode(switch_node, peer_data_anchor, peer_cond_anchor) == SUCCESS, return FAILED,
-                   "Bypass switch node fail.");
+                   "Bypass switch node %s fail.", switch_node->GetName().c_str());
   GE_CHECK_NOTNULL(peer_data_anchor);
   GE_CHECK_NOTNULL(peer_cond_anchor);
   OpDescPtr cond_desc = peer_cond_anchor->GetOwnerNode()->GetOpDesc();
@@ -268,6 +269,15 @@ NodePtr SwitchOpPass::CreateStreamSwitchNode(ComputeGraphPtr &graph, const NodeP
     GELOGE(FAILED, "Create op_desc fail, StreamSwitch:%s.", node_name.c_str());
     return nullptr;
   }
+  // mark hccl group id
+  std::string hccl_group_id;
+  if (AttrUtils::GetStr(switch_node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, hccl_group_id)) {
+    (void)AttrUtils::SetStr(op_desc, ATTR_NAME_HCCL_FUSED_GROUP, hccl_group_id);
+    GELOGI("Set attr ATTR_NAME_HCCL_FUSED_GROUP for Stream_Switch%s, value is %s.", node_name.c_str(),
+           hccl_group_id.c_str());
+  } else {
+    GELOGI("Can not find attr ATTR_NAME_HCCL_FUSED_GROUP for node %s.", switch_node->GetName().c_str());
+  }
 
   if (!AttrUtils::SetInt(op_desc, ATTR_NAME_SWITCH_DATA_TYPE, RT_SWITCH_INT32) ||
       !AttrUtils::SetInt(op_desc, ATTR_NAME_STREAM_SWITCH_COND, (int64_t)RT_EQUAL)) {
@@ -333,62 +343,66 @@ NodePtr SwitchOpPass::CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDat
 ///
 Status SwitchOpPass::CombineSwitchNode(ComputeGraphPtr &graph) {
   for (auto iter = cond_node_map_.begin(); iter != cond_node_map_.end(); ++iter) {
-    OutDataAnchorPtr peer_cond_anchor = iter->first;
-    GE_CHECK_NOTNULL(peer_cond_anchor);
-    std::list<NodePtr> false_switch_list = iter->second[SWITCH_FALSE_OUTPUT];
-    std::list<NodePtr> true_switch_list = iter->second[SWITCH_TRUE_OUTPUT];
-    std::set<NodePtr> same_cond_switch;
-    same_cond_switch.insert(false_switch_list.begin(), false_switch_list.end());
-    same_cond_switch.insert(true_switch_list.begin(), true_switch_list.end());
+    for (auto group_iter = iter->second.begin(); group_iter != iter->second.end(); ++group_iter) {
+      OutDataAnchorPtr peer_cond_anchor = iter->first;
+      GE_CHECK_NOTNULL(peer_cond_anchor);
+      std::list<NodePtr> false_switch_list = group_iter->second[SWITCH_FALSE_OUTPUT];
+      std::list<NodePtr> true_switch_list = group_iter->second[SWITCH_TRUE_OUTPUT];
+      std::set<NodePtr> same_cond_switch;
+      same_cond_switch.insert(false_switch_list.begin(), false_switch_list.end());
+      same_cond_switch.insert(true_switch_list.begin(), true_switch_list.end());
 
-    NodePtr cond_node = peer_cond_anchor->GetOwnerNode();
-    GELOGI("CombineSwitchNode: cond_node=%s", cond_node->GetName().c_str());
+      NodePtr cond_node = peer_cond_anchor->GetOwnerNode();
+      GELOGI("CombineSwitchNode: cond_node=%s", cond_node->GetName().c_str());
 
-    NodePtr cast_node = CreateCastOp(graph, peer_cond_anchor);
-    GE_CHK_BOOL_EXEC(cast_node != nullptr, return FAILED, "Create cast_node fail.");
+      NodePtr cast_node = CreateCastOp(graph, peer_cond_anchor);
+      GE_CHK_BOOL_EXEC(cast_node != nullptr, return FAILED, "Create cast_node fail.");
 
-    NodePtr active_node = CreateActiveNode(graph, cond_node);
-    GE_CHK_BOOL_EXEC(active_node != nullptr, return FAILED, "Create StreamActive node fail.");
-    GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutControlAnchor(), active_node->GetInControlAnchor()),
-                  "StreamActive add ctl edge fail.");
-    if (SetActiveLabelList(active_node, {cast_node->GetName()}) != SUCCESS) {
-      GELOGE(FAILED, "SetActiveLabelList for node %s fail.", active_node->GetName().c_str());
-      return FAILED;
-    }
-
-    const std::string cond_group = cond_node->GetName();
-    for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
-      bool true_branch_flag = (i == SWITCH_TRUE_OUTPUT);
-      std::list<NodePtr> &switch_list = (true_branch_flag ? true_switch_list : false_switch_list);
-      GE_IF_BOOL_EXEC(switch_list.empty(), continue);
-
-      // select first stream_switch
-      NodePtr stream_switch = switch_list.front();
-      OpDescPtr switch_desc = stream_switch->GetOpDesc();
-      GE_CHECK_NOTNULL(switch_desc);
-      switch_desc->SetName(cond_group + "/" + STREAMSWITCH + (true_branch_flag ? "_t" : "_f"));
-      stream_switch_nodes_.emplace_back(stream_switch);
-      need_label_nodes_.emplace_back(stream_switch);
-
-      // 0_input: original pred input, 1_input: constant node
-      GE_CHK_STATUS_RET(AddConstNode(graph, stream_switch), "Add const node fail");
-      GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, stream_switch->GetInDataAnchor(0)),
-                    "StreamSwitch remove data edge fail.");
-      GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutDataAnchor(0), stream_switch->GetInDataAnchor(0)),
-                    "Cast add data edge fail.");
-
-      for (NodePtr &node : switch_list) {
-        GE_CHECK_NOTNULL(node);
-        GE_IF_BOOL_EXEC(node != stream_switch, {
-          GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, node->GetInDataAnchor(0)),
-                        "StreamSwitch remove data edge fail.");
-        });
-        GE_CHK_STATUS(ModifySwitchInCtlEdges(node, cast_node, same_cond_switch), "ModifySwitchInCtlEdges fail");
-        GE_CHK_STATUS(ModifySwitchOutCtlEdges(node, stream_switch, active_node), "ModifySwitchOutCtlEdges fail");
+      NodePtr active_node = CreateActiveNode(graph, cond_node);
+      GE_CHK_BOOL_EXEC(active_node != nullptr, return FAILED, "Create StreamActive node fail.");
+      GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutControlAnchor(), active_node->GetInControlAnchor()),
+                    "StreamActive add ctl edge fail.");
+      if (SetActiveLabelList(active_node, {cast_node->GetName()}) != SUCCESS) {
+        GELOGE(FAILED, "SetActiveLabelList for node %s fail.", active_node->GetName().c_str());
+        return FAILED;
       }
 
-      GE_CHK_STATUS(GraphUtils::AddEdge(active_node->GetOutControlAnchor(), stream_switch->GetInControlAnchor()),
-                    "StreamActive add ctl edge fail.");
+      const std::string cond_group = cond_node->GetName();
+      for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
+        bool true_branch_flag = (i == SWITCH_TRUE_OUTPUT);
+        std::list<NodePtr> &switch_list = (true_branch_flag ? true_switch_list : false_switch_list);
+        GE_IF_BOOL_EXEC(switch_list.empty(), continue);
+
+        // select first stream_switch
+        NodePtr stream_switch = switch_list.front();
+        OpDescPtr switch_desc = stream_switch->GetOpDesc();
+        GE_CHECK_NOTNULL(switch_desc);
+        std::string node_name = cond_group + "/" + STREAMSWITCH + (true_branch_flag ? "_t" : "_f");
+        node_name = CheckDuplicateName(node_name);
+        switch_desc->SetName(node_name);
+        stream_switch_nodes_.emplace_back(stream_switch);
+        need_label_nodes_.emplace_back(stream_switch);
+
+        // 0_input: original pred input, 1_input: constant node
+        GE_CHK_STATUS_RET(AddConstNode(graph, stream_switch), "Add const node fail");
+        GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, stream_switch->GetInDataAnchor(0)),
+                      "StreamSwitch remove data edge fail.");
+        GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutDataAnchor(0), stream_switch->GetInDataAnchor(0)),
+                      "Cast add data edge fail.");
+
+        for (NodePtr &node : switch_list) {
+          GE_CHECK_NOTNULL(node);
+          GE_IF_BOOL_EXEC(node != stream_switch, {
+            GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, node->GetInDataAnchor(0)),
+                          "StreamSwitch remove data edge fail.");
+          });
+          GE_CHK_STATUS(ModifySwitchInCtlEdges(node, cast_node, same_cond_switch), "ModifySwitchInCtlEdges fail");
+          GE_CHK_STATUS(ModifySwitchOutCtlEdges(node, stream_switch, active_node), "ModifySwitchOutCtlEdges fail");
+        }
+
+        GE_CHK_STATUS(GraphUtils::AddEdge(active_node->GetOutControlAnchor(), stream_switch->GetInControlAnchor()),
+                      "StreamActive add ctl edge fail.");
+      }
     }
   }
   return SUCCESS;
@@ -479,9 +493,11 @@ Status SwitchOpPass::BypassSwitchNode(NodePtr &switch_node, OutDataAnchorPtr &pe
   GE_CHK_BOOL_EXEC(switch_node != nullptr, return FAILED, "Switch_node is null.");
   for (uint32_t idx = 0; idx < SWITCH_INPUT_NUM; ++idx) {
     InDataAnchorPtr in_data_anchor = switch_node->GetInDataAnchor(idx);
-    GE_CHK_BOOL_EXEC(in_data_anchor != nullptr, return FAILED, "Check Switch input anchor fail.");
+    GE_CHK_BOOL_EXEC(in_data_anchor != nullptr, return FAILED, "node[%s]Check Switch input anchor fail.",
+                     switch_node->GetName().c_str());
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_CHK_BOOL_EXEC(peer_out_anchor != nullptr, return FAILED, "Check Pre node output anchor fail.");
+    GE_CHK_BOOL_EXEC(peer_out_anchor != nullptr, return FAILED, "node[%s]Check Pre node output anchor fail.",
+                     switch_node->GetName().c_str());
     // Remove Switch data input.
     GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor), "remove edge failed");
 
@@ -528,6 +544,36 @@ Status SwitchOpPass::FindSwitchCondInput(bool pass_switch_flag, OutDataAnchorPtr
   return SUCCESS;
 }
 
+int SwitchOpPass::GetGroupId(const NodePtr &node) {
+  string tailing_optimization_option;
+  bool is_tailing_optimization = false;
+  auto ret = GetContext().GetOption(OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION, tailing_optimization_option);
+  if (ret == GRAPH_SUCCESS) {
+    // "1" means it's True from frontend option
+    is_tailing_optimization = (tailing_optimization_option == "1");
+    GELOGI("Option ge.exec.isTailingOptimization is %s", tailing_optimization_option.c_str());
+  }
+  if (!is_tailing_optimization) {
+    return 0;
+  }
+
+  string hccl_group_id;
+  if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, hccl_group_id)) {
+    GELOGI("Node is %s, can not find hccl group id", node->GetName().c_str());
+    return 0;
+  }
+  auto key_index = hccl_group_id.find_last_of('_');
+  auto key_num = hccl_group_id.substr(key_index + 1, hccl_group_id.length() - key_index);
+  GELOGI("Node is %s,Hccl group id is %s, key_num is %s", node->GetName().c_str(), hccl_group_id.c_str(),
+         key_num.c_str());
+  int num = atoi(key_num.c_str());
+  if (num == 0) {
+    return 0;
+  }
+  GELOGI("Hccl group id is %s, group id is %d", hccl_group_id.c_str(), num);
+  return num;
+}
+
 ///
 /// @brief Mark Switch Branch
 /// @param [in] peer_cond_anchor
@@ -540,12 +586,27 @@ Status SwitchOpPass::MarkBranchs(OutDataAnchorPtr &peer_cond_anchor, NodePtr &st
   GE_CHECK_NOTNULL(stream_switch);
   auto it = cond_node_map_.find(peer_cond_anchor);
   if (it != cond_node_map_.end()) {
-    GE_IF_BOOL_EXEC(it->second.size() != SWITCH_OUTPUT_NUM, {
-      GELOGE(INTERNAL_ERROR, "cond_node_map_ check size fail, node: %s", stream_switch->GetName().c_str());
-      return FAILED;
-    });
-    it->second[index].emplace_back(stream_switch);
+    int switch_group_id = GetGroupId(stream_switch);
+    auto switch_group_it = it->second.find(switch_group_id);
+    if (switch_group_it == it->second.end()) {
+      std::list<NodePtr> false_node_list;
+      std::list<NodePtr> true_node_list;
+      std::list<NodePtr> &node_list = true_branch_flag ? true_node_list : false_node_list;
+      node_list.emplace_back(stream_switch);
+      std::vector<std::list<NodePtr>> switch_list;
+      switch_list.emplace_back(false_node_list);
+      switch_list.emplace_back(true_node_list);
+      (void)it->second.emplace(switch_group_id, switch_list);
+    } else {
+      GE_IF_BOOL_EXEC(switch_group_it->second.size() != SWITCH_OUTPUT_NUM, {
+        GELOGE(INTERNAL_ERROR, "cond_node_map_ check size fail, node: %s", stream_switch->GetName().c_str());
+        return FAILED;
+      });
+      switch_group_it->second[index].emplace_back(stream_switch);
+    }
   } else {
+    int switch_group_id = GetGroupId(stream_switch);
+    map<int64_t, std::vector<std::list<NodePtr>>> switch_group_map;
     std::list<NodePtr> false_node_list;
     std::list<NodePtr> true_node_list;
     std::list<NodePtr> &node_list = true_branch_flag ? true_node_list : false_node_list;
@@ -553,8 +614,9 @@ Status SwitchOpPass::MarkBranchs(OutDataAnchorPtr &peer_cond_anchor, NodePtr &st
     std::vector<std::list<NodePtr>> switch_list;
     switch_list.emplace_back(false_node_list);
     switch_list.emplace_back(true_node_list);
+    (void)switch_group_map.emplace(switch_group_id, switch_list);
     auto result = cond_node_map_.insert(
-      std::pair<OutDataAnchorPtr, std::vector<std::list<NodePtr>>>(peer_cond_anchor, switch_list));
+      std::pair<OutDataAnchorPtr, map<int64_t, std::vector<std::list<NodePtr>>>>(peer_cond_anchor, switch_group_map));
     GE_IF_BOOL_EXEC(!result.second, {
       GELOGE(INTERNAL_ERROR, "cond_node_map_ insert fail, node: %s", stream_switch->GetName().c_str());
       return FAILED;
@@ -574,7 +636,8 @@ NodePtr SwitchOpPass::CreateCastOp(ComputeGraphPtr &graph, OutDataAnchorPtr &pee
   OpDescPtr cond_desc = peer_cond_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(cond_desc != nullptr, return nullptr, "Get cond_desc fail.");
 
-  const std::string cast_name = cond_desc->GetName() + "_" + CAST;
+  std::string cast_name = cond_desc->GetName() + "_" + CAST;
+  cast_name = CheckDuplicateName(cast_name);
   GELOGI("Create cast_node: %s, input datatype:DT_BOOL, out datatype:DT_INT32", cast_name.c_str());
   OpDescPtr cast_desc = MakeShared<OpDesc>(cast_name, CAST);
   if (cast_desc == nullptr) {
@@ -1115,5 +1178,23 @@ void SwitchOpPass::ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node) {
   GE_IF_BOOL_EXEC(old_node == new_node, return );
   CopyControlEdges(old_node, new_node);
   RemoveControlEdges(old_node);
+}
+///
+/// @brief Clear Status, uesd for subgraph pass
+/// @return
+///
+Status SwitchOpPass::ClearStatus() {
+  switch_nodes_.clear();
+  merge_nodes_.clear();
+  enter_nodes_.clear();
+  switch_cyclic_map_.clear();
+  bypass_nodes_.clear();
+  branch_head_nodes_.clear();
+  stream_switch_nodes_.clear();
+  need_label_nodes_.clear();
+  cond_node_map_.clear();
+  switch_node_map_.clear();
+  node_num_map_.clear();
+  return SUCCESS;
 }
 }  // namespace ge

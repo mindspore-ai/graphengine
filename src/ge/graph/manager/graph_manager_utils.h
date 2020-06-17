@@ -36,6 +36,7 @@
 #include "graph/graph.h"
 #include "graph/model.h"
 #include "model/ge_model.h"
+#include "model/ge_root_model.h"
 #include "register/register_fmk_types.h"
 #include "external/ge/ge_api_types.h"
 
@@ -160,6 +161,8 @@ class GraphNode {
   void SetLoadFlag(bool load_flag) { load_flag_ = load_flag; }
   void SetGeModel(const GeModelPtr &ge_model) { ge_model_ = ge_model; }
   GeModelPtr GetGeModel() const { return ge_model_; }
+  void SetGeRootModel(const GeRootModelPtr &ge_root_model) { ge_root_model_ = ge_root_model; }
+  GeRootModelPtr GetGeRootModel() const { return ge_root_model_; }
   const std::map<std::string, std::string> &GetOptions() const { return options_; }
   void SetOptions(const std::map<std::string, std::string> &options) { options_ = options; }
   void Lock();
@@ -179,6 +182,7 @@ class GraphNode {
   bool build_flag_;
   bool load_flag_;
   GeModelPtr ge_model_;
+  GeRootModelPtr ge_root_model_;
   BlockingQueue<uint8_t> sem_;
 };
 

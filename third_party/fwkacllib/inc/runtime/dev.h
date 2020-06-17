@@ -218,6 +218,13 @@ RTS_API rtError_t rtGetRunMode(rtRunMode *mode);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtSetSocVersion(const char *version);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get chipType
+ * @return RT_ERROR_NONE for ok
+ */
+rtError_t rtGetSocVersion(char *version, const uint32_t maxLen);
 #ifdef __cplusplus
 }
 #endif

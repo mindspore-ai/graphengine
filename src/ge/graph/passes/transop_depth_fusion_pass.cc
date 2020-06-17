@@ -25,6 +25,7 @@
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/common/transop_util.h"
+#include "graph/utils/node_utils.h"
 
 namespace ge {
 graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
@@ -38,6 +39,7 @@ graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
     if (TransOpUtil::IsTransOp(node)) {
       continue;
     }
+
     GELOGD("Current normal node is: %s, type: %s, begin in-depth recursive", node->GetName().c_str(),
            node->GetType().c_str());
     for (const auto &out_anchor : node->GetAllOutDataAnchors()) {
@@ -164,6 +166,13 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
 }
 
 bool TransOpDepthFusionPass::CheckNodeCanBeDeleted(const NodePtr &node) {
+  bool is_shape_unknown = false;
+  if (NodeUtils::GetNodeUnknownShapeStatus(*node, is_shape_unknown) == GRAPH_SUCCESS) {
+    if (is_shape_unknown) {
+      GELOGI("op:%s is unknown shape, can not be deleted.", node->GetName().c_str());
+      return false;
+    }
+  }
   return node->GetType() == RESHAPE || node->GetType() == REFORMAT || node->GetType() == SQUEEZE ||
          node->GetType() == EXPANDDIMS;
 }

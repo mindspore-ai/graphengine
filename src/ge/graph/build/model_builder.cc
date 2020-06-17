@@ -412,7 +412,9 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_ZERO_COPY_MEMORY_SIZE, zero_copy_mem_size_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_ZERO_COPY_MEMORY_SIZE failed.");
                    return FAILED);
-
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, ATTR_MODEL_OUT_NODES_NAME, domi::GetContext().net_out_nodes),
+                   GELOGE(FAILED, "SetListStr of ATTR_MODEL_OUT_NODES_NAME failed.");
+                   return FAILED);
   GELOGI("For model, max_mem_offset_: %zu, zero_copy_mem_size_: %zu", max_mem_offset_, zero_copy_mem_size_);
 
   string ge_core_type;
@@ -648,6 +650,14 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
 
   SetModelVersion(model);
 
+  return SUCCESS;
+}
+
+Status ModelBuilder::BuildModelForGetDynShapeTask(ge::Model &model_def) {
+  GE_TIMESTAMP_START(BuildModelDef);
+  GE_CHK_STATUS_RET(BuildModelDef(model_def), "BuildModelDef failed!");
+  GE_TIMESTAMP_END(BuildModelDef, "GraphBuilder::BuildModelDef");
+  SetModelVersion(model_def);
   return SUCCESS;
 }
 

@@ -88,7 +88,7 @@ class MemoryAllocator {
   /// @param [in] device_id device id
   /// @return  memory address
   ///
-  uint8_t *MallocMemory(const string &purpose, uint64_t memory_size, uint32_t device_id = 0) const;
+  uint8_t *MallocMemory(const string &purpose, size_t memory_size, uint32_t device_id = 0) const;
 
   ///
   /// @ingroup ge_graph
@@ -108,7 +108,7 @@ class MemoryAllocator {
   /// @param [in] device_id device id
   /// @return memory address
   ///
-  uint8_t *MallocMemory(const string &purpose, const string &memory_key, uint64_t memory_size, uint32_t device_id = 0);
+  uint8_t *MallocMemory(const string &purpose, const string &memory_key, size_t memory_size, uint32_t device_id = 0);
 
   ///
   /// @ingroup ge_graph
@@ -135,6 +135,7 @@ class MemoryAllocator {
 };
 
 using MemoryAllocatorPtr = std::shared_ptr<MemoryAllocator>;
+class CachingAllocator;
 
 class MemManager {
  public:
@@ -142,6 +143,7 @@ class MemManager {
   virtual ~MemManager();
   static MemManager &Instance();
   static MemoryAllocator *Instance(rtMemType_t memory_type);
+  static CachingAllocator &CachingInstance(rtMemType_t memory_type);
   MemManager(const MemManager &) = delete;
   MemManager &operator=(const MemManager &) = delete;
   ///
@@ -164,13 +166,29 @@ class MemManager {
   /// @ingroup ge_graph
   /// @brief ge memory allocator
   /// @param [in] memory_type memory type
-  /// @return Status result of function
+  /// @return MemoryAllocator ptr
   ///
   MemoryAllocator *GetMemoryAllocator(rtMemType_t memory_type);
 
+  ///
+  /// @ingroup ge_graph
+  /// @brief ge caching allocator
+  /// @param [in] memory_type memory type
+  /// @return CachingAllocator ptr
+  ///
+  CachingAllocator &GetCachingAllocator(rtMemType_t memory_type);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief ge create caching allocator
+  /// @param [in] memory_type memory type
+  /// @return Status result of function
+  ///
+  Status InitCachingAllocator(const std::vector<rtMemType_t> &memory_type);
+
   std::map<rtMemType_t, MemoryAllocator *> memory_allocator_map_;
-  MemoryAllocator *default_memory_allocator_;
-  std::mutex allocator_mutex_;
+  std::map<rtMemType_t, CachingAllocator *> caching_allocator_map_;
+  std::recursive_mutex allocator_mutex_;
 };
 };  // namespace ge
 

@@ -29,6 +29,18 @@
 #include "graph/graph.h"
 #include "graph/model.h"
 
+#define GE_DUMP(compute_graph, name)                                                                   \
+  do {                                                                                                 \
+    GraphUtils::DumpGEGraph(compute_graph, name);                                                      \
+    GraphUtils::DumpGEGraphToOnnx(*compute_graph, name);                                               \
+    for (const auto &sub_graph_func : compute_graph->GetAllSubgraphs()) {                              \
+      static int8_t i = 0;                                                                             \
+      auto sub_graph_func_name = std::string(name) + std::string("_sub_graph_") + std::to_string(i++); \
+      GraphUtils::DumpGEGraph(sub_graph_func, sub_graph_func_name);                                    \
+      GraphUtils::DumpGEGraphToOnnx(*sub_graph_func, sub_graph_func_name);                             \
+    }                                                                                                  \
+  } while (0)
+
 #define REFER_ATTR_VALUE(VT_ENUM, DataType, attr, ret) \
   do {                                                 \
     DataType ret;                                      \
@@ -154,6 +166,8 @@ class GraphUtils {
 
   static graphStatus InsertNodeBetweenDataAnchors(const OutDataAnchorPtr &src, const InDataAnchorPtr &dst,
                                                   const NodePtr &new_node);
+
+  static graphStatus RemoveSubgraphRecursively(const ComputeGraphPtr &compute_graph, const NodePtr &remove_node);
 
   static graphStatus RemoveNodeWithoutRelink(const ComputeGraphPtr &compute_graph, const NodePtr &node);
 
@@ -299,6 +313,24 @@ class GraphUtils {
                                    std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
                                    std::map<std::string, std::string> &anchor_to_symbol);
 
+  ///
+  /// Determine if the graph is a UNKNOWN_SHAPE graph based on whether the graph and all subgraphs
+  /// of the graph have UNKNOWN_SHAPE operators or not.
+  /// Note: This function will only look 'down' from the graph, not 'up'. For example, the following
+  /// scenario (K for known shape, U for unknown shape), ROOT graph is UNKNOWN_SHAPE while SUB graph is KNOWN_SHAPE
+  /// ROOT graph:      A -----> B -----> C
+  ///                  K    subgraph     U
+  ///                           |
+  ///                           V
+  /// SUB graph:          D --> E --> F
+  ///                     K     K     K
+  /// @param [in] graph
+  /// @return bool
+  ///
+  static bool IsUnknownShapeGraph(const ComputeGraphPtr &graph);
+
+  static NodePtr FindNodeFromAllNodes(ComputeGraphPtr &graph, const std::string &name);
+
  private:
   ///
   /// Get reference-mapping for in_data_anchors of node
@@ -438,6 +470,11 @@ class ComputeGraphBuilder {
   ///
   NodePtr GetNode(const std::string &name);
 
+  /// @brief Get all nodes
+  /// @return std::vector<NodePtr>
+  ///
+  std::vector<NodePtr> GetAllNodes();
+
  protected:
   ///
   /// @brief Build nodes
@@ -536,6 +573,13 @@ class CompleteGraphBuilder : public ComputeGraphBuilder {
   CompleteGraphBuilder &AddOutput(const std::string &owner_node_name, uint32_t anchor_ind);
 
   ///
+  /// @brief Add target for graph
+  /// @param [in] target_name
+  /// @return CompleteGraphBuilder
+  ///
+  CompleteGraphBuilder &AddTarget(const std::string &target_name);
+
+  ///
   /// @brief Set parent-node of graph
   /// @param [in] parent_node
   /// @return CompleteGraphBuilder
@@ -590,10 +634,19 @@ class CompleteGraphBuilder : public ComputeGraphBuilder {
   ///
   void AddRetValNodes(graphStatus &error_code, std::string &error_msg);
 
+  ///
+  /// @brief Build target-nodes for graph
+  /// @param [out] error_code
+  /// @param [out] error_msg
+  /// @return void
+  ///
+  void BuildGraphTargets(graphStatus &error_code, std::string &error_msg);
+
   std::string name_;
   NodePtr parent_node_;
   std::map<uint32_t, std::pair<std::vector<std::string>, std::vector<uint32_t>>> graph_inputs_;
   std::vector<std::pair<std::string, uint32_t>> graph_outputs_;
+  std::vector<std::string> graph_targets_;
 
   // index_of_graph_input -> in_anchor_index_of_parent_node
   std::map<uint32_t, uint32_t> input_mapping_;

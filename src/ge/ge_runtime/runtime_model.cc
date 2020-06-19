@@ -220,6 +220,7 @@ bool RuntimeModel::LoadTask() {
       return false;
     }
     task_id_list_.push_back(task_id);
+    stream_id_list_.push_back(stream_id);
   }
   if (task_list_.empty()) {
     GELOGE(FAILED, "Task list is empty");
@@ -507,5 +508,6 @@ void RuntimeModel::CreateOutput(uint32_t index, const OpInfo &op_info, InputOutp
 
 const std::vector<uint32_t> &RuntimeModel::GetTaskIdList() const { return task_id_list_; }
 
+const std::vector<uint32_t> &RuntimeModel::GetStreamIdList() const { return stream_id_list_; }
 }  // namespace model_runner
 }  // namespace ge

@@ -60,6 +60,17 @@ const std::vector<uint32_t> &ModelRunner::GetTaskIdList(uint32_t model_id) const
   return model_iter->second->GetTaskIdList();
 }
 
+const std::vector<uint32_t> &ModelRunner::GetStreamIdList(uint32_t model_id) const {
+  auto model_iter = runtime_models_.find(model_id);
+  if (model_iter == runtime_models_.end()) {
+    GELOGE(PARAM_INVALID, "Model id %u not found.", model_id);
+    static const std::vector<uint32_t> empty_ret;
+    return empty_ret;
+  }
+
+  return model_iter->second->GetStreamIdList();
+}
+
 bool ModelRunner::UnloadModel(uint32_t model_id) {
   auto iter = runtime_models_.find(model_id);
   if (iter != runtime_models_.end()) {

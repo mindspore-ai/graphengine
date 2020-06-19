@@ -36,6 +36,7 @@ class RuntimeModel {
 
   bool Load(uint32_t device_id, uint64_t session_id, std::shared_ptr<DavinciModel> &davinci_model);
   const std::vector<uint32_t> &GetTaskIdList() const;
+  const std::vector<uint32_t> &GetStreamIdList() const;
   bool Run();
   bool CopyInputData(const InputData &input_data);
   bool GetInputOutputDescInfo(bool zero_copy, std::vector<InputOutputDescInfo> *input_desc,
@@ -77,6 +78,7 @@ class RuntimeModel {
   std::vector<std::shared_ptr<OpInfo>> constant_info_list_{};
 
   std::vector<uint32_t> task_id_list_{};
+  std::vector<uint32_t> stream_id_list_{};
 };
 
 }  // namespace model_runner

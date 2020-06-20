@@ -25,6 +25,8 @@ struct AicpuParamHead
 {
     uint32_t        length;                    // Total length: include cunstom message
     uint32_t        ioAddrNum;                 // Input and output address number
+    uint32_t        extInfoLength;             // extInfo struct Length
+    uint64_t        extInfoAddr;               // extInfo address
 } __attribute__ ((packed));
 
 }  // namespace aicpu

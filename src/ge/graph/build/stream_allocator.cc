@@ -683,7 +683,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
       GELOGE(FAILED, "SplitStreams:streamid(%ld) > last_stream_id(%ld)", stream_id, last_stream_id);
       return FAILED;
     }
-    stream_node_num_vec[stream_id]++;
+    AddNodeNum(cur_node, stream_node_num_vec[stream_id]);
     stream_2_nodes_map[stream_id].push_back(cur_node);
     // The maximum number of tasks per stream.
     int64_t max_node_num_one_stream = GetMaxNodeNumPerStream(cur_node, max_task_count);
@@ -706,7 +706,8 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
         "It's time to split the stream, split newly-added stream id is %ld",
         stream_id, stream_node_num_vec[stream_id], max_node_num_one_stream, last_stream_id);
       NodePtr pre_node = pre_node_vec[stream_id];
-      stream_node_num_vec[stream_id] = 1;
+      stream_node_num_vec[stream_id] = 0;
+      AddNodeNum(cur_node, stream_node_num_vec[stream_id]);
       // try spilt a new stream and move same continuous stream label nodes from this stream
       bool not_use_cur = false;
       NodePtr not_cur = nullptr;
@@ -720,7 +721,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
           auto stored_op_desc = node->GetOpDesc();
           GE_CHECK_NOTNULL(stored_op_desc);
           stored_op_desc->SetStreamId(last_stream_id);
-          stream_node_num_vec[stream_id]++;
+          AddNodeNum(node, stream_node_num_vec[stream_id]);
         }
         not_use_cur = true;
         not_cur = nodes.front();
@@ -1055,7 +1056,7 @@ Status StreamAllocator::CollectDeactiveStream(const OpDescPtr &op_desc, std::set
 
 // Insert StreamActive Op for Entry Stream.
 Status StreamAllocator::InsertActiveEntryStream(const std::vector<uint32_t> &active_streams, int64_t stream_id) {
-  string node_name = "ActiveEntryStream_" + string(STREAMACTIVE);
+  string node_name = whole_graph_->GetName() + "_ActiveEntryStream_" + string(STREAMACTIVE);
   OpDescPtr op_desc = ge::MakeShared<OpDesc>(node_name, STREAMACTIVE);
   if (op_desc == nullptr) {
     GELOGE(FAILED, "Failed to new opdesc.");
@@ -1143,7 +1144,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
     GE_CHECK_NOTNULL(node->GetInControlAnchor());
     GE_CHECK_NOTNULL(node->GetOutControlAnchor());
     for (auto &event_id : recv_event_id_list) {
-      string recv_node_name = "_Recv_" + to_string(event_id);
+      string recv_node_name = whole_graph_->GetName() + "_Recv_" + to_string(event_id);
       OpDescPtr op_desc_ptr = MakeShared<OpDesc>(recv_node_name, RECV);
       GE_CHECK_NOTNULL(op_desc_ptr);
 
@@ -1171,7 +1172,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
     GetSendEventIdList(node, send_event_id_list);
 
     for (auto &event_id : send_event_id_list) {
-      string send_node_name = "_Send_" + to_string(event_id);
+      string send_node_name = whole_graph_->GetName() + "_Send_" + to_string(event_id);
       OpDescPtr op_desc_ptr = MakeShared<OpDesc>(send_node_name, SEND);
       GE_CHECK_NOTNULL(op_desc_ptr);
 
@@ -1289,6 +1290,15 @@ int64_t StreamAllocator::GetMaxNodeNumPerStream(const NodePtr &node, uint32_t ma
   }
 
   return max_node_num_one_stream;
+}
+
+void StreamAllocator::AddNodeNum(const NodePtr &node, int64_t &node_num) {
+  node_num++;
+  vector<uint32_t> events;
+  GetSendEventIdList(node, events);
+  node_num += static_cast<int64_t>(events.size());
+  GetRecvEventIdList(node, events);
+  node_num += static_cast<int64_t>(events.size());
 }
 
 // Insert send event id on a node

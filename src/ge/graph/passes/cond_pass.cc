@@ -159,7 +159,7 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
   graph = GraphUtils::FindRootGraph(node->GetOwnerComputeGraph())->GetSubgraph(cond_graph_instance_name);
   GE_CHECK_NOTNULL(graph);
 
-  NodePtr net_output_node = graph->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr net_output_node = graph->FindFirstNodeMatchType(NETOUTPUT);
   GE_CHECK_NOTNULL(net_output_node);
   // cond_graph has and only has one output
   uint32_t output_num = net_output_node->GetAllInDataAnchorsSize();

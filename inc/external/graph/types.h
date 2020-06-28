@@ -143,6 +143,7 @@ enum Format {
   FORMAT_DHWNC,
   FORMAT_FRACTAL_Z_3D_TRANSPOSE,  // 3D filter(transpose) input tensor format
   FORMAT_FRACTAL_ZN_LSTM,
+  FORMAT_FRACTAL_Z_G,
   FORMAT_RESERVED,
   FORMAT_ALL
 };

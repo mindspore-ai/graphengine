@@ -300,11 +300,9 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   GE_CHECK_NOTNULL(end_graph);
   const auto &src_node = out_anchor->GetOwnerNode();
   const auto &dst_node = peer_in_anchor->GetOwnerNode();
-  string engine_end_name;
-  string engine_pld_name;
   // link input -> end
   string end_name = kEndType + std::to_string(graph_info_.num_of_pld_end_);
-  auto end_op_desc = MakeShared<OpDesc>(end_name, END);
+  auto end_op_desc = MakeShared<OpDesc>(end_graph->GetName() + "_" + end_name, END);
   if (end_op_desc == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "pld_op_desc is nullptr.");
     return FAILED;
@@ -318,15 +316,13 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   bool is_need_update_desc = (output_index >= 0) && (graph_info_.mode_ == kPartitioning);
   if (is_need_update_desc) {
     if (UpdateEndOpDesc(src_node, output_index, end_op_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, input index %d, engine name is %s", output_index,
-             engine_end_name.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, input index %d", output_index);
       return FAILED;
     }
   } else {
     GeTensorDesc input_desc;
     if (end_op_desc->AddInputDesc(input_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "AddInputDesc failed, input index %d, engine name is %s", output_index,
-             engine_end_name.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "AddInputDesc failed, input index %d", output_index);
       return FAILED;
     }
   }
@@ -346,11 +342,11 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   }
   /// For fe, op id has been set in AddNode,
   /// we can take op id of srcNode as the mark of parentId now
-  auto const &src_node_opdesc = src_node->GetOpDesc();
+  const auto &src_node_opdesc = src_node->GetOpDesc();
   GE_CHECK_NOTNULL(src_node_opdesc);
   int64_t node_id = src_node_opdesc->GetId();
   const string pld_name = kPlaceHolderType + std::to_string(graph_info_.num_of_pld_end_);
-  auto pld_op_desc = MakeShared<OpDesc>(pld_name, PLACEHOLDER);
+  auto pld_op_desc = MakeShared<OpDesc>(pld_graph->GetName() + "_" + pld_name, PLACEHOLDER);
   if (pld_op_desc == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "pld_op_desc is nullptr.");
     return FAILED;
@@ -370,15 +366,13 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   is_need_update_desc = (input_index >= 0) && (graph_info_.mode_ == kPartitioning);
   if (is_need_update_desc) {
     if (UpdatePldOpDesc(dst_node, input_index, pld_op_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, output index %d, engine name is %s", input_index,
-             engine_pld_name.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "UpdateEndOpDesc failed, output index %d", input_index);
       return FAILED;
     }
   } else {
     GeTensorDesc output_desc;
     if (pld_op_desc->AddOutputDesc(output_desc) != SUCCESS) {
-      GELOGE(GRAPH_PARAM_INVALID, "AddOutputDesc failed, input index %d, engine name is %s", input_index,
-             engine_pld_name.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "AddOutputDesc failed, input index %d", input_index);
       return FAILED;
     }
   }
@@ -399,8 +393,8 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
     return FAILED;
   }
   graph_info_.index_2_end_[graph_info_.num_of_pld_end_] = new_end_node;
-  graph_info_.pld_2_end_[new_pld_node] = new_end_node;
   graph_info_.end_2_pld_[new_end_node] = new_pld_node;
+  graph_info_.pld_2_end_[new_pld_node] = new_end_node;
   return SUCCESS;
 }
 
@@ -591,7 +585,8 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
       sgi->SetOutputContext(graph_info_.output_name_);
       AddEndPldInformationToSubGraphInfo(sgi);
       GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s",
-             engine_name.c_str(), sub_graph->GetName().c_str(), sgi->GetStreamLabel().c_str());
+             engine_name.c_str(), sub_graph->GetName().c_str(),
+             sgi->GetStreamLabel().empty() ? "null" : sgi->GetStreamLabel().c_str());
       output_subgraphs.push_back(sgi);
     }
   }
@@ -896,8 +891,8 @@ Status ge::GraphPartitioner::AddPlaceHolderEnd(const AnchorPtr &out_anchor, cons
     return FAILED;
   }
   // nodes in original graph
-  auto src_node = out_anchor->GetOwnerNode();
-  auto dst_node = in_anchor->GetOwnerNode();
+  const auto &src_node = out_anchor->GetOwnerNode();
+  const auto &dst_node = in_anchor->GetOwnerNode();
   if ((src_node == nullptr) || (dst_node == nullptr)) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "src_node or dst_node is null.");
     return FAILED;

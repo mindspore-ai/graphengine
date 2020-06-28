@@ -144,7 +144,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   err = memcpy_s(model_header.platform_version, PLATFORM_VERSION_LEN, platform_version.c_str(),
                  platform_version.size() + 1);
   if (err != EOK) {
-    GELOGE(MEMALLOC_FAILED, "ModelHelper SaveModel failed while while allocating memory for platform_version");
+    GELOGE(MEMALLOC_FAILED, "ModelHelper SaveModel failed while allocating memory for platform_version.");
     return MEMALLOC_FAILED;
   }
   string version = reinterpret_cast<char *>(model_header.platform_version);

@@ -23,11 +23,11 @@
 #include <unordered_set>
 #include <utility>
 #include "common/ge/ge_util.h"
-#include "ge/ge_api_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/types.h"
+#include "ge/ge_api_types.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
@@ -61,8 +61,7 @@ Status SwitchOpPass::Run(ComputeGraphPtr graph) {
 
   for (auto &node : stream_switch_nodes_) {
     for (auto &out_ctrl_node : node->GetOutControlNodes()) {
-      GELOGD("branch_head_nodes_ insert %s", out_ctrl_node->GetName().c_str());
-      (void)branch_head_nodes_.insert(out_ctrl_node);
+      MarkHeadNodes(out_ctrl_node, node);
     }
   }
 
@@ -544,7 +543,7 @@ Status SwitchOpPass::FindSwitchCondInput(bool pass_switch_flag, OutDataAnchorPtr
   return SUCCESS;
 }
 
-int SwitchOpPass::GetGroupId(const NodePtr &node) {
+int64_t SwitchOpPass::GetGroupId(const NodePtr &node) {
   string tailing_optimization_option;
   bool is_tailing_optimization = false;
   auto ret = GetContext().GetOption(OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION, tailing_optimization_option);
@@ -566,11 +565,11 @@ int SwitchOpPass::GetGroupId(const NodePtr &node) {
   auto key_num = hccl_group_id.substr(key_index + 1, hccl_group_id.length() - key_index);
   GELOGI("Node is %s,Hccl group id is %s, key_num is %s", node->GetName().c_str(), hccl_group_id.c_str(),
          key_num.c_str());
-  int num = atoi(key_num.c_str());
+  int64_t num = atoi(key_num.c_str());
   if (num == 0) {
     return 0;
   }
-  GELOGI("Hccl group id is %s, group id is %d", hccl_group_id.c_str(), num);
+  GELOGI("Hccl group id is %s, group id is %ld", hccl_group_id.c_str(), num);
   return num;
 }
 
@@ -586,7 +585,7 @@ Status SwitchOpPass::MarkBranchs(OutDataAnchorPtr &peer_cond_anchor, NodePtr &st
   GE_CHECK_NOTNULL(stream_switch);
   auto it = cond_node_map_.find(peer_cond_anchor);
   if (it != cond_node_map_.end()) {
-    int switch_group_id = GetGroupId(stream_switch);
+    int64_t switch_group_id = GetGroupId(stream_switch);
     auto switch_group_it = it->second.find(switch_group_id);
     if (switch_group_it == it->second.end()) {
       std::list<NodePtr> false_node_list;
@@ -605,7 +604,7 @@ Status SwitchOpPass::MarkBranchs(OutDataAnchorPtr &peer_cond_anchor, NodePtr &st
       switch_group_it->second[index].emplace_back(stream_switch);
     }
   } else {
-    int switch_group_id = GetGroupId(stream_switch);
+    int64_t switch_group_id = GetGroupId(stream_switch);
     map<int64_t, std::vector<std::list<NodePtr>>> switch_group_map;
     std::list<NodePtr> false_node_list;
     std::list<NodePtr> true_node_list;
@@ -741,7 +740,7 @@ Status SwitchOpPass::UpdateCondBranch(NodePtr &node) {
     for (auto &out_node : cur_node->GetOutAllNodes()) {
       const std::string out_type = out_node->GetType();
       bool stop_flag = (end_type_set.count(out_type) > 0) ||
-                       ((type != STREAMSWITCH) && (branch_head_nodes_.count(out_node) > 0)) ||
+                       ((branch_head_nodes_.count(out_node) > 0) && (branch_head_nodes_[out_node] != node)) ||
                        (((type == ENTER) || (type == REFENTER)) && (out_type != STREAMACTIVE));
       if (!stop_flag) {
         nodes.push(out_node);
@@ -1179,6 +1178,34 @@ void SwitchOpPass::ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node) {
   CopyControlEdges(old_node, new_node);
   RemoveControlEdges(old_node);
 }
+
+///
+/// @brief Mark node as head_node of stream_switch
+/// @param [in] node
+/// @param [in] stream_switch
+/// @return void
+///
+void SwitchOpPass::MarkHeadNodes(const NodePtr &node, const NodePtr &stream_switch) {
+  std::stack<NodePtr> nodes;
+  nodes.push(node);
+  std::set<NodePtr> visited;
+  while (!nodes.empty()) {
+    NodePtr cur_node = nodes.top();
+    nodes.pop();
+    if (visited.count(cur_node) > 0) {
+      continue;
+    }
+    GELOGD("branch_head_node %s of stream_switch %s", cur_node->GetName().c_str(), stream_switch->GetName().c_str());
+    branch_head_nodes_[cur_node] = stream_switch;
+    if ((cur_node->GetType() == IDENTITY) || (cur_node->GetType() == IDENTITYN)) {
+      for (auto &out_node : cur_node->GetOutAllNodes()) {
+        nodes.push(out_node);
+      }
+    }
+    visited.insert(cur_node);
+  }
+}
+
 ///
 /// @brief Clear Status, uesd for subgraph pass
 /// @return

@@ -57,6 +57,9 @@ in a batch of sampled candidates.
 *@attention Constraints: \n
 *ThreadUnsafeUnigramCandidateSampler runs on the Ascend AI CPU, \n
 which delivers poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ThreadUnsafeUnigramCandidateSampler.
 */
 
 REG_OP(ThreadUnsafeUnigramCandidateSampler)
@@ -108,6 +111,9 @@ sampled candidate representing the number of times.
 *@attention Constraints: \n
 *UniformCandidateSampler runs on the Ascend AI CPU, \n
 which delivers poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UniformCandidateSampler.
 */
 
 REG_OP(UniformCandidateSampler)
@@ -171,6 +177,9 @@ If "unique" is true, then this is a probability.
 *@attention Constraints: \n
 * FixedUnigramCandidateSampler runs on the Ascend AI CPU, \n
 which delivers poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FixedUnigramCandidateSampler.
 */
 
 REG_OP(FixedUnigramCandidateSampler)
@@ -227,6 +236,9 @@ to occur in a batch of sampled candidates. \n
 *@attention Constraints: \n
 *LearnedUnigramCandidateSampler runs on the Ascend AI CPU, which delivers \n
 poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator LearnedUnigramCandidateSampler.
 */
 
 REG_OP(LearnedUnigramCandidateSampler)
@@ -276,6 +288,9 @@ to occur in a batch of sampled candidates. \n
 *@attention Constraints: \n
 *LogUniformCandidateSampler runs on the Ascend AI CPU, which delivers \n
 poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator LogUniformCandidateSampler.
 */
 
 REG_OP(LogUniformCandidateSampler)
@@ -321,6 +336,9 @@ to occur in a batch of sampled candidates. If "unique" is true, then this is a p
 
 *@attention Constraints: \n
 *AllCandidateSampler runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AllCandidateSampler.
 */
 
 REG_OP(AllCandidateSampler)
@@ -358,6 +376,9 @@ each element is -FLOAT_MAX.
 
 *@attention Constraints: \n
 *ComputeAccidentalHits runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ComputeAccidentalHits.
 */
 
 REG_OP(ComputeAccidentalHits)

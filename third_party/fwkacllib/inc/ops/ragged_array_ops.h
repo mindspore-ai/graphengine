@@ -41,6 +41,8 @@ namespace ge {
 *y:A Returns The `nested_row_splits` tensors that define the row-partitioning for the \n
 *returned RaggedTensor.The `flat_values` for the returned RaggedTensor.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow RaggedGather operator.
 */
 
 REG_OP(RaggedGather)

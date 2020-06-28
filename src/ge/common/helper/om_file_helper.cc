@@ -52,7 +52,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(u
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type,
                                                                                             ModelPartition &partition) {
   if (!is_inited_) {
-    GELOGE(PARAM_INVALID, "OmFileLoadHelper not Inited!");
+    GELOGE(PARAM_INVALID, "OmFileLoadHelper has not been initialized!");
     return PARAM_INVALID;
   }
 
@@ -67,7 +67,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetMod
 
   if (!found) {
     if (type != ModelPartitionType::TBE_KERNELS) {
-      GELOGE(FAILED, "GetModelPartition:type:%d is not in partition_datas", static_cast<int>(type));
+      GELOGE(FAILED, "GetModelPartition:type:%d is not in partition_datas!", static_cast<int>(type));
       return FAILED;
     }
   }
@@ -77,7 +77,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetMod
 Status OmFileLoadHelper::CheckModelValid(const ge::ModelData &model) const {
   // Parameter validity check
   if (model.model_data == nullptr) {
-    GELOGE(PARAM_INVALID, "Model_data must not be null");
+    GELOGE(PARAM_INVALID, "Model_data must not be null!");
     return PARAM_INVALID;
   }
 
@@ -103,7 +103,7 @@ Status OmFileLoadHelper::CheckModelValid(const ge::ModelData &model) const {
 
 Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint32_t model_data_size) {
   if (model_data == nullptr) {
-    GELOGE(PARAM_INVALID, "Param model_data must not be null");
+    GELOGE(PARAM_INVALID, "Param model_data must not be null!");
     return PARAM_INVALID;
   }
   // Init partition table
@@ -131,7 +131,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
     context_.partition_datas_.push_back(partition);
 
     if (partition.size > model_data_size || mem_offset > model_data_size - partition.size) {
-      GELOGE(PARAM_INVALID, "the current need partition sizes %zu greater than the model data size %u ",
+      GELOGE(PARAM_INVALID, "The partition size %zu is greater than the model data size %u.",
              partition.size + mem_offset, model_data_size);
       return PARAM_INVALID;
     }
@@ -199,7 +199,7 @@ Status OmFileSaveHelper::SaveModelToFile(const char *output_file, ModelBufferDat
 
   ModelPartitionTable *partition_table = GetPartitionTable();
   if (partition_table == nullptr) {
-    GELOGE(ge::GE_GRAPH_SAVE_FAILED, "SaveModelToFile exe failed: partition_table is NULL");
+    GELOGE(ge::GE_GRAPH_SAVE_FAILED, "SaveModelToFile execute failed: partition_table is NULL.");
     return ge::GE_GRAPH_SAVE_FAILED;
   }
   uint32_t size_of_table = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);

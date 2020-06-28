@@ -178,7 +178,7 @@ bool ModelCacheHelper::IsModelCacheHit() const {
     return false;
   }
   if (!IsVarManagerSameAsCache(var_manager_json)) {
-    GELOGI("Graph id[%u] cache miss: the VarManager dos not match the cache info.", graph_id_);
+    GELOGI("Graph id[%u] cache miss: the VarManager does not match the cache info.", graph_id_);
     return false;
   }
   GELOGI("Graph id[%u] cache hit.", graph_id_);
@@ -563,7 +563,7 @@ Status ModelCacheHelper::GetCacheInfo(CacheInfo &cache_info) const {
     cache_info.graph_hash = cache_json[kGraphHash];
     Json nodes_hash_json = cache_json[kNodeHash];
     if (!(nodes_hash_json.is_null() || nodes_hash_json.is_array())) {
-      GELOGW("Nodes hash in cache be null or array.");
+      GELOGW("Nodes hash in cache should be null or array.");
       return FAILED;
     }
     for (const auto &iter : nodes_hash_json) {
@@ -1670,7 +1670,7 @@ Status ModelCacheHelper::LoadOmModelFromCache(GeModelPtr &ge_model) const {
   ModelData model_data;
   ret = DavinciModelParser::LoadFromFile(om_path.c_str(), key_path.c_str(), priority, model_data);
   if (ret != SUCCESS) {
-    GELOGW("LoadOmModelFromCache: Load model from file fialed. ret = %u", ret);
+    GELOGW("LoadOmModelFromCache: Load model from file failed. ret = %u", ret);
     return ret;
   }
 

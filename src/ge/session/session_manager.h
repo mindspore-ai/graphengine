@@ -106,6 +106,16 @@ class SessionManager {
 
   ///
   /// @ingroup ge_session
+  /// @brief build a graph of the session with specific session id
+  /// @param [in] session_id session id
+  /// @param [in] graph_id graph id
+  /// @param [in] inputs input data
+  /// @return Status result of function
+  ///
+  Status BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
+
+  ///
+  /// @ingroup ge_session
   /// @brief run a graph of the session with specific session id for train asynchronously
   /// @param [in] session_id session id
   /// @param [in] graph_id graph id

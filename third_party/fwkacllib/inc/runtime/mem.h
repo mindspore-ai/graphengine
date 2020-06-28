@@ -82,6 +82,7 @@ typedef enum tagRtMemcpyKind {
   RT_MEMCPY_MANAGED,           // managed memory
   RT_MEMCPY_ADDR_DEVICE_TO_DEVICE,
   RT_MEMCPY_HOST_TO_DEVICE_EX, // host  to device ex (only used for 8 bytes)
+  RT_MEMCPY_DEVICE_TO_HOST_EX, // device to host ex
   RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
 

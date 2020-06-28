@@ -59,6 +59,7 @@ static const std::map<Format, std::string> kFormatToStringMap = {
   {FORMAT_CN, "CN"},
   {FORMAT_NC, "NC"},
   {FORMAT_FRACTAL_ZN_LSTM, "FRACTAL_ZN_LSTM"},
+  {FORMAT_FRACTAL_Z_G, "FRACTAL_Z_G"},
   {FORMAT_RESERVED, "FORMAT_RESERVED"},
   {FORMAT_ALL, "ALL"}};
 
@@ -98,8 +99,9 @@ static const std::unordered_set<std::string> kInternalFormat = {"NC1HWC0",
                                                                 "FRACTAL_NZ",
                                                                 "NDC1HWC0",
                                                                 "FORMAT_FRACTAL_Z_3D",
-                                                                "FORMAT_FRACTAL_Z_3D_TRANSPOSE"
-                                                                "FORMAT_FRACTAL_ZN_LSTM"};
+                                                                "FORMAT_FRACTAL_Z_3D_TRANSPOSE",
+                                                                "FORMAT_FRACTAL_ZN_LSTM",
+                                                                "FORMAT_FRACTAL_Z_G"};
 
 static const std::map<std::string, Format> kDataFormatMap = {
   {"NCHW", FORMAT_NCHW}, {"NHWC", FORMAT_NHWC}, {"NDHWC", FORMAT_NDHWC}, {"NCDHW", FORMAT_NCDHW}, {"ND", FORMAT_ND}};
@@ -143,6 +145,7 @@ static const std::map<std::string, Format> kStringToFormatMap = {
   {"CN", FORMAT_CN},
   {"NC", FORMAT_NC},
   {"FRACTAL_ZN_LSTM", FORMAT_FRACTAL_ZN_LSTM},
+  {"FRACTAL_Z_G", FORMAT_FRACTAL_Z_G},
   {"FORMAT_RESERVED", FORMAT_RESERVED},
   {"ALL", FORMAT_ALL}};
 
@@ -235,6 +238,11 @@ static const std::map<ge::DataType, uint32_t> kDataTypeToLength = {
   {DT_RESOURCE, sizeof(uint64_t)},
 };
 
+static const std::map<domi::FrameworkType, std::string> kFmkTypeToString = {
+  {domi::CAFFE, "caffe"},           {domi::MINDSPORE, "mindspore"}, {domi::TENSORFLOW, "tensorflow"},
+  {domi::ANDROID_NN, "android_nn"}, {domi::ONNX, "onnx"},           {domi::FRAMEWORK_RESERVED, "framework_reserved"},
+};
+
 bool TypeUtils::IsDataTypeValid(DataType dt) {
   uint32_t num = static_cast<uint32_t>(dt);
   GE_CHK_BOOL_EXEC((num <= DT_UNDEFINED), return false, "The DataType is invalid");
@@ -310,6 +318,16 @@ Format TypeUtils::DomiFormatToFormat(domi::domiTensorFormat_t domi_format) {
   }
   GELOGE(GRAPH_FAILED, "do not find domi Format %d from map", domi_format);
   return FORMAT_RESERVED;
+}
+
+std::string TypeUtils::FmkTypeToSerialString(domi::FrameworkType fmk_type) {
+  auto it = kFmkTypeToString.find(fmk_type);
+  if (it != kFmkTypeToString.end()) {
+    return it->second;
+  } else {
+    GELOGW("Framework type not support %d.", fmk_type);
+    return "";
+  }
 }
 
 static inline void CopyDataFromBuffer(vector<uint8_t> &data, const Buffer &buffer) {

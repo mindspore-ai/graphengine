@@ -67,6 +67,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistry {
 
   const std::vector<RemoveInputConfigure> &GetRemoveInputConfigure(const std::string &ori_optype) const;
 
+  bool GetOmTypeByOriOpType(const std::string &ori_optype, std::string &om_type);
+
  private:
   std::unordered_map<std::string, std::set<std::string>> op_ori_optype_map_;
   std::unordered_map<std::string, domi::ImplyType> op_run_mode_map_;

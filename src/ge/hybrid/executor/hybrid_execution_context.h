@@ -41,12 +41,12 @@ struct GraphExecutionContext {
   std::unordered_map<NodePtr, NodeStatePtr> node_states;
   rtStream_t stream = nullptr;
   std::unique_ptr<CallbackManager> callback_manager;
-  NpuMemoryAllocator *allocator;
+  NpuMemoryAllocator *allocator = nullptr;
   mutable std::unique_ptr<HybridProfiler> profiler;
   bool trace_enabled = false;
   int profiling_level = 0;
   bool dump_enabled = false;
-  Status status;
+  Status status = SUCCESS;
   std::mutex mu_;
 
   NodeStatePtr GetOrCreateNodeState(const NodePtr &node);

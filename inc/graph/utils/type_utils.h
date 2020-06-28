@@ -25,6 +25,7 @@
 #include "graph/types.h"
 #include "graph/usr_types.h"
 #include "register/register_types.h"
+#include "external/register/register_fmk_types.h"
 
 namespace ge {
 class TypeUtils {
@@ -39,6 +40,7 @@ class TypeUtils {
   static Format SerialStringToFormat(const std::string &str);
   static Format DataFormatToFormat(const std::string &str);
   static Format DomiFormatToFormat(domi::domiTensorFormat_t domi_format);
+  static std::string FmkTypeToSerialString(domi::FrameworkType fmk_type);
 
   static graphStatus Usr2DefQuantizeFactorParams(const UsrQuantizeFactorParams &usr, QuantizeFactorParams &def);
   static graphStatus Def2UsrQuantizeFactorParams(const QuantizeFactorParams &def, UsrQuantizeFactorParams &usr);

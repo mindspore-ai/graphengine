@@ -280,6 +280,8 @@ GE_ERRORNO_RUNTIME(GE_RTI_CALL_HCCL_REDUCE_SCATTER_FAILED, 47, "call hccl hcom r
 
 // Executor module error code definition
 GE_ERRORNO_EXECUTOR(GE_EXEC_NOT_INIT, 1, "GE Executor is not yet initialized.");
+GE_ERRORNO_EXECUTOR(GE_AIPP_NOT_EXIST, 2, "GE AIPP is not exist.");
+GE_ERRORNO_EXECUTOR(GE_DYNAMIC_AIPP_NOT_SUPPORT_QUERY, 3, "GE Dynamic AIPP is not support to query temporarily.");
 
 // Generator module error code definition
 GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_INIT_FAILED, 1, "Graph manager initialize failed.");

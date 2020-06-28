@@ -39,6 +39,7 @@ Status KnownNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> d
       GELOGW("[%s] KnownNodeExecutor::ExecuteAsync davinci moel has no taskinfo.", context.GetNodeName());
       for (int i = 0; i < context.NumInputs(); ++i) {
         auto tensor = context.MutableInput(i);
+        GE_CHECK_NOTNULL(tensor);
         GE_CHK_STATUS_RET(context.SetOutput(i, *tensor), "[%s] Failed to set output[%d]", context.GetNodeName(), i);
       }
     }

@@ -35,7 +35,6 @@
 namespace {
 const uint32_t kAicpuLoadFlag = 1;
 const uint32_t kAicpuUnloadFlag = 0;
-const uint32_t kTimeBufferLen = 80;
 const char *const kDumpOutput = "output";
 const char *const kDumpInput = "input";
 const char *const kDumpAll = "all";
@@ -188,18 +187,6 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   } else {
     GELOGI("loop_cond is null.");
   }
-}
-
-static std::string GetCurrentTime() {
-  std::time_t now = std::time(nullptr);
-  std::tm *ptm = std::localtime(&now);
-  if (ptm == nullptr) {
-    return "";
-  }
-  char buffer[kTimeBufferLen] = {0};
-  // format: 20171122042550
-  std::strftime(buffer, kTimeBufferLen, "%Y%m%d%H%M%S", ptm);
-  return std::string(buffer);
 }
 
 Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
@@ -384,10 +371,9 @@ Status DataDumper::LoadDumpInfo() {
   }
 
   aicpu::dump::OpMappingInfo op_mapping_info;
-  std::string time_now = GetCurrentTime();
-  GELOGI("Time is %s now", time_now.c_str());
-  op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + time_now + "/" +
-                                std::to_string(device_id_) + "/");
+
+  auto dump_path = PropertiesManager::Instance().GetDumpOutputPath();
+  op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + std::to_string(device_id_) + "/");
   op_mapping_info.set_model_name(model_name_);
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuLoadFlag);

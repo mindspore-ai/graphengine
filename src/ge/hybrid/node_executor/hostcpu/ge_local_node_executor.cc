@@ -74,18 +74,18 @@ Status RefInputTask::RefOneByOne(TaskContext &context) {
 
 Status RefInputTask::RefByOrder(const std::vector<uint32_t> &ref_order, TaskContext &context) {
   GELOGI("node %s type %s ref input by order begin.", node_name_.c_str(), node_type_.c_str());
-  uint32_t output_num = context.NumOutputs();
-  if (ref_order.size() != output_num) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %u outputs but only has %u out ref index.", node_name_.c_str(),
+  int32_t output_num = context.NumOutputs();
+  if (ref_order.size() != static_cast<size_t>(output_num)) {
+    GELOGE(INTERNAL_ERROR, "node %s type %s has %d outputs but only has %zu out ref index.", node_name_.c_str(),
            node_type_.c_str(), output_num, ref_order.size());
     return INTERNAL_ERROR;
   }
-  for (uint32_t out_index = 0; out_index < output_num; ++out_index) {
+  for (auto out_index = 0; out_index < output_num; ++out_index) {
     auto ref_input_index = ref_order[out_index];
     auto input = context.GetInput(ref_input_index);
     GE_CHECK_NOTNULL(input);
     context.SetOutput(out_index, *input);
-    GELOGD("node %s type %s output[%u] ref input[%u] addr=%p.", node_name_.c_str(), node_type_.c_str(), out_index,
+    GELOGD("node %s type %s output[%d] ref input[%u] addr=%p.", node_name_.c_str(), node_type_.c_str(), out_index,
            ref_input_index, input->GetData());
   }
   GELOGI("node %s type %s ref input by order end.", node_name_.c_str(), node_type_.c_str());
@@ -124,9 +124,9 @@ Status DependInputShapeTask::Execute(TaskContext &context) {
     GELOGE(compute_ret, "node %s type %s compute failed or not imply.", node_->GetName().c_str(), node_type.c_str());
     return compute_ret;
   }
-  uint32_t output_num = context.NumOutputs();
-  if (output_num != outputs.size()) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %u output, but kernel compute only has %zu output.",
+  int32_t output_num = context.NumOutputs();
+  if (static_cast<size_t>(output_num) != outputs.size()) {
+    GELOGE(INTERNAL_ERROR, "node %s type %s has %d output, but kernel compute only has %zu output.",
            node_->GetName().c_str(), node_type.c_str(), output_num, outputs.size());
     return INTERNAL_ERROR;
   }
@@ -135,26 +135,26 @@ Status DependInputShapeTask::Execute(TaskContext &context) {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
 
   // copy data to output
-  for (uint32_t i = 0; i < output_num; ++i) {
+  for (auto i = 0; i < output_num; ++i) {
     GeTensorPtr &tensor = outputs[i];
     GE_CHECK_NOTNULL(tensor);
     auto tensor_data = tensor->GetData();
     auto tensor_value = context.MutableOutput(i);
     GE_CHECK_NOTNULL(tensor_value);
     if (tensor_data.GetSize() > tensor_value->GetSize()) {
-      GELOGE(INTERNAL_ERROR, "node:%s type:%s [%zu]th compute data size=%zu, but context data size=%zu.",
+      GELOGE(INTERNAL_ERROR, "node:%s type:%s [%d]th compute data size=%zu, but context data size=%zu.",
              node_->GetName().c_str(), node_type.c_str(), i, tensor_data.GetSize(), tensor_value->GetSize());
       return INTERNAL_ERROR;
     }
 
-    GELOGI("node:%s type:%s [%zu]th output data=%p, out size=%zu, data size=%zu.", node_->GetName().c_str(),
+    GELOGI("node:%s type:%s [%d]th output data=%p, out size=%zu, data size=%zu.", node_->GetName().c_str(),
            node_type.c_str(), i, tensor_value->GetData(), tensor_value->GetSize(), tensor_data.GetSize());
 
     if (tensor_data.GetSize() > 0) {
       GE_CHK_RT_RET(rtMemcpy(tensor_value->MutableData(), tensor_value->GetSize(), tensor_data.GetData(),
                              tensor_data.GetSize(), RT_MEMCPY_HOST_TO_DEVICE));
     }
-    GELOGI("node:%s type:%s [%zu]th set data success, data size=%zu.", node_->GetName().c_str(), node_type.c_str(), i,
+    GELOGI("node:%s type:%s [%d]th set data success, data size=%zu.", node_->GetName().c_str(), node_type.c_str(), i,
            tensor_data.GetSize());
   }
   return SUCCESS;

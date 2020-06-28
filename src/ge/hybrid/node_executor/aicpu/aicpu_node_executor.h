@@ -20,31 +20,83 @@
 #include "external/graph/types.h"
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "aicpu_ext_info.h"
 
 namespace ge {
 namespace hybrid {
-class AicpuTfNodeTask : public NodeTask {
- public:
-  AicpuTfNodeTask(const NodePtr &node, const domi::TaskDef &task_def) : node_(node), task_def_(task_def) {}
 
-  Status Init(const HybridModel &model);
+class AicpuNodeTaskBase : public NodeTask {
+ public:
+  AicpuNodeTaskBase(const NodeItem *node_item, const domi::TaskDef &task_def)
+      : node_item_(node_item),
+        task_def_(task_def),
+        node_name_(node_item->node_name),
+        node_type_(node_item->node_type),
+        unknown_type_(node_item->shape_inference_type),
+        aicpu_ext_handle_(node_item->node_name, node_item->num_inputs, node_item->num_outputs,
+                          node_item->shape_inference_type) {}
+
+  ~AicpuNodeTaskBase() override = default;
+
+  virtual Status Init(const HybridModel &model) = 0;
+
+  Status UpdateArgs(TaskContext &context) override;
+
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+
+ protected:
+  virtual Status InitExtInfo(const std::string &kernel_ext_info);
+
+  virtual Status UpdateExtInfo();
+
+  virtual Status UpdateOutputShapeFromExtInfo();
+
+  Status UpdateShapeToOutputDesc(const GeShape &shape_new, int32_t output_index, GeTensorDescPtr &output_desc);
+
+  virtual Status LaunchTask(TaskContext &context) = 0;
+
+  virtual Status TaskCallback(TaskContext &context) = 0;
+
+  virtual Status UpdateIoAddr(TaskContext &context) = 0;
+
+  static Status AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuffer> &tensor_buffer);
+
+ protected:
+  const NodeItem *node_item_;
+  // just reference.
+  const domi::TaskDef &task_def_;
+
+  const std::string node_name_;
+
+  const std::string node_type_;
+
+  UnknowShapeOpType unknown_type_ = DEPEND_IN_SHAPE;
+
+  AicpuExtInfoHandler aicpu_ext_handle_;
+
+  // ext info addr, device mem
+  std::unique_ptr<TensorBuffer> ext_info_addr_dev_;
+};
+
+class AicpuTfNodeTask : public AicpuNodeTaskBase {
+ public:
+  AicpuTfNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def) : AicpuNodeTaskBase(node_item, task_def) {}
 
   ~AicpuTfNodeTask() override = default;
 
-  Status UpdateArgs(TaskContext &context) override;
-  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+  Status Init(const HybridModel &model) override;
+
+ protected:
+  Status LaunchTask(TaskContext &context) override;
+
+  Status TaskCallback(TaskContext &context) override;
+
+  Status UpdateIoAddr(TaskContext &context) override;
 
  private:
-  Status InitExtInfo();
   Status InitForDependComputeTask();
 
-  Status SetShapeToBuf(const GeShape &shape, int64_t buf[], uint32_t buf_size);
-  void GetShapeFromBuf(const int64_t buf[], uint32_t buf_size, std::vector<int64_t> &dims);
-  Status UpdateOutputShapeFromExtInfo();
-
   Status UpdateShapeAndDataByResultSummary(TaskContext &context);
-
-  Status UpdateShapeToOutputDesc(const GeShape &shape_new, size_t output_index, GeTensorDescPtr &output_desc);
 
   ///
   /// read result summary and prepare copy task memory.
@@ -58,22 +110,14 @@ class AicpuTfNodeTask : public NodeTask {
 
   Status UpdateShapeByHbmBuffer(TaskContext &context, const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
-  // common method
-  static Status AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuffer> &tensor_buffer);
+  Status PrepareCopyInputs(const TaskContext &context, const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm,
+                           uint64_t &copy_num);
+
   static Status EnsureSessionCreated(uint64_t session_id);
-  static Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, string &task_info);
+  static Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, std::string &task_info);
+  static uint64_t GetStepIdAddr(const HybridModel &model);
 
  private:
-  const NodePtr node_;
-  // just reference.
-  const domi::TaskDef &task_def_;
-
-  UnknowShapeOpType unknown_type_ = DEPEND_IN_SHAPE;
-
-  size_t input_num_ = 0;
-
-  size_t output_num_ = 0;
-
   // kernel buf, device mem
   std::unique_ptr<TensorBuffer> kernel_buf_;
 
@@ -82,13 +126,9 @@ class AicpuTfNodeTask : public NodeTask {
   // input and output addr, device mem
   std::unique_ptr<TensorBuffer> input_output_addr_;
 
-  // ext info addr, device mem
-  std::unique_ptr<TensorBuffer> ext_info_addr_dev_;
-  std::unique_ptr<uint8_t[]> ext_info_addr_host_;
-  uint32_t ext_info_num_ = 0;
-
   // just used for depend DEPEND_COMPUTE op
   std::unique_ptr<TensorBuffer> copy_task_args_buf_;
+
   std::vector<std::unique_ptr<TensorBuffer>> output_summary_;
   std::vector<aicpu::FWKAdapter::ResultSummary> output_summary_host_;
 
@@ -98,6 +138,29 @@ class AicpuTfNodeTask : public NodeTask {
   std::unique_ptr<TensorBuffer> copy_input_data_size_dev_;
   std::unique_ptr<TensorBuffer> copy_input_src_dev_;
   std::unique_ptr<TensorBuffer> copy_input_dst_dev_;
+};
+
+class AicpuNodeTask : public AicpuNodeTaskBase {
+ public:
+  AicpuNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def) : AicpuNodeTaskBase(node_item, task_def) {}
+
+  ~AicpuNodeTask() override = default;
+
+  Status Init(const HybridModel &model) override;
+
+ protected:
+  Status LaunchTask(TaskContext &context) override;
+
+  Status TaskCallback(TaskContext &context) override;
+
+  Status UpdateIoAddr(TaskContext &context) override;
+
+ private:
+  // host mem
+  std::unique_ptr<uint8_t[]> args_;
+
+  // args size
+  uint32_t args_size_ = 0;
 };
 
 class AiCpuNodeExecutor : public NodeExecutor {

@@ -67,9 +67,8 @@ static bool ReadProtoFromCodedInputStream(CodedInputStream &coded_stream, Messag
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromBinaryFile(const char *file, Message *proto) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file == nullptr || proto == nullptr),
-                                 ErrorManager::GetInstance().ATCReportErrMessage("E19001");
-                                 return false, "Input parameter file or proto is nullptr!");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file == nullptr || proto == nullptr), return false,
+                                 "Input parameter file or proto is nullptr!");
 
   std::string real_path = RealPath(file);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), return false, "pb file path '%s' not valid", file);
@@ -119,8 +118,9 @@ long GetFileLength(const std::string &input_file) {
                                  ErrorManager::GetInstance().ATCReportErrMessage("E10037", {"filepath"}, {input_file});
                                  return -1, "Open file[%s] failed", input_file.c_str());
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_length == 0), ErrorManager::GetInstance().ATCReportErrMessage("E10038");
-                                 return -1, "File[%s] length is 0, not valid.", input_file.c_str());
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_length == 0),
+                                 ErrorManager::GetInstance().ATCReportErrMessage("E10038", {"filepath"}, {input_file});
+                                 return -1, "File[%s] size is 0, not valid.", input_file.c_str());
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     file_length > kMaxFileSizeLimit, ErrorManager::GetInstance().ATCReportErrMessage(
@@ -207,7 +207,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
   if (dir_path_len >= PATH_MAX) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"},
                                                     {directory_path, std::to_string(PATH_MAX)});
-    GELOGW("Path[%s] len is too long, it must smaller than %d", directory_path.c_str(), PATH_MAX);
+    GELOGW("Path[%s] len is too long, it must be less than %d", directory_path.c_str(), PATH_MAX);
     return -1;
   }
   char tmp_dir_path[PATH_MAX] = {0};
@@ -338,14 +338,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     strlen(path) >= PATH_MAX,
     ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"}, {path, std::to_string(PATH_MAX)});
-    return "", "Path[%s] len is too long, it must smaller than %d", path, PATH_MAX);
+    return "", "Path[%s] len is too long, it must be less than %d", path, PATH_MAX);
   // PATH_MAX is the system's own macro, indicating the maximum file path length supported
   std::shared_ptr<char> resolved_path(new (std::nothrow) char[PATH_MAX](), std::default_delete<char[]>());
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    resolved_path == nullptr,
-    ErrorManager::GetInstance().ATCReportErrMessage("E19003", {"filepath", "size"}, {path, std::to_string(PATH_MAX)});
-    return "", "Path[%s] new string object len[%d] failed.", path, PATH_MAX);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(resolved_path == nullptr, return "", "Path[%s] new string object len[%d] failed.",
+                                 path, PATH_MAX);
 
   // Nullptr is returned when the path does not exist or there is no permission
   // Return absolute path when path is accessible
@@ -384,7 +382,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
     !ValidateStr(real_path, mode),
     ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "path"}, {atc_param, real_path});
     return false,
-           "Input parameter's value[%s] is illegal. The path[%s] can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' "
+           "Input parameter[--%s]'s value[%s] is illegal. The path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' "
            "and chinese character.",
            atc_param.c_str(), real_path.c_str());
 
@@ -420,7 +418,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
       !ValidateStr(real_path, mode),
       ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "path"}, {atc_param, real_path});
       return false,
-             "Input parameter's value[%s] is illegal. The path[%s] can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' "
+             "Input parameter[--%s]'s value[%s] is illegal. The path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' "
              "and chinese character.",
              atc_param.c_str(), real_path.c_str());
 

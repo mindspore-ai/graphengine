@@ -33,6 +33,8 @@ namespace ge {
 *@par Outputs:
 *y:A Returns Non-deterministic integer values with specified shape.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NonDeterministicInts operator.
 */
 
 REG_OP(NonDeterministicInts)
@@ -55,6 +57,8 @@ REG_OP(NonDeterministicInts)
 *@par Outputs:
 *y:A Returns the created operation.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow RngSkip operator.
 */
 
 REG_OP(RngSkip)
@@ -82,6 +86,8 @@ smaller than the range of the output (either `2^32` or `2^64`).
 *@par Outputs:
 *y:A Returns Random values with specified shape.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow StatefulRandomBinomial operator.
 */
 
 REG_OP(StatefulRandomBinomial)
@@ -106,6 +112,8 @@ REG_OP(StatefulRandomBinomial)
 *@par Outputs:
 *y:A Returns A tensor of the specified shape filled with random normal values.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow StatefulStandardNormalV2 operator.
 */
 
 REG_OP(StatefulStandardNormalV2)
@@ -129,6 +137,8 @@ REG_OP(StatefulStandardNormalV2)
 *@par Outputs:
 *y:A Returns Random values with specified shape.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow StatefulTruncatedNormal operator.
 */
 
 REG_OP(StatefulTruncatedNormal)
@@ -151,6 +161,8 @@ lower bound 0 is included in the range, while the upper bound 1 is excluded. \n
 *@par Outputs:
 *y:A Returns Random values with specified shape.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow StatefulUniform operator.
 */
 
 REG_OP(StatefulUniform)
@@ -172,6 +184,8 @@ The generated values are uniform integers covering the whole range of `dtype`.
 *@par Outputs:
 *y:A  Returns Random values with specified shape.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow StatefulUniformFullInt operator.
 */
 
 REG_OP(StatefulUniformFullInt)
@@ -200,6 +214,8 @@ smaller than the range of the output (either `2^32` or `2^64`).
 *@par Outputs:
 *y:A Returns Random values with specified shape.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow StatefulUniformInt operator.
 */
 
 REG_OP(StatefulUniformInt)

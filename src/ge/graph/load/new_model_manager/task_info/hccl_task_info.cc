@@ -177,6 +177,7 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
     rt_ret = rtModelBindStream(davinci_model->GetRtModelHandle(), stream, RT_MODEL_WAIT_ACTIVE_STREAM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      (void)rtStreamDestroy(stream);
       return RT_FAILED;
     }
     GELOGD("hccl_stream addr is=%p", stream);

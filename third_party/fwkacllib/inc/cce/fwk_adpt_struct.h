@@ -75,17 +75,25 @@ struct StrFWKKernel {
   uint64_t workspaceBaseAddr;  // Workspace base addr, need convert to void*
   uint64_t inputOutputAddr;    // InputOutput addr, need convert to void*
 
-  uint64_t extInfoNum;         // extend info number
-  uint64_t extInfoAddr;        // extend info addr list, ExtInfo structure, num equal to extInfoNum
+  uint64_t extInfoLen;         // extend info total length
+  uint64_t extInfoAddr;        // extend info addr, ExtInfo structure
 } __attribute__((packed));
 
 typedef StrFWKKernel FWKOperateParam;
 
+// Extent info ShapeAndType
+const uint32_t kMaxShapeDims = 8;
+struct ShapeAndType {
+  int32_t type;
+  int64_t dims[kMaxShapeDims];
+} __attribute__((packed));
+
 // Extend info structure for extInfoAddr
-struct ExtInfo{
-  int32_t  infoType;
-  uint32_t infoLen;
-  uint64_t infoAddr;
+const uint32_t kExtInfoHeadSize = 8;
+struct ExtInfo {
+  int32_t  infoType;    // extend type
+  uint32_t infoLen;     // length for infoMsg
+  char     infoMsg[0];  // extend value
 } __attribute__((packed));
 
 struct ResultSummary {

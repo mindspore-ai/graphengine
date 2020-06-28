@@ -31,6 +31,7 @@ class KernelExTaskInfo : public TaskInfo {
         davinci_model_(nullptr),
         kernel_buf_(nullptr),
         input_output_addr_(nullptr),
+        ext_info_addr_(nullptr),
         dump_args_(nullptr) {}
 
   ~KernelExTaskInfo() override {}
@@ -64,6 +65,7 @@ class KernelExTaskInfo : public TaskInfo {
   DavinciModel *davinci_model_;
   void *kernel_buf_;
   void *input_output_addr_;
+  void *ext_info_addr_;
   void *dump_args_;
   OpDescPtr op_desc_ = nullptr;
   uint32_t args_offset_ = 0;

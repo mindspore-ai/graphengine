@@ -524,7 +524,6 @@ OpDescPtr OpDescUtils::CreateConstOp(const GeTensorPtr &tensor_ptr) {
     return nullptr;
   }
 
-  GE_CHK_BOOL_EXEC(const_opdesc != nullptr, return nullptr, "const_opdesc is nullptr!");
   CHECK_FALSE_EXEC(SetWeights(const_opdesc, tensor_ptr) == ge::GRAPH_SUCCESS, return nullptr);
 
   const_opdesc->SetType(CONSTANT);

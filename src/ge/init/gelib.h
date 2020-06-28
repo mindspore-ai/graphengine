@@ -71,6 +71,9 @@ class GELib {
   // get incre build cache path
   const std::string &GetIncreBuildCachePath() const { return incre_build_cache_path_; }
 
+  void InitProfiling(Options &options);
+  void ShutDownProfiling();
+
   Status InitSystemWithoutOptions();
   Status InitSystemWithOptions(Options &options);
   Status SystemShutdownWithOptions(const Options &options);
@@ -80,7 +83,7 @@ class GELib {
   const GELib &operator=(const GELib &);
   Status InnerInitialize(const map<string, string> &options);
   Status SystemInitialize(const map<string, string> &options);
-  Status SetRTSocVersion(const map<string, string> &options);
+  Status SetRTSocVersion(const map<string, string> &options, map<string, string> &new_options);
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
 

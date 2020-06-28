@@ -172,9 +172,12 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
   if (!session_graph_id.empty()) {
     (void)AttrUtils::SetStr(op_desc, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
   }
+  // Only flush subgraph name
+  string node_name = (graph->GetParentGraph() != nullptr)
+                       ? (graph->GetName() + "_" + op_desc->GetName() + session_graph_id)
+                       : (op_desc->GetName() + session_graph_id);
 
-  string name = op_desc->GetName() + session_graph_id;
-  op_desc->SetName(name);
+  op_desc->SetName(node_name);
   GELOGI("Create cleanAddr op:%s.", op_desc->GetName().c_str());
   // To avoid same name between graphs, set session graph id to this node
   NodePtr clean_addr_node = graph->AddNodeFront(op_desc);

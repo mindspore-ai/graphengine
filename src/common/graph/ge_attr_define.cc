@@ -118,6 +118,9 @@ const std::string ATTR_NAME_NAN_OPT = "nan_opt";
 const std::string ATTR_NAME_AIPP = "aipp";
 const std::string NEW_AIPP_CONV_OP = "new_conv_op_for_aipp";
 
+const std::string ATTR_NAME_AIPP_INPUTS = "_aipp_inputs";
+const std::string ATTR_NAME_AIPP_OUTPUTS = "_aipp_outputs";
+
 const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
 const std::string ATTR_NAME_PARENT_GRAPH_NAME = "_parent_graph_name";
 
@@ -150,6 +153,7 @@ const std::string ATTR_NAME_STREAM_CYCLE_EVENT_FLAG = "need_stream_cycle_event";
 const std::string ATTR_NAME_RTSWITCH_RECV_EVENT_ID = "rtswitch_event_id";
 const std::string ATTR_NAME_AUTOMIC_ADD_START = "automic_add_addr_start";
 const std::string ATTR_NAME_AUTOMIC_ADD_MEM_SIZE = "automic_add_mem_size";
+const std::string ATTR_NAME_DYNAMIC_OUTPUT_DIMS = "_dynamic_output_dims";
 
 // To be deleted
 const std::string ATTR_TO_BE_DELETED = "to_be_deleted";
@@ -1000,7 +1004,7 @@ const std::string ATTR_NAME_FUSION_TYPE_LIST = "_fusion_type_list";
 const std::string ATTR_NAME_VALID_INPUT_SHAPE_LIST_LIST = "_valid_input_shape_list_list";
 const std::string ATTR_NAME_VALID_OUTPUT_SHAPE_LIST_LIST = "_valid_output_shape_list_list";
 const std::string ATTR_NAME_SLICE_INPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
-const std::string ATTR_NAME_SLICE_OUTPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
+const std::string ATTR_NAME_SLICE_OUTPUT_OFFSET_LIST_LIST = "_output_offset_list_list";
 
 // used for Horovod
 const std::string ATTR_INTER_EVENT_IDENTIFY = "event_id";

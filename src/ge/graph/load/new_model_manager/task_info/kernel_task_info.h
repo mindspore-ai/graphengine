@@ -100,6 +100,8 @@ class KernelTaskInfo : public TaskInfo {
 
   Status InitAicpuTask(uint32_t op_index, const domi::KernelDef &kernel_def);
 
+  Status InitAicpuTaskExtInfo(const std::string &ext_info);
+
   Status StoreInputOutputTensor(const std::vector<void *> &input_data_addrs,
                                 const std::vector<void *> &output_data_addrs,
                                 const std::vector<::tagCcAICPUTensor> &input_descs,
@@ -151,6 +153,9 @@ class KernelTaskInfo : public TaskInfo {
   OpDescPtr op_desc_;
   DavinciModel *davinci_model_;
   uint32_t args_offset_ = 0;
+
+  // aicpu ext_info device mem
+  void *aicpu_ext_info_addr_ = nullptr;
 
   // For super kernel
   uint32_t skt_id_;

@@ -86,6 +86,17 @@ Status GraphExecutor::SetGraphContext(GraphContextPtr graph_context_ptr) {
   return SUCCESS;
 }
 
+Status GraphExecutor::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->SetDynamicSize(model_id, batch_num);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "SetDynamicSize failed");
+    return ret;
+  }
+  return SUCCESS;
+}
+
 void GraphExecutor::SetTrainFlag(bool is_train_graph) { train_graph_flag_ = is_train_graph; }
 
 Status GraphExecutor::FreeInOutBuffer() {
@@ -476,7 +487,28 @@ Status GraphExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::ve
     GELOGE(ret, "GetDynamicBatchInfo failed.");
     return ret;
   }
+  return SUCCESS;
+}
 
+Status GraphExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetCurShape(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "GetCurShape failed");
+    return ret;
+  }
+  return SUCCESS;
+}
+
+Status GraphExecutor::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetModelAttr(model_id, dynamic_output_shape_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "GetModelAttr failed");
+    return ret;
+  }
   return SUCCESS;
 }
 
@@ -503,4 +535,43 @@ Status GraphExecutor::GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vecto
 
   return SUCCESS;
 }
+
+Status GraphExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetAIPPInfo(model_id, index, aipp_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetAIPPInfo failed.");
+    return ret;
+  }
+
+  return SUCCESS;
+}
+
+Status GraphExecutor::GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetOrigInputInfo(model_id, index, orig_input_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetOrigInputInfo failed.");
+    return ret;
+  }
+
+  return SUCCESS;
+}
+
+Status GraphExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index,
+                                                std::vector<InputOutputDims> &input_dims,
+                                                std::vector<InputOutputDims> &output_dims) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetAllAippInputOutputDims(model_id, index, input_dims, output_dims);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetAllAippInputOutputDims failed.");
+    return ret;
+  }
+
+  return SUCCESS;
+}
+
 }  // namespace ge

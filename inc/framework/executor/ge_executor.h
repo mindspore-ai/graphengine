@@ -96,6 +96,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ///
   ge::Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
+  ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info);
+
   ///
   /// @ingroup ge
   /// @brief Set dynamic image info
@@ -109,6 +111,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ge::Status SetDynamicAippData(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
                                 const std::vector<kAippDynamicBatchPara> &aippBatchPara,
                                 const kAippDynamicPara &aippParms);
+
+  ge::Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+  ge::Status GetModelAttr(uint32_t model_id, std::vector<std::string> &dynamic_output_shape_info);
 
   ge::Status GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                          std::vector<ge::TensorDesc> &output_desc);
@@ -205,6 +210,11 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
                                  std::vector<DataBuffer> &outputs);
 
   static ge::Status ReleaseSingleOpResource(void *stream);
+
+  ge::Status GetBatchInfoSize(uint32_t model_id, size_t &shape_count);
+  ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
+  ge::Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,
+                                       std::vector<InputOutputDims> &output_dims);
 
  private:
   static bool isInit_;

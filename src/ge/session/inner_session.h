@@ -41,6 +41,8 @@ class InnerSession {
 
   Status RemoveGraph(uint32_t graph_id);
 
+  Status BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
+
   Status RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs, RunAsyncCallback callback);
 
   Status Finalize();

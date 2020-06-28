@@ -75,6 +75,8 @@ message KernelDef {
     bytes flowtable = 15;
     string so_name = 16;
     string kernel_name = 17;
+    bytes kernel_ext_info = 18;
+    uint32 kernel_ext_info_size = 19;
 }
 
 message KernelContext {
@@ -97,6 +99,8 @@ message KernelExDef {
     bytes args = 13;
     bytes task_info = 14;                 // serialized nodeDef, funcDef, inputoutput
     uint32 task_info_size = 15;
+    bytes kernel_ext_info = 16;
+    uint32 kernel_ext_info_size = 17;
 }
 
 

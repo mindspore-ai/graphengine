@@ -22,6 +22,8 @@
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "graph/debug/ge_attr_define.h"
+#include "framework/common/util.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
 #include "model/ge_root_model.h"
@@ -31,6 +33,7 @@ thread_local uint32_t device_count = 0;
 namespace {
 const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
+const char *const kNeedDestroySpecifiedAicpuKernel = "need_destroy_specified_aicpu_kernel";
 }  // namespace
 
 std::shared_ptr<ModelManager> ModelManager::GetInstance() {
@@ -39,7 +42,10 @@ std::shared_ptr<ModelManager> ModelManager::GetInstance() {
   return instance_ptr;
 }
 
-ModelManager::ModelManager() { max_model_id_ = 0; }
+ModelManager::ModelManager() {
+  max_model_id_ = 0;
+  session_id_bias_ = 0;
+}
 
 Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id) {
   STR_FWK_OP_KERNEL param_base = {};
@@ -69,6 +75,8 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
                       GE_CHK_RT(rtFree(aicpu_kernel_addr)); return FAILED;)
       uint64_t kernel_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(aicpu_kernel_addr));
       param_base.fwkKernelBase.fwk_kernel.kernelID = kernel_id_addr;
+      // In the scene of loading once and running many times, the kernel needs to be destroyed many times,
+      // and connot be removed from kernel map.
     }
   }
 
@@ -210,6 +218,13 @@ ModelManager::~ModelManager() {
 Status ModelManager::SetDevice(int32_t deviceId) const {
   GE_CHK_RT_RET(rtSetDevice(deviceId));
 
+  return SUCCESS;
+}
+
+ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHECK_NOTNULL(davinci_model);
+  davinci_model->SetDynamicSize(batch_num);
   return SUCCESS;
 }
 
@@ -616,7 +631,7 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
     return FAILED;
   }
   if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
-    dump_path += "/";
+    dump_path = dump_path + "/" + CurrentTimeInStr() + "/";
   }
   GELOGI("dump status = %s.", dump_path.c_str());
 
@@ -647,7 +662,6 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
 Status ModelManager::GetMaxUsedMemory(const uint32_t model_id, uint64_t &max_size) {
   auto hybrid_model = GetHybridModel(model_id);
   if (hybrid_model != nullptr) {
-    // TODO hybrid use dynamic memory allocation
     max_size = 0;
     return SUCCESS;
   }
@@ -694,6 +708,20 @@ Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<st
   return davinci_model->GetDynamicBatchInfo(batch_info);
 }
 
+Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHECK_NOTNULL(davinci_model);
+  davinci_model->GetCurShape(batch_info);
+  return SUCCESS;
+}
+
+Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHECK_NOTNULL(davinci_model);
+  davinci_model->GetModelAttr(dynamic_output_shape_info);
+  return SUCCESS;
+}
+
 Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                                        vector<InputOutputDescInfo> &output_desc,
                                                        std::vector<uint32_t> &inputFormats,
@@ -703,6 +731,52 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
                          "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
 
   return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
+}
+
+///
+/// @ingroup ge
+/// @brief Get AIPP info
+/// @param [in] model_id
+/// @param [in] index
+/// @param [out] aipp_info
+/// @return execute result
+///
+Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetAIPPInfo failed, invalid model_id is %u.",
+                         model_id);
+
+  return davinci_model->GetAIPPInfo(index, aipp_info);
+}
+
+Status ModelManager::GenSessionId(uint64_t &session_id) {
+  std::lock_guard<std::mutex> lock(session_id_create_mutex_);
+
+  struct timeval tv;
+  if (gettimeofday(&tv, nullptr) != 0) {
+    GELOGE(INTERNAL_ERROR, "Failed to get current time.");
+    return INTERNAL_ERROR;
+  }
+  session_id = static_cast<uint64_t>(tv.tv_sec * 1000000 + tv.tv_usec);  // 1000000us
+
+  session_id_bias_++;
+  // max bais 100.
+  session_id_bias_ = session_id_bias_ % 100;
+  session_id = session_id * 100 + session_id_bias_;
+
+  GELOGD("Generate new session id: %lu.", session_id);
+  return SUCCESS;
+}
+
+Status ModelManager::UpdateSessionId(std::shared_ptr<DavinciModel> &davinci_model, uint64_t session_id) {
+  GeModelPtr ge_model_current = davinci_model->GetGeModel();
+  GE_CHECK_NOTNULL(ge_model_current);
+  if (!ge::AttrUtils::SetInt(ge_model_current, ge::MODEL_ATTR_SESSION_ID, static_cast<int64_t>(session_id))) {
+    GELOGW("Set attr[%s] failed in updating session_id.", MODEL_ATTR_SESSION_ID.c_str());
+  }
+
+  GELOGD("Update session id: %lu.", session_id);
+  return SUCCESS;
 }
 
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
@@ -746,6 +820,15 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       return FAILED;
     }
     davinci_model->SetDeviceId(device_id);
+
+    /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
+    /// These session_ids come from the same model, so the values of session_id are the same.
+    /// Update session_id for infer in load model to avoid the same session_id.
+    uint64_t new_session_id;
+    ret = GenSessionId(new_session_id);
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Generate session_id for infer failed.");
+    ret = UpdateSessionId(davinci_model, new_session_id);
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Update session_id for infer failed.");
 
     ret = davinci_model->Init(dev_ptr, mem_size, weight_ptr, weight_size);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "DavinciInit failed.");
@@ -805,9 +888,17 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
     return ret;
   }
 
+  /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
+  /// These session_ids come from the same model, so the values of session_id are the same.
+  /// Update session_id for infer in load model to avoid the same session_id.
+  uint64_t new_session_id;
+  ret = GenSessionId(new_session_id);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
+  ret = UpdateSessionId(davinci_model, new_session_id);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
+
   GenModelId(&model_id);
   davinci_model->SetId(model_id);
-  davinci_model->SetSessionId(model_id);
   ret = davinci_model->SetQueIds(input_queue_ids, output_queue_ids);
   if (ret != SUCCESS) {
     GELOGE(ret, "set model queue ids failed.");
@@ -839,6 +930,22 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
                                   OutputData &output_data) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid Model ID %u to start! ", model_id);
+
+  GeModelPtr ge_model_current = davinci_model->GetGeModel();
+  bool need_destroy_aicpu_kernel = false;
+  bool result = ge::AttrUtils::GetBool(ge_model_current, kNeedDestroySpecifiedAicpuKernel, need_destroy_aicpu_kernel);
+  if (result && need_destroy_aicpu_kernel) {
+    GELOGI("Get attr %s successfully, start to destroy specified aicpu kernel.", kNeedDestroySpecifiedAicpuKernel);
+
+    // Zero copy is enabled by default, no need to judge.
+    uint64_t session_id_davinci = davinci_model->GetSessionId();
+    uint32_t model_id_davinci = davinci_model->GetModelId();
+    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci);
+    if (status != SUCCESS) {
+      GELOGW("Destroy specified aicpu kernel failed, session id is %lu, model id is %u.", session_id_davinci,
+             model_id_davinci);
+    }
+  }
 
   Status status = davinci_model->NnExecute(stream, async_mode, input_data, output_data);
   if (status == SUCCESS) {
@@ -920,4 +1027,23 @@ void ModelManager::GenModelId(uint32_t *id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
   *id = ++max_model_id_;
 }
+
+Status ModelManager::GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetOrigInputInfo failed, invalid model_id is %u.",
+                         model_id);
+
+  return davinci_model->GetOrigInputInfo(index, orig_input_info);
+}
+
+Status ModelManager::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index,
+                                               std::vector<InputOutputDims> &input_dims,
+                                               std::vector<InputOutputDims> &output_dims) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
+                         "GetAllAippInputOutputDims failed, invalid model_id is %u.", model_id);
+
+  return davinci_model->GetAllAippInputOutputDims(index, input_dims, output_dims);
+}
+
 }  // namespace ge

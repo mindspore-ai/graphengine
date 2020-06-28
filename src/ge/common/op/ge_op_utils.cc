@@ -114,6 +114,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 OpUtils::ConvertAippParams(const GeAttrValue::NAMED_ATTRS &aipp_attr, domi::AippOpParams *aipp_params) {
   GE_CHECK_NOTNULL(aipp_params);
   AIPP_CONVERT_FORMAT_EX(aipp_mode, domi::AippOpParams::AippMode, int32_t, GeAttrValue::INT);
+  AIPP_CONVERT_INT(related_input_rank);
 
   if (aipp_params->aipp_mode() == domi::AippOpParams::dynamic) {
     AIPP_CONVERT_INT(max_src_image_size);
@@ -149,6 +150,7 @@ OpUtils::ConvertAippParams(const GeAttrValue::NAMED_ATTRS &aipp_attr, domi::Aipp
     AIPP_CONVERT_LIST_FLOAT(var_reci_chn_0, true);
     AIPP_CONVERT_LIST_FLOAT(var_reci_chn_1, true);
     AIPP_CONVERT_LIST_FLOAT(var_reci_chn_2, true);
+    AIPP_CONVERT_LIST_FLOAT(var_reci_chn_3, true);
 
     const bool csc_switch = aipp_params->csc_switch();
     AIPP_CONVERT_LIST_INT(matrix_r0c0, csc_switch);

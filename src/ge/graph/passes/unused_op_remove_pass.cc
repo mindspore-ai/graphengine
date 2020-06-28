@@ -39,7 +39,7 @@ Status UnusedOpRemovePass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   std::set<std::string> remove_op_set;
   vector<NodePtr> nodes_to_be_deleted;
-  if (fmktype_ == FMK_TYPE_T) {
+  if (fmktype_ == TENSORFLOW) {
     remove_op_set = kRemoveOpSet;
   } else {
     remove_op_set = kOtherRemoveOpSet;

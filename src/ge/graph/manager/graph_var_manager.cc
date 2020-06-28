@@ -301,7 +301,7 @@ Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uin
   return SUCCESS;
 }
 
-int64_t MemResource::GetVarMemSize() const { return var_mem_size_; }
+uint64_t MemResource::GetVarMemSize() const { return var_mem_size_; }
 
 void MemResource::UpdateVarMemSize(int64_t mem_size) { var_mem_size_ = mem_size; };
 

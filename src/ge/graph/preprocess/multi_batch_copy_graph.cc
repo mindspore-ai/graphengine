@@ -16,12 +16,13 @@
 
 #include "graph/preprocess/multi_batch_copy_graph.h"
 
-#include <string>
 #include <queue>
 #include <set>
+#include <string>
 
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/ge/ge_util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/string_util.h"
@@ -197,7 +198,9 @@ Status CheckDataShape(const std::vector<NodePtr> &nodes) {
     }
   }
   if (unknown_shape_count == 0) {
-    GELOGE(PARAM_INVALID, "There are no unknown shape data, the dynamic batch/imagesize options will be ignored");
+    ErrorManager::GetInstance().ATCReportErrMessage("E10055");
+    GELOGE(PARAM_INVALID,
+           "Need unknow shape data when user set --dynamic_batch_size or --dynamic_image_size, please check.");
     return PARAM_INVALID;
   }
 
@@ -426,7 +429,12 @@ NodePtr MultiBatchGraphCopyer::InsertShapeDataNode() {
     GELOGE(OUT_OF_MEMORY, "Failed to create shape data node, out of memory");
     return nullptr;
   }
-  desc->SetName("ascend_mbatch_shape_data");
+  string node_name = "ascend_mbatch_shape_data";
+  // Only flush subgraph name
+  if (graph_->GetParentGraph() != nullptr) {
+    node_name = graph_->GetName() + "_" + node_name;
+  }
+  desc->SetName(node_name);
   desc->SetType(DATA);
 
   GeTensorDesc tensor_desc;
@@ -468,31 +476,48 @@ Status MultiBatchGraphCopyer::CheckArguments() {
     return PARAM_INVALID;
   }
   if (shapes_.size() < kMinShapesCount) {
-    GELOGE(PARAM_INVALID, "The minimum batch-shapes count is %zu", kMinShapesCount);
+    ErrorManager::GetInstance().ATCReportErrMessage("E10050", {"shapesize", "minshapesize"},
+                                                    {std::to_string(shapes_.size()), std::to_string(kMinShapesCount)});
+    GELOGE(PARAM_INVALID,
+           "Input parameter[--dynamic_batch_size or --dynamic_image_size]'s "
+           "value size [%zu] must be greater than [%zu].",
+           shapes_.size(), kMinShapesCount);
     return PARAM_INVALID;
   }
   if (shapes_.size() > kMaxShapesCount) {
-    GELOGE(PARAM_INVALID, "The max batch-shapes count is %zu", kMaxShapesCount);
+    ErrorManager::GetInstance().ATCReportErrMessage("E10051", {"shapesize", "maxshapesize"},
+                                                    {std::to_string(shapes_.size()), std::to_string(kMaxShapesCount)});
+    GELOGE(PARAM_INVALID,
+           "Input parameter[--dynamic_batch_size or --dynamic_image_size]'s "
+           "value size [%zu] must be less than [%zu].",
+           shapes_.size(), kMaxShapesCount);
     return PARAM_INVALID;
   }
   std::set<std::vector<int64_t>> shapes_set;
   size_t shape_size = shapes_.at(0).size();
   for (auto &shape : shapes_) {
     if (shape_size != shape.size()) {
-      GELOGE(PARAM_INVALID, "All batch shapes size must be the same, first group's size is %zu and another's is %zu.",
+      ErrorManager::GetInstance().ATCReportErrMessage("E10052", {"shapesize1", "shapesize2"},
+                                                      {std::to_string(shape_size), std::to_string(shape.size())});
+      GELOGE(PARAM_INVALID,
+             "Input parameter[--dynamic_batch_size or --dynamic_image_size]'s "
+             "value size must be same, first group's size is %zu and another's is %zu.",
              shape_size, shape.size());
       return PARAM_INVALID;
     }
     for (auto dim : shape) {
       if (dim <= 0) {
-        GELOGE(PARAM_INVALID, "Invalid dim %ld, all dims must more than 0", dim);
+        ErrorManager::GetInstance().ATCReportErrMessage("E10053", {"dim"}, {std::to_string(dim)});
+        GELOGE(PARAM_INVALID, "Invalid dim %ld, all dims must be greater than 0", dim);
         return PARAM_INVALID;
       }
     }
     shapes_set.insert(shape);
   }
   if (shapes_set.size() != shapes_.size()) {
-    GELOGE(PARAM_INVALID, "There are duplicated batch-shapes, please check");
+    ErrorManager::GetInstance().ATCReportErrMessage("E10054");
+    GELOGE(PARAM_INVALID,
+           "Input parameter[--dynamic_batch_size or --dynamic_image_size] exist duplicate shapes, please check");
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -627,11 +652,11 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
   switchn_desc->SetType(SWITCHN);
 
   GeTensorDesc tensor(NodeUtils::GetOutputDesc(*data, kDataOutIndex));
-  if (switchn_desc->AddInputDesc(tensor) != GRAPH_SUCCESS) {  // data
+  if (switchn_desc->AddInputDesc("data", tensor) != GRAPH_SUCCESS) {  // data
     return OUT_OF_MEMORY;
   }
   GeTensorDesc pred_tensor;
-  if (switchn_desc->AddInputDesc(pred_tensor) != GRAPH_SUCCESS) {  // pred
+  if (switchn_desc->AddInputDesc("pred_value", pred_tensor) != GRAPH_SUCCESS) {  // pred
     return OUT_OF_MEMORY;
   }
   for (size_t i = 0; i < shapes_.size(); ++i) {
@@ -647,7 +672,7 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
       GELOGE(INTERNAL_ERROR, "Failed to add attr value on output %zu tensor", i);
       return INTERNAL_ERROR;
     }
-    if (switchn_desc->AddOutputDesc(tensor) != GRAPH_SUCCESS) {
+    if (switchn_desc->AddOutputDesc("output" + std::to_string(i), tensor) != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "Opdesc AddOutputDesc failed");
       return GRAPH_FAILED;
     }
@@ -913,6 +938,47 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
     copyer.AddShape(shape);
   }
   return copyer.CopyGraph();
+}
+
+Status GetDynamicOutputShape(ComputeGraphPtr &graph) {
+  GELOGI("Start to get dynamic output dynamic batch shape msg");
+  std::vector<std::string> dynamic_output_dims;
+  if (graph == nullptr) {
+    GELOGE(PARAM_INVALID, "Graph is null ,para is invalid");
+    return PARAM_INVALID;
+  }
+  for (auto &node : graph->GetAllNodes()) {
+    if (node->GetType() == NETOUTPUT) {
+      auto netoutput_desc = node->GetOpDesc();
+      auto inputnode_to_netoutput = node->GetInAllNodes();
+      for (size_t j = 0; j < inputnode_to_netoutput.size(); j++) {
+        bool ret = false;
+        (void)AttrUtils::GetBool(inputnode_to_netoutput.at(j)->GetOpDesc(), ATTR_INSERT_BY_MBATCH, ret);
+        if (inputnode_to_netoutput.at(j)->GetType() == MERGE && ret) {
+          GELOGI("Find the merge node %s with mbatch attr", inputnode_to_netoutput.at(j)->GetName().c_str());
+          for (size_t i = 0; i < inputnode_to_netoutput.at(j)->GetInNodes().size(); i++) {
+            auto input_desc = inputnode_to_netoutput.at(j)->GetOpDesc();
+            auto input_tensor_desc = input_desc->GetInputDesc(i);
+            auto shape_msg = input_tensor_desc.GetShape().ToString();
+            std::string output_shape = std::to_string(i) + "," + std::to_string(j) + "," + shape_msg;
+            GELOGI("The shape msg in dynamic batch is %s", output_shape.c_str());
+            dynamic_output_dims.emplace_back(output_shape);
+          }
+        }
+      }
+      if (dynamic_output_dims.size() > 0) {
+        if (!AttrUtils::SetListStr(netoutput_desc, ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_dims)) {
+          GELOGE(FAILED, "Set dynamic output dims attr failed");
+          return FAILED;
+        }
+        return SUCCESS;
+      }
+      GELOGI("Can not find the merge node with mbatch attr");
+      return SUCCESS;
+    }
+  }
+  GELOGW("There are no netoutput in graph");
+  return SUCCESS;
 }
 }  // namespace multibatch
 }  // namespace ge

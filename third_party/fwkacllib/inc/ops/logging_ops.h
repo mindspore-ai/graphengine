@@ -33,6 +33,8 @@ the Unix epoch.
 *The timestamp is computed when the op is executed, not when it is added to \n
 the graph.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Timestamp operator.
 */
 
 REG_OP(Timestamp)
@@ -51,6 +53,8 @@ Inputs include: \n
 *@par Attributes:
 *summarize: Print this many entries of each tensor.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Assert operator.
 */
 
 REG_OP(Assert)
@@ -67,6 +71,7 @@ REG_OP(Assert)
 *@par Inputs:
 *x: The tensor to print, it is a dynamic_input.
 
+*Compatible with aicpu Print operator.
 */
 REG_OP(Print)
 .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
@@ -84,6 +89,8 @@ REG_OP(Print)
 *output_stream: A string specifying the output stream or logging level \n
 to print to.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow PrintV2 operator.
 */
 REG_OP(PrintV2)
   .INPUT(x, TensorType({DT_STRING}))

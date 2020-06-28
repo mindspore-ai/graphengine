@@ -45,10 +45,70 @@ const std::string IR_OPTION_TARGET = "target";
 const std::string IR_OPTION_MODE = "mode";
 const std::string IR_OP_CONF_DELIMITER = ":";
 const std::string IR_OPTION_LOG_LEVEL_DEFAULT = "default";
+const std::string IR_OPTION_BUFFER_OPTIMIZE_DEFAULT = "l2_optimize";
+const std::string IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT = "0";
+const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
 }  // namespace
+
+static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
+  // check param disable_reuse_memory
+  std::string disable_reuse_memory =
+    global_options.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY) == global_options.end()
+      ? IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT
+      : global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY];
+  GE_CHK_BOOL_EXEC(ge::CheckDisableReuseMemoryParamValid(disable_reuse_memory) == ge::SUCCESS,
+                   return ge::GRAPH_PARAM_INVALID, "check disable_reuse_memory failed!");
+  global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY] = disable_reuse_memory;
+  // check buffer_optimize
+  std::string buffer_optimize = global_options.find(ge::ir_option::BUFFER_OPTIMIZE) == global_options.end()
+                                  ? IR_OPTION_BUFFER_OPTIMIZE_DEFAULT
+                                  : global_options[ge::ir_option::BUFFER_OPTIMIZE];
+  GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(buffer_optimize) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
+                   "check buffer optimize failed!");
+  global_options[ge::ir_option::BUFFER_OPTIMIZE] = buffer_optimize;
+  // check enable_single_stream
+  std::string enable_single_stream = global_options.find(ge::ir_option::ENABLE_SINGLE_STREAM) == global_options.end()
+                                       ? ""
+                                       : global_options[ge::ir_option::ENABLE_SINGLE_STREAM];
+  GE_CHK_BOOL_EXEC(ge::CheckEnableSingleStreamParamValid(enable_single_stream) == ge::SUCCESS,
+                   return ge::GRAPH_PARAM_INVALID, "check enable single stream failed!");
+  // check compress_weight
+  std::string enable_compress_weight =
+    global_options.find(ge::ir_option::ENABLE_COMPRESS_WEIGHT) == global_options.end()
+      ? IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT
+      : global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT];
+  std::string compress_weight_conf = global_options.find(ge::ir_option::COMPRESS_WEIGHT_CONF) == global_options.end()
+                                       ? ""
+                                       : global_options[ge::ir_option::COMPRESS_WEIGHT_CONF];
+  GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(enable_compress_weight, compress_weight_conf) == ge::SUCCESS,
+                   return ge::GRAPH_PARAM_INVALID, "check compress weight failed!");
+  global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT] =
+    (enable_compress_weight == "true") ? ge::kEnableCompressWeightTrue : ge::kEnableCompressWeightFalse;
+  // check optypelist_for_implmode and op_select_implmode
+  std::string optypelist_for_implmode =
+    global_options.find(ge::ir_option::OPTYPELIST_FOR_IMPLMODE) == global_options.end()
+      ? ""
+      : global_options[ge::ir_option::OPTYPELIST_FOR_IMPLMODE];
+  std::string op_select_implmode = global_options.find(ge::ir_option::OP_SELECT_IMPL_MODE) == global_options.end()
+                                     ? ""
+                                     : global_options[ge::ir_option::OP_SELECT_IMPL_MODE];
+  GE_CHK_BOOL_EXEC(ge::CheckImplmodeParamValid(optypelist_for_implmode, op_select_implmode) == ge::SUCCESS,
+                   return ge::GRAPH_PARAM_INVALID, "check optypelist_for_implmode and op_select_implmode failed!");
+  global_options[ge::ir_option::OP_SELECT_IMPL_MODE] = op_select_implmode;
+
+  return GRAPH_SUCCESS;
+}
 
 graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
   GELOGD("Enter aclgrphInitialize start!");
+  // check global options
+  if (CheckGlobalOptions(global_options) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_PARAM_INVALID, "Check global options falied!");
+    return GRAPH_PARAM_INVALID;
+  }
+  // print global option map
+  ge::PrintOptionMap(global_options, "global option");
+
   std::shared_ptr<ge::GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGI("aclgrphInitialize start!");
@@ -82,7 +142,7 @@ class Impl {
     GetContext().out_nodes_map.clear();
     GetContext().user_out_nodes.clear();
     GetContext().net_format = domi::DOMI_TENSOR_RESERVED;
-    GetContext().type = domi::FMK_TYPE_RESERVED;
+    GetContext().type = domi::FRAMEWORK_RESERVED;
     GetContext().run_mode = ONLY_PRE_CHECK;
     GetContext().train_flag = false;
     GetContext().fp16_high_precision = HIGH_PRECISION_DEFAULT;
@@ -114,12 +174,7 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
       GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!", ele.first.c_str());
       return GRAPH_PARAM_INVALID;
     }
-
-    if (ele.first == ge::ir_option::ENABLE_COMPRESS_WEIGHT) {
-      continue;  // this option will be set afer param check.
-    } else {
-      options_.insert(ele);
-    }
+    options_.insert(ele);
   }
   return GRAPH_SUCCESS;
 }
@@ -127,13 +182,14 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   // 1. check options
   graphStatus ret = CheckOptions(options);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "user input options is not illegal!Please check!");
+    GELOGE(ret, "user input options are illegal! Please check!");
     return ret;
   }
   // set log level
   std::string log = options_.find(ge::ir_option::LOG_LEVEL) == options_.end() ? IR_OPTION_LOG_LEVEL_DEFAULT
                                                                               : options_[ge::ir_option::LOG_LEVEL];
   GE_CHK_BOOL_RET_STATUS_NOLOG(ge::CheckLogParamValidAndSetLogLevel(log) == 0, GRAPH_PARAM_INVALID);
+  options_[ge::ir_option::LOG_LEVEL] = log;
 
   string input_shape = options_.find("input_shape") == options_.end() ? "" : options_["input_shape"];
   string input_format = options_.find("input_format") == options_.end() ? "" : options_["input_format"];
@@ -151,7 +207,7 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
     GELOGE(GRAPH_PARAM_INVALID, "check dynamic batch size or image size failed!");
     return GRAPH_PARAM_INVALID;
   }
-  GELOGD("user input dynamic_batch_size:%s dynamic_image_size:%s", dynamic_batch_size.c_str(),
+  GELOGD("user input dynamic_batch_size:%s,dynamic_image_size:%s", dynamic_batch_size.c_str(),
          dynamic_image_size.c_str());
   GetContext().dynamic_batch_size = dynamic_batch_size;
   GetContext().dynamic_image_size = dynamic_image_size;
@@ -160,23 +216,11 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
     options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end() ? "" : options_[ge::ir_option::OUTPUT_TYPE];
   GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
                    "check output type failed!");
-  // check buffer_optimize
-  std::string buffer_optimize =
-    options_.find(ge::ir_option::BUFFER_OPTIMIZE) == options_.end() ? "" : options_[ge::ir_option::BUFFER_OPTIMIZE];
-  GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(buffer_optimize) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
-                   "check buffer optimize failed!");
-  // check compress_weight
-  std::string enable_compress_weight = options_.find(ge::ir_option::ENABLE_COMPRESS_WEIGHT) == options_.end()
-                                         ? ""
-                                         : options_[ge::ir_option::ENABLE_COMPRESS_WEIGHT];
-  std::string compress_weight_conf = options_.find(ge::ir_option::COMPRESS_WEIGHT_CONF) == options_.end()
-                                       ? ""
-                                       : options_[ge::ir_option::COMPRESS_WEIGHT_CONF];
-  GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(enable_compress_weight, compress_weight_conf) == ge::SUCCESS,
-                   return ge::FAILED, "check compress weight failed!");
-  options_.insert(std::pair<std::string, std::string>(
-    std::string(ge::ir_option::ENABLE_COMPRESS_WEIGHT),
-    (enable_compress_weight == "true") ? ge::kEnableCompressWeightTrue : ge::kEnableCompressWeightFalse));
+  // check insert_op_conf
+  std::string insert_op_conf =
+    options_.find(ge::ir_option::INSERT_OP_FILE) == options_.end() ? "" : options_[ge::ir_option::INSERT_OP_FILE];
+  GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
+                   return ge::GRAPH_PARAM_INVALID, "check insert op conf failed!");
 
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
@@ -184,6 +228,8 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   options_.insert(std::pair<string, string>(string(ge::RUN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::TRAIN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::SAVE_ORIGINAL_MODEL), to_string(0)));
+  // print ge option map
+  ge::PrintOptionMap(options_, "ge option");
 
   // 3. init generator with options_
   ret = generator_.Initialize(options_);

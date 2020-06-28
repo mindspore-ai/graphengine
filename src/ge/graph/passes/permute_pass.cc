@@ -27,9 +27,9 @@
 
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_NHWC;
-using domi::FMK_TYPE_T;
 using domi::GetContext;
 using domi::SUCCESS;
+using domi::TENSORFLOW;
 
 namespace ge {
 Status PermutePass::Run(ComputeGraphPtr graph) {
@@ -40,7 +40,7 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
     OpDescPtr op_desc_ptr = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc_ptr);
     GE_IF_BOOL_EXEC(
-      op_desc_ptr->GetType() == PERMUTE && GetContext().type == domi::FMK_TYPE_T,
+      op_desc_ptr->GetType() == PERMUTE && GetContext().type == domi::TENSORFLOW,
       /// Input format 5D means NHWC in 4D way. So if input origin foramt is NCHW and
       /// permute paramter list is [0,3,1,2], this permute can be optimised.
       GE_IF_BOOL_EXEC(

@@ -40,6 +40,8 @@ int64, double, float, float16.
 *@li sparse_values: A Tensor. Has the same type as rt_dense_values.
 *@li sparse_dense_shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator RaggedTensorToSparse.
 */
 REG_OP(RaggedTensorToSparse)
     .DYNAMIC_INPUT(rt_nested_splits, TensorType({DT_INT32, DT_INT64}))

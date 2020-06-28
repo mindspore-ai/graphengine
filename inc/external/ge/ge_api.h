@@ -79,6 +79,15 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief build graph in the session with specific session id
+  /// @param [in] graphId: graph id
+  /// @param [in] inputs: input data
+  /// @return Status result of function
+  ///
+  Status BuildGraph(uint32_t graphId, const std::vector<InputTensorInfo> &inputs);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief run graph in the session with specific session id asynchronously
   /// @param [in] graphId: graph id
   /// @param [in] inputs: input data

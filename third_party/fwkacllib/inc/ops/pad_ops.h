@@ -21,16 +21,23 @@
 namespace ge {
 
 /**
-*@brief Creates a tensor filled with a scalar value.\n
+*@brief Creates a tensor filled with a scalar value.
 * This operation creates a tensor of shape "dims" and fills it with "value".
 *
 *@par Inputs:
 *@li dims: A 1D tensor of types int32 or int64. Represents the shape of the output tensor.
 
 *@li value: A 0D scalar. Specifies the value to fill the returned tensor.
+*    Must be one of the following types:
+*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "value".
+*
+*@par Third-party framework compatibility
+*@li Compatible with the TensorFlow operator Fill.
+*@li Compatible with the Caffe operator Filler.
 *
 */
 REG_OP(Fill)
@@ -40,11 +47,13 @@ REG_OP(Fill)
     .OP_END_FACTORY_REG(Fill)
 
 /**
-*@brief Creates a tensor filled with a scalar value.\n
+*@brief Creates a tensor filled with a scalar value.
 * This operation creates a tensor of shape "dims" and fills it with "value".
 *
 *@par Inputs:
-* value: A 0D scalar for the value to fill the returned tensor.
+* value: A 0D scalar for the value to fill the returned tensor. Must be one of
+*    the following types:
+*    float16, float32, uint8, int8, int16, int32, int64, quint8, qint8, qint32
 *
 *@par Attributes:
 * dims: A tensor. Must be one of the following types:"int32"
@@ -65,20 +74,24 @@ REG_OP(FillD)
     .OP_END_FACTORY_REG(FillD)
 
 /**
-*@brief Broadcasts an array for a compatible shape.\n
-* Broadcasting is the process of making arrays to have compatible shapes
-* for arithmetic operations. Two shapes are compatible if for each
+*@brief Broadcasts an array for a compatible shape.
+*  Broadcasting is the process of making arrays to have compatible shapes
+*  for arithmetic operations. Two shapes are compatible if for each
 *  dimension pair they are either equal or one of them is one. When trying
 *  to broadcast a Tensor to a shape, it starts with the trailing dimensions,
 *  and works its way forward.
 *
 *@par Inputs:
 *@li x: A tensor.
-*@li shape: A tensor of type int32 or int64.
+*@li shape: A tensor of type int32.
 *     A 1D tensor of type int32, for the shape of the desired output.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BroadcastTo.
+*
 */
 REG_OP(BroadcastTo)
     .INPUT(x, TensorType::BasicType())
@@ -87,9 +100,9 @@ REG_OP(BroadcastTo)
     .OP_END_FACTORY_REG(BroadcastTo)
 
 /**
-*@brief Broadcasts an array for a compatible shape.\n
-* Broadcasting is the process of making arrays to have compatible shapes
-* for arithmetic operations. Two shapes are compatible if for each
+*@brief Broadcasts an array for a compatible shape.
+*  Broadcasting is the process of making arrays to have compatible shapes
+*  for arithmetic operations. Two shapes are compatible if for each
 *  dimension pair they are either equal or one of them is one. When trying
 *  to broadcast a Tensor to a shape, it starts with the trailing dimensions,
 *  and works its way forward.
@@ -103,6 +116,9 @@ REG_OP(BroadcastTo)
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BroadcastTo.
 *
 */
 REG_OP(BroadcastToD)
@@ -123,6 +139,9 @@ REG_OP(BroadcastToD)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Pad.
 */
 REG_OP(Pad)
     .INPUT(x, TensorType::BasicType())
@@ -145,6 +164,9 @@ REG_OP(Pad)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Pad.
 */
 REG_OP(PadD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
@@ -160,10 +182,15 @@ REG_OP(PadD)
 * @li x: A mutable Tensor. Must be one of the following types:
 *     float16, float32, int32.
 
-* @li assist: A mutable Tensor of the same type as "x".
+* @li assist: A mutable Tensor with rank k is at most 1,
+*     Has the same type as "x".
 
 *@par Outputs:
 *y: A mutable Tensor. Has the same type as "x".
+
+*@see Diag()
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
 */
 REG_OP(DiagD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -176,11 +203,16 @@ REG_OP(DiagD)
 
 *@par Inputs:
 *One input, include:
-* x: A mutable Tensor. Must be one of the following types:
+* x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
+*     following types:
 *     float16, float32, double, int32, int64, complex64, complex128.
 
 *@par Outputs:
 *y: A mutable Tensor. Has the same type as "x".
+
+*@see DiagD()
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
 */
 REG_OP(Diag)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32,
@@ -188,6 +220,26 @@ REG_OP(Diag)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32,
                            DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Diag)
+
+/**
+*@brief Ascend Padding, pad the last dimension of input
+
+*@par Inputs:
+*One input, include:
+*x: Tensor which last dimension must be 1. For example: [624000, 1].
+
+*@par Outputs:
+*y: Padding the last dimension of x to padDimSize, [624000, padDimSize].
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
+*/
+REG_OP(AscendPadding)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(pad_dim_size, Int, 8)
+    .OP_END_FACTORY_REG(AscendPadding)
+
 } // namespace ge
 
 #endif //GE_OP_PAD_OPS_H

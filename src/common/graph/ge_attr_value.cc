@@ -1233,6 +1233,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CloneOpDesc(
       GELOGE(GRAPH_FAILED, "DelAttr _opt_input failed.");
     }
   }
+
+  if (!op_desc->output_name_idx_.empty()) {
+    op_desc->output_name_idx_.clear();
+  }
+
   return op_desc;
 }
 

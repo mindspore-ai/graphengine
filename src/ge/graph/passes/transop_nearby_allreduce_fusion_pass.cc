@@ -28,7 +28,7 @@ Status TransOpNearbyAllreduceFusionPass::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  if (node->GetType() == HCOMALLREDUCE) {
+  if (node->GetType() == HCOMALLREDUCE || node->GetType() == HVDCALLBACKALLREDUCE) {
     GELOGI("found allreduce op %s", node->GetName().c_str());
     Status ret = RemoveNearbyPairedTransOps(node);
     if (ret != SUCCESS) {

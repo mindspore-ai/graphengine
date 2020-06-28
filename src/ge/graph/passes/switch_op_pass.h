@@ -147,7 +147,9 @@ class SwitchOpPass : public GraphPass {
 
   void ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node);
 
-  int GetGroupId(const NodePtr &node);
+  int64_t GetGroupId(const NodePtr &node);
+
+  void MarkHeadNodes(const NodePtr &node, const NodePtr &stream_switch);
 
   std::vector<NodePtr> switch_nodes_;
   std::vector<NodePtr> merge_nodes_;
@@ -155,7 +157,7 @@ class SwitchOpPass : public GraphPass {
   std::unordered_map<NodePtr, std::set<std::string>> switch_cyclic_map_;
 
   std::set<NodePtr> bypass_nodes_;
-  std::set<NodePtr> branch_head_nodes_;
+  std::unordered_map<NodePtr, NodePtr> branch_head_nodes_;
   std::vector<NodePtr> stream_switch_nodes_;
   std::vector<NodePtr> need_label_nodes_;
   std::unordered_map<OutDataAnchorPtr, std::map<int64_t, std::vector<std::list<NodePtr>>>> cond_node_map_;

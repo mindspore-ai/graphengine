@@ -124,7 +124,7 @@ Status HostCpuEngine::PrepareOutputs(const ge::ConstOpDescPtr &op_desc, vector<G
 Status HostCpuEngine::RunInternal(const ge::OpDescPtr &op_desc, HostCpuOp &op_kernel,
                                   map<std::string, const Tensor> &named_inputs,
                                   map<std::string, Tensor> &named_outputs) {
-  GELOGD("To run host cpu op: %s", op_desc->GetName().c_str());
+  GELOGD("Run operation on host cpu, op name: %s", op_desc->GetName().c_str());
   Operator op = ge::OpDescUtils::CreateOperatorFromOpDesc(op_desc);
   auto ret = op_kernel.Compute(op, named_inputs, named_outputs);
   if (ret != GRAPH_SUCCESS) {
@@ -139,7 +139,7 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
 
-  GELOGD("To run node by host cpu engine. node name = %s", node->GetName().c_str());
+  GELOGD("Run node by host cpu engine. node name = %s", node->GetName().c_str());
   std::unique_ptr<HostCpuOp> op_kernel;
   GE_CHK_STATUS_RET_NOLOG(FindOpKernel(node, op_kernel));
 
@@ -151,7 +151,7 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, tmp_outputs, named_outputs));
   GE_CHK_STATUS_RET_NOLOG(RunInternal(op_desc, *op_kernel, named_inputs, named_outputs));
 
-  GELOGD("Ran node by host cpu engine successfully. name node = %s", node->GetName().c_str());
+  GELOGD("Run node by host cpu engine successfully. name node = %s", node->GetName().c_str());
   outputs.swap(tmp_outputs);
   return SUCCESS;
 }

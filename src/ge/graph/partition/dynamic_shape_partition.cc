@@ -745,7 +745,8 @@ Status Cluster::BuildPartitionSubgraph() {
   }
   int64_t parent_node_index = 0;
   for (auto anchor : inputs_) {
-    auto data_op = MakeShared<OpDesc>(std::string("Data_") + std::to_string(parent_node_index), ge::DATA);
+    auto data_op =
+      MakeShared<OpDesc>(subgraph_->GetName() + std::string("Data_") + std::to_string(parent_node_index), ge::DATA);
     REQUIRE_NOT_NULL(data_op, "Failed new memory for data op.");
     auto input_desc = anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(anchor->GetIdx());
     REQUIRE_GRAPH_SUCCESS(data_op->AddInputDesc(input_desc), "Failed add input desc.");
@@ -763,7 +764,7 @@ Status Cluster::BuildPartitionSubgraph() {
   if (outputs_.empty() && control_outputs_.empty()) {
     return SUCCESS;
   }
-  auto net_output_op = MakeShared<OpDesc>(NODE_NAME_NET_OUTPUT, ge::NETOUTPUT);
+  auto net_output_op = MakeShared<OpDesc>(subgraph_->GetName() + "_" + NODE_NAME_NET_OUTPUT, ge::NETOUTPUT);
   REQUIRE_NOT_NULL(net_output_op, "Failed new memory for netoutput op.");
   for (size_t i = 0; i < outputs_.size(); ++i) {
     GeTensorDesc input_desc;

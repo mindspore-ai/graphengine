@@ -36,6 +36,9 @@ The caller does not need to pass the value of the variable tensor.
 
 *@par Outputs:
 *y: The created variable tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Variable.
 */
 REG_OP(Variable)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
@@ -59,6 +62,9 @@ pass the reference to the variable tensor to the matching DestroyTemporaryVariab
 
 *@par Outputs:
 *y: The created variable tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator TemporaryVariable.
 */
 REG_OP(TemporaryVariable)
     .OUTPUT(y, TensorType::ALL())
@@ -80,6 +86,9 @@ Must be the same as the "var_name" attribute of the reference to the temporary v
 
 *@par Outputs:
 *y: Final value of the reference to the temporary variable tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator DestroyTemporaryVariable.
 */
 REG_OP(DestroyTemporaryVariable)
     .INPUT(x, TensorType::ALL())
@@ -95,6 +104,9 @@ REG_OP(DestroyTemporaryVariable)
 
 *@par Outputs:
 *y: A tensor, indicating whether "x" has been initialized.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator IsVariableInitialized.
 */
 REG_OP(IsVariableInitialized)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -111,6 +123,8 @@ REG_OP(IsVariableInitialized)
 *@par Outputs:
 *y: A tensor, indicating whether "x" has been initialized, and the data type is boolean.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator VarIsInitializedOp.
 */
 REG_OP(VarIsInitializedOp)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -135,6 +149,8 @@ REG_OP(VarIsInitializedOp)
 *@attention Constraints:\n
 *-The implementation for CountUpTo on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow CountUpTo operator.
 */
 REG_OP(CountUpTo)
     .INPUT(ref, TensorType({DT_INT32, DT_INT64}))

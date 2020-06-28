@@ -38,6 +38,8 @@ namespace ge {
 *@attention Constraints:\n
 *-The implementation for StringToNumber on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow StringToNumber operator.
 */
 REG_OP(StringToNumber)
     .INPUT(x, TensorType({DT_STRING}))

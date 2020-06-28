@@ -66,7 +66,6 @@ Status HybridModelBuilder::Build() {
   GE_CHK_STATUS_RET(TransAllVarData(), "[%s] Failed to trans all var data", GetGraphName());
   GE_CHK_STATUS_RET(CopyVarData(), "[%s] Failed to copy var data", GetGraphName());
   GE_CHK_STATUS_RET(InitModelMem(), "[%s] Failed to init memory", GetGraphName());
-  // TODO VAR_ATTR_VAR_IS_BROADCAST ???
   GE_CHK_STATUS_RET(InitWeights(), "[%s] Failed to init weights", GetGraphName());
   GE_CHK_STATUS_RET(InitConstantOps(), "[%s] Failed to init constant op", GetGraphName());
   GE_CHK_STATUS_RET(InitVariableTensors(), "[%s] Failed to init variables", GetGraphName());
@@ -303,7 +302,7 @@ Status HybridModelBuilder::MergeInputNodes(ComputeGraph &graph) {
 
 Status HybridModelBuilder::MergeNetOutputNode(ComputeGraph &graph) {
   const auto &parent_node = graph.GetParentNode();
-  const NodePtr &net_output_node = graph.FindNode(NODE_NAME_NET_OUTPUT);
+  const NodePtr &net_output_node = graph.FindFirstNodeMatchType(NETOUTPUT);
   GE_CHECK_NOTNULL(net_output_node);
   const auto &net_output_desc = net_output_node->GetOpDesc();
   GE_CHECK_NOTNULL(net_output_desc);
@@ -776,7 +775,7 @@ Status HybridModelBuilder::GetPeerNodeAcrossSubGraphs(const NodePtr &data_node, 
 
   auto src_graph = NodeUtils::GetSubgraph(*src_wrapped_node, kSubgraphIndex);
   GE_CHECK_NOTNULL(src_graph);
-  auto src_net_output_node = src_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  auto src_net_output_node = src_graph->FindFirstNodeMatchType(NETOUTPUT);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(src_net_output_node == nullptr, return INTERNAL_ERROR,
                                  "Failed to find NetOutput in subgraph: %s", src_graph->GetName().c_str());
   auto net_output_desc = src_net_output_node->GetOpDesc();
@@ -843,7 +842,7 @@ Status HybridModelBuilder::ParsePartitionedCall(NodeItem &node_item) {
   GELOGD("Start to parse outputs of node: %s", node_item.NodeName().c_str());
   auto subgraph = NodeUtils::GetSubgraph(*node_item.node, kSubgraphIndex);
   GE_CHECK_NOTNULL(subgraph);
-  auto net_output_node = subgraph->FindNode(NODE_NAME_NET_OUTPUT);
+  auto net_output_node = subgraph->FindFirstNodeMatchType(NETOUTPUT);
   GE_CHECK_NOTNULL(net_output_node);
   auto net_output_desc = net_output_node->GetOpDesc();
   GE_CHECK_NOTNULL(net_output_desc);

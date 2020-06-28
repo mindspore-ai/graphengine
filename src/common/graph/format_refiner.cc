@@ -41,7 +41,7 @@ using namespace ge;
 using namespace std;
 namespace ge {
 namespace {
-static const std::unordered_set<string> kChangeDimNodes = {RESHAPE, PERMUTE, EXPANDDIMS, SQUEEZE};
+static const std::unordered_set<string> kChangeDimNodes = {PERMUTE, EXPANDDIMS, SQUEEZE};
 static bool net_format_is_nd = true;
 static Format g_user_set_format = FORMAT_ND;
 static bool is_first_infer = true;

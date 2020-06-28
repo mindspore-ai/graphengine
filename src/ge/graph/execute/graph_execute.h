@@ -56,6 +56,8 @@ class GraphExecutor {
 
   Status SetGraphContext(GraphContextPtr graph_context_ptr);
 
+  static Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num);
+
   void SetTrainFlag(bool is_train_graph);
 
   const std::vector<InputOutputDescInfo> &GetOutputsDesc() const { return outputs_desc_; }
@@ -71,6 +73,8 @@ class GraphExecutor {
                                        vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &input_formats,
                                        std::vector<uint32_t> &output_formats);
 
+  static Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+
   ///
   /// @ingroup ge
   /// @brief Get dynamic batch_info
@@ -80,10 +84,17 @@ class GraphExecutor {
   ///
   static Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
+  static Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info);
+
+  static Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
+
   static Status GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                                   vector<InputOutputDescInfo> &output_desc,
                                                   std::vector<uint32_t> &input_formats,
                                                   std::vector<uint32_t> &output_formats);
+  static Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
+  static Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,
+                                          std::vector<InputOutputDims> &output_dims);
 
  private:
   Status PrepareInputData(const std::vector<GeTensor> &input_tensor, InputData &graph_input_data,

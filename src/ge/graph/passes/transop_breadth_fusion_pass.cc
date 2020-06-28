@@ -78,6 +78,14 @@ std::string TransOpBreadthFusionPass::GetNodeId(const int anchor_index, const No
     GELOGD("Get stream label %s for node %s, add it to fusion id", stream_label.c_str(), node->GetName().c_str());
     id << '-' << stream_label;
   }
+  for (const auto &in_ctrl_node : node->GetInControlNodes()) {
+    //                    c
+    // switch-->Identity ---> node
+    // the control edge from a identity node can not be removed
+    if (in_ctrl_node->GetType() == IDENTITY) {
+      id << "-control-in-" << in_ctrl_node->GetName();
+    }
+  }
   // [Cascade pointer]
   const auto &input_desc = node->GetOpDesc()->MutableInputDesc(0);
   const auto &output_desc = node->GetOpDesc()->MutableOutputDesc(0);

@@ -478,24 +478,32 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUn
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportProfilingData(
   const std::vector<TaskDescInfo> &task_desc_info, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info) {
 #ifdef DAVINCI_SUPPORT_PROFILING
-  int32_t device_id = 0;
-  rtError_t rt_ret = rtGetDevice(&device_id);
+  int32_t logic_device_id = 0;
+  rtError_t rt_ret = rtGetDevice(&logic_device_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "runtime get device_id failed, current device_id:%d", device_id);
+    GELOGE(rt_ret, "runtime get logic_device_id failed, current logic_device_id:%d", logic_device_id);
     return;
   }
-  GELOGI("current device_id:%d", device_id);
+  GELOGI("current logic_device_id:%d", logic_device_id);
 
-  auto ret = std::find(device_id_.begin(), device_id_.end(), device_id);
+  uint32_t phy_device_id = 0;
+  rt_ret = rtGetDevicePhyIdByIndex((uint32_t)logic_device_id, &phy_device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%d", phy_device_id);
+    return;
+  }
+  GELOGI("current phy_device_id:%d", phy_device_id);
+
+  auto ret = std::find(device_id_.begin(), device_id_.end(), phy_device_id);
   if (ret == device_id_.end()) {
-    GELOGE(FAILED, "get valid device_id failed, profiling report failed.");
+    GELOGE(FAILED, "get valid phy_device_id failed, profiling report failed.");
     return;
   }
 
   GELOGI("start ProfilingTaskDescInfo.");
-  ProfilingTaskDescInfo(task_desc_info, device_id);
+  ProfilingTaskDescInfo(task_desc_info, phy_device_id);
   GELOGI("start ProfilingGraphDescInfo.");
-  ProfilingGraphDescInfo(compute_graph_desc_info, device_id);
+  ProfilingGraphDescInfo(compute_graph_desc_info, phy_device_id);
   GELOGI("Report profiling data for GE end.");
 #endif
 }

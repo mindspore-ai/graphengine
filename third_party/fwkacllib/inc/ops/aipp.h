@@ -32,6 +32,8 @@ namespace ge {
 
 *@par Outputs:
 *features: The AIPP-processed output tensor of type float16 or uint8.
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(Aipp)
     .INPUT(images, TensorType{DT_UINT8})

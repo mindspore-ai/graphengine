@@ -152,6 +152,9 @@ class GraphNode {
   bool GetRunFlag() const { return run_flag_; }
   void SetRunFlag(bool flag) { run_flag_ = flag; }
 
+  bool IsAsync() const { return async_; }
+  void SetAsync(bool flag) { async_ = flag; }
+
   void SetSubGraph(std::vector<SubGraphInfoPtr> &subgraph_ptr_list) { subgraph_ptr_list_ = subgraph_ptr_list; }
   const std::vector<SubGraphInfoPtr> &GetAllSubGraph() const { return subgraph_ptr_list_; }
 
@@ -181,6 +184,7 @@ class GraphNode {
   ComputeGraphPtr compute_graph_;
   bool build_flag_;
   bool load_flag_;
+  bool async_;
   GeModelPtr ge_model_;
   GeRootModelPtr ge_root_model_;
   BlockingQueue<uint8_t> sem_;
@@ -239,6 +243,7 @@ struct GraphManagerOptions {
   bool local_fmk_op_flag;
   bool hcom_parallel;
   bool enable_print_op_pass;
+  bool is_single_op;
   std::map<std::string, int> stream_max_parallel_num;
   std::string output_datatype;
   std::string original_model_file;
@@ -247,7 +252,7 @@ struct GraphManagerOptions {
       : stream_num(1),
         perf_level(domi::GEN_TASK_WITHOUT_FUSION),
         encrypt_mode(-1),
-        framework_type(domi::FMK_TYPE_T),
+        framework_type(domi::TENSORFLOW),
         ek_file(""),
         cert_file(""),
         hw_key_file(""),
@@ -263,6 +268,7 @@ struct GraphManagerOptions {
         local_fmk_op_flag(false),
         hcom_parallel(false),
         enable_print_op_pass(true),
+        is_single_op(false),
         save_original_model("false") {}
 };
 }  // namespace ge

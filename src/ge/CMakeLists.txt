@@ -45,7 +45,7 @@ include_directories(${GE_SOURCE_DIR}/inc/external)
 include_directories(${GE_SOURCE_DIR}/inc/external/graph)
 include_directories(${GE_SOURCE_DIR}/inc/framework)
 include_directories(${GE_SOURCE_DIR}/inc/framework/common)
-include_directories(${GE_SOURCE_DIR}/inc/runtime)
+include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
@@ -108,6 +108,10 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/partition/engine_place.cc"
         "graph/partition/graph_partition.cc"
         "graph/passes/*.cc"
+        "graph/preprocess/graph_preprocess.cc"
+        "graph/preprocess/insert_op/ge_aipp_op.cc"
+        "graph/preprocess/insert_op/util_insert_aipp_op.cc"
+        "graph/preprocess/multi_batch_copy_graph.cc"
         "host_kernels/add_kernel.cc"
         "host_kernels/broadcast_args_kernel.cc"
         "host_kernels/broadcast_gradient_args_kernel.cc"
@@ -144,10 +148,7 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "host_kernels/transdata_kernel.cc"
         "host_kernels/transpose_kernel.cc"
         "host_kernels/unpack_kernel.cc"
-        "graph/preprocess/graph_preprocess.cc"
-        "graph/preprocess/insert_op/ge_aipp_op.cc"
-        "graph/preprocess/insert_op/util_insert_aipp_op.cc"
-        "graph/preprocess/multi_batch_copy_graph.cc"
+        "host_kernels/unsqueeze_kernel.cc"
         "hybrid/common/npu_memory_allocator.cc"
         "hybrid/common/tensor_value.cc"
         "hybrid/executor/*.cc"
@@ -155,6 +156,7 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "hybrid/hybrid_davinci_model.cc"
         "hybrid/model/*.cc"
         "hybrid/node_executor/aicore/*.cc"
+        "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
         "hybrid/node_executor/aicpu/aicpu_node_executor.cc"
         "hybrid/node_executor/compiledsubgraph/known_node_executor.cc"
         "hybrid/node_executor/hostcpu/ge_local_node_executor.cc"
@@ -246,6 +248,10 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/partition/engine_place.cc"
         "graph/partition/graph_partition.cc"
         "graph/passes/*.cc"
+        "graph/preprocess/graph_preprocess.cc"
+        "graph/preprocess/insert_op/ge_aipp_op.cc"
+        "graph/preprocess/insert_op/util_insert_aipp_op.cc"
+        "graph/preprocess/multi_batch_copy_graph.cc"
         "host_kernels/add_kernel.cc"
         "host_kernels/broadcast_args_kernel.cc"
         "host_kernels/broadcast_gradient_args_kernel.cc"
@@ -282,11 +288,8 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "host_kernels/transdata_kernel.cc"
         "host_kernels/transpose_kernel.cc"
         "host_kernels/unpack_kernel.cc"
+        "host_kernels/unsqueeze_kernel.cc"
         "hybrid/hybrid_davinci_model_stub.cc"
-        "graph/preprocess/graph_preprocess.cc"
-        "graph/preprocess/insert_op/ge_aipp_op.cc"
-        "graph/preprocess/insert_op/util_insert_aipp_op.cc"
-        "graph/preprocess/multi_batch_copy_graph.cc"
         "init/gelib.cc"
         "ir_build/atc_ir_common.cc"
         "ir_build/ge_ir_build.cc"

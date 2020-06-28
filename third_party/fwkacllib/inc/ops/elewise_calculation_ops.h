@@ -30,6 +30,9 @@ namespace ge {
 
 *@par Outputs:
 *y: A Tensor. Has the same shape and type as the elements of "x".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AddN.
 */
 REG_OP(AddN)
     .DYNAMIC_INPUT(x, TensorType::NumberType())
@@ -59,6 +62,9 @@ REG_OP(AddN)
 *@par Outputs:
 * @li y1: A mutable Tensor. Has the same type as "grads".
 * @li y2: A mutable Tensor. Has the same type as "grads".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator MaximumGrad.
 */
 REG_OP(MaximumGrad)
     .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
@@ -92,6 +98,9 @@ REG_OP(MaximumGrad)
 *@par Outputs:
 * @li y1: A mutable Tensor. Has the same type as "grads".
 * @li y2: A mutable Tensor. Has the same type as "grads".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator MinimumGrad.
 */
 REG_OP(MinimumGrad)
     .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
@@ -107,15 +116,15 @@ REG_OP(MinimumGrad)
 *@brief Cast a tensor form src data type to dst data type.
 
 *@par Inputs:
-*One input:\n
-*x:A `Tensor`. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8,\n
+*One input:
+*x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8,
    int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 
 *@par Attributes:
 *dst_type: An required attribute of type int32, specifying the dst data type.
 
 *@par Outputs:
-*y:A `Tensor`. Has the same type as `x`.
+*y:A Tensor. Has the same type as x.
 */
 REG_OP(Cast)
     .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
@@ -132,11 +141,15 @@ REG_OP(Cast)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8.
+* @li x1: A Tensor. Must be one of the following types: float16, float32,
+*    double, int32, int8, uint8, int64, uint16, uint32, uint64.
 * @li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator GreaterEqual.
 */
 REG_OP(GreaterEqual)
     .INPUT(x1, TensorType::RealNumberType())
@@ -155,6 +168,9 @@ REG_OP(GreaterEqual)
 
 *@par Outputs:
 *y: A Tensor of type bool.
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Less.
 */
 REG_OP(Less)
     .INPUT(x1, TensorType::RealNumberType())
@@ -174,6 +190,9 @@ REG_OP(Less)
 
 *@par Outputs:
 * y: A Tensor. Has the same type and format as input "x1".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator RealDiv.
 */
 REG_OP(RealDiv)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
@@ -195,6 +214,8 @@ REG_OP(RealDiv)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Sqrt.
 */
 REG_OP(Sqrt)
     .INPUT(x, TensorType{(DT_FLOAT. DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128)})
@@ -211,6 +232,9 @@ REG_OP(Sqrt)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Maximum.
 */
 REG_OP(Maximum)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32,
@@ -231,6 +255,9 @@ REG_OP(Maximum)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x1".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator Minimum.
 */
 REG_OP(Minimum)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_INT32,
@@ -251,6 +278,9 @@ REG_OP(Minimum)
 
 *@par Outputs:
 *y:A Tensor with same type as "x".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Reciprocal.
 */
 REG_OP(Reciprocal)
     .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_FLOAT16,
@@ -269,6 +299,8 @@ REG_OP(Reciprocal)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Subtract.
 */
 REG_OP(Sub)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8,
@@ -291,6 +323,9 @@ REG_OP(Sub)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Abs.
 */
 REG_OP(Abs)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64}))
@@ -311,6 +346,9 @@ REG_OP(Abs)
 *@par Outputs:
 * z: A tensor. Has the same type as "y".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AbsGrad.
+*
 */
 REG_OP(AbsGrad)
     .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -322,12 +360,14 @@ REG_OP(AbsGrad)
 *@brief: Computes the sign  of "x".
 
 *@par Inputs:
-*One inputs, include:
-*x:A Tensor of type float16, float32, int32, int64, double,
+*x:An ND Tensor of type float16, float32, int32, int64, double,
 *     complex64, complex128.
 
 *@par Outputs:
-*y:A Tensor with same type as "x".
+*y:An ND Tensor with same type as "x".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Sign.
 */
 REG_OP(Sign)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT, DT_DOUBLE, DT_INT32,
@@ -346,6 +386,9 @@ REG_OP(Sign)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator SquaredDifference.
 */
 REG_OP(SquaredDifference)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32,
@@ -359,11 +402,16 @@ REG_OP(SquaredDifference)
 /**
 *@brief Computes cosine of "x" element-wise.
 
-*@par Inputs:\n
-*x: A Tensor of type float16 or float32.
+*@par Inputs:
+*x: A Tensor of type float16, float32, double, complex64, complex128.
+* the format can be [NCHW,NC1HWC0,NHWC,ND]
 
-*@par Outputs:\n
-*y: A Tensor of type float16 or float32.
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Cos.
+
 */
 REG_OP(Cos)
     .INPUT(x, TensorType::UnaryDataType())
@@ -375,11 +423,16 @@ REG_OP(Cos)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, float64, int64, uint16, int16, complex64, complex128
-*@li x2: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, float64, int64, uint16, int16, complex64, complex128
+*@li x1: A Tensor. Must be one of the following types:
+*    float16, float32, int32, int8, uint8, float64, int64, uint16, int16,
+*    complex64, complex128, the format can be [NCHW,NC1HWC0,NHWC,ND].
+*@li x2: A Tensor. Has the same type and format as input "x1".
 
 *@par Outputs:
 * y: A Tensor. Has the same type and format as input "x1".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Div.
 */
 REG_OP(Div)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT32,
@@ -398,12 +451,17 @@ REG_OP(Div)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, \n
-* double, int16, int64, complex64, complex128, quint8, qint8, qint32, string, bool.
-*@li x2: A Tensor of the same type as "x1".
+*@li x1: A Tensor. Must be one of the following types:
+*    float16, float32, int32, int8, uint8, double, int16, int64, complex64,
+*    complex128, quint8, qint8, qint32, string, bool. the format can be
+*    [NCHW, NC1HWC0, NHWC, ND]
+*@li x2: A Tensor of the same type and format as "x1".
 
 *@par Outputs:
 *y: A Tensor of type bool.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Equal.
 */
 REG_OP(Equal)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_UINT8,
@@ -422,7 +480,7 @@ REG_OP(Equal)
 
 *@par Inputs:
 *One input:\n
-*x: A Tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
+*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
 
 *@par Attributes:
 *@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1".
@@ -431,6 +489,9 @@ REG_OP(Equal)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Exp.
 */
 REG_OP(Exp)
     .INPUT(x, TensorType::UnaryDataType())
@@ -444,11 +505,14 @@ REG_OP(Exp)
 *@brief Computes the exp(x) - 1 element-wise, y = e^x - 1.
 
 *@par Inputs:
-*One input:\n
+*One input:
 *x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Expm1.
 */
 REG_OP(Expm1)
     .INPUT(x, TensorType::UnaryDataType())
@@ -463,6 +527,9 @@ REG_OP(Expm1)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Inv.
 */
 REG_OP(Inv)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,DT_INT32,DT_INT64,DT_COMPLEX64,DT_COMPLEX128}))
@@ -477,6 +544,12 @@ REG_OP(Inv)
 * Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, int32, int8.
 * @li grad: A Tensor. Has the same type as "x".
+
+*@par Outputs:
+*y: A Tensor, Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator InvGrad.
 */
 REG_OP(InvGrad)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
@@ -489,11 +562,16 @@ REG_OP(InvGrad)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8.
+*@li x1: A Tensor. Must be one of the following types: float32, float64,
+* int32, uint8, int16, int8, int64, qint8, quint8, qint32, uint16,
+* float16, uint32, uint64.
 *@li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor of type bool.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator LessEqual.
 */
 REG_OP(LessEqual)
     .INPUT(x1, TensorType::RealNumberType())
@@ -510,6 +588,9 @@ REG_OP(LessEqual)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Log1p.
 */
 REG_OP(Log1p)
     .INPUT(x, TensorType::UnaryDataType())
@@ -520,11 +601,14 @@ REG_OP(Log1p)
 *@brief Returns element-wise remainder of division.
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, int32, int64, int8, uint8, double.
+* @li x1: A Tensor. Must be one of the following types: float16, float32,
+ * int32, int64, int8, uint8, double.
 * @li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Mod.
 */
 REG_OP(Mod)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8,
@@ -540,11 +624,15 @@ REG_OP(Mod)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8.
+*@li x1: A Tensor. Must be one of the following types: float16, float32, int32,
+ * int8, uint8, double, int16, int64, uint16, half, uint32, uint64
 *@li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor of type bool.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator NotEqual.
 */
 REG_OP(NotEqual)
     .INPUT(x1, TensorType::RealNumberType())
@@ -557,10 +645,14 @@ REG_OP(NotEqual)
 
 *@par Inputs:
 * One input:
-*x: A Tensor. Must be one of the following types: float16, float32, int32
+*x: A Tensor. Must be one of the following types: float16, float32, int32,
+ * int64, complex64, complex128.
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Neg.
 */
 REG_OP(Neg)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_COMPLEX64, DT_COMPLEX128}))
@@ -570,15 +662,22 @@ REG_OP(Neg)
 /**
 *@brief Returns x1/x2 element-wise for integer types.
 
-*@par Inputs:\n
-*@li x1: A Tensor of type float16, float32, int32, int8, or uint8.
+*@par Inputs:
+*@li x1: A Tensor. Must be one of the following types:
+*     float32, float64, int32, uint8, int16, int8,
+*     complex64, int64, qint8, quint8, qint32, uint16,
+*     complex128, float16, uint32, uint64, complex64, complex128.
 *@li x2: A Tensor of the same data type as "x1".
 
-*@par Outputs:\n
-*y: A Tensor of type float16, float32, int32, int8, or uint8.
+*@par Outputs:
+*y: A Tensor. Has the same type as "x1".
  
-*@attention Constraints:\n
+*@attention Constraints:
 * Broadcasting is supported.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator TruncateDiv.
+
 */
 REG_OP(TruncateDiv)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT32,
@@ -597,11 +696,15 @@ REG_OP(TruncateDiv)
 
 *@par Inputs:
 * Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
+* @li x1: A Tensor. Must be one of the following types: float16, float32,
+* double, complex64, complex128.
 * @li x2: A Tensor. Has the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Xdivy.
 */
 REG_OP(Xdivy)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_COMPLEX64,
@@ -613,15 +716,20 @@ REG_OP(Xdivy)
     .OP_END_FACTORY_REG(Xdivy)
 
 /**
-*@brief Computes "x" multiplied by the logarithm of y element-wise, if "x" == 0, return "0".
+*@brief Computes "x" multiplied by the logarithm of y element-wise,
+* if "x" == 0, return "0".
 
 *@par Inputs:
 * Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128. 
+* @li x1: A Tensor. Must be one of the following types: float16, float32,
+* double, complex64, complex128. 
 * @li x2: A Tensor. Has the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Xlogy.
 */
 REG_OP(Xlogy)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_COMPLEX64,
@@ -641,6 +749,9 @@ REG_OP(Xlogy)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Square.
 */
 REG_OP(Square)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT,
@@ -655,10 +766,14 @@ REG_OP(Square)
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
+* x: An ND or 5HD tensor. Must be one of the following types: float, double, half,
+ * complex64, complex128.
 *
 *@par Outputs:
-* y: A tensor. Has the same type as "x".
+* y: An ND or 5HD tensor. Has the same type as "x".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Rsqrt.
 *
 */
 REG_OP(Rsqrt)
@@ -676,6 +791,9 @@ REG_OP(Rsqrt)
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Asin.
+*
 */
 REG_OP(Asin)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
@@ -689,7 +807,7 @@ REG_OP(Asin)
 
 *
 *@par Inputs:
-*@li y: A tensor of type float16 or float32.
+*@li y: A tensor of type float16, float32, float64, int32, int64, complex64, complex128.
 *@li dy: A tensor of the same type as "y".
 *
 *@attention Constraints:
@@ -697,6 +815,9 @@ REG_OP(Asin)
 *
 *@par Outputs:
 * z: A tensor. Has the same type as "y".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AsinGrad.
 *
 */
 REG_OP(AsinGrad)
@@ -717,6 +838,9 @@ REG_OP(AsinGrad)
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Acos.
 *
 */
 REG_OP(Acos)
@@ -740,6 +864,9 @@ REG_OP(Acos)
 *@par Outputs:
 * z: A tensor. Has the same type as "y".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AcosGrad.
+*
 */
 REG_OP(AcosGrad)
   .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -761,6 +888,9 @@ REG_OP(AcosGrad)
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Acosh.
+*
 */
 REG_OP(Acosh)
     .INPUT(x, TensorType::UnaryDataType())
@@ -781,6 +911,9 @@ REG_OP(Acosh)
 *@par Outputs:
 * z: A tensor. Has the same type as "y".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AcoshGrad.
+*
 */
 REG_OP(AcoshGrad)
   .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -794,13 +927,16 @@ REG_OP(AcoshGrad)
 *
 *@par Inputs:
 *@li x1: A tensor of type bool.
-*@li x2 A tensor of the same type as "x1".
+*@li x2: A tensor of the same type as "x1".
 *
 *@attention Constraints:
 * LogicalOr supports broadcasting.
 *
 *@par Outputs:
-* z: A tensor of the same type as "x1".
+* y: A tensor of the same type as "x1".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator LogicalOr.
 *
 */
 REG_OP(LogicalOr)
@@ -815,13 +951,16 @@ REG_OP(LogicalOr)
 *
 *@par Inputs:
 *@li x1: A tensor of type bool.
-*@li x2 A tensor of the same type as "x1".
+*@li x2: A tensor of the same type as "x1".
 *
 *@attention Constraints:
-* LogicalOr supports broadcasting.
+* LogicalAnd supports broadcasting.
 *
 *@par Outputs:
-* z: A tensor of the same type as "x1".
+* y: A tensor of the same type as "x1".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator LogicalAnd.
 *
 */
 REG_OP(LogicalAnd)
@@ -831,9 +970,9 @@ REG_OP(LogicalAnd)
     .OP_END_FACTORY_REG(LogicalAnd)
 
 /**
-*@brief Computes the Bessel i0e function of "x" element-wise.\n
-* Exponentially scaled modified Bessel function of order 0 \n
-* defined as: bessel_i0e(x) = exp(-abs(x)) bessel_i0(x).\n
+*@brief Computes the Bessel i0e function of "x" element-wise.
+* Exponentially scaled modified Bessel function of order 0 
+* defined as: bessel_i0e(x) = exp(-abs(x)) bessel_i0(x).
 * This function is faster and numerically stabler than "bessel_i0(x)".
 *
 *@par Inputs:
@@ -842,6 +981,9 @@ REG_OP(LogicalAnd)
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BesselI0e.
+*
 */
 REG_OP(BesselI0e)
     .INPUT(x, TensorType::FloatingDataType())
@@ -849,9 +991,9 @@ REG_OP(BesselI0e)
     .OP_END_FACTORY_REG(BesselI0e)
 
 /**
-*@brief Computes the Bessel i1e function of "x" element-wise.\n
-* Exponentially scaled modified Bessel function of order 0 \n
-* defined as: bessel_i1e(x) = exp(-abs(x)) bessel_i1(x).\n
+*@brief Computes the Bessel i1e function of "x" element-wise.
+* Exponentially scaled modified Bessel function of order 0 
+* defined as: bessel_i1e(x) = exp(-abs(x)) bessel_i1(x).
 * This function is faster and numerically stabler than "bessel_i1(x)".
 *
 *@par Inputs:
@@ -860,6 +1002,9 @@ REG_OP(BesselI0e)
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BesselI1e.
+*
 */
 REG_OP(BesselI1e)
     .INPUT(x, TensorType::FloatingDataType())
@@ -867,7 +1012,7 @@ REG_OP(BesselI1e)
     .OP_END_FACTORY_REG(BesselI1e)
 
 /**
-* @brief Computes logarithm of x element-wise.\n
+* @brief Computes logarithm of x element-wise.
 * y = log_base(shift + scale * x), with "base" > 0.
 
 * @par Inputs:
@@ -888,6 +1033,10 @@ REG_OP(BesselI1e)
 * value "-1" sets "base" to "e".
 * @li If the input value of operator Log is within the range (0, 0.01] or \n
 * [0.95, 1.05], the output accuracy is subject to change.
+
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator Log.
+* @li Compatible with the Caffe operator Log.
 */
 REG_OP(Log)
     .INPUT(x, TensorType::UnaryDataType())
@@ -912,6 +1061,10 @@ REG_OP(Log)
 * uint8, int8, uint16, int16, int32, int64, complex64, complex128.
 
 * @attention Constraints:
+* @li "x1" and "x2" have incompatible shapes or types.
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Multiply.
 */
 REG_OP(Mul)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_UINT8, DT_INT8,
@@ -931,6 +1084,7 @@ REG_OP(Mul)
 * input gradient.
 
 * @par Inputs:
+* Two inputs, including:
 * @li y: A Tensor of type float32 or float16.
 * @li dy: A Tensor. Has the same type as "y".
 
@@ -962,6 +1116,8 @@ REG_OP(Multiply)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Add.
 */
 REG_OP(Add)
     .INPUT(x1, TensorType({DT_FLOAT, DT_INT32, DT_INT64, DT_FLOAT16, DT_INT16,
@@ -986,6 +1142,9 @@ REG_OP(Add)
 
 *@par Outputs:
 *@li y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator LRN.
 */
 
 REG_OP(FusedMulAdd)
@@ -1001,13 +1160,16 @@ REG_OP(FusedMulAdd)
 *
 *@par Inputs:
 *@li x1: A tensor. Must be one of the following types: float16, float32, float64, uint8, int8, int16, int32, int64, complex64, complex128.
-*@li x2 A tensor of the same type as "x1".
+*@li x2: A tensor of the same type as "x1".
 *
 *@attention Constraints:
 * AddV2 supports broadcasting.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x1".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AddV2.
 *
 */
 REG_OP(AddV2)
@@ -1026,20 +1188,23 @@ REG_OP(AddV2)
 *@brief Updates "ref" by adding "value" to it.
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, int64.
+*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
 *@li value: A Tensor of the same type as "ref".
 
 *@par Attributes:
-*use_locking: An optional bool. Defaults to "False".\n
-              If "True", the addition will be protected by a lock;\n
-              otherwise the behavior is undefined, but may exhibit less contention.\n
+*use_locking: An optional bool. Defaults to "False".
+              If "True", the addition will be protected by a lock;
+              otherwise the behavior is undefined, but may exhibit less contention.
 *             This attribute is reserved.
 
 *@par Outputs:
 *ref: A Tensor that holds the new value of ref after the value has been added.
 
-*@attention Constraints:\n
+*@attention Constraints:
 *An input tensor of type int64 must have a shape with size 1.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AssignAdd.
 */
 REG_OP(AssignAdd)
     .INPUT(ref, TensorType::BasicType())
@@ -1056,17 +1221,20 @@ REG_OP(AssignAdd)
 *@li value: A Tensor of the same type as "ref".
 
 *@par Attributes:
-*@li validate_shape: An optional bool. Defaults to "true".\n
-                     If "true", the operation will validate that the shape of "value" matches the shape of the Tensor being assigned to.\n
-*                    If "false", "ref" will take on the shape of "value".\n
+*@li validate_shape: An optional bool. Defaults to "true".
+                     If "true", the operation will validate that the shape of "value" matches the shape of the Tensor being assigned to.
+*                    If "false", "ref" will take on the shape of "value".
 *                    This attribute is reserved.
-*@li use_locking: An optional bool. Defaults to True.\n
-                  If True, the assignment will be protected by a lock;\n
-                  otherwise the behavior is undefined, but may exhibit less contention.\n
+*@li use_locking: An optional bool. Defaults to True.
+                  If True, the assignment will be protected by a lock;
+                  otherwise the behavior is undefined, but may exhibit less contention.
 *                 This attribute is reserved.
 
 *@par Outputs:
 *ref: A Tensor that holds the new value of ref after the value has been assigned.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Assign.
 */
 REG_OP(Assign)
     .INPUT(ref, TensorType::BasicType())
@@ -1093,6 +1261,9 @@ REG_OP(Assign)
 *@par Outputs:
 * y: A tensor. Has the same type as "var".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AssignSub.
+*
 */
 REG_OP(AssignSub)
     .INPUT(var, TensorType::NumberType())
@@ -1106,13 +1277,17 @@ REG_OP(AssignSub)
 
 *@par Inputs:
 * Two inputs, including:
-*@li y: A Tensor. Must be one of the following types: float16, float32, int32, int8.
-*@li dy: A Tensor of the same type as "y".
+*@li y: An NCHW, NC1HWC0, NHWC, ND Tensor. Must be one of the following types: \
+ * float, int32, int8, double, complex64, complex128, half.
+*@li dy: A Tensor of the same type and format as "y".
 
 *@par Outputs:
-*z: A Tensor of the same type as "y".
+*z: A Tensor of the same type and format as "y".
 
 *@see Matmul() | Rsqrt ()
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator RsqrtGrad.
 */
 REG_OP(RsqrtGrad)
     .INPUT(y, TensorType({UnaryDataType,int32,int8}))
@@ -1123,11 +1298,17 @@ REG_OP(RsqrtGrad)
 /**
 *@brief Computes hyperbolic sine of "x" element-wise.
 
-*@par Inputs:\n
-*x: A Tensor of type float16 or float32.
+*@par Inputs:
+*x: An NCHW, NC1HWC0, NHWC,or ND Tensor of type float, double, complex64,
+ * complex128, half.
 
-*@par Outputs:\n
-*y: A Tensor of type float16 or float32.
+*@par Outputs:
+*y: A NCHW, NC1HWC0, NHWC,or ND Tensor of type float, double, complex64,
+ * complex128, half.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Sinh.
+
 */
 REG_OP(Sinh)
     .INPUT(x, TensorType::UnaryDataType())
@@ -1139,12 +1320,16 @@ REG_OP(Sinh)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: A Tensor of type float16, float32, or int32.
+*@li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64, 
+*qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
 *@li clip_value_min: A Tensor of the same type as "x".
 *@li clip_value_max: A Tensor of the same type as "x".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ClipByValue.
 */
 REG_OP(ClipByValue)
     .INPUT(x, TensorType::NumberType())
@@ -1157,10 +1342,15 @@ REG_OP(ClipByValue)
 *@brief Computes cosine of "x" element-wise.
 
 *@par Inputs:
-*x: A Tensor of type float16 or float32.
+*x: A Tensor of type float16, float32, double, complex64, complex128.
+* the format can be [NCHW,NC1HWC0,NHWC,ND].
 
 *@par Outputs:
-*y: A Tensor of type float16 or float32.
+*y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Cosh.
+
 */
 REG_OP(Cosh)
     .INPUT(x, TensorType::UnaryDataType())
@@ -1172,19 +1362,23 @@ REG_OP(Cosh)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor. Must be one of the following types: float16, float32, int32, int8, uint8, double, complex64, complex128.
+*@li x1: A Tensor. Must be one of the following types:float16, float32, int32,
+*    int8, uint8, double, the format can be [NCHW,NC1HWC0,NHWC,ND].
 *@li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator DivNoNan.
 */
 REG_OP(DivNoNan)
     .INPUT(x1, TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16,
-                           DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_DOUBLE}))
     .INPUT(x2, TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16,
-                           DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16,
-                           DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+                           DT_DOUBLE}))
     .OP_END_FACTORY_REG(DivNoNan)
 
 /**
@@ -1192,10 +1386,15 @@ REG_OP(DivNoNan)
 
 *@par Inputs:
 * One input: \n
-*x: A Tensor of type int16 or uint16. Up to 8D.
+*x: A Tensor, Must be one of the following types:
+*    int32, uint8, int16, int8, int64, int64, uint16, uint32, uint64,
+*    and format can be [NCHW,NC1HWC0,NHWC,ND]
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as "x"
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Invert.
 */
 REG_OP(Invert)
     .INPUT(x, TensorType::IntegerDataType())
@@ -1206,10 +1405,14 @@ REG_OP(Invert)
 *@brief Returns a tensor of the same shape and type with all elements set to one.
 *@par Inputs:
 *One input: \n
-*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, int64, complex128, bool.
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8,
+ * int16, uint16, int32, int64, complex128, bool.
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator OnesLike.
 */
 REG_OP(OnesLike)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8,
@@ -1224,14 +1427,20 @@ REG_OP(OnesLike)
 *@brief Computes the gradient for the inverse of "x" with regard its input.
 
 *@par Inputs:
-*@li input_y: A Tensor. Must be one of the following types: float16, float32, int8, int32.
-*@li input_dy: A Tensor. Must be one of the following types: float16, float32, int8, int32.
+*@li input_y: A Tensor. Must be one of the following types: float, double,
+ * complex64, complex128, half.
+*@li input_dy: A Tensor. Must be one of the following types: float, double,
+ * complex64, complex128, half.
 
-*@par Outputs:\n
-*output_data: A Tensor. Must be one of the following types: float16, float32, int8, int32.
+*@par Outputs:
+*output_data: A Tensor. Must be one of the following types: float, double,
+ * complex64, complex128, half.
 
-*@attention Constraints:\n
+*@attention Constraints:
 * "input_dy" has the same shape and type as "input_y".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator reciprocal_grad.
 */
 REG_OP(ReciprocalGrad)
     .INPUT(y, TensorType::UnaryDataType())
@@ -1242,16 +1451,20 @@ REG_OP(ReciprocalGrad)
 /**
 *@brief Returns the truth value of (x1 > x2) element-wise.
 
-*@par Inputs:\n
-*@li x1: A Tensor of type float16, float32, int32, int8, or uint8.
- 
+*@par Inputs:
+*@li x1: A Tensor of type float16, float32, double, int64, int32, int16, int8,
+*    uint8, uint16, uint32, uint64.
 *@li x2: A Tensor of the same data type as "x1".
 
-*@par Outputs:\n
+*@par Outputs:
 *y: A Tensor of type bool.
  
-*@attention Constraints:\n
+*@attention Constraints:
 * Broadcasting is supported.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Greater.
+
 */
 REG_OP(Greater)
     .INPUT(x1, TensorType::RealNumberType())
@@ -1262,14 +1475,20 @@ REG_OP(Greater)
 /**
 *@brief Returns a tensor of the same type and shape as the input tensor with all elements set to zero.
 
-*@par Inputs:\n
-*x: A Tensor. Must be one of the following types: float16, float32, int8, int32, uint8.
+*@par Inputs:
+*x: A Tensor. Must be one of the following types:
+*     float32, float64, int32, uint8, int16, int8,
+*     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, float16, uint32, uint64, complex64, complex128.
 
-*@par Outputs:\n
-*y: A Tensor. Must be one of the following types: float16, float32, int8, int32, uint8.
+*@par Outputs:
+*y: A Tensor of the same data type as "x".
 
-*@attention Constraints:\n
+*@attention Constraints:
 * The output has the same shape and type as the input.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator zeros_like.
 */
 REG_OP(ZerosLike)
     .INPUT(x, TensorType::BasicType())
@@ -1279,14 +1498,17 @@ REG_OP(ZerosLike)
 /**
 *@brief Returns the truth value of NOT "x" element-wise.
 
-*@par Inputs:\n
-*x: A Tensor of type int8.
+*@par Inputs:
+*x: A Tensor of type bool.
 
-*@par Outputs:\n
-*y: A Tensor of type int8.
+*@par Outputs:
+*y: A Tensor of type bool.
 
-*@attention Constraints:\n
+*@attention Constraints:
 * The input and output values are "1" or "0", corresponding to bool values "true" and "false".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator logical_not.
 */
 REG_OP(LogicalNot)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -1294,7 +1516,7 @@ REG_OP(LogicalNot)
     .OP_END_FACTORY_REG(LogicalNot)
 
 /**
-*@brief Computes inverse hyperbolic sine of x element-wise.\n
+*@brief Computes inverse hyperbolic sine of x element-wise.
 * Given an input tensor, this function computes inverse hyperbolic sine for every element in the tensor.
 
 *
@@ -1303,6 +1525,9 @@ REG_OP(LogicalNot)
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Asinh.
 *
 */
 REG_OP(Asinh)
@@ -1315,11 +1540,14 @@ REG_OP(Asinh)
 
 *
 *@par Inputs:
-*@li y: A tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
+*@li y: A tensor. Must be one of the following types: float16, float32.
 *@li dy: A tensor of the same type as "y"
 *
 *@par Outputs:
 * z: A tensor. Has the same type as "y".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AsinhGrad.
 *
 */
 REG_OP(AsinhGrad)
@@ -1339,6 +1567,9 @@ REG_OP(AsinhGrad)
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Atanh.
+*
 */
 REG_OP(Atanh)
     .INPUT(x, TensorType::UnaryDataType())
@@ -1346,15 +1577,18 @@ REG_OP(Atanh)
     .OP_END_FACTORY_REG(Atanh)
 
 /**
-*@brief Computes the trignometric inverse tangent of x element-wise.\n
+*@brief Computes the trignometric inverse tangent of x element-wise.
 * The atan operation returns the inverse of tan, such that if y = tan(x) then, x = atan(y).
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x". The output of atan will lie within the invertible range of tan, i.e (-pi/2, pi/2).
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Atan.
 *
 */
 REG_OP(Atan)
@@ -1373,6 +1607,9 @@ REG_OP(Atan)
 *@par Outputs:
 * z: A tensor. Has the same type as "y".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AtanGrad.
+*
 */
 REG_OP(AtanGrad)
   .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1390,6 +1627,9 @@ REG_OP(AtanGrad)
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x1".
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Atan2.
 *
 */
 REG_OP(Atan2)
@@ -1412,6 +1652,9 @@ REG_OP(Atan2)
 *@par Outputs:
 * y: A tensor of type bool.
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ApproximateEqual.
+*
 */
 REG_OP(ApproximateEqual)
   .INPUT(x1, TensorType::NumberType())
@@ -1426,6 +1669,7 @@ REG_OP(ApproximateEqual)
 
 *
 *@par Inputs:
+*Dynamic inputs, including:
 * x: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, \n qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
 *
 *@par Outputs:
@@ -1433,6 +1677,9 @@ REG_OP(ApproximateEqual)
 *
 *@par Attributes:
 * N: the size of x.
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AccumulateNV2.
+*
 */
 REG_OP(AccumulateNV2)
    .DYNAMIC_INPUT(x, TensorType::NumberType())
@@ -1441,7 +1688,7 @@ REG_OP(AccumulateNV2)
    .OP_END_FACTORY_REG(AccumulateNV2)
 
 /**
-*@brief Fake-quantizes the input Tensor, type float to output a Tensor of same type. \n
+*@brief Fake-quantizes the input Tensor, type float to output a Tensor of same type.
 *  [min, max] define the clamping range for the "inputs" data.\n
 *  the values of "x" are quantized into the quantization range ([0, 2^num_bits - 1] \n
 *  when "narrow_range" is "false" or [1, 2^num_bits - 1] when it is "true") and \n
@@ -1450,17 +1697,20 @@ REG_OP(AccumulateNV2)
 *  Quantization is called fake since the output is still in floating point. \n
 
 *@par Inputs: 
-*One input: \n
+*One input:
 *x: A Tensor of type float32.
 
 *@par Attributes:
-*@li min: An optional attribute. Defaults to "-6".
-*@li max: An optional attribute. Defaults to "6".
+*@li min: An optional attribute. Defaults to "-6.0".
+*@li max: An optional attribute. Defaults to "6.0".
 *@li num_bits: An optional attribute. Defaults to "8".
 *@li narrow_range: An optional bool. Defaults to "false".
 
 *@par Outputs:
 *y: A Tensor. Has the same shape and type of "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator FakeQuantWithMinMaxArgs.
 */
 REG_OP(FakeQuantWithMinMaxArgs)
     .INPUT(x, TensorType({DT_FLOAT}))
@@ -1481,13 +1731,16 @@ REG_OP(FakeQuantWithMinMaxArgs)
 * This is the input Tensor of the FakeQuantWithMinMaxArgs operator.\n
 
 *@par Attributes:
-*@li min: An optional attribute. Defaults to "-6".
-*@li max: An optional attribute. Defaults to "6".
+*@li min: An optional attribute. Defaults to "-6.0".
+*@li max: An optional attribute. Defaults to "6.0".
 *@li num_bits: An optional attribute. Defaults to "8".
 *@li narrow_range: An optional bool. Defaults to "False".
 
 *@par Outputs:
 *y: A Tensor of type float32.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator FakeQuantWithMinMaxArgsGradient.
 */
 REG_OP(FakeQuantWithMinMaxArgsGradient)
     .INPUT(gradients, TensorType({DT_FLOAT}))
@@ -1515,6 +1768,9 @@ REG_OP(FakeQuantWithMinMaxArgsGradient)
 
 *@par Outputs:
 *y: A Tensor of type float32.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator FakeQuantWithMinMaxVars.
 */
 REG_OP(FakeQuantWithMinMaxVars)
     .INPUT(x, TensorType({DT_FLOAT}))
@@ -1551,6 +1807,8 @@ REG_OP(FakeQuantWithMinMaxVars)
 
 *@see Region()
 
+*@par Third-party framework compatibility
+* Compatible with the operator FakeQuantWithMinMaxVarsGradient.
 */
 REG_OP(FakeQuantWithMinMaxVarsGradient)
     .INPUT(gradients, TensorType({DT_FLOAT}))
@@ -1565,7 +1823,7 @@ REG_OP(FakeQuantWithMinMaxVarsGradient)
     .OP_END_FACTORY_REG(FakeQuantWithMinMaxVarsGradient)
 
 /**
-*@brief Fake-quantizes the "inputs" tensor of type float \n
+*@brief Fake-quantizes the "inputs" tensor of type float
 via per-channel floats min and max of shape [d] to "outputs" \n
 tensor of same shape as inputs
 
@@ -1589,6 +1847,9 @@ tensor of same shape as inputs
 *@li "num_bits" is between 2 and 16
 
 *@see Region()
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator FakeQuantWithMinMaxVarsPerChannel.
 */
 REG_OP(FakeQuantWithMinMaxVarsPerChannel)
     .INPUT(x, TensorType({DT_FLOAT}))
@@ -1625,6 +1886,9 @@ REG_OP(FakeQuantWithMinMaxVarsPerChannel)
 *@li "num_bits" is between 2 and 16
 
 *@see Region()
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator FakeQuantWithMinMaxVarsPerChannelGradient.
 */
 REG_OP(FakeQuantWithMinMaxVarsPerChannelGradient)
     .INPUT(gradients, TensorType({DT_FLOAT}))
@@ -1644,11 +1908,14 @@ REG_OP(FakeQuantWithMinMaxVarsPerChannelGradient)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16,
-*     int32, int64, uint8, uint16, uint32, uint64.
+*     int32, int64, uint8, uint16, uint32, uint64. Broadcasting is supported.
 * @li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BitwiseAnd.
 */
 REG_OP(BitwiseAnd)
     .INPUT(x1, TensorType::IntegerDataType())
@@ -1662,11 +1929,14 @@ REG_OP(BitwiseAnd)
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16,
-*     int32, int64, uint8, uint16, uint32, uint64.
+*     int32, int64, uint8, uint16, uint32, uint64. Broadcasting is supported.
 * @li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BitwiseOr.
 */
 REG_OP(BitwiseOr)
     .INPUT(x1, TensorType::IntegerDataType())
@@ -1678,13 +1948,16 @@ REG_OP(BitwiseOr)
 *@brief Elementwise computes the bitwise XOR of "x1" and "x2".
 
 *@par Inputs:
-*Two inputs, including: \n
-*@li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, uint32, uint64.\n
-*       The format is NC1HWC0 or ND.
+*Two inputs, including: 
+*@li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, uint32, uint64.
+*       The format is NC1HWC0 or ND. Broadcasting is supported.
 *@li x2: A Tensor. Has the same type and format as "x1".
 
 *@par Outputs:
 *y: Output result. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator BitwiseXor.
 */
 REG_OP(BitwiseXor)
     .INPUT(x1, TensorType::IntegerDataType())
@@ -1696,10 +1969,12 @@ REG_OP(BitwiseXor)
 *@brief Returns element-wise smallest integer not less than "x".
 
 *@par Inputs:
-* x: A Tensor. TensorType::FloatingDataType().
+* x: A Tensor of type float16 or float32 or float64.
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Ceil.
 */
 REG_OP(Ceil)
   .INPUT(x, TensorType::FloatingDataType())
@@ -1710,10 +1985,13 @@ REG_OP(Ceil)
 *@brief Returns element-wise largest integer not greater than "x".
 
 *@par Inputs:
-*x: A Tensor of type float16 or float32.
+*x: A Tensor of type float16, float32 or double.
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Floor.
 */
 REG_OP(Floor)
   .INPUT(x, TensorType::FloatingDataType())
@@ -1732,6 +2010,9 @@ REG_OP(Floor)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator FloorDiv.
 */
 REG_OP(FloorDiv)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
@@ -1750,11 +2031,14 @@ REG_OP(FloorDiv)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x1: A Tensor
+*@li x1: A Tensor. Must be one of the following types:
+*    int32, int64, float, float16, double
 *@li x2: A Tensor. Must have the same type as "x1".
 *
 *@par Outputs:
 *y: Result remainder.
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator FloorMod.
 */
 REG_OP(FloorMod)
     .INPUT(x1, TensorType({DT_INT32,  DT_INT64, DT_FLOAT, DT_FLOAT16,
@@ -1776,6 +2060,9 @@ REG_OP(FloorMod)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Pow.
 */
 REG_OP(Pow)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64, DT_INT8,
@@ -1796,6 +2083,9 @@ REG_OP(Pow)
 
 *@par Outputs:
 *y: A mutable Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Rint.
 */
 REG_OP(Rint)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -1803,13 +2093,17 @@ REG_OP(Rint)
     .OP_END_FACTORY_REG(Rint)
 
 /**
-*@brief Rounds the values of a tensor to the nearest integer, element-wise. Rounds half to even.
+*@brief Rounds the values of a tensor to the nearest integer, element-wise.
+ * Rounds half to even.
 
 *@par Inputs:
-*Inputs including: \n
-*x: A required Tensor of type float16, float32, or int32.
+*Inputs including:
+*x: A required ND Tensor of type float16, float, int64, double, complex64,
+ * complex128 or int32.
 *@par Outputs:
-*y: A required Tensor. Has the same data type and shape as "x".
+*y: A required ND Tensor. Has the same data type and shape as "x".
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Round.
 */
 REG_OP(Round)
     .INPUT(x, TensorType(DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64,
@@ -1823,10 +2117,14 @@ REG_OP(Round)
 
 *@par Inputs:
 *One input:
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128, int32, int64
+*x: An ND Tensor. Must be one of the following types: float16, float32, double,
+ * complex64, complex128, int32, int64
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: An ND Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Sin.
 */
 REG_OP(Sin)
     .INPUT(x, TensorType::UnaryDataType())
@@ -1842,6 +2140,9 @@ REG_OP(Sin)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Tan.
 */
 REG_OP(Tan)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_COMPLEX64,
@@ -1855,11 +2156,15 @@ REG_OP(Tan)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x1: A Tensor. Must be one of the following types: float16, float32, double, int32, int64.
+* @li x1: A Tensor. Must be one of the following types: float16, float32,
+* double, int32, int64.
 * @li x2: A Tensor of the same type as "x1".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility
+*@li Compatible with the TensorFlow operator TruncateMod.
 */
 REG_OP(TruncateMod)
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64,
@@ -1875,14 +2180,18 @@ REG_OP(TruncateMod)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x: A Tensor of type NumberType.
-* @li bias: A 1D Tensor of the same type as "x".
+* @li x: A Tensor of type NumberType. Must be one of the following types: float32, float64, int32, uint8, int16, 
+*int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, complex128, float16, uint32, uint64.
+* @li bias: A 1D Tensor with size the C dimension of value.
 
 *@par Attributes:
 *data_format: An optional string. Defaults to "NHWC".
 
 *@par Outputs:
 *y: A Tensor with same type as "x".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BiasAdd.
 */
 REG_OP(BiasAdd)
     .INPUT(x, TensorType::NumberType())
@@ -1895,16 +2204,19 @@ REG_OP(BiasAdd)
 *@brief Returns the index with the smallest value across dimensions of a tensor.
 
 *@par Inputs:
-*Two inputs, including: \n
-*@li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, complex128, float16, uint32, uint64.\n
+*Two inputs, including:
+*@li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, complex128, float16, uint32, uint64.
 *format is ND.
-*@li dimension: A Tensor. Must be one of the following types: int32, int64. Must be in the range [-rank(input x), rank(input x)]. Describes which dimension of the input Tensor to reduce across. \n
+*@li dimension: A Tensor. Must be one of the following types: int32, int64. Must be in the range [-rank(input x), rank(input x)]. Describes which dimension of the input Tensor to reduce across.
 * The format is ND.
 *@par Attributes:
 *dtype: The output type, either "int32" or "int64". Defaults to "int64".
 
 *@par Outputs:
 *y: A Tensor of type "dtype".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ArgMin.
 */
 REG_OP(ArgMin)
     .INPUT(x, TensorType::NumberType())
@@ -1917,7 +2229,7 @@ REG_OP(ArgMin)
 *@brief Returns the index with the smallest value across dimensions of a tensor.
 
 *@par Inputs:
-*One input: \n
+*One input:
 
 *x: A Tensor of type float16 or float32 in ND format.
 
@@ -1927,6 +2239,9 @@ REG_OP(ArgMin)
 
 *@par Outputs:
 *y: A Tensor of type dtype.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ArgMin.
 */
 REG_OP(ArgMinD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1939,16 +2254,22 @@ REG_OP(ArgMinD)
 *@brief Returns the index with the largest value across axes of a tensor.
 
 *@par Inputs:
-* Two inputs, including: \n
+* Two inputs, including: 
 *@li x: A multi-dimensional Tensor of type float16, float32, or int16.
 *@li dimension: A Scalar of type int32, specifying the index with the largest value.
 
-*@par Outputs: \n
+*@par Attributes:
+*dtype: The output type, either "int32" or "int64". Defaults to "int64".
+
+*@par Outputs: 
 *y: A multi-dimensional Tensor of type int32, specifying the index with the largest value. The dimension is one less than that of "x".
 
 *@attention Constraints:
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
 *@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ArgMax.
 */
 REG_OP(ArgMaxV2)
     .INPUT(x, TensorType::NumberType())
@@ -1961,18 +2282,22 @@ REG_OP(ArgMaxV2)
 *@brief Returns the index with the largest value across axes of a tensor.
 
 *@par Inputs:
-* One input, including: \n
+* One input, including: 
 *x: A multi-dimensional Tensor of type float16, float32.
 
 *@par Attributes:
-*dimension: An integer of type int32, specifying the axis information of the index with the maximum value.
+*@li dimension: An integer of type int32, specifying the axis information of the index with the maximum value.
+*@li dtype: The output type, either "int32" or "int64". Defaults to "int64".
 
-*@par Outputs: \n
+*@par Outputs: 
 *y: A multi-dimensional Tensor of type int32, specifying the index with the largest value. The dimension is one less than that of "x".
 
 *@attention Constraints:
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
 *@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ArgMax.
 */
 REG_OP(ArgMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1982,23 +2307,36 @@ REG_OP(ArgMaxD)
     .OP_END_FACTORY_REG(ArgMaxD)
 
 /**
-*@brief Returns the maximum value of all elements in the input in the given dimension.
+*@brief Returns the maximum value of all elements in the input in the given
+* dimension.
 
 *@par Inputs:
 *One input: \n
 *x: A multi-dimensional Tensor of type float16 or float32.
 
 *@par Attributes:
-*@li dimension: An integer of type int32, specifying the axis information of the index with the maximum value.
-*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false".
+*@li dimension: An integer of type int32, specifying the axis information of
+* the index with the maximum value.
+*@li keep_dims: A bool, specifying whether to keep dimensions for the output
+* Tensor. Defaults to "false".
 
 *@par Outputs:
-*@li indice: A multi-dimensional Tensor of type int32, specifying the index. (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
-*@li values: A Tensor, specifying the maximum value. Has the same dimensions as "indice" and the same type as "x".
+*@li indice: A multi-dimensional Tensor of type int32, specifying the index.
+* (If "keep_dims" is set to "false", the output dimensions are reduced by
+* "dimension" compared with that of "x". Otherwise, the output has one fewer
+* dimension than "x".)
+*@li values: A Tensor, specifying the maximum value. Has the same dimensions
+* as "indice" and the same type as "x".
 
 *@attention Constraints:
-*@li If there are multiple maximum values, the index of the first maximum value is used.
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
+*@li If there are multiple maximum values, the index of the first maximum
+* value is used.
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the
+* dimension length of "x".
+
+*@par Third-party framework compatibility
+* Compatible with the two output scenarios of PyTorch operator Max (the output
+* sequence is opposite to that of PyTorch).
 */
 REG_OP(ArgMaxWithValue)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
@@ -2014,17 +2352,30 @@ REG_OP(ArgMaxWithValue)
 *x: A multi-dimensional Tensor of type float16 or float32.
 
 *@par Attributes:
-*@li dimension: An integer of type int32, specifying the axis information of the index with the maximum value.
-*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false".
+*@li dimension: An integer of type int32, specifying the axis information of
+* the index with the maximum value.
+*@li keep_dims: A bool, specifying whether to keep dimensions for the output
+* Tensor. Defaults to "false".
 
 *@par Outputs:
-*@li indice: A multi-dimensional Tensor of type int32, specifying the index. (If "keep_dims" is set to "false", the output dimensions are reduced by "dimension" compared with that of "x". Otherwise, the output has one fewer dimension than "x".)
-*@li values: A Tensor, specifying the minimum value. Has the same dimensions as "indice" and the same type as "x".
+*@li indice: A multi-dimensional Tensor of type int32, specifying the index.
+* (If "keep_dims" is set to "false", the output dimensions are reduced by
+* "dimension" compared with that of "x". Otherwise, the output has one fewer
+* dimension than "x".)
+*@li values: A Tensor, specifying the minimum value. Has the same dimensions
+* as "indice" and the same type as "x".
 
 *@attention Constraints:
-*@li If there are multiple minimum values, the index of the first minimum value is used.
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
-*@li Performing the ArgMinWithValue operation on the last axis of float32 data is not supported on a mini platform.
+*@li If there are multiple minimum values, the index of the first minimum
+* value is used.
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the
+* dimension length of "x".
+*@li Performing the ArgMinWithValue operation on the last axis of float32 data
+* is not supported on a mini platform.
+
+*@par Third-party framework compatibility
+* Compatible with the two output scenarios of PyTorch operator Min (the output
+* sequence is opposite to that of PyTorch).
 */
 REG_OP(ArgMinWithValue)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
@@ -2052,7 +2403,7 @@ REG_OP(ArgMinWithValue)
 *    "0": product, "1": sum, "2": max.
 *@li coeff: A required attribute. Must met all of following rules:
 *    size of "coeff" must be equal to len("x") or is null.
-*    the absolute value of “coeff” must less than or equal to 1.
+*    the absolute value of "coeff" must less than or equal to 1.
 */
 REG_OP(Eltwise)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -2070,6 +2421,9 @@ REG_OP(Eltwise)
 
 *@par Outputs:
 *y: A Tensor of type uint8.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator PopulationCount.
 */
 REG_OP(PopulationCount)
   .INPUT(x, TensorType::IntegerDataType())
@@ -2434,6 +2788,9 @@ REG_OP(SquareSumAll)
 
 *@par Outputs:
 *@li y: A Tensor. Has the same type as "x1".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator LRN.
 */
 REG_OP(FusedMulAddN)
     .INPUT(x1, TensorType::NumberType())
@@ -2452,8 +2809,8 @@ REG_OP(FusedMulAddN)
 
 *@par Attributes:
 *@li axis: An optional int32 used to compute the shape of bias input from the online bottoms. Defaults to "1".
-*@li num_axes:
-*@li bias_from_blob:
+*@li num_axes: An optional int32 used to compute the shape of bias input from a Caffe model trained offline. Defaults to "1".
+*@li bias_from_blob: An optional bool. If "true", bias is input from a Caffe model trained offline. If "false", bias is input from online bottoms. Defaults to "true".
 
 *@par Outputs:
 *y: An ND tensor of type float16 or float32.
@@ -2468,6 +2825,8 @@ REG_OP(FusedMulAddN)
 * If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
 *@li If "bias_from_blob = false", "bias" is not a scalar, and "axis >= 0","axis + m" must be less than or equal to "n" and the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).\n
 * If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Bias.
 */
 
 REG_OP(Bias)
@@ -2509,6 +2868,8 @@ REG_OP(FusedMulAddNL2loss)
 
 *@par Outputs:
 *@li y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Threshold.
 */
 
  REG_OP(Threshold)
@@ -2517,6 +2878,25 @@ REG_OP(FusedMulAddNL2loss)
      .ATTR(threshold, Float, 0.0)
      .OP_END_FACTORY_REG(Threshold);
 
+/**
+*@brief Returns the index number corresponding to the maximum value entered.
+
+*@par Inputs:
+*@li x: A tensor. Must be one of the following types: float16, float32.
+
+*@par Attributes:
+*@li axis: An optional int. Specify the axis to be cut at the input tensor. If this parameter is not provided, find the topk for each batch. Defaults to 10000
+*@li out_max_val: An optional bool. Whether to output the maximum value. If it is True, the maximum value and index are output, otherwise only the index is output.
+* Defaults to False
+*@li topk: An optional int. It means the number of top tok in each axis (the value is greater than or equal to 1), and the value range must be in [1,x.shape(axis)].
+* Defaults to 1
+
+*@par Outputs:
+*@li indices: A tensor of type float16, float32, int32. The index of the maximum value of the output.
+*@li values: A tensor of type float16, float32.Output tensor, including maximum index or maximum value.
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator ArgMax.
+*/
 REG_OP(ArgMaxWithK)
      .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
      .OUTPUT(indices, TensorType({DT_INT32, DT_FLOAT, DT_FLOAT16}))
@@ -2537,6 +2917,8 @@ REG_OP(ArgMaxWithK)
 *@par Outputs:
 *@li y: A Tensor. Has the same type and shape as "x1".
 
+*@par Third-party framework compatibility:
+* Compatible with the Pytorch operator muls.
 */
 REG_OP(Muls)
      .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
@@ -2555,6 +2937,8 @@ REG_OP(Muls)
 *@par Outputs:
 *@li y: A Tensor. Has the same type and shape as "x1".
 
+*@par Third-party framework compatibility:
+* Compatible with the Pytorch operator fills.
 */
 REG_OP(Fills)
      .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
@@ -2573,6 +2957,8 @@ REG_OP(Fills)
 *@par Outputs:
 *@li y: A Tensor. Has the same type and shape as "x1".
 
+*@par Third-party framework compatibility:
+* Compatible with the Pytorch operator adds.
 */
  REG_OP(Adds)
      .INPUT(x, TensorType({DT_FLOAT,DT_INT16,DT_INT32,DT_FLOAT16}))
@@ -2580,6 +2966,19 @@ REG_OP(Fills)
      .REQUIRED_ATTR(value,Float)
      .OP_END_FACTORY_REG(Adds)
 
+/**
+*@brief Computes the product of x and y and returns 0 if the y is zero, even if x is NaN or infinite.
+
+*@par Inputs:
+* @li x1: A Tensor. Must be one of the following types:float16, float32, double, complex64, complex128.
+* @li x2: A Tensor. Has the same type and shape as "x1".
+
+*@par Outputs:
+*y: A Tensor. Has the same type and shape as "x1".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator MulNoNan.
+*/
  REG_OP(MulNoNan)
      .INPUT(x1, TensorType::NumberType()) /* "First operand." */
      .INPUT(x2, TensorType::NumberType()) /* "Second operand." */
@@ -2607,6 +3006,8 @@ REG_OP(Axpy)
 
 *@par Outputs:
 *@li y: A ND Tensor with Must be float32.
+*@par Third-party framework compatibility
+* Compatible with the PyTorch operator CosineEmbeddingLoss.
 */
 REG_OP(CosineEmbeddingLoss)
     .INPUT(x1, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -2616,6 +3017,29 @@ REG_OP(CosineEmbeddingLoss)
     .ATTR(reduction, String, "mean")
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(CosineEmbeddingLoss)
+
+/**
+*@brief Kullback-Leibler divergence.
+
+*@par Inputs:
+*@li x: Tensor of arbitrary shape.
+*@li target: Tensor of the same shape and dtype as x.
+
+*@par Attributes:
+*reduction: An required "string", Specifies the reduction to apply to the output;
+* Reduction only supports the two modes of "sum" and "batchmean".
+
+*@par Outputs:
+*y: A ND Tensor of the same dtype as x.
+*@par Third-party framework compatibility
+*Compatible with the PyTorch operator kl_div.
+*/
+REG_OP(KLDiv)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(reduction, String)
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(KLDiv)
 
 }  // namespace ge
 

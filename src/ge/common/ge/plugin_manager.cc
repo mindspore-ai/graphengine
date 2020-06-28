@@ -50,13 +50,13 @@ PluginManager::~PluginManager() { ClearHandles_(); }
 string PluginManager::GetPath() {
   Dl_info dl_info;
   if (dladdr(reinterpret_cast<void *>(&PluginManager::GetPath), &dl_info) == 0) {
-    GELOGW("Failed to read so_path!");
+    GELOGW("Failed to read the shared library file path!");
     return string();
   } else {
     std::string so_path = dl_info.dli_fname;
     char path[PATH_MAX] = {0};
     if (so_path.length() >= PATH_MAX) {
-      GELOGW("File path is too long!");
+      GELOGW("The shared library file path is too long!");
       return string();
     }
     if (realpath(so_path.c_str(), path) == nullptr) {
@@ -93,11 +93,15 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
   std::vector<std::string> path_vec;
   SplitPath(path, path_vec);
   for (const auto &single_path : path_vec) {
-    GE_IF_BOOL_EXEC(single_path.length() >= PATH_MAX, GELOGE(GE_PLGMGR_PATH_INVALID, "File path is too long!");
+    GE_IF_BOOL_EXEC(single_path.length() >= PATH_MAX,
+                    GELOGE(GE_PLGMGR_PATH_INVALID, "The shared library file path is too long!");
                     continue);
     // load break when number of loaded so reach maximum
     if (num_of_loaded_so >= kMaxNumOfSo) {
-      GELOGW("Number of loaded so reaches maximum, only the first %d are loaded!", kMaxNumOfSo);
+      GELOGW(
+        "The number of dynamic libraries loaded exceeds the kMaxNumOfSo,"
+        " and only the first %d shared libraries will be loaded.",
+        kMaxNumOfSo);
       break;
     }
 
@@ -110,11 +114,11 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
 
     int64_t file_size = 0;
     if (ValidateSo(file_path_dlopen, size_of_loaded_so, file_size) != SUCCESS) {
-      GELOGW("Failed to validate so %s", file_path_dlopen.c_str());
+      GELOGW("Failed to validate the shared library: %s", file_path_dlopen.c_str());
       continue;
     }
 
-    GELOGI("dlopen so path name: %s. ", file_path_dlopen.c_str());
+    GELOGI("dlopen the shared library path name: %s.", file_path_dlopen.c_str());
 
     // load continue when dlopen is failed
     auto handle = dlopen(file_path_dlopen.c_str(), RTLD_NOW | RTLD_GLOBAL);
@@ -128,14 +132,14 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     for (const auto &func_name : func_check_list) {
       auto real_fn = (void (*)())dlsym(handle, func_name.c_str());
       if (real_fn == nullptr) {
-        GELOGE(GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not exist!", func_name.c_str(),
+        GELOGE(GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not existed!", func_name.c_str(),
                func_name.c_str());
         is_valid = false;
         break;
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(dlclose(handle), "Failed to dlclose ret");
+      GE_LOGE_IF(dlclose(handle), "Failed to dlclose.");
       continue;
     }
 
@@ -146,13 +150,13 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     num_of_loaded_so++;
   }
 
-  GELOGI("load so total num %u", num_of_loaded_so);
+  GELOGI("The total number of shared libraries loaded: %u", num_of_loaded_so);
   for (auto name : so_list_) {
-    GELOGI("load %s successfully", name.c_str());
+    GELOGI("load shared library %s successfully", name.c_str());
   }
 
   if (num_of_loaded_so == 0) {
-    GELOGW("Failed to find any valid so in path %s!", path.c_str());
+    GELOGW("No loadable shared library found in the path: %s", path.c_str());
     return SUCCESS;
   }
 
@@ -163,7 +167,7 @@ Status PluginManager::ValidateSo(const string &file_path, int64_t size_of_loaded
   // read file size
   struct stat stat_buf;
   if (stat(file_path.c_str(), &stat_buf) != 0) {
-    GELOGW("%s check fail.", file_path.c_str());
+    GELOGW("The shared library file check failed: %s", file_path.c_str());
     return FAILED;
   }
 
@@ -178,8 +182,8 @@ Status PluginManager::ValidateSo(const string &file_path, int64_t size_of_loaded
   // load continue if the total size of so reaches maximum when it is loaded
   if (size_of_loaded_so + file_size > kMaxSizeOfLoadedSo) {
     GELOGW(
-      "%s is skipped because the size of loaded so reaches maximum if it is load! "
-      "(size: %ldB, size of loaded so: %ldB, maximum: %dB)",
+      "%s is skipped because the size of loaded share library reaches maximum if it is loaded! "
+      "(size: %ldB, size of loaded share library: %ldB, maximum: %dB)",
       file_path.c_str(), file_size, size_of_loaded_so, kMaxSizeOfLoadedSo);
     return FAILED;
   }
@@ -227,7 +231,10 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
 
     // load break when number of loaded so reach maximum
     if (num_of_loaded_so >= kMaxNumOfSo) {
-      GELOGW("Number of loaded so reaches maximum, only the first %d are loaded!", kMaxNumOfSo);
+      GELOGW(
+        "The number of dynamic libraries loaded exceeds the kMaxNumOfSo,"
+        " and only the first %d shared libraries will be loaded.",
+        kMaxNumOfSo);
       break;
     }
 
@@ -240,7 +247,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
 
     int64_t file_size = 0;
     if (ValidateSo(file_path_dlopen, size_of_loaded_so, file_size) != SUCCESS) {
-      GELOGW("Failed to validate so %s", canonical_path_str.c_str());
+      GELOGW("Failed to validate the shared library: %s", canonical_path_str.c_str());
       continue;
     }
 
@@ -266,8 +273,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(dlclose(handle), "Dlclose ret fail");
-      GELOGW("Dlclose ret fail!");
+      GE_LOGE_IF(dlclose(handle), "Failed to dlclose.");
       continue;
     }
 
@@ -279,7 +285,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
   }
   closedir(dir);
   if (num_of_loaded_so == 0) {
-    GELOGW("Failed to find any valid so under %s!", path.c_str());
+    GELOGW("No loadable shared library found in the path: %s", path.c_str());
     return SUCCESS;
   }
 

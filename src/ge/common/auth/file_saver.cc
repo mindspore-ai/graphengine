@@ -40,9 +40,8 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
   }
 
   char real_path[PATH_MAX] = {0};
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(file_path.length() >= PATH_MAX, return FAILED, "File path is longer than PATH_MAX!");
   GE_IF_BOOL_EXEC(realpath(file_path.c_str(), real_path) == nullptr,
-                  GELOGI("File %s is not exit, it will be created.", file_path.c_str()));
+                  GELOGI("File %s is not exist, it will be created.", file_path.c_str()));
   // Open file
   mode_t mode = S_IRUSR | S_IWUSR;
   fd = mmOpen2(real_path, O_RDWR | O_CREAT | O_TRUNC, mode);

@@ -28,7 +28,7 @@ namespace tdt {
  */
 enum TdtDataType {
   TDT_IMAGE_LABEL = 0, /**< Image label*/
-  TDT_T_R,
+  TDT_TFRECORD,        /**< TF Record*/
   TDT_DATA_LABEL,      /**< Data label*/
   TDT_END_OF_SEQUENCE, /**< End of Sequence*/
   TDT_TENSOR,          /**< Tensor*/

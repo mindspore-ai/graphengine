@@ -29,6 +29,7 @@
 #include "graph/utils/type_utils.h"
 #include "graph/manager/util/rt_context_util.h"
 #include "register/op_registry.h"
+#include "common/ge/tbe_plugin_manager.h"
 
 using domi::GetContext;
 using domi::OpRegistry;
@@ -132,6 +133,9 @@ Status GEInitialize(const std::map<string, string> &options) {
   }
   GE_TIMESTAMP_END(CheckOptionsValid, "GEInitialize::CheckOptionsValid");
 
+  GE_TIMESTAMP_START(InitPreparation);
+  TBEPluginManager::Instance().InitPreparation(options);
+  GE_TIMESTAMP_END(InitPreparation, "GEInitialize::InitPreparation");
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
   GE_TIMESTAMP_START(GELibInitialize);
@@ -177,6 +181,10 @@ Status GEFinalize() {
     if (middle_ret != SUCCESS) {
       ret = middle_ret;
     }
+  }
+  middle_ret = TBEPluginManager::Instance().Finalize();
+  if (middle_ret != SUCCESS) {
+    ret = middle_ret;
   }
 
   if (kGeInitialized && ret == SUCCESS) {
@@ -262,10 +270,10 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
 }
 
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options) {
-  GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, sessinon_id: %lu.", graph_id, sessionId_);
+  GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Sesson.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
     return FAILED;
   }
   GELOGD("Adding graph to session");
@@ -340,7 +348,7 @@ void PrintOutputResult(std::vector<Tensor> &outputs) {
         GELOGI("output data[%zu]=%lf", i, *(reinterpret_cast<double *>(outputs[0].GetData()) + i));
         break;
       default:
-        GELOGI("Output datatype %s is not support print.", TypeUtils::DataTypeToSerialString(data_type).c_str());
+        GELOGI("Output datatype %s is not supported.", TypeUtils::DataTypeToSerialString(data_type).c_str());
         return;
     }
   }
@@ -376,6 +384,21 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
 
 Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback) {
   return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, key, callback);
+}
+
+Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs) {
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
+    return FAILED;
+  }
+  GELOGT(TRACE_RUNNING, "Building Graph");
+  Status ret = instance_ptr->SessionManagerObj().BuildGraph(sessionId_, graph_id, inputs);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Session BuildGraph failed");
+    return FAILED;
+  }
+  return SUCCESS;
 }
 
 Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,

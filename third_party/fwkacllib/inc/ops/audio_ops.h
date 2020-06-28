@@ -42,6 +42,10 @@ per time slice.
 
 *@attention Constraints: \n
 *Mfcc runs on the Ascend AI CPU, which delivers poor performance. \n
+
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Mfcc.
 */
 
 REG_OP(Mfcc)
@@ -72,6 +76,9 @@ REG_OP(Mfcc)
 *@attention Constraints: \n
 *AudioSpectrogram runs on the Ascend AI CPU, which delivers \n
 poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AudioSpectrogram.
 */
 
 REG_OP(AudioSpectrogram)
@@ -100,6 +107,9 @@ Length of audio requested.
 
 *@attention Constraints: \n
 *DecodeWav runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator DecodeWav.
 */
 
 REG_OP(DecodeWav)
@@ -124,6 +134,8 @@ REG_OP(DecodeWav)
 *@attention Constraints:\n
 *EncodeWav runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Operator EncodeWav.
 */
 
 REG_OP(EncodeWav)

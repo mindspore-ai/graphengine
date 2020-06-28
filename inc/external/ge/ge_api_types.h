@@ -157,6 +157,9 @@ const std::string OUTPUT_DATATYPE = "ge.outputDatatype";
 // congigure opSelectImplmode to setting op select implmode
 const std::string OP_SELECT_IMPL_MODE = "ge.opSelectImplmode";
 
+// congigure optypelist_for_implmode to setting which op use implmode
+const std::string OPTYPELIST_FOR_IMPLMODE = "ge.optypelistForImplmode";
+
 // configure whether to enable hcom parallel by session constructor options param,
 // its value should be "0" or "1", default value is "0"
 const std::string HCOM_PARALLEL = "ge.hcomParallel";
@@ -258,12 +261,12 @@ using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensor
 namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";
 static const char *const INPUT_SHAPE = "input_shape";
+static const char *const OP_NAME_MAP = "op_name_map";
 static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
 static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
 static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
 static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
 static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
-static const char *const HEAD_STREAM = ge::HEAD_STREAM.c_str();
 static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
 static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
 static const char *const SOC_VERSION = ge::SOC_VERSION.c_str();
@@ -280,16 +283,20 @@ static const char *const COMPRESS_WEIGHT_CONF = "compress_weight_conf";
 static const char *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
 static const char *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
 static const char *const LOG_LEVEL = "log";
+static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c_str();
 
 // for interface: aclgrphBuildModel
 const std::set<std::string> ir_builder_suppported_options = {
-  INPUT_FORMAT,         INPUT_SHAPE, DYNAMIC_BATCH_SIZE, DYNAMIC_IMAGE_SIZE,
-  INSERT_OP_FILE,       OUTPUT_TYPE, BUFFER_OPTIMIZE,    ENABLE_COMPRESS_WEIGHT,
-  COMPRESS_WEIGHT_CONF, OUT_NODES,   INPUT_FP16_NODES,   LOG_LEVEL};
+  INPUT_FORMAT,       INPUT_SHAPE,    OP_NAME_MAP,    DYNAMIC_BATCH_SIZE,
+  DYNAMIC_IMAGE_SIZE, INSERT_OP_FILE, PRECISION_MODE, EXEC_DISABLE_REUSED_MEMORY,
+  AUTO_TUNE_MODE,     OUTPUT_TYPE,    OUT_NODES,      INPUT_FP16_NODES,
+  LOG_LEVEL};
 // for interface: aclgrphBuildInitialize
-const std::set<std::string> global_options = {HEAD_STREAM,
-                                              CORE_TYPE,
+const std::set<std::string> global_options = {CORE_TYPE,
                                               SOC_VERSION,
+                                              BUFFER_OPTIMIZE,
+                                              ENABLE_COMPRESS_WEIGHT,
+                                              COMPRESS_WEIGHT_CONF,
                                               PRECISION_MODE,
                                               EXEC_DISABLE_REUSED_MEMORY,
                                               AUTO_TUNE_MODE,
@@ -298,7 +305,8 @@ const std::set<std::string> global_options = {HEAD_STREAM,
                                               FUSION_SWITCH_FILE,
                                               ENABLE_SMALL_CHANNEL,
                                               QUANT_OPTIMIZE,
-                                              OP_SELECT_IMPL_MODE};
+                                              OP_SELECT_IMPL_MODE,
+                                              OPTYPELIST_FOR_IMPLMODE};
 }  // namespace ir_option
 }  // namespace ge
 

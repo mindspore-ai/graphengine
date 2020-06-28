@@ -46,6 +46,9 @@ Defaults to `int32`.
 *Supported
 *@par L2 convergence supported or not
 *@par Multiple batches supported or not
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow Operator LowerBound.
 */
 
 REG_OP(LowerBound)
@@ -77,6 +80,9 @@ reversal is performed.
 
 *@attention Constraints: \n
 *ReverseSequence runs on the Ascend AI CPU, which delivers poor performance.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ReverseSequence.
 */
 
 REG_OP(ReverseSequence)
@@ -108,6 +114,9 @@ keeps entire upper triangle.
 
 *@attention Constraints: \n
 *MatrixBandPart runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MatrixBandPart.
 */
 
 REG_OP(MatrixBandPart)
@@ -141,6 +150,9 @@ Defaults to "int32".
 
 *@attention Constraints: \n
 *UniqueWithCounts runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UniqueWithCounts.
 */
 
 REG_OP(UniqueWithCounts)
@@ -170,6 +182,9 @@ are 0D scalars.
 
 *@attention Constraints: \n
 *Unique runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Unique.
 */
 
 REG_OP(Unique)
@@ -201,6 +216,9 @@ Defaults to "int32".
 
 *@attention Constraints: \n
 *UniqueExt2 runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UniqueExt2.
 */
 
 REG_OP(UniqueExt2)
@@ -224,6 +242,9 @@ REG_OP(UniqueExt2)
 
 *@attention Constraints: \n
 *InvertPermutation runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator InvertPermutation.
 */
 
 REG_OP(InvertPermutation)
@@ -245,6 +266,9 @@ REG_OP(InvertPermutation)
 
 *@attention Constraints: \n
 *CheckNumerics runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator CheckNumerics.
 */
 
 REG_OP(CheckNumerics)
@@ -268,6 +292,9 @@ the flattened version of an array of dimensions "dims".
 
 *@attention Constraints: \n
 *UnravelIndex runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UnravelIndex.
 */
 
 REG_OP(UnravelIndex)
@@ -292,6 +319,9 @@ REG_OP(UnravelIndex)
 
 *@attention Constraints: \n
 *UpperBound runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UpperBound.
 */
 
 REG_OP(UpperBound)
@@ -322,6 +352,9 @@ Defaults to "int32".
 
 *@attention Constraints: \n
 *UniqueWithCountsExt2 runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UniqueWithCountsExt2.
 */
 
 REG_OP(UniqueWithCountsExt2)
@@ -354,6 +387,9 @@ do include the borders.
 
 *@attention Constraints: \n
 *MirrorPad runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MirrorPad.
 */
 
 REG_OP(MirrorPad)
@@ -384,6 +420,9 @@ REG_OP(MirrorPad)
 
 *@attention Constraints: \n
 *ListDiff runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ListDiff.
 */
 
 REG_OP(ListDiff)
@@ -407,6 +446,8 @@ REG_OP(ListDiff)
 *@par Outputs:
 *y: The empty constant tensor.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator _ParallelConcatStart.
 */
 REG_OP(_ParallelConcatStart)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -424,6 +465,9 @@ Operator Const has the same definition as operator Constant.
 
 *@par Outputs:
 *y: A constant tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Const.
 */
 REG_OP(Const)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
@@ -439,6 +483,9 @@ REG_OP(Const)
 
 *@par Outputs:
 *y: The constant tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Const.
 */
 REG_OP(Constant)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
@@ -454,6 +501,9 @@ REG_OP(Constant)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Snapshot.
 */
 REG_OP(Snapshot)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, \
@@ -470,6 +520,9 @@ REG_OP(Snapshot)
 
 *@par Outputs:
 *y: The input tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator GuaranteeConst.
 */
 REG_OP(GuaranteeConst)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -487,6 +540,9 @@ REG_OP(GuaranteeConst)
 
 *@par Outputs:
 *y: A tensor. The broadcasted shape.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BroadcastArgs.
 */
 REG_OP(BroadcastArgs)
     .INPUT(x1, TensorType({DT_INT32, DT_INT64}))
@@ -505,6 +561,9 @@ REG_OP(BroadcastArgs)
 
 *@par Outputs:
 *y: The input tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator PreventGradient.
 */
 REG_OP(PreventGradient)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -525,6 +584,9 @@ REG_OP(PreventGradient)
 *@par Outputs:
 *@li y1: A tensor. Reduction indices of "x1".
 *@li y2: A tensor. Reduction indices of "x2".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BroadcastGradientArgs.
 */
 REG_OP(BroadcastGradientArgs)
     .INPUT(x1, TensorType({DT_INT32, DT_INT64}))
@@ -542,6 +604,9 @@ REG_OP(BroadcastGradientArgs)
 
 *@par Outputs:
 *y: The input tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator StopGradient.
 */
 REG_OP(StopGradient)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -558,6 +623,9 @@ REG_OP(StopGradient)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Identity.
 */
 REG_OP(Identity)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -574,6 +642,9 @@ REG_OP(Identity)
 
 *@par Outputs:
 *y: A list of Tensor objects, with the same length as the input tensor list.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator IdentityN.
 */
 REG_OP(IdentityN)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -591,6 +662,9 @@ REG_OP(IdentityN)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ExpandDims.
 */
 REG_OP(ExpandDims)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
@@ -599,6 +673,26 @@ REG_OP(ExpandDims)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
         DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .OP_END_FACTORY_REG(ExpandDims)
+
+/**
+*@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape is changed, without changing the data.
+
+*@par Inputs:
+*@li x: Original tensor.
+*@li axis: List of ints.
+
+*@par Outputs:
+*y: Reshape tensor with same data as input.
+
+*@par Third-party framework compatibility
+*Compatible with the Onnx operator Unsqueeze.
+*/
+
+REG_OP(Unsqueeze)
+    .INPUT(x, TensorType({DT_FLOAT32, DT_INT32, DT_UINT8, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT32, DT_INT32, DT_UINT8, DT_BOOL}))
+    .ATTR(axes, ListInt, {})
+    .OP_END_FACTORY_REG(Unsqueeze)
 
 /**
 *@brief Reshapes a tensor. Only the tensor shape is changed, without changing the data.
@@ -616,6 +710,10 @@ REG_OP(ExpandDims)
 
 *@par Attention:
 *This operator cannot be directly called by the acllopExecute API.
+
+*@par Third-party framework compatibility
+*@li Compatible with the TensorFlow operator Reshape.
+*@li Compatible with the Caffe operator Reshape.
 */
 REG_OP(Reshape)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
@@ -638,6 +736,9 @@ REG_OP(Reshape)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Squeeze.
 */
 REG_OP(Squeeze)
     .INPUT(x, TensorType::ALL())
@@ -653,6 +754,9 @@ REG_OP(Squeeze)
 
 *@par Outputs:
 *y: A tensor. The rank of input tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Rank.
 */
 REG_OP(Rank)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -671,6 +775,9 @@ REG_OP(Rank)
 
 *@par Outputs:
 *y: A tensor. The size of the input tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Size.
 */
 REG_OP(Size)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -686,11 +793,15 @@ REG_OP(Size)
 *x: A tensor.
 
 *@par Attributes:
-*index: Index of the input tensor of type int32 or int64.
+*index: Index of the input tensor.The data type must be int32 or int64. \n
+Assume that net has three data nodes, one should be set 0, another should \n
+be set 1, and the left should be set 2.
 
 *@par Outputs:
 *y: A tensor.
 
+*@par Third-party framework compatibility
+*Compatible with the Caffe operator Data.
 */
 REG_OP(Data)
     .INPUT(x, TensorType::ALL())
@@ -712,6 +823,9 @@ REG_OP(Data)
 
 *@par Outputs:
 *y: The created placeholder tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator PlaceHolder.
 */
 REG_OP(PlaceHolder)
     .INPUT(x, TensorType::ALL())
@@ -735,6 +849,8 @@ REG_OP(PlaceHolder)
 *@par Outputs:
 *y: The created placeholder tensor.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator PlaceholderWithDefault.
 */
 REG_OP(PlaceholderWithDefault)
     .INPUT(x, TensorType::ALL())
@@ -754,6 +870,8 @@ REG_OP(PlaceholderWithDefault)
 *@par Outputs:
 *y: A tensor.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ReadVariableOp.
 */
 REG_OP(ReadVariableOp)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -785,6 +903,9 @@ REG_OP(Summary)
 
 *@par Outputs:
 *y: A tensor. The shape of the input tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Size.
 */
 REG_OP(Shape)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -804,6 +925,9 @@ REG_OP(Shape)
 
 *@par Outputs:
 *y: A list of tensors with the same length as the input list of tensors.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ShapeN.
 */
 REG_OP(ShapeN)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8,
@@ -824,6 +948,9 @@ REG_OP(ShapeN)
 
 *@par Outputs:
 *y: A tensor.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Empty.
 */
 REG_OP(Empty)
     .INPUT(shape, TensorType({DT_INT32}))
@@ -850,6 +977,9 @@ specifying the padding sizes.
 
 *@attention Constraints: \n
 *MirrorPadGrad runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MirrorPadGrad.
 */
 
 REG_OP(MirrorPadGrad)
@@ -878,6 +1008,8 @@ DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL.
 *@attention Constraints:\n
 *Where runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Where.
 */
 
 REG_OP(Where)
@@ -887,6 +1019,7 @@ REG_OP(Where)
     .OP_END_FACTORY_REG(Where)
 
 /**
+*@brief Derived from the Caffe operator Split that splits an input blob to
 *    multiple output blobs for feeding a blob into multiple output layers. \n
 *The Split node is removed from the graph after the split operation is completed.
 
@@ -896,12 +1029,16 @@ fp16, fp32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".It's required and the value should equal to output_num.
+
+*@par Attributes:
+*@li N: A required int. The parameter will get the number of dynamic outputs.
 */
 REG_OP(Copy)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
               DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
               DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64}))
+    .REQUIRED_ATTR(N, Int)
     .OP_END_FACTORY_REG(Copy);
 
 /**
@@ -913,9 +1050,12 @@ REG_OP(Copy)
 `farmhash::fingerprint64`.
 
 *@par Outputs:
+y: A two-dimensional `Tensor` of type `tf.uint8`. The first dimension equals to \n
 `data`'s first dimension, and the second dimension size depends on the \n
 fingerprint algorithm.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow Fingerprint operator.
 */
 
 REG_OP(Fingerprint)

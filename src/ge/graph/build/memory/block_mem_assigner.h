@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <list>
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "common/util.h"
@@ -36,13 +37,14 @@ const size_t kMaxLifeTime = 0xffffffff;
 enum MemoryType { kOutput, kWorkspace };
 
 struct NodeTypeIndex {
-  NodeTypeIndex(ge::NodePtr node, MemoryType mem_type, uint32_t index)
-      : node(std::move(node)), mem_type(mem_type), index(index) {}
+  NodeTypeIndex(ge::NodePtr node, MemoryType mem_type, uint32_t index, bool ref_input = false)
+      : node(std::move(node)), mem_type(mem_type), index(index), ref_input(ref_input) {}
 
   ge::NodePtr node = nullptr;
   MemoryType mem_type = kOutput;
   uint32_t index = 0;
   size_t life_time_end = kMaxLifeTime;
+  bool ref_input = false;
   const string GetMemType() const {
     if (mem_type == kOutput) {
       return "output";
@@ -55,9 +57,9 @@ struct NodeTypeIndex {
 
 class MemoryBlock {
  public:
-  explicit MemoryBlock(size_t block_size, bool reuse_mem = true)
+  explicit MemoryBlock(size_t block_size, int64_t stream_id = 0, bool reuse_mem = true)
       : ref_count_(0),
-        stream_id_(0),
+        stream_id_(stream_id),
         deleted_block_(false),
         reuse_mem_(reuse_mem),
         input_index_(0),
@@ -81,7 +83,7 @@ class MemoryBlock {
   void Init(size_t real_size, MemoryType type, const ge::NodePtr &node, uint32_t out_index, size_t no_align_size) {
     real_size_list_.emplace_back(real_size);
     no_align_size_list_.emplace_back(no_align_size);
-    node_type_index_list_.emplace_back(node, type, out_index);
+    node_type_index_list_.emplace_back(node, type, out_index, false);
   }
   size_t Size() const { return block_size_; }
 
@@ -129,6 +131,7 @@ class MemoryBlock {
   bool continuous_block_;
   bool last_continuous_block_;
   bool is_zero_copy_;
+  std::map<int64_t, size_t> depend_stream_life_;
 
  private:
   size_t block_size_;
@@ -287,7 +290,7 @@ class BlockMemAssigner : public MemAssigner {
   std::vector<NodeTypeIndex> zero_memory_list_;
 
   // ref mapping
-  std::map<std::string, std::vector<NodeIndexIO>> symbol_to_anchors_;
+  std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors_;
   std::map<std::string, std::string> anchor_to_symbol_;
   std::map<std::string, bool> pre_reuse_flag_;
   std::map<std::string, bool> post_reuse_flag_;
@@ -371,10 +374,10 @@ class BlockMemAssigner : public MemAssigner {
   ///
   /// @ingroup GE
   /// @brief Merge memory blocks between different batchs
-  /// @return void
+  /// @return merge or not
   /// @author
   ///
-  void MergeDynamicBatchBlocks();
+  bool MergeDynamicBatchBlocks();
 
   void AssignContinuousBlocks();
 

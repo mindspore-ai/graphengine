@@ -36,6 +36,9 @@ int64, uint8, uint16, uint32, uint64. \n
 
 *@attention Constraints: \n
 *Unique runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator RightShift.
 */
 
 REG_OP(RightShift)

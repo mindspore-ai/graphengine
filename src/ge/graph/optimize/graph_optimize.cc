@@ -34,7 +34,7 @@ const char *const kAicoreEngine = "AIcoreEngine";
 
 namespace ge {
 GraphOptimize::GraphOptimize()
-    : optimize_type_(domi::FrameworkType::FMK_TYPE_T),
+    : optimize_type_(domi::FrameworkType::TENSORFLOW),
       cal_config_(""),
       insert_op_config_(""),
       parse_out_node_(""),
@@ -73,7 +73,7 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
       src_index_list.emplace_back(peer_out_anchor->GetIdx());
       node_op_desc->SetSrcName(src_name_list);
       node_op_desc->SetSrcIndex(src_index_list);
-      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && domi::GetContext().type == domi::FMK_TYPE_T),
+      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && domi::GetContext().type == domi::TENSORFLOW),
                       ge::NodePtr peer_owner_node = peer_out_anchor->GetOwnerNode();
                       input_name_list.emplace_back(
                         peer_owner_node->GetName() +
@@ -260,7 +260,7 @@ Status GraphOptimize::OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_
 }
 
 Status GraphOptimize::SetOptions(const ge::GraphManagerOptions &options) {
-  if (options.framework_type >= static_cast<int32_t>(domi::FrameworkType::FMK_TYPE_RESERVED)) {
+  if (options.framework_type >= static_cast<int32_t>(domi::FrameworkType::FRAMEWORK_RESERVED)) {
     GELOGE(GE_GRAPH_OPTIONS_INVALID, "Optimize Type %d invalid.", options.framework_type);
     return GE_GRAPH_OPTIONS_INVALID;
   }
@@ -293,7 +293,7 @@ void GraphOptimize::TranFrameOp(ComputeGraphPtr &compute_graph) {
       // set - framework_type
       // [No need to verify return value]
       op->SetType("FrameworkOp");
-      if (!AttrUtils::SetInt(op, ATTR_NAME_FRAMEWORK_FWK_TYPE, domi::FrameworkType::FMK_TYPE_T)) {
+      if (!AttrUtils::SetInt(op, ATTR_NAME_FRAMEWORK_FWK_TYPE, domi::FrameworkType::TENSORFLOW)) {
         GELOGW("TranFrameOp SetInt ATTR_NAME_FRAMEWORK_FWK_TYPE failed");
       }
     }

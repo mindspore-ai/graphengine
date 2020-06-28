@@ -91,6 +91,9 @@ REG_OP(FusedBatchNorm)
 * @li dx: A Tensor. Must be one of the following types: float32.
 * @li bn_scale: A Tensor. Must be one of the following types: float32.
 * @li bn_bias: A Tensor. Must be one of the following types: float32.
+
+*@par Third-party framework compatibility
+* Compatible with the L2 scenario of PyTorch operator Normalize.
 */
 
 REG_OP(FusedBatchNormGrad)
@@ -118,9 +121,11 @@ REG_OP(FusedBatchNormGrad)
 *@li axis: A required attribute of type list, specifying the axis for normalization.
 *@li eps: An optional attribute of type float, specifying the lower limit of normalization. Defaults to "1e-4".
 
-*@par Outputs: \n
+*@par Outputs:
 *y: A multi-dimensional Tensor of type float16 or float32, specifying the eigenvalue for normalization.
 
+*@par Third-party framework compatibility
+* Compatible with the L2 scenario of PyTorch operator Normalize.
 */
 REG_OP(L2Normalize)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -134,17 +139,24 @@ REG_OP(L2Normalize)
 
 *@par Inputs:
 * Three inputs, including: \n
-*@li x: A multi-dimensional Tensor of type float16 or float32, specifying the eigenvalue of forward inputs.
-*@li y: A multi-dimensional Tensor of type float16 or float32, specifying the normalization result of the forward output.
-*@li dy: A multi-dimensional Tensor of type float16 or float32, specifying the reverse input gradient.
+*@li x: A multi-dimensional Tensor of type float16 or float32, specifying
+* the eigenvalue of forward inputs.
+*@li y: A multi-dimensional Tensor of type float16 or float32, specifying
+* the normalization result of the forward output.
+*@li dy: A multi-dimensional Tensor of type float16 or float32, specifying
+* the reverse input gradient.
 
 *@par Attributes:
-*@li axis: A required attribute of type int, specifying the axis to be normalized.
-*@li eps: An optional attribute of type float, specifying the lower limit of normalization. Defaults to "1e-4".
+*@li axis: A required attribute of type int, specifying the axis to be
+* normalized.
+*@li eps: An optional attribute of type float, specifying the lower limit of
+* normalization. Defaults to "1e-4".
 
 *@par Outputs:
 *dx: Reverse gradient of eigenvalue "x". Has the same dimensions as "x".
 
+*@par Third-party framework compatibility
+* Compatible with the L2 scenario of PyTorch operator NormalizeGrad.
 */
 REG_OP(L2NormalizeGrad)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -183,6 +195,9 @@ REG_OP(L2NormalizeGrad)
 *@li If the operation is used for inference and outputs "reserve_space_1" and "reserve_space_2" are available, then "reserve_space_1" has the same value as "mean" and "reserve_space_2" has the same value as "variance".
 *@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
 
+*@par Third-party framework compatibility
+*@li Compatible with the TensorFlow operator fused_batch_norm.
+*@li Compatible with the TensorFlow operator fused_batch_norm_v2.
 */
 REG_OP(BatchNorm)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -228,6 +243,8 @@ REG_OP(BatchNorm)
 *@li If the operation is used for inference, then output "reserve_space_1" has the same value as "mean" and output "reserve_space_2" has the same value as "variance".
 *@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator fused_batch_norm_v2.
 */
 REG_OP(BatchNormExt2)
     .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -272,6 +289,8 @@ REG_OP(BatchNormExt2)
 * The preceding layer of this operator must be operator BatchNorm.
 
 *@see BatchNorm
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operators FusedBatchNormGradV2 and FusedBatchNormGrad.
 */
 REG_OP(BatchNormGrad)
     .INPUT(y_backprop, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -316,6 +335,8 @@ REG_OP(BatchNormGrad)
 * The preceding layer of this operator must be BatchNormExt2.
 
 *@see BatchNormExt2
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator FusedBatchNormGradV2.
 */
 REG_OP(BatchNormGradExt2)
     .INPUT(y_backprop, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -342,10 +363,10 @@ REG_OP(BatchNormGradExt2)
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
 *@li momentum: An optional string, input x's Scale factor
-*@li scale: no use
-*@li offset: no use
+*@li scale: An optional tensor of type float16 or float32, no use
+*@li offset: An optional tensor of type float16 or float32, no use
 *@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.0001".
+*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
 *@li mode: An optional input, not use
 *@par Outputs:\n
@@ -372,7 +393,7 @@ REG_OP(BNInference)
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
 *@li momentum: An optional float, input x's Scale factor
 *@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.0001".
+*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
 *@li mode: An optional inpout, not use
 *@par Outputs:
@@ -383,6 +404,8 @@ REG_OP(BnHost)
     .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(momentum, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16,DT_FLOAT}))
     .ATTR(epsilon, Float, 0.00001)
     .ATTR(mode, Int, 1)
     .ATTR(use_global_stats, Bool, true)
@@ -398,10 +421,10 @@ REG_OP(BnHost)
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
 *@li momentum: An optional float, input x's Scale factor
-*@li scale: no use
-*@li offset: no use
+*@li scale: An optional tensor of type float16 or float32, no use
+*@li offset: An optional tensor of type float16 or float32, no use
 *@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.0001".
+*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
 *@li mode: An optional inpout, not use
 *@par Outputs:\n

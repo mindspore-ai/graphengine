@@ -61,7 +61,7 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   std::vector<int64_t> output_4dims = output_desc->GetShape().GetDims();
 
   if (input_desc->GetShape().IsUnknownShape() || output_desc->GetShape().IsUnknownShape()) {
-    GELOGI("Current Reshape %s is unkown shape which should be kept.", op_desc_ptr->GetName().c_str());
+    GELOGI("Current Reshape %s is unknown shape which should be kept.", op_desc_ptr->GetName().c_str());
     return SUCCESS;
   }
 

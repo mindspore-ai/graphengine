@@ -18,9 +18,9 @@
 
 #include <string>
 #include <vector>
-#include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/common/omg_util.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"

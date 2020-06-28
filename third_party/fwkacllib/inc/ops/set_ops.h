@@ -42,6 +42,8 @@ namespace ge {
 *@attention Constraints:\n
 *-The implementation for DenseToDenseSetOperation on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow DenseToDenseSetOperation operator.
 */
 REG_OP(DenseToDenseSetOperation)
   .INPUT(x1, TensorType({DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, \
@@ -78,6 +80,8 @@ REG_OP(DenseToDenseSetOperation)
 *@attention Constraints:\n
 *-The implementation for DenseToSparseSetOperation on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow DenseToSparseSetOperation operator.
 */
 REG_OP(DenseToSparseSetOperation)
     .INPUT(x1, TensorType({DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, \
@@ -119,6 +123,8 @@ REG_OP(DenseToSparseSetOperation)
 *@attention Constraints:\n
 *-The implementation for SparseToSparseSetOperation on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow SparseToSparseSetOperation operator.
 */
 REG_OP(SparseToSparseSetOperation)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -155,6 +161,8 @@ REG_OP(SparseToSparseSetOperation)
 *@attention Constraints:\n
 *-The implementation for SetSize on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow SetSize operator.
 */
 REG_OP(SetSize)
     .INPUT(set_indices, TensorType({DT_INT64}))

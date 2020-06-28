@@ -35,6 +35,8 @@ namespace ge {
 
 *@par Outputs:
 * y: A Tensor. Has the same type and shape as "x".
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Power.
 */
 
 REG_OP(Power)
@@ -56,6 +58,8 @@ REG_OP(Power)
 *@par Outputs:
 *z:A Tensor. Has the same type as a.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Igamma operator.
 */
 
 REG_OP(Igamma)
@@ -75,6 +79,8 @@ REG_OP(Igamma)
 *@par Outputs:
 *z:A Tensor. Has the same type as a.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Igammac operator.
 */
 
 REG_OP(Igammac)
@@ -98,6 +104,8 @@ a uint8.
 *@attention Constraints: \n
 *Currently, the innermost dimension of the tensor must be divisible by 8. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow CompareAndBitpack operator
 */
 
 REG_OP(CompareAndBitpack)
@@ -127,6 +135,8 @@ equal to 1.
 *bins:1D Tensor with length equal to size. The counts or summed weights for \n
 each value in the range [0, size).
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Bincount operator
 */
 
 REG_OP(Bincount)
@@ -148,6 +158,8 @@ REG_OP(Bincount)
 *@par Outputs:
 *z:A Tensor. Has the same type as a.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Betainc operator.
 */
 
 REG_OP(Betainc)
@@ -171,6 +183,8 @@ REG_OP(Betainc)
 *@attention Constraints: \n
 *The implementation for Zeta on Ascend uses ai cpu, with bad performance. \n
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Zeta operator.
 */
 
 REG_OP(Zeta)
@@ -194,6 +208,8 @@ the output will be output = [[0, 3] [3, 2] [1, 3]]
 *@par Outputs:
 *y:Same shape with 'input', each value of input replaced with bucket index.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow Bucketize operator.
 */
 
 REG_OP(Bucketize)
@@ -217,6 +233,8 @@ sorted and can be repeated.
 *@par Outputs:
 *y:A Tensor. Has the same type as x.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SparseSegmentSum operator
 */
 
 REG_OP(SparseSegmentSum)
@@ -242,6 +260,8 @@ sorted and can be repeated.
 *@par Outputs:
 *y:A Tensor. Has the same type as x.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SparseSegmentMean operator
 */
 
 REG_OP(SparseSegmentMean)
@@ -268,6 +288,8 @@ SparseSegmentMean op.
 *@par Outputs:
 *y:A Tensor. Has the same type as grad.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SparseSegmentMeanGrad operator
 */
 
 REG_OP(SparseSegmentMeanGrad)
@@ -289,6 +311,8 @@ REG_OP(SparseSegmentMeanGrad)
 *@par Outputs:
 *y:A Tensor. Has the same type as a.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow IgammaGradA operator
 */
 
 REG_OP(IgammaGradA)
@@ -303,6 +327,8 @@ REG_OP(IgammaGradA)
 *@par Attributes:
 *channel_name: A string. Default "".
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow InitData operator
 */
 
 REG_OP(InitData)
@@ -322,6 +348,8 @@ to each component of an element of this dataset.
 *@par Outputs:
 *y:A nested structure of Tensor objects.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow GetNext operator
 */
 
 REG_OP(GetNext)
@@ -351,12 +379,15 @@ REG_OP(EndOfSequence)
 /**
 *@brief: Computes the Gauss error function of `x` element-wise.
 
-*@par Inputs:\n
-*x: A Tensor of type float16 or float32.
+*@par Inputs:
+*x: A Tensor of type float16, float32 or double. the format can be
+*    [NCHW,NC1HWC0,NHWC,ND]
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type and format as "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Erf.
 */
 REG_OP(Erf)
     .INPUT(x, TensorType::FloatingDataType())
@@ -366,12 +397,14 @@ REG_OP(Erf)
 /**
 *@brief: Computes the Gauss complementary error function of "x" element-wise.
 
-*@par Inputs:\n
-*x: A Tensor of type float16 or float32.
+*@par Inputs:
+*x: A Tensor of type float16 ,float32, double.
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Erfc.
 */
 REG_OP(Erfc)
     .INPUT(x, TensorType::FloatingDataType())
@@ -379,40 +412,42 @@ REG_OP(Erfc)
     .OP_END_FACTORY_REG(Erfc)
 
 /**
-*@brief This operation returns a rank 1 histogram counting the number of entries in `values` \n
-*  that fell into every bin.The bins are equal width and determined by the arguments \n
-*  'value_range' and 'nbins'. \n
+*@brief This operation returns a rank 1 histogram counting the number of entries in `values`
+*  that fell into every bin.The bins are equal width and determined by the arguments
+*  'value_range' and 'nbins'.
 
 *@par Inputs:
 *Three inputs, including: \n
-*@li x: A Tensor of type float32,float16,int32.
-*@li range: A Tensor of type float32,float16,int32.
+*@li x: A Tensor of type float32, float16, int32, int64.
+*@li range: A Tensor of type float32,float16,int32, int64.
 *@li nbins: A Tensor of type int32.
 
 *@par Attributes:
 * dtype: An optional attribute. Defaults to "int32".
 
 *@par Outputs:
-*y: A Tensor. A Tensor of type int32.
+*y: A Tensor. A Tensor of type int32 or int64.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator HistogramFixedWidth.
 */
 REG_OP(HistogramFixedWidth)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
+    .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .INPUT(nbins, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT32}))
     .ATTR(dtype, String, "int32")
     .OP_END_FACTORY_REG(HistogramFixedWidth)
 
 /**
-*@brief This operation returns a rank 1 histogram counting the number of entries in `values` \n
-*  that fell into every bin.The bins are equal width and determined by the arguments \n
-*  'value_range' and 'nbins'. \n
+*@brief This operation returns a rank 1 histogram counting the number of entries in `values`
+*  that fell into every bin.The bins are equal width and determined by the arguments
+*  'value_range' and 'nbins'.
 
 *@par Inputs:
 *Two inputs, including: \n
-*@li x: A Tensor of type float32,float16,int32.
-*@li range: A Tensor of type float32,float16,int32.
+*@li x: A Tensor of type float32,float16,int32, int64.
+*@li range: A Tensor of type float32,float16,int32, int64.
 
 *@par Attributes:
 *@li dtype: An optional attribute. Defaults to "int32".
@@ -421,10 +456,12 @@ REG_OP(HistogramFixedWidth)
 *@par Outputs:
 *y: A Tensor. A Tensor of type int32.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator HistogramFixedWidth.
 */
 REG_OP(HistogramFixedWidthD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
+    .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT32}))
     .REQUIRED_ATTR(nbins, Int)
     .ATTR(dtype, String, "int32")
@@ -441,6 +478,8 @@ REG_OP(HistogramFixedWidthD)
 *@par Outputs:
 *output:A Tensor. Has the same type as x1.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NextAfter operator
 */
 REG_OP(NextAfter)
     .INPUT(x1, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -457,6 +496,8 @@ REG_OP(NextAfter)
  * *@par Outputs:
  * *y:A Tensor. Has the same shape as x.
  *
+ * *@par Third-party framework compatibility.
+ * *Compatible with tensorflow IsFinite operator.
  * */
 REG_OP(IsFinite)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -472,6 +513,8 @@ REG_OP(IsFinite)
  * *@par Outputs:
  * *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
  *
+ * *@par Third-party framework compatibility.
+ * *Compatible with tensorflow ComplexAbs operator.
  * */
 REG_OP(ComplexAbs)
     .INPUT(x, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
@@ -488,6 +531,8 @@ REG_OP(ComplexAbs)
  * *@par Outputs:
  * *y:A Tensor. Has the same shape as x.
  *
+ * *@par Third-party framework compatibility.
+ * *Compatible with tensorflow IsNan operator.
  * */
 REG_OP(IsNan)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -503,6 +548,8 @@ REG_OP(IsNan)
  * *@par Outputs:
  * *output:A Tensor. Has the same shape as input.
  *
+ * *@par Third-party framework compatibility.
+ * *Compatible with tensorflow Real operator.
  * */
 REG_OP(Real)
     .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
@@ -519,6 +566,8 @@ REG_OP(Real)
  * *@par Outputs:
  * *output:A Tensor. Has the same shape as input.
  *
+ * *@par Third-party framework compatibility.
+ * *Compatible with tensorflow output operator.
  * */
 REG_OP(Conj)
     .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
@@ -542,6 +591,8 @@ REG_OP(Conj)
  * *@li y: A Tensor. Must be the following type: float32.
  * *@li total_weight: A Tensor. Must be the type: float32.
  *
+ * *@par Third-party framework compatibility
+ * *Compatible with pytorch NLLLoss operator
  * */
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT}))
@@ -570,6 +621,8 @@ REG_OP(NLLLoss)
  * *One outputs, including:
  * *@li x_grad: A Tensor. Must be the following type: float32.
  *
+ * *@par Third-party framework compatibility
+ * *Compatible with pytorch NLLLossGrad operator
  * */
 REG_OP(NLLLossGrad)
     .INPUT(x, TensorType({DT_FLOAT}))

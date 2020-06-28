@@ -464,6 +464,24 @@ void GeTensorDesc::SetFormat(Format format) {
   }
 }
 
+void GeTensorDesc::SetName(const std::string &name) {
+  auto tensor_descriptor_msg = tensor_descriptor_.GetProtoMsg();
+  if (tensor_descriptor_msg != nullptr) {
+    tensor_descriptor_msg->set_name(name);
+    return;
+  }
+  GELOGW("[SetName]tensor_descriptor_msg is null.");
+}
+
+const std::string GeTensorDesc::GetName() const {
+  auto tensor_descriptor_msg = tensor_descriptor_.GetProtoMsg();
+  if (tensor_descriptor_msg != nullptr) {
+    return tensor_descriptor_msg->name();
+  }
+  GELOGW("[GetName]tensor_descriptor_msg is null.");
+  return "";
+}
+
 Format GeTensorDesc::GetOriginFormat() const {
   std::string origin_format_str;
   if (!AttrUtils::GetStr(this, TENSOR_UTILS_ORIGIN_FORMAT, origin_format_str)) {

@@ -27,9 +27,9 @@ extern "C" {
     The different framwork we adapted for.
 */
 typedef enum {
-  FMK_KERNEL_TYPE_T = 0,
-  FMK_KERNEL_TYPE_C = 10,
-  FMK_KERNEL_TYPE_P = 20,
+  FMK_KERNEL_TYPE_TF = 0,
+  FMK_KERNEL_TYPE_CF = 10,
+  FMK_KERNEL_TYPE_PT = 20,
   FMK_KERNEL_TYPE_RESERVED
 } FwkkernelType_t;
 

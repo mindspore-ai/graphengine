@@ -27,6 +27,7 @@
 namespace ge {
 namespace multibatch {
 Status ProcessMultiBatch(ComputeGraphPtr &graph);
+Status GetDynamicOutputShape(ComputeGraphPtr &graph);
 
 enum NodeStatus {
   kNodeInBatchBranch,

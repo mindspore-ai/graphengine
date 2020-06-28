@@ -34,6 +34,8 @@ the queue is open.
 *@par Outputs:
 *is_closed:A Tensor of type bool.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueIsClosed operator.
 */
 
 REG_OP(QueueIsClosed)
@@ -51,6 +53,8 @@ REG_OP(QueueIsClosed)
 *@par Outputs:
 *size:A Tensor of type int32.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueSize operator.
 */
 
 REG_OP(QueueSize)
@@ -76,6 +80,8 @@ the given name across multiple sessions.
 *@par Outputs:
 *handle:A Tensor of type mutable resource. The handle to a queue.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow FIFOQueue operator.
 */
 
 REG_OP(FIFOQueue)
@@ -101,6 +107,8 @@ the enqueued tensors should be taken.
 operation will block for up to timeout_ms milliseconds. Note: This option \n
 is not supported yet.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueEnqueue operator.
 */
 
 REG_OP(QueueEnqueue)
@@ -127,6 +135,8 @@ the enqueued tensors should be taken.
 operation will block for up to timeout_ms milliseconds. Note: This option \n
 is not supported yet.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueEnqueueMany operator.
 */
 
 REG_OP(QueueEnqueueMany)
@@ -156,6 +166,8 @@ component in a tuple.
 *@par Outputs:
 *components:A list of Tensor objects of type component_types.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueDequeue operator.
 */
 
 REG_OP(QueueDequeue)
@@ -187,6 +199,8 @@ component in a tuple.
 *@par Outputs:
 *components:A list of Tensor objects of type component_types.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueDequeueMany operator.
 */
 
 REG_OP(QueueDequeueMany)
@@ -219,6 +233,8 @@ component in a tuple.
 *@par Outputs:
 *components:A list of Tensor objects of type component_types.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueDequeueUpTo operator.
 */
 
 REG_OP(QueueDequeueUpTo)
@@ -255,6 +271,8 @@ match this name to the matching Unstage Op.
 
 *@see Unstage
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Stage operator.
 */
 
 REG_OP(Stage)
@@ -279,6 +297,8 @@ REG_OP(Stage)
 
 *@see Stage
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow StageClear operator.
 */
 
 REG_OP(StageClear)
@@ -307,6 +327,8 @@ container does not contain sufficient elements this op will block until it does.
 *@par Outputs:
 *y:A list of Tensor objects of type dtypes.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow StagePeek operator.
 */
 
 REG_OP(StagePeek)
@@ -334,6 +356,8 @@ REG_OP(StagePeek)
 *@par Outputs:
 *size:A Tensor of type int32.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow StageSize operator.
 */
 
 REG_OP(StageSize)
@@ -358,6 +382,8 @@ REG_OP(StageSize)
 *@par Outputs:
 *element:A Tensor of type elem_type.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow StackPop operator.
 */
 
 REG_OP(StackPop)
@@ -383,6 +409,8 @@ to false.
 *@par Outputs:
 *y:A Tensor. Has the same type as elem.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow StackPush operator.
 */
 
 REG_OP(StackPush)
@@ -403,6 +431,8 @@ REG_OP(StackPush)
 *The input handle must be type resource. Inputs include: \n
 *handle: A Tensor of type resource. The handle to a stack.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow StackClose operator.
 */
 
 REG_OP(StackClose)
@@ -423,6 +453,8 @@ REG_OP(StackClose)
 *@par Outputs:
 *handle: A Tensor of type resource. The handle to a stack.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Stack operator.
 */
 
 REG_OP(Stack)
@@ -452,6 +484,8 @@ DT_COMPLEX64, DT_COMPLEX128, DT_RESOURCE, DT_STRING.
 *@attention Constraints:\n
 *DynamicPartition runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator DynamicPartition.
 */
 
 REG_OP(DynamicPartition)
@@ -485,6 +519,8 @@ DT_QUINT8, DT_QINT8, DT_STRING, DT_COMPLEX64, DT_COMPLEX128.
 *@attention Constraints:\n
 *DynamicStitch runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator DynamicStitch.
 */
 
 REG_OP(DynamicStitch)
@@ -520,6 +556,8 @@ DT_COMPLEX64, DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT32.
 *@attention Constraints:\n
 *ParallelDynamicStitch runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ParallelDynamicStitch.
 */
 
 REG_OP(ParallelDynamicStitch)
@@ -541,12 +579,15 @@ REG_OP(ParallelDynamicStitch)
 *@par Attributes:An optional int that is >= 0. Defaults to "0".
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
+*@li dtypes: A list of tf.DTypes.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
 *@attention Constraints:\n
 *MapClear runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapClear.
 */
 
 REG_OP(MapClear)
@@ -563,6 +604,7 @@ REG_OP(MapClear)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
+*@li dtypes: A list of tf.DTypes.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -572,6 +614,8 @@ REG_OP(MapClear)
 *@attention Constraints:\n
 *MapIncompleteSize runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapIncompleteSize.
 */
 
 REG_OP(MapIncompleteSize)
@@ -596,6 +640,8 @@ REG_OP(MapIncompleteSize)
 *@par Outputs:
 *y: A list of Tensor objects of type dtypes.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Unstage operator.
 */
 
 REG_OP(Unstage)
@@ -629,6 +675,7 @@ DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32.
 Maximum number of elements in the Staging Area. If > 0, \n
 inserts on the container will block when the capacity is reached.
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
+*@li dtypes: A list of tf.DTypes.
 *@li container: An optional string. Defaults to "". \n
 If non-empty, this queue is placed in the given container. \n
 Otherwise, a default container is used.
@@ -638,6 +685,8 @@ It is necessary to match this name to the matching Unstage Op.
 *@attention Constraints:\n
 *MapStage runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapStage.
 */
 
 REG_OP(MapStage)
@@ -680,6 +729,8 @@ DT_QINT16, DT_QUINT16, DT_QINT32.
 *@attention Constraints:\n
 *MapUnstage runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapUnstage.
 */
 
 REG_OP(MapUnstage)
@@ -722,6 +773,8 @@ DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32.
 *@attention Constraints:\n
 *MapUnstageNoKey runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapUnstageNoKey.
 */
 
 REG_OP(MapUnstageNoKey)
@@ -750,6 +803,7 @@ REG_OP(MapUnstageNoKey)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
+*@li dtypes: A list of tf.DTypes that has length >= 1.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -763,6 +817,8 @@ DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32.
 *@attention Constraints:\n
 *MapPeek runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapPeek.
 */
 
 REG_OP(MapPeek)
@@ -786,6 +842,7 @@ REG_OP(MapPeek)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
+*@li dtypes: A list of tf.DTypes.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -795,6 +852,8 @@ REG_OP(MapPeek)
 *@attention Constraints:\n
 *MatMul runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator MapSize.
 */
 
 REG_OP(MapSize)
@@ -831,6 +890,8 @@ in the TensorArray will be expected to have have identical shapes.
 *@li handle: The handle to the TensorArray.
 *@li flow: A scalar used to control gradient flow.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArray operator.
 */
 
 REG_OP(TensorArray)
@@ -853,6 +914,8 @@ REG_OP(TensorArray)
 *handle: A Tensor of type resource. The handle to a TensorArray \n
 (output of TensorArray or TensorArrayGrad).
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayClose operator.
 */
 
 REG_OP(TensorArrayClose)
@@ -878,6 +941,8 @@ the first axis.
 *@li lengths: A vector of the row sizes of the original T elements in the \n
 value output.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayConcat operator.
 */
 
 REG_OP(TensorArrayConcat)
@@ -912,6 +977,8 @@ specified, gathering zero-size TensorArrays is an error.
 *value:  All of the elements in the TensorArray, concatenated along a new \n
 axis (the new dimension 0).
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayGather operator.
 */
 
 REG_OP(TensorArrayGather)
@@ -943,6 +1010,8 @@ TensorArray to return.
 *@li grad_handle: A Tensor of type resource.
 *@li flow_out: A Tensor of type float.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayGrad operator.
 */
 
 REG_OP(TensorArrayGrad)
@@ -966,6 +1035,8 @@ REG_OP(TensorArrayGrad)
 *@par Outputs:
 *flow_out: A float scalar that enforces proper chaining of operations.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayWrite operator.
 */
 
 REG_OP(TensorArrayWrite)
@@ -998,6 +1069,8 @@ TensorArray to return.
 *@li grad_handle: A Tensor of type resource.
 *@li flow_out: A Tensor of type float.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayGradWithShape operator.
 */
 
 REG_OP(TensorArrayGradWithShape)
@@ -1024,6 +1097,8 @@ REG_OP(TensorArrayGradWithShape)
 *@par Outputs:
 *y: A Tensor of type dtype.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayRead operator.
 */
 
 REG_OP(TensorArrayRead)
@@ -1050,6 +1125,8 @@ elements.
 *@par Outputs:
 *flow_out: A float scalar that enforces proper chaining of operations.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArrayScatter operator.
 */
 
 REG_OP(TensorArrayScatter)
@@ -1076,6 +1153,8 @@ the TensorArray.
 *@par Outputs:
 *flow_out: A float scalar that enforces proper chaining of operations.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArraySplit operator.
 */
 
 REG_OP(TensorArraySplit)
@@ -1099,6 +1178,8 @@ REG_OP(TensorArraySplit)
 *@par Outputs:
 *size: The number of elements in a TensorArray..
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow TensorArraySize operator.
 */
 
 REG_OP(TensorArraySize)
@@ -1124,6 +1205,8 @@ be stored in this queue.
 *@par Outputs:
 *handle: A Tensor of type resource. The handle to a stack.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow RandomShuffleQueue operator.
 */
 
 REG_OP(RandomShuffleQueue)
@@ -1164,6 +1247,8 @@ will be shared under the given name across multiple sessions.
 *@attention Constraints:\n
 *PaddingFIFOQueue runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator PaddingFIFOQueue.
 */
 
 REG_OP(PaddingFIFOQueue)
@@ -1179,6 +1264,7 @@ REG_OP(PaddingFIFOQueue)
 *@brief A queue that produces elements sorted by the first component value.
 
 *@par Attributes:
+*@li component_types: An optional list of tf.DTypes. Defaults to {}. \n
 The type of each component in a value.
 *@li shapes: A list of shapes for each component of a queue element.
 The length of this attr must be either 0 or the same as the length of \n
@@ -1195,6 +1281,8 @@ queue will be shared under the given name across multiple sessions.
 *@attention Constraints:\n
 *PriorityQueue runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator PriorityQueue.
 */
 
 REG_OP(PriorityQueue)
@@ -1221,6 +1309,8 @@ the given queue will be canceled.
 *@attention Constraints:\n
 *QueueClose runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator QueueClose.
 */
 
 REG_OP(QueueClose)
@@ -1257,6 +1347,8 @@ It is necessary to match this name to the matching Unstage Op.
 *@attention Constraints:\n
 *OrderedMapStage runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapStage.
 */
 
 REG_OP(OrderedMapStage)
@@ -1290,6 +1382,8 @@ REG_OP(OrderedMapStage)
 *@attention Constraints:\n
 *OrderedMapSize runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapSize.
 */
 
 REG_OP(OrderedMapSize)
@@ -1314,6 +1408,8 @@ REG_OP(OrderedMapSize)
 *@attention Constraints:\n
 *OrderedMapClear runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapClear.
 */
 
 REG_OP(OrderedMapClear)
@@ -1341,6 +1437,8 @@ REG_OP(OrderedMapClear)
 *OrderedMapIncompleteSize runs on the Ascend AI CPU, \n
 which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapIncompleteSize.
 */
 
 REG_OP(OrderedMapIncompleteSize)
@@ -1376,6 +1474,8 @@ DT_COMPLEX64, DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT
 *@attention Constraints:\n
 *OrderedMapPeek runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapPeek.
 */
 
 REG_OP(OrderedMapPeek)
@@ -1418,6 +1518,8 @@ DT_COMPLEX64, DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT
 *OrderedMapUnstageNoKey runs on the Ascend AI CPU, \n
 which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapUnstageNoKey.
 */
 
 REG_OP(OrderedMapUnstageNoKey)
@@ -1446,6 +1548,7 @@ REG_OP(OrderedMapUnstageNoKey)
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
 *@li memory_limit: An optional int that is >= 0. Defaults to "0".
+*@li dtypes: A list of tf.DTypes that has length >= 1.
 *@li container: An optional string. Defaults to "".
 *@li shared_name: An optional string. Defaults to "".
 
@@ -1457,6 +1560,8 @@ DT_FLOAT16, DT_DOUBLE, DT_BOOL, DT_UINT32, DT_UINT64.
 *@attention Constraints:\n
 *OrderedMapUnstage runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator OrderedMapUnstage.
 */
 
 REG_OP(OrderedMapUnstage)
@@ -1496,6 +1601,8 @@ the given name across multiple sessions.
 *@attention Constraints:\n
 *Barrier runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Barrier.
 */
 
 REG_OP(Barrier)
@@ -1526,6 +1633,8 @@ DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128,  DT_RESOURCE, DT_STRING.
 *@attention Constraints:\n
 *BarrierInsertMany runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BarrierInsertMany.
 */
 
 REG_OP(BarrierInsertMany)
@@ -1572,6 +1681,8 @@ DT_RESOURCE, DT_STRING.
 *@attention Constraints:\n
 *BarrierTakeMany runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BarrierTakeMany.
 */
 
 REG_OP(BarrierTakeMany)
@@ -1605,6 +1716,8 @@ even if no new key is introduced.
 *@attention Constraints:\n
 *BarrierClose runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BarrierClose.
 */
 
 REG_OP(BarrierClose)
@@ -1625,6 +1738,8 @@ REG_OP(BarrierClose)
 *@attention Constraints:\n
 *BarrierReadySize runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BarrierReadySize.
 */
 
 REG_OP(BarrierReadySize)
@@ -1645,6 +1760,8 @@ REG_OP(BarrierReadySize)
 *@attention Constraints:\n
 *BarrierIncompleteSize runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BarrierIncompleteSize.
 */
 
 REG_OP(BarrierIncompleteSize)
@@ -1672,6 +1789,8 @@ compression for the file. Currently ZLIB and GZIP are supported.
 *@par Outputs:
 *records: A Tensor of type string.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow RecordInput operator.
 */
 
 REG_OP(RecordInput)
@@ -1703,6 +1822,8 @@ name across multiple sessions.
 *@attention Constraints:\n
 *ConditionalAccumulator runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ConditionalAccumulator.
 */
 
 REG_OP(ConditionalAccumulator)
@@ -1735,6 +1856,8 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE
 *AccumulatorApplyGradient runs on the Ascend AI CPU, \n
 which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AccumulatorApplyGradient.
 */
 
 REG_OP(AccumulatorApplyGradient)
@@ -1759,6 +1882,8 @@ in the given accumulator.
 *AccumulatorNumAccumulated runs on the Ascend AI CPU, \n
 which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AccumulatorNumAccumulated.
 */
 
 REG_OP(AccumulatorNumAccumulated)
@@ -1777,6 +1902,8 @@ REG_OP(AccumulatorNumAccumulated)
 *@attention Constraints:\n
 *AccumulatorSetGlobalStep runs on the Ascend AI CPU, which delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AccumulatorSetGlobalStep.
 */
 
 REG_OP(AccumulatorSetGlobalStep)
@@ -1806,6 +1933,8 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE.
 *AccumulatorTakeGradient runs on the Ascend AI CPU,
 \nwhich delivers poor performance.\n
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AccumulatorTakeGradient.
 */
 
 REG_OP(AccumulatorTakeGradient)
@@ -1831,6 +1960,8 @@ default is "MEAN".
 *@par Outputs:
 *handle: The handle to the accumulator.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SparseConditionalAccumulator operator.
 */
 
 REG_OP(SparseConditionalAccumulator)
@@ -1863,6 +1994,8 @@ unknown, in which case the input is ignored during validation.
 *@li dtype: The data type of accumulated gradients. Needs to correspond to \n
 the type of the accumulator.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SparseAccumulatorApplyGradient operator.
 */
 
 REG_OP(SparseAccumulatorApplyGradient)
@@ -1895,6 +2028,8 @@ type of the accumulator.
 *@li values: Values of the average of the accumulated sparse gradients.
 *@li shape: Shape of the average of the accumulated sparse gradients.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SparseAccumulatorTakeGradient operator.
 */
 
 REG_OP(SparseAccumulatorTakeGradient)
@@ -1925,6 +2060,8 @@ name across multiple sessions.
 *@attention Constraints:
 *ResourceConditionalAccumulator runs on the Ascend AI CPU, which delivers poor performance.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ResourceConditionalAccumulator.
 */
 
 REG_OP(ResourceConditionalAccumulator)
@@ -1950,6 +2087,8 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE
 *@attention Constraints:
 *ResourceAccumulatorApplyGradient runs on the Ascend AI CPU, which delivers poor performance.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ResourceAccumulatorApplyGradient.
 */
 
 REG_OP(ResourceAccumulatorApplyGradient)
@@ -1970,6 +2109,8 @@ REG_OP(ResourceAccumulatorApplyGradient)
 *@attention Constraints:
 *ResourceAccumulatorNumAccumulated runs on the Ascend AI CPU, which delivers poor performance.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ResourceAccumulatorNumAccumulated.
 */
 
 REG_OP(ResourceAccumulatorNumAccumulated)
@@ -1987,6 +2128,8 @@ REG_OP(ResourceAccumulatorNumAccumulated)
 *@attention Constraints:
 *ResourceAccumulatorSetGlobalStep runs on the Ascend AI CPU, which delivers poor performance.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ResourceAccumulatorSetGlobalStep.
 */
 
 REG_OP(ResourceAccumulatorSetGlobalStep)
@@ -2013,6 +2156,8 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE.
 *@attention Constraints:
 *ResourceAccumulatorTakeGradient runs on the Ascend AI CPU, which delivers poor performance.
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator ResourceAccumulatorTakeGradient.
 */
 
 REG_OP(ResourceAccumulatorTakeGradient)
@@ -2037,6 +2182,8 @@ bool, double, string.
 *@attention Constraints:\n
 *-The implementation for OutfeedEnqueueOp on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow OutfeedEnqueueOp operator.
 */
 REG_OP(OutfeedEnqueueOp)
   .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8,

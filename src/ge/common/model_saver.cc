@@ -26,6 +26,7 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
+#include "common/util/error_manager/error_manager.h"
 
 namespace ge {
 const uint32_t kInteval = 2;
@@ -41,10 +42,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   try {
     model_str = model.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
   } catch (std::exception &e) {
-    GELOGE(FAILED, "Transfer json to string failed, reason: %s.", e.what());
+    ErrorManager::GetInstance().ATCReportErrMessage("E19007", {"exception"}, {e.what()});
+    GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
     return FAILED;
   } catch (...) {
-    GELOGE(FAILED, "Transfer json to string failed.");
+    ErrorManager::GetInstance().ATCReportErrMessage("E19008");
+    GELOGE(FAILED, "Failed to convert JSON to string.");
     return FAILED;
   }
 
@@ -57,6 +60,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   mode_t mode = S_IRUSR | S_IWUSR;
   int32_t fd = mmOpen2(real_path, O_RDWR | O_CREAT | O_TRUNC, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"filepath", "errMsg"}, {file_path, strerror(errno)});
     GELOGE(FAILED, "Open file failed. file path : %s, %s", file_path, strerror(errno));
     return FAILED;
   }
@@ -65,6 +69,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   // Write data to file
   mmSsize_t mmpa_ret = mmWrite(fd, const_cast<void *>((const void *)model_char), len);
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E19003", {"mmpa_ret", "errMsg"},
+                                                    {std::to_string(mmpa_ret), strerror(errno)});
     // Need to both print the error info of mmWrite and mmClose, so return ret after mmClose
     GELOGE(FAILED, "Write to file failed. errno = %d, %s", mmpa_ret, strerror(errno));
     ret = FAILED;

@@ -106,7 +106,6 @@ Status HybridModelExecutor::ResetExecutionContext(GraphExecutionContext &context
   context.execution_queue.Restart();
   GE_CHK_STATUS_RET_NOLOG(context.callback_manager->Init());
 
-  // TODO do not re-assign Consts every run
   for (auto const_node : model.GetConstNodes()) {
     auto weight_tensor = model.GetWeight(const_node);
     GE_CHECK_NOTNULL(weight_tensor);

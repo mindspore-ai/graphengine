@@ -41,6 +41,9 @@ a single feature.
 
 *@attention Constraints: \n
 *BoostedTreesBucketize runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator BoostedTreesBucketize.
 */
 
 REG_OP(BoostedTreesBucketize)

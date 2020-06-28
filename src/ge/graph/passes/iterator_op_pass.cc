@@ -72,9 +72,19 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
         VarManager::Instance(graph->GetSessionID())->GetCurVarDesc(NODE_NAME_FLOWCTRL_LOOP_PER_ITER, ge_tensor_desc);
       GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Fail to Get var_desc of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
                       continue);
+      Status ret;
+      ret = SetRtContext(rtContext_t(), RT_CTX_NORMAL_MODE);
+
+      // EOS will not be considered if ret is not SUCCESS.
+      GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGW("Set rt context RT_CTX_GEN_MODE failed."); continue);
 
       status =
         GetVariableValue(graph->GetSessionID(), ge_tensor_desc, NODE_NAME_FLOWCTRL_LOOP_PER_ITER, &loop_per_iter);
+      ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE);
+
+      // The following process will be affected if ret is not SUCCESS.
+      GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "Set rt context RT_CTX_GEN_MODE failed."); return ret);
+
       GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Get variable value of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
                       continue);
       GELOGI("The value of NODE_NAME_FLOWCTRL_LOOP_PER_ITER is %ld", loop_per_iter);
@@ -107,18 +117,8 @@ Status IteratorOpPass::GetVariableValue(uint64_t session_id, const ge::GeTensorD
   auto logic_var_base = VarManager::Instance(session_id)->GetVarMemLogicBase();
   // devcice_addr
   uint8_t *variable_addr = static_cast<uint8_t *>(var_mem_base + offset - logic_var_base);
-  Status ret;
-  ret = SetRtContext(rtContext_t(), RT_CTX_NORMAL_MODE);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Set rt context RT_CTX_NORMAL_MODE failed.");
-    return ret;
-  }
+
   GE_CHK_RT_RET(rtMemcpy(dest, sizeof(int64_t), variable_addr, sizeof(int64_t), RT_MEMCPY_DEVICE_TO_HOST));
-  ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Set rt context RT_CTX_GEN_MODE failed.");
-    return ret;
-  }
   return SUCCESS;
 }
 

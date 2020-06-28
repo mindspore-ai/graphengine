@@ -231,7 +231,7 @@ using cce::ccStatus_t;
       DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
       exec_expr;                                           \
     }                                                      \
-  }
+  };
 
 // If expr is not RT_ERROR_NONE, print the log and return
 #define GE_CHK_RT_RET(expr)                                \
@@ -259,7 +259,7 @@ using cce::ccStatus_t;
     if (expr) {                          \
       exec_expr;                         \
     }                                    \
-  }
+  };
 
 // If make_shared is abnormal, print the log and execute the statement
 #define GE_MAKE_SHARED(exec_expr0, exec_expr1) \

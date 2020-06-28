@@ -26,6 +26,8 @@ class SliceKernel : public Kernel {
  public:
   Status Compute(const OpDescPtr attr, const std::vector<ConstGeTensorPtr> &input,
                  vector<GeTensorPtr> &v_output) override;
+
+  Status CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr);
 };
 }  // namespace ge
 

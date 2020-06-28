@@ -17,8 +17,8 @@
 #include "graph/passes/cond_remove_pass.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/utils/type_utils.h"
 #include "graph/utils/node_utils.h"
+#include "graph/utils/type_utils.h"
 
 namespace {
 const uint32_t kConditionIndexNum = 1;

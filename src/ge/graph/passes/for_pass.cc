@@ -42,7 +42,6 @@ const std::string kAbs = "Abs";
 
 namespace ge {
 Status ForPass::Run(NodePtr &node) {
-  GE_CHECK_NOTNULL(node->GetOpDesc());
   if (node->GetType() != FOR) {
     GELOGD("no need for_pass for node %s.", node->GetName().c_str());
     return SUCCESS;
@@ -78,6 +77,7 @@ Status ForPass::Run(NodePtr &node) {
                     node->GetName().c_str());
 
   // for node has and only has one subgraph
+  GE_CHECK_NOTNULL(node->GetOpDesc());
   node->GetOpDesc()->RemoveSubgraphInstanceName(node->GetOpDesc()->GetSubgraphInstanceName(0));
 
   GELOGI("Transfer for_op to while_op succ, node:%s.", node->GetName().c_str());

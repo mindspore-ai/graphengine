@@ -80,6 +80,7 @@ class StreamAllocator {
 
   Status GetMaxStreamAndTask(bool huge_stream, uint32_t &max_stream_count, uint32_t &max_task_count);
   int64_t GetMaxNodeNumPerStream(const NodePtr &node, uint32_t max_node_num_one_stream);
+  void AddNodeNum(const NodePtr &node, int64_t &node_num);
 
   void AddSendEventId(const NodePtr &node, uint32_t event_id);
   void AddRecvEventId(const NodePtr &node, uint32_t event_id);

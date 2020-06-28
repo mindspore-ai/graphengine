@@ -33,6 +33,8 @@ namespace ge {
 *@par Outputs:
 *y: A vector Tensor. 1D. Has the same type as "values".
 
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator SparseSoftmax.
 */
 REG_OP(SparseSoftmax)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -54,6 +56,8 @@ REG_OP(SparseSoftmax)
 *@par Outputs:
 *y: A matrix Tensor. Has the same type and same shape as "x2".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseTensorDenseAdd.
 */
 
 REG_OP(SparseTensorDenseAdd)
@@ -79,6 +83,8 @@ REG_OP(SparseTensorDenseAdd)
 *@li y_indices: The indices of the SparseTensor. Has the same type as "indices".
 *@li y_values: The values of the SparseTensorr. Has the same type as "values".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseReorder.
 */
 REG_OP(SparseReorder)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -104,6 +110,8 @@ REG_OP(SparseReorder)
 *@li y_indices: A Tensor of type int64. The indices of the new dense shape.
 *@li y_shape: A Tensor of type int64. The shape of the new dense shape.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseReshape.
 */
 REG_OP(SparseReshape)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -126,6 +134,8 @@ REG_OP(SparseReshape)
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1_values".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseDenseCwiseAdd.
 */
 REG_OP(SparseDenseCwiseAdd)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -153,6 +163,8 @@ REG_OP(SparseDenseCwiseAdd)
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1_values".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseDenseCwiseDiv.
 */
 REG_OP(SparseDenseCwiseDiv)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -180,6 +192,8 @@ REG_OP(SparseDenseCwiseDiv)
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1_values".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseDenseCwiseMul.
 */
 REG_OP(SparseDenseCwiseMul)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -211,6 +225,8 @@ REG_OP(SparseDenseCwiseMul)
 *@par Outputs:
 *handle: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator AddSparseToTensorsMap.
 */
 REG_OP(AddSparseToTensorsMap)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -235,6 +251,8 @@ REG_OP(AddSparseToTensorsMap)
 *@par Outputs:
 *y_grad: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseSliceGrad.
 */
 REG_OP(SparseSliceGrad)
     .INPUT(backprop_val_grad, TensorType({ DT_INT8, DT_UINT8, DT_INT16,
@@ -263,6 +281,8 @@ REG_OP(SparseSliceGrad)
 *y_values: A Tensor. Has the same type as "values".
 *y_values: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseSlice.
 */
 REG_OP(SparseSlice)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -292,6 +312,8 @@ REG_OP(SparseSlice)
 *x1_val_grad: A Tensor. Has the same type as "backprop_val_grad".
 *x2_val_grad: A Tensor. Has the same type as "backprop_val_grad".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseAddGrad.
 */
 REG_OP(SparseAddGrad)
     .INPUT(backprop_val_grad, TensorType({DT_INT8, DT_INT16, DT_INT32,
@@ -316,6 +338,8 @@ REG_OP(SparseAddGrad)
 *@li y_value: A Tensor. Has the same type as "grad_values".
 *@li y_default_value: A Tensor. Has the same type as "grad_values".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseFillEmptyRowsGrad.
 */
 REG_OP(SparseFillEmptyRowsGrad)
     .INPUT(reverse_index_map, TensorType({DT_INT64}))
@@ -349,6 +373,8 @@ REG_OP(SparseFillEmptyRowsGrad)
 *@li adjoint_b: An optional bool. Defaults to "False".Use the adjoint of B in the matrix multiply.
 *@li If B is complex, this is transpose(conj(B)). Otherwise it is transpose(B).
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseTensorDenseMatMul.
 */
 REG_OP(SparseTensorDenseMatMul)
     .INPUT(x1_indices, TensorType({DT_INT32, DT_INT64}))
@@ -376,6 +402,8 @@ REG_OP(SparseTensorDenseMatMul)
 *@par Outputs:
 *y: A Tensor. Has the same type as "values".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseToDense.
 */
 REG_OP(SparseToDense)
     .INPUT(indices, TensorType({DT_INT32, DT_INT64}))
@@ -411,6 +439,8 @@ REG_OP(SparseToDense)
 * @li y_values:A `Tensor`. Has the same type as `values`.
 * @li y_shape:A `Tensor` of type `int64`.
 
+*@par Third-party framework compatibility
+* Compatible SparseConcat operator in Tensorflow
 */
 REG_OP(SparseConcat)
     .DYNAMIC_INPUT(indices, TensorType({DT_INT64}))
@@ -452,6 +482,8 @@ REG_OP(SparseConcat)
 * @li sum_values:A `Tensor`. Has the same type as `x1_values`.
 * @li sum_shape:A `Tensor` of type `int64`.
 
+*@par Third-party framework compatibility
+* Compatible SparseAdd operator in Tensorflow
 */
 REG_OP(SparseAdd)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -488,6 +520,8 @@ REG_OP(SparseAdd)
 * @li empty_row_indicator:A `Tensor` of type `bool`.
 * @li reverse_index_map:A `Tensor` of type `int64`.
 
+*@par Third-party framework compatibility
+* Compatible SparseFillEmptyRows operator in Tensorflow
 */
 REG_OP(SparseFillEmptyRows)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -527,6 +561,8 @@ REG_OP(SparseFillEmptyRows)
 * @li y_indices:A `Tensor` of type `int64`.
 * @li y_values:A `Tensor`. Has the same type as `x1_values`.
 
+*@par Third-party framework compatibility
+* Compatible SparseSparseMaximum operator in Tensorflow
 */
 REG_OP(SparseSparseMaximum)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -561,6 +597,8 @@ REG_OP(SparseSparseMaximum)
 * @li y_indices:A `Tensor` of type `int64`.
 * @li y_values:A `Tensor`. Has the same type as `x1_values`.
 
+*@par Third-party framework compatibility
+* Compatible SparseSparseMinimum operator in Tensorflow
 */
 REG_OP(SparseSparseMinimum)
     .INPUT(x1_indices, TensorType({DT_INT64}))
@@ -600,6 +638,8 @@ REG_OP(SparseSparseMinimum)
 *@par Outputs:
 * y:A `Tensor`. Has the same type as `input_values`.
 
+*@par Third-party framework compatibility
+* Compatible SparseReduceMax operator in Tensorflow
 */
 REG_OP(SparseReduceMax)
     .INPUT(x_indices, TensorType({DT_INT64}))
@@ -635,6 +675,8 @@ REG_OP(SparseReduceMax)
 * @li y_values:A `Tensor`. Has the same type as `input_values`.
 * @li y_shape:A `Tensor` of type `int64`.
 
+*@par Third-party framework compatibility
+* Compatible SparseReduceMaxSparse operator in Tensorflow
 */
 REG_OP(SparseReduceMaxSparse)
     .INPUT(x_indices, TensorType({DT_INT64}))
@@ -672,6 +714,8 @@ REG_OP(SparseReduceMaxSparse)
 * @li y_values: A Tensor. Has the same type as "input_values".
 * @li y_shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseReduceSum.
 */
 REG_OP(SparseReduceSum)
     .INPUT(x_indices, TensorType({DT_INT64}))
@@ -709,6 +753,8 @@ REG_OP(SparseReduceSum)
 * @li y_values: A Tensor. Has the same type as "input_values".
 * @li y_shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseReduceSumSparse.
 */
 REG_OP(SparseReduceSumSparse)
     .INPUT(x_indices, TensorType({DT_INT64}))
@@ -745,6 +791,8 @@ REG_OP(SparseReduceSumSparse)
 * @li y_values: A list of "num_split" Tensor objects with the same type as "values".
 * @li y_shape: A list of "num_split" Tensor objects of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseSplit.
 */
 REG_OP(SparseSplit)
     .INPUT(split_dim, TensorType({DT_INT64}))
@@ -790,6 +838,8 @@ REG_OP(SparseSplit)
 * @li output_values: A Tensor of type "out_type".
 * @li output_shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SparseCross.
 */
 REG_OP(SparseCross)
     .DYNAMIC_INPUT(indices, TensorType({DT_INT64}))
@@ -826,6 +876,8 @@ REG_OP(SparseCross)
 *@par Outputs:
 * handles: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator AddManySparseToTensorsMap.
 */
 REG_OP(AddManySparseToTensorsMap)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -847,6 +899,7 @@ REG_OP(AddManySparseToTensorsMap)
 * The "N" serialized SparseTensor objects.
 
 *@par Attributes:
+* @li dtype: A tf.DType. The "dtype" of the SparseTensor objects stored in the "SparseTensorsMap".
 * @li container: An optional string. Defaults to "". \n
 *The container name for the "SparseTensorsMap" read by this op.
 * @li shared_name: An optional string. Defaults to "". \n
@@ -857,6 +910,8 @@ REG_OP(AddManySparseToTensorsMap)
 * @li values: A Tensor of type "dtype".
 * @li shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator TakeManySparseFromTensorsMap.
 */
 REG_OP(TakeManySparseFromTensorsMap)
     .INPUT(handles, TensorType({DT_INT64}))
@@ -884,6 +939,8 @@ REG_OP(TakeManySparseFromTensorsMap)
 *@par Outputs:
 * serialized_sparse: A Tensor of type "out_type".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SerializeSparse.
 */
 REG_OP(SerializeSparse)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -910,6 +967,8 @@ REG_OP(SerializeSparse)
 *@par Outputs:
 * serialized_sparse: A Tensor of type "out_type".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SerializeManySparse.
 */
 REG_OP(SerializeManySparse)
     .INPUT(indices, TensorType({DT_INT64}))
@@ -937,6 +996,8 @@ REG_OP(SerializeManySparse)
 * @li values: A Tensor of type "dtype".
 * @li shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator DeserializeSparse.
 */
 REG_OP(DeserializeSparse)
     .INPUT(serialized_sparse, TensorType({DT_STRING}))
@@ -964,6 +1025,8 @@ REG_OP(DeserializeSparse)
 * @li values: A Tensor of type "dtype".
 * @li shape: A Tensor of type int64.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator DeserializeManySparse.
 */
 REG_OP(DeserializeManySparse)
     .INPUT(serialized_sparse, TensorType({DT_STRING}))

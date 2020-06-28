@@ -42,7 +42,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   }
   // check input size
   if (input.size() != kSliceInputSize) {
-    GELOGE(PARAM_INVALID, "The number of input for slice must be %zu.", kSliceInputSize);
+    GELOGW("The number of input for slice must be %zu.", kSliceInputSize);
     return NOT_CHANGED;
   }
 
@@ -50,7 +50,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   ConstGeTensorPtr begin = input[kSliceInputIndexBegin];
   ConstGeTensorPtr size = input[kSliceInputIndexSize];
   if (x_ == nullptr || begin == nullptr || size == nullptr) {
-    GELOGE(PARAM_INVALID, "input tensor is nullptr.");
+    GELOGW("input tensor is nullptr.");
     return NOT_CHANGED;
   }
 
@@ -58,7 +58,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   auto data_type = x_->GetTensorDesc().GetDataType();
   // check data type of begin and size
   if (begin->GetTensorDesc().GetDataType() != DT_INT32 || size->GetTensorDesc().GetDataType() != DT_INT32) {
-    GELOGE(PARAM_INVALID, "Data type of begin and size for slice are not DT_INT32.");
+    GELOGW("Data type of begin and size for slice are not DT_INT32.");
     return NOT_CHANGED;
   }
 
@@ -75,7 +75,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   const ge::GeShape &x_shape = x_->GetTensorDesc().GetShape();
   size_t dim_size = x_shape.GetDimNum();
   if (dim_size != begin_size || dim_size != size_size) {
-    GELOGE(PARAM_INVALID, "Data type of begin and size for slice are not DT_INT32.");
+    GELOGW("Data type of begin and size for slice are not DT_INT32.");
     return NOT_CHANGED;
   }
 
@@ -103,18 +103,35 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   GeTensorDesc output_tensor_desc(output_shape, FORMAT_NCHW, data_type);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed, node name %s.", attr->GetName().c_str());
+    GELOGW("make_shared ge::GeTensor failed, node name %s.", attr->GetName().c_str());
     return NOT_CHANGED;
   }
-  Status ret = OpUtils::SetOutputSliceData(data, static_cast<int64_t>(data_size), data_type, input_dims, begin_vec,
-                                           output_dims, output_ptr.get(), stride_vec);
+
+  Status ret = CheckOutputDims(output_dims, attr);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "SetOutputSliceData failed.");
+    return ret;
+  }
+
+  ret = OpUtils::SetOutputSliceData(data, static_cast<int64_t>(data_size), data_type, input_dims, begin_vec,
+                                    output_dims, output_ptr.get(), stride_vec);
+  if (ret != SUCCESS) {
+    GELOGW("SetOutputSliceData failed.");
     return NOT_CHANGED;
   }
   v_output.push_back(output_ptr);
   GELOGI("SliceKernel success.");
   return SUCCESS;
+}
+
+Status SliceKernel::CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr) {
+  // check dim not all less than 0
+  for (auto dim : output_dims) {
+    if (dim > 0) {
+      return SUCCESS;
+    }
+  }
+  GELOGW("all output dim <=0, can't be processed. op_name : %s", attr->GetName().c_str());
+  return NOT_CHANGED;
 }
 
 REGISTER_KERNEL(SLICE, SliceKernel);

@@ -42,6 +42,8 @@ triangular part of the innermost matrices of this tensor.
 *The input x is a tensor of shape [..., M, M] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow CholeskyGrad operator.
 */
 
 REG_OP(CholeskyGrad)
@@ -65,6 +67,8 @@ is [..., M, M].
 *The input x is a tensor of shape [..., M, M] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Cholesky operator.
 */
 
 REG_OP(Cholesky)
@@ -90,6 +94,8 @@ form square matrices. Inputs include: \n
 *The input x is a tensor of shape [N, M, M] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow LogMatrixDeterminant operator.
 */
 
 REG_OP(LogMatrixDeterminant)
@@ -114,6 +120,8 @@ form square matrices. Inputs include: \n
 *The input x is a tensor of shape [..., M, M] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow MatrixDeterminant operator.
 */
 
 REG_OP(MatrixDeterminant)
@@ -142,6 +150,8 @@ deal with matrix or its (block-wise) adjoint.
 *The input x is a tensor of shape [..., M, M] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow MatrixInverse operator.
 */
 
 REG_OP(MatrixInverse)
@@ -170,6 +180,8 @@ solve with matrix or its (block-wise) adjoint.
 *The input matrix is a tensor of shape [..., M, M] whose inner-most 2 \n
 dimensions form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow MatrixSolve operator.
 */
 
 REG_OP(MatrixSolve)
@@ -200,6 +212,8 @@ rhs[..., :, :] in the least squares sense.
 *The input matrix matrix is a tensor of shape [..., M, M] whose inner-most 2 \n
 dimensions form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow MatrixSolveLs operator.
 */
 
 REG_OP(MatrixSolveLs)
@@ -233,6 +247,8 @@ with matrix or its (block-wise) adjoint.
 *The input matrix is a tensor of shape [..., M, M] whose inner-most 2 \n
 dimensions form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow MatrixTriangularSolve operator.
 */
 
 REG_OP(MatrixTriangularSolve)
@@ -264,6 +280,8 @@ columns of q.
 *The input matrix x is a tensor of shape [..., M, N] whose inner-most 2 \n
 dimensions form matrices of size [M, N]. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Qr operator.
 */
 
 REG_OP(Qr)
@@ -293,6 +311,8 @@ contain eigenvectors of the corresponding matrices in tensor
 *The input x is a tensor of shape [..., N, N] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SelfAdjointEig operator.
 */
 
 REG_OP(SelfAdjointEig)
@@ -329,6 +349,8 @@ returned if compute_uv is False.
 *The input x is a tensor of shape [..., N, N] whose inner-most 2 dimensions \n
 form square matrices. \n
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow Svd operator
 */
 
 REG_OP(Svd)
@@ -353,6 +375,8 @@ denotes the lower triangular factor `L` with unit diagonal.
 *@li p: upper triangular part denotes the upper triangular factor `U`.Permutation \n
 of the rows encoded as a list of indices in `0..M-1`. Shape is `[..., M]`.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow Lu operator.
 */
 
 REG_OP(Lu)
@@ -371,6 +395,8 @@ REG_OP(Lu)
 *@par Outputs:
 y: Shape is `[..., M, M]`.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow MatrixSquareRoot operator.
 */
 
 REG_OP(MatrixSquareRoot)
@@ -392,6 +418,8 @@ left-hand side.
 *@par Outputs:
 y: Tensor of shape `[..., M, K]` containing the solutions
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow TridiagonalSolve operator.
 */
 
 REG_OP(TridiagonalSolve)

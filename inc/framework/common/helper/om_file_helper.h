@@ -59,15 +59,14 @@ class OmFileLoadHelper {
 
   Status GetModelPartition(ModelPartitionType type, ModelPartition &partition);
 
+  OmFileContext context_;
+
  private:
   Status CheckModelValid(const ge::ModelData &model) const;
 
   Status LoadModelPartitionTable(uint8_t *model_data, const uint32_t model_data_size);
 
   bool is_inited_{false};
-
- public:
-  OmFileContext context_;
 };
 
 class OmFileSaveHelper {

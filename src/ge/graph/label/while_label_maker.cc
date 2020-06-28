@@ -98,7 +98,7 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
     return FAILED;
   }
 
-  NodePtr cond_out_node = cond_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr cond_out_node = cond_graph->FindFirstNodeMatchType(NETOUTPUT);
   GE_CHECK_NOTNULL(cond_out_node);
   OpDescPtr cond_out_desc = cond_out_node->GetOpDesc();
   GE_CHECK_NOTNULL(cond_out_desc);

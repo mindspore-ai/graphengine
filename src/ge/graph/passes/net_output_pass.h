@@ -66,6 +66,16 @@ class NetOutputPass : public GraphPass {
   Status GetOutputNode(const ge::ComputeGraphPtr &graph, std::vector<RetvalInfo> &output_nodes_info);
 
   ///
+  /// Get the output node of the graph
+  /// @param [in] graph: Input ComputeGraph
+  /// @param [in/out] net_output_desc: output netoutput node <NodePtr, index> pair
+  /// @return SUCCESS: Execution succeed
+  /// @return OTHERS:  Execution failed
+  /// @author
+  ///
+  Status CreateNetOutputNode(OpDescPtr &net_output_desc, ge::ComputeGraphPtr &graph);
+
+  ///
   /// Check if the network output node is legal
   /// @param [in] graph: Input ComputeGraph
   /// @param [in] outputs: Output node information of graph

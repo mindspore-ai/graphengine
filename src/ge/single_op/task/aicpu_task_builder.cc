@@ -48,7 +48,7 @@ Status AiCpuTaskBuilder::SetInputOutputAddr(void **io_addr, const std::vector<vo
 
 Status AiCpuTaskBuilder::SetFmkOpKernel(void *io_addr, void *ws_addr, STR_FWK_OP_KERNEL &fwk_op_kernel) {
   auto sec_ret =
-    memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_def_.args().data(), sizeof(STR_FWK_OP_KERNEL));
+    memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_def_.args().data(), kernel_def_.args().size());
   if (sec_ret != EOK) {
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
     return FAILED;
@@ -81,7 +81,7 @@ Status AiCpuTaskBuilder::SetKernelArgs(void **args, STR_FWK_OP_KERNEL &fwk_op_ke
 }
 
 Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam &param) {
-  if (kernel_def_.args_size() != sizeof(STR_FWK_OP_KERNEL)) {
+  if (kernel_def_.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
     GELOGE(PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d", sizeof(STR_FWK_OP_KERNEL),
            kernel_def_.args_size());
     return PARAM_INVALID;
@@ -105,7 +105,7 @@ Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam
     return ret;
   }
 
-  STR_FWK_OP_KERNEL fwk_op_kernel;
+  STR_FWK_OP_KERNEL fwk_op_kernel = {0};
   ret = SetFmkOpKernel(io_addr, ws_addr_vec[0], fwk_op_kernel);
   if (ret != SUCCESS) {
     (void)rtFree(io_addr);

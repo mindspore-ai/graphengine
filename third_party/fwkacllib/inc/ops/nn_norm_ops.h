@@ -32,6 +32,9 @@ namespace ge {
 
 *@par Outputs:
 * y: A Tensor. Has the same type as "grad".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator LogSoftmaxGrad.
 */
 
 REG_OP(LogSoftmaxGrad)
@@ -64,6 +67,9 @@ REG_OP(SparseSoftmaxCrossEntropyWithLogitsCCE)
 *@par Outputs:
 *loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
 *backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). Has the same type as "features".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator SparseSoftmaxCrossEntropyWithLogits.
 */
 REG_OP(SparseSoftmaxCrossEntropyWithLogits)
     .INPUT(features, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -84,6 +90,9 @@ REG_OP(SparseSoftmaxCrossEntropyWithLogits)
 *@par Outputs:
 *loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
 *backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). Has the same type as "features".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator SoftmaxCrossEntropyWithLogits.
 */
 REG_OP(SoftmaxCrossEntropyWithLogits)
     .INPUT(features, TensorType({DT_DOUBLE,DT_FLOAT16,DT_FLOAT}))
@@ -96,13 +105,17 @@ REG_OP(SoftmaxCrossEntropyWithLogits)
 *@brief Computes gradients for a softmax operation.
 
 *@par Inputs:
-* Two inputs, including: \n
-* @li softmax: Output of the softmax operator. Must be one of the following types: float16, float31, int32, int8, uint8. The format is NC1HWC0 or DN.
-* @li grad_softmax: A Tensor. Has the same shape and type as "softmax". The format is NC1HWC0 or DN.
+* Two inputs, including:
+* @li softmax: Output of the softmax operator. Must be one of the following
+* types: float16, float31, int32, int8, uint8. The format is NC1HWC0 or DN.
+* @li grad_softmax: A Tensor. Has the same shape and type as "softmax".
+* The format is NC1HWC0 or DN.
 
 *@par Outputs:
 *grad_x: A Tensor. Has the same shape and type as "softmax".
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator SoftmaxGrad.
 */
 REG_OP(SoftmaxGrad)
     .INPUT(softmax, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
@@ -121,6 +134,8 @@ REG_OP(SoftmaxGrad)
 *@par Outputs:
 *loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict".
 
+*@par Third-party framework compatibility
+* Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SigmoidCrossEntropyWithLogitsGrad.
 */
 REG_OP(SigmoidCrossEntropyWithLogitsGrad)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -138,9 +153,11 @@ REG_OP(SigmoidCrossEntropyWithLogitsGrad)
 *@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
 *@li dout: A multi-dimensional Tensor of float16 or float32, specifying the gradient transferred from the upper layer.
 
-*@par Outputs: \n
+*@par Outputs:
 *gradient: Return gradient. Has the same dimensions and type as "predict".
 
+*@par Third-party framework compatibility
+* Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SigmoidCrossEntropyWithLogits.
 */
 REG_OP(SigmoidCrossEntropyWithLogits)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -165,6 +182,8 @@ REG_OP(SigmoidCrossEntropyWithLogits)
 *@attention Constraints:
 * This operator does not perform the "reduce" operation on the loss value. Call other reduce operators to perform "reduce" operation on the loss if required.
 
+*@par Third-party framework compatibility
+* Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SmoothL1Loss.
 */
 REG_OP(SmoothL1Loss)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -188,6 +207,8 @@ REG_OP(SmoothL1Loss)
 *@par Outputs:
 *gradient: Return gradient. Has the same dimensions and type as "predict".
 
+*@par Third-party framework compatibility
+* Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SmoothL1LossGrad.
 */
 REG_OP(SmoothL1LossGrad)
     .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -216,6 +237,8 @@ REG_OP(SmoothL1LossGrad)
 *@li The value of "x" must range from 0 to 1.
 *@li The value of "y" must be "0" or "1".
 
+*@par Third-party framework compatibility
+* Compatible with PyTorch operator BCELoss.
 */
 REG_OP(BinaryCrossEntropy)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -245,6 +268,8 @@ REG_OP(BinaryCrossEntropy)
 *@li The value of "x" must range from 0 to 1.
 *@li The value of "y" must be "0" or "1".
 
+*@par Third-party framework compatibility
+* Compatible with PyTorch operator BCELossGrad.
 */
 REG_OP(BinaryCrossEntropyGrad)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -256,19 +281,26 @@ REG_OP(BinaryCrossEntropyGrad)
     .OP_END_FACTORY_REG(BinaryCrossEntropyGrad)
 
 /**
-*@brief Applies the Softmax function to an n-dimensional input Tensor rescaling them \n so 
-that the elements of the n-dimensional output Tensor lie in the range [0,1] and sum to 1.
+*@brief Applies the Softmax function to an n-dimensional input Tensor
+* rescaling them. so that the elements of the n-dimensional output Tensor lie
+* in the range [0,1] and sum to 1.
 
 *@par Inputs:
 *One input:
-*x: A mutable Tensor. Must be one of the following types: float16,
-*float32, double. Should be a Variable Tensor.
+*x: A mutable Tensor. Must be one of the following types: float16, float32,
+* double. Should be a Variable Tensor.
 
 *@par Attributes:
-*axes: A list of ints. The dimension softmax would be performed on.
+*axes: A list of ints. The dimension softmax would be performed on. Defaults
+* to "{-1}".
 
 *@par Outputs:
-*y: A Tensor. Has the same dimensionality and shape as the "x" with values in the range [0, 1]. Must be one of the following types: float16, float32, int32.
+*y: A Tensor. Has the same dimensionality and shape as the "x" with values in
+* the range [0, 1]. Must be one of the following types: float16, float32,
+* double.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Softmax.
 */
 REG_OP(SoftmaxV2)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
@@ -288,6 +320,9 @@ REG_OP(SoftmaxV2)
 
 *@par Outputs:
 * logsoftmax: A Tensor. Has the same type as "logits".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator LogSoftmax.
 */
 REG_OP(LogSoftmaxV2)
     .INPUT(logits, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
@@ -357,6 +392,8 @@ REG_OP(SoftmaxGradExt)
 
 *@attention Constraints:\n
 * The input tensor must have the NCHW format, whose shape length must be 4.
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator MVN.
 */
 
 REG_OP(MVN)
@@ -390,6 +427,8 @@ REG_OP(MVN)
 *@par Outputs:
 *y: A Tensor. Has the same type and format as "x1".
 
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Normalize.
 */
 REG_OP(Normalize)
      .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
@@ -414,8 +453,9 @@ REG_OP(Normalize)
 * @li beta: A Tensor. Must be one of the following types: float16, float32.
 
 *@par Attributes:
-* @li begin_norm_axis: A required attribute, the type is int32.
-* @li begin_params_axis: A required attribute,the type is int32.
+* @li begin_norm_axis: A optional attribute, the type is int32. Defaults to 0.
+* @li begin_params_axis: A optional attribute, the type is int32. Defaults to 0.
+* @li epsilon: A optional attribute, the type is float32. Defaults to 1e-7.
 
 *@par Outputs:
 *Three outputs, including:
@@ -454,7 +494,7 @@ REG_OP(LayerNorm)
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 *@par Inputs:
-*Three inputs, including:
+*Five inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32.
 * @li x: A Tensor. Must be one of the following types: float16, float32.
 * @li variance: A Tensor. Must be one of the following types: float16, float32.
@@ -497,7 +537,7 @@ REG_OP(LayerNormGrad)
 *  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
 
 *@par Inputs:
-*Three inputs, including:
+*Five inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32.
 * @li x: A Tensor. Must be one of the following types: float16, float32.
 * @li variance: A Tensor. Must be one of the following types: float16, float32.
@@ -596,6 +636,8 @@ REG_OP(DropOutDoMask)
 
 *@par Attributes:
 *@li axis: An optional int32 used to compute the shape of scale and bias input from the online bottoms. Defaults to "1".
+*@li num_axes: An optional int32 used to compute the shape of scale and bias input from a Caffe model trained offline. Defaults to "1".
+*@li scale_from_blob: An optional bool. If "true", scale and bias are input from a Caffe model trained offline. If "false", scale and bias are input from online bottoms. Defaults to "true".
 
 *@par Outputs:
 *y: An ND tensor of type float16 or float32.
@@ -611,6 +653,8 @@ REG_OP(DropOutDoMask)
 *@li If "scale_from_blob = false", "scale" is not a scalar, and "axis >= 0","axis + m" must be less than or equal to "n" and the ith axis of "scale" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).\n
 * If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "scale" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
 *@li If "bias" is not None, the constraints for "bias" is the same as that for "scale".
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Scale.
 */
 REG_OP(Scale)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
@@ -630,16 +674,22 @@ REG_OP(Scale)
 *@li x: A Tensor. Must be 4-D shape, and only support the following types: float16, float32.
 
 *@par Attributes:
-* depth_radius = (local_size + 1) / 2. Defaults to "5".
+*@li depth_radius: An optional int32, specifying the half-width of the normalization window. Defaults to "5".
+* under the caffe framework, if local_size is provided and is an odd number,
+* depth_radius = (local_size - 1) / 2. local_size is the number of channels to sum over (for ACROSS_CHANNELS)
+* or the side length of the square region to sum over (for WITHIN_CHANNEL).
 *@li bias: An optional float32. An offset, usually > 0 to avoid dividing by 0.
 * Defaults to "1".
 *@li alpha: An optional float32. A scaling factor, usually positive.
 * Defaults to "1".
+*@li beta: An optional float32. An exponent. Defaults to "0.75" for the caffe framework, Defaults to "0.5" for others.
 *@li norm_region: An optional string. A mode option. "ACROSS_CHANNELS":0, "WITHIN_CHANNEL":1. Defaults to "ACROSS_CHANNELS".
 
 *@par Outputs:
 *y: A Tensor. Has the same data type and shape as "x".
 
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator LRN.
 */
 REG_OP(LRN)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -674,6 +724,8 @@ REG_OP(LRN)
 * @attention Constraints:
 * "x" and "y" must have the same shape and type as "grads".
 
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator LRNGrad.
 */
 REG_OP(LRNGrad)
     .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -703,6 +755,8 @@ REG_OP(LRNGrad)
  *@par Attributes:
  *@li blank_label: An optional attribute. Defaults to 0.
 
+ *@par Third-party framework compatibility
+ * Compatible with TensorFlow RNNTLoss operator.
  */
 REG_OP(RNNTLoss)
     .INPUT(acts, TensorType({DT_FLOAT}))
@@ -762,6 +816,8 @@ ce_2" has the same value as "variance".
 *@li For Ascend 310, the result accuracy fails  due to the square root \n
 instruction.
 
+*@par Third-party framework compatibility
+*@li Compatible with the PyTorch operator GroupNorm.
 */
 REG_OP(GroupNorm)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

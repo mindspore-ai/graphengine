@@ -33,6 +33,10 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
     GELOGE(PARAM_INVALID, "Param [opDesc] must not be null.");
     return PARAM_INVALID;
   }
+  if (node->GetType() == CONSTANT || node->GetType() == CONSTANTOP) {
+    GELOGI("Node %s is const. Ignore current pass.", node->GetName().c_str());
+    return SUCCESS;
+  }
   // Node like no op, it has no output
   if (node->GetOpDesc()->GetAllOutputsDescPtr().empty()) {
     GELOGI("Node %s has no output desc. Ignore current pass.", node->GetName().c_str());
@@ -105,13 +109,7 @@ Status ReplaceWithEmptyConstPass::ReplaceWithEmptyConst(NodePtr &node_to_replace
     GELOGI("Node %s has been replaced by empty const %s.", node_to_replace->GetName().c_str(),
            const_node->GetName().c_str());
   }
-  // Unlink control edge from node_to_replace to graph
-  if (node_to_replace->GetInControlAnchor() != nullptr) {
-    node_to_replace->GetInControlAnchor()->UnlinkAll();
-  }
-  if (node_to_replace->GetOutControlAnchor() != nullptr) {
-    node_to_replace->GetOutControlAnchor()->UnlinkAll();
-  }
+  IsolateAndDeleteNode(node_to_replace, {});
   return SUCCESS;
 }
 Status ReplaceWithEmptyConstPass::InsertEmptyConst(const GeTensorDesc &out_desc, NodePtr &const_node,

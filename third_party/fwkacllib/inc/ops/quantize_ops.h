@@ -44,6 +44,9 @@ namespace ge {
 * @attention Constraints:
 * @li "input_min_range" and "input_max_range" have the same shapes.
 * @li "input_data" and "output_data" have the same shapes.
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Dequantize.
 */
 REG_OP(Dequantize)
     .INPUT(x, TensorType(DT_QINT8, DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16))
@@ -68,6 +71,8 @@ REG_OP(Dequantize)
 
 *@par Outputs:
 *y: The quantized output tensor of type int8 and with format NC1HWC0.
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendQuant)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32}))
@@ -92,6 +97,8 @@ REG_OP(AscendQuant)
 
 *@par Outputs:
 *y: The dequantized output tensor of type float16 or float32 and with format NC1HWC0.
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendDequant)
     .INPUT(x, TensorType({DT_INT32}))

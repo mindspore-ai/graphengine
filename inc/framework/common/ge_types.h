@@ -33,11 +33,11 @@ enum RuntimeType { HOST = 0, DEVICE = 1 };
 enum PerfLevel { GEN_TASK_WITH_FUSION = -1, GEN_TASK_WITHOUT_L2FUSION = 3, GEN_TASK_WITHOUT_FUSION = 4 };
 
 enum FrameworkType {
-  FMK_TYPE_C = 0,
-  FMK_TYPE_MINDSPORE = 1,
-  FMK_TYPE_T = 3,
-  FMK_TYPE_A_NN,
-  FMK_TYPE_RESERVED,
+  CAFFE = 0,
+  MINDSPORE = 1,
+  TENSORFLOW = 3,
+  ANDROID_NN,
+  FRAMEWORK_RESERVED,
 };
 
 enum OpEngineType {
@@ -109,6 +109,72 @@ struct InputOutputDescInfo {
   uint32_t size;
   uint32_t data_type;
   ShapeDescription shape_info;
+};
+
+// Definition of model io dims
+struct InputOutputDims {
+  std::string name;
+  size_t dim_num;
+  uint32_t size;
+  std::vector<int64_t> dims;
+};
+
+// Definition of model io dims
+struct OriginInputInfo {
+  Format format;
+  DataType data_type;
+  uint32_t dim_num;
+};
+
+// The structure of AIPP info
+struct AippConfigInfo {
+  int8_t input_format;
+  int32_t src_image_size_w;
+  int32_t src_image_size_h;
+  int8_t crop;
+  int32_t load_start_pos_w;
+  int32_t load_start_pos_h;
+  int32_t crop_size_w;
+  int32_t crop_size_h;
+  int8_t resize;
+  int32_t resize_output_w;
+  int32_t resize_output_h;
+  int8_t padding;
+  int32_t left_padding_size;
+  int32_t right_padding_size;
+  int32_t top_padding_size;
+  int32_t bottom_padding_size;
+  int8_t csc_switch;
+  int8_t rbuv_swap_switch;
+  int8_t ax_swap_switch;
+  int8_t single_line_mode;
+  int32_t matrix_r0c0;
+  int32_t matrix_r0c1;
+  int32_t matrix_r0c2;
+  int32_t matrix_r1c0;
+  int32_t matrix_r1c1;
+  int32_t matrix_r1c2;
+  int32_t matrix_r2c0;
+  int32_t matrix_r2c1;
+  int32_t matrix_r2c2;
+  int32_t output_bias_0;
+  int32_t output_bias_1;
+  int32_t output_bias_2;
+  int32_t input_bias_0;
+  int32_t input_bias_1;
+  int32_t input_bias_2;
+  int32_t mean_chn_0;
+  int32_t mean_chn_1;
+  int32_t mean_chn_2;
+  int32_t mean_chn_3;
+  float min_chn_0;
+  float min_chn_1;
+  float min_chn_2;
+  float min_chn_3;
+  float var_reci_chn_0;
+  float var_reci_chn_1;
+  float var_reci_chn_2;
+  float var_reci_chn_3;
 };
 
 // The structure of offline Modeldata

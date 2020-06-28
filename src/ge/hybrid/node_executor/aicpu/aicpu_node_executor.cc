@@ -16,32 +16,22 @@
 
 #include "hybrid/node_executor/aicpu/aicpu_node_executor.h"
 #include "common/formats/formats.h"
+#include "aicpu/common/aicpu_task_struct.h"
 #include "graph/load/new_model_manager/model_manager.h"
-#include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"
 #include "init/gelib.h"
 
 namespace ge {
 namespace hybrid {
-using aicpu::FWKAdapter::ExtInfo;
 namespace {
 // mem need release
 constexpr uint64_t kReleaseFlag = 1;
-
-// max dim count is 8.
-constexpr uint32_t kMaxDimCount = 8;
-
-// if dim count is not reach kMaxDimCount, use INT64_MIN to mark dim end.
-constexpr int64_t kDimEndFlag = INT64_MIN;
-
-struct MaxShape {
-  int64_t dims[kMaxDimCount] = {0};
-};
 }  // namespace
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_TF, AiCpuNodeExecutor);
+REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_CUSTOM, AiCpuNodeExecutor);
 
-Status AicpuTfNodeTask::AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuffer> &tensor_buffer) {
+Status AicpuNodeTaskBase::AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuffer> &tensor_buffer) {
   auto allocator = NpuMemoryAllocator::GetAllocator();
   GE_CHECK_NOTNULL(allocator);
   tensor_buffer = TensorBuffer::Create(allocator, size);
@@ -49,217 +39,50 @@ Status AicpuTfNodeTask::AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuf
   return SUCCESS;
 }
 
-Status AicpuTfNodeTask::InitExtInfo() {
-  // exit info, 0: op type
-  size_t ext_info_size = sizeof(ExtInfo) + sizeof(uint32_t);
-  ext_info_num_ = 1;
-  // exit info 1:input shape, 2:output shape
-  if (input_num_ > 0) {
-    ext_info_size += sizeof(ExtInfo) + input_num_ * sizeof(MaxShape);
-    ++ext_info_num_;
-  }
-
-  // exit info 2:output shape
-  if ((unknown_type_ != DEPEND_COMPUTE) && (output_num_ > 0)) {
-    ext_info_size += sizeof(ExtInfo) + output_num_ * sizeof(MaxShape);
-    ++ext_info_num_;
-  }
-
-  GE_CHK_STATUS_RET(AllocTensorBuffer(ext_info_size, ext_info_addr_dev_),
-                    "Node %s alloc buffer for ext info failed, size=%zu.", node_->GetName().c_str(), ext_info_size);
-
-  auto ext_info_dev_base = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
-  ext_info_addr_host_.reset(new (std::nothrow) uint8_t[ext_info_size]);
-  GE_CHECK_NOTNULL(ext_info_addr_host_);
-
-  size_t ext_info_type_offset = ext_info_num_ * sizeof(ExtInfo);
-  size_t ext_info_input_shape_offset = ext_info_type_offset + sizeof(uint32_t);
-
-  auto ext_info_host_buf = ext_info_addr_host_.get();
-
-  auto ext_info_type = reinterpret_cast<ExtInfo *>(ext_info_host_buf);
-  ext_info_type->infoType = aicpu::FWKAdapter::FWK_ADPT_EXT_SHAPE_TYPE;
-  ext_info_type->infoLen = sizeof(uint32_t);
-  ext_info_type->infoAddr = ext_info_dev_base + ext_info_type_offset;
-  // set unknown shape type
-  auto unkonw_shape_type_addr = reinterpret_cast<uint32_t *>(ext_info_host_buf + ext_info_type_offset);
-  *unkonw_shape_type_addr = unknown_type_;
-
-  if (input_num_ > 0) {
-    auto ext_info_input = reinterpret_cast<ExtInfo *>(ext_info_host_buf + sizeof(ExtInfo));
-    ext_info_input->infoType = aicpu::FWKAdapter::FWK_ADPT_EXT_INPUT_SHAPE;
-    ext_info_input->infoLen = input_num_ * sizeof(MaxShape);
-    ext_info_input->infoAddr = ext_info_dev_base + ext_info_input_shape_offset;
-  }
-  if ((unknown_type_ != DEPEND_COMPUTE) && (output_num_ > 0)) {
-    size_t ext_info_output_shape_offset = ext_info_input_shape_offset + input_num_ * sizeof(MaxShape);
-    auto ext_info_output = reinterpret_cast<ExtInfo *>(ext_info_host_buf + (ext_info_num_ - 1) * sizeof(ExtInfo));
-    ext_info_output->infoType = aicpu::FWKAdapter::FWK_ADPT_EXT_OUTPUT_SHAPE;
-    ext_info_output->infoLen = output_num_ * sizeof(MaxShape);
-    ext_info_output->infoAddr = ext_info_dev_base + ext_info_output_shape_offset;
-  }
-
-  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(), ext_info_host_buf, ext_info_size,
-                         RT_MEMCPY_HOST_TO_DEVICE));
-  return SUCCESS;
-}
-
-Status AicpuTfNodeTask::InitForDependComputeTask() {
-  if ((unknown_type_ != DEPEND_COMPUTE) || (output_num_ == 0)) {
-    GELOGI("node %s type %s unknown_type is %d, output num is %zu.", node_->GetName().c_str(), node_->GetType().c_str(),
-           unknown_type_, output_num_);
-    return SUCCESS;
-  }
-
-  output_summary_.resize(output_num_);
-  constexpr auto result_summary_size = sizeof(aicpu::FWKAdapter::ResultSummary);
-  for (size_t i = 0; i < output_num_; ++i) {
-    GE_CHK_STATUS_RET(AllocTensorBuffer(result_summary_size, output_summary_[i]),
-                      "Node %s alloc buffer for ext info failed, size=%zu.", node_->GetName().c_str(),
-                      result_summary_size);
-  }
-  output_summary_host_.resize(output_num_);
-
-  // init for mem copy task
-  // copy task need copy output_data and output_shape, max len is 2 * output_num
-  const size_t copy_input_buf_len = output_num_ * 2 * sizeof(uint64_t);
-  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_release_flag_dev_),
-                    "Node %s alloc copy task input release_flag failed, size=%zu", node_->GetName().c_str(),
-                    copy_input_buf_len);
-  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_data_size_dev_),
-                    "Node %s alloc copy task input data_size failed, size=%zu", node_->GetName().c_str(),
-                    copy_input_buf_len);
-  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_src_dev_),
-                    "Node %s alloc copy task input src failed, size=%zu", node_->GetName().c_str(), copy_input_buf_len);
-  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_dst_dev_),
-                    "Node %s alloc copy task input dst failed, size=%zu", node_->GetName().c_str(), copy_input_buf_len);
+Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info) {
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.Parse(kernel_ext_info),
+                    "Node[%s] parse kernel ext info failed, kernel_ext_info_size=%zu.", node_name_.c_str(),
+                    kernel_ext_info.size());
 
   // copy task args buf
-  GE_CHK_STATUS_RET(AllocTensorBuffer(sizeof(STR_FWK_OP_KERNEL), copy_task_args_buf_),
-                    "Node %s alloc copy task args buf failed, size=%zu", node_->GetName().c_str(),
-                    sizeof(STR_FWK_OP_KERNEL));
+  GE_CHK_STATUS_RET(AllocTensorBuffer(kernel_ext_info.size(), ext_info_addr_dev_),
+                    "Node[%s] alloc kernel_ext_info buf failed, size=%zu", node_name_.c_str(), kernel_ext_info.size());
 
-  std::vector<uint64_t> copy_io_addr;
-  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_release_flag_dev_->GetData()));
-  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_data_size_dev_->GetData()));
-  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_src_dev_->GetData()));
-  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_dst_dev_->GetData()));
-
-  // mem copy op has 4 inputs and 0 output.
-  const auto copy_io_addr_size = sizeof(uint64_t) * copy_io_addr.size();
-
-  // can alloc in init, it can reuse
-  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_io_addr_size, copy_ioaddr_dev_),
-                    "Node %s alloc copy task io buf failed, size=%zu", node_->GetName().c_str(), copy_io_addr_size);
-
-  GE_CHK_RT_RET(rtMemcpy(copy_ioaddr_dev_->GetData(), copy_io_addr_size, &copy_io_addr[0], copy_io_addr_size,
-                         RT_MEMCPY_HOST_TO_DEVICE));
-  return SUCCESS;
-}
-
-Status AicpuTfNodeTask::Init(const HybridModel &model) {
-  auto node_name = node_->GetName();
-  GELOGI("AicpuTfNodeTask[%s] Init Start.", node_name.c_str());
-  auto op_desc = node_->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-
-  const auto node_item = model.GetNodeItem(node_);
-  GE_CHECK_NOTNULL(node_item);
-  unknown_type_ = node_item->shape_inference_type;
-
-  auto &kernel_ex_def = task_def_.kernel_ex();
-
-  auto kernel_workspace_size = static_cast<size_t>(kernel_ex_def.task_info_size());
-  GE_CHK_STATUS_RET(AllocTensorBuffer(kernel_workspace_size, kernel_workspace_),
-                    "Node %s alloc buffer for kernel workspace failed, size=%zu.", node_name.c_str(),
-                    kernel_workspace_size);
-
-  GE_CHK_RT_RET(rtMemcpy(kernel_workspace_->GetData(), kernel_workspace_size, kernel_ex_def.task_info().data(),
-                         static_cast<uint64_t>(kernel_ex_def.task_info_size()), RT_MEMCPY_HOST_TO_DEVICE));
-  input_num_ = op_desc->GetInputsSize();
-  output_num_ = op_desc->GetOutputsSize();
-  size_t input_output_size = (input_num_ + output_num_) * sizeof(uint64_t);
-  if (input_output_size > 0) {
-    // alloc input output addr buf
-    GE_CHK_STATUS_RET(AllocTensorBuffer(input_output_size, input_output_addr_),
-                      "Node %s alloc buffer for input output addr failed, size=%zu.", node_name.c_str(),
-                      input_output_size);
-  }
-
-  // init ext info
-  GE_CHK_STATUS_RET(InitExtInfo(), "Task %s init ext info failed.", node_name.c_str());
-  GE_CHK_STATUS_RET(InitForDependComputeTask(), "Task %s init for depend compute task failed.", node_name.c_str());
-
-  // build fwk_op_kernel.
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(sizeof(STR_FWK_OP_KERNEL) < kernel_ex_def.args_size(), return FAILED,
-                                 "sizeof STR_FWK_OP_KERNEL is: %zu, but args_size is: %u", sizeof(STR_FWK_OP_KERNEL),
-                                 kernel_ex_def.args_size());
-
-  STR_FWK_OP_KERNEL fwk_op_kernel = {0};
-  errno_t sec_ret = memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args().data(),
-                             static_cast<size_t>(kernel_ex_def.args_size()));
-  GE_CHK_BOOL_EXEC(sec_ret == EOK, return INTERNAL_ERROR, "memcpy fwk_op_kernel failed, ret: %d", sec_ret);
-
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr = reinterpret_cast<uintptr_t>(kernel_workspace_->GetData());
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.inputOutputAddr = reinterpret_cast<uintptr_t>(input_output_addr_->GetData());
-  // set ext info addr and ext info num
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoNum = ext_info_num_;
-
-  // get step_id_addr
-  auto var_tensor = model.GetVariable(NODE_NAME_GLOBAL_STEP);
-  uint64_t step_id_addr = 0;
-  if (var_tensor != nullptr) {
-    step_id_addr = reinterpret_cast<uintptr_t>(var_tensor->GetData());
-  }
-
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = step_id_addr;
-
-  auto session_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID;
-  GE_CHK_STATUS_RET(EnsureSessionCreated(session_id), "session id %lu create failed.", session_id);
-
-  // alloc kernel_buf_ and copy to device.
-  GE_CHK_STATUS_RET(AllocTensorBuffer(sizeof(STR_FWK_OP_KERNEL), kernel_buf_),
-                    "Node %s alloc buffer for kernel buf failed, size=%zu.", node_name.c_str(),
-                    sizeof(STR_FWK_OP_KERNEL));
-
-  GE_CHK_RT_RET(rtMemcpy(kernel_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL), &fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL),
-                         RT_MEMCPY_HOST_TO_DEVICE));
-
-  GELOGI("AicpuTfNodeTask[%s] init end.", node_name.c_str());
-  return SUCCESS;
-}
-
-Status AicpuTfNodeTask::EnsureSessionCreated(uint64_t session_id) {
-  auto model_manager = ModelManager::GetInstance();
-  GE_CHECK_NOTNULL(model_manager);
-  GE_CHK_STATUS_RET(model_manager->CreateAicpuSession(session_id), "Create aicpu session %u failed", session_id);
-  return SUCCESS;
-}
-
-Status AicpuTfNodeTask::SetShapeToBuf(const GeShape &shape, int64_t buf[], uint32_t buf_size) {
-  auto node_name = node_->GetName();
-  uint32_t index = 0;
-  int64_t shape_size = shape.GetDimNum();
-  if (shape_size > buf_size) {
-    GELOGI("SetShapeToBuf[%s] failed, as shape size %ld is over %u.", node_name.c_str(), shape_size, buf_size);
-    return PARAM_INVALID;
-  }
-  for (; index < shape_size; ++index) {
-    buf[index] = shape.GetDim(index);
-  }
-  if (index < buf_size) {
-    buf[index] = kDimEndFlag;
+  // if no input and no output(DEPEND_COMPUTE equal no output), copy once, or else copy when update args.
+  if (node_item_->num_inputs == 0 && ((unknown_type_ == DEPEND_COMPUTE) || (node_item_->num_outputs == 0))) {
+    GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(), kernel_ext_info.data(),
+                           kernel_ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE));
   }
   return SUCCESS;
 }
 
-Status AicpuTfNodeTask::UpdateShapeToOutputDesc(const GeShape &shape_new, size_t output_index,
-                                                GeTensorDescPtr &output_desc) {
-  auto node_name = node_->GetName();
+Status AicpuNodeTaskBase::UpdateOutputShapeFromExtInfo() {
+  if (node_item_->num_outputs == 0) {
+    GELOGI("Task [%s] output_num is 0, no need update output shape.", node_name_.c_str());
+    return SUCCESS;
+  }
+  // copy to host buf
+  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_.GetExtInfo(), aicpu_ext_handle_.GetExtInfoLen(),
+                         ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(), RT_MEMCPY_DEVICE_TO_HOST));
+
+  for (auto i = 0; i < node_item_->num_outputs; ++i) {
+    GeShape shape;
+    // not support update data type now, just for param
+    DataType data_type;
+    aicpu_ext_handle_.GetOutputShapeAndType(i, shape, data_type);
+    auto output_desc = node_item_->op_desc->MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(output_desc);
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, i, output_desc), "Update node %s [%d]th output shape failed.",
+                      node_name_.c_str(), i);
+  }
+  return SUCCESS;
+}
+
+Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new, int32_t output_index,
+                                                  GeTensorDescPtr &output_desc) {
   auto shape_old = output_desc->GetShape();
   output_desc->SetShape(shape_new);
-  GELOGI("Update node[%s] out[%zu] shape from %s to %s.", node_name.c_str(), output_index, shape_old.ToString().c_str(),
+  GELOGI("Update node[%s] out[%d] shape from %s to %s.", node_name_.c_str(), output_index, shape_old.ToString().c_str(),
          shape_new.ToString().c_str());
 
   auto origin_shape_old = output_desc->GetOriginShape();
@@ -274,39 +97,243 @@ Status AicpuTfNodeTask::UpdateShapeToOutputDesc(const GeShape &shape_new, size_t
   auto trans_ret =
     formats::TransShape(format, shape_new.GetDims(), output_desc->GetDataType(), origin_format, origin_dims_new);
   GE_CHK_STATUS_RET(trans_ret,
-                    "Node[%s] out[%zu] originFormat[%d] is not same as format[%d], but TransShape failed, shape=%s.",
-                    node_name.c_str(), output_index, origin_format, format, shape_new.ToString().c_str());
+                    "Node[%s] out[%d] originFormat[%d] is not same as format[%d], but TransShape failed, shape=%s.",
+                    node_name_.c_str(), output_index, origin_format, format, shape_new.ToString().c_str());
   auto origin_shape_new = GeShape(origin_dims_new);
   output_desc->SetOriginShape(origin_shape_new);
-  GELOGI("Node[%s] out[%zu] originFormat[%d] is not same as format[%d], need update from %s ro %s.", node_name.c_str(),
+  GELOGI("Node[%s] out[%d] originFormat[%d] is not same as format[%d], need update from %s ro %s.", node_name_.c_str(),
          output_index, origin_format, format, origin_shape_old.ToString().c_str(), origin_shape_new.ToString().c_str());
+  return SUCCESS;
+}
+
+Status AicpuNodeTaskBase::UpdateExtInfo() {
+  GELOGI("Node[%s] update ext info begin, unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  if (node_item_->num_inputs == 0 && node_item_->num_outputs == 0) {
+    GELOGI("Node[%s] has no input and output, no need update ext info.", node_name_.c_str());
+    return SUCCESS;
+  }
+
+  for (auto i = 0; i < node_item_->num_inputs; ++i) {
+    auto input_desc = node_item_->op_desc->MutableInputDesc(i);
+    GE_CHECK_NOTNULL(input_desc);
+    GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateInputShapeAndType(i, *input_desc),
+                      "Node[%s] input[%d] update input shape failed.", node_name_.c_str(), i);
+  }
+
+  if (unknown_type_ != DEPEND_COMPUTE) {
+    for (auto j = 0; j < node_item_->num_outputs; ++j) {
+      auto output_desc = node_item_->op_desc->MutableOutputDesc(j);
+      GE_CHECK_NOTNULL(output_desc);
+
+      GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateOutputShapeAndType(j, *output_desc),
+                        "Node[%s] output[%d] UpdateOutputShapeAndType failed.", node_name_.c_str(), j);
+    }
+  }
+
+  // copy input and output shapes to device
+  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(), aicpu_ext_handle_.GetExtInfo(),
+                         aicpu_ext_handle_.GetExtInfoLen(), RT_MEMCPY_HOST_TO_DEVICE));
+
+  GELOGI("Node[%s] update ext info end.", node_name_.c_str());
+  return SUCCESS;
+}
+
+Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
+  GELOGI("Node[%s] update args begin. unknown_type=%d", node_name_.c_str(), unknown_type_);
+  if (node_item_->num_inputs == 0 && node_item_->num_outputs == 0) {
+    GELOGI("Node[%s] has no input and output, no need update args.", node_name_.c_str());
+    return SUCCESS;
+  }
+
+  GE_CHK_STATUS_RET(UpdateIoAddr(context), "Node[%s] update io addr failed.", node_name_.c_str());
+
+  GE_CHK_STATUS_RET(UpdateExtInfo(), "Node[%s] update ext info failed.", node_name_.c_str());
+
+  GELOGI("Node[%s] update args end.", node_name_.c_str());
+  return SUCCESS;
+}
+
+Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  GELOGI("Node[%s] execute async start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
+
+  GE_CHK_STATUS_RET(LaunchTask(context));
+
+  auto callback = [=, &context]() {
+    GELOGI("Node[%s] callback start.", node_name_.c_str());
+    RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[TaskCallback] Start");
+    Status callback_ret = TaskCallback(context);
+    RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[TaskCallback] End");
+
+    GELOGI("Node[%s] task callBack ret = %u.", node_name_.c_str(), callback_ret);
+    if (done_callback != nullptr) {
+      context.SetStatus(callback_ret);
+      done_callback();
+    }
+
+    GELOGI("Node[%s] callback end.", node_name_.c_str());
+  };
+
+  GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(callback));
+
+  GELOGI("Node[%s] execute async end.", node_name_.c_str());
+  return SUCCESS;
+}
+
+Status AicpuTfNodeTask::InitForDependComputeTask() {
+  if ((unknown_type_ != DEPEND_COMPUTE) || (node_item_->num_outputs == 0)) {
+    GELOGI("Node[%s] type[%s] unknown_type is %d, output num is %d.", node_name_.c_str(), node_item_->node_type.c_str(),
+           unknown_type_, node_item_->num_outputs);
+    return SUCCESS;
+  }
+
+  output_summary_.resize(node_item_->num_outputs);
+  constexpr auto result_summary_size = sizeof(aicpu::FWKAdapter::ResultSummary);
+  for (auto i = 0; i < node_item_->num_outputs; ++i) {
+    GE_CHK_STATUS_RET(AllocTensorBuffer(result_summary_size, output_summary_[i]),
+                      "Node[%s] alloc buffer for result summary info failed, size=%zu.", node_name_.c_str(),
+                      result_summary_size);
+  }
+  output_summary_host_.resize(node_item_->num_outputs);
+
+  // init for mem copy task
+  // copy task need copy output_data and output_shape, max len is 2 * output_num
+  const size_t copy_input_buf_len = node_item_->num_outputs * 2 * sizeof(uint64_t);
+  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_release_flag_dev_),
+                    "Node[%s] alloc copy task input release_flag failed, size=%zu", node_name_.c_str(),
+                    copy_input_buf_len);
+  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_data_size_dev_),
+                    "Node[%s] alloc copy task input data_size failed, size=%zu", node_name_.c_str(),
+                    copy_input_buf_len);
+  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_src_dev_),
+                    "Node[%s] alloc copy task input src failed, size=%zu", node_name_.c_str(), copy_input_buf_len);
+  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_input_buf_len, copy_input_dst_dev_),
+                    "Node[%s] alloc copy task input dst failed, size=%zu", node_name_.c_str(), copy_input_buf_len);
+
+  // copy task args buf
+  GE_CHK_STATUS_RET(AllocTensorBuffer(sizeof(STR_FWK_OP_KERNEL), copy_task_args_buf_),
+                    "Node[%s] alloc copy task args buf failed, size=%zu", node_name_.c_str(),
+                    sizeof(STR_FWK_OP_KERNEL));
+
+  std::vector<uint64_t> copy_io_addr;
+  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_release_flag_dev_->GetData()));
+  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_data_size_dev_->GetData()));
+  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_src_dev_->GetData()));
+  copy_io_addr.emplace_back(reinterpret_cast<uintptr_t>(copy_input_dst_dev_->GetData()));
+
+  // mem copy op has 4 inputs and 0 output.
+  const auto copy_io_addr_size = sizeof(uint64_t) * copy_io_addr.size();
+
+  // can alloc in init, it can reuse
+  GE_CHK_STATUS_RET(AllocTensorBuffer(copy_io_addr_size, copy_ioaddr_dev_),
+                    "Node[%s] alloc copy task io buf failed, size=%zu", node_name_.c_str(), copy_io_addr_size);
+
+  GE_CHK_RT_RET(rtMemcpy(copy_ioaddr_dev_->GetData(), copy_io_addr_size, &copy_io_addr[0], copy_io_addr_size,
+                         RT_MEMCPY_HOST_TO_DEVICE));
+  return SUCCESS;
+}
+
+Status AicpuTfNodeTask::Init(const HybridModel &model) {
+  GELOGI("Node[%s] init start.", node_name_.c_str());
+
+  GE_CHK_BOOL_RET_STATUS(task_def_.has_kernel_ex(), FAILED, "Node[%s] is tf node but task def does not has kernel ex.",
+                         node_name_.c_str());
+
+  auto &kernel_ex_def = task_def_.kernel_ex();
+  auto kernel_workspace_size = kernel_ex_def.task_info().size();
+  GE_CHK_STATUS_RET(AllocTensorBuffer(kernel_workspace_size, kernel_workspace_),
+                    "Node[%s] alloc buffer for kernel workspace failed, size=%zu.", node_name_.c_str(),
+                    kernel_workspace_size);
+
+  GE_CHK_RT_RET(rtMemcpy(kernel_workspace_->GetData(), kernel_workspace_size, kernel_ex_def.task_info().data(),
+                         kernel_workspace_size, RT_MEMCPY_HOST_TO_DEVICE));
+
+  auto input_output_size = (node_item_->num_inputs + node_item_->num_outputs) * sizeof(uint64_t);
+  // alloc input output addr buf, allow alloc size 0
+  GE_CHK_STATUS_RET(AllocTensorBuffer(input_output_size, input_output_addr_),
+                    "Node[%s] alloc buffer for io addr failed, size=%zu.", node_name_.c_str(), input_output_size);
+
+  auto &kernel_ext_info = kernel_ex_def.kernel_ext_info();
+  auto kernel_ext_info_size = kernel_ex_def.kernel_ext_info_size();
+  GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
+                         "Node[%s] task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.", node_name_.c_str(),
+                         kernel_ext_info.size(), kernel_ext_info_size);
+
+  // init ext info
+  GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info), "Node[%s] init ext info failed.", node_name_.c_str());
+  GE_CHK_STATUS_RET(InitForDependComputeTask(), "Node[%s] init for depend compute task failed.", node_name_.c_str());
+
+  // build fwk_op_kernel.
+  GE_CHK_BOOL_RET_STATUS(sizeof(STR_FWK_OP_KERNEL) >= kernel_ex_def.args_size(), FAILED,
+                         "Node[%s] sizeof STR_FWK_OP_KERNEL is: %zu, but args_size is: %u", node_name_.c_str(),
+                         sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args_size());
+
+  STR_FWK_OP_KERNEL fwk_op_kernel = {0};
+  errno_t sec_ret =
+    memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args().data(), kernel_ex_def.args_size());
+  GE_CHK_BOOL_RET_STATUS(sec_ret == EOK, INTERNAL_ERROR, "Node[%s] memcpy fwk_op_kernel failed, ret: %d.",
+                         node_name_.c_str(), sec_ret);
+
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr = reinterpret_cast<uintptr_t>(kernel_workspace_->GetData());
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.inputOutputAddr = reinterpret_cast<uintptr_t>(input_output_addr_->GetData());
+  // set ext info addr and ext info num
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info_addr_dev_->GetSize();
+
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = GetStepIdAddr(model);
+
+  auto session_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID;
+  GE_CHK_STATUS_RET(EnsureSessionCreated(session_id), "Node[%s] create session id %lu failed.", node_name_.c_str(),
+                    session_id);
+
+  // alloc kernel_buf_ and copy to device.
+  GE_CHK_STATUS_RET(AllocTensorBuffer(sizeof(STR_FWK_OP_KERNEL), kernel_buf_),
+                    "Node[%s] alloc buffer for kernel buf failed, size=%zu.", node_name_.c_str(),
+                    sizeof(STR_FWK_OP_KERNEL));
+
+  GE_CHK_RT_RET(rtMemcpy(kernel_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL), &fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL),
+                         RT_MEMCPY_HOST_TO_DEVICE));
+
+  GELOGI("Node[%s] init end.", node_name_.c_str());
+  return SUCCESS;
+}
+
+uint64_t AicpuTfNodeTask::GetStepIdAddr(const HybridModel &model) {
+  // get step_id_addr
+  auto var_tensor = model.GetVariable(NODE_NAME_GLOBAL_STEP);
+  uint64_t step_id_addr = 0;
+  if (var_tensor != nullptr) {
+    step_id_addr = reinterpret_cast<uintptr_t>(var_tensor->GetData());
+  }
+  return step_id_addr;
+}
+
+Status AicpuTfNodeTask::EnsureSessionCreated(uint64_t session_id) {
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  GE_CHK_STATUS_RET(model_manager->CreateAicpuSession(session_id), "Create aicpu session %lu failed", session_id);
   return SUCCESS;
 }
 
 Status AicpuTfNodeTask::ReadResultSummaryAndPrepareMemory(TaskContext &context,
                                                           std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm) {
-  for (size_t i = 0; i < output_num_; ++i) {
+  for (auto i = 0; i < node_item_->num_outputs; ++i) {
     auto &result_summary = output_summary_host_[i];
     GE_CHK_RT_RET(rtMemcpy(&result_summary, sizeof(aicpu::FWKAdapter::ResultSummary), output_summary_[i]->GetData(),
                            output_summary_[i]->GetSize(), RT_MEMCPY_DEVICE_TO_HOST));
 
-    GELOGI(
-      "Node[%s] out[%zu] result summary addr=%p,"
-      " shape_data_ptr=0x%lx, shape_data_size=%lu, raw_data_ptr=0x%lx, raw_data_size=%lu.",
-      node_->GetName().c_str(), i, output_summary_[i]->GetData(), result_summary.shape_data_ptr,
-      result_summary.shape_data_size, result_summary.raw_data_ptr, result_summary.raw_data_size);
-
     auto raw_data_size = result_summary.raw_data_size;
     std::unique_ptr<TensorBuffer> tensor_buffer;
-    GE_CHK_STATUS_RET(AllocTensorBuffer(raw_data_size, tensor_buffer), "alloc tensor buffer failed, raw_data_size=%lu",
+    GE_CHK_STATUS_RET(AllocTensorBuffer(raw_data_size, tensor_buffer),
+                      "Node[%s] out[%d] alloc tensor buffer failed, raw_data_size=%lu", node_name_.c_str(), i,
                       raw_data_size);
     auto status = context.SetOutput(i, TensorValue(std::shared_ptr<TensorBuffer>(tensor_buffer.release())));
-    GE_CHK_STATUS_RET(status, "SetOutput %zu failed.", i);
+    GE_CHK_STATUS_RET(status, "Node[%s] set output %d failed.", node_name_.c_str(), i);
 
     auto shape_data_size = result_summary.shape_data_size;
     std::unique_ptr<TensorBuffer> shape_buffer;
     GE_CHK_STATUS_RET(AllocTensorBuffer(shape_data_size, shape_buffer),
-                      "alloc shape buffer failed, shape_data_size=%lu", shape_data_size);
+                      "Node[%s] out[%d] alloc shape buffer failed, shape_data_size=%lu", node_name_.c_str(), i,
+                      shape_data_size);
     out_shape_hbm.emplace_back(std::move(shape_buffer));
   }
   return SUCCESS;
@@ -314,19 +341,56 @@ Status AicpuTfNodeTask::ReadResultSummaryAndPrepareMemory(TaskContext &context,
 
 Status AicpuTfNodeTask::CopyDataToHbm(TaskContext &context,
                                       const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm) {
-  GE_CHK_BOOL_RET_STATUS(out_shape_hbm.size() == output_num_, INTERNAL_ERROR,
-                         "Node %s has %zu outputs but out shape is %zu", node_->GetName().c_str(), output_num_,
+  GE_CHK_BOOL_RET_STATUS(out_shape_hbm.size() == static_cast<std::size_t>(node_item_->num_outputs), INTERNAL_ERROR,
+                         "Node[%s] has %d outputs but out shape is %zu.", node_name_.c_str(), node_item_->num_outputs,
                          out_shape_hbm.size());
 
+  uint64_t copy_num = 0;
+  GE_CHK_STATUS_RET_NOLOG(PrepareCopyInputs(context, out_shape_hbm, copy_num));
+
+  STR_FWK_OP_KERNEL aicpu_task = {0};
+  std::string task_info;
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[GenMemCopyTask] Start");
+  GE_CHK_STATUS_RET_NOLOG(GenMemCopyTask(copy_num, aicpu_task, task_info));
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[GenMemCopyTask] End");
+
+  std::unique_ptr<TensorBuffer> kernel_workspace_buf;
+  GE_CHK_STATUS_RET(AllocTensorBuffer(task_info.size(), kernel_workspace_buf),
+                    "Node[%s] alloc copy task workspace buf failed, size=%zu.", node_name_.c_str(), task_info.size());
+
+  GE_CHK_RT_RET(rtMemcpy(kernel_workspace_buf->GetData(), task_info.size(), task_info.data(), task_info.size(),
+                         RT_MEMCPY_HOST_TO_DEVICE));
+
+  aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = reinterpret_cast<uintptr_t>(copy_ioaddr_dev_->GetData());
+  aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr = reinterpret_cast<uintptr_t>(kernel_workspace_buf->GetData());
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoLen = 0;
+
+  GE_CHK_RT_RET(rtMemcpy(copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL), &aicpu_task,
+                         sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE));
+
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[LaunchCopy] Start");
+  GE_CHK_RT_RET(rtKernelLaunchEx(copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL), RT_KERNEL_DEFAULT,
+                                 context.GetStream()));
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[LaunchCopy] End");
+
+  GE_CHK_RT_RET(rtStreamSynchronize(context.GetStream()));
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[SynchronizeCopy] End");
+  return SUCCESS;
+}
+
+Status AicpuTfNodeTask::PrepareCopyInputs(const TaskContext &context,
+                                          const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm,
+                                          uint64_t &copy_num) {
   std::vector<uint64_t> copy_input_release_flag;
   std::vector<uint64_t> copy_input_data_size;
   std::vector<uint64_t> copy_input_src;
   std::vector<uint64_t> copy_input_dst;
 
-  for (size_t i = 0; i < output_num_; ++i) {
+  for (auto i = 0; i < node_item_->num_outputs; ++i) {
     const auto &summary = output_summary_host_[i];
-    GELOGI("node[%s] [%zu]th output summary, shape data=%lx, shape data size=%lu, raw data=%lx, raw data size=%lu.",
-           node_->GetName().c_str(), i, summary.shape_data_ptr, summary.shape_data_size, summary.raw_data_ptr,
+    GELOGI("Node[%s] out[%d] summary, shape data=0x%lx, shape data size=%lu, raw data=0x%lx, raw data size=%lu.",
+           node_name_.c_str(), i, summary.shape_data_ptr, summary.shape_data_size, summary.raw_data_ptr,
            summary.raw_data_size);
     if (summary.raw_data_size > 0) {
       auto output = context.GetOutput(i);
@@ -349,15 +413,9 @@ Status AicpuTfNodeTask::CopyDataToHbm(TaskContext &context,
     }
   }
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(copy_input_release_flag.empty(), return INTERNAL_ERROR, "Node %s need copy num is 0",
-                                 node_->GetName().c_str());
+  copy_num = copy_input_release_flag.size();
 
-  auto copy_num = copy_input_release_flag.size();
-  STR_FWK_OP_KERNEL aicpu_task = {0};
-  std::string task_info;
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[GenMemCopyTask] Start");
-  GE_CHK_STATUS_RET_NOLOG(GenMemCopyTask(copy_num, aicpu_task, task_info));
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[GenMemCopyTask] End");
+  GE_CHK_BOOL_RET_STATUS(copy_num > 0, INTERNAL_ERROR, "Node[%s] need copy num is 0", node_name_.c_str());
 
   // copy task need copy output and output shape
   const size_t copy_input_buf_len = copy_num * sizeof(uint64_t);
@@ -370,269 +428,253 @@ Status AicpuTfNodeTask::CopyDataToHbm(TaskContext &context,
                          copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
   GE_CHK_RT_RET(rtMemcpy(copy_input_dst_dev_->GetData(), copy_input_dst_dev_->GetSize(), &copy_input_dst[0],
                          copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
-
-  std::unique_ptr<TensorBuffer> kernel_workspace_buf;
-  GE_CHK_STATUS_RET(AllocTensorBuffer(task_info.size(), kernel_workspace_buf),
-                    "Node %s alloc copy task workspace buf failed, size=%zu", node_->GetName().c_str(),
-                    task_info.size());
-
-  GE_CHK_RT_RET(rtMemcpy(kernel_workspace_buf->GetData(), task_info.size(), task_info.data(), task_info.size(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
-
-  aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = reinterpret_cast<uintptr_t>(copy_ioaddr_dev_->GetData());
-  aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr = reinterpret_cast<uintptr_t>(kernel_workspace_buf->GetData());
-  aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
-  aicpu_task.fwkKernelBase.fwk_kernel.extInfoNum = 0;
-
-  GE_CHK_RT_RET(rtMemcpy(copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL), &aicpu_task,
-                         sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE));
-
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[LaunchCopy] Start");
-  GE_CHK_RT_RET(rtKernelLaunchEx(copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL), RT_KERNEL_DEFAULT,
-                                 context.GetStream()));
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[LaunchCopy] End");
-
-  GE_CHK_RT_RET(rtStreamSynchronize(context.GetStream()));
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[SynchronizeCopy] End");
   return SUCCESS;
 }
 
-Status AicpuTfNodeTask::GenMemCopyTask(uint64_t copy_num, STR_FWK_OP_KERNEL &task, string &task_info) {
+Status AicpuTfNodeTask::GenMemCopyTask(uint64_t copy_num, STR_FWK_OP_KERNEL &task, std::string &task_info) {
   auto instance_ptr = ge::GELib::GetInstance();
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(instance_ptr == nullptr || !instance_ptr->InitFlag(), return GE_CLI_GE_NOT_INITIALIZED,
-                                 "GE is not initialized");
+  GE_CHK_BOOL_RET_STATUS(instance_ptr != nullptr && instance_ptr->InitFlag(), GE_CLI_GE_NOT_INITIALIZED,
+                         "GE is not initialized");
 
   static constexpr const char *const kKernelLibName = "aicpu_kernel";
   OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(kernel_info == nullptr, return FAILED, "Get op kernel info store failed");
+  GE_CHK_BOOL_RET_STATUS(kernel_info != nullptr, FAILED, "Get op kernel info store[%s] failed", kKernelLibName);
   auto ret = kernel_info->GenMemCopyTask(copy_num, task, task_info);
-  GE_CHK_STATUS_RET(ret, "call aicpu GenMemCopyTask failed, copy_num=%lu, ret=%u", copy_num, ret);
+  GE_CHK_STATUS_RET(ret, "Call aicpu GenMemCopyTask failed, copy_num=%lu, ret=%u", copy_num, ret);
   return SUCCESS;
 }
 
 Status AicpuTfNodeTask::UpdateShapeByHbmBuffer(TaskContext &context,
                                                const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm) {
-  GE_CHK_BOOL_RET_STATUS(out_shape_hbm.size() == output_num_, INTERNAL_ERROR,
-                         "Node %s has %zu outputs but out shape is %zu", node_->GetName().c_str(), output_num_,
+  GE_CHK_BOOL_RET_STATUS(out_shape_hbm.size() == static_cast<std::size_t>(node_item_->num_outputs), INTERNAL_ERROR,
+                         "Node[%s] has %d outputs but out shape is %zu", node_name_.c_str(), node_item_->num_outputs,
                          out_shape_hbm.size());
-  auto op_desc = node_->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-  for (size_t i = 0; i < output_num_; ++i) {
+  for (auto i = 0; i < node_item_->num_outputs; ++i) {
     const auto &result_summary = output_summary_host_[i];
-    auto output_desc = op_desc->MutableOutputDesc(i);
+    auto output_desc = node_item_->op_desc->MutableOutputDesc(i);
     std::vector<int64_t> shape_dims;
     if (result_summary.shape_data_size > 0) {
       const auto &shape_hbm = out_shape_hbm[i];
       GE_CHK_BOOL_RET_STATUS((result_summary.shape_data_size % sizeof(int64_t) == 0), INTERNAL_ERROR,
-                             "node %s %zuth output shape data size is %lu is not divided by int64_t.",
-                             node_->GetName().c_str(), i, result_summary.shape_data_size);
+                             "Node[%s] [%d]th output shape data size is %lu is not divided by int64_t.",
+                             node_name_.c_str(), i, result_summary.shape_data_size);
       uint32_t dim_num = result_summary.shape_data_size / sizeof(int64_t);
-      GELOGI("node %s %zuth output dim num=%lu.", node_->GetName().c_str(), i, dim_num);
+      GELOGI("Node[%s] [%d]th output dim num=%u.", node_name_.c_str(), i, dim_num);
       std::unique_ptr<int64_t[]> shape_addr(new (std::nothrow) int64_t[dim_num]());
       GE_CHECK_NOTNULL(shape_addr);
       GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size, shape_hbm->GetData(),
                              shape_hbm->GetSize(), RT_MEMCPY_DEVICE_TO_HOST));
       for (uint32_t dim_idx = 0; dim_idx < dim_num; ++dim_idx) {
         shape_dims.emplace_back(shape_addr[dim_idx]);
-        GELOGD("node %s %zuth output dim[%u]=%lu.", node_->GetName().c_str(), i, dim_idx, shape_addr[dim_idx]);
+        GELOGD("Node[%s] [%d]th output dim[%u]=%ld.", node_name_.c_str(), i, dim_idx, shape_addr[dim_idx]);
       }
     }
     GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(GeShape(shape_dims), i, output_desc),
-                      "update node %s %uth output shape failed.", node_->GetName().c_str(), i);
+                      "Node[%s] update [%d]th output shape failed.", node_name_.c_str(), i);
   }
-  return SUCCESS;
-}
-
-Status AicpuTfNodeTask::UpdateOutputShapeFromExtInfo() {
-  auto node_name = node_->GetName();
-  if (output_num_ == 0) {
-    GELOGI("Task [%s] output_num is 0, no need reset output shape.", node_name.c_str());
-    return SUCCESS;
-  }
-
-  auto ext_output_shape_offset = ext_info_num_ * sizeof(ExtInfo) + sizeof(uint32_t) + input_num_ * sizeof(MaxShape);
-  size_t ext_info_output_shape_len = output_num_ * sizeof(MaxShape);
-  auto output_shape_host_buf = ext_info_addr_host_.get() + ext_output_shape_offset;
-  auto output_shape_dev_buf = reinterpret_cast<uint8_t *>(ext_info_addr_dev_->GetData()) + ext_output_shape_offset;
-
-  GE_CHK_RT_RET(rtMemcpy(output_shape_host_buf, ext_info_output_shape_len, output_shape_dev_buf,
-                         ext_info_output_shape_len, RT_MEMCPY_DEVICE_TO_HOST));
-
-  auto op_desc = node_->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-
-  auto shapeBuf = reinterpret_cast<int64_t *>(output_shape_host_buf);
-  for (uint32_t i = 0; i < output_num_; ++i) {
-    std::vector<int64_t> dims;
-    GetShapeFromBuf(shapeBuf + i * kMaxDimCount, kMaxDimCount, dims);
-    auto output_desc = op_desc->MutableOutputDesc(i);
-    GE_CHECK_NOTNULL(output_desc);
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(GeShape(dims), i, output_desc),
-                      "update node %s %uth output shape failed.", node_name.c_str(), i);
-  }
-
   return SUCCESS;
 }
 
 Status AicpuTfNodeTask::UpdateShapeAndDataByResultSummary(TaskContext &context) {
-  GELOGI("Task [%s] update shape and data by result summary begin.", node_->GetName().c_str());
+  GELOGI("Node[%s] update shape and data by result summary begin.", node_name_.c_str());
 
   std::vector<std::unique_ptr<TensorBuffer>> out_shape_hbm;
   GE_CHK_STATUS_RET(ReadResultSummaryAndPrepareMemory(context, out_shape_hbm),
-                    "node %s read ResultSummary and update output shape failed.", node_->GetName().c_str());
+                    "Node[%s] read ResultSummary and update output shape failed.", node_name_.c_str());
 
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(),
-                        "[ReadResultSummaryAndPrepareMemory] End");
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[ReadResultSummaryAndPrepareMemory] End");
 
-  GE_CHK_STATUS_RET(CopyDataToHbm(context, out_shape_hbm), "node %s copy data to output failed.",
-                    node_->GetName().c_str());
+  GE_CHK_STATUS_RET(CopyDataToHbm(context, out_shape_hbm), "Node[%s] copy data to output failed.", node_name_.c_str());
 
-  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[CopyDataToHbm] End");
+  RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[CopyDataToHbm] End");
 
-  GE_CHK_STATUS_RET(UpdateShapeByHbmBuffer(context, out_shape_hbm), "node %s update shape by hbm buffer failed.",
-                    node_->GetName().c_str());
+  GE_CHK_STATUS_RET(UpdateShapeByHbmBuffer(context, out_shape_hbm), "Node[%s] update shape by hbm buffer failed.",
+                    node_name_.c_str());
 
-  GELOGI("Task [%s] update shape and data by result summary end.", node_->GetName().c_str());
+  GELOGI("Node[%s] update shape and data by result summary end.", node_name_.c_str());
   return SUCCESS;
 }
 
-void AicpuTfNodeTask::GetShapeFromBuf(const int64_t buf[], uint32_t buf_size, std::vector<int64_t> &dims) {
-  for (uint32_t index = 0; index < buf_size; ++index) {
-    auto tmpDim = buf[index];
-    if (tmpDim == kDimEndFlag) {
-      break;
-    }
-    dims.emplace_back(tmpDim);
-  }
-}
-
-Status AicpuTfNodeTask::UpdateArgs(TaskContext &context) {
-  auto node_name = node_->GetName();
-  GELOGI("AicpuTfNodeTask[%s] UpdateArgs begin. unknown_type=%d", node_name.c_str(), unknown_type_);
-  auto op_desc = node_->GetOpDesc();
-  auto io_nums = input_num_ + output_num_;
-  if (io_nums == 0) {
-    GELOGI("Node %s has no input and output, no need update args.", node_name.c_str());
-    return SUCCESS;
-  }
-
-  vector<uint64_t> io_addrs(io_nums, 0UL);
-  size_t ext_shape_nums = (unknown_type_ == DEPEND_COMPUTE) ? input_num_ : io_nums;
-  vector<MaxShape> io_shapes(ext_shape_nums);
-
-  uint32_t index = 0;
-  for (size_t i = 0; i < input_num_; ++i, ++index) {
+Status AicpuTfNodeTask::UpdateIoAddr(TaskContext &context) {
+  vector<uint64_t> io_addrs;
+  io_addrs.reserve(node_item_->num_inputs + node_item_->num_outputs);
+  for (auto i = 0; i < node_item_->num_inputs; ++i) {
     auto inputData = context.GetInput(i);
     GE_CHECK_NOTNULL(inputData);
-    auto input_desc = op_desc->MutableInputDesc(i);
-    GE_CHECK_NOTNULL(input_desc);
-    auto &shape = input_desc->MutableShape();
-
-    GELOGD("io_addr[%u] = %p, size = %zu", index, inputData->GetData(), inputData->GetSize());
-    io_addrs[index] = reinterpret_cast<uintptr_t>(inputData->GetData());
-    GE_CHK_STATUS_RET(SetShapeToBuf(shape, io_shapes[index].dims, kMaxDimCount),
-                      "task %s input[%zu] SetShapeToBuf failed.", node_name.c_str(), i);
+    GELOGD("Node[%s] input[%d] addr = %p, size = %zu", node_name_.c_str(), i, inputData->GetData(),
+           inputData->GetSize());
+    io_addrs.emplace_back(reinterpret_cast<uintptr_t>(inputData->GetData()));
   }
 
   if (unknown_type_ != DEPEND_COMPUTE) {
     // unknown type 4 do this in call back.
     GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
-    for (size_t j = 0; j < output_num_; ++j, ++index) {
+    for (auto j = 0; j < node_item_->num_outputs; ++j) {
       auto outputData = context.GetOutput(j);
       GE_CHECK_NOTNULL(outputData);
-      auto output_desc = op_desc->MutableOutputDesc(j);
-      GE_CHECK_NOTNULL(output_desc);
-      auto shape = output_desc->GetShape();
 
-      // shape range need use range update shape
-      if (unknown_type_ == DEPEND_SHAPE_RANGE) {
-        std::vector<std::pair<int64_t, int64_t>> range;
-        auto range_ret = output_desc->GetShapeRange(range);
-        GE_CHK_BOOL_RET_STATUS(range_ret == GRAPH_SUCCESS, INTERNAL_ERROR,
-                               "node %s has is shape range but get GetShapeRange failed, ret=%u.", node_name.c_str(),
-                               range_ret);
-        for (size_t k = 0; k < range.size(); ++k) {
-          if (shape.GetDim(k) < 0 && k < range.size()) {
-            GELOGD("node %s output[%zu] update dim[%zu] from %lu to range max %lu.", node_name.c_str(), j, k,
-                   shape.GetDim(k), range[k].second);
-            shape.SetDim(k, range[k].second);
-          }
-        }
-      }
-
-      GELOGD("io_addr[%u] = %p, size = %zu", index, outputData->GetData(), outputData->GetSize());
-      io_addrs[index] = reinterpret_cast<uintptr_t>(outputData->GetData());
-      GE_CHK_STATUS_RET(SetShapeToBuf(shape, io_shapes[index].dims, kMaxDimCount),
-                        "task %s output[%zu] SetShapeToBuf failed.", node_name.c_str(), j);
+      GELOGD("Node[%s] output[%d] addr = %p, size = %zu", node_name_.c_str(), j, outputData->GetData(),
+             outputData->GetSize());
+      io_addrs.emplace_back(reinterpret_cast<uintptr_t>(outputData->GetData()));
     }
   } else {
     // unknown type 4 use result summary update ioaddr.
-    GELOGI("AicpuTfNodeTask[%s] is unknown-shape, use ResultSummary as out-addr.", node_name.c_str());
-    GE_CHK_BOOL_RET_STATUS(output_summary_.size() == output_num_, INTERNAL_ERROR,
-                           "node %s has %zu output but %zu output summary.", node_name.c_str(), output_num_,
-                           output_summary_.size());
+    GELOGI("Node[%s] is depend compute node, use result summary as out addr.", node_name_.c_str());
+    GE_CHK_BOOL_RET_STATUS(output_summary_.size() == static_cast<std::size_t>(node_item_->num_outputs), INTERNAL_ERROR,
+                           "Node[%s] has %d output but %zu output summary.", node_name_.c_str(),
+                           node_item_->num_outputs, output_summary_.size());
 
-    for (size_t j = 0; j < output_num_; ++j, ++index) {
+    for (auto j = 0; j < node_item_->num_outputs; ++j) {
       void *summary_addr = output_summary_[j]->GetData();
-      io_addrs[index] = reinterpret_cast<uintptr_t>(summary_addr);
+      io_addrs.emplace_back(reinterpret_cast<uintptr_t>(summary_addr));
     }
   }
 
   // if has input and output, need copy to ioaddr
-  if (io_nums > 0) {
+  if (!io_addrs.empty()) {
     // copy input and output to device
     GE_CHK_RT_RET(rtMemcpy(input_output_addr_->GetData(), input_output_addr_->GetSize(), &io_addrs[0],
                            sizeof(uint64_t) * io_addrs.size(), RT_MEMCPY_HOST_TO_DEVICE));
   }
-
-  // if has shape ext info, need copy to ext addr
-  if (ext_shape_nums > 0) {
-    uint32_t offset = ext_info_num_ * sizeof(ExtInfo) + sizeof(uint32_t);
-    uint32_t len = sizeof(MaxShape) * ext_shape_nums;
-    auto ext_addr_dev_base = reinterpret_cast<uint8_t *>(ext_info_addr_dev_->GetData()) + offset;
-    // copy input and output shapes to device
-    GE_CHK_RT_RET(rtMemcpy(ext_addr_dev_base, ext_info_addr_dev_->GetSize() - offset, &io_shapes[0], len,
-                           RT_MEMCPY_HOST_TO_DEVICE));
-  }
-
-  GELOGI("AicpuTfNodeTask[%s] UpdateArgs end.", node_name.c_str());
   return SUCCESS;
 }
 
-Status AicpuTfNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
-  auto node_name = node_->GetName();
-  GELOGI("AicpuTfNodeTask[%s] ExecuteAsync Start. unknown_type=%d.", node_name.c_str(), unknown_type_);
-
+Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
+  GELOGI("Node[%s] launch task start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
   uint32_t flag = RT_KERNEL_DEFAULT;
   GE_CHK_RT_RET(rtKernelLaunchEx(kernel_buf_->GetData(), kernel_buf_->GetSize(), flag, context.GetStream()));
-
-  auto callback = [=, &context]() {
-    GELOGI("AicpuTfNodeTask[%s] callback start.", node_->GetName().c_str());
-    RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[TaskCallback] Start");
-    Status callback_ret = SUCCESS;
-    // check need update shape, call update shape.
-    if (unknown_type_ == DEPEND_SHAPE_RANGE) {
-      // check result
-      callback_ret = UpdateOutputShapeFromExtInfo();
-    } else if (unknown_type_ == DEPEND_COMPUTE) {
-      callback_ret = UpdateShapeAndDataByResultSummary(context);
-    }
-
-    GELOGI("AicpuTfNodeTask[%s] refresh output complete, ret = %d.", node_->GetName().c_str(), callback_ret);
-    RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_->GetName().c_str(), "[TaskCallback] End");
-
-    if (done_callback != nullptr) {
-      context.SetStatus(callback_ret);
-      done_callback();
-    }
-
-    GELOGI("AicpuTfNodeTask[%s] callback end.", node_->GetName().c_str());
-  };
-
-  GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(callback));
-
-  GELOGI("AicpuTfNodeTask[%s] ExecuteAsync end.", node_name.c_str());
+  GELOGI("Node[%s] launch end.", node_name_.c_str());
   return SUCCESS;
+}
+
+Status AicpuTfNodeTask::TaskCallback(TaskContext &context) {
+  GELOGI("Node[%s] task callback start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  Status callback_ret = SUCCESS;
+  // check need update shape, call update shape.
+  if (unknown_type_ == DEPEND_SHAPE_RANGE) {
+    // check result
+    callback_ret = UpdateOutputShapeFromExtInfo();
+  } else if (unknown_type_ == DEPEND_COMPUTE) {
+    callback_ret = UpdateShapeAndDataByResultSummary(context);
+  }
+  GELOGI("Node[%s] task callback end.", node_name_.c_str());
+  return callback_ret;
+}
+
+Status AicpuNodeTask::Init(const HybridModel &model) {
+  auto node_name = node_name_;
+  GELOGI("Node[%s] init start.", node_name.c_str());
+
+  GE_CHK_BOOL_RET_STATUS(unknown_type_ != DEPEND_COMPUTE, FAILED,
+                         "Node[%s] unknown type[%d] is depend compute, it's not supported now.", node_name.c_str(),
+                         unknown_type_);
+
+  GE_CHK_BOOL_RET_STATUS(task_def_.has_kernel(), FAILED, "Node[%s] task def does not has kernel.", node_name.c_str());
+  auto &kernel_def = task_def_.kernel();
+
+  auto &args = kernel_def.args();
+  args_size_ = kernel_def.args_size();
+
+  GE_CHK_BOOL_RET_STATUS(args.size() == args_size_, FAILED, "Node[%s] task def args.size=%zu, but args_size=%u.",
+                         node_name.c_str(), args.size(), args_size_);
+
+  GE_CHK_BOOL_RET_STATUS(args_size_ >= sizeof(aicpu::AicpuParamHead), FAILED,
+                         "Node[%s] task def args_size=%u is less than aicpu param head len=%zu.", node_name.c_str(),
+                         args_size_, sizeof(aicpu::AicpuParamHead));
+
+  args_.reset(new (std::nothrow) uint8_t[args_size_]());
+  GE_CHK_BOOL_RET_STATUS(args_ != nullptr, FAILED, "Node[%s] malloc args mem failed, args_size_=%u.", node_name.c_str(),
+                         args_size_);
+
+  errno_t sec_ret = memcpy_s(args_.get(), args_size_, args.c_str(), args.size());
+  GE_CHK_BOOL_RET_STATUS(sec_ret == EOK, INTERNAL_ERROR, "Node[%s] copy args failed, ret: %d", node_name_.c_str(),
+                         sec_ret);
+
+  auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(args_.get());
+  auto io_num = node_item_->num_inputs + node_item_->num_outputs;
+
+  // check AicpuParamHead ioAddrNum is right.
+  GE_CHK_BOOL_RET_STATUS((aicpu_param_head->ioAddrNum == static_cast<uint32_t>(io_num)), PARAM_INVALID,
+                         "Node[%s] param head ioAddrNum=%u, but node has %d inputs and %d outputs.", node_name.c_str(),
+                         aicpu_param_head->ioAddrNum, node_item_->num_inputs, node_item_->num_outputs);
+
+  auto mini_len = sizeof(aicpu::AicpuParamHead) + io_num * sizeof(uint64_t);
+  // check args len must over mini len.
+  GE_CHK_BOOL_RET_STATUS((mini_len <= aicpu_param_head->length), PARAM_INVALID,
+                         "Node[%s] param head length=%u, but min len need %zu.", node_name.c_str(),
+                         aicpu_param_head->length, mini_len);
+
+  auto &kernel_ext_info = kernel_def.kernel_ext_info();
+  auto kernel_ext_info_size = kernel_def.kernel_ext_info_size();
+  GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
+                         "Node[%s] task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.", node_name.c_str(),
+                         kernel_ext_info.size(), kernel_ext_info_size);
+
+  GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info), "Node[%s] init ext info failed.", node_name.c_str());
+
+  aicpu_param_head->extInfoLength = ext_info_addr_dev_->GetSize();
+  aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
+
+  GELOGI("Node[%s] init end.", node_name.c_str());
+  return SUCCESS;
+}
+
+Status AicpuNodeTask::UpdateIoAddr(TaskContext &context) {
+  vector<uint64_t> io_addrs;
+  io_addrs.reserve(node_item_->num_inputs + node_item_->num_outputs);
+  for (auto i = 0; i < node_item_->num_inputs; ++i) {
+    auto inputData = context.GetInput(i);
+    GE_CHECK_NOTNULL(inputData);
+
+    GELOGD("Node[%s] input[%d] = %p, size = %zu", node_name_.c_str(), i, inputData->GetData(), inputData->GetSize());
+    io_addrs.emplace_back(reinterpret_cast<uintptr_t>(inputData->GetData()));
+  }
+
+  GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
+  for (auto j = 0; j < node_item_->num_outputs; ++j) {
+    auto outputData = context.GetOutput(j);
+    GE_CHECK_NOTNULL(outputData);
+    GELOGD("Node[%s] output[%d] addr = %p, size = %zu", node_name_.c_str(), j, outputData->GetData(),
+           outputData->GetSize());
+    io_addrs.emplace_back(reinterpret_cast<uintptr_t>(outputData->GetData()));
+  }
+
+  auto io_addr = args_.get() + sizeof(aicpu::AicpuParamHead);
+  // if has input and output, need copy to ioaddr
+  error_t cpy_ret =
+    memcpy_s(io_addr, args_size_ - sizeof(aicpu::AicpuParamHead), &io_addrs[0], sizeof(uint64_t) * io_addrs.size());
+  GE_CHK_BOOL_RET_STATUS(cpy_ret == EOK, INTERNAL_ERROR,
+                         "Node[%s] memcpy io addr to AicpuParamHead failed, ret=%d, args_size=%u, io nums=%zu.",
+                         node_name_.c_str(), cpy_ret, args_size_, io_addrs.size());
+  return SUCCESS;
+}
+
+Status AicpuNodeTask::LaunchTask(TaskContext &context) {
+  GELOGI("Node[%s] launch task start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  const auto &so_name = task_def_.kernel().so_name();
+  const auto &kernel_name = task_def_.kernel().kernel_name();
+  uint32_t flag = RT_KERNEL_DEFAULT;
+  auto rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name.c_str()),
+                                          reinterpret_cast<const void *>(kernel_name.c_str()),
+                                          1,  // default core dim is 1
+                                          args_.get(), args_size_, nullptr, context.GetStream(), flag);
+  GE_CHK_RT_RET(rt_ret);
+  GELOGI("Node[%s] launch task end.", node_name_.c_str());
+  return SUCCESS;
+}
+
+Status AicpuNodeTask::TaskCallback(TaskContext &context) {
+  GELOGI("Node[%s] task callback start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  Status callback_ret = SUCCESS;
+  // check need update shape, call update shape.
+  if (unknown_type_ == DEPEND_SHAPE_RANGE) {
+    // check result
+    callback_ret = UpdateOutputShapeFromExtInfo();
+  } else {
+    GELOGI("Node[%s] unknown shape type is %d no need update output shape.", node_name_.c_str(), unknown_type_);
+  }
+  GELOGI("Node[%s] task callback end.", node_name_.c_str());
+  return callback_ret;
 }
 
 Status AiCpuNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
@@ -643,19 +685,34 @@ Status AiCpuNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) cons
 Status AiCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,
                                    std::shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
-  GELOGI("Node[%s] create task start.", node->GetName().c_str());
+  GELOGI("Node[%s] load task start.", node->GetName().c_str());
+  auto node_item = model.GetNodeItem(node);
+  GE_CHECK_NOTNULL(node_item);
   auto task_defs = model.GetTaskDefs(node);
   GE_CHECK_NOTNULL(task_defs);
-  GE_CHK_BOOL_EXEC((*task_defs).size() == 1, return PARAM_INVALID, "aicpu op[%s] task_def num[%zu] != 1",
-                   node->GetName().c_str(), (*task_defs).size());
-  auto aicpu_task = MakeShared<AicpuTfNodeTask>(node, (*task_defs)[0]);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(aicpu_task == nullptr, return MEMALLOC_FAILED,
-                                 "create aicpuTfNodeTask for node %s failed", node->GetName().c_str());
+  GE_CHK_BOOL_RET_STATUS((*task_defs).size() == 1, PARAM_INVALID, "Node[%s] task_def num[%zu] != 1",
+                         node->GetName().c_str(), (*task_defs).size());
+  const auto &task_def = (*task_defs)[0];
+  std::shared_ptr<AicpuNodeTaskBase> aicpu_task;
+  if (task_def.type() == RT_MODEL_TASK_KERNEL_EX) {
+    GELOGI("Node[%s] task type=%u is AicpuTfNodeTask.", node->GetName().c_str(), task_def.type());
+    aicpu_task = MakeShared<AicpuTfNodeTask>(node_item, task_def);
+  } else if (task_def.type() == RT_MODEL_TASK_KERNEL) {
+    GELOGI("Node[%s] task type=%u is AicpuNodeTask.", node->GetName().c_str(), task_def.type());
+    aicpu_task = MakeShared<AicpuNodeTask>(node_item, task_def);
+  } else {
+    GELOGE(UNSUPPORTED, "Node[%s] task type=%u is not supported by aicpu node executor.", node->GetName().c_str(),
+           task_def.type());
+    return UNSUPPORTED;
+  }
 
-  GE_CHK_STATUS_RET(aicpu_task->Init(model), "AicpuTfNodeTask %s Init failed.", node->GetName().c_str());
+  GE_CHK_BOOL_RET_STATUS(aicpu_task != nullptr, MEMALLOC_FAILED, "Load task for node %s failed.",
+                         node->GetName().c_str());
+
+  GE_CHK_STATUS_RET(aicpu_task->Init(model), "Node[%s] task init failed.", node->GetName().c_str());
 
   task = std::move(aicpu_task);
-  GELOGI("Node[%s] create task end.", node->GetName().c_str());
+  GELOGI("Node[%s] load task end.", node->GetName().c_str());
   return SUCCESS;
 }
 }  // namespace hybrid

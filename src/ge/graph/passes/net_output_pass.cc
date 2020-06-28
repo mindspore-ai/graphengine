@@ -429,13 +429,28 @@ Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraph
   }
   return SUCCESS;
 }
+
+Status NetOutputPass::CreateNetOutputNode(OpDescPtr &net_output_desc, ge::ComputeGraphPtr &graph) {
+  // Only flush subgraph name
+  string node_name =
+    (graph->GetParentGraph() != nullptr) ? (graph->GetName() + "_" + NODE_NAME_NET_OUTPUT) : NODE_NAME_NET_OUTPUT;
+  net_output_desc = MakeShared<OpDesc>(node_name, NETOUTPUT);
+  if (net_output_desc == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "Make shared net output op failed.");
+    return MEMALLOC_FAILED;
+  }
+  (void)AttrUtils::SetListStr(net_output_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES,
+                              std::move(std::vector<std::string>()));
+  return SUCCESS;
+}
+
 Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Compute graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
   GELOGI("NetOutputPass Run.");
-  NodePtr output_node = graph->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr output_node = graph->FindFirstNodeMatchType(NETOUTPUT);
   OpDescPtr net_output_desc = nullptr;
   std::vector<RetvalInfo> output_nodes_info;
 
@@ -447,13 +462,10 @@ Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
                                 std::move(std::vector<std::string>()));
     return ProcessWithNetoutput(graph, output_node);
   } else {
-    net_output_desc = MakeShared<OpDesc>(NODE_NAME_NET_OUTPUT, NETOUTPUT);
-    if (net_output_desc == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "Make shared net output op failed.");
-      return MEMALLOC_FAILED;
+    if (CreateNetOutputNode(net_output_desc, graph) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Get net output nodes failed.");
+      return INTERNAL_ERROR;
     }
-    (void)AttrUtils::SetListStr(net_output_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES,
-                                std::move(std::vector<std::string>()));
     Status ret = GetOutputNode(graph, output_nodes_info);
     if (ret != SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Get net output nodes failed.");

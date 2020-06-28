@@ -59,11 +59,15 @@ REG_OP(TransposeD)
         The returned tensor's dimension i will correspond to the input dimension perm[i].
 
 *@par Inputs:
+*Two inputs, including:
 *@li x: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
 *@li perm: A Tensor of type int32 or int64. A permutation of the dimensions of "x".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Transpose.
 */
 REG_OP(Transpose)
     .INPUT(x, TensorType::BasicType())
@@ -91,16 +95,21 @@ REG_OP(Permute)
     .OP_END_FACTORY_REG(Permute)
 
 /**
-*@brief Flattens the inputs. Reserves axis 0 and flattens the input tensors along axis 1.
+*@brief Flattens the inputs. Reserves axis 0 and flattens the input tensors
+* along axis 1.
 
 *@par Inputs:
 *One input: \n
-*x: A multi-dimensional Tensor. Must be one of the following types: \n
-int8, uint8, int16, uint16, int32, int64, float16, float32, float64.
+*x: A multi-dimensional Tensor. Must be one of the following types:
+* int8, uint8, int16, uint16, int32, uint32, int64,uint64, float16, float32.
 
 *@par Outputs:
-*y: A 2D flattened Tensor (Reserves axis 0 and flattens the input tensors along axis 1). Must be one of the following data types: int8, uint8, int16, uint16, int32, int64, float16, float32, float64.
+*y: A 2D flattened Tensor (Reserves axis 0 and flattens the input tensors
+* along axis 1). Must be one of the following data types: int8, uint8, int16,
+* uint16, int32, uint32, int64,uint64, float16, float32.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Flatten.
 */
 REG_OP(Flatten)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64,
@@ -115,14 +124,17 @@ REG_OP(Flatten)
 *@brief Permutes and crops the input tensor.
 
 *@par Inputs:
-* Three inputs, including: \n
-*@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+* Three inputs, including:
+*@li x: A 5D Tensor of type float16 or int8 or uint8, with format NC1HWC0.
 *@li block_shape: A 1D list or tuple of int32 or int64.
-*@li crops: A 2D list or tuple of int32 or int64. Specifies the amount to crop from start and end dimensions after permutation.
+*@li crops: A 2D list or tuple of int32 or int64. Specifies the amount to 
+*crop from start and end dimensions after permutation.
 
 *@par Outputs:
 *y: A Tensor with format NC1HWC0. Has the same type as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator BatchToSpaceND.
 */
 REG_OP(BatchToSpaceND)
     .INPUT(x, TensorType::BasicType())
@@ -135,17 +147,20 @@ REG_OP(BatchToSpaceND)
 *@brief Permutes and crops the input tensor.
 
 *@par Inputs:
-* One input: \n
-*x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
+* One input:
+*x: A 5D Tensor of type float16 or int8 or uint8, with format NC1HWC0.
 
 *@par Attributes:
 *@li block_shape: A required 1D list or tuple of int32 or int64.
-*@li crops: A required 2D list or tuple of int32 or int64. Specifies the amount to crop from the start and end dimensions after permutation.
+*@li crops: A required 2D list or tuple of int32 or int64. Specifies the amount to crop
+* from the start and end dimensions after permutation.
 
 *@par Outputs:
 *y: A Tensor with format NC1HWC0. Has the same type as input "x".
 
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator BatchToSpaceND.
 */
 REG_OP(BatchToSpaceNDD)
     .INPUT(x, TensorType::BasicType())
@@ -166,6 +181,8 @@ REG_OP(BatchToSpaceNDD)
 *@par Outputs:
 *y: A Tensor with format NC1HWC0. Has the same type as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SpaceToBatchND.
 */
 REG_OP(SpaceToBatchND)
     .INPUT(x, TensorType::BasicType())
@@ -188,6 +205,8 @@ REG_OP(SpaceToBatchND)
 *@par Outputs:
 *y: A Tensor with format NC1HWC0. Has the same type as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SpaceToBatchND.
 */
 REG_OP(SpaceToBatchNDD)
     .INPUT(x, TensorType::BasicType())
@@ -197,19 +216,24 @@ REG_OP(SpaceToBatchNDD)
     .OP_END_FACTORY_REG(SpaceToBatchNDD)
 
 /**
-*@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are moved to the "depth" dimension.
+*@brief Outputs a copy of the input tensor where values from the "height" and
+* "width" dimensions are moved to the "depth" dimension.
 
 *@par Inputs:
 *x: An NHWC Tensor. Must be one of the following types:
-* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 
 
 *@par Attributes:
 *@li block_size: A required int, specifying the input block size.
-*@li data_format: An optional string from "NHWC" and "NCHW"
+*@li data_format: An optional string, specifying the data format. Defaults to
+* "NHWC".
 
 *@par Outputs:
 *y: A Tensor. Has the same type as input "x".
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SpaceToDepth.
 */
 REG_OP(SpaceToDepth)
   .INPUT(x, TensorType::BasicType())
@@ -233,6 +257,9 @@ REG_OP(SpaceToDepth)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator DepthToSpace.
 */
 REG_OP(DepthToSpace)
   .INPUT(x, TensorType::BasicType())
@@ -245,23 +272,27 @@ REG_OP(DepthToSpace)
 *@brief Permutes data into spatial data blocks and then prunes them.
 
 *@par Inputs:
-*x: A 4D Tensor with format NC1HWC0. \n
+*@li x: A 4D Tensor with format NC1HWC0.
+*@li crops: A 1D list or tuple of int32 or int64.
 
 *Must be one of the following types: float16, float32
 
 *@par Attributes:
-*@li crops: A required list of int8, int16, int32, or int64. No default value.
-*@li block_size: A required int8, int16, int32, or int64. No default value.
+*block_size: A required int8, int16, int32, or int64. No default value.
 
 *@par Outputs:
-*y: A 4D Tensor with format NC1HWC0, \n
+*y: A 4D Tensor with format NC1HWC0,
 
 * of type float16 or float32.
 
 *@attention Constraints:
 *@li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
-*@li "crops" is a 2D tensor of non-negative integers with shape (2, 2).
-*@li block_size >= 2
+*@li "crops" is a 4Dshape [batch, height, width, depth], height = height_pad - crop_top - crop_bottom, 
+*width = width_pad - crop_left - crop_right.
+*@li block_size > 2
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator BatchToSpace.
 */
 REG_OP(BatchToSpace)
     .INPUT(x, TensorType::BasicType())
@@ -275,13 +306,15 @@ REG_OP(BatchToSpace)
 
 *@par Inputs:
 * One input:
-*x: An Tensor of shape [batch*block_size*block_size, height_pad/block_size, width_pad/block_size, depth].\n
+*x: An Tensor of shape [batch*block_size*block_size, height_pad/block_size, width_pad/block_size, depth].
 *The batch size of the input tensor must be divisible by (block size * block size).
+*Must be one of the following types:  float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, 
+*int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 
 *@par Attributes:
 *@li block_size: Must be one of the following types: `int32`, `int64`.
-*@li crops: An Tensor. Must be one of the following types: int32, Int64.\n
-*2D tensor with non negative integer of shape [2, 2]. It specifies how many\n
+*@li crops: An Tensor. Must be one of the following types: int32, Int64.
+*2D tensor with non negative integer of shape [2, 2]. It specifies how many
 *elements are clipped from the intermediate result of spatial dimension.
 
 *@par Outputs:
@@ -290,7 +323,11 @@ REG_OP(BatchToSpace)
 *@attention Constraints:
 *@li The size of the first dimension of input "x" must be divisible by (block_size * block_size).
 *@li "crops" is a 2D tensor of non-negative integers with shape (2, 2).
-*@li block_size >= 2
+*@li block_size > 2
+
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator BatchToSpace.
 */
 REG_OP(BatchToSpaceD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_UINT8,
@@ -304,12 +341,14 @@ REG_OP(BatchToSpaceD)
     .OP_END_FACTORY_REG(BatchToSpaceD)
 
 /**
-*@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are padded and rearranged to the "batch" dimension.
+*@brief Outputs a copy of the input tensor where values from the "height" and
+* "width" dimensions are padded and rearranged to the "batch" dimension.
 
 *@par Inputs:
+* Two inputs, including:
 *@li x: An NC1HWC0 Tensor. Must be one of the following types:
-* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
-
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 *@li paddings: A 2D tensor of type int, specifying the input.
 
 *@par Attributes:
@@ -317,6 +356,8 @@ REG_OP(BatchToSpaceD)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as input "x".
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SpaceToBatch.
 */
 REG_OP(SpaceToBatch)
     .INPUT(x, TensorType::BasicType())
@@ -338,6 +379,8 @@ REG_OP(SpaceToBatch)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as input "x".
+*@par Third-party framework compatibility
+*@ Compatible with the TensorFlow operator SpaceToBatch.
 */
 REG_OP(SpaceToBatchD)
     .INPUT(x, TensorType::BasicType())
@@ -351,7 +394,7 @@ REG_OP(SpaceToBatchD)
 * tensors.
 
 * @par Inputs:
-* @ x: A rank-R tensor (R > 0) of type BasicType, with format ND or NC1HWC0.
+* x: A rank-R tensor (R > 0) of type BasicType, with format ND or NC1HWC0.
 
 * @par Attributes:
 * @li num: An optional int, specifying the number of tensors to be unpacked to.
@@ -366,6 +409,9 @@ REG_OP(SpaceToBatchD)
 * @li If "num" is not specified, it is inferred from the shape of "x".
 * @li For the ND format, "axis" is in the range [-R, R); For the NC1HWC0 format,
 * "axis" must not be 2, 3, -2, or -3.
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Unpack.
 */
 REG_OP(Unpack)
     .INPUT(x, TensorType::BasicType())
@@ -379,7 +425,9 @@ REG_OP(Unpack)
 * dimension of the output.
 
 * @par Inputs:
-* x: A 4D Tensor with shape [batch, in_rows, in_cols, depth].
+* x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of the
+*    following types:float32, double, int32, uint8, int16, int8, int64, uint16,
+*    float16, uint32, uint64
 
 * @par Attributes:
 * @li ksizes: A required list or tuple. The size of the sliding window for each
@@ -395,13 +443,15 @@ REG_OP(Unpack)
 * @li padding: A required string. The type of padding algorithm to use.
 
 * @par Outputs:
-* Output: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *\n
+* y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *\n
 * ksize_cols * depth] containing image patches with size ksize_rows x ksize_cols\n
 * x depth vectorized in the "depth" dimension. Note "out_rows" and "out_cols"\n
 * are the dimensions of the output patches.
 
 * @attention Constraints:
 * "ksizes", "strides" and "rates" are lists of integers.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator ExtractImagePatches.
 */
 REG_OP(ExtractImagePatches)
     .INPUT(x, TensorType::RealNumberType())
@@ -434,6 +484,8 @@ REG_OP(ExtractImagePatches)
 
 * @attention Constraints:
 * "ksizes" and "strides" are lists of integers.
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator ExtractVolumePatches.
 */
 REG_OP(ExtractVolumePatches)
     .INPUT(x, TensorType::REALNUMBERTYPE())
@@ -504,6 +556,8 @@ REG_OP(ConfusionTranspose)
 
 *@attention Constraints:
 * "axis" and "end_axis" must be within the dimension range of the input. This operator cannot be directly called by the acllopExecute API.
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Flatten.
 */
 REG_OP(FlattenV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT16, DT_UINT16,

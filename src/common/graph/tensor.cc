@@ -589,6 +589,7 @@ GeTensorDesc TensorAdapter::TensorDesc2GeTensorDesc(const TensorDesc &tensor_des
                               tensor_desc.GetDataType());
   ge_tensor_desc.SetOriginShape(GeShape(tensor_desc.GetOriginShape().GetDims()));
   ge_tensor_desc.SetOriginFormat(tensor_desc.GetOriginFormat());
+  ge_tensor_desc.SetName(tensor_desc.GetName());
   std::vector<std::pair<int64_t, int64_t>> shape_range;
   auto status = tensor_desc.GetShapeRange(shape_range);
   if (status != GRAPH_SUCCESS) {
@@ -613,6 +614,7 @@ TensorDesc TensorAdapter::GeTensorDesc2TensorDesc(const GeTensorDesc &ge_tensor_
                          ge_tensor_desc.GetDataType());
   tensor_desc.SetOriginShape(Shape(ge_tensor_desc.GetOriginShape().GetDims()));
   tensor_desc.SetOriginFormat(ge_tensor_desc.GetOriginFormat());
+  tensor_desc.SetName(ge_tensor_desc.GetName());
   std::vector<std::pair<int64_t, int64_t>> shape_range;
   auto status = ge_tensor_desc.GetShapeRange(shape_range);
   if (status != GRAPH_SUCCESS) {

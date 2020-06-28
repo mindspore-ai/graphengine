@@ -40,6 +40,8 @@ include: \n
 
 *@see StatelessMultinomial()
 
+*@par Third-party framework compatibility
+*compatible with StatelessMultinomial op of tensorflow
 */
 REG_OP(StatelessMultinomial)
     .INPUT(logits, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE}))
@@ -61,6 +63,8 @@ REG_OP(StatelessMultinomial)
 *@par Outputs:
 *y: Returns Random values with specified shape.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow StatelessRandomUniformInt operator.
 */
 
 REG_OP(StatelessRandomUniformInt)

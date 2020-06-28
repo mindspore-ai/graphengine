@@ -30,8 +30,10 @@
 
 namespace ge {
 
-static std::set<std::string> caffe_support_input_format = {"NCHW", "ND", "NCDHW"};
+static std::set<std::string> caffe_support_input_format = {"NCHW", "ND"};
 static std::set<std::string> tf_support_input_format = {"NCHW", "NHWC", "ND", "NCDHW", "NDHWC"};
+static std::set<std::string> onnx_support_input_format = {"NCHW", "ND"};
+
 static std::map<std::string, domiTensorFormat_t> input_format_str_to_geformat = {
   {"ND", domi::DOMI_TENSOR_ND},       {"NCHW", domi::DOMI_TENSOR_NCHW},       {"NHWC", domi::DOMI_TENSOR_NHWC},
   {"CHWN", domi::DOMI_TENSOR_CHWN},   {"NC1HWC0", domi::DOMI_TENSOR_NC1HWC0}, {"NHWC1C0", domi::DOMI_TENSOR_NHWC1C0},
@@ -56,5 +58,10 @@ Status CheckOutputTypeParamValid(const std::string output_type);
 Status CheckBufferOptimizeParamValid(const std::string buffer_optimize);
 Status CheckCompressWeightParamValid(const std::string enable_compress_weight, const std::string compress_weight_conf);
 int CheckLogParamValidAndSetLogLevel(const std::string log);
+Status CheckInsertOpConfParamValid(const std::string insert_op_conf);
+Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory);
+Status CheckEnableSingleStreamParamValid(const std::string enable_single_stream);
+Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::string &op_select_implmode);
+void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips);
 }  // namespace ge
 #endif  // FRAMEWORK_DOMI_ATC_IR_COMMON_H_

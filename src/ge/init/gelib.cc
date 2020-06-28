@@ -29,6 +29,7 @@
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/util.h"
 #include "ge/ge_api_types.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
 #include "graph/ge_context.h"
@@ -44,6 +45,7 @@ using Json = nlohmann::json;
 namespace ge {
 namespace {
 const int kDecimal = 10;
+const int kSocVersionLen = 50;
 }  // namespace
 static std::shared_ptr<GELib> instancePtr_ = nullptr;
 
@@ -57,15 +59,17 @@ Status GELib::Initialize(const map<string, string> &options) {
     GELOGE(GE_CLI_INIT_FAILED, "GeLib initialize failed, malloc shared_ptr failed.");
     return GE_CLI_INIT_FAILED;
   }
-  Status ret = instancePtr_->SetRTSocVersion(options);
+
+  map<string, string> new_options;
+  Status ret = instancePtr_->SetRTSocVersion(options, new_options);
   if (ret != SUCCESS) {
     GELOGE(ret, "GeLib initial failed.");
     return ret;
   }
-  GetMutableGlobalOptions().insert(options.begin(), options.end());
+  GetMutableGlobalOptions().insert(new_options.begin(), new_options.end());
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GE_TIMESTAMP_START(Init);
-  ret = instancePtr_->InnerInitialize(options);
+  ret = instancePtr_->InnerInitialize(new_options);
   if (ret != SUCCESS) {
     GELOGE(ret, "GeLib initial failed.");
     instancePtr_ = nullptr;
@@ -166,10 +170,11 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
     if (iter->second == std::to_string(enable_dump_flag) && path_iter != options.end()) {
       std::string dump_path = path_iter->second;
       if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
-        dump_path += "/";
+        dump_path = dump_path + "/" + CurrentTimeInStr() + "/";
       }
 
       PropertiesManager::Instance().AddDumpPropertyValue(DUMP_ALL_MODEL, {});
+      GELOGD("Get dump path %s successfully", dump_path.c_str());
       PropertiesManager::Instance().SetDumpOutputPath(dump_path);
     }
     auto step_iter = options.find(OPTION_EXEC_DUMP_STEP);
@@ -186,8 +191,11 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
     }
   }
 
+  // In train and infer, profiling is always needed.
+  InitOptions(options);
+  InitProfiling(this->options_);
+
   if (is_train_mode_) {
-    InitOptions(options);
     status = InitSystemWithOptions(this->options_);
   } else {
     status = InitSystemWithoutOptions();
@@ -195,13 +203,30 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
   return status;
 }
 
-Status GELib::SetRTSocVersion(const map<string, string> &options) {
-  GELOGI("start SetRTSocVersion");
-  auto it = options.find(ge::SOC_VERSION);
-  if (it != options.end()) {
+void GELib::InitProfiling(Options &options) {
+  GELOGI("Init Profiling. session Id: %ld, device id:%d ", options.session_id, options.device_id);
+  std::lock_guard<std::mutex> lock(status_mutex_);
+  GetContext().Init();
+  // Profiling init
+  if (ProfilingManager::Instance().Init(options) != SUCCESS) {
+    GELOGW("Profiling init failed.");
+  }
+}
+
+Status GELib::SetRTSocVersion(const map<string, string> &options, map<string, string> &new_options) {
+  GELOGI("Start to set SOC_VERSION");
+  new_options.insert(options.begin(), options.end());
+  auto it = new_options.find(ge::SOC_VERSION);
+  if (it != new_options.end()) {
     GE_CHK_RT_RET(rtSetSocVersion(it->second.c_str()));
+    GELOGI("Succeeded in setting SOC_VERSION[%s] to runtime.", it->second.c_str());
   } else {
-    GELOGW("options not find SOC_VERSION");
+    GELOGI("SOC_VERSION is not exist in options");
+    char version[kSocVersionLen] = {0};
+    rtError_t rt_ret = rtGetSocVersion(version, kSocVersionLen);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtGetSocVersion failed"); return FAILED;)
+    GELOGI("Succeeded in getting SOC_VERSION[%s] from runtime.", version);
+    new_options.insert(std::make_pair(ge::SOC_VERSION, version));
   }
   return SUCCESS;
 }
@@ -270,12 +295,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   GE_IF_BOOL_EXEC(is_system_inited && !is_shutdown,
                   GELOGW("System init with options is already inited and not shutdown.");
                   return SUCCESS);
-  GetContext().Init();
-
-  // profiling init
-  if (ProfilingManager::Instance().Init(options) != SUCCESS) {
-    GELOGW("Profiling init failed.");
-  }
 
   std::vector<rtMemType_t> mem_type;
   mem_type.push_back(RT_MEMORY_HBM);
@@ -331,12 +350,6 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_SUCCEED);
   GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
 
-  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().StopProfiling();
-  }
-  if (ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
-  }
   is_system_inited = false;
   is_shutdown = true;
 
@@ -408,6 +421,9 @@ Status GELib::Finalize() {
   GELOGI("HostCpuEngine finalization.");
   HostCpuEngine::GetInstance().Finalize();
 
+  // Shut down profiling
+  ShutDownProfiling();
+
   if (is_train_mode_) {
     GELOGI("System ShutDown.");
     mid_state = SystemShutdownWithOptions(this->options_);
@@ -416,6 +432,7 @@ Status GELib::Finalize() {
       final_state = mid_state;
     }
   }
+
   is_train_mode_ = false;
 
   GetMutableGlobalOptions().erase(ENABLE_SINGLE_STREAM);
@@ -428,6 +445,17 @@ Status GELib::Finalize() {
   }
   GELOGI("finalization success.");
   return SUCCESS;
+}
+
+void GELib::ShutDownProfiling() {
+  std::lock_guard<std::mutex> lock(status_mutex_);
+
+  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
+    ProfilingManager::Instance().StopProfiling();
+  }
+  if (ProfilingManager::Instance().ProfilingOn()) {
+    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+  }
 }
 
 // Get Singleton Instance

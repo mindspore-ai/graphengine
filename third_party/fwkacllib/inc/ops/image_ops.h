@@ -37,6 +37,8 @@ interpretted as channels, and must be three. Inputs include: \n
 *Input images is a tensor of at least 3 dimensions. The last dimension is \n
 interpretted as channels, and must be three.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow AdjustHue operator.
 */
 
 REG_OP(AdjustHue)
@@ -61,6 +63,8 @@ interpretted as channels, and must be three. Inputs include: \n
 *Input images is a tensor of at least 3 dimensions. The last dimension is \n
 interpretted as channels, and must be three.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow AdjustSaturation operator.
 */
 
 REG_OP(AdjustSaturation)
@@ -85,6 +89,8 @@ interpreted as '[height, width, channels]'. Inputs include: \n
 *Input images is a tensor of at least 3 dimensions. The last dimension is \n
 interpretted as channels, and must be three.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow AdjustContrast operator.
 */
 
 REG_OP(AdjustContrast)
@@ -122,6 +128,8 @@ NearestNeighbor.
 *@attention Constraints: \n
 *Input images must be a 4-D tensor.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow CropAndResize operator.
 */
 
 REG_OP(CropAndResize)
@@ -161,6 +169,8 @@ supported for now.
 *@attention Constraints: \n
 *Input images and grads must be a 4-D tensor.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow CropAndResizeGradBoxes operator.
 */
 
 REG_OP(CropAndResizeGradBoxes)
@@ -200,6 +210,8 @@ supported for now.
 *@attention Constraints: \n
 *Input grads must be a 4-D tensor.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow CropAndResizeGradImage operator.
 */
 
 REG_OP(CropAndResizeGradImage)
@@ -243,6 +255,8 @@ glimpse_width, channels].
 *@attention Constraints: \n
 *Input x must be a 4-D tensor.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow CropAndResizeGradImage operator.
 */
 
 REG_OP(ExtractGlimpse)
@@ -269,6 +283,8 @@ REG_OP(ExtractGlimpse)
 *@attention Constraints: \n
 *Last dimension of input x must be size 3.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow HSVToRGB operator.
 */
 
 REG_OP(HSVToRGB)
@@ -301,6 +317,8 @@ the values at the corner pixels. Defaults to false.
 *@attention Constraints: \n
 *Input images and output images must be quantized types.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow QuantizedResizeBilinear operator.
 */
 
 REG_OP(QuantizedResizeBilinear)
@@ -335,6 +353,8 @@ Defaults to false.
 *@attention Constraints: \n
 *Input images can be of different types but output images are always float.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeArea operator.
 */
 
 REG_OP(ResizeArea)
@@ -368,6 +388,8 @@ false.
 *@attention Constraints: \n
 *Input images can be of different types but output images are always float.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeBicubicGrad operator.
 */
 
 REG_OP(ResizeBicubicGrad)
@@ -399,6 +421,8 @@ Defaults to false.
 *@attention Constraints: \n
 *Input images can be of different types but output images are always float.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeBicubic operator.
 */
 
 REG_OP(ResizeBicubic)
@@ -431,6 +455,9 @@ false.
 
 *@attention Constraints: \n
 *Input grads must be a 4-D tensor.
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeNearestNeighborV2Grad operator.
 */
 
 REG_OP(ResizeNearestNeighborV2Grad)
@@ -460,6 +487,8 @@ false.
 *@par Outputs:
 *y: A Tensor. Has the same type as grads.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeNearestNeighborV2GradD operator.
 */
 
 REG_OP(ResizeNearestNeighborV2GradD)
@@ -490,6 +519,9 @@ false.
 
 *@attention Constraints: \n
 *Input grads must be a 4-D tensor.
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeBilinearV2Grad operator.
 */
 
 REG_OP(ResizeBilinearV2Grad)
@@ -519,6 +551,9 @@ Defaults to false.
 
 *@attention Constraints: \n
 *Input images can be of different types but output images are always float.
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeBilinearV2 operator.
 */
 
 REG_OP(ResizeBilinearV2)
@@ -546,6 +581,8 @@ higher rank. RGB data to convert. Last dimension must be size 3.
 value of the pixels. The output is only well defined if the value in images \n
 are in [0,1].
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow RGBToHSV operator.
 */
 
 REG_OP(RGBToHSV)
@@ -587,6 +624,8 @@ If false, raise an error.
 *@attention Constraints: \n
 *Input images can be of different types but output images are always float.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow SampleDistortedBoundingBoxExt2 operator.
 */
 
 REG_OP(SampleDistortedBoundingBoxExt2)
@@ -623,6 +662,9 @@ Defaults to false.
 
 *@par Outputs:
 *y: 4-D with shape [batch, new_height, new_width, channels].
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ResizeNearestNeighborV2 operator.
 */
 
 REG_OP(ResizeNearestNeighborV2)
@@ -651,6 +693,8 @@ num_bounding_boxes, 4] containing bounding boxes.
 *@attention Constraints: \n
 *Input images must be a 4-D tensor.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow DrawBoundingBoxes operator.
 */
 
 REG_OP(DrawBoundingBoxes)
@@ -682,6 +726,8 @@ indices from the boxes tensor, where M <= max_output_size.
 *@attention Constraints: \n
 *Input boxes and  scores must be float type.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NonMaxSuppression operator.
 */
 
 REG_OP(NonMaxSuppression)
@@ -713,6 +759,8 @@ indices from the boxes tensor, where M <= max_output_size.
 *@attention Constraints: \n
 *Input boxes and  scores must be float type.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NonMaxSuppressionV2 operator.
 */
 
 REG_OP(NonMaxSuppressionV2)
@@ -746,6 +794,8 @@ indices from the boxes tensor, where M <= max_output_size.
 *@attention Constraints: \n
 *Input boxes and  scores must be float type.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NonMaxSuppressionV3 operator.
 */
 
 REG_OP(NonMaxSuppressionV3)
@@ -786,6 +836,8 @@ elements in selected_indices, with the valid elements appearing first.
 *@attention Constraints: \n
 *Input boxes and  scores must be float type.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NonMaxSuppressionV4 operator.
 */
 
 REG_OP(NonMaxSuppressionV4)
@@ -824,6 +876,8 @@ to be of length max_output_size. Defaults to false.
 *selected_indices: A 1-D integer tensor of shape [M] representing the \n
 selected indices from the boxes tensor, where M <= max_output_size.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow NonMaxSuppressionWithOverlaps operator.
 */
 
 REG_OP(NonMaxSuppressionWithOverlaps)
@@ -860,6 +914,8 @@ inch ('in') or centimeter ('cm').
 *@par Outputs:
 *contents: 0-D. JPEG-encoded image.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow EncodeJpeg operator.
 */
 
 REG_OP(EncodeJpeg)
@@ -891,6 +947,8 @@ where channels is: 1: for grayscale; 2: for grayscale + alpha; 3: for RGB; \n
 *@par Outputs:
 *contents: 0-D. PNG-encoded image.
 
+*@par Third-party framework compatibility
+*Compatible with tensorflow EncodePng operator.
 */
 
 REG_OP(EncodePng)
@@ -921,6 +979,9 @@ pixels of the input and output tensors are aligned. Defaults to "false".
 size[1] <= 2048.
 *@li The input "images" must be a tensor of 5 elements: images[2] <= 2048, \n
 images[3] <= 2048.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ResizeBilinearV2D.
 */
 REG_OP(ResizeBilinearV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -950,6 +1011,9 @@ pixels of the input and output tensors are aligned. Defaults to "false".
 *@attention Constraints:
 * The input "size" must be a tensor of 2 elements: size[0] <= 7680, \n
 size[1] <= 4320
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ResizeNearestNeighborV2.
 */
 REG_OP(ResizeNearestNeighborV2D)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
@@ -972,6 +1036,9 @@ to int32.
 
 *@par Outputs:
 *image_shape: 1-D. The image shape with format [height, width, channels].
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow ExtractJpegShape operator.
 */
 
 REG_OP(ExtractJpegShape)
@@ -993,6 +1060,9 @@ containing bounding boxes.
 *@par Outputs:
 *y: Returns 4-D with the same shape as `images`. \n
 The batch of input images with bounding boxes drawn on the images.
+
+*@par Third-party framework compatibility
+* Compatible with tensorflow DrawBoundingBoxesV2 operator.
 */
 
 REG_OP(DrawBoundingBoxesV2)
@@ -1030,6 +1100,9 @@ selected indices from the boxes tensor, where M <= max_output_size.
 scores for each selected box, where `M <= max_output_size`.
 *@li valid_outputs: A 0-D integer tensor representing the number of valid \n
 elements in selected_indices, with the valid elements appearing first.
+
+*@par Third-party framework compatibility
+* Compatible with tensorflow NonMaxSuppressionV5 operator.
 */
 
 REG_OP(NonMaxSuppressionV5)
@@ -1058,6 +1131,9 @@ REG_OP(NonMaxSuppressionV5)
 
 *@par Outputs:
 *y: A Tensor with type float32.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow ScaleAndTranslate operator.
 */
 
 REG_OP(ScaleAndTranslate)
@@ -1082,6 +1158,9 @@ REG_OP(ScaleAndTranslate)
 
 *@par Outputs:
 *y: A `Tensor`. Has the same type as `grads`.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow ScaleAndTranslateGrad operator.
 */
 
 REG_OP(ScaleAndTranslateGrad)
@@ -1126,6 +1205,8 @@ coordinates as it is. If not specified, defaults to true.
 *y: A 1-D integer tensor of shape `[M]` representing the selected \n
 indices from the boxes tensor, where `M <= max_output_size`.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow CombinedNonMaxSuppression operator.
 */
 
 REG_OP(CombinedNonMaxSuppression)

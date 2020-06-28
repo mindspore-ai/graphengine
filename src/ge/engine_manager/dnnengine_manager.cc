@@ -75,7 +75,7 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
     return status;
   }
 
-  GELOGI("The number of DNNEngineObjs are %zu.", engines_map_.size());
+  GELOGI("The number of DNNEngineObjs is %zu.", engines_map_.size());
 
   // Engines initialize
   for (auto iter = engines_map_.begin(); iter != engines_map_.end(); ++iter) {
@@ -373,7 +373,7 @@ Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle h
       GELOGE(FAILED, "The json file %s is not exist, %s", file_path.c_str(), strerror(errno));
       return FAILED;
     } else {
-      GELOGW("The json file %s is not need", file_path.c_str());
+      GELOGW("The json file %s is not needed.", file_path.c_str());
       return SUCCESS;
     }
   }

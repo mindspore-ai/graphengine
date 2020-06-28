@@ -52,7 +52,7 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
         // Memcpyasync needs to be inserted between constant (/data) and hcomallreduce to avoid constant being cleared.
         NodePtr src_node = src_out_anchor->GetOwnerNode();
         std::string src_type = src_node->GetType();
-        bool check_src_type = (src_type == CONSTANTOP) || (src_type == DATA);
+        bool check_src_type = (src_type == CONSTANTOP) || (src_type == DATA) || (src_type == CONSTANT);
         if (check_src_type && node->GetType() == HCOMALLREDUCE) {
           Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
           if (ret != SUCCESS) {

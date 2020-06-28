@@ -15,29 +15,29 @@
  */
 
 #include "graph/preprocess/insert_op/ge_aipp_op.h"
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
-#include "proto/insert_op.pb.h"
-#include "graph/debug/ge_attr_define.h"
-#include "graph/utils/graph_utils.h"
-#include "graph/utils/node_utils.h"
-#include "graph/utils/op_desc_utils.h"
-#include "graph/utils/tensor_utils.h"
-#include "graph/utils/type_utils.h"
+#include "base_insert_op.h"
+#include "common/dynamic_aipp.h"
+#include "common/ge/ge_util.h"
+#include "common/util.h"
+#include "external/graph/operator_factory.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/op/ge_op_utils.h"
 #include "framework/common/types.h"
 #include "framework/omg/omg_inner_types.h"
-#include "common/dynamic_aipp.h"
-#include "common/ge/ge_util.h"
-#include "common/util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/optimize/common/params.h"
-#include "external/graph/operator_factory.h"
-#include "base_insert_op.h"
+#include "graph/utils/graph_utils.h"
+#include "graph/utils/node_utils.h"
+#include "graph/utils/op_desc_utils.h"
+#include "graph/utils/tensor_utils.h"
+#include "graph/utils/type_utils.h"
+#include "proto/insert_op.pb.h"
 
 #define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                       \
   do {                                                                                       \
@@ -305,6 +305,14 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
     return PARAM_INVALID;
   }
 
+  // In scenario AIPP+CONV2D+POOLING, keep the aipp info to Data, since AIPP disappear after subgraph optimize
+  GeAttrValue::NAMED_ATTRS aipp_attr;
+  ConvertParamToAttr(aipp_attr);
+  if (!AttrUtils::SetNamedAttrs(data_node->GetOpDesc(), ATTR_NAME_AIPP, aipp_attr)) {
+    GELOGE(INTERNAL_ERROR, "Set name attrs for Data node failed. id: %d", rank);
+    return INTERNAL_ERROR;
+  }
+
   if (aipp_params_->input_edge_idx_size() > 0) {
     for (auto edge_index : aipp_params_->input_edge_idx()) {
       edge_indexes.insert(edge_index);
@@ -412,6 +420,8 @@ Status AippOp::ValidateParams() {
                          "The parameter var_reci_chn_1 can not be configed repeatedly");
   GE_CHK_BOOL_RET_STATUS(aipp_params_->var_reci_chn_2_size() <= 1, PARAM_INVALID,
                          "The parameter var_reci_chn_2 can not be configed repeatedly");
+  GE_CHK_BOOL_RET_STATUS(aipp_params_->var_reci_chn_3_size() <= 1, PARAM_INVALID,
+                         "The parameter var_reci_chn_3 can not be configed repeatedly");
 
   GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r0c0_size() <= 1, PARAM_INVALID,
                          "The parameter matrix_r0c0 can not be configed repeatedly");
@@ -520,8 +530,13 @@ void AippOp::SetCscDefaultValue() {
 void AippOp::SetDtcDefaultValue() {
   GE_CHECK_NOTNULL_JUST_RETURN(aipp_params_);
   CHECK_FALSE_EXEC(aipp_params_->var_reci_chn_0_size() > 0, aipp_params_->add_var_reci_chn_0(DEFAULT_VAR_RECI_CHN));
+  GELOGD("var_reci_chn_0 is %f, size is %u.", DEFAULT_VAR_RECI_CHN, aipp_params_->var_reci_chn_0_size());
   CHECK_FALSE_EXEC(aipp_params_->var_reci_chn_1_size() > 0, aipp_params_->add_var_reci_chn_1(DEFAULT_VAR_RECI_CHN));
+  GELOGD("var_reci_chn_1 is %f, size is %u.", DEFAULT_VAR_RECI_CHN, aipp_params_->var_reci_chn_1_size());
   CHECK_FALSE_EXEC(aipp_params_->var_reci_chn_2_size() > 0, aipp_params_->add_var_reci_chn_2(DEFAULT_VAR_RECI_CHN));
+  GELOGD("var_reci_chn_2 is %f, size is %u.", DEFAULT_VAR_RECI_CHN, aipp_params_->var_reci_chn_2_size());
+  CHECK_FALSE_EXEC(aipp_params_->var_reci_chn_3_size() > 0, aipp_params_->add_var_reci_chn_3(DEFAULT_VAR_RECI_CHN));
+  GELOGD("var_reci_chn_3 is %f, size is %u.", DEFAULT_VAR_RECI_CHN, aipp_params_->var_reci_chn_3_size());
 }
 
 Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
@@ -555,6 +570,7 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
 void AippOp::ConvertParamToAttr(GeAttrValue::NAMED_ATTRS &aipp_attrs) {
   GE_CHECK_NOTNULL_JUST_RETURN(aipp_params_);
   SAVE_AIPP_ATTR(aipp_mode, GeAttrValue::INT);
+  SAVE_AIPP_ATTR(related_input_rank, GeAttrValue::INT);
 
   if (aipp_params_->aipp_mode() == domi::AippOpParams::static_) {
     SAVE_AIPP_ATTR(input_format, GeAttrValue::INT);
@@ -582,12 +598,15 @@ void AippOp::ConvertParamToAttr(GeAttrValue::NAMED_ATTRS &aipp_attrs) {
     SAVE_AIPP_ATTR(mean_chn_0, GeAttrValue::INT);
     SAVE_AIPP_ATTR(mean_chn_1, GeAttrValue::INT);
     SAVE_AIPP_ATTR(mean_chn_2, GeAttrValue::INT);
+    SAVE_AIPP_ATTR(mean_chn_3, GeAttrValue::INT);
     SAVE_AIPP_ATTR(min_chn_0, GeAttrValue::FLOAT);
     SAVE_AIPP_ATTR(min_chn_1, GeAttrValue::FLOAT);
     SAVE_AIPP_ATTR(min_chn_2, GeAttrValue::FLOAT);
+    SAVE_AIPP_ATTR(min_chn_3, GeAttrValue::FLOAT);
     SAVE_AIPP_ATTR_LIST(var_reci_chn_0, GeAttrValue::FLOAT);
     SAVE_AIPP_ATTR_LIST(var_reci_chn_1, GeAttrValue::FLOAT);
     SAVE_AIPP_ATTR_LIST(var_reci_chn_2, GeAttrValue::FLOAT);
+    SAVE_AIPP_ATTR_LIST(var_reci_chn_3, GeAttrValue::FLOAT);
     SAVE_AIPP_ATTR_LIST(matrix_r0c0, GeAttrValue::INT);
     SAVE_AIPP_ATTR_LIST(matrix_r0c1, GeAttrValue::INT);
     SAVE_AIPP_ATTR_LIST(matrix_r0c2, GeAttrValue::INT);
@@ -646,8 +665,13 @@ Status AippOp::CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp_
   TensorUtils::SetReuseInput(input_tensor, false);
   TensorUtils::SetSize(input_tensor, max_dynamic_aipp_size);
 
+  string node_name = kDynamicAippData;
+  // Only flush subgraph name
+  if (graph->GetParentGraph() != nullptr) {
+    node_name = graph->GetName() + "_" + node_name;
+  }
   // new add aipp_data ops for dynamic aipp param input
-  OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(kDynamicAippData, AIPPDATA);
+  OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(node_name, AIPPDATA);
   GE_CHECK_NOTNULL(op_desc_ptr_data);
   auto stat1 = op_desc_ptr_data->AddInputDesc(input_tensor);
 

@@ -134,6 +134,7 @@ Status ExecutionEngine::ExecutionProcess() {
     auto shared_task_context = shared_ptr<TaskContext>(task_context.release());
 
     auto cb = std::shared_ptr<NodeDoneCallback>(new (std::nothrow) NodeDoneCallback(context_, shared_task_context));
+    GE_CHECK_NOTNULL(cb);
     auto callback = [&, cb]() {
       auto ret = cb->OnNodeDone();
       if (ret != SUCCESS) {

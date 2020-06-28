@@ -38,6 +38,7 @@
 
 namespace {
 const size_t kDynamicBatchSizeVecSize = 1;
+const size_t kStaticBatchInfoSize = 1;
 const size_t kDynamicImageSizeVecSize = 2;
 const size_t kDynamicImageSizeInputSize = 2;
 const char *const kBatchLabel = "Batch_";
@@ -180,16 +181,16 @@ class ModelListenerAdapter : public ModelListener {
 GeExecutor::GeExecutor() {}
 
 Status GeExecutor::Initialize() {
-  GELOGI("Init ge_executor begin.");
+  GELOGI("Init GeExecutor begin.");
   if (isInit_) {
-    GELOGW("Already inited, don't need to init again.");
+    GELOGW("Already initialized, no need to be initialized again.");
     return ge::SUCCESS;
   }
 
   std::vector<rtMemType_t> mem_type(1, RT_MEMORY_HBM);
   auto ret = MemManager::Instance().Initialize(mem_type);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Memory Manager init fail.");
+    GELOGE(ret, "Memory Manager init failed.");
     return ret;
   }
 
@@ -200,14 +201,14 @@ Status GeExecutor::Initialize() {
   ProfilingManager::Instance().Init(profiling_options);
 
   isInit_ = true;
-  GELOGI("Init ge_executor over.");
+  GELOGI("Init GeExecutor over.");
   return ge::SUCCESS;
 }
 
 Status GeExecutor::Finalize() {
-  GELOGI("Uninit ge_executor begin.");
+  GELOGI("Uninit GeExecutor begin.");
   if (isInit_ == false) {
-    GELOGW("ge_executor needs to init begin.");
+    GELOGW("GeExecutor has not been initialized.");
     return ge::SUCCESS;
   }
 
@@ -217,7 +218,7 @@ Status GeExecutor::Finalize() {
     ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
   }
 
-  GELOGI("Uninit ge_executor over.");
+  GELOGI("Uninit GeExecutor over.");
   return ge::SUCCESS;
 }
 
@@ -236,6 +237,7 @@ Status GeExecutor::SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_ad
 
   // Verify whether the input dynamic batch matches the model gear
   std::vector<std::vector<int64_t>> batch_info;
+  std::vector<uint64_t> batch_num{batch_size};
   Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "Get dynamic input info failed.");
@@ -247,6 +249,11 @@ Status GeExecutor::SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_ad
     return FAILED;
   }
 
+  ret = GraphExecutor::SetDynamicSize(model_id, batch_num);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Set dynamic size failed");
+    return FAILED;
+  }
   // memcpy dynamic_batch_size from host to device
   if (rtMemcpy(dynamic_input_addr, length, &batch_size, size, RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
     GELOGE(FAILED, "memcpy dynamic batch input data failed!");
@@ -270,6 +277,7 @@ Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_ad
 
   // Verify whether the input dynamic resolution matches the model gear
   std::vector<std::vector<int64_t>> batch_info;
+  std::vector<uint64_t> batch_num{image_height, image_width};
   Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "Get dynamic input info failed.");
@@ -281,6 +289,11 @@ Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_ad
     return FAILED;
   }
 
+  ret = GraphExecutor::SetDynamicSize(model_id, batch_num);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Set dynamic size failed");
+    return FAILED;
+  }
   // Memcpy dynamic resolution height from host to device
   if (rtMemcpy(dynamic_input_addr, sizeof(uint64_t), &image_height, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE) !=
       RT_ERROR_NONE) {
@@ -293,6 +306,20 @@ Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_ad
   if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + sizeof(uint64_t)),
                remain_size, &image_width, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
     GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status GeExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info) {
+  GELOGI("Begin to get current shape");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
+    return GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetCurShape(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Get current shape failed");
     return FAILED;
   }
   return SUCCESS;
@@ -346,13 +373,13 @@ Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path,
                                     int32_t priority, std::shared_ptr<ge::ModelListener> listener) {
   GELOGI("load model offline begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
   string filePath = RealPath(path.c_str());
   if (filePath.empty()) {
-    GELOGE(ge::FAILED, "fileath is invalid. please check your text file '%s'.", path.c_str());
+    GELOGE(ge::FAILED, "File path is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;
   }
 
@@ -375,7 +402,7 @@ Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
                              std::shared_ptr<ge::ModelListener> listener) {
   GELOGI("Load model begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -397,7 +424,7 @@ Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
 Status GeExecutor::UnloadModel(uint32_t model_id) {
   GELOGI("unload model %u begin.", model_id);
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
   Status ret = GraphLoader::DestroyAicpuSessionForInfer(model_id);
@@ -411,7 +438,7 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
 Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData &output_data) {
   GELOGI("run model begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -428,7 +455,7 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
                                     std::vector<ge::TensorDesc> &output_desc) {
   GELOGI("get model desc info begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -436,12 +463,11 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
   std::vector<InputOutputDescInfo> output_desc_infos;
   std::vector<uint32_t> input_formats;
   std::vector<uint32_t> output_formats;
-  GELOGI("GetInputOutputDescInfo via new ome.");
 
   Status ret =
     GraphExecutor::GetInputOutputDescInfo(model_id, input_desc_infos, output_desc_infos, input_formats, output_formats);
   if (ret != domi::SUCCESS) {
-    GELOGE(ret, "GetInputOutputDescInfo  failed. ret = %u", ret);
+    GELOGE(ret, "GetInputOutputDescInfo failed. ret = %u", ret);
     return TransferDomiErrorCode(ret);
   }
 
@@ -473,7 +499,7 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
 Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
   GELOGI("Begin to get dynamic batch info.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -487,11 +513,49 @@ Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vecto
   return SUCCESS;
 }
 
+///
+/// @ingroup ge
+/// @brief Get AIPP input format
+/// @param [in] model_id
+/// @param [in] index
+/// @param [out] input_format
+/// @return execute result
+///
+Status GeExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+  GELOGI("Begin to GetAIPPInfo.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetAIPPInfo(model_id, index, aipp_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetAIPPInfo failed.");
+    return ret;
+  }
+  GELOGI("GetAIPPInfo succ.");
+  return SUCCESS;
+}
+Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dynamic_output_shape_info) {
+  GELOGI("Begin to get dynamic batch output shape info");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetModelAttr(model_id, dynamic_output_shape_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Get dynamic batch output shape info failed.");
+    return ret;
+  }
+
+  GELOGI("Get dynamic batch output shape info succ.");
+  return SUCCESS;
+}
+
 Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                                std::vector<TensorDesc> &output_desc) {
   GELOGI("get model desc info for zero copy begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -499,12 +563,11 @@ Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge
   std::vector<InputOutputDescInfo> output_desc_infos;
   std::vector<uint32_t> input_formats;
   std::vector<uint32_t> output_formats;
-  GELOGI("GetInputOutputDescInfoForZeroCopy via new ome.");
 
   Status ret = GraphExecutor::GetInputOutputDescInfoForZeroCopy(model_id, input_desc_infos, output_desc_infos,
                                                                 input_formats, output_formats);
   if (ret != domi::SUCCESS) {
-    GELOGE(ret, "Get DescInfo For ZeroCopy failed. ret = %u", ret);
+    GELOGE(ret, "Get DescInfo from zero copy failed. ret = %u", ret);
     return TransferDomiErrorCode(ret);
   }
 
@@ -521,7 +584,7 @@ Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge
   GetGeTensorDescFromDomiInfo(input_desc, input_desc_infos, input_formats);
   GetGeTensorDescFromDomiInfo(output_desc, output_desc_infos, output_formats);
 
-  GELOGI("get model desc info for zero copy end.");
+  GELOGI("get model desc info from zero copy end.");
   return ge::SUCCESS;
 }
 
@@ -539,7 +602,7 @@ Status GeExecutor::CommandHandle(const Command &command) {
 Status GeExecutor::GetMaxUsedMemory(uint32_t model_id, uint32_t &max_size) {
   GELOGI("Get max used memory begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -559,13 +622,13 @@ Status GeExecutor::GetMaxUsedMemory(uint32_t model_id, uint32_t &max_size) {
 Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_data) {
   GELOGI("Load data from file begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
   string filePath = RealPath(path.c_str());
   if (filePath.empty()) {
-    GELOGE(ge::FAILED, "filePath is invalid. please check your text file '%s'.", path.c_str());
+    GELOGE(ge::FAILED, "File path is invalid. please check your text file '%s'.", path.c_str());
     return ge::FAILED;
   }
   GELOGI("load modelData from file: %s.", path.c_str());
@@ -618,7 +681,7 @@ Status GeExecutor::LoadModelWithQ(uint32_t &model_id, const ModelData &model_dat
                                   const std::vector<uint32_t> &output_queue_ids) {
   GELOGI("Load model with queue begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
   return GraphLoader::LoadModelWithQ(model_id, model_data, input_queue_ids, output_queue_ids);
@@ -638,7 +701,7 @@ Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModel
                              ge::RunModelData &run_output_data, bool async_mode) {
   GELOGI("Execute model begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -674,7 +737,7 @@ Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModel
 Status GeExecutor::GetMemAndWeightSize(const std::string &path, size_t &mem_size, size_t &weight_size) {
   GELOGI("Get memory and weight size from file begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -707,7 +770,7 @@ Status GeExecutor::GetMemAndWeightSize(const void *model_data, size_t model_size
                                        size_t &weight_size) {
   GELOGI("Get memory and weight size from data begin.");
   if (!isInit_) {
-    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
@@ -741,4 +804,56 @@ Status GeExecutor::ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer
 Status GeExecutor::ReleaseSingleOpResource(void *stream) {
   return SingleOpManager::GetInstance().ReleaseResource(stream);
 }
+
+Status GeExecutor::GetBatchInfoSize(uint32_t model_id, size_t &shape_count) {
+  std::vector<std::vector<int64_t>> batch_info;
+  Status ret = GetDynamicBatchInfo(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Calc batch info size failed. ret = %d", ret);
+    return ret;
+  }
+  if (batch_info.empty()) {
+    shape_count = kStaticBatchInfoSize;
+  } else {
+    shape_count = batch_info.size();
+  }
+  return SUCCESS;
+}
+
+Status GeExecutor::GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info) {
+  GELOGI("Begin to GetOrigInputInfo.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  Status ret = GraphExecutor::GetOrigInputInfo(model_id, index, orig_input_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetOrigInputInfo failed.");
+    return ret;
+  }
+
+  GELOGI("GetOrigInputInfo succ.");
+  return SUCCESS;
+}
+
+Status GeExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index,
+                                             std::vector<InputOutputDims> &input_dims,
+                                             std::vector<InputOutputDims> &output_dims) {
+  GELOGI("Begin to GetAllAippInputOutputDims.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  Status ret = GraphExecutor::GetAllAippInputOutputDims(model_id, index, input_dims, output_dims);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetAllAippInputOutputDims failed.");
+    return ret;
+  }
+
+  GELOGI("GetAllAippInputOutputDims succ.");
+  return SUCCESS;
+}
+
 }  // namespace ge

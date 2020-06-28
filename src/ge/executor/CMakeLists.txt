@@ -30,6 +30,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../common/profiling/profiling_manager.cc"
         "../graph/execute/graph_execute.cc"
         "../graph/load/graph_loader.cc"
+        "../graph/load/new_model_manager/aipp_utils.cc"
         "../graph/load/new_model_manager/cpu_queue_schedule.cc"
         "../graph/load/new_model_manager/data_dumper.cc"
         "../graph/load/new_model_manager/data_inputer.cc"

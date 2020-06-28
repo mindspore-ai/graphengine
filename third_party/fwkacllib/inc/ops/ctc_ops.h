@@ -47,6 +47,8 @@ repeated non-blank labels will not be merged and are interpreted as \n
 individual labels.  This is a simplified version of CTC. \n
 If not specified, defaults to true
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow CTCLoss operator.
 */
 
 REG_OP(CTCLoss)

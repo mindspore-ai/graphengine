@@ -42,6 +42,8 @@ include: \n
 
 *@see StringSplit()
 
+*@par Third-party framework compatibility
+*compatible with StringSplit op of tensorflow
 */
 REG_OP(StringSplit)
     .INPUT(input, TensorType({DT_STRING}))
@@ -72,6 +74,8 @@ include: \n
 
 *@see StringSplitV2()
 
+*@par Third-party framework compatibility
+*compatible with StringSplitV2 op of tensorflow
 */
 REG_OP(StringSplitV2)
     .INPUT(input, TensorType({DT_STRING}))
@@ -102,6 +106,8 @@ include: \n
 
 *@see UnicodeScript()
 
+*@par Third-party framework compatibility
+*compatible with UnicodeScript op of tensorflow
 */
 REG_OP(UnicodeScript)
     .INPUT(x, TensorType({DT_INT32}))
@@ -127,9 +133,12 @@ include: \n
 *inputs are trusted or unimportant. There is a risk of adversaries\n
 *constructing inputs that all hash to the same bucket.\n
 *To prevent this problem, use a strong hash function with\n
+*tf.string_to_hash_bucket_strong.
 
 *@see Substr()
 
+*@par Third-party framework compatibility
+*compatible with Substr op of tensorflow
 */
 REG_OP(Substr)
     .INPUT(input, TensorType({DT_STRING}))
@@ -154,9 +163,12 @@ include: \n
 *This function may be used when CPU time is scarce and inputs are trusted or\n
 *unimportant. There is a risk of adversaries constructing inputs that all hash\n
 *to the same bucket. To prevent this problem, use a strong hash function with\n
+*tf.string_to_hash_bucket_strong.
 
 *@see StringToHashBucketFast()
 
+*@par Third-party framework compatibility
+*compatible with StringToHashBucketFast op of tensorflow
 */
 REG_OP(StringToHashBucketFast)
     .INPUT(x, TensorType({DT_STRING}))
@@ -185,9 +197,12 @@ include: \n
 * hash value distribution over buckets. This requires that the hash function\
 *is seeded by a high-entropy (random) "key" unknown to the adversary.
 *@li The additional robustness comes at a cost of roughly 4x higher\n
+*compute time than tf.string_to_hash_bucket_fast.
 
 *@see StringToHashBucketStrong()
 
+*@par Third-party framework compatibility
+*compatible with StringToHashBucketStrong op of tensorflow
 */
 REG_OP(StringToHashBucketStrong)
     .INPUT(x, TensorType({DT_STRING}))
@@ -211,6 +226,8 @@ include: \n
 
 *@see StringToHashBucket()
 
+*@par Third-party framework compatibility
+*compatible with StringToHashBucket op of tensorflow
 */
 REG_OP(StringToHashBucket)
     .INPUT(string_tensor, TensorType({DT_STRING}))
@@ -230,6 +247,8 @@ include: \n
 
 *@see StringStrip()
 
+*@par Third-party framework compatibility
+*compatible with StringStrip op of tensorflow
 */
 REG_OP(StringStrip)
     .INPUT(x, TensorType({DT_STRING}))
@@ -256,6 +275,8 @@ include: \n
 
 *@see StringLength()
 
+*@par Third-party framework compatibility
+*compatible with StringLength op of tensorflow
 */
 REG_OP(StringLength)
     .INPUT(x, TensorType({DT_STRING}))
@@ -286,6 +307,8 @@ include: \n
 
 *@see StringJoin()
 
+*@par Third-party framework compatibility
+*compatible with StringJoin op of tensorflow
 */
 REG_OP(StringJoin)
     .DYNAMIC_INPUT(x, TensorType({DT_STRING}))
@@ -316,6 +339,8 @@ include: \n
 
 *@see StringFormat()
 
+*@par Third-party framework compatibility
+* compatible with StringFormat op of tensorflow
 */
 REG_OP(StringFormat)
     .DYNAMIC_INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
@@ -345,6 +370,8 @@ include: \n
 
 *@see RegexFullMatch()
 
+*@par Third-party framework compatibility
+*compatible with RegexFullMatch op of tensorflow
 */
 REG_OP(RegexFullMatch)
     .INPUT(x, TensorType({DT_STRING}))
@@ -375,6 +402,8 @@ include: \n
 
 *@see RegexReplace()
 
+*@par Third-party framework compatibility
+*compatible with RegexReplace op of tensorflow
 */
 REG_OP(RegexReplace)
     .INPUT(x, TensorType({DT_STRING}))
@@ -408,6 +437,8 @@ include: \n
 
 *@see AsString()
 
+*@par Third-party framework compatibility
+*compatible with AsString op of tensorflow
 */
 REG_OP(AsString)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, \
@@ -444,6 +475,8 @@ include: \n
 
 *@see EncodeBase64()
 
+*@par Third-party framework compatibility
+*compatible with EncodeBase64 op of tensorflow
 */
 REG_OP(EncodeBase64)
     .INPUT(x, TensorType({DT_STRING}))
@@ -465,6 +498,8 @@ include: \n
 
 *@see DecodeBase64()
 
+*@par Third-party framework compatibility
+*compatible with DecodeBase64 op of tensorflow
 */
 REG_OP(DecodeBase64)
     .INPUT(x, TensorType({DT_STRING}))

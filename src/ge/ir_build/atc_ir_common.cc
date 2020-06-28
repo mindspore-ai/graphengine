@@ -15,11 +15,11 @@
  */
 
 #include "atc_ir_common.h"
+#include "common/util/error_manager/error_manager.h"
+#include "external/ge/ge_api_types.h"
 #include "framework/common/string_util.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
-#include "common/util/error_manager/error_manager.h"
-#include "external/ge/ge_api_types.h"
 
 using std::pair;
 using std::string;
@@ -32,8 +32,8 @@ const int64_t kDynamicImageSizeNum = 2;
 // datatype/formats from user to GE, Unified to util interface file later
 const std::map<std::string, ge::DataType> kOutputTypeSupportDatatype = {
   {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
-const std::set<std::string> kBufferOptimizeSupportOption = {"l1_optimize", "l2_optimize", "off_optimize",
-                                                            "l1_and_l2_optimize"};
+const std::set<std::string> kBufferOptimizeSupportOption = {"l2_optimize", "off_optimize"};
+const std::string IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT = "high_performance";
 }  // namespace
 
 bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
@@ -168,14 +168,14 @@ Status CheckDynamicBatchSizeOrImageSizeParamValid(std::string &dynamic_batch_siz
   unordered_map<string, vector<int64_t>> shape_map;
   vector<pair<string, vector<int64_t>>> user_shape_map;
   is_dynamic_input = true;
-  if (!ParseInputShape(input_shape, shape_map, user_shape_map, is_dynamic_input)) {
-    GELOGE(ge::PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
+  if (input_shape.empty()) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"input_shape"});
+    GELOGE(ge::PARAM_INVALID, "The input_shape can not be empty in dynamic batchsize scenario.");
     return ge::PARAM_INVALID;
   }
 
-  if (shape_map.empty()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"input_shape"});
-    GELOGE(ge::PARAM_INVALID, "The input_shape can not be empty in dynamic batchsize scenario.");
+  if (!ParseInputShape(input_shape, shape_map, user_shape_map, is_dynamic_input)) {
+    GELOGE(ge::PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
     return ge::PARAM_INVALID;
   }
 
@@ -250,8 +250,11 @@ bool ParseInputShape(const string &input_shape, unordered_map<string, vector<int
       int64_t result = left_result;
       // - 1 is not currently supported
       if (!is_dynamic_input && result <= 0) {
-        GELOGW("Invalid parameter for input shape: %s ,expect positive integer , but value = %ld", shape.c_str(),
-               result);
+        ErrorManager::GetInstance().ATCReportErrMessage("E10057", {"shape", "result"}, {shape, std::to_string(result)});
+        GELOGW(
+          "Input parameter[--input_shape]’s shape value[%s] is invalid, "
+          "expect positive integer, but value is %ld.",
+          shape.c_str(), result);
         return false;
       }
       shape_values.push_back(result);
@@ -277,9 +280,10 @@ Status CheckOutputTypeParamValid(const std::string output_type) {
 Status CheckBufferOptimizeParamValid(const std::string buffer_optimize) {
   if ((!buffer_optimize.empty()) &&
       (kBufferOptimizeSupportOption.find(buffer_optimize) == kBufferOptimizeSupportOption.end())) {
-    GELOGE(ge::PARAM_INVALID,
-           "buffer_optimize flag %s is invalid, only support"
-           "l1_optimize,l2_optimize, off_optimize, l1_and_l2_optimize",
+    ErrorManager::GetInstance().ATCReportErrMessage(
+      "E10068", {"parameter", "value", "reason"},
+      {"buffer_optimize", buffer_optimize, "only support l2_optimize or off_optimize"});
+    GELOGE(ge::PARAM_INVALID, "buffer_optimize flag %s is invalid, only support l2_optimize or off_optimize",
            buffer_optimize.c_str());
     return ge::PARAM_INVALID;
   }
@@ -289,7 +293,7 @@ Status CheckBufferOptimizeParamValid(const std::string buffer_optimize) {
 Status CheckCompressWeightParamValid(const std::string enable_compress_weight, const std::string compress_weight_conf) {
   if ((!compress_weight_conf.empty()) &&
       (!CheckInputPathValid(compress_weight_conf, ge::ir_option::COMPRESS_WEIGHT_CONF))) {
-    GELOGE(ge::PARAM_INVALID, "compress weight config file %s not found!!", compress_weight_conf.c_str());
+    GELOGE(ge::PARAM_INVALID, "compress weight config file not found, file_name:%s", compress_weight_conf.c_str());
     return ge::PARAM_INVALID;
   }
   if ((enable_compress_weight != "") && (enable_compress_weight != "true") && (enable_compress_weight != "false")) {
@@ -329,5 +333,64 @@ int CheckLogParamValidAndSetLogLevel(const std::string log) {
     GELOGE(ge::PARAM_INVALID, "Log setlevel fail !");
   }
   return ret;
+}
+
+Status CheckInsertOpConfParamValid(const std::string insert_op_conf) {
+  if ((!insert_op_conf.empty()) && (!CheckInputPathValid(insert_op_conf, ge::ir_option::INSERT_OP_FILE))) {
+    GELOGE(ge::PARAM_INVALID, "insert op config file not found: %s", insert_op_conf.c_str());
+    return ge::PARAM_INVALID;
+  }
+  return ge::SUCCESS;
+}
+
+Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory) {
+  if ((disable_reuse_memory != "") && (disable_reuse_memory != "0") && (disable_reuse_memory != "1")) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"disable_reuse_memory"});
+    GELOGE(ge::PARAM_INVALID, "Input parameter[--disable_reuse_memory]'s value must be 1 or 0.");
+    return ge::PARAM_INVALID;
+  }
+
+  const char *env_ge_dump = std::getenv("DUMP_OP");
+  const int decimal = 10;
+  int ge_dump_flag = (env_ge_dump != nullptr) ? std::strtol(env_ge_dump, nullptr, decimal) : 0;
+  if (ge_dump_flag && (disable_reuse_memory == "0")) {
+    GELOGW("Will dump uncorrect op data with param disable_reuse_memory=0");
+  }
+  return ge::SUCCESS;
+}
+
+Status CheckEnableSingleStreamParamValid(const std::string enable_single_stream) {
+  if ((enable_single_stream != "") && (enable_single_stream != "true") && (enable_single_stream != "false")) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10033", {"parameter", "value"},
+                                                    {"enable_single_stream", enable_single_stream});
+    GELOGE(ge::PARAM_INVALID, "Input parameter[--enable_single_stream]'s value[%s] must be true or false.",
+           enable_single_stream.c_str());
+    return ge::PARAM_INVALID;
+  }
+  return ge::SUCCESS;
+}
+
+Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::string &op_select_implmode) {
+  // only appointed op_select_implmode, can user appoint optypelist_for_implmode
+  if (optypelist_for_implmode != "" && op_select_implmode == "") {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"op_select_implmode"});
+    GELOGE(
+      ge::FAILED,
+      "Input parameter[--op_select_implmode] must be appointed when appoint parameter[--optypelist_for_implmode].");
+    return ge::PARAM_INVALID;
+  }
+  // op_select_implmode default value is high_performance
+  if (op_select_implmode == "") {
+    op_select_implmode = IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT;
+  }
+  return ge::SUCCESS;
+}
+
+void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips) {
+  for (auto iter = options.begin(); iter != options.end(); iter++) {
+    std::string key = iter->first;
+    std::string option_name = iter->second;
+    GELOGI("%s set successfully, key=%s, value=%s", tips.c_str(), key.c_str(), option_name.c_str());
+  }
 }
 }  // namespace ge

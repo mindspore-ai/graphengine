@@ -23,15 +23,17 @@ namespace ge {
 /**
 *@brief Performs reduced batch normalization.
 
-*@par Inputs:\n
+*@par Inputs:
 *x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
 
 *@par Outputs:
 *@li sum: A 1D Tensor of type float32 for SUM reduced "x".
 *@li square_sum: A 1D Tensor of type float32 for SUMSQ reduced "x".
 
-*@attention Constraints:\n
-* This operator is a BatchNorm fusion operator for updating the moving averages for training. \n This operator is used in conjunction with BNTrainingUpdate.
+*@attention Constraints:
+* This operator is a BatchNorm fusion operator for updating the moving
+* averages for training. \n
+* This operator is used in conjunction with BNTrainingUpdate.
 */
 REG_OP(BNTrainingReduce)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -44,19 +46,26 @@ REG_OP(BNTrainingReduce)
 
 *@par Inputs:
 * Seven inputs, including: \n
-*@li grads: A 5D Tensor of type float16 or float32, with format NC1HWC0, for the gradient.
+*@li grads: A 5D Tensor of type float16 or float32, with format NC1HWC0, for
+* the gradient.
 *@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
-*@li diff_scale: A 5D Tensor of type float32, with format NC1HWC0, for the mean of "x".
-*@li diff_offset: A 5D Tensor of type float32, with format NC1HWC0, for the variance of "x".
+*@li diff_scale: A 5D Tensor of type float32, with format NC1HWC0,
+* for the mean of "x".
+*@li diff_offset: A 5D Tensor of type float32, with format NC1HWC0,
+* for the variance of "x".
 *@li scale: A 5D Tensor of type float32, with format NC1HWC0.
-*@li batch_mean: A 5D Tensor of type float32, with format NC1HWC0, for the mean of "x".
-*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0, for the variance of "x".
+*@li batch_mean: A 5D Tensor of type float32, with format NC1HWC0,
+* for the mean of "x".
+*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0,
+* for the variance of "x".
 
 *@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number added to the variance of "x".
+*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* added to the variance of "x".
 
 *@par Outputs:
-*y: A Tensor of type float16 or float32, with format NC1HWC0, for the offset of "x".
+*y: A Tensor of type float16 or float32, with format NC1HWC0, for the offset
+* of "x".
 
 *@attention Constraints:
 * The preceding layer of this operator must be BNTrainingUpdateGrad.
@@ -78,21 +87,25 @@ REG_OP(BNTrainingReduceGrad)
 /**
 *@brief Performs reduced batch normalization.
 
-*@par Inputs:\n
+*@par Inputs:
 * Seven inputs, including: (NC1HWC0 supported)
 *@li x: A 5D Tensor of type float16 or float32.
-*@li sum: A 1D Tensor of type float32 for the output of operator BNTrainingReduce.
-*@li square_sum: A 1D Tensor of type float32 for the output of operator BNTrainingReduce.
+*@li sum: A 1D Tensor of type float32 for the output of operator
+* BNTrainingReduce.
+*@li square_sum: A 1D Tensor of type float32 for the output of operator
+* BNTrainingReduce.
 *@li scale: A 1D Tensor of type float32, for the scaling factor.
 *@li offset: A 1D Tensor of type float32, for the scaling offset.
 *@li mean: A 1D Tensor of type float32, for the updated mean.
 *@li variance: A 1D Tensor of type float32, for the updated variance.
 
 *@par Attributes:
-*@li epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero.
-*@li factor: A required float32, specifying the weight for updating the mean and variance.
+*@li epsilon: A required float32, specifying the small value added to variance
+* to avoid dividing by zero.
+*@li factor: A required float32, specifying the weight for updating the mean
+* and variance.
 
-*@par Outputs:\n
+*@par Outputs:
 * Five outputs, including: (NC1HWC0 supported)
 *@li y: A 5D Tensor of type float16 or float32, for normalized "x".
 *@li mean: A 5D Tensor of type float32, for the updated mean.
@@ -101,8 +114,11 @@ REG_OP(BNTrainingReduceGrad)
 *@li batch_variance: A 1D Tensor of type float32, for the variance of "x".
 
 *@attention Constraints:
-*@li This operator is a BatchNorm fusion operator for updating the moving averages for training. \n This operator is used in conjunction with BNTrainingReduce.
-*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*@li This operator is a BatchNorm fusion operator for updating the moving
+* averages for training. \n 
+*This operator is used in conjunction with BNTrainingReduce.
+*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square
+* root instruction.
 */
 REG_OP(BNTrainingUpdate)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -133,13 +149,15 @@ REG_OP(BNTrainingUpdate)
 *@li variance: A 5D Tensor of type float32, for the variance.
 
 *@par Attributes:
-*epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.0001".
+*epsilon: An optional float32, specifying the small value added to variance to
+* avoid dividing by zero. Defaults to "0.0001".
 
 *@par Outputs:\n
 *y: A 5D Tensor of type float16 or float32 for the normalized "x".
 
 *@attention Constraints:
-*For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*For Ascend 310, the result accuracy fails to reach 1‰ due to the square root
+* instruction.
 */
 REG_OP(BNInfer)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -207,17 +225,23 @@ REG_OP(BNTrainingUpdateV3)
 
 *@par Inputs:
 * Four inputs, including: \n
-*@li grads: A 5D Tensor of type float16 or float32, with format NC1HWC0, for the gradient.
+*@li grads: A 5D Tensor of type float16 or float32, with format NC1HWC0,
+* for the gradient.
 *@li x: A 5D Tensor of type float16 or float32, with format NC1HWC0.
-*@li batch_mean: A 5D Tensor of type float32, with format NC1HWC0, for the mean of "x".
-*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0, for the variance of "x".
+*@li batch_mean: A 5D Tensor of type float32, with format NC1HWC0,
+* for the mean of "x".
+*@li batch_variance: A 5D Tensor of type float32, with format NC1HWC0,
+* for the variance of "x".
 
 *@par Attributes:
-*epsilon: An optional float32. Defaults to "0.0001". A small float number added to the variance of "x".
+*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* added to the variance of "x".
 
 *@par Outputs:
-*@li diff_scale: A Tensor of type float32, with format NC1HWC0, for the offset of "scale".
-*@li diff_offset: A Tensor of type float32, with format NC1HWC0, for the offset of "offset".
+*@li diff_scale: A Tensor of type float32, with format NC1HWC0,
+* for the offset of "scale".
+*@li diff_offset: A Tensor of type float32, with format NC1HWC0,
+* for the offset of "offset".
 
 */
 REG_OP(BNTrainingUpdateGrad)
@@ -261,7 +285,10 @@ REG_OP(BNInferGrad)
 
 *@par Inputs:
 * Two inputs, including: \n
-*@li x: A Tensor of type float16 or float32. Up to 8D.
+*@li x: A Tensor. Must be one of the following types:
+*     float32, float64, int32, uint8, int16, int8,
+*     complex64, int64, qint8, quint8, qint32, uint16,
+*     complex128, float16, uint32, uint64, complex64, complex128.
 *@li axes: A 1D list or tuple of int32 or int64. Specifies the dimensions to reduce.
 
 *@par Attributes:
@@ -270,6 +297,8 @@ REG_OP(BNInferGrad)
 *@par Outputs:
 *y: The reduced tensor. Has the same type and format as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Sum.
 */
 REG_OP(ReduceSum)
     .INPUT(x, TensorType::NumberType())
@@ -292,6 +321,8 @@ REG_OP(ReduceSum)
 *@par Outputs:
 *y: The reduced tensor. Has the same type and format as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Sum.
 */
 REG_OP(ReduceSumD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_INT32}))
@@ -305,8 +336,7 @@ REG_OP(ReduceSumD)
 
 *@par Inputs:
 *One input:
-*x: A mutable Tensor. Must be one of the following types: float16,
-* float32, double. Should be a Variable Tensor.
+*x: The boolean tensor to reduce.
 
 *@par Attributes:
 *@li keep_dims: A bool. If true, retains reduced dimensions with length 1.
@@ -315,6 +345,9 @@ REG_OP(ReduceSumD)
 
 *@par Outputs:
 *y: The reduced tensor.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ReduceAll.
 */
 REG_OP(ReduceAllD)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -328,7 +361,7 @@ REG_OP(ReduceAllD)
 
 *@par Inputs:
 *Two inputs, including:
-*@li x: A mutable Tensor. Must be one of the following types: float16, float32, double. Should be a Variable Tensor.
+*@li x: The boolean tensor to reduce.
 *@li axis: A mutable Tensor. The dimensions to reduce. If None, reduces all dimensions. Must be in the range [- rank (input_sensor), rank (input_sensor)).
 
 *@par Attributes:
@@ -336,6 +369,9 @@ REG_OP(ReduceAllD)
 
 *@par Outputs:
 *y: The reduced tensor.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ReduceAll.
 */
 REG_OP(ReduceAll)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -358,6 +394,8 @@ REG_OP(ReduceAll)
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ReduceProd.
 */
 REG_OP(ReduceProd)
     .INPUT(x,TensorType::NumberType())
@@ -383,6 +421,8 @@ REG_OP(ReduceProd)
 *@attention Constraints:
 * "keep_dims" is in the range [-rank(input_tensor), rank(input_tensor)].
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ReduceProd.
 */
 REG_OP(ReduceProdD)
     .INPUT(x,TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16}))
@@ -407,6 +447,9 @@ REG_OP(ReduceProdD)
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator ReduceMean.
 */
 REG_OP(ReduceMean)
     .INPUT(x, TensorType::NumberType())
@@ -431,6 +474,9 @@ REG_OP(ReduceMean)
 * - If false, the rank of the tensor is reduced by 1 for each entry in axis.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with the TensorFlow operator ReduceMean.
 */
 REG_OP(ReduceMeanD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT, DT_INT8, DT_UINT8}))
@@ -456,6 +502,8 @@ REG_OP(ReduceMeanD)
 *@attention Constraints:
 * The value range of "axes" is [-dims, dims - 1]. "dims" indicates the dimension length of "x".
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Max.
 */
 REG_OP(ReduceMax)
     .INPUT(x, TensorType::NumberType())
@@ -480,6 +528,9 @@ REG_OP(ReduceMax)
 
 *@attention Constraints:
 * The value range of "axis" is [-dims, dims - 1]. "dims" indicates the dimension length of "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Max.
 */
 REG_OP(ReduceMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8, DT_INT8,
@@ -506,6 +557,8 @@ REG_OP(ReduceMaxD)
 *@attention Constraints:\n
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)).
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator reduce_min.
 */
 REG_OP(ReduceMin)
     .INPUT(x, TensorType::NumberType())
@@ -530,6 +583,8 @@ REG_OP(ReduceMin)
 *@attention Constraints:\n
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)).
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator reduce_min.
 */
 REG_OP(ReduceMinD)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
@@ -538,7 +593,7 @@ REG_OP(ReduceMinD)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMinD)
 /**
-*@brief Computes the "logical or" of elements across dimensions of a tensor.\n
+*@brief Computes the "logical or" of elements across dimensions of a tensor.
 * Reduces "x" along the dimensions given in "axes".
 * Unless "keep_dims" is true, the rank of the tensor is reduced by 1 for each
 * entry in "axes". If "keep_dims" is true, the reduced dimensions
@@ -547,7 +602,7 @@ REG_OP(ReduceMinD)
 * If "axes" is None, all dimensions are reduced, and a
 * tensor with a single element is returned.
 *
-*@attention Constraints:\n
+*@attention Constraints:
 * Only support bool
 *
 *@par Inputs:
@@ -561,6 +616,9 @@ REG_OP(ReduceMinD)
 *@par Outputs:
 * y: The reduced tensor
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator reduce_any.
+*
 */
 REG_OP(ReduceAny)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -569,7 +627,7 @@ REG_OP(ReduceAny)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceAny)
 /**
-*@brief Computes the "logical or" of elements across dimensions of a tensor.\n
+*@brief Computes the "logical or" of elements across dimensions of a tensor.
 * Reduces "x" along the dimensions given in "axes".
 * Unless "keep_dims" is true, the rank of the tensor is reduced by 1 for each
 * entry in "axes". If "keep_dims" is true, the reduced dimensions
@@ -578,19 +636,21 @@ REG_OP(ReduceAny)
 * If "axis" is None, all dimensions are reduced, and a
 * tensor with a single element is returned.
 *
-*@attention Constraints:\n
+*@attention Constraints:
 *  Only support bool
 *
 *@par Inputs:
 * x: The boolean tensor to reduce.
 *
 *@par Attributes:
-*@li axes: The dimensions to reduce. If "None" (default), reduces all
-*          dimensions. Must be in the range "[-rank(x), rank(x))".
+*@li axes: The dimensions to reduce. Must be in the range "[-rank(x), rank(x))".
 *@li keep_dims: If true, retains reduced dimensions with length 1.
 *
 *@par Outputs:
 * y: The reduced tensor
+*
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator reduce_any.
 *
 */
 REG_OP(ReduceAnyD)
@@ -622,6 +682,8 @@ REG_OP(ReduceAnyD)
 *y: A Tensor. Has the same type as "x".
 
 *@attention Constraints: The Reduction operator supports type float16 only on the device chip.
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator Reduction.
 */
 REG_OP(Reduction)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -647,6 +709,8 @@ REG_OP(Reduction)
 *@attention Constraints:\n
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)).
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator EuclideanNorm.
 */
 REG_OP(EuclideanNorm)
     .INPUT(x, TensorType::NumberType())
@@ -671,6 +735,8 @@ REG_OP(EuclideanNorm)
 *@attention Constraints:\n
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)).
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator EuclideanNorm.
 */
 REG_OP(EuclideanNormD)
     .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))

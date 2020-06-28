@@ -48,63 +48,6 @@ bool IsUseBFS() {
   }
   return false;
 }
-bool IsTailingOptimization() {
-  string is_tailing_optimization_option;
-  auto ret = GetContext().GetOption(ge::OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION, is_tailing_optimization_option);
-  if (ret == GRAPH_SUCCESS) {
-    GELOGI("Option ge.exec.isTailingOptimization is %s", is_tailing_optimization_option.c_str());
-    // "1" means it's True from frontend option
-    return is_tailing_optimization_option == "1";
-  }
-  GELOGW("OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION not set, use BFSTopologicalSorting by default.");
-  return false;
-}
-bool IsFusedNode(const NodePtr &node) {
-  bool is_fused_node = false;
-  AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_FLAG, is_fused_node);
-  return is_fused_node;
-}
-string GetGroupId(const NodePtr &node) {
-  string group_id;
-  AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, group_id);
-  return group_id;
-}
-bool IsGroupEnd(const NodePtr &node) {
-  if (GetGroupId(node).empty()) {
-    return false;
-  }
-  if (node->GetOutDataNodesSize() == 0) {
-    return true;
-  }
-  for (const auto &out_data_node : node->GetOutDataNodes()) {
-    if (IsFusedNode(out_data_node)) {
-      return true;
-    }
-  }
-  return false;
-}
-void SplitNodeToStack(const std::map<string, NodePtr> &breadth_node_map, string current_group_id,
-                      std::vector<NodePtr> &stack_input, std::deque<NodePtr> &group_stack, std::deque<NodePtr> &stack) {
-  for (const auto &name_node : breadth_node_map) {
-    // group first
-    string group_id;
-    if (AttrUtils::GetStr(name_node.second->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, group_id)) {
-      GELOGI("current node %s, group id: %s , current group id %s", name_node.second->GetName().c_str(),
-             group_id.c_str(), current_group_id.c_str());
-      if (!current_group_id.empty() && group_id != current_group_id) {
-        GELOGI("node go to input_stack back: %s", name_node.second->GetName().c_str());
-        (void)stack_input.insert(stack_input.begin(), name_node.second);
-      } else {
-        current_group_id = group_id;
-        GELOGI("node go to group_stack: %s", name_node.second->GetName().c_str());
-        (void)group_stack.push_front(name_node.second);
-      }
-      continue;
-    }
-    GELOGI("node go to stack: %s ", name_node.second->GetName().c_str());
-    (void)stack.push_front(name_node.second);
-  }
-}
 }  // namespace
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::ComputeGraph(const std::string &name)
@@ -187,6 +130,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::FindNode(co
       continue;
     }
     if (node->GetName() == name) {
+      return node;
+    }
+  }
+  return nullptr;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr
+ComputeGraph::FindFirstNodeMatchType(const std::string &name) const {
+  for (const auto &node : nodes_) {
+    if (node == nullptr) {
+      continue;
+    }
+    if (node->GetType() == name) {
       return node;
     }
   }
@@ -642,9 +598,9 @@ ComputeGraph::UpdateInputMapping(const std::map<uint32_t, uint32_t> &input_mappi
 ///
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 ComputeGraph::UpdateOutputMapping(const std::map<uint32_t, uint32_t> &output_mapping) {
-  NodePtr net_output = FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr net_output = FindFirstNodeMatchType(NETOUTPUT);
   if (net_output == nullptr) {
-    GE_LOGE("UpdateOutputMapping failed: node %s not exist in graph.", NODE_NAME_NET_OUTPUT);
+    GE_LOGE("UpdateOutputMapping failed: node type %s not exist in graph.", NETOUTPUT);
     return GRAPH_FAILED;
   }
   OpDescPtr op_desc = net_output->GetOpDesc();
@@ -799,65 +755,6 @@ graphStatus ComputeGraph::BFSTopologicalSorting(std::vector<NodePtr> &node_vec,
   return GRAPH_SUCCESS;
 }
 
-graphStatus ComputeGraph::BFSTopologicalSortingWithGroup(std::vector<NodePtr> &node_vec,
-                                                         std::map<NodePtr, uint32_t> &map_in_edge_num,
-                                                         std::deque<NodePtr> &stack) {
-  GELOGI("Runing_Bfs_Sort_With_Group");
-  std::string current_group_id;
-  std::vector<NodePtr> stack_input;
-  std::deque<NodePtr> group_stack;
-  std::deque<NodePtr> fused_node_stack;
-  std::map<string, NodePtr> breadth_node_map;
-  // Record the number of non data nodes but no input nodes
-  GE_CHK_BOOL_EXEC(SortNodes(stack_input, map_in_edge_num) == GRAPH_SUCCESS, return GRAPH_FAILED, "sort nodes failed");
-
-  // Only data nodes here
-  while (!stack_input.empty() || !stack.empty() || !group_stack.empty()) {
-    NodePtr node = nullptr;
-    if (!group_stack.empty()) {
-      // Traversal node in group has priority
-      node = group_stack.back();
-      group_stack.pop_back();
-    } else if (!stack.empty()) {
-      node = stack.back();
-      stack.pop_back();
-    } else {
-      node = stack_input.back();
-      stack_input.pop_back();
-    }
-
-    if (IsFusedNode(node) && current_group_id.empty()) {
-      current_group_id = node->GetName();
-    }
-    if (GetGroupId(node).empty() || GetGroupId(node) == current_group_id) {
-      node_vec.push_back(node);
-      GE_CHECK_NOTNULL(node->GetOpDesc());
-      GELOGI("node_vec.push_back %s", node->GetOpDesc()->GetName().c_str());
-    } else {
-      if (current_group_id.empty()) {
-        current_group_id = GetGroupId(node);
-        node_vec.push_back(node);
-        GE_CHECK_NOTNULL(node->GetOpDesc());
-        GELOGI("node_vec.push_back %s", node->GetOpDesc()->GetName().c_str());
-      } else {
-        GELOGI("current group id is %s ,node go to input_stack back: %s", current_group_id.c_str(),
-               node->GetName().c_str());
-        (void)stack_input.insert(stack_input.begin(), node);
-        continue;
-      }
-    }
-    CollectBreadthOutNode(node, map_in_edge_num, breadth_node_map);
-    SplitNodeToStack(breadth_node_map, current_group_id, stack_input, group_stack, stack);
-    breadth_node_map.clear();
-    // check the end of group
-    if (IsGroupEnd(node)) {
-      GELOGI("Current node %s is end of group %s.", node->GetName().c_str(), current_group_id.c_str());
-      current_group_id = "";
-    }
-  }
-  return GRAPH_SUCCESS;
-}
-
 graphStatus ComputeGraph::CollectBreadthOutNode(const NodePtr &node, std::map<NodePtr, uint32_t> &map_in_edge_num,
                                                 std::map<string, NodePtr> &breadth_node_map) {
   for (const auto &anchor : node->GetAllOutDataAnchors()) {
@@ -907,7 +804,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::Topolog
   }
 
   std::vector<std::shared_ptr<ComputeGraph>> subgraphs;
-  (void)AllGraphNodes(subgraphs);
+  auto nodes = AllGraphNodes(subgraphs);
+  for (size_t i = 0; i < nodes.size(); i++) {
+    NodePtr node = nodes.at(i);   // [node: should not be null]
+    node->GetOpDesc()->SetId(i);  // [node->GetOpDesc(): should not be null]
+  }
   if (sub_graph_.size() != subgraphs.size()) {  // Graph Partition use subgraph, Keep original
     GELOGW("Keep original subgraph for graph size %zu not equal %zu.", sub_graph_.size(), subgraphs.size());
     return SUCCESS;
@@ -920,17 +821,10 @@ graphStatus ComputeGraph::TopologicalSortingGraph() {
   std::vector<NodePtr> node_vec;
   std::map<NodePtr, uint32_t> map_in_edge_num;
   bool use_BFS = IsUseBFS();
-  bool is_tailing_optimization = IsTailingOptimization();
   if (use_BFS) {
     std::deque<NodePtr> stack;
-    if (is_tailing_optimization) {
-      if (BFSTopologicalSortingWithGroup(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
-        return GRAPH_FAILED;
-      }
-    } else {
-      if (BFSTopologicalSorting(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
-        return GRAPH_FAILED;
-      }
+    if (BFSTopologicalSorting(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
+      return GRAPH_FAILED;
     }
   } else {
     std::vector<NodePtr> stack;

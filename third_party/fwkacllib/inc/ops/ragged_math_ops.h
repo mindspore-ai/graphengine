@@ -38,6 +38,8 @@ namespace ge {
 *The vector inputs must all have the same size.  Scalar inputs are broadcast \n
 *to match the size of the vector inputs.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow RaggedRange operator.
 */
 
 REG_OP(RaggedRange)

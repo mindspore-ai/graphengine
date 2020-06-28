@@ -25,11 +25,12 @@ namespace domi {
 /// @brief  AI framework types
 ///
 enum FrameworkType {
-  FMK_TYPE_C = 0,
-  FMK_TYPE_MINDSPORE = 1,
-  FMK_TYPE_T = 3,
-  FMK_TYPE_A_NN,
-  FMK_TYPE_RESERVED,
+  CAFFE = 0,
+  MINDSPORE = 1,
+  TENSORFLOW = 3,
+  ANDROID_NN,
+  ONNX,
+  FRAMEWORK_RESERVED,
 };
 }  // namespace domi
 

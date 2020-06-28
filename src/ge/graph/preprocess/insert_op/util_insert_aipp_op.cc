@@ -17,6 +17,8 @@
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
 #include <fstream>
 #include <utility>
+#include "common/dynamic_aipp.h"
+#include "common/formats/utils/formats_trans_utils.h"
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 #include "common/util.h"
@@ -31,8 +33,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "common/dynamic_aipp.h"
-#include "common/formats/utils/formats_trans_utils.h"
 
 using domi::AippOpParams;
 
@@ -317,6 +317,160 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
            switchn->GetName().c_str());
     return INTERNAL_ERROR;
   }
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std::set<NodePtr>> &data_next_node_map) {
+  GELOGI("Start to get data and next node %s.", node->GetName().c_str());
+  OpDescPtr data_op = node->GetOpDesc();
+  GE_CHECK_NOTNULL(data_op);
+  if (!data_op->HasAttr(ATTR_NAME_AIPP)) {
+    GELOGI("there is not AIPP info for Data: %s.", data_op->GetName().c_str());
+    return SUCCESS;
+  }
+
+  std::unique_ptr<domi::AippOpParams> aipp_params(new (std::nothrow) domi::AippOpParams());
+  ge::GeAttrValue::NAMED_ATTRS aipp_attr;
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(data_op, ATTR_NAME_AIPP, aipp_attr), GE_AIPP_NOT_EXIST,
+                         "Data node do not contain param aipp!");
+  GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aipp_params.get()), "get aipp params failed");
+
+  if (aipp_params->aipp_mode() != domi::AippOpParams::static_) {
+    return SUCCESS;
+  }
+
+  for (auto out_data_anchor : node->GetAllOutDataAnchors()) {
+    GE_CHECK_NOTNULL(out_data_anchor);
+    auto peer_in_anchors = out_data_anchor->GetPeerInDataAnchors();
+    for (auto peer_in_data_anchor : peer_in_anchors) {
+      GE_CHECK_NOTNULL(peer_in_data_anchor);
+      const auto &dst_node = peer_in_data_anchor->GetOwnerNode();
+      const auto &dst_op = dst_node->GetOpDesc();
+      GE_CHECK_NOTNULL(dst_op);
+
+      if (dst_op->GetType() == AIPP || dst_op->GetType() == SWITCHN) {
+        auto data_iter = data_next_node_map.find(node);
+        if (data_iter == data_next_node_map.end()) {
+          std::set<NodePtr> next_node_set;
+          next_node_set.insert(dst_node);
+          data_next_node_map[node] = next_node_set;
+        } else {
+          if (data_next_node_map[node].find(dst_node) == data_next_node_map[node].end()) {
+            data_next_node_map[node].insert(dst_node);
+          }
+        }
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::GetAllAipps(const NodePtr &node, std::vector<NodePtr> &aipps) {
+  GE_CHECK_NOTNULL(node);
+  OpDescPtr op = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op);
+  GELOGI("Get all aipp node from this node %s.", op->GetName().c_str());
+  if (op->GetType() == AIPP) {
+    aipps.emplace_back(node);
+  } else if (op->GetType() == SWITCHN) {
+    for (auto out_data_anchor : node->GetAllOutDataAnchors()) {
+      GE_CHECK_NOTNULL(out_data_anchor);
+      auto peer_in_anchors = out_data_anchor->GetPeerInDataAnchors();
+      if (peer_in_anchors.size() > 0) {
+        auto peer_in_anchor = peer_in_anchors.at(0);
+        GE_CHECK_NOTNULL(peer_in_anchor);
+        auto dst_aipp_node = peer_in_anchor->GetOwnerNode();
+        if (dst_aipp_node->GetType() == AIPP) {
+          aipps.emplace_back(dst_aipp_node);
+        }
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
+  GELOGI("Start to record aipp info to Data.");
+  std::map<NodePtr, std::set<NodePtr>> data_next_node_map;
+  for (auto &node : graph->GetDirectNode()) {
+    if (node->GetType() == DATA) {
+      GE_RETURN_IF_ERROR(GetDataRelatedNode(node, data_next_node_map));
+    }
+  }
+
+  for (auto it : data_next_node_map) {
+    std::vector<std::string> input_dims;
+    std::vector<std::string> output_dims;
+    auto data_node = it.first;
+    std::set<NodePtr> aipps_or_switchs = it.second;
+    if (aipps_or_switchs.size() != 1) {
+      GELOGW("The number of successors swith or aipp of data is more than 1");
+      continue;
+    }
+
+    std::vector<NodePtr> aipps;
+    GE_RETURN_IF_ERROR(GetAllAipps(*aipps_or_switchs.begin(), aipps));
+    GELOGI("RecordAIPPInfoToData: Data: name[%s], type[%s], batch size[%u]", data_node->GetName().c_str(),
+           data_node->GetType().c_str(), aipps.size());
+
+    for (auto aipp_it : aipps) {
+      string input;
+      string output;
+      GetInputOutputInfo(data_node, aipp_it, input, output);
+      input_dims.emplace_back(input);
+      output_dims.emplace_back(output);
+    }
+
+    if (!AttrUtils::SetListStr(data_node->GetOpDesc(), ATTR_NAME_AIPP_INPUTS, input_dims)) {
+      GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_AIPP_INPUTS.c_str());
+      return FAILED;
+    }
+
+    if (!AttrUtils::SetListStr(data_node->GetOpDesc(), ATTR_NAME_AIPP_OUTPUTS, output_dims)) {
+      GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_AIPP_OUTPUTS.c_str());
+      return FAILED;
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::GetInputOutputInfo(NodePtr &data_node, NodePtr &aipp_node, std::string &input,
+                                           std::string &output) {
+  GE_CHECK_NOTNULL(data_node);
+  GE_CHECK_NOTNULL(aipp_node);
+  OpDescPtr data_op = data_node->GetOpDesc();
+  GE_CHECK_NOTNULL(data_op);
+  OpDescPtr aipp_op = aipp_node->GetOpDesc();
+  GE_CHECK_NOTNULL(aipp_op);
+
+  // aipp node's original output shape equals to original model data's shape
+  ConstGeTensorDescPtr output_desc = aipp_op->GetOutputDescPtr(0);
+  Format orig_format = output_desc->GetOriginFormat();
+  DataType orig_data_type = output_desc->GetOriginDataType();
+  std::string tensor_name = data_op->GetName();
+  size_t dim_num = output_desc->GetOriginShape().GetDimNum();
+  int64_t tensor_size = 0;
+  (void)TensorUtils::CalcTensorMemSize(output_desc->GetOriginShape(), orig_format, orig_data_type, tensor_size);
+  int64_t input_size = tensor_size;
+  input = TypeUtils::FormatToSerialString(orig_format) + ":" + TypeUtils::DataTypeToSerialString(orig_data_type) + ":" +
+          tensor_name + ":" + std::to_string(input_size) + ":" + std::to_string(dim_num) + ":" +
+          formats::JoinToString(output_desc->GetOriginShape().GetDims());
+
+  Format format = output_desc->GetFormat();
+  DataType data_type = output_desc->GetDataType();
+  std::string output_name = aipp_op->GetOutputNameByIndex(0);
+  size_t output_dim_num = output_desc->GetShape().GetDimNum();
+  (void)TensorUtils::CalcTensorMemSize(output_desc->GetShape(), output_desc->GetFormat(), output_desc->GetDataType(),
+                                       tensor_size);
+  int64_t output_size = tensor_size;
+  output = TypeUtils::FormatToSerialString(format) + ":" + TypeUtils::DataTypeToSerialString(data_type) + ":" +
+           output_name + ":" + std::to_string(output_size) + ":" + std::to_string(output_dim_num) + ":" +
+           formats::JoinToString(output_desc->GetShape().GetDims());
+
+  GELOGI("GetInputOutputInfo: get data[%s] node related aipp[%s] node info, input[%s], output[%s].",
+         data_node->GetName().c_str(), aipp_node->GetName().c_str(), input.c_str(), output.c_str());
   return SUCCESS;
 }
 }  // namespace ge

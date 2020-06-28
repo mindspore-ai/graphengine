@@ -81,7 +81,7 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
   const string node_name = ge_node.GetName();
   const string node_type = ge_node.GetType();
   size_t output_size = op_desc->GetOutputsSize();
-  GELOGD("Calc op[%s:%s] op running param, output size=%zu.", node_name.c_str(), node_type.c_str(), output_size);
+  GELOGD("Calc op[%s:%s] running param, output size=%zu.", node_name.c_str(), node_type.c_str(), output_size);
 
   for (size_t i = 0; i < output_size; ++i) {
     GeTensorDesc output_tensor = op_desc->GetOutputDesc(static_cast<uint32_t>(i));

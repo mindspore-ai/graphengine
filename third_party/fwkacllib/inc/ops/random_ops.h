@@ -43,6 +43,8 @@ namespace ge {
 *@attention Constraints:\n
 *-The implementation for Multinomial on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow Multinomial operator.
 */
 REG_OP(Multinomial)
     .INPUT(logits, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
@@ -75,6 +77,8 @@ REG_OP(Multinomial)
 *@attention Constraints:\n
 *-The implementation for ParameterizedTruncatedNormal on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow ParameterizedTruncatedNormal operator.
 */
 REG_OP(ParameterizedTruncatedNormal)
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
@@ -101,6 +105,8 @@ REG_OP(ParameterizedTruncatedNormal)
 *@attention Constraints:\n
 *-The implementation for RandomGammaGrad on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomGammaGrad operator.
 */
 REG_OP(RandomGammaGrad)
     .INPUT(alpha, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -126,6 +132,8 @@ REG_OP(RandomGammaGrad)
 *@attention Constraints:\n
 *-The implementation for RandomGamma on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomGamma operator.
 */
 REG_OP(RandomGamma)
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
@@ -154,6 +162,8 @@ REG_OP(RandomGamma)
 *@attention Constraints:\n
 *-The implementation for RandomPoisson on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomPoisson operator.
 */
 REG_OP(RandomPoisson)
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
@@ -183,6 +193,8 @@ REG_OP(RandomPoisson)
 *@attention Constraints:\n
 *-The implementation for RandomShuffle on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomShuffle operator.
 */
 REG_OP(RandomShuffle)
     .INPUT(x, TensorType({DT_INT64, DT_INT32, DT_UINT16, DT_INT16,
@@ -213,6 +225,8 @@ REG_OP(RandomShuffle)
 *@attention Constraints:\n
 *-The implementation for RandomStandardNormal on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomStandardNormal operator.
 */
 REG_OP(RandomStandardNormal)
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
@@ -241,6 +255,8 @@ REG_OP(RandomStandardNormal)
 *@attention Constraints:\n
 *-The implementation for RandomUniformInt on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomUniformInt operator.
 */
 REG_OP(RandomUniformInt)
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
@@ -269,6 +285,8 @@ REG_OP(RandomUniformInt)
 *@attention Constraints:\n
 *-The implementation for RandomUniform on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow RandomUniform operator.
 */
 REG_OP(RandomUniform)
     .INPUT(shape, TensorType({DT_INT32, DT_INT64}))
@@ -295,6 +313,8 @@ REG_OP(RandomUniform)
 *@attention Constraints:\n
 *-The implementation for TruncatedNormal on Ascend uses AICPU, with bad performance.\n
 
+*@par Third-party framework compatibility
+*@li compatible with tensorflow TruncatedNormal operator.
 */
 REG_OP(TruncatedNormal)
     .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
@@ -335,18 +355,21 @@ REG_OP(DropOutGenMask)
 /**
 *@brief Generates values in an interval.
 
-*@par Inputs:\n
+*@par Inputs:
 * Four ND inputs, including:
-*@li input_assist: A 1D Tensor of type float32.
-*@li input_start: A 1D Tensor of type float32, for the first entry in the range.
-*@li input_stop: A 1D Tensor of type float32, for the last entry in the range.
-*@li input_num: A 1D Tensor of type int32, for the common difference of the entries.
+*@li assist: A 1D Tensor of type float32.
+*@li start: A 1D Tensor of type float32, for the first entry in the range.
+*@li stop: A 1D Tensor of type float32, for the last entry in the range.
+*@li num: A 1D Tensor of type int32 or int64, for the common difference of the entries.
 
-*@par Outputs:\n
+*@par Outputs:
 *output_op: A 1D Tensor of type float32.
 
-*@attention Constraints:\n
+*@attention Constraints:
 * "input_assist" is a sequence of "input_num" evenly-spaced values beginning at 0 with an common difference of 1.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator lin_space.
 */
 REG_OP(LinSpaceD)
     .INPUT(assist, TensorType({DT_FLOAT}))
@@ -359,19 +382,20 @@ REG_OP(LinSpaceD)
 /**
 *@brief Generates values in an interval.
 
-*@par Inputs:\n
+*@par Inputs:
 * Four ND inputs, including:
-*@li input_assist: A 1D Tensor of type float32.
-*@li input_start: A 1D Tensor of type float32, for the first entry in the range.
-*@li input_stop: A 1D Tensor of type float32, for the last entry in the range.
-*@li input_num: A 1D Tensor of type int32, for the common difference of the entries.
+*@li start: A 1D Tensor of type float32, for the first entry in the range.
+*@li stop: A 1D Tensor of type float32, for the last entry in the range.
+*@li num: A 1D Tensor of type int32 or int64, for the common difference of the entries.
 
-*@par Outputs:\n
+*@par Outputs:
 *output_op: A 1D Tensor of type float32.
 
-*@attention Constraints:\n
+*@attention Constraints:
 * "input_assist" is a sequence of "input_num" evenly-spaced values beginning at 0 with an common difference of 1.
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator lin_space.
 */
 REG_OP(LinSpace)
     .INPUT(start, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -435,6 +459,8 @@ REG_OP(RandomChoiceWithMask)
 *@attention Constraints:\n
 *@li "group" must be greater than 0 and must evenly divide the channel dimension size.
 *@li The format of input "x" must be NCHW.
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator ShuffleChannel.
 */
 REG_OP(ShuffleChannel)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT16,

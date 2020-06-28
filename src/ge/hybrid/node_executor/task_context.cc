@@ -262,8 +262,8 @@ Status TaskContext::PropagateOutputs() {
       auto dst_input_idx = dst_input_index_and_node.first;
       auto dst_node_item = dst_input_index_and_node.second;
       GELOGI(
-        "Propagate output of node %s, output index = %d, dst node = %s, dst_input_index = %d, dst_input_offset = %d, "
-        "addr = %p",
+        "Propagate output of node %s, output index = %d, dst node = %s, "
+        "dst_input_index = %d, dst_input_offset = %d, addr = %p",
         node_item_->NodeName().c_str(), i, dst_node_item->NodeName().c_str(), dst_input_idx,
         dst_node_item->input_start + dst_input_idx,
         execution_context_->all_inputs.data() + dst_node_item->input_start + dst_input_idx);

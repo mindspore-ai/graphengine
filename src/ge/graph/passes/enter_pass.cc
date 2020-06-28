@@ -16,11 +16,8 @@
 
 #include "graph/passes/enter_pass.h"
 
-#include <vector>
-
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
-#include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
 
 namespace ge {

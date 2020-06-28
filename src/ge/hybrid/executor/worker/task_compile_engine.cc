@@ -89,6 +89,7 @@ Status TaskCompileEngine::CompileProcess() {
     }
 
     auto entry = unique_ptr<ResultQueueEntry>(new (std::nothrow) ResultQueueEntry());
+    GE_CHECK_NOTNULL(entry);
     entry->node_state = node_state;
 
     auto node_item = *node_state->node_item;

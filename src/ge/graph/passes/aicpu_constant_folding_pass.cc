@@ -323,7 +323,7 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
   aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
-  aicpu_task.fwkKernelBase.fwk_kernel.extInfoNum = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoLen = 0;
   std::string task_info;
   Status ret = kernel_info->GenSingleOpRunTask(node, aicpu_task, task_info);
   if (ret != SUCCESS) {
@@ -378,7 +378,7 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
   aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.workspaceBaseAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
-  aicpu_task.fwkKernelBase.fwk_kernel.extInfoNum = 0;
+  aicpu_task.fwkKernelBase.fwk_kernel.extInfoLen = 0;
   std::string task_info;
   Status ret = kernel_info->GenMemCopyTask(data_infos.size(), aicpu_task, task_info);
   if (ret != SUCCESS) {

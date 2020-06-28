@@ -34,6 +34,8 @@ namespace ge {
 dimension of `input` is replaced with the `fft_length / 2 + 1` unique \n
 frequency components of its 1D Fourier transform.
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow RFFT operator.
 */
 REG_OP(RFFT)
     .INPUT(input, TensorType({DT_FLOAT}))

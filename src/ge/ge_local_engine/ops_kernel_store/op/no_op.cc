@@ -24,7 +24,7 @@ namespace ge_local {
 NoOp::NoOp(const Node &node, RunContext &run_context) : Op(node, run_context) {}
 
 Status NoOp::Run() {
-  GELOGI("Node:%s type is %s, no need gen task.", name_.c_str(), type_.c_str());
+  GELOGI("Node:%s type is %s, no need generate task.", name_.c_str(), type_.c_str());
   // Do nothing
   return SUCCESS;
 }

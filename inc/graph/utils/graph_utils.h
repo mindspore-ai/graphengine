@@ -22,6 +22,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <list>
 #include "graph/anchor.h"
 #include "graph/node.h"
 #include "graph/compute_graph.h"
@@ -111,21 +112,25 @@ enum IOType { kIn, kOut };
 
 struct NodeIndexIO {
   NodeIndexIO(ge::NodePtr node, uint32_t index, IOType io_type)
-      : node(std::move(node)), index(index), io_type(io_type) {}
+      : node_(std::move(node)), index_(index), io_type_(io_type) {
+    if (node_ != nullptr) {
+      value_ = node_->GetName() + (io_type_ == kOut ? "_out_" : "_in_") + std::to_string(index_);
+    }
+  }
   NodeIndexIO(ge::NodePtr node, int index, IOType io_type)
-      : node(std::move(node)), index(static_cast<uint32_t>(index)), io_type(io_type) {}
+      : node_(std::move(node)), index_(static_cast<uint32_t>(index)), io_type_(io_type) {
+    if (node_ != nullptr) {
+      value_ = node_->GetName() + (io_type_ == kOut ? "_out_" : "_in_") + std::to_string(index_);
+    }
+  }
   ~NodeIndexIO() {}
 
-  NodePtr node = nullptr;
-  uint32_t index = 0;
-  IOType io_type = kOut;
+  NodePtr node_ = nullptr;
+  uint32_t index_ = 0;
+  IOType io_type_ = kOut;
+  std::string value_;
 
-  std::string ToString() const {
-    if ((node == nullptr) || (node->GetOwnerComputeGraph() == nullptr)) {
-      return "";
-    }
-    return node->GetName() + (io_type == kOut ? "_out_" : "_in_") + std::to_string(index);
-  }
+  std::string ToString() const { return value_; }
 };
 
 class GraphUtils {
@@ -310,7 +315,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus GetRefMapping(const ComputeGraphPtr &graph,
-                                   std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                   std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                    std::map<std::string, std::string> &anchor_to_symbol);
 
   ///
@@ -340,7 +345,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus HandleInAnchorMapping(const NodePtr &node,
-                                           std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                           std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                            std::map<std::string, std::string> &anchor_to_symbol);
 
   ///
@@ -351,7 +356,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus HandleOutAnchorMapping(const NodePtr &node,
-                                            std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                            std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                             std::map<std::string, std::string> &anchor_to_symbol);
 
   ///
@@ -362,7 +367,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus HandleSubgraphInput(const NodePtr &node,
-                                         std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                         std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                          std::map<std::string, std::string> &anchor_to_symbol);
 
   ///
@@ -373,7 +378,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus HandleMergeInput(const NodePtr &node,
-                                      std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                      std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                       std::map<std::string, std::string> &anchor_to_symbol);
 
   ///
@@ -384,7 +389,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus HandleSubgraphOutput(const NodePtr &node,
-                                          std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                          std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                           std::map<std::string, std::string> &anchor_to_symbol);
 
   ///
@@ -397,7 +402,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus UnionSymbolMapping(const NodeIndexIO &exist_node_info1, const NodeIndexIO &exist_node_info2,
-                                        std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                        std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                         std::map<std::string, std::string> &anchor_to_symbol, std::string &symbol);
 
   ///
@@ -409,7 +414,7 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus UpdateRefMapping(const NodeIndexIO &cur_node_info, const NodeIndexIO &exist_node_info,
-                                      std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                      std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                       std::map<std::string, std::string> &anchor_to_symbol);
 
   ///

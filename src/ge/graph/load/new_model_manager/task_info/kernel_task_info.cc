@@ -414,6 +414,7 @@ Status KernelTaskInfo::Release() {
   FreeRtMem(&custom_info_.output_descs);
   FreeRtMem(&custom_info_.output_addrs);
   FreeRtMem(&custom_info_.attr_handle);
+  FreeRtMem(&aicpu_ext_info_addr_);
 
   if (ctx_.argsOffset != nullptr) {
     delete[] ctx_.argsOffset;
@@ -792,6 +793,16 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     }
   }
 
+  auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(args_addr.get());
+  const auto &ext_info = kernel_def.kernel_ext_info();
+  auto init_ret = InitAicpuTaskExtInfo(ext_info);
+  if (init_ret != SUCCESS) {
+    GELOGE(init_ret, "Init aicpu task ext info failed, ext_info size=%zu", ext_info.size());
+    return init_ret;
+  }
+  aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
+  aicpu_param_head->extInfoLength = reinterpret_cast<uintptr_t>(ext_info.size());
+
   // malloc device memory for args
   rtError_t rt_ret = rtMalloc(static_cast<void **>(&args_), args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
@@ -819,6 +830,24 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
   davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_addr.get(), args_, args_size_,
                                   sizeof(aicpu::AicpuParamHead));
+
+  return SUCCESS;
+}
+
+Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
+  if (ext_info.empty()) {
+    return SUCCESS;
+  }
+  auto rt_ret = rtMalloc(&aicpu_ext_info_addr_, ext_info.size(), RT_MEMORY_HBM);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
+    return FAILED;
+  }
+  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
+    return FAILED;
+  }
 
   return SUCCESS;
 }

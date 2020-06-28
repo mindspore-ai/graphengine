@@ -94,7 +94,7 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
     return PARAM_INVALID;
   }
 
-  if (model_params_.memory_size > 0) {
+  if (model_params_.memory_size > model_params_.zero_copy_mem_size) {
     const string purpose("malloc feature map memory on model execute.");
     GELOGI("total memory: %lu, zero_copy_mem: %lu", model_params_.memory_size, model_params_.zero_copy_mem_size);
     model_params_.mem_base = res.MallocMemory(purpose, model_params_.memory_size - model_params_.zero_copy_mem_size);

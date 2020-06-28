@@ -1336,7 +1336,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraphPtr GraphUtils::FindR
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::GetRefMapping(const ComputeGraphPtr &graph,
-                                      std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                      std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                       std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(graph);
   for (auto &node : graph->GetAllNodes()) {
@@ -1384,7 +1384,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr GraphUtils::FindNodeFromA
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::HandleInAnchorMapping(const NodePtr &node,
-                                              std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                              std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                               std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(node);
 
@@ -1402,7 +1402,7 @@ graphStatus GraphUtils::HandleInAnchorMapping(const NodePtr &node,
   }
 
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
-    NodeIndexIO cur_node_info = NodeIndexIO(node, in_data_anchor->GetIdx(), kIn);
+    NodeIndexIO cur_node_info(node, in_data_anchor->GetIdx(), kIn);
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     if (peer_out_anchor == nullptr) {
       std::string symbol = cur_node_info.ToString();
@@ -1410,7 +1410,7 @@ graphStatus GraphUtils::HandleInAnchorMapping(const NodePtr &node,
       symbol_to_anchors[symbol] = {cur_node_info};
       anchor_to_symbol[symbol] = symbol;
     } else {
-      NodeIndexIO exist_node_info = NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
+      NodeIndexIO exist_node_info(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
       if (UpdateRefMapping(cur_node_info, exist_node_info, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
         GE_LOGE("Update symbol mapping failed.");
         return GRAPH_FAILED;
@@ -1429,18 +1429,18 @@ graphStatus GraphUtils::HandleInAnchorMapping(const NodePtr &node,
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::HandleOutAnchorMapping(const NodePtr &node,
-                                               std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                               std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                                std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(node);
   for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
-    NodeIndexIO cur_node_info = NodeIndexIO(node, out_data_anchor->GetIdx(), kOut);
+    NodeIndexIO cur_node_info(node, out_data_anchor->GetIdx(), kOut);
     if (anchor_to_symbol.find(cur_node_info.ToString()) != anchor_to_symbol.end()) {
       continue;
     }
 
     int32_t reuse_in_index = -1;
     if (IsRefFromInput(out_data_anchor, reuse_in_index)) {
-      NodeIndexIO exist_node_info = NodeIndexIO(node, reuse_in_index, kIn);
+      NodeIndexIO exist_node_info(node, reuse_in_index, kIn);
       if (UpdateRefMapping(cur_node_info, exist_node_info, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
         GE_LOGE("Update symbol mapping failed.");
         return GRAPH_FAILED;
@@ -1448,7 +1448,7 @@ graphStatus GraphUtils::HandleOutAnchorMapping(const NodePtr &node,
     } else {
       std::string symbol = cur_node_info.ToString();
       GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
-      symbol_to_anchors.emplace(std::make_pair(symbol, std::vector<NodeIndexIO>{cur_node_info}));
+      symbol_to_anchors.emplace(std::make_pair(symbol, std::list<NodeIndexIO>{cur_node_info}));
       anchor_to_symbol.emplace(std::make_pair(symbol, symbol));
     }
   }
@@ -1464,7 +1464,7 @@ graphStatus GraphUtils::HandleOutAnchorMapping(const NodePtr &node,
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::HandleSubgraphInput(const NodePtr &node,
-                                            std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                            std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                             std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
@@ -1482,8 +1482,8 @@ graphStatus GraphUtils::HandleSubgraphInput(const NodePtr &node,
   OutDataAnchorPtr peer_out_anchor = parent_in_anchor->GetPeerOutAnchor();
   if (peer_out_anchor != nullptr) {
     // Data has and only has one input
-    NodeIndexIO cur_node_info = NodeIndexIO(node, 0, kIn);
-    NodeIndexIO exist_node_info = NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
+    NodeIndexIO cur_node_info(node, 0, kIn);
+    NodeIndexIO exist_node_info(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
     if (UpdateRefMapping(cur_node_info, exist_node_info, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
       GE_LOGE("Update symbol mapping failed.");
       return GRAPH_FAILED;
@@ -1501,7 +1501,7 @@ graphStatus GraphUtils::HandleSubgraphInput(const NodePtr &node,
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
-                                         std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                         std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                          std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(node);
   std::vector<NodeIndexIO> exist_node_infos;
@@ -1574,7 +1574,7 @@ graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
-                                             std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                             std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                              std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(node);
   ComputeGraphPtr owner_graph = node->GetOwnerComputeGraph();
@@ -1595,8 +1595,8 @@ graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
     }
     GE_CHECK_NOTNULL(parent_node->GetOutDataAnchor(index));
     // Union symbol of peer_out_anchor & parent_out_anchor
-    NodeIndexIO peer_node_info = NodeIndexIO(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
-    NodeIndexIO parent_node_info = NodeIndexIO(parent_node, index, kOut);
+    NodeIndexIO peer_node_info(peer_out_anchor->GetOwnerNode(), peer_out_anchor->GetIdx(), kOut);
+    NodeIndexIO parent_node_info(parent_node, index, kOut);
     std::string symbol;
     if ((UnionSymbolMapping(peer_node_info, parent_node_info, symbol_to_anchors, anchor_to_symbol, symbol) !=
          GRAPH_SUCCESS) ||
@@ -1606,7 +1606,7 @@ graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
       return GRAPH_FAILED;
     }
 
-    NodeIndexIO cur_node_info = NodeIndexIO(node, in_data_anchor->GetIdx(), kIn);
+    NodeIndexIO cur_node_info(node, in_data_anchor->GetIdx(), kIn);
     GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
     symbol_to_anchors[symbol].emplace_back(cur_node_info);
     anchor_to_symbol.emplace(std::make_pair(cur_node_info.ToString(), symbol));
@@ -1625,7 +1625,7 @@ graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::UnionSymbolMapping(const NodeIndexIO &exist_node_info1, const NodeIndexIO &exist_node_info2,
-                                           std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                           std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                            std::map<std::string, std::string> &anchor_to_symbol, std::string &symbol) {
   std::string symbol1 = anchor_to_symbol[exist_node_info1.ToString()];
   std::string symbol2 = anchor_to_symbol[exist_node_info2.ToString()];
@@ -1675,7 +1675,7 @@ graphStatus GraphUtils::UnionSymbolMapping(const NodeIndexIO &exist_node_info1, 
 /// @return success: GRAPH_SUCESS
 ///
 graphStatus GraphUtils::UpdateRefMapping(const NodeIndexIO &cur_node_info, const NodeIndexIO &exist_node_info,
-                                         std::map<std::string, std::vector<NodeIndexIO>> &symbol_to_anchors,
+                                         std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                          std::map<std::string, std::string> &anchor_to_symbol) {
   auto iter1 = anchor_to_symbol.find(exist_node_info.ToString());
   if (iter1 == anchor_to_symbol.end()) {

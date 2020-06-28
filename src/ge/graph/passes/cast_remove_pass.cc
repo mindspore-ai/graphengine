@@ -34,8 +34,8 @@ Status CastRemovePass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
 
-  // begin with not trans op, and only has one out data node
-  if (TransOpUtil::IsTransOp(node) || node->GetOutDataNodesSize() != 1) {
+  // begin with not trans op, and only has one out data anchor
+  if (TransOpUtil::IsTransOp(node) || node->GetAllOutDataAnchorsSize() != 1) {
     return SUCCESS;
   }
 

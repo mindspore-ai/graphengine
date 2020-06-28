@@ -18,6 +18,7 @@
 #include <iostream>
 #include <set>
 #include <unordered_map>
+#include <securectype.h>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
@@ -250,7 +251,7 @@ Status ModelBuilder::SetInputOutputDesc() {
     }
     // if user set input node format ND, the expected node for data and netoutput format is ND in
     // final graph.
-    if ((domi::GetContext().format == domi::DOMI_TENSOR_ND) &&
+    if ((domi::GetContext().format == domi::DOMI_TENSOR_ND) && (!node_op_desc->HasAttr("_is_single_op")) &&
         ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
       GELOGI("The node [%s] format should be set ND.", node_op_desc->GetName().c_str());
       auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
@@ -521,11 +522,37 @@ Status ModelBuilder::MergeWeights() {
     }
     if (weight_data.data() != nullptr) {
       GE_IF_BOOL_EXEC(base_addr == nullptr, GELOGE(FAILED, "Base addr is nullptr."); return FAILED);
-      GE_CHK_BOOL_EXEC(
-        memcpy_s(base_addr + offset, weight_offset_ - offset, weight_data.data(), weight_data.size()) == EOK,
-        return FAILED, "call memcpy_s failed.");
+      if (weight_offset_ - offset < weight_data.size()) {
+        GELOGE(FAILED, "left weight size not enough. left_size:%lu, weight_size:%lu", weight_offset_ - offset,
+               weight_data.size());
+        return FAILED;
+      }
+      uintptr_t dst_ptr = (uintptr_t)base_addr + offset;
+      uintptr_t src_ptr = (uintptr_t)weight_data.data();
+      size_t left_size = weight_data.size();
+      while (left_size > SECUREC_MEM_MAX_LEN) {
+        auto err = memcpy_s(reinterpret_cast<void *>(dst_ptr), SECUREC_MEM_MAX_LEN, reinterpret_cast<void *>(src_ptr),
+                            SECUREC_MEM_MAX_LEN);
+        if (err != EOK) {
+          GELOGE(FAILED,
+                 "mem copy failed. errret:%u, "
+                 "dst_ptr:%lx, dst_size:%lu, src_ptr:%lx, src_size:%lu",
+                 err, dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
+          return FAILED;
+        }
+        left_size -= SECUREC_MEM_MAX_LEN;
+        dst_ptr = dst_ptr + SECUREC_MEM_MAX_LEN;
+        src_ptr = src_ptr + SECUREC_MEM_MAX_LEN;
+      }
+      auto err = memcpy_s(reinterpret_cast<void *>(dst_ptr), left_size, reinterpret_cast<void *>(src_ptr), left_size);
+      if (err != EOK) {
+        GELOGE(FAILED,
+               "mem copy failed. errret:%u, "
+               "dst_ptr:%lx, dst_size:%lu, src_ptr:%lx, src_size:%lu",
+               err, dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
+        return FAILED;
+      }
     }
-
     weight_data.clear();
   }
 

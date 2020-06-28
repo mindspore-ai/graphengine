@@ -130,6 +130,16 @@ bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::Op
     for (const std::string &name : op_desc->GetSubgraphInstanceNames()) {
       op_def_proto->add_subgraph_name(name);
     }
+
+    proto::AttrDef key;
+    proto::AttrDef value;
+    for (auto &item : op_desc->output_name_idx_) {
+      key.mutable_list()->add_s(item.first);
+      value.mutable_list()->add_i(item.second);
+    }
+    auto op_desc_attr = op_def_proto->mutable_attr();
+    op_desc_attr->insert({"_output_name_key", key});
+    op_desc_attr->insert({"_output_name_value", value});
   }
   return true;
 }
@@ -228,6 +238,25 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ModelSerializeImp::Unseriali
 }
 
 bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_def_proto) {
+  std::vector<string> key;
+  std::vector<uint32_t> value;
+  if (op_def_proto.attr().count("_output_name_key") > 0) {
+    auto &output_name_key_list = op_def_proto.attr().at("_output_name_key").list();
+    for (const auto &item_s : output_name_key_list.s()) {
+      key.push_back(item_s);
+    }
+    auto op_desc_attr = op_def_proto.mutable_attr();
+    op_desc_attr->erase("_output_name_key");
+  }
+  if (op_def_proto.attr().count("_output_name_value") > 0) {
+    auto &output_name_value_list = op_def_proto.attr().at("_output_name_value").list();
+    for (const auto &item_i : output_name_value_list.i()) {
+      value.push_back(static_cast<uint32_t>(item_i));
+    }
+    auto op_desc_attr = op_def_proto.mutable_attr();
+    op_desc_attr->erase("_output_name_value");
+  }
+
   op_desc = std::shared_ptr<OpDesc>(new (std::nothrow) OpDesc(protobuf_owner_, &op_def_proto));
   GE_CHK_BOOL_EXEC(op_desc != nullptr, return false, "op_desc is nullptr.");
 
@@ -251,6 +280,16 @@ bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_d
   for (const std::string &name : op_def_proto.subgraph_name()) {
     op_desc->AddSubgraphName(name);
     op_desc->SetSubgraphInstanceName(graph_index++, name);
+  }
+
+  if (key.size() != 0) {
+    if (key.size() != value.size()) {
+      GELOGE(GRAPH_FAILED, "twe vector size is different. key_size: %zu, value_size: %zu.", key.size(), value.size());
+    } else {
+      for (uint32_t i = 0; i < key.size(); ++i) {
+        op_desc->output_name_idx_.insert(std::pair<string, uint32_t>(key.at(i), value.at(i)));
+      }
+    }
   }
 
   return true;

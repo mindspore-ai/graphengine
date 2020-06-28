@@ -504,8 +504,13 @@ graphStatus SameTransdataBreadthFusionPass::ReuseNodesBeforeTransdata(int anchor
   GE_CHECK_NOTNULL(transdata_out_anchor);
   GELOGI("remove edge.src:%s, dst:%s", head_node_anchor->GetOwnerNode()->GetName().c_str(),
          head_node_peer_anchor->GetOwnerNode()->GetName().c_str());
-  if (GraphUtils::RemoveEdge(head_node_anchor, head_node_peer_anchor) != GRAPH_SUCCESS) {
-    GELOGW("remove edge failed!src:%s, dst:%s", head_node_anchor->GetOwnerNode()->GetName().c_str(),
+  if (head_node_anchor->IsLinkedWith(head_node_peer_anchor)) {
+    if (GraphUtils::RemoveEdge(head_node_anchor, head_node_peer_anchor) != GRAPH_SUCCESS) {
+      GELOGW("remove edge failed!src:%s, dst:%s", head_node_anchor->GetOwnerNode()->GetName().c_str(),
+             head_node_peer_anchor->GetOwnerNode()->GetName().c_str());
+    }
+  } else {
+    GELOGW("edge not link now. src:%s, dst:%s", head_node_anchor->GetOwnerNode()->GetName().c_str(),
            head_node_peer_anchor->GetOwnerNode()->GetName().c_str());
   }
 

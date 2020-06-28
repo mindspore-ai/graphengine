@@ -114,7 +114,15 @@ typedef enum tagRtLimitType {
   RT_LIMIT_TYPE_LOW_POWER_TIMEOUT = 0,  // timeout for power down , ms
 } rtLimitType_t;
 
+typedef struct rtExceptionInfo {
+    uint32_t taskid;
+    uint32_t streamid;
+    uint32_t tid;
+} rtExceptionInfo;
+
 typedef void (*rtErrorCallback)(rtExceptionType);
+
+typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
 
 /**
  * @ingroup dvrt_base
@@ -191,6 +199,14 @@ RTS_API rtError_t rtSetPollingMode();
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtSetExceptCallback(rtErrorCallback callback);
+
+/**
+ * @ingroup dvrt_base
+ * @brief register callback for task fail
+ * @param [out] NA
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
 
 /**
  * @ingroup dvrt_base

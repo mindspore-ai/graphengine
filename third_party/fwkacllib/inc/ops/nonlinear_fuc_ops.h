@@ -29,6 +29,8 @@ namespace ge {
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Gelu
 */
 REG_OP(Gelu)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -39,13 +41,15 @@ REG_OP(Gelu)
 *@brief Computes the gradient for the gelu of "x".
 
 *@par Inputs:
-*Two inputs, including:
+*Three inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32
 * @li x: A Tensor of the same type as "dy".
 * @li y: A Tensor of the same type as "dy".
 
 *@par Outputs:
 *z: A Tensor. Has the same type as "dy".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator GeluGrad
 */
 REG_OP(GeluGrad)
     .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -65,6 +69,8 @@ REG_OP(GeluGrad)
 
 *@par Outputs:
 *z: A Tensor. Has the same type as "y".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator TanhGrad.
 */
 REG_OP(TanhGrad)
     .INPUT(y, TensorType::UnaryDataType())
@@ -77,11 +83,13 @@ REG_OP(TanhGrad)
 
 *@par Inputs:
 *One input:
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128, int32, int64
+*x: A Tensor. Must be one of the following types: float16, float32, complex64, complex128, int32, int64
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Tanh.
 */
 REG_OP(Tanh)
     .INPUT(x, TensorType::UnaryDataType())
@@ -97,6 +105,10 @@ REG_OP(Tanh)
 *
 * @par Outputs:
 * y: A tensor. Has the same type as "x".
+*
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator Relu.
+* @li Compatible with the Caffe operator ReLULayer.
 *
 */
 REG_OP(Relu)
@@ -117,6 +129,9 @@ REG_OP(Relu)
 
 * @par Outputs:
 * y: A Tensor of type RealNumberType.
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Relu6.
 */
 REG_OP(Relu6)
     .INPUT(x, TensorType::RealNumberType())
@@ -135,6 +150,9 @@ REG_OP(Relu6)
 
 * @par Outputs:
 * y: A Tensor of type RealNumberType.
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Relu6.
 */
 REG_OP(Relu6D)
     .INPUT(x, TensorType::RealNumberType())
@@ -152,6 +170,9 @@ REG_OP(Relu6D)
 
 * @par Outputs:
 * backprops: A Tensor of type RealNumberType.
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Relu6Grad.
 */
 REG_OP(Relu6Grad)
     .INPUT(gradients, TensorType::RealNumberType())
@@ -169,6 +190,9 @@ REG_OP(Relu6Grad)
 * A Tensor. Has the same type as "x".
 
 * @see Relu()
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Sigmoid.
 */
 REG_OP(Sigmoid)
     .INPUT(x, TensorType::UnaryDataType())
@@ -201,6 +225,8 @@ REG_OP(SigmoidGrad)
 *@par Outputs:
 *y: A tensor. Has the same type and format as input "x".
 
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator BNLL.
 */
 REG_OP(BNLL)
     .INPUT(x, TensorType::FloatingDataType())
@@ -217,6 +243,8 @@ REG_OP(BNLL)
 *@par Outputs:
 *y: The activations tensor. Has the same type and format as input "x"
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Softplus.
 */
 REG_OP(Softplus)
     .INPUT(x, TensorType::FloatingDataType())
@@ -235,6 +263,8 @@ REG_OP(Softplus)
 *@par Outputs:
 *backprops: A Tensor. Has the same type and format as input "gradients".
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator SoftplusGrad.
 */
 REG_OP(SoftplusGrad)
     .INPUT(gradients, TensorType::FloatingDataType())
@@ -252,6 +282,8 @@ REG_OP(SoftplusGrad)
 *@par Outputs:
 *y: The activations tensor. Has the same type and format as "x"
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Softsign.
 */
 REG_OP(Softsign)
     .INPUT(x, TensorType::FloatingDataType())
@@ -262,14 +294,17 @@ REG_OP(Softsign)
 *@brief Computes scaled exponential linear: scale * alpha * (exp(x) - 1).
 
 *@par Inputs:
-* One input: \n
-*x: A Tensor. Must be one of the following types: float16, float32, int32, int8.
+* One input:
+*x: A Tensor. Must be one of the following types: float16, float, double
+ * int32, int8. format:ND, NC1HWC0.
 
 *@par Outputs:
-*y: A Tensor. Has the same type and format as input "x".
+*y: A Tensor. Has the same type and format as input "x". format:ND, NC1HWC0.
 
 *@see Region()
 
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Selu.
 */
 REG_OP(Selu)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_DOUBLE,
@@ -283,8 +318,10 @@ REG_OP(Selu)
 
 *@par Inputs:
 * Two inputs, including:
-*@li gradients: A Tensor. Must be one of the following types: float32, double, int32, int8, int16, int8, int64, uint16, float16, uint32, uint64
-*@li features: A Tensor. Must be one of the following types: float32, double, int32, int8, int16, int8, int64, uint16, float16, uint32, uint64
+*@li gradients: A Tensor. Must be one of the following types: float32, double,
+ * int32, int8, int16, int64, uint16, float16, uint32, uint64
+*@li features: A Tensor. Must be one of the following types: float32, double,
+ * int32, int8, int16, int64, uint16, float16, uint32, uint64
 
 *@par Outputs:
 *backprops: A Tensor. Must have the same type as"gradients".
@@ -294,6 +331,8 @@ REG_OP(Selu)
 
 *@see Relu
 
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ReluGrad.
 */
 REG_OP(ReluGrad)
     .INPUT(gradients, TensorType::RealNumberType())
@@ -316,6 +355,9 @@ REG_OP(ReluGrad)
 * The corresponding Relu operator needs to be called before using this operator on the network.
 
 *@see Relu
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator ReluGradV2.
 */
 REG_OP(ReluGradV2)
     .INPUT(gradients, TensorType::RealNumberType())
@@ -337,6 +379,10 @@ REG_OP(ReluGradV2)
 *@par Outputs:
 *@li y: A tensor. Has the same type as "x".
 *@li mask: A tensor of type uint8.
+*
+*@par Third-party framework compatibility
+* Incompatible with TensorFlow or Caffe.
+*
 */
 REG_OP(ReluV2)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_INT8, DT_INT32, DT_INT16, DT_INT64, DT_UINT8, DT_UINT16, DT_QINT8}))
@@ -355,6 +401,8 @@ REG_OP(ReluV2)
 *@par Outputs:
 *y: An activated Tensor. Has the same dimensions with "x".
 
+*@par Third-party framework compatibility
+* Compatible with PyTorch and Caffe operator PReLU.
 */
 REG_OP(PRelu)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -375,6 +423,8 @@ REG_OP(PRelu)
 *@li dx: Reverse gradient of "features". Has the same dimensions and type as "features".
 *@li da: Reverse gradient of "weight". Has the same dimensions and type as "features".
 
+*@par Third-party framework compatibility
+* Compatible with PyTorch operator PReluGrad.
 */
 REG_OP(PReluGrad)
     .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -385,22 +435,26 @@ REG_OP(PReluGrad)
     .OP_END_FACTORY_REG(PReluGrad)
 
 /**
-*@brief Activation function fused from sigmoid and ReLU, with soft saturation on the left and no saturation on the right.
+*@brief Activation function fused from sigmoid and ReLU, with soft saturation
+*    on the left and no saturation on the right.
 
 *@par Inputs:
-*x: A float16 or float32, for the input data type.
+*x: A float16, float32 or double, for the input data type.
 
 *@par Attributes:
 *alpha: A float. Defines at which negative value the ELU saturates. Defaults to "1.0".
 
 *@par Outputs:
-*y: A float16 or float32, for the normalized result.
+*y: A float16, float32 or double, for the normalized result.
 
 *@attention Constraints:
 *@li The input is of type float16 or float32.
 
 *@par Multiple batches supported or not
 *Supported
+*@par Third-party framework compatibility
+*@li Compatible with Tensorflow's Elu operator
+*@li Compatible with Caffe's ELULayer operator
 *
 *@since V100R001C33
 */
@@ -422,6 +476,9 @@ REG_OP(Elu)
 *@par Outputs:
 * y: A tensor. Has the same type as "grads".
 *
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator EluGrad.
+*
 */
 REG_OP(EluGrad)
     .INPUT(grads, TensorType::FloatingDataType())
@@ -441,6 +498,8 @@ REG_OP(EluGrad)
 *
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator ReLU.
 */
 REG_OP(LeakyRelu)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE}))
@@ -461,6 +520,9 @@ REG_OP(LeakyRelu)
 
 *@par Outputs:
 *backprops: A Tensor. Has the same type as "gradients".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator LeakyReluGrad.
 */
 REG_OP(LeakyReluGrad)
     .INPUT(gradients, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

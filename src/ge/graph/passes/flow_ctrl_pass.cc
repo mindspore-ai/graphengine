@@ -188,9 +188,9 @@ NodePtr FlowCtrlPass::AddVariableNode(ComputeGraphPtr &compute_graph, const stri
 }
 
 Status FlowCtrlPass::AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph) {
-  NodePtr output_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr output_node = compute_graph->FindFirstNodeMatchType(NETOUTPUT);
   if (output_node == nullptr) {
-    GELOGD("Node %s can't be found in graph %u", NODE_NAME_NET_OUTPUT.c_str(), compute_graph->GetGraphID());
+    GELOGD("Node type %s can't be found in graph %u", NETOUTPUT, compute_graph->GetGraphID());
     return SUCCESS;
   }
 

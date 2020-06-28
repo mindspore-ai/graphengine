@@ -177,7 +177,7 @@ class MemResource {
 
   Status AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset);
 
-  int64_t GetVarMemSize() const;
+  uint64_t GetVarMemSize() const;
 
   void UpdateVarMemSize(int64_t mem_size);
 

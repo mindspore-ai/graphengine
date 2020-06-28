@@ -51,6 +51,9 @@ the same types as "x_tensors".
 
 *@attention Constraints: \n
 *Batch runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Batch.
 */
 
 REG_OP(Batch)
@@ -92,6 +95,9 @@ across multiple sessions.
 
 *@attention Constraints: \n
 *Unbatch runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Unbatch.
 */
 
 REG_OP(Unbatch)
@@ -128,6 +134,9 @@ across multiple sessions.
 
 *@attention Constraints: \n
 *UnbatchGrad runs on the Ascend AI CPU, which delivers poor performance. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator UnbatchGrad.
 */
 
 REG_OP(UnbatchGrad)

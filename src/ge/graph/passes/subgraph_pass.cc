@@ -104,7 +104,6 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
   // Subgraph Data Node, check for constant input.
   std::string const_type;
   if (!NodeUtils::GetConstOpType(in_node, const_type)) {
-    GELOGE(FAILED, "Get const_op_type failed, node:%s.", in_node->GetName().c_str());
     return SUCCESS;
   }
 
@@ -213,7 +212,7 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
     return FAILED;
   }
 
-  NodePtr output_node = while_body->FindNode(NODE_NAME_NET_OUTPUT);
+  NodePtr output_node = while_body->FindFirstNodeMatchType(NETOUTPUT);
   if (output_node == nullptr) {
     GELOGE(FAILED, "net_output_node not exist in graph %s.", while_body->GetName().c_str());
     return FAILED;
@@ -297,11 +296,7 @@ void SubgraphPass::MarkOutputIndex(const OutDataAnchorPtr &peer_out_anchor, uint
     if (visited_nodes.count(cur_node) > 0) {
       continue;
     }
-    if (node_to_attr_index.count(cur_node) > 0) {
-      node_to_attr_index[cur_node].emplace_back(index);
-    } else {
-      node_to_attr_index[cur_node] = {index};
-    }
+    node_to_attr_index[cur_node].emplace_back(index);
     for (const NodePtr &in_node : cur_node->GetInDataNodes()) {
       nodes.emplace(in_node);
     }

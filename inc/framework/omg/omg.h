@@ -23,6 +23,7 @@
 #include <vector>
 #include "framework/common/types.h"
 #include "framework/omg/omg_inner_types.h"
+#include "framework/omg/parser/parser_inner_ctx.h"
 #include "proto/ge_ir.pb.h"
 #include "proto/om.pb.h"
 
@@ -99,6 +100,11 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
 
 Status GetOutputLeaf(ge::NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
                      std::vector<std::string> &output_nodes_name);
+
+void UpdateOmgCtxWithParserCtx();
+
+void UpdateParserCtxWithOmgCtx();
+
 }  // namespace ge
 
 namespace domi {

@@ -49,6 +49,7 @@ class GraphPrepare {
                  VarAccelerateCtrl &var_acc_ctrl, uint64_t session_id = 0);
   Status PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
                          ge::ComputeGraphPtr &compute_graph, uint64_t session_id = 0);
+  Status RecordAIPPInfo(ge::ComputeGraphPtr &compute_graph);
   Status PrepareRunningFormatRefiner();
   void SetOptions(const GraphManagerOptions &options);
   Status GenerateInfershapeGraph(ConstGraphPtr graph);
@@ -99,6 +100,8 @@ class GraphPrepare {
   bool ConfirmUseOpAndIndexByNode(const ge::NodePtr &var_node, const map<string, std::set<int>> &confirm_ops,
                                   ge::NodePtr &use_node);
   Status GraphEquivalentTransformation();
+  void TypeConversionOfConstant();
+
   ge::ComputeGraphPtr compute_graph_;
   GraphManagerOptions options_;
 };

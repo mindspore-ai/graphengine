@@ -34,6 +34,7 @@
 #include "graph/load/new_model_manager/data_dumper.h"
 #include "graph/load/new_model_manager/data_inputer.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/new_model_manager/aipp_utils.h"
 #include "graph/load/new_model_manager/zero_copy_task.h"
 #include "graph/model.h"
 #include "graph/node.h"
@@ -294,6 +295,19 @@ class DavinciModel {
   ///
   Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info);
 
+  void GetCurShape(std::vector<int64_t> &batch_info);
+
+  void GetModelAttr(std::vector<std::string> &dynamic_output_shape_info);
+
+  ///
+  /// @ingroup ge
+  /// @brief Get AIPP input info
+  /// @param [in] index
+  /// @param [out] aipp_info
+  /// @return execute result
+  ///
+  Status GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info);
+
   ///
   /// @ingroup ge
   /// @brief Get model_id.
@@ -407,6 +421,8 @@ class DavinciModel {
   void SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<void *> &outside_addrs, const void *info, void *args,
                        size_t size, size_t offset);
 
+  void SetDynamicSize(const std::vector<uint64_t> &batch_num);
+
   bool GetL1FusionEnableOption() { return is_l1_fusion_enable_; }
 
   void SetProfileTime(ModelProcStage stage, int64_t endTime = 0);
@@ -451,6 +467,10 @@ class DavinciModel {
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
   Status UpdateKnownZeroCopyAddr(vector<void *> &io_addrs, uint32_t args_offset);
+
+  Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
+  Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
+                                   std::vector<InputOutputDims> &output_dims);
 
  private:
   // memory address of weights
@@ -559,6 +579,10 @@ class DavinciModel {
   void ReleaseTask();
 
   void UnbindTaskSinkStream();
+
+  bool IsAicpuKernelConnectSpecifiedLayer();
+
+  Status MarkSpecifiedAicpuKernel();
 
   ///
   /// @ingroup ge
@@ -741,6 +765,8 @@ class DavinciModel {
   Status GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data_index, OutputData *output_data,
                              std::vector<ge::OutputTensorInfo> &outputs);
 
+  void ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_info);
+
   bool is_model_has_inited_;
   uint32_t model_id_;
   uint32_t runtime_model_id_;
@@ -856,6 +882,8 @@ class DavinciModel {
   void *args_host_ = nullptr;
   std::map<const void *, void *> knonw_input_data_info_;
   std::map<const void *, void *> knonw_output_data_info_;
+
+  vector<uint64_t> batch_size_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

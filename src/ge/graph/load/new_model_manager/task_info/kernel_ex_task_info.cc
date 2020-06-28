@@ -67,6 +67,18 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     return FAILED;
   }
 
+  const auto &ext_info = kernel_ex_def.kernel_ext_info();
+  if (!ext_info.empty()) {
+    auto rt_ret = rtMalloc(&ext_info_addr_, ext_info.size(), RT_MEMORY_HBM);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
+                    GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
+                    return FAILED;)
+    rt_ret = rtMemcpy(ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
+                    GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
+                    return FAILED;)
+  }
+
   // 2.1 get loop cond variable for tensor array write
   uint64_t step_id_addr = 0;
   OpDescPtr step_id_node = davinci_model_->GetVariableOp(NODE_NAME_GLOBAL_STEP);
@@ -77,7 +89,9 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     }
   }
 
-  auto session_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID;
+  auto session_id = davinci_model_->GetSessionId();
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID = session_id;
+
   // 2.2 Collect aicpu kernel
   uint64_t kernel_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.kernelID;
   GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuKernel(session_id, davinci_model->Id(), kernel_id) != SUCCESS,
@@ -97,8 +111,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(workspace_base_addr));
     fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = step_id_addr;
-    fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoNum = 0;
-    fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
+    fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info.size();
+    fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_);
 
     rt_ret = rtMalloc(&kernel_buf_, kernel_buf_size_, RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc error: 0x%X", rt_ret); return FAILED;)
@@ -149,8 +163,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr = workspace_base_addr;
   fwk_op_kernel.fwkKernelBase.fwk_kernel.inputOutputAddr = input_output_addr;
   fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = step_id_addr;
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoNum = 0;
-  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info.size();
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_);
 
   // 4. Create session
   GE_CHECK_NOTNULL(ModelManager::GetInstance());
@@ -289,6 +303,15 @@ Status KernelExTaskInfo::Release() {
       ret = FAILED;
     } else {
       input_output_addr_ = nullptr;
+    }
+  }
+  if (ext_info_addr_ != nullptr) {
+    rtError_t rt_ret = rtFree(ext_info_addr_);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGW("rtFree ext_info_addr[%p] error, ret: 0x%X", ext_info_addr_, rt_ret);
+      ret = FAILED;
+    } else {
+      ext_info_addr_ = nullptr;
     }
   }
   return ret;

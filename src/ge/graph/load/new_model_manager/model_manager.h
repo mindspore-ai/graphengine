@@ -17,6 +17,7 @@
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_MANAGER_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_MANAGER_H_
 
+#include <model/ge_root_model.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <algorithm>
@@ -25,7 +26,6 @@
 #include <set>
 #include <string>
 #include <vector>
-#include <model/ge_root_model.h>
 #include "cce/aicpu_engine_struct.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/ge_types.h"
@@ -189,6 +189,16 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
   ///
+  /// @ingroup ge
+  /// @brief Get AIPP info
+  /// @param [in] model_id
+  /// @param [in] index
+  /// @param [out] aipp_info
+  /// @return execute result
+  ///
+  ge::Status GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+
+  ///
   /// @ingroup domi_ome
   /// @brief set model input and output size zero copy
   /// @param [in] model_id  model id
@@ -202,7 +212,13 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
                                                std::vector<uint32_t> &inputFormats,
                                                std::vector<uint32_t> &outputFormats);
 
+  ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info);
+
+  ge::Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
+
   ge::Status SetDevice(int32_t deviceId) const;
+
+  ge::Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num);
 
   ///
   /// @ingroup domi_ome
@@ -225,6 +241,13 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id);
 
   ge::Status DestroyAicpuSessionForInfer(uint32_t model_id);
+
+  ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
+
+  ge::Status GenSessionId(uint64_t &session_id);
+
+  ge::Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,
+                                       std::vector<InputOutputDims> &output_dims);
 
  private:
   ///
@@ -253,6 +276,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status DeleteModel(uint32_t id);
 
   void GenModelId(uint32_t *id);
+  ge::Status UpdateSessionId(std::shared_ptr<DavinciModel> &davinci_model, uint64_t session_id);
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
@@ -260,6 +284,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   uint32_t max_model_id_;
   std::mutex map_mutex_;
   std::mutex sess_ids_mutex_;
+  std::mutex session_id_create_mutex_;
+  uint64_t session_id_bias_;
   std::set<uint64_t> sess_ids_;
 };
 }  // namespace ge

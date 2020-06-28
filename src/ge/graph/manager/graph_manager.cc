@@ -41,20 +41,24 @@
 #include "graph/ge_local_context.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/util/rt_context_util.h"
+#include "graph/partition/dynamic_shape_partition.h"
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/atomic_addr_clean_pass.h"
 #include "graph/passes/cast_remove_pass.h"
 #include "graph/passes/common_subexpression_elimination_pass.h"
 #include "graph/passes/compile_nodes_pass.h"
+#include "graph/passes/cond_remove_pass.h"
 #include "graph/passes/constant_folding_pass.h"
 #include "graph/passes/constant_fuse_same_pass.h"
 #include "graph/passes/control_trigger_pass.h"
+#include "graph/passes/ctrl_edge_transfer_pass.h"
 #include "graph/passes/dimension_adjust_pass.h"
+#include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/flow_ctrl_pass.h"
 #include "graph/passes/hccl_group_pass.h"
 #include "graph/passes/hccl_memcpy_pass.h"
-#include "graph/passes/identity_pass.h"
 #include "graph/passes/identify_reference_pass.h"
+#include "graph/passes/identity_pass.h"
 #include "graph/passes/iterator_op_pass.h"
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 #include "graph/passes/merge_pass.h"
@@ -63,10 +67,11 @@
 #include "graph/passes/permute_pass.h"
 #include "graph/passes/prune_pass.h"
 #include "graph/passes/replace_with_empty_const_pass.h"
-#include "graph/passes/reshape_remove_pass.h"
 #include "graph/passes/reshape_recovery_pass.h"
+#include "graph/passes/reshape_remove_pass.h"
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
 #include "graph/passes/subgraph_pass.h"
+#include "graph/passes/switch_data_edges_bypass.h"
 #include "graph/passes/switch_dead_branch_elimination.h"
 #include "graph/passes/switch_logic_remove_pass.h"
 #include "graph/passes/switch_op_pass.h"
@@ -76,14 +81,10 @@
 #include "graph/passes/transop_symmetry_elimination_pass.h"
 #include "graph/passes/transop_without_reshape_fusion_pass.h"
 #include "graph/passes/transpose_transdata_pass.h"
-#include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/variable_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
 #include "graph/passes/variable_ref_useless_control_out_delete_pass.h"
-#include "graph/passes/cond_remove_pass.h"
-#include "graph/passes/ctrl_edge_transfer_pass.h"
-#include "graph/partition/dynamic_shape_partition.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
@@ -369,14 +370,15 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   GM_RUN_AND_DUMP("Prepare", graph_preparer_.PrepareDynShape, graph_node->GetGraph(), inputs, compute_graph,
                   session_id);
   GM_RUN_AND_DUMP("OptimizeOriginalGraph", graph_optimize_.OptimizeOriginalGraph, compute_graph);
+
   GM_RUN_AND_DUMP("PrepareRunningFormatRefiner", graph_preparer_.PrepareRunningFormatRefiner);
   GM_RUN_AND_DUMP("RefineRunningFormat", graph_optimize_.OptimizeOriginalGraphJudgeInsert, compute_graph);
+  GE_RUN(GraphManager, graph_preparer_.RecordAIPPInfo, compute_graph);
   if (IsTailingOptimization()) {
     GM_RUN_AND_DUMP("OptimizeSwitchOp", graph_preparer_.SwitchOpOptimize, compute_graph);
   }
   GM_RUN_AND_DUMP("Optimize1", OptimizeStage1, compute_graph);
   GM_RUN_AND_DUMP("InferShape2", compute_graph->InferShapeInNeed);
-  // TODO: to be delete
   const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
   if (unknown_shape_skip != nullptr) {
     PassManager graph_pass;
@@ -423,7 +425,11 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
         return ret;
       }
     }
-    ret = LoadGraph(ge_root_model, graph_node);
+    if (!graph_node->IsAsync()) {
+      ret = LoadGraph(ge_root_model, graph_node);
+    } else {
+      ret = LoadGraphAsync(ge_root_model, graph_node);
+    }
     if (ret != SUCCESS) {
       GELOGE(ret, "LoadGraph Failed.");
       return ret;
@@ -432,7 +438,11 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
     var_acc_ctrl_.SetGraphBuildEnd(graph_node->GetGraphId());
   } else if (!graph_node->GetLoadFlag()) {
     GeRootModelPtr ge_root_model_ptr = graph_node->GetGeRootModel();
-    ret = LoadGraph(ge_root_model_ptr, graph_node);
+    if (!graph_node->IsAsync()) {
+      ret = LoadGraph(ge_root_model_ptr, graph_node);
+    } else {
+      ret = LoadGraphAsync(ge_root_model_ptr, graph_node);
+    }
     if (ret != SUCCESS) {
       GELOGE(ret, "LoadGraph Failed.");
       return ret;
@@ -587,7 +597,7 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
   GELOGI("[RunGraph] start to run graph, graph_id = %u, is_train_graph: %d", graph_id, GetTrainFlag());
 
   if (inputs.empty()) {
-    GELOGI("[RunGraph] initilize sub graph has no inputs.");
+    GELOGI("[RunGraph] initialize sub graph has no inputs");
   }
 
   // find graph
@@ -689,7 +699,7 @@ Status GraphManager::GenerateInfershapeGraph(GraphId &graph_id) {
 }
 
 Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
-                                GeRootModelPtr &ge_root_model) {
+                                GeRootModelPtr &ge_root_model, uint64_t session_id, bool async) {
   GELOGI("[BuildGraph] start to build graph, graph_id=%u.", graph_id);
   if (inputs.empty()) {
     GELOGW("[BuildGraph] BuildGraph warning: empty GeTensor inputs");
@@ -712,15 +722,10 @@ Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTen
     GELOGE(GE_GRAPH_ALREADY_RUNNING, "[BuildGraph] graph already running, graph id = %u", graph_node->GetGraphId());
     return GE_GRAPH_ALREADY_RUNNING;
   }
+  graph_node->SetAsync(async);
   // set graph's run flag
   graph_node->SetRunFlag(true);
 
-  struct timeval tv;
-  if (gettimeofday(&tv, nullptr) != 0) {
-    GELOGE(INTERNAL_ERROR, "get the time of day failed.");
-    return INTERNAL_ERROR;
-  }
-  uint64_t session_id = static_cast<uint64_t>(tv.tv_sec * 1000000 + tv.tv_usec);  // 1000000us
   ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
   graph_node->SetRunFlag(false);
   if (ret != SUCCESS) {
@@ -954,6 +959,9 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   }
   options_.enable_print_op_pass = true;
   ret = ParseOption(options, ENABLE_PRINT_OP_PASS, options_.enable_print_op_pass);
+
+  options_.is_single_op = false;
+  ret = ParseOption(options, SINGLE_OP_FLAG, options_.is_single_op);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
                   GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.enablePrintOpPass value is invalid, must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
@@ -1555,6 +1563,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   }
   PassManager after_merge_passes;
   GE_CHK_STATUS_RET(
+    after_merge_passes.AddPass("OptimizeStage1_1::SwitchDataEdgesBypass", new (std::nothrow) SwitchDataEdgesBypass));
+  GE_CHK_STATUS_RET(
     after_merge_passes.AddPass("OptimizeStage1_1::ConstantFuseSamePass", new (std::nothrow) ConstantFuseSamePass));
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::CommonSubexpressionEliminationPass",
                                                new (std::nothrow) CommonSubexpressionEliminationPass));
@@ -1579,8 +1589,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   GE_IF_BOOL_EXEC(options == "default" || options == "1", GELOGI("turn on variable accelerator");
                   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::VariableOpPass",
                                                                new (std::nothrow) VariableOpPass(&var_acc_ctrl_))))
-  GE_CHK_STATUS_RET(
-    after_merge_passes.AddPass("OptimizeStage1_1::TransOpDepthFusionPass", new (std::nothrow) TransOpDepthFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::TransOpWithoutReshapeFusionPass",
                                                new (std::nothrow) TransOpWithoutReshapeFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::TransOpBreadthFusionPass",
@@ -1660,7 +1668,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
     GELOGE(ret, "Run identity remove pass for preprocess failed, ret:%u.", ret);
     return ret;
   }
-
   return SUCCESS;
 }
 
@@ -1688,10 +1695,6 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("CondRemovePass", &condition_remove_pass);
-  HcclGroupPass hccl_group_pass;
-  if (IsTailingOptimization()) {
-    names_to_passes.emplace_back("HcclGroupPass", &hccl_group_pass);
-  }
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "OptimizeStage2::MergedGraphNameToPasses");
@@ -1708,18 +1711,11 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
 
   PassManager pass_for_control_attr_optimize;
   if (options_.train_graph_flag) {
-    // TODO: to be delete
     const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
     if (unknown_shape_skip == nullptr) {
       GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::FlowCtrlPass",
                                                                new (std::nothrow) FlowCtrlPass))
     }
-  }
-  // TODO: to be delete
-  const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
-  if (unknown_shape_skip == nullptr) {
-    GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::SubgraphPass",
-                                                             new (std::nothrow) SubgraphPass));
   }
 
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::MultiBatchPass",
@@ -1738,6 +1734,14 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   // to prevent unexpected deletion of nodes after a `Data` node
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::AtomicAddrCleanPass",
                                                            new (std::nothrow) AtomicAddrCleanPass))
+
+  const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
+  if (unknown_shape_skip == nullptr) {
+    // SubgraphPass solves memory_assign_conflicts by insert MemcpyAsync node, which depends on multi attrs and
+    // graph-structure. So try not to add new pass after SubgraphPass.
+    GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::SubgraphPass",
+                                                             new (std::nothrow) SubgraphPass));
+  }
 
   GE_TIMESTAMP_START(pass_for_control_attr_optimize);
   ret = pass_for_control_attr_optimize.Run(compute_graph);
@@ -1908,6 +1912,7 @@ Status GraphManager::LoadGraphAsync(const GeRootModelPtr &ge_root_model, const G
       graph_node->SetRunFlag(false);
       return ret;
     }
+    graph_node->SetLoadFlag(true);
     ge_root_model->SetModelId(model_id_info.model_id);
     graph_node->SetGeRootModel(ge_root_model);
   }

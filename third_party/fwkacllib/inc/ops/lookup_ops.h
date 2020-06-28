@@ -30,6 +30,8 @@ namespace ge {
 *@li keys: A Tensor. Any shape. Keys to look up.
 *@li values: A Tensor. Values to associate with keys.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow LookupTableImport operator.
 */
 
 REG_OP(LookupTableImport)
@@ -52,6 +54,8 @@ REG_OP(LookupTableImport)
 *@li The tensor keys must be of the same type as the keys of the table. \n
 *@li The tensor values must be of the type of the table values. \n
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow LookupTableInsert operator.
 */
 
 REG_OP(LookupTableInsert)
@@ -76,6 +80,8 @@ REG_OP(LookupTableInsert)
 *@li keys: A Tensor of type Tkeys.
 *@li values: A Tensor of type Tvalues.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow LookupTableExport operator.
 */
 
 REG_OP(LookupTableExport)
@@ -97,6 +103,8 @@ REG_OP(LookupTableExport)
 *@par Outputs:
 *size: A Tensor of type int64.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow LookupTableSize operator.
 */
 
 REG_OP(LookupTableSize)
@@ -119,6 +127,8 @@ REG_OP(LookupTableSize)
 *@par Outputs:
 *values: A Tensor. Has the same type as default_value.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow LookupTableFind operator.
 */
 
 REG_OP(LookupTableFind)
@@ -150,6 +160,8 @@ shared_name is empty, the table is shared using the node name.
 *@attention Constraints: \n
 *The implementation for HashTable on Ascend uses ai cpu, with bad performance. \n
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow HashTable operator.
 */
 
 REG_OP(HashTable)
@@ -172,6 +184,8 @@ initialized.
 *@li keys: A Tensor. Keys of type Tkey.
 *@li values: A Tensor. Values of type Tval.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow InitializeTable operator.
 */
 
 REG_OP(InitializeTable)
@@ -209,6 +223,8 @@ Must be between 0 and 1.
 *@par Outputs:
 *handle: A Tensor of type resource. Handle to the table.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow MutableDenseHashTable operator.
 */
 
 REG_OP(MutableDenseHashTable)
@@ -241,6 +257,8 @@ shared_name is empty, the table is shared using the node name.
 *@par Outputs:
 *handle: A Tensor of type resource. Handle to the table.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow MutableHashTableOfTensors operator.
 */
 
 REG_OP(MutableHashTableOfTensors)
@@ -269,6 +287,8 @@ shared_name is empty, the table is shared using the node name.
 *@par Outputs:
 *handle: A Tensor of type resource. Handle to the table.
 
+*@par Third-party framework compatibility.
+*Compatible with tensorflow MutableHashTable operator.
 */
 
 REG_OP(MutableHashTable)

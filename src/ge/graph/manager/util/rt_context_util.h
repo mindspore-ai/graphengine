@@ -31,6 +31,10 @@ class RtContextUtil {
 
   void AddrtContext(rtContext_t context);
 
+  const rtContext_t GetNormalModeContext() const { return before_prerun_ctx_; }
+
+  void SetNormalModeContext(rtContext_t context) { before_prerun_ctx_ = context; }
+
   void DestroyrtContexts();
 
   RtContextUtil &operator=(const RtContextUtil &) = delete;
@@ -41,8 +45,8 @@ class RtContextUtil {
   ~RtContextUtil() {}
 
   std::vector<rtContext_t> rtContexts_;
+  rtContext_t before_prerun_ctx_ = nullptr;
 };
 }  // namespace ge
 
 #endif  // GE_GRAPH_MANAGER_UTIL_RT_CONTEXT_UTIL_H_
-

@@ -133,10 +133,11 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc failed. error: 0x%X", rt_ret); return FAILED;)
     rt_ret =
       rtMemcpy((void *)hbm_nav_table_addr, nav_table_size, (void *)nav_table, nav_table_size, RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy failed. error: 0x%X", rt_ret); return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy failed. error: 0x%X", rt_ret);
+                    GE_CHK_RT(rtFree(hbm_nav_table_addr)); return FAILED;)
     rt_ret = rtKernelConfigTransArg(hbm_nav_table_addr, sizeof(uint64_t), 0, &hbm_nav_table_addr_pys);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtKernelConfigTransArg failed. error: 0x%X", rt_ret);
-                    return FAILED;)
+                    GE_CHK_RT(rtFree(hbm_nav_table_addr)); return FAILED;)
 
     GELOGD("SKT: hbm_nav_table_addr %p, hbm_nav_table_addr_pys %p", hbm_nav_table_addr, hbm_nav_table_addr_pys);
     // Create the necessary metadata for the super kernel
@@ -159,7 +160,8 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc failed. error: 0x%X", rt_ret); return FAILED;)
     rt_ret =
       rtMemcpy((void *)hbm_nav_table_addr, nav_table_size, (void *)nav_table, nav_table_size, RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy failed. error: 0x%X", rt_ret); return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy failed. error: 0x%X", rt_ret);
+                    GE_CHK_RT(rtFree(hbm_nav_table_addr)); return FAILED;)
     // Create the necessary metadata for the super kernel
     h = new SuperKernel(this->func_stub_, hbm_nav_table_addr, nav_table_size, block_dim);
   }

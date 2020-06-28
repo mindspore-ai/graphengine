@@ -99,7 +99,8 @@ class GraphManager {
   /// @param [out] models build result
   /// @return Status result of function
   ///
-  ge::Status BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs, GeRootModelPtr &models);
+  ge::Status BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs, GeRootModelPtr &models,
+                        uint64_t session_id = 0, bool async = false);
 
   ///
   /// @ingroup ge_graph

@@ -31,7 +31,7 @@
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_RESERVED;
 using domi::domiTensorFormat_t;
-using domi::FMK_TYPE_RESERVED;
+using domi::FRAMEWORK_RESERVED;
 using domi::FrameworkType;
 using std::map;
 using std::string;
@@ -100,7 +100,7 @@ struct OmgContext {
   std::string ddk_version;
   // preferential format used by the entire network
   domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
-  domi::FrameworkType type = domi::FMK_TYPE_RESERVED;
+  domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
   RunMode run_mode = ONLY_PRE_CHECK;
   bool train_flag = false;
   // whether to use FP16 high precision

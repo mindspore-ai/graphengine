@@ -72,7 +72,6 @@ Status CallbackManager::CallbackProcess(rtContext_t context) {
       return RT_FAILED;
     }
 
-    // TODO reuse event
     GE_CHK_RT(rtEventDestroy(event));
 
     auto cb_func = entry.second.first;
@@ -105,10 +104,10 @@ void CallbackManager::RtCallbackFunc(void *data) {
 }
 
 Status CallbackManager::RegisterCallback(const std::function<void()> &callback) {
-  auto *func = new (std::nothrow) std::function<void()>(callback);
+  auto func = std::unique_ptr<std::function<void()>>(new (std::nothrow) std::function<void()>(callback));
   GE_CHECK_NOTNULL(func);
   GELOGD("Callback registered");
-  return RegisterCallback(RtCallbackFunc, func);
+  return RegisterCallback(RtCallbackFunc, func.release());
 }
 }  // namespace hybrid
 }  // namespace ge

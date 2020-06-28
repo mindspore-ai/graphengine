@@ -54,6 +54,8 @@ namespace ge {
 *weights associated with a sparse feature group.a list of vectors where the values are the delta \n
 *weights associated with a dense feature group.
 
+*@par Third-party framework compatibility
+* Compatible with tensorflow SdcaOptimizerV2 operator.
 */
 
 REG_OP(SdcaOptimizerV2)

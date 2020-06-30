@@ -28,7 +28,6 @@
 
 namespace ge {
 namespace model_runner {
-
 RuntimeModel::~RuntimeModel() {
   GELOGI("RuntimeModel destructor start");
 
@@ -221,21 +220,40 @@ bool RuntimeModel::LoadTask() {
     }
     task_id_list_.push_back(task_id);
     stream_id_list_.push_back(stream_id);
+    if (task->Args() != nullptr) {
+      std::shared_ptr<RuntimeInfo> runtime_tuple = nullptr;
+      GE_MAKE_SHARED(runtime_tuple = std::make_shared<RuntimeInfo>(task_id, stream_id, task->Args()), return false);
+      auto emplace_ret = runtime_info_map_.emplace(task->task_name(), runtime_tuple);
+      if (!emplace_ret.second) {
+        GELOGW("Task name exist:%s", task->task_name().c_str());
+      }
+    }
   }
   if (task_list_.empty()) {
     GELOGE(FAILED, "Task list is empty");
     return false;
   }
-  GELOGI("Distribute task succ.");
 
-  auto rt_ret = rtModelLoadComplete(rt_model_handle_);
+  GELOGI("LoadTask succ.");
+  return true;
+}
+
+bool RuntimeModel::LoadComplete() {
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  auto rt_ret = rtModelGetTaskId(rt_model_handle_, &task_id, &stream_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rtModelGetTaskId failed, ret:0x%X", rt_ret);
+    return RT_FAILED;
+  }
+  task_id_list_.push_back(task_id);
+  stream_id_list_.push_back(stream_id);
+
+  rt_ret = rtModelLoadComplete(rt_model_handle_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api rtModelLoadComplete failed, ret: 0x%X.", rt_ret);
     return false;
   }
-
-  GELOGI("LoadTask succ.");
-  return true;
 }
 
 bool RuntimeModel::Load(uint32_t device_id, uint64_t session_id, std::shared_ptr<DavinciModel> &davinci_model) {

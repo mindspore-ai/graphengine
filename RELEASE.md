@@ -1,3 +1,22 @@
+# Release 0.5.0-beta
+
+## Major Features and Improvements
+- Optimize Allreduce trailing parallelism, rebuild the calculation graph dependencies, adjust the calculation order, and maximize the efficiency of calculation and gradient aggregation communication in parallel, especially in large data volume gradient aggregation and low bandwidth/large cluster scenarios You can get a bigger income.
+- Advance constant folding, variable fusion, conversion operator related optimization pass to the end of the graph preparation.
+- Modify memory allocation algorithm, optimize GE memory allocation, and reduce memory usage in training multi-PCS scenarios.
+- Support IR composition, model compilation, inference execution in the same process.
+
+## Bugfixes 
+- Fix the bug that the graphic attribute "output_name_idx_" is not serialized to the GEIR model file, resulting in the failure of the Fast-RCNN network offline inference model generation。
+- Introduce timestamp in the dump data storage directory, to ensure that the dump file generated is in a different directory each time it is executed.
+- Reinforce the ParserJsonFile interface to fix the program coredump bug caused by the injection of abnormal json files.
+- Fix the bug that Stream binding failure scenario and sream resource leakage.
+
+## Thanks to our Contributors
+Thanks goes to these wonderful people: 
+wangcong，weiyang，yanghaorang，xutianchun，shibeiji
+Contributions of any kind are welcome!
+
 # Release 0.3.0-alpha
 
 ## Major Features and Improvements

@@ -49,6 +49,15 @@ bool ModelRunner::LoadDavinciModel(uint32_t device_id, uint64_t session_id, uint
   return true;
 }
 
+bool ModelRunner::LoadModelComplete(uint32_t model_id) {
+  auto model_iter = runtime_models_.find(model_id);
+  if (model_iter == runtime_models_.end()) {
+    GELOGE(PARAM_INVALID, "Model id %u not found.", model_id);
+    return false;
+  }
+  return model_iter->second->LoadComplete();
+}
+
 const std::vector<uint32_t> &ModelRunner::GetTaskIdList(uint32_t model_id) const {
   auto model_iter = runtime_models_.find(model_id);
   if (model_iter == runtime_models_.end()) {
@@ -69,6 +78,17 @@ const std::vector<uint32_t> &ModelRunner::GetStreamIdList(uint32_t model_id) con
   }
 
   return model_iter->second->GetStreamIdList();
+}
+
+const std::map<std::string, std::shared_ptr<RuntimeInfo>> &ModelRunner::GetRuntimeInfoMap(uint32_t model_id) const {
+  auto model_iter = runtime_models_.find(model_id);
+  if (model_iter == runtime_models_.end()) {
+    GELOGW("Model id %u not found.", model_id);
+    static const std::map<std::string, std::shared_ptr<RuntimeInfo>> empty_ret;
+    return empty_ret;
+  }
+
+  return model_iter->second->GetRuntimeInfoMap();
 }
 
 bool ModelRunner::UnloadModel(uint32_t model_id) {

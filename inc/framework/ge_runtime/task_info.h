@@ -21,6 +21,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "cce/taskdown_api.h"
@@ -52,21 +53,27 @@ class TaskInfo {
   virtual ~TaskInfo() {}
   uint32_t stream_id() const { return stream_id_; }
   TaskInfoType type() const { return type_; }
+  std::string op_name() const { return op_name_; }
+  bool dump_flag() const { return dump_flag_; }
 
  protected:
-  TaskInfo(uint32_t stream_id, TaskInfoType type) : stream_id_(stream_id), type_(type) {}
+  TaskInfo(const std::string &op_name, uint32_t stream_id, TaskInfoType type, bool dump_flag)
+      : op_name_(op_name), stream_id_(stream_id), type_(type), dump_flag_(dump_flag) {}
 
  private:
+  std::string op_name_;
   uint32_t stream_id_;
   TaskInfoType type_;
+  bool dump_flag_;
 };
 
 class CceTaskInfo : public TaskInfo {
  public:
-  CceTaskInfo(uint32_t stream_id, const cce::ccOpContext &ctx, const std::string &stub_func, uint32_t block_dim,
-              const std::vector<uint8_t> &args, uint32_t args_size, const std::vector<uint8_t> &sm_desc,
-              const std::vector<uint8_t> &flow_table, const std::vector<uint8_t> &args_offset, bool is_flowtable)
-      : TaskInfo(stream_id, TaskInfoType::CCE),
+  CceTaskInfo(const std::string &op_name, uint32_t stream_id, const cce::ccOpContext &ctx, const std::string &stub_func,
+              uint32_t block_dim, const std::vector<uint8_t> &args, uint32_t args_size,
+              const std::vector<uint8_t> &sm_desc, const std::vector<uint8_t> &flow_table,
+              const std::vector<uint8_t> &args_offset, bool is_flowtable)
+      : TaskInfo(op_name, stream_id, TaskInfoType::CCE, false),
         ctx_(ctx),
         stub_func_(stub_func),
         block_dim_(block_dim),
@@ -102,11 +109,11 @@ class CceTaskInfo : public TaskInfo {
 
 class TbeTaskInfo : public TaskInfo {
  public:
-  TbeTaskInfo(uint32_t stream_id, const std::string &stub_func, uint32_t block_dim, const std::vector<uint8_t> &args,
-              uint32_t args_size, const std::vector<uint8_t> &sm_desc, void *binary, uint32_t binary_size,
-              const std::vector<uint8_t> &meta_data, const std::vector<void *> &input_data_addrs,
-              const std::vector<void *> &output_data_addrs, const std::vector<void *> &workspace_addrs)
-      : TaskInfo(stream_id, TaskInfoType::TBE),
+  TbeTaskInfo(const std::string &op_name, uint32_t stream_id, const std::string &stub_func, uint32_t block_dim,
+              const std::vector<uint8_t> &args, uint32_t args_size, const std::vector<uint8_t> &sm_desc, void *binary,
+              uint32_t binary_size, const std::vector<uint8_t> &meta_data, const std::vector<void *> &input_data_addrs,
+              const std::vector<void *> &output_data_addrs, const std::vector<void *> &workspace_addrs, bool dump_flag)
+      : TaskInfo(op_name, stream_id, TaskInfoType::TBE, dump_flag),
         stub_func_(stub_func),
         block_dim_(block_dim),
         args_(args),
@@ -153,9 +160,10 @@ class TbeTaskInfo : public TaskInfo {
 
 class AicpuTaskInfo : public TaskInfo {
  public:
-  AicpuTaskInfo(uint32_t stream_id, const string &so_name, const std::string &kernel_name, const std::string &node_def,
-                const std::vector<void *> &input_data_addrs, const std::vector<void *> &output_data_addrs)
-      : TaskInfo(stream_id, TaskInfoType::AICPU),
+  AicpuTaskInfo(const std::string &op_name, uint32_t stream_id, const string &so_name, const std::string &kernel_name,
+                const std::string &node_def, const std::vector<void *> &input_data_addrs,
+                const std::vector<void *> &output_data_addrs, bool dump_flag)
+      : TaskInfo(op_name, stream_id, TaskInfoType::AICPU, dump_flag),
         so_name_(so_name),
         kernel_name_(kernel_name),
         node_def_(node_def),
@@ -179,8 +187,8 @@ class AicpuTaskInfo : public TaskInfo {
 
 class LabelSetTaskInfo : public TaskInfo {
  public:
-  LabelSetTaskInfo(uint32_t stream_id, uint32_t label_id)
-      : TaskInfo(stream_id, TaskInfoType::LABEL_SET), label_id_(label_id) {}
+  LabelSetTaskInfo(const std::string &op_name, uint32_t stream_id, uint32_t label_id)
+      : TaskInfo(op_name, stream_id, TaskInfoType::LABEL_SET, false), label_id_(label_id) {}
   ~LabelSetTaskInfo() override {}
   uint32_t label_id() const { return label_id_; }
 
@@ -190,8 +198,8 @@ class LabelSetTaskInfo : public TaskInfo {
 
 class LabelGotoTaskInfo : public TaskInfo {
  public:
-  LabelGotoTaskInfo(uint32_t stream_id, uint32_t label_id)
-      : TaskInfo(stream_id, TaskInfoType::LABEL_GOTO), label_id_(label_id) {}
+  LabelGotoTaskInfo(const std::string &op_name, uint32_t stream_id, uint32_t label_id)
+      : TaskInfo(op_name, stream_id, TaskInfoType::LABEL_GOTO, false), label_id_(label_id) {}
   ~LabelGotoTaskInfo() override {}
   uint32_t label_id() const { return label_id_; }
 
@@ -201,8 +209,9 @@ class LabelGotoTaskInfo : public TaskInfo {
 
 class LabelSwitchTaskInfo : public TaskInfo {
  public:
-  LabelSwitchTaskInfo(uint32_t stream_id, uint32_t label_size, const std::vector<uint32_t> &label_list, void *cond)
-      : TaskInfo(stream_id, TaskInfoType::LABEL_SWITCH),
+  LabelSwitchTaskInfo(const std::string &op_name, uint32_t stream_id, uint32_t label_size,
+                      const std::vector<uint32_t> &label_list, void *cond)
+      : TaskInfo(op_name, stream_id, TaskInfoType::LABEL_SWITCH, false),
         label_size_(label_size),
         label_list_(label_list),
         cond_(cond) {}
@@ -222,8 +231,8 @@ class EventTaskInfo : public TaskInfo {
   uint32_t event_id() const { return event_id_; }
 
  protected:
-  EventTaskInfo(uint32_t stream_id, TaskInfoType type, uint32_t event_id)
-      : TaskInfo(stream_id, type), event_id_(event_id) {}
+  EventTaskInfo(const std::string &op_name, uint32_t stream_id, TaskInfoType type, uint32_t event_id)
+      : TaskInfo(op_name, stream_id, type, false), event_id_(event_id) {}
   virtual ~EventTaskInfo() override {}
 
   uint32_t event_id_;
@@ -231,39 +240,41 @@ class EventTaskInfo : public TaskInfo {
 
 class EventRecordTaskInfo : public EventTaskInfo {
  public:
-  EventRecordTaskInfo(uint32_t stream_id, uint32_t event_id)
-      : EventTaskInfo(stream_id, TaskInfoType::EVENT_RECORD, event_id) {}
+  EventRecordTaskInfo(const std::string &op_name, uint32_t stream_id, uint32_t event_id)
+      : EventTaskInfo(op_name, stream_id, TaskInfoType::EVENT_RECORD, event_id) {}
   ~EventRecordTaskInfo() override {}
 };
 
 class EventWaitTaskInfo : public EventTaskInfo {
  public:
-  EventWaitTaskInfo(uint32_t stream_id, uint32_t event_id)
-      : EventTaskInfo(stream_id, TaskInfoType::EVENT_WAIT, event_id) {}
+  EventWaitTaskInfo(const std::string &op_name, uint32_t stream_id, uint32_t event_id)
+      : EventTaskInfo(op_name, stream_id, TaskInfoType::EVENT_WAIT, event_id) {}
   ~EventWaitTaskInfo() override {}
 };
 
 class FusionStartTaskInfo : public TaskInfo {
  public:
-  explicit FusionStartTaskInfo(uint32_t stream_id) : TaskInfo(stream_id, TaskInfoType::FUSION_START) {}
+  explicit FusionStartTaskInfo(const std::string &op_name, uint32_t stream_id)
+      : TaskInfo(op_name, stream_id, TaskInfoType::FUSION_START, false) {}
   ~FusionStartTaskInfo() override {}
 };
 
 class FusionEndTaskInfo : public TaskInfo {
  public:
-  explicit FusionEndTaskInfo(uint32_t stream_id) : TaskInfo(stream_id, TaskInfoType::FUSION_END) {}
+  explicit FusionEndTaskInfo(const std::string &op_name, uint32_t stream_id)
+      : TaskInfo(op_name, stream_id, TaskInfoType::FUSION_END, false) {}
   ~FusionEndTaskInfo() override {}
 };
 
 class HcclTaskInfo : public TaskInfo {
  public:
-  HcclTaskInfo(uint32_t stream_id, const std::string hccl_type, void *input_data_addr, void *output_data_addr,
-               void *workspace_addr, int64_t workspace_size, int64_t hccl_stream_num,
+  HcclTaskInfo(const std::string &op_name, uint32_t stream_id, const std::string hccl_type, void *input_data_addr,
+               void *output_data_addr, void *workspace_addr, int64_t workspace_size, int64_t hccl_stream_num,
                const std::vector<uint8_t> &private_def, void *ops_kernel_store, int32_t count, int64_t root_id,
                int64_t op_type, int64_t data_type, const std::string &group,
                std::function<bool(void *, void *)> hcom_bind_model, std::function<bool(void *)> hcom_unbind_model,
-               std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task)
-      : TaskInfo(stream_id, TaskInfoType::HCCL),
+               std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task, bool dump_flag)
+      : TaskInfo(op_name, stream_id, TaskInfoType::HCCL, dump_flag),
         hccl_type_(hccl_type),
         input_data_addr_(input_data_addr),
         output_data_addr_(output_data_addr),
@@ -322,8 +333,11 @@ class HcclTaskInfo : public TaskInfo {
 
 class ProfilerTraceTaskInfo : public TaskInfo {
  public:
-  ProfilerTraceTaskInfo(uint32_t stream_id, uint64_t log_id, bool notify, uint32_t flat)
-      : TaskInfo(stream_id, TaskInfoType::PROFILER_TRACE), log_id_(log_id), notify_(notify), flat_(flat) {}
+  ProfilerTraceTaskInfo(const std::string &op_name, uint32_t stream_id, uint64_t log_id, bool notify, uint32_t flat)
+      : TaskInfo(op_name, stream_id, TaskInfoType::PROFILER_TRACE, false),
+        log_id_(log_id),
+        notify_(notify),
+        flat_(flat) {}
   ~ProfilerTraceTaskInfo() override {}
 
   uint64_t log_id() const { return log_id_; }
@@ -338,8 +352,9 @@ class ProfilerTraceTaskInfo : public TaskInfo {
 
 class MemcpyAsyncTaskInfo : public TaskInfo {
  public:
-  MemcpyAsyncTaskInfo(uint32_t stream_id, void *dst, uint64_t dst_max, void *src, uint64_t count, uint32_t kind)
-      : TaskInfo(stream_id, TaskInfoType::MEMCPY_ASYNC),
+  MemcpyAsyncTaskInfo(const std::string &op_name, uint32_t stream_id, void *dst, uint64_t dst_max, void *src,
+                      uint64_t count, uint32_t kind, bool dump_flag)
+      : TaskInfo(op_name, stream_id, TaskInfoType::MEMCPY_ASYNC, dump_flag),
         dst_(dst),
         dst_max_(dst_max),
         src_(src),
@@ -363,9 +378,9 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
 
 class StreamSwitchTaskInfo : public TaskInfo {
  public:
-  StreamSwitchTaskInfo(uint32_t stream_id, int64_t true_stream_id, void *input_addr, void *value_addr, int64_t cond,
-                       int64_t data_type)
-      : TaskInfo(stream_id, TaskInfoType::STREAM_SWITCH),
+  StreamSwitchTaskInfo(const std::string &op_name, uint32_t stream_id, int64_t true_stream_id, void *input_addr,
+                       void *value_addr, int64_t cond, int64_t data_type)
+      : TaskInfo(op_name, stream_id, TaskInfoType::STREAM_SWITCH, false),
         true_stream_id_(true_stream_id),
         input_addr_(input_addr),
         value_addr_(value_addr),
@@ -389,8 +404,8 @@ class StreamSwitchTaskInfo : public TaskInfo {
 
 class StreamActiveTaskInfo : public TaskInfo {
  public:
-  StreamActiveTaskInfo(uint32_t stream_id, uint32_t active_stream_id)
-      : TaskInfo(stream_id, TaskInfoType::STREAM_ACTIVE), active_stream_id_(active_stream_id) {}
+  StreamActiveTaskInfo(const std::string &op_name, uint32_t stream_id, uint32_t active_stream_id)
+      : TaskInfo(op_name, stream_id, TaskInfoType::STREAM_ACTIVE, false), active_stream_id_(active_stream_id) {}
   ~StreamActiveTaskInfo() override {}
 
   uint32_t active_stream_id() const { return active_stream_id_; }

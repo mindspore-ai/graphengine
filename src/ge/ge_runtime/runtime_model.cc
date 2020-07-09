@@ -254,6 +254,7 @@ bool RuntimeModel::LoadComplete() {
     GELOGE(RT_FAILED, "Call rt api rtModelLoadComplete failed, ret: 0x%X.", rt_ret);
     return false;
   }
+  return true;
 }
 
 bool RuntimeModel::Load(uint32_t device_id, uint64_t session_id, std::shared_ptr<DavinciModel> &davinci_model) {

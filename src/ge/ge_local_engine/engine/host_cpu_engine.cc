@@ -131,6 +131,7 @@ Status HostCpuEngine::RunInternal(const ge::OpDescPtr &op_desc, HostCpuOp &op_ke
     GELOGE(FAILED, "Failed to compute host cpu op. node = %s, ret = %u", op_desc->GetName().c_str(), ret);
     return FAILED;
   }
+  op.BreakConnect();
 
   return SUCCESS;
 }

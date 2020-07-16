@@ -292,6 +292,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
       GELOGW("ProfMgrStartUp failed.");
       return FAILED;
     }
+    GELOGD("StartProfiling, prof_handle: %p", prof_handle);
     prof_handle_vec_.push_back(prof_handle);
   }
 #endif
@@ -314,8 +315,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   for (size_t i = 0; i < prof_handle_vec_.size(); ++i) {
     int result = ProfMgrStop(prof_handle_vec_[i]);
     if (result != 0) {
-      GELOGW("ProfMgr stop return fail:%d.", result);
-      return;
+      GELOGW("ProfMgr stop return fail:%d, handle:%p", result, prof_handle_vec_[i]);
     }
   }
   vector<void *>().swap(prof_handle_vec_);

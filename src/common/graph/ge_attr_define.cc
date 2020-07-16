@@ -154,6 +154,7 @@ const std::string ATTR_NAME_RTSWITCH_RECV_EVENT_ID = "rtswitch_event_id";
 const std::string ATTR_NAME_AUTOMIC_ADD_START = "automic_add_addr_start";
 const std::string ATTR_NAME_AUTOMIC_ADD_MEM_SIZE = "automic_add_mem_size";
 const std::string ATTR_NAME_DYNAMIC_OUTPUT_DIMS = "_dynamic_output_dims";
+const std::string ATTR_NAME_INPUT_ORIGIN_SIZE = "input_origin_size";
 
 // To be deleted
 const std::string ATTR_TO_BE_DELETED = "to_be_deleted";

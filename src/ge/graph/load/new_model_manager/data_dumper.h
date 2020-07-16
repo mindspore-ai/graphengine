@@ -64,6 +64,8 @@ class DataDumper {
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args);
   void SaveEndGraphId(uint32_t task_id, uint32_t stream_id);
 
+  void SetOmName(const std::string &om_name) { om_name_ = om_name; }
+
   Status LoadDumpInfo();
 
   Status UnloadDumpInfo();
@@ -71,9 +73,13 @@ class DataDumper {
  private:
   void ReleaseDevMem(void **ptr) noexcept;
 
-  void PrintCheckLog();
+  void PrintCheckLog(string &dump_list_key);
 
   std::string model_name_;
+
+  // for inference data dump
+  std::string om_name_;
+
   uint32_t model_id_;
   RuntimeParam runtime_param_;
   void *dev_mem_load_;
@@ -107,6 +113,7 @@ struct DataDumper::InnerDumpInfo {
   int input_anchor_index;
   int output_anchor_index;
   std::vector<int64_t> dims;
+  int64_t data_size;
 };
 
 struct DataDumper::InnerInputMapping {

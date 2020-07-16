@@ -31,6 +31,7 @@
 namespace ge {
 namespace {
 const size_t kConcatV2InputNum = 3;
+const int kSupportEmptyTensorRank = 1;
 const std::set<DataType> concatv2_supported_type = {DT_INT32, DT_FLOAT};
 
 template <typename T>
@@ -39,7 +40,12 @@ void GetOutputData(std::vector<T> &y_data, int64_t loop, size_t &input_size,
   for (int64_t i = 0; i < loop; i++) {
     for (size_t k = 0; k < input_size; k++) {
       GeShape datak_shape = input.at(k)->GetTensorDesc().GetShape();
-      const T *datak = reinterpret_cast<const T *>(input.at(k)->GetData().data());
+      auto buffer = input.at(k)->GetData();
+      const T *datak = reinterpret_cast<const T *>(buffer.data());
+      if (datak == nullptr || buffer.size() == 0) {
+        GELOGW("input[%zu] is with no data", k);
+        continue;
+      }
       int64_t gapk = datak_shape.GetShapeSize() / loop;  // [2,3] is 6/loop
       for (int64_t j = 0; j < gapk; j++) {
         y_data.push_back(datak[j + gapk * i]);
@@ -63,7 +69,8 @@ Status ConcatV2Kernel::Compute(const ge::OpDescPtr op_desc_ptr, const vector<ge:
     return PARAM_INVALID;
   }
   int tidx = -1;
-  Status ret = ConcatV2PreCompute(input, tidx);
+  ConstGeTensorPtr tensor = nullptr;
+  Status ret = ConcatV2PreCompute(input, tidx, tensor);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -71,9 +78,8 @@ Status ConcatV2Kernel::Compute(const ge::OpDescPtr op_desc_ptr, const vector<ge:
   size_t input_size = input.size();  // N + 1
   input_size--;                      // N
 
-  ConstGeTensorPtr tensor0 = input.at(0);
-  GE_CHECK_NOTNULL(tensor0);
-  DataType data_type = tensor0->GetTensorDesc().GetDataType();
+  GE_CHECK_NOTNULL(tensor);
+  DataType data_type = tensor->GetTensorDesc().GetDataType();
   uint32_t length = 0;
   if (!TypeUtils::GetDataTypeLength(data_type, length)) {
     GELOGW("Can't GetDataTypeLength of data_type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
@@ -91,7 +97,7 @@ Status ConcatV2Kernel::Compute(const ge::OpDescPtr op_desc_ptr, const vector<ge:
     return MEMALLOC_FAILED;
   }
 
-  GeShape data0_shape = tensor0->GetTensorDesc().GetShape();
+  GeShape data0_shape = tensor->GetTensorDesc().GetShape();
   int64_t loop = 1;
   for (int i = 0; i < tidx; i++) {
     loop *= data0_shape.GetDim(i);
@@ -110,29 +116,33 @@ Status ConcatV2Kernel::Compute(const ge::OpDescPtr op_desc_ptr, const vector<ge:
   return SUCCESS;
 }
 
-Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &input, int &tidx) {
+Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &input, int &tidx,
+                                          ConstGeTensorPtr &tensor) {
   size_t input_size = input.size();
   // N >= 2 and N + 1 >= 3
   if (input_size < kConcatV2InputNum) {
     GELOGI("The number of input for ConcatV2 must not be less than %zu.", kConcatV2InputNum);
     return NOT_CHANGED;
   }
-
+  bool has_empty_tensor = false;
+  input_size--;
   for (size_t i = 0; i < input_size; i++) {
     if (input[i] == nullptr) {
       GELOGI("Input%zu must not be null.", i);
       return NOT_CHANGED;
     }
     if (input.at(i)->GetData().size() == 0) {
-      GELOGI("Check data size fail. input%zu size is 0.", i);
-      return NOT_CHANGED;
+      GELOGW("input[%zu] is with no data.", i);
+      has_empty_tensor = true;
+      continue;
+    }
+    if (tensor == nullptr) {
+      tensor = input.at(i);  // get first valid tensor with data
     }
   }
 
-  input_size--;
-  ConstGeTensorPtr tensor0 = input.at(0);
-  GE_CHECK_NOTNULL(tensor0);
-  DataType data_type = tensor0->GetTensorDesc().GetDataType();
+  GE_CHECK_NOTNULL(tensor);
+  DataType data_type = tensor->GetTensorDesc().GetDataType();
   for (size_t i = 1; i < input_size; i++) {
     if (data_type != input.at(i)->GetTensorDesc().GetDataType()) {
       GELOGI("Data type of N inputs for ConcatV2 not the same, check input %zu failed.", i);
@@ -149,13 +159,18 @@ Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &i
   ConstGeTensorPtr tensor_axis = input.at(input_size);
   GE_CHECK_NOTNULL(tensor_axis);
   const int *axis = reinterpret_cast<const int *>(tensor_axis->GetData().data());
-  tidx = axis[0];                                                                // [-rank(values), rank(values))
-  int dims = static_cast<int>(tensor0->GetTensorDesc().GetShape().GetDimNum());  // rank
+  GE_CHECK_NOTNULL(axis);
+  tidx = axis[0];                                                               // [-rank(values), rank(values))
+  int rank = static_cast<int>(tensor->GetTensorDesc().GetShape().GetDimNum());  // rank
   if (tidx < 0) {
-    tidx += dims;
+    tidx += rank;
   }
-  if (tidx < 0 || tidx > dims) {
-    GELOGI("ConcatV2 tidx not legal.");
+  // 1. tidx should in range [0,rank)
+  // 2. empty tensor only support case: [n],[m],[]
+  // case: [[],[]] ,[[],[]] ,[] or other case when rank >=2 is not supported
+  if (tidx < 0 || tidx >= rank || (has_empty_tensor && rank > kSupportEmptyTensorRank)) {
+    GELOGW("ConcatV2 info: tidx[%d]_rank[%d]_has_empty_tensor[bool:%d] cannot be supported, skip fold.", tidx, rank,
+           has_empty_tensor);
     return NOT_CHANGED;
   }
 

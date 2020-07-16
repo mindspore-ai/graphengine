@@ -820,6 +820,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       return FAILED;
     }
     davinci_model->SetDeviceId(device_id);
+    davinci_model->SetOmName(model.om_name);
 
     /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
     /// These session_ids come from the same model, so the values of session_id are the same.

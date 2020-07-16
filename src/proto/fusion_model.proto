@@ -17,6 +17,7 @@
 syntax = "proto3";
 
 import "om.proto";
+
 package domi;
 
 message FusionModelDef {

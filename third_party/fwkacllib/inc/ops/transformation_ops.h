@@ -20,18 +20,37 @@
 #include "graph/operator_reg.h"
 
 namespace ge {
+/**
+*@brief Convert tensor format from HWCN to C1HWNCoC0.
+
+*@par Inputs:
+*x: A Tensor. Must be 4D Tensor of type float16, float32, int32, uint16, with format HWCN.
+
+*@par Outputs:
+*y: A 6D Tensor. Has the same type as "x", with format C1HWNCoC0.
+*/
 REG_OP(DepthwiseWeight4DTo6D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))
     .OP_END_FACTORY_REG(DepthwiseWeight4DTo6D)
 
+/**
+*@brief Convert tensor format from C1HWNCoC0 to HWCN.
+
+*@par Inputs:
+*x: A Tensor. Must be 6D Tensor of type float16, float32, int32, uint16, with format C1HWNCoC0.
+
+*@par Attributes:
+*channel_size: An optional int, specifying the channel size of 4D Tensor with format HWCN.
+
+*@par Outputs:
+*y: A 4D Tensor. Has the same type as "x", with format HWCN.
+*/
 REG_OP(DepthwiseWeight6DTo4D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_UINT16}))
     .ATTR(channel_size, Int, 16)
     .OP_END_FACTORY_REG(DepthwiseWeight6DTo4D)
-
-
 
 /**
 *@brief Permutes the dimensions according to perm.\n
@@ -390,20 +409,20 @@ REG_OP(SpaceToBatchD)
     .OP_END_FACTORY_REG(SpaceToBatchD)
 
 /**
-* @brief Unpacks the given dimension of a rank-R tensor "x" into rank-(R-1)
+* @brief Unpacks the given dimension of a rank-R Tensor "x" into rank-(R-1)
 * tensors.
 
 * @par Inputs:
 * x: A rank-R tensor (R > 0) of type BasicType, with format ND or NC1HWC0.
 
 * @par Attributes:
-* @li num: An optional int, specifying the number of tensors to be unpacked to.
+* @li num: A required int, specifying the number of tensors to be unpacked to.
 * Defaults to "None".
-* @li axis: A required int, specifying the axis to unpack along. The value range
+* @li axis: An optional int, specifying the axis to unpack along. The value range
 * is [-R, R).
 
 * @par Outputs:
-* y: The list of Tensor objects unpacked from "x", of type BasicType.
+* y: Dynamic output. The list of Tensor objects unpacked from "x", of type BasicType.
 
 * @attention Constraints:
 * @li If "num" is not specified, it is inferred from the shape of "x".
@@ -434,11 +453,11 @@ REG_OP(Unpack)
 * dimension of images.
 * @li strides: A required list or tuple. How far the centers of two consecutive
 * patches are in the images. Must be: [1, stride_rows, stride_cols, 1].
-* @li rates: A required list or tuple. Must be: [1, rate_rows, rate_cols, 1]. \n
-* This is the input stride, specifying how far two consecutive patch  \n
+* @li rates: A required list or tuple. Must be: [1, rate_rows, rate_cols, 1].\n
+* This is the input stride, specifying how far two consecutive patch\n
 * samples are in the input. Equivalent to extracting patches
 * with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *\n
-* (rates - 1), followed by subsampling them spatially by a factor of rates. \n
+* (rates - 1), followed by subsampling them spatially by a factor of rates.\n
 * This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
 * @li padding: A required string. The type of padding algorithm to use.
 

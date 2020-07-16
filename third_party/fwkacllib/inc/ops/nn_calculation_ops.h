@@ -62,7 +62,7 @@ namespace ge {
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
 * Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
-* stride_h + 32 * filter_h) * ceil(Wi, 16) �?l1_size and Hf*Wf �?l0b_size/512.\n
+* stride_h + 32 * filter_h) * ceil(Wi, 16) <= l1_size and Hf*Wf <= l0b_size/512.
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2DBackpropFilter.
@@ -119,7 +119,7 @@ REG_OP(DepthwiseConv2DBackpropFilter)
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
 * Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
-* stride_h + 32 * filter_h) * ceil(Wi, 16) �?l1_size and Hf*Wf �?l0b_size/512.\n
+* stride_h + 32 * filter_h) * ceil(Wi, 16) <= l1_size and Hf*Wf <= l0b_size/512.
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2DBackpropFilter.
@@ -178,7 +178,7 @@ REG_OP(DepthwiseConv2DBackpropFilterD)
 * Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 �?C0, where max_h_in_l1 = (l1_size - Hf *
+* Limited by Tiling: max_h_in_l1 >= C0, where max_h_in_l1 = (l1_size - Hf *
 * Wf * C0 * C0 * 2) / (2 * Wo *C0).\n
 
 * @par Third-party framework compatibility
@@ -235,7 +235,7 @@ REG_OP(DepthwiseConv2DBackpropInput)
 * Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 �?C0, where max_h_in_l1 = (l1_size - Hf *
+* Limited by Tiling: max_h_in_l1 >= C0, where max_h_in_l1 = (l1_size - Hf *
 * Wf * C0 * C0 * 2) / (2 * Wo *C0).\n
 
 * @par Third-party framework compatibility
@@ -460,13 +460,10 @@ REG_OP(Conv2DBackpropInputD)
 *@par Inputs:
  * Three inputs:
  * @li x: A Tensor. Must have the same type as "filter". 4D with shape
- * [batch, out_height, out_width, out_channels]
- * or [batch, out_channels, out_height, out_width]. Gradients with respect
+ * [batch, out_channels, out_height, out_width]. Gradients with respect
  * to the output of the convolution.
  * @li filter: A Tensor of type float16.
- * 4D with shape [filter_height, filter_width, in_channels, out_channels],
- * or [out_channels, filter_height, filter_width, in_channels],
- * or [out_channels, in_channel, filter_height, filter_width].
+ * 4D with shape [out_channels, in_channel, filter_height, filter_width].\n
  * Two optional inputs:
  * @li bias: An optional tensor of type float16
  * @li offset_w: An optional 1D tensor for quantized deconvolution. Reserved.\n
@@ -478,14 +475,14 @@ REG_OP(Conv2DBackpropInputD)
  * padding on the feature map
  * @li dilations: A tuple or list of 4 integers. The dilation factor for each
  * dimension of input. Must be [1, 1, 1, 1].
- * @li groups: Number of blocked connections from input channels to \n
- output channels.
- * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to "NHWC".\n
+ * @li groups: Number of blocked connections from input channels to
+ * output channels.
+ * @li data_format: An optional string from: "NCHW". Defaults to "NCHW".\n
   Specify the data format of the input and output data.
  * @li offset_x: An optional integer for quantized deconvolution.
 *@par Outputs:
  * y: A Tensor. Has the same type as "filter". 4D tensor with shape
- * [batch, height, width, channels] or [batch, channels, height, width].
+ * [batch, channels, height, width].
 */
 REG_OP(Deconvolution)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
@@ -493,11 +490,11 @@ REG_OP(Deconvolution)
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
-    .ATTR(strides, ListInt, {1, 1, 1, 1})
+    .ATTR(strides, ListInt, {1, 1})
     .ATTR(pads, ListInt, {0, 0, 0, 0})
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(groups, Int, 1)
-    .ATTR(data_format, String, "NHWC")
+    .ATTR(data_format, String, "NCHW")
     .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(Deconvolution)
 /**
@@ -642,7 +639,7 @@ REG_OP(Conv2DBackpropFilterD)
 * @verbatim
      Output           | Restrictions
     ------------------|----------------------------------------------
-     W dimension == 1 | HxW(input) == HxW(filter) == 1x1,2x2...11x11.
+     W dimension == 1 | HxW(input) == HxW(filter)
      H dimension == 1 |
     ------------------|----------------------------------------------
      W dimension == 1 | Not supported

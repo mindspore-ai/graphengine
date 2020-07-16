@@ -20,6 +20,7 @@
 #include "common/helper/model_helper.h"
 #include "common/helper/om_file_helper.h"
 #include "common/util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge/ge_api.h"
 #include "graph/ge_context.h"
@@ -125,17 +126,7 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
   if (data_op == nullptr) {
     return FAILED;
   }
-  auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
-  auto input_desc = op_desc->MutableInputDesc(index);
-  GE_CHECK_NOTNULL_EXEC(input_desc, return PARAM_INVALID);
-  ge::Format old_format = input_desc->GetFormat();
-  if (old_format == FORMAT_FRACTAL_NZ || old_format == FORMAT_FRACTAL_Z) {
-    input_desc->SetFormat(FORMAT_ND);
-    input_desc->SetOriginFormat(FORMAT_ND);
-    (void)AttrUtils::SetStr(data_op, "_single_input_format", TypeUtils::FormatToSerialString(old_format));
-    (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
-  }
+  (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
   GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail.");
   GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail.");
@@ -157,17 +148,7 @@ static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, cons
   if (op_desc == nullptr) {
     return FAILED;
   }
-  auto single_op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL_EXEC(single_op_desc, return PARAM_INVALID);
-  auto output_desc = single_op_desc->MutableOutputDesc(0);
-  GE_CHECK_NOTNULL_EXEC(output_desc, return PARAM_INVALID);
-  ge::Format old_format = output_desc->GetFormat();
-  if (old_format == FORMAT_FRACTAL_NZ || old_format == FORMAT_FRACTAL_Z) {
-    output_desc->SetFormat(FORMAT_ND);
-    output_desc->SetOriginFormat(FORMAT_ND);
-    (void)AttrUtils::SetStr(op_desc, "_single_output_format", TypeUtils::FormatToSerialString(old_format));
-    (void)AttrUtils::SetBool(op_desc, "_is_single_op", true);
-  }
+  (void)AttrUtils::SetBool(op_desc, "_is_single_op", true);
   int32_t count = 0;
   for (const auto &out_desc : outputs) {
     GeTensorDesc tensor = out_desc.GetTensorDesc();
@@ -210,19 +191,6 @@ static void GetOpsProtoPath(string &opsproto_path) {
   path_base = path_base.substr(0, path_base.rfind('/'));
   path_base = path_base.substr(0, path_base.rfind('/') + 1);
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
-}
-
-static string GetModelNameFromFileName(const string &file_name_prefix) {
-  int start_position = 0;
-  // using output as model_name (ignore ".om")
-  int filename_suffixes = 3;
-  if (file_name_prefix.find_last_of('/') != string::npos) {
-    start_position += 1;
-  }
-  int end_position = file_name_prefix.length() - filename_suffixes;
-  string model_name = file_name_prefix.substr(start_position, end_position - start_position);
-  GELOGI("Get model_name from file, model_name:%s", model_name.c_str());
-  return model_name;
 }
 
 class GeGenerator::Impl {
@@ -332,8 +300,6 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   GraphId graph_id;
   GeRootModelPtr ge_root_model = nullptr;
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
-  const string model_name = GetModelNameFromFileName(file_name_prefix);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(model_name.empty(), return PARAM_INVALID, "om name is not valid!");
   impl_->is_offline_ = is_offline;
   Status ret = impl_->BuildModel(graph, inputs, graph_id, ge_root_model);
   if (ret != SUCCESS) {
@@ -345,9 +311,15 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   }
   GE_CHECK_NOTNULL(ge_root_model);
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  ModelHelper model_helper;
+  string model_name = "";
+  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(), model_name);
+  if (name_ret != SUCCESS) {
+    GELOGE(FAILED, "Get model_name failed. Param --output is invalid");
+    return PARAM_INVALID;
+  }
   map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
   GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
-
   GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model can not be null");
   ge_model->SetName(model_name);
   ret = impl_->SaveModel(file_name_prefix, ge_model, model);

@@ -63,7 +63,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     return ret;
   }
 
-  domi::KernelDef kernel_def = task_def.kernel();
+  const domi::KernelDef &kernel_def = task_def.kernel();
   block_dim_ = kernel_def.block_dim();
   args_size_ = kernel_def.args_size();
   // get opcontext stored in model
@@ -549,7 +549,8 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     return FAILED;
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
+  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                    op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + offset;
   }
@@ -818,7 +819,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return RT_FAILED;
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
+  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                    op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }

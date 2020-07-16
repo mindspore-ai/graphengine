@@ -536,7 +536,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   compute_graph_ = GraphUtils::GetComputeGraph(graph);
   GE_CHK_BOOL_RET_STATUS(compute_graph_ != nullptr, INTERNAL_ERROR, "Get compute graph is nullptr.");
 
-  runtime_param_.graph_id = GetGraphID(compute_graph_->GetName());
+  runtime_param_.graph_id = compute_graph_->GetGraphID();
 
   GE_TIMESTAMP_START(TransAllVarData);
   GE_CHK_STATUS_RET(TransAllVarData(compute_graph_, runtime_param_.graph_id), "TransAllVarData failed.");
@@ -1535,7 +1535,10 @@ Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc,
                              "construct output_name failed.");
       // forward compatbility, if old om has no out_node_name, need to return output follow origin way
       if (out_size == out_node_name.size()) {
-        output_name = out_node_name[index] + ":" + std::to_string(src_index[index]);
+        // neweast plan, the index will add to name during generate model.
+        bool contains_colon = out_node_name[index].find(":") != std::string::npos;
+        output_name =
+          contains_colon ? out_node_name[index] : out_node_name[index] + ":" + std::to_string(src_index[index]);
       } else {
         output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" +
                       std::to_string(src_index[index]);
@@ -2510,51 +2513,19 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
 }
 
 Status DavinciModel::InitTaskInfo(domi::ModelTaskDef &model_task_def) {
-  GELOGI("InitTaskInfo in,task size %zu", model_task_def.task().size());
+  GELOGI("InitTaskInfo in,task size %d", model_task_def.task().size());
   task_list_.resize(model_task_def.task_size());
-  std::vector<std::future<Status>> futures(model_task_def.task_size());
-  ThreadPool executor(kThreadNum);
-  rtContext_t ctx = nullptr;
-  rtError_t rt_ret = rtCtxGetCurrent(&ctx);
-  if (rt_ret != RT_ERROR_NONE || ctx == nullptr) {
-    GELOGE(RT_FAILED, "Failed to get current context from rt, error-code 0x%X.", rt_ret);
-    return RT_FAILED;
-  }
-
-  for (int32_t i = 0; i < model_task_def.task_size(); ++i) {
-    std::future<Status> f = executor.commit(
-      [](const domi::TaskDef &task, DavinciModel *model, rtContext_t ctx, int32_t idx) -> Status {
-        rtError_t rt_ret = rtCtxSetCurrent(ctx);
-        if (rt_ret != RT_ERROR_NONE) {
-          GELOGE(RT_FAILED, "Failed to set context from rt, error-code 0x%X.", rt_ret);
-          return RT_FAILED;
-        }
-        Status ret = FAILED;
-        // dynamic shape will create task_list_ before
-        if (model->task_list_[idx] == nullptr) {
-          model->task_list_[idx] = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task.type()));
-          GE_CHECK_NOTNULL(model->task_list_[idx]);
-        }
-        ret = model->task_list_[idx]->Init(task, model);
-        return ret;
-      },
-      model_task_def.task(i), this, ctx, i);
-    if (!f.valid()) {
-      GELOGE(FAILED, "Future is invalid");
-      return FAILED;
-    }
-    futures[i] = std::move(f);
-  }
-
-  Status ret;
-  for (size_t i = 0; i < futures.size(); ++i) {
-    ret = futures[i].get();
+  for (int i = 0; i < model_task_def.task_size(); ++i) {
+    // dynamic shape will create task_list_ before
+    const domi::TaskDef &task = model_task_def.task(i);
+    task_list_[i] = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task.type()));
+    GE_CHECK_NOTNULL(task_list_[i]);
+    Status ret = task_list_[i]->Init(task, this);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Task index %zu init failed.", i);
+      GELOGE(ret, "Task index %d init failed.", i);
       return ret;
     }
   }
-
   GELOGI("InitTaskInfo out");
   return SUCCESS;
 }
@@ -2623,7 +2594,7 @@ Status DavinciModel::DistributeTask() {
         return PARAM_INVALID;
       }
 
-      if (PropertiesManager::Instance().IsLayerNeedDump(name_, op->GetName())) {
+      if (PropertiesManager::Instance().IsLayerNeedDump(name_, om_name_, op->GetName())) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
@@ -2661,8 +2632,9 @@ Status DavinciModel::DistributeTask() {
 
 void DavinciModel::SetEndGraphId(uint32_t task_id, uint32_t stream_id) {
   auto all_dump_model = PropertiesManager::Instance().GetAllDumpModel();
-  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
-      all_dump_model.find(name_) != all_dump_model.end()) {
+  bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
+  bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
+  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() || findByOmName || findByModelName) {
     GELOGI("start save end_graph_info to dumper, task_id is %u, stream_id is %u", task_id, stream_id);
     data_dumper_.SaveEndGraphId(task_id, stream_id);
   }
@@ -3344,17 +3316,6 @@ void DavinciModel::FreeWeightsMem() {
   }
 }
 
-uint32_t DavinciModel::GetGraphID(const std::string &session_graph_id) {
-  std::string session_id = "_";
-  auto pos = session_graph_id.find(session_id);
-  if (pos != std::string::npos) {
-    size_t graph_id_length = session_graph_id.length() - pos - session_id.length();
-    std::string graph_id = session_graph_id.substr(pos + session_id.length(), graph_id_length);
-    return static_cast<uint32_t>(std::strtol(graph_id.c_str(), nullptr, kDecimal));
-  }
-  return 0;
-}
-
 Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) {
   GELOGI("TransAllVarData start: session_id:%lu, graph_id: %u.", session_id_, graph_id);
   rtContext_t ctx = nullptr;
@@ -3387,6 +3348,7 @@ void DavinciModel::SetDataDumperArgs() {
   data_dumper_.SetModelName(name_);
   data_dumper_.SetModelId(model_id_);
   data_dumper_.SetMemory(runtime_param_);
+  data_dumper_.SetOmName(om_name_);
 
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);

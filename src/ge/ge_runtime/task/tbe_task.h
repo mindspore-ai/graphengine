@@ -30,10 +30,6 @@ class TbeTask : public TaskRepeater<TbeTaskInfo> {
 
   bool Distribute() override;
 
-  void *Args() override { return args_; }
-
-  std::string task_name() const override { return task_info_->op_name(); }
-
  private:
   std::shared_ptr<TbeTaskInfo> task_info_;
   void *stream_;

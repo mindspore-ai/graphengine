@@ -40,6 +40,23 @@ namespace ge {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
 }  // namespace
+static void ConvertShape2Nhwc(Format &format, vector<int64_t> &shape_vec) {
+  if ((format == FORMAT_NHWC) || (shape_vec.size() != static_cast<size_t>(NORMAL_TENSOR_SIZE))) {
+    return;
+  }
+  if (format != FORMAT_NCHW) {
+    GELOGW("The format is not NCHW, current format is %s", TypeUtils::FormatToSerialString(format).c_str());
+    return;
+  }
+  vector<int64_t> shape_vec_tmp;
+  shape_vec.swap(shape_vec_tmp);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_N]);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_H]);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_W]);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_C]);
+  return;
+}
+
 Status InsertNewOpUtil::Init() {
   insert_op_conf_.reset((new (std::nothrow) domi::InsertNewOps()));
   GE_CHECK_NOTNULL(insert_op_conf_);
@@ -223,11 +240,13 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
     GELOGE(FAILED, "UpdateOutputDesc fail, graph_ret:%d", graph_ret);
     return FAILED;
   }
-  GELOGI("Get size [%ld] from aipp [%s].", size, aipp_op_desc->GetName().c_str());
+  GELOGI("Get input size [%ld] from aipp [%s].", size, aipp_op_desc->GetName().c_str());
   if (size == 0) {
     GELOGE(FAILED, "Can not get size from aipp [%s]", aipp_op_desc->GetName().c_str());
     return FAILED;
   }
+  // Save the input size of aipp node, which will be used in dumping aipp node or fused aipp node
+  (void)AttrUtils::SetInt(aipp_input, ATTR_NAME_INPUT_ORIGIN_SIZE, size);
 
   auto in_data_anchor = node->GetInDataAnchor(0);
   GE_CHECK_NOTNULL(in_data_anchor);
@@ -305,6 +324,7 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
 
   auto data_opdesc = data->GetOpDesc();
   GE_CHECK_NOTNULL(data_opdesc);
+  Format old_format = output_desc->GetFormat();
   auto ret = data_opdesc->UpdateOutputDesc(0, *input_desc);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to update data %s output using switchn %s", data->GetName().c_str(),
@@ -317,7 +337,32 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
            switchn->GetName().c_str());
     return INTERNAL_ERROR;
   }
+  // Update attr _mbatch_origin_input_dims for data when it is linked to aipp
+  UpdateMultiBatchInputDims(data_opdesc, old_format);
   return SUCCESS;
+}
+
+void InsertNewOpUtil::UpdateMultiBatchInputDims(const OpDescPtr &data_opdesc, Format &old_format) {
+  if (!data_opdesc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
+    GELOGW("Failed to acquire _mbatch_origin_input_dims attr from node [%s]", data_opdesc->GetName().c_str());
+    return;
+  }
+  auto new_data_dims = data_opdesc->GetOutputDesc(0).GetShape().GetDims();
+  vector<int64_t> origin_input_dims;
+  (void)AttrUtils::GetListInt(data_opdesc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+  // Convert origin_input_dims to NHWC because data format is set to NHWC when it is linked to aipp.
+  ConvertShape2Nhwc(old_format, origin_input_dims);
+  if (new_data_dims.size() != origin_input_dims.size()) {
+    return;
+  }
+  for (size_t i = 0; i < origin_input_dims.size(); ++i) {
+    // Need to update shape when aipp has crop function because H,W is different, ignore -1.
+    if (origin_input_dims[i] > 0) {
+      origin_input_dims[i] = new_data_dims[i];
+    }
+  }
+  (void)AttrUtils::SetListInt(data_opdesc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+  return;
 }
 
 Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std::set<NodePtr>> &data_next_node_map) {

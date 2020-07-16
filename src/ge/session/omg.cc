@@ -29,6 +29,8 @@
 #include "common/types.h"
 #include "common/util.h"
 #include "common/util/error_manager/error_manager.h"
+#include "common/helper/model_helper.h"
+#include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/parser/parser_inner_ctx.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -419,10 +421,6 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
       GELOGE(domi::FAILED, "Can not find src node (%s) in graph.", user_out_nodes[i].first.c_str());
       return domi::FAILED;
     }
-    if (out_node->GetType() == DATA) {
-      GELOGE(domi::FAILED, "out_nodes [%s] can not be set input data, please check", user_out_nodes[i].first.c_str());
-      return domi::FAILED;
-    }
     auto op_desc = out_node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     if (i < output_formats.size()) {
@@ -441,7 +439,7 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
       (void)ge::AttrUtils::SetListInt(op_desc, "_output_dt_index", it_index->second);
     }
     output_nodes_info.push_back(std::make_pair(out_node, user_out_nodes[i].second));
-    output_nodes_name.push_back(out_node->GetName());
+    output_nodes_name.push_back(out_node->GetName() + ":" + std::to_string(user_out_nodes[i].second));
   }
   // default output node (leaf)
   if (user_out_nodes.empty()) {
@@ -468,7 +466,7 @@ Status GetOutputLeaf(NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> 
   if (node->GetType() != NETOUTPUT) {
     for (size_t index = 0; index < size; ++index) {
       output_nodes_info.push_back(std::make_pair(node, index));
-      output_nodes_name.push_back(node->GetName());
+      output_nodes_name.push_back(node->GetName() + ":" + std::to_string(index));
     }
   } else {
     const auto in_anchors = node->GetAllInDataAnchors();
@@ -480,7 +478,7 @@ Status GetOutputLeaf(NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> 
       }
       auto out_node = out_anchor->GetOwnerNode();
       output_nodes_info.push_back(std::make_pair(out_node, out_anchor->GetIdx()));
-      output_nodes_name.push_back(out_node->GetName());
+      output_nodes_name.push_back(out_node->GetName() + ":" + std::to_string(out_anchor->GetIdx()));
     }
   }
   return SUCCESS;
@@ -612,9 +610,16 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   Params::Instance()->SetTarget(target);
 
   // Create an empty computegraph
-  ComputeGraphPtr compute_graph = nullptr;
-  GE_MAKE_SHARED(compute_graph = std::make_shared<ComputeGraph>(kGraphDefaultName + "_" + CurrentTimeInStr()),
-                 return FAILED);
+  std::string om_name;
+  ParseAtcParms(atc_params, "output", om_name);
+  ModelHelper model_helper;
+  string graph_name = "";
+  Status name_ret = model_helper.GetBaseNameFromFileName(om_name, graph_name);
+  if (name_ret != SUCCESS) {
+    graph_name = kGraphDefaultName + "_" + CurrentTimeInStr();
+  }
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(graph_name);
+  GE_CHECK_NOTNULL(compute_graph);
   graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
 
   // initialize omgContext
@@ -664,8 +669,6 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
     GELOGI("The pre-checking report has been saved to %s.", check_report.c_str());
   }
 
-  // Prevent data residue in multiple calls
-  PreChecker::Instance().Clear();
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC model parse ret fail.");
 
   std::string input_fp16_nodes;
@@ -693,12 +696,19 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   auto weights_parser = WeightsParserFactory::Instance()->CreateWeightsParser(type);
   ret = weights_parser->Parse(weights_file, graph);
-  GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC weights parse ret fail.");
 
   // IN ONLY_PRE_CHECK mode, generate pre inspection report only.
-  if (run_mode == ONLY_PRE_CHECK) {
+  if (PreChecker::Instance().HasError() || run_mode == ONLY_PRE_CHECK) {
+    std::string check_report;
+    ParseAtcParms(atc_params, "check_report", check_report);
+    GE_RETURN_WITH_LOG_IF_ERROR(PreChecker::Instance().Save(check_report), "Generate pre-checking report failed.");
+    GEEVENT("The pre-checking report has been saved to %s.", check_report.c_str());
     return SUCCESS;
   }
+  // Prevent data residue in multiple calls
+  PreChecker::Instance().Clear();
+
+  GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC weights parse ret fail.");
 
   GELOGI("ATC parser success.");
 

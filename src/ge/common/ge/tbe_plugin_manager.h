@@ -63,7 +63,6 @@ class TBEPluginManager {
   static void GetCustomOpPath(std::string &customop_path);
   void LoadCustomOpLib();
   static Status CheckCustomAiCpuOpLib();
-  static bool CheckRegisterStatus(const OpRegistrationData &reg_data);
 
   SoHandlesVec handles_vec_;
   static std::map<string, string> options_;

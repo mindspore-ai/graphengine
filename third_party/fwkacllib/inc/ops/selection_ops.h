@@ -149,7 +149,7 @@ REG_OP(TileD)
 * @li indices: A Tensor of type IndexNumberType.
 
 * @par Outputs:
-* output: A Tensor of type BasicType.
+* y: A Tensor of type BasicType.
 * @see GatherNd()
 
 * @attention Constraints:
@@ -767,6 +767,7 @@ REG_OP(SliceD)
 * dimension.
 
 * @par Inputs:
+* Two inputs, including:
 * @li x: A 1D or higher tensor of type float16, with the last dimension at
 * least "k".
 * Specifies the data to sort.
@@ -789,7 +790,7 @@ REG_OP(SliceD)
 * @li indices: A Tensor of type int32, specifying the indices of sorted data.
 
 * @attention Constraints:
-* @li k =< 4096
+* @li k =< 5120
 * @li Size of the last dimension =< 65500
 * @li sorted = true
 * @li Don't support to get score on the platform of Ascend310
@@ -813,6 +814,7 @@ REG_OP(TopKD)
 * dimension.
 
 * @par Inputs:
+* Two inputs, including:
 * @li x: A 1D or higher tensor of type BasicType, with the last dimension
 * at least "k".
 * @li k: A 0D Tensor of type int32.\n
@@ -902,8 +904,8 @@ REG_OP(ScatterNdD)
 * @li x2: A 1D Tensor of type int32. A batch_size tensor of class ids.
 
 * @par Attributes:
-* @li k: A required int32, specifying the number of top elements to look at for
-* computing precision.
+* @li k: A required IndexNumberType, specifying the number of top elements to
+* look at for computing precision.
 
 * @par Outputs:
 * y: A Tensor of type bool.
@@ -1000,6 +1002,7 @@ REG_OP(StridedSliceAssign)
 * "strides", etc. work exactly as in "StridedSlice".
 
 * @par Inputs:
+* Two inputs, including:
 * @li var: A mutable ND Tensor of type BasicType.
 * @li input_value: A mutable ND "Tensor" of type BasicType.
 
@@ -1335,7 +1338,7 @@ REG_OP(InplaceSubD)
     .OP_END_FACTORY_REG(InplaceSubD)
 
 /**
-* @brief Applies sparse addition to input "x" using individual values or slices\n
+* @brief Applies sparse addition to input "x" using individual values or slices
 * from "updates" according to "indices". The updates are non-aliasing: "x" is\n
 * only modified in-place if no other operations will use it. Otherwise, a copy\n
 * of "x" is made. This operation has a gradient with respect to both "x" and
@@ -1372,7 +1375,7 @@ REG_OP(ScatterNonAliasingAdd)
 * @li x: A Tensor of type RealNumberType.
 * @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
 * of "x.shape".
-* @li k: A Tensor.
+* @li num_segments: A Tensor of type IndexNumberType.
 
 * @par Outputs:
 * y: A Tensor of type RealNumberType.
@@ -1419,13 +1422,13 @@ REG_OP(UnsortedSegmentMinD)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor of type RealNumberType.
+* @li x: A Tensor of type NumberType.
 * @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
 * of "x.shape".
-* @li k: A Tensor.
+* @li num_segments: A Tensor of type IndexNumberType.
 
 * @par Outputs:
-* y: A Tensor of type RealNumberType.
+* y: A Tensor of type NumberType.
 
 * @see UnsortedSegmentSum(), UnsortedSegmentMin(),
 

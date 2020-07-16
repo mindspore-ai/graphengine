@@ -28,7 +28,7 @@ class ConcatV2Kernel : public Kernel {
                  std::vector<GeTensorPtr> &v_output) override;
 
  private:
-  Status ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &input, int &tidx);
+  Status ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &input, int &tidx, ConstGeTensorPtr &tensor);
 };
 }  // namespace ge
 

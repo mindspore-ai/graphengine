@@ -61,6 +61,7 @@ class InsertNewOpUtil {
 
   std::unique_ptr<domi::InsertNewOps> insert_op_conf_;
 
+  void UpdateMultiBatchInputDims(const OpDescPtr &data_opdesc, Format &old_format);
   Status UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &switchns);
   Status UpdateDataBySwitchN(const NodePtr &switchn, const NodePtr &data);
   Status GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std::set<NodePtr>> &data_next_node_map);

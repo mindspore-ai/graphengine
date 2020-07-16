@@ -38,6 +38,7 @@
 namespace {
 const char *const kAttrNameWorkspaceReuseFlag = "workspace_reuse_flag";
 const char *const kL2FusionDynamicConvergeOp = "l2fusion_dynamic_converge_op";
+const char *const kOpNoReuseMem = "no_reuse_mem_flag";
 const char *const kDisableReuseMemory = "ge.exec.disableReuseMemory";
 const char *const OP_NO_REUSE_MEM = "OP_NO_REUSE_MEM";
 const int kReuseMaxCount = 10;
@@ -624,8 +625,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   (void)ge::GetContext().GetOption(kDisableReuseMemory, ge_disable_reuse_mem_env);
   if (ge_disable_reuse_mem_env != "1") {
     bool reuse_mem_flag = !((workspace_reuse_flag.size() > out_index) && !workspace_reuse_flag[out_index]);
-    is_reuse_memory = !node_op_desc->HasAttr(kL2FusionDynamicConvergeOp) && reuse_mem_flag && is_op_reuse_mem &&
-                      (IsPreReuse(n, out_index));
+    is_reuse_memory = !node_op_desc->HasAttr(kL2FusionDynamicConvergeOp) && !node_op_desc->HasAttr(kOpNoReuseMem) &&
+                      reuse_mem_flag && is_op_reuse_mem && (IsPreReuse(n, out_index));
     auto stream_id = node_op_desc->GetStreamId();
     auto map_iter = reusable_streams_map_.find(stream_id);
     if (is_reuse_memory && map_iter != reusable_streams_map_.end()) {
@@ -1182,6 +1183,9 @@ void ReAssignContinuousBlocks(const std::vector<MemoryBlock *> &org_blocks,
 
     GELOGI("Block continuous input index:%d", memory_block->input_index_);
     count++;
+    if (count == 1) {
+      memory_block->first_continuous_block_ = true;
+    }
     if (count == continuous_blocks.size()) {
       memory_block->last_continuous_block_ = true;
     }
@@ -1242,6 +1246,10 @@ void BlockMemAssigner::ResizeMemoryBlocks() {
     if (memory_block == nullptr || memory_block->deleted_block_ || memory_block->is_zero_copy_) {
       continue;
     }
+    if (memory_block->first_continuous_block_) {
+      mem_offset_ += MEM_ALIGN_SIZE;
+    }
+
     memory_block->Resize();
     memory_block->SetHeadOffset(mem_offset_);
     mem_offset_ += memory_block->Size();

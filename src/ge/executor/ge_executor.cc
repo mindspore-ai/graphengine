@@ -641,7 +641,6 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
       model_data.model_data = nullptr;
     }
   }
-
   return ret;
 }
 

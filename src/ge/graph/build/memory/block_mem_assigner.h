@@ -64,6 +64,7 @@ class MemoryBlock {
         reuse_mem_(reuse_mem),
         input_index_(0),
         continuous_block_(false),
+        first_continuous_block_(false),
         last_continuous_block_(false),
         is_zero_copy_(false),
         block_size_(block_size),
@@ -129,6 +130,7 @@ class MemoryBlock {
   bool reuse_mem_;
   uint32_t input_index_;
   bool continuous_block_;
+  bool first_continuous_block_;
   bool last_continuous_block_;
   bool is_zero_copy_;
   std::map<int64_t, size_t> depend_stream_life_;

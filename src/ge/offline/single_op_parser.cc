@@ -273,10 +273,6 @@ Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single
     } else {
       op_desc->AddInputDesc(desc.name, ge_tensor_desc);
     }
-    if (desc.format == FORMAT_FRACTAL_NZ || desc.format == FORMAT_FRACTAL_Z) {
-      ge_tensor_desc.SetFormat(FORMAT_ND);
-      ge_tensor_desc.SetOriginFormat(FORMAT_ND);
-    }
     build_param.inputs.emplace_back(ge_tensor_desc);
   }
 
@@ -292,10 +288,6 @@ Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single
     TensorUtils::SetInputTensor(ge_tensor_desc, false);
     TensorUtils::SetOutputTensor(ge_tensor_desc, true);
     op_desc->AddOutputDesc(ge_tensor_desc);
-    if (desc.format == FORMAT_FRACTAL_NZ || desc.format == FORMAT_FRACTAL_Z) {
-      ge_tensor_desc.SetFormat(FORMAT_ND);
-      ge_tensor_desc.SetOriginFormat(FORMAT_ND);
-    }
     build_param.outputs.emplace_back(ge_tensor_desc);
   }
 

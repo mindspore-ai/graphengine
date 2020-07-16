@@ -187,12 +187,9 @@ void TBEPluginManager::LoadCustomOpLib() {
   std::vector<OpRegistrationData> registration_datas = domi::OpRegistry::Instance()->registrationDatas;
   GELOGI("The size of registration_datas is: %zu", registration_datas.size());
   for (OpRegistrationData reg_data : registration_datas) {
-    bool ret = CheckRegisterStatus(reg_data);
-    if (ret) {
-      GELOGD("Begin to register optype: %s, imply_type: %u", reg_data.GetOmOptype().c_str(),
-             static_cast<uint32_t>(reg_data.GetImplyType()));
-      domi::OpRegistry::Instance()->Register(reg_data);
-    }
+    GELOGD("Begin to register optype: %s, imply_type: %u", reg_data.GetOmOptype().c_str(),
+           static_cast<uint32_t>(reg_data.GetImplyType()));
+    domi::OpRegistry::Instance()->Register(reg_data);
   }
 }
 
@@ -228,31 +225,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::LoadPlug
       GELOGI("Plugin so has already been loaded, no need to load again.");
     }
   }
-}
-
-bool TBEPluginManager::CheckRegisterStatus(const OpRegistrationData &reg_data) {
-  bool ret = true;
-  static char *parser_priority = std::getenv("PARSER_PRIORITY");
-  static bool keep_cce = parser_priority != nullptr && string(parser_priority) == "cce";
-  auto ori_optype_set = reg_data.GetOriginOpTypeSet();
-  for (const auto &op_type : ori_optype_set) {
-    domi::ImplyType imply_type = domi::OpRegistry::Instance()->GetImplyTypeByOriOpType(op_type);
-    GELOGD("Enter into reg_data loop. op_type = %s , om_optype_ = %s", op_type.c_str(), reg_data.GetOmOptype().c_str());
-    if (imply_type != domi::ImplyType::BUILDIN) {
-      if ((keep_cce && reg_data.GetImplyType() != domi::ImplyType::CCE) ||
-          (!keep_cce && reg_data.GetImplyType() != domi::ImplyType::TVM)) {
-        GELOGD("op_type[%s] does not need to be changed, om_optype:%s.", op_type.c_str(),
-               reg_data.GetOmOptype().c_str());
-        ret = false;
-      } else {
-        GELOGI("op_type[%s] will be changed to om_optype:%s.", op_type.c_str(), reg_data.GetOmOptype().c_str());
-      }
-    } else {
-      GELOGD("First register in ge initialize, original type: %s, om_optype: %s, imply type: %d.", op_type.c_str(),
-             reg_data.GetOmOptype().c_str(), static_cast<int>(reg_data.GetImplyType()));
-    }
-  }
-  return ret;
 }
 
 Status TBEPluginManager::CheckCustomAiCpuOpLib() {

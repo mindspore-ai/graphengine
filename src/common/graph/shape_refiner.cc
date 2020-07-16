@@ -235,6 +235,7 @@ graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &
 
     GELOGD("get op from OperatorFactory success. opType: %s", op_type.c_str());
     auto temp_op_desc = ge::OpDescUtils::GetOpDescFromOperator(node_op);
+    node_op.BreakConnect();
     if (temp_op_desc == nullptr) {
       GELOGE(GRAPH_FAILED, "temp op desc is null");
       return GRAPH_FAILED;

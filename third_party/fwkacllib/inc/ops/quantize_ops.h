@@ -21,17 +21,17 @@
 namespace ge {
 
 /**
-* @brief Dequantizes the input tensor into a float tensor.\n
-* [input_min_range, input_max_range] are scalar floats that specify the range
-* for "output_data". \n
+* @brief Dequantizes the input tensor into a float tensor.
+* [min_range, max_range] are float32 tensors that specify the range
+* for "y". \n
 * The "mode" attribute controls exactly which calculations are used to convert\n
 * the float values to their quantized equivalents.
 * @par Inputs:
-* @li input_data: A Tensor. Must be one of the following types: int8, uint8,
+* @li x: A Tensor. Must be one of the following types: int8, uint8,
 * int32.
-* @li input_min_range: A Tensor of type float32.
+* @li min_range: A Tensor of type float32.
 * Specifies the minimum scalar value possibly produced for the input.
-* @li input_max_range: A Tensor of type float32.
+* @li max_range: A Tensor of type float32.
 * Specifies the maximum scalar value possibly produced for the input.
 
 * @par Attributes:
@@ -39,11 +39,11 @@ namespace ge {
 * Defaults to "MIN_COMBINED".
 
 * @par Outputs:
-* output_data: A dictionary of type float32.
+* y: A dictionary of type float32.
 
 * @attention Constraints:
-* @li "input_min_range" and "input_max_range" have the same shapes.
-* @li "input_data" and "output_data" have the same shapes.
+* @li "min_range" and "max_range" have the same shapes.
+* @li "x" and "y" have the same shapes.
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Dequantize.

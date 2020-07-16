@@ -115,6 +115,7 @@ bool HcclTask::Distribute() {
     rt_ret = rtModelBindStream(rt_model_handle_, stream, RT_HEAD_STREAM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      (void)rtStreamDestroy(stream);
       return false;
     }
 

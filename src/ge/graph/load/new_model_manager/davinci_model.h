@@ -187,6 +187,8 @@ class DavinciModel {
   // model name
   string Name() { return name_; }
 
+  // om_name
+  string OmName() { return om_name_; }
   // version
   uint32_t Version() const { return version_; }
 
@@ -471,6 +473,8 @@ class DavinciModel {
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
   Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
                                    std::vector<InputOutputDims> &output_dims);
+  // om file name
+  void SetOmName(string om_name) { om_name_ = om_name; }
 
  private:
   // memory address of weights
@@ -752,8 +756,6 @@ class DavinciModel {
 
   void CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputDescInfo &output, uint32_t &format_result);
 
-  uint32_t GetGraphID(const std::string &session_graph_id);
-
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
   Status CopyVarData(ComputeGraphPtr &graph);
 
@@ -771,6 +773,10 @@ class DavinciModel {
   uint32_t model_id_;
   uint32_t runtime_model_id_;
   string name_;
+
+  // used for inference data dump
+  string om_name_;
+
   uint32_t version_;
   GeModelPtr ge_model_;
 

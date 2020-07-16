@@ -204,9 +204,6 @@ const std::string SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
 // Save original model file name
 const std::string ORIGINAL_MODEL_FILE = "ge.originalModelFile";
 
-// FE enable quant optimize
-const std::string QUANT_OPTIMIZE = "ge.quantOptimize";
-
 const char *const OPTION_GE_MAX_DUMP_FILE_NUM = "ge.maxDumpFileNum";
 const char *const OPTION_GE_MAX_DUMP_FILE_SIZE = "ge.maxDumpFileSize";
 const char *const OPTION_GE_MAX_DUMP_OP_NUM = "ge.maxDumpOpNum";
@@ -274,7 +271,6 @@ static const char *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
 static const char *const AICORE_NUM = ge::AICORE_NUM.c_str();
 static const char *const FUSION_SWITCH_FILE = ge::FUSION_SWITCH_FILE.c_str();
 static const char *const ENABLE_SMALL_CHANNEL = ge::ENABLE_SMALL_CHANNEL.c_str();
-static const char *const QUANT_OPTIMIZE = ge::QUANT_OPTIMIZE.c_str();
 static const char *const OP_SELECT_IMPL_MODE = ge::OP_SELECT_IMPL_MODE.c_str();
 static const char *const OUTPUT_TYPE = ge::OUTPUT_DATATYPE.c_str();
 static const char *const BUFFER_OPTIMIZE = ge::BUFFER_OPTIMIZE.c_str();
@@ -304,7 +300,6 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               AICORE_NUM,
                                               FUSION_SWITCH_FILE,
                                               ENABLE_SMALL_CHANNEL,
-                                              QUANT_OPTIMIZE,
                                               OP_SELECT_IMPL_MODE,
                                               OPTYPELIST_FOR_IMPLMODE};
 }  // namespace ir_option

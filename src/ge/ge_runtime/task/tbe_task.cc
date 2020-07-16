@@ -95,14 +95,15 @@ bool TbeTask::Distribute() {
     return false;
   }
 
+  GELOGI("InitTbeTask end.");
   GELOGI("DistributeTbeTask start.");
-  auto dump_flag = task_info_->dump_flag() ? RT_KERNEL_DUMPFLAG : RT_KERNEL_DEFAULT;
-  rt_ret = rtKernelLaunchWithFlag(stub_func_, task_info_->block_dim(), args_, args_size, nullptr, stream_, dump_flag);
+  rt_ret = rtKernelLaunch(stub_func_, task_info_->block_dim(), args_, args_size, nullptr, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api rtKernelLaunch failed, ret: 0x%X", rt_ret);
     return false;
   }
-  GELOGI("[DataDump] task name:%s, dump_flag:%d", task_info_->op_name().c_str(), dump_flag);
+
+  GELOGI("DistributeTbeTask end.");
   return true;
 }
 

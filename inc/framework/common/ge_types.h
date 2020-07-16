@@ -183,6 +183,7 @@ struct ModelData {
   uint32_t model_len = 0;      // Model binary data length
   int32_t priority = 0;        // Model priority
   std::string key;             // Key path for encrypt model, Empty for unencrypt
+  std::string om_name;         // om file name, used for data dump
 };
 
 // The definition of Model information

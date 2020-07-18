@@ -20,15 +20,204 @@
 #include <cstdio>
 #include <fstream>
 
+#include "common/ge/ge_util.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_types.h"
 #include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/ge_context.h"
 #include "graph/utils/attr_utils.h"
 
 namespace ge {
+namespace {
+const string kEnableFlag = "1";
+
+const uint32_t kAicoreOverflow = (0x1 << 0);
+const uint32_t kAtomicOverflow = (0x1 << 1);
+const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
+}  // namespace
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties::DumpProperties(const DumpProperties &other) {
+  CopyFrom(other);
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &DumpProperties::operator=(
+  const DumpProperties &other) {
+  CopyFrom(other);
+  return *this;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::InitByOptions() {
+  enable_dump_.clear();
+  enable_dump_debug_.clear();
+  dump_path_.clear();
+  dump_step_.clear();
+  dump_mode_.clear();
+  is_op_debug_ = false;
+  op_debug_mode_ = 0;
+
+  string enable_dump;
+  (void)GetContext().GetOption(OPTION_EXEC_ENABLE_DUMP, enable_dump);
+  enable_dump_ = enable_dump;
+
+  string enable_dump_debug;
+  (void)GetContext().GetOption(OPTION_EXEC_ENABLE_DUMP_DEBUG, enable_dump_debug);
+  enable_dump_debug_ = enable_dump_debug;
+
+  if ((enable_dump_ == kEnableFlag) || (enable_dump_debug_ == kEnableFlag)) {
+    string dump_path;
+    if (GetContext().GetOption(OPTION_EXEC_DUMP_PATH, dump_path) == GRAPH_SUCCESS) {
+      if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
+        dump_path = dump_path + "/";
+      }
+      dump_path = dump_path + CurrentTimeInStr() + "/";
+      GELOGI("Get dump path %s successfully", dump_path.c_str());
+      SetDumpPath(dump_path);
+    } else {
+      GELOGW("DUMP_PATH is not set");
+    }
+  }
+
+  if (enable_dump_ == kEnableFlag) {
+    string dump_step;
+    if (GetContext().GetOption(OPTION_EXEC_DUMP_STEP, dump_step) == GRAPH_SUCCESS) {
+      GELOGD("Get dump step %s successfully", dump_step.c_str());
+      SetDumpStep(dump_step);
+    }
+    string dump_mode;
+    if (GetContext().GetOption(OPTION_EXEC_DUMP_MODE, dump_mode) == GRAPH_SUCCESS) {
+      GELOGD("Get dump mode %s successfully", dump_mode.c_str());
+      SetDumpMode(dump_mode);
+    }
+    AddPropertyValue(DUMP_ALL_MODEL, {});
+  }
+
+  SetDumpDebugOptions();
+}
+
+// The following is the new dump scenario of the fusion operator
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::AddPropertyValue(
+  const std::string &model, const std::set<std::string> &layers) {
+  for (const std::string &layer : layers) {
+    GELOGI("This model %s config to dump layer %s", model.c_str(), layer.c_str());
+  }
+
+  model_dump_properties_map_[model] = layers;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::DeletePropertyValue(const std::string &model) {
+  auto iter = model_dump_properties_map_.find(model);
+  if (iter != model_dump_properties_map_.end()) {
+    model_dump_properties_map_.erase(iter);
+  }
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> DumpProperties::GetAllDumpModel() const {
+  std::set<std::string> model_list;
+  for (auto &iter : model_dump_properties_map_) {
+    model_list.insert(iter.first);
+  }
+
+  return model_list;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> DumpProperties::GetPropertyValue(
+  const std::string &model) const {
+  auto iter = model_dump_properties_map_.find(model);
+  if (iter != model_dump_properties_map_.end()) {
+    return iter->second;
+  }
+  return {};
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool DumpProperties::IsLayerNeedDump(
+  const std::string &model, const std::string &om_name, const std::string &op_name) const {
+  // if dump all
+  if (model_dump_properties_map_.find(DUMP_ALL_MODEL) != model_dump_properties_map_.end()) {
+    return true;
+  }
+
+  // if this model need dump
+  auto om_name_iter = model_dump_properties_map_.find(om_name);
+  auto model_name_iter = model_dump_properties_map_.find(model);
+  if (om_name_iter != model_dump_properties_map_.end() || model_name_iter != model_dump_properties_map_.end()) {
+    // if no dump layer info, dump all layer in this model
+    auto model_iter = om_name_iter != model_dump_properties_map_.end() ? om_name_iter : model_name_iter;
+    if (model_iter->second.empty()) {
+      return true;
+    }
+
+    return model_iter->second.find(op_name) != model_iter->second.end();
+  }
+
+  GELOGD("Model %s is not seated to be dump.", model.c_str());
+  return false;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpPath(const std::string &path) {
+  dump_path_ = path;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string DumpProperties::GetDumpPath() const { return dump_path_; }
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpStep(const std::string &step) {
+  dump_step_ = step;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string DumpProperties::GetDumpStep() const { return dump_step_; }
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpMode(const std::string &mode) {
+  dump_mode_ = mode;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string DumpProperties::GetDumpMode() const { return dump_mode_; }
+
+void DumpProperties::CopyFrom(const DumpProperties &other) {
+  if (&other != this) {
+    enable_dump_ = other.enable_dump_;
+    enable_dump_debug_ = other.enable_dump_debug_;
+    dump_path_ = other.dump_path_;
+    dump_step_ = other.dump_step_;
+    dump_mode_ = other.dump_mode_;
+
+    model_dump_properties_map_ = other.model_dump_properties_map_;
+    is_op_debug_ = other.is_op_debug_;
+    op_debug_mode_ = other.op_debug_mode_;
+  }
+}
+
+void DumpProperties::SetDumpDebugOptions() {
+  if (enable_dump_debug_ == kEnableFlag) {
+    string dump_debug_mode;
+    if (GetContext().GetOption(OPTION_EXEC_DUMP_DEBUG_MODE, dump_debug_mode) == GRAPH_SUCCESS) {
+      GELOGD("Get dump debug mode %s successfully", dump_debug_mode.c_str());
+    } else {
+      GELOGW("Dump debug mode is not set.");
+      return;
+    }
+
+    if (dump_debug_mode == OP_DEBUG_AICORE) {
+      GELOGD("ge.exec.dumpDebugMode=aicore_overflow, op debug is open.");
+      is_op_debug_ = true;
+      op_debug_mode_ = kAicoreOverflow;
+    } else if (dump_debug_mode == OP_DEBUG_ATOMIC) {
+      GELOGD("ge.exec.dumpDebugMode=atomic_overflow, op debug is open.");
+      is_op_debug_ = true;
+      op_debug_mode_ = kAtomicOverflow;
+    } else if (dump_debug_mode == OP_DEBUG_ALL) {
+      GELOGD("ge.exec.dumpDebugMode=all, op debug is open.");
+      is_op_debug_ = true;
+      op_debug_mode_ = kAllOverflow;
+    } else {
+      GELOGW("ge.exec.dumpDebugMode is invalid.");
+    }
+  } else {
+    GELOGI("ge.exec.enableDumpDebug is false or is not set.");
+  }
+}
+
 PropertiesManager::PropertiesManager() : is_inited_(false), delimiter("=") {}
 PropertiesManager::~PropertiesManager() {}
 
@@ -159,131 +348,22 @@ PropertiesManager::GetPropertyMap() {
 
 // Set separator
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetPropertyDelimiter(const std::string &de) {
+  std::lock_guard<std::mutex> lock(mutex_);
   delimiter = de;
 }
 
-// The following is the new dump scenario of the fusion operator
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::AddDumpPropertyValue(
-  const std::string &model, const std::set<std::string> &layers) {
-  for (const std::string &layer : layers) {
-    GELOGI("This model %s config to dump layer %s", model.c_str(), layer.c_str());
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &PropertiesManager::GetDumpProperties(
+  uint64_t session_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // If session_id is not found in dump_properties_map_, operator[] will insert one.
+  return dump_properties_map_[session_id];
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::RemoveDumpProperties(uint64_t session_id) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto iter = dump_properties_map_.find(session_id);
+  if (iter != dump_properties_map_.end()) {
+    dump_properties_map_.erase(iter);
   }
-
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  model_dump_properties_map_[model] = layers;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::DeleteDumpPropertyValue(
-  const std::string &model) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  auto iter = model_dump_properties_map_.find(model);
-  if (iter != model_dump_properties_map_.end()) {
-    model_dump_properties_map_.erase(iter);
-  }
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::ClearDumpPropertyValue() {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  model_dump_properties_map_.clear();
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> PropertiesManager::GetAllDumpModel() {
-  std::set<std::string> model_list;
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  for (auto &iter : model_dump_properties_map_) {
-    model_list.insert(iter.first);
-  }
-
-  return model_list;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> PropertiesManager::GetDumpPropertyValue(
-  const std::string &model) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  auto iter = model_dump_properties_map_.find(model);
-  if (iter != model_dump_properties_map_.end()) {
-    return iter->second;
-  }
-  return {};
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::IsLayerNeedDump(const std::string &model,
-                                                                                         const std::string &om_name,
-                                                                                         const std::string &op_name) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  // if dump all
-  if (model_dump_properties_map_.find(ge::DUMP_ALL_MODEL) != model_dump_properties_map_.end()) {
-    return true;
-  }
-
-  // if this model need dump
-  auto om_name_iter = model_dump_properties_map_.find(om_name);
-  auto model_name_iter = model_dump_properties_map_.find(model);
-  if (om_name_iter != model_dump_properties_map_.end() || model_name_iter != model_dump_properties_map_.end()) {
-    // if no dump layer info, dump all layer in this model
-    auto model_iter = om_name_iter != model_dump_properties_map_.end() ? om_name_iter : model_name_iter;
-    if (model_iter->second.empty()) {
-      return true;
-    }
-
-    return model_iter->second.find(op_name) != model_iter->second.end();
-  }
-
-  GELOGD("Model %s is not seated to be dump.", model.c_str());
-  return false;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::QueryModelDumpStatus(
-  const std::string &model) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  auto iter = model_dump_properties_map_.find(model);
-  if (iter != model_dump_properties_map_.end()) {
-    return true;
-  } else if (model_dump_properties_map_.find(ge::DUMP_ALL_MODEL) != model_dump_properties_map_.end()) {
-    return true;
-  }
-  return false;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetDumpOutputModel(
-  const std::string &output_mode) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  this->output_mode_ = output_mode;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::GetDumpOutputModel() {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  return this->output_mode_;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetDumpOutputPath(
-  const std::string &output_path) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  this->output_path_ = output_path;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::GetDumpOutputPath() {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  return this->output_path_;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetDumpStep(const std::string &dump_step) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  this->dump_step_ = dump_step;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::GetDumpStep() {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  return this->dump_step_;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetDumpMode(const std::string &dump_mode) {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  this->dump_mode_ = dump_mode;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::GetDumpMode() {
-  std::lock_guard<std::mutex> lock(dump_mutex_);
-  return this->dump_mode_;
 }
 }  // namespace ge

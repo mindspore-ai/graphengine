@@ -1508,7 +1508,7 @@ REG_OP(ApplyProximalAdagradD)
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".\n
 *     If "True", updating of the var and accum tensors will be protected by a lock; \n
-*     If "False", the behavior is undefined, but may exhibit less contention.
+*     If "False", the behavior is undefined, but may exhibit less contention. 
 
 *@par Outputs:
 *var: A mutable Tensor. Has the same type as "var".

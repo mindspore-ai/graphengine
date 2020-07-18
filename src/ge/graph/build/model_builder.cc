@@ -15,10 +15,10 @@
  */
 
 #include "graph/build/model_builder.h"
+#include <securectype.h>
 #include <iostream>
 #include <set>
 #include <unordered_map>
-#include <securectype.h>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
@@ -27,6 +27,7 @@
 #include "graph/build/label_allocator.h"
 #include "graph/build/stream_allocator.h"
 #include "graph/common/omg_util.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
@@ -85,9 +86,11 @@ bool IsGeLocalOp(const ge::ConstOpDescPtr &op_desc) {
 }  // namespace
 
 namespace ge {
-ModelBuilder::ModelBuilder(ge::ComputeGraphPtr compute_graph, const Graph2SubGraphInfoList &subgraphs,
-                           const map<string, int> &stream_max_parallel_num, bool hcom_parallel, int mode)
-    : mem_offset_(0),
+ModelBuilder::ModelBuilder(uint64_t session_id, ge::ComputeGraphPtr compute_graph,
+                           const Graph2SubGraphInfoList &subgraphs, const map<string, int> &stream_max_parallel_num,
+                           bool hcom_parallel, int mode)
+    : session_id_(session_id),
+      mem_offset_(0),
       weight_offset_(kWeightsStartOffset),
       compute_graph_(std::move(compute_graph)),
       subgraphs_(subgraphs),
@@ -242,7 +245,7 @@ Status ModelBuilder::SetInputOutputDesc() {
   Status ret;
   GELOGI("Start to SetInputOutputDesc.");
 
-  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
 
@@ -291,7 +294,7 @@ Status ModelBuilder::SetInputOutputDesc() {
 }
 
 void ModelBuilder::AddNodeInputProperty() {
-  for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     vector<string> src_name_list;
@@ -318,7 +321,7 @@ void ModelBuilder::AddNodeInputProperty() {
     node_op_desc->SetSrcIndex(src_index_list);
   }
 
-  for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
     GE_IF_BOOL_EXEC(node_op_desc->GetType() == NETOUTPUT, continue);
@@ -356,7 +359,7 @@ void ModelBuilder::AddNodeInputProperty() {
 
 Status ModelBuilder::AdjustInputTensorFlag() {
   GELOGI("Start to AdjustInputTensorFlag.");
-  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     if ((n->GetType() == DATA_TYPE) || (n->GetType() == AIPP_DATA_TYPE)) {
       GELOGD("Data node: %s.", n->GetName().c_str());
       for (const auto &anchor : n->GetAllOutDataAnchors()) {
@@ -432,6 +435,21 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(&model, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_),
                    GELOGE(FAILED, "SetBool of ATTR_NAME_SWITCH_FOR_L1_FUSION failed.");
                    return FAILED);
+  const DumpProperties &dump_properties = PropertiesManager::Instance().GetDumpProperties(session_id_);
+  bool is_op_debug = dump_properties.IsOpDebugOpen();
+  GELOGI("Get op debug:%d", is_op_debug);
+  if (is_op_debug) {
+    if (!ge::AttrUtils::SetBool(&model, ATTR_OP_DEBUG_FLAG, is_op_debug)) {
+      GELOGE(FAILED, "SetBool of ATTR_OP_DEBUG_FLAG failed.");
+      return FAILED;
+    }
+    uint32_t op_debug_mode = dump_properties.GetOpDebugMode();
+    GELOGI("Get op debug mode:%d", op_debug_mode);
+    if (!ge::AttrUtils::SetInt(&model, ATTR_OP_DEBUG_MODE, op_debug_mode)) {
+      GELOGE(FAILED, "SetBool of ATTR_OP_DEBUG_MODE failed.");
+      return FAILED;
+    }
+  }
   model.SetName(compute_graph_->GetName());
   model.SetGraph(ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph_));
 
@@ -448,7 +466,7 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
 }
 
 void ModelBuilder::ClearOriginalFormat() {
-  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
     if (node_op_desc != nullptr) {
       if (node_op_desc->HasAttr(ATTR_NAME_FORMAT)) {
@@ -487,7 +505,7 @@ Status ModelBuilder::MergeWeights() {
   weight_buffer_ = buffer;
   auto base_addr = weight_buffer_.GetData();
 
-  for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
     if (node->GetType() != CONSTANT) {
@@ -527,8 +545,8 @@ Status ModelBuilder::MergeWeights() {
                weight_data.size());
         return FAILED;
       }
-      uintptr_t dst_ptr = (uintptr_t)base_addr + offset;
-      uintptr_t src_ptr = (uintptr_t)weight_data.data();
+      uintptr_t dst_ptr = reinterpret_cast<uintptr_t>(base_addr) + offset;
+      uintptr_t src_ptr = reinterpret_cast<uintptr_t>(weight_data.data());
       size_t left_size = weight_data.size();
       while (left_size > SECUREC_MEM_MAX_LEN) {
         auto err = memcpy_s(reinterpret_cast<void *>(dst_ptr), SECUREC_MEM_MAX_LEN, reinterpret_cast<void *>(src_ptr),
@@ -565,7 +583,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
 
   // Add TBE Kernels
   std::set<std::string> name_set;
-  for (const ge::NodePtr &n : compute_graph_->GetAllNodes()) {
+  for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
     TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
@@ -659,7 +677,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   // Compile single op in graph build stage
   GE_TIMESTAMP_START(CompileSingleOp);
   GE_CHK_STATUS_RET(CompileSingleOp(), "ATC builder CompileSingleOp() return fail.");
-  GE_TIMESTAMP_END(CompileSingleOp, "GraphBuilder::CompileSingleOp");
+  GE_TIMESTAMP_EVENT_END(CompileSingleOp, "GraphBuilder::CompileSingleOp");
 
   // Refresh real streams and insert event nodes.
   GE_TIMESTAMP_START(RefreshRealStream);
@@ -700,7 +718,7 @@ Status ModelBuilder::CompileSingleOp() {
 
   GE_TIMESTAMP_CALLNUM_START(BatchCompileOp);
   std::unordered_map<string, vector<ge::NodePtr>> node_vector_map;
-  for (auto &node : compute_graph_->GetAllNodes()) {
+  for (auto &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto op_desc = node->GetOpDesc();
     if (op_desc == nullptr) {
       continue;
@@ -737,7 +755,7 @@ Status ModelBuilder::CompileSingleOp() {
     GE_CHECK_NOTNULL(kernel_info);
     GE_TIMESTAMP_RESTART(BatchCompileOp);
     auto ret = kernel_info->CompileOp(node_vector);
-    GEEVENT("[GEPERFTRACE] The node size of compile op of %s is %zu", kernel_lib_name.c_str(), node_vector.size());
+    GELOGI("[GEPERFTRACE] The node size of compile op of %s is %zu", kernel_lib_name.c_str(), node_vector.size());
     GE_TIMESTAMP_ADD(BatchCompileOp);
     if (ret != ge::SUCCESS) {
       GELOGE(ret, "Compile op failed, kernel lib name is %s", kernel_lib_name.c_str());

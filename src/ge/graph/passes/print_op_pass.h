@@ -31,6 +31,6 @@ class PrintOpPass : public BaseNodePass {
  public:
   Status Run(ge::NodePtr &node) override;
 };
-};  // namespace ge
+}  // namespace ge
 
 #endif  // GE_GRAPH_PASSES_PRINT_OP_PASS_H_

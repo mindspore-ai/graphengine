@@ -17,7 +17,6 @@
 #include "graph/passes/transop_depth_fusion_pass.h"
 
 #include <algorithm>
-#include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "graph/compute_graph.h"
@@ -29,7 +28,6 @@
 
 namespace ge {
 graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
-  GE_TIMESTAMP_START(TransOpDepthFusionPass);
   GELOGI("[TransOpDepthFusionPass]: optimize in depth begin...");
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
@@ -53,7 +51,6 @@ graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
     }
   }
   GELOGI("[TransOpDepthFusionPass]: Optimize in depth success...");
-  GE_TIMESTAMP_END(TransOpDepthFusionPass, "GraphManager::TransOpDepthFusionPass");
   return GRAPH_SUCCESS;
 }
 

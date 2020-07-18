@@ -1,5 +1,5 @@
 LOCAL_PATH := $(call my-dir)
-
+include $(LOCAL_PATH)/stub/Makefile
 COMMON_LOCAL_SRC_FILES := \
     ./proto/om.proto \
     ./proto/ge_ir.proto \
@@ -77,6 +77,7 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
     libprotobuf   \
     libslog       \
+    liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -85,6 +86,54 @@ LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_HOST_SHARED_LIBRARY)
 
+#compiler for host
+include $(CLEAR_VARS)
+LOCAL_MODULE := stub/libgraph
+
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CPPFLAGS += -fexceptions
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES  := \
+    ../../out/graph/lib64/stub/graph.cc \
+    ../../out/graph/lib64/stub/operator.cc \
+    ../../out/graph/lib64/stub/tensor.cc \
+    ../../out/graph/lib64/stub/operator_factory.cc \
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+LOCAL_MULTILIB := 64
+LOCAL_PROPRIETARY_MODULE := true
+
+include $(BUILD_HOST_SHARED_LIBRARY)
+
+#compiler for host
+include $(CLEAR_VARS)
+LOCAL_MODULE := fwk_stub/libgraph
+
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CPPFLAGS += -fexceptions
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES  := \
+    ../../out/graph/lib64/stub/attr_value.cc \
+    ../../out/graph/lib64/stub/graph.cc \
+    ../../out/graph/lib64/stub/operator.cc \
+    ../../out/graph/lib64/stub/operator_factory.cc \
+    ../../out/graph/lib64/stub/tensor.cc \
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+LOCAL_MULTILIB := 64
+LOCAL_PROPRIETARY_MODULE := true
+
+include $(BUILD_HOST_SHARED_LIBRARY)
 
 #compiler for device
 include $(CLEAR_VARS)
@@ -99,6 +148,7 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
     libprotobuf   \
     libslog       \
+    liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -111,6 +161,60 @@ LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 
+#compiler for device
+include $(CLEAR_VARS)
+LOCAL_MODULE := stub/libgraph
+
+LOCAL_CFLAGS += -O2
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES  := \
+    ../../out/graph/lib64/stub/graph.cc \
+    ../../out/graph/lib64/stub/operator.cc \
+    ../../out/graph/lib64/stub/tensor.cc \
+    ../../out/graph/lib64/stub/operator_factory.cc \
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+ifeq ($(device_os),android)
+LOCAL_LDFLAGS := -ldl
+endif
+
+LOCAL_MULTILIB := 64
+LOCAL_PROPRIETARY_MODULE := true
+
+include $(BUILD_SHARED_LIBRARY)
+
+#compiler for device
+include $(CLEAR_VARS)
+LOCAL_MODULE := fwk_stub/libgraph
+
+LOCAL_CFLAGS += -O2
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES  := \
+    ../../out/graph/lib64/stub/attr_value.cc \
+    ../../out/graph/lib64/stub/graph.cc \
+    ../../out/graph/lib64/stub/operator.cc \
+    ../../out/graph/lib64/stub/operator_factory.cc \
+    ../../out/graph/lib64/stub/tensor.cc \
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+ifeq ($(device_os),android)
+LOCAL_LDFLAGS := -ldl
+endif
+
+LOCAL_MULTILIB := 64
+LOCAL_PROPRIETARY_MODULE := true
+
+include $(BUILD_SHARED_LIBRARY)
 
 # compile for ut/st
 include $(CLEAR_VARS)
@@ -125,6 +229,7 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
     libprotobuf   \
     libslog       \
+    liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -150,6 +255,7 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
     libslog       \
+    liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -173,6 +279,7 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
     libslog       \
+    liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
 

@@ -29,7 +29,6 @@
 
 namespace ge {
 namespace formats {
-
 namespace {
 enum DataTypeTransMode {
   kTransferWithDatatypeFloatToFloat16,

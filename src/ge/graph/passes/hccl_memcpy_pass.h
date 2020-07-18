@@ -34,8 +34,6 @@ class HcclMemcpyPass : public GraphPass {
 
   std::string CheckDuplicateName(const std::string &node_name);
 
-  bool NeedInsertMemcpyOp(const ge::ConstOpDescPtr &op_desc) const;
-
   Status ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                               const InDataAnchorPtr &hccl_in_anchor);
 

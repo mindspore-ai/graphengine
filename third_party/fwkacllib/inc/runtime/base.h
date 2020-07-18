@@ -68,6 +68,8 @@ typedef enum tagRtError {
     RT_ERROR_NO_STREAM_CB_REG = 0x96,         // no callback register info for stream
     RT_ERROR_DATA_DUMP_LOAD_FAILED = 0x97,    // data dump load info fail
     RT_ERROR_CALLBACK_THREAD_UNSUBSTRIBE = 0x98,    // callback thread unsubstribe
+    RT_ERROR_DEBUG_REGISTER_FAILED = 0x99,    // debug register fail
+    RT_ERROR_DEBUG_UNREGISTER_FAILED = 0x9A,    // debug unregister fail
     RT_ERROR_RESERVED
 } rtError_t;
 
@@ -183,14 +185,6 @@ RTS_API rtError_t rtGetLastError();
  * @brief Returns the last error from a runtime call.
  */
 RTS_API rtError_t rtPeekAtLastError();
-
-/**
- * @ingroup dvrt_base
- * @brief set polling receive mode for task report
- * @param [out] NA
- * @return RT_ERROR_NONE for ok
- */
-RTS_API rtError_t rtSetPollingMode();
 
 /**
  * @ingroup dvrt_base

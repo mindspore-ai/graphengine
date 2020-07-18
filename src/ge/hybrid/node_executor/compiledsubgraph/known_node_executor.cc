@@ -26,7 +26,6 @@
 
 namespace ge {
 namespace hybrid {
-
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::COMPILED_SUBGRAPH, KnownNodeExecutor);
 
 Status KnownNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
@@ -98,8 +97,11 @@ Status KnownNodeTask::Init(TaskContext &context) {
   GE_CHK_STATUS_RET(context.AllocateOutputs(), "known node task allocate output failed.");
 
   // init davinicmodel
-  davinci_model_->InitRuntimeParams();
-  GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed.");
+  if (!load_flag_) {
+    davinci_model_->InitRuntimeParams();
+    GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed.");
+  }
+
   // allocate mem base
   void *buffer = nullptr;
   if (davinci_model_->TotalMemSize() != 0) {
@@ -161,6 +163,5 @@ Status KnownNodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context,
                     context.GetNodeItem().NodeName().c_str());
   return SUCCESS;
 }
-
 }  // namespace hybrid
 }  // namespace ge

@@ -39,7 +39,6 @@
 namespace ge {
 namespace formats {
 namespace {
-
 constexpr int64_t kMaxDimsNumC = 4;
 
 Status CheckDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_type) > 0 ? SUCCESS : UNSUPPORTED; }
@@ -109,7 +108,7 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
     return NOT_CHANGED;
   }
 
-  /* prepare for padding in chw*/
+  // prepare for padding in chw
   int64_t tmp = h * w * c;
   int64_t n_o = Ceil(n, static_cast<int64_t>(c0));
   int64_t c_o = c0;
@@ -309,6 +308,5 @@ Status FormatTransferNchwToFZC04::TransShape(Format src_format, const std::vecto
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferNchwToFZC04, FORMAT_NCHW, FORMAT_FRACTAL_Z_C04)
-
 }  // namespace formats
 }  // namespace ge

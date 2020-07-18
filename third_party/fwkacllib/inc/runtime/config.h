@@ -41,8 +41,7 @@ typedef enum tagRtChipType {
   CHIP_CLOUD,
   CHIP_MDC,
   CHIP_LHISI,
-  CHIP_OTHER_PHN,
-  CHIP_OTHER_OLD,
+  CHIP_DC,
   CHIP_END,
 } rtChipType_t;
 

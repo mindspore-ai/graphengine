@@ -25,7 +25,6 @@
 
 namespace ge {
 namespace hybrid {
-
 class AiCoreNodeTaskRegistry {
  public:
   ~AiCoreNodeTaskRegistry() = default;
@@ -47,32 +46,27 @@ class AiCoreNodeTaskRegistry {
 class AiCoreNodeTask : public NodeTask {
  public:
   explicit AiCoreNodeTask(std::vector<std::unique_ptr<AiCoreOpTask>> &&tasks);
-  ~AiCoreNodeTask() = default;
-  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+  ~AiCoreNodeTask() override = default;
+  bool IsSupportDynamicShape() override;
+  Status UpdateTilingData(TaskContext &context) override;
+
   Status UpdateArgs(TaskContext &context) override;
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
 
  private:
-  static Status UpdateAllArgs(TaskContext &context, std::unique_ptr<AiCoreOpTask> &task);
-  static Status UpdateAtomicArgs(TaskContext &context, std::unique_ptr<AiCoreOpTask> &task);
   std::vector<std::unique_ptr<AiCoreOpTask>> tasks_;
 };
 
 class AiCoreNodeExecutor : public NodeExecutor {
  public:
   Status Initialize() override;
-  Status Finalize() override;
-
   Status LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const override;
   Status CompileTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const override;
 
  private:
-  static Status CreateTask(const HybridModel &model, const std::vector<domi::TaskDef> &task_defs, const NodePtr &node,
-                           std::shared_ptr<NodeTask> &task);
-  static Status BuildAiCoreTask(const domi::KernelDef &kernel_def, const OpDescPtr &op_desc, AiCoreOpTask **task);
   static Status GenNodeKey(const NodePtr &node, std::string &node_key);
   std::unique_ptr<AiCoreTaskCompiler> compiler_;
 };
-
 }  // namespace hybrid
 }  // namespace ge
 #endif  // GE_HYBRID_KERNEL_AICORE_NODE_EXECUTOR_H_

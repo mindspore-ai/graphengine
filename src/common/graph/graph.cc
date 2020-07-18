@@ -210,7 +210,7 @@ class GraphImpl {
 
   graphStatus FindOpByName(const string &name, ge::Operator &op) const {
     auto it = op_list_.find(name);
-    GE_CHK_BOOL_EXEC(it != op_list_.end(), return GRAPH_FAILED, "Error: there is no op: %s.", name.c_str());
+    GE_CHK_BOOL_EXEC(it != op_list_.end(), return GRAPH_FAILED, "there is no op: %s.", name.c_str());
     op = it->second;
     return GRAPH_SUCCESS;
   }

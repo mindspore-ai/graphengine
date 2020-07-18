@@ -83,6 +83,7 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
       continue;
     }
     auto key = GetCseKey(node);
+    GELOGD("The node %s cse key %s", node->GetName().c_str(), key.c_str());
     auto iter = keys_to_node.find(key);
     if (iter == keys_to_node.end()) {
       keys_to_node[key] = node;

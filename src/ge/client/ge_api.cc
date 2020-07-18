@@ -28,6 +28,7 @@
 #include "graph/opsproto_manager.h"
 #include "graph/utils/type_utils.h"
 #include "graph/manager/util/rt_context_util.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "register/op_registry.h"
 #include "common/ge/tbe_plugin_manager.h"
 
@@ -41,8 +42,8 @@ namespace {
 const int32_t kMaxStrLen = 128;
 }
 
-static bool kGeInitialized = false;
-static std::mutex kGeReleaseMutex;  // GEFinalize and ~Session use
+static bool g_ge_initialized = false;
+static std::mutex g_ge_release_mutex;  // GEFinalize and ~Session use
 
 namespace ge {
 void GetOpsProtoPath(std::string &opsproto_path) {
@@ -61,31 +62,6 @@ void GetOpsProtoPath(std::string &opsproto_path) {
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
 }
 
-Status CheckDumpAndReuseMemory(const std::map<string, string> &options) {
-  const int kDecimal = 10;
-  auto dump_op_env = std::getenv("DUMP_OP");
-  int dump_op_flag = (dump_op_env != nullptr) ? std::strtol(dump_op_env, nullptr, kDecimal) : 0;
-  auto disableReuseMemoryIter = options.find("ge.exec.disableReuseMemory");
-  if (disableReuseMemoryIter != options.end()) {
-    if (disableReuseMemoryIter->second == "0") {
-      GELOGD("ge.exec.disableReuseMemory=0, reuse memory is open");
-      if (dump_op_flag) {
-        GELOGW("Will dump incorrect op data with GE Option ge.exec.disableReuseMemory=0");
-      }
-    } else if (disableReuseMemoryIter->second == "1") {
-      GELOGD("ge.exec.disableReuseMemory=1, reuse memory is close");
-    } else {
-      GELOGE(PARAM_INVALID, "CheckDumpAndReuseMemory ge.exec.disableReuseMemory is valid");
-      return FAILED;
-    }
-  } else {
-    if (dump_op_flag) {
-      GELOGW("Will dump incorrect op data with default reuse memory");
-    }
-  }
-  return SUCCESS;
-}
-
 Status CheckOptionsValid(const std::map<string, string> &options) {
   // check job_id is valid
   auto job_id_iter = options.find(OPTION_EXEC_JOB_ID);
@@ -96,11 +72,6 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
     }
   }
 
-  // Check ge.exec.disableReuseMemory and env DUMP_OP
-  if (CheckDumpAndReuseMemory(options) != SUCCESS) {
-    return FAILED;
-  }
-
   return SUCCESS;
 }
 
@@ -108,7 +79,7 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
 Status GEInitialize(const std::map<string, string> &options) {
   GELOGT(TRACE_INIT, "GEInitialize start");
   // 0.check init status
-  if (kGeInitialized) {
+  if (g_ge_initialized) {
     GELOGW("GEInitialize is called more than once");
     return SUCCESS;
   }
@@ -147,9 +118,9 @@ Status GEInitialize(const std::map<string, string> &options) {
   }
 
   // 7.check return status, return
-  if (!kGeInitialized) {
+  if (!g_ge_initialized) {
     // Initialize success, first time calling initialize
-    kGeInitialized = true;
+    g_ge_initialized = true;
   }
 
   GELOGT(TRACE_STOP, "GEInitialize finished");
@@ -160,12 +131,12 @@ Status GEInitialize(const std::map<string, string> &options) {
 Status GEFinalize() {
   GELOGT(TRACE_INIT, "GEFinalize start");
   // check init status
-  if (!kGeInitialized) {
+  if (!g_ge_initialized) {
     GELOGW("GEFinalize is called before GEInitialize");
     return SUCCESS;
   }
 
-  std::lock_guard<std::mutex> lock(kGeReleaseMutex);
+  std::lock_guard<std::mutex> lock(g_ge_release_mutex);
   // call Finalize
   Status ret = SUCCESS;
   Status middle_ret;
@@ -187,10 +158,10 @@ Status GEFinalize() {
     ret = middle_ret;
   }
 
-  if (kGeInitialized && ret == SUCCESS) {
+  if (g_ge_initialized && ret == SUCCESS) {
     // Unified destruct rt_context
-    RtContextUtil::GetInstance().DestroyrtContexts();
-    kGeInitialized = false;
+    RtContextUtil::GetInstance().DestroyAllRtContexts();
+    g_ge_initialized = false;
   }
 
   GELOGT(TRACE_STOP, "GEFinalize finished");
@@ -202,7 +173,7 @@ Session::Session(const std::map<string, string> &options) {
   GELOGT(TRACE_INIT, "Session Constructor start");
   // check init status
   sessionId_ = 0;
-  if (!kGeInitialized) {
+  if (!g_ge_initialized) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED);
     return;
   }
@@ -232,13 +203,13 @@ Session::Session(const std::map<string, string> &options) {
 Session::~Session() {
   GELOGT(TRACE_INIT, "Session Destructor start");
   // 0.check init status
-  if (!kGeInitialized) {
+  if (!g_ge_initialized) {
     GELOGW("GE is not yet initialized or is finalized.");
     return;
   }
 
   Status ret = FAILED;
-  std::lock_guard<std::mutex> lock(kGeReleaseMutex);
+  std::lock_guard<std::mutex> lock(g_ge_release_mutex);
   try {
     uint64_t session_id = sessionId_;
     // call DestroySession

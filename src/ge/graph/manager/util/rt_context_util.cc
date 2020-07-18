@@ -19,13 +19,30 @@
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
-void RtContextUtil::AddrtContext(rtContext_t context) { rtContexts_.emplace_back(context); }
+void RtContextUtil::AddRtContext(uint64_t session_id, rtContext_t context) {
+  std::lock_guard<std::mutex> lock(ctx_mutex_);
+  rt_contexts_[session_id].emplace_back(context);
+}
 
-void RtContextUtil::DestroyrtContexts() {
-  GELOGI("The size of runtime context handle is %zu.", rtContexts_.size());
-  for (auto &rtContext : rtContexts_) {
+void RtContextUtil::DestroyRtContexts(uint64_t session_id) {
+  std::lock_guard<std::mutex> lock(ctx_mutex_);
+  auto &contexts = rt_contexts_[session_id];
+  DestroyRtContexts(session_id, contexts);
+}
+
+void RtContextUtil::DestroyAllRtContexts() {
+  std::lock_guard<std::mutex> lock(ctx_mutex_);
+  for (auto &ctx_pair : rt_contexts_) {
+    DestroyRtContexts(ctx_pair.first, ctx_pair.second);
+  }
+  rt_contexts_.clear();
+}
+
+void RtContextUtil::DestroyRtContexts(uint64_t session_id, std::vector<rtContext_t> &contexts) {
+  GELOGI("Runtime context handle number of session %lu is %zu.", session_id, contexts.size());
+  for (auto &rtContext : contexts) {
     (void)rtCtxDestroy(rtContext);
   }
-  rtContexts_.clear();
+  contexts.clear();
 }
 }  // namespace ge

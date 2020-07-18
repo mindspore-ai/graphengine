@@ -14,70 +14,182 @@
  * limitations under the License.
  */
 
-#ifndef GE_HYBRID_KERNEL_NODE_EXECUTOR_H_
-#define GE_HYBRID_KERNEL_NODE_EXECUTOR_H_
+#ifndef GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_
+#define GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_
 
 #include "external/ge/ge_api_error_codes.h"
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "graph/node.h"
-#include "proto/task.pb.h"
 #include "task_context.h"
 
 namespace ge {
+const uint32_t MEMORY_ALIGN_RATIO = 2;
+const uint32_t MEMORY_ALIGN_SIZE = 32;
 namespace hybrid {
 class HybridModel;
-
+// Base class of Node Task
 class NodeTask {
  public:
   NodeTask() = default;
   virtual ~NodeTask() = default;
-  virtual Status UpdateArgs(TaskContext &context) = 0;
-  virtual Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) = 0;
+
+  /**
+   * Update tiling data
+   * @param context             instance of TaskContext
+   * @return SUCCESS on success, error code otherwise
+   */
+  virtual Status UpdateTilingData(TaskContext &context) { return SUCCESS; }
+
+  /**
+   * Init
+   * @param context             instance of TaskContext
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status Init(TaskContext &context) { return SUCCESS; }
+
+  /**
+   * Whether this task supports dynamic shape
+   * @return true if this task supports dynamic shape, false otherwise
+   */
+  virtual bool IsSupportDynamicShape() { return true; }
+
+  /**
+   * Update args for execution
+   * @param context             instance of TaskContext
+   * @return SUCCESS on success, error code otherwise
+   */
+  virtual Status UpdateArgs(TaskContext &context) = 0;
+
+  /**
+   * Execute task async
+   * @param context             instance of TaskContext
+   * @param done_callback       callback function, will be invoked after task is done
+   * @return SUCCESS on success, error code otherwise
+   */
+  virtual Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) = 0;
 };
 
+// Node executor
 class NodeExecutor {
  public:
   NodeExecutor() = default;
   virtual ~NodeExecutor() = default;
 
+  /**
+   * Initialize node executor
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status Initialize() { return SUCCESS; }
 
+  /**
+   * Finalize node executor
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status Finalize() { return SUCCESS; }
 
+  /**
+   * Load task in load stage
+   * @param model       instance of HybridModel
+   * @param node        node
+   * @param task        generated node task
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status LoadTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const;
 
+  /**
+   * Compile task in run stage
+   * @param model       instance of HybridModel
+   * @param node        node
+   * @param task        generated node task
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status CompileTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const;
 
+  /**
+   * Preparation actions before execution
+   * @param task        instance of NodeTask
+   * @param context     instance of TaskContext
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status PrepareTask(NodeTask &task, TaskContext &context) const;
+
+  /**
+   * Execute task
+   * @param task        instance of NodeTask
+   * @param context     instance of TaskContext
+   * @param callback    callback function which will be invoked after computation is done
+   * @return SUCCESS on success, error code otherwise
+   */
   virtual Status ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const;
 };
 
 class NodeExecutorManager {
  public:
-  enum class ExecutorType { AICORE, GE_LOCAL, AICPU_TF, AICPU_CUSTOM, COMPILED_SUBGRAPH, HCCL, RESERVED };
+  enum class ExecutorType {
+    AICORE,
+    AICPU_TF,
+    AICPU_CUSTOM,
+    COMPILED_SUBGRAPH,
+    DYNAMIC_SUBGRAPH,
+    GE_LOCAL,
+    CONTROL_OP,
+    HCCL,
+    RESERVED
+  };
 
   static NodeExecutorManager &GetInstance() {
     static NodeExecutorManager instance;
     return instance;
   }
 
-  Status CalcOpRunningParam(Node &node) const;
-
+  /**
+   * Register build of executor
+   * @param executor_type   type of executor
+   * @param builder         build function
+   */
   void RegisterExecutorBuilder(ExecutorType executor_type, const std::function<NodeExecutor *()> &builder);
 
+  /**
+   * Initialize executor if needed
+   * @return SUCCESS on success, error code otherwise
+   */
   Status EnsureInitialized();
 
+  Status InitializeExecutors();
+
+  void FinalizeExecutors();
+
+  /**
+   * CalcOpRunningParam
+   * @param node        node
+   * @return SUCCESS on success, error code otherwise
+   */
+  Status CalcOpRunningParam(Node &node) const;
+
+  /**
+   * Get executor by node
+   * @param node            node
+   * @param executor        executor
+   * @return SUCCESS on success, error code otherwise
+   */
   Status GetExecutor(Node &node, const NodeExecutor **executor) const;
 
+  /**
+   * Resolve executor type by node
+   * @param node            node
+   * @return executor type
+   */
   ExecutorType ResolveExecutorType(Node &node) const;
 
+ private:
   std::map<ExecutorType, std::unique_ptr<NodeExecutor>> executors_;
   std::map<ExecutorType, std::function<NodeExecutor *()>> builders_;
   std::map<std::string, std::shared_ptr<OpsKernelInfoStore>> kernel_stores_;
   std::map<std::string, NodeExecutorManager::ExecutorType> engine_mapping_;
   std::mutex mu_;
   bool initialized_ = false;
+  bool executor_initialized_ = false;
+  int ref_count_ = 0;
 };
 
 class NodeExecutorRegistrar {
@@ -99,4 +211,4 @@ class NodeExecutorRegistrar {
     ::ge::hybrid::NodeExecutorRegistrar(                                              \
       engine_type, []() -> ::ge::hybrid::NodeExecutor * { return new (std::nothrow) executor(); })
 
-#endif  // GE_HYBRID_KERNEL_NODE_EXECUTOR_H_
+#endif  // GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_

@@ -47,16 +47,16 @@ const uint32_t kAddrLen = sizeof(void *);
 
 namespace ge {
 KernelTaskInfo::SuperKernelTaskInfo KernelTaskInfo::skt_info_ = {
-  0, 0, 0, 0, nullptr, nullptr, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
+  0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
 
 Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    GELOGE(PARAM_INVALID, "davinci model is null!");
     return PARAM_INVALID;
   }
   davinci_model_ = davinci_model;
   is_l1_fusion_enable_ = davinci_model_->GetL1FusionEnableOption();
-  GELOGD("KernelTaskInfo Init Start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
+  GELOGD("KernelTaskInfo init start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
 
   Status ret = SetStream(task_def.stream_id(), davinci_model_->GetStreamList());
   if (ret != SUCCESS) {
@@ -73,7 +73,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   // get opdesc
   op_desc_ = davinci_model_->GetOpByIndex(context.op_index());
   if (op_desc_ == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Get op_desc failed, index is out of range!");
+    GELOGE(INTERNAL_ERROR, "Get op desc failed, index is out of range!");
     return INTERNAL_ERROR;
   }
   (void)AttrUtils::GetBool(*op_desc_, ATTR_N_BATCH_SPILT, is_n_batch_spilt_);
@@ -138,14 +138,21 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     ret = InitCceTask(kernel_def);
   }
 
-  GELOGD("KernelTaskInfo Init finish, result=%u.", ret);
+  GELOGD("KernelTaskInfo init finish, result=%u.", ret);
   return ret;
 }
 
 Status KernelTaskInfo::SaveSKTDumpInfo() {
   GE_CHECK_NOTNULL(davinci_model_);
-  davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_stream_id, skt_info_.last_op,
-                               skt_info_.last_dump_args);
+  if (skt_dump_flag_ == RT_KERNEL_DEFAULT) {
+    GELOGD("no need save skt dump info");
+    return SUCCESS;
+  }
+  // all op in super kernel share one taskid and streamid
+  for (size_t i = 0; i < skt_info_.op_desc_list.size(); i++) {
+    davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_stream_id, skt_info_.op_desc_list[i],
+                                 skt_info_.dump_args_list[i]);
+  }
   return SUCCESS;
 }
 
@@ -187,6 +194,9 @@ Status KernelTaskInfo::SKTFinalize() {
   GELOGI("SuperKernel Distribute [skt_id:%u]", skt_id_);
   skt_info_.kernel_list.clear();
   skt_info_.arg_list.clear();
+  skt_info_.dump_flag_list.clear();
+  skt_info_.op_desc_list.clear();
+  skt_info_.dump_args_list.clear();
   skt_info_.last_stream = nullptr;
   skt_info_.last_block_dim = 0;
   skt_info_.last_sm_desc = sm_desc_;
@@ -195,6 +205,15 @@ Status KernelTaskInfo::SKTFinalize() {
   skt_info_.last_dump_args = 0;
   skt_info_.last_op = nullptr;
   return SUCCESS;
+}
+
+uint32_t KernelTaskInfo::GetDumpFlag() {
+  for (auto flag : skt_info_.dump_flag_list) {
+    if (flag == RT_KERNEL_DUMPFLAG) {
+      return RT_KERNEL_DUMPFLAG;
+    }
+  }
+  return RT_KERNEL_DEFAULT;
 }
 
 Status KernelTaskInfo::SuperKernelLaunch() {
@@ -206,7 +225,7 @@ Status KernelTaskInfo::SuperKernelLaunch() {
   auto &skt_kernel_list = skt_info_.kernel_list;
   auto &skt_arg_list = skt_info_.arg_list;
   GELOGI("SuperKernelLaunch: Skt_kernel_list size[%d] skt_arg_list[%d]", skt_kernel_list.size(), skt_arg_list.size());
-  if (skt_kernel_list.size() == kSKTSingleSize) {
+  if (skt_kernel_list.size() == kSKTSingleSize && skt_arg_list.size() == kSKTSingleSize) {
     rt_ret = rtKernelLaunchWithFlag(skt_info_.kernel_list[0], static_cast<uint32_t>(skt_info_.last_block_dim),
                                     skt_info_.arg_list[0], skt_info_.last_args_size,
                                     static_cast<rtSmDesc_t *>(skt_info_.last_sm_desc), skt_info_.last_stream,
@@ -215,6 +234,7 @@ Status KernelTaskInfo::SuperKernelLaunch() {
       GELOGE(RT_FAILED, "SuperKernelLaunch: Call rt api failed, ret: 0x%X", rt_ret);
       return RT_FAILED;
     }
+    call_save_dump_ = true;
     GE_CHK_STATUS_RET(SKTFinalize(), "Skt finalize failed");
     return SUCCESS;
   }
@@ -226,18 +246,22 @@ Status KernelTaskInfo::SuperKernelLaunch() {
     return RT_FAILED;
   }
   // Call the fuse API
-  skt::SuperKernel *superKernel = nullptr;
+  std::unique_ptr<skt::SuperKernel> superKernel = nullptr;
   if (factory->FuseKernels(skt_kernel_list, skt_arg_list, skt_info_.last_block_dim, superKernel) != SUCCESS) {
     GELOGE(RT_FAILED, "SuperKernelLaunch: fuse call failed");
     return RT_FAILED;
   }
   // Launch a super kernel
-  if (superKernel->Launch(skt_info_.last_stream, RT_KERNEL_DUMPFLAG) != SUCCESS) {
+  skt_dump_flag_ = GetDumpFlag();
+  if (superKernel->Launch(skt_info_.last_stream, skt_dump_flag_) != SUCCESS) {
     GELOGE(RT_FAILED, "SuperKernelLaunch: launch failed");
     return RT_FAILED;
   }
   GELOGI("SuperKernelLaunch: success[skt_kernel_list size[%zu] skt_arg_list[%zu]]", skt_kernel_list.size(),
          skt_arg_list.size());
+  // record skt addr for release
+  superkernel_dev_nav_table_ = superKernel->GetNavTablePtr();
+  superkernel_device_args_addr_ = superKernel->GetDeviceArgsPtr();
   GE_CHK_STATUS_RET(SKTFinalize(), "Skt finalize failed");
   return SUCCESS;
 }
@@ -250,6 +274,9 @@ Status KernelTaskInfo::SaveSuperKernelInfo() {
   skt_info_.last_args_size = args_size_;
   skt_info_.last_sm_desc = sm_desc_;
   skt_info_.last_dump_flag = dump_flag_;
+  skt_info_.dump_flag_list.push_back(dump_flag_);
+  skt_info_.op_desc_list.push_back(op_desc_);
+  skt_info_.dump_args_list.push_back(reinterpret_cast<uintptr_t>(dump_args_));
   skt_info_.last_group_key = group_key_;
   skt_info_.last_dump_args = reinterpret_cast<uintptr_t>(dump_args_);
   skt_info_.last_op = op_desc_;
@@ -328,6 +355,7 @@ Status KernelTaskInfo::SuperKernelDistribute() {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return FAILED;
     }
+    call_save_dump_ = true;
     UpdateTaskId();
     GELOGI("Current Common Task Distribute [taskid:%u]", task_id_);
   } else {
@@ -356,6 +384,7 @@ Status KernelTaskInfo::Distribute() {
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
                                        reinterpret_cast<const void *>(kernel_name_.c_str()), 1, args_, args_size_,
                                        nullptr, stream_, dump_flag_);
+    call_save_dump_ = true;
   } else {
     /* default: not skt launch */
     GELOGI(
@@ -369,6 +398,7 @@ Status KernelTaskInfo::Distribute() {
       // call rtKernelLaunch for current task
       rt_ret = rtKernelLaunchWithFlag(stub_func_, block_dim_, args_, args_size_, static_cast<rtSmDesc_t *>(sm_desc_),
                                       stream_, dump_flag_);
+      call_save_dump_ = true;
     }
   }
   if (rt_ret != RT_ERROR_NONE) {
@@ -392,9 +422,31 @@ Status KernelTaskInfo::UpdateArgs() {
   vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc_);
 
   vector<void *> io_addrs;
-  io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
-  io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
-  io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+  if (!op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
+    io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+    io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+    io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+  } else {
+    string peer_input_name;
+    if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name)) {
+      uint32_t output_index = davinci_model_->GetFixedAddrOutputIndex(peer_input_name);
+      if (output_index > output_data_addrs.size()) {
+        GELOGE(FAILED, "The output data addr size[%zu] and output index[%u] are inconsistent.",
+               output_data_addrs.size(), output_index);
+        return FAILED;
+      }
+      io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+      for (size_t i = 0; i < output_data_addrs.size(); ++i) {
+        if (i == output_index) {
+          void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
+          io_addrs.emplace_back(fixed_addr);
+          continue;
+        }
+        io_addrs.emplace_back(output_data_addrs[i]);
+      }
+      io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+    }
+  }
 
   GE_CHK_STATUS_RET(davinci_model_->UpdateKnownZeroCopyAddr(io_addrs, args_offset_),
                     "update known node %s zero copy addr failed.", op_desc_->GetName().c_str());
@@ -408,6 +460,8 @@ Status KernelTaskInfo::Release() {
     return SUCCESS;
   }
   FreeRtMem(&args_);
+  FreeRtMem(&superkernel_device_args_addr_);
+  FreeRtMem(&superkernel_dev_nav_table_);
   FreeRtMem(&flowtable_);
   FreeRtMem(&custom_info_.input_descs);
   FreeRtMem(&custom_info_.input_addrs);
@@ -472,6 +526,29 @@ Status KernelTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel
   args_offset_ = davinci_model->GetTotalArgsSize();
   davinci_model->SetTotalArgsSize(args_size);
   GELOGI("kernel task name , args_size %u, args_offset %u", args_size, args_offset_);
+
+  // get opcontext stored in model
+  const domi::KernelContext &context = kernel_def.context();
+  // get opdesc
+  op_desc_ = davinci_model->GetOpByIndex(context.op_index());
+  GE_CHECK_NOTNULL(op_desc_);
+  // alloc fixed addr
+  string peer_input_name;
+  if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name) && !peer_input_name.empty()) {
+    uint32_t output_index = davinci_model->GetFixedAddrOutputIndex(peer_input_name);
+    if (output_index > op_desc_->GetOutputsSize()) {
+      GELOGE(FAILED, "The output size[%zu] and output index[%u] are inconsistent.", op_desc_->GetOutputsSize(),
+             output_index);
+      return FAILED;
+    }
+    fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(peer_input_name);
+    auto tensor_desc = op_desc_->GetOutputDesc(output_index);
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
+    davinci_model->SetTotalFixedAddrsSize(peer_input_name, tensor_size);
+    GELOGI("Calculate stream switch task args , tensor size is %ld, fixed addr offset %ld", tensor_size,
+           fixed_addr_offset_);
+  }
   return SUCCESS;
 }
 
@@ -549,8 +626,8 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     return FAILED;
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                    op_desc->GetName())) {
+  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                          op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + offset;
   }
@@ -561,10 +638,8 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   }
 
   vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
+  virtual_io_addrs.insert(virtual_io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+  virtual_io_addrs.insert(virtual_io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
   davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_info.data(), args_, args_size_, offset);
 
   GELOGD("Do InitTVMTask end");
@@ -602,7 +677,6 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
   const std::vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
   Status ret = StoreInputOutputTensor(input_data_addrs, output_data_addrs, ModelUtils::GetInputDescs(op_desc),
                                       ModelUtils::GetOutputDescs(op_desc));
-
   if (ret != SUCCESS) {
     GELOGE(ret, "StoreInputOutputTensor Failed");
     return ret;
@@ -667,11 +741,9 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
     return RT_FAILED;
   }
 
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_in_addrs, input_data_addrs.data(), custom_info_.input_addrs,
-                                  virtual_in_addrs.size() * kAddrLen, 0);
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_out_addrs, output_data_addrs.data(), custom_info_.output_addrs,
+  davinci_model_->SetZeroCopyAddr(op_desc, input_data_addrs, input_data_addrs.data(), custom_info_.input_addrs,
+                                  input_data_addrs.size() * kAddrLen, 0);
+  davinci_model_->SetZeroCopyAddr(op_desc, output_data_addrs, output_data_addrs.data(), custom_info_.output_addrs,
                                   output_data_addrs.size() * kAddrLen, 0);
   return SUCCESS;
 }
@@ -801,6 +873,9 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     GELOGE(init_ret, "Init aicpu task ext info failed, ext_info size=%zu", ext_info.size());
     return init_ret;
   }
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, aicpu_ext_info_addr_=%p", op_desc_->GetName().c_str(),
+         op_desc_->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
+
   aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
   aicpu_param_head->extInfoLength = reinterpret_cast<uintptr_t>(ext_info.size());
 
@@ -819,19 +894,13 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return RT_FAILED;
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                    op_desc->GetName())) {
+  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                          op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
 
-  vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_addr.get(), args_, args_size_,
-                                  sizeof(aicpu::AicpuParamHead));
+  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
 
   return SUCCESS;
 }

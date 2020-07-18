@@ -29,6 +29,7 @@
 #include "common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/types.h"
+#include "common/properties_manager.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/data_dumper.h"
@@ -47,6 +48,10 @@
 #include "task_info/task_info.h"
 
 namespace ge {
+// op debug need 2048 bits buffer
+const size_t kOpDebugMemorySize = 2048UL;
+const size_t kDebugP2pSize = 8UL;
+
 typedef enum tagModelProcStage {
   MODEL_LOAD_START = 1,
   MODEL_LOAD_END,
@@ -171,13 +176,6 @@ class DavinciModel {
   // get session id
   uint64_t SessionId() const { return runtime_param_.session_id; }
 
-  vector<OpDescPtr> GetOpDesc() {
-    vector<OpDescPtr> opDescVector;
-    GE_IF_BOOL_EXEC(AttrUtils::GetListOpDesc(GetGeModel(), MODEL_ATTR_FUSION_MODEL_DEF, opDescVector),
-                    GELOGI("get opDesc of opDescVector"));
-    return opDescVector;
-  }
-
   // get model priority
   int32_t Priority() const { return priority_; }
 
@@ -248,15 +246,9 @@ class DavinciModel {
   ///
   Format GetFormat();
 
-  rtModel_t GetRtModelHandle() {
-    rtModel_t res = rt_model_handle_;
-    return res;
-  }
+  rtModel_t GetRtModelHandle() const { return rt_model_handle_; }
 
-  rtStream_t GetRtModelStream() {
-    rtModel_t res = rt_model_stream_;
-    return res;
-  }
+  rtStream_t GetRtModelStream() const { return rt_model_stream_; }
 
   uint64_t GetRtBaseAddr() const { return runtime_param_.logic_mem_base; }
 
@@ -295,7 +287,7 @@ class DavinciModel {
   /// @param [out] batch_info
   /// @return execute result
   ///
-  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info);
+  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info) const;
 
   void GetCurShape(std::vector<int64_t> &batch_info);
 
@@ -344,10 +336,9 @@ class DavinciModel {
   ///
   /// @ingroup ge
   /// @brief dump all op input and output information
-  /// @param [in] op_list model_id
-  /// @return Status
+  /// @return void
   ///
-  Status DumpOpInputOutput();
+  void DumpOpInputOutput();
 
   ///
   /// @ingroup ge
@@ -403,7 +394,9 @@ class DavinciModel {
   ///
   uint32_t GetDeviceId() const { return device_id_; }
 
-  GeModelPtr GetGeModel() { return ge_model_; }
+  bool NeedDestroyAicpuKernel() const { return need_destroy_aicpu_kernel_; }
+
+  Status UpdateSessionId(uint64_t session_id);
 
   const RuntimeParam &GetRuntimeParam() { return runtime_param_; }
 
@@ -463,6 +456,19 @@ class DavinciModel {
     void *cur_args = static_cast<char *>(args_) + offset;
     return cur_args;
   }
+  void SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size);
+  int64_t GetFixedAddrsSize(string tensor_name);
+  void *GetCurrentFixedAddr(int64_t offset) const {
+    void *cur_addr = static_cast<char *>(fixed_addrs_) + offset;
+    return cur_addr;
+  }
+
+  uint32_t GetFixedAddrOutputIndex(string tensor_name) {
+    if (tensor_name_to_peer_output_index_.find(tensor_name) != tensor_name_to_peer_output_index_.end()) {
+      return tensor_name_to_peer_output_index_[tensor_name];
+    }
+    return UINT32_MAX;
+  }
   void SetKnownNode(bool known_node) { known_node_ = known_node; }
   bool IsKnownNode() { return known_node_; }
   Status MallocKnownArgs();
@@ -473,8 +479,12 @@ class DavinciModel {
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
   Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
                                    std::vector<InputOutputDims> &output_dims);
+  void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
   // om file name
   void SetOmName(string om_name) { om_name_ = om_name; }
+
+  void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
+  const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
 
  private:
   // memory address of weights
@@ -491,8 +501,6 @@ class DavinciModel {
   int64_t load_end_time_;
   struct timeInfo time_info_;
   int32_t dataInputTid;
-
-  void InitZeroCopyUtil(bool is_dynamic_batch, bool &input_zero_copy, bool &output_zero_copy);
 
   ///
   /// @ingroup ge
@@ -531,6 +539,13 @@ class DavinciModel {
 
   ///
   /// @ingroup ge
+  /// @brief Set copy only for No task feed NetOutput address.
+  /// @return None.
+  ///
+  void SetCopyOnlyOutput();
+
+  ///
+  /// @ingroup ge
   /// @brief Copy Input/Output to model for direct use.
   /// @param [in] const InputData &input_data: user input data info.
   /// @param [in/out] OutputData &output_data: user output data info.
@@ -554,15 +569,13 @@ class DavinciModel {
 
   Status CopyInputData(const InputData &input_data, bool device_data = false);
 
-  Status CopyOutputData(uint32_t data_id, OutputData &output_data);
-
-  Status CopyOutputDataToUser(OpDescPtr &op_desc, std::vector<DataBuffer> &blobs, uint32_t &data_index);
+  Status CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind);
 
   Status SyncVarData();
 
-  Status SyncDataAndDump();
-
   Status InitModelMem(void *dev_ptr, size_t memsize, void *weight_ptr, size_t weightsize);
+
+  void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
 
   Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats);
 
@@ -586,7 +599,12 @@ class DavinciModel {
 
   bool IsAicpuKernelConnectSpecifiedLayer();
 
-  Status MarkSpecifiedAicpuKernel();
+  ///
+  /// @ingroup ge
+  /// @brief Reduce memory usage after task sink.
+  /// @return: void
+  ///
+  void Shrink();
 
   ///
   /// @ingroup ge
@@ -722,10 +740,9 @@ class DavinciModel {
   ///
   /// @ingroup ge
   /// @brief definiteness queue schedule, active original model stream.
-  /// @param [in] streams: streams will active by S0.
   /// @return: 0 for success / others for fail
   ///
-  Status CpuActiveStream(const std::vector<rtStream_t> &stream_list);
+  Status CpuActiveStream();
 
   ///
   /// @ingroup ge
@@ -743,12 +760,19 @@ class DavinciModel {
   ///
   Status CpuModelRepeat();
 
+  Status InitEntryTask();
+  Status AddHeadStream();
+
   ///
   /// @ingroup ge
   /// @brief set ts device.
   /// @return: 0 for success / others for fail
   ///
   Status SetTSDevice();
+
+  Status OpDebugRegister();
+
+  void OpDebugUnRegister();
 
   void CheckHasHcomOp();
 
@@ -757,17 +781,17 @@ class DavinciModel {
   void CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputDescInfo &output, uint32_t &format_result);
 
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
-  Status CopyVarData(ComputeGraphPtr &graph);
 
   // get desc info of graph for profiling
-  Status GetComputeGraphInfo(vector<ComputeGraphDescInfo> &compute_graph_desc_info);
+  Status GetComputeGraphInfo(const ComputeGraphPtr &graph, vector<ComputeGraphDescInfo> &graph_desc_info);
 
-  void SetDataDumperArgs();
+  void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
 
   Status GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data_index, OutputData *output_data,
                              std::vector<ge::OutputTensorInfo> &outputs);
 
   void ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_info);
+  void GetFixedAddrAttr(const OpDescPtr &op_desc);
 
   bool is_model_has_inited_;
   uint32_t model_id_;
@@ -779,6 +803,9 @@ class DavinciModel {
 
   uint32_t version_;
   GeModelPtr ge_model_;
+
+  bool need_destroy_aicpu_kernel_{false};
+  vector<std::string> out_node_name_;
 
   map<uint32_t, OpDescPtr> op_list_;
 
@@ -840,6 +867,11 @@ class DavinciModel {
 
   bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
 
+  bool is_pure_head_stream_{false};
+  rtStream_t rt_head_stream_{nullptr};
+  rtStream_t rt_entry_stream_{nullptr};
+  rtAicpuDeployType_t deploy_type_{AICPU_DEPLOY_RESERVED};
+
   // ACL queue schedule, save queue ids for Init.
   std::vector<TaskInfoPtr> cpu_task_list_;
   std::vector<uint32_t> input_queue_ids_;    // input queue ids created by caller.
@@ -861,8 +893,6 @@ class DavinciModel {
   std::vector<rtStream_t> active_stream_list_;
   std::set<uint32_t> active_stream_indication_;
 
-  std::shared_ptr<domi::ModelTaskDef> model_task_def_;
-  std::set<uint32_t> aicpu_streams_;
   std::set<uint32_t> hcom_streams_;
   RuntimeParam runtime_param_;
 
@@ -874,22 +904,40 @@ class DavinciModel {
   // for profiling task and graph info
   std::map<uint32_t, std::string> op_name_map_;
   std::vector<TaskDescInfo> task_desc_info_;
-  ComputeGraphPtr compute_graph_;
 
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
+  std::map<OpDescPtr, void *> saved_task_addrs_;
 
   bool known_node_ = false;
   uint32_t total_args_size_ = 0;
   void *args_ = nullptr;
   void *args_host_ = nullptr;
+  void *fixed_addrs_ = nullptr;
+  int64_t total_fixed_addr_size_ = 0;
   std::map<const void *, void *> knonw_input_data_info_;
   std::map<const void *, void *> knonw_output_data_info_;
 
+  vector<vector<int64_t>> batch_info_;
+
   vector<uint64_t> batch_size_;
+  // key: input tensor name, generally rts op;
+  // value: the fixed addr of input anchor, same as the peer output anchor addr of the peer op
+  std::map<string, int64_t> tensor_name_to_fixed_addr_size_;
+
+  // key: input tensor name, generally rts op; value: the peer output anchor of the peer op
+  std::map<string, int64_t> tensor_name_to_peer_output_index_;
+  // if model is first execute
+  bool is_first_execute_;
+  // for op debug
+  std::mutex debug_reg_mutex_;
+  bool is_op_debug_reg_ = false;
+  void *op_debug_addr_ = nullptr;
+  void *p2p_debug_addr_ = nullptr;
+  bool is_new_model_desc_{false};
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

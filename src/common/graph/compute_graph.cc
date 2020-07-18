@@ -106,6 +106,15 @@ ComputeGraph::Vistor<NodePtr> ComputeGraph::AllGraphNodes(std::vector<std::share
   return Vistor<NodePtr>(shared_from_this(), all_nodes);
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::Vistor<NodePtr> ComputeGraph::GetNodes(
+  bool is_unknown_shape) const {
+  if (is_unknown_shape) {
+    return GetDirectNode();
+  } else {
+    return GetAllNodes();
+  }
+}
+
 size_t ComputeGraph::GetDirectNodesSize() const { return nodes_.size(); }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::Vistor<NodePtr> ComputeGraph::GetDirectNode() const {
@@ -496,6 +505,10 @@ ComputeGraph::AddSubgraph(const std::string &name, const std::shared_ptr<Compute
   }
   if (name != subgraph->GetName()) {
     GELOGW("The subgraph name %s is different with input %s", subgraph->GetName().c_str(), name.c_str());
+  }
+  if (names_to_subgraph_.find(name) != names_to_subgraph_.end()) {
+    GE_LOGE("The subgraph %s existed", name.c_str());
+    return GRAPH_PARAM_INVALID;
   }
   sub_graph_.push_back(subgraph);
   names_to_subgraph_[name] = subgraph;

@@ -17,30 +17,21 @@
 #ifndef GE_HYBRID_EXECUTOR_EXECUTOR_EXECUTION_ENGINE_H_
 #define GE_HYBRID_EXECUTOR_EXECUTOR_EXECUTION_ENGINE_H_
 
-#include "common/thread_pool.h"
-#include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/executor/hybrid_execution_context.h"
-#include "hybrid/executor/rt_callback_manager.h"
 #include "hybrid/node_executor/task_context.h"
 
 namespace ge {
 namespace hybrid {
 class ExecutionEngine {
  public:
-  explicit ExecutionEngine(GraphExecutionContext *context, CallbackManager *callback_manager);
-  ~ExecutionEngine() = default;
-
-  Status Start();
+  static Status ExecuteAsync(NodeState &node_state, const std::shared_ptr<TaskContext> &task_context,
+                             GraphExecutionContext &execution_context);
 
  private:
-  Status PropagateOutputs(const NodeItem &node_item, TaskContext &task_context);
-
-  Status ExecutionProcess();
-
-  Status ExecuteAsync(NodeState &node_state, TaskContext &task_context, const std::function<void()> &callback);
-
-  GraphExecutionContext *context_;
-  CallbackManager *callback_manager_;
+  static Status ValidateInputTensors(const NodeState &node_state, const TaskContext &task_context);
+  static Status PropagateOutputs(const NodeItem &node_item, TaskContext &task_context, GraphExecutionContext &context);
+  static Status DoExecuteAsync(NodeState &node_state, TaskContext &task_context, GraphExecutionContext &context,
+                               const std::function<void()> &callback);
 };
 }  // namespace hybrid
 }  // namespace ge

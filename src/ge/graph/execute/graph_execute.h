@@ -71,7 +71,7 @@ class GraphExecutor {
 
   static Status GetInputOutputDescInfo(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                        vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &input_formats,
-                                       std::vector<uint32_t> &output_formats);
+                                       std::vector<uint32_t> &output_formats, bool new_model_desc = false);
 
   static Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
@@ -110,7 +110,7 @@ class GraphExecutor {
 
   Status FreeInOutBuffer();
 
-  Status MallocInOutBuffer(const std::vector<uint32_t> &buffer_size, std::vector<void *> &data_addr);
+  Status MallocInOutBuffer(const std::vector<uint64_t> &buffer_size, std::vector<void *> &data_addr);
 
   bool init_flag_;
 
@@ -129,7 +129,7 @@ class GraphExecutor {
 
   bool malloc_flag_;
   std::vector<void *> buffer_addr_;
-  std::vector<uint32_t> buffer_size_;
+  std::vector<uint64_t> buffer_size_;
 };
 }  // namespace ge
 

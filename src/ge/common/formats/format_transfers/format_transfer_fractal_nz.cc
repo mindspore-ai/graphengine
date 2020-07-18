@@ -56,7 +56,7 @@ Status TransShapeToFracNz(const ShapeVector &src_shape, DataType data_type, Shap
   dst_shape.clear();
   hw_shape.clear();
   auto w0 = GetCubeSizeByDataType(data_type);
-  auto h0 = GetCubeSizeByDataType(data_type);
+  int64_t h0 = kCubeSize;
   switch (src_shape.size()) {
     case 1:
       dst_shape.push_back(Ceil(src_shape[0], w0));

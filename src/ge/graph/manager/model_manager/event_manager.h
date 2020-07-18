@@ -17,7 +17,6 @@
 #ifndef GE_GRAPH_MANAGER_MODEL_MANAGER_EVENT_MANAGER_H_
 #define GE_GRAPH_MANAGER_MODEL_MANAGER_EVENT_MANAGER_H_
 
-
 #include <vector>
 
 #include "common/fmk_error_codes.h"
@@ -94,5 +93,5 @@ class EventManager {
   bool inited_;
   uint32_t current_idx_;
 };  // EventManager
-};  // namespace ge
+}  // namespace ge
 #endif  // GE_GRAPH_MANAGER_MODEL_MANAGER_EVENT_MANAGER_H_

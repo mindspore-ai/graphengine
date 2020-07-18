@@ -17,34 +17,5 @@
 #include "hybrid_execution_context.h"
 
 namespace ge {
-namespace hybrid {
-NodeStatePtr GraphExecutionContext::GetOrCreateNodeState(const NodePtr &node) {
-  auto &node_state = node_states[node];
-  if (node_state == nullptr) {
-    const NodeItem *node_item = model->GetNodeItem(node);
-    if (node_item == nullptr) {
-      return nullptr;
-    }
-    node_state.reset(new (std::nothrow) NodeState(*node_item));
-  }
-
-  return node_state;
-}
-
-void GraphExecutionContext::OnError(Status error_code) {
-  GELOGE(error_code, "Error occurred while executing model");
-  {
-    std::lock_guard<std::mutex> lk(mu_);
-    this->status = error_code;
-  }
-
-  compile_queue.Stop();
-  execution_queue.Stop();
-}
-
-Status GraphExecutionContext::GetStatus() {
-  std::lock_guard<std::mutex> lk(mu_);
-  return status;
-}
-}  // namespace hybrid
+namespace hybrid {}  // namespace hybrid
 }  // namespace ge

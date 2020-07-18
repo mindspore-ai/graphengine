@@ -41,11 +41,9 @@ using namespace ge;
 using namespace std;
 namespace ge {
 namespace {
-static const std::unordered_set<string> kChangeDimNodes = {PERMUTE, EXPANDDIMS, SQUEEZE};
-static bool net_format_is_nd = true;
-static Format g_user_set_format = FORMAT_ND;
-static bool is_first_infer = true;
-static RefRelations reflection_builder;
+const std::unordered_set<string> kChangeDimNodes = {PERMUTE, EXPANDDIMS, SQUEEZE};
+const string kIsGraphInferred = "_is_graph_inferred";
+RefRelations reflection_builder;
 }  // namespace
 
 graphStatus ReflectionProcess(const std::unordered_set<RefCell, RefCellHash> &reflection,
@@ -72,9 +70,49 @@ graphStatus ReflectionProcess(const std::unordered_set<RefCell, RefCellHash> &re
   return GRAPH_SUCCESS;
 }
 
-graphStatus FormatRefiner::RefreshConstantOutProcess(const OpDescPtr &op_desc) {
+graphStatus BiasAddFormatFixProcess(ge::NodePtr &node_ptr) {
+  // 5 meas dim num
+  if (node_ptr->GetType() != "BiasAdd") {
+    return GRAPH_SUCCESS;
+  }
+  std::unordered_map<string, Format> kTfFormatFix = {{"NHWC", FORMAT_NDHWC}, {"NCHW", FORMAT_NCDHW}};
+  for (size_t i = 0; i < node_ptr->GetOpDesc()->GetInputsSize(); i++) {
+    auto in_desc = node_ptr->GetOpDesc()->MutableInputDesc(i);
+    GE_CHECK_NOTNULL(in_desc);
+    if (in_desc->MutableShape().GetDimNum() != 5) {  // 5 means dim num
+      continue;
+    }
+    auto format = in_desc->GetOriginFormat();
+    auto key = TypeUtils::FormatToSerialString(format);
+    auto fixed_format = (kTfFormatFix.count(key) == 0) ? format : kTfFormatFix[key];
+    in_desc->SetOriginFormat(fixed_format);
+    in_desc->SetFormat(fixed_format);
+    GELOGD("fix the %zu'th input of node[%s]. Origin format is %s , after fixed it is %s", i,
+           node_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(format).c_str(),
+           TypeUtils::FormatToSerialString(fixed_format).c_str());
+  }
+  for (size_t i = 0; i < node_ptr->GetOpDesc()->GetOutputsSize(); i++) {
+    auto out_desc = node_ptr->GetOpDesc()->MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(out_desc);
+    if (out_desc->MutableShape().GetDimNum() != 5) {  // 5 means dim num
+      continue;
+    }
+    auto format = out_desc->GetOriginFormat();
+    auto key = TypeUtils::FormatToSerialString(format);
+    auto fixed_format = (kTfFormatFix.count(key) == 0) ? format : kTfFormatFix[key];
+    out_desc->SetOriginFormat(fixed_format);
+    out_desc->SetFormat(fixed_format);
+    GELOGD("fix the %zu'th output of node[%s]. Origin format is %s , after fixed it is %s", i,
+           node_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(format).c_str(),
+           TypeUtils::FormatToSerialString(fixed_format).c_str());
+  }
+  return GRAPH_SUCCESS;
+}
+
+graphStatus FormatRefiner::RefreshConstantOutProcess(const ComputeGraphPtr &graph, const OpDescPtr &op_desc) {
+  GE_CHECK_NOTNULL(graph);
   GE_CHECK_NOTNULL(op_desc);
-  if (op_desc->GetType() == CONSTANTOP && is_first_infer == true) {
+  if (op_desc->GetType() == CONSTANTOP && !IsGraphInferred(graph)) {
     ConstGeTensorPtr tensor_value;
     if (!AttrUtils::GetTensor(op_desc, "value", tensor_value)) {
       GELOGE(GRAPH_FAILED, "Get value failed, node name:%s.", op_desc->GetName().c_str());
@@ -95,7 +133,7 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
   }
   anchor_points.clear();
   // Get all anchor point nodes and switch nodes
-  for (const auto &node_ptr : graph->GetAllNodes()) {
+  for (auto &node_ptr : graph->GetAllNodes()) {
     if (node_ptr == nullptr) {
       return GRAPH_FAILED;
     }
@@ -103,7 +141,7 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
     if (op_desc == nullptr) {
       return GRAPH_FAILED;
     }
-    graphStatus status = RefreshConstantOutProcess(op_desc);
+    graphStatus status = RefreshConstantOutProcess(graph, op_desc);
     if (status != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "refresh constant out process failed!");
       return GRAPH_FAILED;
@@ -135,6 +173,16 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
     if (!node_is_all_nd) {
       continue;
     }
+    // special process for biasAdd op
+    // In tensorflow, biasAdd's format is alwayse NHWC even though set the arg
+    // "data_format" to NDHWC or NCDHW.It will destroy our format-infer mechanism
+    // so here do special process
+    status = BiasAddFormatFixProcess(node_ptr);
+    if (status != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "fix biasAdd process failed!");
+      return GRAPH_FAILED;
+    }
+
     GELOGD("Node[%s] is anchor point!", node_ptr->GetName().c_str());
     anchor_points.push_back(node_ptr);
   }
@@ -344,14 +392,11 @@ void FormatRefiner::RefreshOriginFormatOfAnchor(std::vector<ge::NodePtr> &anchor
   }
 }
 
-void FormatRefiner::SetInferOrigineFormatFlag(bool is_first) { is_first_infer = is_first; }
-
-graphStatus FormatRefiner::DataNodeFormatProcess(std::vector<ge::NodePtr> &data_nodes, ge::Format data_format,
+graphStatus FormatRefiner::DataNodeFormatProcess(const ComputeGraphPtr &graph, std::vector<ge::NodePtr> &data_nodes,
+                                                 ge::Format data_format,
                                                  std::unordered_map<ge::NodePtr, bool> &node_status) {
-  bool is_internal_format = TypeUtils::IsInternalFormat(data_format);
-  bool need_process = (!is_first_infer) && (!is_internal_format) && (data_format != FORMAT_ND);
-  if (!need_process) {
-    GELOGI("no necessary to do DataNodeFormatProcess.is_first_infer:%d, data_format:%s", is_first_infer,
+  if (!(IsGraphInferred(graph) && (!TypeUtils::IsInternalFormat(data_format)) && (data_format != FORMAT_ND))) {
+    GELOGI("no necessary to do DataNodeFormatProcess. is_graph_inferred:%d, data_format:%s", IsGraphInferred(graph),
            TypeUtils::FormatToSerialString(data_format).c_str());
     return GRAPH_SUCCESS;
   }
@@ -410,8 +455,6 @@ graphStatus FormatRefiner::InferOrigineFormat(const ge::ComputeGraphPtr &graph) 
   std::vector<ge::NodePtr> anchor_points;
   std::vector<ge::NodePtr> data_nodes;
   // global net format
-  net_format_is_nd = true;
-  g_user_set_format = FORMAT_ND;
 
   if (graph == nullptr) {
     GELOGE(GRAPH_FAILED, "input graph is null");
@@ -448,10 +491,15 @@ graphStatus FormatRefiner::InferOrigineFormat(const ge::ComputeGraphPtr &graph) 
   /// format for these data nodes.
   /// Notice: ignore 5D formats
   auto data_format = graph->GetDataFormat();
-  status = DataNodeFormatProcess(data_nodes, data_format, node_status);
-  // Set infer flag to false
-  SetInferOrigineFormatFlag(false);
+  status = DataNodeFormatProcess(graph, data_nodes, data_format, node_status);
+
+  (void)AttrUtils::SetBool(graph, kIsGraphInferred, true);
 
   return status;
+}
+
+bool FormatRefiner::IsGraphInferred(const ComputeGraphPtr &graph) {
+  bool is_graph_inferred = false;
+  return (AttrUtils::GetBool(graph, kIsGraphInferred, is_graph_inferred) && is_graph_inferred);
 }
 }  // namespace ge

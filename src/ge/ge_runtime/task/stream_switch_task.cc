@@ -51,7 +51,7 @@ bool StreamSwitchTask::Distribute() {
   }
 
   if (static_cast<uint64_t>(task_info_->true_stream_id()) >= stream_list_.size()) {
-    GELOGE(PARAM_INVALID, "true_stream_id %ld must be less than stream_list_ size %zu!", task_info_->true_stream_id(),
+    GELOGE(PARAM_INVALID, "true_stream_id %ld must less than stream_list_ size %zu!", task_info_->true_stream_id(),
            stream_list_.size());
     return false;
   }

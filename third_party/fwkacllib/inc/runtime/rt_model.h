@@ -65,6 +65,13 @@ typedef enum tagModelQueueFlag {
 #define EXECUTOR_TS ((uint32_t)0x01)
 #define EXECUTOR_AICPU ((uint32_t)0x02)
 
+/*
+ * @ingroup rt_model
+ * @brief debug flag for kernel exception dump
+ */
+#define RT_DEBUG_FLAG_AICORE_OVERFLOW (0x1 << 0)
+#define RT_DEBUG_FLAG_ATOMIC_ADD_OVERFLOW (0x1 << 1)
+
 /**
  * @ingroup
  * @brief the type defination of aicpu model task command
@@ -402,6 +409,26 @@ RTS_API rtError_t rtModelBindQueue(rtModel_t model, uint32_t queueId, rtModelQue
  * @return RT_ERROR_INVALID_VALUE for error input handle
  */
 RTS_API rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId);
+
+/*
+ * @ingroup rt_model
+ * @brief enable debug for dump overflow exception
+ * @param [in] addr: ddr address of kernel exception dumpped
+ * @param [in] model: model handle
+ * @param [in] flag: debug flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input handle
+ */
+rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *addr, uint32_t *streamId, uint32_t *taskId);
+
+/*
+ * @ingroup rt_model
+ * @brief disable debug for dump overflow exception
+ * @param [in] model: model handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input handle
+ */
+RTS_API rtError_t rtDebugUnRegister(rtModel_t model);
 
 #ifdef __cplusplus
 }

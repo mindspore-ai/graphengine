@@ -336,16 +336,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 
   std::string data;
   for (const auto &task : task_desc_info) {
+    std::string model_name = task.model_name;
     std::string op_name = task.op_name;
     uint32_t block_dim = task.block_dim;
     uint32_t task_id = task.task_id;
     uint32_t stream_id = task.stream_id;
-    data = op_name.append(" ").append(std::to_string(block_dim)
-                                        .append(" ")
-                                        .append(std::to_string(task_id))
-                                        .append(" ")
-                                        .append(std::to_string(stream_id))
-                                        .append("\n"));
+    data = model_name.append(" ").append(op_name).append(" ").append(std::to_string(block_dim)
+                                                                       .append(" ")
+                                                                       .append(std::to_string(task_id))
+                                                                       .append(" ")
+                                                                       .append(std::to_string(stream_id))
+                                                                       .append("\n"));
 
     Msprof::Engine::ReporterData reporter_data{};
     reporter_data.deviceId = device_id;
@@ -376,7 +377,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 
   std::string data;
   for (const auto &graph : compute_graph_desc_info) {
-    data.append("op_name:").append(graph.op_name).append(" op_type:").append(graph.op_type);
+    data.append("model_name:")
+      .append(graph.model_name)
+      .append(" op_name:")
+      .append(graph.op_name)
+      .append(" op_type:")
+      .append(graph.op_type);
     for (size_t i = 0; i < graph.input_format.size(); ++i) {
       data.append(" input_id:")
         .append(std::to_string(i))

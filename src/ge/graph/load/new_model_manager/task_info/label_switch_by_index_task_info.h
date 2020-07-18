@@ -22,7 +22,8 @@
 namespace ge {
 class LabelSwitchByIndexTaskInfo : public TaskInfo {
  public:
-  LabelSwitchByIndexTaskInfo() : index_value_(nullptr), branch_max_(0), args_(nullptr), args_size_(0) {}
+  LabelSwitchByIndexTaskInfo()
+      : index_value_(nullptr), branch_max_(0), args_(nullptr), args_size_(0), fixed_addr_offset_(0) {}
 
   ~LabelSwitchByIndexTaskInfo() override;
 
@@ -30,13 +31,15 @@ class LabelSwitchByIndexTaskInfo : public TaskInfo {
 
   Status Distribute() override;
 
+  Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
+
  private:
   void *index_value_;    // switch index input.
   uint32_t branch_max_;  // max branch count.
   void *args_;           // label info memory.
   uint32_t args_size_;   // label info length.
-
   std::vector<rtLabel_t> label_list_;
+  int64_t fixed_addr_offset_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_

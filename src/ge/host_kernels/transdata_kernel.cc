@@ -113,7 +113,7 @@ Status TransdataKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<C
     return NOT_CHANGED;
   }
   if (formats::TransFormat(trans_args, trans_result) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to trans formats from %s to %s, shape %s to  %s, data type %s",
+    GELOGW("Failed to trans formats from %s to %s, shape %s to  %s, data type %s",
            TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(data_format).c_str(),
            formats::ShapeToString(src_shape).c_str(), formats::ShapeToString(data_shape).c_str(),
            TypeUtils::DataTypeToSerialString(src_data_type).c_str());

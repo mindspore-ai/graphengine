@@ -56,7 +56,7 @@ Status ReFormatKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Co
 
   ConstGeTensorPtr const_weight_ptr = input[kReformatFirstInput];
   if (const_weight_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "Parameter's invalid, Input_0 is nullptr.");
+    GELOGW("Parameter's invalid, Input_0 is nullptr.");
     return NOT_CHANGED;
   }
 
@@ -75,18 +75,17 @@ Status ReFormatKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Co
     return NOT_CHANGED;
   }
   if (!KernelUtils::CheckSizeForTransOp(const_weight_ptr, op_desc_ptr)) {
-    GELOGE(FAILED, "CheckSize failed, input size(shape %s) is not equal to weight size(shape %s)",
+    GELOGW("CheckSize failed, input size(shape %s) is not equal to weight size(shape %s)",
            formats::ShapeToString(src_shape).c_str(),
            formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str());
     return NOT_CHANGED;
   }
   GeTensorPtr output_ptr = MakeShared<GeTensor>(op_desc_ptr->GetOutputDesc(kReformatFirstOutput));
   if (output_ptr == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Create shared ptr for GeTensor failed");
+    GELOGW("Create shared ptr for GeTensor failed");
     return NOT_CHANGED;
   }
-  GE_IF_BOOL_EXEC(output_ptr->SetData(input.at(0)->GetData()) != GRAPH_SUCCESS,
-                  GELOGE(INTERNAL_ERROR, "set data failed");
+  GE_IF_BOOL_EXEC(output_ptr->SetData(input.at(0)->GetData()) != GRAPH_SUCCESS, GELOGW("set data failed");
                   return NOT_CHANGED);
   v_output.emplace_back(output_ptr);
   GELOGD("ReFormatKernel success.");

@@ -222,9 +222,10 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, size_t &mem_offse
 
   mem_offset = memory_offset_[0].mem_offset_;
 
-  if (mem_offset > VarManager::Instance(0)->GetGraphMemoryMaxSize()) {
+  auto session_id = compute_graph_->GetSessionID();
+  if (mem_offset > VarManager::Instance(session_id)->GetGraphMemoryMaxSize()) {
     GELOGE(ge::FAILED, "Current memoffset %zu is greater than memory manager malloc max size %zu", mem_offset,
-           VarManager::Instance(0)->GetGraphMemoryMaxSize());
+           VarManager::Instance(session_id)->GetGraphMemoryMaxSize());
     return ge::FAILED;
   }
   return SUCCESS;
@@ -1222,10 +1223,16 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
                peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), peer_out_anchor->GetIdx(),
                input_list.back());
       } else {
+        int64_t output_offset = output_list.at(peer_out_anchor->GetIdx());
+        if (peer_out_anchor->GetOwnerNode()->GetType() == CONSTANT) {
+          GeTensorDesc tensor_desc = tmp_op_desc->GetInputDesc(input_index);
+          GE_CHK_STATUS(TensorUtils::GetDataOffset(tensor_desc, output_offset));
+        }
+
         GELOGI("node[%s] input[%d] is set from node[%s] out index[%d] offset[%ld]", tmp_op_desc->GetName().c_str(),
                input_index, peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), peer_out_anchor->GetIdx(),
-               output_list.at(peer_out_anchor->GetIdx()));
-        input_list.emplace_back(output_list.at(peer_out_anchor->GetIdx()));
+               output_offset);
+        input_list.emplace_back(output_offset);
       }
     }
   }

@@ -91,7 +91,7 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   std::string var_key = VarKey(var_name, tensor_desc);
   GELOGD("VarResource::SaveVarAddr, var_key = %s", var_key.c_str());
   if (var_addr_mgr_map_.count(var_key) == 0) {
-    uint64_t logic_address = VarManager::Instance(0)->GetVarMemLogicBase() +
+    uint64_t logic_address = VarManager::Instance(session_id_)->GetVarMemLogicBase() +
                              reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
     GELOGI("SaveVarAddr node_name %s, tensor_desc format %s, type %s.", var_name.c_str(),
            TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
@@ -274,7 +274,7 @@ MemResource::MemResource() : total_size_(0), var_mem_size_(0) {}
 Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset) {
   size = (size + kSessionMemAlignSize - 1) / kSessionMemAlignSize * kSessionMemAlignSize;
   uint64_t real_size = size;
-  total_size_ = VarManager::Instance(0)->GetVarMemMaxSize();
+  total_size_ = VarManager::Instance(session_id)->GetVarMemMaxSize();
   if (total_size_ < var_mem_size_) {
     GELOGE(PARAM_INVALID, "total_size_: %lu is smaller than var_mem_size_: %lu", total_size_, var_mem_size_);
     return PARAM_INVALID;
@@ -684,7 +684,8 @@ uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_ty
   if (mem_base == nullptr) {
     return nullptr;
   }
-  uint8_t *mem_addr = logic_addr + reinterpret_cast<intptr_t>(mem_base) - VarManager::Instance(0)->GetVarMemLogicBase();
+  uint8_t *mem_addr =
+    logic_addr + reinterpret_cast<intptr_t>(mem_base) - VarManager::Instance(session_id_)->GetVarMemLogicBase();
   return mem_addr;
 }
 

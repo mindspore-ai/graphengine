@@ -673,7 +673,7 @@ REG_OP(ReduceAnyD)
 
 *@par Attributes:
 *@li operation: An optional int32 from 1(SUM), 2(ASUM), 3(SUMSQ), and 4(MEAN), 
-*specifying the reduction algorithm. Defaults to 1.
+*specifying the reduction algorithm. Defaults to "1".
 *@li axis: An optional int32, specifying the first axis to reduce. Defaults to "0". 
 *The value range is [-N, N-1], where N is the input tensor rank.
 *@li coeff: An optional float32, specifying the scale coefficient. Defaults to "1.0".
@@ -745,7 +745,190 @@ REG_OP(EuclideanNormD)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(EuclideanNormD)
 
-} //namespace ge
 
+
+/**
+*@brief Performs instance normalization for inference.
+
+*@par Inputs:\n
+* Five inputs, including: (NC1HWC0 supported)
+*@li x: A Tensor of type float16 or float32.
+*@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
+*@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
+*@li mean: A [N, C1, 1, 1, C0] ensor of type float32, for the mean.
+*@li variance: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance.
+
+*@par Attributes:
+*epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. 
+Defaults to "0.00001".
+
+*@par Outputs:\n
+*y: A Tensor of type float16 or float32 for the normalized "x".
+*batch_mean: A Tensor of type float32 for the result mean.
+*batch_ variance: A Tensor of type float32 for the result variance.
+
+*@attention Constraints:
+*For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*/
+REG_OP(INInferV2)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OPTIONAL_INPUT(gamma, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(beta, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+    .ATTR(epsilon, Float, 0.00001)
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(INInferV2)
+
+/**
+*@brief Performs reduced instance normalization.
+
+*@par Inputs:\n
+*x: A Tensor of type float16 or float32, with format NC1HWC0.
+
+*@par Outputs:
+*@li sum: A Tensor of type float32 for SUM reduced "x".
+*@li square_sum: A Tensor of type float32 for SUMSQ reduced "x".
+
+*@attention Constraints:\n
+* This operator is a InstanceNorm fusion operator for updating the moving averages for training. \n 
+* This operator is used in conjunction with INTrainingUpdateV2.
+*/
+REG_OP(INTrainingReduceV2)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(sum, TensorType({DT_FLOAT}))
+    .OUTPUT(square_sum, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(INTrainingReduceV2)
+
+
+/**
+*@brief Performs update instance normalization.
+
+*@par Inputs:\n
+* Seven inputs, including: (NC1HWC0supported)
+*@li x: A Tensor of type float16 or float32.
+*@li sum: A T [N, C1, 1, 1, C0] ensor of type float32 for the output of operator INTrainingReduceV2.
+*@li square_sum: A  [N, C1, 1, 1, C0] Tensor of type float32 for the output of operator INTrainingReduceV2.
+*@li gamma: A  [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
+*@li beta: A  [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
+*@li mean: A  [N, C1, 1, 1, C0] Tensor of type float32, for the updated mean.
+*@li variance: A  [N, C1, 1, 1, C0] Tensor of type float32, for the updated variance.
+
+*@par Attributes:
+*@li momentum: A required float32, specifying the momentum to update mean and var.
+*@li epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero.
+
+*@par Outputs:\n
+* Three outputs, including: (NC1HWC0 supported)
+*@li y: A Tensor of type float16 or float32, for normalized "x".
+*@li batch_mean: A Tensor of type float32, for the updated mean.
+*@li batch_variance: A Tensor of type float32, for the updated variance.
+
+*@attention Constraints:
+*@li This operator is a InstanceNorm fusion operator for updating the moving averages for training. \n 
+* This operator is used in conjunction with INTrainingReduceV2.
+*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*/
+REG_OP(INTrainingUpdateV2)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(sum, TensorType({DT_FLOAT}))
+    .INPUT(square_sum, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(gamma, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(beta, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+    .ATTR(momentum, Float, 0.1)
+    .ATTR(epsilon, Float, 0.00001)
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(INTrainingUpdateV2)
+
+
+/**
+*@brief Performs reduced group normalization.
+
+*@par Inputs:\n
+*x: A Tensor of type float16 or float32, with format NCHW NHWC.
+
+*@par Outputs:
+*@li sum: A Tensor of type float32 for SUM reduced "x".
+*@li square_sum: A Tensor of type float32 for SUMSQ reduced "x".
+
+
+*@par Attributes:
+*@li num_groups: Int, specifying the num of groups. required, same to GNTrainingUpdate.
+
+*@attention Constraints:\n
+* This operator is a GroupNorm fusion operator for updating the moving averages for training. \n 
+* This operator is used in conjunction with GNTrainingUpdate.
+*/
+REG_OP(GNTrainingReduce)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(sum, TensorType({DT_FLOAT}))
+    .OUTPUT(square_sum, TensorType({DT_FLOAT}))
+    .ATTR(num_groups, Int, 2)
+    .OP_END_FACTORY_REG(GNTrainingReduce)
+
+
+/**
+*@brief Performs update group normalization.
+
+*@par Inputs:\n
+* Eight inputs, including: (NCHW NHWC supported)
+*@li x: A Tensor of type float16 or float32.
+*@li sum: A 5D Tensor of type float32, 
+shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+for the output of operator GNTrainingReduce.
+*@li square_sum: A 5D Tensor of type float32, 
+shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+for the output of operator GNTrainingReduce.
+*@li scale: A 5D Tensor of type float32, 
+shape is [1, G, D, 1, 1] for NCHW, [1, 1, 1, G, D] for NHWC
+is for the scaling gamma.
+*@li offset: A 5D Tensor of type float32, 
+shape is [1, G, D, 1, 1] for NCHW, [1, 1, 1, G, D] for NHWC
+for the scaling beta.
+*@li mean: A 5D Tensor of type float32, 
+shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+for the updated mean.
+*@li variance: A 5D Tensor of type float32, 
+shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+for the updated variance.
+
+
+*@par Attributes:
+*@li epsilon: A float32, specifying the small value added to variance to avoid dividing by zero.
+*@li num_groups: Int, specifying the num of groups. required, same to GNTrainingReduce
+
+*@par Outputs:\n
+* Three outputs, including: (NC1HWC0 supported)
+*@li y: A Tensor of type float16 or float32, for normalized "x".
+*@li batch_mean: A Tensor of type float32, for the updated mean.
+*@li batch_variance: A Tensor of type float32, for the updated variance.
+
+*@attention Constraints:
+*@li This operator is a InstanceNorm fusion operator for updating the moving averages for training. \n 
+* This operator is used in conjunction with GNTrainingUpdate.
+*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*/
+REG_OP(GNTrainingUpdate)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(sum, TensorType({DT_FLOAT}))
+    .INPUT(square_sum, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+    .ATTR(num_groups, Int, 2)
+    .ATTR(epsilon, Float, 0.0001)
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(GNTrainingUpdate)
+
+} //namespace ge
 
 #endif /* GE_OP_REDUCE_OPS_H */

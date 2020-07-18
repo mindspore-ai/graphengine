@@ -39,13 +39,18 @@ class StreamSwitchTaskInfo : public TaskInfo {
 
   Status Distribute() override;
 
+  Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
+
  private:
+  void SetInputAndValuePtr(DavinciModel *davinci_model, const vector<void *> &input_data_addrs);
   void *input_ptr_;
   rtCondition_t cond_;
   void *value_ptr_;
   rtStream_t true_stream_;
   uint32_t true_stream_id_;
   rtSwitchDataType_t data_type_;
+  static const uint32_t kInputNum = 2;
+  vector<int64_t> fixed_addr_offset_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_STREAM_SWITCH_TASK_INFO_H_

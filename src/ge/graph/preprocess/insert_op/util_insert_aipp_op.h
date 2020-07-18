@@ -67,6 +67,7 @@ class InsertNewOpUtil {
   Status GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std::set<NodePtr>> &data_next_node_map);
   Status GetAllAipps(const NodePtr &node, std::vector<NodePtr> &aipps);
   Status GetInputOutputInfo(NodePtr &data_node, NodePtr &aipp_node, std::string &input, std::string &output);
+  Status SetModelInputDims(NodePtr &data_node, NodePtr &aipp_node);
 };
 }  // namespace ge
 

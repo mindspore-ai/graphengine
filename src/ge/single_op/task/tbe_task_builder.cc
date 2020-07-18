@@ -290,6 +290,8 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
   if (ret != SUCCESS) {
     return ret;
   }
+  auto task_info = BuildTaskUtils::GetTaskInfo(op_desc_);
+  GELOGI("[TASK_INFO] %s %s", stub_name_.c_str(), task_info.c_str());
 
   void *stub_func = nullptr;
   auto rtRet = rtGetFunctionByName(stub_name_.c_str(), &stub_func);

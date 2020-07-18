@@ -29,27 +29,13 @@ namespace ge {
 namespace hybrid {
 HybridModel::HybridModel(GeRootModelPtr ge_model) : ge_root_model_(std::move(ge_model)) {}
 
+HybridModel::~HybridModel() { GELOGD("[%s] HybridModel destroyed.", model_name_.c_str()); }
+
 Status HybridModel::Init() {
   GELOGD("Start to init hybrid model.");
   GE_CHK_STATUS_RET(HybridModelBuilder(*this).Build(), "Failed to build hybrid model.");
   GELOGD("HybridModel initialized successfully.");
   return SUCCESS;
-}
-
-void HybridModel::Print() const {
-  for (const auto &node : node_items_) {
-    GELOGD("%s", node->DebugString().c_str());
-  }
-}
-
-TensorValue *HybridModel::GetWeight(const NodeItem *const_node) const {
-  auto it = weights_.find(const_node->node_id);
-  if (it == weights_.end() || it->second == nullptr) {
-    GELOGE(INTERNAL_ERROR, "[%s] Failed to get weight", const_node->NodeName().c_str());
-    return nullptr;
-  }
-
-  return it->second.get();
 }
 
 TensorValue *HybridModel::GetVariable(const string &name) const {
@@ -83,26 +69,26 @@ const std::vector<domi::TaskDef> *HybridModel::GetTaskDefs(const NodePtr &node) 
 }
 
 NodeItem *HybridModel::MutableNodeItem(const NodePtr &node) {
-  auto node_id = node->GetOpDesc()->GetId();
-  if (node_id < 0 || static_cast<size_t>(node_id) > node_items_.size()) {
-    GELOGE(INTERNAL_ERROR, "index out of range. node_id = %ld, num_nodes = %zu", node_id, node_items_.size());
+  auto it = node_items_.find(node);
+  if (it == node_items_.end()) {
     return nullptr;
   }
-  return node_items_[node_id].get();
+
+  return it->second.get();
 }
 
 const NodeItem *HybridModel::GetNodeItem(const NodePtr &node) const {
-  auto node_id = node->GetOpDesc()->GetId();
-  if (node_id < 0 || static_cast<size_t>(node_id) > node_items_.size()) {
-    GELOGE(INTERNAL_ERROR, "Index out of range. node_id = %ld, num_nodes = %zu.", node_id, node_items_.size());
+  auto it = node_items_.find(node);
+  if (it == node_items_.end()) {
     return nullptr;
   }
-  return node_items_[node_id].get();
+
+  return it->second.get();
 }
 
 GeModelPtr HybridModel::GetGeModel(const NodePtr &node) const {
-  auto it = known_shape_sub_graphs_.find(node);
-  if (it == known_shape_sub_graphs_.end()) {
+  auto it = known_shape_sub_models_.find(node);
+  if (it == known_shape_sub_models_.end()) {
     GELOGE(INTERNAL_ERROR, "[%s] Failed to get GeModel for subgraph node.", node->GetName().c_str());
     return nullptr;
   }
@@ -110,8 +96,27 @@ GeModelPtr HybridModel::GetGeModel(const NodePtr &node) const {
   return it->second;
 }
 
-const vector<int> &HybridModel::GetNetOutputInputOffsets() const { return net_output_input_offsets_; }
+const GraphItem *HybridModel::GetRootGraphItem() const { return root_graph_item_.get(); }
 
-void HybridModel::SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
+const GraphItem *HybridModel::GetSubgraphItem(const std::string &graph_name) const {
+  GELOGD("To find subgraph item by name = %s", graph_name.c_str());
+  auto it = subgraph_items_.find(graph_name);
+  if (it == subgraph_items_.end()) {
+    GELOGD("Subgraph item not found by node = %s", graph_name.c_str());
+    return nullptr;
+  }
+
+  return it->second.get();
+}
+
+const GraphItem *HybridModel::GetSubgraphItem(const ComputeGraphPtr &subgraph) const {
+  if (subgraph == nullptr) {
+    GELOGE(PARAM_INVALID, "subgraph is nullptr");
+    return nullptr;
+  }
+
+  auto subgraph_name = subgraph->GetName();
+  return GetSubgraphItem(subgraph_name);
+}
 }  // namespace hybrid
 }  // namespace ge

@@ -23,6 +23,7 @@ LIBGE_LOCAL_SRC_FILES := \
     common/formats/utils/formats_trans_utils.cc \
     common/fp16_t.cc \
     common/ge/plugin_manager.cc\
+    common/ge/op_tiling_manager.cc\
     common/helper/model_cache_helper.cc \
     common/profiling/profiling_manager.cc \
     engine_manager/dnnengine_manager.cc \
@@ -77,7 +78,6 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/load/new_model_manager/task_info/task_info.cc \
     graph/load/new_model_manager/tbe_handle_store.cc \
     graph/load/new_model_manager/zero_copy_task.cc \
-    graph/load/output/output.cc \
     graph/manager/graph_context.cc \
     graph/manager/graph_manager.cc \
     graph/manager/graph_manager_utils.cc \
@@ -99,6 +99,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/aicpu_constant_folding_pass.cc \
     graph/passes/assert_pass.cc \
     graph/passes/atomic_addr_clean_pass.cc \
+    graph/passes/mark_same_addr_pass.cc \
     graph/partition/dynamic_shape_partition.cc \
     graph/passes/base_pass.cc \
     graph/passes/cast_remove_pass.cc \
@@ -158,8 +159,8 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/get_original_format_pass.cc \
     graph/passes/guarantee_const_pass.cc \
     graph/passes/hccl_memcpy_pass.cc \
-    graph/passes/identify_reference_pass.cc \
     graph/passes/identity_pass.cc \
+    graph/passes/ref_identity_delete_op_pass.cc \
     graph/passes/infershape_pass.cc \
     graph/passes/isolated_op_remove_pass.cc \
     graph/passes/iterator_op_pass.cc \
@@ -191,7 +192,9 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/data_pass.cc \
     graph/passes/switch_data_edges_bypass.cc \
     graph/passes/switch_logic_remove_pass.cc \
-    graph/passes/switch_op_pass.cc \
+    graph/passes/merge_to_stream_merge_pass.cc \
+    graph/passes/switch_to_stream_switch_pass.cc \
+    graph/passes/attach_stream_label_pass.cc \
     graph/passes/switch_dead_branch_elimination.cc \
     graph/passes/replace_transshape_pass.cc \
     graph/passes/transop_breadth_fusion_pass.cc \
@@ -230,6 +233,7 @@ LIBGE_LOCAL_SRC_FILES := \
     single_op/task/op_task.cc \
     single_op/task/tbe_task_builder.cc \
     single_op/task/aicpu_task_builder.cc \
+    single_op/task/aicpu_kernel_task_builder.cc \
     hybrid/common/tensor_value.cc                                        \
     hybrid/common/npu_memory_allocator.cc                                \
     hybrid/executor/rt_callback_manager.cc                               \
@@ -239,12 +243,15 @@ LIBGE_LOCAL_SRC_FILES := \
     hybrid/executor/hybrid_model_executor.cc                             \
     hybrid/executor/hybrid_model_async_executor.cc                       \
     hybrid/executor/hybrid_execution_context.cc                          \
+    hybrid/executor/subgraph_context.cc                                  \
+    hybrid/executor/subgraph_executor.cc                                 \
     hybrid/executor/worker/task_compile_engine.cc                        \
     hybrid/executor/worker/shape_inference_engine.cc                     \
     hybrid/executor/worker/execution_engine.cc                           \
     hybrid/model/hybrid_model.cc                                         \
     hybrid/model/hybrid_model_builder.cc                                 \
     hybrid/model/node_item.cc                                            \
+    hybrid/model/graph_item.cc                                           \
     hybrid/node_executor/aicore/aicore_node_executor.cc                  \
     hybrid/node_executor/aicore/aicore_op_task.cc                        \
     hybrid/node_executor/aicore/aicore_task_builder.cc                   \
@@ -253,6 +260,9 @@ LIBGE_LOCAL_SRC_FILES := \
     hybrid/node_executor/aicpu/aicpu_node_executor.cc                    \
     hybrid/node_executor/compiledsubgraph/known_node_executor.cc         \
     hybrid/node_executor/hostcpu/ge_local_node_executor.cc               \
+    hybrid/node_executor/controlop/control_op_executor.cc                \
+    hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc \
+    hybrid/node_executor/hccl/hccl_node_executor.cc               \
     hybrid/node_executor/node_executor.cc                                \
     hybrid/node_executor/task_context.cc                                 \
     hybrid/hybrid_davinci_model.cc                                       \
@@ -338,6 +348,28 @@ LOCAL_SHARED_LIBRARIES += \
 
 include $(BUILD_HOST_SHARED_LIBRARY)
 
+#compiler for GeRunner
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := stub/libge_runner
+
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -O2
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -DDAVINCI_SUPPORT_PROFILING -DDAVINCI_CLOUD
+ifeq ($(DEBUG), 1)
+LOCAL_CFLAGS += -g -O0
+endif
+
+
+LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
+
+LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+include $(BUILD_HOST_SHARED_LIBRARY)
 
 # add engine_conf.json to host
 include $(CLEAR_VARS)
@@ -407,6 +439,7 @@ LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -DDAVINCI_SUPPORT_PROFILING -DDAVINCI_CLOUD
 LOCAL_CFLAGS += -g -O0
 
 LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
+
 LOCAL_SRC_FILES := $(LIBGE_LOCAL_SRC_FILES)
 LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 

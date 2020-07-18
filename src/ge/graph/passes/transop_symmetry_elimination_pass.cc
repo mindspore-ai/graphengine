@@ -24,7 +24,6 @@
 namespace {
 const int kTransOpOutIndex = 0;
 static std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOAT, ge::DT_BOOL}};
-
 }  // namespace
 namespace ge {
 Status TransOpSymmetryEliminationPass::Run(NodePtr &node) {

@@ -62,9 +62,6 @@ class GELib {
   // get TrainMode flag
   bool isTrainMode() { return is_train_mode_; }
 
-  // add head stream to model
-  bool HeadStream() const { return head_stream_; }
-
   // get incre build flag
   bool IsIncreBuild() const { return is_incre_build_; }
 
@@ -86,6 +83,8 @@ class GELib {
   Status SetRTSocVersion(const map<string, string> &options, map<string, string> &new_options);
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
+  void SetDumpModelOptions(const map<string, string> &options);
+  void SetOpDebugOptions(const map<string, string> &options);
 
   DNNEngineManager engineManager_;
   OpsKernelManager opsManager_;
@@ -98,7 +97,6 @@ class GELib {
   bool is_shutdown = false;
   bool is_use_hcom = false;
   bool is_incre_build_ = false;
-  bool head_stream_ = false;
   std::string incre_build_cache_path_;
 };
 }  // namespace ge

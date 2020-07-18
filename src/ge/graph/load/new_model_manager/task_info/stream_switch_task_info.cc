@@ -42,16 +42,11 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
 
   auto stream_switch_def = task_def.stream_switch();
   uint32_t op_index = stream_switch_def.op_index();
-
   // get StreamSwitch op
   OpDescPtr op_desc = davinci_model->GetOpByIndex(op_index);
   GE_CHECK_NOTNULL(op_desc);
   auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-  if (!input_data_addr.empty() && input_data_addr.size() >= STREAM_SWITCH_INPUT_NUM) {
-    input_ptr_ = input_data_addr[0];
-    value_ptr_ = input_data_addr[1];
-  }
-
+  SetInputAndValuePtr(davinci_model, input_data_addr);
   uint32_t cond = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_STREAM_SWITCH_COND, cond)) {
     GELOGE(INTERNAL_ERROR, "StreamSwitchOp get attr STREAM_SWITCH_COND fail.");
@@ -115,6 +110,42 @@ Status StreamSwitchTaskInfo::Distribute() {
   GELOGI("StreamSwitchTaskInfo Distribute Success. cond:%d, stream:%p, datatype:%d.", cond_, true_stream_, data_type_);
   return SUCCESS;
 }
+Status StreamSwitchTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
+  GE_CHECK_NOTNULL(davinci_model);
+  auto stream_switch_def = task_def.stream_switch();
+  uint32_t op_index = stream_switch_def.op_index();
+  GELOGI("Begin to calculate args, op_index is: %u", op_index);
+  auto op_desc = davinci_model->GetOpByIndex(op_index);
+  GE_CHECK_NOTNULL(op_desc);
+  GELOGI("Calc opType[%s] args size. Node name is [%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
+  if (op_desc->GetInputsSize() != STREAM_SWITCH_INPUT_NUM) {
+    GELOGE(FAILED, "Stream switch op only have one data input. Now input size is %zu", op_desc->GetInputsSize());
+    return FAILED;
+  }
+  for (uint32_t i = 0; i < STREAM_SWITCH_INPUT_NUM; ++i) {
+    string input_tensor_name = op_desc->GetInputNameByIndex(i);
+    int64_t fixed_addr_offset = davinci_model->GetFixedAddrsSize(input_tensor_name);
+    fixed_addr_offset_.emplace_back(fixed_addr_offset);
+    auto tensor_desc = op_desc->GetInputDesc(i);
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
+    davinci_model->SetTotalFixedAddrsSize(input_tensor_name, tensor_size);
+    GELOGI("Calculate stream switch task args , tensor size is %ld, fixed addr[%u] offset %ld", tensor_size, i,
+           fixed_addr_offset);
+  }
+  return SUCCESS;
+}
 
+void StreamSwitchTaskInfo::SetInputAndValuePtr(DavinciModel *davinci_model, const vector<void *> &input_data_addrs) {
+  if (davinci_model->IsKnownNode() && fixed_addr_offset_.size() == STREAM_SWITCH_INPUT_NUM) {
+    input_ptr_ = davinci_model->GetCurrentFixedAddr(fixed_addr_offset_[0]);
+    value_ptr_ = davinci_model->GetCurrentFixedAddr(fixed_addr_offset_[1]);
+  } else {
+    if (!input_data_addrs.empty() && input_data_addrs.size() >= STREAM_SWITCH_INPUT_NUM) {
+      input_ptr_ = input_data_addrs[0];
+      value_ptr_ = input_data_addrs[1];
+    }
+  }
+}
 REGISTER_TASK_INFO(RT_MODEL_TASK_STREAM_SWITCH, StreamSwitchTaskInfo);
 }  // namespace ge

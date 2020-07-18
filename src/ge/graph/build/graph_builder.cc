@@ -18,11 +18,14 @@
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
 #include "common/opskernel/ops_kernel_info_types.h"
+#include "graph/build/logical_stream_allocator.h"
 #include "graph/build/run_context.h"
 #include "graph/build/stream_graph_optimizer.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/passes/mark_same_addr_pass.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "init/gelib.h"
 #include "model/ge_model.h"
 
@@ -33,6 +36,21 @@ const int32_t kInvalidPerfLevel = -1;
 }  // namespace
 namespace ge {
 GraphBuilder::GraphBuilder() : build_mode_(BuildMode::GEN_TASK_WITH_FUSION), hcom_parallel_(false) {}
+
+Status GraphBuilder::MarkGraph(ComputeGraphPtr &graph) {
+  GE_CHECK_NOTNULL(graph);
+  bool is_unknown_shape = false;
+  for (const auto &node : graph->GetDirectNode()) {
+    GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
+                      "Get node[%s] shape status failed!", node->GetName().c_str());
+    if (is_unknown_shape) {
+      break;
+    }
+  }
+  graph->SetGraphUnknownFlag(is_unknown_shape);
+  GELOGD("mark graph [%s] unknown status success! value is %d", graph->GetName().c_str(), is_unknown_shape);
+  return SUCCESS;
+}
 
 void GraphBuilder::SetOptions(const ge::GraphManagerOptions &options) {
   stream_max_parallel_num_ = options.stream_max_parallel_num;
@@ -54,7 +72,7 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  for (const auto &node_ptr : graph->GetAllNodes()) {
+  for (const auto &node_ptr : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node_ptr->GetOpDesc());
     std::string kernel_lib_name = node_ptr->GetOpDesc()->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
@@ -102,11 +120,7 @@ Status GraphBuilder::UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph
          graph->GetName().c_str());
   auto parent_op_desc = parent_node_ptr->GetOpDesc();
   GE_CHECK_NOTNULL(parent_op_desc);
-  bool is_unknown_shape = false;
-  if (!AttrUtils::GetBool(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape)) {
-    GELOGE(PARAM_INVALID, "Get op %s unknown shape attr failed.", parent_op_desc->GetName().c_str());
-    return PARAM_INVALID;
-  }
+  bool is_unknown_shape = graph->GetGraphUnknownFlag();
   if (is_unknown_shape) {
     GELOGI("Current graph[%s] is unknown, no need to update parent node[%s] output size.", graph->GetName().c_str(),
            parent_node_ptr->GetName().c_str());
@@ -121,14 +135,14 @@ Status GraphBuilder::UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph
     for (const auto &in_data_anchor : node_ptr->GetAllInDataAnchors()) {
       auto index = in_data_anchor->GetIdx();
       ge::GeTensorDesc desc_temp = op_desc->GetInputDesc(index);
-      int64_t size = 0;
-      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc_temp, size) != SUCCESS, GELOGI("Get size failed!"));
       uint32_t parent_index = 0;
       if (!AttrUtils::GetInt(desc_temp, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-        GELOGE(INTERNAL_ERROR, "NetOutput input tensor %d, attr %s not found.", index,
-               ATTR_NAME_PARENT_NODE_INDEX.c_str());
-        return INTERNAL_ERROR;
+        GELOGI("NetOutput input tensor %d, attr %s not found.", index, ATTR_NAME_PARENT_NODE_INDEX.c_str());
+        continue;
       }
+
+      int64_t size = 0;
+      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc_temp, size) != SUCCESS, GELOGI("Get size failed!"));
       ge::GeTensorDesc parent_desc_temp = parent_op_desc->GetOutputDesc(parent_index);
       ge::TensorUtils::SetSize(parent_desc_temp, size);
       GE_CHK_STATUS_RET(parent_op_desc->UpdateOutputDesc(parent_index, parent_desc_temp));
@@ -176,7 +190,7 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
   auto subgraph_map = graph_partitioner_.GetSubGraphMap();
 
   GE_TIMESTAMP_START(BuildSubgraph);
-  ge::ModelBuilder builder(comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
+  ge::ModelBuilder builder(session_id, comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
   GE_DUMP(comp_graph, "BeforePreBuildModel");
   GE_TIMESTAMP_START(PreBuildModel);
   GE_CHK_STATUS_RET(builder.PreBuildModel(), "Graph[%s] builder PreBuildModel() return fail.",
@@ -229,7 +243,7 @@ Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeMo
   GE_TIMESTAMP_END(CalcOpParam, "GraphBuilder::CalcOpParam");
   GE_DUMP(comp_graph, "AfterCalcOpParam");
   Graph2SubGraphInfoList subgraph_map;
-  ge::ModelBuilder builder(comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
+  ge::ModelBuilder builder(session_id, comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
   ModelPtr model_ptr = MakeShared<ge::Model>();
   if (model_ptr == nullptr) {
     return MEMALLOC_FAILED;
@@ -263,51 +277,38 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                                                GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
                                                uint64_t session_id) {
   GELOGI("Start to build BuildForDynamicShape for dynamic shape.");
-  for (const auto &node : comp_graph->GetDirectNode()) {
+  // mark unknown shape attr
+  for (auto &sub_graph : comp_graph->GetAllSubgraphs()) {
+    auto status = MarkGraph(sub_graph);
+    if (status != SUCCESS) {
+      GELOGE(FAILED, "mark graph failed!");
+      return status;
+    }
+  }
+  // Update Root Graph Data size
+  for (auto &node : comp_graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
+    op_desc->SetStreamId(kInvalidStream);
     if (node->GetType() == DATA) {
       GE_CHK_STATUS_RET(CalcDynShapeRootGraphDataSize(op_desc), "Calc dynamic shape root graph data[%s] size failed.",
                         op_desc->GetName().c_str());
     }
-
-    // ATTR_NAME_IS_UNKNOWN_SHAPE is set on "graph partion" stage, but afer fusion , the graph may
-    // be changed so here need to renew. For example , the scene followed:
-    //             (known)partioncall(known)                              (known)partioncall(known)
-    //                                                After fusion
-    //                     |                            -->
-    // (known)Unique(unknown)--->(unknow)Shape(unknown)                   (known)FuncDef(known)
-    // if scene like this , it should be process as known shape graph
-    bool is_unknown_shape = false;
-    GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
-                      "Get node[%s] shape status failed!", node->GetName().c_str());
-    if (!is_unknown_shape) {
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape), return FAILED,
-                       "Renew node [%s] attr[%s] failed!", node->GetName().c_str(), ATTR_NAME_IS_UNKNOWN_SHAPE.c_str());
-      GELOGD("renew node [%s] attr[%s] success! value is %d", node->GetName().c_str(),
-             ATTR_NAME_IS_UNKNOWN_SHAPE.c_str(), is_unknown_shape);
-    }
-
-    vector<string> subgraph_names = op_desc->GetSubgraphInstanceNames();
-    for (auto subgraph_name : subgraph_names) {
-      ComputeGraphPtr subgraph = comp_graph->GetSubgraph(subgraph_name);
-      bool is_unknown_shape = false;
-      if (!AttrUtils::GetBool(op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape)) {
-        GELOGE(PARAM_INVALID, "Get op %s unknown shape attr failed.", op_desc->GetName().c_str());
-        return PARAM_INVALID;
-      }
-      if (is_unknown_shape) {
-        // unknown shape build flow
-        GE_CHK_STATUS_RET(BuildForUnknownShapeGraph(subgraph, ge_model_ptr, session_id),
-                          "Build for unknown shape graph failed.");
-      } else {
-        // known shape build flow
-        GE_CHK_STATUS_RET(BuildForKnownShapeGraph(subgraph, subgraph_ptr_list, ge_model_ptr, session_id),
-                          "Build for known shape graph failed.");
-      }
-      ge_root_model_ptr->SetSubgraphInstanceNameToModel(subgraph_name, ge_model_ptr);
-    }
   }
+  //
+  for (auto &sub_graph : comp_graph->GetAllSubgraphs()) {
+    if (sub_graph->GetGraphUnknownFlag()) {
+      // unknown shape build flow
+      GE_CHK_STATUS_RET(BuildForUnknownShapeGraph(sub_graph, ge_model_ptr, session_id),
+                        "Build for unknown shape graph failed.");
+    } else {
+      // known shape build flow
+      GE_CHK_STATUS_RET(BuildForKnownShapeGraph(sub_graph, subgraph_ptr_list, ge_model_ptr, session_id),
+                        "Build for known shape graph failed.");
+    }
+    ge_root_model_ptr->SetSubgraphInstanceNameToModel(sub_graph->GetName(), ge_model_ptr);
+  }
+
   return SUCCESS;
 }
 
@@ -327,8 +328,9 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
     GELOGE(INTERNAL_ERROR, "Get weight memory size fail.");
     return INTERNAL_ERROR;
   }
-  auto *get_mem_base =
-    reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(ge::VarManager::Instance(0)->GetVarMemMaxSize()));
+
+  auto var_manager = VarManager::Instance(session_id);
+  auto *get_mem_base = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(var_manager->GetVarMemMaxSize()));
   uint8_t *get_weight_mem_base = get_mem_base;
   if (weight_size > 0) {
     get_weight_mem_base = get_mem_base + memory_size;
@@ -354,11 +356,8 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
     return ret;
   }
   GE_DUMP(comp_graph, "AfterOptimizeStreamedSubGraph");
-  auto *get_var_mem_base =
-    reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(ge::VarManager::Instance(0)->GetVarMemLogicBase()));
-  uint64_t var_size = (ge::VarManager::Instance(session_id)->GetVarMemSize(RT_MEMORY_HBM) > 0)
-                        ? ge::VarManager::Instance(0)->GetVarMemMaxSize()
-                        : 0;
+  auto *get_var_mem_base = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(var_manager->GetVarMemLogicBase()));
+  uint64_t var_size = (var_manager->GetVarMemSize(RT_MEMORY_HBM) > 0) ? var_manager->GetVarMemMaxSize() : 0;
   TaskGenerator task_generator(get_var_mem_base, var_size);
   ret = task_generator.GetTaskInfo(*model_ptr, comp_graph, session_id, run_context.GetRunContext());
 
@@ -368,6 +367,13 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
 Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
   // set input_desc.size = src_node.output_desc.size
   if (node_ptr->GetType() == DATA) {
+    bool is_unknown_shape = false;
+    GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node_ptr, is_unknown_shape),
+                      "Get data node[%s] shape status failed!", node_ptr->GetName().c_str());
+    if (is_unknown_shape) {
+      GELOGD("data node: %s is unknown shape, do not set input size!", node_ptr->GetName().c_str());
+      return SUCCESS;
+    }
     if (UpdateDataInputSize(node_ptr) != SUCCESS) {
       GELOGE(FAILED, "Update data input size failed.");
       return FAILED;
@@ -398,7 +404,7 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
     GE_CHECK_NOTNULL(input_desc);
     ge::TensorUtils::SetSize(const_cast<GeTensorDesc &>(*input_desc), size);
     GE_CHK_STATUS_RET(node_op_desc->UpdateInputDesc(in_data_anchor->GetIdx(), *input_desc));
-    GELOGD("%s input desc, dim_size: %zu, mem_size: %u, format: %s, type: %s.", node_ptr->GetName().c_str(),
+    GELOGD("%s input desc, dim_size: %zu, mem_size: %ld, format: %s, type: %s.", node_ptr->GetName().c_str(),
            input_desc->GetShape().GetDimNum(), size, TypeUtils::FormatToSerialString(input_desc->GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str());
   }

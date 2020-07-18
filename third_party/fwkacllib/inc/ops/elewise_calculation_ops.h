@@ -483,9 +483,9 @@ REG_OP(Equal)
 *x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
 
 *@par Attributes:
-*@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1".
-*@li scale: An optional attribute of type float32, specifying the scale alpha. Defaults to "1".
-*@li shift: An optional attribute of type float32, specifying the shift beta. Defaults to "0".
+*@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1.0".
+*@li scale: An optional attribute of type float32, specifying the scale alpha. Defaults to "1.0".
+*@li shift: An optional attribute of type float32, specifying the shift beta. Defaults to "0.0".
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
@@ -1016,17 +1016,17 @@ REG_OP(BesselI1e)
 * y = log_base(shift + scale * x), with "base" > 0.
 
 * @par Inputs:
-* @li x: A Tensor of type UnaryDataType.
+* @li x: A Tensor of type complex64, complex128, float16, float32 or double.
 
 * @par Attributes:
-* @li base: An optional float32, specifying the base "e". Defaults to "-1"
+* @li base: An optional float32, specifying the base "e". Defaults to "-1.0"
 
 * @li scale: An optional float32, specifying the scale of input "x". Defaults
-* to "1"
-* @li shift: An optional float32, specifying the shift. Defaults to "0"
+* to "1.0"
+* @li shift: An optional float32, specifying the shift. Defaults to "0.0"
 
 * @par Outputs:
-* y: A Tensor of type UnaryDataType.
+* y: A Tensor has same type as "x".
 
 * @attention Constraints:
 * @li "base" is supposed to be greater than 0. Retaining the default
@@ -2262,7 +2262,7 @@ REG_OP(ArgMinD)
 *dtype: The output type, either "int32" or "int64". Defaults to "int64".
 
 *@par Outputs: 
-*y: A multi-dimensional Tensor of type int32, specifying the index with the largest value. The dimension is one less than that of "x".
+*y: A multi-dimensional Tensor of type int32 or int64, specifying the index with the largest value. The dimension is one less than that of "x".
 
 *@attention Constraints:
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
@@ -2398,8 +2398,8 @@ REG_OP(ArgMinWithValue)
 *y: A Tensor. Has the same type and format as "x".
 
 *@par Attributes:
-*@li N: A required attribute. the number of input x, max size is 32.
-*@li model: An optional attribute. Defaults to "1".
+*@li N: A required attribute. the number of input x, max size is 32. Type is int.
+*@li model: An optional attribute. Type is int. Defaults to "1".
 *    "0": product, "1": sum, "2": max.
 *@li coeff: A required attribute. Must met all of following rules:
 *    size of "coeff" must be equal to len("x") or is null.
@@ -2691,6 +2691,86 @@ REG_OP(AdamApplyOne)
     .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OP_END_FACTORY_REG(AdamApplyOne)
+
+/**
+*@brief A fusion operator for bert lamb.
+
+*@par Inputs:
+*Eleven inputs, including:
+* @li input0: A Tensor. Must be one of the following types: float16, float32.
+* @li input1: A Tensor. Must be one of the following types: float16, float32.
+* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input3: A Tensor. Must be one of the following types: float16, float32.
+* @li input4: A Tensor. Must be one of the following types: float16, float32.
+* @li mul0_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul1_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul4_x: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li output0: A Tensor. Must be one of the following types: float16, float32.
+* @li output1: A Tensor. Must be one of the following types: float16, float32.
+* @li output2: A Tensor. Must be one of the following types: float16, float32.
+
+*/
+REG_OP(AdamApplyOneWithDecayAssign)
+    .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul0_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul1_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul3_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul4_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(AdamApplyOneWithDecayAssign)
+
+/**
+*@brief A fusion operator for bert lamb.
+
+*@par Inputs:
+*Ten inputs, including:
+* @li input0: A Tensor. Must be one of the following types: float16, float32.
+* @li input1: A Tensor. Must be one of the following types: float16, float32.
+* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input3: A Tensor. Must be one of the following types: float16, float32.
+* @li input4: A Tensor. Must be one of the following types: float16, float32.
+* @li mul0_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul1_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+*Three outputs, including:
+* @li output0: A Tensor. Must be one of the following types: float16, float32.
+* @li output1: A Tensor. Must be one of the following types: float16, float32.
+* @li output2: A Tensor. Must be one of the following types: float16, float32.
+
+*/
+REG_OP(AdamApplyOneAssign)
+    .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul0_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul1_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul3_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(AdamApplyOneAssign)
 
 /**
 *@brief Confuse select, maximum, greater and sqrt.
@@ -3042,6 +3122,22 @@ REG_OP(KLDiv)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(KLDiv)
 
+/**
+*@brief copy data from x to y..
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+*/
+REG_OP(TensorMove)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
+    .OP_END_FACTORY_REG(TensorMove)
 }  // namespace ge
 
 

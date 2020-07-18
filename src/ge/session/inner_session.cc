@@ -29,6 +29,34 @@
 #include "runtime/mem.h"
 
 namespace ge {
+namespace {
+Status CheckReuseMemoryOption(const std::map<string, string> &options) {
+  const int kDecimal = 10;
+  auto dump_op_env = std::getenv("DUMP_OP");
+  int dump_op_flag = (dump_op_env != nullptr) ? std::strtol(dump_op_env, nullptr, kDecimal) : 0;
+  auto iter = options.find(OPTION_EXEC_DISABLE_REUSED_MEMORY);
+  if (iter != options.end()) {
+    if (iter->second == "0") {
+      GELOGD("%s=0, reuse memory is open", OPTION_EXEC_DISABLE_REUSED_MEMORY);
+      if (dump_op_flag) {
+        GELOGW("Will dump incorrect op data with ge option %s=0", OPTION_EXEC_DISABLE_REUSED_MEMORY);
+      }
+    } else if (iter->second == "1") {
+      GELOGD("%s=1, reuse memory is close", OPTION_EXEC_DISABLE_REUSED_MEMORY);
+    } else {
+      GELOGE(PARAM_INVALID, "option %s=%s is invalid", OPTION_EXEC_DISABLE_REUSED_MEMORY, iter->second.c_str());
+      return FAILED;
+    }
+  } else {
+    if (dump_op_flag) {
+      GELOGW("Will dump incorrect op data with default reuse memory");
+    }
+  }
+
+  return SUCCESS;
+}
+}  // namespace
+
 static std::mutex mutex_;  // BuildGraph and RunGraph use
 
 InnerSession::InnerSession(uint64_t session_id, const std::map<string, string> &options)
@@ -39,13 +67,36 @@ Status InnerSession::Initialize() {
     GELOGW("[InnerSession:%lu] session already initialize.", session_id_);
     return SUCCESS;
   }
+
+  // If the global options and the session options are duplicated, the session options is preferred.
+  auto all_options = options_;
+  all_options.insert(GetMutableGlobalOptions().begin(), GetMutableGlobalOptions().end());
+
+  Status ret = CheckReuseMemoryOption(all_options);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[InnerSession:%lu] check reuse memory option failed.", session_id_);
+    return ret;
+  }
+
   UpdateThreadContext(std::map<std::string, std::string>{});
 
   GE_CHK_RT_RET(rtSetDevice(GetContext().DeviceId()));
 
-  Status ret = graph_manager_.Initialize(options_);
+  PropertiesManager::Instance().GetDumpProperties(session_id_).InitByOptions();
+
+  ret = graph_manager_.Initialize(options_);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] initialize failed.", session_id_);
+    PropertiesManager::Instance().RemoveDumpProperties(session_id_);
+    return ret;
+  }
+
+  ret = VarManager::Instance(session_id_)->SetMemoryMallocSize(all_options);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "failed to set malloc size");
+    (void)graph_manager_.Finalize();
+    PropertiesManager::Instance().RemoveDumpProperties(session_id_);
+    GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
     return ret;
   }
 
@@ -55,6 +106,7 @@ Status InnerSession::Initialize() {
   ret = VarManager::Instance(session_id_)->Init(version, session_id_, DEFAULT_DEVICE_ID, DEFAULT_JOB_ID);
   if (ret != SUCCESS) {
     GELOGE(ret, "failed to init session instance");
+    PropertiesManager::Instance().RemoveDumpProperties(session_id_);
   }
   init_flag_ = true;
   return SUCCESS;
@@ -78,6 +130,9 @@ Status InnerSession::Finalize() {
   // release var memory
   GELOGI("VarManager free var memory.");
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
+
+  PropertiesManager::Instance().RemoveDumpProperties(session_id_);
+
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
 
   return ret;
@@ -223,6 +278,7 @@ void InnerSession::UpdateThreadContext(const std::map<std::string, std::string> 
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GetThreadLocalContext().SetSessionOption(options_);
   GetThreadLocalContext().SetGraphOption(options);
+  GetContext().SetSessionId(session_id_);
 }
 
 void InnerSession::UpdateThreadContext(uint32_t graph_id) {

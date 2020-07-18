@@ -38,7 +38,7 @@ const char *const kFinalize = "Finalize";
 
 namespace ge {
 OpsKernelManager::OpsKernelManager()
-    : plugin_manager_(), init_flag_(false), enable_fe_flag_(false), enable_aicpu_flag_(false) {}
+    : plugin_manager_(), op_tiling_manager_(), init_flag_(false), enable_fe_flag_(false), enable_aicpu_flag_(false) {}
 
 OpsKernelManager::~OpsKernelManager() {
   graph_optimizers_.clear();
@@ -75,6 +75,8 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
 
   GetExternalEnginePath(extern_engine_path);
   GELOGI("OPTION_EXEC_EXTERN_PLUGIN_PATH=%s.", extern_engine_path.c_str());
+
+  op_tiling_manager_.LoadSo();
 
   ret = plugin_manager_.LoadSo(extern_engine_path, func_check_list);
   if (ret == SUCCESS) {

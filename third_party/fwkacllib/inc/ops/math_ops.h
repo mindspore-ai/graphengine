@@ -29,9 +29,9 @@ namespace ge {
 * x: A Tensor of type float16 or float32.
 
 *@par Attributes:
-*@li power: Optional. Defaults to 1.0.
-*@li scale: Optional. Defaults to 1.0.
-*@li shift: Optional. Defaults to 0.0.
+*@li power: Optional. Must be one of the following types: float32. Defaults to 1.0.
+*@li scale: Optional. Must be one of the following types: float32. Defaults to 1.0.
+*@li shift: Optional. Must be one of the following types: float32. Defaults to 0.0.
 
 *@par Outputs:
 * y: A Tensor. Has the same type and shape as "x".

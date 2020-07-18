@@ -21,9 +21,9 @@
 
 namespace ge {
 Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
-  GELOGI("MemcpyAddrAsyncTaskInfo Init Start.");
+  GELOGI("MemcpyAddrAsyncTaskInfo Init Start");
   if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    GELOGE(PARAM_INVALID, "davinci_model is null");
     return PARAM_INVALID;
   }
 
@@ -32,44 +32,26 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
     return ret;
   }
 
-  auto memcpy_async_def = task_def.memcpy_async();
-  uint32_t op_index = memcpy_async_def.op_index();
-  OpDescPtr op_desc = davinci_model->GetOpByIndex(op_index);
+  const auto &memcpy_async = task_def.memcpy_async();
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(memcpy_async.op_index());
   if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Init MemcpyAddrAsyncTaskInfo error, index is out of range!");
+    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
     return INTERNAL_ERROR;
   }
 
-  uint64_t logic_dst = memcpy_async_def.dst();
-  uint64_t logic_src = memcpy_async_def.src();
-
-  dst_max_ = memcpy_async_def.dst_max();
-
-  uint64_t update_base_addr = 0;
-  ret = GetUpdateBaseAddr(davinci_model, logic_src, update_base_addr);
+  ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.src(), src_);
   if (ret != SUCCESS) {
     return ret;
   }
-  src_ = reinterpret_cast<uint8_t *>(update_base_addr + logic_src);
-  if (src_ == nullptr) {
-    GELOGE(PARAM_INVALID, "src_ is null!");
-    return PARAM_INVALID;
-  }
 
-  uint64_t mem_base = reinterpret_cast<uint64_t>(davinci_model->MemBase());
-  uint64_t logic_mem_base = davinci_model->GetRtBaseAddr();
-  dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_base + (logic_dst - logic_mem_base)));
-  if (dst_ == nullptr) {
-    GELOGE(PARAM_INVALID, "dst_ is null!");
-    return PARAM_INVALID;
+  ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.dst(), dst_);
+  if (ret != SUCCESS) {
+    return ret;
   }
 
   vector<void *> io_addrs;
   io_addrs.emplace_back(src_);
   io_addrs.emplace_back(dst_);
-
-  count_ = memcpy_async_def.count();
-  kind_ = memcpy_async_def.kind();
 
   // malloc args memory
   size_t args_size = sizeof(void *) * io_addrs.size();
@@ -88,20 +70,18 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
     return RT_FAILED;
   }
 
-  // Just dest addr need zero copy.
-  davinci_model->SetZeroCopyAddr(op_desc, {dst_}, io_addrs.data(), args_, args_size, sizeof(void *));
+  count_ = memcpy_async.count();
+  kind_ = memcpy_async.kind();
+  dst_max_ = memcpy_async.dst_max();
+  GELOGI("InitMemcpyAddrAsyncTaskInfo, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu, args:%p, size:%zu",
+         memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_, args_, args_size);
 
-  GELOGI("InitMemcpyAddrAsyncTaskInfo, logic_src:%p, logic_dst:%p, src:%p, dst:%p, src_args:%p, dst_args:%p",
-         reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(logic_src)),
-         reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(logic_dst)), src_, dst_, args_,
-         reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_) + args_size));
-
+  davinci_model->SetZeroCopyAddr(op_desc, io_addrs, io_addrs.data(), args_, args_size, 0);
   return SUCCESS;
 }
 
 Status MemcpyAddrAsyncTaskInfo::Distribute() {
-  GELOGI("MemcpyAddrAsyncTaskInfo Distribute Start.");
-  GELOGI("Distribute MemcpyAddrAsync, dst_max:%lu, count:%lu, kind:%u.", dst_max_, count_, kind_);
+  GELOGI("MemcpyAddrAsyncTaskInfo Distribute Start, dst_max:%lu, count:%lu, kind:%u", dst_max_, count_, kind_);
 
   rtError_t rt_ret = rtMemcpyAsync(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_) + sizeof(void *)),
                                    dst_max_, args_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
@@ -110,40 +90,6 @@ Status MemcpyAddrAsyncTaskInfo::Distribute() {
     return RT_FAILED;
   }
 
-  return SUCCESS;
-}
-
-Status MemcpyAddrAsyncTaskInfo::GetUpdateBaseAddr(DavinciModel *davinci_model, uint64_t update_addr,
-                                                  uint64_t &base_addr) {
-  GE_CHECK_NOTNULL(davinci_model);
-  uint64_t data_base_addr =
-    static_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->MemBase())) - davinci_model->GetRtBaseAddr();
-  uint64_t weight_base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->WeightsMemBase())) -
-                              davinci_model->GetRtWeightAddr();
-  uint64_t var_base_addr =
-    static_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model->VarMemBase())) - davinci_model->GetRtVarAddr();
-
-  uint64_t data_base_addr_start = davinci_model->GetRtBaseAddr();
-  uint64_t data_base_addr_end = davinci_model->GetRtBaseAddr() + davinci_model->TotalMemSize();
-  uint64_t wight_base_addr_start = davinci_model->GetRtWeightAddr();
-  uint64_t wight_base_addr_end = davinci_model->GetRtWeightAddr() + davinci_model->TotalWeightsMemSize();
-  uint64_t varible_base_addr_start = davinci_model->GetRtVarAddr();
-  uint64_t varible_base_addr_end = davinci_model->GetRtVarAddr() + davinci_model->TotalVarMemSize();
-
-  if ((data_base_addr_start <= update_addr) && (update_addr <= data_base_addr_end)) {
-    base_addr = data_base_addr;
-    GELOGI("The update_addr is data address.");
-  } else if ((wight_base_addr_start <= update_addr) && (update_addr <= wight_base_addr_end)) {
-    base_addr = weight_base_addr;
-    GELOGI("The update_addr is weight address.");
-  } else if ((varible_base_addr_start <= update_addr) && (update_addr <= varible_base_addr_end)) {
-    base_addr = var_base_addr;
-    GELOGI("The update_addr is variable address.");
-  } else if (update_addr != 0) {
-    base_addr = 0;
-    GELOGE(PARAM_INVALID, "The update_addr is abnormal.");
-    return PARAM_INVALID;
-  }
   return SUCCESS;
 }
 

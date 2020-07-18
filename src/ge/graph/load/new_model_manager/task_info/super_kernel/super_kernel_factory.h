@@ -29,7 +29,6 @@ class SuperKernelFactory {
   void *func_ptr_ = nullptr;
   void *handle_ = nullptr;
   std::string sk_stub_name_ = "_Z21super_kernel_templatePmm";
-  const char *use_physical_address_ = getenv("GE_USE_PHYSICAL_ADDRESS");
   bool is_init_ = false;
   SuperKernelFactory(){};
   ~SuperKernelFactory() {
@@ -48,7 +47,7 @@ class SuperKernelFactory {
   Status Init();
   Status Uninitialize();
   Status FuseKernels(const std::vector<void *> &stub_func_list, const std::vector<void *> &args_addr_list,
-                     uint32_t block_dim, SuperKernel *&h);
+                     uint32_t block_dim, std::unique_ptr<skt::SuperKernel> &h);
 };
 }  // namespace skt
 }  // namespace ge

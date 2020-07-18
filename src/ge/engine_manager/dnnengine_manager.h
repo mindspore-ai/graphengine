@@ -63,6 +63,8 @@ class DNNEngineManager {
   // If can't find appropriate engine name, return "", report error
   string GetDNNEngineName(const OpDescPtr &op_desc);
   const map<string, SchedulerConf> &GetSchedulers() const;
+  const map<string, uint64_t> &GetCheckSupportCost() const;
+  void InitPerformanceStaistic();
 
  private:
   DNNEngineManager();
@@ -78,6 +80,7 @@ class DNNEngineManager {
   std::map<std::string, DNNEnginePtr> engines_map_;
   std::map<std::string, ge::DNNEngineAttribute> engines_attrs_map_;
   std::map<string, SchedulerConf> schedulers_;
+  std::map<string, uint64_t> checksupport_cost_;
   bool init_flag_;
 };
 }  // namespace ge

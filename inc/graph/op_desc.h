@@ -105,6 +105,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   GeTensorDescPtr MutableInputDesc(uint32_t index) const;
 
+  GeTensorDescPtr MutableInputDesc(const string &name) const;
+
   Vistor<GeTensorDesc> GetAllInputsDesc() const;
 
   Vistor<GeTensorDescPtr> GetAllInputsDescPtr() const;
@@ -126,6 +128,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   GeTensorDesc GetOutputDesc(const string &name) const;
 
   GeTensorDescPtr MutableOutputDesc(uint32_t index) const;
+
+  GeTensorDescPtr MutableOutputDesc(const string &name) const;
 
   uint32_t GetAllOutputsDescSize() const;
 

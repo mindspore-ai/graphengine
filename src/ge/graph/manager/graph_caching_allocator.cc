@@ -34,9 +34,6 @@ const size_t bin_ranges[kNumBins] = {kRoundBlockSize * kKByteSize,
                                      26 * kGByteSize};
 
 static bool BlockComparator(const Block *left, const Block *right) {
-  if (left->device_id != right->device_id) {
-    return left->device_id < right->device_id;
-  }
   if (left->size != right->size) {
     return left->size < right->size;
   }
@@ -267,20 +264,20 @@ Status CachingAllocator::TryExtendCache(size_t size, uint32_t device_id) {
       return ge::FAILED;
     }
   }
-  if (AddToBlockBin(memory_addr, memory_size) != ge::SUCCESS) {
+  if (AddToBlockBin(memory_addr, memory_size, device_id) != ge::SUCCESS) {
     (void)memory_allocator_->FreeMemory(memory_addr);
     return ge::FAILED;
   }
   return ge::SUCCESS;
 }
 
-Status CachingAllocator::AddToBlockBin(uint8_t *ptr, size_t size) {
+Status CachingAllocator::AddToBlockBin(uint8_t *ptr, size_t size, uint32_t device_id) {
   BlockBin *bin = GetBlockBin(size);
   if (bin == nullptr) {
     GELOGE(ge::FAILED, "Get block bin failed size = %zu", size);
     return ge::FAILED;
   }
-  Block *block = new (std::nothrow) Block(0, size, bin, nullptr);
+  Block *block = new (std::nothrow) Block(device_id, size, bin, nullptr);
   if (block == nullptr) {
     GELOGE(ge::FAILED, "Alloc block failed size = %zu", size);
     return ge::FAILED;
@@ -339,5 +336,4 @@ void CachingAllocator::FreeBlockBins() {
     }
   }
 }
-
 }  // namespace ge

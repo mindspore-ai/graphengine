@@ -59,8 +59,7 @@ class GraphPrepare {
   Status Init(const ge::Graph &graph, uint64_t session_id = 0);
   Status Preprocess(const std::vector<GeTensor> &user_input);
   Status CheckGraph();
-  Status CheckRefInputNode(const NodePtr &node, const std::string &input_name,
-                           const std::unordered_set<NodePtr> &ref_nodes);
+  Status CheckRefInputNode(const NodePtr &node, const std::string &input_name, const std::set<NodePtr> &ref_nodes);
   Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
@@ -69,6 +68,7 @@ class GraphPrepare {
   Status CheckConstOp();
   Status VerifyConstOp(const NodePtr &node);
   Status CheckUserInput(const std::vector<GeTensor> &user_input);
+  Status UpdateDataNetOutputByStorageFormat();
   Status OptimizeForPreprocess();
   Status PrepareOptimize();
   Status InferShapeForPreprocess();
@@ -88,6 +88,8 @@ class GraphPrepare {
   Status UpdateInputOutputByOptions();
   bool IsBroadCastOpData(const ge::NodePtr &var_node);
 
+  bool IsTansDataOpData(const ge::NodePtr &var_node);
+
   void AdjustBroadCastOpData(const ge::NodePtr &var_node);
 
   bool IsAssignOpData(const ge::NodePtr &var_node);
@@ -104,6 +106,7 @@ class GraphPrepare {
 
   ge::ComputeGraphPtr compute_graph_;
   GraphManagerOptions options_;
+  uint64_t session_id_ = 0;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PREPROCESS_GRAPH_PREPROCESS_H_

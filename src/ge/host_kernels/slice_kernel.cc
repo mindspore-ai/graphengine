@@ -21,8 +21,8 @@
 #include "common/types.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
-#include "host_kernels/kernel_utils.h"
 #include "graph/utils/type_utils.h"
+#include "host_kernels/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
 namespace ge {

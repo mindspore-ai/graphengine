@@ -59,17 +59,15 @@ class StreamAllocator {
   Status SplitStreams(std::vector<std::set<int64_t>> &split_streams);
   bool NeedSpiltNewStream(int64_t stream_node_num, int64_t max_node_num_one_stream, const OpDescPtr &op_desc) const;
 
-  Status UpdateActiveStreams(const std::vector<std::set<int64_t>> &splited_streams);
+  Status UpdateActiveStreams(const std::vector<std::set<int64_t>> &split_streams);
   void UpdateLabelStreams(const std::vector<std::set<int64_t>> &split_streams);
-  Status InsertActiveNodesAfterSwitch(NodePtr &switch_node);
+  Status UpdateActiveStreamsForSwitchNode(NodePtr &switch_node);
   Status InsertActiveNodesAfterSwitch(NodePtr &switch_nodes, std::vector<NodePtr> &switch_active_nodes);
+  Status UpdateActiveStreamsForActiveNode(const std::vector<std::set<int64_t>> &split_streams, NodePtr &node);
   Status UpdateActiveStreamsForSubgraphs() const;
+  bool IsActivated(int64_t stream_id) const;
   Status SetActiveStreamsForLoop();
   Status CheckStreamActived() const;
-
-  Status AddActiveEntryStream();
-  Status CollectDeactiveStream(const OpDescPtr &op_desc, std::set<uint32_t> &deactive_streams) const;
-  Status InsertActiveEntryStream(const std::vector<uint32_t> &active_streams, int64_t stream_id);
 
   Status RefreshContinuousEvents();
 

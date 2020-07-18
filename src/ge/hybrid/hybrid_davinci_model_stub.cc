@@ -26,6 +26,8 @@ std::unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModel
 
 Status HybridDavinciModel::Init() { return UNSUPPORTED; }
 
+Status HybridDavinciModel::Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) { return UNSUPPORTED; }
+
 Status HybridDavinciModel::ModelRunStart() { return UNSUPPORTED; }
 
 Status HybridDavinciModel::ModelRunStop() { return UNSUPPORTED; }

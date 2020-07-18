@@ -46,8 +46,8 @@ class VarMemAssignUtil {
 
   static Status DealTransNode(const ge::NodePtr &final_trans_node);
   static Status DealExportTransNode(const ge::NodePtr &node, const ge::NodePtr &final_trans_node);
-  static Status AssignData2VarRef(const ge::NodePtr &variable_ref, const std::string &src_var_name,
-                                  uint64_t session_id);
+  static Status AssignData2VarRef(const ge::NodePtr &variable_ref, const std::string &src_var_name, uint64_t session_id,
+                                  uint32_t out_index);
 
   static Status SetOutTransNodeToAssign(const ge::NodePtr &node, const ge::NodePtr &final_trans_node, size_t index);
 };

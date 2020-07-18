@@ -149,5 +149,4 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrHolder {
   AnyMap extAttrs_;
 };
 }  // namespace ge
-
 #endif  // INC_GRAPH_DETAIL_ATTRIBUTES_HOLDER_H_

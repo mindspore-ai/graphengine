@@ -24,6 +24,7 @@
 
 #include "common/debug/log.h"
 #include "common/ge/ge_util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
 #include "init/gelib.h"
@@ -161,6 +162,10 @@ bool DNNEngineManager::IsEngineRegistered(const std::string &name) {
   return false;
 }
 
+void DNNEngineManager::InitPerformanceStaistic() { checksupport_cost_.clear(); }
+
+const map<string, uint64_t> &DNNEngineManager::GetCheckSupportCost() const { return checksupport_cost_; }
+
 std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
   GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(GE_CLI_GE_NOT_INITIALIZED, "DNNEngineManager: op_desc is nullptr");
                   return "");
@@ -194,15 +199,20 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
     if (kernel_info_store != kernel_map.end()) {
       std::string unsupported_reason;
       // It will be replaced by engine' checksupport
+      uint64_t start_time = GetCurrentTimestap();
       if (kernel_info_store->second->CheckSupported(op_desc, unsupported_reason)) {
+        checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
         op_desc->SetOpEngineName(it.engine);
         op_desc->SetOpKernelLibName(kernel_name);
         GELOGD("DNNEngineManager:Set OpKernelLibName %s and engine name %s into op_desc %s", kernel_name.c_str(),
                it.engine.c_str(), op_desc->GetName().c_str());
         return it.engine;
       } else {
+        checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
         bool is_custom_op = false;
         if ((ge::AttrUtils::GetBool(op_desc, kCustomOpFlag, is_custom_op)) && is_custom_op) {
+          ErrorManager::GetInstance().ATCReportErrMessage("E13001", {"kernelname", "optype", "opname"},
+                                                          {kernel_name, op_desc->GetType(), op_desc->GetName()});
           GELOGE(FAILED,
                  "The custom operator registered by the user does not support the logic function delivered by this "
                  "network. Check support failed, kernel_name is %s, op type is %s, op name is %s",
@@ -221,9 +231,13 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
     }
   }
   for (const auto &it : unsupported_reasons) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E13002", {"optype", "opskernel", "reason"},
+                                                    {op_desc->GetType(), it.first, it.second});
     GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "GetDNNEngineName:Op type %s of ops kernel %s is unsupported, reason:%s",
            op_desc->GetType().c_str(), it.first.c_str(), it.second.c_str());
   }
+  ErrorManager::GetInstance().ATCReportErrMessage("E13003", {"opname", "optype"},
+                                                  {op_desc->GetName(), op_desc->GetType()});
   GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "Can't find any supported ops kernel and engine of %s, type is %s",
          op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return "";
@@ -384,7 +398,13 @@ Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle h
     return FAILED;
   }
 
-  ifs >> *json_file;
+  try {
+    ifs >> *json_file;
+  } catch (const json::exception &e) {
+    GELOGE(FAILED, "Read json file failed");
+    ifs.close();
+    return FAILED;
+  }
   ifs.close();
   GELOGI("Read json file success");
   return SUCCESS;

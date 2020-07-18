@@ -18,6 +18,7 @@
 #define GE_HYBRID_MODEL_NODE_ITEM_H_
 
 #include <vector>
+#include "external/ge/ge_api_error_codes.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
 #include "framework/common/types.h"
@@ -33,9 +34,15 @@ struct NodeItem {
   explicit NodeItem(NodePtr node);
   ~NodeItem() = default;
 
+  Status Init();
+
   const std::string &NodeName() const { return node_name; }
 
   const std::string &NodeType() const { return node_type; }
+
+  bool IsControlOp() const;
+
+  void SetToDynamic();
 
   std::string DebugString() const;
 
@@ -52,17 +59,21 @@ struct NodeItem {
   UnknowShapeOpType shape_inference_type = DEPEND_IN_SHAPE;
   std::string node_name;
   std::string node_type;
-  std::vector<ge::NodePtr> dependent_node_list;
+  std::vector<ge::NodePtr> dependents_for_shape_inference;
+  std::vector<ge::NodePtr> dependents_for_execution;
   std::set<int> to_const_output_id_list;
 
-  // src_output_id, dst_anchor_id, dst_node
   vector<NodeItem *> inputs;
+  // src_output_id, dst_anchor_id, dst_node
   vector<vector<pair<uint32_t, NodeItem *>>> outputs;
 
   std::shared_ptr<NodeTask> kernel_task;
   const NodeExecutor *node_executor = nullptr;
-  std::map<int, ge::GeTensorDescPtr> const_input_shapes;
   std::map<int, ge::NodePtr> ref_outputs;
+  std::map<int, int> reuse_inputs;
+
+  std::vector<bool> is_input_shape_static;
+  int num_static_input_shapes = 0;
 };
 }  // namespace hybrid
 }  // namespace ge

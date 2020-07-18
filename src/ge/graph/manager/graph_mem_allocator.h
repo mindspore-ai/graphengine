@@ -190,6 +190,6 @@ class MemManager {
   std::map<rtMemType_t, CachingAllocator *> caching_allocator_map_;
   std::recursive_mutex allocator_mutex_;
 };
-};  // namespace ge
+}  // namespace ge
 
 #endif  // GE_GRAPH_MANAGER_GRAPH_MEM_ALLOCATOR_H_

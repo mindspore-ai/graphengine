@@ -67,6 +67,7 @@ class GraphBuilder {
                                  GeModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
   Status BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);
+  Status MarkGraph(ComputeGraphPtr &graph);
   int build_mode_;
 
   std::map<std::string, int> stream_max_parallel_num_;

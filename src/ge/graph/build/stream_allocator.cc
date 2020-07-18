@@ -146,12 +146,6 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
     return status;
   }
 
-  status = AddActiveEntryStream();
-  if (status != SUCCESS) {
-    GELOGE(status, "AddActiveEntryStream failed!");
-    return status;
-  }
-
   status = RefreshContinuousEvents();
   if (status != SUCCESS) {
     GELOGE(status, "RefreshContinuousEvents failed!");
@@ -167,7 +161,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
   DumpEvents();
   GE_DUMP(whole_graph_, "AfterRefreshRealStream");
 
-  for (const NodePtr &node : whole_graph_->GetAllNodes()) {
+  for (const NodePtr &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     auto stream_id = node->GetOpDesc()->GetStreamId();
     if (stream_id == kInvalidStream) {
@@ -199,7 +193,7 @@ Status StreamAllocator::AssignSingleStream() {
   }
 
   int64_t task_count = 0;
-  for (const NodePtr &node : whole_graph_->GetAllNodes()) {
+  for (const NodePtr &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     string op_type = node->GetType();
     if (IsHcclOp(op_type)) {
       task_count += kTaskNumPerHcclNode;
@@ -236,7 +230,7 @@ Status StreamAllocator::AssignSingleStream() {
 }
 
 Status StreamAllocator::SetActiveStreamsByLabel() {
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     string stream_label;
@@ -248,7 +242,7 @@ Status StreamAllocator::SetActiveStreamsByLabel() {
     }
   }
 
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     vector<string> activated_label_list;
     if (!AttrUtils::GetListStr(node->GetOpDesc(), ATTR_NAME_ACTIVE_LABEL_LIST, activated_label_list) ||
@@ -326,7 +320,7 @@ Status StreamAllocator::SetActiveStreamsForSubgraphs() {
 
 // Insert the send/recv event id to the graph
 Status StreamAllocator::InsertSyncEvents() {
-  for (const auto &cur_node : whole_graph_->GetAllNodes()) {
+  for (const auto &cur_node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     // Take the adjacent points, then judge whether need to insert the event
     for (const OutDataAnchorPtr &anchor : cur_node->GetAllOutDataAnchors()) {
       for (const InDataAnchorPtr &peer_in_anchor : anchor->GetPeerInDataAnchors()) {
@@ -377,6 +371,11 @@ Status StreamAllocator::InsertOneEventInTwoNodes(const NodePtr &cur_node, const 
   // No need to insert events between nodes in the same stream.
   int64_t next_stream_id = next_node->GetOpDesc()->GetStreamId();
   if (cur_stream_id == next_stream_id) {
+    return SUCCESS;
+  }
+
+  if ((cur_node->GetType() == ENTER) || (cur_node->GetType() == REFENTER)) {
+    GELOGD("No need to insert event after enter_node %s.", cur_node->GetName().c_str());
     return SUCCESS;
   }
 
@@ -446,7 +445,7 @@ Status StreamAllocator::InsertEventsForSubgraph() {
 Status StreamAllocator::OptimizeSyncEvents() {
   map<int64_t, vector<NodePtr>> stream_nodes;
 
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     int64_t stream_id = node->GetOpDesc()->GetStreamId();
     stream_nodes[stream_id].emplace_back(node);
@@ -671,7 +670,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
   GE_CHK_STATUS_RET(GetMaxStreamAndTask(false, max_stream_count, max_task_count),
                     "Get max stream and task count failed.");
 
-  for (const auto &cur_node : whole_graph_->GetAllNodes()) {
+  for (const auto &cur_node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(cur_node);
     auto op_desc = cur_node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
@@ -774,42 +773,23 @@ bool StreamAllocator::NeedSpiltNewStream(int64_t stream_node_num, int64_t max_no
 Status StreamAllocator::UpdateActiveStreams(const vector<set<int64_t>> &split_streams) {
   UpdateLabelStreams(split_streams);
 
-  for (auto &node : whole_graph_->GetAllNodes()) {
+  for (auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     if ((node->GetType() == STREAMSWITCH) || (node->GetType() == STREAMSWITCHN)) {
-      if (InsertActiveNodesAfterSwitch(node) != SUCCESS) {
-        GELOGE(FAILED, "Insert active nodes after switch node failed.");
+      if (UpdateActiveStreamsForSwitchNode(node) != SUCCESS) {
+        GELOGE(FAILED, "Update active streams for switch node: %s failed.", node->GetName().c_str());
         return FAILED;
       }
     } else {
-      vector<uint32_t> active_streams;
-      GE_CHECK_NOTNULL(node->GetOpDesc());
-      if (AttrUtils::GetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
-        vector<uint32_t> new_active_streams = active_streams;
-        for (const uint32_t logical_stream : active_streams) {
-          if (static_cast<size_t>(logical_stream) >= split_streams.size()) {
-            GELOGE(FAILED, "logical stream is out of range.");
-            return FAILED;
-          }
-          const set<int64_t> &new_split_streams = split_streams[logical_stream];
-          if (!new_split_streams.empty()) {
-            for (int64_t split_stream : new_split_streams) {
-              new_active_streams.emplace_back(static_cast<uint32_t>(split_stream));
-              GELOGI("Add stream %ld to active_stream_list of node %s of graph %s", split_stream,
-                     node->GetName().c_str(), node->GetOwnerComputeGraph()->GetName().c_str());
-            }
-          }
-        }
-        if (!AttrUtils::SetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, new_active_streams)) {
-          GELOGE(FAILED, "Set active streams for node %s failed.", node->GetName().c_str());
-          return FAILED;
-        }
+      if (UpdateActiveStreamsForActiveNode(split_streams, node) != SUCCESS) {
+        GELOGE(FAILED, "Update active streams for active node: %s failed.", node->GetName().c_str());
+        return FAILED;
       }
     }
   }
 
   Status status = UpdateActiveStreamsForSubgraphs();
   if (status != SUCCESS) {
-    GELOGE(status, "SetActiveStreamsForSubgraph failed!");
+    GELOGE(status, "Update active streams for subgraphs failed!");
     return status;
   }
 
@@ -840,7 +820,7 @@ void StreamAllocator::UpdateLabelStreams(const vector<set<int64_t>> &split_strea
   }
 }
 
-Status StreamAllocator::InsertActiveNodesAfterSwitch(NodePtr &switch_node) {
+Status StreamAllocator::UpdateActiveStreamsForSwitchNode(NodePtr &switch_node) {
   vector<NodePtr> active_nodes;
   if (InsertActiveNodesAfterSwitch(switch_node, active_nodes) != SUCCESS) {
     GELOGE(FAILED, "Insert active nodes after node %s failed.", switch_node->GetName().c_str());
@@ -906,6 +886,38 @@ Status StreamAllocator::InsertActiveNodesAfterSwitch(NodePtr &switch_node, vecto
   return SUCCESS;
 }
 
+Status StreamAllocator::UpdateActiveStreamsForActiveNode(const vector<set<int64_t>> &split_streams, NodePtr &node) {
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  vector<uint32_t> active_streams;
+  if (AttrUtils::GetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
+    vector<uint32_t> new_active_streams = active_streams;
+    for (uint32_t logical_stream : active_streams) {
+      if (static_cast<size_t>(logical_stream) >= split_streams.size()) {
+        GELOGE(FAILED, "logical stream is out of range.");
+        return FAILED;
+      }
+      const set<int64_t> &new_split_streams = split_streams[logical_stream];
+      for (int64_t split_stream : new_split_streams) {
+        for (const auto &node_stream : node_split_stream_map_) {
+          if (split_stream == node_stream.second) {
+            if (node_stream.first->GetOwnerComputeGraph() == node->GetOwnerComputeGraph()) {
+              new_active_streams.emplace_back(static_cast<uint32_t>(split_stream));
+              GELOGI("Add stream %ld to active_stream_list of node %s of graph %s", split_stream,
+                     node->GetName().c_str(), node->GetOwnerComputeGraph()->GetName().c_str());
+            }
+            break;
+          }
+        }
+      }
+    }
+    if (!AttrUtils::SetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, new_active_streams)) {
+      GELOGE(FAILED, "Set active streams for node %s failed.", node->GetName().c_str());
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
 Status StreamAllocator::UpdateActiveStreamsForSubgraphs() const {
   // Update active stream list for active nodes
   for (auto &node_stream_pair : node_split_stream_map_) {
@@ -926,20 +938,39 @@ Status StreamAllocator::UpdateActiveStreamsForSubgraphs() const {
     }
     const auto &active_node = it->second;
     GE_CHECK_NOTNULL(active_node);
-    auto op_desc = active_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
+    auto active_op = active_node->GetOpDesc();
+    GE_CHECK_NOTNULL(active_op);
     vector<uint32_t> active_streams;
-    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams);
+    (void)AttrUtils::GetListInt(active_op, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams);
     set<uint32_t> new_active_streams(active_streams.begin(), active_streams.end());
-    new_active_streams.emplace(static_cast<uint32_t>(node_stream_pair.second));
+    // specific_activated_streams_ has already contained new split activated stream
+    int64_t new_split_stream = node_stream_pair.second;
+    if (IsActivated(new_split_stream)) {
+      continue;
+    }
+    new_active_streams.emplace(static_cast<uint32_t>(new_split_stream));
     active_streams.assign(new_active_streams.begin(), new_active_streams.end());
-    if (!AttrUtils::SetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
+    if (!AttrUtils::SetListInt(active_op, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
       GELOGE(FAILED, "Set active streams for node %s failed.", active_node->GetName().c_str());
       return FAILED;
     }
   }
 
   return SUCCESS;
+}
+
+bool StreamAllocator::IsActivated(int64_t stream_id) const {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
+    auto op_desc = node->GetOpDesc();
+    vector<uint32_t> active_streams;
+    if (op_desc == nullptr || !AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
+      continue;
+    }
+    if (std::find(active_streams.begin(), active_streams.end(), stream_id) != active_streams.end()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 Status StreamAllocator::SetActiveStreamsForLoop() {
@@ -950,7 +981,7 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
     }
   }
   // Set the stream that needs to be activated
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     bool is_loop_active = false;
     if (AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, is_loop_active) && is_loop_active) {
@@ -973,7 +1004,7 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
 }
 
 Status StreamAllocator::CheckStreamActived() const {
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     vector<uint32_t> active_streams;
     if (AttrUtils::GetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
@@ -985,108 +1016,6 @@ Status StreamAllocator::CheckStreamActived() const {
       }
     }
   }
-
-  return SUCCESS;
-}
-
-// Add active entry stream for special env.
-Status StreamAllocator::AddActiveEntryStream() {
-  auto gelib = GELib::GetInstance();
-  bool head_stream = (gelib == nullptr) ? false : gelib->HeadStream();
-  GELOGI("Configured head stream: %u", head_stream);
-  if (!head_stream) {
-    return SUCCESS;
-  }
-
-  // Collect streams active by StreamSwitch/StreamActive node.
-  std::set<uint32_t> deactive_stream;
-  for (ge::NodePtr &node : whole_graph_->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node->GetOpDesc());
-    Status ret = CollectDeactiveStream(node->GetOpDesc(), deactive_stream);
-    if (ret != SUCCESS) {
-      return ret;
-    }
-  }
-
-  // Collect default active stream, Add to active entry stream.
-  std::vector<uint32_t> active_stream_list;
-  for (int64_t stream_id = 0; stream_id < stream_num_; ++stream_id) {
-    if (deactive_stream.count(stream_id) == 0) {
-      active_stream_list.push_back(stream_id);
-    }
-  }
-
-  int64_t new_stream_id = stream_num_;
-  stream_num_++;
-  return InsertActiveEntryStream(active_stream_list, new_stream_id);
-}
-
-// Collect deactive stream from flowctrl op.
-Status StreamAllocator::CollectDeactiveStream(const OpDescPtr &op_desc, std::set<uint32_t> &deactive_streams) const {
-  GE_CHECK_NOTNULL(op_desc);
-  std::string op_type = op_desc->GetType();
-  if (op_type == STREAMSWITCH) {
-    std::vector<uint32_t> active_stream_list;
-    // If GetListInt fail, active_stream_list is empty.
-    (void)ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list);
-    if (active_stream_list.size() != kMaxSwitchStreamNum) {
-      GELOGE(INTERNAL_ERROR, "Stream num of switch true branch must be %u.", kMaxSwitchStreamNum);
-      return INTERNAL_ERROR;
-    }
-
-    deactive_streams.insert(active_stream_list[0]);
-    GELOGI("Flowctrl_op node:%s, flowctrl stream id:%u.", op_desc->GetName().c_str(), active_stream_list[0]);
-  } else if (op_type == STREAMACTIVE) {
-    if (op_desc->HasAttr(ATTR_NAME_SWITCH_BRANCH_NODE_LABEL)) {
-      std::vector<uint32_t> active_stream_list;
-      if (!AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list)) {
-        GELOGE(INTERNAL_ERROR, "StreamActiveOp get attr ACTIVE_STREAM fail.");
-        return INTERNAL_ERROR;
-      }
-
-      for (uint32_t deactive_stream : active_stream_list) {
-        deactive_streams.insert(deactive_stream);
-        GELOGI("Flowctrl_op node:%s, flowctrl stream id:%u.", op_desc->GetName().c_str(), deactive_stream);
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
-// Insert StreamActive Op for Entry Stream.
-Status StreamAllocator::InsertActiveEntryStream(const std::vector<uint32_t> &active_streams, int64_t stream_id) {
-  string node_name = whole_graph_->GetName() + "_ActiveEntryStream_" + string(STREAMACTIVE);
-  OpDescPtr op_desc = ge::MakeShared<OpDesc>(node_name, STREAMACTIVE);
-  if (op_desc == nullptr) {
-    GELOGE(FAILED, "Failed to new opdesc.");
-    return FAILED;
-  }
-  GELOGI("Create StreamActive op:%s.", op_desc->GetName().c_str());
-
-  GE_CHK_BOOL_EXEC(
-    AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
-    GELOGE(FAILED, "SetListStr failed.");
-    return FAILED);
-
-  NodePtr active_node = whole_graph_->AddNodeFront(op_desc);
-  GE_IF_BOOL_EXEC(active_node == nullptr,
-                  GELOGE(FAILED, "Create StreamActive op: %s failed.", op_desc->GetName().c_str());
-                  return INTERNAL_ERROR);
-  GE_CHECK_NOTNULL(active_node->GetOpDesc());
-  // Add one stream for ActiveEntryStream Task.
-  active_node->GetOpDesc()->SetStreamId(stream_id);
-
-  GE_CHK_BOOL_EXEC(AttrUtils::SetBool(op_desc, "is_aicpu_stream", true), GELOGE(FAILED, "SetBool failed.");
-                   return FAILED);
-  GE_CHK_BOOL_EXEC(AttrUtils::SetListInt(active_node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams),
-                   GELOGE(FAILED, "SetListInt failed.");
-                   return FAILED);
-
-  std::vector<std::string> group_names;
-  GE_CHK_BOOL_EXEC(AttrUtils::SetListStr(active_node->GetOpDesc(), ATTR_NAME_SWITCH_BRANCH_NODE_LABEL, group_names),
-                   GELOGE(FAILED, "SetLisStr failed.");
-                   return FAILED);
 
   return SUCCESS;
 }
@@ -1136,7 +1065,7 @@ Status StreamAllocator::RefreshContinuousEvents() {
 
 // Insert the real send/recv node in the graph
 Status StreamAllocator::InsertSyncEventNodes() {
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     // Add the node corresponding to the recv event
     vector<uint32_t> recv_event_id_list;
     GetRecvEventIdList(node, recv_event_id_list);
@@ -1223,7 +1152,7 @@ Status StreamAllocator::ReorderEventNodes() const {
 
 void StreamAllocator::DumpEvents() {
   map<int64_t, vector<NodePtr>> after_refresh_stream_nodes;
-  for (const auto &node : whole_graph_->GetAllNodes()) {
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
     int64_t stream_id = node->GetOpDesc()->GetStreamId();
     after_refresh_stream_nodes[stream_id].emplace_back(node);

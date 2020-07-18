@@ -72,9 +72,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void Pb2Json::Message2Json(cons
 void Pb2Json::OneField2Json(const ProtobufMsg &message, const ProtobufFieldDescriptor *field,
                             const ProtobufReflection *reflection, const set<string> &black_fields, Json &json,
                             bool enum2str) {
-  if (field == nullptr || reflection == nullptr) {
-    return;
-  }
   switch (field->type()) {
     case ProtobufFieldDescriptor::TYPE_MESSAGE: {
       const ProtobufMsg &tmp_message = reflection->GetMessage(message, field);
@@ -118,8 +115,12 @@ void Pb2Json::OneField2Json(const ProtobufMsg &message, const ProtobufFieldDescr
 
     case ProtobufFieldDescriptor::TYPE_FLOAT:
       char str[kSignificantDigits];
-      sprintf_s(str, kSignificantDigits, "%g", reflection->GetFloat(message, field));
-      json[field->name()] = str;
+      if (sprintf_s(str, kSignificantDigits, "%g", reflection->GetFloat(message, field)) != -1) {
+        json[field->name()] = str;
+      } else {
+        json[field->name()] = reflection->GetFloat(message, field);
+      }
+
       break;
 
     case ProtobufFieldDescriptor::TYPE_STRING:

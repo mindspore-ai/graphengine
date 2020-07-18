@@ -23,6 +23,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "graph/op_desc.h"
 
 using domi::ImplyType;
@@ -78,7 +79,7 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
     return result;
   }
   GELOGI("[CompileNodesPass]: Optimize success.");
-  GE_TIMESTAMP_END(CompileNodesPass, "GraphManager::CompileNodesPass");
+  GE_TIMESTAMP_EVENT_END(CompileNodesPass, "OptimizeStage2::ControlAttrOptimize::CompileNodesPass");
   return GRAPH_SUCCESS;
 }
 
@@ -101,7 +102,6 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
     }
   }
   OpsKernelInfoStorePtr kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
-
   if (kernel_info == nullptr) {
     GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node->GetName().c_str());
     return ge::GE_GRAPH_PARAM_NULLPTR;

@@ -19,12 +19,16 @@
 #include "framework/common/debug/log.h"
 #include "graph/utils/tensor_utils.h"
 #include "hybrid/executor/hybrid_execution_context.h"
+#include "hybrid/executor/subgraph_executor.h"
 
 namespace ge {
 namespace hybrid {
-TaskContext::TaskContext(GraphExecutionContext *execution_context) : execution_context_(execution_context) {}
+TaskContext::TaskContext(GraphExecutionContext *execution_context, const NodeItem *node_item,
+                         SubgraphContext *subgraph_context)
+    : node_item_(node_item), execution_context_(execution_context), subgraph_context_(subgraph_context) {}
+
 TaskContext::~TaskContext() {
-  GELOGD("To execute ~TaskContext(). node = %s", node_item_->NodeName().c_str());
+  GELOGD("[%s] TaskContext destroyed.", node_item_->NodeName().c_str());
   for (auto ws_addr : workspaces_) {
     execution_context_->allocator->Deallocate(ws_addr);
   }
@@ -38,19 +42,28 @@ TaskContext::~TaskContext() {
   }
 }
 
-std::unique_ptr<TaskContext> TaskContext::Create(const NodeItem &node_item, GraphExecutionContext *graph_context) {
-  GELOGI("To create task context for node %s, input start = %d, num_inputs = %d, output start = %d, num_outputs = %d",
+std::unique_ptr<TaskContext> TaskContext::Create(const NodeItem &node_item, GraphExecutionContext *execution_context,
+                                                 SubgraphContext *subgraph_context) {
+  GELOGI("[%s] To create task context, input start = %d, num_inputs = %d, output start = %d, num_outputs = %d.",
          node_item.NodeName().c_str(), node_item.input_start, node_item.num_inputs, node_item.output_start,
          node_item.num_outputs);
-  auto task_context = std::unique_ptr<TaskContext>(new (std::nothrow) TaskContext(graph_context));
+  if (node_item.input_start < 0 || node_item.output_start < 0) {
+    GELOGE(INTERNAL_ERROR, "NodeItem not property initialized. input_start = %d, output_start = %d",
+           node_item.input_start, node_item.output_start);
+    return nullptr;
+  }
+
+  auto task_context =
+    std::unique_ptr<TaskContext>(new (std::nothrow) TaskContext(execution_context, &node_item, subgraph_context));
   if (task_context == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Failed to create instance of TaskContext. node = %s", node_item.NodeName().c_str());
+    GELOGE(MEMALLOC_FAILED, "[%s] Failed to create instance of TaskContext.", node_item.NodeName().c_str());
     return nullptr;
   }
 
   task_context->node_item_ = &node_item;
-  task_context->inputs_start_ = graph_context->all_inputs.data() + node_item.input_start;
-  task_context->outputs_start_ = graph_context->all_outputs.data() + node_item.output_start;
+  task_context->inputs_start_ = subgraph_context->all_inputs_.data() + node_item.input_start;
+  task_context->outputs_start_ = subgraph_context->all_outputs_.data() + node_item.output_start;
+  task_context->iteration_ = execution_context->iteration;
   return task_context;
 }
 
@@ -59,7 +72,7 @@ int TaskContext::NumInputs() const { return node_item_->num_inputs; }
 int TaskContext::NumOutputs() const { return node_item_->num_outputs; }
 
 TensorValue *TaskContext::MutableInput(int index) {
-  if (index < 0 || index > node_item_->num_inputs) {
+  if (index < 0 || index >= node_item_->num_inputs) {
     GELOGE(PARAM_INVALID, "Index out of range. index = %d, num_inputs = %d", index, node_item_->num_inputs);
     return nullptr;
   }
@@ -68,7 +81,7 @@ TensorValue *TaskContext::MutableInput(int index) {
 }
 
 const TensorValue *TaskContext::GetOutput(int index) const {
-  if (index < 0 || index > node_item_->num_outputs) {
+  if (index < 0 || index >= node_item_->num_outputs) {
     GELOGE(PARAM_INVALID, "Index out of range. index = %d, num_outputs = %d", index, node_item_->num_outputs);
     return nullptr;
   }
@@ -77,7 +90,7 @@ const TensorValue *TaskContext::GetOutput(int index) const {
 }
 
 TensorValue *TaskContext::MutableOutput(int index) {
-  if (index < 0 || index > node_item_->num_outputs) {
+  if (index < 0 || index >= node_item_->num_outputs) {
     GELOGE(PARAM_INVALID, "Index out of range. index = %d, num_outputs = %d", index, node_item_->num_outputs);
     return nullptr;
   }
@@ -97,7 +110,7 @@ void *TaskContext::MutableWorkspace(int index) {
 }
 
 const TensorValue *TaskContext::GetInput(int index) const {
-  if (index < 0 || index > node_item_->num_inputs) {
+  if (index < 0 || index >= node_item_->num_inputs) {
     GELOGE(PARAM_INVALID, "Index out of range. index = %d, num_inputs = %d", index, node_item_->num_inputs);
     return nullptr;
   }
@@ -120,7 +133,14 @@ Status TaskContext::AllocateWorkspaces() {
 }
 
 Status TaskContext::RegisterCallback(const std::function<void()> &callback_fun) const {
-  return execution_context_->callback_manager->RegisterCallback(callback_fun);
+  auto ret = execution_context_->callback_manager->RegisterCallback(callback_fun);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[%s] Failed to register callback", GetNodeName());
+    execution_context_->callback_manager->Destroy();
+    return ret;
+  }
+
+  return SUCCESS;
 }
 
 string TaskContext::TensorDesc2String(const GeTensorDesc &desc) {
@@ -137,7 +157,7 @@ string TaskContext::TensorDesc2String(const GeTensorDesc &desc) {
   return ss.str();
 }
 
-Status TaskContext::AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue &tensor) {
+Status TaskContext::AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue &tensor, AllocationAttr *attr) {
   int64_t size = 0;
   if (ge::TensorUtils::GetSize(tensor_desc, size) != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to get tensor size");
@@ -148,13 +168,14 @@ Status TaskContext::AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue 
     GELOGW("size from tensor_desc == 0");
   }
 
-  auto buffer = TensorBuffer::Create(execution_context_->allocator, size);
+  auto buffer = TensorBuffer::Create(execution_context_->allocator, size, attr);
   GE_CHECK_NOTNULL(buffer);
   tensor = TensorValue(shared_ptr<TensorBuffer>(buffer.release()));
   return SUCCESS;
 }
 
-Status TaskContext::AllocateOutput(int index, const GeTensorDesc &tensor_desc, TensorValue **tensor) {
+Status TaskContext::AllocateOutput(int index, const GeTensorDesc &tensor_desc, TensorValue **tensor,
+                                   AllocationAttr *attr) {
   GELOGI("To allocate output for node: %s. index = %d, tensor desc = %s", node_item_->NodeName().c_str(), index,
          TensorDesc2String(tensor_desc).c_str());
 
@@ -178,9 +199,29 @@ Status TaskContext::AllocateOutput(int index, const GeTensorDesc &tensor_desc, T
     GE_CHECK_NOTNULL(ref_tensor);
     outputs_start_[index] = *ref_tensor;
   } else {
-    GE_CHK_STATUS_RET_NOLOG(AllocateTensor(tensor_desc, outputs_start_[index]));
-    GELOGD("Allocating output successfully. node: %s. index = %d, size = %zu", node_item_->NodeName().c_str(), index,
-           outputs_start_[index].GetSize());
+    auto reuse_input = node_item_->reuse_inputs.find(index);
+    if (reuse_input != node_item_->reuse_inputs.end()) {
+      GELOGD("[%s] Output[%d] is referenced to input[%d]", GetNodeName(), index, reuse_input->second);
+      outputs_start_[index] = inputs_start_[reuse_input->second];
+    } else {
+      GE_CHK_STATUS_RET_NOLOG(AllocateTensor(tensor_desc, outputs_start_[index], attr));
+      GELOGD("Allocating output successfully. node: %s. index = %d, size = %zu", node_item_->NodeName().c_str(), index,
+             outputs_start_[index].GetSize());
+    }
+  }
+
+  // Temp modification
+  if (node_item_->node_type == "UnsortedSegmentSum" || node_item_->node_type == "UnsortedSegmentSumD" ||
+      node_item_->node_type == "ScatterNd") {
+    auto &out_tensor = outputs_start_[index];
+    GELOGD("[%s] clear output tensor: %s", GetNodeName(), out_tensor.DebugString().c_str());
+    auto *ctx = GetExecutionContext();
+    string name = "rtMemsetAsync" + node_item_->node_name;
+    RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] Start"); });
+    RECORD_EXECUTION_EVENT(GetExecutionContext(), node_item_->node_name.c_str(), "[rtMemsetAsync] Start");
+    GE_CHK_RT_RET(rtMemsetAsync(out_tensor.MutableData(), out_tensor.GetSize(), 0, out_tensor.GetSize(), GetStream()));
+    RECORD_EXECUTION_EVENT(GetExecutionContext(), node_item_->node_name.c_str(), "[rtMemsetAsync] End");
+    RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] End"); });
   }
 
   if (execution_context_->trace_enabled) {
@@ -194,11 +235,11 @@ Status TaskContext::AllocateOutput(int index, const GeTensorDesc &tensor_desc, T
   return SUCCESS;
 }
 
-Status TaskContext::AllocateOutputs() {
+Status TaskContext::AllocateOutputs(AllocationAttr *attr) {
   for (int i = 0; i < node_item_->num_outputs; ++i) {
     const auto &output_desc = node_item_->op_desc->MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_desc);
-    GE_CHK_STATUS_RET_NOLOG(AllocateOutput(i, *output_desc, nullptr));
+    GE_CHK_STATUS_RET_NOLOG(AllocateOutput(i, *output_desc, nullptr, attr));
   }
 
   return SUCCESS;
@@ -230,7 +271,7 @@ Status TaskContext::SetOutput(int index, const TensorValue &tensor) {
 
 rtStream_t TaskContext::GetStream() { return execution_context_->stream; }
 
-int64_t TaskContext::GetSessionId() { return execution_context_->session_id; }
+int64_t TaskContext::GetSessionId() const { return execution_context_->session_id; }
 
 Status TaskContext::GetStatus() const { return status_; }
 
@@ -238,7 +279,13 @@ void TaskContext::SetStatus(Status status) { status_ = status; }
 
 Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr) {
   GE_CHECK_NOTNULL(buffer);
-  *buffer = execution_context_->allocator->Allocate(size, ori_addr);
+  if (ori_addr == nullptr) {
+    *buffer = execution_context_->allocator->Allocate(size, nullptr);
+  } else {
+    AllocationAttr attr(ori_addr);
+    *buffer = execution_context_->allocator->Allocate(size, &attr);
+  }
+
   if (*buffer == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to allocate workspace of size = %zu", size);
     return MEMALLOC_FAILED;
@@ -261,16 +308,21 @@ Status TaskContext::PropagateOutputs() {
     for (auto &dst_input_index_and_node : output_nodes) {
       auto dst_input_idx = dst_input_index_and_node.first;
       auto dst_node_item = dst_input_index_and_node.second;
+      auto input_offset = dst_node_item->input_start + dst_input_idx;
       GELOGI(
         "Propagate output of node %s, output index = %d, dst node = %s, "
-        "dst_input_index = %d, dst_input_offset = %d, addr = %p",
-        node_item_->NodeName().c_str(), i, dst_node_item->NodeName().c_str(), dst_input_idx,
-        dst_node_item->input_start + dst_input_idx,
-        execution_context_->all_inputs.data() + dst_node_item->input_start + dst_input_idx);
-      execution_context_->all_inputs[dst_node_item->input_start + dst_input_idx] = *tensor;
+        "dst_input_index = %d, dst_input_offset = %d.",
+        node_item_->NodeName().c_str(), i, dst_node_item->NodeName().c_str(), dst_input_idx, input_offset);
+
+      if (subgraph_context_->all_inputs_.size() <= static_cast<size_t>(input_offset)) {
+        GELOGE(INTERNAL_ERROR, "[%s] input index out of range. index = %d, total input num = %zu", GetNodeName(),
+               input_offset, subgraph_context_->all_inputs_.size());
+        return INTERNAL_ERROR;
+      }
+
+      subgraph_context_->all_inputs_[input_offset] = *tensor;
       if (execution_context_->trace_enabled) {
-        execution_context_->all_inputs[dst_node_item->input_start + dst_input_idx].SetName(node_item_->NodeName() +
-                                                                                           "_in_" + std::to_string(i));
+        subgraph_context_->all_inputs_[input_offset].SetName(node_item_->NodeName() + "_in_" + std::to_string(i));
       }
     }
   }
@@ -289,5 +341,37 @@ void TaskContext::ReleaseInput(int index) {
     GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), index);
   }
 }
+
+ConstGeTensorDescPtr TaskContext::GetOutputDesc(int index) {
+  return node_item_->op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+}
+
+ConstGeTensorDescPtr TaskContext::GetInputDesc(int index) {
+  return node_item_->op_desc->MutableInputDesc(static_cast<uint32_t>(index));
+}
+
+GeTensorDescPtr TaskContext::MutableInputDesc(int index) {
+  return node_item_->op_desc->MutableInputDesc(static_cast<uint32_t>(index));
+}
+
+GeTensorDescPtr TaskContext::MutableOutputDesc(int index) {
+  return node_item_->op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+}
+
+bool TaskContext::IsForceInferShape() const { return force_infer_shape_; }
+
+void TaskContext::SetForceInferShape(bool force_infer_shape) { force_infer_shape_ = force_infer_shape; }
+
+void TaskContext::NodeDone() { subgraph_context_->NodeDone(node_item_->node); }
+
+void TaskContext::OnError(Status error) { subgraph_context_->OnError(error); }
+
+bool TaskContext::IsTraceEnabled() const { return execution_context_->trace_enabled; }
+
+TensorValue *TaskContext::GetVariable(const std::string &name) { return execution_context_->model->GetVariable(name); }
+
+uint64_t TaskContext::GetIterationNumber() const { return iteration_; }
+
+bool TaskContext::IsDumpEnabled() const { return execution_context_->dump_enabled; }
 }  // namespace hybrid
 }  // namespace ge

@@ -147,7 +147,8 @@ static const std::map<std::string, Format> kStringToFormatMap = {
   {"FRACTAL_ZN_LSTM", FORMAT_FRACTAL_ZN_LSTM},
   {"FRACTAL_Z_G", FORMAT_FRACTAL_Z_G},
   {"FORMAT_RESERVED", FORMAT_RESERVED},
-  {"ALL", FORMAT_ALL}};
+  {"ALL", FORMAT_ALL},
+  {"NULL", FORMAT_NULL}};
 
 static const std::map<DataType, std::string> kDataTypeToStringMap = {
   {DT_UNDEFINED, "DT_UNDEFINED"},            // Used to indicate a DataType field has not been set.

@@ -16,6 +16,7 @@
 
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MEMCPY_ADDR_ASYNC_TASK_INFO_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MEMCPY_ADDR_ASYNC_TASK_INFO_H_
+
 #include "graph/load/new_model_manager/task_info/task_info.h"
 
 namespace ge {
@@ -32,9 +33,8 @@ class MemcpyAddrAsyncTaskInfo : public TaskInfo {
       if (ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", ret);
       }
+      args_ = nullptr;
     }
-
-    args_ = nullptr;
   }
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
@@ -42,11 +42,9 @@ class MemcpyAddrAsyncTaskInfo : public TaskInfo {
   Status Distribute() override;
 
  private:
-  Status GetUpdateBaseAddr(DavinciModel *davinci_model, uint64_t update_addr, uint64_t &base_addr);
-
-  void *dst_;
+  uint8_t *dst_;
   uint64_t dst_max_;
-  void *src_;
+  uint8_t *src_;
   void *args_;
   uint64_t count_;
   uint32_t kind_;

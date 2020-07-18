@@ -129,7 +129,7 @@ Status SliceDKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Cons
   auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Failed to fold node %s, out of memory", op_desc_ptr->GetName().c_str());
+    GELOGW("Failed to fold node %s, out of memory", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;
   }
 
@@ -143,8 +143,14 @@ Status SliceDKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Cons
 
   void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(x_tensor->GetData().data()));
   int64_t x_data_size = x_tensor->GetTensorDesc().GetShape().GetShapeSize();
-  Status ret = OpUtils::SetOutputSliceData(data, x_data_size, x_data_type, x_dims, begin_list, size_list,
-                                           output_ptr.get(), stride_list);
+
+  Status ret = CheckOutputDims(size_list, op_desc_ptr);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+
+  ret = OpUtils::SetOutputSliceData(data, x_data_size, x_data_type, x_dims, begin_list, size_list, output_ptr.get(),
+                                    stride_list);
   if (ret != SUCCESS) {
     GELOGW("Set output data of SliceD failed.");
     return NOT_CHANGED;
@@ -153,6 +159,17 @@ Status SliceDKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Cons
   v_output.emplace_back(output_ptr);
   GELOGI("SliceD folding kernel success.");
   return SUCCESS;
+}
+
+Status SliceDKernel::CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr) {
+  // check dim not all less than 0
+  for (auto dim : output_dims) {
+    if (dim > 0) {
+      return SUCCESS;
+    }
+  }
+  GELOGW("all output dim <=0, can't be processed. op_name : %s", attr->GetName().c_str());
+  return NOT_CHANGED;
 }
 
 REGISTER_KERNEL(SLICED, SliceDKernel);

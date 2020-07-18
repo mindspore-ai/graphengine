@@ -18,6 +18,7 @@
 #define GE_GE_RUNTIME_TASK_AICPU_TASK_H_
 
 #include <memory>
+#include <string>
 #include "ge_runtime/task/task.h"
 
 namespace ge {
@@ -30,12 +31,17 @@ class AicpuTask : public TaskRepeater<AicpuTaskInfo> {
 
   bool Distribute() override;
 
+  void *Args() override { return input_output_addr_; }
+
+  std::string task_name() const override { return task_info_->op_name(); }
+
  private:
   static void ReleaseRtMem(void **ptr) noexcept;
 
   std::shared_ptr<AicpuTaskInfo> task_info_;
   void *stream_;
   void *args_;
+  void *input_output_addr_;
 };
 }  // namespace model_runner
 }  // namespace ge

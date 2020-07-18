@@ -299,4 +299,36 @@ void GraphOptimize::TranFrameOp(ComputeGraphPtr &compute_graph) {
     }
   }
 }
+
+Status GraphOptimize::IdentifyReference(ComputeGraphPtr &compute_graph) {
+  for (auto &node : compute_graph->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node);
+    auto op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    auto input_name_index = op_desc->GetAllInputName();
+    bool is_ref = false;
+    for (const auto &name_index : input_name_index) {
+      const int out_index = op_desc->GetOutputIndexByName(name_index.first);
+      if (out_index != -1) {
+        auto input_desc = op_desc->GetInputDesc(name_index.second);
+        input_desc.SetRefPortByIndex({name_index.second});
+        op_desc->UpdateInputDesc(name_index.second, input_desc);
+        GELOGI("SetRefPort: set op[%s] input desc[%u-%s] ref.", op_desc->GetName().c_str(), name_index.second,
+               name_index.first.c_str());
+        auto output_desc = op_desc->GetOutputDesc(static_cast<uint32_t>(out_index));
+        output_desc.SetRefPortByIndex({name_index.second});
+        op_desc->UpdateOutputDesc(static_cast<uint32_t>(out_index), output_desc);
+        GELOGI("SetRefPort: set op[%s] output desc[%u-%s] ref.", op_desc->GetName().c_str(), out_index,
+               name_index.first.c_str());
+        is_ref = true;
+      }
+    }
+    if (is_ref) {
+      AttrUtils::SetBool(op_desc, ATTR_NAME_REFERENCE, is_ref);
+      GELOGI("param [node] %s is reference node, set attribute %s to be true.", node->GetName().c_str(),
+             ATTR_NAME_REFERENCE.c_str());
+    }
+  }
+  return SUCCESS;
+}
 }  // namespace ge

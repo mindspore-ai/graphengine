@@ -37,6 +37,7 @@
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "omm/csa_interact.h"
 #include "runtime/kernel.h"
 
@@ -46,6 +47,9 @@ namespace ge {
 namespace {
 const int kDecimal = 10;
 const int kSocVersionLen = 50;
+const uint32_t kAicoreOverflow = (0x1 << 0);
+const uint32_t kAtomicOverflow = (0x1 << 1);
+const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
 }  // namespace
 static std::shared_ptr<GELib> instancePtr_ = nullptr;
 
@@ -75,7 +79,7 @@ Status GELib::Initialize(const map<string, string> &options) {
     instancePtr_ = nullptr;
     return ret;
   }
-  GE_TIMESTAMP_END(Init, "GELib::Initialize");
+  GE_TIMESTAMP_EVENT_END(Init, "GELib::Initialize");
   return SUCCESS;
 }
 
@@ -126,16 +130,6 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initSmStatus;
   }
 
-  GELOGI("memoryMallocSize initial.");
-  GE_TIMESTAMP_START(SetMemoryMallocSize);
-  Status initMemStatus = VarManager::Instance(0)->SetMemoryMallocSize(options);
-  GE_TIMESTAMP_END(SetMemoryMallocSize, "InnerInitialize::SetMemoryMallocSize");
-  if (initMemStatus != SUCCESS) {
-    GELOGE(initMemStatus, "failed to set malloc size");
-    RollbackInit();
-    return initMemStatus;
-  }
-
   GELOGI("Start to initialize HostCpuEngine");
   GE_TIMESTAMP_START(HostCpuEngineInitialize);
   Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
@@ -157,37 +151,6 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
   if (iter != options.end()) {
     if (GraphRunMode(std::strtol(iter->second.c_str(), nullptr, kDecimal)) >= TRAIN) {
       is_train_mode_ = true;
-    }
-  }
-
-  iter = options.find(HEAD_STREAM);
-  head_stream_ = (iter != options.end()) ? std::strtol(iter->second.c_str(), nullptr, kDecimal) : false;
-
-  iter = options.find(OPTION_EXEC_ENABLE_DUMP);
-  if (iter != options.end()) {
-    int32_t enable_dump_flag = 1;
-    auto path_iter = options.find(OPTION_EXEC_DUMP_PATH);
-    if (iter->second == std::to_string(enable_dump_flag) && path_iter != options.end()) {
-      std::string dump_path = path_iter->second;
-      if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
-        dump_path = dump_path + "/" + CurrentTimeInStr() + "/";
-      }
-
-      PropertiesManager::Instance().AddDumpPropertyValue(DUMP_ALL_MODEL, {});
-      GELOGD("Get dump path %s successfully", dump_path.c_str());
-      PropertiesManager::Instance().SetDumpOutputPath(dump_path);
-    }
-    auto step_iter = options.find(OPTION_EXEC_DUMP_STEP);
-    if (step_iter != options.end()) {
-      std::string dump_step = step_iter->second;
-      GELOGD("Get dump step %s successfully", dump_step.c_str());
-      PropertiesManager::Instance().SetDumpStep(dump_step);
-    }
-    auto mode_iter = options.find(OPTION_EXEC_DUMP_MODE);
-    if (mode_iter != options.end()) {
-      std::string dump_mode = mode_iter->second;
-      GELOGD("Get dump mode %s successfully", dump_mode.c_str());
-      PropertiesManager::Instance().SetDumpMode(dump_mode);
     }
   }
 

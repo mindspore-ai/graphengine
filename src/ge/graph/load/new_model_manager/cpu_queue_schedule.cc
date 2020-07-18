@@ -339,7 +339,7 @@ Status CpuTaskActiveEntry::Distribute() {
     return RT_FAILED;
   }
 
-  GELOGI("Cpu kernel launch wait end task success.");
+  GELOGI("Cpu kernel launch active entry task success.");
   return SUCCESS;
 }
 

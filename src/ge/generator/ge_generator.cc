@@ -207,6 +207,13 @@ class GeGenerator::Impl {
   GraphManager graph_manager_;
   SaveParam save_param_;
   bool is_offline_ = true;
+
+ private:
+  static std::string Trim(const std::string &str);
+  bool ParseVersion(const std::string &line, std::string &version);
+  bool GetVersionFromPath(const std::string &file_path, std::string &version);
+  bool SetAtcVersionInfo(AttrHolder &obj);
+  bool SetOppVersionInfo(AttrHolder &obj);
 };
 
 Status GeGenerator::Initialize(const map<string, string> &options) {
@@ -288,6 +295,124 @@ Status GeGenerator::GenerateInfershapeGraph(const Graph &graph) {
   return SUCCESS;
 }
 
+// Remove the space and tab before and after the string
+std::string GeGenerator::Impl::Trim(const std::string &str) {
+  if (str.empty()) {
+    return str;
+  }
+
+  std::string::size_type start = str.find_first_not_of(" \t\r\n");
+  if (start == std::string::npos) {
+    return str;
+  }
+
+  std::string::size_type end = str.find_last_not_of(" \t\r\n") + 1;
+  return str.substr(start, end);
+}
+
+// Parsing the command line
+bool GeGenerator::Impl::ParseVersion(const std::string &line, std::string &version) {
+  std::string flag = "Version=";
+  std::string temp = Trim(line);
+
+  if (temp.empty()) {
+    GELOGW("line is empty.");
+    return false;
+  }
+
+  std::string::size_type pos = temp.find(flag);
+  if (pos == std::string::npos) {
+    GELOGW("Incorrect line [%s], it must include [%s].", line.c_str(), flag.c_str());
+    return false;
+  }
+
+  if (temp.size() == flag.size()) {
+    GELOGW("version information is empty. %s", line.c_str());
+    return false;
+  }
+
+  version = temp.substr(pos + flag.size());
+  GELOGI("Version=%s", version.c_str());
+
+  return true;
+}
+
+bool GeGenerator::Impl::GetVersionFromPath(const std::string &file_path, std::string &version) {
+  // Normalize the path
+  string resolved_file_path = RealPath(file_path.c_str());
+  if (resolved_file_path.empty()) {
+    GELOGW("Invalid input file path [%s], make sure that the file path is correct.", file_path.c_str());
+    return false;
+  }
+  std::ifstream fs(resolved_file_path, std::ifstream::in);
+  if (!fs.is_open()) {
+    GELOGW("Open %s failed.", file_path.c_str());
+    return false;
+  }
+
+  std::string line;
+  if (getline(fs, line)) {
+    if (!ParseVersion(line, version)) {
+      GELOGW("Parse version failed. content is [%s].", line.c_str());
+      fs.close();
+      return false;
+    }
+  } else {
+    GELOGW("No version information found in the file path:%s", file_path.c_str());
+    fs.close();
+    return false;
+  }
+
+  fs.close();  // close the file
+  return true;
+}
+
+// Set package version information in the model
+bool GeGenerator::Impl::SetAtcVersionInfo(AttrHolder &obj) {
+  std::string path_base = ge::GELib::GetPath();
+  path_base = path_base.substr(0, path_base.rfind('/'));
+  path_base = path_base.substr(0, path_base.rfind('/') + 1);
+
+  std::string version_path = path_base + "version.info";
+  GELOGI("version_path is %s", version_path.c_str());
+  std::string version;
+  if (!GetVersionFromPath(version_path, version)) {
+    GELOGW("Get atc version information failed!");
+    return false;
+  }
+  // set version info
+  if (!ge::AttrUtils::SetStr(obj, ATTR_MODEL_ATC_VERSION, version)) {
+    GELOGW("Ge model set atc version failed!");
+    return false;
+  }
+  GELOGI("Ge model set atc version information success.");
+  return true;
+}
+
+// Set package version information in the model
+bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
+  const char *path_env = std::getenv("ASCEND_OPP_PATH");
+  if (path_env == nullptr) {
+    GELOGW("Get environment variable ASCEND_OPP_PATH failed!");
+    return false;
+  }
+  std::string version_path = path_env;
+  version_path += "/version.info";
+  GELOGI("version_path is %s", version_path.c_str());
+  std::string version;
+  if (!GetVersionFromPath(version_path, version)) {
+    GELOGW("Get opp version information failed!");
+    return false;
+  }
+  // set version info
+  if (!ge::AttrUtils::SetStr(obj, ATTR_MODEL_OPP_VERSION, version)) {
+    GELOGW("Ge model set opp version failed!");
+    return false;
+  }
+  GELOGI("Ge Model set opp version information success.");
+  return true;
+}
+
 Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                                   ModelBufferData &model, bool is_offline) {
   rtContext_t ctx = nullptr;
@@ -315,6 +440,7 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   string model_name = "";
   Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(), model_name);
   if (name_ret != SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
     GELOGE(FAILED, "Get model_name failed. Param --output is invalid");
     return PARAM_INVALID;
   }
@@ -464,6 +590,14 @@ Status GeGenerator::Impl::SaveParams(GeModelPtr &ge_model, const string &type, c
 }
 
 Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &model, ModelBufferData &model_buff) {
+  // set atc version
+  if (!SetAtcVersionInfo(*(model.get()))) {
+    GELOGW("SetPackageVersionInfo of atc failed!");
+  }
+  // set opp version
+  if (!SetOppVersionInfo(*(model.get()))) {
+    GELOGW("SetPackageVersionInfo of ops failed!");
+  }
   ModelHelper model_helper;
   model_helper.SetSaveMode(is_offline_);
   Status ret = model_helper.SaveToOmModel(model, save_param_, file_name_prefix, model_buff);
@@ -526,5 +660,4 @@ Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph, GraphId &g
 
   return SUCCESS;
 }
-
 }  // namespace ge

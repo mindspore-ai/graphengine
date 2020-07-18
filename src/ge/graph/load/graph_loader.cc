@@ -350,7 +350,8 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
     return RT_FAILED;
   }
   // Add small page memory size
-  free = static_cast<int64_t>(free_mem + VarManager::Instance(0)->GetUseMaxMemorySize() - total_mem);
+  free =
+    static_cast<int64_t>(free_mem + VarManager::Instance(GetContext().SessionId())->GetUseMaxMemorySize() - total_mem);
   GELOGI("GetMemoryInfo free[%zu], total[%zu], return free[%ld]", free_mem, total_mem, free);
   return SUCCESS;
 }

@@ -173,5 +173,4 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
 }
 
 RunContext &RunContextUtil::GetRunContext() { return run_context_; }
-
 }  // namespace ge

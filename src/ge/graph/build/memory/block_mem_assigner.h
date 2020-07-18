@@ -34,6 +34,8 @@
 namespace ge {
 const size_t kMaxLifeTime = 0xffffffff;
 
+using DependStreamLife = std::map<int64_t, std::map<int64_t, size_t>>;
+
 enum MemoryType { kOutput, kWorkspace };
 
 struct NodeTypeIndex {
@@ -116,13 +118,17 @@ class MemoryBlock {
 
   bool IsSameLabel(std::string &first_batch_label);
 
-  void AddLifeReuseBlock(MemoryBlock *block);
+  void AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &node_depend_stream_life);
 
   void SetLifeTimeEnd(size_t time);
 
   size_t GetLifeBegin();
 
   size_t GetLifeEnd();
+
+  void AddDependLifeBegin(DependStreamLife &node_depend_stream_life);
+
+  size_t GetDependLifeBegin(int64_t stream_id, DependStreamLife &node_depend_stream_life);
 
   int ref_count_;
   int64_t stream_id_;
@@ -193,47 +199,6 @@ class BlockMemAssigner : public MemAssigner {
   void GetOutAndWorkSpaceMem(std::vector<int64_t> &all_memory_size);
 
   void GetNodeWorkSpaceSize(const ge::NodePtr &node, std::vector<int64_t> &workspace_memory);
-
-  ///
-  /// @ingroup GE
-  /// @brief Traversing the compute_graph_ to find the reuse relationship between streams
-  /// @param [in] reusable_stream_map map to save stream_id and its reusable stream_ids
-  /// @return void
-  /// @author
-  ///
-  void InitReusableStreamMap();
-
-  ///
-  /// @ingroup GE
-  /// @brief Traversing the compute_graph_ to find the first and last nodeptr of a stream.
-  /// @param [in] stream_head_tail_node_map map to save stream_id and its first and last nodeptr.
-  /// @param [in] stream_mem_map map to save stream_id and its memory capacity.
-  /// @return void
-  /// @author
-  ///
-  void FindHeadAndTailNodesForStream(std::map<int64_t, std::pair<NodePtr, NodePtr>> &stream_head_tail_node_map,
-                                     std::unordered_map<int64_t, int64_t> &stream_mem_map);
-
-  ///
-  /// @ingroup GE
-  /// @brief Traversing the compute_graph_ to find the reuse relationship between streams.
-  /// @param [in] stream_head_tail_node_map map to save stream_id and its first and last nodeptr.
-  /// @param [in] stream_dependency_map map to save stream_id and stream_ids depends on it.
-  /// @return void
-  /// @author
-  ///
-  void FindDependentStream(std::map<int64_t, std::pair<NodePtr, NodePtr>> &stream_head_tail_node_map,
-                           std::map<int64_t, std::unordered_set<int64_t>> &stream_dependency_map);
-
-  ///
-  /// @ingroup GE
-  /// @brief Find dependent link between parent_graph and sub_graph
-  /// @param [in] pre_node
-  /// @param [out] out_nodes
-  /// @return void
-  /// @author
-  ///
-  void FindDependentStreamBetweenGraphs(const NodePtr &pre_node, std::vector<NodePtr> &out_nodes);
 
   ///
   /// @ingroup GE
@@ -395,9 +360,9 @@ class BlockMemAssigner : public MemAssigner {
   /// @return void
   /// @author
   ///
-  void ReuseBlocksByLifeTime();
+  void ReuseBlocksByLifeTime(size_t range_size);
 
-  std::vector<MemoryBlock *> reusable_blocks_;
+  std::unordered_map<int64_t, std::vector<MemoryBlock *>> reusable_blocks_;
 
   std::map<std::string, uint64_t> reusable_block_counts_;
 
@@ -411,9 +376,6 @@ class BlockMemAssigner : public MemAssigner {
 
   std::unordered_map<std::string, uint32_t> node_continuous_input_counts_;
 
-  // save stream_id and reusable stream_ids
-  std::unordered_map<int64_t, std::unordered_set<int64_t>> reusable_streams_map_;
-
   // reuse memory
   vector<string> op_no_reuse_mem_vec_;
 
@@ -426,6 +388,8 @@ class BlockMemAssigner : public MemAssigner {
   size_t life_time_;
 
   int64_t atomic_addr_clean_id_ = 0;
+
+  DependStreamLife total_node_depend_stream_life_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MEMORY_BLOCK_MEM_ASSIGNER_H_

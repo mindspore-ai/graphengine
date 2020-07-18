@@ -24,6 +24,7 @@
 
 #include "common/debug/log.h"
 #include "common/ge/plugin_manager.h"
+#include "common/ge/op_tiling_manager.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/optimizer/graph_optimizer.h"
@@ -105,6 +106,7 @@ class OpsKernelManager {
   Status InitGraphOptimizerPriority();
 
   PluginManager plugin_manager_;
+  OpTilingManager op_tiling_manager_;
   // opsKernelInfoStore
   map<string, OpsKernelInfoStorePtr> ops_kernel_store_{};
   // graph_optimizer

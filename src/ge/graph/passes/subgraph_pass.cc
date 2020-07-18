@@ -15,7 +15,6 @@
  */
 
 #include "graph/passes/subgraph_pass.h"
-#include <stack>
 #include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -67,13 +66,13 @@ Status SubgraphPass::Run(ComputeGraphPtr graph) {
 
 /**
  * @ingroup ge
- * @brief Check Subgraph NetOutput node
+ * @brief Check Subgraph Input node
  * @param [in] graph: ComputeGraph.
- * @param [in] node: NetOutput node in Subgraph.
+ * @param [in] node: Data node in Subgraph.
  * @return: 0 for SUCCESS / others for FAILED
  */
 Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodePtr &node) {
-  GELOGD("Hadle input_node %s for graph %s.", node->GetName().c_str(), graph->GetName().c_str());
+  GELOGD("Handle input_node %s for graph %s.", node->GetName().c_str(), graph->GetName().c_str());
   // Data has and only has one output
   bool input_continues_required_flag = false;
   OutDataAnchorPtr out_data_anchor = node->GetOutDataAnchor(0);
@@ -86,7 +85,7 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
   // Data->InputContinuesRequiredOp in subgraph need memcpy.
   if (input_continues_required_flag) {
     GELOGD("Data %s output_node required continues input.", node->GetName().c_str());
-    std::string name = node->GetName() + "_" + MEMCPYASYNC + "_" + std::to_string(memcpy_num_++);
+    std::string name = node->GetName() + "_output_0_Memcpy";
     if (InsertMemcpyNode(graph, out_data_anchor, in_anchors, name) != SUCCESS) {
       GELOGE(FAILED, "Insert memcpy after %s failed.", node->GetName().c_str());
       return FAILED;
@@ -123,7 +122,7 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
     GE_CHECK_NOTNULL(peer_out_anchor);
     GELOGD("Constant input %s links to While %s.", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
            parent_node->GetName().c_str());
-    std::string name = in_node->GetName() + "_" + MEMCPYASYNC + "_" + std::to_string(memcpy_num_++);
+    std::string name = parent_node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
     if (InsertMemcpyNode(parent_graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
       GELOGE(FAILED, "Insert memcpy between %s and %s failed.", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
              parent_node->GetName().c_str());
@@ -136,7 +135,7 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
 
 /**
  * @ingroup ge
- * @brief Check Subgraph NetOutput node
+ * @brief Check Subgraph Output node
  * @param [in] graph: ComputeGraph.
  * @param [in] node: NetOutput node in Subgraph.
  * @return: 0 for SUCCESS / others for FAILED
@@ -153,14 +152,14 @@ Status SubgraphPass::SubgraphOutputNode(const ComputeGraphPtr &graph, const Node
     //   1. Const->NetOutput in subgraph
     //   2. AtomicOp->NetOutput in subgraph
     //   3. OutputContinuesRequiredOp->NetOutput in subgraph
-    //   4. Data->NetOutput in subgraph but not while body
+    //   4. Data->NetOutput in subgraph but parent_node is not while
     std::string op_type;
     bool insert_flag = NodeUtils::GetConstOpType(in_node, op_type) ||
                        IsAtomicRequired(in_node, peer_out_anchor->GetIdx()) || IsOutputContinuesRequired(in_node) ||
-                       ((in_node->GetType() == DATA) && !IsWhileBodyOutput(in_data_anchor));
+                       ((in_node->GetType() == DATA) && (kWhileOpTypes.count(graph->GetParentNode()->GetType()) == 0));
     if (insert_flag) {
-      GELOGI("Insert MemcpyAsync node between %s and %s.", node->GetName().c_str(), in_node->GetName().c_str());
-      std::string name = in_node->GetName() + "_" + MEMCPYASYNC + "_" + std::to_string(memcpy_num_++);
+      GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
+      std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
       if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
         GELOGE(FAILED, "Insert memcpy between %s and %s failed.", in_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
@@ -186,8 +185,8 @@ Status SubgraphPass::WhileInputNodes(const ComputeGraphPtr &graph, const NodePtr
     GE_CHECK_NOTNULL(in_node);
     // Input->While and Input link to other nodes need insert memcpy
     if (peer_out_anchor->GetPeerInDataAnchors().size() > 1) {
-      GELOGI("Input %s of While %s links to other nodes.", in_node->GetName().c_str(), node->GetName().c_str());
-      std::string name = in_node->GetName() + "_" + MEMCPYASYNC + "_" + std::to_string(memcpy_num_++);
+      GELOGD("Input %s of While %s links to other nodes.", in_node->GetName().c_str(), node->GetName().c_str());
+      std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
       if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
         GELOGE(FAILED, "Insert memcpy between %s and %s failed.", in_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
@@ -206,230 +205,77 @@ Status SubgraphPass::WhileInputNodes(const ComputeGraphPtr &graph, const NodePtr
  * @return: 0 for SUCCESS / others for FAILED
  */
 Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodePtr &node) {
-  ComputeGraphPtr while_body = GetWhileBodySubgraph(graph, node);
+  // index of body_subgraph is 1
+  ComputeGraphPtr while_body = NodeUtils::GetSubgraph(*node, 1);
   if (while_body == nullptr) {
     GELOGE(FAILED, "while_body of %s is NULL.", node->GetName().c_str());
     return FAILED;
   }
 
-  NodePtr output_node = while_body->FindFirstNodeMatchType(NETOUTPUT);
+  std::vector<NodePtr> data_nodes;
+  std::set<uint32_t> bypass_index;
+  NodePtr output_node = nullptr;
+  for (const auto &n : while_body->GetDirectNode()) {
+    const std::string &type = n->GetType();
+    if (type == DATA) {
+      if (CheckInsertInputMemcpy(n, bypass_index)) {
+        data_nodes.emplace_back(n);
+      }
+    } else if (type == NETOUTPUT) {
+      if (output_node == nullptr) {
+        output_node = n;
+      } else {
+        GELOGE(FAILED, "while_body %s exists multi NetOutput nodes.", while_body->GetName().c_str());
+        return FAILED;
+      }
+    }
+  }
   if (output_node == nullptr) {
-    GELOGE(FAILED, "net_output_node not exist in graph %s.", while_body->GetName().c_str());
+    GELOGE(FAILED, "while_body %s has no output.", while_body->GetName().c_str());
     return FAILED;
   }
-  OpDescPtr output_desc = output_node->GetOpDesc();
-  GE_CHECK_NOTNULL(output_desc);
-  std::unordered_map<NodePtr, std::vector<uint32_t>> node_to_attr_index;
-  for (const InDataAnchorPtr &in_data_anchor : output_node->GetAllInDataAnchors()) {
-    uint32_t index = 0;
-    if (!AttrUtils::GetInt(output_desc->GetInputDesc(in_data_anchor->GetIdx()), ATTR_NAME_PARENT_NODE_INDEX, index)) {
-      GELOGE(FAILED, "Get attr PARENT_NODE_INDEX failed, node %s:%u.", output_node->GetName().c_str(),
-             in_data_anchor->GetIdx());
-      return FAILED;
-    }
-    MarkOutputIndex(in_data_anchor->GetPeerOutAnchor(), index, node_to_attr_index);
+
+  if ((InsertInputMemcpy(while_body, data_nodes) != SUCCESS) ||
+      (InsertOutputMemcpy(while_body, output_node, bypass_index) != SUCCESS)) {
+    GELOGE(FAILED, "Insert memcpy node in while_body %s failed.", while_body->GetName().c_str());
+    return FAILED;
   }
 
-  std::set<NodePtr> data_nodes;
-  std::set<uint32_t> netoutput_input_indexes;
-  GetExchangeInOut(node_to_attr_index, data_nodes, netoutput_input_indexes);
-  return InsertMemcpyInWhileBody(while_body, data_nodes, output_node, netoutput_input_indexes);
+  return SUCCESS;
 }
 
 /**
  * @ingroup ge
- * @brief Get body subgraph of While op
- * @param [in] graph: ComputeGraph.
- * @param [in] node: While node.
- * @return: body subgraph
- */
-ComputeGraphPtr SubgraphPass::GetWhileBodySubgraph(const ComputeGraphPtr &graph, const NodePtr &node) {
-  OpDescPtr op_desc = node->GetOpDesc();
-  if (op_desc == nullptr) {
-    GELOGE(FAILED, "op_desc is NULL.");
-    return nullptr;
-  }
-
-  const std::vector<std::string> &subgraph_instance_names = op_desc->GetSubgraphInstanceNames();
-  std::string body_instance_name;
-  for (const std::string &instance_name : subgraph_instance_names) {
-    std::string subgraph_name;
-    if (op_desc->GetSubgraphNameByInstanceName(instance_name, subgraph_name) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Get subgraph_name by instance_name %s failed, node:%s.", instance_name.c_str(),
-             node->GetName().c_str());
-      return nullptr;
-    }
-    if (subgraph_name == ATTR_NAME_WHILE_BODY) {
-      body_instance_name = instance_name;
-      break;
-    }
-  }
-
-  ComputeGraphPtr root_graph = GraphUtils::FindRootGraph(graph);
-  if (root_graph == nullptr) {
-    GELOGE(FAILED, "root_graph is NULL.");
-    return nullptr;
-  }
-
-  return root_graph->GetSubgraph(body_instance_name);
-}
-
-/**
- * @ingroup ge
- * @brief Mark output parent_node_index
- * @param [in] peer_out_anchor: peer_out_anchor of NetOutput
- * @param [in] index: parent_node_index of NetOutput
- * @param [out] node_to_attr_index: key for node in subgraph, value for parent_node_index
- * @return: void
- */
-void SubgraphPass::MarkOutputIndex(const OutDataAnchorPtr &peer_out_anchor, uint32_t index,
-                                   std::unordered_map<NodePtr, std::vector<uint32_t>> &node_to_attr_index) {
-  if (peer_out_anchor == nullptr) {
-    return;
-  }
-  std::set<NodePtr> visited_nodes;
-  std::stack<NodePtr> nodes;
-  nodes.emplace(peer_out_anchor->GetOwnerNode());
-  while (!nodes.empty()) {
-    NodePtr cur_node = nodes.top();
-    nodes.pop();
-    if (visited_nodes.count(cur_node) > 0) {
-      continue;
-    }
-    node_to_attr_index[cur_node].emplace_back(index);
-    for (const NodePtr &in_node : cur_node->GetInDataNodes()) {
-      nodes.emplace(in_node);
-    }
-    visited_nodes.emplace(cur_node);
-  }
-}
-
-/**
- * @ingroup ge
- * @brief Get data_nodes / input_indexes of netoutput if need insert memcpy
- * @param [in] node_to_attr_index: key for node in subgraph, value for parent_node_index
- * @param [out] data_nodes: data_nodes need insert memcpy
- * @param [out] netoutput_input_indexes: input_indexes of netoutput need insert memcpy
- * @return: void
- */
-void SubgraphPass::GetExchangeInOut(const std::unordered_map<NodePtr, std::vector<uint32_t>> &node_to_attr_index,
-                                    std::set<NodePtr> &data_nodes, std::set<uint32_t> &netoutput_input_indexes) {
-  for (const auto &item : node_to_attr_index) {
-    NodePtr node = item.first;
-    uint32_t input_index = 0;
-    if ((node->GetType() != DATA) || !AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, input_index)) {
-      continue;
-    }
-    if (item.second.empty() || ((item.second.size() == 1) && (item.second[0] == input_index))) {
-      continue;
-    }
-    data_nodes.emplace(node);
-
-    // Data node has and only has one output
-    OutDataAnchorPtr out_data_anchor = node->GetOutDataAnchor(0);
-    if (out_data_anchor == nullptr) {
-      continue;
-    }
-    for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-      NodePtr out_node = peer_in_anchor->GetOwnerNode();
-      if ((out_node->GetType() != NETOUTPUT) || (out_node->GetOpDesc() == nullptr)) {
-        continue;
-      }
-      uint32_t output_index = 0;
-      GeTensorDesc input_tensor = out_node->GetOpDesc()->GetInputDesc(peer_in_anchor->GetIdx());
-      if (!AttrUtils::GetInt(input_tensor, ATTR_NAME_PARENT_NODE_INDEX, output_index)) {
-        continue;
-      }
-      if (input_index != output_index) {
-        netoutput_input_indexes.emplace(peer_in_anchor->GetIdx());
-      }
-    }
-  }
-}
-
-/**
- * @ingroup ge
- * @brief Insert memcpy node in while_body
+ * @brief Insert input memcpy node in while_body
  * @param [in] graph: while_body
- * @param [in] data_nodes: data_nodes need insert memcpy
- * @param [in] output_node: NetOutput in while_body
- * @param [in] netoutput_input_indexes: input_indexes of netoutput need insert memcpy
+ * @param [in] data_nodes: data_nodes
  * @return: 0 for SUCCESS / others for FAILED
  */
-Status SubgraphPass::InsertMemcpyInWhileBody(const ComputeGraphPtr &graph, const std::set<NodePtr> &data_nodes,
-                                             const NodePtr &output_node,
-                                             const std::set<uint32_t> &netoutput_input_indexes) {
-  for (const NodePtr &data_node : data_nodes) {
+Status SubgraphPass::InsertInputMemcpy(const ComputeGraphPtr &graph, const std::vector<NodePtr> &data_nodes) {
+  if (data_nodes.empty()) {
+    GELOGD("No need to insert input memcpy node in while_body %s.", graph->GetName().c_str());
+    return SUCCESS;
+  }
+
+  std::string in_name = graph->GetName() + "_input_Memcpy";
+  OpDescBuilder in_builder(in_name, MEMCPYASYNC);
+  for (size_t i = 0; i < data_nodes.size(); i++) {
     // Data node has and only has one output
-    OutDataAnchorPtr out_data_anchor = data_node->GetOutDataAnchor(0);
+    in_builder.AddInput("x" + std::to_string(i), data_nodes[i]->GetOpDesc()->GetOutputDesc(0))
+      .AddOutput("y" + std::to_string(i), data_nodes[i]->GetOpDesc()->GetOutputDesc(0));
+  }
+  GELOGD("Insert memcpy after data_nodes of while_body %s.", graph->GetName().c_str());
+  NodePtr in_memcpy = graph->AddNode(in_builder.Build());
+  GE_CHECK_NOTNULL(in_memcpy);
+  for (size_t i = 0; i < data_nodes.size(); i++) {
+    // Data node has and only has one output
+    OutDataAnchorPtr out_data_anchor = data_nodes[i]->GetOutDataAnchor(0);
     std::vector<InDataAnchorPtr> in_anchors;
     for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
       in_anchors.emplace_back(peer_in_anchor);
     }
-    std::string name = data_node->GetName() + "_" + MEMCPYASYNC + "_" + std::to_string(memcpy_num_++);
-    GELOGD("Insert memcpy after while_body %s input_node %s.", graph->GetName().c_str(), data_node->GetName().c_str());
-    if (InsertMemcpyNode(graph, out_data_anchor, in_anchors, name) != SUCCESS) {
-      GELOGE(FAILED, "Insert MemcpyAsync node %s after %s failed.", name.c_str(), data_node->GetName().c_str());
-      return FAILED;
-    }
-  }
-
-  for (uint32_t index : netoutput_input_indexes) {
-    InDataAnchorPtr in_data_anchor = output_node->GetInDataAnchor(index);
-    GE_CHECK_NOTNULL(in_data_anchor);
-    OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(peer_out_anchor);
-    std::string name =
-      peer_out_anchor->GetOwnerNode()->GetName() + "_" + MEMCPYASYNC + "_" + std::to_string(memcpy_num_++);
-    GELOGD("Insert memcpy after while_body %s output %u.", graph->GetName().c_str(), index);
-    if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
-      GELOGE(FAILED, "Insert MemcpyAsync node %s after %s failed.", name.c_str(),
-             peer_out_anchor->GetOwnerNode()->GetName().c_str());
-      return FAILED;
-    }
-  }
-
-  std::set<NodePtr> memcpy_nodes;
-  std::set<NodePtr> loop_body_nodes;
-  for (const NodePtr &data_node : data_nodes) {
-    // data_node has only one output node
-    NodePtr memcpy_node = data_node->GetOutDataNodes().at(0);
-    GE_CHECK_NOTNULL(memcpy_node);
-    memcpy_nodes.emplace(memcpy_node);
-    for (const NodePtr &out_node : memcpy_node->GetOutDataNodes()) {
-      loop_body_nodes.insert(out_node);
-    }
-  }
-  return InsertNoOp(graph, memcpy_nodes, loop_body_nodes);
-}
-
-/**
- * @ingroup ge
- * @brief Insert NoOp node between memcpy_nodes and loop_body_nodes
- * @param [in] graph: while_body
- * @param [in] memcpy_nodes
- * @param [in] loop_body_nodes
- * @return: 0 for SUCCESS / others for FAILED
- */
-Status SubgraphPass::InsertNoOp(const ComputeGraphPtr &graph, const std::set<NodePtr> &memcpy_nodes,
-                                const std::set<NodePtr> &loop_body_nodes) {
-  if (memcpy_nodes.empty() || loop_body_nodes.empty()) {
-    return SUCCESS;
-  }
-
-  OpDescBuilder noop_desc_builder("NoOp_for_Control", NOOP);
-  OpDescPtr noop_desc = noop_desc_builder.Build();
-  NodePtr noop_node = graph->AddNode(noop_desc);
-  GE_CHECK_NOTNULL(noop_node);
-  for (const NodePtr &memcpy_node : memcpy_nodes) {
-    if (GraphUtils::AddEdge(memcpy_node->GetOutControlAnchor(), noop_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Add ctrl edge %s->%s failed.", memcpy_node->GetName().c_str(), noop_node->GetName().c_str());
-      return FAILED;
-    }
-  }
-  for (const NodePtr &loop_body_node : loop_body_nodes) {
-    if (GraphUtils::AddEdge(noop_node->GetOutControlAnchor(), loop_body_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Add ctrl edge %s->%s failed.", noop_node->GetName().c_str(), loop_body_node->GetName().c_str());
+    if (InsertNodeBetween(out_data_anchor, in_anchors, in_memcpy, i, i) != SUCCESS) {
+      GELOGE(FAILED, "Insert MemcpyAsync %s in while_body %s failed.", in_name.c_str(), graph->GetName().c_str());
       return FAILED;
     }
   }
@@ -439,28 +285,82 @@ Status SubgraphPass::InsertNoOp(const ComputeGraphPtr &graph, const std::set<Nod
 
 /**
  * @ingroup ge
- * @brief Check is data->netoutput in while body
- * @param [in] in_data_anchor
- * @return: true for data->netoutput in while body / for false for others
+ * @brief Insert output memcpy node in while_body
+ * @param [in] graph: while_body
+ * @param [in] output_node: NetOutput
+ * @param [in] bypass_index
+ * @return: 0 for SUCCESS / others for FAILED
  */
-bool SubgraphPass::IsWhileBodyOutput(const InDataAnchorPtr &in_data_anchor) {
-  // Check is subgraph
-  NodePtr parent_node = in_data_anchor->GetOwnerNode()->GetOwnerComputeGraph()->GetParentNode();
-  if (parent_node == nullptr) {
-    return false;
+Status SubgraphPass::InsertOutputMemcpy(const ComputeGraphPtr &graph, const NodePtr &output_node,
+                                        const std::set<uint32_t> &bypass_index) {
+  if (output_node->GetAllInDataAnchorsSize() == bypass_index.size()) {
+    GELOGD("No need to insert output memcpy node in while_body %s, output_size=%zu, bypass_num=%zu.",
+           graph->GetName().c_str(), output_node->GetAllInDataAnchorsSize(), bypass_index.size());
+    return SUCCESS;
   }
 
-  // Check if parent_node is While
-  if (kWhileOpTypes.count(parent_node->GetType()) == 0) {
-    return false;
+  std::string out_name = graph->GetName() + "_output_Memcpy";
+  OpDescBuilder out_builder(out_name, MEMCPYASYNC);
+  for (size_t i = 0; i < output_node->GetAllInDataAnchorsSize(); i++) {
+    if (bypass_index.count(i) == 0) {
+      out_builder.AddInput("x" + std::to_string(i), output_node->GetOpDesc()->GetInputDesc(i))
+        .AddOutput("y" + std::to_string(i), output_node->GetOpDesc()->GetInputDesc(i));
+    }
+  }
+  GELOGD("Insert memcpy before NetOutput of while_body %s.", graph->GetName().c_str());
+  NodePtr out_memcpy = graph->AddNode(out_builder.Build());
+  GE_CHECK_NOTNULL(out_memcpy);
+  size_t cnt = 0;
+  for (size_t i = 0; i < output_node->GetAllInDataAnchorsSize(); i++) {
+    if (bypass_index.count(i) == 0) {
+      InDataAnchorPtr in_data_anchor = output_node->GetInDataAnchor(i);
+      OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+      if (InsertNodeBetween(peer_out_anchor, {in_data_anchor}, out_memcpy, cnt, cnt) != SUCCESS) {
+        GELOGE(FAILED, "Insert MemcpyAsync %s in while_body %s failed.", out_name.c_str(), graph->GetName().c_str());
+        return FAILED;
+      }
+      cnt++;
+    }
   }
 
-  // While cond / body
-  OpDescPtr op_desc = in_data_anchor->GetOwnerNode()->GetOpDesc();
-  if (op_desc == nullptr) {
-    return false;
+  return SUCCESS;
+}
+
+/**
+ * @ingroup ge
+ * @brief Check is data->netoutput without change in while body
+ * @param [in] node: data node
+ * @param [out] bypass_index
+ * @return: false for data->netoutput without change in while body / for true for others
+ */
+bool SubgraphPass::CheckInsertInputMemcpy(const NodePtr &node, std::set<uint32_t> &bypass_index) {
+  uint32_t input_index = 0;
+  if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, input_index)) {
+    return true;
   }
-  return AttrUtils::HasAttr(op_desc->GetInputDesc(in_data_anchor->GetIdx()), ATTR_NAME_PARENT_NODE_INDEX);
+
+  // Data node has and only has one output
+  OutDataAnchorPtr out_data_anchor = node->GetOutDataAnchor(0);
+  if ((out_data_anchor == nullptr) || (out_data_anchor->GetPeerInDataAnchors().size() != 1)) {
+    return true;
+  }
+  InDataAnchorPtr peer_in_anchor = out_data_anchor->GetPeerInDataAnchors().at(0);
+  if (peer_in_anchor->GetOwnerNode()->GetType() != NETOUTPUT) {
+    return true;
+  }
+
+  OpDescPtr op_desc = peer_in_anchor->GetOwnerNode()->GetOpDesc();
+  uint32_t output_index = 0;
+  if ((op_desc == nullptr) ||
+      !AttrUtils::GetInt(op_desc->GetInputDesc(peer_in_anchor->GetIdx()), ATTR_NAME_PARENT_NODE_INDEX, output_index)) {
+    return true;
+  }
+
+  if (input_index != output_index) {
+    return true;
+  }
+  bypass_index.insert(peer_in_anchor->GetIdx());
+  return false;
 }
 
 /**
@@ -542,7 +442,7 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(0))
                         .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
                         .Build();
-  if (GraphUtils::InsertNodeBefore(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
+  if (GraphUtils::InsertNodeAfter(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Insert MemcpyAsync node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
     return FAILED;
   }
@@ -550,4 +450,33 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
   return SUCCESS;
 }
 
+///
+/// @brief Insert node: src->insert_node:input_index, insert_node:output_index->dst
+/// @param [in] src
+/// @param [in] dsts
+/// @param [in] insert_node
+/// @param [in] input_index
+/// @param [in] output_index
+/// @return Status
+///
+Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
+                                       const NodePtr &insert_node, uint32_t input_index, uint32_t output_index) {
+  if (GraphUtils::AddEdge(src, insert_node->GetInDataAnchor(input_index)) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Add data_edge %s:%d->%s:%u failed.", src->GetOwnerNode()->GetName().c_str(), src->GetIdx(),
+           insert_node->GetName().c_str(), input_index);
+    return FAILED;
+  }
+  for (const auto &dst : dsts) {
+    GELOGD("Insert node %s between %s->%s.", insert_node->GetName().c_str(), src->GetOwnerNode()->GetName().c_str(),
+           dst->GetOwnerNode()->GetName().c_str());
+    if ((GraphUtils::RemoveEdge(src, dst) != GRAPH_SUCCESS) ||
+        (GraphUtils::AddEdge(insert_node->GetOutDataAnchor(output_index), dst) != GRAPH_SUCCESS)) {
+      GELOGE(FAILED, "Replace data_edge %s:%d->%s:%d by %s:%u->%s:%d failed.", src->GetOwnerNode()->GetName().c_str(),
+             src->GetIdx(), dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx(), insert_node->GetName().c_str(),
+             output_index, dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx());
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
 }  // namespace ge

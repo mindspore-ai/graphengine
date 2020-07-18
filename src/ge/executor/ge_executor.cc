@@ -452,7 +452,7 @@ Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData
 
 // Get input and output descriptor
 Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
-                                    std::vector<ge::TensorDesc> &output_desc) {
+                                    std::vector<ge::TensorDesc> &output_desc, bool new_model_desc) {
   GELOGI("get model desc info begin.");
   if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
@@ -464,8 +464,8 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
   std::vector<uint32_t> input_formats;
   std::vector<uint32_t> output_formats;
 
-  Status ret =
-    GraphExecutor::GetInputOutputDescInfo(model_id, input_desc_infos, output_desc_infos, input_formats, output_formats);
+  Status ret = GraphExecutor::GetInputOutputDescInfo(model_id, input_desc_infos, output_desc_infos, input_formats,
+                                                     output_formats, new_model_desc);
   if (ret != domi::SUCCESS) {
     GELOGE(ret, "GetInputOutputDescInfo failed. ret = %u", ret);
     return TransferDomiErrorCode(ret);
@@ -854,5 +854,4 @@ Status GeExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index,
   GELOGI("GetAllAippInputOutputDims succ.");
   return SUCCESS;
 }
-
 }  // namespace ge

@@ -122,7 +122,7 @@ Status FloorModKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Co
 
   GeTensorPtr output_ptr = MakeShared<GeTensor>(op_desc_ptr->GetOutputDesc(kFloorModFirstOutput));
   if (output_ptr == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
+    GELOGW("make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;
   }
 

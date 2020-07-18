@@ -24,10 +24,12 @@
 namespace ge {
 namespace hybrid {
 class NpuMemoryAllocator;
+class AllocationAttr;
 
 class TensorBuffer {
  public:
-  static std::unique_ptr<TensorBuffer> Create(NpuMemoryAllocator *allocator, size_t size);
+  static std::unique_ptr<TensorBuffer> Create(NpuMemoryAllocator *allocator, size_t size,
+                                              AllocationAttr *attr = nullptr);
 
   static std::unique_ptr<TensorBuffer> Create(void *buffer, size_t size);
 

@@ -22,7 +22,6 @@
 #include <vector>
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
-#include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
@@ -117,20 +116,44 @@ void SameTransdataBreadthFusionPass::InsertSameTransdataNodeIndex(int anchors_in
   same_transdata_nodes.push_back(anchors_index);
 }
 
+std::set<std::string> SameTransdataBreadthFusionPass::GetInControlIdentityNodes(const NodePtr &node,
+                                                                                int subgraph_index) {
+  std::set<std::string> in_node_names;
+  for (const auto &in_node : node->GetInControlNodes()) {
+    if (in_node->GetType() == IDENTITY) {
+      in_node_names.insert(in_node->GetName());
+    }
+  }
+  for (const auto &subgraph_node : before_transdata_nodes_[subgraph_index]) {
+    for (const auto &in_node : subgraph_node->GetInControlNodes()) {
+      if (in_node->GetType() == IDENTITY) {
+        in_node_names.insert(in_node->GetName());
+      }
+    }
+  }
+  GELOGD("control in nodes for %s(%d): %zu", node->GetName().c_str(), subgraph_index, in_node_names.size());
+  return in_node_names;
+}
+
 void SameTransdataBreadthFusionPass::GetSameTransdataNode(vector<int> &same_transdata_nodes) {
   auto iter = all_transdata_nodes_.begin();
   same_transdata_nodes.push_back(iter->first);
+
   auto node_for_compare_in_anchor = iter->second;
   GE_CHECK_NOTNULL_JUST_RETURN(node_for_compare_in_anchor);
   auto node_for_compare = node_for_compare_in_anchor->GetOwnerNode();
+
+  // Get op-desc, input/output desc, in-control-edges-from-identity, as the compare-key
   auto op_desc_for_compare = node_for_compare->GetOpDesc();
   GE_CHECK_NOTNULL_JUST_RETURN(op_desc_for_compare);
   string op_compare_stream_label;
   (void)AttrUtils::GetStr(op_desc_for_compare, ATTR_NAME_STREAM_LABEL, op_compare_stream_label);
+  auto op_compare_in_ctrl_nodes = GetInControlIdentityNodes(node_for_compare, iter->first);
   auto input_desc_for_compare = op_desc_for_compare->GetInputDescPtr(node_for_compare_in_anchor->GetIdx());
   GE_CHECK_NOTNULL_JUST_RETURN(input_desc_for_compare);
   auto output_desc_for_compare = op_desc_for_compare->GetOutputDescPtr(0);
   GE_CHECK_NOTNULL_JUST_RETURN(output_desc_for_compare);
+
   iter = all_transdata_nodes_.erase(iter);
   while (iter != all_transdata_nodes_.end()) {
     auto in_anchor = iter->second;
@@ -149,12 +172,14 @@ void SameTransdataBreadthFusionPass::GetSameTransdataNode(vector<int> &same_tran
     auto output_desc_tmp = op_desc_tmp->GetOutputDescPtr(0);
     string op_tmp_stream_label;
     (void)AttrUtils::GetStr(op_desc_tmp, ATTR_NAME_STREAM_LABEL, op_tmp_stream_label);
+    auto op_tmp_in_ctrl_nodes = GetInControlIdentityNodes(node_tmp, iter->first);
     GE_CHECK_NOTNULL_JUST_RETURN(input_desc_tmp);
     GE_CHECK_NOTNULL_JUST_RETURN(output_desc_tmp);
 
     if ((op_compare_stream_label == op_tmp_stream_label) &&
         (input_desc_tmp->GetFormat() == input_desc_for_compare->GetFormat()) &&
-        (output_desc_tmp->GetFormat() == output_desc_for_compare->GetFormat())) {
+        (output_desc_tmp->GetFormat() == output_desc_for_compare->GetFormat()) &&
+        (op_compare_in_ctrl_nodes == op_tmp_in_ctrl_nodes)) {
       GELOGD("same transdata node:%s, src node:%s", node_tmp->GetName().c_str(), node_for_compare->GetName().c_str());
       InsertSameTransdataNodeIndex(iter->first, same_transdata_nodes);
       iter = all_transdata_nodes_.erase(iter);
@@ -339,14 +364,13 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkTransdataControlOutput2PreNode
 }
 
 graphStatus SameTransdataBreadthFusionPass::Run(ComputeGraphPtr graph) {
-  GE_TIMESTAMP_START(SameTransdataBreadthFusionPass);
   GELOGI("[SameTransdataBreadthFusionPass]: optimize begin.");
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
   }
 
   for (auto &node : graph->GetDirectNode()) {
-    if (IsTransOp(node) || node->GetOutDataNodes().size() <= 1) {
+    if (IsTransOp(node) || node->GetOutDataNodesSize() <= 1) {
       continue;
     }
 
@@ -374,7 +398,6 @@ graphStatus SameTransdataBreadthFusionPass::Run(ComputeGraphPtr graph) {
   }
 
   GELOGI("[SameTransdataBreadthFusionPass]: Optimize success.");
-  GE_TIMESTAMP_END(SameTransdataBreadthFusionPass, "GraphManager::SameTransdataBreadthFusionPass");
   return GRAPH_SUCCESS;
 }
 

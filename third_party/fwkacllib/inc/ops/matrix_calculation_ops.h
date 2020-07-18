@@ -699,6 +699,45 @@ REG_OP(FullyConnection)
     .OP_END_FACTORY_REG(FullyConnection)
 
 /**
+*@brief Also known as a "fully-connected-compress" layer, computes an inner product with a set of learned weights, and (optionally) adds biases.
+
+*@par Inputs:
+* Four inputs, including:
+*@li x: A Tensor of type uint8, int8.
+*@li w: A weight matrix of type int8, int8.
+*@li w: A compress index matrix of type int8, int8.
+*@li b: A Tensor of type float16, int32, int32.
+*@li offset_w: A Tensor of type int8.i
+
+*@par Attributes:
+*@li num_output: Reserved.
+*@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
+*@li axis: Reserved.
+*@li offset_x: Reserved.
+
+*@par Outputs:
+*y: The result tensor of type int32.
+
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator InnerProduct.
+
+*@par Quantization supported or not
+* Yes
+*/
+REG_OP(FullyConnectionCompress)
+    .INPUT(x, TensorType({DT_UINT8, DT_INT8}))
+    .INPUT(w, TensorType({DT_INT8}))
+    .INPUT(comress_index, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(b, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(num_output, Int)
+    .ATTR(transpose, Bool, false)
+    .ATTR(axis, Int, 1)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(FullyConnectionCompress)
+
+/**
 *@brief Computes the confusion matrix from predictions and labels.
 
 *@par Inputs:

@@ -18,6 +18,7 @@
 #define GE_GRAPH_PASSES_VARIABLE_PREPARE_OP_PASS_H_
 
 #include <map>
+#include <stack>
 #include <string>
 
 #include "framework/common/ge_inner_error_codes.h"
@@ -30,15 +31,19 @@ class VariablePrepareOpPass : public GraphPass {
 
  private:
   Status DealVariableNode(ge::NodePtr &node);
-  Status DealWritableNode(ge::NodePtr &writable_node, ge::NodePtr &var_node, int out_index);
-  NodePtr GetFinalWritableNode(ge::NodePtr &writable_node, int &out_index);
-  Status AddVariableRef(ge::NodePtr &node, ge::NodePtr &var_node, int index);
-  NodePtr CreatVariableRef(const std::string &variable_ref_name, ge::NodePtr &var_node);
+  Status DealWritableNode(const ge::NodePtr &writable_node, int input_index, const ge::NodePtr &var_node);
+  Status GetPeerNodeOfRefInput(const ge::NodePtr &node, int input_index, std::stack<pair<NodePtr, int>> &nodes);
+  Status AddVariableRef(ge::NodePtr &node, const ge::NodePtr &var_node, int index);
+  Status InsertVariableRef(ge::NodePtr &node, int in_index, const ge::NodePtr &var_node);
+  Status AddControlEdge(const ge::NodePtr &node, const ge::NodePtr &variable_ref_node);
+  NodePtr CreateVariableRef(const std::string &variable_ref_name, const ge::NodePtr &var_node);
+  NodePtr CreateRefIdentity(const std::string &ref_identity_name, const ge::NodePtr &node, uint32_t input_index);
   int GetWritableNodeOutIndex(const NodePtr &node, int input_index);
   void GenerateRefTypeAndInputOutputMap(const NodePtr &node);
   int FindRefOutIndex(const std::string &node_type, int input_index,
                       const std::map<std::string, std::map<int, int>> &ref_map);
   Status CheckStreamLabel(const ge::NodePtr &var_ref_node, const ge::NodePtr &final_writable_node);
+  bool HasControlOut(const ge::NodePtr &node);
 
   std::map<std::string, std::map<int, int>> ref_input_output_map_;
   static std::map<std::string, std::map<int, int>> ref_node_without_prototype_map_;

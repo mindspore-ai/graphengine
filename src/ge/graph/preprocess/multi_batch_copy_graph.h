@@ -33,6 +33,7 @@ enum NodeStatus {
   kNodeInBatchBranch,
   kNodeOutBatchBranch,
   kNodeStartNode,
+  kNodeNotSupportNode,
 };
 
 class MultiBatchGraphCopyer {

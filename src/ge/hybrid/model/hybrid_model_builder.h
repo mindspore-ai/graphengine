@@ -46,18 +46,20 @@ class HybridModelBuilder {
   static Status HandleDtString(const GeTensor &tensor, void *var_addr);
   static Status MergeInputNodes(ComputeGraph &compute_graph);
   static Status MergeNetOutputNode(ComputeGraph &compute_graph);
-  static Status MergeSubgraphs(ComputeGraph &root_graph, ComputeGraphPtr &merged_graph);
+  static Status UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGraphPtr &merged_graph);
+  static Status UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph &parent_graph, ComputeGraph &sub_graph);
   static Status InitWeights();
-
+  static Status BuildInputMapping(GraphItem &graph_item, std::vector<NodeItem *> &data_nodes, bool is_root_graph);
+  static Status ResolveRefIo(NodeItem &node_item);
+  Status BuildOutputMapping(GraphItem &partitioned_call, const NodeItem &node_item, bool is_root_graph);
   Status ValidateParams();
   Status LoadGraph();
+  Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
   Status LoadTasks();
-  Status ParsePartitionedCall(NodeItem &node_item);
-  Status ParseNetOutput(const NodeItem &node_item);
-  Status BuildNoteItem(const NodePtr &node, NodeItem &node_item);
+  Status IdentifyVariableOutputs(NodeItem &node_item);
+  Status BuildNodeItem(const NodePtr &node, NodeItem &node_item);
   Status GetOrCreateNodeItem(const NodePtr &node, NodeItem **node_item);
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);
-  Status ResolveRootNodes();
   Status IndexTaskDefs();
   Status IndexSpecialNodes();
   Status InitRuntimeParams();
@@ -65,19 +67,23 @@ class HybridModelBuilder {
   Status TransAllVarData();
   Status CopyVarData();
   Status VarNodeToTensor(const NodePtr &var_node, std::unique_ptr<TensorValue> &tensor);
+  Status AssignUninitializedConstantOps();
   Status InitConstantOps();
   Status InitVariableTensors();
+  Status LoadDynamicSubgraph(ComputeGraph &graph, bool is_root_graph);
+  Status LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem *parent_node_item);
 
-  const char *GetGraphName() const { return graph_name_.c_str(); }
+  const char *GetGraphName() const { return hybrid_model_.model_name_.c_str(); }
 
   const NodeItem *GetNodeItem(const NodePtr &node) const;
   NodeItem *MutableNodeItem(const NodePtr &node);
 
   GeRootModelPtr ge_root_model_;
-  std::string graph_name_;
   std::map<int, std::unique_ptr<TensorValue>> weights_;
+  std::map<std::string, GeModelPtr> subgraph_models_;
   HybridModel &hybrid_model_;
   std::map<NodePtr, std::vector<std::pair<int, NodePtr>>> node_ref_inputs_;
+  int node_index = 0;
 
   RuntimeParam &runtime_param_;
   VarManager *var_manager_ = nullptr;

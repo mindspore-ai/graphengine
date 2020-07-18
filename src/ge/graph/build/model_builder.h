@@ -37,7 +37,7 @@
 namespace ge {
 class ModelBuilder {
  public:
-  ModelBuilder(ge::ComputeGraphPtr whole_graph, const Graph2SubGraphInfoList &subgraphs,
+  ModelBuilder(uint64_t session_id, ge::ComputeGraphPtr whole_graph, const Graph2SubGraphInfoList &subgraphs,
                const std::map<std::string, int> &stream_max_parallel_num, bool hcom_parallel,
                int mode = static_cast<int>(domi::BuildMode::GEN_TASK_WITHOUT_FUSION));
 
@@ -81,6 +81,8 @@ class ModelBuilder {
   void InitL1FusionOption();
 
   Status CompileSingleOp();
+
+  uint64_t session_id_;
 
   size_t mem_offset_;
 

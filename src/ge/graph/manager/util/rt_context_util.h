@@ -18,6 +18,8 @@
 #define GE_GRAPH_MANAGER_UTIL_RT_CONTEXT_UTIL_H_
 
 #include <vector>
+#include <map>
+#include <mutex>
 
 #include "runtime/context.h"
 
@@ -29,13 +31,14 @@ class RtContextUtil {
     return instance;
   }
 
-  void AddrtContext(rtContext_t context);
+  void AddRtContext(uint64_t session_id, rtContext_t context);
 
   const rtContext_t GetNormalModeContext() const { return before_prerun_ctx_; }
 
   void SetNormalModeContext(rtContext_t context) { before_prerun_ctx_ = context; }
 
-  void DestroyrtContexts();
+  void DestroyRtContexts(uint64_t session_id);
+  void DestroyAllRtContexts();
 
   RtContextUtil &operator=(const RtContextUtil &) = delete;
   RtContextUtil(const RtContextUtil &RtContextUtil) = delete;
@@ -44,8 +47,12 @@ class RtContextUtil {
   RtContextUtil() = default;
   ~RtContextUtil() {}
 
-  std::vector<rtContext_t> rtContexts_;
+  void DestroyRtContexts(uint64_t session_id, std::vector<rtContext_t> &contexts);
+
+  std::map<uint64_t, std::vector<rtContext_t>> rt_contexts_;
   rtContext_t before_prerun_ctx_ = nullptr;
+
+  std::mutex ctx_mutex_;
 };
 }  // namespace ge
 

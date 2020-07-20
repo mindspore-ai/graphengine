@@ -49,6 +49,15 @@ bool ModelRunner::LoadDavinciModel(uint32_t device_id, uint64_t session_id, uint
   return true;
 }
 
+bool ModelRunner::DistributeTask(uint32_t model_id) {
+  auto model_iter = runtime_models_.find(model_id);
+  if (model_iter == runtime_models_.end()) {
+    GELOGE(PARAM_INVALID, "Model id %u not found.", model_id);
+    return false;
+  }
+  return model_iter->second->DistributeTask();
+}
+
 bool ModelRunner::LoadModelComplete(uint32_t model_id) {
   auto model_iter = runtime_models_.find(model_id);
   if (model_iter == runtime_models_.end()) {
@@ -89,6 +98,16 @@ const std::map<std::string, std::shared_ptr<RuntimeInfo>> &ModelRunner::GetRunti
   }
 
   return model_iter->second->GetRuntimeInfoMap();
+}
+
+void *ModelRunner::GetModelHandle(uint32_t model_id) const {
+  auto model_iter = runtime_models_.find(model_id);
+  if (model_iter == runtime_models_.end()) {
+    GELOGW("Model id %u not found.", model_id);
+    return nullptr;
+  }
+
+  return model_iter->second->GetModelHandle();
 }
 
 bool ModelRunner::UnloadModel(uint32_t model_id) {

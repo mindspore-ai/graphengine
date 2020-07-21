@@ -174,9 +174,11 @@ echo "---------------- GraphEngine output generated ----------------"
 # generate output package in tar form, including ut/st libraries/executables
 cd ${BASEPATH}
 mkdir -p output/plugin/nnengine/ge_config/
+mkdir -p output/plugin/opskernel/
 find output/ -name graphengine_lib.tar -exec rm {} \;
 cp src/ge/engine_manager/engine_conf.json output/plugin/nnengine/ge_config/
 find output/ -maxdepth 1 -name libengine.so -exec mv -f {} output/plugin/nnengine/ \;
+find output/ -maxdepth 1 -name libge_local_engine.so -exec mv -f {} output/plugin/opskernel/ \;
 tar -cf graphengine_lib.tar output/*
 mv -f graphengine_lib.tar output
 echo "---------------- GraphEngine package archive generated ----------------"

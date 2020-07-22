@@ -283,14 +283,16 @@ bool RuntimeModel::Load(uint32_t device_id, uint64_t session_id, std::shared_ptr
   }
 
   GenerateTask(device_id, session_id, davinci_model);
+  return status;
+}
 
-  status = LoadTask();
+bool RuntimeModel::DistributeTask() {
+  bool status = LoadTask();
   if (!status) {
     GELOGE(FAILED, "DistributeTask failed");
-    return status;
+    return false;
   }
-
-  return status;
+  return true;
 }
 
 bool RuntimeModel::Run() {

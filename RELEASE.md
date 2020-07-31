@@ -1,3 +1,24 @@
+# Release 0.6.0-beta
+
+## Major Features and Improvements
+- GE supports function control operators such as If/Case/While/For.
+- In a single operator call scenario, GE supports recording the correspondence between operators and tasks for performance commissioning.
+- GE supports new operator overflow positioning solution.
+
+## Bugfixes 
+- Fix the problem that the aclmdlGetCurOutputDims interface failed to query output Dims in dynamic batch scenarios.
+- Fix the problem that the operator compilation options (advanced and advanced) cannot be selected.
+- Fix the problem that zero copy function cannot be performed in the scene of converging conditional operators after Data operators.
+- Fix the problem that the empty graph cannot be handled.
+
+
+
+## Thanks to our Contributors
+Thanks goes to these wonderful people: 
+wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong
+Contributions of any kind are welcome!
+
+
 # Release 0.5.0-beta
 
 ## Major Features and Improvements

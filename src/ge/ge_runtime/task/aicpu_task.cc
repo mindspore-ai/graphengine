@@ -85,15 +85,11 @@ bool AicpuTask::Distribute() {
     return false;
   }
 
-  input_output_addr_ = reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(args_) + io_addr_offset);
-
-  auto dump_flag = task_info_->dump_flag() ? RT_KERNEL_DUMPFLAG : RT_KERNEL_DEFAULT;
-  GELOGI(
-    "Distribute AicpuTask start, args_size = %u, io_addrs_num = %u, so_name = %s, kernel_name = %s, dump_flag = %d.",
-    args_size, io_addrs_num, task_info_->so_name().data(), task_info_->kernel_name().data(), dump_flag);
-  rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(task_info_->so_name().data()),
-                                     reinterpret_cast<const void *>(task_info_->kernel_name().data()), 1, args_,
-                                     args_size, nullptr, stream_, dump_flag);
+  GELOGI("Distribute AicpuTask start, args_size = %u, io_addrs_num = %u, so_name = %s, kernel_name = %s.", args_size,
+         io_addrs_num, task_info_->so_name().data(), task_info_->kernel_name().data());
+  rt_ret = rtCpuKernelLaunch(reinterpret_cast<const void *>(task_info_->so_name().data()),
+                             reinterpret_cast<const void *>(task_info_->kernel_name().data()), 1, args_, args_size,
+                             nullptr, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;

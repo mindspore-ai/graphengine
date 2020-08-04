@@ -92,5 +92,5 @@ fp16_t max(fp16_t fp1, fp16_t fp2);
 /// @brief   Calculate the minimum fp16_t of fp1 and fp2
 /// @return  Returns minimum fp16_t of fp1 and fp2
 fp16_t min(fp16_t fp1, fp16_t fp2);
-}  // namespace ge
+};      // namespace ge
 #endif  // GE_COMMON_MATH_FP16_MATH_H_

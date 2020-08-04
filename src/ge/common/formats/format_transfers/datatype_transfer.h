@@ -27,6 +27,7 @@
 
 namespace ge {
 namespace formats {
+
 struct CastArgs {
   const uint8_t *data;
   size_t src_data_size;

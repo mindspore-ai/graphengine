@@ -27,6 +27,7 @@
 #include "mmpa/mmpa_api.h"
 
 namespace ge {
+
 /**
  * @ingroup domi_calibration
  * @brief  Initializes an input array to a specified value
@@ -66,6 +67,7 @@ Status NnSet(const int32_t n, const Dtype alpha, Dtype *output) {
   }
   return SUCCESS;
 }
+
 }  // end namespace ge
 
 #endif  //  GE_COMMON_MATH_UTIL_H_

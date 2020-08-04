@@ -19,7 +19,6 @@
 #include <securec.h>
 #include <memory>
 
-#include "common/debug/log.h"
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
@@ -108,8 +107,8 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
 
   int64_t hw = h * w;
   int64_t chw = c * hw;
-  int64_t nchw = n * chw;
   int64_t hwc0 = hw * c0;
+  int64_t nchw = n * chw;
 
   // horizontal fractal matrix count (N)
   int64_t hf_cnt = Ceil(n, static_cast<int64_t>(kNiSize));
@@ -120,15 +119,18 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
   int64_t total_ele_cnt = hf_cnt * vf_cnt * fractal_ele_cnt;
   int size = GetSizeByDataType(args.src_data_type);
   int64_t dst_size = total_ele_cnt * size;
-  GE_CHK_BOOL_EXEC_NOLOG(dst_size != 0, result.length = static_cast<size_t>(dst_size); return SUCCESS;);
+  if (dst_size == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    dst == nullptr,
+  if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;);
+    return OUT_OF_MEMORY;
+  }
 
   for (int64_t vfi = 0; vfi < vf_cnt; vfi++) {
     // vertical fractal matrix base index
@@ -154,20 +156,12 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
           auto protected_size = dst_size - offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                   ? dst_size - offset
                                   : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
-          errno_t ret = EOK;
+          errno_t ret;
           if (need_pad_zero) {
             ret = memset_s(dst.get() + offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
           } else {
-            if (protected_size < size) {
-              GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
-                     protected_size, size);
-              return INTERNAL_ERROR;
-            }
-            char *dst_data = reinterpret_cast<char *>(dst.get() + offset);
-            const char *src_data = reinterpret_cast<const char *>(args.data + src_offset * size);
-            for (int64_t index = 0; index < size; index++) {
-              *dst_data++ = *src_data++;
-            }
+            ret = memcpy_s(dst.get() + offset, static_cast<size_t>(protected_size), args.data + src_offset * size,
+                           static_cast<size_t>(size));
           }
           if (ret != EOK) {
             GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory at offset %ld, error-code %d pad mode %d", offset,
@@ -205,15 +199,18 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
     dst_size *= dim;
   }
   dst_size *= data_size;
-  GE_CHK_BOOL_EXEC_NOLOG(dst_size != 0, result.length = static_cast<size_t>(dst_size); return SUCCESS;);
+  if (dst_size == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    dst == nullptr,
+  if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;);
+    return OUT_OF_MEMORY;
+  }
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
     for (int64_t hi = 0; hi < h; hi++) {
@@ -226,22 +223,14 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
                                     ? dst_size - dst_offset
                                     : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
-            errno_t ret = EOK;
+            errno_t ret;
             if (pad_zero) {
               ret = memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0,
                              static_cast<size_t>(data_size));
             } else {
-              if (protected_size < data_size) {
-                GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
-                       protected_size, data_size);
-                return INTERNAL_ERROR;
-              }
               int64_t src_idx = hi * wcn + wi * cn + (c1i * c0 + c0i) * n + n1n0i;
-              char *dst_data = reinterpret_cast<char *>(dst.get() + dst_offset);
-              const char *src_data = reinterpret_cast<const char *>(args.data + src_idx * data_size);
-              for (int64_t index = 0; index < data_size; index++) {
-                *dst_data++ = *src_data++;
-              }
+              ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size),
+                             args.data + src_idx * data_size, static_cast<size_t>(data_size));
             }
             if (ret != EOK) {
               GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
@@ -280,15 +269,18 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
     dst_size *= dim;
   }
   dst_size *= data_size;
-  GE_CHK_BOOL_EXEC_NOLOG(dst_size != 0, result.length = static_cast<size_t>(dst_size); return SUCCESS;);
+  if (dst_size == 0) {
+    result.length = static_cast<size_t>(dst_size);
+    return SUCCESS;
+  }
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    dst == nullptr,
+  if (dst == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;);
+    return OUT_OF_MEMORY;
+  }
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
     for (int64_t hi = 0; hi < h; hi++) {
@@ -301,22 +293,14 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
                                     ? dst_size - dst_offset
                                     : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
-            errno_t ret = EOK;
+            errno_t ret;
             if (pad_zero) {
               ret = memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0,
                              static_cast<size_t>(data_size));
             } else {
-              if (protected_size < data_size) {
-                GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
-                       protected_size, data_size);
-                return INTERNAL_ERROR;
-              }
               int64_t src_idx = n1n0i * hwc + hi * wc + wi * c + (c1i * c0 + c0i);
-              char *dst_data = reinterpret_cast<char *>(dst.get() + dst_offset);
-              const char *src_data = reinterpret_cast<const char *>(args.data + src_idx * data_size);
-              for (int64_t index = 0; index < data_size; index++) {
-                *dst_data++ = *src_data++;
-              }
+              ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size),
+                             args.data + src_idx * data_size, static_cast<size_t>(data_size));
             }
             if (ret != EOK) {
               GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
@@ -353,16 +337,16 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
     return PARAM_INVALID;
   }
 
-  if (args.src_format == FORMAT_NHWC && args.dst_format == FORMAT_FRACTAL_Z) {
-    return TransFormatNhwcToFz(args, result);
+  if (args.src_format == FORMAT_NCHW && args.dst_format == FORMAT_FRACTAL_Z) {
+    return TransFormatFromNchwToFz(args, result);
   }
 
   if (args.src_format == FORMAT_HWCN && args.dst_format == FORMAT_FRACTAL_Z) {
     return TransFormatHwcnToFz(args, result);
   }
 
-  if (args.src_format == FORMAT_NCHW && args.dst_format == FORMAT_FRACTAL_Z) {
-    return TransFormatFromNchwToFz(args, result);
+  if (args.src_format == FORMAT_NHWC && args.dst_format == FORMAT_FRACTAL_Z) {
+    return TransFormatNhwcToFz(args, result);
   }
 
   return UNSUPPORTED;
@@ -374,14 +358,14 @@ Status FormatTransferFractalZ::TransShape(Format src_format, const std::vector<i
     return UNSUPPORTED;
   }
 
-  if (src_format == FORMAT_NHWC && dst_format == FORMAT_FRACTAL_Z) {
-    return TransShapeNhwcToFz(src_shape, data_type, dst_shape);
+  if (src_format == FORMAT_NCHW && dst_format == FORMAT_FRACTAL_Z) {
+    return TransShapeNchwToFz(src_shape, data_type, dst_shape);
   }
   if (src_format == FORMAT_HWCN && dst_format == FORMAT_FRACTAL_Z) {
     return TransShapeHwcnToFz(src_shape, data_type, dst_shape);
   }
-  if (src_format == FORMAT_NCHW && dst_format == FORMAT_FRACTAL_Z) {
-    return TransShapeNchwToFz(src_shape, data_type, dst_shape);
+  if (src_format == FORMAT_NHWC && dst_format == FORMAT_FRACTAL_Z) {
+    return TransShapeNhwcToFz(src_shape, data_type, dst_shape);
   }
 
   return UNSUPPORTED;
@@ -390,5 +374,6 @@ Status FormatTransferFractalZ::TransShape(Format src_format, const std::vector<i
 REGISTER_FORMAT_TRANSFER(FormatTransferFractalZ, FORMAT_NCHW, FORMAT_FRACTAL_Z)
 REGISTER_FORMAT_TRANSFER(FormatTransferFractalZ, FORMAT_HWCN, FORMAT_FRACTAL_Z)
 REGISTER_FORMAT_TRANSFER(FormatTransferFractalZ, FORMAT_NHWC, FORMAT_FRACTAL_Z)
+
 }  // namespace formats
 }  // namespace ge

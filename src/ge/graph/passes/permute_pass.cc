@@ -33,6 +33,7 @@ using domi::TENSORFLOW;
 
 namespace ge {
 Status PermutePass::Run(ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(PermutePass);
   GE_CHECK_NOTNULL(graph);
   std::vector<NodePtr> isolate_nodes;
   for (NodePtr &node : graph->GetDirectNode()) {
@@ -115,6 +116,8 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
       GE_RETURN_WITH_LOG_IF_ERROR(graph->RemoveNode(node), "[%s]:remove permute node failed",
                                   node->GetOpDesc()->GetName().c_str());
     });
+
+  GE_TIMESTAMP_END(PermutePass, "GraphManager::PermutePass");
   return SUCCESS;
 }
 }  // namespace ge

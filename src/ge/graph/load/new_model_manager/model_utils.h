@@ -34,79 +34,78 @@ class ModelUtils {
   ~ModelUtils() = default;
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get input size.
   /// @return vector<uint32_t>
   ///
   static vector<int64_t> GetInputSize(ConstOpDescPtr op_desc);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get output size.
   /// @return vector<uint32_t>
   ///
   static vector<int64_t> GetOutputSize(ConstOpDescPtr op_desc);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get workspace size.
   /// @return vector<uint32_t>
   ///
   static vector<int64_t> GetWorkspaceSize(ConstOpDescPtr op_desc);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get weight size.
   /// @return vector<uint32_t>
   ///
   static vector<int64_t> GetWeightSize(ConstOpDescPtr op_desc);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get weights.
   /// @return vector<ConstGeTensorPtr>
   ///
   static vector<ConstGeTensorPtr> GetWeights(ConstOpDescPtr op_desc);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get AiCpuOp Input descriptor.
   /// @return vector<::tagCcAICPUTensor>
   ///
   static vector<::tagCcAICPUTensor> GetInputDescs(ConstOpDescPtr op_desc);
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get AiCpuOp Output descriptor.
   /// @return vector<::tagCcAICPUTensor>
   ///
   static vector<::tagCcAICPUTensor> GetOutputDescs(ConstOpDescPtr op_desc);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get input data address.
   /// @return vector<void*>
   ///
-  static vector<void *> GetInputDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc);
+  static vector<void *> GetInputDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc,
+                                          bool need_convert = true);
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get output data address.
   /// @return vector<void*>
   ///
-  static vector<void *> GetOutputDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc);
+  static vector<void *> GetOutputDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc,
+                                           bool need_convert = true);
 
   ///
-  /// @ingroup ge
+  /// @ingroup domi_ome
   /// @brief Get workspace data address.
   /// @return vector<void*>
   ///
-  static vector<void *> GetWorkspaceDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc);
+  static vector<void *> GetWorkspaceDataAddrs(const RuntimeParam &model_param, ConstOpDescPtr op_desc,
+                                              bool need_convert = true);
 
-  ///
-  /// @ingroup ge
-  /// @brief Get memory runtime base.
-  /// @return Status
-  ///
-  static Status GetRtAddress(const RuntimeParam &model_param, uintptr_t logic_addr, uint8_t *&mem_addr);
+  static ge::Status ConvertVirtualAddressToPhysical(uint8_t *virtual_address, uint64_t size,
+                                                    uint8_t *&physical_address);
 };
 }  // namespace ge
 

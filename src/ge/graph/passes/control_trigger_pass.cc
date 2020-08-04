@@ -15,9 +15,16 @@
  */
 
 #include "graph/passes/control_trigger_pass.h"
+
 #include <stack>
+
 #include "common/ge/ge_util.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
 #include "graph/common/omg_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
@@ -437,7 +444,7 @@ Status ControlTriggerPass::FindPredInput(const NodePtr &switch_node) {
   return SUCCESS;
 }
 ///
-/// @brief Clear Status, used for subgraph pass
+/// @brief Clear Status, uesd for subgraph pass
 /// @return SUCCESS
 ///
 Status ControlTriggerPass::ClearStatus() {

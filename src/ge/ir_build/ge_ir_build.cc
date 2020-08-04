@@ -296,6 +296,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
 
   // 3. build IR model
   ret = generator_.GenerateOnlineModel(graph, inputs, model);
+
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "GenerateOnlineModel failed!");
     return ret;
@@ -349,4 +350,5 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
   return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
+
 }  // namespace ge

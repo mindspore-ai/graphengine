@@ -44,12 +44,8 @@ const char *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
 const char *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
 const char *const OPTION_EXEC_DUMP_MODE = "ge.exec.dumpMode";
-const char *const OPTION_EXEC_ENABLE_DUMP_DEBUG = "ge.exec.enableDumpDebug";
-const char *const OPTION_EXEC_DUMP_DEBUG_MODE = "ge.exec.dumpDebugMode";
-const char *const OPTION_EXEC_OP_DEBUG_LEVEL = "ge.exec.opDebugLevel";
 const char *const OPTION_EXEC_ENABLE_INCRE_BUILD = "ge.exec.enableIncreBuild";
 const char *const OPTION_EXEC_INCRE_BUILD_CACHE_PATH = "ge.exec.increBuildCachePath";
-const char *const OPTION_EXEC_ENABLE_SCOPE_FUSION_PASSES = "ge.exec.enableScopeFusionPasses";
 // profiling flag
 const char *const OPTION_EXEC_PROFILING_MODE = "ge.exec.profilingMode";
 const char *const OPTION_EXEC_PROFILING_OPTIONS = "ge.exec.profilingOptions";
@@ -222,10 +218,6 @@ const char *const ENABLE_SINGLE_STREAM = "ge.enableSingleStream";
 
 // Configure input fp16 nodes
 const std::string INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
-
-// Configure debug level, its value should be 0(default), 1 or 2.
-// 0: close debug; 1: open TBE compiler; 2: open ccec compiler
-const std::string OP_DEBUG_LEVEL = "ge.opDebugLevel";
 
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };

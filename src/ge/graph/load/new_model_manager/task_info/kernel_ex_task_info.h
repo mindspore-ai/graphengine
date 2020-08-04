@@ -54,7 +54,6 @@ class KernelExTaskInfo : public TaskInfo {
     auto ret = reinterpret_cast<uintptr_t>(dump_args_);
     return ret;
   }
-  bool CallSaveDumpInfo() override { return true; };
 
  private:
   Status CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param, const OpDescPtr &op_desc);
@@ -70,7 +69,6 @@ class KernelExTaskInfo : public TaskInfo {
   void *dump_args_;
   OpDescPtr op_desc_ = nullptr;
   uint32_t args_offset_ = 0;
-  int64_t fixed_addr_offset_ = 0;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_EX_TASK_INFO_H_

@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_FOLDING_KERNEL_IDENTITY_KERNEL_H_
-#define GE_GRAPH_PASSES_FOLDING_KERNEL_IDENTITY_KERNEL_H_
+#ifndef GE_GRAPH_PASSES_IDENTIFY_REFERENCE_PASS_H_
+#define GE_GRAPH_PASSES_IDENTIFY_REFERENCE_PASS_H_
 
-#include "inc/kernel.h"
-#include <vector>
+#include "graph/passes/base_pass.h"
 
 namespace ge {
-class IdentityKernel : public Kernel {
+class IdentifyReferencePass : public BaseNodePass {
  public:
-  Status Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge::ConstGeTensorPtr> &input,
-                 std::vector<ge::GeTensorPtr> &v_output) override;
+  Status Run(NodePtr &node) override;
 };
 }  // namespace ge
 
-#endif  // GE_GRAPH_PASSES_FOLDING_KERNEL_IDENTITY_KERNEL_H_
+#endif  // GE_GRAPH_PASSES_IDENTIFY_REFERENCE_PASS_H_

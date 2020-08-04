@@ -92,6 +92,6 @@ class EventManager {
   std::vector<rtEvent_t> event_list_;
   bool inited_;
   uint32_t current_idx_;
-};  // EventManager
-}  // namespace ge
+};      // EventManager
+};      // namespace ge
 #endif  // GE_GRAPH_MANAGER_MODEL_MANAGER_EVENT_MANAGER_H_

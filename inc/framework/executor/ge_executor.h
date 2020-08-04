@@ -21,12 +21,12 @@
 #include <string>
 #include <vector>
 
-#include "common/dynamic_aipp.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/ge_types.h"
 #include "common/types.h"
 #include "graph/tensor.h"
 #include "runtime/base.h"
+#include "common/dynamic_aipp.h"
 
 namespace ge {
 class ModelListenerAdapter;

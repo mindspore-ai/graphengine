@@ -25,7 +25,6 @@
 #include "graph/buffer.h"
 #include "graph/ge_error_codes.h"
 #include "graph/types.h"
-
 namespace ge {
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeShape {
  public:
@@ -109,11 +108,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDesc : public AttrH
   DataType GetDataType() const;
   void SetDataType(DataType dt);
 
-  DataType GetOriginDataType() const;
   void SetOriginDataType(DataType originDataType);
-
-  std::vector<uint32_t> GetRefPortIndex() const;
-  void SetRefPortByIndex(const std::vector<uint32_t> &index);
+  DataType GetOriginDataType() const;
 
   GeTensorDesc Clone() const;
   GeTensorDesc &operator=(const GeTensorDesc &desc);
@@ -190,4 +186,5 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensor {
   GeTensorDesc &DescReference() const;
 };
 }  // namespace ge
+
 #endif  // INC_GRAPH_GE_TENSOR_H_

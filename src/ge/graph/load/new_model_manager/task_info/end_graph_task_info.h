@@ -22,7 +22,7 @@
 namespace ge {
 class EndGraphTaskInfo : public TaskInfo {
  public:
-  EndGraphTaskInfo() {}
+  EndGraphTaskInfo() : model_(0) {}
 
   ~EndGraphTaskInfo() override { model_ = nullptr; }
 
@@ -35,10 +35,10 @@ class EndGraphTaskInfo : public TaskInfo {
   uint32_t GetStreamId() override { return stream_id_; }
 
  private:
-  rtModel_t model_{nullptr};
-  DavinciModel *davinci_model_{nullptr};
-  uint32_t task_id_{0};
-  uint32_t stream_id_{0};
+  rtModel_t model_;
+  DavinciModel *davinci_model_;
+  uint32_t task_id_;
+  uint32_t stream_id_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_END_GRAPH_TASK_INFO_H_

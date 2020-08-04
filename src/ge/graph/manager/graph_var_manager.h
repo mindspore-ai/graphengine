@@ -309,5 +309,5 @@ class VarManagerPool {
   std::mutex var_manager_mutex_;
   map<uint64_t, VarManager *> var_manager_map_;
 };
-}  // namespace ge
+};      // namespace ge
 #endif  // GE_GRAPH_MANAGER_GRAPH_VAR_MANAGER_H_

@@ -129,8 +129,7 @@ Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam
   task.task_info_ = kernel_def_.task_info();
   task.workspace_addr_ = ws_addr_vec[0];
 
-  auto debug_info = BuildTaskUtils::GetTaskInfo(op_desc_);
-  GELOGI("[TASK_INFO] %s %s", task.task_info_.c_str(), debug_info.c_str());
   return SUCCESS;
 }
+
 }  // namespace ge

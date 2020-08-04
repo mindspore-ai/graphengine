@@ -327,6 +327,6 @@ class GraphManager {
 
   std::mutex run_mutex_;
 };
-}  // namespace ge
+};  // namespace ge
 
 #endif  // GE_GRAPH_MANAGER_GRAPH_MANAGER_H_

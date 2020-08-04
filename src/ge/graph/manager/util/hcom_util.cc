@@ -24,6 +24,7 @@
 #include "graph/utils/type_utils.h"
 
 namespace ge {
+
 Status HcomOmeUtil::GetHcclDataType(const ge::ConstOpDescPtr &op_desc,
                                     std::vector<GETaskKernelHcclInfo> &kernel_hccl_infos) {
   GE_CHECK_NOTNULL(op_desc);
@@ -100,12 +101,6 @@ Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, hcclDataType
       GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(i));
       GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(*op_desc->GetInputDescPtr(i), input_size),
                         "get size from TensorDesc failed, op : %s, input index : %zu", op_desc->GetName().c_str(), i);
-      // dynamic shape hccl op get size from output tensor desc
-      if (op_desc->HasAttr(ATTR_NAME_IS_UNKNOWN_SHAPE)) {
-        GE_CHECK_NOTNULL(op_desc->GetOutputDescPtr(i));
-        GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(*op_desc->GetOutputDescPtr(i), input_size),
-                          "get size from TensorDesc failed, op : %s, input index : %zu", op_desc->GetName().c_str(), i);
-      }
 
       GE_IF_BOOL_EXEC(
         op_desc->GetType() == HCOMREDUCESCATTER, int32_t rank_size = 0;
@@ -119,8 +114,6 @@ Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, hcclDataType
         total_size = total_size + block_size; continue;);
 
       int64_t shape_size = op_desc->GetInputDescPtr(i)->GetShape().GetShapeSize();
-      GELOGD("hcom util node %s inputsize %ld, shapesize %ld, datasize %d.", op_desc->GetName().c_str(), input_size,
-             shape_size, size);
       GE_CHK_STATUS_RET(ge::CheckInt64Int32MulOverflow(shape_size, size),
                         "Product of shape size and size beyond INT64_MAX");
       GE_IF_BOOL_EXEC(is_allgather, block_size = shape_size * size;);

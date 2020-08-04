@@ -45,7 +45,7 @@ static void ConvertShape2Nhwc(Format &format, vector<int64_t> &shape_vec) {
     return;
   }
   if (format != FORMAT_NCHW) {
-    GELOGW("The format is not NCHW, current format is %s.", TypeUtils::FormatToSerialString(format).c_str());
+    GELOGW("The format is not NCHW, current format is %s", TypeUtils::FormatToSerialString(format).c_str());
     return;
   }
   vector<int64_t> shape_vec_tmp;
@@ -245,6 +245,7 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
     GELOGE(FAILED, "Can not get size from aipp [%s]", aipp_op_desc->GetName().c_str());
     return FAILED;
   }
+  // Save the input size of aipp node, which will be used in dumping aipp node or fused aipp node
   (void)AttrUtils::SetInt(aipp_input, ATTR_NAME_INPUT_ORIGIN_SIZE, size);
 
   auto in_data_anchor = node->GetInDataAnchor(0);

@@ -15,7 +15,7 @@
  */
 
 #include "graph/passes/infershape_pass.h"
-#include "common/util/error_manager/error_manager.h"
+
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/shape_refiner.h"
@@ -24,8 +24,6 @@ namespace ge {
 Status InferShapePass::Run(NodePtr &node) {
   auto ret = ShapeRefiner::InferShapeAndType(node, !OptionExists(kOptimizeAfterSubGraph));
   if (ret != GRAPH_SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E35003", {"opname", "err_msg"},
-                                                    {node->GetName(), "check your model!"});
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }

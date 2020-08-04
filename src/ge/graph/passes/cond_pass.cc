@@ -226,7 +226,7 @@ Status CondPass::HandleScalarCond(const ComputeGraphPtr &graph, const OutDataAnc
     return FAILED;
   }
 
-  if (GraphUtils::InsertNodeAfter(out_anchor, {in_anchor}, cast_node) != GRAPH_SUCCESS) {
+  if (GraphUtils::InsertNodeBefore(out_anchor, {in_anchor}, cast_node) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Insert Cast node %s between %s->%s failed.", cast_node->GetName().c_str(),
            out_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
     return FAILED;
@@ -271,7 +271,7 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   }
   AddRePassNode(new_node);
 
-  if (GraphUtils::InsertNodeAfter(out_anchor, {in_anchor}, new_node) != GRAPH_SUCCESS) {
+  if (GraphUtils::InsertNodeBefore(out_anchor, {in_anchor}, new_node) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Insert %s node %s between %s->%s failed.", type.c_str(), new_node->GetName().c_str(),
            out_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
     return FAILED;

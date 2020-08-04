@@ -17,6 +17,7 @@
 #include "variable_ref_useless_control_out_delete_pass.h"
 
 namespace ge {
+
 Status VariableRefUselessControlOutDeletePass::Run(ge::ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   for (const auto &node : graph->GetDirectNode()) {

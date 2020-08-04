@@ -16,8 +16,8 @@
 
 #include "graph/load/new_model_manager/task_info/label_switch_by_index_task_info.h"
 
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 constexpr uint8_t kLabelSwitchIndexNum = 1;
@@ -59,13 +59,7 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
            op_desc->GetName().c_str(), input_data_addr.size(), kLabelSwitchIndexNum);
     return INTERNAL_ERROR;
   }
-
-  if (davinci_model->IsKnownNode()) {
-    index_value_ = davinci_model->GetCurrentFixedAddr(fixed_addr_offset_);
-  } else {
-    index_value_ = input_data_addr[0];
-  }
-
+  index_value_ = input_data_addr[0];
   davinci_model->DisableZeroCopy(index_value_);
 
   std::vector<uint32_t> label_idx_list;
@@ -127,29 +121,6 @@ Status LabelSwitchByIndexTaskInfo::Distribute() {
   }
 
   GELOGI("LabelSwitchByIndexTaskInfo Distribute Success.");
-  return SUCCESS;
-}
-
-Status LabelSwitchByIndexTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
-  GE_CHECK_NOTNULL(davinci_model);
-  auto label_switch = task_def.label_switch_by_index();
-  uint32_t op_index = label_switch.op_index();
-  GELOGI("Begin to calculate args, op_index is: %u", op_index);
-  auto op_desc = davinci_model->GetOpByIndex(op_index);
-  GE_CHECK_NOTNULL(op_desc);
-  GELOGI("Calc opType[%s] args size. Node name is [%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
-  if (op_desc->GetInputsSize() != kLabelSwitchIndexNum) {
-    GELOGE(FAILED, "Label switch op only have one data input. Now input size is %zu", op_desc->GetInputsSize());
-    return FAILED;
-  }
-  string input_tensor_name = op_desc->GetInputNameByIndex(0);
-  fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(input_tensor_name);
-  auto tensor_desc = op_desc->GetInputDesc(0);
-  int64_t tensor_size = 0;
-  GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
-  davinci_model->SetTotalFixedAddrsSize(input_tensor_name, tensor_size);
-  GELOGI("Calculate stream switchn task args , tensor_size %ld, fixed_addr_offset %ld", tensor_size,
-         fixed_addr_offset_);
   return SUCCESS;
 }
 

@@ -65,9 +65,6 @@ namespace ge {
 namespace {
 const std::string kGraphDefaultName = "domi_default";
 const std::string kScopeIdAttr = "fusion_scope";
-const char *const kOutputTypeSample = "correct sample is \"opname:index:dtype\"";
-const char *const kOutputTypeSupport = "only support FP32, FP16, UINT8";
-const char *const kOutputTypeError = "The multiple out nodes set in output_type must be found in out_nodes.";
 }  // namespace
 
 // When the model is converted to a JSON file, the following operator attributes in the blacklist will be ignored
@@ -81,7 +78,7 @@ static bool CheckInputTrueOrFalse(const std::string &s, const std::string &atc_p
   if ((s == "true") || (s == "false")) {
     return true;
   } else {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10005", {"parameter", "value"}, {atc_param, s});
+    ErrorManager::GetInstance().ATCReportErrMessage("E10033", {"parameter", "value"}, {atc_param, s});
     GELOGE(PARAM_INVALID, "Input parameter[--%s]'s value[%s] must be true or false.", atc_param.c_str(), s.c_str());
     return false;
   }
@@ -100,12 +97,12 @@ static Status CheckInputShapeNode(const ComputeGraphPtr &graph) {
     std::string node_name = it.first;
     ge::NodePtr node = graph->FindNode(node_name);
     if (node == nullptr) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10016", {"parameter", "opname"}, {"input_shape", node_name});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10034", {"parameter", "opname"}, {"input_shape", node_name});
       GELOGE(PARAM_INVALID, "Input parameter[--input_shape]'s opname[%s] is not exist in model", node_name.c_str());
       return PARAM_INVALID;
     }
     if (node->GetType() != DATA) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10017", {"parameter", "opname"}, {"input_shape", node_name});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10035", {"parameter", "opname"}, {"input_shape", node_name});
       GELOGE(PARAM_INVALID, "Input parameter[--input_shape]'s opname[%s] is not a input opname", node_name.c_str());
       return PARAM_INVALID;
     }
@@ -136,19 +133,18 @@ static Status CheckInputFp16Nodes(const ComputeGraphPtr &graph, const string &in
   for (uint32_t i = 0; i < input_fp16_nodes_vec.size(); ++i) {
     ge::NodePtr node = graph->FindNode(input_fp16_nodes_vec[i]);
     if (node == nullptr) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10016", {"parameter", "opname"},
+      ErrorManager::GetInstance().ATCReportErrMessage("E10034", {"parameter", "opname"},
                                                       {"input_fp16_nodes", input_fp16_nodes_vec[i]});
-      GELOGE(PARAM_INVALID, "Input parameter[--input_fp16_nodes]'s opname[%s] is not exist in model",
+      GELOGE(PARAM_INVALID, "Can not find node [%s] in graph, please check input_fp16_nodes param",
              input_fp16_nodes_vec[i].c_str());
       return PARAM_INVALID;
     }
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     if (op_desc->GetType() != DATA) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10017", {"parameter", "opname"},
+      ErrorManager::GetInstance().ATCReportErrMessage("E10035", {"parameter", "opname"},
                                                       {"input_fp16_nodes", input_fp16_nodes_vec[i]});
-      GELOGE(PARAM_INVALID, "Input parameter[--input_fp16_nodes]'s opname[%s] is not a input opname",
-             input_fp16_nodes_vec[i].c_str());
+      GELOGE(PARAM_INVALID, "input_fp16_nodes: %s is not a input node name", input_fp16_nodes_vec[i].c_str());
       return PARAM_INVALID;
     }
     if (ge::AttrUtils::SetBool(op_desc, "input_fp16", true)) {
@@ -306,32 +302,14 @@ Status SetOutFormatAndDataTypeAttr(ge::OpDescPtr op_desc, const ge::Format forma
   return domi::SUCCESS;
 }
 
-bool CheckDigitStr(std::string &str) {
-  for (char c : str) {
-    if (!isdigit(c)) {
-      GELOGE(domi::FAILED, "value[%s] is not positive integer", str.c_str());
-      return false;
-    }
-  }
-  return true;
-}
-
 Status StringToInt(std::string &str, int32_t &value) {
   try {
-    if (!CheckDigitStr(str)) {
-      GELOGE(PARAM_INVALID, "Invalid of digit string: %s ", str.c_str());
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {"--output_type", str, "is not positive integer"});
-      return PARAM_INVALID;
-    }
     value = stoi(str);
   } catch (std::invalid_argument &) {
-    GELOGE(PARAM_INVALID, "Invalid of digit string: %s, catch invalid_argument.", str.c_str());
-    ErrorManager::GetInstance().ATCReportErrMessage("E10014", {"parameter", "value"}, {"output_type", str});
+    GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", str.c_str());
     return PARAM_INVALID;
   } catch (std::out_of_range &) {
-    GELOGE(PARAM_INVALID, "Invalid of digit string: %s, catch out_of_range.", str.c_str());
-    ErrorManager::GetInstance().ATCReportErrMessage("E10013", {"parameter", "value"}, {"output_type", str});
+    GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", str.c_str());
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -347,9 +325,8 @@ Status VerifyOutputTypeAndOutNodes(std::vector<std::string> &out_type_vec) {
   }
   for (uint32_t i = 0; i < out_type_vec.size(); ++i) {
     if (out_nodes_info.find(out_type_vec[i]) == out_nodes_info.end()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {"--output_type", out_type_vec[i], kOutputTypeError});
-      GELOGE(domi::FAILED, "Invalid value for --output_type[%s], %s.", out_type_vec[i].c_str(), kOutputTypeError);
+      ErrorManager::GetInstance().ATCReportErrMessage("E10059", {"value"}, {out_type_vec[i]});
+      GELOGE(domi::FAILED, "Can not find this node (%s) in out_nodes.", out_type_vec[i].c_str());
       return domi::FAILED;
     }
   }
@@ -362,9 +339,9 @@ Status ParseOutputType(const std::string &output_type, std::map<std::string, vec
     GELOGI("output_type is not multiple nodes, means all out nodes");
     auto it = output_type_str_to_datatype.find(output_type);
     if (it == output_type_str_to_datatype.end()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {"--output_type", output_type, kOutputTypeSupport});
-      GELOGE(PARAM_INVALID, "Invalid value for --output_type[%s], %s.", output_type.c_str(), kOutputTypeSupport);
+      ErrorManager::GetInstance().ATCReportErrMessage("E10042", {"value"}, {output_type});
+      GELOGE(ge::PARAM_INVALID, "Invalid value for --output_type[%s], only support DT_FLOAT, DT_FLOAT16, DT_UINT8!!",
+             output_type.c_str());
       return domi::FAILED;
     }
     return domi::SUCCESS;
@@ -374,9 +351,11 @@ Status ParseOutputType(const std::string &output_type, std::map<std::string, vec
   for (const string &node : nodes_v) {
     vector<string> node_index_type_v = StringUtils::Split(node, ':');
     if (node_index_type_v.size() != 3) {  // The size must be 3.
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {"--output_type", node, kOutputTypeSample});
-      GELOGE(PARAM_INVALID, "Invalid value for --output_type[%s], %s.", node.c_str(), kOutputTypeSample);
+      ErrorManager::GetInstance().ATCReportErrMessage("E10058", {"value"}, {node});
+      GELOGE(PARAM_INVALID,
+             "The param of output_type is invalid, the correct format is [opname:index:dtype],"
+             "while the actual input is %s.",
+             node.c_str());
       return domi::FAILED;
     }
     ge::DataType tmp_dt;
@@ -384,15 +363,13 @@ Status ParseOutputType(const std::string &output_type, std::map<std::string, vec
     std::string index_str = StringUtils::Trim(node_index_type_v[1]);
     int32_t index;
     if (StringToInt(index_str, index) != SUCCESS) {
-      GELOGE(PARAM_INVALID, "This str must be digit string, while the actual input is %s.", index_str.c_str());
       return domi::FAILED;
     }
     std::string dt_value = StringUtils::Trim(node_index_type_v[2]);
     auto it = output_type_str_to_datatype.find(dt_value);
     if (it == output_type_str_to_datatype.end()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {"--output_type", dt_value, kOutputTypeSupport});
-      GELOGE(ge::PARAM_INVALID, "Invalid value for --output_type[%s], %s.", dt_value.c_str(), kOutputTypeSupport);
+      ErrorManager::GetInstance().ATCReportErrMessage("E10042", {"value"}, {dt_value});
+      GELOGE(ge::PARAM_INVALID, "output_type [%s] is invalid.", dt_value.c_str());
       return domi::FAILED;
     } else {
       tmp_dt = it->second;
@@ -419,22 +396,6 @@ Status ParseOutputType(const std::string &output_type, std::map<std::string, vec
   return VerifyOutputTypeAndOutNodes(out_type_vec);
 }
 
-Status CheckOutNode(ge::OpDescPtr op_desc, int32_t index) {
-  int32_t out_size = op_desc->GetOutputsSize();
-  if (index < 0 || index >= out_size) {
-    GELOGE(domi::FAILED,
-           "out_node [%s] output index:%d must be smaller "
-           "than node output size:%d and can not be negative!",
-           op_desc->GetName().c_str(), index, out_size);
-    std::string fail_reason = "output index:" + to_string(index) +
-                              " must be smaller than output size:" + to_string(out_size) + " and can not be negative!";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10003", {"parameter", "value", "reason"},
-                                                    {"out_nodes", op_desc->GetName(), fail_reason});
-    return domi::FAILED;
-  }
-  return domi::SUCCESS;
-}
-
 Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output) {
   ge::ComputeGraphPtr compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
@@ -443,6 +404,7 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
   std::vector<domiTensorFormat_t> output_formats = domi::GetContext().output_formats;
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes_info;
   std::vector<std::string> output_nodes_name;
+
   std::map<std::string, vector<uint32_t>> out_type_index_map;
   std::map<std::string, vector<ge::DataType>> out_type_dt_map;
   if (!output_type.empty()) {
@@ -461,10 +423,6 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
     }
     auto op_desc = out_node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    if (CheckOutNode(op_desc, user_out_nodes[i].second) != SUCCESS) {
-      GELOGE(domi::FAILED, "Check out node (%s) fail.", user_out_nodes[i].first.c_str());
-      return domi::FAILED;
-    }
     if (i < output_formats.size()) {
       if (output_formats[i] == domi::DOMI_TENSOR_NC1HWC0) {
         GELOGI("The output node [%s] should be set NC1HWC0", user_out_nodes[i].first.c_str());
@@ -603,9 +561,8 @@ Status ParseOutNodes(const string &out_nodes) {
       for (const string &node : nodes_v) {
         vector<string> key_value_v = StringUtils::Split(node, ':');
         if (key_value_v.size() != 2) {  // The size must be 2.
-          ErrorManager::GetInstance().ATCReportErrMessage(
-            "E10001", {"parameter", "value", "reason"},
-            {"--out_nodes", node, "the correct format is \"node_name1:0;node_name1:1;node_name2:0\""});
+          ErrorManager::GetInstance().ATCReportErrMessage("E10069", {"param", "value", "supports"},
+                                                          {"out_nodes", node, "opname:index"});
           GELOGE(PARAM_INVALID,
                  "The input format of --out_nodes is invalid, the correct format is "
                  "\"node_name1:0;node_name1:1;node_name2:0\", while the actual input is %s.",
@@ -614,12 +571,6 @@ Status ParseOutNodes(const string &out_nodes) {
         }
         auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
         // stoi: The method may throw an exception: invalid_argument/out_of_range
-        if (!CheckDigitStr(key_value_v[1])) {
-          ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                          {"--out_nodes", out_nodes, "is not positive integer"});
-          GELOGE(PARAM_INVALID, "This str must be digit string, while the actual input is %s", out_nodes.c_str());
-          return PARAM_INVALID;
-        }
         int32_t index = stoi(StringUtils::Trim(key_value_v[1]));
         if (iter != domi::GetContext().out_nodes_map.end()) {
           iter->second.emplace_back(index);
@@ -633,11 +584,9 @@ Status ParseOutNodes(const string &out_nodes) {
     }
   } catch (std::invalid_argument &) {
     GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", out_nodes.c_str());
-    ErrorManager::GetInstance().ATCReportErrMessage("E10014", {"parameter", "value"}, {"out_nodes", out_nodes});
     return PARAM_INVALID;
   } catch (std::out_of_range &) {
     GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", out_nodes.c_str());
-    ErrorManager::GetInstance().ATCReportErrMessage("E10013", {"parameter", "value"}, {"out_nodes", out_nodes});
     return PARAM_INVALID;
   }
 
@@ -649,7 +598,7 @@ Status ParseOutNodes(const string &out_nodes) {
 ///  @param [in] graph Input network graph
 ///  @return SUCCESS: Input parameters are correct; PARAM_INVALID: Input parameters are incorrect
 ///
-static Status CheckOpNameMap(const ComputeGraphPtr &graph, const std::string &op_conf) {
+static Status CheckOpNameMap(const ComputeGraphPtr &graph) {
   GE_CHECK_NOTNULL(graph);
   unordered_map<string, string> graphNodeTypes;
   for (const NodePtr &node : graph->GetAllNodes()) {
@@ -664,9 +613,7 @@ static Status CheckOpNameMap(const ComputeGraphPtr &graph, const std::string &op
   GE_RT_PARAM_INVALID_WITH_LOG_IF_TRUE(propertiesMap.empty(), "op_name_map file is empty, please check file!");
   for (auto iter = propertiesMap.begin(); iter != propertiesMap.end(); iter++) {
     GE_IF_BOOL_EXEC(graphNodeTypes.find(iter->second) == graphNodeTypes.end(),
-                    ErrorManager::GetInstance().ATCReportErrMessage(
-                      "E10003", {"parameter", "value", "reason"},
-                      {"op_name_map", op_conf, "type[" + iter->second + "] is not found in model"});
+                    ErrorManager::GetInstance().ATCReportErrMessage("E10060", {"parameter"}, {"op_name_map"});
                     GELOGE(PARAM_INVALID, "Invalid parameter for op_name_map."); return PARAM_INVALID;);
   }
   return SUCCESS;
@@ -723,8 +670,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
     PropertiesManager::Instance().SetPropertyDelimiter(OP_CONF_DELIMITER);
     // Parsing the op_conf configuration item file
     GE_IF_BOOL_EXEC(!PropertiesManager::Instance().Init(op_conf),
-                    ErrorManager::GetInstance().ATCReportErrMessage("E10003", {"parameter", "value", "reason"},
-                                                                    {"op_name_map", op_conf, "file content error"});
+                    ErrorManager::GetInstance().ATCReportErrMessage("E10060", {"parameter"}, {"op_name_map"});
                     GELOGE(FAILED, "op_name_map init failed!"); return FAILED);
     // Return map and put it into ATC global variable
     domi::GetContext().op_conf_map = PropertiesManager::Instance().GetPropertyMap();
@@ -743,7 +689,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
     std::string check_report;
     ParseAtcParms(atc_params, "check_report", check_report);
     GE_RETURN_WITH_LOG_IF_ERROR(PreChecker::Instance().Save(check_report), "Generate pre-checking report failed.");
-    GEEVENT("The pre-checking report has been saved to %s.", check_report.c_str());
+    GELOGI("The pre-checking report has been saved to %s.", check_report.c_str());
   }
 
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC model parse ret fail.");
@@ -763,8 +709,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
 
   // Verify the contents of the op_name_map
   if (op_conf != nullptr && *op_conf != '\0') {
-    GE_RETURN_WITH_LOG_IF_ERROR(CheckOpNameMap(compute_graph, op_conf),
-                                "op_name_map parameter is not fit with input net!");
+    GE_RETURN_WITH_LOG_IF_ERROR(CheckOpNameMap(compute_graph), "op_name_map parameter is not fit with input net!");
   }
 
   // Print parse network structure
@@ -838,6 +783,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
   // Load model from file
   Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+
   if (ret != SUCCESS) {
     GELOGE(ret, "LoadFromFile failed.");
     return ret;
@@ -848,6 +794,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
   // Parse the contents of the file to get the modeldef object
   ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
+
   if (ret == SUCCESS) {
     OmFileLoadHelper omFileLoadHelper;
     ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
@@ -875,6 +822,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
     // De serialization
     bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
+
     if (flag) {
       GetGroupName(model_def);
 
@@ -943,16 +891,14 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType framework, const char *model_file,
                                                       const char *json_file) {
-  if (framework == domi::CAFFE || framework == domi::TENSORFLOW || framework == domi::ONNX) {
+  if (framework == domi::CAFFE || framework == domi::TENSORFLOW) {
     auto model_parser = ModelParserFactory::Instance()->CreateModelParser(framework);
     GE_CHK_BOOL_RET_STATUS(model_parser != nullptr, FAILED, "ATC create model parser ret fail, framework:%d.",
                            framework);
     return model_parser->ToJson(model_file, json_file);
   }
 
-  ErrorManager::GetInstance().ATCReportErrMessage(
-    "E10001", {"parameter", "value", "reason"},
-    {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow)"});
+  ErrorManager::GetInstance().ATCReportErrMessage("E10045", {"parameter"}, {"model"});
   GELOGE(PARAM_INVALID, "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow).");
   return PARAM_INVALID;
 }

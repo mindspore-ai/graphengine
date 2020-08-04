@@ -26,12 +26,6 @@ namespace ge {
 class ConstantFoldingPass : public FoldingPass {
  public:
   Status Run(ge::NodePtr &node) override;
-  const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> &GetGeConstantFoldingPerfStatistic() const;
-  const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> &GetOpConstantFoldingPerfStatistic() const;
-
- private:
-  std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> statistic_of_op_constant_folding_;
-  std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> statistic_of_ge_constant_folding_;
 };
 }  // namespace ge
 

@@ -120,7 +120,7 @@ Status GraphExecutor::FreeInOutBuffer() {
   }
 }
 
-Status GraphExecutor::MallocInOutBuffer(const std::vector<uint64_t> &buffer_size, std::vector<void *> &data_addr) {
+Status GraphExecutor::MallocInOutBuffer(const std::vector<uint32_t> &buffer_size, std::vector<void *> &data_addr) {
   if (malloc_flag_) {
     auto all_size_same = true;
     if (buffer_size.size() == buffer_size_.size()) {
@@ -169,7 +169,7 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
   graph_input_data.timestamp = 0;
   std::size_t inputSize = input_tensor.size();
   std::size_t output_size = output_desc.size();
-  std::vector<uint64_t> bufferSizeVec;
+  std::vector<uint32_t> bufferSizeVec;
   std::vector<void *> addrVec;
 
   for (std::size_t i = 0; i < inputSize; ++i) {
@@ -211,7 +211,7 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
 
   for (std::size_t j = 0; j < output_size; j++) {
     auto desc = output_desc[j];
-    uint64_t buffer_size = desc.size;
+    uint32_t buffer_size = desc.size;
 
     DataBuffer out_data_buf;
     out_data_buf.data = reinterpret_cast<uint8_t *>(addrVec[inputSize + j]);
@@ -225,13 +225,6 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
 
 Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                                        std::vector<GeTensor> &output_tensor) {
-  auto model_manager = ge::ModelManager::GetInstance();
-  GE_CHECK_NOTNULL(model_manager);
-  if (model_manager->IsDynamicShape(model_id)) {
-    GELOGI("[ExecuteGraph] GetInputOutputDescInfo via dynamic shape model executor, modelId=%u", model_id);
-    return model_manager->SyncExecuteModel(model_id, input_tensor, output_tensor);
-  }
-
   // Prepare input and output
   std::vector<InputOutputDescInfo> inputs_desc;
   std::vector<InputOutputDescInfo> output_desc;
@@ -582,4 +575,5 @@ Status GraphExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t inde
 
   return SUCCESS;
 }
+
 }  // namespace ge

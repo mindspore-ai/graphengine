@@ -35,7 +35,6 @@ enum RemoveInputType {
   OMG_MOVE_TYPE_SCALAR_VALUE,
   OMG_REMOVE_TYPE_WITH_COND = 1000,
   OMG_REMOVE_INPUT_WITH_ORIGINAL_TYPE,
-  OMG_INPUT_REORDER,
 };
 
 struct RemoveInputConfigure {
@@ -44,7 +43,6 @@ struct RemoveInputConfigure {
   RemoveInputType moveType;
   bool attrValue = false;
   std::string originalType;
-  std::vector<int> input_order;
 };
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistry {
@@ -59,11 +57,11 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistry {
 
   void GetOpTypeByImplyType(std::vector<std::string> &vec_op_type, const domi::ImplyType &imply_type);
 
-  domi::ParseParamFunc GetParseParamFunc(const std::string &op_type, const std::string &ori_type);
+  domi::ParseParamFunc GetParseParamFunc(const std::string &op_type);
 
-  domi::ParseParamByOpFunc GetParseParamByOperatorFunc(const std::string &ori_type);
+  domi::ParseParamByOpFunc GetParseParamByOperatorFunc(const std::string &op_type);
 
-  domi::FusionParseParamFunc GetFusionParseParamFunc(const std::string &op_type, const std::string &ori_type);
+  domi::FusionParseParamFunc GetFusionParseParamFunc(const std::string &op_type);
 
   domi::ParseSubgraphFunc GetParseSubgraphPostFunc(const std::string &op_type);
 
@@ -74,13 +72,14 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistry {
   bool GetOmTypeByOriOpType(const std::string &ori_optype, std::string &om_type);
 
  private:
+  std::unordered_map<std::string, std::set<std::string>> op_ori_optype_map_;
   std::unordered_map<std::string, domi::ImplyType> op_run_mode_map_;
-  std::unordered_map<std::string, ParseParamFunc> op_parse_params_fn_map_;
+  std::unordered_map<std::string, ParseParamFunc> opParseParamsFnMap_;
   std::unordered_map<std::string, ParseParamByOpFunc> parse_params_by_op_func_map_;
-  std::unordered_map<std::string, FusionParseParamFunc> fusion_op_parse_params_fn_map_;
+  std::unordered_map<std::string, FusionParseParamFunc> fusionOpParseParamsFnMap_;
   std::unordered_map<std::string, ParseSubgraphFunc> op_types_to_parse_subgraph_post_func_;
   std::unordered_map<std::string, std::vector<RemoveInputConfigure>> remove_input_configure_map_;
-  std::unordered_map<std::string, std::string> origin_type_to_om_type_;
+  std::unordered_map<std::string, std::string> originOpType2OmOpType_;
 };
 }  // namespace domi
 #endif  // INC_REGISTER_OP_REGISTRY_H_

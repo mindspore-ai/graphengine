@@ -22,12 +22,16 @@
 #include <sstream>
 #include <vector>
 
+#include "framework/common/debug/ge_log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 
+namespace {
+bool is_loop_graph = false;
+}
 namespace ge {
 namespace {
 bool GraphShouldBeSkip(const ge::ComputeGraphPtr &graph) {
@@ -40,6 +44,7 @@ bool GraphShouldBeSkip(const ge::ComputeGraphPtr &graph) {
 }  // namespace
 
 Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(AtomicAddrCleanPass);
   if (graph == nullptr) {
     GELOGE(PARAM_INVALID, "param [graph] must not be null.");
     return PARAM_INVALID;
@@ -66,10 +71,10 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
       }
       atomic_node_vec.push_back(node);
     }
-    if (!is_loop_graph_ && node->GetType() == LOOPCOND) {
+    if (!is_loop_graph && node->GetType() == LOOPCOND) {
       // there is loop in this graph
       GELOGD("There is no loop node. It will insert clean node follow atomic node.");
-      is_loop_graph_ = true;
+      is_loop_graph = true;
     }
   }
   if (atomic_node_vec.empty()) {
@@ -78,7 +83,7 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
   }
   // 2.Insert clean node and link to atomic node
   Status ret;
-  if (is_loop_graph_) {
+  if (is_loop_graph) {
     ret = HandleLoopGraph(graph, atomic_node_vec);
     if (ret != SUCCESS) {
       return ret;
@@ -90,6 +95,7 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     }
   }
   GELOGD("AtomicAddrCleanPass end.");
+  GE_TIMESTAMP_END(AtomicAddrCleanPass, "GraphManager::AtomicAddrCleanPass");
   return SUCCESS;
 }
 
@@ -166,14 +172,12 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
   if (!session_graph_id.empty()) {
     (void)AttrUtils::SetStr(op_desc, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
   }
-  string node_name = op_desc->GetName();
   // Only flush subgraph name
-  if (graph->GetParentGraph() != nullptr) {
-    node_name = graph->GetName() + "_" + node_name;
-  }
+  string node_name = (graph->GetParentGraph() != nullptr)
+                       ? (graph->GetName() + "_" + op_desc->GetName() + session_graph_id)
+                       : (op_desc->GetName() + session_graph_id);
 
-  string name = node_name + session_graph_id;
-  op_desc->SetName(name);
+  op_desc->SetName(node_name);
   GELOGI("Create cleanAddr op:%s.", op_desc->GetName().c_str());
   // To avoid same name between graphs, set session graph id to this node
   NodePtr clean_addr_node = graph->AddNodeFront(op_desc);
@@ -199,7 +203,7 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
   }
   GELOGD("Graph add cleanAddrNode op out ctrl edge, dst node: %s.", atomic_node->GetName().c_str());
   std::string stream_label;
-  if (is_loop_graph_ && AttrUtils::GetStr(atomic_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
+  if (is_loop_graph && AttrUtils::GetStr(atomic_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
     if (!AttrUtils::SetStr(atomic_clean_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
       GELOGW("LinkToAtomicNode: SetStr failed");
       return INTERNAL_ERROR;
@@ -258,7 +262,7 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   return true;
 }
 ///
-/// @brief Clear Status, used for subgraph pass
+/// @brief Clear Status, uesd for subgraph pass
 /// @return SUCCESS
 ///
 Status AtomicAddrCleanPass::ClearStatus() {

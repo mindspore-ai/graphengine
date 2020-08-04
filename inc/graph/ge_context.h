@@ -28,7 +28,6 @@ class GEContext {
   uint32_t DeviceId();
   uint64_t TraceId();
   void Init();
-  void SetSessionId(uint64_t session_id);
   void SetCtxDeviceId(uint32_t device_id);
 
  private:

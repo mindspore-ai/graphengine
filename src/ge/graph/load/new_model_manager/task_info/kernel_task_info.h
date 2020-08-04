@@ -61,8 +61,6 @@ class KernelTaskInfo : public TaskInfo {
     sm_desc_ = nullptr;
     flowtable_ = nullptr;
     args_ = nullptr;
-    superkernel_device_args_addr_ = nullptr;
-    superkernel_dev_nav_table_ = nullptr;
   }
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
@@ -89,8 +87,6 @@ class KernelTaskInfo : public TaskInfo {
   }
 
   uint32_t GetSktTaskID() override { return skt_id_; }
-
-  bool CallSaveDumpInfo() override { return call_save_dump_; };
 
   cce::ccOpContext ctx_;
   FusionOpInfo fusion_op_info_;
@@ -134,7 +130,6 @@ class KernelTaskInfo : public TaskInfo {
   void UpdateSKTTaskId();
   Status SKTFinalize();
   Status SuperKernelLaunch();
-  uint32_t GetDumpFlag();
   Status SaveSuperKernelInfo();
   bool IsMarkedLastNode();
   bool IsMarkedFirstNode();
@@ -158,8 +153,6 @@ class KernelTaskInfo : public TaskInfo {
   OpDescPtr op_desc_;
   DavinciModel *davinci_model_;
   uint32_t args_offset_ = 0;
-  int64_t fixed_addr_offset_ = 0;
-  bool call_save_dump_ = false;
 
   // aicpu ext_info device mem
   void *aicpu_ext_info_addr_ = nullptr;
@@ -171,9 +164,6 @@ class KernelTaskInfo : public TaskInfo {
   bool is_n_batch_spilt_;
   int64_t group_key_;
   bool has_group_key_;
-  uint32_t skt_dump_flag_ = RT_KERNEL_DEFAULT;
-  void *superkernel_device_args_addr_ = nullptr;
-  void *superkernel_dev_nav_table_ = nullptr;
 
   struct AICPUCustomInfo {
     void *input_descs = nullptr;
@@ -193,9 +183,6 @@ class KernelTaskInfo : public TaskInfo {
     void *last_sm_desc;
     std::vector<void *> kernel_list;
     std::vector<void *> arg_list;
-    std::vector<uint32_t> dump_flag_list;
-    std::vector<OpDescPtr> op_desc_list;
-    std::vector<uintptr_t> dump_args_list;
     uint32_t last_dump_flag;
     int64_t last_group_key;
     uintptr_t last_dump_args;

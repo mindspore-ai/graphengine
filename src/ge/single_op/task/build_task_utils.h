@@ -18,7 +18,6 @@
 #define GE_SINGLE_OP_TASK_BUILD_TASK_UTILS_H_
 
 #include <vector>
-#include <sstream>
 
 #include "graph/op_desc.h"
 #include "single_op/single_op.h"
@@ -32,21 +31,6 @@ class BuildTaskUtils {
   static std::vector<std::vector<void *>> GetAddresses(const OpDescPtr &op_desc, const SingleOpModelParam &param);
   static std::vector<void *> JoinAddresses(const std::vector<std::vector<void *>> &addresses);
   static std::vector<void *> GetKernelArgs(const OpDescPtr &op_desc, const SingleOpModelParam &param);
-  static std::string GetTaskInfo(const OpDescPtr &op_desc);
-  template <typename T>
-  static std::string VectorToString(const std::vector<T> &values) {
-    std::stringstream ss;
-    ss << '[';
-    auto size = values.size();
-    for (size_t i = 0; i < size; ++i) {
-      ss << values[i];
-      if (i != size - 1) {
-        ss << ", ";
-      }
-    }
-    ss << ']';
-    return ss.str();
-  }
 };
 }  // namespace ge
 #endif  // GE_SINGLE_OP_TASK_BUILD_TASK_UTILS_H_

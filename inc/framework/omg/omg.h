@@ -106,6 +106,7 @@ void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &ou
 void UpdateOmgCtxWithParserCtx();
 
 void UpdateParserCtxWithOmgCtx();
+
 }  // namespace ge
 
 namespace domi {

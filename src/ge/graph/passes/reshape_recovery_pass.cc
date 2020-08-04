@@ -30,10 +30,6 @@ NodePtr CreateReshape(const ConstGeTensorDescPtr &src, const ConstGeTensorDescPt
   if (ret != GRAPH_SUCCESS) {
     return nullptr;
   }
-  ret = reshape->AddInputDesc("shape", GeTensorDesc(GeShape(), Format(), DT_INT32));
-  if (ret != GRAPH_SUCCESS) {
-    return nullptr;
-  }
   ret = reshape->AddOutputDesc("y", *dst);
   if (ret != GRAPH_SUCCESS) {
     return nullptr;
@@ -53,10 +49,7 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
       GE_CHECK_NOTNULL(dst_node);
       GE_CHECK_NOTNULL(dst_node->GetOpDesc());
       auto dst_tensor = dst_node->GetOpDesc()->GetInputDescPtr(dst_anchor->GetIdx());
-      bool is_need_insert_reshape = src_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
-                                    dst_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
-                                    src_tensor->GetShape().GetDims() != dst_tensor->GetShape().GetDims();
-      if (is_need_insert_reshape) {
+      if (src_tensor->GetShape().GetDims() != dst_tensor->GetShape().GetDims()) {
         auto reshape = CreateReshape(src_tensor, dst_tensor, node->GetOwnerComputeGraph());
         GE_CHECK_NOTNULL(reshape);
         auto ret = GraphUtils::InsertNodeBetweenDataAnchors(src_anchor, dst_anchor, reshape);

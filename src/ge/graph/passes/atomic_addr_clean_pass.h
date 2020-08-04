@@ -75,7 +75,6 @@ class AtomicAddrCleanPass : public GraphPass {
   bool IsAtomicOp(const NodePtr &node);
 
   vector<NodePtr> hcom_node_vec_;
-  bool is_loop_graph_ = false;
 };
 }  // namespace ge
 

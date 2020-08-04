@@ -27,6 +27,7 @@ using std::string;
 using std::vector;
 
 namespace fe {
+
 class PlatformInfoManager {
  public:
   PlatformInfoManager(const PlatformInfoManager &) = delete;
@@ -37,8 +38,6 @@ class PlatformInfoManager {
   uint32_t Finalize();
 
   uint32_t GetPlatformInfo(const string SoCVersion, PlatformInfo &platformInfo, OptionalInfo &optiCompilationInfo);
-
-  uint32_t GetPlatformInfoWithOutSocVersion(PlatformInfo &platformInfo, OptionalInfo &optiCompilationInfo);
 
   void SetOptionalCompilationInfo(OptionalInfo &optiCompilationInfo);
 
@@ -95,5 +94,6 @@ class PlatformInfoManager {
   map<string, PlatformInfo> platformInfoMap_;
   OptionalInfo optiCompilationInfo_;
 };
+
 }  // namespace fe
 #endif

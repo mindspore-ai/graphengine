@@ -54,9 +54,9 @@ const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 struct DataBuffer {
  public:
   void *data;       // Data address
-  uint64_t length;  // Data length
+  uint32_t length;  // Data length
   bool isDataSupportMemShare = false;
-  DataBuffer(void *dataIn, uint64_t len, bool isSupportMemShare)
+  DataBuffer(void *dataIn, uint32_t len, bool isSupportMemShare)
       : data(dataIn), length(len), isDataSupportMemShare(isSupportMemShare) {}
 
   DataBuffer() : data(nullptr), length(0), isDataSupportMemShare(false) {}
@@ -106,7 +106,7 @@ struct ShapeDescription {
 // Definition of input and output description information
 struct InputOutputDescInfo {
   std::string name;
-  uint64_t size;
+  uint32_t size;
   uint32_t data_type;
   ShapeDescription shape_info;
 };
@@ -231,7 +231,6 @@ struct Options {
 
 // Profiling info of task
 struct TaskDescInfo {
-  std::string model_name;
   std::string op_name;
   uint32_t block_dim;
   uint32_t task_id;
@@ -240,7 +239,6 @@ struct TaskDescInfo {
 
 // Profiling info of graph
 struct ComputeGraphDescInfo {
-  std::string model_name;
   std::string op_name;
   std::string op_type;
   std::vector<Format> input_format;

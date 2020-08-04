@@ -33,6 +33,7 @@ class SessionManager {
   friend class GELib;
 
  public:
+  Status SetrtContext(rtContext_t rtContext);
   ///
   /// @ingroup ge_session
   /// @brief create session
@@ -162,12 +163,10 @@ class SessionManager {
 
   Status GetNextSessionId(SessionId &next_session_id);
 
-  Status SetRtContext(SessionId session_id, rtContext_t rtContext);
-
   std::map<SessionId, SessionPtr> session_manager_map_;
   std::mutex mutex_;
   bool init_flag_ = false;
 };
-}  // namespace ge
+};  // namespace ge
 
 #endif  // GE_SESSION_SESSION_MANAGER_H_

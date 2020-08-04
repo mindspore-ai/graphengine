@@ -27,7 +27,6 @@
 #include "graph/ge_tensor.h"
 #include "graph/graph.h"
 #include "graph/op_desc.h"
-#include "graph/detail/attributes_holder.h"
 
 namespace ge {
 class GeGenerator {

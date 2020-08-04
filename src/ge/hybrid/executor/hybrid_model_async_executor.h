@@ -35,8 +35,6 @@ class HybridModelAsyncExecutor {
 
   Status Init();
 
-  Status Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
-
   Status Start(const std::shared_ptr<ModelListener> &listener);
 
   void SetDeviceId(uint32_t device_id);
@@ -54,10 +52,10 @@ class HybridModelAsyncExecutor {
 
   Status SyncVarData();
 
-  Status HandleResult(Status exec_ret, uint32_t data_id, HybridModelExecutor::ExecuteArgs &args,
+  Status HandleResult(Status exec_ret, uint32_t data_id, const std::vector<TensorValue> &output_tensors,
                       OutputData *output_data);
 
-  Status CopyOutputs(HybridModelExecutor::ExecuteArgs &args, OutputData *output_data,
+  Status CopyOutputs(const std::vector<TensorValue> &output_tensors, OutputData *output_data,
                      std::vector<ge::OutputTensorInfo> &outputs);
 
   Status OnComputeDone(uint32_t data_index, uint32_t result_code, std::vector<ge::OutputTensorInfo> &outputs);
@@ -72,7 +70,7 @@ class HybridModelAsyncExecutor {
   uint32_t model_id_ = 0U;
   std::atomic_bool run_flag_;
   std::unique_ptr<DataInputer> data_inputer_;
-  std::unique_ptr<HybridModelExecutor> executor_;
+  std::unique_ptr<HybridModelExecutor> engine_;
   std::future<Status> future_;
   uint64_t iterator_count_ = 0;
 

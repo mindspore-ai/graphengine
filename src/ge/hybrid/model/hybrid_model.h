@@ -26,22 +26,38 @@
 #include "graph/node.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/model/node_item.h"
-#include "hybrid/model/graph_item.h"
 #include "model/ge_root_model.h"
 
 namespace ge {
 namespace hybrid {
+class HybridModelAsyncExecutor;
 class HybridModel {
  public:
   explicit HybridModel(GeRootModelPtr ge_model);
 
-  ~HybridModel();
+  ~HybridModel() = default;
 
   Status Init();
 
+  const std::vector<NodeItem *> &RootNodes() const { return root_nodes_; }
+
   const NodeItem *GetNodeItem(const NodePtr &node) const;
 
+  size_t NumNodes() const { return node_items_.size(); }
+
   uint64_t GetSessionId() const { return root_runtime_param_.session_id; }
+
+  int TotalInputs() const { return total_inputs_; }
+
+  const map<uint32_t, NodeItem *> &GetInputNodes() const { return input_nodes_; }
+
+  const std::map<uint32_t, std::vector<int>> &GetInputOffsets() const { return input_offsets_; }
+
+  const vector<int> &GetNetOutputInputOffsets() const;
+
+  const std::vector<int> &GetOutputOffsets() const { return output_offsets_; }
+
+  const std::vector<NodeItem *> &GetConstNodes() const { return const_nodes_; }
 
   GeModelPtr GetGeModel(const NodePtr &node) const;
 
@@ -51,11 +67,13 @@ class HybridModel {
 
   const uint8_t *GetVarMemBase() const { return var_mem_base_; }
 
-  void SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
+  void SetDeviceId(uint32_t device_id);
 
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
 
   uint32_t GetModelId() const { return model_id_; }
+
+  TensorValue *GetWeight(const NodeItem *const_node) const;
 
   TensorValue *GetVariable(const string &name) const;
 
@@ -63,28 +81,32 @@ class HybridModel {
 
   const std::vector<domi::TaskDef> *GetTaskDefs(const NodePtr &node) const;
 
-  const GraphItem *GetRootGraphItem() const;
+  int TotalOutputs() const { return total_outputs_; }
 
-  const GraphItem *GetSubgraphItem(const std::string &graph_name) const;
-
-  const GraphItem *GetSubgraphItem(const ComputeGraphPtr &subgraph) const;
+  GeRootModelPtr GetGeRootModel() const { return ge_root_model_; }
+  void Print() const;
 
  private:
   friend class HybridModelBuilder;
   friend class HybridModelAsyncExecutor;
 
-  std::string model_name_;
   GeRootModelPtr ge_root_model_;
+  std::vector<NodeItem *> root_nodes_;
   std::map<uint32_t, NodeItem *> input_nodes_;
+  std::map<uint32_t, std::vector<int>> input_offsets_;
+  std::vector<int> output_offsets_;
+  std::vector<int> net_output_input_offsets_;
+  NodeItem *net_output_node_ = nullptr;
+  std::vector<std::unique_ptr<NodeItem>> node_items_;
+  std::vector<NodeItem *> const_nodes_;
   std::map<std::string, NodePtr> constant_op_nodes_;
   std::map<std::string, NodePtr> variable_nodes_;
   std::map<std::string, std::unique_ptr<TensorValue>> variable_tensors_;
+  std::map<int, std::unique_ptr<TensorValue>> weights_;
   std::map<NodePtr, std::vector<domi::TaskDef>> task_defs_;
-  std::map<NodePtr, GeModelPtr> known_shape_sub_models_;
-
-  std::unique_ptr<GraphItem> root_graph_item_;
-  std::map<std::string, std::unique_ptr<GraphItem>> subgraph_items_;
-  std::map<NodePtr, std::unique_ptr<NodeItem>> node_items_;
+  std::map<NodePtr, GeModelPtr> known_shape_sub_graphs_;
+  int total_inputs_ = 0;
+  int total_outputs_ = 0;
 
   // runtime fields
   uint32_t device_id_ = 0;

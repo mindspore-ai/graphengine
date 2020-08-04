@@ -26,34 +26,15 @@
 
 namespace ge {
 namespace hybrid {
-class AllocationAttr {
- public:
-  explicit AllocationAttr(int padding);
-  explicit AllocationAttr(void *try_reuse_addr);
-  AllocationAttr(int padding, void *try_reuse_addr);
-  ~AllocationAttr() = default;
-
- private:
-  friend class NpuMemoryAllocator;
-  int padding_ = 0;
-  void *try_reuse_addr_ = nullptr;
-};
-
 class NpuMemoryAllocator {
  public:
   ~NpuMemoryAllocator() = default;
   static NpuMemoryAllocator *GetAllocator(uint32_t device_id);
   static NpuMemoryAllocator *GetAllocator();
   static void DestroyAllocator();
-  static AllocationAttr *AttrWithDefaultPadding() {
-    static AllocationAttr attr(kDefaultPadding, nullptr);
-    return &attr;
-  }
 
-  void *Allocate(std::size_t size, AllocationAttr *attr = nullptr);
+  void *Allocate(std::size_t size, void *try_reuse_addr = nullptr);
   void Deallocate(void *data);
-
-  static constexpr int kDefaultPadding = 32;
 
  private:
   explicit NpuMemoryAllocator(uint32_t device_id);

@@ -40,28 +40,19 @@ Status AicpuNodeTaskBase::AllocTensorBuffer(size_t size, std::unique_ptr<TensorB
 }
 
 Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info) {
-  if (node_item_->is_dynamic) {
-    // dynamic node must have ext info
-    GE_CHK_STATUS_RET(aicpu_ext_handle_.Parse(kernel_ext_info),
-                      "Node[%s] parse kernel ext info failed, kernel_ext_info_size=%zu.", node_name_.c_str(),
-                      kernel_ext_info.size());
-  }
-
-  // if no ext info no need copy to device.
-  if (kernel_ext_info.empty()) {
-    GELOGI("Node[%s] kernel_ext_info is empty, no need copy to device, is_dynamic=%s.", node_name_.c_str(),
-           node_item_->is_dynamic ? "true" : "false");
-    return SUCCESS;
-  }
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.Parse(kernel_ext_info),
+                    "Node[%s] parse kernel ext info failed, kernel_ext_info_size=%zu.", node_name_.c_str(),
+                    kernel_ext_info.size());
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(kernel_ext_info.size(), ext_info_addr_dev_),
                     "Node[%s] alloc kernel_ext_info buf failed, size=%zu", node_name_.c_str(), kernel_ext_info.size());
 
-  // copy default ext info to device
-  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(), kernel_ext_info.data(),
-                         kernel_ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE));
-
+  // if no input and no output(DEPEND_COMPUTE equal no output), copy once, or else copy when update args.
+  if (node_item_->num_inputs == 0 && ((unknown_type_ == DEPEND_COMPUTE) || (node_item_->num_outputs == 0))) {
+    GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(), kernel_ext_info.data(),
+                           kernel_ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE));
+  }
   return SUCCESS;
 }
 
@@ -148,18 +139,16 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
 }
 
 Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
-  GELOGI("Node[%s] update args begin. is_dynamic=%s, unknown_type=%d", node_name_.c_str(),
-         node_item_->is_dynamic ? "true" : "false", unknown_type_);
+  GELOGI("Node[%s] update args begin. unknown_type=%d", node_name_.c_str(), unknown_type_);
   if (node_item_->num_inputs == 0 && node_item_->num_outputs == 0) {
     GELOGI("Node[%s] has no input and output, no need update args.", node_name_.c_str());
     return SUCCESS;
   }
 
   GE_CHK_STATUS_RET(UpdateIoAddr(context), "Node[%s] update io addr failed.", node_name_.c_str());
-  if (node_item_->is_dynamic) {
-    // dynamic node need update ext info.
-    GE_CHK_STATUS_RET(UpdateExtInfo(), "Node[%s] update ext info failed.", node_name_.c_str());
-  }
+
+  GE_CHK_STATUS_RET(UpdateExtInfo(), "Node[%s] update ext info failed.", node_name_.c_str());
+
   GELOGI("Node[%s] update args end.", node_name_.c_str());
   return SUCCESS;
 }
@@ -286,12 +275,9 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
 
   fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr = reinterpret_cast<uintptr_t>(kernel_workspace_->GetData());
   fwk_op_kernel.fwkKernelBase.fwk_kernel.inputOutputAddr = reinterpret_cast<uintptr_t>(input_output_addr_->GetData());
-
-  if (ext_info_addr_dev_ != nullptr) {
-    // set ext info addr and ext info num
-    fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
-    fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info_addr_dev_->GetSize();
-  }
+  // set ext info addr and ext info num
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
+  fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info_addr_dev_->GetSize();
 
   fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = GetStepIdAddr(model);
 
@@ -520,8 +506,7 @@ Status AicpuTfNodeTask::UpdateIoAddr(TaskContext &context) {
     io_addrs.emplace_back(reinterpret_cast<uintptr_t>(inputData->GetData()));
   }
 
-  // known shape or not depend compute
-  if (!node_item_->is_dynamic || unknown_type_ != DEPEND_COMPUTE) {
+  if (unknown_type_ != DEPEND_COMPUTE) {
     // unknown type 4 do this in call back.
     GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
     for (auto j = 0; j < node_item_->num_outputs; ++j) {
@@ -563,17 +548,14 @@ Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
 }
 
 Status AicpuTfNodeTask::TaskCallback(TaskContext &context) {
-  GELOGI("Node[%s] task callback start. is_dynamic=%s, unknown_type=%d.", node_name_.c_str(),
-         node_item_->is_dynamic ? "true" : "false", unknown_type_);
+  GELOGI("Node[%s] task callback start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
   Status callback_ret = SUCCESS;
-  if (node_item_->is_dynamic) {
-    // check need update shape, call update shape.
-    if (unknown_type_ == DEPEND_SHAPE_RANGE) {
-      // check result
-      callback_ret = UpdateOutputShapeFromExtInfo();
-    } else if (unknown_type_ == DEPEND_COMPUTE) {
-      callback_ret = UpdateShapeAndDataByResultSummary(context);
-    }
+  // check need update shape, call update shape.
+  if (unknown_type_ == DEPEND_SHAPE_RANGE) {
+    // check result
+    callback_ret = UpdateOutputShapeFromExtInfo();
+  } else if (unknown_type_ == DEPEND_COMPUTE) {
+    callback_ret = UpdateShapeAndDataByResultSummary(context);
   }
   GELOGI("Node[%s] task callback end.", node_name_.c_str());
   return callback_ret;
@@ -630,13 +612,8 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
 
   GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info), "Node[%s] init ext info failed.", node_name.c_str());
 
-  if (ext_info_addr_dev_ == nullptr) {
-    aicpu_param_head->extInfoLength = 0;
-    aicpu_param_head->extInfoAddr = 0;
-  } else {
-    aicpu_param_head->extInfoLength = ext_info_addr_dev_->GetSize();
-    aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
-  }
+  aicpu_param_head->extInfoLength = ext_info_addr_dev_->GetSize();
+  aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
 
   GELOGI("Node[%s] init end.", node_name.c_str());
   return SUCCESS;
@@ -687,12 +664,10 @@ Status AicpuNodeTask::LaunchTask(TaskContext &context) {
 }
 
 Status AicpuNodeTask::TaskCallback(TaskContext &context) {
-  GELOGI("Node[%s] task callback start, is_dynamic = %s, unknown_type=%d.", node_name_.c_str(),
-         node_item_->is_dynamic ? "true" : "false", unknown_type_);
+  GELOGI("Node[%s] task callback start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
   Status callback_ret = SUCCESS;
-
   // check need update shape, call update shape.
-  if (node_item_->is_dynamic && unknown_type_ == DEPEND_SHAPE_RANGE) {
+  if (unknown_type_ == DEPEND_SHAPE_RANGE) {
     // check result
     callback_ret = UpdateOutputShapeFromExtInfo();
   } else {

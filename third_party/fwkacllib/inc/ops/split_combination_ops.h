@@ -25,11 +25,11 @@ namespace ge {
 *@par Inputs:
 * Two inputs, including:
 *@li x: An ND Tensor.
-*Must be one of the types:float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32. 
+*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 *@li split_dim: Must be the following type:int32. Specifies the dimension along which to split.
 
 *@par Attributes:
-*num_split: A required int32. Specifies the number of output tensors. No default value.
+*num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value.
 
 *@par Outputs:
 *y: Dynamic output.A list of output tensors. Has the same type and format as "x".
@@ -186,7 +186,6 @@ REG_OP(ParallelConcat)
 
 *@par Attributes:
 *concat_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to concatenate. No default value.
-*N: An attribute int8, int16, int32, or int64. Specifies the number of elements in "x". Defaults to "1". 
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as "x".
@@ -268,9 +267,7 @@ REG_OP(ConcatD)
 *@par Inputs:
 * Two inputs, including:
 *@li x: Dynamic input.An NC1HWC0 or ND Tensor.
-*Must be one of the following types: float16, float32, double, int32,
-*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16,
-*     complex128, uint32, uint64, qint16, quint16.
+*Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 *@li concat_dim: An int32, or int64. Specifies the dimension along which to concatenate.
 
 *@par Attributes:

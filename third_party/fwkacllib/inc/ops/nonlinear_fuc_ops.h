@@ -83,7 +83,7 @@ REG_OP(TanhGrad)
 
 *@par Inputs:
 *One input:
-*x: A Tensor. Must be one of the following types: float16, float32, complex64, complex128, double.
+*x: A Tensor. Must be one of the following types: float16, float32, complex64, complex128, int32, int64
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -184,7 +184,7 @@ REG_OP(Relu6Grad)
 * @brief Compute sigmoid of "x" element-wise.
 
 * @par Inputs:
-* A Tensor of type complex64, complex128, float16, float32 or double.
+* A Tensor of type UnaryDataType.
 
 * @par Outputs:
 * A Tensor. Has the same type as "x".
@@ -220,7 +220,7 @@ REG_OP(SigmoidGrad)
 *if x>0, x+log(1+exp(-x)); otherwise log(1+exp(x)).
 
 *@par Inputs:
-*x: A Tensor of type double, float16 or float32.
+*x: A Tensor of type float16 or float32.
 
 *@par Outputs:
 *y: A tensor. Has the same type and format as input "x".
@@ -442,7 +442,7 @@ REG_OP(PReluGrad)
 *x: A float16, float32 or double, for the input data type.
 
 *@par Attributes:
-*alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0".
+*alpha: A float. Defines at which negative value the ELU saturates. Defaults to "1.0".
 
 *@par Outputs:
 *y: A float16, float32 or double, for the normalized result.

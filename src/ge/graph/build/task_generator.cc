@@ -29,7 +29,6 @@
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "graph/common/ge_call_wrapper.h"
 #include "init/gelib.h"
 
 using domi::LogTimeStampDef;
@@ -48,6 +47,7 @@ const char *const kIsOutputVar = "OUTPUT_IS_VAR";
 const char *const kProfilingMode = "PROFILING_MODE";
 const char *const kProfilingFpPoint = "FP_POINT";
 const char *const kProfilingBpPoint = "BP_POINT";
+const char *const kOffOptimize = "off_optimize";
 const uint32_t kProfilingArStep = 2;
 const uint64_t kProfilingFpStartLogid = 1;
 const uint64_t kProfilingBpEndLogid = 2;
@@ -75,7 +75,21 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
   std::vector<TaskDef> task_def_list;
   std::map<uint32_t, string> op_name_map;
   GE_DUMP(graph, "GenerateTaskBefore");
-  Status ret = GenerateTask(run_context, graph, task_def_list, op_name_map);
+  bool is_unknown_shape = false;
+  NodePtr parent_node = graph->GetParentNode();
+  if (parent_node != nullptr) {
+    auto op_desc = parent_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    (void)AttrUtils::GetBool(op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape);
+  }
+  Status ret = SUCCESS;
+  if (is_unknown_shape) {
+    GELOGI("Beign to generate unknown shape task. Graph name is %s.", graph->GetName().c_str());
+    ret = GenerateUnknownShapeTask(run_context, graph, task_def_list, op_name_map);
+  } else {
+    GELOGI("Beign to generate known shape task. Graph name is %s.", graph->GetName().c_str());
+    ret = GenerateTask(run_context, graph, task_def_list, op_name_map);
+  }
   GE_DUMP(graph, "GenerateTaskAfter");
 
   if (ret != SUCCESS) {
@@ -95,7 +109,7 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
                    GELOGE(FAILED, "SetListStr failed.");
                    return FAILED);
 
-  GELOGI("Call GenerateTask Success, task_def_list.size:%zu, op_name_map.size:%zu", task_def_list.size(),
+  GELOGI("Generate task success, task_def_list.size:%zu, op_name_map.size:%zu", task_def_list.size(),
          op_name_map.size());
 
   // Init and serialize model_task_def
@@ -117,7 +131,7 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
     return ret;
   }
 
-  GELOGI("Get TaskInfo success. session_id=%lu", session_id);
+  GELOGI("Get TaskInfo success. session id is %lu", session_id);
   return SUCCESS;
 }
 
@@ -184,7 +198,7 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
 
 Status TaskGenerator::SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion_nodes, ComputeGraphPtr &graph) {
   std::map<NodePtr, int64_t> nodes_with_group_attr;
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     int64_t group_id = kInvalidGroupId;
@@ -235,13 +249,12 @@ Status TaskGenerator::SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion
 
 Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &graph,
                                    vector<domi::TaskDef> &task_def_list, map<uint32_t, string> &op_name_map) {
-  GELOGD("Beign to generate task, graph name is %s.", graph->GetName().c_str());
   std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
   if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GenerateTask failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
-  GE_CHK_STATUS_RET(MarkNodeAndSetIndex(graph), "MarkNodeAndSetIndex failed.");
+  GE_CHK_STATUS_RET(MarkNodeAndSetIndex(graph), "Mark node and set index failed.");
   ProfilingPoint profiling_point;
   vector<uint32_t> all_reduce_nodes;
   GE_CHK_STATUS_RET(FindProfilingTaskIndex(graph, profiling_point, all_reduce_nodes));
@@ -251,21 +264,141 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   GE_TIMESTAMP_CALLNUM_START(GenerateTask);
   // map store fusion nodes
   map<int64_t, std::vector<NodePtr>> fusion_nodes;
-  string buffer_optimize = "off_optimize";
+  string buffer_optimize = kOffOptimize;
   (void)ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
-  if (buffer_optimize != "off_optimize") {
+  if (buffer_optimize != kOffOptimize) {
+    GE_CHK_STATUS_RET(SaveFusionNodes(fusion_nodes, graph));
+  }
+  std::unordered_set<Node *> fusion_nodes_seen;
+  int64_t group_key;
+  uint32_t node_index = 0;
+  for (auto &node : graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    node_index++;
+    string name = node->GetName();
+    string type = node->GetType();
+    bool attr_notask = false;
+    bool get_attr_notask_flag = ge::AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_notask);
+    GE_IF_BOOL_EXEC(get_attr_notask_flag && attr_notask,
+                    GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
+                    continue);
+
+    GE_CHK_STATUS_RET(UpdateOpIsVarAttr(op_desc, graph->GetSessionID()));
+    string op_kernel_lib_name = op_desc->GetOpKernelLibName();
+    // For fusion ddb pass, task def must be continuous.
+    // Part2: Call
+    auto fusion_task_info =
+      FusionTaskInfo{run_context,        graph,         node,        op_desc,         node_index,      ge_lib,
+                     ops_kernel_manager, task_def_list, op_name_map, profiling_point, all_reduce_nodes};
+    GE_CHK_STATUS_RET(GenerateTaskForFusionNode(fusion_task_info, fusion_nodes, fusion_nodes_seen),
+                      "Call GenerateTaskForFusionNode node:%s(%s) failed", name.c_str(), type.c_str());
+    // continue directly
+    if (ge::AttrUtils::GetInt(op_desc, ATTR_NAME_FUSION_GROUP_KEY, group_key)) {
+      GELOGI("Fusion node[name:%s, type:%s] do not need generate task again.", name.c_str(), type.c_str());
+      continue;
+    }
+    if (op_kernel_lib_name.empty()) {
+      GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
+      continue;
+    }
+
+    OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
+    if (kernel_info_store == nullptr) {
+      GELOGE(INTERNAL_ERROR, "No ops kernel store found. node:%s(%s), op_kernel_lib_name=%s.", name.c_str(),
+             type.c_str(), op_kernel_lib_name.c_str());
+      return INTERNAL_ERROR;
+    }
+    GE_CHK_STATUS_RET(UpdateAnchorStatus(node), "Call UpdateAnchorStatus node:%s(%s) failed", name.c_str(),
+                      type.c_str());
+    int64_t op_id = op_desc->GetId();
+    int64_t stream_id = op_desc->GetStreamId();
+    if (stream_id < 0 || stream_id >= static_cast<int64_t>(run_context.graphStreamList.size())) {
+      GELOGE(INTERNAL_ERROR, "node[name:%s(%s), id:%ld] stream id is invalid, stream list size=%zu", name.c_str(),
+             type.c_str(), op_id, run_context.graphStreamList.size());
+      return INTERNAL_ERROR;
+    }
+
+    // Profiling task
+    size_t task_list_size_before = task_def_list.size();
+    GE_CHK_STATUS_RET(InsertProfilingTaskBefore(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
+    run_context.stream = run_context.graphStreamList[stream_id];
+    GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task.", op_kernel_lib_name.c_str(),
+           name.c_str(), type.c_str(), op_id, stream_id);
+    GE_TIMESTAMP_RESTART(GenerateTask);
+    auto ret = kernel_info_store->GenerateTask(*node, run_context, task_def_list);
+    GE_TIMESTAMP_ADD(GenerateTask);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task failed.",
+             op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id);
+      return ret;
+    }
+    // Profiling task
+    GE_CHK_STATUS_RET(InsertProfilingTaskAfter(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
+
+    size_t task_list_size_after = task_def_list.size();
+    // If tasks is reduced
+    if (task_list_size_after < task_list_size_before) {
+      GELOGE(FAILED, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task. but task num from %zu to %zu.",
+             op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id, task_list_size_before,
+             task_list_size_after);
+      return FAILED;
+    }
+
+    // Reset stream id to ge stream id, as graph load must use ge stream to reassign stream
+    void *ops_kernel_info_store_ptr = kernel_info_store.get();
+    for (size_t idx = task_list_size_before; idx < task_list_size_after; ++idx) {
+      task_def_list[idx].set_stream_id(static_cast<uint32_t>(stream_id));
+      op_name_map[idx] = name;
+      // Set opsKernelInfoStorePtr and op_index, the two fields be use in DistributeTask and InitTaskInfo
+      TaskDef *task_def_ptr = &task_def_list[idx];
+      GE_CHECK_NOTNULL(task_def_ptr);
+      task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(ops_kernel_info_store_ptr));
+    }
+
+    GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task finished, generate %zu task(s).",
+           op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id,
+           task_list_size_after - task_list_size_before);
+  }
+  GE_TIMESTAMP_CALLNUM_END(GenerateTask, "GraphBuild::GenerateTask");
+  return SUCCESS;
+}
+
+Status TaskGenerator::GenerateUnknownShapeTask(RunContext &run_context, ComputeGraphPtr &graph,
+                                               vector<domi::TaskDef> &task_def_list,
+                                               map<uint32_t, string> &op_name_map) {
+  std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
+  if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GenerateTask failed.");
+    return GE_CLI_GE_NOT_INITIALIZED;
+  }
+  GE_CHK_STATUS_RET(MarkNodeAndSetIndex(graph), "Mark node and set index failed.");
+  ProfilingPoint profiling_point;
+  vector<uint32_t> all_reduce_nodes;
+  GE_CHK_STATUS_RET(FindProfilingTaskIndex(graph, profiling_point, all_reduce_nodes));
+
+  const OpsKernelManager &ops_kernel_manager = ge_lib->OpsKernelManagerObj();
+
+  GE_TIMESTAMP_CALLNUM_START(GenerateTask);
+  // map store fusion nodes
+  map<int64_t, std::vector<NodePtr>> fusion_nodes;
+  string buffer_optimize = kOffOptimize;
+  (void)ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
+  if (buffer_optimize != kOffOptimize) {
     GE_CHK_STATUS_RET(SaveFusionNodes(fusion_nodes, graph));
   }
   std::unordered_set<Node *> fusion_nodes_seen;
   int64_t group_key;
   uint32_t node_index = 0;
   rtStream_t stream = nullptr;
-  bool is_unknown_shape = graph->GetGraphUnknownFlag();
-  if (is_unknown_shape) {
-    GE_CHK_STATUS_RET(SetUnknownShapeStream(run_context, stream), "Set unknown shape stream failed.");
+  GE_CHK_RT_RET(rtStreamCreate(&stream, 0));
+  run_context.stream = stream;
+  if (rtModelBindStream(run_context.model, stream, 0) != RT_ERROR_NONE) {
+    GELOGE(FAILED, "Call rt api failed.");
+    GE_CHK_RT(rtStreamDestroy(stream));
+    return FAILED;
   }
-
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     node_index++;
@@ -303,17 +436,12 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     }
     GE_CHK_STATUS_RET(UpdateAnchorStatus(node), "Call UpdateAnchorStatus node:%s(%s) failed", name.c_str(),
                       type.c_str());
+    int64_t op_id = op_desc->GetId();
+    int64_t stream_id = op_desc->GetStreamId();
     // Profiling task
     size_t task_list_size_before = task_def_list.size();
     GE_CHK_STATUS_RET(InsertProfilingTaskBefore(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
-    int64_t op_id = op_desc->GetId();
-    // Compatible with dynamic shape scenes, the default is 0
-    int64_t stream_id = 0;
-    if (!is_unknown_shape) {
-      stream_id = op_desc->GetStreamId();
-      GE_CHK_STATUS_RET(SetKnownShapeStream(run_context, stream_id), "node[name:%s(%s), id:%ld] stream id is invalid.",
-                        name.c_str(), type.c_str(), op_id);
-    }
+
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task.", op_kernel_lib_name.c_str(),
            name.c_str(), type.c_str(), op_id, stream_id);
     GE_TIMESTAMP_RESTART(GenerateTask);
@@ -326,7 +454,6 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     }
     // Profiling task
     GE_CHK_STATUS_RET(InsertProfilingTaskAfter(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
-
     size_t task_list_size_after = task_def_list.size();
     // If tasks is reduced
     if (task_list_size_after < task_list_size_before) {
@@ -339,21 +466,20 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     // Reset stream id to ge stream id, as graph load must use ge stream to reassign stream
     void *ops_kernel_info_store_ptr = kernel_info_store.get();
     for (size_t idx = task_list_size_before; idx < task_list_size_after; ++idx) {
-      task_def_list[idx].set_stream_id(static_cast<uint32_t>(stream_id));
       op_name_map[idx] = name;
       // Set opsKernelInfoStorePtr and op_index, the two fields be use in DistributeTask and InitTaskInfo
       TaskDef *task_def_ptr = &task_def_list[idx];
       GE_CHECK_NOTNULL(task_def_ptr);
       task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(ops_kernel_info_store_ptr));
     }
+
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task finished, generate %zu task(s).",
            op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id,
            task_list_size_after - task_list_size_before);
   }
-  if (is_unknown_shape) {
-    GE_CHK_STATUS_RET(DestroyUnknownShapeStream(run_context, stream), "Destory unknown shape stream failed.");
-  }
-  GE_TIMESTAMP_CALLNUM_EVENT_END(GenerateTask, "GraphBuild::GenerateTask");
+  GE_CHK_RT(rtModelUnbindStream(run_context.model, stream));
+  GE_CHK_RT(rtStreamDestroy(stream));
+  GE_TIMESTAMP_CALLNUM_END(GenerateTask, "GraphBuild::GenerateTask");
   return SUCCESS;
 }
 
@@ -502,11 +628,7 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  const auto all_nodes = graph->GetNodes(graph->GetGraphUnknownFlag());
-  if (all_nodes.empty()) {
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Graph's node is empty");
-    return GE_GRAPH_GRAPH_NODE_NULL;
-  }
+  const auto all_nodes = graph->GetAllNodes();
 
   int64_t node_index = 0;
   for (auto &node : all_nodes) {
@@ -593,7 +715,7 @@ Status TaskGenerator::AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   OpDescPtr fp_op_desc = nullptr;
   uint32_t current_idx = 0;
   uint32_t first_fp = 0;
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     string op_kernel_lib_name = op_desc->GetOpKernelLibName();
@@ -620,7 +742,7 @@ Status TaskGenerator::AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingP
     return SUCCESS;
   }
   GELOGI("Find fp_op_desc is %s, id is %ld", fp_op_desc->GetName().c_str(), fp_op_desc->GetId());
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     current_idx++;
@@ -641,7 +763,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   uint32_t last_bp = 0;
   uint32_t iter_end = 0;
   uint32_t current_idx = 0;
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     current_idx++;
@@ -685,7 +807,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
 
   GE_CHECK_NOTNULL(bp_op_desc);
   current_idx = 0;
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     current_idx++;
@@ -704,7 +826,7 @@ Status TaskGenerator::FindFpOfEnv(const ComputeGraphPtr &graph, const std::strin
   GELOGI("Start FindFpOfEnv");
   uint32_t current_idx = 0;
   uint32_t first_fp = 0;
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(node->GetOpDesc());
     current_idx++;
@@ -729,7 +851,7 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
   uint32_t current_idx = 0;
   uint32_t iter_end = 0;
   uint32_t last_bp = 0;
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  for (auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(node->GetOpDesc());
     current_idx++;
@@ -805,10 +927,10 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
 
   bool train_graph = graph->GetNeedIteration();
   if (profiling_point.fp_index == 0 && train_graph) {
-    GELOGW("First forward op name can't be found in graph for training trace.");
+    GELOGE(FAILED, "First forward op name can't be found in graph for training trace.");
   }
   if (profiling_point.bp_index == 0 && train_graph) {
-    GELOGW("Last backward op name can't be found in graph for training trace.");
+    GELOGE(FAILED, "Last backward op name can't be found in graph for training trace.");
   }
   return SUCCESS;
 }
@@ -946,31 +1068,4 @@ bool TaskGenerator::IsProfPoint(const OpDescPtr &op, const std::string &name) {
   return false;
 }
 
-Status TaskGenerator::SetUnknownShapeStream(RunContext &run_context, rtStream_t &stream) {
-  GE_CHK_RT_RET(rtStreamCreate(&stream, 0));
-  run_context.stream = stream;
-  rtError_t rt_ret = rtModelBindStream(run_context.model, stream, 0);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    GE_CHK_RT_RET(rtStreamDestroy(stream));
-    return FAILED;
-  }
-  return SUCCESS;
-}
-
-Status TaskGenerator::DestroyUnknownShapeStream(RunContext &run_context, rtStream_t &stream) {
-  GE_CHK_RT(rtModelUnbindStream(run_context.model, stream));
-  GE_CHK_RT_RET(rtStreamDestroy(stream));
-  return SUCCESS;
-}
-
-Status TaskGenerator::SetKnownShapeStream(RunContext &run_context, int64_t stream_id) {
-  if (stream_id < 0 || stream_id >= static_cast<int64_t>(run_context.graphStreamList.size())) {
-    GELOGE(INTERNAL_ERROR, "Stream id[%ld] is invalid, stream list size=%zu", stream_id,
-           run_context.graphStreamList.size());
-    return INTERNAL_ERROR;
-  }
-  run_context.stream = run_context.graphStreamList[stream_id];
-  return SUCCESS;
-}
 }  // namespace ge

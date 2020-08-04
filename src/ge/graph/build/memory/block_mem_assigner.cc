@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <sstream>
 
-#include "external/ge/ge_api_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
 #include "graph/buffer.h"
@@ -40,6 +39,7 @@ namespace {
 const char *const kAttrNameWorkspaceReuseFlag = "workspace_reuse_flag";
 const char *const kL2FusionDynamicConvergeOp = "l2fusion_dynamic_converge_op";
 const char *const kOpNoReuseMem = "no_reuse_mem_flag";
+const char *const kDisableReuseMemory = "ge.exec.disableReuseMemory";
 const char *const OP_NO_REUSE_MEM = "OP_NO_REUSE_MEM";
 const int kReuseMaxCount = 10;
 const int kReuseMaxOpNum = 10;
@@ -133,20 +133,21 @@ bool MemoryBlock::IsSameLabel(std::string &first_batch_label) {
 }
 
 bool CanNotLifeReuse(MemoryBlock *block) {
-  if ((block == nullptr) || !block->reuse_mem_ || block->deleted_block_ || block->continuous_block_) {
+  if (block == nullptr || !block->reuse_mem_ || block->deleted_block_ || block->continuous_block_ ||
+      block->GetLifeEnd() == kMaxLifeTime) {
     return true;
   }
   return false;
 }
 
-void MemoryBlock::AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life) {
+void MemoryBlock::AddLifeReuseBlock(MemoryBlock *block) {
   if (CanNotLifeReuse(this) || CanNotLifeReuse(block)) {
     return;
   }
   MemoryBlock *parent = nullptr;
   MemoryBlock *child = nullptr;
   // merge small block to large block
-  if (block->GetDependLifeBegin(stream_id_, total_node_depend_stream_life) > GetLifeEnd()) {
+  if ((block->GetLifeBegin() > GetLifeEnd()) && (block->stream_id_ == stream_id_)) {
     if ((child_offset_ + block->block_size_) <= block_size_) {
       parent = this;
       child = block;
@@ -178,87 +179,6 @@ size_t MemoryBlock::GetLifeBegin() {
     }
   }
   return life_time;
-}
-
-/// |-stream 1-|   |-stream 2-|
-/// |--block1--|   |--block---|
-/// |--block2--|   |--block---|
-/// |--block3--|\  |--block---|
-/// |--block---| \ |--block---|
-/// |--block---|  \|--block---|
-/// |--block---|   |--block7--|
-/// |--block---|   |--block---|
-/// block7's first node's input node's life begin > block2's life end, block7 can reuse block1~block2
-size_t MemoryBlock::GetDependLifeBegin(int64_t stream_id, DependStreamLife &total_node_depend_stream_life) {
-  AddDependLifeBegin(total_node_depend_stream_life);
-  auto it = depend_stream_life_.find(stream_id);
-  if (it == depend_stream_life_.end()) {
-    return 0;
-  }
-  return it->second;
-}
-
-void AddDependLife(const ge::NodePtr &org_node, const ge::NodePtr &node, int64_t stream_id,
-                   std::map<int64_t, size_t> &depend_stream_life, DependStreamLife &total_node_depend_stream_life) {
-  GE_CHECK_NOTNULL_EXEC(node, return );
-  auto node_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL_EXEC(node_desc, return );
-  auto node_id = node_desc->GetId();
-  auto stream_life = total_node_depend_stream_life.find(node_id);
-  if (stream_life != total_node_depend_stream_life.end()) {
-    for (auto &it : stream_life->second) {
-      if (depend_stream_life.find(it.first) == depend_stream_life.end()) {
-        depend_stream_life[it.first] = it.second;
-      }
-    }
-    return;
-  }
-
-  for (const auto &in_anchor : node->GetAllInAnchors()) {
-    GE_CHECK_NOTNULL_EXEC(in_anchor, continue);
-    for (auto peer_out_anchor : in_anchor->GetPeerAnchors()) {
-      GE_CHECK_NOTNULL_EXEC(peer_out_anchor, continue);
-      auto peer_node = peer_out_anchor->GetOwnerNode();
-      GE_CHECK_NOTNULL_EXEC(peer_node, continue);
-      auto peer_node_desc = peer_node->GetOpDesc();
-      GE_CHECK_NOTNULL_EXEC(peer_node_desc, continue);
-      auto peer_node_stream_id = peer_node_desc->GetStreamId();
-      if (peer_node_stream_id < 0) {
-        continue;
-      }
-      size_t peer_node_life_time = peer_node_desc->GetId();
-      auto it = depend_stream_life.find(peer_node_stream_id);
-      if (it == depend_stream_life.end() || peer_node_life_time > it->second) {
-        depend_stream_life[peer_node_stream_id] = peer_node_life_time;
-        if (peer_node_stream_id != stream_id) {
-          GELOGI("Node:%s stream id:%ld depend node:%s stream id:%ld index[%d] life time[%zu].",
-                 org_node->GetName().c_str(), stream_id, peer_node_desc->GetName().c_str(), peer_node_stream_id,
-                 peer_out_anchor->GetIdx(), peer_node_life_time);
-        }
-        AddDependLife(org_node, peer_node, stream_id, depend_stream_life, total_node_depend_stream_life);
-      }
-    }
-  }
-
-  // save on node to save next calculation
-  for (auto &it : depend_stream_life) {
-    if (total_node_depend_stream_life[node_id].find(it.first) == total_node_depend_stream_life[node_id].end()) {
-      total_node_depend_stream_life[node_id][it.first] = it.second;
-    }
-  }
-}
-
-void MemoryBlock::AddDependLifeBegin(DependStreamLife &total_node_depend_stream_life) {
-  if (!depend_stream_life_.empty()) {
-    return;
-  }
-  if (!node_type_index_list_.empty()) {
-    auto node = node_type_index_list_.front().node;
-    if (node != nullptr) {
-      AddDependLife(node, node, stream_id_, depend_stream_life_, total_node_depend_stream_life);
-    }
-  }
-  depend_stream_life_[stream_id_] = GetLifeBegin();
 }
 
 size_t MemoryBlock::GetLifeEnd() {
@@ -382,7 +302,7 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
           if (iter1 == anchor_to_symbol_.end()) {
             continue;
           }
-          const std::string &symbol = iter1->second;
+          std::string symbol = iter1->second;
           auto iter2 = symbol_size_.find(symbol);
           if (iter2 == symbol_size_.end()) {
             symbol_size_[symbol] = size;
@@ -397,7 +317,7 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
     all_memory_size.insert(all_memory_size.end(), temp.begin(), temp.end());
   }
   GELOGI("The last atomic_addr_clean node id: %ld", atomic_addr_clean_id_);
-  for (const auto &pair : symbol_size_) {
+  for (auto &pair : symbol_size_) {
     all_memory_size.emplace_back(pair.second);
   }
   sort(all_memory_size.begin(), all_memory_size.end());
@@ -507,6 +427,14 @@ bool CanReuseBySize(const map<string, uint64_t> &reusable_block_counts, const Me
   return can_reuse;
 }
 
+bool CanReuseByStream(const std::unordered_set<int64_t> &reuse_stream, MemoryBlock &reusable_block) {
+  bool can_reuse = false;
+  if (reuse_stream.find(reusable_block.stream_id_) != reuse_stream.cend()) {
+    can_reuse = true;
+  }
+  return can_reuse;
+}
+
 bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
                                                    uint32_t &peer_input_index) {
   if (n == nullptr || n->GetAllOutDataAnchors().size() <= 0) {
@@ -567,11 +495,11 @@ void BlockMemAssigner::InitReuseFlag() {
                                                        ge::CONSTANT,  ge::CONSTANTOP};
   static const std::set<std::string> kPostReuseTypes = {ge::DATA_TYPE, ge::AIPP_DATA_TYPE, ge::ENTER,
                                                         ge::REFENTER,  ge::NEXTITERATION,  ge::REFNEXTITERATION};
-  for (const auto &pair : symbol_to_anchors_) {
+  for (auto &pair : symbol_to_anchors_) {
     std::string symbol = pair.first;
     bool pre_reuse_flag = true;
     bool post_reuse_flag = true;
-    for (const auto &node_index_io : pair.second) {
+    for (auto &node_index_io : pair.second) {
       if (node_index_io.io_type_ == kIn) {
         continue;
       }
@@ -585,13 +513,13 @@ void BlockMemAssigner::InitReuseFlag() {
       if (node_index_io.node_->GetOutDataNodes().empty()) {
         out_flg = true;
       }
-      for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
+      for (auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
         if (IsDirectOutputNode(in_anchor->GetOwnerNode(), in_anchor->GetIdx())) {
           out_flg = true;
           break;
         }
       }
-      const std::string &type = out_anchor->GetOwnerNode()->GetType();
+      std::string type = out_anchor->GetOwnerNode()->GetType();
       pre_reuse_flag = pre_reuse_flag && !out_flg && (kPreReuseTypes.count(type) == 0);
       post_reuse_flag = post_reuse_flag && (kPostReuseTypes.count(type) == 0);
       if (!pre_reuse_flag && !post_reuse_flag) {
@@ -624,7 +552,7 @@ bool BlockMemAssigner::IsPreReuse(const NodePtr &node, uint32_t out_index) const
     return false;
   }
 
-  const std::string &symbol = iter1->second;
+  std::string symbol = iter1->second;
   auto iter2 = pre_reuse_flag_.find(symbol);
   if (iter2 == pre_reuse_flag_.end()) {
     return false;
@@ -642,7 +570,7 @@ bool BlockMemAssigner::IsPostReuse(const MemoryBlock *mem_block) const {
   if (mem_block == nullptr) {
     return false;
   }
-  for (const auto &symbol : mem_block->SymbolList()) {
+  for (auto &symbol : mem_block->SymbolList()) {
     auto iter = post_reuse_flag_.find(symbol);
     if (iter == post_reuse_flag_.end()) {
       continue;
@@ -665,7 +593,8 @@ bool BlockMemAssigner::IsSymbolExist(const NodeIndexIO &node_index_io) {
   if (iter == anchor_to_symbol_.end()) {
     return false;
   }
-  return symbol_blocks_.find(iter->second) != symbol_blocks_.end();
+  std::string symbol = iter->second;
+  return symbol_blocks_.find(symbol) != symbol_blocks_.end();
 }
 
 ///
@@ -674,10 +603,10 @@ bool BlockMemAssigner::IsSymbolExist(const NodeIndexIO &node_index_io) {
 /// @return void
 ///
 void BlockMemAssigner::PrintSymbolMap() {
-  for (const auto &pair : symbol_to_anchors_) {
+  for (auto &pair : symbol_to_anchors_) {
     GELOGD("symbol=%s, max_size=%zu, pre_reuse=%s, post_reuse=%s", pair.first.c_str(), symbol_size_[pair.first],
            pre_reuse_flag_[pair.first] ? "true" : "false", post_reuse_flag_[pair.first] ? "true" : "false");
-    for (const auto &node_index_io : pair.second) {
+    for (auto &node_index_io : pair.second) {
       GELOGD("anchor:%s", node_index_io.ToString().c_str());
     }
   }
@@ -693,14 +622,15 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
 
   bool is_reuse_memory = false;
   string ge_disable_reuse_mem_env = "0";
-  (void)ge::GetContext().GetOption(OPTION_EXEC_DISABLE_REUSED_MEMORY, ge_disable_reuse_mem_env);
+  (void)ge::GetContext().GetOption(kDisableReuseMemory, ge_disable_reuse_mem_env);
   if (ge_disable_reuse_mem_env != "1") {
     bool reuse_mem_flag = !((workspace_reuse_flag.size() > out_index) && !workspace_reuse_flag[out_index]);
     is_reuse_memory = !node_op_desc->HasAttr(kL2FusionDynamicConvergeOp) && !node_op_desc->HasAttr(kOpNoReuseMem) &&
                       reuse_mem_flag && is_op_reuse_mem && (IsPreReuse(n, out_index));
     auto stream_id = node_op_desc->GetStreamId();
-    if (is_reuse_memory) {
-      for (auto it = reusable_blocks_[stream_id].begin(); it != reusable_blocks_[stream_id].end(); ++it) {
+    auto map_iter = reusable_streams_map_.find(stream_id);
+    if (is_reuse_memory && map_iter != reusable_streams_map_.end()) {
+      for (auto it = reusable_blocks_.begin(); it != reusable_blocks_.end(); ++it) {
         MemoryBlock *reusable_block = *it;
         if (!IsPostReuse(reusable_block)) {
           reusable_block->reuse_mem_ = false;
@@ -710,7 +640,10 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
 
         // A node can reuse blocks of the same stream and preorder streams
         auto id = GetAtomicAddrCleanId();
-        if (CanReuseBySize(reusable_block_counts_, *reusable_block, block_size, real_size, continuous, id)) {
+        if (CanReuseBySize(reusable_block_counts_, *reusable_block, block_size, real_size, continuous, id) &&
+            CanReuseByStream(map_iter->second, *reusable_block)) {
+          GELOGD("Cross stream mem reuse, target stream:%ld, current stream:%ld", reusable_block->stream_id_,
+                 stream_id);
           reusable_block->AddNodeTypeIndex({n, mem_type, out_index, false}, real_size, no_align_size);
           if (mem_type == kOutput) {
             auto iter = anchor_to_symbol_.find(NodeIndexIO(n, out_index, kOut).ToString());
@@ -721,7 +654,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
           reusable_block->continuous_block_ = continuous;
           reusable_block->ref_count_++;
           ReduceReusableBlockCount(*reusable_block, reusable_block_counts_);
-          reusable_blocks_[stream_id].erase(it);
+          reusable_blocks_.erase(it);
           return reusable_block;
         }
       }
@@ -767,7 +700,7 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
                                  "Get no align size failed");
 
   if (IsSymbolExist(node_index_io)) {
-    const std::string &symbol = anchor_to_symbol_[node_index_io.ToString()];
+    std::string symbol = anchor_to_symbol_[node_index_io.ToString()];
     block = symbol_blocks_[symbol];
     block->AddNodeTypeIndex({n, kOutput, index, true}, size, no_align_size);
     block->ref_count_++;
@@ -990,7 +923,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   (void)ge::AttrUtils::GetBool(op_desc, ATOMIC_ATTR_IS_ATOMIC_NODE, is_atomic);
   // Allocate memory for the current node and release node memory of the same size in the workspace
   GE_IF_BOOL_EXEC(ge_disable_reuse_mem_env_ != "1",
-                  ReleaseMemorys(stream_workspace_blocks_[stream_id], reusable_blocks_[stream_id]);)
+                  ReleaseMemorys(stream_workspace_blocks_[stream_id], reusable_blocks_);)
   for (uint32_t i = 0; i < static_cast<uint32_t>(op_desc->GetOutputsSize()); i++) {
     int64_t size = 0;
     auto output_op_desc = op_desc->GetOutputDescPtr(i);
@@ -1044,7 +977,10 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
 /// @return Status result
 ///
 void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
-  (void)ge::GetContext().GetOption(OPTION_EXEC_DISABLE_REUSED_MEMORY, ge_disable_reuse_mem_env_);
+  // Init reusable streams map
+  InitReusableStreamMap();
+
+  (void)ge::GetContext().GetOption(kDisableReuseMemory, ge_disable_reuse_mem_env_);
   GEEVENT("Reuse memory %s", ge_disable_reuse_mem_env_ == "1" ? "close" : "open");
   string op_no_reuse_mem_str;
   const char *op_no_reuse_mem = std::getenv(OP_NO_REUSE_MEM);
@@ -1097,7 +1033,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mem_block == nullptr, continue, "failed to apply memory block.");
       CheckWorkspaceReuse(workspace_reuse_flag, i, stream_id, mem_block);
     }
-    ReleaseInputNodeOutMemory(node_out_blocks_, reusable_blocks_[stream_id], n);
+    ReleaseInputNodeOutMemory(node_out_blocks_, reusable_blocks_, n);
   }
 
   GELOGD("Assigned memory blocks:");
@@ -1108,7 +1044,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
 
   bool merge_dynamic_batch = false;
   GE_IF_BOOL_EXEC(!(ge_disable_reuse_mem_env_ == "1"), merge_dynamic_batch = MergeDynamicBatchBlocks();)
-  GE_IF_BOOL_EXEC((!(ge_disable_reuse_mem_env_ == "1") && !merge_dynamic_batch), ReuseBlocksByLifeTime(ranges.size());)
+  GE_IF_BOOL_EXEC(!merge_dynamic_batch, ReuseBlocksByLifeTime();)
   AssignContinuousBlocks();
   ResizeMemoryBlocks();
 
@@ -1285,11 +1221,7 @@ void BlockMemAssigner::AssignContinuousBlocks() {
   }
 }
 
-void BlockMemAssigner::ReuseBlocksByLifeTime(size_t range_size) {
-  // 1 means block size is same so no need to do this
-  if (range_size <= 1) {
-    return;
-  }
+void BlockMemAssigner::ReuseBlocksByLifeTime() {
   for (size_t i = 0; i < memory_blocks_.size(); ++i) {
     auto parent = memory_blocks_[i];
     if (parent == nullptr || parent->deleted_block_) {
@@ -1299,7 +1231,7 @@ void BlockMemAssigner::ReuseBlocksByLifeTime(size_t range_size) {
       parent->reuse_mem_ = false;
     }
     for (size_t j = i + 1; j < memory_blocks_.size(); ++j) {
-      parent->AddLifeReuseBlock(memory_blocks_[j], total_node_depend_stream_life_);
+      parent->AddLifeReuseBlock(memory_blocks_[j]);
     }
   }
 }
@@ -1386,10 +1318,10 @@ void SetOffsetSize(const NodeTypeIndex &node_type, const MemoryBlock *block, siz
   }
   GELOGI(
     "[IMAS]Set %s name[%s] %s[%u] offset to [%ld] streamid[%ld] size[%zu] realsize[%zu]"
-    " noalignsize[%zu] life time begin[%zu] life time end[%zu] child[%d:%d:%d:%d] isref[%d].",
+    " noalignsize[%zu] life time begin[%zu] life time end[%zu] child[%d] isref[%d].",
     graph_name.c_str(), op_desc->GetName().c_str(), node_type.GetMemType().c_str(), node_type.index, offset,
     op_desc->GetStreamId(), block->Size(), real_size, no_align_size, op_desc->GetId(), end, child_block,
-    block->reuse_mem_, block->continuous_block_, block->deleted_block_, node_type.ref_input);
+    node_type.ref_input);
 }
 
 void SetBlockOpMemOffset(MemoryBlock *block, bool child_block) {
@@ -1446,6 +1378,139 @@ Status BlockMemAssigner::Assign() {
   SetOpMemOffset(false);
 
   return SUCCESS;
+}
+
+void BlockMemAssigner::InitReusableStreamMap() {
+  // save a stream's id and its first Node and last node.
+  map<int64_t, pair<NodePtr, NodePtr>> stream_head_tail_node_map;
+  // save a stream's id and its directly child stream.
+  map<int64_t, unordered_set<int64_t>> stream_dependency_map;
+  // save a stream's id and its occupied memory.
+  unordered_map<int64_t, int64_t> stream_mem_map;
+
+  // Find streams's first and last node.
+  FindHeadAndTailNodesForStream(stream_head_tail_node_map, stream_mem_map);
+
+  // If streamB's first node is the output of streamA's last node, then B depends on A.
+  FindDependentStream(stream_head_tail_node_map, stream_dependency_map);
+
+  // If a stream has more than one child stream, select the one that occupies the closest memory
+  for (const auto &iter : stream_dependency_map) {
+    if (iter.second.empty()) {
+      continue;
+    }
+    int64_t target_size = stream_mem_map[iter.first];
+    int64_t min_size_gap = LONG_MAX;
+    int64_t target_reuse_stream_id = 0;
+    for (auto id : iter.second) {
+      if (labs(stream_mem_map[id] - target_size) < min_size_gap) {
+        target_reuse_stream_id = id;
+        min_size_gap = labs(stream_mem_map[id] - target_size);
+      }
+    }
+    // If b can reuse a, then b should also be able to reuse all blocks that a can reuse.
+    reusable_streams_map_[target_reuse_stream_id].insert(reusable_streams_map_[iter.first].begin(),
+                                                         reusable_streams_map_[iter.first].end());
+  }
+}
+
+void BlockMemAssigner::FindHeadAndTailNodesForStream(map<int64_t, pair<NodePtr, NodePtr>> &stream_head_tail_node_map,
+                                                     unordered_map<int64_t, int64_t> &stream_mem_map) {
+  for (const auto &n : compute_graph_->GetAllNodes()) {
+    GE_IF_BOOL_EXEC(n->GetOpDesc() == nullptr, GELOGW("Op desc is nullptr"); continue);
+    auto stream_id = n->GetOpDesc()->GetStreamId();
+    // traverse to find streams's first and last node.
+    if (stream_head_tail_node_map.find(stream_id) == stream_head_tail_node_map.end()) {
+      stream_head_tail_node_map[stream_id] = std::make_pair(n, n);
+      reusable_streams_map_[stream_id].insert(stream_id);  // a node can reuse blocks from same stream.
+    } else {
+      stream_head_tail_node_map[stream_id].second = n;
+    }
+
+    // Accumulate the output size of the node in the stream.
+    for (size_t i = 0; i < n->GetOpDesc()->GetOutputsSize(); i++) {
+      int64_t size = 0;
+      if (ge::TensorUtils::GetSize(*n->GetOpDesc()->GetOutputDescPtr(static_cast<uint32_t>(i)), size) != SUCCESS) {
+        GELOGW("Get output size failed!");
+        continue;
+      }
+      stream_mem_map[stream_id] += size;
+    }
+    // Accumulate the workspace size of the node in the stream.
+    for (auto size : n->GetOpDesc()->GetWorkspaceBytes()) {
+      stream_mem_map[stream_id] += size;
+    }
+  }
+}
+
+void BlockMemAssigner::FindDependentStream(map<int64_t, pair<NodePtr, NodePtr>> &stream_head_tail_node_map,
+                                           map<int64_t, unordered_set<int64_t>> &stream_dependency_map) {
+  for (const auto &it1 : stream_head_tail_node_map) {
+    for (const auto &it2 : stream_head_tail_node_map) {
+      if (it1 == it2) {
+        continue;
+      }
+      NodePtr pre_node = it1.second.second;
+      NodePtr post_node = it2.second.first;
+      std::vector<NodePtr> out_nodes;
+      // Direct link out_node
+      for (const auto &out_node : pre_node->GetOutNodes()) {
+        if ((out_node->GetOpDesc() == nullptr) || (post_node->GetOpDesc() == nullptr) ||
+            (pre_node->GetOpDesc() == nullptr)) {
+          continue;
+        }
+        out_nodes.emplace_back(out_node);
+      }
+
+      FindDependentStreamBetweenGraphs(pre_node, out_nodes);
+
+      for (auto &out_node : out_nodes) {
+        if (out_node->GetOpDesc()->GetId() == post_node->GetOpDesc()->GetId()) {
+          stream_dependency_map[pre_node->GetOpDesc()->GetStreamId()].insert(post_node->GetOpDesc()->GetStreamId());
+        }
+      }
+    }
+  }
+}
+
+///
+/// @ingroup GE
+/// @brief Find dependent link between parent_graph and sub_graph
+/// @param [in] pre_node
+/// @param [out] out_nodes
+/// @return void
+/// @author
+///
+void BlockMemAssigner::FindDependentStreamBetweenGraphs(const NodePtr &pre_node, std::vector<NodePtr> &out_nodes) {
+  if ((pre_node == nullptr) || (pre_node->GetOpDesc() == nullptr)) {
+    return;
+  }
+
+  // FunctionOp & subgraph input
+  std::vector<std::string> subgraph_names = pre_node->GetOpDesc()->GetSubgraphInstanceNames();
+  for (auto &subgraph_name : subgraph_names) {
+    ComputeGraphPtr subgraph = compute_graph_->GetSubgraph(subgraph_name);
+    if (subgraph == nullptr) {
+      continue;
+    }
+    for (auto &node : subgraph->GetDirectNode()) {
+      OpDescPtr op_desc = node->GetOpDesc();
+      if (op_desc == nullptr) {
+        continue;
+      }
+      if (op_desc->HasAttr(ATTR_NAME_PARENT_NODE_INDEX)) {
+        out_nodes.emplace_back(node);
+      }
+    }
+  }
+
+  // subgraph output & parent_node output
+  if (NodeUtils::IsSubgraphOutput(pre_node)) {
+    NodePtr parent_node = pre_node->GetOwnerComputeGraph()->GetParentNode();
+    for (const auto &out_node : parent_node->GetOutNodes()) {
+      out_nodes.emplace_back(out_node);
+    }
+  }
 }
 
 bool BlockMemAssigner::CheckIsZeroMemNodeType(const string &node_type) const {

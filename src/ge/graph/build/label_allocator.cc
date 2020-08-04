@@ -24,6 +24,7 @@
 #include "graph/label/label_maker.h"
 
 namespace ge {
+
 LabelAllocator::LabelAllocator(const ComputeGraphPtr &graph) : compute_graph_(graph) {}
 
 Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
@@ -75,4 +76,5 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
   (void)functional_nodes.insert(parent);  // unique functional node.
   return true;
 }
+
 }  // namespace ge

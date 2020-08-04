@@ -81,6 +81,9 @@ class LogicalStreamPass {
   bool HasStreamLabel(const Subgraph &subgraph) const;
   bool HasAssignedStream(const Subgraph &subgraph) const;
 
+  // Determine if the input of the subgraph is a constant.
+  bool HasNonConstInputNode(const Subgraph &subgraph) const;
+
  private:
   std::string name_;
 };
@@ -118,6 +121,7 @@ class AssignByDependencyPass : public LogicalStreamPass {
 
   void UpdateAssignedSubgraphs(Context &context);
   void UpdateReusedSubgraphs();
+  bool IsHeadNodeExceeded(const std::vector<SubgraphPtr> &subgraphs) const;
 
   bool CouldReuse(const SubgraphPtr &subgraph, const SubgraphPtr &pred_subgraph,
                   const std::map<NodePtr, SubgraphPtr> &pld_subgraph_map);

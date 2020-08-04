@@ -30,9 +30,10 @@ namespace ge {
 class FormatRefiner {
  public:
   static graphStatus InferOrigineFormat(const ge::ComputeGraphPtr &graph);
+  static void SetInferOrigineFormatFlag(bool is_first = true);
 
  private:
-  static graphStatus RefreshConstantOutProcess(const ComputeGraphPtr &graph, const OpDescPtr &op_desc);
+  static graphStatus RefreshConstantOutProcess(const OpDescPtr &op_desc);
   static graphStatus GetAnchorPoints(const ge::ComputeGraphPtr &graph, std::vector<ge::NodePtr> &anchor_points,
                                      std::vector<ge::NodePtr> &data_nodes,
                                      std::unordered_map<ge::NodePtr, bool> &node_status);
@@ -42,9 +43,8 @@ class FormatRefiner {
                                       std::unordered_map<ge::NodePtr, bool> &node_status);
   static graphStatus ForwardInferProcess(std::deque<ge::NodePtr> &nodes, ge::NodePtr &node,
                                          std::unordered_map<ge::NodePtr, bool> &node_status);
-  static graphStatus DataNodeFormatProcess(const ComputeGraphPtr &graph, std::vector<ge::NodePtr> &data_nodes,
-                                           ge::Format data_format, std::unordered_map<ge::NodePtr, bool> &node_status);
-  static bool IsGraphInferred(const ComputeGraphPtr &graph);
+  static graphStatus DataNodeFormatProcess(std::vector<ge::NodePtr> &data_nodes, ge::Format data_format,
+                                           std::unordered_map<ge::NodePtr, bool> &node_status);
 };
 }  // namespace ge
 #endif  // COMMON_GRAPH_FORMAT_REFINER_H_

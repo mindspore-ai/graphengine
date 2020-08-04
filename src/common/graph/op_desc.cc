@@ -19,7 +19,6 @@
 #include "debug/ge_util.h"
 #include "external/graph/operator.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/util/error_manager/error_manager.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_tensor.h"
 #include "graph/operator_factory_impl.h"
@@ -471,25 +470,6 @@ GeTensorDesc OpDesc::GetInputDesc(const string &name) const {
   return *(inputs_desc_[it->second].get());
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDescPtr OpDesc::MutableInputDesc(uint32_t index) const {
-  GE_CHK_BOOL_RET_STATUS(index < inputs_desc_.size(), nullptr, "Can't find the input desc %u", index);
-  if (inputs_desc_[index] == nullptr) {
-    return nullptr;
-  }
-  GE_CHK_BOOL_RET_STATUS(inputs_desc_[index]->IsValid() == GRAPH_SUCCESS, nullptr, "input desc is invalid");
-  return inputs_desc_[index];
-}
-
-GeTensorDescPtr OpDesc::MutableInputDesc(const string &name) const {
-  auto input_name_idx = GetAllInputName();
-  auto it = input_name_idx.find(name);
-  if (it == input_name_idx.end()) {
-    GELOGW("Failed to get [%s] input desc", name.c_str());
-    return nullptr;
-  }
-  return MutableInputDesc(it->second);
-}
-
 GE_FUNC_HOST_VISIBILITY OpDesc::Vistor<string> OpDesc::GetAllInputNames() const {
   auto input_name_idx = GetAllInputName();
   vector<string> names;
@@ -515,6 +495,15 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::SetOpEngineName(cons
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY std::string OpDesc::GetOpEngineName() const { return engine_name_; }
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDescPtr OpDesc::MutableInputDesc(uint32_t index) const {
+  GE_CHK_BOOL_RET_STATUS(index < inputs_desc_.size(), nullptr, "Can't find the input desc %u", index);
+  if (inputs_desc_[index] == nullptr) {
+    return nullptr;
+  }
+  GE_CHK_BOOL_RET_STATUS(inputs_desc_[index]->IsValid() == GRAPH_SUCCESS, nullptr, "input desc is invalid");
+  return inputs_desc_[index];
+}
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDesc::Vistor<GeTensorDesc> OpDesc::GetAllInputsDesc() const {
   vector<GeTensorDesc> temp{};
@@ -618,15 +607,6 @@ GeTensorDesc OpDesc::GetOutputDesc(const string &name) const {
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDescPtr OpDesc::MutableOutputDesc(uint32_t index) const {
   GE_CHK_BOOL_RET_STATUS(index < outputs_desc_.size(), nullptr, "Cann't find the output desc %u", index);
   return outputs_desc_[index];
-}
-
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDescPtr OpDesc::MutableOutputDesc(const string &name) const {
-  auto it = output_name_idx_.find(name);
-  if (it == output_name_idx_.end()) {
-    GELOGW("Failed to get [%s] output desc", name.c_str());
-    return nullptr;
-  }
-  return MutableOutputDesc(it->second);
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY uint32_t OpDesc::GetAllOutputsDescSize() const {
@@ -902,22 +882,15 @@ graphStatus OpDesc::CommonVerify() const {
     // Checking shape of all inputs
     vector<int64_t> ishape = GetInputDescPtr(iname)->GetShape().GetDims();
     for (int64_t dim : ishape) {
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-        dim < -2, ErrorManager::GetInstance().ATCReportErrMessage(
-                    "E19014", {"opname", "value", "reason"},
-                    {GetName(), "input " + iname + " shape", "contains negative or zero dimension"});
-        return GRAPH_FAILED, "Op[%s]'s input %s shape contains negative or zero dimension.", GetName().c_str(),
-               iname.c_str());
+      GE_CHK_BOOL_RET_STATUS(dim >= -2, GRAPH_FAILED, "operator input %s shape contains negative or zero dimension.",
+                             iname.c_str());
     }
   }
   // Check all attributes defined
   const auto &all_attributes = GetAllAttrs();
   for (const auto &name : GetAllAttrNames()) {
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      all_attributes.find(name) == all_attributes.end(),
-      ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
-                                                      {GetName(), "attribute " + name, "is empty"});
-      return GRAPH_FAILED, "operator attribute %s is empty.", name.c_str());
+    GE_CHK_BOOL_RET_STATUS(all_attributes.find(name) != all_attributes.end(), GRAPH_FAILED,
+                           "operator attribute %s is empty.", name.c_str());
   }
 
   return GRAPH_SUCCESS;

@@ -725,10 +725,6 @@ const std::string ATTR_MODEL_TASK_INDEX_OP_NAME = "task_index_op_name";
 
 const std::string ATTR_MODEL_CORE_TYPE = "core_type";
 
-const std::string ATTR_MODEL_ATC_VERSION = "atc_version";
-
-const std::string ATTR_MODEL_OPP_VERSION = "opp_version";
-
 // Public attribute
 const std::string ATTR_NAME_IMPLY_TYPE = "imply_type";
 
@@ -938,7 +934,7 @@ const std::string ATTR_NAME_MEMORY_TYPE_WORKSPACE = "memory_type_workspace";
 
 const std::string MODEL_ATTR_SESSION_ID = "session_id";
 
-// lx fusion
+// l1 fusion and other fusion in future
 const std::string ATTR_NAME_L1_FUSION_GROUP_ID = "_l1_fusion_group_id";
 const std::string ATTR_NAME_FUSION_GROUP_KEY = "_fusion_group_key";
 const std::string ATTR_NAME_L1_FUSION_GROUP_KEY = "_l1_fusion_group_key";
@@ -952,17 +948,9 @@ const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_L1_FUSION = "_output_offset_for_l1
 const std::string ATTR_NAME_SWITCH_FOR_L1_FUSION = "_enable_l1_fusion";
 const std::string ATTR_N_BATCH_SPILT = "_is_n_batch_split";
 const std::string ATTR_NO_TASK_AND_DUMP_NEEDED = "_no_task_and_dump_needed";
-const std::string ATTR_DATA_DUMP_REF = "_datadump_ref";
 const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_BUFFER_FUSION = "_output_offset_for_buffer_fusion";
 const std::string ATTR_NAME_L2_FUSION_GROUP_ID = "_l2_fusion_group_id";
 const std::string ATTR_NAME_SWITCH_FOR_L2_FUSION = "_enable_l2_fusion";
-const std::string ATTR_NAME_OP_INPUT_L1_FLAG = "_op_input_l1_flag";
-const std::string ATTR_NAME_OP_INPUT_L1_ADDR = "_op_input_l1_addr";
-const std::string ATTR_NAME_OP_INPUT_L1_VALID_SIZE = "_op_input_l1_valid_size";
-
-// Op debug attrs
-const std::string ATTR_OP_DEBUG_FLAG = "_op_debug_flag";
-const std::string ATTR_OP_DEBUG_MODE = "_op_debug_mode";
 
 // Atomic addr clean attrs
 const std::string ATOMIC_ATTR_INPUT_INDEX = "atomic_input_index";
@@ -1027,11 +1015,4 @@ const std::string ATTR_HOROVOD_ATTR_REDUCE_TYPE = "reduce_op";
 // used for allreduce tailing optimization
 const std::string ATTR_NAME_HCCL_FUSED_GROUP = "_hccl_fused_group";
 const std::string ATTR_NAME_HCCL_FUSED_FLAG = "_hccl_fused_node";
-
-// dynamic shape attr
-const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR = "_alloc_fixed_addr";
-const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX = "_alloc_fixed_addr_index";
-
-// for fusion op plugin
-const std::string ATTR_NAME_FUSIONOP_ORIGINAL_TYPE = "_fusionop_original_type";
 }  // namespace ge

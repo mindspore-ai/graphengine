@@ -19,7 +19,6 @@
 
 #include "debug/ge_log.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/util/error_manager/error_manager.h"
 #include "graph/ge_tensor.h"
 #include "graph/types.h"
 #include "graph/utils/type_utils.h"
@@ -106,10 +105,7 @@ static graphStatus CalcElementCntByDims(const std::vector<int64_t> &dims, int64_
   element_cnt = 1;
   for (int64_t dim : dims) {
     if (CheckMultiplyOverflowInt64(element_cnt, dim)) {
-      ErrorManager::GetInstance().ATCReportErrMessage(
-        "E19013", {"function", "var1", "var2"},
-        {"CheckMultiplyOverflowInt64", std::to_string(element_cnt), std::to_string(dim)});
-      GELOGE(GRAPH_FAILED, "CalcElementCntByDims failed, when multiplying %ld and %ld.", element_cnt, dim);
+      GELOGE(GRAPH_FAILED, "CalcElementCntByDims failed, as when multiplying %ld and %ld.", element_cnt, dim);
       return GRAPH_FAILED;
     }
     element_cnt *= dim;
@@ -277,6 +273,7 @@ static graphStatus CalcTensorElementCnt(const std::vector<int64_t> &dims, Format
     case FORMAT_FRACTAL_Z:
       graph_status = CalcElementCntOfFractalZ(dims, data_type, element_cnt);
       break;
+    case FORMAT_NC1HWC0_C04:
     case FORMAT_FRACTAL_NZ:
     case FORMAT_FRACTAL_ZZ:
     case FORMAT_NDHWC:
@@ -288,7 +285,6 @@ static graphStatus CalcTensorElementCnt(const std::vector<int64_t> &dims, Format
     case FORMAT_NDC1HWC0:
     case FORMAT_FRACTAL_Z_C04:
     case FORMAT_FRACTAL_ZN_LSTM:
-    case FORMAT_NC1HWC0_C04:
       graph_status = CalcElementCntByDims(dims, element_cnt);
       break;
     default:

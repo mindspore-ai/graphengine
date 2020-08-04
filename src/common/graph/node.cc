@@ -26,7 +26,6 @@
 #include "utils/ge_ir_utils.h"
 #include "utils/node_utils.h"
 #include "utils/op_desc_utils.h"
-#include "common/util/error_manager/error_manager.h"
 
 using std::string;
 using std::vector;
@@ -155,7 +154,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool Node::NodeAnchorIsEqual(cons
     const auto &peer_node = left_anchor->GetPeerAnchors().at(j)->GetOwnerNode();
     const auto &r_peer_node = right_anchor->GetPeerAnchors().at(j)->GetOwnerNode();
     if (peer_node == nullptr || r_peer_node == nullptr) {
-      GELOGE(GRAPH_FAILED, "anchor's peer node is null, node name: %s index[%zu] peer node index[%zu]. ",
+      GELOGE(GRAPH_FAILED, "Error: anchor's peer node is null, node name: %s index[%zu] peer node index[%zu]. ",
              this->GetName().c_str(), i, j);
       return false;
     }
@@ -435,11 +434,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Node::Vistor<AnchorPtr> Node::Get
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InDataAnchorPtr Node::GetInDataAnchor(int idx) const {
   if (idx < 0 || idx >= static_cast<int>(in_data_anchors_.size())) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-      "E19019", {"opname", "index", "anchorname", "optype"},
-      {GetName().c_str(), std::to_string(idx), "in_data_anchor", GetType().c_str()});
-    GELOGE(GRAPH_FAILED, "Op[%s] doesn't have index[%d]'s in_data_anchor which optype is %s.", GetName().c_str(), idx,
-           GetType().c_str());
+    GELOGE(GRAPH_FAILED, "the node doesn't have %d th in_data_anchor, node %s:%s", idx, GetType().c_str(),
+           GetName().c_str());
     return nullptr;
   } else {
     return in_data_anchors_[idx];
@@ -449,10 +445,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InDataAnchorPtr Node::GetInDataAn
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AnchorPtr Node::GetInAnchor(int idx) const {
   // Idx can't be less than -1 or >= in_data_anchors_.size(), -1 means index of control anchor_
   if (idx < -1 || idx >= static_cast<int>(in_data_anchors_.size())) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-      "E19019", {"opname", "index", "anchorname", "optype"},
-      {GetName().c_str(), std::to_string(idx), "in_anchor", GetType().c_str()});
-    GELOGW("Op[%s] doesn't have index[%d]'s in_anchor which optype is %s.", GetName().c_str(), idx, GetType().c_str());
+    GELOGW("the node doesn't have %d th in_anchor, node %s:%s", idx, GetType().c_str(), GetName().c_str());
     return nullptr;
   } else {
     // Return control anchor
@@ -468,15 +461,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AnchorPtr Node::GetInAnchor(int i
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AnchorPtr Node::GetOutAnchor(int idx) const {
   // Idx can't be less than -1 or >= out_data_anchors_.size(), -1 means index of control anchor_
   if (idx < -1 || idx >= static_cast<int>(out_data_anchors_.size())) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19019", {"opname", "index", "anchorname", "optype"},
-                                                    {
-                                                      GetName().c_str(),
-                                                      std::to_string(idx),
-                                                      "out_anchor",
-                                                      GetType().c_str(),
-                                                    });
-    GELOGE(GRAPH_FAILED, "Op[%s] doesn't have index[%d]'s out_anchor which optype is %s.", GetName().c_str(), idx,
-           GetType().c_str());
+    GELOGE(GRAPH_FAILED, "the node doesn't have %d th out_anchor, node %s:%s", idx, GetType().c_str(),
+           GetName().c_str());
     return nullptr;
   } else {
     // Return control anchor
@@ -491,11 +477,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AnchorPtr Node::GetOutAnchor(int 
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OutDataAnchorPtr Node::GetOutDataAnchor(int idx) const {
   if (idx < 0 || idx >= static_cast<int>(out_data_anchors_.size())) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-      "E19019", {"opname", "index", "anchorname", "optype"},
-      {GetName().c_str(), std::to_string(idx), "out_data_anchor", GetType().c_str()});
-    GELOGE(GRAPH_FAILED, "Op[%s] doesn't have index[%d]'s out_data_anchor which optype is %s.", GetName().c_str(), idx,
-           GetType().c_str());
+    GELOGE(GRAPH_FAILED, "the node doesn't have %d th out_data_anchor, node %s:%s", idx, GetType().c_str(),
+           GetName().c_str());
     return nullptr;
   } else {
     return out_data_anchors_[idx];
@@ -750,15 +733,11 @@ graphStatus Node::Verify() const {
       GELOGW("in anchor ptr is null");
       continue;
     }
-    bool valid_anchor = op_->GetType() == data_type || op_->GetType() == aipp_data_type ||
-                        op_->GetType() == const_type || op_->GetType() == variable_type ||
-                        op_->IsOptionalInput(in_anchor_ptr->GetIdx()) || in_anchor_ptr->GetPeerAnchors().size() > 0;
-    if (!valid_anchor) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E11019", {"name", "index"},
-                                                      {GetName(), std::to_string(in_anchor_ptr->GetIdx())});
-      GELOGE(GRAPH_FAILED, "operator %s's input %d is not linked.", GetName().c_str(), in_anchor_ptr->GetIdx());
-      return GRAPH_FAILED;
-    }
+    GE_CHK_BOOL_RET_STATUS(
+      op_->GetType() == data_type || op_->GetType() == aipp_data_type || op_->GetType() == const_type ||
+        op_->GetType() == variable_type || op_->IsOptionalInput(in_anchor_ptr->GetIdx()) ||
+        in_anchor_ptr->GetPeerAnchors().size() > 0,
+      GRAPH_FAILED, "operator %s's input %d is not linked.", GetName().c_str(), in_anchor_ptr->GetIdx());
   }
 
   string frameworkop_type = "FrameworkOp";

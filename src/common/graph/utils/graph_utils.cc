@@ -38,7 +38,6 @@
 #include "utils/ge_ir_utils.h"
 #include "utils/node_utils.h"
 #include "debug/ge_op_types.h"
-#include "external/ge/ge_api_types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -411,8 +410,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::InsertTra
 /// @return graphStatus
 ///
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
-GraphUtils::InsertNodeAfter(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
-                            const NodePtr &insert_node, uint32_t input_index, uint32_t output_index) {
+GraphUtils::InsertNodeBefore(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
+                             const NodePtr &insert_node, uint32_t input_index, uint32_t output_index) {
   GE_CHECK_NOTNULL(src);
   GE_CHECK_NOTNULL(insert_node);
 
@@ -571,7 +570,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraph(cons
   static int max_dumpfile_num = 0;
   if (max_dumpfile_num == 0) {
     string opt = "0";
-    (void)GetContext().GetOption(OPTION_GE_MAX_DUMP_FILE_NUM, opt);
+    (void)GetContext().GetOption("ge.maxDumpFileNum", opt);
     max_dumpfile_num = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
   }
   if (max_dumpfile_num != 0 && file_idx > max_dumpfile_num) {
@@ -671,7 +670,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
     if (maxDumpFileSize == 0) {
       string opt = "0";
       // Can not check return value
-      (void)GetContext().GetOption(OPTION_GE_MAX_DUMP_FILE_SIZE, opt);
+      (void)GetContext().GetOption("ge.maxDumpFileSize", opt);
       maxDumpFileSize = atol(opt.c_str());
     }
     if (maxDumpFileSize != 0 && fileSize != -1 && fileSize > maxDumpFileSize) {
@@ -741,7 +740,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraphToOnn
   static int max_dumpfile_num = 0;
   if (max_dumpfile_num == 0) {
     string opt = "0";
-    (void)GetContext().GetOption(OPTION_GE_MAX_DUMP_FILE_NUM, opt);
+    (void)GetContext().GetOption("ge.maxDumpFileNum", opt);
     max_dumpfile_num = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
   }
   if (max_dumpfile_num != 0 && file_index > max_dumpfile_num) {
@@ -921,7 +920,7 @@ graphStatus RelinkDataIO(const NodePtr &node, const std::vector<int> &io_map, In
 InNodesToOut GetFullConnectIONodes(const NodePtr &node) {
   InNodesToOut in_nodes_to_out;
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "Node is nullptr");
+    GELOGE(GRAPH_FAILED, "Node is nullptr,node is %s", node->GetName().c_str());
     return in_nodes_to_out;
   }
   auto in_nodes_list = node->GetInNodes();
@@ -1309,36 +1308,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::MoveOutCt
   return GRAPH_SUCCESS;
 }
 
-///
-/// Copy all in-data edges from `src_node` to `dst_node`.
-/// @param src_node
-/// @param dst_node
-/// @return
-///
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::CopyInDataEdges(const NodePtr &src_node,
-                                                                                       NodePtr &dst_node) {
-  if ((src_node == nullptr) || (dst_node == nullptr)) {
-    GELOGE(GRAPH_FAILED, "Parameter is nullptr");
-    return GRAPH_PARAM_INVALID;
-  }
-  auto src_data_in_nodes = src_node->GetInDataNodes();
-  if (src_data_in_nodes.empty()) {
-    return GRAPH_SUCCESS;
-  }
-  for (const auto &in_data_anchor : src_node->GetAllInDataAnchors()) {
-    auto input_desc = src_node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx());
-    auto ret =
-      GraphUtils::AddEdge(in_data_anchor->GetPeerOutAnchor(), dst_node->GetInDataAnchor(in_data_anchor->GetIdx()));
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(GRAPH_FAILED, "Failed to add data edge from %s to %s when copy in data edge from %s to %s",
-             in_data_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetName().c_str(), dst_node->GetName().c_str(),
-             src_node->GetName().c_str(), dst_node->GetName().c_str());
-      return ret;
-    }
-  }
-  return GRAPH_SUCCESS;
-}
-
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::AppendInputNode(const ComputeGraphPtr &graph,
                                                                                        const NodePtr &node) {
   if (graph->AddInputNode(node) == nullptr) {
@@ -1370,7 +1339,7 @@ graphStatus GraphUtils::GetRefMapping(const ComputeGraphPtr &graph,
                                       std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                       std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(graph);
-  for (const auto &node : graph->GetAllNodes()) {
+  for (auto &node : graph->GetAllNodes()) {
     // in_data_anchor
     if (HandleInAnchorMapping(node, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
       GE_LOGE("Find ref_mapping for in_data_anchors of node %s failed.", node->GetName().c_str());
@@ -1427,16 +1396,16 @@ graphStatus GraphUtils::HandleInAnchorMapping(const NodePtr &node,
     return HandleSubgraphInput(node, symbol_to_anchors, anchor_to_symbol);
   }
 
-  const std::string &type = node->GetType();
+  std::string type = node->GetType();
   if ((type == MERGE) || (type == STREAMMERGE)) {
     return HandleMergeInput(node, symbol_to_anchors, anchor_to_symbol);
   }
 
-  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     NodeIndexIO cur_node_info(node, in_data_anchor->GetIdx(), kIn);
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     if (peer_out_anchor == nullptr) {
-      const std::string &symbol = cur_node_info.ToString();
+      std::string symbol = cur_node_info.ToString();
       GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
       symbol_to_anchors[symbol] = {cur_node_info};
       anchor_to_symbol[symbol] = symbol;
@@ -1463,7 +1432,7 @@ graphStatus GraphUtils::HandleOutAnchorMapping(const NodePtr &node,
                                                std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                                std::map<std::string, std::string> &anchor_to_symbol) {
   GE_CHECK_NOTNULL(node);
-  for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
+  for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     NodeIndexIO cur_node_info(node, out_data_anchor->GetIdx(), kOut);
     if (anchor_to_symbol.find(cur_node_info.ToString()) != anchor_to_symbol.end()) {
       continue;
@@ -1477,7 +1446,7 @@ graphStatus GraphUtils::HandleOutAnchorMapping(const NodePtr &node,
         return GRAPH_FAILED;
       }
     } else {
-      const std::string &symbol = cur_node_info.ToString();
+      std::string symbol = cur_node_info.ToString();
       GELOGD("Add anchor %s, symbol %s.", cur_node_info.ToString().c_str(), symbol.c_str());
       symbol_to_anchors.emplace(std::make_pair(symbol, std::list<NodeIndexIO>{cur_node_info}));
       anchor_to_symbol.emplace(std::make_pair(symbol, symbol));
@@ -1537,7 +1506,7 @@ graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
   GE_CHECK_NOTNULL(node);
   std::vector<NodeIndexIO> exist_node_infos;
   std::vector<NodeIndexIO> cur_node_infos;
-  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     if (peer_out_anchor == nullptr) {
       std::string next_name;
@@ -1560,10 +1529,10 @@ graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
 
   size_t anchor_nums = 0;
   NodeIndexIO max_node_index_io(nullptr, 0, kOut);
-  for (const auto &temp_node_info : exist_node_infos) {
+  for (auto &temp_node_info : exist_node_infos) {
     auto iter1 = anchor_to_symbol.find(temp_node_info.ToString());
     if (iter1 != anchor_to_symbol.end()) {
-      const std::string &temp_symbol = iter1->second;
+      std::string temp_symbol = iter1->second;
       auto iter2 = symbol_to_anchors.find(temp_symbol);
       if (iter2 != symbol_to_anchors.end()) {
         if (iter2->second.size() > anchor_nums) {
@@ -1575,7 +1544,7 @@ graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
   }
 
   std::string symbol;
-  for (const auto &temp_node_info : exist_node_infos) {
+  for (auto &temp_node_info : exist_node_infos) {
     if ((UnionSymbolMapping(max_node_index_io, temp_node_info, symbol_to_anchors, anchor_to_symbol, symbol) !=
          GRAPH_SUCCESS) ||
         symbol.empty()) {
@@ -1587,7 +1556,7 @@ graphStatus GraphUtils::HandleMergeInput(const NodePtr &node,
 
   auto iter = symbol_to_anchors.find(symbol);
   if (iter != symbol_to_anchors.end()) {
-    for (const auto &temp_node_info : cur_node_infos) {
+    for (auto &temp_node_info : cur_node_infos) {
       GELOGD("Add anchor %s, symbol %s.", temp_node_info.ToString().c_str(), symbol.c_str());
       iter->second.emplace_back(temp_node_info);
       anchor_to_symbol.emplace(std::make_pair(temp_node_info.ToString(), symbol));
@@ -1615,7 +1584,7 @@ graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
 
   OpDescPtr op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_CHECK_NOTNULL(peer_out_anchor);
 
@@ -1658,8 +1627,8 @@ graphStatus GraphUtils::HandleSubgraphOutput(const NodePtr &node,
 graphStatus GraphUtils::UnionSymbolMapping(const NodeIndexIO &exist_node_info1, const NodeIndexIO &exist_node_info2,
                                            std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                            std::map<std::string, std::string> &anchor_to_symbol, std::string &symbol) {
-  const std::string &symbol1 = anchor_to_symbol[exist_node_info1.ToString()];
-  const std::string &symbol2 = anchor_to_symbol[exist_node_info2.ToString()];
+  std::string symbol1 = anchor_to_symbol[exist_node_info1.ToString()];
+  std::string symbol2 = anchor_to_symbol[exist_node_info2.ToString()];
   if (symbol1 == symbol2) {
     symbol = symbol1;
     GELOGI("no need to union.");
@@ -1715,7 +1684,7 @@ graphStatus GraphUtils::UpdateRefMapping(const NodeIndexIO &cur_node_info, const
     return GRAPH_FAILED;
   }
 
-  const std::string &symbol = iter1->second;
+  std::string symbol = iter1->second;
   auto iter2 = symbol_to_anchors.find(symbol);
   if (iter2 == symbol_to_anchors.end()) {
     GE_LOGE("symbol %s not found.", symbol.c_str());
@@ -1743,7 +1712,7 @@ bool GraphUtils::IsRefFromInput(const OutDataAnchorPtr &out_data_anchor, int32_t
 
   // pass-through op
   NodePtr node = out_data_anchor->GetOwnerNode();
-  const std::string &type = node->GetType();
+  std::string type = node->GetType();
   const std::set<std::string> pass_through_set = {NETOUTPUT, WHILE, _WHILE, STATELESSWHILE};
   if ((pass_through_set.count(type) > 0) || (NodeUtils::IsSubgraphInput(node))) {
     reuse_in_index = output_index;
@@ -1786,7 +1755,7 @@ bool GraphUtils::IsRefFromInput(const OutDataAnchorPtr &out_data_anchor, int32_t
       uint32_t reuse_input_index = 0;
       if (TensorUtils::GetReuseInputIndex(*output_op_desc, reuse_input_index) == GRAPH_SUCCESS) {
         reuse_in_index = static_cast<int32_t>(reuse_input_index);
-        GELOGI("ReuseInput name[%s] output[%d] reuse input[%d].", op_desc->GetName().c_str(), output_index,
+        GELOGI("ReuseInput name[%s] output[%u] reuse input[%d].", op_desc->GetName().c_str(), output_index,
                reuse_in_index);
         return true;
       }
@@ -2328,7 +2297,7 @@ void CompleteGraphBuilder::AddRetValNodes(graphStatus &error_code, std::string &
       return;
     }
 
-    std::string name = node->GetName() + "_RetVal_" + std::to_string(index);
+    std::string name = node->GetName() + "_RetVal";
     OpDescPtr ret_val_desc = shared_ptr<OpDesc>(new (std::nothrow) OpDesc(name, FRAMEWORKOP));
     if (ret_val_desc == nullptr) {
       error_code = GRAPH_FAILED;

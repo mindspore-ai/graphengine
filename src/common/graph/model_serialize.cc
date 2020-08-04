@@ -88,8 +88,10 @@ bool ModelSerializeImp::SerializeEdge(const NodePtr &node, proto::OpDef *op_def_
 }
 
 bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::OpDef *op_def_proto, bool is_dump) {
-  GE_CHK_BOOL_EXEC(op_desc != nullptr, return false, "op_desc is null.");
-  GE_CHK_BOOL_EXEC(op_def_proto != nullptr, return false, "op_def_proto is null.");
+  if (op_desc == nullptr || op_def_proto == nullptr) {
+    GELOGE(GRAPH_FAILED, "Input Para Invalid");
+    return false;
+  }
   if (op_desc->op_def_.GetProtoMsg() != nullptr) {
     *op_def_proto = *op_desc->op_def_.GetProtoMsg();
     // Delete unnecessary attr
@@ -128,17 +130,16 @@ bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::Op
     for (const std::string &name : op_desc->GetSubgraphInstanceNames()) {
       op_def_proto->add_subgraph_name(name);
     }
-    if (!op_desc->output_name_idx_.empty()) {
-      proto::AttrDef key;
-      proto::AttrDef value;
-      for (auto &item : op_desc->output_name_idx_) {
-        key.mutable_list()->add_s(item.first);
-        value.mutable_list()->add_i(item.second);
-      }
-      auto op_desc_attr = op_def_proto->mutable_attr();
-      op_desc_attr->insert({"_output_name_key", key});
-      op_desc_attr->insert({"_output_name_value", value});
+
+    proto::AttrDef key;
+    proto::AttrDef value;
+    for (auto &item : op_desc->output_name_idx_) {
+      key.mutable_list()->add_s(item.first);
+      value.mutable_list()->add_i(item.second);
     }
+    auto op_desc_attr = op_def_proto->mutable_attr();
+    op_desc_attr->insert({"_output_name_key", key});
+    op_desc_attr->insert({"_output_name_value", value});
   }
   return true;
 }

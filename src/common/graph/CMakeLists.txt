@@ -71,6 +71,5 @@ target_link_libraries(graph PRIVATE
         ${PROTOBUF_LIBRARY}
         ${c_sec}
         ${slog}
-        ${error_manager}
         rt
         dl)

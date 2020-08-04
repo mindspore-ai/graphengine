@@ -17,13 +17,44 @@
 #ifndef GE_HYBRID_EXECUTOR_COMPILE_TASK_COMPILE_ENGINE_H_
 #define GE_HYBRID_EXECUTOR_COMPILE_TASK_COMPILE_ENGINE_H_
 
+#include <memory>
+#include <thread>
+#include "common/thread_pool.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 
 namespace ge {
 namespace hybrid {
 class TaskCompileEngine {
  public:
-  static Status Compile(NodeState &node_state, GraphExecutionContext *context);
+  explicit TaskCompileEngine(GraphExecutionContext *context);
+
+  ~TaskCompileEngine();
+
+  Status Init();
+
+  Status Start(ThreadPool &pool);
+
+ private:
+  struct ResultQueueEntry {
+    NodeStatePtr node_state;
+    std::unique_ptr<std::future<Status>> future;
+  };
+
+  Status CompileProcess();
+
+  Status CompileDone(Status status);
+
+ private:
+  Status DoCompile(const NodeItem &node_item, NodeState &node_state);
+  Status CompileAsync(const NodeItem &node_item, ResultQueueEntry &entry);
+  Status DistributeCompiledTasks();
+  void Reset();
+
+  rtContext_t rt_context_ = nullptr;
+  GraphExecutionContext *context_;
+  BlockingQueue<unique_ptr<ResultQueueEntry>> complete_queue_;
+  ThreadPool pool_;
+  std::future<Status> worker_future_;
 };
 }  // namespace hybrid
 }  // namespace ge

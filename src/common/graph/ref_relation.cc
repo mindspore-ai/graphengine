@@ -242,10 +242,6 @@ void RefRelations::Impl::GetDataAndNetoutputOfSubGraph(const ge::ComputeGraph &r
   int sub_graph_idx = 0;
   for (const auto &name : sub_graph_names) {
     auto sub_graph = root_graph.GetSubgraph(name);
-    if (sub_graph == nullptr) {
-      GELOGW("Can not find the sub graph %s for root graph %s.", name.c_str(), root_graph.GetName().c_str());
-      continue;
-    }
     for (const auto &sub_graph_node : sub_graph->GetDirectNode()) {
       auto sub_graph_node_type = sub_graph_node->GetType();
 

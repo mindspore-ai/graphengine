@@ -45,7 +45,7 @@ Status EndGraphTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 Status EndGraphTaskInfo::Distribute() {
   GELOGI("EndGraphTaskInfo Distribute Start.");
   GE_CHECK_NOTNULL(davinci_model_);
-  auto all_dump_model = davinci_model_->GetDumpProperties().GetAllDumpModel();
+  auto all_dump_model = PropertiesManager::Instance().GetAllDumpModel();
   if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
       all_dump_model.find(davinci_model_->Name()) != all_dump_model.end() ||
       all_dump_model.find(davinci_model_->OmName()) != all_dump_model.end()) {
@@ -80,4 +80,5 @@ Status EndGraphTaskInfo::Distribute() {
 }
 
 REGISTER_TASK_INFO(RT_MODEL_TASK_MODEL_END_GRAPH, EndGraphTaskInfo);
+
 }  // namespace ge

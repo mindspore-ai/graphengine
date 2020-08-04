@@ -20,7 +20,6 @@
 #include <memory>
 #include "graph/ge_tensor.h"
 #include "graph/tensor.h"
-
 namespace ge {
 using GeTensorPtr = std::shared_ptr<GeTensor>;
 using ConstGeTensorPtr = std::shared_ptr<const GeTensor>;

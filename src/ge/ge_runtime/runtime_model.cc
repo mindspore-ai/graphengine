@@ -28,6 +28,7 @@
 
 namespace ge {
 namespace model_runner {
+
 RuntimeModel::~RuntimeModel() {
   GELOGI("RuntimeModel destructor start");
 
@@ -115,34 +116,23 @@ bool RuntimeModel::InitEvent(uint32_t event_num) {
   return true;
 }
 
-bool RuntimeModel::InitLabel(std::shared_ptr<DavinciModel> &davinci_model) {
-  GELOGI("batch number:%u.", davinci_model->GetBatchNum());
-  label_list_.resize(davinci_model->GetBatchNum());
-  for (auto &task_info : davinci_model->GetTaskInfoList()) {
-    if (task_info == nullptr) {
-      GELOGE(PARAM_INVALID, "task_info is null.");
-      continue;
-    }
-
-    if (task_info->type() != TaskInfoType::LABEL_SET) {
-      continue;
-    }
-    auto label_set_task_info = std::static_pointer_cast<LabelSetTaskInfo>(task_info);
-
-    if (label_set_task_info->stream_id() >= stream_list_.size()) {
-      GELOGE(PARAM_INVALID, "Invalid stream id.");
-      return false;
-    }
-
-    rtLabel_t rt_label = nullptr;
-    rtError_t rt_ret = rtLabelCreateEx(&rt_label, stream_list_[label_set_task_info->stream_id()]);
+bool RuntimeModel::InitLabel(uint32_t batch_num) {
+  GELOGI("batch number:%u.", batch_num);
+  for (uint32_t i = 0; (batch_num != 0 && i <= batch_num); ++i) {
+    rtLabel_t rt_lLabel = nullptr;
+    rtError_t rt_ret = rtLabelCreate(&rt_lLabel);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, i; %u; ret: 0x%X", i, rt_ret);
       return false;
     }
-    label_list_[label_set_task_info->label_id()] = rt_label;
-  }
 
+    if (rt_lLabel == nullptr) {
+      GELOGE(RT_FAILED, "rtLabel is nullptr!");
+      return false;
+    }
+
+    label_list_.emplace_back(rt_lLabel);
+  }
   return true;
 }
 
@@ -174,7 +164,7 @@ bool RuntimeModel::InitResource(std::shared_ptr<DavinciModel> &davinci_model) {
     return false;
   }
 
-  if (!InitLabel(davinci_model)) {
+  if (!InitLabel(davinci_model->GetBatchNum())) {
     return false;
   }
 
@@ -219,41 +209,20 @@ bool RuntimeModel::LoadTask() {
       return false;
     }
     task_id_list_.push_back(task_id);
-    stream_id_list_.push_back(stream_id);
-    if (task->Args() != nullptr) {
-      std::shared_ptr<RuntimeInfo> runtime_tuple = nullptr;
-      GE_MAKE_SHARED(runtime_tuple = std::make_shared<RuntimeInfo>(task_id, stream_id, task->Args()), return false);
-      auto emplace_ret = runtime_info_map_.emplace(task->task_name(), runtime_tuple);
-      if (!emplace_ret.second) {
-        GELOGW("Task name exist:%s", task->task_name().c_str());
-      }
-    }
   }
   if (task_list_.empty()) {
     GELOGE(FAILED, "Task list is empty");
     return false;
   }
+  GELOGI("Distribute task succ.");
 
-  GELOGI("LoadTask succ.");
-  return true;
-}
-
-bool RuntimeModel::LoadComplete() {
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  auto rt_ret = rtModelGetTaskId(rt_model_handle_, &task_id, &stream_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rtModelGetTaskId failed, ret:0x%X", rt_ret);
-    return RT_FAILED;
-  }
-  task_id_list_.push_back(task_id);
-  stream_id_list_.push_back(stream_id);
-
-  rt_ret = rtModelLoadComplete(rt_model_handle_);
+  auto rt_ret = rtModelLoadComplete(rt_model_handle_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api rtModelLoadComplete failed, ret: 0x%X.", rt_ret);
     return false;
   }
+
+  GELOGI("LoadTask succ.");
   return true;
 }
 
@@ -283,16 +252,14 @@ bool RuntimeModel::Load(uint32_t device_id, uint64_t session_id, std::shared_ptr
   }
 
   GenerateTask(device_id, session_id, davinci_model);
-  return status;
-}
 
-bool RuntimeModel::DistributeTask() {
-  bool status = LoadTask();
+  status = LoadTask();
   if (!status) {
     GELOGE(FAILED, "DistributeTask failed");
-    return false;
+    return status;
   }
-  return true;
+
+  return status;
 }
 
 bool RuntimeModel::Run() {
@@ -303,14 +270,10 @@ bool RuntimeModel::Run() {
     return false;
   }
 
-  GELOGI("Run rtModelExecute success, ret = 0x%X", ret);
+  GELOGI("Run rtModelExecute success");
 
   ret = rtStreamSynchronize(rt_model_stream_);
   if (ret != RT_ERROR_NONE) {
-    if (ret == RT_ERROR_END_OF_SEQUENCE) {
-      GELOGI("Model stream RT_ERROR_END_OF_SEQUENCE signal received, ret = 0x%X", ret);
-      return true;
-    }
     GELOGE(RT_FAILED, "Model stream sync failed, ret = 0x%X", ret);
     return false;
   }
@@ -470,7 +433,7 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
     }
 
     if (constant->output_tensors[0].size < constant->weight_data.size()) {
-      GELOGE(PARAM_INVALID, "Output size:%u less than weight data size:%zu", constant->output_tensors[0].size,
+      GELOGE(PARAM_INVALID, "Output size:%u is less than weight data size:%zu", constant->output_tensors[0].size,
              constant->weight_data.size());
       return false;
     }
@@ -485,8 +448,11 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
       /// The logic of GetShapeSize is wrong, the scaler tensor's GetShapeSize is zero
       /// and that of unknown shape is zero too.
       /// Unknown shape will not appear here, so we can use zero judge a tensor is scaler or not.
-      int64_t elem_num =
-        (constant->weight_tensors[0].GetShapeSize() == 0) ? 1 : constant->weight_tensors[0].GetShapeSize();
+      int64_t elem_num = constant->weight_tensors[0].GetShapeSize();
+      if (elem_num == 0 && constant->weight_tensors[0].size == 0) {
+        elem_num = 1;
+      }
+
       if (constant->weight_data.size() < sizeof(uint64_t)) {
         GELOGE(FAILED, "weight_data size is smaller than sizeof(uint64_t)");
         return false;
@@ -529,6 +495,5 @@ void RuntimeModel::CreateOutput(uint32_t index, const OpInfo &op_info, InputOutp
 
 const std::vector<uint32_t> &RuntimeModel::GetTaskIdList() const { return task_id_list_; }
 
-const std::vector<uint32_t> &RuntimeModel::GetStreamIdList() const { return stream_id_list_; }
 }  // namespace model_runner
 }  // namespace ge

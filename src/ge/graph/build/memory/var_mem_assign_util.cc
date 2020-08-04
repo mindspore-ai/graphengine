@@ -299,33 +299,21 @@ Status VarMemAssignUtil::SetOutTransNodeToAssign(const ge::NodePtr &node, const 
 Status VarMemAssignUtil::AssignMemory2HasRefAttrNode(ge::ComputeGraphPtr &compute_graph) {
   for (const ge::NodePtr &n : compute_graph->GetAllNodes()) {
     string ref_var_src_var_name;
-    auto op_desc = n->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    for (uint32_t idx = 0; idx < op_desc->GetOutputsSize(); idx += 1) {
-      const auto out_desc = op_desc->MutableOutputDesc(idx);
-      if (ge::AttrUtils::GetStr(out_desc, REF_VAR_SRC_VAR_NAME, ref_var_src_var_name)) {
-        GE_CHK_STATUS_RET(AssignData2VarRef(n, ref_var_src_var_name, compute_graph->GetSessionID(), idx));
-      }
-    }
+    GE_CHECK_NOTNULL(n->GetOpDesc());
+    bool is_ref = ge::AttrUtils::GetStr(n->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
+    GE_IF_BOOL_EXEC(is_ref,
+                    GE_CHK_STATUS_RET(AssignData2VarRef(n, ref_var_src_var_name, compute_graph->GetSessionID())));
   }
   return SUCCESS;
 }
 
 Status VarMemAssignUtil::AssignData2VarRef(const ge::NodePtr &has_ref_attr_node, const string &src_var_name,
-                                           uint64_t session_id, uint32_t out_index) {
-  // Get ref_var_src_var address
-  auto root_graph = GraphUtils::FindRootGraph(has_ref_attr_node->GetOwnerComputeGraph());
-  GE_CHECK_NOTNULL(root_graph);
-  ge::NodePtr var_ref_src_var = root_graph->FindNode(src_var_name);
-  if (var_ref_src_var == nullptr) {
-    for (auto sub_graph : root_graph->GetAllSubgraphs()) {
-      auto node_ptr = sub_graph->FindNode(src_var_name);
-      if (node_ptr != nullptr) {
-        var_ref_src_var = node_ptr;
-        break;
-      }
-    }
+                                           uint64_t session_id) {
+  if (!TransOpUtil::IsTransOp(has_ref_attr_node)) {
+    return SUCCESS;
   }
+  // Get ref_var_src_var address
+  ge::NodePtr var_ref_src_var = has_ref_attr_node->GetOwnerComputeGraph()->FindNode(src_var_name);
   GE_IF_BOOL_EXEC(var_ref_src_var == nullptr || var_ref_src_var->GetOpDesc() == nullptr, return FAILED);
   GeTensorDesc src_tensor_desc = var_ref_src_var->GetOpDesc()->GetOutputDesc(0);
   uint8_t *dev_ptr = nullptr;
@@ -334,8 +322,14 @@ Status VarMemAssignUtil::AssignData2VarRef(const ge::NodePtr &has_ref_attr_node,
   vector<int64_t> ref_attr_node_output_list = has_ref_attr_node->GetOpDesc()->GetOutputOffset();
   GE_CHECK_SIZE(ref_attr_node_output_list.size());
 
-  GE_CHK_BOOL_RET_STATUS(out_index < ref_attr_node_output_list.size(), FAILED,
-                         "out_index %u >= ref_attr_node_output_list.size() %zu", out_index,
+  int out_index = 0;
+  bool is_get = ge::AttrUtils::GetInt(var_ref_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, out_index);
+  if (!is_get) {
+    GELOGI("%s failed to get attr [REF_VAR_PRE_PEER_OUT_INDEX]", var_ref_src_var->GetName().c_str());
+  }
+
+  GE_CHK_BOOL_RET_STATUS(static_cast<size_t>(out_index) < ref_attr_node_output_list.size(), FAILED,
+                         "out_index %d >= ref_attr_node_output_list.size() %zu", out_index,
                          ref_attr_node_output_list.size());
 
   ref_attr_node_output_list[out_index] = static_cast<int64_t>(reinterpret_cast<uintptr_t>(dev_ptr));

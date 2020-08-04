@@ -132,14 +132,14 @@ Status TransposeKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<C
     return NOT_CHANGED;
   }
   if (!KernelUtils::CheckSizeForTransOp(const_weight_ptr, op_desc_ptr)) {
-    GELOGW("CheckSize failed, input size is not equal to weight size");
+    GELOGE(FAILED, "CheckSize failed, input size is not equal to weight size");
     return NOT_CHANGED;
   }
   const uint8_t *src_data = const_weight_ptr->GetData().data();
   formats::TransResult trans_result;
   auto ret = formats::TransposeWithShapeCheck(src_data, src_shape, data_shape, src_data_type, perm_list, trans_result);
   if (ret != SUCCESS) {
-    GELOGW("Failed to Transpose from %s to %s, shape %s to  %s, perm_list %s, data type %s",
+    GELOGE(INTERNAL_ERROR, "Failed to Transpose from %s to %s, shape %s to  %s, perm_list %s, data type %s",
            TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(data_format).c_str(),
            formats::ShapeToString(src_shape).c_str(), formats::ShapeToString(data_shape).c_str(),
            formats::ShapeToString(perm_list).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str());

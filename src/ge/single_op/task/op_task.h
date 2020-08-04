@@ -28,7 +28,6 @@ namespace ge {
 enum OpTaskType {
   OP_TASK_TBE = 0,
   OP_TASK_AICPU,
-  OP_TASK_AICPUCC,
   OP_TASK_INVALID,
 };
 
@@ -78,34 +77,6 @@ class AiCpuTask : public OpTask {
   void *args_ = nullptr;
   size_t arg_size_ = 0;
   std::string op_type_;
-  void *io_addr_ = nullptr;
-};
-
-class AiCpuCCTask : public OpTask {
- public:
-  AiCpuCCTask() = default;
-  ~AiCpuCCTask() override;
-  AiCpuCCTask(const AiCpuCCTask &) = delete;
-  AiCpuCCTask &operator=(const AiCpuCCTask &) = delete;
-
-  Status LaunchKernel(rtStream_t stream) override;
-  OpTaskType GetOpTaskType() override { return OP_TASK_AICPUCC; }
-  const void *GetIOAddr() const;
-  const void *GetArgs() const;
-  void SetKernelArgs(void *args, size_t arg_size);
-  void SetSoName(const std::string &so_name);
-  void SetkernelName(const std::string &kernel_Name);
-  void SetIoAddr(void *io_addr);
-  size_t GetArgSize() const;
-
- private:
-  friend class AiCpuCCTaskBuilder;
-  std::string so_name_;
-  std::string kernel_name_;
-  void *args_ = nullptr;
-  size_t arg_size_ = 0;
-  uint32_t block_dim_ = 1;
-  void *sm_desc_ = nullptr;
   void *io_addr_ = nullptr;
 };
 }  // namespace ge

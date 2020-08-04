@@ -130,7 +130,7 @@ struct NodeIndexIO {
   IOType io_type_ = kOut;
   std::string value_;
 
-  const std::string &ToString() const { return value_; }
+  std::string ToString() const { return value_; }
 };
 
 class GraphUtils {
@@ -188,8 +188,8 @@ class GraphUtils {
   /// @param [in] output_index
   /// @return graphStatus
   ///
-  static graphStatus InsertNodeAfter(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
-                                     const NodePtr &insert_node, uint32_t input_index = 0, uint32_t output_index = 0);
+  static graphStatus InsertNodeBefore(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
+                                      const NodePtr &insert_node, uint32_t input_index = 0, uint32_t output_index = 0);
 
   static graphStatus RemoveJustNode(ComputeGraphPtr compute_graph, const NodePtr &node);
 
@@ -302,14 +302,6 @@ class GraphUtils {
   /// @return success: GRAPH_SUCESS
   ///
   static graphStatus MoveOutCtrlEdges(NodePtr &src_node, NodePtr &dst_node);
-
-  ///
-  /// Copy all in-data edges from `src_node` to `dst_node`
-  /// @param src_node
-  /// @param dst_node
-  /// @return
-  ///
-  static graphStatus CopyInDataEdges(const NodePtr &src_node, NodePtr &dst_node);
 
   static ComputeGraphPtr FindRootGraph(ComputeGraphPtr graph);
 
@@ -736,4 +728,5 @@ class PartialGraphBuilder : public ComputeGraphBuilder {
   std::vector<NodePtr> exist_nodes_;
 };
 }  // namespace ge
+
 #endif  // INC_GRAPH_UTILS_GRAPH_UTILS_H_

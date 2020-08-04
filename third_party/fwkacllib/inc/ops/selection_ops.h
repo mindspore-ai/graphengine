@@ -89,8 +89,7 @@ REG_OP(RangeD)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x: A Tensor. 
-* Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32. 
+* @li x: A Tensor of type TensorType::BasicType().
 * @li multiples: A 1D Tensor of type int32 or int64.
 *     The length must be the same as the number of dimensions in "input"
 
@@ -497,7 +496,7 @@ REG_OP(UnsortedSegmentSumD)
 *@par Inputs:
 * Two inputs, including:\n
 *@li x: An ND Tensor (up to 8D). \n
-*Must be one of the following types: int8, uint8, int16, uint16, int32, int64, bool, float16, float32, double, complex64, complex128, string.
+*Must be one of the following types: int8, uint8, int16, uint16, int32, int64, bool, float32, double
 *@li axis: A 1D Tensor.\n
 *Must be one of the following types: int32, int64
 
@@ -1560,14 +1559,14 @@ REG_OP(ProposalD)
 * If reverse=false: (N, H, W, C)->(N, H/stride, W/stride, C*(stride*stride))
 
 *@par Inputs:
-*x: An (N, H, W, C) tensor. Type is float16, float32, int8, uint8, int16, uint16, int32, uint32, int64 or uint64..
+*x: An (N, H, W, C) tensor. All types except double are supported.
 
 *@par Attributes:
 *@li stride: An optional int32, specifying the plane or channel scaling factor. Defaults to "2".
 *@li reverse: An optional bool, specifying the conversion mode. If "true", depth to space conversion is performed. If "false", space to depth conversion is performed. Defaults to "false".
 
 *@par Outputs:
-*y: An (N, H, W, C) tensor. Has same type as "x".
+*y: An (N, H, W, C) tensor. All types except double are supported.
 
 *@attention Constraints:
 *@li If reverse=true: C/(stride*stride) yields an integer result. If reverse=false: W/stride and H/stride yield integer results.
@@ -1594,7 +1593,7 @@ REG_OP(PassThrough)
 * @li x: A required Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32,int64, uint64.
 * @li size: A required Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 *@par Attributes:
-*@li axis: A required int32, specifying the first dimension to crop. Defaults to "2".
+*@li axis: A required int32, specifying the first dimension to crop.
 *@li offset: A required array, specifying the shift for all/each dimension to align the cropped bottom with the reference bottom. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 *@par Outputs:
 *y: A required Tensor. Has the same type and shape as "size".

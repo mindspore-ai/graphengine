@@ -220,7 +220,6 @@ const string TENSOR_UTILS_ORIGIN_SHAPE = "origin_shape";
 const string TENSOR_UTILS_ORIGIN_FORMAT = "origin_format";
 const string TENSOR_UTILS_ORIGIN_DATA_TYPE = "origin_data_type";
 const string TENSOR_UTILS_SHAPE_RANGE = "shape_range";
-const string TENSOR_UTILS_REF_PORT_INDEX = "ref_port_index";
 
 GeShape::GeShape(const ProtoMsgOwner &proto_owner, proto::ShapeDef *proto_msg) : shape_def_(proto_owner, proto_msg) {}
 
@@ -566,16 +565,6 @@ DataType GeTensorDesc::GetOriginDataType() const {
     return DT_UNDEFINED;
   }
   return TypeUtils::SerialStringToDataType(origin_data_type_str);
-}
-
-std::vector<uint32_t> GeTensorDesc::GetRefPortIndex() const {
-  vector<uint32_t> ref_port_index;
-  (void)AttrUtils::GetListInt(this, TENSOR_UTILS_REF_PORT_INDEX, ref_port_index);
-  return ref_port_index;
-}
-
-void GeTensorDesc::SetRefPortByIndex(const std::vector<uint32_t> &index) {
-  (void)AttrUtils::SetListInt(this, TENSOR_UTILS_REF_PORT_INDEX, index);
 }
 
 graphStatus GeTensorDesc::IsValid() const {

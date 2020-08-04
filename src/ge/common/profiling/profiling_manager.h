@@ -17,6 +17,7 @@
 #ifndef GE_COMMON_PROFILING_PROFILING_MANAGER_H_
 #define GE_COMMON_PROFILING_PROFILING_MANAGER_H_
 
+#include <nlohmann/json.hpp>
 #include <map>
 #include <string>
 #include <vector>
@@ -30,6 +31,7 @@
 using std::map;
 using std::string;
 using std::vector;
+using Json = nlohmann::json;
 
 namespace ge {
 const std::string GE_PROFILING_MODULE = "Framework";
@@ -84,11 +86,13 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void PluginUnInit(const std::string &module) const;
 
  private:
+  ge::Status ParseFeaturesFromAclCfg(const Json &feature);
   bool is_profiling_ = false;
   bool is_op_trace_ = false;
   bool is_load_ = false;
   int32_t op_trace_iter_num_ = 0;
   string job_id_;
+  string prof_dir_;
   vector<int32_t> device_id_;
   vector<string> op_trace_conf_;
   vector<string> profiling_opts_;
@@ -96,6 +100,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   string recv_profiling_config_;
   string send_profiling_config_;
   string system_trace_conf_;
+  string task_trace_conf_;
   const ProfilingEngineImpl engine_;
 };
 }  // namespace ge

@@ -25,7 +25,6 @@
 #include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_manager_utils.h"
-#include "graph/common/ge_call_wrapper.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
@@ -232,33 +231,33 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
   ComputeGraphPtr new_sub_graph = MakeShared<ComputeGraph>(original_compute_graph->GetName());
   GE_CHECK_NOTNULL(new_sub_graph);
   output_merged_compute_graph = new_sub_graph;
-  GE_TIMESTAMP_START(MergeSubGraphRemoveNode);
+  GE_TIMESTAMP_START(MergeGraphRemoveNode);
   if (RemoveNodeAndEdgeBetweenEndPld(output_merged_compute_graph, sub_graph_list) != ge::SUCCESS) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: merging sub-graphs failed");
     return FAILED;
   }
-  GE_TIMESTAMP_END(MergeSubGraphRemoveNode, "GraphPartitioner::MergeGraphRemoveNodeAndEdge");
-  GE_TIMESTAMP_START(MergeSubGraphTopologicalSorting);
+  GE_TIMESTAMP_END(MergeGraphRemoveNode, "GraphPartitioner::MergeGraphRemoveNodeAndEdge");
+  GE_TIMESTAMP_START(MergeGraphTopologicalSorting);
   Status ret = output_merged_compute_graph->TopologicalSorting();
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_TOPO_SORT_FAILED, "[GraphPartitioner]: output_merged_compute_graph->TopologicalSorting failed");
     return FAILED;
   }
-  GE_TIMESTAMP_END(MergeSubGraphTopologicalSorting, "GraphPartitioner::MergeGraphTopologicalSorting");
+  GE_TIMESTAMP_END(MergeGraphTopologicalSorting, "GraphPartitioner::MergeGraphTopologicalSorting");
   // flush all nodes' engine of merged graph
-  GE_TIMESTAMP_START(MergeSubGraphEnginePlacerRun);
+  GE_TIMESTAMP_START(MergeGraphEnginePlacerRun);
   graph_info_.engine_placer_.SetComputeGraph(output_merged_compute_graph);
   if (graph_info_.engine_placer_.Run() != SUCCESS) {
     GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: engine_placer run failed");
     return FAILED;
   }
-  GE_TIMESTAMP_END(MergeSubGraphEnginePlacerRun, "GraphPartitioner::MergeGraphEnginePlacerRun");
+  GE_TIMESTAMP_END(MergeGraphEnginePlacerRun, "GraphPartitioner::MergeGraphEnginePlacerRun");
   GELOGI("Graph merge ends.");
   return SUCCESS;
 }
 
 Status ge::GraphPartitioner::UpdatePldOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &pld_op_desc) {
-  if ((dst_node == nullptr) || (pld_op_desc == nullptr) || (dst_node->GetOpDesc() == nullptr)) {
+  if (dst_node == nullptr || pld_op_desc == nullptr || dst_node->GetOpDesc() == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
   }
@@ -276,7 +275,7 @@ Status ge::GraphPartitioner::UpdatePldOpDesc(const NodePtr &dst_node, int input_
 }
 
 Status ge::GraphPartitioner::UpdateEndOpDesc(const NodePtr &src_node, int output_index, OpDescPtr &end_op_desc) {
-  if ((src_node == nullptr) || (end_op_desc == nullptr) || (src_node->GetOpDesc() == nullptr)) {
+  if (src_node == nullptr || end_op_desc == nullptr || src_node->GetOpDesc() == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
   }
@@ -297,9 +296,9 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
                                                                  const AnchorPtr &peer_in_anchor,
                                                                  const ge::ComputeGraphPtr &pld_graph,
                                                                  const ge::ComputeGraphPtr &end_graph) {
+  GE_CHECK_NOTNULL(out_anchor);
   GE_CHECK_NOTNULL(peer_in_anchor);
   GE_CHECK_NOTNULL(pld_graph);
-  GE_CHECK_NOTNULL(out_anchor);
   GE_CHECK_NOTNULL(end_graph);
   const auto &src_node = out_anchor->GetOwnerNode();
   const auto &dst_node = peer_in_anchor->GetOwnerNode();
@@ -314,7 +313,6 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
                   GELOGW("SetInt peerIndex failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(end_op_desc, "parentOpType", dst_node->GetType()),
                   GELOGW("SetStr parentOpType failed");)
-  GE_IF_BOOL_EXEC(!end_op_desc->SetExtAttr("parentNode", dst_node), GELOGW("SetEndExtAttr parentNode failed");)
   // replace input_desc of end with owner node's desc
   int output_index = ge::AnchorUtils::GetIdx(out_anchor);
   bool is_need_update_desc = (output_index >= 0) && (graph_info_.mode_ == kPartitioning);
@@ -363,7 +361,6 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
                   GELOGW("SetStr parentId failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "anchorIndex", AnchorUtils::GetIdx(out_anchor)),
                   GELOGW("SetInt anchorIndex failed");)
-  GE_IF_BOOL_EXEC(!pld_op_desc->SetExtAttr("parentNode", src_node), GELOGW("SetPldExtAttr parentNode failed");)
   // do not care over flow
   graph_info_.num_of_pld_end_++;
   // replace output_desc of pld with input node's output desc
@@ -398,14 +395,14 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
     return FAILED;
   }
   graph_info_.index_2_end_[graph_info_.num_of_pld_end_] = new_end_node;
-  graph_info_.pld_2_end_[new_pld_node] = new_end_node;
   graph_info_.end_2_pld_[new_end_node] = new_pld_node;
+  graph_info_.pld_2_end_[new_pld_node] = new_end_node;
   return SUCCESS;
 }
 
 Status ge::GraphPartitioner::LinkInput2EndRemoveOrginalLink(ge::NodePtr input_node, ge::ComputeGraphPtr src_graph,
                                                             ge::ComputeGraphPtr dst_graph) {
-  if ((input_node == nullptr) || (src_graph == nullptr) || (dst_graph == nullptr)) {
+  if (input_node == nullptr || src_graph == nullptr || dst_graph == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
   }
@@ -445,7 +442,7 @@ Status ge::GraphPartitioner::LinkInput2EndRemoveOrginalLink(ge::NodePtr input_no
 
 Status ge::GraphPartitioner::PutInputNodesInSubGraph(const ge::ComputeGraphPtr &src_graph,
                                                      const ge::ComputeGraphPtr &dst_graph) {
-  if ((src_graph == nullptr) || (dst_graph == nullptr)) {
+  if (src_graph == nullptr || dst_graph == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
   }
@@ -852,34 +849,34 @@ Status ge::GraphPartitioner::PartitionSubGraph(ge::ComputeGraphPtr compute_graph
     GELOGE(GE_GRAPH_TOPO_SORT_FAILED, "[GraphPartitioner]: subGraphPtr->TopologicalSorting failed");
     return FAILED;
   }
-  GE_TIMESTAMP_START(PartitionSubGraphInitialize);
+  GE_TIMESTAMP_START(GraphPartitionInitialize);
   if (Initialize(compute_graph) != SUCCESS) {
     GELOGE(GE_GRAPH_INIT_FAILED, "[GraphPartitioner]: initialize failed");
     return FAILED;
   }
-  GE_TIMESTAMP_END(PartitionSubGraphInitialize, "GraphPartitioner::PartitionInitialize");
-  GE_TIMESTAMP_START(PartitionSubGraphMarkClusters);
+  GE_TIMESTAMP_END(GraphPartitionInitialize, "GraphPartitioner::PartitionInitialize");
+  GE_TIMESTAMP_START(GraphPartitionMarkClusters);
   MarkClusters();
-  GE_TIMESTAMP_END(PartitionSubGraphMarkClusters, "GraphPartitioner::PartitionMarkClusters");
-  GE_TIMESTAMP_START(PartitionSubGraphSplitSubGraphs);
+  GE_TIMESTAMP_END(GraphPartitionMarkClusters, "GraphPartitioner::PartitionMarkClusters");
+  GE_TIMESTAMP_START(GraphPartitionSplitSubGraphs);
   if (SplitSubGraphs(compute_graph) != SUCCESS) {
     GELOGE(FAILED, "[GraphPartitioner]: SplitSubGraphs failed");
     return FAILED;
   }
-  GE_TIMESTAMP_END(PartitionSubGraphSplitSubGraphs, "GraphPartitioner::PartitionSplitSubGraphs");
-  GE_TIMESTAMP_START(PartitionSubGraphSortSubGraphs);
+  GE_TIMESTAMP_END(GraphPartitionSplitSubGraphs, "GraphPartitioner::PartitionSplitSubGraphs");
+  GE_TIMESTAMP_START(GraphPartitionSortSubGraphs);
   if (SortSubGraphs(compute_graph) != ge::SUCCESS) {
     GELOGE(GE_GRAPH_TOPO_SORT_FAILED, "Graph Partition SortSubGraphs failed.");
     return ge::FAILED;
   }
-  GE_TIMESTAMP_END(PartitionSubGraphSortSubGraphs, "GraphPartitioner::PartitionSortSubGraphs");
-  GE_TIMESTAMP_START(PartitionSubGraphAddPartitionsToGraphNode);
+  GE_TIMESTAMP_END(GraphPartitionSortSubGraphs, "GraphPartitioner::PartitionSortSubGraphs");
+  GE_TIMESTAMP_START(GraphPartitionAddPartitionsToGraphNode);
   vector<ge::SubGraphInfoPtr> output_subgraphs;
   if (AddPartitionsToGraphNode(output_subgraphs, compute_graph) != ge::SUCCESS) {
     GELOGE(GE_GRAPH_EMPTY_PARTITION, "Graph Partition AddPartitionsToGraphNode failed.");
     return ge::FAILED;
   }
-  GE_TIMESTAMP_END(PartitionSubGraphAddPartitionsToGraphNode, "GraphPartitioner::PartitionAddPartitionsToGraphNode");
+  GE_TIMESTAMP_END(GraphPartitionAddPartitionsToGraphNode, "GraphPartitioner::PartitionAddPartitionsToGraphNode");
   GELOGI("Graph Partition ends. Adding partitions to SubGraphInfo, got %zu sub graphs", output_subgraphs.size());
   graph_info_.mode_ = kMerging;
   // do not care over flow
@@ -926,7 +923,7 @@ Status ge::GraphPartitioner::AddPlaceHolderEnd(const AnchorPtr &out_anchor, cons
 Status ge::GraphPartitioner::SortSubGraphs(const ge::ComputeGraphPtr &compute_graph) {
   uint32_t rank = kRankOne;  // rank 0 for data graph
   ComputeGraphPtr new_input_nodes_sub_graph = MakeShared<ComputeGraph>("inputNodeGraph");
-  if ((new_input_nodes_sub_graph == nullptr) || (compute_graph == nullptr)) {
+  if (new_input_nodes_sub_graph == nullptr || compute_graph == nullptr) {
     GELOGE(FAILED, "[GraphPartitioner]: new_input_nodes_sub_graph or compute_graph is null.");
     return FAILED;
   }
@@ -968,7 +965,7 @@ Status ge::GraphPartitioner::SortSubGraphs(const ge::ComputeGraphPtr &compute_gr
 }
 
 AnchorPtr ge::GraphPartitioner::GetEndInAnchor(const AnchorPtr &src_anchor, const NodePtr &end_node) {
-  if ((src_anchor == nullptr) || (end_node == nullptr)) {
+  if (src_anchor == nullptr || end_node == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return nullptr;
   }
@@ -982,7 +979,7 @@ AnchorPtr ge::GraphPartitioner::GetEndInAnchor(const AnchorPtr &src_anchor, cons
 }
 
 AnchorPtr ge::GraphPartitioner::GetPldOutAnchor(const NodePtr &pld_node, const AnchorPtr &dst_anchor) {
-  if ((pld_node == nullptr) || (dst_anchor == nullptr)) {
+  if (pld_node == nullptr || dst_anchor == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return nullptr;
   }
@@ -995,16 +992,16 @@ AnchorPtr ge::GraphPartitioner::GetPldOutAnchor(const NodePtr &pld_node, const A
   return pld_out_anchor;
 }
 
-void ge::GraphPartitioner::AddEndPldInformationToSubGraphInfo(ge::SubGraphInfoPtr &subgraph_info) {
-  if (subgraph_info == nullptr) {
+void ge::GraphPartitioner::AddEndPldInformationToSubGraphInfo(ge::SubGraphInfoPtr &sub_graph_info) {
+  if (sub_graph_info == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return;
   }
-  auto subgraph = subgraph_info->GetSubGraph();
-  GE_CHECK_NOTNULL_JUST_RETURN(subgraph);
+  auto sub_graph = sub_graph_info->GetSubGraph();
+  GE_CHECK_NOTNULL_JUST_RETURN(sub_graph);
   NodetoNodeMap end_map;
   NodetoNodeMap pld_map;
-  for (const auto &node : subgraph->GetDirectNode()) {
+  for (const auto &node : sub_graph->GetDirectNode()) {
     if (node->GetType() == kEndType) {
       end_map[node] = graph_info_.end_2_pld_.at(node);
     }
@@ -1012,8 +1009,8 @@ void ge::GraphPartitioner::AddEndPldInformationToSubGraphInfo(ge::SubGraphInfoPt
       pld_map[node] = graph_info_.pld_2_end_.at(node);
     }
   }
-  subgraph_info->SetEnd2PldMap(end_map);
-  subgraph_info->SetPld2EndMap(pld_map);
+  sub_graph_info->SetEnd2PldMap(end_map);
+  sub_graph_info->SetPld2EndMap(pld_map);
 }
 
 const Graph2SubGraphInfoList &ge::GraphPartitioner::GetSubGraphMap() { return graph_2_subgraph_list_; }

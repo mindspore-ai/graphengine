@@ -129,6 +129,12 @@ Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, const DataBuffer &data,
       }
 
       auto dst_addr = static_cast<uint8_t *>(data.data);
+      auto dst_size = static_cast<uint64_t>(data.length);
+      if (ModelUtils::ConvertVirtualAddressToPhysical(dst_addr, dst_size, dst_addr) != SUCCESS) {
+        GELOGE(FAILED, "[ZCPY] Convert virtual address to physical for dst_addr failed.");
+        return FAILED;
+      }
+
       GELOGI("[ZCPY] %s update task, args: %p, size: %zu, offset: %zu, addr: 0x%lx, length: %u", name_.c_str(),
              args_addr_, args_size_, offset, addr, data.length);
       *(uintptr_t *)(args_info + offset) = reinterpret_cast<uintptr_t>(dst_addr);

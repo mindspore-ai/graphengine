@@ -22,19 +22,16 @@
 #include <vector>
 #include "external/ge/ge_api_error_codes.h"
 #include "hybrid/common/tensor_value.h"
-#include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/executor/rt_callback_manager.h"
 #include "hybrid/model/node_item.h"
 
 namespace ge {
 namespace hybrid {
 class GraphExecutionContext;
-class SubgraphContext;
 
 class TaskContext {
  public:
-  static std::unique_ptr<TaskContext> Create(const NodeItem &node_item, GraphExecutionContext *execution_context,
-                                             SubgraphContext *subgraph_context);
+  static std::unique_ptr<TaskContext> Create(const NodeItem &node_item, GraphExecutionContext *graph_context);
 
   ~TaskContext();
 
@@ -44,32 +41,18 @@ class TaskContext {
   const NodeItem &GetNodeItem() const;
   const char *GetNodeName() const;
   TensorValue *MutableInput(int index);
-  ConstGeTensorDescPtr GetInputDesc(int index);
-  ConstGeTensorDescPtr GetOutputDesc(int index);
-  GeTensorDescPtr MutableInputDesc(int index);
-  GeTensorDescPtr MutableOutputDesc(int index);
   void ReleaseInput(int index);
   const TensorValue *GetInput(int index) const;
   const TensorValue *GetOutput(int index) const;
   TensorValue *MutableOutput(int index);
-  TensorValue *GetVariable(const std::string &name);
   rtStream_t GetStream();
-  int64_t GetSessionId() const;
-  uint64_t GetIterationNumber() const;
-
-  void NodeDone();
-  void OnError(Status error);
+  int64_t GetSessionId();
 
   Status SetOutput(int index, const TensorValue &tensor);
-  Status AllocateOutput(int index, const GeTensorDesc &tensor_desc, TensorValue **tensor,
-                        AllocationAttr *attr = nullptr);
-  Status AllocateOutputs(AllocationAttr *attr = nullptr);
+  Status AllocateOutput(int index, const GeTensorDesc &tensor_desc, TensorValue **tensor);
+  Status AllocateOutputs();
   Status AllocateWorkspaces();
   Status AllocateWorkspace(size_t size, void **buffer, void *ori_addr = nullptr);
-
-  bool IsTraceEnabled() const;
-
-  bool IsDumpEnabled() const;
 
   const GraphExecutionContext *GetExecutionContext() { return execution_context_; }
 
@@ -85,25 +68,17 @@ class TaskContext {
 
   void SetStatus(Status status);
 
-  bool IsForceInferShape() const;
-  void SetForceInferShape(bool force_infer_shape);
-  void *handle_ = nullptr;
-
  private:
-  TaskContext(GraphExecutionContext *execution_context, const NodeItem *node_item, SubgraphContext *subgraph_context);
-
-  static string TensorDesc2String(const GeTensorDesc &desc);
-  Status AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue &tensor, AllocationAttr *attr);
-
-  const NodeItem *node_item_ = nullptr;
-  bool force_infer_shape_ = false;
-  GraphExecutionContext *execution_context_;
-  SubgraphContext *subgraph_context_;
+  explicit TaskContext(GraphExecutionContext *execution_context);
   TensorValue *inputs_start_ = nullptr;
   TensorValue *outputs_start_ = nullptr;
+  static string TensorDesc2String(const GeTensorDesc &desc);
+  Status AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue &tensor);
+
+  GraphExecutionContext *execution_context_;
+  const NodeItem *node_item_ = nullptr;
   Status status_ = SUCCESS;
   std::vector<void *> workspaces_;
-  uint64_t iteration_ = 0;
 };
 }  // namespace hybrid
 }  // namespace ge

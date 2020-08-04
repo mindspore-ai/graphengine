@@ -32,50 +32,6 @@ static const char *USE_FUSION __attribute__((unused)) = "FMK_USE_FUSION";
 static const char *TIMESTAT_ENABLE __attribute__((unused)) = "DAVINCI_TIMESTAT_ENABLE";
 static const char *ANNDROID_DEBUG __attribute__((unused)) = "ANNDROID_DEBUG";
 
-class DumpProperties {
- public:
-  DumpProperties() = default;
-  ~DumpProperties() = default;
-  DumpProperties(const DumpProperties &dump);
-  DumpProperties &operator=(const DumpProperties &dump);
-
-  void InitByOptions();
-
-  void AddPropertyValue(const std::string &model, const std::set<std::string> &layers);
-  void DeletePropertyValue(const std::string &model);
-
-  std::set<std::string> GetAllDumpModel() const;
-  std::set<std::string> GetPropertyValue(const std::string &model) const;
-  bool IsLayerNeedDump(const std::string &model, const std::string &om_name, const std::string &op_name) const;
-
-  void SetDumpPath(const std::string &path);
-  std::string GetDumpPath() const;
-
-  void SetDumpStep(const std::string &step);
-  std::string GetDumpStep() const;
-
-  void SetDumpMode(const std::string &mode);
-  std::string GetDumpMode() const;
-
-  bool IsOpDebugOpen() const { return is_op_debug_; }
-  uint32_t GetOpDebugMode() const { return op_debug_mode_; }
-
- private:
-  void CopyFrom(const DumpProperties &other);
-  void SetDumpDebugOptions();
-
-  string enable_dump_;
-  string enable_dump_debug_;
-
-  std::string dump_path_;
-  std::string dump_step_;
-  std::string dump_mode_;
-  std::map<std::string, std::set<std::string>> model_dump_properties_map_;
-
-  bool is_op_debug_ = false;
-  uint32_t op_debug_mode_ = 0;
-};
-
 class PropertiesManager {
  public:
   // Singleton
@@ -125,8 +81,21 @@ class PropertiesManager {
    */
   void SetPropertyDelimiter(const std::string &de);
 
-  DumpProperties &GetDumpProperties(uint64_t session_id);
-  void RemoveDumpProperties(uint64_t session_id);
+  void AddDumpPropertyValue(const std::string &model, const std::set<std::string> &layers);
+  std::set<std::string> GetAllDumpModel();
+  std::set<std::string> GetDumpPropertyValue(const std::string &model);
+  bool IsLayerNeedDump(const std::string &model, const std::string &om_name, const std::string &op_name);
+  void DeleteDumpPropertyValue(const std::string &model);
+  void ClearDumpPropertyValue();
+  bool QueryModelDumpStatus(const std::string &model);
+  void SetDumpOutputModel(const std::string &output_model);
+  std::string GetDumpOutputModel();
+  void SetDumpOutputPath(const std::string &output_path);
+  std::string GetDumpOutputPath();
+  void SetDumpStep(const std::string &dump_step);
+  std::string GetDumpStep();
+  void SetDumpMode(const std::string &dump_mode);
+  std::string GetDumpMode();
 
  private:
   // Private construct, destructor
@@ -150,7 +119,12 @@ class PropertiesManager {
   std::map<std::string, std::string> properties_map_;
   std::mutex mutex_;
 
-  std::map<uint64_t, DumpProperties> dump_properties_map_;
+  std::string output_mode_;
+  std::string output_path_;
+  std::string dump_step_;
+  std::string dump_mode_;
+  std::map<std::string, std::set<std::string>> model_dump_properties_map_;  // model_dump_layers_map_
+  std::mutex dump_mutex_;
 };
 }  // namespace ge
 

@@ -37,8 +37,6 @@ class HybridDavinciModel {
 
   Status Init();
 
-  Status Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
-
   Status ModelRunStart();
 
   Status ModelRunStop();

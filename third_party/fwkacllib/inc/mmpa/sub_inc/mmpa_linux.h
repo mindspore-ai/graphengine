@@ -344,8 +344,6 @@ extern INT32 mmRealPath(const CHAR *path, CHAR *realPath, INT32 realPathLen);
 
 extern INT32 mmDup2(INT32 oldFd, INT32 newFd);
 
-extern INT32 mmDup(INT32 fd);
-
 extern INT32 mmUnlink(const CHAR *filename);
 
 extern INT32 mmChmod(const CHAR *filename, INT32 mode);

@@ -94,6 +94,18 @@ class TaskGenerator {
                       std::map<uint32_t, string> &op_name_map);
 
   ///
+  /// call engine to generate unknown shape task.
+  /// @param run_context run context
+  /// @param graph compute graph
+  /// @param task_def_list task def list generate by engine
+  /// @param op_name_map relation of task index and op
+  /// @return SUCCESS:seccess
+  /// Other: failed
+  ///
+  Status GenerateUnknownShapeTask(RunContext &run_context, ComputeGraphPtr &graph,
+                                  std::vector<domi::TaskDef> &task_def_list, std::map<uint32_t, string> &op_name_map);
+
+  ///
   /// AddModelTaskToModel
   /// @param model_task_def model task
   /// @param model_def model
@@ -141,12 +153,6 @@ class TaskGenerator {
                                    std::unordered_set<Node *> &fusion_nodes_seen);
 
   Status SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion_nodes, ComputeGraphPtr &graph);
-
-  Status SetUnknownShapeStream(RunContext &run_context, rtStream_t &stream);
-
-  Status DestroyUnknownShapeStream(RunContext &run_context, rtStream_t &stream);
-
-  Status SetKnownShapeStream(RunContext &run_context, int64_t stream_id);
 
   uint8_t *var_mem_base_ = nullptr;
   uint64_t var_mem_size_ = 0;

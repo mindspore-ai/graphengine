@@ -378,7 +378,6 @@ _declspec(dllexport) INT32 mmGetRealPath(CHAR *path, CHAR *realPath);
 _declspec(dllexport) INT32 mmRealPath(const CHAR *path, CHAR *realPath, INT32 realPathLen);
 
 _declspec(dllexport) INT32 mmDup2(INT32 oldFd, INT32 newFd);
-_declspec(dllexport) INT32 mmDup(INT32 fd);
 _declspec(dllexport) INT32 mmUnlink(const CHAR *filename);
 _declspec(dllexport) INT32 mmChmod(const CHAR *filename, INT32 mode);
 _declspec(dllexport) INT32 mmFileno(FILE *stream);

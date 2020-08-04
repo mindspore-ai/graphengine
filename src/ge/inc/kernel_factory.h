@@ -103,5 +103,5 @@ class KernelFactory {
     return ptr;                                       \
   }                                                   \
   KernelFactory::Registerar g_##type##_Kernel_Creator(type, Creator_##type##_Kernel)
-}  // namespace ge
+};      // end namespace ge
 #endif  // GE_INC_KERNEL_FACTORY_H_

@@ -69,6 +69,7 @@ bool CastRemovePass::HasSameDataType(OpDescPtr &begin_op_desc, OpDescPtr &end_op
 
   auto begin_out_desc = begin_op_desc->MutableOutputDesc(0);
   DataType begin_out_datatype = begin_out_desc->GetDataType();
+
   if (begin_out_datatype == end_out_datatype && (begin_out_datatype == DT_FLOAT16 || begin_out_datatype == DT_FLOAT)) {
     type = begin_out_datatype;
     return true;

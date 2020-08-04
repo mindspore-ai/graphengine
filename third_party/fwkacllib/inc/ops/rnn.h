@@ -67,13 +67,6 @@ REG_OP(BasicLSTMCell)
     .ATTR(activation, String, "tanh")
     .OP_END_FACTORY_REG(BasicLSTMCell)
 
-REG_OP(DynamicLSTM)
-    .INPUT(x, TensorType({DT_FLOAT32}))
-    .INPUT(w, TensorType({DT_FLOAT32}))
-    .INPUT(b, TensorType({DT_FLOAT32}))
-    .OUTPUT(output_h, TensorType({DT_FLOAT32}))
-    .OP_END_FACTORY_REG(DynamicLSTM)
-
 /**
 *@brief: Basic LSTM Cell backward calculation.Calculate the gradient of input and hidden state.
 *@par Inputs:
@@ -94,7 +87,7 @@ REG_OP(BasicLSTMCellInputGrad)
     .INPUT(dgate, TensorType({DT_FLOAT16}))
     .INPUT(w, TensorType({DT_FLOAT16}))
     .OPTIONAL_INPUT(dropout_mask, TensorType({DT_UINT8}))
-    .OUTPUT(dxt, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(dxt, TensorType({DT_FLOAT16}))
     .OUTPUT(dht, TensorType({DT_FLOAT16, DT_FLOAT32}))
     .ATTR(keep_prob, Float, 1.0)
     .OP_END_FACTORY_REG(BasicLSTMCellInputGrad)

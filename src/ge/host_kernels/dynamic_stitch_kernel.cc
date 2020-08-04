@@ -63,11 +63,11 @@ Status DynamicStitchKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Co
 
 Status DynamicStitchKernel::ValidateParams(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input) {
   if (op_desc_ptr == nullptr) {
-    GELOGW("Input op_desc is nullptr.");
+    GELOGE(PARAM_INVALID, "Input op_desc is nullptr.");
     return PARAM_INVALID;
   }
   if (op_desc_ptr->GetOutputsSize() == 0) {
-    GELOGW("Current output_desc is empty.");
+    GELOGE(PARAM_INVALID, "Current output_desc is empty.");
     return PARAM_INVALID;
   }
   // validate input
@@ -78,7 +78,7 @@ Status DynamicStitchKernel::ValidateParams(const OpDescPtr &op_desc_ptr, const s
   }
   for (const auto &in : input) {
     if (in == nullptr) {
-      GELOGW("input is nullptr.");
+      GELOGE(PARAM_INVALID, "input is nullptr.");
       return PARAM_INVALID;
     }
   }
@@ -150,7 +150,7 @@ Status DynamicStitchKernel::GenData(const vector<ConstGeTensorPtr> &input, GeTen
   // 2.allocate memery for output
   std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[allowance]);
   if (buf == nullptr) {
-    GELOGW("new buffer failed");
+    GELOGE(MEMALLOC_FAILED, "new buffer failed");
     return INTERNAL_ERROR;
   }
   // 3.copy data from input_data along with the sequence of input_indices
@@ -164,7 +164,7 @@ Status DynamicStitchKernel::GenData(const vector<ConstGeTensorPtr> &input, GeTen
   output_ptr->MutableTensorDesc().SetShape(merged_shape);
   Status ret = output_ptr->SetData(buf.get(), allowance);
   if (ret != GRAPH_SUCCESS) {
-    GELOGW("set data failed");
+    GELOGE(INTERNAL_ERROR, "set data failed");
     return NOT_CHANGED;
   }
   return SUCCESS;

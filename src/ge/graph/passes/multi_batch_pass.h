@@ -31,15 +31,14 @@ class MultiBatchPass : public GraphPass {
   Status FindPredValue(const ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value);
   bool CheckSwitchN(std::vector<std::vector<int64_t>> &batch_shape);
   void FindSwitchOutNodes(uint32_t batch_num);
-  Status ReplaceSwitchN(const ComputeGraphPtr &graph, const OutDataAnchorPtr &pred_value,
+  Status ReplaceSwitchN(ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value,
                         const std::vector<std::vector<int64_t>> &batch_shape);
 
   bool CheckDims(const std::vector<std::vector<int64_t>> &output_shape) const;
-  NodePtr CreateSwitchCaseNode(const ComputeGraphPtr &graph, const std::string &name,
-                               const OutDataAnchorPtr &pred_value,
+  NodePtr CreateSwitchCaseNode(ComputeGraphPtr &graph, const std::string &name, const OutDataAnchorPtr &pred_value,
                                const std::vector<std::vector<int64_t>> &batch_shape);
-  Status BypassSwitchN(const NodePtr &switch_n_node, const NodePtr &switch_case_node);
-  Status AttachLabel(const NodePtr &switch_case_node);
+  Status BypassSwitchN(NodePtr &switch_n_node, NodePtr &switch_case_node);
+  Status AttachLabel(NodePtr &switch_case_node);
   Status AttachBatchLabel(uint32_t batch_idx);
   Status AttachStreamLabel(uint32_t batch_idx, const std::string &stream_label);
 

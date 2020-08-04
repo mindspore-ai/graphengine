@@ -49,4 +49,5 @@ class ModelSerialize {
   friend class GraphDebugImp;
 };
 }  // namespace ge
+
 #endif  // INC_GRAPH_MODEL_SERIALIZE_H_

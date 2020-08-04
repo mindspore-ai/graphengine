@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_SWITCH_TO_STREAM_SWITCH_PASS_H_
-#define GE_GRAPH_PASSES_SWITCH_TO_STREAM_SWITCH_PASS_H_
+#ifndef GE_GRAPH_PASSES_SWITCH_OP_PASS_H_
+#define GE_GRAPH_PASSES_SWITCH_OP_PASS_H_
 
+#include <list>
+#include <set>
+#include <string>
+#include <stack>
+#include <unordered_map>
+#include <vector>
 #include "inc/graph_pass.h"
 
 namespace ge {
@@ -85,158 +91,78 @@ namespace ge {
  +-----------+         +-----------+      +-----------+                    +-----|   Less    |----+
                                                                                  +-----------+
 */
-class SwitchToStreamSwitchPass : public GraphPass {
+class SwitchOpPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
-
-  ///
-  /// @brief Clear Status, used for subgraph pass
-  /// @return
-  ///
   Status ClearStatus() override;
 
  private:
-  ///
-  /// @brief Check cyclic dependence
-  /// @param [in] graph
-  /// @return Status
-  ///
-  Status CheckCycleDependence(const ComputeGraphPtr &graph);
+  Status ReplaceSwitchNode(ComputeGraphPtr &graph, NodePtr &switch_node);
 
-  ///
-  /// @brief Mark cyclic dependence
-  /// @param [in] graph
-  /// @param [in] cond_switch_map
-  /// @return void
-  ///
-  void MarkCycleDependence(const std::unordered_map<NodePtr, std::vector<NodePtr>> &cond_switch_map);
+  Status ReplaceMergeNode(ComputeGraphPtr &graph, NodePtr &merge_node);
 
-  ///
-  /// @brief Replace Switch Op
-  /// @param [in] graph
-  /// @param [in] switch_node
-  /// @return Status
-  ///
-  Status ReplaceSwitchNode(const ComputeGraphPtr &graph, const NodePtr &switch_node);
+  NodePtr CreateStreamSwitchNode(ComputeGraphPtr &graph, const NodePtr &switch_node, const std::string &suffix,
+                                 OutDataAnchorPtr &peer_cond_anchor);
 
-  ///
-  /// @brief Bypass Switch Node
-  /// @param [in] switch_node
-  /// @param [out] peer_data_anchor
-  /// @param [out] peer_cond_anchor
-  /// @return Status
-  ///
-  Status BypassSwitchNode(const NodePtr &switch_node, OutDataAnchorPtr &peer_data_anchor,
-                          OutDataAnchorPtr &peer_cond_anchor);
+  NodePtr CreateMemcpyAsyncNode(ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag);
 
-  ///
-  /// @brief Find Switch cond input
-  /// @param [in] pass_switch_flag
-  /// @param [out] peer_cond_anchor
-  /// @return Status
-  ///
+  Status CombineSwitchNode(ComputeGraphPtr &graph);
+
+  NodePtr CreateActiveNode(ComputeGraphPtr &graph, NodePtr &node);
+
+  Status AddMemcpyAsyncNodes(ComputeGraphPtr &graph, NodePtr &stream_merge_node, bool multi_batch_flag);
+
+  Status BypassSwitchNode(NodePtr &switch_node, OutDataAnchorPtr &peer_data_anchor, OutDataAnchorPtr &peer_cond_anchor);
+
   Status FindSwitchCondInput(bool pass_switch_flag, OutDataAnchorPtr &peer_cond_anchor);
 
-  ///
-  /// @brief Create StreamSwitch Node
-  /// @param [in] graph
-  /// @param [in] switch_node
-  /// @param [in] suffix
-  /// @param [in] peer_cond_anchor
-  /// @return ge::NodePtr
-  ///
-  NodePtr CreateStreamSwitchNode(const ComputeGraphPtr &graph, const NodePtr &switch_node, const std::string &suffix,
-                                 const OutDataAnchorPtr &peer_cond_anchor);
+  Status MarkBranchs(OutDataAnchorPtr &peer_cond_anchor, NodePtr &stream_switch_node, bool true_branch_flag);
 
-  ///
-  /// @brief Mark Switch Branch
-  /// @param [in] peer_cond_anchor
-  /// @param [in] stream_switch
-  /// @param [in] true_branch_flag
-  /// @return Status
-  ///
-  Status MarkBranches(const OutDataAnchorPtr &peer_cond_anchor, const NodePtr &stream_switch_node,
-                      bool true_branch_flag);
+  NodePtr CreateCastOp(ComputeGraphPtr &graph, OutDataAnchorPtr &peer_cond_anchor);
 
-  ///
-  /// @brief Get group_id for switch_node
-  /// @param [in] node
-  /// @return group_id
-  ///
-  int64_t GetGroupId(const NodePtr &node);
+  Status AddConstNode(ComputeGraphPtr &graph, NodePtr &stream_switch_node);
 
-  ///
-  /// @brief Combine switch nodes link to same cond
-  /// @param [in] graph
-  /// @return Status
-  ///
-  Status CombineSwitchNode(const ComputeGraphPtr &graph);
+  Status UpdateCondBranch(NodePtr &node);
 
-  ///
-  /// @brief Create cast node
-  /// @param [in] graph
-  /// @param [in] peer_cond_anchor
-  /// @return NodePtr
-  ///
-  NodePtr CreateCastOp(const ComputeGraphPtr &graph, const OutDataAnchorPtr &peer_cond_anchor);
+  Status UpdateAttachFlag(const NodePtr &node, std::string &stream_label, bool &merge_flag, bool &exit_flag,
+                          bool &net_output_flag);
 
-  ///
-  /// @brief Create Active Op
-  /// @param [in] graph
-  /// @param [in] cond_node
-  /// @return ge::NodePtr
-  ///
-  NodePtr CreateActiveNode(const ComputeGraphPtr &graph, const NodePtr &node);
+  Status UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const std::string &stream_label);
 
-  ///
-  /// @brief Add const node as switch input1
-  /// @param [in] graph
-  /// @param [in] stream_switch
-  /// @return Status
-  ///
-  Status AddConstNode(const ComputeGraphPtr &graph, const NodePtr &stream_switch_node);
+  Status UpdateEnterNode();
 
-  ///
-  /// @brief Modify in ctl edge for switch_node
-  /// @param [in] switch_node
-  /// @param [in] cast_node
-  /// @param [in] same_cond_switch
-  /// @return Status
-  ///
-  Status ModifySwitchInCtlEdges(const NodePtr &switch_node, const NodePtr &cast_node,
-                                const std::set<NodePtr> &same_cond_switch);
-
-  ///
-  /// @brief Modify out ctl edge for switch_node
-  /// @param [in] switch_node
-  /// @param [in] stream_switch
-  /// @param [in] active_node
-  /// @return Status
-  ///
-  Status ModifySwitchOutCtlEdges(const NodePtr &switch_node, const NodePtr &stream_switch, const NodePtr &active_node);
-
-  ///
-  /// @brief Check duplicate node_name
-  /// @param [in] node_name
-  /// @return std::string
-  ///
   std::string CheckDuplicateName(const std::string &node_name);
 
-  ///
-  /// @brief Move Control Edges
-  /// @param [in] old_node
-  /// @param [in] new_node
-  /// @return void
-  ///
-  void MoveCtrlEdges(const NodePtr &old_node, const NodePtr &new_node);
+  Status CheckCycleDependence(ComputeGraphPtr &graph);
+
+  void MarkCycleDependence(const std::unordered_map<NodePtr, std::vector<NodePtr>> &cond_switch_map);
+
+  Status ModifySwitchInCtlEdges(NodePtr &switch_node, NodePtr &cast_node, const std::set<NodePtr> &same_cond_switch);
+
+  Status ModifySwitchOutCtlEdges(NodePtr &switch_node, NodePtr &stream_switch, NodePtr &active_node);
+
+  void CopyControlEdges(NodePtr &old_node, NodePtr &new_node, bool input_check_flag = false);
+
+  void RemoveControlEdges(NodePtr &node);
+
+  void ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node);
+
+  int64_t GetGroupId(const NodePtr &node);
+
+  void MarkHeadNodes(const NodePtr &node, const NodePtr &stream_switch);
 
   std::vector<NodePtr> switch_nodes_;
+  std::vector<NodePtr> merge_nodes_;
+  std::vector<NodePtr> enter_nodes_;
   std::unordered_map<NodePtr, std::set<std::string>> switch_cyclic_map_;
+
   std::set<NodePtr> bypass_nodes_;
+  std::unordered_map<NodePtr, NodePtr> branch_head_nodes_;
   std::vector<NodePtr> stream_switch_nodes_;
+  std::vector<NodePtr> need_label_nodes_;
   std::unordered_map<OutDataAnchorPtr, std::map<int64_t, std::vector<std::list<NodePtr>>>> cond_node_map_;
   std::unordered_map<NodePtr, std::set<std::string>> switch_node_map_;
   std::unordered_map<std::string, uint32_t> node_num_map_;
 };
 }  // namespace ge
-#endif  // GE_GRAPH_PASSES_SWITCH_TO_STREAM_SWITCH_PASS_H_
+#endif  // GE_GRAPH_PASSES_SWITCH_OP_PASS_H_

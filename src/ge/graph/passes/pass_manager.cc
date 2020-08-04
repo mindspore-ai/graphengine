@@ -19,7 +19,6 @@
 #include "common/types.h"
 #include "common/util.h"
 #include "graph/utils/node_utils.h"
-#include "graph/common/ge_call_wrapper.h"
 #include "omg/omg_inner_types.h"
 
 namespace ge {

@@ -87,6 +87,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
   uint8_t platform_type_ = {0};
   uint32_t model_id_ = INVALID_MODEL_ID;
 };
-}  // namespace ge
+};  // namespace ge
 using GeModelPtr = std::shared_ptr<ge::GeModel>;
 #endif  // GE_MODEL_GE_MODEL_H_

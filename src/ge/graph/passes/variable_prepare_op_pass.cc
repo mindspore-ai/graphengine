@@ -30,7 +30,6 @@
 namespace ge {
 std::map<std::string, std::map<int, int>> VariablePrepareOpPass::ref_node_without_prototype_map_{
   {REFSWITCH, {{0, 0}, {0, 1}}}};
-
 Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   for (const auto &node : graph->GetDirectNode()) {
@@ -63,6 +62,7 @@ Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
       GELOGI("{ %d : %d }", index_iter->first, index_iter->second);
     }
   }
+
   return SUCCESS;
 }
 
@@ -73,13 +73,10 @@ Status VariablePrepareOpPass::DealVariableNode(NodePtr &var_node) {
     GE_CHECK_NOTNULL(dst_node);
     InDataAnchorPtr dst_in_data_anchor = dst_node_and_inanchor.second;
     GE_CHECK_NOTNULL(dst_in_data_anchor);
-    auto input_index = dst_in_data_anchor->GetIdx();
-    int out_index = GetWritableNodeOutIndex(dst_node, input_index);
+    int out_index = GetWritableNodeOutIndex(dst_node, dst_in_data_anchor->GetIdx());
     if (out_index >= 0) {
-      Status ret = DealWritableNode(dst_node, input_index, var_node);
+      Status ret = DealWritableNode(dst_node, var_node, out_index);
       if (ret != SUCCESS) {
-        GELOGE(FAILED, "Deal writable node[%s] failed, input index: %d, var: %s.", dst_node->GetName().c_str(),
-               input_index, var_node->GetName().c_str());
         return FAILED;
       }
     }
@@ -87,97 +84,84 @@ Status VariablePrepareOpPass::DealVariableNode(NodePtr &var_node) {
   return SUCCESS;
 }
 
-Status VariablePrepareOpPass::DealWritableNode(const ge::NodePtr &writable_node, int input_index,
-                                               const ge::NodePtr &var_node) {
-  // Find the last ref node:
-  // If the ref input has corresponding output, add variable ref after it.
-  // If the ref input has no corresponding output, insert RefIdentity and variable ref before it.
-  // If ref node with control output was found while finding the last ref node, add variable ref after it.
-  std::stack<pair<NodePtr, int>> nodes_to_check;
-  nodes_to_check.push({writable_node, input_index});
-  while (!nodes_to_check.empty()) {
-    auto node_index = nodes_to_check.top();
-    nodes_to_check.pop();
-    auto cur_node = node_index.first;
-    int cur_input_index = node_index.second;
-    // Collect ref node after cur node
-    const auto nodes_size = nodes_to_check.size();
-    // Add peer ref output node of current node to stack
-    CHECK_FALSE_EXEC(GetPeerNodeOfRefInput(cur_node, cur_input_index, nodes_to_check) == SUCCESS,
-                     GELOGE(FAILED, "GetPeerNodeOfRefInput for node[%s] failed.", cur_node->GetName().c_str());
-                     return FAILED);
-    auto output_index = GetWritableNodeOutIndex(cur_node, cur_input_index);
-    CHECK_FALSE_EXEC(output_index >= 0,
-                     GELOGE(FAILED, "Get writable node[%s] ref input[%d]'s corresponding out index failed: %d.",
-                            cur_node->GetName().c_str(), cur_input_index, output_index);
-                     return FAILED);
-    if (nodes_size == nodes_to_check.size()) {
-      const auto &op_desc = cur_node->GetOpDesc();
-      GE_CHECK_NOTNULL(op_desc);
-      // No need to add variable_ref for frameworkop
-      if (op_desc->GetType() == FRAMEWORKOP) {
-        GELOGD("No need to add variable_ref for frameworkop");
+Status VariablePrepareOpPass::DealWritableNode(ge::NodePtr &writable_node, ge::NodePtr &var_node, int out_index) {
+  GE_CHECK_NOTNULL(writable_node);
+  GE_CHECK_NOTNULL(var_node);
+  NodePtr final_writable_node = writable_node;
+  bool is_have_peer_node = false;
+  for (auto &dst_node_and_inanchor : writable_node->GetOutDataNodesAndAnchors()) {
+    NodePtr dst_node = dst_node_and_inanchor.first;
+    GE_CHECK_NOTNULL(dst_node);
+    InDataAnchorPtr dst_in_data_anchor = dst_node_and_inanchor.second;
+    GE_CHECK_NOTNULL(dst_in_data_anchor);
+    is_have_peer_node = true;
+    int current_out_index = GetWritableNodeOutIndex(dst_node, dst_in_data_anchor->GetIdx());
+    if (current_out_index >= 0) {
+      final_writable_node = GetFinalWritableNode(dst_node, current_out_index);
+      out_index = current_out_index;
+    }
+
+    GE_CHECK_NOTNULL(final_writable_node);
+    Status ret = AddVariableRef(final_writable_node, var_node, out_index);
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "add variable ref failed");
+      return FAILED;
+    }
+  }
+  if (final_writable_node->GetName() == writable_node->GetName() && !is_have_peer_node) {
+    Status ret = AddVariableRef(final_writable_node, var_node, out_index);
+    if (ret != SUCCESS) {
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+NodePtr VariablePrepareOpPass::GetFinalWritableNode(ge::NodePtr &writable_node, int &out_index) {
+  NodePtr current_node = writable_node;
+  std::unordered_set<Node *> seen_node;
+  while (true) {
+    if (seen_node.count(current_node.get())) {
+      GELOGE(FAILED, "There is a ring structure in the graph");
+      return nullptr;
+    }
+    seen_node.insert(current_node.get());
+    OutDataAnchorPtr out_anchor = current_node->GetOutDataAnchor(out_index);
+    if (out_anchor == nullptr) {
+      GELOGE(FAILED, "Failed to get data anchor by index %d", out_index);
+      return nullptr;
+    }
+    bool found_writeable_node = false;
+    auto peer_in_anchors = out_anchor->GetPeerInDataAnchors();
+    for (auto &peer_in_anchor : peer_in_anchors) {
+      if (peer_in_anchor == nullptr) {
+        GELOGE(FAILED, "peer in data anchor is nullptr, node %s:%s", current_node->GetType().c_str(),
+               current_node->GetName().c_str());
         continue;
       }
-      if (static_cast<uint32_t>(output_index) < op_desc->GetOutputsSize()) {
-        // Add variable ref node after ref output for final ref node
-        CHECK_FALSE_EXEC(AddVariableRef(cur_node, var_node, output_index) == SUCCESS,
-                         GELOGE(FAILED, "Add variable ref failed");
-                         return FAILED);
-      } else {
-        // Insert variable ref node before ref input without corresponding ref output
-        CHECK_FALSE_EXEC(InsertVariableRef(cur_node, cur_input_index, var_node) == SUCCESS,
-                         GELOGE(FAILED, "Insert variable ref and ref identity failed");
-                         return FAILED);
+
+      NodePtr peer_node = peer_in_anchor->GetOwnerNode();
+      int current_out_index = GetWritableNodeOutIndex(peer_node, peer_in_anchor->GetIdx());
+      if (current_out_index >= 0) {
+        current_node = peer_node;
+        out_index = current_out_index;
+        found_writeable_node = true;
+        break;
       }
-      continue;
     }
-    if (HasControlOut(cur_node)) {
-      // Add variable ref node after ref output for ref node has control output.
-      CHECK_FALSE_EXEC(AddVariableRef(cur_node, var_node, output_index) == SUCCESS,
-                       GELOGE(FAILED, "Add variable ref failed");
-                       return FAILED);
+    if (!found_writeable_node) {
+      GELOGD("final writable node is %s", current_node->GetName().c_str());
+      return current_node;
     }
   }
-  return SUCCESS;
 }
 
-Status VariablePrepareOpPass::GetPeerNodeOfRefInput(const ge::NodePtr &node, int input_index,
-                                                    std::stack<pair<NodePtr, int>> &nodes) {
-  auto output_index = GetWritableNodeOutIndex(node, input_index);
-  if (output_index == -1) {
-    GELOGE(PARAM_INVALID, "Node[%s] is not a ref node.", node->GetName().c_str());
-    return PARAM_INVALID;
-  }
-  const auto &op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-  if (static_cast<uint32_t>(output_index) == op_desc->GetOutputsSize()) {
-    return SUCCESS;
-  }
-  if (output_index >= static_cast<int>(node->GetAllOutDataAnchorsSize())) {
-    GELOGW("Can not get %d th output anchor of %s", output_index, node->GetName().c_str());
-    return SUCCESS;
-  }
-  const auto &out_anchor = node->GetOutDataAnchor(output_index);
-  GE_CHECK_NOTNULL(out_anchor);
-  for (const auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
-    auto peer_node = peer_in_anchor->GetOwnerNode();
-    if (peer_node == nullptr) {
-      continue;
-    }
-    const int peer_in_index = peer_in_anchor->GetIdx();
-    if (GetWritableNodeOutIndex(peer_node, peer_in_index) != -1) {
-      nodes.push({peer_node, peer_in_index});
-    }
-  }
-  return SUCCESS;
-}
-
-Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, const ge::NodePtr &var_node, int index) {
+Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, ge::NodePtr &var_node, int index) {
   GE_CHECK_NOTNULL(final_writable_node);
   GE_CHECK_NOTNULL(var_node);
-  if (index >= static_cast<int>(final_writable_node->GetAllOutDataAnchorsSize())) {
-    GELOGW("Can not get %d th output anchor of %s", index, final_writable_node->GetName().c_str());
+
+  if (final_writable_node->GetType() == FRAMEWORKOP) {
+    GELOGD("No need to add variable_ref for frameworkop");
     return SUCCESS;
   }
   // Check for duplicate creation
@@ -197,8 +181,7 @@ Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, c
   // creat variable_ref
   std::stringstream variable_ref_name;
   variable_ref_name << "_TO_" << final_writable_node->GetName() << "_REF_" << index;
-  NodePtr variable_ref_node = CreateVariableRef(var_node->GetName() + variable_ref_name.str(), var_node);
-  GE_CHECK_NOTNULL(variable_ref_node);
+  NodePtr variable_ref_node = CreatVariableRef(var_node->GetName() + variable_ref_name.str(), var_node);
   Status ret_check = CheckStreamLabel(variable_ref_node, final_writable_node);
   if (ret_check != SUCCESS) {
     GELOGE(FAILED, "check stream lable failed");
@@ -206,12 +189,23 @@ Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, c
   }
 
   GELOGI("Add variable_ref between [%s] and [%s]", var_node->GetName().c_str(), variable_ref_node->GetName().c_str());
-  // add control anchor between variable_ref and final peer node
+  GE_CHECK_NOTNULL(variable_ref_node);
+  // add  control anchor between  variable_ref and final peer node
   // variable_ref_node need to execute before other nodes
-  CHECK_FALSE_EXEC(AddControlEdge(final_writable_node, variable_ref_node) == SUCCESS,
-                   GELOGE(FAILED, "Add control edges between variable ref node and output nodes of ref node failed");
-                   return FAILED);
-
+  auto final_writable_outAnchors = final_writable_node->GetAllOutAnchors();
+  for (auto &final_writable_outAnchor : final_writable_outAnchors) {
+    GE_CHECK_NOTNULL(final_writable_outAnchor);
+    for (auto &final_writable_peerAnchor : final_writable_outAnchor->GetPeerAnchors()) {
+      GE_CHECK_NOTNULL(final_writable_peerAnchor);
+      NodePtr peer_node = final_writable_peerAnchor->GetOwnerNode();
+      graphStatus ret =
+        ge::GraphUtils::AddEdge(variable_ref_node->GetOutControlAnchor(), peer_node->GetInControlAnchor());
+      if (ret != GRAPH_SUCCESS) {
+        GELOGE(FAILED, "add control anchor between  variable_ref and final_writable peer node failed");
+        return FAILED;
+      }
+    }
+  }
   graphStatus ret = ge::GraphUtils::AddEdge(out_anchor, variable_ref_node->GetInDataAnchor(0));
   if (ret != GRAPH_SUCCESS) {
     GELOGE(FAILED, "add data anchor between  variable_ref and final_writable peer node failed");
@@ -220,110 +214,7 @@ Status VariablePrepareOpPass::AddVariableRef(ge::NodePtr &final_writable_node, c
   return SUCCESS;
 }
 
-Status VariablePrepareOpPass::InsertVariableRef(ge::NodePtr &node, int in_index, const ge::NodePtr &var_node) {
-  GE_CHECK_NOTNULL(node);
-  GE_CHECK_NOTNULL(var_node);
-  // Check connection between two nodes
-  const auto in_anchor = node->GetInDataAnchor(in_index);
-  GE_CHECK_NOTNULL(in_anchor);
-  auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
-  GE_CHECK_NOTNULL(peer_out_anchor);
-  auto peer_in_node = peer_out_anchor->GetOwnerNode();
-  GE_CHECK_NOTNULL(peer_in_node);
-
-  // Create ref_identity
-  std::stringstream ref_identity_name;
-  ref_identity_name << "RefIdentity_" << peer_in_node->GetName() << "_" << peer_out_anchor->GetIdx() << "_TO_"
-                    << node->GetName() << "_" << in_index;
-  NodePtr ref_identity_node = CreateRefIdentity(ref_identity_name.str(), node, static_cast<uint32_t>(in_index));
-  GE_CHECK_NOTNULL(ref_identity_node);
-
-  // Create variable_ref
-  std::stringstream variable_ref_name;
-  variable_ref_name << "_TO_" << node->GetName() << "_REF_" << in_index;
-  NodePtr variable_ref_node = CreateVariableRef(var_node->GetName() + variable_ref_name.str(), var_node);
-  GE_CHECK_NOTNULL(variable_ref_node);
-  Status ret_check = CheckStreamLabel(variable_ref_node, node);
-  if (ret_check != SUCCESS) {
-    GELOGE(FAILED, "check stream lable failed");
-    return FAILED;
-  }
-
-  GELOGI("Insert variable_ref of [%s] between [%s] and [%s]", var_node->GetName().c_str(),
-         peer_in_node->GetName().c_str(), node->GetName().c_str());
-  // add control anchor between variable_ref and node
-  // variable_ref_node need to execute before other nodes
-  CHECK_FALSE_EXEC(AddControlEdge(node, variable_ref_node) == SUCCESS,
-                   GELOGE(FAILED, "Add control edges between variable ref node and output nodes of ref node failed");
-                   return FAILED);
-
-  // Insert variable ref node between two nodes and remove the original edge.
-  CHECK_FALSE_EXEC(ge::GraphUtils::RemoveEdge(peer_out_anchor, in_anchor) == SUCCESS,
-                   GELOGE(FAILED, "Remove edge between ref node and its peer node failed");
-                   return FAILED);
-  CHECK_FALSE_EXEC(ge::GraphUtils::AddEdge(peer_out_anchor, ref_identity_node->GetInDataAnchor(0)) == SUCCESS,
-                   GELOGE(FAILED, "Add data edge between pre node and ref_identity failed");
-                   return FAILED);
-  CHECK_FALSE_EXEC(ge::GraphUtils::AddEdge(ref_identity_node->GetOutDataAnchor(0), in_anchor) == SUCCESS,
-                   GELOGE(FAILED, "Add data edge between ref_identity and ref node failed");
-                   return FAILED);
-
-  // Add edge from ref identity node to variable ref node.
-  CHECK_FALSE_EXEC(
-    ge::GraphUtils::AddEdge(ref_identity_node->GetOutDataAnchor(0), variable_ref_node->GetInDataAnchor(0)) == SUCCESS,
-    GELOGE(FAILED, "Add data edge between ref_identity and variable_ref failed");
-    return FAILED);
-  CHECK_FALSE_EXEC(
-    ge::GraphUtils::AddEdge(node->GetOutControlAnchor(), variable_ref_node->GetInControlAnchor()) == SUCCESS,
-    GELOGE(FAILED, "Add control edge between ref_identity and variable_ref failed");
-    return FAILED);
-  return SUCCESS;
-}
-
-Status VariablePrepareOpPass::AddControlEdge(const ge::NodePtr &node, const ge::NodePtr &variable_ref_node) {
-  auto out_anchors = node->GetAllOutAnchors();
-  for (auto &out_anchor : out_anchors) {
-    GE_CHECK_NOTNULL(out_anchor);
-    for (auto &peer_in_anchor : out_anchor->GetPeerAnchors()) {
-      GE_CHECK_NOTNULL(peer_in_anchor);
-      NodePtr peer_node = peer_in_anchor->GetOwnerNode();
-      GE_CHECK_NOTNULL(peer_node);
-      CHECK_FALSE_EXEC(
-        ge::GraphUtils::AddEdge(variable_ref_node->GetOutControlAnchor(), peer_node->GetInControlAnchor()) == SUCCESS,
-        GELOGE(FAILED, "Add control edge between variable_ref and ref node's peer node failed");
-        return FAILED);
-    }
-  }
-  return SUCCESS;
-}
-
-ge::NodePtr VariablePrepareOpPass::CreateRefIdentity(const std::string &ref_identity_name, const ge::NodePtr &node,
-                                                     uint32_t input_index) {
-  OpDescPtr op_desc = node->GetOpDesc();
-  if (op_desc == nullptr) {
-    GELOGE(FAILED, "opdesc is nullptr");
-    return nullptr;
-  }
-
-  OpDescPtr ref_identity_op_desc = MakeShared<OpDesc>(ref_identity_name.c_str(), REFIDENTITY);
-  if (ref_identity_op_desc == nullptr) {
-    GELOGE(FAILED, "ref_identity op desc is nullptr");
-    return nullptr;
-  }
-
-  GE_IF_BOOL_EXEC(ref_identity_op_desc->AddOutputDesc(op_desc->GetInputDesc(input_index)) != SUCCESS,
-                  GELOGW("add output desc edge failed");
-                  return nullptr);
-  GE_IF_BOOL_EXEC(ref_identity_op_desc->AddInputDesc(op_desc->GetInputDesc(input_index)) != SUCCESS,
-                  GELOGW("add input desc edge failed");
-                  return nullptr);
-  NodePtr ref_identity_node = node->GetOwnerComputeGraph()->AddNode(ref_identity_op_desc);
-  GE_IF_BOOL_EXEC(ref_identity_node == nullptr, GELOGW("ref_identity_node is null"); return nullptr);
-  return ref_identity_node;
-}
-
-ge::NodePtr VariablePrepareOpPass::CreateVariableRef(const std::string &variable_ref_name,
-                                                     const ge::NodePtr &var_node) {
+ge::NodePtr VariablePrepareOpPass::CreatVariableRef(const std::string &variable_ref_name, ge::NodePtr &var_node) {
   OpDescPtr var_op_desc = var_node->GetOpDesc();
   if (var_op_desc == nullptr) {
     GELOGE(FAILED, "get var opdesc is nullptr");
@@ -359,6 +250,7 @@ int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int inpu
   }
   GELOGD("get writable node and input index %s:%d", node->GetName().c_str(), input_index);
   auto node_type = node->GetType();
+
   if (node_type == FRAMEWORKOP) {
     std::string original_type;
     GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("Get node original type fail"));
@@ -374,17 +266,25 @@ void VariablePrepareOpPass::GenerateRefTypeAndInputOutputMap(const NodePtr &node
     GELOGW("op_desc in null, please check node:[%s]", node->GetName().c_str());
     return;
   }
-  for (const auto &name_index : op_desc->GetAllInputName()) {
-    // Record the index of output with the same name as input, thinking of them as a pair of ref input and output.
-    const int out_index = op_desc->GetOutputIndexByName(name_index.first);
-    if (out_index != -1) {
-      ref_input_output_map_[node->GetType()][name_index.second] = out_index;
+  for (const auto &out_ancohor : node->GetAllOutDataAnchors()) {
+    int output_index = out_ancohor->GetIdx();
+    string output_name = op_desc->GetOutputNameByIndex(output_index);
+    GELOGD("output name:[%s]", output_name.c_str());
+
+    int input_index = op_desc->GetInputIndexByName(output_name);
+    if (input_index == -1) {
       continue;
     }
-    // Record the ref input without corresponding output.
-    const auto &input_desc = op_desc->GetInputDesc(name_index.second);
-    if (!input_desc.GetRefPortIndex().empty()) {
-      ref_input_output_map_[node->GetType()][name_index.second] = static_cast<int>(op_desc->GetOutputsSize());
+    auto ref_type_and_input_output_iter = ref_input_output_map_.find(node->GetType());
+    if (ref_type_and_input_output_iter != ref_input_output_map_.end()) {
+      auto &input_output_index_map = ref_type_and_input_output_iter->second;
+      if (input_output_index_map.find(input_index) == input_output_index_map.end()) {
+        input_output_index_map.emplace(input_index, output_index);
+        GELOGD("Add RefInputOutputMap %s:{ %d, %d }", node->GetType().c_str(), input_index, output_index);
+      }
+    } else {
+      ref_input_output_map_.insert({node->GetType(), {{input_index, output_index}}});
+      GELOGD("Create RefInputOutputMap { %s:{ %d, %d } }", node->GetType().c_str(), input_index, output_index);
     }
   }
 }
@@ -416,16 +316,5 @@ Status VariablePrepareOpPass::CheckStreamLabel(const ge::NodePtr &var_ref_node,
     GE_CHK_STATUS_RET(SetStreamLabel(var_ref_node, stream_label), "set stream label failed");
   }
   return SUCCESS;
-}
-
-bool VariablePrepareOpPass::HasControlOut(const ge::NodePtr &node) {
-  const auto &out_control_anchor = node->GetOutControlAnchor();
-  for (const auto &peer_in_control_anchor : out_control_anchor->GetPeerInControlAnchors()) {
-    if (peer_in_control_anchor == nullptr || peer_in_control_anchor->GetOwnerNode() == nullptr) {
-      continue;
-    }
-    return true;
-  }
-  return false;
 }
 }  // namespace ge

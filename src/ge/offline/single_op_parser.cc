@@ -200,13 +200,13 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.input_desc) {
     if (tensor_desc.type == DT_UNDEFINED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"input", std::to_string(index)});
-      GELOGE(false, "Input's dataType is invalid when the index is %d", index);
+      GELOGE(false, "Input index[%d]'s dataType is invalid", index);
       return false;
     }
 
     if (tensor_desc.format == FORMAT_RESERVED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10028", {"input", "index"}, {"input", std::to_string(index)});
-      GELOGE(PARAM_INVALID, "Input's format is invalid when the index is %d", index);
+      GELOGE(PARAM_INVALID, "Input index[%d]'s format is invalid", index);
       return false;
     }
     ++index;
@@ -216,13 +216,13 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.output_desc) {
     if (tensor_desc.type == DT_UNDEFINED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"output", std::to_string(index)});
-      GELOGE(PARAM_INVALID, "Output's dataType is invalid when the index is %d", index);
+      GELOGE(PARAM_INVALID, "Output[%d] dataType is invalid", index);
       return false;
     }
 
     if (tensor_desc.format == FORMAT_RESERVED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10028", {"input", "index"}, {"output", std::to_string(index)});
-      GELOGE(PARAM_INVALID, "Output's format is invalid when the index is %d", index);
+      GELOGE(PARAM_INVALID, "Output[%d] format is invalid", index);
       return false;
     }
     ++index;
@@ -316,15 +316,17 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
     try {
       single_op_desc = single_op_json;
     } catch (const nlohmann::json::exception &e) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10032", {"index", "jsonfile", "exception"},
-                                                      {std::to_string(index), file, e.what()});
-      GELOGE(PARAM_INVALID, "Parse the index[%d] of op failed when read json file[%s], exception %s, jsonStr %s", index,
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E10045", {"index", "jsonfile", "exception", "jsonStr"},
+        {std::to_string(index), file, e.what(), single_op_json.dump(kDumpJsonIndent)});
+      GELOGE(PARAM_INVALID, "Parse op[%d] failed when read json file[%s], exception[%s], jsonStr[%s]", index,
              file.c_str(), e.what(), single_op_json.dump(kDumpJsonIndent).c_str());
       return PARAM_INVALID;
     }
 
     if (!Validate(single_op_desc)) {
-      GELOGE(PARAM_INVALID, "Validate the index[%d] of op failed when read json file[%s].", index, file.c_str());
+      ErrorManager::GetInstance().ATCReportErrMessage("E10046", {"index", "jsonfile"}, {std::to_string(index), file});
+      GELOGE(PARAM_INVALID, "Validate op[%d] failed when read json file[%s].", index, file.c_str());
       return PARAM_INVALID;
     }
 
@@ -335,7 +337,7 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
     }
 
     op_list.emplace_back(param);
-    GELOGI("Parse the index[%d] of op success", index);
+    GELOGI("Parse op[%d] success", index);
     index += 1;
   }
 

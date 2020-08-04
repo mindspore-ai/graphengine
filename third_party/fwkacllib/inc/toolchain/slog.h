@@ -91,10 +91,6 @@ extern "C" {
  * max log length
  */
 #define MSG_LENGTH 1024
-#define DEBUG_LOG_MASK      (0x00010000)
-#define SECURITY_LOG_MASK   (0x00100000)
-#define RUN_LOG_MASK        (0x01000000)
-#define OPERATION_LOG_MASK  (0x10000000)
 
 typedef struct tagDCODE {
   const char *cName;
@@ -173,10 +169,82 @@ enum {
   PROCMGR,     // Process Manager, Base Platform
   BBOX,
   AIVECTOR,
-  TBE,
-  FV,
   INVLID_MOUDLE_ID
 };
+
+#ifdef MODULE_ID_NAME
+
+/**
+ * @ingroup slog
+ *
+ * set module id to map
+ */
+#define SET_MOUDLE_ID_MAP_NAME(x) \
+  { #x, x }
+
+static DCODE g_moduleIdName[] = {SET_MOUDLE_ID_MAP_NAME(SLOG),
+                                 SET_MOUDLE_ID_MAP_NAME(IDEDD),
+                                 SET_MOUDLE_ID_MAP_NAME(IDEDH),
+                                 SET_MOUDLE_ID_MAP_NAME(HCCL),
+                                 SET_MOUDLE_ID_MAP_NAME(FMK),
+                                 SET_MOUDLE_ID_MAP_NAME(HIAIENGINE),
+                                 SET_MOUDLE_ID_MAP_NAME(DVPP),
+                                 SET_MOUDLE_ID_MAP_NAME(RUNTIME),
+                                 SET_MOUDLE_ID_MAP_NAME(CCE),
+#if (OS_TYPE == LINUX)
+                                 SET_MOUDLE_ID_MAP_NAME(HDC),
+#else
+                                 SET_MOUDLE_ID_MAP_NAME(HDCL),
+#endif // OS_TYPE
+                                 SET_MOUDLE_ID_MAP_NAME(DRV),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCFUSION),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCLOCATION),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCPERCEPTION),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCFSM),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCCOMMON),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCMONITOR),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCBSWP),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCDEFAULT),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCSC),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCPNC),
+                                 SET_MOUDLE_ID_MAP_NAME(MLL),
+                                 SET_MOUDLE_ID_MAP_NAME(DEVMM),
+                                 SET_MOUDLE_ID_MAP_NAME(KERNEL),
+                                 SET_MOUDLE_ID_MAP_NAME(LIBMEDIA),
+                                 SET_MOUDLE_ID_MAP_NAME(CCECPU),
+                                 SET_MOUDLE_ID_MAP_NAME(ASCENDDK),
+                                 SET_MOUDLE_ID_MAP_NAME(ROS),
+                                 SET_MOUDLE_ID_MAP_NAME(HCCP),
+                                 SET_MOUDLE_ID_MAP_NAME(ROCE),
+                                 SET_MOUDLE_ID_MAP_NAME(TEFUSION),
+                                 SET_MOUDLE_ID_MAP_NAME(PROFILING),
+                                 SET_MOUDLE_ID_MAP_NAME(DP),
+                                 SET_MOUDLE_ID_MAP_NAME(APP),
+                                 SET_MOUDLE_ID_MAP_NAME(TS),
+                                 SET_MOUDLE_ID_MAP_NAME(TSDUMP),
+                                 SET_MOUDLE_ID_MAP_NAME(AICPU),
+                                 SET_MOUDLE_ID_MAP_NAME(LP),
+                                 SET_MOUDLE_ID_MAP_NAME(TDT),
+                                 SET_MOUDLE_ID_MAP_NAME(FE),
+                                 SET_MOUDLE_ID_MAP_NAME(MD),
+                                 SET_MOUDLE_ID_MAP_NAME(MB),
+                                 SET_MOUDLE_ID_MAP_NAME(ME),
+                                 SET_MOUDLE_ID_MAP_NAME(IMU),
+                                 SET_MOUDLE_ID_MAP_NAME(IMP),
+                                 SET_MOUDLE_ID_MAP_NAME(GE),
+                                 SET_MOUDLE_ID_MAP_NAME(MDCFUSA),
+                                 SET_MOUDLE_ID_MAP_NAME(CAMERA),
+                                 SET_MOUDLE_ID_MAP_NAME(ASCENDCL),
+                                 SET_MOUDLE_ID_MAP_NAME(TEEOS),
+                                 SET_MOUDLE_ID_MAP_NAME(ISP),
+                                 SET_MOUDLE_ID_MAP_NAME(SIS),
+                                 SET_MOUDLE_ID_MAP_NAME(HSM),
+                                 SET_MOUDLE_ID_MAP_NAME(DSS),
+                                 SET_MOUDLE_ID_MAP_NAME(PROCMGR),
+                                 SET_MOUDLE_ID_MAP_NAME(BBOX),
+                                 SET_MOUDLE_ID_MAP_NAME(AIVECTOR),
+                                 { NULL, -1 }};
+#endif // MODULE_ID_NAME
 
 #if (OS_TYPE == LINUX)
 /**
@@ -318,11 +386,6 @@ extern int CheckLogLevel(int moduleId, int logLevel);
     DlogWithKVInner(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
   } while (0)
 
-/**
- * @ingroup slog
- * @brief DlogFlush: flush log buffer to file
- */
-void DlogFlush(void);
 
 /**
  * @ingroup slog

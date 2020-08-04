@@ -31,7 +31,7 @@ class NodeDoneManager {
 
   bool Await(const NodePtr &node);
 
-  void Destroy();
+  void Reset();
 
  private:
   class Cond {
@@ -42,7 +42,7 @@ class NodeDoneManager {
     bool Await();
 
    private:
-    std::mutex cond_mu_;
+    std::mutex mu_;
     std::condition_variable cv_;
     bool is_released_ = false;
     bool is_cancelled_ = false;
@@ -51,7 +51,6 @@ class NodeDoneManager {
   Cond *GetSubject(const NodePtr &node);
   std::mutex mu_;
   std::unordered_map<NodePtr, Cond> subjects_;
-  bool destroyed_ = false;
 };
 }  // namespace hybrid
 }  // namespace ge

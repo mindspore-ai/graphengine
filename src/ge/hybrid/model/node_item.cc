@@ -16,8 +16,6 @@
 
 #include "node_item.h"
 #include <sstream>
-#include "common/debug/log.h"
-#include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
 namespace hybrid {
@@ -30,34 +28,12 @@ NodeItem::NodeItem(NodePtr node) : node(std::move(node)) {
   this->node_type = this->node->GetType();
 }
 
-Status NodeItem::Init() {
-  for (int i = 0; i < num_inputs; ++i) {
-    const auto &input_desc = op_desc->MutableInputDesc(i);
-    GE_CHECK_NOTNULL(input_desc);
-    if (input_desc->MutableShape().IsUnknownShape()) {
-      is_input_shape_static.push_back(false);
-    } else {
-      num_static_input_shapes++;
-      is_input_shape_static.push_back(true);
-      GELOGD("[%s] The shape of input[%d] is static. shape = [%s]", NodeName().c_str(), i,
-             input_desc->MutableShape().ToString().c_str());
-    }
-  }
-
-  return SUCCESS;
-}
-
-bool NodeItem::IsControlOp() const {
-  auto op_type = op_desc->GetType();
-  return op_type == IF || op_type == CASE || op_type == WHILE || op_type == FOR;
-}
-
 std::string NodeItem::DebugString() const {
   std::stringstream ss;
   ss << "Node: ";
   ss << "id = " << node_id;
-  ss << ", name = [" << node->GetName();
-  ss << "], type = " << node->GetType();
+  ss << ", name = " << node->GetName();
+  ss << ", type = " << node->GetType();
   ss << ", is_dynamic = " << (is_dynamic ? "True" : "False");
   ss << ", unknown_shape_op_type = " << shape_inference_type;
   ss << ", input_start = " << input_start;
@@ -65,7 +41,7 @@ std::string NodeItem::DebugString() const {
   ss << ", output_start = " << output_start;
   ss << ", num_outputs = " << num_outputs;
   ss << ", dependent_nodes = [";
-  for (const auto &dep_node : dependents_for_shape_inference) {
+  for (const auto &dep_node : dependent_node_list) {
     ss << dep_node->GetName() << ", ";
   }
   ss << "]";
@@ -79,18 +55,5 @@ std::string NodeItem::DebugString() const {
 
   return ss.str();
 }
-
-void NodeItem::SetToDynamic() {
-  num_static_input_shapes = 0;
-  is_dynamic = true;
-  for (size_t i = 0; i < is_input_shape_static.size(); ++i) {
-    is_input_shape_static[i] = false;
-  }
-  if (kernel_task != nullptr && !kernel_task->IsSupportDynamicShape()) {
-    GELOGD("[%s] Dynamic shape is not supported, clear node task.", node_name.c_str());
-    kernel_task = nullptr;
-  }
-}
-
 }  // namespace hybrid
 }  // namespace ge

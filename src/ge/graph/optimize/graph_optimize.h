@@ -67,9 +67,6 @@ class GraphOptimize {
   // handle summary node before preRun graph
   Status HandleSummaryOp(ComputeGraphPtr &compute_graph);
 
-  // Identify reference node before optimize subgraph
-  Status IdentifyReference(ComputeGraphPtr &compute_graph);
-
   void TranFrameOp(ComputeGraphPtr &compute_graph);
 
  private:
@@ -88,5 +85,5 @@ class GraphOptimize {
   std::map<uint32_t, std::map<string, size_t>> summary_output_indexes_ = {};
   std::string func_bin_path_;
 };
-}  // namespace ge
+};      // namespace ge
 #endif  // GE_GRAPH_OPTIMIZE_GRAPH_OPTIMIZE_H_

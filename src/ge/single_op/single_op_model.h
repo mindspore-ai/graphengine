@@ -64,7 +64,6 @@ class SingleOpModel {
   Status BuildTaskList(SingleOp &single_op);
   Status BuildKernelTask(const domi::KernelDef &kernel_def, SingleOp &single_op, OpTask **task);
   Status BuildKernelExTask(const domi::KernelExDef &kernel_def, SingleOp &single_op, OpTask **task);
-  Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(TbeOpTask *task, SingleOp &op);

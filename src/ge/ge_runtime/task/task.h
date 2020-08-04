@@ -18,9 +18,7 @@
 #define GE_GE_RUNTIME_TASK_TASK_H_
 
 #include <memory>
-#include <utility>
 #include <vector>
-#include <string>
 #include "runtime/rt_model.h"
 #include "ge_runtime/model_context.h"
 #include "ge_runtime/task_info.h"
@@ -34,10 +32,6 @@ class Task {
   virtual ~Task() {}
 
   virtual bool Distribute() = 0;
-
-  virtual void *Args() { return nullptr; }
-
-  virtual std::string task_name() const { return ""; }
 };
 
 template <class T>

@@ -144,6 +144,8 @@ class HcomOmeUtil {
   ///
   static Status GetHorovodInputs(const ge::ConstOpDescPtr &op_desc,
                                  std::vector<GETaskKernelHcclInfo> &kernel_hccl_infos);
+
+ private:
   ///
   /// @ingroup domi_ome
   /// @brief GetHcomCount
@@ -152,8 +154,6 @@ class HcomOmeUtil {
   ///
   static Status GetHcomCount(const ge::ConstOpDescPtr &op_desc, hcclDataType_t data_type, bool is_allgather,
                              int &count);
-
- private:
   ///
   /// @ingroup domi_ome
   /// @brief GetHorovodCount

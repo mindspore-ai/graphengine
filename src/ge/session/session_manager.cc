@@ -51,11 +51,11 @@ Status SessionManager::Finalize() {
   return SUCCESS;
 }
 
-Status SessionManager::SetRtContext(SessionId session_id, rtContext_t rt_context) {
+Status SessionManager::SetrtContext(rtContext_t rt_context) {
   GELOGI("set rt_context RT_CTX_NORMAL_MODE, device id:%u.", GetContext().DeviceId());
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, RT_CTX_NORMAL_MODE, static_cast<int32_t>(GetContext().DeviceId())));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
-  RtContextUtil::GetInstance().AddRtContext(session_id, rt_context);
+  RtContextUtil::GetInstance().AddrtContext(rt_context);
   return SUCCESS;
 }
 
@@ -85,7 +85,7 @@ Status SessionManager::CreateSession(const std::map<std::string, std::string> &o
   session_id = next_session_id;
 
   // create a context
-  ret = SetRtContext(session_id, rtContext_t());
+  ret = SetrtContext(rtContext_t());
 
   return ret;
 }
@@ -106,7 +106,7 @@ Status SessionManager::DestroySession(SessionId session_id) {
   }
 
   // Unified destruct rt_context
-  RtContextUtil::GetInstance().DestroyRtContexts(session_id);
+  RtContextUtil::GetInstance().DestroyrtContexts();
 
   SessionPtr innerSession = it->second;
   Status ret = innerSession->Finalize();
@@ -300,4 +300,4 @@ bool SessionManager::IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id)
   }
   return innerSession->IsGraphNeedRebuild(graph_id);
 }
-}  // namespace ge
+};  // namespace ge

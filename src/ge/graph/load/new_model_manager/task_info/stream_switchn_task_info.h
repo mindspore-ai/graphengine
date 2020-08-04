@@ -29,16 +29,13 @@ class StreamSwitchNTaskInfo : public TaskInfo {
         value_ptr_(nullptr),
         true_stream_ptr_(nullptr),
         element_size_(0),
-        data_type_(RT_SWITCH_INT64),
-        args_offset_(0) {}
+        data_type_(RT_SWITCH_INT64) {}
 
   ~StreamSwitchNTaskInfo() override {}
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
   Status Distribute() override;
-
-  Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
  private:
   Status GetTrueStreamPtr(const OpDescPtr &op_desc, DavinciModel *davinci_model);
@@ -50,7 +47,6 @@ class StreamSwitchNTaskInfo : public TaskInfo {
   rtSwitchDataType_t data_type_;
   vector<rtStream_t> true_stream_list_;
   vector<int64_t> value_list_;
-  int64_t args_offset_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_STREAM_SWITCHN_TASK_INFO_H_

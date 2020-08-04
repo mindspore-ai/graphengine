@@ -28,7 +28,6 @@
 #include "graph/utils/tensor_utils.h"
 #include "runtime/rt.h"
 #include "task/aicpu_task_builder.h"
-#include "task/aicpu_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
 
 using domi::TaskDef;
@@ -199,6 +198,11 @@ Status SingleOpModel::SetInputsAndOutputs(SingleOp &single_op) {
   int arg_index = 0;
   for (size_t i = 0; i < input_offset_list_.size(); ++i) {
     auto *addr = model_params_.mem_base + input_offset_list_[i];
+    auto ret = ModelUtils::ConvertVirtualAddressToPhysical(addr, input_sizes_[i], addr);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "ConvertVirtualAddressToPhysical failed. Input index = %zu", i);
+      return ret;
+    }
     model_params_.addr_mapping_.emplace(reinterpret_cast<uintptr_t>(addr), arg_index++);
     single_op.input_sizes_.emplace_back(input_sizes_[i]);
     single_op.input_addr_list_.emplace_back(addr);
@@ -206,6 +210,11 @@ Status SingleOpModel::SetInputsAndOutputs(SingleOp &single_op) {
 
   for (size_t i = 0; i < output_offset_list_.size(); ++i) {
     auto *addr = model_params_.mem_base + output_offset_list_[i];
+    auto ret = ModelUtils::ConvertVirtualAddressToPhysical(addr, output_sizes_[i], addr);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "ConvertVirtualAddressToPhysical failed. Output index = %zu", i);
+      return ret;
+    }
     model_params_.addr_mapping_.emplace(reinterpret_cast<uintptr_t>(addr), arg_index++);
     single_op.output_sizes_.emplace_back(output_sizes_[i]);
     single_op.output_addr_list_.emplace_back(addr);
@@ -225,31 +234,16 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
     if (task_type == RT_MODEL_TASK_KERNEL) {
-      const domi::KernelDef &kernel_def = task_def.kernel();
-      const auto &context = kernel_def.context();
-      auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-      if (kernel_type == cce::ccKernelType::TE) {
-        GELOGD("Building TBE task");
-        OpTask *task = nullptr;
-        auto ret = BuildKernelTask(task_def.kernel(), single_op, &task);
-        if (ret != SUCCESS) {
-          return ret;
-        }
-        single_op.tasks_.emplace_back(task);
-      } else if (kernel_type == cce::ccKernelType::AI_CPU) {
-        GELOGD("Building AICPU_CC task");
-        OpTask *task = nullptr;
-        auto ret = BuildCpuKernelTask(task_def.kernel(), &task);
-        if (ret != SUCCESS) {
-          return ret;
-        }
-        single_op.tasks_.emplace_back(task);
-      } else {
-        GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernek are supported, but got %u", context.kernel_type());
-        return UNSUPPORTED;
+      GELOGD("Building TBE task");
+      OpTask *task = nullptr;
+      auto ret = BuildKernelTask(task_def.kernel(), single_op, &task);
+      if (ret != SUCCESS) {
+        return ret;
       }
+
+      single_op.tasks_.emplace_back(task);
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
-      GELOGD("Building AICPU_TF task");
+      GELOGD("Building AICPU task");
       OpTask *task = nullptr;
       auto ret = BuildKernelExTask(task_def.kernel_ex(), single_op, &task);
       if (ret != SUCCESS) {
@@ -287,6 +281,12 @@ void SingleOpModel::ParseArgTable(TbeOpTask *task, SingleOp &op) {
 Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, SingleOp &single_op, OpTask **task) {
   GE_CHECK_NOTNULL(task);
   const auto &context = kernel_def.context();
+  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
+  if (kernel_type != cce::ccKernelType::TE) {
+    GELOGE(UNSUPPORTED, "Only TBE kernel is supported, but got %u", context.kernel_type());
+    return UNSUPPORTED;
+  }
+
   auto iter = op_list_.find(context.op_index());
   if (iter == op_list_.end()) {
     GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
@@ -323,35 +323,17 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, Sin
 
   std::unique_ptr<AiCpuTask> aicpu_task(new (std::nothrow) AiCpuTask());
   if (aicpu_task == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create aicpu_TF op task failed");
+    GELOGE(MEMALLOC_FAILED, "create aicpu op task failed");
     return MEMALLOC_FAILED;
   }
   auto builder = AiCpuTaskBuilder(iter->second, kernel_def);
   auto ret = builder.BuildTask(*aicpu_task, model_params_);
   if (ret != SUCCESS) {
-    GELOGE(ret, "build aicpu_TF op task failed");
+    GELOGE(ret, "build aicpu op task failed");
     return ret;
   }
 
   *task = aicpu_task.release();
-  return SUCCESS;
-}
-
-Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task) {
-  std::unique_ptr<AiCpuCCTask> aicpucc_task(new (std::nothrow) AiCpuCCTask());
-  if (aicpucc_task == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create aicpu_CC op task failed");
-    return MEMALLOC_FAILED;
-  }
-
-  auto builder = AiCpuCCTaskBuilder(kernel_def);
-  auto ret = builder.BuildTask(*aicpucc_task);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "build aicpu_CC op task failed");
-    return ret;
-  }
-
-  *task = aicpucc_task.release();
   return SUCCESS;
 }
 

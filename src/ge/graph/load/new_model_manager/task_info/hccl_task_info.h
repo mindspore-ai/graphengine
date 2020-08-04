@@ -34,10 +34,7 @@ class HcclTaskInfo : public TaskInfo {
         hccl_stream_list_(),
         ops_kernel_store_(nullptr),
         private_def_(nullptr),
-        private_def_len_(0),
-        op_desc_(nullptr),
-        args_(nullptr),
-        args_offset_(0) {}
+        private_def_len_(0) {}
 
   ~HcclTaskInfo() override;
 
@@ -46,10 +43,6 @@ class HcclTaskInfo : public TaskInfo {
   ge::Status Distribute() override;
 
   uint32_t GetTaskID() override { return id_; }
-
-  Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
-
-  Status UpdateArgs() override;
 
  private:
   ge::Status SetAddrs(const std::string &hccl_type, const std::shared_ptr<OpDesc> &op);
@@ -79,12 +72,6 @@ class HcclTaskInfo : public TaskInfo {
   static std::mutex hccl_follow_stream_mutex_;
   static uint32_t max_node_of_hccl_stream_;
   vector<GETaskKernelHcclInfo> kernel_hccl_infos_;
-  vector<void *> input_data_addrs_;
-  vector<void *> output_data_addrs_;
-  vector<void *> workspace_data_addrs_;
-  OpDescPtr op_desc_;
-  void *args_;
-  uint32_t args_offset_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_HCCL_TASK_INFO_H_

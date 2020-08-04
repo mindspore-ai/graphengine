@@ -38,7 +38,6 @@ Status EnginePlacer::Run() {
     return FAILED;
   }
   // Assign engine for each node in the graph
-  instance_ptr->DNNEngineManagerObj().InitPerformanceStaistic();
   for (const auto &node_ptr : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(node_ptr);
     GE_CHECK_NOTNULL(node_ptr->GetOpDesc());
@@ -61,15 +60,12 @@ Status EnginePlacer::Run() {
       return FAILED;
     }
   }
-  for (auto &it : instance_ptr->DNNEngineManagerObj().GetCheckSupportCost()) {
-    GEEVENT("The time cost of %s::CheckSupported is [%lu] micro second.", it.first.c_str(), it.second);
-  }
   GELOGI("Engine placer ends.");
   return SUCCESS;
 }
 
 Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::string &engine_name) {
-  if ((node_ptr == nullptr) || (node_ptr->GetOpDesc() == nullptr)) {
+  if (node_ptr == nullptr || node_ptr->GetOpDesc() == nullptr) {
     GELOGE(FAILED, "node_ptr is null.");
     return FAILED;
   }

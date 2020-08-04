@@ -28,6 +28,7 @@
 #include "graph/op_kernel_bin.h"
 
 namespace ge {
+
 using TBEKernel = ge::OpKernelBin;
 using TBEKernelPtr = std::shared_ptr<ge::OpKernelBin>;
 

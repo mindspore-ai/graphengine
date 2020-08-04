@@ -66,7 +66,7 @@ Status ExpanddimsKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vec
   auto output_tensor_desc = op_desc_ptr->GetOutputDesc(kExpandDimsIndexZero);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGW("Failed to fold node %s, out of memory", op_desc_ptr->GetName().c_str());
+    GELOGE(MEMALLOC_FAILED, "Failed to fold node %s, out of memory", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;
   }
 

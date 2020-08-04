@@ -32,6 +32,7 @@
 #include "runtime/mem.h"
 
 namespace ge {
+
 constexpr size_t kRoundBlockSize = 512;   // all block sizes are rounded to at least 512 bytes
 constexpr double kSplitThreshold = 0.75;  // split when malloc size <= small block size * kSpliThreshold
 constexpr size_t kKByteSize = 1024;
@@ -67,10 +68,6 @@ class MemoryAllocator;
 class CachingAllocator {
  public:
   explicit CachingAllocator(rtMemType_t memory_type);
-
-  CachingAllocator(const CachingAllocator &) = delete;
-
-  CachingAllocator &operator=(const CachingAllocator &) = delete;
 
   virtual ~CachingAllocator() = default;
 
@@ -140,10 +137,9 @@ class CachingAllocator {
   /// @brief add memory to right bin based on size
   /// @param [in] memory ptr
   /// @param [in] memory size
-  /// @param [in] device_id device id
   /// @return Status result of function
   ///
-  Status AddToBlockBin(uint8_t *ptr, size_t size, uint32_t device_id);
+  Status AddToBlockBin(uint8_t *ptr, size_t size);
 
   ///
   /// @ingroup ge_graph
@@ -210,5 +206,7 @@ class CachingAllocator {
   // block bins by different block size
   BlockBin *free_block_bins_[kNumBins];
 };
-}  // namespace ge
+
+};  // namespace ge
+
 #endif  // GE_GRAPH_MANAGER_GRAPH_CACHING_ALLOCATOR_H_

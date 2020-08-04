@@ -28,7 +28,6 @@ struct CompressConfig {
   size_t channel;      // channels of L2 or DDR. For load balance
   size_t fractalSize;  // size of compressing block
   bool isTight;        // whether compose compressed data tightly
-  size_t init_offset;
 };
 
 CmpStatus CompressWeights(char* input, const CompressConfig& compressConfig, char* indexs, char* output,

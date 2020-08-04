@@ -102,11 +102,6 @@ typedef enum tagHcclDataType {
     HCCL_DATA_TYPE_RESERVED   /**< reserved */
 } hcclDataType_t;
 
-constexpr u32 HCCL_UNIQUE_ID_BYTES =  2060; // 2060: unique id length
-using hcclUniqueId =  struct hcclUniqueIdDef {
-    char internal[HCCL_UNIQUE_ID_BYTES];
-};
-
 const u32 HCCL_MAX_SEGMENT_NUM = 8;   // The max number of gradient segments.
 
 /**
@@ -123,12 +118,6 @@ enum GradSplitForceMode {
     FORCE_NONE,     /**< no force */
     FORCE_SIZE,     /**< force split gradient by size */
     FORCE_RESERVED  /**< reserved */
-};
-
-enum OriginalGraphShapeType {
-    KNOWN_SHAPE,
-    UNKNOWN_SHAPE,
-    SHAPE_RESERVED  /**< reserved */
 };
 
 /**

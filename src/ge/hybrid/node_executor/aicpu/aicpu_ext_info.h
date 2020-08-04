@@ -24,6 +24,7 @@
 
 namespace ge {
 namespace hybrid {
+
 using AicpuShapeAndType = aicpu::FWKAdapter::ShapeAndType;
 using AicpuExtInfo = aicpu::FWKAdapter::ExtInfo;
 

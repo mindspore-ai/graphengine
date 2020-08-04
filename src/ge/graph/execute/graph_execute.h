@@ -110,7 +110,7 @@ class GraphExecutor {
 
   Status FreeInOutBuffer();
 
-  Status MallocInOutBuffer(const std::vector<uint64_t> &buffer_size, std::vector<void *> &data_addr);
+  Status MallocInOutBuffer(const std::vector<uint32_t> &buffer_size, std::vector<void *> &data_addr);
 
   bool init_flag_;
 
@@ -129,7 +129,7 @@ class GraphExecutor {
 
   bool malloc_flag_;
   std::vector<void *> buffer_addr_;
-  std::vector<uint64_t> buffer_size_;
+  std::vector<uint32_t> buffer_size_;
 };
 }  // namespace ge
 

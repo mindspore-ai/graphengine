@@ -29,18 +29,6 @@
 #include "inc/kernel.h"
 
 namespace ge {
-const int64_t kStartCallNum = 1;
-
-const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>>
-  &ConstantFoldingPass::GetGeConstantFoldingPerfStatistic() const {
-  return statistic_of_ge_constant_folding_;
-}
-
-const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>>
-  &ConstantFoldingPass::GetOpConstantFoldingPerfStatistic() const {
-  return statistic_of_op_constant_folding_;
-}
-
 Status ConstantFoldingPass::Run(ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GELOGD("Begin to run constant folding on node %s", node->GetName().c_str());
@@ -62,8 +50,6 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
 
   auto inputs = OpDescUtils::GetInputData(input_nodes);
   vector<GeTensorPtr> outputs;
-  // Statistic of ge constant folding kernel
-  uint64_t start_time = GetCurrentTimestap();
   auto ret = RunOpKernel(node, inputs, outputs);
   if (ret != SUCCESS) {
     auto op_kernel = folding_pass::GetKernelByType(node);
@@ -73,18 +59,7 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
       return SUCCESS;
     }
 
-    // Statistic of op and fe constant folding kernel
-    start_time = GetCurrentTimestap();
     ret = op_kernel->Compute(node_desc, inputs, outputs);
-    uint64_t cost_time = GetCurrentTimestap() - start_time;
-    if (statistic_of_ge_constant_folding_.find(node->GetType()) != statistic_of_ge_constant_folding_.end()) {
-      uint64_t &cnt = statistic_of_ge_constant_folding_[node->GetType()].first;
-      uint64_t &cur_cost_time = statistic_of_ge_constant_folding_[node->GetType()].second;
-      cnt++;
-      cur_cost_time += cost_time;
-    } else {
-      statistic_of_ge_constant_folding_[node->GetType()] = std::pair<uint64_t, uint64_t>(kStartCallNum, cost_time);
-    }
     if (ret != SUCCESS) {
       if (ret == NOT_CHANGED) {
         GELOGD("Node %s type %s, compute terminates and exits the constant folding.", node->GetName().c_str(),
@@ -95,16 +70,6 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
       return ret;
     }
     GELOGI("Node %s type %s, constant folding compute success.", node->GetName().c_str(), node->GetType().c_str());
-  } else {
-    if (statistic_of_op_constant_folding_.find(node->GetType()) != statistic_of_op_constant_folding_.end()) {
-      uint64_t &cnt = statistic_of_op_constant_folding_[node->GetType()].first;
-      uint64_t &cost_time = statistic_of_op_constant_folding_[node->GetType()].second;
-      cnt++;
-      cost_time += GetCurrentTimestap() - start_time;
-    } else {
-      statistic_of_op_constant_folding_[node->GetType()] =
-        std::pair<uint64_t, uint64_t>(kStartCallNum, GetCurrentTimestap() - start_time);
-    }
   }
 
   if (outputs.empty()) {

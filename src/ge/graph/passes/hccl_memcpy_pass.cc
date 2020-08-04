@@ -28,7 +28,6 @@
 namespace {
 const int32_t kAnchorSize = 1;
 const int kAnchorNum = 0;
-const char *const kInputMutable = "_input_mutable";
 }  // namespace
 namespace ge {
 Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
@@ -36,16 +35,7 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
-
-    bool node_input_mutable = false;
-    if (!AttrUtils::HasAttr(op_desc, kInputMutable)) {
-      continue;
-    }
-
-    GE_IF_BOOL_EXEC(!AttrUtils::GetBool(op_desc, kInputMutable, node_input_mutable),
-                    GELOGE(INTERNAL_ERROR, "node:%s get attr:_input_mutable failed.", node->GetName().c_str());
-                    return FAILED);
-    if (!node_input_mutable) {
+    if (!NeedInsertMemcpyOp(op_desc)) {
       continue;
     }
 
@@ -63,7 +53,7 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
         NodePtr src_node = src_out_anchor->GetOwnerNode();
         std::string src_type = src_node->GetType();
         bool check_src_type = (src_type == CONSTANTOP) || (src_type == DATA) || (src_type == CONSTANT);
-        if (check_src_type) {
+        if (check_src_type && node->GetType() == HCOMALLREDUCE) {
           Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
           if (ret != SUCCESS) {
             GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
@@ -146,6 +136,16 @@ std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
 }
 
 ///
+/// @brief Check hcom op
+/// @param [in] ge::ConstOpDescPtr op_desc
+/// @return bool
+///
+bool HcclMemcpyPass::NeedInsertMemcpyOp(const ge::ConstOpDescPtr &op_desc) const {
+  return (op_desc->GetType() == HCOMALLGATHER || op_desc->GetType() == HCOMALLREDUCE ||
+          op_desc->GetType() == HCOMREDUCESCATTER);
+}
+
+///
 /// @brief Modify edge connection
 /// @param [in] ComputeGraphPtr graph
 /// @param [in] OutDataAnchorPtr src_out_anchor
@@ -182,7 +182,7 @@ Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const 
   return SUCCESS;
 }
 ///
-/// @brief Clear Status, used for subgraph pass
+/// @brief Clear Status, uesd for subgraph pass
 /// @return SUCCESS
 ///
 Status HcclMemcpyPass::ClearStatus() {

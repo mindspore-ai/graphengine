@@ -85,8 +85,6 @@ uint32_t GEContext::DeviceId() { return device_id_; }
 
 uint64_t GEContext::TraceId() { return trace_id_; }
 
-void GEContext::SetSessionId(uint64_t session_id) { session_id_ = session_id; }
-
 void GEContext::SetCtxDeviceId(uint32_t device_id) { device_id_ = device_id; }
 
 }  // namespace ge

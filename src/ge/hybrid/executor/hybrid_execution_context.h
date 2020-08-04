@@ -20,7 +20,6 @@
 #include <atomic>
 #include <unordered_map>
 #include "common/blocking_queue.h"
-#include "framework/common/debug/ge_log.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/executor/hybrid_profiler.h"
@@ -34,26 +33,34 @@ namespace hybrid {
 struct GraphExecutionContext {
   uint64_t session_id = 0;
   const HybridModel *model = nullptr;
+  NodeDoneManager cv_manager;
+  BlockingQueue<NodeStatePtr> compile_queue;
+  BlockingQueue<NodeStatePtr> execution_queue;
+  std::vector<TensorValue> all_inputs;
+  std::vector<TensorValue> all_outputs;
+  std::unordered_map<NodePtr, NodeStatePtr> node_states;
   rtStream_t stream = nullptr;
-  rtContext_t rt_context = nullptr;
-  rtContext_t rt_gen_context = nullptr;
   std::unique_ptr<CallbackManager> callback_manager;
   NpuMemoryAllocator *allocator = nullptr;
   mutable std::unique_ptr<HybridProfiler> profiler;
   bool trace_enabled = false;
-  long profiling_level = 0;
+  int profiling_level = 0;
   bool dump_enabled = false;
-  long iteration = 0;
+  Status status = SUCCESS;
+  std::mutex mu_;
+
+  NodeStatePtr GetOrCreateNodeState(const NodePtr &node);
+  void OnError(Status status);
+  Status GetStatus();
 };
 
-#define RECORD_PROFILING_EVENT(context, evt_type, fmt, category, node_name, ...)                          \
+#define RECORD_PROFILING_EVENT(context, event_type, fmt, category, node_name, ...)                        \
   do {                                                                                                    \
     if ((context)->profiler != nullptr) {                                                                 \
       if (node_name != nullptr) {                                                                         \
-        context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GetTid(), node_name, category, \
-                                       ##__VA_ARGS__);                                                    \
+        context->profiler->RecordEvent(event_type, "[%s] [%s] " fmt, node_name, category, ##__VA_ARGS__); \
       } else {                                                                                            \
-        context->profiler->RecordEvent(evt_type, "tid:%lu [%s] " fmt, GetTid(), category, ##__VA_ARGS__); \
+        context->profiler->RecordEvent(event_type, "[%s] " fmt, category, ##__VA_ARGS__);                 \
       }                                                                                                   \
     }                                                                                                     \
   } while (0)
@@ -72,6 +79,7 @@ struct GraphExecutionContext {
 
 #define RECORD_CALLBACK_EVENT(context, name, fmt, ...) \
   RECORD_PROFILING_EVENT((context), HybridProfiler::CALLBACK, fmt, "Callback", name, ##__VA_ARGS__)
+
 }  // namespace hybrid
 }  // namespace ge
 #endif  // GE_HYBRID_EXECUTOR_HYBRID_EXECUTION_CONTEXT_H_

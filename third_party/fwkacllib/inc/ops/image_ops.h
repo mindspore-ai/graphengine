@@ -934,7 +934,6 @@ REG_OP(EncodeJpeg)
 
 /**
 *@brief PNG-encode an image.
-
 *@par Inputs:
 *Input image must be unit8 or uint16 type. Inputs include: \n
 *image: is a 3-D uint8 or uint16 Tensor of shape [height, width, channels] \n
@@ -1223,6 +1222,16 @@ REG_OP(CombinedNonMaxSuppression)
     .ATTR(pad_per_class, Bool, false)
     .ATTR(clip_boxes, Bool, true)
     .OP_END_FACTORY_REG(CombinedNonMaxSuppression)
+
+REG_OP(SpatialTransformerD)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OPTIONAL_INPUT(theta, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .ATTR(output_size, ListInt, {-1, -1})
+    .ATTR(default_theta, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .ATTR(use_default_theta, ListBool, {})
+    .OP_END_FACTORY_REG(SpatialTransformerD)
 
 }  // namespace ge
 

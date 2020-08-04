@@ -22,6 +22,7 @@
 #include "common/ge/ge_util.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"
@@ -732,6 +733,7 @@ void TransOpWithoutReshapeFusionPass::RemoveNousedNodes(const ComputeGraphPtr &g
 }
 
 graphStatus TransOpWithoutReshapeFusionPass::Run(ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(TransOpWithoutReshapeFusionPass);
   GELOGI("[TransOpWithoutReshapeFusionPass]: optimize begin.");
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
@@ -784,6 +786,7 @@ graphStatus TransOpWithoutReshapeFusionPass::Run(ComputeGraphPtr graph) {
     }
   }
   GELOGI("[TransOpWithoutReshapeFusionPass]: Optimize end.");
+  GE_TIMESTAMP_END(TransOpWithoutReshapeFusionPass, "GraphManager::TransOpWithoutReshapeFusionPass");
   return GRAPH_SUCCESS;
 }
 

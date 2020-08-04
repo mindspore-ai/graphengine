@@ -20,6 +20,7 @@
 
 #include "common/formats/formats.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
 #include "graph/graph.h"
 #include "graph/manager/graph_var_manager.h"
@@ -114,6 +115,7 @@ bool IsTransSupport(const TransNodeInfo &trans_info) {
 }  // namespace
 
 Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
+  GE_TIMESTAMP_START(VariableOpPass);
   if (graph == nullptr) {
     GELOGE(INTERNAL_ERROR, "Failed to run variable op pass, null graph");
     return INTERNAL_ERROR;
@@ -188,15 +190,9 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
     if (UpdateIOFormatInfo(end_iter->output, node_set) != SUCCESS) {
       return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
     }
-
-    // renew var desc if the trans_road is all reshape or reformat
-    ret = RenewVarDesc(graph->GetSessionID(), node, fusion_road);
-    if (ret != SUCCESS) {
-      GELOGE(FAILED, "var manager renew var[%s] descriptor failed!", node->GetName().c_str());
-      return FAILED;
-    }
   }
 
+  GE_TIMESTAMP_END(VariableOpPass, "GraphManager::VariableOpPass");
   return SUCCESS;
 }
 
@@ -608,28 +604,4 @@ Status VariableOpPass::RenewVarDesc(ge::ComputeGraphPtr &graph) {
   }
   return SUCCESS;
 }
-
-Status VariableOpPass::RenewVarDesc(uint64_t session_id, const NodePtr &node, const VarTransRoad &fusion_road) {
-  // renew var desc if the trans_road is all reshape or reformat
-  for (auto &road : fusion_road) {
-    if (road.node_type != RESHAPE && road.node_type != REFORMAT) {
-      return SUCCESS;
-    }
-  }
-
-  if (!ge::VarManager::Instance(session_id)->IsVarExist(node->GetName())) {
-    GELOGD("var manager does not exist var node[%s]", node->GetName().c_str());
-    return SUCCESS;
-  }
-  GELOGD("var manager exist var node[%s]", node->GetName().c_str());
-  GE_CHECK_NOTNULL(node->GetOpDesc());
-  Status ret = ge::VarManager::Instance(session_id)->RenewCurVarDesc(node->GetName(), node->GetOpDesc());
-  if (ret != SUCCESS) {
-    GELOGE(FAILED, "var manager renew var[%s] descriptor failed!", node->GetName().c_str());
-    return FAILED;
-  }
-
-  return SUCCESS;
-}
-
 }  // namespace ge

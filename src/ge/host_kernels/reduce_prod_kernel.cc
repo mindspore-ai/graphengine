@@ -51,7 +51,7 @@ Status ReduceProdKernel::ReduceProdCheck(const ge::OpDescPtr &op_desc_ptr,
              op_desc_ptr->GetName().c_str());
       return NOT_CHANGED;
     }
-    GELOGW("Unexpected ReduceProd node, node input size: %zu, node name: %s", input.size(),
+    GELOGE(PARAM_INVALID, "Unexpected ReduceProd node, node input size: %zu, node name: %s", input.size(),
            op_desc_ptr->GetName().c_str());
     return PARAM_INVALID;
   }
@@ -60,13 +60,13 @@ Status ReduceProdKernel::ReduceProdCheck(const ge::OpDescPtr &op_desc_ptr,
   GE_CHECK_NOTNULL(data_tensor);
   GE_CHECK_NOTNULL(axis_tensor);
   if (axis_tensor->GetTensorDesc().GetShape().GetDimNum() > kReduceProdMaxAxisRank) {
-    GELOGW("Axis must be at most rank 1, node node: %s", op_desc_ptr->GetName().c_str());
+    GELOGE(PARAM_INVALID, "Axis must be at most rank 1, node node: %s", op_desc_ptr->GetName().c_str());
     return PARAM_INVALID;
   }
 
   DataType data_type = data_tensor->GetTensorDesc().GetDataType();
   if (kReduceProdSupportedType.find(data_type) == kReduceProdSupportedType.end()) {
-    GELOGW("ReduceProdKernel data type %s not support, node name: %s",
+    GELOGE(PARAM_INVALID, "ReduceProdKernel data type %s not support, node name: %s",
            TypeUtils::DataTypeToSerialString(data_type).c_str(), op_desc_ptr->GetName().c_str());
     return PARAM_INVALID;
   }
@@ -83,7 +83,7 @@ Status ReduceProdKernel::AxisCal(const std::vector<ge::ConstGeTensorPtr> &input)
   int32_t *axis = const_cast<int32_t *>(reinterpret_cast<const int32_t *>(axis_tensor->GetData().GetData()));
   GE_CHECK_NOTNULL(axis);
   if (static_cast<size_t>(*axis) >= data_dim_size) {
-    GELOGW("axis is out of rank of data_dims, axis is %d.", *axis);
+    GELOGE(PARAM_INVALID, "axis is out of rank of data_dims, axis is %d.", *axis);
     return PARAM_INVALID;
   }
   axis_dim_ = data_dims[static_cast<size_t>(*axis)];
@@ -98,13 +98,13 @@ Status ReduceProdKernel::AxisCal(const std::vector<ge::ConstGeTensorPtr> &input)
     // data_dims is the vector of dims, element in data_dims isn't negative.
     if (axis_appear) {
       if (data_dims[i] != 0 && end_dim_ > (INT64_MAX / data_dims[i])) {
-        GELOGW("Product is overflow. multiplier 1: %ld. multiplier 2: %ld.", end_dim_, data_dims[i]);
+        GELOGE(INTERNAL_ERROR, "Product is overflow. multiplier 1: %ld. multiplier 2: %ld.", end_dim_, data_dims[i]);
         return INTERNAL_ERROR;
       }
       end_dim_ *= data_dims[i];
     } else {
       if (data_dims[i] != 0 && head_dim_ > (INT64_MAX / data_dims[i])) {
-        GELOGW("Product is overflow. multiplier 1: %ld. multiplier 2: %ld.", head_dim_, data_dims[i]);
+        GELOGE(INTERNAL_ERROR, "Product is overflow. multiplier 1: %ld. multiplier 2: %ld.", head_dim_, data_dims[i]);
         return INTERNAL_ERROR;
       }
       head_dim_ *= data_dims[i];
@@ -122,7 +122,7 @@ Status ReduceProdKernel::DataCal(const std::vector<ge::ConstGeTensorPtr> &input,
     size_t data_num = data_tensor->GetData().size() / sizeof(int32_t);
     unique_ptr<int32_t[]> buf(new (std::nothrow) int32_t[data_num]());
     if (buf == nullptr) {
-      GELOGW("new buf failed");
+      GELOGE(MEMALLOC_FAILED, "new buf failed");
       return INTERNAL_ERROR;
     }
 
@@ -190,12 +190,12 @@ Status ReduceProdKernel::ComputeNoAxis(const ge::OpDescPtr &op_desc_ptr, const s
   ConstGeTensorPtr data_tensor = input.at(kReduceProdDataIndex);
   GE_CHECK_NOTNULL(data_tensor);
   if (data_tensor->GetData().size() == 0) {
-    GELOGW("ReduceProdKernel data size of inputs is 0, node node: %s", op_desc_ptr->GetName().c_str());
+    GELOGE(PARAM_INVALID, "ReduceProdKernel data size of inputs is 0, node node: %s", op_desc_ptr->GetName().c_str());
     return PARAM_INVALID;
   }
   DataType data_type = data_tensor->GetTensorDesc().GetDataType();
   if (kReduceProdSupportedType.find(data_type) == kReduceProdSupportedType.end()) {
-    GELOGW("ReduceProdKernel data type %s not support, node name: %s",
+    GELOGE(PARAM_INVALID, "ReduceProdKernel data type %s not support, node name: %s",
            TypeUtils::DataTypeToSerialString(data_type).c_str(), op_desc_ptr->GetName().c_str());
     return PARAM_INVALID;
   }
@@ -206,7 +206,7 @@ Status ReduceProdKernel::ComputeNoAxis(const ge::OpDescPtr &op_desc_ptr, const s
     size_t data_num = data_tensor->GetData().size() / sizeof(int32_t);
     unique_ptr<int32_t[]> buf(new (std::nothrow) int32_t[data_num]());
     if (buf == nullptr) {
-      GELOGW("new buf failed");
+      GELOGE(MEMALLOC_FAILED, "new buf failed");
       return INTERNAL_ERROR;
     }
 
@@ -235,7 +235,7 @@ Status ReduceProdKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vec
   GELOGI("ReduceProdKernel in.");
   Status ret = ReduceProdCheck(op_desc_ptr, input);
   if (ret != SUCCESS && ret != NOT_CHANGED) {
-    GELOGW("ReduceProdKernel input is invalid, failed to fold node.");
+    GELOGE(PARAM_INVALID, "ReduceProdKernel input is invalid, failed to fold node.");
     return NOT_CHANGED;
   }
 
@@ -243,7 +243,7 @@ Status ReduceProdKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vec
   auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGW("make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
+    GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;
   }
 

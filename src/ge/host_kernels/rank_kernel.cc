@@ -49,7 +49,7 @@ Status RankKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_outp
   auto ndims = input_shape->GetShape().GetDimNum();
   GeTensorDesc tensor_desc(op_desc->GetOutputDesc(0));
   GeTensorPtr output_ptr;
-  output_ptr = MakeShared<ge::GeTensor>(tensor_desc, reinterpret_cast<uint8_t *>(&ndims), GetSizeByDataType(DT_INT32));
+  output_ptr = MakeShared<ge::GeTensor>(tensor_desc, reinterpret_cast<uint8_t *>(&ndims), sizeof(ndims));
   if (output_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed");
     return MEMALLOC_FAILED;

@@ -133,24 +133,25 @@ Status AddKernel::BCastAdd(const OpDescPtr &op_desc_ptr, const std::vector<Const
 
 Status AddKernel::AddCheck(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input) {
   if (op_desc_ptr == nullptr) {
-    GELOGW("Op_desc_ptr must not be null.");
+    GELOGE(PARAM_INVALID, "Op_desc_ptr must not be null.");
     return PARAM_INVALID;
   }
   // check how many inputs
   if ((input.size() != kAddInputSize) || (op_desc_ptr->GetOutputsSize() != kAddOutputSize)) {
-    GELOGW("The number of input for add must be %zu, output number must be %zu.", kAddInputSize, kAddOutputSize);
+    GELOGE(PARAM_INVALID, "The number of input for add must be %zu, output number must be %zu.", kAddInputSize,
+           kAddOutputSize);
     return PARAM_INVALID;
   }
   // input vector elements must not be null
   if ((input[kAddFirstInput] == nullptr) || (input[kAddSecondInput] == nullptr)) {
-    GELOGW("Input vector elements must not be null.");
+    GELOGE(PARAM_INVALID, "Input vector elements must not be null.");
     return PARAM_INVALID;
   }
   // Inputs must have the same datatype.
   DataType data_type_0 = input[kAddFirstInput]->GetTensorDesc().GetDataType();
   DataType data_type_1 = input[kAddSecondInput]->GetTensorDesc().GetDataType();
   if (data_type_0 != data_type_1) {
-    GELOGW("Data type of inputs for add not matched, data_type_0:%s, data_type_1:%s",
+    GELOGE(PARAM_INVALID, "Data type of inputs for add not matched, data_type_0:%s, data_type_1:%s",
            TypeUtils::DataTypeToSerialString(data_type_0).c_str(),
            TypeUtils::DataTypeToSerialString(data_type_1).c_str());
     return PARAM_INVALID;
@@ -191,7 +192,7 @@ Status AddKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<ConstGe
   }
 
   if (ret != SUCCESS) {
-    GELOGW("Greater broadcasting failed.");
+    GELOGE(ret, "Greater broadcasting failed.");
     return NOT_CHANGED;
   }
   return SUCCESS;

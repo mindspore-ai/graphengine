@@ -29,7 +29,6 @@ class SliceDKernel : public Kernel {
  private:
   Status SliceDCheck(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input,
                      std::vector<int64_t> &begin_list, std::vector<int64_t> &size_list);
-  Status CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr);
 };
 }  // namespace ge
 

@@ -44,7 +44,6 @@ class StridedSliceKernel : public Kernel {
                  int32_t &end_i, int32_t &dim_i) const;
   void GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, const Attr &args,
                      vector<int64_t> &v_dims);
-  Status CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_FOLDING_KERNEL_STRIDED_SLICE_KERNEL_H_

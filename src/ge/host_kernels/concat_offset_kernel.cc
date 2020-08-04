@@ -41,7 +41,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   // validate attrs
   int N = 0;
   if (!(AttrUtils::GetInt(op_desc_ptr, "N", N))) {
-    GELOGW("Attr %s is not exist.", "N");
+    GELOGE(PARAM_INVALID, "Attr %s is not exist.", "N");
     return NOT_CHANGED;
   }
   // follow IR def, the first input is concat_dim
@@ -50,7 +50,8 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   int32_t concat_dim = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(input_0->GetData().data())));
   // validate inputs
   if (static_cast<int>(input.size()) != (N + kNumOne) || input.size() <= kConcatOffsetInputIndexOne) {
-    GELOGW("The number of input for concat offset must be equal with %d, and must be more than one.", (N + kNumOne));
+    GELOGE(PARAM_INVALID, "The number of input for concat offset must be equal with %d, and must be more than one.",
+           (N + kNumOne));
     return NOT_CHANGED;
   }
 
@@ -58,7 +59,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   GeShape output_shape = input[kConcatOffsetInputIndexOne]->GetTensorDesc().GetShape();
   int64_t output_size = output_shape.GetShapeSize();
   if (concat_dim >= output_size) {
-    GELOGW("Concat dim is biger than the size of output_shape.");
+    GELOGE(PARAM_INVALID, "Concat dim is biger than the size of output_shape.");
     return NOT_CHANGED;
   }
   GELOGI("Output shape size is %ld", output_size);
@@ -78,7 +79,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
     GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
     if (output_ptr == nullptr) {
-      GELOGW("Failed to fold node %s, out of memeory", op_desc_ptr->GetName().c_str());
+      GELOGE(MEMALLOC_FAILED, "Failed to fold node %s, out of memeory", op_desc_ptr->GetName().c_str());
       return NOT_CHANGED;
     }
 
@@ -86,7 +87,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     output_ptr->MutableTensorDesc().SetShape(output_shape);
     GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()),
                                         static_cast<size_t>(sizeof(DT_INT32) * output_size)) != GRAPH_SUCCESS,
-                    GELOGW("set data failed");
+                    GELOGE(INTERNAL_ERROR, "set data failed");
                     return NOT_CHANGED);
     v_output.push_back(output_ptr);
     // caculate offset

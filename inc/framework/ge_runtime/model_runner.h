@@ -35,9 +35,6 @@ class ModelRunner {
 
   bool LoadDavinciModel(uint32_t device_id, uint64_t session_id, uint32_t model_id,
                         std::shared_ptr<DavinciModel> davinci_model, std::shared_ptr<ModelListener> listener);
-
-  bool DistributeTask(uint32_t model_id);
-
   bool LoadModelComplete(uint32_t model_id);
 
   const std::vector<uint32_t> &GetTaskIdList(uint32_t model_id) const;
@@ -45,8 +42,6 @@ class ModelRunner {
   const std::vector<uint32_t> &GetStreamIdList(uint32_t model_id) const;
 
   const std::map<std::string, std::shared_ptr<RuntimeInfo>> &GetRuntimeInfoMap(uint32_t model_id) const;
-
-  void *GetModelHandle(uint32_t model_id) const;
 
   bool UnloadModel(uint32_t model_id);
 

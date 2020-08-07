@@ -73,24 +73,24 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   // Only in Horovod scenario should get the inputName and GeShape
   ret = HcomOmeUtil::GetHorovodInputs(op_desc_, kernel_hccl_infos_);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "davinci_model: GetHorovodInputs fail! domi error: %u", ret);
-    return FAILED;
+    GELOGE(ret, "davinci_model: GetHorovodInputs fail! domi error: %u", ret);
+    return ret;
   }
   Status dmrt = HcomOmeUtil::GetHcclDataType(op_desc_, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
-    GELOGE(FAILED, "davinci_model: GetHcomDataType fail! domi error: %u", dmrt);
-    return FAILED;
+    GELOGE(dmrt, "davinci_model: GetHcomDataType fail! domi error: %u", dmrt);
+    return dmrt;
   }
   dmrt = HcomOmeUtil::GetHcclCount(op_desc_, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
-    GELOGE(FAILED, "davinci_model: GetHcomCount fail! domi error: %u", dmrt);
-    return FAILED;
+    GELOGE(dmrt, "davinci_model: GetHcomCount fail! domi error: %u", dmrt);
+    return dmrt;
   }
   // Only HCOMBROADCAST and HVDCALLBACKBROADCAST need to get the rootId
   dmrt = HcomOmeUtil::GetAllRootId(op_desc_, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
-    GELOGE(FAILED, "davinci_model: Get rootId fail! domi error: %u", dmrt);
-    return FAILED;
+    GELOGE(dmrt, "davinci_model: Get rootId fail! domi error: %u", dmrt);
+    return dmrt;
   }
 
   // GE's new process: hccl declares the number of streams required, creates a stream by GE, and sends it to hccl
@@ -138,8 +138,8 @@ Status HcclTaskInfo::SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciM
     uint32_t max_task_count;
     ret = rtGetMaxStreamAndTask(RT_NORMAL_STREAM, &max_stream_count, &max_task_count);
     if (ret != RT_ERROR_NONE) {
-      GELOGE(FAILED, "Get max stream and task count by rts failed.");
-      return FAILED;
+      GELOGE(RT_FAILED, "Get max stream and task count by rts failed.");
+      return RT_ERROR_TO_GE_STATUS(ret);
     }
     max_node_of_hccl_stream_ = max_task_count / kMaxTaskOfStream;
   }
@@ -153,8 +153,8 @@ Status HcclTaskInfo::SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciM
     ReuseStream(created_stream_num, davinci_model);
     ret = CreateStream(hccl_stream_num - created_stream_num, davinci_model);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Create hccl stream failed.");
-      return FAILED;
+      GELOGE(RT_FAILED, "Create hccl stream failed.");
+      return RT_ERROR_TO_GE_STATUS(ret);
     }
   }
   GELOGI("Initialize hccl slave stream success, hcclStreamNum =%ld", hccl_stream_num);
@@ -179,14 +179,14 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
       rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     // Create slave stream, inactive by default, activated by hccl
     rt_ret = rtModelBindStream(davinci_model->GetRtModelHandle(), stream, RT_MODEL_WAIT_ACTIVE_STREAM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       (void)rtStreamDestroy(stream);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     GELOGD("hccl_stream addr is=%p", stream);
     int64_t remain_cap = max_node_of_hccl_stream_ - 1;
@@ -250,8 +250,7 @@ Status HcclTaskInfo::UpdateArgs() {
   io_addrs.insert(io_addrs.end(), output_data_addrs_.begin(), output_data_addrs_.end());
   io_addrs.insert(io_addrs.end(), workspace_data_addrs_.begin(), workspace_data_addrs_.end());
 
-  GE_CHK_STATUS_RET(davinci_model_->UpdateKnownZeroCopyAddr(io_addrs, args_offset_),
-                    "update known node %s zero copy addr failed.", op_desc_->GetName().c_str());
+  davinci_model_->SetTotalIOAddrs(io_addrs);
 
   GELOGI("HcclTaskInfo::UpdateArgs success.");
   return SUCCESS;

@@ -68,7 +68,7 @@ Status MemcpyAsyncTaskInfo::Distribute() {
   rtError_t rt_ret = rtMemcpyAsync(dst_, dst_max_, src_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   GELOGI("MemcpyAsyncTaskInfo Distribute Success");
@@ -102,8 +102,7 @@ Status MemcpyAsyncTaskInfo::UpdateArgs() {
   io_addrs.emplace_back(reinterpret_cast<void *>(src_));
   io_addrs.emplace_back(reinterpret_cast<void *>(dst_));
 
-  GE_CHK_STATUS_RET(davinci_model_->UpdateKnownZeroCopyAddr(io_addrs, args_offset_),
-                    "update memcpyasync in known node zero copy addr failed.");
+  davinci_model_->SetTotalIOAddrs(io_addrs);
 
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs success.");
   return SUCCESS;

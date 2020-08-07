@@ -36,6 +36,7 @@ GE_COMMON_LOCAL_SRC_FILES := \
     properties_manager.cc \
     types.cc\
     model_parser/base.cc \
+    model_parser/graph_parser_util.cc \
     tbe_kernel_store.cc \
     op/attr_value_util.cc \
     op/ge_op_utils.cc \

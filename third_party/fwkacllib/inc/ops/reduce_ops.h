@@ -880,22 +880,22 @@ REG_OP(GNTrainingReduce)
 * Eight inputs, including: (NCHW NHWC supported)
 *@li x: A Tensor of type float16 or float32.
 *@li sum: A 5D Tensor of type float32, 
-shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the output of operator GNTrainingReduce.
 *@li square_sum: A 5D Tensor of type float32, 
-shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the output of operator GNTrainingReduce.
 *@li scale: A 5D Tensor of type float32, 
-shape is [1, G, D, 1, 1] for NCHW, [1, 1, 1, G, D] for NHWC
+shape is [1, G, 1, 1, 1] for NCHW, [1, 1, 1, G, 1] for NHWC
 is for the scaling gamma.
 *@li offset: A 5D Tensor of type float32, 
-shape is [1, G, D, 1, 1] for NCHW, [1, 1, 1, G, D] for NHWC
+shape is [1, G, 1, 1, 1] for NCHW, [1, 1, 1, G, 1] for NHWC
 for the scaling beta.
 *@li mean: A 5D Tensor of type float32, 
-shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the updated mean.
 *@li variance: A 5D Tensor of type float32, 
-shape is [N, G, D, 1, 1] for NCHW, [N, 1, 1, G, D] for NHWC
+shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
 for the updated variance.
 
 

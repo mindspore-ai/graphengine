@@ -20,7 +20,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <string>
-
+#include "common/ge/op_tiling_manager.h"
 #include "single_op/single_op_model.h"
 #include "single_op/stream_resource.h"
 
@@ -34,16 +34,27 @@ class SingleOpManager {
     return instance;
   }
 
-  Status GetOpFromModel(const std::string &key, const ge::ModelData &model_data, void *stream, SingleOp **single_op);
+  Status GetOpFromModel(const std::string &model_name, const ge::ModelData &model_data, void *stream,
+                        SingleOp **single_op);
+
+  Status GetDynamicOpFromModel(const std::string &model_name, const ge::ModelData &model_data, void *stream,
+                               DynamicSingleOp **dynamic_single_op);
+
+  StreamResource *GetResource(uintptr_t resource_id, rtStream_t stream);
 
   Status ReleaseResource(void *stream);
 
+  void RegisterTilingFunc();
+
  private:
-  StreamResource *GetResource(uintptr_t resource_id);
+  static Status GetResourceId(rtStream_t stream, uintptr_t &resource_id);
+
   StreamResource *TryGetResource(uintptr_t resource_id);
 
   std::mutex mutex_;
+  bool tiling_func_registered_ = false;
   std::unordered_map<uintptr_t, StreamResource *> stream_resources_;
+  OpTilingManager op_tiling_manager_;
 };
 }  // namespace ge
 

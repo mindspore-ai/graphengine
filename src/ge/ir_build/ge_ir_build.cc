@@ -26,6 +26,7 @@
 #include "framework/common/util.h"
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/omg_inner_types.h"
+#include "common/model_parser/graph_parser_util.h"
 #include "ge/ge_api_types.h"
 #include "generator/ge_generator.h"
 #include "graph/compute_graph.h"
@@ -151,6 +152,7 @@ class Impl {
     GetContext().is_dynamic_input = false;
     GetContext().dynamic_batch_size.clear();
     GetContext().dynamic_image_size.clear();
+    GetContext().dynamic_dims.clear();
   };
   ~Impl() { (void)generator_.Finalize(); };
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
@@ -200,17 +202,20 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   string dynamic_image_size = options_.find(ge::ir_option::DYNAMIC_IMAGE_SIZE) == options_.end()
                                 ? ""
                                 : options_[ge::ir_option::DYNAMIC_IMAGE_SIZE];
+  string dynamic_dims =
+    options_.find(ge::ir_option::DYNAMIC_DIMS) == options_.end() ? "" : options_[ge::ir_option::DYNAMIC_DIMS];
 
-  auto status = CheckDynamicBatchSizeOrImageSizeParamValid(dynamic_batch_size, dynamic_image_size, input_shape,
-                                                           input_format, is_dynamic_input_);
+  auto status = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims, input_shape,
+                                            input_format, is_dynamic_input_);
   if (status != ge::SUCCESS) {
-    GELOGE(GRAPH_PARAM_INVALID, "check dynamic batch size or image size failed!");
+    GELOGE(GRAPH_PARAM_INVALID, "Check dynamic input size failed!");
     return GRAPH_PARAM_INVALID;
   }
-  GELOGD("user input dynamic_batch_size:%s,dynamic_image_size:%s", dynamic_batch_size.c_str(),
-         dynamic_image_size.c_str());
+  GELOGD("User input dynamic_batch_size:%s, dynamic_image_size:%s, dynamic_dims:%s.", dynamic_batch_size.c_str(),
+         dynamic_image_size.c_str(), dynamic_dims.c_str());
   GetContext().dynamic_batch_size = dynamic_batch_size;
   GetContext().dynamic_image_size = dynamic_image_size;
+  GetContext().dynamic_dims = dynamic_dims;
   // check output_type
   std::string output_type =
     options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end() ? "" : options_[ge::ir_option::OUTPUT_TYPE];
@@ -243,11 +248,13 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
+  int64_t index = 0;
   for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
+      AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
       GELOGI("Data op inputDesc size is: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();
@@ -259,7 +266,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
         GELOGI("Data op get shape from Context.");
       } else {
         data_shape = tensor.GetShape();
-        GELOGI("Data op get shape from InputDesc in geir graph.");
+        GELOGI("Data op get shape from InputDesc in ge ir graph.");
       }
 
       ge::DataType data_type = tensor.GetDataType();

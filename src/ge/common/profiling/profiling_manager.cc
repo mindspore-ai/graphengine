@@ -16,14 +16,11 @@
 
 #include "common/profiling/profiling_manager.h"
 
-#include <nlohmann/json.hpp>
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/string_util.h"
 #include "graph/ge_context.h"
 #include "runtime/base.h"
-
-using Json = nlohmann::json;
 
 namespace {
 const char *const kJobID = "jobID";
@@ -35,6 +32,7 @@ const char *const kEvents = "events";
 const char *const kAiCoreEvents = "ai_core_events";
 const char *const kName = "name";
 const char *const kTraceID = "traceId";
+const char *const kProfDir = "resultPath";
 const size_t kReportMaxLen = 2048;
 }  // namespace
 
@@ -100,6 +98,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     Json start_prof_conf = Json::parse(config);
     Json &prof_conf = start_prof_conf[kStartCfg][0];
     job_id_ = prof_conf[kJobID];
+    auto iter = prof_conf.find(kProfDir);
+    if (iter != prof_conf.end()) {
+      prof_dir_ = prof_conf[kProfDir];
+    }
     Json &device_id = prof_conf[kDeviceID];
     if (device_id.size() != 0) {
       vector<int32_t>().swap(device_id_);
@@ -126,23 +128,36 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
       }
     }
 
-    GELOGI("Profiling json config from acl:%s", config.c_str());
     Json &features = prof_conf[kFeatures];
+    if (ParseFeaturesFromAclCfg(features) != SUCCESS) {
+      GELOGE(FAILED, "Parse feature from acl cfg failed.");
+      return FAILED;
+    }
+    is_profiling_ = true;
+  } catch (...) {
+    GELOGE(FAILED, "Json conf is not invalid !");
+    return ge::PARAM_INVALID;
+  }
+#endif
+  return ge::SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::ParseFeaturesFromAclCfg(
+  const Json &features) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  try {
     for (size_t i = 0; i < features.size(); ++i) {
-      Json &feature = features[i];
+      const Json &feature = features[i];
       if ((feature.find(kName) == feature.end()) || feature[kName].is_null()) {
         continue;
       }
-
       const std::string &name = feature[kName];
       if (name == "op_trace") {
-        GELOGI("Op trace config from acl");
-        Json &conf = feature[kConf];
-        Json &events = conf[0][kEvents];
+        const Json &conf = feature[kConf];
+        const Json &events = conf[0][kEvents];
         const std::string &ai_core_events = events[0][kAiCoreEvents];
         GELOGI("Op trace config from acl ai_core_events:%s", ai_core_events.c_str());
         is_op_trace_ = true;
-        // op trace get conf
         ProfMgrConf prof_mgr_conf;
         int result = ProfMgrGetConf(ai_core_events, &prof_mgr_conf);
         if (result != 0) {
@@ -154,10 +169,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
         GELOGI("Op trace profiling iter num %d,", op_trace_iter_num_);
       } else if (name == "task_trace") {
         is_op_trace_ = false;
+        if (feature.find(kConf) != feature.end()) {
+          const Json &conf = feature[kConf];
+          std::stringstream task_trace_conf;
+          task_trace_conf << conf;
+          task_trace_conf_ = task_trace_conf.str();
+        }
         GELOGI("Task trace config from acl");
       } else if (name == "system_trace") {
         is_op_trace_ = false;
-        Json &conf = feature[kConf];
+        const Json &conf = feature[kConf];
         std::stringstream system_trace_conf;
         system_trace_conf << conf;
         system_trace_conf_ = system_trace_conf.str();
@@ -165,10 +186,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
       }
       profiling_opts_.push_back(name);
     }
-
-    is_profiling_ = true;
   } catch (...) {
-    GELOGE(FAILED, "Json conf is not invalid !");
+    GELOGE(ge::PARAM_INVALID, "Json conf feature is not invalid !");
     return ge::PARAM_INVALID;
   }
 #endif
@@ -235,6 +254,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
       p_device[kDeviceID] = std::to_string(device_id);
       p_device[kJobID] = job_id_;
       p_device[kTraceID] = std::to_string(GetContext().TraceId());
+      if (!prof_dir_.empty()) {
+        p_device[kProfDir] = prof_dir_;
+        GELOGI("Prof dir: %s.", prof_dir_.c_str());
+      }
 
       Json features;
       if (is_op_trace_) {
@@ -258,6 +281,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
           Json f;
           if (profiling_opts_[i] == "system_trace") {
             f[kConf] = nlohmann::json::parse(system_trace_conf_);
+          } else if (profiling_opts_[i] == "task_trace") {
+            if (!task_trace_conf_.empty()) {
+              f[kConf] = nlohmann::json::parse(task_trace_conf_);
+            }
           }
           f[kName] = profiling_opts_[i];
           features[i] = f;

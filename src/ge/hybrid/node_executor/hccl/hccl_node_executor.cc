@@ -153,7 +153,7 @@ Status HcclNodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context,
 }
 
 Status HcclNodeExecutor::Initialize() {
-  std::string file_name = "libhccl.so";
+  std::string file_name = "libhcom_graph_adaptor.so";
   std::string path = PluginManager::GetPath();
   path.append(file_name);
   string canonical_path = RealPath(path.c_str());

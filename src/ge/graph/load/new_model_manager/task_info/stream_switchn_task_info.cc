@@ -22,10 +22,8 @@
 #include "graph/load/new_model_manager/model_utils.h"
 
 namespace {
-const uint32_t kDynamicBtachParamNum = 1;
-const uint32_t kDynamicResolutionParamNum = 2;
 const uint8_t kStreamSwitchnInputNum = 1;
-}  // namespace
+}
 
 namespace ge {
 Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
@@ -45,10 +43,6 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
 
   // set size_
   input_size_ = stream_switchn_def.size();
-  if (input_size_ != kDynamicBtachParamNum && input_size_ != kDynamicResolutionParamNum) {
-    GELOGE(FAILED, "The size of dynamic batch or imagesize input is 1 or 2, now it is %u.", input_size_);
-    return FAILED;
-  }
 
   // set value_ptr_
   auto value = stream_switchn_def.target_value();
@@ -95,7 +89,7 @@ Status StreamSwitchNTaskInfo::Distribute() {
     rtStreamSwitchN(input_ptr_, input_size_, value_ptr_, true_stream_ptr_, element_size_, stream_, data_type_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   GELOGI("StreamSwitchNTaskInfo Distribute Success. inputSize:%u, elementSize:%d, datatype:%d.", input_size_,

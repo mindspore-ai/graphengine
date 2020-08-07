@@ -82,6 +82,8 @@ class PlatformInfoManager {
 
   void ParseVectorCoreMemoryRates(map<string, string> &vectorCoreMemoryRatesMap, PlatformInfo &platformInfoTemp);
 
+  void ParseCPUCache(map<string, string> &CPUCacheMap, PlatformInfo &platformInfoTemp);
+
   void ParseVectorCoreintrinsicDtypeMap(map<string, string> &vectorCoreintrinsicDtypeMap,
                                         PlatformInfo &platformInfoTemp);
 

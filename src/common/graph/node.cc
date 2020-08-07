@@ -449,9 +449,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InDataAnchorPtr Node::GetInDataAn
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AnchorPtr Node::GetInAnchor(int idx) const {
   // Idx can't be less than -1 or >= in_data_anchors_.size(), -1 means index of control anchor_
   if (idx < -1 || idx >= static_cast<int>(in_data_anchors_.size())) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-      "E19019", {"opname", "index", "anchorname", "optype"},
-      {GetName().c_str(), std::to_string(idx), "in_anchor", GetType().c_str()});
     GELOGW("Op[%s] doesn't have index[%d]'s in_anchor which optype is %s.", GetName().c_str(), idx, GetType().c_str());
     return nullptr;
   } else {
@@ -743,26 +740,27 @@ graphStatus Node::Verify() const {
   const string aipp_data_type = "AippData";
   const string const_type = "Const";
   const string variable_type = "Variable";
+  bool is_unknown_graph = GetOwnerComputeGraph()->GetGraphUnknownFlag();
   GE_CHK_BOOL_EXEC(op_ != nullptr, return GRAPH_FAILED, "original OpDesc is nullptr");
 
-  for (const auto &in_anchor_ptr : GetAllInDataAnchors()) {
-    if (in_anchor_ptr == nullptr) {
-      GELOGW("in anchor ptr is null");
-      continue;
-    }
-    bool valid_anchor = op_->GetType() == data_type || op_->GetType() == aipp_data_type ||
-                        op_->GetType() == const_type || op_->GetType() == variable_type ||
-                        op_->IsOptionalInput(in_anchor_ptr->GetIdx()) || in_anchor_ptr->GetPeerAnchors().size() > 0;
-    if (!valid_anchor) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E11019", {"name", "index"},
-                                                      {GetName(), std::to_string(in_anchor_ptr->GetIdx())});
-      GELOGE(GRAPH_FAILED, "operator %s's input %d is not linked.", GetName().c_str(), in_anchor_ptr->GetIdx());
-      return GRAPH_FAILED;
+  if (!is_unknown_graph) {
+    for (const auto &in_anchor_ptr : GetAllInDataAnchors()) {
+      GE_IF_BOOL_EXEC(in_anchor_ptr == nullptr, GELOGW("in anchor ptr is null"); continue);
+      bool valid_anchor = op_->GetType() == data_type || op_->GetType() == aipp_data_type ||
+                          op_->GetType() == const_type || op_->GetType() == variable_type ||
+                          op_->IsOptionalInput(in_anchor_ptr->GetIdx()) || in_anchor_ptr->GetPeerAnchors().size() > 0;
+      if (!valid_anchor) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E11019", {"opname", "index"},
+                                                        {GetName(), std::to_string(in_anchor_ptr->GetIdx())});
+        GELOGE(GRAPH_FAILED, "operator %s's input %d is not linked.", GetName().c_str(), in_anchor_ptr->GetIdx());
+        return GRAPH_FAILED;
+      }
     }
   }
 
   string frameworkop_type = "FrameworkOp";
-  if (op_->GetType() != frameworkop_type) {
+  bool need_update_name = op_->GetType() != frameworkop_type && !is_unknown_graph;
+  if (need_update_name) {
     auto node_op = ge::OperatorFactoryImpl::CreateOperator("node_op", op_->GetType());
     if (node_op.IsEmpty()) {
       GELOGW("get op from OperatorFactory fail. opType: %s", op_->GetType().c_str());
@@ -782,7 +780,7 @@ graphStatus Node::Verify() const {
     }
     node_op.BreakConnect();
   }
-
+  GE_IF_BOOL_EXEC(is_unknown_graph, return GRAPH_SUCCESS;);
   if (op_->CommonVerify() == GRAPH_SUCCESS) {
     Operator op_proxy = ge::OpDescUtils::CreateOperatorFromNode(shared_from_this());
     auto verify_func = op_->GetVerifyFunc();

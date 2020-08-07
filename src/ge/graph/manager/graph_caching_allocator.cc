@@ -134,11 +134,6 @@ uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device
   }
   if (ptr == nullptr) {
     GELOGE(FAILED, "Malloc failed device id = %u, size= %zu", device_id, size);
-  } else {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    block->allocated = true;
-    allocated_blocks_[block->ptr] = block;
-    GELOGI("Malloc device id = %u, size= %zu", device_id, size);
   }
   return ptr;
 }
@@ -222,9 +217,16 @@ Block *CachingAllocator::FindFreeBlock(size_t size, uint8_t *org_ptr, uint32_t d
     if (block != nullptr) {
       GELOGI("Find block size = %zu", block->size);
       if (ShouldSplit(block, size)) {
-        return SplitBlock(block, size, *bin, device_id);
+        block = SplitBlock(block, size, *bin, device_id);
+      }
+
+      if (block->ptr != nullptr) {
+        block->allocated = true;
+        allocated_blocks_[block->ptr] = block;
+        GELOGI("Malloc device id = %u, size= %zu", device_id, size);
       }
     }
+
     return block;
   }
   return nullptr;

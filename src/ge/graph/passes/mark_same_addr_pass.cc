@@ -44,23 +44,8 @@ bool MarkSameAddrPass::IsNextNodeExpected(const ge::NodePtr &cur_node, const vec
 Status MarkSameAddrPass::Run(ComputeGraphPtr graph) {
   GELOGD("MarkSameAddrPass begin.");
   GE_CHECK_NOTNULL(graph);
-  auto parent_node = graph->GetParentNode();
-  if (parent_node == nullptr) {
-    return SUCCESS;
-  }
-  auto parent_op_desc = parent_node->GetOpDesc();
-  GE_CHECK_NOTNULL(parent_op_desc);
-  if (!parent_op_desc->HasAttr(ATTR_NAME_IS_UNKNOWN_SHAPE)) {
-    GELOGD("Graph[%s] do not have unknown shape attr. Parent node is %s", graph->GetName().c_str(),
-           parent_op_desc->GetName().c_str());
-    return SUCCESS;
-  }
-
-  bool is_unknown_shape = false;
-  (void)AttrUtils::GetBool(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape);
-  if (is_unknown_shape) {
-    GELOGD("Graph[%s] is unknown shape, do not need to set fixed addr attr. Parent node is %s",
-           graph->GetName().c_str(), parent_op_desc->GetName().c_str());
+  if (graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown shape, do not need to set fixed addr attr.", graph->GetName().c_str());
     return SUCCESS;
   }
 

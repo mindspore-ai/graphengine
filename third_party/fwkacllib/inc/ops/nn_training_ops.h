@@ -307,16 +307,6 @@ REG_OP(ApplyMomentum)
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyMomentum)
 
-REG_OP(ApplyMomentumCCE)
-    .INPUT(var, TensorType::NumberType())
-    .INPUT(accum, TensorType::NumberType())
-    .INPUT(lr, TensorType::NumberType())
-    .INPUT(grad, TensorType::NumberType())
-    .INPUT(momentum, TensorType::NumberType())
-    .OUTPUT(var, TensorType::NumberType())
-    .ATTR(use_nesterov, Bool, false)
-    .ATTR(use_locking, Bool, false)
-    .OP_END_FACTORY_REG(ApplyMomentumCCE)
 
 /**
 *@brief Updates "var" according to the momentum scheme. Set use_nesterov = True if you

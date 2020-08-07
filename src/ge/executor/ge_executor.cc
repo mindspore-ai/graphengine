@@ -36,6 +36,9 @@
 #include "mmpa/mmpa_api.h"
 #include "single_op/single_op_manager.h"
 
+using std::string;
+using std::vector;
+
 namespace {
 const size_t kDynamicBatchSizeVecSize = 1;
 const size_t kStaticBatchInfoSize = 1;
@@ -102,20 +105,36 @@ void SetDynamicInputDataFlag(const ge::RunModelData &input_data, const std::vect
                              ge::InputData &inputs) {
   inputs.is_dynamic_batch = true;
   std::string batch_label;
+  size_t match_idx = 0;
   for (size_t i = 0; i < batch_info.size(); ++i) {
-    if (batch_info[i].size() == kDynamicBatchSizeVecSize &&
-        batch_info[i][0] == static_cast<int64_t>(input_data.dynamic_batch_size)) {
-      batch_label = kBatchLabel + std::to_string(i);
-      inputs.batch_label = batch_label;
+    // dynamic_dims
+    if (input_data.dynamic_dims.size() != 0) {
+      bool is_match = true;
+      for (size_t j = 0; j < static_cast<size_t>(input_data.dynamic_dims.size()); ++j) {
+        if (static_cast<uint64_t>(batch_info[i][j]) != input_data.dynamic_dims[j]) {
+          is_match = false;
+          break;
+        }
+      }
+      if (is_match) {
+        match_idx = i;
+        break;
+      }
+      // dynamic_batch_size
+    } else if (batch_info[i].size() == kDynamicBatchSizeVecSize &&
+               batch_info[i][0] == static_cast<int64_t>(input_data.dynamic_batch_size)) {
+      match_idx = i;
       break;
+      // dynamic_image_size
     } else if (batch_info[i].size() == kDynamicImageSizeVecSize &&
                batch_info[i][0] == static_cast<int64_t>(input_data.dynamic_image_height) &&
                batch_info[i][1] == static_cast<int64_t>(input_data.dynamic_image_width)) {
-      batch_label = kBatchLabel + std::to_string(i);
-      inputs.batch_label = batch_label;
+      match_idx = i;
       break;
     }
   }
+  batch_label = kBatchLabel + std::to_string(match_idx);
+  inputs.batch_label = batch_label;
   GELOGI("current batch label:%s", batch_label.c_str());
 }
 
@@ -225,39 +244,41 @@ Status GeExecutor::Finalize() {
 Status GeExecutor::SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
                                        uint64_t batch_size) {
   if (dynamic_input_addr == nullptr) {
-    GELOGE(FAILED, "Dynamic input addr is nullptr!");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Dynamic input addr is nullptr!");
+    return PARAM_INVALID;
   }
 
   uint64_t size = sizeof(uint64_t);
   if (length < size) {
-    GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, size);
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Dynamic input size [%lu] is less than [%lu]!", length, size);
+    return PARAM_INVALID;
   }
 
   // Verify whether the input dynamic batch matches the model gear
   std::vector<std::vector<int64_t>> batch_info;
   std::vector<uint64_t> batch_num{batch_size};
-  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+  int32_t dynamic_type = static_cast<int32_t>(FIXED);
+  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Get dynamic input info failed.");
-    return FAILED;
+    GELOGE(ret, "Get dynamic input info failed.");
+    return ret;
   }
 
   if (!IsDynamicBatchSizeMatchModel(batch_size, batch_info)) {
-    GELOGE(FAILED, "The current dynamic input does not match the gear of the model.");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "The current dynamic input does not match the gear of the model.");
+    return PARAM_INVALID;
   }
 
-  ret = GraphExecutor::SetDynamicSize(model_id, batch_num);
+  ret = GraphExecutor::SetDynamicSize(model_id, batch_num, static_cast<int32_t>(DYNAMIC_BATCH));
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Set dynamic size failed");
-    return FAILED;
+    GELOGE(ret, "Set dynamic size failed");
+    return ret;
   }
   // memcpy dynamic_batch_size from host to device
-  if (rtMemcpy(dynamic_input_addr, length, &batch_size, size, RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
-    GELOGE(FAILED, "memcpy dynamic batch input data failed!");
-    return FAILED;
+  rtError_t rt_ret = rtMemcpy(dynamic_input_addr, length, &batch_size, size, RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "memcpy dynamic batch input data failed! ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   return SUCCESS;
 }
@@ -265,40 +286,42 @@ Status GeExecutor::SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_ad
 Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
                                        uint64_t image_height, uint64_t image_width) {
   if (dynamic_input_addr == nullptr) {
-    GELOGE(FAILED, "Dynamic input addr is nullptr!");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Dynamic input addr is nullptr!");
+    return PARAM_INVALID;
   }
 
   uint64_t dynamic_input_size = kDynamicImageSizeInputSize * sizeof(uint64_t);
   if (length < dynamic_input_size) {
-    GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
+    return PARAM_INVALID;
   }
 
   // Verify whether the input dynamic resolution matches the model gear
   std::vector<std::vector<int64_t>> batch_info;
   std::vector<uint64_t> batch_num{image_height, image_width};
-  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+  int32_t dynamic_type = static_cast<int32_t>(FIXED);
+  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Get dynamic input info failed.");
-    return FAILED;
+    GELOGE(ret, "Get dynamic input info failed.");
+    return ret;
   }
 
   if (!IsDynamicImageSizeMatchModel(image_height, image_width, batch_info)) {
-    GELOGE(FAILED, "The current dynamic input does not match the gear of the model.");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "The current dynamic input does not match the gear of the model.");
+    return PARAM_INVALID;
   }
 
-  ret = GraphExecutor::SetDynamicSize(model_id, batch_num);
+  ret = GraphExecutor::SetDynamicSize(model_id, batch_num, static_cast<int32_t>(DYNAMIC_IMAGE));
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Set dynamic size failed");
-    return FAILED;
+    GELOGE(ret, "Set dynamic size failed");
+    return ret;
   }
   // Memcpy dynamic resolution height from host to device
-  if (rtMemcpy(dynamic_input_addr, sizeof(uint64_t), &image_height, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE) !=
-      RT_ERROR_NONE) {
-    GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
-    return FAILED;
+  rtError_t rt_ret =
+    rtMemcpy(dynamic_input_addr, sizeof(uint64_t), &image_height, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "memcpy dynamic resolution input data failed! ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   uint64_t remain_size = length - sizeof(uint64_t);
@@ -311,16 +334,109 @@ Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_ad
   return SUCCESS;
 }
 
-Status GeExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info) {
+Status GeExecutor::SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
+                                  const vector<uint64_t> &dynamic_dims) {
+  if (dynamic_input_addr == nullptr) {
+    GELOGE(FAILED, "Dynamic input addr is nullptr!");
+    return FAILED;
+  }
+
+  Status ret = GraphExecutor::SetDynamicSize(model_id, dynamic_dims, static_cast<int32_t>(DYNAMIC_DIMS));
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Set dynamic size failed");
+    return FAILED;
+  }
+
+  vector<uint64_t> cur_dynamic_dims;
+  if (GetCurDynamicDims(model_id, dynamic_dims, cur_dynamic_dims) != SUCCESS) {
+    GELOGE(FAILED, "GetCurDynamicDims failed.");
+    return FAILED;
+  }
+
+  size_t dynamic_dim_num = cur_dynamic_dims.size();
+  uint64_t dynamic_input_size = static_cast<uint64_t>(dynamic_dim_num * sizeof(uint64_t));
+  if (length < dynamic_input_size) {
+    GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
+    return FAILED;
+  }
+
+  for (uint32_t i = 0; i < dynamic_dim_num; ++i) {
+    // Memcpy dynamic dim[i] from host to device
+    if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + sizeof(uint64_t) * i),
+                 length - sizeof(uint64_t) * i, &cur_dynamic_dims[i], sizeof(uint64_t),
+                 RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
+      GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &combined_dims,
+                                     vector<uint64_t> &cur_dynamic_dims) {
+  vector<vector<int64_t>> combined_batch;
+  if (GraphExecutor::GetCombinedDynamicDims(model_id, combined_batch) != SUCCESS) {
+    GELOGE(FAILED, "Get combined dynamic dims info failed.");
+    return FAILED;
+  }
+  if (combined_batch.empty()) {
+    GELOGE(FAILED, "Combined dynamic dims is empty.");
+    return FAILED;
+  }
+
+  if (combined_dims.size() != combined_batch[0].size()) {
+    GELOGE(FAILED, "Input dynamic dims's dimension size[%zu] is different from model[%zu].", combined_dims.size(),
+           combined_batch[0].size());
+    return FAILED;
+  }
+  bool matched = false;
+  size_t idx = 0;
+  for (size_t i = 0; i < combined_batch.size(); i++) {
+    bool is_match = true;
+    for (size_t j = 0; j < combined_dims.size(); j++) {
+      if (combined_dims[j] != static_cast<uint64_t>(combined_batch[i][j])) {
+        is_match = false;
+        break;
+      }
+    }
+    if (is_match) {
+      idx = i;
+      matched = true;
+      break;
+    }
+  }
+
+  if (!matched) {
+    GELOGE(FAILED, "Input dynamic dims can not match model.");
+    return FAILED;
+  }
+
+  // batch_info save the dynamic info of combined_dims
+  vector<vector<int64_t>> batch_info;
+  int32_t dynamic_type = static_cast<int32_t>(FIXED);
+  if (GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type) != SUCCESS) {
+    GELOGE(FAILED, "Get dynamic input info failed.");
+    return FAILED;
+  }
+
+  cur_dynamic_dims.clear();
+  for (size_t i = 0; i < batch_info[idx].size(); i++) {
+    cur_dynamic_dims.emplace_back(static_cast<uint64_t>(batch_info[idx][i]));
+  }
+
+  return SUCCESS;
+}
+
+Status GeExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
   GELOGI("Begin to get current shape");
   if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
-  Status ret = GraphExecutor::GetCurShape(model_id, batch_info);
+  Status ret = GraphExecutor::GetCurShape(model_id, batch_info, dynamic_type);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Get current shape failed");
-    return FAILED;
+    GELOGE(ret, "Get current shape failed");
+    return ret;
   }
   return SUCCESS;
 }
@@ -330,12 +446,12 @@ Status GeExecutor::SetDynamicAippData(uint32_t model_id, void *dynamic_input_add
                                       const kAippDynamicPara &aippParms) {
   GELOGI("Enter to SetDynamicAippData.");
   if (dynamic_input_addr == nullptr) {
-    GELOGE(FAILED, "Dynamic aipp input addr is nullptr!");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Dynamic aipp input addr is nullptr!");
+    return PARAM_INVALID;
   }
   if (aippBatchPara.empty()) {
-    GELOGE(FAILED, "aippBatchPara is empty.");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "aippBatchPara is empty.");
+    return PARAM_INVALID;
   }
   uint64_t batch_num = aippBatchPara.size();
   uint64_t real_aippParms_size = sizeof(kAippDynamicPara) - sizeof(kAippDynamicBatchPara);
@@ -345,24 +461,25 @@ Status GeExecutor::SetDynamicAippData(uint32_t model_id, void *dynamic_input_add
     "batch num is %lu, struct_len is %lu",
     model_id, length, batch_num, struct_len);
   if (struct_len > length) {
-    GELOGE(FAILED, "input dynamic aipp param len [%lu] is larger than aipp_data size [%lu]", struct_len, length);
-    return FAILED;
+    GELOGE(PARAM_INVALID, "input dynamic aipp param len [%lu] is larger than aipp_data size [%lu]", struct_len, length);
+    return PARAM_INVALID;
   }
   // Memcpy real kAippDynamicBatchPara from host to device
-  if (rtMemcpy(dynamic_input_addr, length, &aippParms, real_aippParms_size, RT_MEMCPY_HOST_TO_DEVICE) !=
-      RT_ERROR_NONE) {
-    GELOGE(FAILED, "memcpy real_aippParms_size failed!");
-    return FAILED;
+  rtError_t rt_ret = rtMemcpy(dynamic_input_addr, length, &aippParms, real_aippParms_size, RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "memcpy real_aippParms_size failed! ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   uint64_t remain_len = length - real_aippParms_size;
   uint8_t *aipp_batch_para_dev = reinterpret_cast<uint8_t *>(dynamic_input_addr) + real_aippParms_size;
 
   for (uint64_t i = 0; i < batch_num; ++i) {
-    if (rtMemcpy(reinterpret_cast<void *>(aipp_batch_para_dev + i * sizeof(kAippDynamicBatchPara)),
-                 (remain_len - i * sizeof(kAippDynamicBatchPara)), &(aippBatchPara[i]), sizeof(kAippDynamicBatchPara),
-                 RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
-      GELOGE(FAILED, "memcpy kAippDynamicBatchPara input data failed!");
-      return FAILED;
+    rt_ret = rtMemcpy(reinterpret_cast<void *>(aipp_batch_para_dev + i * sizeof(kAippDynamicBatchPara)),
+                      (remain_len - i * sizeof(kAippDynamicBatchPara)), &(aippBatchPara[i]),
+                      sizeof(kAippDynamicBatchPara), RT_MEMCPY_HOST_TO_DEVICE);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "memcpy kAippDynamicBatchPara input data failed! ret: 0x%X", rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
   return SUCCESS;
@@ -429,7 +546,7 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
   }
   Status ret = GraphLoader::DestroyAicpuSessionForInfer(model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed.");
+    GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed. model id: %u", model_id);
     return FAILED;
   }
   return GraphLoader::UnloadModel(model_id);
@@ -468,17 +585,19 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
                                                      output_formats, new_model_desc);
   if (ret != domi::SUCCESS) {
     GELOGE(ret, "GetInputOutputDescInfo failed. ret = %u", ret);
-    return TransferDomiErrorCode(ret);
+    return ret;
   }
 
   if (input_formats.size() != input_desc_infos.size()) {
-    GELOGE(ge::FAILED, "input_formats.size() != input_desc_infos.size().");
-    return ge::FAILED;
+    GELOGE(ge::PARAM_INVALID, "input_formats size %zu is not equal to input_desc_infos size %zu.", input_formats.size(),
+           input_desc_infos.size());
+    return ge::PARAM_INVALID;
   }
 
   if (output_formats.size() != output_desc_infos.size()) {
-    GELOGE(ge::FAILED, "output_formats.size() != output_desc_infos.size().");
-    return ge::FAILED;
+    GELOGE(ge::PARAM_INVALID, "output_formats size %zu is not equal to output_desc_infos size %zu.",
+           output_formats.size(), output_desc_infos.size());
+    return ge::PARAM_INVALID;
   }
 
   // Transfer data to TensorDesc
@@ -494,22 +613,48 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
 /// @brief Get dynamic batch_info
 /// @param [in] model_id
 /// @param [out] batch_info
+/// @param [out] dynamic_type
 /// @return execute result
 ///
-Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
+Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
+                                       int32_t &dynamic_type) {
   GELOGI("Begin to get dynamic batch info.");
   if (!isInit_) {
     GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return GE_EXEC_NOT_INIT;
   }
 
-  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+  Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
   if (ret != SUCCESS) {
     GELOGE(ret, "GetDynamicBatchInfo failed.");
     return ret;
   }
 
   GELOGI("Get dynamic batch info succ.");
+  return SUCCESS;
+}
+
+///
+/// @ingroup ge
+/// @brief Get combined dynamic dims info
+/// @param [in] model_id
+/// @param [out] batch_info
+/// @return execute result
+///
+Status GeExecutor::GetCombinedDynamicDims(uint32_t model_id, vector<vector<int64_t>> &batch_info) {
+  GELOGI("Begin to get combined dynamic dims info.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  Status ret = GraphExecutor::GetCombinedDynamicDims(model_id, batch_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetCombinedDynamicDims failed.");
+    return ret;
+  }
+
+  GELOGI("Get combined dynamic dims succ.");
   return SUCCESS;
 }
 
@@ -628,8 +773,8 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
 
   string filePath = RealPath(path.c_str());
   if (filePath.empty()) {
-    GELOGE(ge::FAILED, "File path is invalid. please check your text file '%s'.", path.c_str());
-    return ge::FAILED;
+    GELOGE(GE_EXEC_MODEL_PATH_INVALID, "File path is invalid. please check your text file '%s'.", path.c_str());
+    return GE_EXEC_MODEL_PATH_INVALID;
   }
   GELOGI("load modelData from file: %s.", path.c_str());
   std::string key_path;
@@ -710,12 +855,20 @@ Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModel
   GetDomiOutputData(run_output_data, output_data);
 
   if ((run_input_data.dynamic_batch_size != 0) || (run_input_data.dynamic_image_width != 0) ||
-      (run_input_data.dynamic_image_height != 0)) {
+      (run_input_data.dynamic_image_height != 0) || (run_input_data.dynamic_dims.size() != 0)) {
     std::vector<std::vector<int64_t>> batch_info;
-    Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info);
+    int32_t dynamic_type = static_cast<int32_t>(FIXED);
+    Status ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Get dynamic input info failed.");
-      return FAILED;
+      GELOGE(ret, "Get dynamic input info failed.");
+      return ret;
+    }
+    if (dynamic_type == static_cast<int32_t>(DYNAMIC_DIMS)) {
+      ret = GraphExecutor::GetCombinedDynamicDims(model_id, batch_info);
+      if (ret != SUCCESS) {
+        GELOGE(FAILED, "Get dynamic input info failed.");
+        return FAILED;
+      }
     }
     if (!batch_info.empty()) {
       SetDynamicInputDataFlag(run_input_data, batch_info, input_data);
@@ -790,6 +943,11 @@ Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelDa
   return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op);
 }
 
+Status GeExecutor::LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                       DynamicSingleOp **single_op) {
+  return SingleOpManager::GetInstance().GetDynamicOpFromModel(model_name, modelData, stream, single_op);
+}
+
 Status GeExecutor::ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,
                                 std::vector<DataBuffer> &outputs) {
   if (executor == nullptr) {
@@ -800,13 +958,21 @@ Status GeExecutor::ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer
   return executor->ExecuteAsync(inputs, outputs);
 }
 
+ge::Status GeExecutor::ExecuteAsync(DynamicSingleOp *executor, const vector<GeTensorDesc> &input_desc,
+                                    const vector<DataBuffer> &inputs, vector<GeTensorDesc> &output_desc,
+                                    vector<DataBuffer> &outputs) {
+  GE_CHECK_NOTNULL(executor);
+  return executor->ExecuteAsync(input_desc, inputs, output_desc, outputs);
+}
+
 Status GeExecutor::ReleaseSingleOpResource(void *stream) {
   return SingleOpManager::GetInstance().ReleaseResource(stream);
 }
 
 Status GeExecutor::GetBatchInfoSize(uint32_t model_id, size_t &shape_count) {
   std::vector<std::vector<int64_t>> batch_info;
-  Status ret = GetDynamicBatchInfo(model_id, batch_info);
+  int32_t dynamic_type = static_cast<int32_t>(FIXED);
+  Status ret = GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
   if (ret != SUCCESS) {
     GELOGE(ret, "Calc batch info size failed. ret = %d", ret);
     return ret;

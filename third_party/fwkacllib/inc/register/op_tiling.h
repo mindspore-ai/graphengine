@@ -21,6 +21,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/node.h"
 
+#include <nlohmann/json.hpp>
 #include <iostream>
 #include <sstream>
 #include <functional>
@@ -81,10 +82,11 @@ struct TeOpParas {
     TeOpAttrArgs attrs;
 };
 
-using OpTilingFunc = std::function<bool(const std::string&, const TeOpParas&,
-                                        const std::string&, OpRunInfo&)>;
 
-using OpTilingFuncPtr = bool(*)(const std::string&, const TeOpParas&, const std::string&, OpRunInfo&);
+using OpTilingFunc = std::function<bool(const std::string&, const TeOpParas&,
+                                        const nlohmann::json& , OpRunInfo&)>;
+
+using OpTilingFuncPtr = bool(*)(const std::string&, const TeOpParas&, const nlohmann::json& , OpRunInfo&);
 
 class FMK_FUNC_HOST_VISIBILITY OpTilingInterf
 {
@@ -124,6 +126,7 @@ inline size_t ByteBufferGetAll(ByteBuffer &buf, char *dest, size_t dest_len)
 
 
 extern "C" ge::graphStatus OpParaCalculate(const ge::Node &node, OpRunInfo &run_info);
+extern "C" ge::graphStatus OpAtomicCalculate(const ge::Node &node, OpRunInfo &run_info);
 
 }
 

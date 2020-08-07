@@ -24,46 +24,19 @@
 
 #include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 
 namespace ge {
-namespace {
-bool GraphShouldBeSkip(const ge::ComputeGraphPtr &graph) {
-  // Internal function, guaranteeing graph non-null
-  if (graph->GetParentGraph() == nullptr) {
-    return false;
-  }
-  return GraphUtils::IsUnknownShapeGraph(graph);
-}
-}  // namespace
-
 Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
-  if (graph == nullptr) {
-    GELOGE(PARAM_INVALID, "param [graph] must not be null.");
-    return PARAM_INVALID;
-  }
-  if (GraphShouldBeSkip(graph)) {
-    return SUCCESS;
-  }
+  GE_CHECK_NOTNULL(graph);
   GELOGD("AtomicAddrCleanPass begin.");
   // 1.Recoginze atomic and loop mark
   vector<NodePtr> atomic_node_vec;
   for (NodePtr &node : graph->GetDirectNode()) {
     if (IsAtomicOp(node)) {
-      bool is_unknown = false;
-      auto ret_status = NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown);
-      if (ret_status != GRAPH_SUCCESS) {
-        GELOGW("Get node unknown status failed, node name:%s, type:%s.", node->GetName().c_str(),
-               node->GetType().c_str());
-        continue;
-      }
-      if (is_unknown) {
-        GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
-               node->GetType().c_str());
-        continue;
-      }
       atomic_node_vec.push_back(node);
     }
     if (!is_loop_graph_ && node->GetType() == LOOPCOND) {
@@ -76,6 +49,14 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     GELOGI("There is no atomic node. Ignore atomicAddrClean pass.");
     return SUCCESS;
   }
+
+  bool is_known_graph = graph->GetGraphUnknownFlag();
+  if (is_known_graph) {
+    GELOGD("Graph[%s] is unknown graph. It will call fe interface to compile op.", graph->GetName().c_str());
+    GE_CHK_STATUS_RET(CompileUnknownGraphOp(atomic_node_vec));
+    return SUCCESS;
+  }
+
   // 2.Insert clean node and link to atomic node
   Status ret;
   if (is_loop_graph_) {
@@ -123,15 +104,28 @@ Status AtomicAddrCleanPass::HandleLoopGraph(ComputeGraphPtr &graph, const vector
 }
 
 Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vector<NodePtr> &atomic_node_vec) {
-  GELOGD("Not loop graph. It will insert only 1 clean node.");
+  GELOGD("Not loop graph and unknown graph. It will insert only 1 clean node.");
+
+  vector<NodePtr> common_atomic_nodes;
+  auto ret = HandleDispersedAtomicNodes(graph, atomic_node_vec, common_atomic_nodes);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Handle dispersed atomic nodes failed, graph name is %s.", graph->GetName().c_str());
+    return ret;
+  }
+
+  if (common_atomic_nodes.empty()) {
+    GELOGI("common_atomic_nodes is empty");
+    return SUCCESS;
+  }
+
   // not loop graph , insert only one clean node in graph
   NodePtr clean_addr_node = InsertAtomicAddrCleanNode(graph);
   if (clean_addr_node == nullptr) {
     GELOGE(FAILED, "Insert AtomicAddrClean node failed. Ignore atomicAddrClean pass.");
     return FAILED;
   }
-  for (const auto &node : atomic_node_vec) {
-    auto ret = LinkToAtomicNode(node, clean_addr_node);
+  for (const auto &node : common_atomic_nodes) {
+    ret = LinkToAtomicNode(node, clean_addr_node);
     if (ret != SUCCESS) {
       GELOGE(ret, "Link control anchor failed from atomic node to atomic_addr_clean node.");
       return ret;
@@ -143,13 +137,51 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
     for (auto &in_anchor : node->GetAllInDataAnchors()) {
       GE_CHECK_NOTNULL(in_anchor->GetPeerOutAnchor());
       NodePtr peer_in_node = in_anchor->GetPeerOutAnchor()->GetOwnerNode();
-      Status ret = LinkToAtomicNode(peer_in_node, clean_addr_node);
+      ret = LinkToAtomicNode(peer_in_node, clean_addr_node);
       if (ret != SUCCESS) {
         GELOGE(ret, "Link failed, %s : %s", peer_in_node->GetName().c_str(), clean_addr_node->GetName().c_str());
         return ret;
       }
     }
   }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
+                                                       const std::vector<NodePtr> &atomic_node_vec,
+                                                       std::vector<NodePtr> &common_atomic_nodes) {
+  int index = 0;
+  for (const auto &node : atomic_node_vec) {
+    vector<int> node_anchors_connect_netoutput;
+    // If GetBool fail, attr is_connect_netoutput is an empty vector.
+    (void)ge::AttrUtils::GetListInt(node->GetOpDesc(), ATTR_NAME_NODE_CONNECT_OUTPUT, node_anchors_connect_netoutput);
+    if (!node_anchors_connect_netoutput.empty()) {
+      NodePtr dispersed_clean_addr_node = InsertAtomicAddrCleanNode(graph);
+      if (dispersed_clean_addr_node == nullptr) {
+        GELOGE(FAILED, "Insert AtomicAddrClean node failed. Ignore atomicAddrClean pass.");
+        return FAILED;
+      }
+
+      auto dispersed_node_op_desc = dispersed_clean_addr_node->GetOpDesc();
+      GE_CHECK_NOTNULL(dispersed_node_op_desc);
+      string node_name = dispersed_node_op_desc->GetName();
+      std::ostringstream oss;
+      oss << node_name << "_" << index;
+      node_name = oss.str();
+      dispersed_node_op_desc->SetName(node_name);
+      GELOGD("Inserted dispersed atomic clean node name is %s", node_name.c_str());
+      ++index;
+      Status ret = LinkToAtomicNode(node, dispersed_clean_addr_node);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "Link control anchor failed from atomic node: %s to atomic_addr_clean node: %s.",
+               node->GetName().c_str(), dispersed_clean_addr_node->GetName().c_str());
+        return ret;
+      }
+    } else {
+      common_atomic_nodes.emplace_back(node);
+    }
+  }
+
   return SUCCESS;
 }
 
@@ -263,6 +295,51 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
 ///
 Status AtomicAddrCleanPass::ClearStatus() {
   hcom_node_vec_.clear();
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_node_vec) {
+  GE_TIMESTAMP_CALLNUM_START(UnknownGraphCompileOp);
+  std::unordered_map<string, vector<ge::NodePtr>> node_vector_map;
+  std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
+  if ((instance == nullptr) || !instance->InitFlag()) {
+    GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "CompileSingleOp failed.");
+    return ge::GE_CLI_GE_NOT_INITIALIZED;
+  }
+
+  for (auto &atomic_node : atomic_node_vec) {
+    auto op_desc = atomic_node->GetOpDesc();
+    if (op_desc == nullptr) {
+      GELOGW("op desc is nullptr.");
+      continue;
+    }
+    string kernel_lib_name = op_desc->GetOpKernelLibName();
+    if (kernel_lib_name.empty()) {
+      GELOGE(ge::INTERNAL_ERROR, "Get atomic node:%s(%s) kernel lib failed.", atomic_node->GetName().c_str(),
+             atomic_node->GetType().c_str());
+      return ge::INTERNAL_ERROR;
+    }
+
+    OpsKernelInfoStorePtr kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
+    GE_CHECK_NOTNULL(kernel_info);
+    node_vector_map[kernel_lib_name].emplace_back(atomic_node);
+  }
+
+  for (auto &it : node_vector_map) {
+    auto &kernel_lib_name = it.first;
+    auto &node_vector = it.second;
+    OpsKernelInfoStorePtr kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
+    GE_CHECK_NOTNULL(kernel_info);
+    GE_TIMESTAMP_RESTART(UnknownGraphCompileOp);
+    auto ret = kernel_info->CompileOp(node_vector);
+    GELOGI("The atomic node size of compile op of %s is %zu", kernel_lib_name.c_str(), node_vector.size());
+    GE_TIMESTAMP_ADD(UnknownGraphCompileOp);
+    if (ret != ge::SUCCESS) {
+      GELOGE(ret, "Compile atomic op failed, kernel lib name is %s", kernel_lib_name.c_str());
+      return ret;
+    }
+  }
+  GE_TIMESTAMP_CALLNUM_END(UnknownGraphCompileOp, "AtomicAddrCleanPass::CompileUnknownGraphOp");
   return SUCCESS;
 }
 }  // namespace ge

@@ -53,5 +53,26 @@ class SingleOp {
   std::vector<std::vector<uintptr_t *>> arg_table_;
   bool use_physical_addr_ = false;
 };
+
+class DynamicSingleOp {
+ public:
+  DynamicSingleOp(uintptr_t resource_id, rtStream_t stream);
+  ~DynamicSingleOp() = default;
+  Status ExecuteAsync(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                      std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs);
+
+ private:
+  friend class SingleOpModel;
+  Status ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                        std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const;
+
+  Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes, std::vector<void *> &workspaces);
+
+  std::unique_ptr<TbeOpTask> op_task_;
+  uintptr_t resource_id_ = 0;
+  rtStream_t stream_ = nullptr;
+  size_t num_inputs_ = 0;
+  size_t num_outputs_ = 0;
+};
 }  // namespace ge
 #endif  // GE_SINGLE_OP_SINGLE_OP_H_

@@ -28,7 +28,6 @@
 #include "graph/utils/tensor_adapter.h"
 
 namespace {
-const char *const kSeparate = "/";
 const std::map<std::string, std::string> kResourcePairType = {{"StackPush", "StackPop"}};
 const std::set<std::string> kResourceTypes = {"StackPush", "StackPop"};
 }  // namespace
@@ -41,15 +40,16 @@ Status ResourcePairRemoveControlPass::Run(ComputeGraphPtr graph) {
   // find all node of condition type, store with type and scope prefix key
   for (auto &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node);
-    if (kResourceTypes.find(node->GetType()) != kResourceTypes.end()) {
+    auto node_type = node->GetType();
+    if (kResourceTypes.find(node_type) != kResourceTypes.end()) {
       std::string node_name = node->GetName();
-      std::string node_prefix;
-      size_t last_separate_index = node_name.find_last_of(kSeparate);
-      if (last_separate_index != std::string::npos) {
-        node_prefix = node_name.substr(0, last_separate_index);
+      std::string node_key(node_name);
+      std::size_t found = node_name.rfind(node_type);
+      if (found != std::string::npos) {
+        node_key.replace(found, node_type.size(), "");
       }
-      prefix_2_node_per_type[node->GetType()][node_prefix] = node;
-      GELOGD("ResourcePairRemoveControlPass insert prefix:%s, op_name:%s, op_type:%s", node_prefix.c_str(),
+      prefix_2_node_per_type[node_type][node_key] = node;
+      GELOGD("ResourcePairRemoveControlPass insert node_key:%s, op_name:%s, op_type:%s", node_key.c_str(),
              node_name.c_str(), node->GetType().c_str());
     }
   }

@@ -34,7 +34,6 @@ namespace ge {
 *@par Outputs:
 *The output is dynamic for attribute func_name.
 */
-
 REG_OP(AssistHelp)
     .DYNAMIC_INPUT(x, TensorType({ DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16,
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE }))
@@ -42,6 +41,20 @@ REG_OP(AssistHelp)
         DT_UINT8, DT_INT32, DT_INT64, DT_UINT32, DT_UINT64, DT_BOOL, DT_DOUBLE}))
     . REQUIRED_ATTR (func_name, String)
     . OP_END_FACTORY_REG(AssistHelp)
+
+/**
+*@brief aicpu cache help for lhisi cache flush.
+
+*@par Inputs:
+*The input is dynamic for attribute func_name \n
+
+*@par Outputs:
+*The output is dynamic for attribute func_name.
+*/
+REG_OP(CacheUpdate)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(x, TensorType::BasicType())
+    .OP_END_FACTORY_REG(CacheUpdate)
 
 }  // namespace ge
 

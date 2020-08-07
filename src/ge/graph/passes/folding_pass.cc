@@ -291,7 +291,7 @@ Status FoldingPass::RemoveNodeKeepingCtrlEdges(NodePtr &node) {
     GELOGE(INTERNAL_ERROR, "Failed to remove node %s from graph", node->GetName().c_str());
     return INTERNAL_ERROR;
   }
-  AddNodeDeleted(node.get());
+  AddNodeDeleted(node);
   return SUCCESS;
 }
 

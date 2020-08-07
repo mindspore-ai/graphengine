@@ -73,7 +73,6 @@ class GraphPrepare {
   Status PrepareOptimize();
   Status InferShapeForPreprocess();
   Status TryDoAipp();
-  Status OptimizeAfterInfershapeByAtcParams();
   Status UpdateVariableFormats(ComputeGraphPtr &graph);
   Status UpdateVariableFormatsDynShape(ComputeGraphPtr &graph);
   Status FormatAndShapeProcess();

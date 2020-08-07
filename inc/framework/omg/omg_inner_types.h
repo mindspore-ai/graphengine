@@ -120,6 +120,7 @@ struct OmgContext {
   bool is_dynamic_input = false;
   std::string dynamic_batch_size;
   std::string dynamic_image_size;
+  std::string dynamic_dims;
 };
 }  // namespace ge
 

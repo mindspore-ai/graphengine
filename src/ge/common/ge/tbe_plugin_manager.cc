@@ -182,7 +182,7 @@ void TBEPluginManager::GetCustomOpPath(std::string &customop_path) {
 }
 
 void TBEPluginManager::LoadCustomOpLib() {
-  LoadPluginSo();
+  LoadPluginSo(options_);
 
   std::vector<OpRegistrationData> registration_datas = domi::OpRegistry::Instance()->registrationDatas;
   GELOGI("The size of registration_datas is: %zu", registration_datas.size());
@@ -193,10 +193,13 @@ void TBEPluginManager::LoadCustomOpLib() {
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::LoadPluginSo() {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::LoadPluginSo(
+  const std::map<string, string> &options) {
   vector<string> file_list;
   string caffe_parser_path;
   std::string plugin_path;
+
+  options_ = options;
   GetCustomOpPath(plugin_path);
 
   // Whether there are files in the plugin so path

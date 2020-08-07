@@ -90,6 +90,8 @@ class MemoryBlock {
   }
   size_t Size() const { return block_size_; }
 
+  size_t AlignSize() const;
+
   void SetHeadOffset(size_t offset);
 
   void SetTailOffset(size_t offset);
@@ -117,6 +119,8 @@ class MemoryBlock {
   std::string String();
 
   bool IsSameLabel(std::string &first_batch_label);
+
+  void AddContinuousLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life);
 
   void AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &node_depend_stream_life);
 
@@ -361,6 +365,10 @@ class BlockMemAssigner : public MemAssigner {
   /// @author
   ///
   void ReuseBlocksByLifeTime(size_t range_size);
+
+  bool IsContinuousOutput(const NodePtr &n);
+
+  MemoryBlock *ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges, const bool is_op_reuse_mem);
 
   std::unordered_map<int64_t, std::vector<MemoryBlock *>> reusable_blocks_;
 

@@ -36,20 +36,20 @@ GraphLoader::~GraphLoader() = default;
 Status GraphLoader::UnloadModel(uint32_t model_id) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  GELOGI("UnLoad model begin, model_id:%u.", model_id);
+  GELOGI("UnLoad model begin, model id:%u.", model_id);
 
   Status ret = model_manager->Stop(model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UnloadModel: Stop failed.");
+    GELOGE(ret, "UnloadModel: Stop failed. model id:%u", model_id);
   }
 
   ret = model_manager->Unload(model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UnloadModel: Unload failed.");
+    GELOGE(ret, "UnloadModel: Unload failed. model id:%u", model_id);
     CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_UNLOAD);
     return ret;
   }
-  GELOGI("UnLoad model success, model_id:%u.", model_id);
+  GELOGI("UnLoad model success, model id:%u.", model_id);
   return SUCCESS;
 }
 
@@ -123,14 +123,14 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
   Status ret;
   try {
     if (!CheckInputPathValid(path)) {
-      GELOGE(PARAM_INVALID, "model path is invalid: %s", path.c_str());
-      return PARAM_INVALID;
+      GELOGE(GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
+      return GE_EXEC_MODEL_PATH_INVALID;
     }
 
     GELOGI("Load model begin, model path is: %s", path.c_str());
     if (!key_path.empty() && !CheckInputPathValid(key_path)) {
-      GELOGE(PARAM_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
-      return PARAM_INVALID;
+      GELOGE(GE_EXEC_MODEL_KEY_PATH_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
+      return GE_EXEC_MODEL_KEY_PATH_INVALID;
     }
 
     ret = DavinciModelParser::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);

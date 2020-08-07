@@ -159,10 +159,6 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   std::map<string, uint32_t> GetAllInputName() const;
 
-  void SetAllInputName(const std::map<string, uint32_t> &input_name_idx);
-
-  std::vector<string> GetAllOptionalInputName() const;
-
   std::map<string, uint32_t> GetAllOutputName();
 
   bool UpdateInputName(std::map<string, uint32_t> inputNameIdx);
@@ -300,6 +296,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   std::map<std::string, SubgraphType> subgraph_ir_names_to_type_;
 
   vector<GeTensorDescPtr> inputs_desc_{};
+  map<string, uint32_t> input_name_idx_{};
+  std::unordered_set<string> optional_input_names_{};
   vector<GeTensorDescPtr> outputs_desc_{};
   map<string, uint32_t> output_name_idx_{};
   std::function<graphStatus(Operator &)> infer_func_ = nullptr;

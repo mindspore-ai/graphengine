@@ -16,9 +16,9 @@
 
 #include "graph/load/new_model_manager/zero_copy_task.h"
 
-#include "graph/load/new_model_manager/model_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
+#include "graph/load/new_model_manager/model_utils.h"
 
 namespace ge {
 const char *const kDefaultBatchLable = "Batch_default";
@@ -48,8 +48,8 @@ Status ZeroCopyTask::SetTaskArgsOffset(uintptr_t addr, size_t offset) {
     it->second.push_back(offset);
   }
 
-  GELOGI("[ZCPY] %s set task, addr: 0x%lx, args: %p, size: %zu, offset: %zu", name_.c_str(), addr, args_addr_,
-         args_size_, offset);
+  GELOGI("[ZCPY] %s set task, virtual_addr: 0x%lx, args_addr: %p, size: %zu, offset: %zu", name_.c_str(), addr,
+         args_addr_, args_size_, offset);
   return SUCCESS;
 }
 
@@ -65,7 +65,8 @@ void ZeroCopyTask::SetOriginalArgs(const void *info, size_t size) {
   const uint8_t *data = static_cast<const uint8_t *>(info);
   args_info_.assign(data, data + size);
 
-  GELOGI("[ZCPY] %s set info, args: %p, args size: %zu, info size: %zu", name_.c_str(), args_addr_, args_size_, size);
+  GELOGI("[ZCPY] %s set info from virtual_addr: 0x%lx, args_addr: %p, args size: %zu, info size: %zu", name_.c_str(),
+         info, args_addr_, args_size_, size);
 }
 
 /**
@@ -110,13 +111,13 @@ bool ZeroCopyTask::CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_ad
  * @ingroup ge
  * @brief Set user data addr to Task param.
  * @param [in] addr: virtual address value from Op.
- * @param [in] data: data buffer from user.
+ * @param [in] buffer_addr: real_data_buffer_addr from user.
  * @param [in] batch_addrs: dynamic batch addr info.
  * @param [in] batch_label: batch label.
  * @return: void
  */
-Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, const DataBuffer &data,
-                                     const map<string, set<uintptr_t>> &batch_addrs, const string &batch_label) {
+Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, void *buffer_addr, const map<string, set<uintptr_t>> &batch_addrs,
+                                     const string &batch_label) {
   for (auto pair : task_addr_offset_) {
     if (pair.first != addr) {
       continue;
@@ -128,9 +129,9 @@ Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, const DataBuffer &data,
         continue;
       }
 
-      auto dst_addr = static_cast<uint8_t *>(data.data);
-      GELOGI("[ZCPY] %s update task, args: %p, size: %zu, offset: %zu, addr: 0x%lx, length: %u", name_.c_str(),
-             args_addr_, args_size_, offset, addr, data.length);
+      auto dst_addr = static_cast<uint8_t *>(buffer_addr);
+      GELOGI("[ZCPY] %s update task, args_addr: %p, size: %zu, offset: %zu, virtual_addr: 0x%lx", name_.c_str(),
+             args_addr_, args_size_, offset, addr);
       *(uintptr_t *)(args_info + offset) = reinterpret_cast<uintptr_t>(dst_addr);
       is_updated_ = true;
     }
@@ -162,11 +163,11 @@ Status ZeroCopyTask::DistributeParam(rtStream_t stream) {
   }
 
   if (rt_err != RT_ERROR_NONE) {
-    GELOGE(FAILED, "[ZCPY] %s distribute task param failed, error=0x%x", name_.c_str(), rt_err);
-    return FAILED;
+    GELOGE(RT_FAILED, "[ZCPY] %s distribute task param failed, error=0x%x", name_.c_str(), rt_err);
+    return RT_ERROR_TO_GE_STATUS(rt_err);
   }
 
-  GELOGI("[ZCPY] %s refresh task args success, args: %p, size: %zu, args_info_: %p, length: %zu", name_.c_str(),
+  GELOGI("[ZCPY] %s refresh task args success, args_addr: %p, size: %zu, args_info_: %p, length: %zu", name_.c_str(),
          args_addr_, args_size_, args_info_.data(), args_info_.size());
   return SUCCESS;
 }

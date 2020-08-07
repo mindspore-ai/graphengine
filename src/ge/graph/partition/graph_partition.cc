@@ -315,6 +315,11 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(end_op_desc, "parentOpType", dst_node->GetType()),
                   GELOGW("SetStr parentOpType failed");)
   GE_IF_BOOL_EXEC(!end_op_desc->SetExtAttr("parentNode", dst_node), GELOGW("SetEndExtAttr parentNode failed");)
+  OpDescPtr dst_node_op_desc = dst_node->GetOpDesc();
+  GE_CHECK_NOTNULL(dst_node_op_desc);
+  GE_IF_BOOL_EXEC(
+    !AttrUtils::SetStr(end_op_desc, ATTR_NAME_END_REAR_NODE_ENGINE_NAME, dst_node_op_desc->GetOpEngineName()),
+    GELOGW("SetStr rearNodeEngineName failed");)
   // replace input_desc of end with owner node's desc
   int output_index = ge::AnchorUtils::GetIdx(out_anchor);
   bool is_need_update_desc = (output_index >= 0) && (graph_info_.mode_ == kPartitioning);
@@ -364,6 +369,11 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "anchorIndex", AnchorUtils::GetIdx(out_anchor)),
                   GELOGW("SetInt anchorIndex failed");)
   GE_IF_BOOL_EXEC(!pld_op_desc->SetExtAttr("parentNode", src_node), GELOGW("SetPldExtAttr parentNode failed");)
+  OpDescPtr src_node_op_desc = src_node->GetOpDesc();
+  GE_CHECK_NOTNULL(src_node_op_desc);
+  GE_IF_BOOL_EXEC(
+    !AttrUtils::SetStr(pld_op_desc, ATTR_NAME_PLD_FRONT_NODE_ENGINE_NAME, src_node_op_desc->GetOpEngineName()),
+    GELOGW("SetStr frontNodeEngineName failed");)
   // do not care over flow
   graph_info_.num_of_pld_end_++;
   // replace output_desc of pld with input node's output desc

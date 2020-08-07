@@ -42,6 +42,8 @@ struct NodeItem {
 
   bool IsControlOp() const;
 
+  bool NeedInfershape() const;
+
   void SetToDynamic();
 
   std::string DebugString() const;
@@ -73,6 +75,7 @@ struct NodeItem {
   std::map<int, int> reuse_inputs;
 
   std::vector<bool> is_input_shape_static;
+  bool is_output_shape_static = true;
   int num_static_input_shapes = 0;
 };
 }  // namespace hybrid

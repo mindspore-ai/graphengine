@@ -136,7 +136,7 @@ void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path) {
   std::string path = path_base + so_path;
   extern_engine_path = (path + "libfe.so" + ":") + (path + "libge_local_engine.so" + ":") +
                        (path + "librts_engine.so" + ":") + (path + "libaicpu_engine.so" + ":") +
-                       (path_base + "libhccl.so");
+                       (path_base + "libhcom_graph_adaptor.so");
 }
 
 Status OpsKernelManager::InitPluginOptions(const map<string, string> &options) {

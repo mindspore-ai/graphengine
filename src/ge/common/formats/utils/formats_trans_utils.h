@@ -21,7 +21,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #include "external/graph/types.h"
 #include "graph/ge_tensor.h"
 

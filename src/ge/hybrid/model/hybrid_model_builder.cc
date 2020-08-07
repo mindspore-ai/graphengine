@@ -159,13 +159,6 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
   (void)AttrUtils::SetBool(new_node->op_desc, kIsFirstNode, false);
   (void)AttrUtils::SetBool(new_node->op_desc, kIsLastNode, false);
 
-  int32_t unknown_shape_type_val = 0;
-  (void)AttrUtils::GetInt(new_node->op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
-  new_node->shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
-
-  GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, new_node->is_dynamic),
-                    "[%s] Failed to get shape status.", node->GetName().c_str());
-
   if (new_node->is_dynamic && (new_node->IsControlOp() || new_node->NodeType() == PARTITIONEDCALL)) {
     new_node->shape_inference_type = DEPEND_COMPUTE;
   }
@@ -545,6 +538,15 @@ Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item, const NodeI
 
 Status HybridModelBuilder::LoadGraph() {
   auto root_graph = ge_root_model_->GetRootGraph();
+  std::shared_ptr<ComputeGraph> merged_graph;
+  GELOGI("Before merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu", root_graph->GetDirectNodesSize(),
+         root_graph->GetAllNodesSize());
+  GE_CHK_GRAPH_STATUS_RET(UnfoldSubgraphs(*root_graph, merged_graph), "Failed to unfold subgraphs.");
+  root_graph = std::move(merged_graph);
+  GELOGI("After merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu", root_graph->GetDirectNodesSize(),
+         root_graph->GetAllNodesSize());
+  GE_DUMP(root_graph, "hybrid_merged_graph");
+
   GE_CHK_STATUS_RET(LoadDynamicSubgraph(*root_graph, true), "Failed to load root graph.");
   GELOGD("Done loading root graph successfully.");
 

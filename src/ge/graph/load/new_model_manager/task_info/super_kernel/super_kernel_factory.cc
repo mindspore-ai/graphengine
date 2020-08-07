@@ -33,15 +33,15 @@ Status SuperKernelFactory::Init() {
     }
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(this->sk_stub_name_.c_str(), &this->func_stub_);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret,
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED,
                                                     "rtGetFunctionByName "
                                                     "failed. stub_func: %s, please export LD_LIBRARY_PATH for "
                                                     "libcce_aicore.so",
                                                     this->sk_stub_name_.c_str());
-                    return FAILED;)
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
     rt_ret = rtGetAddrByFun(this->func_stub_, &this->func_ptr_);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtGetAddrByFun failed. error: 0x%X", rt_ret);
-                    return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtGetAddrByFun failed. error: 0x%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
     GELOGD(
       "SKT: fuseKernels super_kernel_template subFunc %p, device func "
       "address %p",
@@ -94,8 +94,8 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
   for (unsigned i = 0; i < stub_func_list.size(); i++) {
     void *sub_device_func = nullptr;
     rt_ret = rtGetAddrByFun(stub_func_list[i], &sub_device_func);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtGetAddrByFun failed. error: 0x%X", rt_ret);
-                    return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtGetAddrByFun failed. error: 0x%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
     GELOGD("SKT: fuseKernels subFunc %p, device func address %p", stub_func_list[i], sub_device_func);
     // store two uint64_t address
     // address divided by 4 because of 32bits encoding, call offset will *4 when calculating
@@ -105,11 +105,12 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
     GELOGD("SKT: fuseKernels args base address %lu", nav_table[i * 2 + 1]);
   }
   rt_ret = rtMalloc((void **)&hbm_nav_table_addr, nav_table_size, RT_MEMORY_HBM);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc failed. error: 0x%X", rt_ret); return FAILED;)
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc failed. error: 0x%X", rt_ret);
+                  return RT_ERROR_TO_GE_STATUS(rt_ret);)
   rt_ret =
     rtMemcpy((void *)hbm_nav_table_addr, nav_table_size, (void *)nav_table, nav_table_size, RT_MEMCPY_HOST_TO_DEVICE);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy failed. error: 0x%X", rt_ret);
-                  GE_CHK_RT(rtFree(hbm_nav_table_addr)); return FAILED;)
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy failed. error: 0x%X", rt_ret);
+                  GE_CHK_RT(rtFree(hbm_nav_table_addr)); return RT_ERROR_TO_GE_STATUS(rt_ret);)
   // Create the necessary metadata for the super kernel
   h =
     std::unique_ptr<skt::SuperKernel>(new SuperKernel(this->func_stub_, hbm_nav_table_addr, nav_table_size, block_dim));

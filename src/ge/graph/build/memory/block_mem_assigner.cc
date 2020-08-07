@@ -55,6 +55,13 @@ using std::unordered_map;
 using std::unordered_set;
 using std::vector;
 
+void AlignMemOffset(size_t &mem_align_size) {
+  if (mem_align_size <= 0) {
+    return;
+  }
+  mem_align_size = (mem_align_size + MEM_ALIGN_SIZE - 1) / MEM_ALIGN_SIZE * MEM_ALIGN_SIZE;
+}
+
 void MemoryBlock::SetHeadOffset(size_t offset) {
   head_offset_ = offset;
   size_t child_offset = head_offset_;
@@ -92,13 +99,27 @@ void MemoryBlock::Resize() {
   } else {
     size_t block_size = (child_block_size > *iter) ? child_block_size : *iter;
     if ((block_size > 0) && (block_size % MEM_ALIGN_SIZE != 0)) {
-      block_size = (block_size + MEM_ALIGN_SIZE - 1) / MEM_ALIGN_SIZE * MEM_ALIGN_SIZE;
+      AlignMemOffset(block_size);
     }
     block_size_ = block_size;
     if (last_continuous_block_) {
       block_size_ += MEM_ALIGN_SIZE;
     }
   }
+}
+
+size_t MemoryBlock::AlignSize() const {
+  size_t align_block_size = 0;
+  auto iter = std::max_element(real_size_list_.begin(), real_size_list_.end());
+  if (iter == real_size_list_.end()) {
+    GELOGW("real_size_list_ is empty");
+  } else {
+    align_block_size = *iter;
+    if ((align_block_size > 0) && (align_block_size % MEM_ALIGN_SIZE != 0)) {
+      AlignMemOffset(align_block_size);
+    }
+  }
+  return align_block_size;
 }
 
 bool MemoryBlock::IsSameLabel(std::string &first_batch_label) {
@@ -133,31 +154,69 @@ bool MemoryBlock::IsSameLabel(std::string &first_batch_label) {
 }
 
 bool CanNotLifeReuse(MemoryBlock *block) {
-  if ((block == nullptr) || !block->reuse_mem_ || block->deleted_block_ || block->continuous_block_) {
+  if ((block == nullptr) || !block->reuse_mem_ || block->deleted_block_) {
     return true;
   }
   return false;
 }
 
-void MemoryBlock::AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life) {
-  if (CanNotLifeReuse(this) || CanNotLifeReuse(block)) {
-    return;
+void MemoryBlock::AddContinuousLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life) {
+  // continuous memory case:only real_size is maximum can be reused and only one continuous memory in one block
+  auto it_block = std::max_element(std::begin(block->NoAlignSizeList()), std::end(block->NoAlignSizeList()));
+  auto it_this = std::max_element(std::begin(NoAlignSizeList()), std::end(NoAlignSizeList()));
+  if (it_block != std::end(block->NoAlignSizeList()) && it_this != std::end(NoAlignSizeList())) {
+    if ((continuous_block_ && block->continuous_block_) || (continuous_block_ && (*it_this < *it_block)) ||
+        (block->continuous_block_ && (*it_this > *it_block))) {
+      GELOGD("Conflict current block size:%zu continuous:%d, reuse block max size:%zu continuous:%d", *it_this,
+             continuous_block_, *it_block, block->continuous_block_);
+      return;
+    }
   }
+
   MemoryBlock *parent = nullptr;
   MemoryBlock *child = nullptr;
   // merge small block to large block
   if (block->GetDependLifeBegin(stream_id_, total_node_depend_stream_life) > GetLifeEnd()) {
-    if ((child_offset_ + block->block_size_) <= block_size_) {
-      parent = this;
-      child = block;
-    } else if ((block->child_offset_ + block_size_) <= block->block_size_) {
+    if ((block->child_offset_ + AlignSize()) <= *it_block) {
       parent = block;
       child = this;
     }
   }
   if ((parent != nullptr) && (child != nullptr) && child->child_blocks_.empty()) {
     parent->child_blocks_.emplace_back(child);
-    parent->child_offset_ += child->block_size_;
+    parent->child_offset_ += child->AlignSize();
+    child->deleted_block_ = true;
+    GELOGI(
+      "Add continuous block[%p size:%zu, stream id:%ld life time[begin:%zu, end:%zu]] to"
+      " block[%p size:%zu, stream id:%ld, life time[begin:%zu, end:%zu]]",
+      child, child->block_size_, child->stream_id_, child->GetLifeBegin(), child->GetLifeEnd(), parent,
+      parent->block_size_, parent->stream_id_, parent->GetLifeBegin(), parent->GetLifeEnd());
+  }
+}
+
+void MemoryBlock::AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life) {
+  if (CanNotLifeReuse(this) || CanNotLifeReuse(block)) {
+    return;
+  }
+  if (block->continuous_block_) {
+    AddContinuousLifeReuseBlock(block, total_node_depend_stream_life);
+    return;
+  }
+  MemoryBlock *parent = nullptr;
+  MemoryBlock *child = nullptr;
+  // merge small block to large block
+  if (block->GetDependLifeBegin(stream_id_, total_node_depend_stream_life) > GetLifeEnd()) {
+    if ((child_offset_ + block->AlignSize()) <= AlignSize()) {
+      parent = this;
+      child = block;
+    } else if ((block->child_offset_ + AlignSize()) <= block->AlignSize()) {
+      parent = block;
+      child = this;
+    }
+  }
+  if ((parent != nullptr) && (child != nullptr) && child->child_blocks_.empty()) {
+    parent->child_blocks_.emplace_back(child);
+    parent->child_offset_ += child->AlignSize();
     child->deleted_block_ = true;
     GELOGI(
       "Add block[%p size:%zu, stream id:%ld life time[begin:%zu, end:%zu]] to"
@@ -431,7 +490,7 @@ size_t GetBlockSize(size_t size, const vector<int64_t> &ranges) {
   }
 
   GELOGW("Memory needed size:%zu is beyond the biggest block in memory ranges.", size);
-  return 0;
+  return size;
 }
 
 bool IsDirectOutputNode(const NodePtr &node, int idx) {
@@ -465,34 +524,8 @@ void ReduceReusableBlockCount(const MemoryBlock &mem_block, map<string, uint64_t
 }
 
 bool CanReuseBySize(const map<string, uint64_t> &reusable_block_counts, const MemoryBlock &reusable_block,
-                    size_t block_size, size_t real_size, bool continuous, int64_t atomic_addr_clean_id) {
+                    size_t block_size, size_t real_size, bool continuous) {
   bool can_reuse = false;
-
-  // If node is before atomic_addr_clean node, the continus memory can't be reused.
-  if (!reusable_block.NodeTypeIndexList().empty()) {
-    auto node = reusable_block.NodeTypeIndexList()[0].node;
-    if (node != nullptr) {
-      auto op_desc = node->GetOpDesc();
-      if (op_desc != nullptr) {
-        if ((op_desc->GetId() < atomic_addr_clean_id) && continuous) {
-          return false;
-        }
-      }
-    }
-  }
-
-  // continuous memory case:only real_size is maximum can be reused and only one continuous memory in one block
-  if (continuous || reusable_block.continuous_block_) {
-    auto it =
-      std::max_element(std::begin(reusable_block.NoAlignSizeList()), std::end(reusable_block.NoAlignSizeList()));
-    if (it != std::end(reusable_block.NoAlignSizeList())) {
-      GE_IF_BOOL_EXEC((continuous && reusable_block.continuous_block_) || (continuous && (real_size < *it)) ||
-                        (reusable_block.continuous_block_ && (real_size > *it)),
-                      GELOGD("Conflict current block size:%zu continuous:%d, reuse block max size:%zu continuous:%d",
-                             real_size, continuous, *it, reusable_block.continuous_block_);
-                      return false;);
-    }
-  }
   if (reusable_block.Size() == block_size) {
     can_reuse = true;
   } else {
@@ -683,6 +716,34 @@ void BlockMemAssigner::PrintSymbolMap() {
   }
 }
 
+bool BlockMemAssigner::IsContinuousOutput(const NodePtr &n) {
+  if (n == nullptr) {
+    GELOGE(FAILED, "Node is null.");
+    return false;
+  }
+
+  // Get the continuous output type of the node, default is false
+  bool is_output_continuous = false;
+  auto node_desc = n->GetOpDesc();
+  if (node_desc == nullptr) {
+    GELOGE(FAILED, "Node[%s] nodedesc is null.", n->GetName().c_str());
+    return false;
+  }
+
+  // If GetBool fail, is_output_continuous is false.
+  (void)ge::AttrUtils::GetBool(node_desc, ATTR_NAME_CONTINUOUS_OUTPUT, is_output_continuous);
+  if (is_output_continuous) {
+    if (n->GetOwnerComputeGraph() != nullptr) {
+      string graph_name = n->GetOwnerComputeGraph()->GetName();
+      GELOGI("%s name[%s] set continuous, output size[%u].", graph_name.c_str(), n->GetName().c_str(),
+             n->GetAllOutDataAnchorsSize());
+      return true;
+    }
+  }
+
+  return false;
+}
+
 MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, size_t no_align_size,
                                            MemoryType mem_type, const NodePtr &n, uint32_t out_index,
                                            const vector<bool> &workspace_reuse_flag, const bool is_op_reuse_mem,
@@ -699,7 +760,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
     is_reuse_memory = !node_op_desc->HasAttr(kL2FusionDynamicConvergeOp) && !node_op_desc->HasAttr(kOpNoReuseMem) &&
                       reuse_mem_flag && is_op_reuse_mem && (IsPreReuse(n, out_index));
     auto stream_id = node_op_desc->GetStreamId();
-    if (is_reuse_memory) {
+    if (is_reuse_memory && !continuous) {
       for (auto it = reusable_blocks_[stream_id].begin(); it != reusable_blocks_[stream_id].end(); ++it) {
         MemoryBlock *reusable_block = *it;
         if (!IsPostReuse(reusable_block)) {
@@ -709,8 +770,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
         }
 
         // A node can reuse blocks of the same stream and preorder streams
-        auto id = GetAtomicAddrCleanId();
-        if (CanReuseBySize(reusable_block_counts_, *reusable_block, block_size, real_size, continuous, id)) {
+        if (CanReuseBySize(reusable_block_counts_, *reusable_block, block_size, real_size, continuous)) {
           reusable_block->AddNodeTypeIndex({n, mem_type, out_index, false}, real_size, no_align_size);
           if (mem_type == kOutput) {
             auto iter = anchor_to_symbol_.find(NodeIndexIO(n, out_index, kOut).ToString());
@@ -747,6 +807,47 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
     }
   }
   memory_blocks_.emplace_back(block);
+  return block;
+}
+
+MemoryBlock *BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges,
+                                                     const bool is_op_reuse_mem) {
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr, return nullptr, "input node is null.");
+  auto node_op_desc = n->GetOpDesc();
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node_op_desc == nullptr, return nullptr, "node_op_desc is null.");
+  MemoryBlock *block = nullptr;
+  int64_t total_size = 0;
+  for (uint32_t index = 0; index < static_cast<uint32_t>(node_op_desc->GetOutputsSize()); index++) {
+    auto output_op_desc = node_op_desc->GetOutputDescPtr(index);
+    if (output_op_desc == nullptr) {
+      return nullptr;
+    }
+    int64_t size = 0;
+    if (ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS) {
+      GELOGI("Get size failed");
+      return nullptr;
+    }
+    size_t align_size = static_cast<size_t>(size);
+    AlignMemOffset(align_size);
+    total_size += align_size;
+
+    // only apply total size in first block
+    if (index != 0) {
+      zero_memory_list_.emplace_back(n, kOutput, index);
+    }
+  }
+
+  auto block_size = GetBlockSize(total_size, ranges);
+  GELOGI("Node[%s] continuous out memory size[%ld] block size[%zu]", node_op_desc->GetName().c_str(), total_size,
+         block_size);
+
+  vector<bool> workspace_reuse_flag;
+  block = ApplyMemory(block_size, total_size, total_size, kOutput, n, 0, workspace_reuse_flag, is_op_reuse_mem, true);
+  if (block != nullptr) {
+    // hccl task need align header and tail
+    block->first_continuous_block_ = true;
+    block->last_continuous_block_ = true;
+  }
   return block;
 }
 
@@ -991,6 +1092,10 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   // Allocate memory for the current node and release node memory of the same size in the workspace
   GE_IF_BOOL_EXEC(ge_disable_reuse_mem_env_ != "1",
                   ReleaseMemorys(stream_workspace_blocks_[stream_id], reusable_blocks_[stream_id]);)
+  if (IsContinuousOutput(node)) {
+    (void)ApplyContinuousMemory(node, ranges, is_op_reuse_mem_);
+    return SUCCESS;
+  }
   for (uint32_t i = 0; i < static_cast<uint32_t>(op_desc->GetOutputsSize()); i++) {
     int64_t size = 0;
     auto output_op_desc = op_desc->GetOutputDescPtr(i);
@@ -1017,7 +1122,8 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
       continue;
     }
     // atomic can't be reused
-    if (is_op_reuse_mem_ && out_node_set_continuous_input && is_atomic) {
+    bool need_change = is_op_reuse_mem_ && out_node_set_continuous_input && is_atomic;
+    if (need_change) {
       is_op_reuse_mem_ = false;
     }
     MemoryBlock *mem_block = ApplyOutMemory(node, i, ranges, is_op_reuse_mem_, out_node_set_continuous_input);
@@ -1225,10 +1331,12 @@ static bool CompareBlockIndex(MemoryBlock *left, MemoryBlock *right) {
 /// @param [in] input blocks need continuous
 /// @param [out] blocks after continuous order
 /// @param [in/out] blocks ordered
+/// @param [in] input or output
 ///
 void ReAssignContinuousBlocks(const std::vector<MemoryBlock *> &org_blocks,
                               const std::map<MemoryBlock *, uint32_t> block_map,
-                              std::vector<MemoryBlock *> &dest_blocks, std::vector<MemoryBlock *> &continuous_blocks) {
+                              std::vector<MemoryBlock *> &dest_blocks, std::vector<MemoryBlock *> &continuous_blocks,
+                              const std::string &type) {
   for (auto &memory_block : org_blocks) {
     if (memory_block == nullptr || memory_block->deleted_block_) {
       continue;
@@ -1245,7 +1353,7 @@ void ReAssignContinuousBlocks(const std::vector<MemoryBlock *> &org_blocks,
   for (auto &memory_block : continuous_blocks) {
     GE_IF_BOOL_EXEC(memory_block == nullptr, continue);
 
-    GELOGI("Block continuous input index:%d", memory_block->input_index_);
+    GELOGI("Block continuous %s index:%d", type.c_str(), memory_block->input_index_);
     count++;
     if (count == 1) {
       memory_block->first_continuous_block_ = true;
@@ -1280,7 +1388,7 @@ void BlockMemAssigner::AssignContinuousBlocks() {
              continuous_block_map.size(), continuous_blocks.size());
       continue;
     }
-    ReAssignContinuousBlocks(memory_blocks_, continuous_block_map, dest_memory_blocks, continuous_blocks);
+    ReAssignContinuousBlocks(memory_blocks_, continuous_block_map, dest_memory_blocks, continuous_blocks, "input");
     memory_blocks_.swap(dest_memory_blocks);
   }
 }
@@ -1292,14 +1400,25 @@ void BlockMemAssigner::ReuseBlocksByLifeTime(size_t range_size) {
   }
   for (size_t i = 0; i < memory_blocks_.size(); ++i) {
     auto parent = memory_blocks_[i];
-    if (parent == nullptr || parent->deleted_block_) {
+    if (parent == nullptr || parent->deleted_block_ || parent->continuous_block_) {
       continue;
     }
     if (parent->reuse_mem_ && !IsPostReuse(parent)) {
       parent->reuse_mem_ = false;
     }
     for (size_t j = i + 1; j < memory_blocks_.size(); ++j) {
-      parent->AddLifeReuseBlock(memory_blocks_[j], total_node_depend_stream_life_);
+      auto child = memory_blocks_[j];
+      if (child == nullptr) {
+        continue;
+      }
+      // If node is before atomic_addr_clean node, the continus memory can't be reused.
+      if (!parent->NodeTypeIndexList().empty() && child->continuous_block_) {
+        auto node = parent->NodeTypeIndexList()[0].node;
+        if (node == nullptr || node->GetOpDesc() == nullptr || (node->GetOpDesc()->GetId() < GetAtomicAddrCleanId())) {
+          continue;
+        }
+      }
+      parent->AddLifeReuseBlock(child, total_node_depend_stream_life_);
     }
   }
 }
@@ -1450,8 +1569,8 @@ Status BlockMemAssigner::Assign() {
 
 bool BlockMemAssigner::CheckIsZeroMemNodeType(const string &node_type) const {
   return (node_type == VARIABLE) || (node_type == CONSTANT) || (node_type == MULTISHAPE) ||
-         (node_type == HCOMBROADCAST) || (node_type == HCOMALLREDUCE) || (node_type == CONSTANTOP) ||
-         (node_type == ASSIGNADD) || (node_type == ASSIGNSUB) || (node_type == ASSIGN) || (node_type == HVDWAIT) ||
-         (node_type == HVDCALLBACKBROADCAST) || (node_type == HVDCALLBACKALLREDUCE);
+         (node_type == HCOMBROADCAST) || (node_type == CONSTANTOP) || (node_type == ASSIGNADD) ||
+         (node_type == ASSIGNSUB) || (node_type == ASSIGN) || (node_type == HVDWAIT) ||
+         (node_type == HVDCALLBACKBROADCAST);
 }
 }  // namespace ge

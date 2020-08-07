@@ -54,6 +54,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "helper/om_file_helper.cc"
         "math/fp16_math.cc"
         "model_parser/base.cc"
+#        "model_parser/graph_parser_util.cc"
         "model_saver.cc"
         "op/attr_value_util.cc"
         "op/ge_op_utils.cc"

@@ -28,14 +28,15 @@
 #include "common/helper/model_helper.h"
 #include "common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
-#include "common/types.h"
 #include "common/properties_manager.h"
+#include "common/types.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/load/new_model_manager/aipp_utils.h"
 #include "graph/load/new_model_manager/data_dumper.h"
 #include "graph/load/new_model_manager/data_inputer.h"
 #include "graph/load/new_model_manager/model_utils.h"
-#include "graph/load/new_model_manager/aipp_utils.h"
+#include "graph/load/new_model_manager/zero_copy_offset.h"
 #include "graph/load/new_model_manager/zero_copy_task.h"
 #include "graph/model.h"
 #include "graph/node.h"
@@ -285,11 +286,20 @@ class DavinciModel {
   /// @ingroup ge
   /// @brief Get dynamic batch_info
   /// @param [out] batch_info
+  /// @param [out] dynamic_type
   /// @return execute result
   ///
-  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info) const;
+  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) const;
 
-  void GetCurShape(std::vector<int64_t> &batch_info);
+  ///
+  /// @ingroup ge
+  /// @brief Get combined dynamic dims info
+  /// @param [out] batch_info
+  /// @return None
+  ///
+  void GetCombinedDynamicDims(std::vector<std::vector<int64_t>> &batch_info) const;
+
+  void GetCurShape(std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
   void GetModelAttr(std::vector<std::string> &dynamic_output_shape_info);
 
@@ -416,7 +426,7 @@ class DavinciModel {
   void SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<void *> &outside_addrs, const void *info, void *args,
                        size_t size, size_t offset);
 
-  void SetDynamicSize(const std::vector<uint64_t> &batch_num);
+  void SetDynamicSize(const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
 
   bool GetL1FusionEnableOption() { return is_l1_fusion_enable_; }
 
@@ -456,6 +466,9 @@ class DavinciModel {
     void *cur_args = static_cast<char *>(args_) + offset;
     return cur_args;
   }
+  void SetTotalIOAddrs(vector<void *> &io_addrs) {
+    total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
+  }
   void SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size);
   int64_t GetFixedAddrsSize(string tensor_name);
   void *GetCurrentFixedAddr(int64_t offset) const {
@@ -474,7 +487,8 @@ class DavinciModel {
   Status MallocKnownArgs();
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
-  Status UpdateKnownZeroCopyAddr(vector<void *> &io_addrs, uint32_t args_offset);
+  Status UpdateKnownZeroCopyAddr();
+  void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
   Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
@@ -513,22 +527,6 @@ class DavinciModel {
 
   ///
   /// @ingroup ge
-  /// @brief Save Data address info for ZeroCopy.
-  /// @param [in] const std::vector<void *> &outside_addrs
-  /// @return None.
-  ///
-  void SetInputOutsideAddr(const std::vector<void *> &outside_addrs);
-
-  ///
-  /// @ingroup ge
-  /// @brief Save NetOutput address info for ZeroCopy.
-  /// @param [in] const std::vector<void *> &outside_addrs
-  /// @return None.
-  ///
-  void SetOutputOutsideAddr(const std::vector<void *> &outside_addrs);
-
-  ///
-  /// @ingroup ge
   /// @brief Copy Check input size and model op size.
   /// @param [in] const int64_t &input_size: input size.
   /// @param [in] const int64_t &op_size: model op size.
@@ -564,7 +562,7 @@ class DavinciModel {
   /// @param [in] batch_label: batch label for multi-batch scenes
   /// @return SUCCESS handle successfully / others handle failed
   ///
-  Status UpdateIoTaskArgs(const map<uint32_t, pair<int64_t, void *>> &data_info, bool is_input,
+  Status UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                           const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label);
 
   Status CopyInputData(const InputData &input_data, bool device_data = false);
@@ -706,8 +704,7 @@ class DavinciModel {
   ///
   Status BindInputQueue();
 
-  Status CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
-                              std::map<const void *, std::vector<void *>> &outside_addrs);
+  Status CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list, std::map<const void *, ZeroCopyOffset> &outside_addrs);
 
   ///
   /// @ingroup ge
@@ -816,8 +813,12 @@ class DavinciModel {
 
   vector<OpDescPtr> variable_op_list_;
 
-  std::map<uint32_t, std::pair<int64_t, void *>> input_data_info_;   // Virtual address from Data output.
-  std::map<uint32_t, std::pair<int64_t, void *>> output_data_info_;  // Virtual address from NetOutput input.
+  std::map<uint32_t, ZeroCopyOffset> new_input_data_info_;
+  std::map<uint32_t, ZeroCopyOffset> new_output_data_info_;
+  std::map<const void *, ZeroCopyOffset> new_input_outside_addrs_;
+  std::map<const void *, ZeroCopyOffset> new_output_outside_addrs_;
+
+  std::vector<void *> real_virtual_addrs_;
 
   // output op: save cce op actual needed memory size
   vector<int64_t> output_memory_size_list_;
@@ -849,9 +850,7 @@ class DavinciModel {
   std::mutex outside_addrs_mutex_;
   std::vector<ZeroCopyTask> zero_copy_tasks_;  // Task used Data or NetOutput addr.
   std::set<const void *> copy_only_addrs_;     // Address need copy to original place.
-  // {node_addr, {addr_in_task_args}}
-  std::map<const void *, std::vector<void *>> input_outside_addrs_;   // Key is virtual address from Data.
-  std::map<const void *, std::vector<void *>> output_outside_addrs_;  // Key is virtual address from NetOutput.
+
   // {op_id, batch_label}
   std::map<int64_t, std::string> zero_copy_op_id_batch_label_;
   // {batch_label, addrs}
@@ -920,8 +919,13 @@ class DavinciModel {
   int64_t total_fixed_addr_size_ = 0;
   std::map<const void *, void *> knonw_input_data_info_;
   std::map<const void *, void *> knonw_output_data_info_;
+  vector<void *> total_io_addrs_;
+  vector<void *> orig_total_io_addrs_;
+  bool base_addr_not_changed_ = false;
 
   vector<vector<int64_t>> batch_info_;
+  std::vector<std::vector<int64_t>> combined_batch_info_;
+  int32_t dynamic_type_ = 0;
 
   vector<uint64_t> batch_size_;
   // key: input tensor name, generally rts op;

@@ -103,26 +103,32 @@ void DynamicShapePartitioner::PruneUniqueClusters() {
     if (unique_clusters_.count(cluster) != 0) {
       continue;
     }
-    unique_clusters_.insert(cluster);
+    if (unique_clusters_.insert(cluster).second) {
+      sorted_unique_clusters_.emplace_back(cluster);
+    }
   }
+  auto comp_func = [](std::shared_ptr<Cluster> clu_a, std::shared_ptr<Cluster> clu_b) -> bool {
+    return clu_a->Id() < clu_b->Id();
+  };
+  std::sort(sorted_unique_clusters_.begin(), sorted_unique_clusters_.end(), comp_func);
 }
 
 Status DynamicShapePartitioner::BuildPartitionFrame() {
-  for (const auto &cluster : unique_clusters_) {
+  for (const auto &cluster : sorted_unique_clusters_) {
     REQUIRE_SUCCESS(cluster->BuildFrame(), "Failed build frame of cluster[%lu].", cluster->Id());
   }
   return SUCCESS;
 }
 
 Status DynamicShapePartitioner::CombinePartitionFrame() {
-  for (const auto &cluster : unique_clusters_) {
+  for (const auto &cluster : sorted_unique_clusters_) {
     REQUIRE_SUCCESS(cluster->CombinePartitionFrame(), "Failed combine frame of cluster[%lu].", cluster->Id());
   }
   return SUCCESS;
 }
 
 Status DynamicShapePartitioner::BuildPartitionSubgraph() {
-  for (const auto &cluster : unique_clusters_) {
+  for (const auto &cluster : sorted_unique_clusters_) {
     REQUIRE_SUCCESS(cluster->BuildPartitionSubgraph(), "Failed build subgraph of cluster[%lu].", cluster->Id());
   }
   return SUCCESS;
@@ -171,6 +177,7 @@ void DynamicShapePartitioner::ClearResource() {
   node_2_cluster_.clear();
   ordered_cluster_.clear();
   unique_clusters_.clear();
+  sorted_unique_clusters_.clear();
   unknown_shape_nodes_.clear();
   root_graph_.reset();
 }
@@ -220,8 +227,8 @@ Status DynamicShapePartitioner::TopologicalSortClusters() {
   std::queue<ClusterPtr> ready_clusters;
   std::unordered_map<ClusterPtr, size_t> cluster_pending_count;
   std::unordered_set<ClusterPtr> seen_clusters;
-  for (auto &iter : node_2_cluster_) {
-    auto cluster = iter.second;
+  for (auto &node : root_graph_->GetDirectNode()) {
+    auto &cluster = node_2_cluster_[node];
     if (seen_clusters.count(cluster) != 0) {
       continue;
     }
@@ -756,6 +763,9 @@ Status Cluster::BuildPartitionSubgraph() {
     REQUIRE_GRAPH_SUCCESS(data_op->AddOutputDesc(input_desc), "Failed add output desc.");
     REQUIRE(AttrUtils::SetInt(data_op, ATTR_NAME_PARENT_NODE_INDEX, parent_node_index),
             "Failed set parent_node_index on subgraph data node.");
+    bool is_unknown_shape = IsUnknownShape();
+    REQUIRE(AttrUtils::SetBool(data_op, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape),
+            "Failed set _is_unknown_shape flag on data op %s.", data_op->GetName().c_str());
     auto data_node = subgraph_->AddNode(data_op);
     REQUIRE_NOT_NULL(data_node, "Failed add data node to subgraph.");
     REQUIRE_GRAPH_SUCCESS(data_node->SetOwnerComputeGraph(subgraph_), "Failed set owner graph of data node.");
@@ -769,6 +779,9 @@ Status Cluster::BuildPartitionSubgraph() {
   }
   auto net_output_op = MakeShared<OpDesc>(subgraph_->GetName() + "_" + NODE_NAME_NET_OUTPUT, ge::NETOUTPUT);
   REQUIRE_NOT_NULL(net_output_op, "Failed new memory for netoutput op.");
+  bool is_unknown_shape = IsUnknownShape();
+  REQUIRE(AttrUtils::SetBool(net_output_op, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape),
+          "Failed set _is_unknown_shape flag on net_output_op %s.", net_output_op->GetName().c_str());
   for (size_t i = 0; i < outputs_.size(); ++i) {
     GeTensorDesc input_desc;
     REQUIRE_GRAPH_SUCCESS(net_output_op->AddInputDesc(input_desc), "Failed add input desc.");

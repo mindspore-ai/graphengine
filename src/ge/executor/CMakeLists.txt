@@ -60,6 +60,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../graph/load/new_model_manager/task_info/task_info.cc"
         "../graph/load/new_model_manager/tbe_handle_store.cc"
         "../graph/load/new_model_manager/zero_copy_task.cc"
+        "../graph/load/new_model_manager/zero_copy_offset.cc"
         "../graph/manager/graph_caching_allocator.cc"
         "../graph/manager/graph_manager_utils.cc"
         "../graph/manager/graph_mem_allocator.cc"

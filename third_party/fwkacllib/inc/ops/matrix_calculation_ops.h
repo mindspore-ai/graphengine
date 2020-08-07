@@ -167,50 +167,6 @@ REG_OP(BatchMatMul)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(BatchMatMul)
 
-REG_OP(MeanCCE)
-    .INPUT(x, TensorType::ALL())
-    .INPUT(indices, TensorType::ALL())
-    .OUTPUT(y, TensorType::ALL())
-    .ATTR(keep_dims, Bool, false)
-    .ATTR(value1, ListInt, {})
-    .ATTR(mode, Int, 3)                 // 0:max pooling or 1:avg pooling
-    .ATTR(pad_mode, Int, 0)
-    .ATTR(global_pooling, Bool, true)  // tensorflow have no attr, set default value
-    .ATTR(window, ListInt, {1,1})      // kernel size
-    .ATTR(pad, ListInt, {0,0,0,0})     // pad size
-    .ATTR(stride, ListInt, {1,1})      // stride size
-    .ATTR(ceil_mode, Int, 0)
-    .ATTR(data_mode, Int, 1)
-    .ATTR(nan_opt, Int, 0)
-    .ATTR(fomart, Int, 0)
-    .OP_END_FACTORY_REG(MeanCCE)
-
-REG_OP(MeanGrad)
-    .INPUT(x, TensorType::ALL())
-    .OUTPUT(y, TensorType::ALL())
-    .ATTR(mode, Int, 1)                 // 0:max pooling or 1:avg pooling
-    .ATTR(pad_mode, Int, 0)
-    .ATTR(global_pooling, Bool, false)
-    .ATTR(window, ListInt, {1,1})      // kernel size
-    .ATTR(pad, ListInt, {0,0,0,0})     // pad size
-    .ATTR(stride, ListInt, {1,1})      // stride size
-    .ATTR(ceil_mode, Int, 0)
-    .ATTR(data_mode, Int, 1)
-    .ATTR(nan_opt, Int, 0)
-    .ATTR(mean_grad_output_shape_value, ListInt, {1,1,1,1})
-    .ATTR(mean_grad_output_shape_format, Int, 1) //must be NHWC
-    .OP_END_FACTORY_REG(MeanGrad)
-
-REG_OP(MatMulCCE)
-    .INPUT(x1, TensorType({DT_FLOAT}))
-    .INPUT(x2, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(x3, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
-    .ATTR(transpose_a, Bool, false)
-    .ATTR(transpose_b, Bool, false)
-    .ATTR(has_bias, Bool, false)
-    .OP_END_FACTORY_REG(MatMulCCE)
-
 /**
 *@brief Computes half the L2 norm of a tensor without the sqrt.
 
@@ -673,8 +629,9 @@ REG_OP(DiagPart)
 
 *@par Attributes:
 *@li num_output: Reserved.
-*@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
-*@li axis: Optional. A int. 1 or 2.
+*@li transpose: A bool, specifying weight whether to transpose, either "true" or "false". Defaults to "false".
+*@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
+ * The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
 *@li offset_x: Reserved.
 
 *@par Outputs:

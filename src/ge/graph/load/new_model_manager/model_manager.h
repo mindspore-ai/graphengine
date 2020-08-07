@@ -187,9 +187,19 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @brief Get dynamic batch_info
   /// @param [in] model_id
   /// @param [out] batch_info
+  /// @param [out] dynamic_type
   /// @return execute result
   ///
-  ge::Status GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+  ge::Status GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
+                                 int32_t &dynamic_type);
+  ///
+  /// @ingroup ge
+  /// @brief Get combined dynamic dims info
+  /// @param [in] model_id
+  /// @param [out] batch_info
+  /// @return execute result
+  ///
+  ge::Status GetCombinedDynamicDims(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
   ///
   /// @ingroup ge
@@ -215,13 +225,13 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
                                                std::vector<uint32_t> &inputFormats,
                                                std::vector<uint32_t> &outputFormats);
 
-  ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info);
+  ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
   ge::Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
   ge::Status SetDevice(int32_t deviceId) const;
 
-  ge::Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num);
+  ge::Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
 
   ///
   /// @ingroup domi_ome

@@ -69,38 +69,10 @@ void AttachStreamLabelPass::FindNodes(const ComputeGraphPtr &graph) {
 
   for (const auto &node : stream_switch_nodes_) {
     for (const auto &out_ctrl_node : node->GetOutControlNodes()) {
-      MarkHeadNodes(out_ctrl_node, node);
+      GELOGD("branch_head_node %s of stream_switch %s.", out_ctrl_node->GetName().c_str(), node->GetName().c_str());
+      branch_head_nodes_[out_ctrl_node] = node;
     }
     need_label_nodes_.emplace_back(node);
-  }
-}
-
-///
-/// @brief Mark node as head_node of stream_switch
-/// @param [in] node
-/// @param [in] stream_switch
-/// @return void
-///
-void AttachStreamLabelPass::MarkHeadNodes(const NodePtr &node, const NodePtr &stream_switch) {
-  static const std::set<std::string> bypass_type_set = {IDENTITY,  IDENTITYN,  CAST,   TRANSDATA,
-                                                        TRANSPOSE, TRANSPOSED, RESHAPE};
-  std::stack<NodePtr> nodes;
-  nodes.push(node);
-  std::set<NodePtr> visited;
-  while (!nodes.empty()) {
-    NodePtr cur_node = nodes.top();
-    nodes.pop();
-    if (visited.count(cur_node) > 0) {
-      continue;
-    }
-    GELOGD("branch_head_node %s of stream_switch %s.", cur_node->GetName().c_str(), stream_switch->GetName().c_str());
-    branch_head_nodes_[cur_node] = stream_switch;
-    if (bypass_type_set.count(cur_node->GetType()) > 0) {
-      for (const auto &out_node : cur_node->GetOutAllNodes()) {
-        nodes.push(out_node);
-      }
-    }
-    visited.insert(cur_node);
   }
 }
 

@@ -934,7 +934,6 @@ REG_OP(EncodeJpeg)
 
 /**
 *@brief PNG-encode an image.
-
 *@par Inputs:
 *Input image must be unit8 or uint16 type. Inputs include: \n
 *image: is a 3-D uint8 or uint16 Tensor of shape [height, width, channels] \n
@@ -990,6 +989,40 @@ REG_OP(ResizeBilinearV2D)
     .ATTR(half_pixel_centers, Bool, false)
     .REQUIRED_ATTR(size, ListInt)
     .OP_END_FACTORY_REG(ResizeBilinearV2D)
+
+/**
+*@brief Resizes "images" to "size" using bilinear interpolation and keep ration at the time.
+
+*@par Inputs:
+* One input:
+*images: An NC1HWC0 Tensor. \n
+* Must be one of the following types: float16, float32.
+
+*@par Attributes:
+*@li min_dimension: A required int32 attribute for the min dimension for the images.
+* No default value.
+*@li max_dimension: A required int32 attribute for the max dimension for the images.
+* No default value.
+*@li align_corners: An optional bool. If "true", the centers of the corner
+* pixels of the input and output tensors are aligned. Defaults to "false".
+*@li half_pixel_centers: indicates if the offset coordinates are normalized
+* Defaults to "false".
+
+*@par Outputs:
+*y: A Tensor with type float32 and the same format as input "images".
+
+*@attention Constraints:
+* The input "images" must be a tensor of 5 elements: images[2] <= 2048, \n
+images[3] <= 2048.
+*/
+REG_OP(KeepRationResizeBilinear)
+    .INPUT(images, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(min_dimension, Int)
+    .REQUIRED_ATTR(max_dimension, Int)
+    .ATTR(align_corners, Bool, false)
+    .ATTR(half_pixel_centers, Bool, false)
+    .OP_END_FACTORY_REG(KeepRationResizeBilinear)
 
 /**
 *@brief Resizes "images" to "size" using nearest neighbor interpolation.
@@ -1223,6 +1256,16 @@ REG_OP(CombinedNonMaxSuppression)
     .ATTR(pad_per_class, Bool, false)
     .ATTR(clip_boxes, Bool, true)
     .OP_END_FACTORY_REG(CombinedNonMaxSuppression)
+
+REG_OP(SpatialTransformerD)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OPTIONAL_INPUT(theta, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .ATTR(output_size, ListInt, {-1, -1})
+    .ATTR(default_theta, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .ATTR(use_default_theta, ListBool, {})
+    .OP_END_FACTORY_REG(SpatialTransformerD)
 
 }  // namespace ge
 

@@ -1004,9 +1004,8 @@ REG_OP(StridedSliceAssign)
 
 * @par Inputs:
 * Two inputs, including:
-* @li var: A mutable ND Tensor of type BasicType.
-* @li input_value: A mutable ND "Tensor" of type BasicType.
-
+* @li var: A mutable ND Tensor of the following types:int32, int16, float16, float32.
+* @li input_value: A mutable ND "Tensor" of the following types:int32, int16, float16, float32.
 
 * @par Attributes:
 * @li begin: A required list of ints.
@@ -1030,9 +1029,9 @@ REG_OP(StridedSliceAssign)
 * @see StridedSlice()
 */
 REG_OP(StridedSliceAssignD)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(var, TensorType(BasicType))
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
     .REQUIRED_ATTR(begin, ListInt)
     .REQUIRED_ATTR(end, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -1397,24 +1396,23 @@ REG_OP(UnsortedSegmentMin)
 * @brief Computes the minimum along segments of a tensor.
 
 * @par Inputs:
-* Three inputs, including:
-* @li x: A Tensor of type RealNumberType.
-* @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
+* Two inputs, including:
+* @li x: A Tensor of the following types:int32, int16, float16, float32.
+* @li segment_ids: A 1D Tensor of type int32, whose shape is a prefix
 * of "x.shape".
-* @li k: A Tensor.
 
 * @par Attributes:
 * num_segments: A required int32, specifying the number of distinct segment IDs.
 
 * @par Outputs:
-* y: A Tensor of type RealNumberType.
+* y: A Tensor.Must have the same type as input "x".
 
 * @see UnsortedSegmentProdD(),
 */
 REG_OP(UnsortedSegmentMinD)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .INPUT(segment_ids, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .REQUIRED_ATTR(num_segments, Int)
     .OP_END_FACTORY_REG(UnsortedSegmentMinD)
 
@@ -1447,24 +1445,23 @@ REG_OP(UnsortedSegmentProd)
 * @brief Computes the product along segments of a tensor.
 
 * @par Inputs:
-* Three inputs, including:
-* @li x: A Tensor of type RealNumberType.
-* @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
+* Two inputs, including:
+* @li x: A Tensor of the following types:int32, int16, float16, float32.
+* @li segment_ids: A 1D Tensor of type int32, whose shape is a prefix
 * of "x.shape".
-* @li k: A Tensor.
 
 * @par Attributes:
 * num_segments: An int32, specifying the number of distinct segment IDs.
 
 * @par Outputs:
-* y: A Tensor of type RealNumberType.
+* y: A Tensor.Must have the same type as input "x".
 
 * @see UnsortedSegmentMinD()
 */
 REG_OP(UnsortedSegmentProdD)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .INPUT(segment_ids, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .REQUIRED_ATTR(num_segments, Int)
     .OP_END_FACTORY_REG(UnsortedSegmentProdD)
 
@@ -1775,6 +1772,6 @@ REG_OP(CumulativeLogsumexpD)
     .ATTR(exclusive, Bool, false)
     .ATTR(reverse, Bool, false)
     .OP_END_FACTORY_REG(CumulativeLogsumexpD)
-
 } // namespace ge
+
 #endif // GE_OP_SELECTION_OPS_H

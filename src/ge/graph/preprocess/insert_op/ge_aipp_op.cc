@@ -24,6 +24,7 @@
 #include "common/dynamic_aipp.h"
 #include "common/ge/ge_util.h"
 #include "common/util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "external/graph/operator_factory.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -49,6 +50,16 @@
     if (aipp_params_->KEY##_size() > 0) {                                                       \
       (void)aipp_attrs.SetAttr(#KEY, GeAttrValue::CreateFrom<SAVE_TYPE>(aipp_params_->KEY(0))); \
     }                                                                                           \
+  } while (0)
+
+#define AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(expr, _status, errormsg)                  \
+  do {                                                                                   \
+    bool b = (expr);                                                                     \
+    if (!b) {                                                                            \
+      GELOGE(_status, errormsg);                                                         \
+      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+      return _status;                                                                    \
+    }                                                                                    \
   } while (0)
 
 namespace {
@@ -411,86 +422,87 @@ Status AippOp::SetDefaultParams() {
 
 Status AippOp::ValidateParams() {
   GE_CHECK_NOTNULL(aipp_params_);
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->aipp_mode() != domi::AippOpParams::undefined, PARAM_INVALID,
-                         "when insert AIPP op, aipp_mode must be configured as static or dynamic ");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->aipp_mode() != domi::AippOpParams::undefined, PARAM_INVALID,
+                                         "When insert AIPP op, aipp_mode must be configured as static or dynamic ");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->var_reci_chn_0_size() <= 1, PARAM_INVALID,
-                         "The parameter var_reci_chn_0 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->var_reci_chn_1_size() <= 1, PARAM_INVALID,
-                         "The parameter var_reci_chn_1 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->var_reci_chn_2_size() <= 1, PARAM_INVALID,
-                         "The parameter var_reci_chn_2 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->var_reci_chn_3_size() <= 1, PARAM_INVALID,
-                         "The parameter var_reci_chn_3 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_0_size() <= 1, PARAM_INVALID,
+                                         "The parameter var_reci_chn_0 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_1_size() <= 1, PARAM_INVALID,
+                                         "The parameter var_reci_chn_1 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_2_size() <= 1, PARAM_INVALID,
+                                         "The parameter var_reci_chn_2 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_3_size() <= 1, PARAM_INVALID,
+                                         "The parameter var_reci_chn_3 can not be configed repeatedly");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r0c0_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r0c0 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r0c1_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r0c1 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r0c2_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r0c2 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r0c0_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r0c0 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r0c1_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r0c1 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r0c2_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r0c2 can not be configed repeatedly");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r1c0_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r1c0 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r1c1_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r1c1 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r1c2_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r1c2 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r1c0_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r1c0 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r1c1_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r1c1 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r1c2_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r1c2 can not be configed repeatedly");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r2c0_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r2c0 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r2c1_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r2c1 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->matrix_r2c2_size() <= 1, PARAM_INVALID,
-                         "The parameter matrix_r2c2 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r2c0_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r2c0 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r2c1_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r2c1 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r2c2_size() <= 1, PARAM_INVALID,
+                                         "The parameter matrix_r2c2 can not be configed repeatedly");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->output_bias_0_size() <= 1, PARAM_INVALID,
-                         "The parameter output_bias_0 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->output_bias_1_size() <= 1, PARAM_INVALID,
-                         "The parameter output_bias_1 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->output_bias_2_size() <= 1, PARAM_INVALID,
-                         "The parameter output_bias_2 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->output_bias_0_size() <= 1, PARAM_INVALID,
+                                         "The parameter output_bias_0 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->output_bias_1_size() <= 1, PARAM_INVALID,
+                                         "The parameter output_bias_1 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->output_bias_2_size() <= 1, PARAM_INVALID,
+                                         "The parameter output_bias_2 can not be configed repeatedly");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->input_bias_0_size() <= 1, PARAM_INVALID,
-                         "The parameter input_bias_0 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->input_bias_1_size() <= 1, PARAM_INVALID,
-                         "The parameter input_bias_1 can not be configed repeatedly");
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->input_bias_2_size() <= 1, PARAM_INVALID,
-                         "The parameter input_bias_2 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_bias_0_size() <= 1, PARAM_INVALID,
+                                         "The parameter input_bias_0 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_bias_1_size() <= 1, PARAM_INVALID,
+                                         "The parameter input_bias_1 can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_bias_2_size() <= 1, PARAM_INVALID,
+                                         "The parameter input_bias_2 can not be configed repeatedly");
 
-  GE_CHK_BOOL_RET_STATUS(aipp_params_->input_edge_idx_size() <= 1, PARAM_INVALID,
-                         "The parameter input_edge_idx can not be configed repeatedly");
+  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_edge_idx_size() <= 1, PARAM_INVALID,
+                                         "The parameter input_edge_idx can not be configed repeatedly");
 
   const domi::AippOpParams::AippMode aipp_mode = aipp_params_->aipp_mode();
   if (aipp_mode == domi::AippOpParams::dynamic) {
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->max_src_image_size() > 0, PARAM_INVALID,
-                           "for dynamic AIPP params, max_src_image_size must greater than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
+      aipp_params_->max_src_image_size() > 0, PARAM_INVALID,
+      "For dynamic AIPP params, max_src_image_size must be set which number should be greater than 0");
   } else {
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->input_format() != domi::AippOpParams::UNDEFINED, PARAM_INVALID,
-                           "Input format of AIPP conf is undefined");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_format() != domi::AippOpParams::UNDEFINED, PARAM_INVALID,
+                                           "Input format of AIPP conf is undefined");
 
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->src_image_size_w() >= 0, PARAM_INVALID,
-                           "src_image_size_w must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->src_image_size_h() >= 0, PARAM_INVALID,
-                           "src_image_size_h must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->load_start_pos_w() >= 0, PARAM_INVALID,
-                           "load_start_pos_w must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->load_start_pos_h() >= 0, PARAM_INVALID,
-                           "load_start_pos_h must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->crop_size_w() >= 0, PARAM_INVALID,
-                           "crop_size_w must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->resize_output_w() >= 0, PARAM_INVALID,
-                           "resize_output_w must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->resize_output_h() >= 0, PARAM_INVALID,
-                           "resize_output_h must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->left_padding_size() >= 0, PARAM_INVALID,
-                           "left_padding_size must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->right_padding_size() >= 0, PARAM_INVALID,
-                           "right_padding_size must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->top_padding_size() >= 0, PARAM_INVALID,
-                           "top_padding_size must not be configed smaller than 0");
-    GE_CHK_BOOL_RET_STATUS(aipp_params_->bottom_padding_size() >= 0, PARAM_INVALID,
-                           "bottom_padding_size must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->src_image_size_w() >= 0, PARAM_INVALID,
+                                           "Src_image_size_w must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->src_image_size_h() >= 0, PARAM_INVALID,
+                                           "Src_image_size_h must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->load_start_pos_w() >= 0, PARAM_INVALID,
+                                           "Load_start_pos_w must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->load_start_pos_h() >= 0, PARAM_INVALID,
+                                           "Load_start_pos_h must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->crop_size_w() >= 0, PARAM_INVALID,
+                                           "Crop_size_w must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->resize_output_w() >= 0, PARAM_INVALID,
+                                           "Resize_output_w must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->resize_output_h() >= 0, PARAM_INVALID,
+                                           "Resize_output_h must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->left_padding_size() >= 0, PARAM_INVALID,
+                                           "Left_padding_size must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->right_padding_size() >= 0, PARAM_INVALID,
+                                           "Right_padding_size must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->top_padding_size() >= 0, PARAM_INVALID,
+                                           "Top_padding_size must not be configed smaller than 0");
+    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->bottom_padding_size() >= 0, PARAM_INVALID,
+                                           "Bottom_padding_size must not be configed smaller than 0");
   }
 
   return SUCCESS;

@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "graph/types.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
@@ -46,6 +47,9 @@ Status RankKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_outp
 
   const auto &input_shape = op_desc->MutableInputDesc(kRankDataInputIndex);
   GE_CHECK_NOTNULL(input_shape);
+  if (input_shape->GetShape().GetDims() == UNKNOWN_RANK) {
+    return NOT_CHANGED;
+  }
   auto ndims = input_shape->GetShape().GetDimNum();
   GeTensorDesc tensor_desc(op_desc->GetOutputDesc(0));
   GeTensorPtr output_ptr;

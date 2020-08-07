@@ -232,7 +232,7 @@
     rtError_t _rt_ret = (expr);                            \
     if (_rt_ret != RT_ERROR_NONE) {                        \
       DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
-      return ge::RT_FAILED;                                \
+      return RT_ERROR_TO_GE_STATUS(_rt_ret);               \
     }                                                      \
   } while (0);
 

@@ -42,10 +42,12 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/passes/memcpy_addr_async_pass.h"
 #include "init/gelib.h"
 #include "memory/memory_assigner.h"
 #include "omg/version.h"
 #include "register/op_registry.h"
+#include "graph/passes/set_input_output_offset_pass.h"
 
 using std::map;
 using std::set;
@@ -668,11 +670,35 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
   GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
 
+  // Add memcpy_addr_async node.
+  rtFeatureType_t feature_type = FEATURE_TYPE_MEMCPY;
+  int32_t feature_info = MEMCPY_INFO_SUPPORT_ZEROCOPY;
+  int64_t value = 0;
+  rtError_t rt_ret = rtGetRtCapability(feature_type, feature_info, &value);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtGetRtCapability failed.");
+    return RT_FAILED;
+  } else {
+    if (value == RT_CAPABILITY_SUPPORT) {
+      GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
+      MemcpyAddrAsyncPass memcpy_addr;
+      GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph_), "Add memcpy_addr_async node failed.");
+      GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
+    } else {
+      GELOGW("rtGetRtCapability not support memcpy_addr_async.");
+    }
+  }
+
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);
   GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_offset_, zero_copy_mem_size_),
                     "Assign Memory Failed!");
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
+
+  GE_TIMESTAMP_START(SetInputOutputOffset);
+  SetInputOutputOffsetPass input_output_offset;
+  GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_), "Set input output offset failed.");
+  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run.");
 
   // Compile single op in graph build stage
   GE_TIMESTAMP_START(CompileSingleOp);

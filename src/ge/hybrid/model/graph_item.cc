@@ -30,13 +30,10 @@ const vector<const NodeItem *> &GraphItem::GetInputNodes() const { return input_
 
 Status GraphItem::GetOutputDescList(vector<ConstGeTensorDescPtr> &output_desc_list) const {
   if (is_dynamic_) {
-    for (auto &node_and_idx : output_edges_) {
-      const auto &tensor_desc = node_and_idx.first->op_desc->MutableOutputDesc(node_and_idx.second);
-      GE_CHECK_NOTNULL(tensor_desc);
+    for (auto &tensor_desc : output_node_->op_desc->GetAllInputsDescPtr()) {
       output_desc_list.emplace_back(tensor_desc);
     }
   } else {
-    auto all_output_desc = output_node_->op_desc->GetAllOutputsDescPtr();
     for (auto &tensor_desc : output_node_->op_desc->GetAllOutputsDescPtr()) {
       output_desc_list.emplace_back(tensor_desc);
     }

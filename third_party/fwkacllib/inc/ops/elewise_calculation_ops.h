@@ -1100,12 +1100,6 @@ REG_OP(SqrtGrad)
     .OUTPUT(z, TensorType(UnaryDataType))
     .OP_END_FACTORY_REG(SqrtGrad)
 
-REG_OP(Multiply)
-    .INPUT(x, TensorType({DT_FLOAT,DT_UINT8,DT_INT8,DT_UINT16,DT_INT16,DT_INT32,DT_INT64,DT_DOUBLE,DT_FLOAT16}))
-    .INPUT(y, TensorType({DT_FLOAT,DT_UINT8,DT_INT8,DT_UINT16,DT_INT16,DT_INT32,DT_INT64,DT_DOUBLE,DT_FLOAT16}))
-    .OUTPUT(z, TensorType({DT_FLOAT,DT_UINT8,DT_INT8,DT_UINT16,DT_INT16,DT_INT32,DT_INT64,DT_DOUBLE,DT_FLOAT16}))
-    .OP_END_FACTORY_REG(Multiply)
-
 /**
 *@brief Returns x + y element-wise.
 *@par Inputs:
@@ -2861,22 +2855,19 @@ REG_OP(SquareSumAll)
 *@brief Confuse broadcast, addn and mul.
 
 *@par Inputs:
-*Five inputs, including:
-* @li x1: A Tensor. Must be one of the following types:int32 float16, float32.
+*Three inputs, including:
+* @li x1: A Tensor. Must be one of the following types:int32, int16, float16, float32.
 * @li x2: A Tensor of the same type as "x1".
 * @li x3: A Tensor of the same type as "x1".
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type as "x1".
-
-*@par Third-party framework compatibility:
-* Compatible with the TensorFlow operator LRN.
+* y: A Tensor. Has the same type as "x1".
 */
 REG_OP(FusedMulAddN)
-    .INPUT(x1, TensorType::NumberType())
-    .INPUT(x2, TensorType::NumberType())
-    .INPUT(x3, TensorType::NumberType())
-    .OUTPUT(y, TensorType::NumberType())
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
+    .INPUT(x3, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .OP_END_FACTORY_REG(FusedMulAddN)
 
 /**

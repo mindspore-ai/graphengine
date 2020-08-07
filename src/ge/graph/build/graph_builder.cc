@@ -37,21 +37,6 @@ const int32_t kInvalidPerfLevel = -1;
 namespace ge {
 GraphBuilder::GraphBuilder() : build_mode_(BuildMode::GEN_TASK_WITH_FUSION), hcom_parallel_(false) {}
 
-Status GraphBuilder::MarkGraph(ComputeGraphPtr &graph) {
-  GE_CHECK_NOTNULL(graph);
-  bool is_unknown_shape = false;
-  for (const auto &node : graph->GetDirectNode()) {
-    GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
-                      "Get node[%s] shape status failed!", node->GetName().c_str());
-    if (is_unknown_shape) {
-      break;
-    }
-  }
-  graph->SetGraphUnknownFlag(is_unknown_shape);
-  GELOGD("mark graph [%s] unknown status success! value is %d", graph->GetName().c_str(), is_unknown_shape);
-  return SUCCESS;
-}
-
 void GraphBuilder::SetOptions(const ge::GraphManagerOptions &options) {
   stream_max_parallel_num_ = options.stream_max_parallel_num;
   hcom_parallel_ = options.hcom_parallel;
@@ -277,14 +262,6 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                                                GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
                                                uint64_t session_id) {
   GELOGI("Start to build BuildForDynamicShape for dynamic shape.");
-  // mark unknown shape attr
-  for (auto &sub_graph : comp_graph->GetAllSubgraphs()) {
-    auto status = MarkGraph(sub_graph);
-    if (status != SUCCESS) {
-      GELOGE(FAILED, "mark graph failed!");
-      return status;
-    }
-  }
   // Update Root Graph Data size
   for (auto &node : comp_graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
@@ -297,11 +274,22 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
   }
   //
   for (auto &sub_graph : comp_graph->GetAllSubgraphs()) {
+    // exclude functional subgraph in known subgraph
+    if (sub_graph->GetParentGraph() != comp_graph && !sub_graph->GetParentGraph()->GetGraphUnknownFlag()) {
+      continue;
+    }
     if (sub_graph->GetGraphUnknownFlag()) {
       // unknown shape build flow
       GE_CHK_STATUS_RET(BuildForUnknownShapeGraph(sub_graph, ge_model_ptr, session_id),
                         "Build for unknown shape graph failed.");
     } else {
+      // reset functional subgraph parent graph as known subgraph
+      for (const auto &node : sub_graph->GetDirectNode()) {
+        for (const auto &sub_graph_name : node->GetOpDesc()->GetSubgraphInstanceNames()) {
+          auto sub_sub_graph = comp_graph->GetSubgraph(sub_graph_name);
+          GE_CHK_STATUS_RET(sub_graph->AddSubgraph(sub_sub_graph), "Failed add subgraph to known graph.");
+        }
+      }
       // known shape build flow
       GE_CHK_STATUS_RET(BuildForKnownShapeGraph(sub_graph, subgraph_ptr_list, ge_model_ptr, session_id),
                         "Build for known shape graph failed.");
@@ -450,6 +438,11 @@ Status GraphBuilder::CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc)
   GELOGI("Begin to calc dynamic shape graph data[%s] size.", op_desc->GetName().c_str());
   // data op only has one output anchor
   ge::GeTensorDesc output_desc = op_desc->GetOutputDesc(0);
+  if (output_desc.MutableShape().IsUnknownShape()) {
+    GELOGI("No need to update dynamic shape graph data output size for unknown shape data.");
+    return SUCCESS;
+  }
+
   int64_t output_size = 0;
   if (ge::TensorUtils::GetSize(output_desc, output_size) != SUCCESS) {
     GELOGW("Get size failed!");

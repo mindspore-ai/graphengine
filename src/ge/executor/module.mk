@@ -26,6 +26,7 @@ local_ge_executor_src_files :=  \
     ../graph/load/new_model_manager/data_inputer.cc \
     ../graph/load/new_model_manager/data_dumper.cc \
     ../graph/load/new_model_manager/zero_copy_task.cc \
+    ../graph/load/new_model_manager/zero_copy_offset.cc \
     ../graph/load/new_model_manager/task_info/task_info.cc                  \
     ../graph/load/new_model_manager/task_info/event_record_task_info.cc     \
     ../graph/load/new_model_manager/task_info/event_wait_task_info.cc       \
@@ -79,6 +80,7 @@ local_ge_executor_shared_library :=        \
     libslog                                \
     libmmpa                                \
     libgraph                               \
+    libregister                            \
     libmsprof                              \
 
 local_ge_executor_ldflags := -lrt -ldl     \
@@ -128,6 +130,7 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libslog                                \
     libmmpa                                \
     libgraph                               \
+    libregister                            \
     libmsprof                              \
 
 LOCAL_LDFLAGS += $(local_ge_executor_ldflags)
@@ -153,6 +156,7 @@ LOCAL_C_INCLUDES := $(local_ge_executor_c_include)
 LOCAL_STATIC_LIBRARIES := \
     libge_common \
     libgraph     \
+    libregister  \
     libprotobuf  \
 
 LOCAL_SHARED_LIBRARIES :=                  \
@@ -184,6 +188,7 @@ LOCAL_C_INCLUDES := $(local_ge_executor_c_include)
 LOCAL_STATIC_LIBRARIES := \
     libge_common \
     libgraph     \
+    libregister  \
     libprotobuf  \
 
 LOCAL_SHARED_LIBRARIES :=                  \

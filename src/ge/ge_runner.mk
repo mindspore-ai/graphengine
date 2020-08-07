@@ -78,6 +78,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/load/new_model_manager/task_info/task_info.cc \
     graph/load/new_model_manager/tbe_handle_store.cc \
     graph/load/new_model_manager/zero_copy_task.cc \
+    graph/load/new_model_manager/zero_copy_offset.cc    \
     graph/manager/graph_context.cc \
     graph/manager/graph_manager.cc \
     graph/manager/graph_manager_utils.cc \
@@ -98,10 +99,13 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/addn_pass.cc \
     graph/passes/aicpu_constant_folding_pass.cc \
     graph/passes/assert_pass.cc \
+    graph/passes/input_output_connection_identify_pass.cc \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
+    graph/passes/mark_graph_unknown_status_pass.cc \
     graph/partition/dynamic_shape_partition.cc \
     graph/passes/base_pass.cc \
+    graph/passes/bitcast_pass.cc \
     graph/passes/cast_remove_pass.cc \
     graph/passes/cast_translate_pass.cc \
     graph/passes/common_subexpression_elimination_pass.cc \
@@ -214,6 +218,9 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/variable_prepare_op_pass.cc \
     graph/passes/variable_ref_delete_op_pass.cc \
     graph/passes/variable_ref_useless_control_out_delete_pass.cc \
+    graph/passes/end_of_sequence_add_control_pass.cc \
+    graph/passes/memcpy_addr_async_pass.cc \
+    graph/passes/set_input_output_offset_pass.cc \
     graph/preprocess/graph_preprocess.cc \
     graph/preprocess/insert_op/ge_aipp_op.cc \
     graph/preprocess/insert_op/util_insert_aipp_op.cc \

@@ -295,14 +295,16 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
   if (op_desc == nullptr) {
     return GRAPH_FAILED;
   }
+  bool is_unknown_graph = node_ptr->GetOwnerComputeGraph()->GetGraphUnknownFlag();
+  if (is_unknown_graph) {
+    return GRAPH_SUCCESS;
+  }
   for (const auto &out_anchor : node_ptr->GetAllOutDataAnchors()) {
     auto output_tensor = op_desc->MutableOutputDesc(out_anchor->GetIdx());
     ge::TensorUtils::SetRealDimCnt(*output_tensor, static_cast<uint32_t>(output_tensor->GetShape().GetDims().size()));
-    bool is_unknown_graph = node_ptr->GetOwnerComputeGraph()->GetGraphUnknownFlag();
-    if (!is_unknown_graph) {
-      output_tensor->SetOriginShape(output_tensor->GetShape());
-      output_tensor->SetOriginDataType(output_tensor->GetDataType());
-    }
+    output_tensor->SetOriginShape(output_tensor->GetShape());
+    output_tensor->SetOriginDataType(output_tensor->GetDataType());
+
     GELOGD("node name is %s, origin shape is %ld, origin format is %s, origin data type is %s",
            node_ptr->GetName().c_str(), output_tensor->GetOriginShape().GetShapeSize(),
            TypeUtils::FormatToSerialString(output_tensor->GetOriginFormat()).c_str(),
@@ -321,8 +323,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
       GELOGI("Peer input opdesc name is %s, need to flush: shape size is %zu, datatype is %d, original datatype is %d",
              peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), output_tensor->GetShape().GetDimNum(),
              output_tensor->GetDataType(), output_tensor->GetOriginDataType());
-      peer_input_desc->SetShape(output_tensor->GetShape());
       peer_input_desc->SetOriginShape(output_tensor->GetOriginShape());
+      peer_input_desc->SetShape(output_tensor->GetShape());
       peer_input_desc->SetDataType(output_tensor->GetDataType());
       peer_input_desc->SetOriginDataType(output_tensor->GetOriginDataType());
       std::vector<std::pair<int64_t, int64_t>> shape_range;
@@ -337,6 +339,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
   }
   return GRAPH_SUCCESS;
 }
+
 bool NodeUtils::IsInNodesEmpty(const Node &node) {
   for (const auto &in_anchor : node.in_data_anchors_) {
     if (in_anchor != nullptr) {
@@ -446,6 +449,7 @@ std::string NodeUtils::GetNodeType(const Node &node) {
   (void)AttrUtils::GetStr(node.GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type);
   return type;
 }
+
 ComputeGraphPtr NodeUtils::GetSubgraph(const Node &node, uint32_t index) {
   auto op_desc = node.GetOpDesc();
   if (op_desc == nullptr) {
@@ -498,6 +502,14 @@ bool NodeUtils::IsSubgraphInput(const NodePtr &node) {
     return false;
   }
   if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
+    bool is_unknown_shape = false;
+    (void)AttrUtils::GetBool(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape);
+    if (is_unknown_shape) return false;
+  }
+
+  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE) &&
+      kCaseOpTypes.count(parent_op_desc->GetType()) == 0 && kWhileOpTypes.count(parent_op_desc->GetType()) == 0 &&
+      kForOpTypes.count(parent_op_desc->GetType()) == 0 && kIfOpTypes.count(parent_op_desc->GetType()) == 0) {
     return false;
   }
 
@@ -519,7 +531,16 @@ bool NodeUtils::IsSubgraphOutput(const NodePtr &node) {
   if (parent_op_desc == nullptr) {
     return false;
   }
+
   if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
+    bool is_unknown_shape = false;
+    (void)AttrUtils::GetBool(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape);
+    if (is_unknown_shape) return false;
+  }
+
+  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE) &&
+      kCaseOpTypes.count(parent_op_desc->GetType()) == 0 && kWhileOpTypes.count(parent_op_desc->GetType()) == 0 &&
+      kForOpTypes.count(parent_op_desc->GetType()) == 0 && kIfOpTypes.count(parent_op_desc->GetType()) == 0) {
     return false;
   }
 

@@ -349,7 +349,7 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
 
     GELOGD("[%s] Updating output tensor, index = %d, tensor = %s", graph_item_->GetName().c_str(), parent_output_index,
            outputs[i].DebugString().c_str());
-    task_context.SetOutput(parent_output_index, outputs[i]);
+    GE_CHK_STATUS_RET(task_context.SetOutput(parent_output_index, outputs[i]));
 
     // updating shapes. dynamic format/dtype is not supported.
     // It should be noted that even the subgraph is of known shape, it is also necessary to update parent output desc,

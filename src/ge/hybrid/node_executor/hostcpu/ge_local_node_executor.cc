@@ -62,7 +62,7 @@ Status RefInputTask::RefOneByOne(TaskContext &context) {
   for (uint32_t out_index = 0; out_index < output_num; ++out_index) {
     auto input = context.GetInput(out_index);
     GE_CHECK_NOTNULL(input);
-    context.SetOutput(out_index, *input);
+    GE_CHK_STATUS_RET(context.SetOutput(out_index, *input));
     GELOGD("node %s type %s output[%u] ref input[%u] addr=%p.", node_name_.c_str(), node_type_.c_str(), out_index,
            out_index, input->GetData());
   }
@@ -82,7 +82,7 @@ Status RefInputTask::RefByOrder(const std::vector<uint32_t> &ref_order, TaskCont
     auto ref_input_index = ref_order[out_index];
     auto input = context.GetInput(ref_input_index);
     GE_CHECK_NOTNULL(input);
-    context.SetOutput(out_index, *input);
+    GE_CHK_STATUS_RET(context.SetOutput(out_index, *input));
     GELOGD("node %s type %s output[%d] ref input[%u] addr=%p.", node_name_.c_str(), node_type_.c_str(), out_index,
            ref_input_index, input->GetData());
   }

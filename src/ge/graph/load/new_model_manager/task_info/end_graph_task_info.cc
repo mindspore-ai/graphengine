@@ -34,7 +34,7 @@ Status EndGraphTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
   if (ret != SUCCESS) {
     GELOGE(ret, "SetStream fail, stream_id:%u", task_def.stream_id());
-    return FAILED;
+    return ret;
   }
 
   model_ = davinci_model->GetRtModelHandle();
@@ -53,14 +53,14 @@ Status EndGraphTaskInfo::Distribute() {
     rtError_t rt_ret = rtEndGraphEx(model_, stream_, kDumpFlag);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rtEndGraphEx failed, ret: 0x%x", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   } else {
     GELOGI("Start to call rtEndGraph");
     rtError_t rt_ret = rtEndGraph(model_, stream_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rtEndGraph failed, ret: 0x%x", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
 
@@ -69,7 +69,7 @@ Status EndGraphTaskInfo::Distribute() {
   rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   task_id_ = task_id;
   stream_id_ = stream_id;

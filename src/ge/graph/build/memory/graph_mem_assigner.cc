@@ -293,7 +293,8 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
         } else if (is_loop_graph) {
           GE_CHK_STATUS_RET(SetLoopGraphAtomicAttr(node, mem_clean_start));
         } else {
-          GE_CHK_STATUS_RET(SetAtomicCleanAttr(nullptr, mem_clean_start, mem_clean_size), "SetAtomicCleanAttr failed.");
+          GE_CHK_STATUS_RET(SetAtomicCleanAttr(nullptr, {mem_clean_start}, {mem_clean_size}),
+                            "SetAtomicCleanAttr failed.");
         }
       }
     }
@@ -441,35 +442,33 @@ Status GraphMemoryAssigner::AssignContinuousOutputMemory(const ge::NodePtr &node
   GE_IF_BOOL_EXEC(out_op_desc == nullptr, GELOGE(ge::FAILED, "out_op_desc is null."); return ge::FAILED);
   vector<int64_t> output_list = out_op_desc->GetOutputOffset();
 
-  if (out_op_desc->GetOutputsSize() > output_list.size()) {
+  if ((out_op_desc->GetOutputsSize() > output_list.size()) || (output_list.size() == 0)) {
     GELOGE(ge::FAILED, "The size %zu of node output desc is more than output_list's size %zu.",
            out_op_desc->GetOutputsSize(), output_list.size());
     return ge::FAILED;
   }
 
-  memory_offset_[0].mem_offset_ += MEM_ALIGN_SIZE;
+  size_t mem_offset = output_list[0];
   for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
-    output_list[out_data_anchor->GetIdx()] = memory_offset_[0].mem_offset_;
-    size_t pre_mem_offset = memory_offset_[0].mem_offset_;
-
+    output_list[out_data_anchor->GetIdx()] = mem_offset;
     int64_t tensor_desc_size = 0;
     if (ge::TensorUtils::GetSize(*(out_op_desc->GetOutputDescPtr(out_data_anchor->GetIdx())), tensor_desc_size) !=
         ge::SUCCESS) {
       GELOGE(FAILED, "GetSize failed.");
       return FAILED;
     }
-    memory_offset_[0].mem_offset_ += tensor_desc_size;
-
-    AlignMemOffset(MEM_ALIGN_SIZE);
+    mem_offset += tensor_desc_size;
+    if (mem_offset <= 0) {
+      return FAILED;
+    }
+    mem_offset = (mem_offset + MEM_ALIGN_SIZE - 1) / MEM_ALIGN_SIZE * MEM_ALIGN_SIZE;
     GELOGI(
-      "[IMAS]Continuous output : Set %s name[%s] output[%d] offset to [%zu] stream_id[%ld] size[%zu] "
+      "[IMAS]Continuous output : Set %s name[%s] output[%d] offset to [%zu] stream_id[%ld] size[%ld] "
       "real_size[%ld].",
       node->GetOwnerComputeGraph()->GetName().c_str(), out_op_desc->GetName().c_str(), out_data_anchor->GetIdx(),
-      pre_mem_offset, out_op_desc->GetStreamId(), (memory_offset_[0].mem_offset_ - pre_mem_offset), tensor_desc_size);
+      output_list[out_data_anchor->GetIdx()], out_op_desc->GetStreamId(), tensor_desc_size, tensor_desc_size);
   }
-
   out_op_desc->SetOutputOffset(output_list);
-  memory_offset_[0].mem_offset_ += MEM_ALIGN_SIZE;
   return ge::SUCCESS;
 }
 
@@ -809,14 +808,12 @@ Status GraphMemoryAssigner::ReAssignVirtualNodesMemory(map<string, vector<NodePt
 }
 
 Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
-  if (compute_graph_ == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "Graph must not be null.");
-    return ge::PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(compute_graph_);
   // Atomic op memory start addr
   int64_t atomic_mem_start = static_cast<int64_t>(memory_offset_[0].mem_offset_);
   GELOGI("Begin to reAssign atomic memory, atomic initial address mem_offset = %zu!", memory_offset_[0].mem_offset_);
 
+  vector<NodePtr> connect_netoutput_nodes;
   for (auto &node : compute_graph_->GetAllNodes()) {
     auto node_op_desc = node->GetOpDesc();
     if (node_op_desc == nullptr) {
@@ -839,36 +836,20 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
       return ge::PARAM_INVALID;
     }
 
-    // Atomic op memory start addr of loop graph
-    int64_t loop_graph_atomic_mem_start = static_cast<int64_t>(memory_offset_[0].mem_offset_);
-
-    // Reassign atomic node output memory
-    Status ret = AssignAtomicOutputMemory(node);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Assign atomic output memory failed, node is %s.", node_op_desc->GetName().c_str());
-      return ret;
+    vector<int> is_connect_netoutput;
+    // If GetBool fail, attr is_connect_netoutput is an empty vector.
+    (void)ge::AttrUtils::GetListInt(node_op_desc, ATTR_NAME_NODE_CONNECT_OUTPUT, is_connect_netoutput);
+    if (!is_connect_netoutput.empty()) {
+      connect_netoutput_nodes.emplace_back(node);
+      continue;
     }
 
-    // Check atomic workspace
-    map<string, map<int64_t, int64_t>> sub_node_workspace_info;
-    sub_node_workspace_info = node_op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, sub_node_workspace_info);
-    if (!sub_node_workspace_info.empty()) {
-      bool is_fusion_node = false;
-      // If GetBool fail, is_fusion_node is false.
-      (void)ge::AttrUtils::GetBool(node_op_desc, ATOMIC_ATTR_IS_FUSION_NODE, is_fusion_node);
-
-      if (is_fusion_node) {
-        // Assign fusion atomic node workspace memory
-        ret = AssignFusionAtomicWorkspaceMemory(node_op_desc, sub_node_workspace_info);
-      } else {
-        // Assign single ordinary atomic node workspace memory, not include fusion node
-        ret = AssignOrdinaryAtomicWorkspaceMemory(node_op_desc, sub_node_workspace_info);
-      }
-
-      if (ret != SUCCESS) {
-        GELOGE(ret, "Assign atomic workspace memory failed, node is %s.", node_op_desc->GetName().c_str());
-        return ret;
-      }
+    // Atomic op memory start addr of loop graph
+    int64_t loop_graph_atomic_mem_start = static_cast<int64_t>(memory_offset_[0].mem_offset_);
+    vector<int64_t> mem_offset_end;
+    if (AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end) != SUCCESS) {
+      GELOGE(FAILED, "Assign atomic output and workspace memory failed, node is %s.", node->GetName().c_str());
+      return FAILED;
     }
 
     /// In networks with loop op, atomic op uses atomic_addr_clean op independently,
@@ -883,10 +864,77 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
     // Set the address attr of atomic clean operator
     int64_t atomic_mem_size = memory_offset_[0].mem_offset_ - atomic_mem_start;
     if (atomic_mem_size != 0) {
-      GE_CHK_STATUS_RET(SetAtomicCleanAttr(nullptr, atomic_mem_start, atomic_mem_size), "SetAtomicCleanAttr failed.");
+      GE_CHK_STATUS_RET(SetAtomicCleanAttr(nullptr, {atomic_mem_start}, {atomic_mem_size}),
+                        "SetAtomicCleanAttr failed.");
     }
   }
 
+  if (AssignConnectNetOutputAtomicMemory(connect_netoutput_nodes) != SUCCESS) {
+    GELOGE(FAILED, "Failed to assign memory of nodes that connect to netoutput.");
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+Status GraphMemoryAssigner::AssignAtomicOutputAndWorkspaceMemory(const ge::NodePtr &node,
+                                                                 vector<int64_t> &mem_offset_end) {
+  auto node_op_desc = node->GetOpDesc();
+  // Assign atomic node output memory
+  Status ret = AssignAtomicOutputMemory(node, mem_offset_end);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed to assign atomic output memory, node is %s.", node_op_desc->GetName().c_str());
+    return ret;
+  }
+
+  // Check and assign atomic node workspace memory
+  map<string, map<int64_t, int64_t>> atomic_workspace_info;
+  atomic_workspace_info = node_op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, atomic_workspace_info);
+  if (!atomic_workspace_info.empty()) {
+    bool is_fusion_node = false;
+    // If GetBool fail, is_fusion_node is false.
+    (void)ge::AttrUtils::GetBool(node_op_desc, ATOMIC_ATTR_IS_FUSION_NODE, is_fusion_node);
+
+    if (is_fusion_node) {
+      // Assign fusion atomic node workspace memory
+      ret = AssignFusionAtomicWorkspaceMemory(node_op_desc, atomic_workspace_info, mem_offset_end);
+    } else {
+      // Assign single ordinary atomic node workspace memory, not include fusion node
+      ret = AssignOrdinaryAtomicWorkspaceMemory(node_op_desc, atomic_workspace_info, mem_offset_end);
+    }
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Assign atomic workspace memory failed, node is %s.", node_op_desc->GetName().c_str());
+      return ret;
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status GraphMemoryAssigner::AssignConnectNetOutputAtomicMemory(vector<NodePtr> &connect_netoutput_nodes) {
+  for (auto &node : connect_netoutput_nodes) {
+    GE_CHECK_NOTNULL(node);
+    if (node->GetOpDesc() == nullptr) {
+      GELOGW("Current node %s op desc is nullptr, memory assignment is skipped.", node->GetName().c_str());
+      continue;
+    }
+
+    // Atomic memory start addr
+    int64_t original_atomic_mem_start = static_cast<int64_t>(memory_offset_[0].mem_offset_);
+    GELOGD("Start to assign memory of atomic node, node name: %s, node type: %s, mem_offset: %ld.",
+           node->GetName().c_str(), node->GetOpDesc()->GetType().c_str(), original_atomic_mem_start);
+    vector<int64_t> mem_offset_end;
+    if (AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end) != SUCCESS) {
+      GELOGE(FAILED, "Assign atomic output and workspace memory failed, node is %s.", node->GetName().c_str());
+      return FAILED;
+    }
+
+    // All atomic nodes use atomic_addr_clean op independently, so we need to set the attr separately.
+    if (SetIndependentAtomicAttr(node, original_atomic_mem_start, mem_offset_end) != SUCCESS) {
+      GELOGE(FAILED, "Failed to set atomic attr separately.");
+      return FAILED;
+    }
+  }
   return SUCCESS;
 }
 
@@ -971,9 +1019,10 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
   return true;
 }
 
-Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
+Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, vector<int64_t> &mem_offset_end) {
   auto op_desc = node->GetOpDesc();
   GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(ge::FAILED, "op_desc is null."); return ge::FAILED);
+  mem_offset_end.clear();
   GELOGD("Begin to assign atomic output memory, node = %s.", op_desc->GetName().c_str());
 
   vector<int64_t> atomic_output_index;
@@ -996,24 +1045,9 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
 
     // If the input of the cascade op needs to clear the atomic addr, there is no need to clear it separately here
     bool is_assigned_mem = false;
-    if (static_cast<size_t>(output_index) >= node->GetAllOutDataAnchors().size()) {
-      GELOGE(ge::PARAM_INVALID, "Output index %ld is more than the size of node's AllOutDataAnchors.", output_index);
-      return ge::PARAM_INVALID;
-    }
-    auto out_data_anchor = node->GetAllOutDataAnchors().at(output_index);
-    GE_CHECK_NOTNULL(out_data_anchor);
-    auto input_anchors = out_data_anchor->GetPeerInDataAnchors();
-    for (auto &input_anchor : input_anchors) {
-      auto output_node = input_anchor->GetOwnerNode();
-
-      /// Get input atomic attr of peer output op, if atomic_input_index[0] = -1, indicates that the atomic address
-      /// has been assigned
-      vector<int64_t> atomic_input_index;
-      (void)ge::AttrUtils::GetListInt(output_node->GetOpDesc(), ATOMIC_ATTR_INPUT_INDEX, atomic_input_index);
-      if (!atomic_input_index.empty() && (atomic_input_index[0] == kAllInputAddrIsAtomic)) {
-        is_assigned_mem = true;
-        break;
-      }
+    if (GetMemoryAssignmentStatus(node, output_index, is_assigned_mem) != SUCCESS) {
+      GELOGE(ge::FAILED, "Failed to get memory assignment of node %s.", node->GetName().c_str());
+      return ge::FAILED;
     }
 
     // If you have already assigned an atomic address, skip it, and you don't need to reassign it.
@@ -1038,6 +1072,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
 
     memory_offset_[0].mem_offset_ += size;
     AlignMemOffset(MEM_ALIGN_SIZE);
+    mem_offset_end.emplace_back(memory_offset_[0].mem_offset_);
   }
 
   op_desc->SetOutputOffset(output_list);
@@ -1045,8 +1080,33 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node) {
   return ge::SUCCESS;
 }
 
+Status GraphMemoryAssigner::GetMemoryAssignmentStatus(const ge::NodePtr &node, int64_t output_index,
+                                                      bool &is_mem_assigned) {
+  if (static_cast<size_t>(output_index) >= node->GetAllOutDataAnchors().size()) {
+    GELOGE(ge::PARAM_INVALID, "Output index %ld is more than the size of node's AllOutDataAnchors.", output_index);
+    return ge::PARAM_INVALID;
+  }
+  auto out_data_anchor = node->GetAllOutDataAnchors().at(output_index);
+  GE_CHECK_NOTNULL(out_data_anchor);
+  auto input_anchors = out_data_anchor->GetPeerInDataAnchors();
+  for (auto &input_anchor : input_anchors) {
+    auto output_node = input_anchor->GetOwnerNode();
+
+    /// Get input atomic attr of peer output op, if atomic_input_index[0] = -1, indicates that the atomic address
+    /// has been assigned
+    vector<int64_t> atomic_input_index;
+    (void)ge::AttrUtils::GetListInt(output_node->GetOpDesc(), ATOMIC_ATTR_INPUT_INDEX, atomic_input_index);
+    if (!atomic_input_index.empty() && (atomic_input_index[0] == kAllInputAddrIsAtomic)) {
+      is_mem_assigned = true;
+      break;
+    }
+  }
+  return SUCCESS;
+}
+
 Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDescPtr &op_desc,
-                                                                map<string, map<int64_t, int64_t>> &workspace_info) {
+                                                                map<string, map<int64_t, int64_t>> &workspace_info,
+                                                                vector<int64_t> &mem_offset_end) {
   GELOGI("Begin to reassign normal atomic memory, node = %s.", op_desc->GetName().c_str());
   vector<int64_t> workspace_vector = op_desc->GetWorkspace();
 
@@ -1078,6 +1138,7 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
         op_desc->GetStreamId(), workspace_size, workspace_size);
 
       memory_offset_[0].mem_offset_ += workspace_size;
+      mem_offset_end.emplace_back(memory_offset_[0].mem_offset_);
     }
   }
   op_desc->SetWorkspace(workspace_vector);
@@ -1086,7 +1147,8 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
 }
 
 Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPtr &op_desc,
-                                                              map<string, map<int64_t, int64_t>> &workspace_info) {
+                                                              map<string, map<int64_t, int64_t>> &workspace_info,
+                                                              vector<int64_t> &mem_offset_end) {
   GELOGI("Begin to reassign fusion atomic memory, node = %s.", op_desc->GetName().c_str());
   map<string, map<int64_t, int64_t>> sub_node_workspace_offset;
 
@@ -1108,6 +1170,7 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
         op_desc->GetStreamId(), workspace_size, workspace_size);
 
       memory_offset_[0].mem_offset_ += workspace_size;
+      mem_offset_end.emplace_back(memory_offset_[0].mem_offset_);
       index_offset.insert(std::make_pair(workspace_index, workspace_offset));
     }
     sub_node_workspace_offset.insert(std::make_pair(iter.first, index_offset));
@@ -1287,6 +1350,47 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node) const {
   return SUCCESS;
 }
 
+Status GraphMemoryAssigner::SetIndependentAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start,
+                                                     const vector<int64_t> &mem_offset_end) {
+  GELOGD("Start to set independent atomic attr, atomic_addr_clean memory offset start is %ld", atomic_mem_start);
+
+  // Parsing offset and size vectors
+  vector<int64_t> memory_offset_start;
+  vector<int64_t> memory_offset_size;
+  memory_offset_start.emplace_back(atomic_mem_start);
+  for (size_t i = 0; i < mem_offset_end.size(); ++i) {
+    memory_offset_start.emplace_back(mem_offset_end[i]);
+    // Number 1 means element index
+    auto size = memory_offset_start[i + 1] - memory_offset_start[i];
+    memory_offset_size.emplace_back(size);
+  }
+  memory_offset_start.pop_back();
+
+  const auto &in_control_anchor = node->GetInControlAnchor();
+  if (!memory_offset_size.empty() && in_control_anchor != nullptr) {
+    for (auto &peer_out_control_anchor : in_control_anchor->GetPeerOutControlAnchors()) {
+      if (peer_out_control_anchor == nullptr) {
+        continue;
+      }
+      auto peer_out_node = peer_out_control_anchor->GetOwnerNode();
+      auto peer_out_node_desc = peer_out_node->GetOpDesc();
+      if (peer_out_node_desc == nullptr) {
+        continue;
+      }
+
+      GELOGD("Current node memory_offset vector size is %zu, node name %s, node type is %s.", memory_offset_size.size(),
+             peer_out_node_desc->GetName().c_str(), peer_out_node_desc->GetType().c_str());
+      if (peer_out_node_desc->GetType() == ATOMICADDRCLEAN) {
+        if (SetAtomicCleanAttr(peer_out_node, memory_offset_start, memory_offset_size) != SUCCESS) {
+          GELOGE(FAILED, "Set atomic clean attr failed.");
+          return FAILED;
+        }
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 Status GraphMemoryAssigner::SetLoopGraphAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start) {
   // set the address attr of atomic clean operator for loop graph
   int64_t atomic_mem_size = memory_offset_[0].mem_offset_ - atomic_mem_start;
@@ -1308,7 +1412,7 @@ Status GraphMemoryAssigner::SetLoopGraphAtomicAttr(const ge::NodePtr &node, int6
              peer_out_node_desc->GetType().c_str());
 
       if (peer_out_node_desc->GetType() == ATOMICADDRCLEAN) {
-        GE_CHK_STATUS_EXEC(SetAtomicCleanAttr(peer_out_node, atomic_mem_start, atomic_mem_size),
+        GE_CHK_STATUS_EXEC(SetAtomicCleanAttr(peer_out_node, {atomic_mem_start}, {atomic_mem_size}),
                            GELOGE(FAILED, "SetAtomicCleanAttr failed.");
                            return FAILED);
       }
@@ -1317,8 +1421,8 @@ Status GraphMemoryAssigner::SetLoopGraphAtomicAttr(const ge::NodePtr &node, int6
   return SUCCESS;
 }
 
-ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &n, int64_t atomic_mem_start,
-                                                   int64_t atomic_mem_size) {
+ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &n, const vector<int64_t> &atomic_mem_start,
+                                                   const vector<int64_t> &atomic_mem_size) {
   for (ge::NodePtr &node : compute_graph_->GetAllNodes()) {
     auto node_op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
@@ -1327,15 +1431,15 @@ ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &n, int64_t ato
         ((n == nullptr) && (node_op_desc->GetType() == ATOMICADDRCLEAN))) {
       vector<int64_t> workspace_vector = node_op_desc->GetWorkspace();
       vector<int64_t> workspace_byte_vector = node_op_desc->GetWorkspaceBytes();
-      workspace_vector.emplace_back(atomic_mem_start);
-      workspace_byte_vector.emplace_back(atomic_mem_size);
+      workspace_vector.insert(workspace_vector.end(), atomic_mem_start.begin(), atomic_mem_start.end());
+      workspace_byte_vector.insert(workspace_byte_vector.end(), atomic_mem_size.begin(), atomic_mem_size.end());
       node_op_desc->SetWorkspace(workspace_vector);
       node_op_desc->SetWorkspaceBytes(workspace_byte_vector);
 
       std::vector<int64_t> mem_start_vector;
       // If GetListInt fail, mem_start_vector is empty.
       (void)ge::AttrUtils::GetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_START, mem_start_vector);
-      mem_start_vector.emplace_back(atomic_mem_start);
+      mem_start_vector.insert(mem_start_vector.end(), atomic_mem_start.begin(), atomic_mem_start.end());
       GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_START, mem_start_vector),
                        GELOGE(FAILED, "SetListInt failed.");
                        return FAILED);
@@ -1343,16 +1447,26 @@ ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &n, int64_t ato
       std::vector<int64_t> mem_size_vector;
       // If GetListInt fail, mem_size_vector is empty.
       (void)ge::AttrUtils::GetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_MEM_SIZE, mem_size_vector);
-      mem_size_vector.emplace_back(atomic_mem_size);
+      mem_size_vector.insert(mem_size_vector.end(), atomic_mem_size.begin(), atomic_mem_size.end());
       GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_MEM_SIZE, mem_size_vector),
                        GELOGE(FAILED, "SetListInt failed.");
                        return FAILED);
 
-      GELOGI(
-        "[IMAS]SetAtomicCleanAttr : Set %s name[%s] output[%d] offset to [%ld] streamid[%ld] size[%ld] "
-        "realsize[%ld].",
-        node->GetOwnerComputeGraph()->GetName().c_str(), node_op_desc->GetName().c_str(), 0, atomic_mem_start,
-        node->GetOpDesc()->GetStreamId(), atomic_mem_size, atomic_mem_size);
+      std::stringstream ss;
+      for (auto iter : atomic_mem_start) {
+        ss << iter << " ";
+      }
+      string atomic_mem_start_str = ss.str();
+      ss.clear();
+      ss.str("");
+      for (auto iter : atomic_mem_size) {
+        ss << iter << " ";
+      }
+      string atomic_mem_size_str = ss.str();
+
+      GELOGI("[IMAS]SetAtomicCleanAttr : Set graph[%s] atomic_node[%s] output offset [%s] size[%s] streamid[%ld]",
+             node->GetOwnerComputeGraph()->GetName().c_str(), node_op_desc->GetName().c_str(),
+             atomic_mem_start_str.c_str(), atomic_mem_size_str.c_str(), node->GetOpDesc()->GetStreamId());
     }
   }
   return SUCCESS;

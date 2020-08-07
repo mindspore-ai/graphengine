@@ -54,6 +54,8 @@ Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::Task
   std::vector<int64_t> output_offsets(op_desc->GetOutputsSize(), kMemBase);
   op_desc->SetInputOffset(input_offsets);
   op_desc->SetOutputOffset(output_offsets);
+  std::vector<int64_t> workspaces(op_desc->GetWorkspaceBytes().size(), kMemBase);
+  op_desc->SetWorkspace(std::move(workspaces));
   GE_CHK_STATUS_RET_NOLOG(DoGenerateTask(*aic_kernel_store_, *node, tasks));
   GELOGD("successfully generated task: %s", node->GetName().c_str());
   GELOGI("AiCoreTaskCompiler(%s) CompileOp End.", node->GetName().c_str());

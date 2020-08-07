@@ -37,7 +37,10 @@ AicpuTask::AicpuTask(const ModelContext &model_context, const std::shared_ptr<Ai
   }
 }
 
-AicpuTask::~AicpuTask() { ReleaseRtMem(&args_); }
+AicpuTask::~AicpuTask() {
+  ReleaseRtMem(&args_);
+  ReleaseRtMem(&ext_info_);
+}
 
 bool AicpuTask::Distribute() {
   GELOGI("InitAicpuTask start.");
@@ -47,10 +50,36 @@ bool AicpuTask::Distribute() {
   auto io_addrs_num = static_cast<uint32_t>(io_addrs.size());
   auto io_addrs_size = static_cast<uint32_t>(io_addrs_num * sizeof(void *));
   constexpr uint32_t io_addr_offset = sizeof(aicpu::AicpuParamHead);
-  uint32_t node_def_addr_offset = io_addr_offset + io_addrs_size;
-  uint32_t args_size =
-    sizeof(aicpu::AicpuParamHead) + io_addrs_size + static_cast<uint32_t>(task_info_->node_def().size());
-  aicpu::AicpuParamHead aicpu_param_head = {args_size, io_addrs_num};
+  uint32_t node_def_len_offset = io_addr_offset + io_addrs_size;
+  uint32_t node_def_addr_offset = node_def_len_offset + sizeof(uint32_t);
+  uint32_t args_size = sizeof(aicpu::AicpuParamHead) + io_addrs_size +
+                       static_cast<uint32_t>(task_info_->node_def().size()) + sizeof(uint32_t);
+
+  aicpu::AicpuParamHead aicpu_param_head;
+  aicpu_param_head.length = args_size;
+  aicpu_param_head.ioAddrNum = io_addrs_num;
+  auto ext_info = task_info_->ext_info();
+  uint32_t ext_size = ext_info.size();
+  if (ext_info.empty()) {
+    aicpu_param_head.extInfoLength = 0;
+    aicpu_param_head.extInfoAddr = 0;
+  } else {
+    rtError_t flag = rtMalloc(&ext_info_, ext_size, RT_MEMORY_HBM);
+    if (flag != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api(rtMalloc) failed, ret: 0x%X.", flag);
+      return false;
+    }
+
+    flag = rtMemcpy(ext_info_, ext_size, reinterpret_cast<void *>(ext_info.data()), ext_size, RT_MEMCPY_HOST_TO_DEVICE);
+    if (flag != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api(rtMemCpy) failed, ret: 0x%X.", flag);
+      return false;
+    }
+
+    GELOGI("ext info size:", ext_size);
+    aicpu_param_head.extInfoLength = ext_size;
+    aicpu_param_head.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_);
+  }
 
   // Malloc device memory for args
   rtError_t rt_ret = rtMalloc(&args_, args_size, RT_MEMORY_HBM);
@@ -76,6 +105,17 @@ bool AicpuTask::Distribute() {
       return false;
     }
   }
+
+  // Memcpy node def
+  auto size = task_info_->node_def().size();
+  rt_ret =
+    rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(args_) + node_def_len_offset), sizeof(uint32_t),
+             reinterpret_cast<const void *>(&size), sizeof(uint32_t), RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X.", rt_ret);
+    return false;
+  }
+
   // Memcpy node def
   rt_ret = rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(args_) + node_def_addr_offset),
                     task_info_->node_def().size(), reinterpret_cast<const void *>(task_info_->node_def().data()),

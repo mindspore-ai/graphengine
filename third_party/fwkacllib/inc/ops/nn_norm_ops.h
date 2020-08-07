@@ -44,16 +44,6 @@ REG_OP(LogSoftmaxGrad)
     .ATTR(axis, ListInt, {-1})
     .OP_END_FACTORY_REG(LogSoftmaxGrad)
 
-REG_OP(SparseSoftmaxCrossEntropyWithLogitsCCE)
-    .INPUT(features, TensorType{DT_FLOAT})
-    .INPUT(labels, TensorType{DT_FLOAT})
-    .OUTPUT(out, TensorType{DT_FLOAT})
-    .OUTPUT(non, TensorType{DT_FLOAT})
-    .ATTR(cross_entropy_is_grad, Bool, 0)
-    .ATTR(cross_entropy_mode, Int, 1)
-    .ATTR(softmax_cross_entropy_lossscale_div_batch, Float, 1.0)
-    .OP_END_FACTORY_REG(SparseSoftmaxCrossEntropyWithLogitsCCE)
-
 /**
 *@brief Computes sparse softmax cross entropy cost and gradients to backpropagate.
 
@@ -329,22 +319,6 @@ REG_OP(LogSoftmaxV2)
     .OUTPUT(logsoftmax, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
     .ATTR(axes, ListInt, {-1})
     .OP_END_FACTORY_REG(LogSoftmaxV2)
-
-REG_OP(FusedBatchNormV2)
-    .INPUT(x, TensorType{DT_FLOAT})                  /* Input data tensor from the previous operator"" */
-    .INPUT(scale, TensorType{DT_FLOAT})              /* If spatial is true, the dimension of bias is (C) If spatial is false, the dimensions of scale are (C x D1 x ... x Dn)*/
-    .INPUT(b, TensorType{DT_FLOAT})                  /* If spatial is true, the dimension of bias is (C) If spatial is false, the dimensions of scale are (C x D1 x ... x Dn)*/
-    .OPTIONAL_INPUT(mean, TensorType{DT_FLOAT})               /* If spatial is true, the dimension of the running mean (training) or the estimated mean (testing) is (C).If spatial is false, the dimensions of the running mean (training) or the estimated mean (testing) are (C x D1 x ... x Dn)*/
-    .OPTIONAL_INPUT(variance, TensorType{DT_FLOAT})           /* If spatial is true, the dimension of the running variance(training) or the estimated variance (testing) is (C). If spatial is false, the dimensions of the running variance(training) or the estimated variance (testing) are (C x D1 x ... x Dn).*/
-    .OUTPUT(y, TensorType{DT_FLOAT})                 /* The output tensor of the same shape as X */
-    .ATTR(momentum, Float, 0.9)            // Factor used in computing the running mean and variance.
-    .ATTR(epsilon, Float, 1e-5f)           // The epsilon value to use to avoid division by zero
-    .ATTR(mode, Int, 1)                    // 1 means using "CC_BATCHNORM_SPATIAL"; 0 means using "CC_BATCHNORM_PER_ACTIVATION"; only support 1 now
-    .ATTR(use_global_stats, Bool, true)
-    .ATTR(alpha, Float, 1)
-    .ATTR(beta, Float, 0)
-    .OP_END_FACTORY_REG(FusedBatchNormV2)
-
 
 /**
 *@brief Confuse mul, sum and sub.
@@ -683,7 +657,7 @@ REG_OP(Scale)
 *@li alpha: An optional float32. A scaling factor, usually positive.
 * Defaults to "1.0".
 *@li beta: An optional float32. An exponent. Defaults to "0.75" for the caffe framework, Defaults to "0.5" for others.
-*@li norm_region: An optional string. A mode option. "ACROSS_CHANNELS":0, "WITHIN_CHANNEL":1. Defaults to "ACROSS_CHANNELS".
+*@li norm_region: An optional string. A mode option. "ACROSS_CHANNELS":0. Defaults to "ACROSS_CHANNELS".
 
 *@par Outputs:
 *y: A Tensor. Has the same data type and shape as "x".

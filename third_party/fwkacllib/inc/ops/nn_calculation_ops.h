@@ -312,53 +312,6 @@ REG_OP(DepthwiseConv2D)
     .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(DepthwiseConv2D)
 
-REG_OP(Conv2DCCE)
-    .INPUT(x, TensorType{DT_FLOAT})              // The input tensor
-    .INPUT(w, TensorType({DT_FLOAT, DT_INT8}))   // The weight tensor ,If QuantType =1 ,shall use type""tensor(int8)
-    .OPTIONAL_INPUT(b, TensorType{DT_FLOAT})     // Optional 1D bias to be added to the convolution, has size of M.
-    .OUTPUT(y, TensorType{DT_FLOAT})             // The output tensor
-    .ATTR(mode, Int, 1)
-    .ATTR(group, Int, 1)               // number of groups input channels and output channels are divided into
-    .ATTR(num_output, Int, 0)          // number of output tensor
-    .ATTR(pad, ListInt, {0, 0, 0, 0}) // Padding for the beginning and ending along each axis
-    .ATTR(kernel, ListInt, {0, 0})
-    .ATTR(stride, ListInt, {1, 1})    // Stride along each axis.
-    .ATTR(dilation, ListInt, {1, 1})  // dilation value along each axis of the filter.
-    .ATTR(pad_mode, Int, 0)            // pad mode, 0:NOTSET, 1:SAME_UPPER, SAME_LOWER or 2:VALID.defaul default value is 0:NOTSET
-    .ATTR(algo, Int, 2)
-    .OP_END_FACTORY_REG(Conv2DCCE)
-
-REG_OP(Conv2DBackpropFilterCCE)
-    .INPUT(x, TensorType{DT_FLOAT})
-    .INPUT(filter_sizes, TensorType{DT_INT8})
-    .INPUT(out_backprop, TensorType{DT_FLOAT})
-    .OUTPUT(y, TensorType{DT_FLOAT})
-    .ATTR(conv_grad_filter_output_shape, ListInt, {0, 0, 0, 0})
-    .ATTR(mode, Int, 1)
-    .ATTR(group, Int, 1)
-    .ATTR(pad, ListInt, {0, 0, 0, 0})
-    .ATTR(stride, ListInt, {1, 1})
-    .ATTR(dilation, ListInt, {1, 1})
-    .ATTR(padding, Int, 0)   //pad_mode:same valid
-    .ATTR(algo, Int, 0)
-    .OP_END_FACTORY_REG(Conv2DBackpropFilterCCE)
-
-REG_OP(Conv2DBackpropInputCCE)
-   .INPUT(input_sizes, TensorType{DT_INT8})
-   .INPUT(filter, TensorType{DT_FLOAT})
-   .INPUT(out_backprop, TensorType{DT_FLOAT})
-   .OUTPUT(output, TensorType{DT_FLOAT})
-   .ATTR(conv_grad_input_output_shape, ListInt, {0, 0, 0, 0})
-   .ATTR(mode, Int, 1)
-   .ATTR(format, Int, 0)
-   .ATTR(group, Int, 1)
-   .ATTR(pad_mode, Int, 0)
-   .ATTR(stride, ListInt, {1, 1})
-   .ATTR(dilation, ListInt, {1, 1})
-   .ATTR(pad, ListInt, {0, 0, 0, 0})
-   .ATTR(algo, Int, 0)
-   .OP_END_FACTORY_REG(Conv2DBackpropInputCCE)
-
 /**
 *@brief Performs the the backward operation for "BiasAdd" on the "bias" tensor.
 *        It accumulates all the values from out_backprop into the feature
@@ -581,8 +534,6 @@ REG_OP(Conv2DBackpropFilterD)
     |          |---------|---------|---------|----------|--------
     |          | float32 | float32 | float32 | _        | float32
     |          |---------|---------|---------|----------|--------
-    |          | float64 | float64 | float64 | _        | float64
-    |          |---------|---------|---------|----------|--------
     |          | int8    | int8    | int32   | int8     | int32
     -----------|---------|---------|---------|----------|--------
     |Format    | NCHW    | NCHW    | ND      | ND       | NCHW
@@ -602,7 +553,7 @@ REG_OP(Conv2DBackpropFilterD)
 * for dilated convolution. Has the same dimension order and value as "strides".
 * @li groups: Number of blocked connections from input channels to output
 * channels. Input channels and output channels must both be divisible by
-* "groups".Type is int32.  Must be set to 1.
+* "groups".Type is int32.
 * @li offset_x: An optional integer for quantized convolution. Type is int32. Defaults to "0".
 * @li data_format: An optional string from: "NHWC", "NCHW". Specifying the
 * data format of the input and output images. Type is string. Defaults to "NHWC". Reserved.
@@ -654,11 +605,11 @@ REG_OP(Conv2DBackpropFilterD)
 *@li Compatible with the Caffe operator 2D "Convolution".
 */
 REG_OP(Conv2D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -684,36 +635,46 @@ REG_OP(Conv2DCompress)
 
 /**
 *@brief Computes a 3D convolution given 5D "x" and "filter" tensors.
-*@par Inputs:
-*@li x: A 5D tensor. Must be one of the following types: float16, float32, float64. The format is NCDHW or NDHWC.
-*@li filter: A 5D tensor of the same type as "x". The format is NCDHW, NDHWC or DHWCN.
-*@li bias: An optional 1D tensor of the same type as "x".
+ *@par Inputs:
+ * @li x: A 5D tensor. Must be one of the following types: float16, float32, float64. The format is NCDHW or NDHWC.
+ * @li filter: A 5D tensor of the same type as "x". The format is NCDHW, NDHWC or DHWCN.
+
+*@par Optional input:
+ * @li bias: An optional 1D tensor of the same type as "x".
+ * @li offset_w: An optional 1D tensor for quantized deconvolution. Reserved.
+
+*@par Required Attributes:
+* @li strides: A list of 5 ints. Specifies the stride of the sliding window for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
+* @li pads: A list of 6 ints. Supports only padding along the D, H and W dimensions in sequence of head, tail, top, bottom, left and right.
 
 *@par Attributes:
-*@li strides: A list of 5 ints. Specifies the stride of the sliding window for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
-*@li pads: A list of 6 ints. Supports only padding along the D, H and W dimensions in sequence of head, tail, top, bottom, left and right.
-*@li data_format: An optional string from: "NDHWC", "NCDHW". Defaults to "NDHWC". Specify the data format of the input and output data.
-*@li dilations: A list of 5 ints. Specifies the dilation factor for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
+ * @li groups: Number of blocked connections from input channels to output channels.
+ * @li data_format: An optional string from: "NDHWC", "NCDHW". Defaults to "NDHWC". Specify the data format of the input and output data.
+ * @li dilations: A list of 5 ints. Specifies the dilation factor for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
+ * @li offset_x: An optional int. Input offset, used for quantized inference. Defaults to 0.
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+ *y: A Tensor. Has the same type as "x".
 
-*@attention Constraints:\n
-*The image size after padding is greater than the filter size.\n
+*@attention Constraints:
+ *The image size after padding is greater than the filter size.
 
 *@par Third-party framework compatibility
-*@li Compatible with the TensorFlow operator conv3d.
-*@li Compatible with the Caffe operator Convolution.
+ * @li Compatible with the TensorFlow operator conv3d.
+ * @li Compatible with the Caffe operator Convolution.
 */
 REG_OP(Conv3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
-    .ATTR(data_format, String, "NDHWC")
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NDHWC")
+    .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(Conv3D)
 
 /**
@@ -723,28 +684,35 @@ REG_OP(Conv3D)
  * @li input_size: A Tensor of type int32, int64. An integer vector representing the shape of input,
  * where input is a 5-D tensor [batch, depth, height, width, channels] or [batch, channels, depth, height, width].
  * @li filter: A Tensor. Must be one of the following types: float16, float32, float64.
- * @li grads: A Tensor. Must have the same type as filter. 5-D with shape [batch, depth, out_height, out_width, out_channels]
+ * @li out_backprop: A Tensor. Must have the same type as filter. 5-D with shape [batch, depth, out_height, out_width, out_channels]
  * or [batch, out_channels, depth, out_height, out_width]. Gradients with respect to the output of the convolution.
+
+*@par Required Attributes:
+ * @li strides: A list of 5 ints. Specifies the stride of the sliding window for each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
+ * @li pads: A list of 6 ints. Supports only padding along the D, H and W dimensions in sequence of head, tail, top, bottom, left and right.
+
 *@par Attributes:
- * Four attributes:
- * @li strides: A tuple/list of 3 integers. The stride of the sliding window for D/H/W dimension.
- * @li pads: A tuple/list of 6 integers
- * @li dilations: A tuple/list of 6 integers, The dilation factor for each dimension of input, now only support [1,1,1,1,1]
+ * Three attributes:
+ * @li groups: Number of blocked connections from input channels to output channels.
  * @li data_format: An optional string from: "NDHWC", "NCHWD". Defaults to "NDHWC". Specify the data format of the input and output data.
+ * @li dilations: A tuple/list of 6 integers, The dilation factor for each dimension of input, now only support [1,1,1,1,1]
+
 *@par Outputs:
  * y: A Tensor. Has the same type as filter,and has same format as input_size
+
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv3d_backprop_input
 */
 REG_OP(Conv3DBackpropInput)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
     .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
-    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
-    .ATTR(data_format, String, "NDHWC")
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(Conv3DBackpropInput)
 
 /**
@@ -752,46 +720,56 @@ REG_OP(Conv3DBackpropInput)
 *@par Inputs:
  * Two inputs:
  * @li filter: A Tensor. Types is float16.
- * @li grads: A Tensor. Must have the same type as filter.
+ * @li out_backprop: A Tensor. Must have the same type as filter.
+
+*@par Required Attributes:
+ *@li strides: A list of 5 ints. Specifies the stride of the sliding window for
+  each dimension of "x". The N and C dimensions must be 1. Has the same format as "x".
+ *@li pads: A list of 6 ints. Supports only padding along the D, H and W
+ dimensions in sequence of head, tail, top, bottom, left and right.
+ *@li input_size: A Tensor of type int32, int64. An integer vector representing the shape of input,
+ * where input is a 5-D tensor [batch, depth, height, width, channels] or [batch, channels, depth, height, width].
+
 *@par Attributes:
- * Five attributes:
- * @li input_size A Tensor of type int32. An integer vector representing the shape of input,
- * @li strides: A tuple/list of 3 integers. The stride of the sliding window for D/H/W dimension.
- * @li pads: A tuple/list of 4 integers
- * @li dilations: A tuple/list of 5 integers, The dilation factor for each dimension of input, now only support [1,1,1,1,1]
+ * Three attributes:
+ * @li groups: Number of blocked connections from input channels to output channels.
  * @li data_format: An optional string from: "NDHWC", "NCHWD". Defaults to "NDHWC". Specify the data format of the input and output data.
+ * @li dilations: A tuple/list of 5 integers, The dilation factor for each dimension of input, now only support [1,1,1,1,1]
 *@par Outputs:
  * y: A Tensor. Has the same type as filter
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv3d_backprop_input
 */
+
+
 REG_OP(Conv3DBackpropInputD)
     .INPUT(filter, TensorType({DT_FLOAT16}))
-    .INPUT(grads, TensorType({DT_FLOAT16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT16}))
     .REQUIRED_ATTR(input_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
-    .ATTR(data_format, String, "NDHWC")
     .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(Conv3DBackpropInputD)
 
 REG_OP(LSTM)
-      .INPUT(x, TensorType({DT_FLOAT16}))
-      .INPUT(cont, TensorType({DT_FLOAT32,DT_FLOAT16}))
-      .INPUT(w_x, TensorType({DT_FLOAT16}))
-      .INPUT(bias, TensorType({DT_FLOAT16,DT_FLOAT32,DT_INT16,DT_INT32}))
-      .INPUT(w_h, TensorType({DT_FLOAT16}))
-      .OPTIONAL_INPUT(x_static, TensorType({DT_FLOAT16}))
-      .OPTIONAL_INPUT(h_0, TensorType({DT_FLOAT16,DT_FLOAT32}))
-      .OPTIONAL_INPUT(c_0, TensorType({DT_FLOAT16,DT_FLOAT32}))
-      .OPTIONAL_INPUT(w_x_static, TensorType({DT_FLOAT16}))
-      .OUTPUT(h, TensorType({DT_FLOAT16, DT_FLOAT}))
-      .OUTPUT(h_t, TensorType({DT_FLOAT16, DT_FLOAT}))
-      .OUTPUT(c_t, TensorType({DT_FLOAT16, DT_FLOAT}))
-      .ATTR(num_output, Int, 0)
-      .ATTR(expose_hidden, Bool, false)
-      .OP_END_FACTORY_REG(LSTM)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(cont, TensorType({DT_FLOAT32,DT_FLOAT16}))
+    .INPUT(w_x, TensorType({DT_FLOAT16}))
+    .INPUT(bias, TensorType({DT_FLOAT16,DT_FLOAT32,DT_INT16,DT_INT32}))
+    .INPUT(w_h, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(x_static, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(h_0, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(c_0, TensorType({DT_FLOAT16,DT_FLOAT32}))
+    .OPTIONAL_INPUT(w_x_static, TensorType({DT_FLOAT16}))
+    .OUTPUT(h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(h_t, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(c_t, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(num_output, Int, 0)
+    .ATTR(expose_hidden, Bool, false)
+    .OP_END_FACTORY_REG(LSTM)
 
 /**
 *@brief Computes the gradients of convolution3D with respect to the filter
@@ -851,6 +829,8 @@ REG_OP(Conv3DBackpropFilter)
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv3d_backprop_filter
 */
+
+
 REG_OP(Conv3DBackpropFilterD)
     .INPUT(x, TensorType({DT_FLOAT16}))
     .INPUT(out_backprop, TensorType({DT_FLOAT16}))
@@ -862,5 +842,86 @@ REG_OP(Conv3DBackpropFilterD)
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(Conv3DBackpropFilterD)
+
+/**
+*@brief Computes the transpose of convolution 3d with respect to the input.
+*@par Inputs:
+ * Five inputs:
+ * @li input_size: A Tensor of type int32. An integer vector representing the shape of input
+ * @li x: A Tensor.
+ * @li filter: A Tensor. Types is float16.
+ * @li bias: An optional 1D tensor of the same type as "x".
+ * @li offset_w: An optional 1D tensor for quantized deconvolution. Reserved.
+
+*@par Required Attributes:
+ * @li strides: A tuple/list of 3 integers. The stride of the sliding window for D/H/W dimension.
+ * @li pads: A tuple/list of 6 integers
+*@par Attributes:
+ * Five attributes:
+ * @li groups: Number of blocked connections from input channels to output channels.
+ * @li dilations: A tuple/list of 5 integers, The dilation factor for each dimension of input, now only support [1,1,1,1,1]
+ * @li data_format: An optional string from: "NDHWC", "NCHWD". Defaults to "NDHWC". Specify the data format of the input and output data.
+ * @li output_padding: The size will be added in the output shape.
+ * @li offset_x: Input offset_x value
+*@par Outputs:
+ * y: A Tensor. Has the same type as filter
+*/
+REG_OP(Conv3DTranspose)
+    .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NDHWC")
+    .ATTR(output_padding, ListInt, {0, 0, 0, 0, 0})
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(Conv3DTranspose)
+
+/**
+*@brief Computes the transpose of convolution 3d with respect to the input.
+*@par Inputs:
+ * Four inputs:
+ * @li x: A Tensor.
+ * @li filter: A Tensor. Types is float16.
+ * @li bias: An optional 1D tensor of the same type as "x".
+ * @li offset_w: An optional 1D tensor for quantized deconvolution. Reserved.
+
+*@par Required Attributes:
+ * @li input_size: A Tensor of type int32. An integer vector representing the shape of input
+ * @li strides: A tuple/list of 3 integers. The stride of the sliding window for D/H/W dimension.
+ * @li pads: A tuple/list of 6 integers
+*@par Attributes:
+ * Five attributes:
+ * @li dilations: A tuple/list of 5 integers, The dilation factor for each dimension of input, now only support [1,1,1,1,1]
+ * @li groups: Number of blocked connections from input channels to output channels.
+ * @li data_format: An optional string from: "NDHWC", "NCHWD". Defaults to "NDHWC". Specify the data format of the input and output data.
+ * @li output_padding: The size will be added in the output shape.
+ * @li offset_x: Input offset_x value
+*@par Outputs:
+ * y: A Tensor. Has the same type as filter
+*/
+
+
+REG_OP(Conv3DTransposeD)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(filter, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(dilations, ListInt, {1, 1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NDHWC")
+    .ATTR(output_padding, ListInt, {0, 0, 0, 0, 0})
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(Conv3DTransposeD)
+
 }  // namespace ge
 #endif  // GE_OP_NN_CALCULATION_OPS_H

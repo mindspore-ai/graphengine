@@ -17,11 +17,13 @@
 #include "single_op/single_op.h"
 
 #include "common/fmk_types.h"
+#include "common/math/math_util.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/mem.h"
+#include "single_op/single_op_manager.h"
 
 namespace ge {
 namespace {
@@ -182,4 +184,85 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
 }
 
 void SingleOp::SetStream(rtStream_t stream) { stream_ = stream; }
+
+DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, rtStream_t stream)
+    : resource_id_(resource_id), stream_(stream) {}
+
+Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                                       std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const {
+  if (inputs.size() != input_desc.size()) {
+    GELOGE(PARAM_INVALID, "Input number mismatches input desc number. Input num = %zu, input desc num = %zu",
+           inputs.size(), input_desc.size());
+    return PARAM_INVALID;
+  }
+
+  if (outputs.size() != output_desc.size()) {
+    GELOGE(PARAM_INVALID, "Output number mismatches output desc number. Output num = %zu, output desc num = %zu",
+           outputs.size(), output_desc.size());
+    return PARAM_INVALID;
+  }
+
+  if (input_desc.size() != num_inputs_) {
+    GELOGE(PARAM_INVALID, "Input number mismatches. expect %zu, but given %zu", num_inputs_, input_desc.size());
+    return PARAM_INVALID;
+  }
+
+  if (output_desc.size() != num_outputs_) {
+    GELOGE(PARAM_INVALID, "Output number mismatches. expect %zu, but given %zu", num_outputs_, output_desc.size());
+    return PARAM_INVALID;
+  }
+
+  return SUCCESS;
+}
+
+Status DynamicSingleOp::AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes,
+                                           std::vector<void *> &workspaces) {
+  static const std::string kPurpose("malloc workspace memory for dynamic op.");
+  if (workspace_sizes.empty()) {
+    GELOGD("No need to allocate workspace.");
+    return SUCCESS;
+  }
+  int64_t total_size = 0;
+  std::vector<int64_t> ws_offsets;
+  for (auto ws_size : workspace_sizes) {
+    // alignment and padding should be done in OpParaCalculate
+    GE_CHK_STATUS_RET_NOLOG(CheckInt64AddOverflow(total_size, ws_size));
+    ws_offsets.emplace_back(total_size);
+    total_size += ws_size;
+  }
+
+  GELOGD("Total workspace size is %ld", total_size);
+  StreamResource *stream_resource = SingleOpManager::GetInstance().GetResource(resource_id_, stream_);
+  GE_CHECK_NOTNULL(stream_resource);
+  auto ws_base = stream_resource->MallocMemory(kPurpose, static_cast<size_t>(total_size));
+  if (ws_base == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "Failed to allocate memory of size: %ld", total_size);
+    return MEMALLOC_FAILED;
+  }
+  GELOGD("Done allocating workspace memory successfully.");
+
+  for (auto ws_offset : ws_offsets) {
+    workspaces.emplace_back(ws_base + ws_offset);
+  }
+
+  return SUCCESS;
+}
+
+Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc, const vector<DataBuffer> &input_buffers,
+                                     vector<GeTensorDesc> &output_desc, vector<DataBuffer> &output_buffers) {
+  GE_CHECK_NOTNULL(op_task_);
+  GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
+  GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
+  std::vector<void *> workspace_buffers;
+  GE_CHK_STATUS_RET_NOLOG(AllocateWorkspaces(op_task_->GetWorkspaceSizes(), workspace_buffers));
+  std::vector<void *> inputs;
+  std::vector<void *> outputs;
+  for (auto &buffer : input_buffers) {
+    inputs.emplace_back(buffer.data);
+  }
+  for (auto &buffer : output_buffers) {
+    outputs.emplace_back(buffer.data);
+  }
+  return op_task_->LaunchKernel(inputs, outputs, workspace_buffers, stream_);
+}
 }  // namespace ge

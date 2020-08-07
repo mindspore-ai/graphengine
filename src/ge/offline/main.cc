@@ -26,6 +26,7 @@
 #include "common/gflags_util.h"
 #include "common/util.h"
 #include "common/util/error_manager/error_manager.h"
+#include "common/model_parser/graph_parser_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge/ge_api.h"
 #include "generator/ge_generator.h"
@@ -163,13 +164,18 @@ DEFINE_string(save_original_model, "", "Optional; enable output original offline
 DEFINE_string(dynamic_batch_size, "",
               "Optional; If set, generate dynamic multi batch model. "
               "Different batch sizes are split by ','."
-              "dynamic_batch_size and dynamic_imagesize can only be set one.");
+              "dynamic_batch_size, dynamic_image_size and dynamic_dims can only be set one.");
 
 DEFINE_string(dynamic_image_size, "",
               "Optional; If set, generate dynamic multi image size model."
               "Different groups of image size are split by ';',"
               "while different dimensions of each group are split by ','."
-              "dynamic_batch_size and dynamic_imagesize can only be set one.");
+              "dynamic_batch_size, dynamic_image_size and dynamic_dims can only be set one.");
+
+DEFINE_string(dynamic_dims, "",
+              "Optional; If set, generate dynamic input size model. "
+              "Different groups of size are split by ';', while different dimensions of each group are split by ','."
+              "dynamic_batch_size, dynamic_image_size and dynamic_dims can only be set one.");
 
 DEFINE_string(enable_small_channel, "0", "Optional; If set to 1, small channel is enabled.");
 
@@ -180,7 +186,7 @@ DEFINE_string(compress_weight_conf, "", "Optional; the config file to compress w
 
 DEFINE_string(enable_single_stream, "", "Optional; enable single stream. true: enable; false(default): disable");
 
-DEFINE_string(log, "default", "Optional; generate atc log. Support debug, info, warning, error, null");
+DEFINE_string(log, "null", "Optional; generate atc log. Support debug, info, warning, error, null");
 
 DEFINE_string(dump_mode, "0", "Optional; generate infershape json,only support 1 , 0.");
 
@@ -207,10 +213,7 @@ class GFlagUtils {
       "arguments explain:\n"
       "  --model             Model file\n"
       "  --singleop          Single op definition file. atc will generate offline "
-      "model(s) for single op if --singleop is set. \n"
-      "                      Note: Only output, soc_verion, core_type, aicore_num, auto_tune_mode, precision_mode, "
-      "op_select_implmode, enable_small_channel, enable_compress_weight, compress_weight_conf "
-      "enable_single_stream and log are valid in this mode \n"
+      "model(s) for single op if --singleop is set.\n"
       "  --weight            Weight file. Required when framework is Caffe\n"
       "  --framework         Framework type(0:Caffe; 1:MindSpore; 3:Tensorflow)\n"
       "  --output            Output file path&name(needn't suffix, will add "
@@ -260,7 +263,7 @@ class GFlagUtils {
       "  --optypelist_for_implmode    Appoint which op to use op_select_implmode, used with op_select_implmode ."
       "Separate multiple nodes with commas (,). Use double quotation marks (\") to enclose each argument."
       "E.g.: \"node_name1,node_name2\"\n"
-      "  --soc_version       The soc version. E.g.: \"Ascend310\"\n"
+      "  --soc_version       The soc version.\n"
       "  --core_type         Set core type AiCore or VectorCore. VectorCore: use vector core. "
       "Default value is: AiCore\n"
       "  --enable_compress_weight  Enable compress weight. true: enable; false(default): disable\n"
@@ -314,10 +317,10 @@ class GFlagUtils {
     Status ret = CheckFrameWorkValid(FLAGS_framework, FLAGS_weight);
     GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "CheckFrameWorkValid failed");
 
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ge::CheckDynamicBatchSizeOrImageSizeParamValid(
-                                     FLAGS_dynamic_batch_size, FLAGS_dynamic_image_size, FLAGS_input_shape,
-                                     FLAGS_input_format, is_dynamic_input) != ge::SUCCESS,
-                                   return ge::FAILED, "check dynamic batch size or image size failed!");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      ge::CheckDynamicInputParamValid(FLAGS_dynamic_batch_size, FLAGS_dynamic_image_size, FLAGS_dynamic_dims,
+                                      FLAGS_input_shape, FLAGS_input_format, is_dynamic_input) != ge::SUCCESS,
+      return ge::FAILED, "check dynamic size(batch size, image size or dims) failed!");
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!CheckEncryptModeValid(FLAGS_encrypt_mode), return domi::FAILED,
@@ -496,12 +499,15 @@ class GFlagUtils {
   }
 };
 
-void SetDynamicBatchSizeOrImagesizeOptions() {
+void SetDynamicInputSizeOptions() {
   if (!FLAGS_dynamic_batch_size.empty()) {
     domi::GetContext().dynamic_batch_size = FLAGS_dynamic_batch_size;
   }
   if (!FLAGS_dynamic_image_size.empty()) {
     domi::GetContext().dynamic_image_size = FLAGS_dynamic_image_size;
+  }
+  if (!FLAGS_dynamic_dims.empty()) {
+    domi::GetContext().dynamic_dims = FLAGS_dynamic_dims;
   }
 }
 
@@ -579,12 +585,12 @@ void GetPluginSoFileList(const string &path, vector<string> &fileList, string &c
 
 void LoadModelParserLib(std::string caffe_parser_path) {
   if (FLAGS_framework == static_cast<int32_t>(domi::TENSORFLOW)) {
-    void *tf_handle = dlopen("libfmk_tensorflow_parser.so", RTLD_NOW | RTLD_GLOBAL);
+    void *tf_handle = dlopen("libfmk_parser.so", RTLD_NOW | RTLD_GLOBAL);
     if (tf_handle == nullptr) {
-      GELOGW("dlopen fmk library [libfmk_tensorflow_parser.so] failed.");
+      GELOGW("dlopen fmk library [libfmk_parser.so] failed.");
       return;
     }
-    GELOGI("plugin load libfmk_tensorflow_parser.so success.");
+    GELOGI("plugin load libfmk_parser.so success.");
   } else if (FLAGS_framework == static_cast<int32_t>(domi::CAFFE)) {
     // What we are dealing with here is that the user modifies the caffe.proto scenario.
     // If no lib_Caffe_Parser.so is found under the plugin path, use the default lib_Caffe_Parser.so path.
@@ -596,17 +602,17 @@ void LoadModelParserLib(std::string caffe_parser_path) {
       return;
     }
     GELOGI("plugin load %s success.", caffe_parser_path.c_str());
-    // According to the dependency, the Caffe parsing module of the framework is loaded here( libfmk_caffe_parser.so).
+    // According to the dependency, the Caffe parsing module of the framework is loaded here( libfmk_parser.so).
     // (depend on the lib_caffe_parser.so)
-    void *fmk_handle = dlopen("libfmk_caffe_parser.so", RTLD_NOW | RTLD_GLOBAL);
+    void *fmk_handle = dlopen("libfmk_parser.so", RTLD_NOW | RTLD_GLOBAL);
     if (fmk_handle == nullptr) {
-      GELOGW("dlopen fmk library [libfmk_caffe_parser.so] failed.");
+      GELOGW("dlopen fmk library [libfmk_parser.so] failed.");
       if (dlclose(handle) != 0) {
         GELOGW("dlclose lib_caffe_parser.so failed.");
       }
       return;
     }
-    GELOGI("plugin load libfmk_caffe_parser.so success.");
+    GELOGI("plugin load libfmk_parser.so success.");
   } else if (FLAGS_framework == static_cast<int32_t>(domi::ONNX)) {
     void *handle = dlopen("libfmk_onnx_parser.so", RTLD_NOW | RTLD_GLOBAL);
     if (handle == nullptr) {
@@ -657,8 +663,10 @@ void LoadCustomOpLib(bool need_load_ops_plugin) {
 
   std::vector<OpRegistrationData> registrationDatas = OpRegistry::Instance()->registrationDatas;
   for (OpRegistrationData reg_data : registrationDatas) {
-    (void)ge::OpRegistrationTbe::Instance()->Finalize(reg_data);
-    (void)OpRegistry::Instance()->Register(reg_data);
+    if (reg_data.GetFrameworkType() == static_cast<domi::FrameworkType>(FLAGS_framework)) {
+      (void)ge::OpRegistrationTbe::Instance()->Finalize(reg_data);
+      (void)OpRegistry::Instance()->Register(reg_data);
+    }
   }
 }
 
@@ -780,12 +788,12 @@ static Status ConvertModelToJson(int fwk_type, const string &model_file, const s
   }
 
   if (FLAGS_dump_mode == "0") {
-    // Caffe or tf model to json depend on lib_caffe_parser.so or libfmk_tensorflow_parser.so.
+    // Caffe or tf model to json depend on lib_caffe_parser.so or libfmk_parser.so.
     LoadCustomOpLib(false);
     ret = ge::ConvertFwkModelToJson((domi::FrameworkType)fwk_type, model_file.c_str(), json_file.c_str());
     return ret;
   } else if (FLAGS_dump_mode == "1") {
-    // Caffe or tf model to json depend on lib_caffe_parser.so or libfmk_tensorflow_parser.so and ops plugin so.
+    // Caffe or tf model to json depend on lib_caffe_parser.so or libfmk_parser.so and ops plugin so.
     LoadCustomOpLib(true);
     ret = GenerateInfershapeJson();
     return ret;
@@ -886,7 +894,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
       (void)ge::GELib::GetInstance()->Finalize();
       return domi::FAILED;
     }
-    if (SetOutputNodeInfo(graph, FLAGS_output_type, "") != domi::SUCCESS) {
+    if (ge::SetOutputNodeInfo(graph, FLAGS_output_type, "") != domi::SUCCESS) {
       DOMI_LOGE("Set output node info fail.");
       (void)ge_generator.Finalize();
       (void)ge::GELib::GetInstance()->Finalize();
@@ -941,12 +949,6 @@ domi::Status GenerateSingleOp(const std::string &json_file_path) {
   // need to be changed when ge.ini plan is done
   SetEnvForSingleOp(options);
 
-  vector<ge::SingleOpBuildParam> build_params;
-  if (ge::SingleOpParser::ParseSingleOpList(json_file_path, build_params) != ge::SUCCESS) {
-    DOMI_LOGE("parse single op json file failed");
-    return domi::FAILED;
-  }
-
   auto ret = ge::GELib::Initialize(options);
   if (ret != ge::SUCCESS) {
     DOMI_LOGE("GE initialize failed!");
@@ -957,6 +959,14 @@ domi::Status GenerateSingleOp(const std::string &json_file_path) {
   ret = generator.Initialize(options);
   if (ret != SUCCESS) {
     DOMI_LOGE("GeGenerator initialize failed!");
+    (void)ge::GELib::GetInstance()->Finalize();
+    return domi::FAILED;
+  }
+
+  vector<ge::SingleOpBuildParam> build_params;
+  if (ge::SingleOpParser::ParseSingleOpList(json_file_path, build_params) != ge::SUCCESS) {
+    DOMI_LOGE("parse single op json file failed");
+    (void)generator.Finalize();
     (void)ge::GELib::GetInstance()->Finalize();
     return domi::FAILED;
   }
@@ -1057,7 +1067,7 @@ domi::Status GenerateOmModel() {
 
   options.insert(std::pair<string, string>(string(ge::ENABLE_SINGLE_STREAM), FLAGS_enable_single_stream));
 
-  SetDynamicBatchSizeOrImagesizeOptions();
+  SetDynamicInputSizeOptions();
 
   if (!FLAGS_save_original_model.empty()) {
     options.insert(std::pair<string, string>(string(ge::SAVE_ORIGINAL_MODEL), FLAGS_save_original_model));
@@ -1137,7 +1147,7 @@ int init(int argc, char *argv[]) {
   GFlagUtils::InitGFlag(argc, argv);
   // set log level
   int ret = -1;
-  const std::set<string> log_level = {"default", "null", "debug", "info", "warning", "error"};
+  const std::set<string> log_level = {"null", "debug", "info", "warning", "error"};
   if (log_level.count(FLAGS_log) == 0) {
     std::cout << "E10010: invalid value for --log:" << FLAGS_log << ", only support debug, info, warning, error, null"
               << std::endl;
@@ -1211,6 +1221,7 @@ int main(int argc, char *argv[]) {
     return ret;
   } else {
     std::cout << "ATC run success, welcome to the next use." << std::endl;
+    (void)ErrorManager::GetInstance().OutputMessage(STDOUT_FILENO);
     return 0;
   }
 }

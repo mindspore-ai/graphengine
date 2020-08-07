@@ -64,12 +64,6 @@ const std::string ATTR_NAME_IS_INPUT_CONST = "is_input_const";
 
 const std::string ATTR_NAME_OP_INFER_DEPENDS = "_op_infer_depends";
 
-const std::string ATTR_NAME_OPT_INPUT = "_opt_input";
-
-const std::string ATTR_NAME_INPUT_NAME_IDX_KEY = "_input_name_idx_key";
-
-const std::string ATTR_NAME_INPUT_NAME_IDX_VALUE = "_input_name_idx_value";
-
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDesc::OpDesc() {
   op_def_.InitDefault();
   if (op_def_.GetProtoMsg() != nullptr) {
@@ -211,8 +205,7 @@ graphStatus OpDesc::AddInputDesc(uint32_t index, const ge::GeTensorDesc &input_d
 }
 
 graphStatus OpDesc::AddInputDesc(const string &name, const ge::GeTensorDesc &input_desc) {
-  auto input_name_idx = GetAllInputName();
-  if (input_name_idx.find(name) != input_name_idx.end()) {
+  if (input_name_idx_.find(name) != input_name_idx_.end()) {
     GELOGI("input %s is exist,  update it", name.c_str());
     graphStatus ret = UpdateInputDesc(name, input_desc);
     return ret;
@@ -224,17 +217,15 @@ graphStatus OpDesc::AddInputDesc(const string &name, const ge::GeTensorDesc &inp
       return GRAPH_FAILED;
     }
     inputs_desc_.push_back(in_desc);
-    (void)input_name_idx.insert(make_pair(name, index));
-    SetAllInputName(input_name_idx);
+    (void)input_name_idx_.insert(make_pair(name, index));
     return GRAPH_SUCCESS;
   }
 }
 
 graphStatus OpDesc::AddInputDescMiddle(const string &name, const unsigned int num, size_t index) {
-  auto input_name_idx = GetAllInputName();
   for (unsigned int i = 0; i < num; i++) {
     string input_name = name + std::to_string(i);
-    GE_CHK_BOOL_RET_STATUS((input_name_idx.find(input_name) == input_name_idx.end()), GRAPH_FAILED,
+    GE_CHK_BOOL_RET_STATUS((input_name_idx_.find(input_name) == input_name_idx_.end()), GRAPH_FAILED,
                            "Add input tensor_desc is existed. name[%s]", input_name.c_str());
 
     std::shared_ptr<GeTensorDesc> in_desc = ComGraphMakeShared<GeTensorDesc>(GeTensorDesc());
@@ -251,24 +242,22 @@ graphStatus OpDesc::AddInputDescMiddle(const string &name, const unsigned int nu
     (void)inputs_desc_.insert(inputs_desc_.begin() + index + i, in_desc);
 
     // Update index in input_name_idx
-    for (auto it = input_name_idx.begin(); it != input_name_idx.end(); ++it) {
+    for (auto it = input_name_idx_.begin(); it != input_name_idx_.end(); ++it) {
       if (it->second >= (index + i)) {
         it->second += 1;
       }
     }
 
-    (void)input_name_idx.insert(make_pair(input_name, i + index));
+    (void)input_name_idx_.insert(make_pair(input_name, i + index));
   }
-  SetAllInputName(input_name_idx);
 
   return GRAPH_SUCCESS;
 }
 
 graphStatus OpDesc::AddInputDescForward(const string &name, const unsigned int num) {
-  auto input_name_idx = GetAllInputName();
   for (unsigned int i = 0; i < num; i++) {
     string input_name = name + std::to_string(i);
-    GE_CHK_BOOL_RET_STATUS((input_name_idx.find(input_name) == input_name_idx.end()), GRAPH_FAILED,
+    GE_CHK_BOOL_RET_STATUS((input_name_idx_.find(input_name) == input_name_idx_.end()), GRAPH_FAILED,
                            "Add input tensor_desc is existed. name[%s]", input_name.c_str());
 
     std::shared_ptr<GeTensorDesc> in_desc = ComGraphMakeShared<GeTensorDesc>(GeTensorDesc());
@@ -279,13 +268,12 @@ graphStatus OpDesc::AddInputDescForward(const string &name, const unsigned int n
     (void)inputs_desc_.insert(inputs_desc_.begin(), in_desc);
 
     // Update index in input_name_idx
-    for (auto it = input_name_idx.begin(); it != input_name_idx.end(); ++it) {
+    for (auto it = input_name_idx_.begin(); it != input_name_idx_.end(); ++it) {
       it->second += 1;
     }
 
-    (void)input_name_idx.insert(make_pair(input_name, 0));
+    (void)input_name_idx_.insert(make_pair(input_name, 0));
   }
-  SetAllInputName(input_name_idx);
 
   return GRAPH_SUCCESS;
 }
@@ -316,17 +304,8 @@ graphStatus OpDesc::AddOutputDescForward(const string &name, const unsigned int 
 
 graphStatus OpDesc::AddOptionalInputDesc(const string &name, const ge::GeTensorDesc &input_desc) {
   if (OpDesc::AddInputDesc(name, input_desc) == GRAPH_FAILED) return GRAPH_FAILED;
-  vector<string> optional_input_names;
-  (void)AttrUtils::GetListStr(this, ATTR_NAME_OPT_INPUT, optional_input_names);
-  optional_input_names.push_back(name);
-  (void)AttrUtils::SetListStr(this, ATTR_NAME_OPT_INPUT, optional_input_names);
+  (void)optional_input_names_.insert(name);
   return GRAPH_SUCCESS;
-}
-
-std::vector<string> OpDesc::GetAllOptionalInputName() const {
-  vector<string> optional_input_names;
-  (void)AttrUtils::GetListStr(this, ATTR_NAME_OPT_INPUT, optional_input_names);
-  return optional_input_names;
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
@@ -343,12 +322,11 @@ OpDesc::UpdateInputDesc(uint32_t index, const ge::GeTensorDesc &tensor_Desc) {
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool OpDesc::OpDescMembersAreEqual(const OpDesc &r_op_desc) const {
-  return (
-    IsEqual(this->GetAllInputName(), r_op_desc.GetAllInputName(), "OpDesc.GetAllInputName()") &&
-    IsEqual(this->output_name_idx_, r_op_desc.output_name_idx_, "OpDesc.output_name_idx_") &&
-    IsEqual(this->GetAllOptionalInputName(), r_op_desc.GetAllOptionalInputName(), "OpDesc.GetAllOptionalInputName()") &&
-    IsEqual(this->engine_name_, r_op_desc.engine_name_, "OpDesc.engine_name_") &&
-    IsEqual(this->op_kernel_lib_name_, r_op_desc.op_kernel_lib_name_, "OpDesc.op_kernel_lib_name_"));
+  return (IsEqual(this->input_name_idx_, r_op_desc.input_name_idx_, "OpDesc.input_name_idx_") &&
+          IsEqual(this->output_name_idx_, r_op_desc.output_name_idx_, "OpDesc.output_name_idx_") &&
+          IsEqual(this->optional_input_names_, r_op_desc.optional_input_names_, "OpDesc.optional_input_names_") &&
+          IsEqual(this->engine_name_, r_op_desc.engine_name_, "OpDesc.engine_name_") &&
+          IsEqual(this->op_kernel_lib_name_, r_op_desc.op_kernel_lib_name_, "OpDesc.op_kernel_lib_name_"));
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool OpDesc::OpDescAttrsAreEqual(const OpDesc &r_op_desc) const {
@@ -422,9 +400,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool OpDesc::operator==(const OpD
 }
 
 graphStatus OpDesc::UpdateInputDesc(const string &name, const ge::GeTensorDesc &tensor_Desc) {
-  auto input_name_idx = GetAllInputName();
-  auto it = input_name_idx.find(name);
-  if (it == input_name_idx.end()) {
+  auto it = input_name_idx_.find(name);
+  if (it == input_name_idx_.end()) {
     GELOGW("Cann't find the input desc. name[%s]", name.c_str());
     return GRAPH_FAILED;
   }
@@ -444,9 +421,8 @@ graphStatus OpDesc::UpdateInputDesc(const string &name, const ge::GeTensorDesc &
 }
 
 bool OpDesc::InputIsSet(const string &name) const {
-  auto input_name_idx = GetAllInputName();
-  auto it = input_name_idx.find(name);
-  if (it != input_name_idx.end()) {
+  auto it = input_name_idx_.find(name);
+  if (it != input_name_idx_.end()) {
     GE_IF_BOOL_EXEC(it->second >= inputs_desc_.size(), GELOGE(GRAPH_FAILED, "it->second is invalid."); return false);
     auto tensor_desc = inputs_desc_[it->second];
     GE_IF_BOOL_EXEC(tensor_desc == nullptr, GELOGE(GRAPH_FAILED, "tensor_desc is null."); return false);
@@ -464,9 +440,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDesc OpDesc::GetInputDesc
 }
 
 GeTensorDesc OpDesc::GetInputDesc(const string &name) const {
-  auto input_name_idx = GetAllInputName();
-  auto it = input_name_idx.find(name);
-  GE_CHK_BOOL_RET_STATUS_NOLOG(it != input_name_idx.end(), GeTensorDesc());
+  auto it = input_name_idx_.find(name);
+  GE_CHK_BOOL_RET_STATUS_NOLOG(it != input_name_idx_.end(), GeTensorDesc());
   GE_CHK_BOOL_RET_STATUS_NOLOG(it->second < inputs_desc_.size(), GeTensorDesc());
   return *(inputs_desc_[it->second].get());
 }
@@ -476,7 +451,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeTensorDescPtr OpDesc::MutableIn
   if (inputs_desc_[index] == nullptr) {
     return nullptr;
   }
-  GE_CHK_BOOL_RET_STATUS(inputs_desc_[index]->IsValid() == GRAPH_SUCCESS, nullptr, "input desc is invalid");
+  if (inputs_desc_[index]->IsValid() != GRAPH_SUCCESS) {
+    GELOGW("input desc is invalid");
+    return nullptr;
+  }
   return inputs_desc_[index];
 }
 
@@ -491,12 +469,11 @@ GeTensorDescPtr OpDesc::MutableInputDesc(const string &name) const {
 }
 
 GE_FUNC_HOST_VISIBILITY OpDesc::Vistor<string> OpDesc::GetAllInputNames() const {
-  auto input_name_idx = GetAllInputName();
   vector<string> names;
-  if (input_name_idx.empty()) {
+  if (input_name_idx_.empty()) {
     return OpDesc::Vistor<string>(shared_from_this(), names);
   }
-  for (std::pair<string, uint32_t> input : input_name_idx) {
+  for (std::pair<string, uint32_t> input : input_name_idx_) {
     names.push_back(input.first);
   }
   return OpDesc::Vistor<string>(shared_from_this(), names);
@@ -672,9 +649,8 @@ OpDesc::GetInputDescPtrDfault(uint32_t index) const {
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ConstGeTensorDescPtr OpDesc::GetInputDescPtr(const string &name) const {
-  auto input_name_idx = GetAllInputName();
-  auto it = input_name_idx.find(name);
-  GE_CHK_BOOL_RET_STATUS_NOLOG(it != input_name_idx.end(), shared_ptr<const GeTensorDesc>());
+  auto it = input_name_idx_.find(name);
+  GE_CHK_BOOL_RET_STATUS_NOLOG(it != input_name_idx_.end(), shared_ptr<const GeTensorDesc>());
   return inputs_desc_[it->second];
 }
 
@@ -708,45 +684,12 @@ graphStatus OpDesc::AddDynamicOutputDesc(const string &name, const unsigned int 
 }
 
 bool OpDesc::IsOptionalInput(const string &name) const {
-  vector<string> optional_input_names;
-  (void)AttrUtils::GetListStr(this, ATTR_NAME_OPT_INPUT, optional_input_names);
-  for (auto &item : optional_input_names) {
-    if (item == name) {
-      return true;
-    }
-  }
-  return false;
+  return optional_input_names_.find(name) != optional_input_names_.end();
 }
 
 bool OpDesc::IsOptionalInput(uint32_t index) const { return IsOptionalInput(GetInputNameByIndex(index)); }
 
-std::map<string, uint32_t> OpDesc::GetAllInputName() const {
-  std::map<string, uint32_t> input_name_idx;
-  std::vector<string> key;
-  std::vector<uint32_t> value;
-  (void)AttrUtils::GetListStr(this, ATTR_NAME_INPUT_NAME_IDX_KEY, key);
-  (void)AttrUtils::GetListInt(this, ATTR_NAME_INPUT_NAME_IDX_VALUE, value);
-
-  if (key.size() != value.size()) {
-    GE_LOGE("twe vector size is different. key_size: %zu, value_size: %zu.", key.size(), value.size());
-  } else {
-    for (uint32_t i = 0; i < key.size(); ++i) {
-      input_name_idx.insert(std::pair<string, uint32_t>(key.at(i), value.at(i)));
-    }
-  }
-  return input_name_idx;
-}
-
-void OpDesc::SetAllInputName(const std::map<string, uint32_t> &input_name_idx) {
-  std::vector<string> key;
-  std::vector<uint32_t> value;
-  for (auto &item : input_name_idx) {
-    key.emplace_back(item.first);
-    value.emplace_back(item.second);
-  }
-  (void)AttrUtils::SetListStr(this, ATTR_NAME_INPUT_NAME_IDX_KEY, key);
-  (void)AttrUtils::SetListInt(this, ATTR_NAME_INPUT_NAME_IDX_VALUE, value);
-}
+std::map<string, uint32_t> OpDesc::GetAllInputName() const { return input_name_idx_; }
 
 std::map<string, uint32_t> OpDesc::GetAllOutputName() { return output_name_idx_; }
 
@@ -757,7 +700,6 @@ bool OpDesc::UpdateInputName(std::map<string, uint32_t> input_name_idx) {
   auto factory_map_size = input_name_idx.size();
   // It indicates that some inputs have no optionalname.
   // The redundant optionalname of factory needs to be deleted and then assigned
-  auto all_input_name_idx = GetAllInputName();
   if (input_map_size < factory_map_size) {
     GELOGI("UpdateInputName org inputname map size: %zu, factory inputname map size: %zu", input_map_size,
            factory_map_size);
@@ -770,18 +712,17 @@ bool OpDesc::UpdateInputName(std::map<string, uint32_t> input_name_idx) {
     }
     if (input_name_idx.size() == input_map_size) {
       GELOGI("UpdateInputName");
-      all_input_name_idx = input_name_idx;
+      input_name_idx_ = input_name_idx;
     } else {
       ret = false;
       GELOGW("after UpdateInputName factoryName map size : %zu", input_name_idx.size());
     }
   } else if (input_map_size == factory_map_size) {
-    all_input_name_idx = input_name_idx;
+    input_name_idx_ = input_name_idx;
   } else {
     ret = false;
     GELOGW("org inputname map size: %zu, factory inputname map size: %zu", input_map_size, factory_map_size);
   }
-  SetAllInputName(all_input_name_idx);
   return ret;
 }
 
@@ -924,21 +865,19 @@ graphStatus OpDesc::CommonVerify() const {
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY string OpDesc::GetInputNameByIndex(uint32_t index) const {
-  auto input_name_idx = GetAllInputName();
-  auto it = input_name_idx.begin();
-  for (; it != input_name_idx.end(); ++it) {
+  auto it = input_name_idx_.begin();
+  for (; it != input_name_idx_.end(); ++it) {
     if (it->second == index) {
       break;
     }
   }
-  GE_CHK_BOOL_RET_STATUS_NOLOG(it != input_name_idx.end(), "");
+  GE_CHK_BOOL_RET_STATUS_NOLOG(it != input_name_idx_.end(), "");
   return it->first;
 }
 
 int OpDesc::GetInputIndexByName(const string &name) const {
-  auto input_name_idx = GetAllInputName();
-  auto it_find = input_name_idx.find(name);
-  GE_CHK_BOOL_RET_STATUS_NOLOG(it_find != input_name_idx.end(), -1);
+  auto it_find = input_name_idx_.find(name);
+  GE_CHK_BOOL_RET_STATUS_NOLOG(it_find != input_name_idx_.end(), -1);
   return static_cast<int>(it_find->second);
 }
 
@@ -1231,12 +1170,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<bool> OpDesc::GetIsInputCo
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDesc::RestoreInputNameIdx(const string &name,
                                                                                        const int &index) {
-  auto input_name_idx = GetAllInputName();
-  if (input_name_idx.find(name) != input_name_idx.end()) {
+  if (input_name_idx_.find(name) != input_name_idx_.end()) {
     GELOGI("Restore input name index is existed. name[%s]", name.c_str());
   }
-  (void)input_name_idx.insert(make_pair(name, index));
-  SetAllInputName(input_name_idx);
+  (void)input_name_idx_.insert(make_pair(name, index));
   return GRAPH_SUCCESS;
 }
 

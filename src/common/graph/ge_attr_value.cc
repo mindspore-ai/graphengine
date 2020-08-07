@@ -1216,26 +1216,15 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CloneOpDesc(
   GE_CHK_BOOL_EXEC(imp.UnserializeOpDesc(op_desc, *op_def), return op_desc, "op_desc unserialize failed");
   op_desc->extAttrs_ = org_op_desc->extAttrs_;
 
-  if (op_desc->HasAttr("_input_name_idx_key")) {
-    if (op_desc->DelAttr("_input_name_idx_key") != SUCCESS) {
-      GELOGE(GRAPH_FAILED, "DelAttr _input_name_idx_key failed.");
-    }
+  // This function may be called by some passes of fusion engine, in this condition, do not need these attribute
+  if (!op_desc->input_name_idx_.empty()) {
+    op_desc->input_name_idx_.clear();
   }
-
-  if (op_desc->HasAttr("_input_name_idx_value")) {
-    if (op_desc->DelAttr("_input_name_idx_value") != SUCCESS) {
-      GELOGE(GRAPH_FAILED, "DelAttr _input_name_idx_value failed.");
-    }
-  }
-
-  if (op_desc->HasAttr("_opt_input")) {
-    if (op_desc->DelAttr("_opt_input") != SUCCESS) {
-      GELOGE(GRAPH_FAILED, "DelAttr _opt_input failed.");
-    }
-  }
-
   if (!op_desc->output_name_idx_.empty()) {
     op_desc->output_name_idx_.clear();
+  }
+  if (!op_desc->optional_input_names_.empty()) {
+    op_desc->optional_input_names_.clear();
   }
 
   return op_desc;
@@ -1260,6 +1249,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CopyOpDesc(c
 
   op_desc->extAttrs_ = org_op_desc->extAttrs_;
 
+  op_desc->input_name_idx_.insert(org_op_desc->input_name_idx_.begin(), org_op_desc->input_name_idx_.end());
+  op_desc->optional_input_names_.insert(org_op_desc->optional_input_names_.begin(),
+                                        org_op_desc->optional_input_names_.end());
   op_desc->output_name_idx_.insert(org_op_desc->output_name_idx_.begin(), org_op_desc->output_name_idx_.end());
 
   op_desc->infer_func_ = org_op_desc->infer_func_;

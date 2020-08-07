@@ -29,6 +29,9 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   GE_CHK_STATUS_RET_NOLOG(node_state.GetShapeInferenceState().AwaitShapesReady(*execution_context_));
 
   auto &node_item = *node_state.GetNodeItem();
+  if (node_item.is_output_shape_static) {
+    return SUCCESS;
+  }
   // Skip shape inference for node of type DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {
     GELOGD("[%s] Skipping node with unknown shape type DEPEND_COMPUTE", node_item.NodeName().c_str());
@@ -48,10 +51,12 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
 
   // Do shape inference
   GELOGD("[%s] Start to invoke InferShapeAndType", node_item.NodeName().c_str());
-  RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
-  GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndType(node_item.node), "Invoke InferShapeAndType failed.");
-  RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] End");
-
+  {
+    std::lock_guard<std::mutex> lk(mu_);
+    RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
+    GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndType(node_item.node), "Invoke InferShapeAndType failed.");
+    RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] End");
+  }
   // Check again to make sure shape is valid after shape inference
   if (node_item.shape_inference_type != DEPEND_SHAPE_RANGE) {
     bool is_unknown_shape = false;
@@ -89,6 +94,10 @@ Status ShapeInferenceEngine::AwaitDependentNodes(NodeState &node_state) {
 }
 
 Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
+  if (node_item.is_output_shape_static) {
+    return SUCCESS;
+  }
+
   // output shape will not be valid until compute is done.
   bool shape_is_future =
     node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE;

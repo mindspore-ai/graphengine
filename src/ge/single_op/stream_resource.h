@@ -37,22 +37,27 @@ class StreamResource {
   StreamResource &operator=(const StreamResource &) = delete;
   StreamResource &operator=(StreamResource &&) = delete;
 
-  void CacheOperator(const void *key, SingleOp *single_op);
+  void CacheOperator(const void *key, std::unique_ptr<SingleOp> &&single_op);
+  void CacheDynamicOperator(const void *key, std::unique_ptr<DynamicSingleOp> &&single_op);
+  void SetStream(rtStream_t stream);
 
   SingleOp *GetOperator(const void *key);
+  DynamicSingleOp *GetDynamicOperator(const void *key);
 
   uint8_t *MallocMemory(const std::string &purpose, size_t size);
   uint8_t *MallocWeight(const std::string &purpose, size_t size);
 
  private:
-  static uint8_t *DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
-                                 std::vector<uint8_t *> &allocated);
+  uint8_t *DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
+                          std::vector<uint8_t *> &allocated);
 
   size_t max_memory_size_ = 0;
   size_t max_weight_size_ = 0;
   std::vector<uint8_t *> memory_list_;
   std::vector<uint8_t *> weight_list_;
-  std::unordered_map<const void *, SingleOp *> op_map_;
+  std::unordered_map<const void *, std::unique_ptr<SingleOp>> op_map_;
+  std::unordered_map<const void *, std::unique_ptr<DynamicSingleOp>> dynamic_op_map_;
+  rtStream_t stream_ = nullptr;
 };
 }  // namespace ge
 

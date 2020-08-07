@@ -104,11 +104,15 @@ Status NextIterationPass::FindWhileGroups() {
           GELOGE(INTERNAL_ERROR, "Get NextIteration node failed, frame_name: %s.", frame_name.c_str());
           return INTERNAL_ERROR;
         }
+        loop_group_iter.second->merge_next_pairs.emplace_back(std::make_pair(out_node, next_node));
 
         NodePtr switch_node = nullptr;
         if (FindTargetNode(out_node, SWITCH, false, switch_node) != SUCCESS) {
           GELOGE(INTERNAL_ERROR, "Get Switch node failed, frame_name: %s.", frame_name.c_str());
           return INTERNAL_ERROR;
+        }
+        if (switch_node == nullptr) {
+          continue;
         }
 
         NodePtr loop_cond = nullptr;
@@ -116,14 +120,12 @@ Status NextIterationPass::FindWhileGroups() {
           GELOGE(INTERNAL_ERROR, "Get LoopCond node failed, frame_name: %s.", frame_name.c_str());
           return INTERNAL_ERROR;
         }
-
         if (loop_group_iter.second->loop_cond == nullptr) {
           loop_group_iter.second->loop_cond = loop_cond;
         } else if (loop_group_iter.second->loop_cond != loop_cond) {
           GELOGE(FAILED, "Multi LoopCond nodes exist, frame_name: %s.", frame_name.c_str());
           return FAILED;
         }
-        loop_group_iter.second->merge_next_pairs.emplace_back(std::make_pair(out_node, next_node));
       }
     }
   }
@@ -311,7 +313,7 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
     }
   }
 
-  if (target_node == nullptr) {
+  if ((target_type != SWITCH) && (target_node == nullptr)) {
     GELOGE(INTERNAL_ERROR, "Find node %s failed.", target_type.c_str());
     return INTERNAL_ERROR;
   }

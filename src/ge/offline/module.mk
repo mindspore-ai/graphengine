@@ -42,7 +42,7 @@ LOCAL_SHARED_LIBRARIES := \
     libge_compiler \
     libruntime_compile \
     libparser_common \
-    libfmk_tensorflow_parser \
+    libfmk_parser \
     liberror_manager \
 
 LOCAL_STATIC_LIBRARIES := libgflags

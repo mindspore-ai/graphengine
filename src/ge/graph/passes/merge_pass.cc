@@ -66,7 +66,7 @@ Status MergePass::Run(NodePtr &node) {
         AddRePassNode(end_node);
       }
       for (const auto &delete_node : del_nodes) {
-        AddNodeDeleted(delete_node.get());
+        AddNodeDeleted(delete_node);
       }
       return ret;
     }

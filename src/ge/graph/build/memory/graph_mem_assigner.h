@@ -147,22 +147,33 @@ class GraphMemoryAssigner {
   ///
   bool CheckInputIsSupportAtomic(const ge::NodePtr &node);
 
-  ge::Status AssignAtomicOutputMemory(const ge::NodePtr &node);
+  ge::Status GetMemoryAssignmentStatus(const ge::NodePtr &node, int64_t output_index, bool &is_mem_assigned);
+
+  ge::Status AssignAtomicOutputMemory(const ge::NodePtr &node, std::vector<int64_t> &mem_offset_end);
 
   ge::Status AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDescPtr &op_desc,
-                                                 std::map<std::string, std::map<int64_t, int64_t>> &workspace_info);
+                                                 std::map<std::string, std::map<int64_t, int64_t>> &workspace_info,
+                                                 std::vector<int64_t> &mem_offset_end);
 
   ge::Status AssignFusionAtomicWorkspaceMemory(const ge::OpDescPtr &op_desc,
-                                               std::map<std::string, std::map<int64_t, int64_t>> &workspace_info);
+                                               std::map<std::string, std::map<int64_t, int64_t>> &workspace_info,
+                                               std::vector<int64_t> &mem_offset_end);
 
+  ge::Status AssignAtomicOutputAndWorkspaceMemory(const ge::NodePtr &node, std::vector<int64_t> &mem_offset_end);
+
+  ge::Status AssignConnectNetOutputAtomicMemory(vector<NodePtr> &connect_netoutput_nodes);
+
+  ge::Status SetIndependentAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start,
+                                      const std::vector<int64_t> &mem_offset_end);
   ///
   /// @brief set loop graph atomic attr
-  /// @param node
+  /// @param node, atomic memory assignment start offset
   /// @param atomic_mem_start: atomic op memory start address
   ///
   ge::Status SetLoopGraphAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start);
 
-  ge::Status SetAtomicCleanAttr(const ge::NodePtr &n, int64_t atomic_mem_start, int64_t atomic_mem_size);
+  ge::Status SetAtomicCleanAttr(const ge::NodePtr &n, const std::vector<int64_t> &atomic_mem_start,
+                                const std::vector<int64_t> &atomic_mem_size);
 
   void AlignMemOffset(const int64_t &mem_align_size);
 

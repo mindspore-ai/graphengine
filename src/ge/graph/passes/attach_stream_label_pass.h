@@ -40,14 +40,6 @@ class AttachStreamLabelPass : public GraphPass {
   void FindNodes(const ComputeGraphPtr &graph);
 
   ///
-  /// @brief Mark node as head_node of stream_switch
-  /// @param [in] node
-  /// @param [in] stream_switch
-  /// @return void
-  ///
-  void MarkHeadNodes(const NodePtr &node, const NodePtr &stream_switch);
-
-  ///
   /// @brief update cond branch
   /// @param [in] node
   /// @return Status

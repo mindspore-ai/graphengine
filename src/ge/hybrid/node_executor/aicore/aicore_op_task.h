@@ -75,6 +75,7 @@ class AtomicAddrCleanOpTask : public AiCoreOpTask {
 
  protected:
   std::string GetKeyForOpParamSize() const override;
+  Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info) override;
 
  private:
   Status InitAtomicAddrCleanIndices(const OpDesc &op_desc);

@@ -487,8 +487,8 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
   if (!ret || proto_size == 0) {
-    GELOGE(FAILED, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
+    return PARAM_INVALID;
   }
 
   if (dev_mem_load_ != nullptr) {
@@ -499,20 +499,20 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
   rtError_t rt_ret = rtMalloc(&dev_mem_load_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "load dump information.", proto_size)
 
   rt_ret = rtMemcpy(dev_mem_load_, proto_size, proto_str.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtDatadumpInfoLoad(dev_mem_load_, proto_size);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtDatadumpInfoLoad failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   load_flag_ = true;
@@ -525,8 +525,8 @@ Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
   if (!ret || proto_size == 0) {
-    GELOGE(FAILED, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
+    return PARAM_INVALID;
   }
 
   if (dev_mem_unload_ != nullptr) {
@@ -537,20 +537,20 @@ Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_
   rtError_t rt_ret = rtMalloc(&dev_mem_unload_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "unload dump information.", proto_size)
 
   rt_ret = rtMemcpy(dev_mem_unload_, proto_size, proto_str.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtDatadumpInfoLoad(dev_mem_unload_, proto_size);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtDatadumpInfoLoad failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   load_flag_ = false;
   GELOGI("UnloadDumpInfo success, proto size is: %zu.", proto_size);
@@ -588,18 +588,20 @@ Status DataDumper::LoadDumpInfo() {
     task.mutable_op()->set_op_type(op_desc->GetType());
 
     if (dump_properties_.GetDumpMode() == kDumpOutput) {
-      if (DumpOutput(op_iter, task) != SUCCESS) {
-        GELOGE(FAILED, "Dump output failed");
-        return FAILED;
+      Status ret = DumpOutput(op_iter, task);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "Dump output failed");
+        return ret;
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
     }
     if (dump_properties_.GetDumpMode() == kDumpInput) {
       if (op_iter.is_task) {
-        if (DumpInput(op_iter, task) != SUCCESS) {
-          GELOGE(FAILED, "Dump input failed");
-          return FAILED;
+        Status ret = DumpInput(op_iter, task);
+        if (ret != SUCCESS) {
+          GELOGE(ret, "Dump input failed");
+          return ret;
         }
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
@@ -608,14 +610,14 @@ Status DataDumper::LoadDumpInfo() {
     if (dump_properties_.GetDumpMode() == kDumpAll) {
       auto ret = DumpOutput(op_iter, task);
       if (ret != SUCCESS) {
-        GELOGE(FAILED, "Dump output failed when in dumping all");
-        return FAILED;
+        GELOGE(ret, "Dump output failed when in dumping all");
+        return ret;
       }
       if (op_iter.is_task) {
         ret = DumpInput(op_iter, task);
         if (ret != SUCCESS) {
-          GELOGE(FAILED, "Dump input failed when in dumping all");
-          return FAILED;
+          GELOGE(ret, "Dump input failed when in dumping all");
+          return ret;
         }
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
@@ -630,8 +632,8 @@ Status DataDumper::LoadDumpInfo() {
   if (!op_list_.empty() || is_op_debug_) {
     auto ret = ExecuteLoadDumpInfo(op_mapping_info);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Execute load dump info failed");
-      return FAILED;
+      GELOGE(ret, "Execute load dump info failed");
+      return ret;
     }
   }
   return SUCCESS;
@@ -702,8 +704,8 @@ Status DataDumper::UnloadDumpInfo() {
   }
   auto ret = ExecuteUnLoadDumpInfo(op_mapping_info);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Execute unload dump info failed");
-    return FAILED;
+    GELOGE(ret, "Execute unload dump info failed");
+    return ret;
   }
   return SUCCESS;
 }

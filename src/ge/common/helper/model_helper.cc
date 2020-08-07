@@ -91,9 +91,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   }
   auto ge_model_weight = ge_model->GetWeight();
   GELOGI("WEIGHTS_DATA size is %zu , %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
-  if (SaveModelPartition(om_file_save_helper, ModelPartitionType::WEIGHTS_DATA, ge_model_weight.GetData(),
-                         ge_model_weight.GetSize()) != SUCCESS) {
-    GELOGW("Add weight partition failed");  // weight is not necessary
+  // weight is not necessary
+  if (ge_model_weight.GetSize() > 0) {
+    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::WEIGHTS_DATA,
+                                         ge_model_weight.GetData(), ge_model_weight.GetSize()),
+                      "Add weight partition failed");
   }
 
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
@@ -239,45 +241,48 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(FAILED, "Model_data is nullptr, or model_data_size is 0");
-    return FAILED;
+    GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
+    return GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
 
   if (is_assign_model_) {
-    GELOGE(FAILED, "Model helper has already loaded!");
-    return FAILED;
+    GELOGE(GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
+    return GE_EXEC_LOAD_MODEL_REPEATED;
   }
 
   if (ReleaseLocalModelData() != SUCCESS) {
-    GELOGE(FAILED, "ReleaseLocalModelData failed.");
-    return FAILED;
+    GELOGE(INTERNAL_ERROR, "ReleaseLocalModelData failed.");
+    return INTERNAL_ERROR;
   }
 
+  Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_) != SUCCESS) {
-    GELOGE(FAILED, "Parse model content failed!");
-    return FAILED;
+    GELOGE(status, "Parse model content failed!");
+    return status;
   }
 
   file_header_ = reinterpret_cast<ModelFileHeader *>(model_data.model_data);
 
   OmFileLoadHelper om_load_helper;
-  if (om_load_helper.Init(model_addr_tmp_, model_len_tmp_) != SUCCESS) {
-    GELOGE(FAILED, "Om_load_helper init failed");
+  status = om_load_helper.Init(model_addr_tmp_, model_len_tmp_);
+  if (status != SUCCESS) {
+    GELOGE(status, "Om_load_helper init failed");
     model_addr_tmp_ = nullptr;
-    return FAILED;
+    return status;
   }
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_addr_tmp_);
   if (partition_table->num == kOriginalOmPartitionNum) {
     model_addr_tmp_ = nullptr;
-    GELOGE(FAILED, "om model is error,please use executable om model");
-    return FAILED;
+    GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
+    return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }
   // Encrypt model need to del temp model/no encrypt model don't need to del model
   model_addr_tmp_ = nullptr;
 
-  if (GenerateGeModel(om_load_helper) != SUCCESS) {
-    GELOGE(FAILED, "GenerateGeModel failed");
-    return FAILED;
+  status = GenerateGeModel(om_load_helper);
+  if (status != SUCCESS) {
+    GELOGE(status, "GenerateGeModel failed");
+    return status;
   }
 
   is_assign_model_ = true;
@@ -289,19 +294,19 @@ Status ModelHelper::GenerateGeModel(OmFileLoadHelper &om_load_helper) {
   GE_CHECK_NOTNULL(model_);
   Status ret = LoadModelData(om_load_helper);
   if (ret != SUCCESS) {
-    return ret;
+    return GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
   }
   ret = LoadWeights(om_load_helper);
   if (ret != SUCCESS) {
-    return ret;
+    return GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
   }
   ret = LoadTask(om_load_helper);
   if (ret != SUCCESS) {
-    return ret;
+    return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
   }
   ret = LoadTBEKernelStore(om_load_helper);
   if (ret != SUCCESS) {
-    return ret;
+    return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
   }
   return SUCCESS;
 }

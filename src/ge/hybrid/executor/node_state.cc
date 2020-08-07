@@ -33,7 +33,7 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
 }
 
 void ShapeInferenceState::UpdateInputShape(uint32_t idx, const GeShape &ori_shape, const GeShape &shape) {
-  if (node_item.is_input_shape_static[idx]) {
+  if (!node_item.is_dynamic || node_item.is_input_shape_static[idx]) {
     GELOGD("[%s] Trying to update static shape, idx = %u. old shape = [%s], new shape = [%s]",
            node_item.NodeName().c_str(), idx, node_item.op_desc->MutableInputDesc(idx)->GetShape().ToString().c_str(),
            shape.ToString().c_str());
@@ -52,7 +52,7 @@ void ShapeInferenceState::UpdateInputShape(uint32_t idx, const GeShape &ori_shap
 }
 
 void ShapeInferenceState::UpdateInputShapeFuture(uint32_t idx, ShapeFuture &&future) {
-  if (node_item.is_input_shape_static[idx]) {
+  if (!node_item.is_dynamic || node_item.is_input_shape_static[idx]) {
     GELOGD("[%s] Trying to update constant shape, idx = %u", node_item.NodeName().c_str(), idx);
     return;
   }
@@ -66,6 +66,9 @@ void ShapeInferenceState::UpdateInputShapeFuture(uint32_t idx, ShapeFuture &&fut
 }
 
 Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &context) {
+  if (!node_item.is_dynamic) {
+    return SUCCESS;
+  }
   std::unique_lock<std::mutex> lk(mu_);
   if (num_pending_shapes_ > 0) {
     GELOGD("[%s] Await pending shape or shape future start.", node_item.NodeName().c_str());

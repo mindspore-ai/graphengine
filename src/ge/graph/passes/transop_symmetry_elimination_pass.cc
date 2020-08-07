@@ -15,21 +15,26 @@
  */
 
 #include "transop_symmetry_elimination_pass.h"
+#include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/common/transop_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
+#include "types.h"
 
 namespace {
 const int kTransOpOutIndex = 0;
-static std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOAT, ge::DT_BOOL}};
+const std::set<std::string> white_list_op{ge::TRANSPOSED, ge::RESHAPE, ge::REFORMAT, ge::CAST, ge::TRANSDATA};
+std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOAT, ge::DT_BOOL}};
 }  // namespace
 namespace ge {
 Status TransOpSymmetryEliminationPass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
-  if (!TransOpUtil::IsTransOp(node)) {
+  if (white_list_op.find(node->GetType()) == white_list_op.end()) {
     return SUCCESS;
   }
   GELOGD("Symmetry Elimination Pass in.");
@@ -40,9 +45,8 @@ Status TransOpSymmetryEliminationPass::Run(NodePtr &node) {
       GE_CHECK_NOTNULL(peer_in_anchor->GetOwnerNode());
       GE_CHECK_NOTNULL(peer_in_anchor->GetOwnerNode()->GetOpDesc());
       if (!CheckCanBeEliminated(node, peer_in_anchor)) {
-        break;
+        continue;
       }
-
       auto dst_node = peer_in_anchor->GetOwnerNode();
       Status ret = EliminateTransOp(node, out_anchor, dst_node, peer_in_anchor);
       if (ret != SUCCESS) {
@@ -70,12 +74,33 @@ bool TransOpSymmetryEliminationPass::CheckCanBeEliminated(const ge::NodePtr &src
            dst_node->GetType().c_str(), dst_in_anchor->GetIdx());
     return false;
   }
-  if (!DescAreSymmetry(src_node, dst_node) || !CheckPrecisionLoss(src_node)) {
-    GELOGD("Not satisfied symmetry or has precision loss, ignore pass.");
-    return false;
+  if (src_node->GetType() == ge::RESHAPE) {
+    GE_CHECK_NOTNULL(src_node->GetOpDesc());
+    auto unknown_dims_num = GetUnknownDimsNum(src_node->GetOpDesc()->GetInputDesc(0));
+    if (unknown_dims_num != 0 && (unknown_dims_num == UNKNOWN_DIM_NUM || unknown_dims_num > 1)) {
+      GELOGD(
+        "Pre node %s is reshape op which input is dynamic shape and has more than one unknown dimension. "
+        "Ignore pass.",
+        src_node->GetName().c_str());
+      return false;
+    }
+  } else if (src_node->GetType() == ge::TRANSPOSED) {
+    if (!JudgeTransposeDBack2Raw(src_node, dst_node)) {
+      GELOGD("Two Transpose op src node %s dst node %s will change the raw data. Ignore pass.",
+             src_node->GetName().c_str(), dst_node->GetName().c_str());
+      return false;
+    }
+  } else if (src_node->GetType() == ge::TRANSDATA) {
+    auto unknown_dims_num = GetUnknownDimsNum(src_node->GetOpDesc()->GetInputDesc(0));
+    if (unknown_dims_num == UNKNOWN_DIM_NUM) {
+      GELOGD("Pre node %s is transdata op which input is dynamic shape and all dimension are unknown(-2). Ignore pass.",
+             src_node->GetName().c_str());
+      return false;
+    }
   }
-  return true;
+  return CheckPrecisionLoss(src_node) && DescAreSymmetry(src_node, dst_node);
 }
+
 bool TransOpSymmetryEliminationPass::DescAreSymmetry(const NodePtr &src_node, const NodePtr &dst_node) {
   const auto &src_input_desc = src_node->GetOpDesc()->MutableInputDesc(0);
   const auto &dst_output_desc = dst_node->GetOpDesc()->MutableOutputDesc(0);
@@ -88,15 +113,28 @@ bool TransOpSymmetryEliminationPass::DescAreSymmetry(const NodePtr &src_node, co
   const auto &dst_output_format = dst_output_desc->GetFormat();
   const auto &dst_output_shape = dst_output_desc->GetShape().GetDims();
 
+  bool is_symmetry = true;
   if (src_node->GetType() == CAST && dst_node->GetType() == CAST) {
     bool is_format_symmetry =
       (src_input_format == dst_output_format) || (dst_output_format == FORMAT_ND) || (src_input_format == FORMAT_ND);
-    return (src_input_dtype == dst_output_dtype) && is_format_symmetry;
+    is_symmetry = (src_input_dtype == dst_output_dtype) && is_format_symmetry;
   } else {
-    return (src_input_dtype == dst_output_dtype) && (src_input_shape == dst_output_shape) &&
-           (src_input_format == dst_output_format);
+    is_symmetry = (src_input_dtype == dst_output_dtype) && (src_input_shape == dst_output_shape) &&
+                  (src_input_format == dst_output_format);
   }
+  if (!is_symmetry) {
+    GELOGD(
+      "Not satisfied symmetry. ignore pass.\n"
+      "Src node %s input type: %s format: %s shape: %s, "
+      "dst node %s output type: %s format: %s shape: %s. ",
+      src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_input_dtype).c_str(),
+      TypeUtils::FormatToSerialString(src_input_format).c_str(), formats::ShapeToString(src_input_shape).c_str(),
+      dst_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(dst_output_dtype).c_str(),
+      TypeUtils::FormatToSerialString(dst_output_format).c_str(), formats::ShapeToString(dst_output_shape).c_str());
+  }
+  return is_symmetry;
 }
+
 bool TransOpSymmetryEliminationPass::CheckPrecisionLoss(const ge::NodePtr &src_node) {
   auto idx = TransOpUtil::GetTransOpDataIndex(src_node);
   auto input_desc = src_node->GetOpDesc()->GetInputDesc(idx);
@@ -105,9 +143,58 @@ bool TransOpSymmetryEliminationPass::CheckPrecisionLoss(const ge::NodePtr &src_n
   auto dst_dtype = output_desc.GetDataType();
   auto iter = precision_loss_transfer_map.find(src_dtype);
   if (iter != precision_loss_transfer_map.end() && iter->second == dst_dtype) {
-    GELOGW("Node %s transfer data type from %s to %s ,it will cause precision loss.", src_node->GetName().c_str(),
-           TypeUtils::DataTypeToSerialString(src_dtype).c_str(), TypeUtils::DataTypeToSerialString(dst_dtype).c_str());
+    GELOGW("Node %s transfer data type from %s to %s ,it will cause precision loss. ignore pass.",
+           src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_dtype).c_str(),
+           TypeUtils::DataTypeToSerialString(dst_dtype).c_str());
     return false;
+  }
+  return true;
+}
+
+int TransOpSymmetryEliminationPass::GetUnknownDimsNum(const GeTensorDesc &node_desc) {
+  //
+  //  unknown_dims_num != 0 , is dynamic shape
+  //  unknown_dims_num = UNKNOWN_DIM_NUM , all dims are unknown
+  //  unknown_dims_num = n , n > 0 , has n dims unknown
+  //
+  int unknown_dims_num = 0;
+  auto ge_shape = node_desc.GetShape();
+  for (const auto dim : ge_shape.GetDims()) {
+    if (dim == UNKNOWN_DIM_NUM) {
+      return UNKNOWN_DIM_NUM;
+    }
+    if (dim == UNKNOWN_DIM) {
+      ++unknown_dims_num;
+    }
+  }
+  return unknown_dims_num;
+}
+
+bool TransOpSymmetryEliminationPass::JudgeTransposeDBack2Raw(const NodePtr &src_node, const NodePtr &dst_node) {
+  //
+  //  A transpose to C : A---->(perm_1)---->B---->(perm_2)---->C
+  //  we want to judge A is equal with C or not
+  //  suppose A = C then:
+  //  1. B[i] = A[perm_1[i]]
+  //  2. C[i] = B[perm_2[i]]
+  //  3. combine 1 and 2 then: C[i] = A[perm_1[perm_2[i]]]
+  //  which we get through 3: i = perm_1[perm_2[i]]
+  //
+  vector<int64_t> src_node_perm;
+  AttrUtils::GetListInt(src_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, src_node_perm);
+  vector<int64_t> dst_node_perm;
+  AttrUtils::GetListInt(dst_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, dst_node_perm);
+
+  if (src_node_perm.size() != dst_node_perm.size()) {
+    return false;
+  }
+  for (size_t src_index = 0; src_index < src_node_perm.size(); ++src_index) {
+    if (dst_node_perm[src_index] >= static_cast<int64_t>(src_node_perm.size())) {
+      return false;
+    }
+    if (static_cast<int64_t>(src_index) != src_node_perm[dst_node_perm[src_index]]) {
+      return false;
+    }
   }
   return true;
 }
@@ -139,7 +226,18 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
     GELOGE(FAILED, "Copy control edge from %s to %s failed.", src_node->GetName().c_str(), dst_node->GetName().c_str());
     return ret;
   }
-  // 4.IsolateAndDelete T2, A will link to B automatically, and all control edge will also relink.
+  // 4.Add control edge from T1 other input to T2, like reshape second input
+  for (const auto &in_node : src_node->GetInDataNodes()) {
+    if (in_node->GetName() == pre_normal_node->GetName()) {
+      continue;
+    }
+    ret = GraphUtils::AddEdge(in_node->GetOutControlAnchor(), dst_node->GetInControlAnchor());
+    if (ret != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "Add control edge from %s to %s failed.", in_node->GetName().c_str(), dst_node->GetName().c_str());
+      return ret;
+    }
+  }
+  // 5.IsolateAndDelete T2, A will link to B automatically, and all control edge will also relink.
   ret = IsolateAndDeleteNode(dst_node, {0});
   if (ret != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", dst_node->GetName().c_str(),
@@ -147,16 +245,16 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
     return ret;
   }
   GELOGI("Trans op symmetry eliminate successfully. Node %s has been removed.", dst_node->GetName().c_str());
-  // 5.If T1 has no data out, isolate and deleted it.
+  // 6.If T1 has no data out, isolate and deleted it.
   if (src_node->GetOutDataNodesSize() == 0) {
-    // 5.1 Copy out control to pre normal node
+    // 6.1 Copy out control to pre normal node
     ret = GraphUtils::CopyOutCtrlEdges(src_node, pre_normal_node);
     if (ret != GRAPH_SUCCESS) {
       GELOGE(FAILED, "Copy control edge from %s to %s failed.", src_node->GetName().c_str(),
              dst_node->GetName().c_str());
       return ret;
     }
-    // 5.2 Isolate and delete T1
+    // 6.2 Isolate and delete T1
     ret = IsolateAndDeleteNode(src_node, {});
     if (ret != GRAPH_SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", src_node->GetName().c_str(),

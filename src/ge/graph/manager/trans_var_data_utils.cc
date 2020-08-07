@@ -444,7 +444,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
         rtError_t rt_ret = rtCtxSetCurrent(ctx);
         if (rt_ret != RT_ERROR_NONE) {
           GELOGE(RT_FAILED, "Failed to set context, error_code is: 0x%X.", rt_ret);
-          return RT_FAILED;
+          return RT_ERROR_TO_GE_STATUS(rt_ret);
         }
         uint32_t allocated_graph_id = 0;
         Status ret = VarManager::Instance(session_id)->GetAllocatedGraphId(node->GetName(), allocated_graph_id);

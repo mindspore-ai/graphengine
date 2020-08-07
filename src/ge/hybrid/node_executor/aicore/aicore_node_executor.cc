@@ -74,11 +74,11 @@ Status AiCoreNodeExecutor::GenNodeKey(const NodePtr &node, std::string &node_key
   GE_CHECK_NOTNULL(op_desc);
 
   // make sure unique, (op_id + input_shape) is unique
-  node_key = std::to_string(op_desc->GetId()) + "/";
+  node_key = std::to_string(op_desc->GetId()) + "-";
   node_key.append(std::to_string(op_desc->GetInputsSize()));
   auto input_descs = op_desc->GetAllInputsDescPtr();
   for (auto &input_desc : input_descs) {
-    node_key.push_back('/');
+    node_key.push_back('-');
     auto &shape = input_desc->MutableShape();
     auto num_dims = shape.GetDimNum();
     if (num_dims == 0) {
@@ -86,7 +86,7 @@ Status AiCoreNodeExecutor::GenNodeKey(const NodePtr &node, std::string &node_key
     }  // scalar
     for (std::size_t i = 0; i < num_dims - 1; i++) {
       node_key.append(std::to_string(shape.GetDim(i)));
-      node_key.push_back(',');
+      node_key.push_back('_');
     }
     node_key.append(std::to_string(shape.GetDim(num_dims - 1)));
   }
@@ -114,13 +114,15 @@ std::shared_ptr<NodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &nod
 Status AiCoreNodeExecutor::CompileTask(const HybridModel &model, const NodePtr &node,
                                        shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
   GELOGI("AiCoreNodeExecutor(%s) CompileTask Start.", node->GetName().c_str());
 
   AiCoreNodeTaskRegistry &registry = AiCoreNodeTaskRegistry::GetInstance();
-  std::string node_key;
-  GE_CHK_STATUS_RET(GenNodeKey(node, node_key), "GenNodeKey failed, op name = %s.", node->GetName().c_str());
+  std::string shape_key;
+  GE_CHK_STATUS_RET(GenNodeKey(node, shape_key), "GenNodeKey failed, op name = %s.", node->GetName().c_str());
 
-  node_key = std::to_string(model.GetModelId()) + "/" + node_key;
+  auto node_key = std::to_string(model.GetModelId()) + "/" + shape_key;
   GELOGD("NodeKey for %s = %s", node->GetName().c_str(), node_key.c_str());
   task = registry.GetTask(node_key);
   if (task != nullptr) {
@@ -129,7 +131,10 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model, const NodePtr &
   }
 
   std::vector<domi::TaskDef> task_defs;
-  GE_CHK_STATUS_RET(compiler_->CompileOp(node, task_defs), "Compile op(%s) failed.", node->GetName().c_str());
+  auto ori_node_name = node->GetName();
+  op_desc->SetName(ori_node_name + "_" + shape_key);
+  GE_CHK_STATUS_RET(compiler_->CompileOp(node, task_defs), "Compile op(%s) failed.", ori_node_name.c_str());
+  op_desc->SetName(ori_node_name);
   GELOGD("successfully generated task_defs: %s", node->GetName().c_str());
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), task_defs);

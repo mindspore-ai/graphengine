@@ -49,10 +49,6 @@ graphStatus ReverseBrushWhileBodySubGraph(const ConstNodePtr &node) {
   }
 
   for (const auto &node_sub : sub_graph_body->GetAllNodes()) {
-    if (node_sub->GetInDataNodes().size() == 0) {
-      continue;
-    }
-
     for (size_t i = 0; i < node_sub->GetAllInDataAnchorsSize(); i++) {
       auto input_desc = node_sub->GetOpDesc()->MutableInputDesc(i);
       (void)input_desc->SetUnknownDimNumShape();
@@ -303,11 +299,11 @@ graphStatus UpdateParentNodeOutTensor(const ConstNodePtr &node) {
 }
 }  // namespace
 void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::string &phase) {
-  if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "node is null");
+  if (!IsLogEnable(GE, DLOG_DEBUG)) {
     return;
   }
-  if (!IsLogEnable(GE, DLOG_DEBUG)) {
+  if (node == nullptr) {
+    GELOGE(GRAPH_FAILED, "node is null");
     return;
   }
   ge::OpDescPtr op_desc = node->GetOpDesc();
@@ -325,6 +321,18 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
                         TypeUtils::FormatToSerialString(input_desc->GetFormat()) + " ";
     }
     str += input_desc_str;
+
+    input_desc_str = "input origin shape: ";
+    for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
+      input_desc_str += "[";
+      for (int64_t dim : input_desc->GetOriginShape().GetDims()) {
+        input_desc_str += std::to_string(dim) + " ";
+      }
+      input_desc_str += "]";
+      input_desc_str += ":" + TypeUtils::DataTypeToSerialString(input_desc->GetOriginDataType()) + ":" +
+                        TypeUtils::FormatToSerialString(input_desc->GetOriginFormat()) + " ";
+    }
+    str += input_desc_str;
   }
 
   if (op_desc->GetAllOutputsDescSize() != 0) {
@@ -340,6 +348,21 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
       output_desc_str += "]";
       output_desc_str += ":" + TypeUtils::DataTypeToSerialString(output_desc->GetDataType()) + ":" +
                          TypeUtils::FormatToSerialString(output_desc->GetFormat()) + " ";
+    }
+    str += output_desc_str;
+
+    output_desc_str = "output origin shape: ";
+    for (const auto &output_desc : op_desc->GetAllOutputsDescPtr()) {
+      if (output_desc == nullptr) {
+        continue;
+      }
+      output_desc_str += "[";
+      for (int64_t dim : output_desc->GetOriginShape().GetDims()) {
+        output_desc_str += std::to_string(dim) + " ";
+      }
+      output_desc_str += "]";
+      output_desc_str += ":" + TypeUtils::DataTypeToSerialString(output_desc->GetOriginDataType()) + ":" +
+                         TypeUtils::FormatToSerialString(output_desc->GetOriginFormat()) + " ";
     }
     str += output_desc_str;
   }
@@ -362,7 +385,6 @@ graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &
       return ret;
     }
   }
-
   // Get infer func and execute
   ret = op_desc->CallInferFunc(op);
   if (ret == GRAPH_PARAM_INVALID) {
@@ -479,19 +501,20 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
     GELOGE(GRAPH_FAILED, "Verifying %s failed.", node->GetName().c_str());
     return GRAPH_FAILED;
   }
+  PrintInOutTensorShape(node, "before_infershape");
+  Operator op = OpDescUtils::CreateOperatorFromNode(node);
 
-  auto inference_context = CreateInferenceContext(context_map, node);
-  if (inference_context == nullptr) {
-    GELOGE(GRAPH_FAILED, "inference context is null");
-    return GRAPH_FAILED;
+  bool is_unknown_graph = node->GetOwnerComputeGraph()->GetGraphUnknownFlag();
+  if (!is_unknown_graph) {
+    auto inference_context = CreateInferenceContext(context_map, node);
+    if (inference_context == nullptr) {
+      GELOGE(GRAPH_FAILED, "inference context is null");
+      return GRAPH_FAILED;
+    }
+    GELOGD("create context for node:%s, marks %zu", node->GetName().c_str(), inference_context->GetMarks().size());
+    op.SetInferenceContext(inference_context);
   }
 
-  GELOGD("create context for node:%s, marks %zu", node->GetName().c_str(), inference_context->GetMarks().size());
-
-  PrintInOutTensorShape(node, "before_infershape");
-
-  Operator op = OpDescUtils::CreateOperatorFromNode(node);
-  op.SetInferenceContext(inference_context);
   graphStatus status = InferShapeAndType(node, op, before_subgraph);
   if (status == GRAPH_PARAM_INVALID || status == GRAPH_SUCCESS) {
     (void)ge::NodeUtils::UpdatePeerNodeInputDesc(node);
@@ -499,16 +522,17 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
     GELOGE(GRAPH_FAILED, "%s call infer function failed.", node->GetName().c_str());
     return GRAPH_FAILED;
   }
-
-  auto ctx_after_infer = op.GetInferenceContext();
-  if (ctx_after_infer != nullptr) {
-    GELOGD("[%s] after infershape. mark:%zu", node->GetName().c_str(), ctx_after_infer->GetMarks().size());
-    if (!ctx_after_infer->GetOutputHandleShapesAndTypes().empty() || !ctx_after_infer->GetMarks().empty()) {
-      GELOGD("[%s] set inference context after. mark:%zu", node->GetName().c_str(), ctx_after_infer->GetMarks().size());
-      (void)context_map.emplace(node, ctx_after_infer);
+  if (!is_unknown_graph) {
+    auto ctx_after_infer = op.GetInferenceContext();
+    if (ctx_after_infer != nullptr) {
+      GELOGD("[%s] after infershape. mark:%zu", node->GetName().c_str(), ctx_after_infer->GetMarks().size());
+      if (!ctx_after_infer->GetOutputHandleShapesAndTypes().empty() || !ctx_after_infer->GetMarks().empty()) {
+        GELOGD("[%s] set inference context after. mark:%zu", node->GetName().c_str(),
+               ctx_after_infer->GetMarks().size());
+        (void)context_map.emplace(node, ctx_after_infer);
+      }
     }
   }
-
   PrintInOutTensorShape(node, "after_infershape");
 
   return GRAPH_SUCCESS;

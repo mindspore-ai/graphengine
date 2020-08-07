@@ -27,7 +27,7 @@ Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph, TaskContext
                                           const std::function<void()> &done_callback) {
   GELOGD("[%s] Start to execute subgraph.", subgraph->GetName().c_str());
   auto execution_context = const_cast<GraphExecutionContext *>(task_context.GetExecutionContext());
-  auto executor = MakeShared<SubgraphExecutor>(subgraph, execution_context, task_context.IsForceInferShape());
+  auto executor = MakeShared<SubgraphExecutor>(subgraph, execution_context);
   GE_CHECK_NOTNULL(executor);
   GE_CHK_STATUS_RET(executor->ExecuteAsync(task_context), "[%s] Failed to execute partitioned call.",
                     subgraph->GetName().c_str());
@@ -186,13 +186,34 @@ Status WhileOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::fun
     return INTERNAL_ERROR;
   }
 
-  // graph build can not set accurate flag unknown_shape_status by now.
-  // Treating all nodes in while scope as unknown shape.
-  task_context.SetForceInferShape(true);
+  bool is_continue = false;
+  GE_CHK_STATUS_RET(ExecuteOneLoop(task_context, is_continue), "[%s] Failed to execute iteration 0.",
+                    task_context.GetNodeName());
+  if (!is_continue) {
+    for (int i = 0; i < task_context.NumInputs(); ++i) {
+      auto input_tensor = task_context.GetInput(i);
+      auto input_tensor_desc = task_context.GetInputDesc(i);
+      auto output_tensor_desc = task_context.MutableOutputDesc(i);
+      GE_CHECK_NOTNULL(input_tensor);
+      GE_CHECK_NOTNULL(input_tensor_desc);
+      GE_CHECK_NOTNULL(output_tensor_desc);
+      GE_CHK_STATUS_RET_NOLOG(task_context.SetOutput(i, *input_tensor));
+      *output_tensor_desc = *input_tensor_desc;
+    }
 
-  int iteration = 0;
+    return SUCCESS;
+  }
+
+  // backup original input tensor desc
+  std::vector<GeTensorDesc> ori_input_desc;
+  for (int i = 0; i < task_context.NumInputs(); ++i) {
+    auto tensor_desc = task_context.GetInputDesc(i);
+    GE_CHECK_NOTNULL(tensor_desc);
+    ori_input_desc.emplace_back(*tensor_desc);
+  }
+
+  int iteration = 1;
   while (true) {
-    bool is_continue = false;
     GELOGD("[%s] Start to execute, iteration = %d", task_context.GetNodeName(), iteration);
     GE_CHK_STATUS_RET(ExecuteOneLoop(task_context, is_continue), "[%s] Failed to execute iteration %d.",
                       task_context.GetNodeName(), iteration);
@@ -203,6 +224,16 @@ Status WhileOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::fun
     }
 
     ++iteration;
+  }
+
+  for (int i = 0; i < task_context.NumInputs(); ++i) {
+    auto input_tensor = task_context.GetInput(i);
+    auto tensor_desc = task_context.MutableInputDesc(i);
+    GE_CHECK_NOTNULL(input_tensor);
+    GE_CHECK_NOTNULL(tensor_desc);
+    // restore original input tensor desc
+    *tensor_desc = std::move(ori_input_desc[i]);
+    GE_CHK_STATUS_RET_NOLOG(task_context.SetOutput(i, *input_tensor));
   }
 
   return SUCCESS;
@@ -268,11 +299,6 @@ Status WhileOpNodeTask::ExecuteOneLoop(TaskContext &task_context, bool &is_conti
   GE_CHK_STATUS_RET(ExecuteCond(task_context, is_continue), "[%s] Failed to execute cond-subgraph",
                     task_context.GetNodeName());
   if (!is_continue) {
-    for (int i = 0; i < task_context.NumInputs(); ++i) {
-      auto input_tensor = task_context.GetInput(i);
-      GE_CHECK_NOTNULL(input_tensor);
-      task_context.SetOutput(i, *input_tensor);
-    }
     return SUCCESS;
   }
 

@@ -23,6 +23,9 @@
 extern "C" {
 #endif
 
+#define RT_CAPABILITY_SUPPORT     (0x1)
+#define RT_CAPABILITY_NOT_SUPPORT (0x0)
+
 typedef struct tagRTDeviceInfo {
   uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
   uint32_t ctrl_cpu_ip;
@@ -53,6 +56,16 @@ typedef enum tagRtAicpuDeployType {
   AICPU_DEPLOY_CROSS_THREAD = 0x2,
   AICPU_DEPLOY_RESERVED
 } rtAicpuDeployType_t;
+
+typedef enum tagRtFeatureType {
+  FEATURE_TYPE_MEMCPY = 0,
+  FEATURE_TYPE_RSV
+} rtFeatureType_t;
+
+typedef enum tagMemcpyInfo {
+  MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
+  MEMCPY_INFO_RSV
+} rtMemcpyInfo_t;
 
 /**
  * @ingroup dvrt_dev
@@ -297,6 +310,24 @@ rtError_t rtGetSocVersion(char *version, const uint32_t maxLen);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtGetPairDevicesInfo(uint32_t devId, uint32_t otherDevId, int32_t infoType, int64_t *value);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get capability infomation.
+ * @param [in] featureType  feature type
+               typedef enum tagRtFeatureType {
+                    FEATURE_TYPE_MEMCPY = 0,
+                    FEATURE_TYPE_RSV,
+               } rtFeatureType_t;
+ * @param [in] infoType   info type
+               typedef enum tagMemcpyInfo {
+                    MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
+                    MEMCPY_INFO _RSV,
+               } rtMemcpyInfo_t;
+ * @param [out] value   the capability info
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, int64_t *value);
 #ifdef __cplusplus
 }
 #endif

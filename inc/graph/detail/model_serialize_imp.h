@@ -67,6 +67,9 @@ class ModelSerializeImp {
   bool HandleNodeNameRef();
 
   bool UnserializeOpDesc(OpDescPtr &opDesc, proto::OpDef &opDefProto);
+  void AttrDefToOpDesc(OpDescPtr &op_desc, std::vector<string> &key_in, std::vector<string> &key_out,
+                       std::vector<uint32_t> &value_in, std::vector<uint32_t> &value_out, std::vector<string> &opt);
+  void OpDescToAttrDef(const ConstOpDescPtr &op_desc, proto::OpDef *op_def_proto);
 
   bool UnserializeNode(ComputeGraphPtr &graph, proto::OpDef &opDefProto);
 

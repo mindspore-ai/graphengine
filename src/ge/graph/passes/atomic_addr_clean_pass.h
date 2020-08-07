@@ -74,6 +74,16 @@ class AtomicAddrCleanPass : public GraphPass {
    */
   bool IsAtomicOp(const NodePtr &node);
 
+  /**
+   * Handle atomic node in unknown graph
+   * @param atomic_node_vec: atomic node vector in unknown graph
+   * @return
+   */
+  Status CompileUnknownGraphOp(const vector<NodePtr> &atomic_node_vec);
+
+  Status HandleDispersedAtomicNodes(ComputeGraphPtr &graph, const std::vector<NodePtr> &atomic_node_vec,
+                                    std::vector<NodePtr> &common_atomic_nodes);
+
   vector<NodePtr> hcom_node_vec_;
   bool is_loop_graph_ = false;
 };

@@ -165,6 +165,7 @@ class KernelTaskInfo : public TaskInfo {
   void *aicpu_ext_info_addr_ = nullptr;
 
   // For super kernel
+  void *skt_dump_args_ = nullptr;
   uint32_t skt_id_;
   std::string stub_func_name_;
   bool is_l1_fusion_enable_;

@@ -26,23 +26,26 @@
 #include "common/ge_types.h"
 #include "common/types.h"
 #include "graph/tensor.h"
+#include "graph/ge_tensor.h"
 #include "runtime/base.h"
 
 namespace ge {
 class ModelListenerAdapter;
 
 class SingleOp;
+class DynamicSingleOp;
 
 struct RunModelData {
   uint32_t index;  // Data index
   uint32_t modelId;
-  std::vector<DataBuffer> blobs;      // All input/output data buffer
-  uint32_t timestamp;                 // Data creation time
-  uint32_t timeout;                   // Processing timeout
-  uint64_t request_id = 0;            // Request ID
-  uint64_t dynamic_batch_size = 0;    // Dynamic batch size scene, set dynamic size, not supported by default:0
-  uint64_t dynamic_image_height = 0;  // Dynamic image size scene, set image height, not supported by default:0
-  uint64_t dynamic_image_width = 0;   // Dynamic image size scene, set image width, not supported by default:0
+  std::vector<DataBuffer> blobs;       // All input/output data buffer
+  uint32_t timestamp;                  // Data creation time
+  uint32_t timeout;                    // Processing timeout
+  uint64_t request_id = 0;             // Request ID
+  uint64_t dynamic_batch_size = 0;     // Dynamic batch size scene, set dynamic size, not supported by default:0
+  uint64_t dynamic_image_height = 0;   // Dynamic image size scene, set image height, not supported by default:0
+  uint64_t dynamic_image_width = 0;    // Dynamic image size scene, set image width, not supported by default:0
+  std::vector<uint64_t> dynamic_dims;  // Dynamic dims scene, set dynamic dims, not supported by default:empty
 };
 
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
@@ -87,16 +90,52 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ///
   ge::Status SetDynamicImageSize(uint32_t model_id, void *dynamic_input_addr, uint64_t length, uint64_t image_height,
                                  uint64_t image_width);
+
+  ///
+  /// @ingroup ge
+  /// @brief Set dynamic dims info
+  /// @param [in] model_id: model id allocate from manager
+  /// @param [in] dynamic_input_addr: dynamic input addr created by user
+  /// @param [in] length: length of dynamic input addr
+  /// @param [in] dynamic_dim_num: number of dynamic dimension
+  /// @param [in] dynamic_dims: array of dynamic dimensions
+  /// @return execute result
+  ///
+  ge::Status SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, uint64_t length,
+                            const std::vector<uint64_t> &dynamic_dims);
+
+  ///
+  /// @ingroup ge
+  /// @brief Get current dynamic dims info by combined dims
+  /// @param [in] model_id: model id allocate from manager
+  /// @param [in] combined_dims: array of combined dimensions
+  /// @param [out] cur_dynamic_dims: current dynamic dims
+  /// @return execute result
+  ///
+  ge::Status GetCurDynamicDims(uint32_t model_id, const std::vector<uint64_t> &combined_dims,
+                               std::vector<uint64_t> &cur_dynamic_dims);
+
   ///
   /// @ingroup ge
   /// @brief Get dynamic batch_info
   /// @param [in] model_id
   /// @param [out] batch_info
+  /// @param [out] dynamic_type
   /// @return execute result
   ///
-  ge::Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+  ge::Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
+                                 int32_t &dynamic_type);
 
-  ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info);
+  ///
+  /// @ingroup ge
+  /// @brief Get combined dynamic dims info
+  /// @param [in] model_id
+  /// @param [out] batch_info
+  /// @return execute result
+  ///
+  ge::Status GetCombinedDynamicDims(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+
+  ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
   ///
   /// @ingroup ge
@@ -207,6 +246,13 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
                                  SingleOp **single_op);
 
   static ge::Status ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,
+                                 std::vector<DataBuffer> &outputs);
+
+  static ge::Status LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                        DynamicSingleOp **single_op);
+
+  static ge::Status ExecuteAsync(DynamicSingleOp *executor, const std::vector<GeTensorDesc> &input_desc,
+                                 const std::vector<DataBuffer> &inputs, std::vector<GeTensorDesc> &output_desc,
                                  std::vector<DataBuffer> &outputs);
 
   static ge::Status ReleaseSingleOpResource(void *stream);

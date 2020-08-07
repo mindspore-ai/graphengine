@@ -61,6 +61,7 @@ typedef enum tagRtPlatformType {
   PLATFORM_MINI_V2,
   PLATFORM_LHISI_ES,
   PLATFORM_LHISI_CS,
+  PLATFORM_DC,
   PLATFORM_END,
 } rtPlatformType_t;
 

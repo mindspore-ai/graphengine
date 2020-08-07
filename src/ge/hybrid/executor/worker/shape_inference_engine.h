@@ -19,6 +19,7 @@
 
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_context.h"
+#include <mutex>
 
 namespace ge {
 namespace hybrid {
@@ -36,6 +37,7 @@ class ShapeInferenceEngine {
 
   GraphExecutionContext *execution_context_;
   SubgraphContext *subgraph_context_;
+  std::mutex mu_;
 };
 }  // namespace hybrid
 }  // namespace ge

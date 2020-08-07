@@ -19,10 +19,12 @@
 
 #include <memory>
 #include <string>
+#include <external/graph/tensor.h>
 
 #include "runtime/stream.h"
 #include "common/ge_inner_error_codes.h"
 #include "graph/op_kernel_bin.h"
+#include "graph/node.h"
 
 namespace ge {
 enum OpTaskType {
@@ -37,7 +39,20 @@ class OpTask {
   OpTask() = default;
   virtual ~OpTask() = default;
   virtual Status LaunchKernel(rtStream_t stream) = 0;
+  virtual Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
+    return UNSUPPORTED;
+  }
+  virtual Status LaunchKernel(const std::vector<void *> &inputs, const std::vector<void *> &outputs,
+                              const std::vector<void *> &workspaces, rtStream_t stream) {
+    return UNSUPPORTED;
+  }
   virtual OpTaskType GetOpTaskType() = 0;
+
+  const vector<int64_t> &GetWorkspaceSizes() const;
+  void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
+
+ private:
+  std::vector<int64_t> workspace_sizes_;
 };
 
 class TbeOpTask : public OpTask {
@@ -48,18 +63,33 @@ class TbeOpTask : public OpTask {
 
   void SetSmDesc(void *sm_desc);
   void SetStubFunc(const std::string &name, const void *stub_func);
-  void SetKernelArgs(void *args, size_t arg_size, uint32_t block_dim);
+  void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim);
+
+  Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) override;
+
+  Status LaunchKernel(const vector<void *> &inputs, const vector<void *> &outputs, const vector<void *> &workspaces,
+                      rtStream_t stream) override;
+
   const void *GetArgs() const;
   size_t GetArgSize() const;
   const std::string &GetStubName() const;
+  void EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, size_t max_tiling_size);
 
  private:
+  static Status UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc &dst_tensor);
+  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc);
+
   const void *stub_func_ = nullptr;
-  void *args_ = nullptr;
+  std::unique_ptr<uint8_t[]> args_;
   size_t arg_size_ = 0;
   uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   std::string stub_name_;
+
+  void *tiling_buffer_ = nullptr;
+  uint32_t max_tiling_size_ = 0;
+  std::string tiling_data_;
+  NodePtr node_;
 };
 
 class AiCpuTask : public OpTask {

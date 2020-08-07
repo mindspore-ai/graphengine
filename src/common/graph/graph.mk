@@ -124,6 +124,7 @@ LOCAL_SRC_FILES  := \
     ../../out/graph/lib64/stub/operator.cc \
     ../../out/graph/lib64/stub/operator_factory.cc \
     ../../out/graph/lib64/stub/tensor.cc \
+    ../../out/graph/lib64/stub/inference_context.cc \
 
 
 LOCAL_SHARED_LIBRARIES :=
@@ -201,6 +202,7 @@ LOCAL_SRC_FILES  := \
     ../../out/graph/lib64/stub/operator.cc \
     ../../out/graph/lib64/stub/operator_factory.cc \
     ../../out/graph/lib64/stub/tensor.cc \
+    ../../out/graph/lib64/stub/inference_context.cc \
 
 
 LOCAL_SHARED_LIBRARIES :=

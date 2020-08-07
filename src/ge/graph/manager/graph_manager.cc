@@ -43,7 +43,9 @@
 #include "graph/manager/util/rt_context_util.h"
 #include "graph/partition/dynamic_shape_partition.h"
 #include "graph/passes/addn_pass.h"
+#include "graph/passes/bitcast_pass.h"
 #include "graph/passes/atomic_addr_clean_pass.h"
+#include "graph/passes/attach_stream_label_pass.h"
 #include "graph/passes/cast_remove_pass.h"
 #include "graph/passes/common_subexpression_elimination_pass.h"
 #include "graph/passes/compile_nodes_pass.h"
@@ -58,13 +60,17 @@
 #include "graph/passes/hccl_group_pass.h"
 #include "graph/passes/hccl_memcpy_pass.h"
 #include "graph/passes/identity_pass.h"
+#include "graph/passes/input_output_connection_identify_pass.h"
 #include "graph/passes/iterator_op_pass.h"
 #include "graph/passes/link_gen_mask_nodes_pass.h"
+#include "graph/passes/mark_graph_unknown_status_pass.h"
 #include "graph/passes/merge_pass.h"
+#include "graph/passes/merge_to_stream_merge_pass.h"
 #include "graph/passes/multi_batch_pass.h"
 #include "graph/passes/next_iteration_pass.h"
 #include "graph/passes/permute_pass.h"
 #include "graph/passes/prune_pass.h"
+#include "graph/passes/ref_identity_delete_op_pass.h"
 #include "graph/passes/replace_with_empty_const_pass.h"
 #include "graph/passes/reshape_recovery_pass.h"
 #include "graph/passes/reshape_remove_pass.h"
@@ -73,9 +79,7 @@
 #include "graph/passes/switch_data_edges_bypass.h"
 #include "graph/passes/switch_dead_branch_elimination.h"
 #include "graph/passes/switch_logic_remove_pass.h"
-#include "graph/passes/merge_to_stream_merge_pass.h"
 #include "graph/passes/switch_to_stream_switch_pass.h"
-#include "graph/passes/attach_stream_label_pass.h"
 #include "graph/passes/transop_breadth_fusion_pass.h"
 #include "graph/passes/transop_depth_fusion_pass.h"
 #include "graph/passes/transop_nearby_allreduce_fusion_pass.h"
@@ -84,9 +88,9 @@
 #include "graph/passes/transpose_transdata_pass.h"
 #include "graph/passes/variable_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
-#include "graph/passes/ref_identity_delete_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
 #include "graph/passes/variable_ref_useless_control_out_delete_pass.h"
+#include "graph/passes/end_of_sequence_add_control_pass.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
@@ -699,6 +703,58 @@ Status GraphManager::GenerateInfershapeGraph(GraphId &graph_id) {
 
   GELOGI("[DumpInfershapeJson] Dump infershape json success, graph_id=%u.", graph_id);
   return ret;
+}
+
+Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
+                                                 GeRootModelPtr &ge_root_model, uint64_t session_id) {
+  // find graph
+  GraphNodePtr graph_node = nullptr;
+  Status ret = GetGraphNode(graph_id, graph_node);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[BuildGraph] graph not exist, graph_id = %u.", graph_id);
+    return ret;
+  }
+
+  if (graph_node == nullptr) {
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[BuildGraph] graph node is NULL, graphId = %u.", graph_id);
+    return GE_GRAPH_GRAPH_NODE_NULL;
+  }
+  auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
+  GE_CHECK_NOTNULL(compute_graph);
+
+  GM_RUN_AND_DUMP_PERF("Prepare", graph_preparer_.PrepareDynShape, graph_node->GetGraph(), inputs, compute_graph,
+                       session_id);
+
+  for (auto &node : compute_graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    if (op_desc->HasAttr(ATTR_NAME_UNREGST_OPPATH)) {
+      vector<ge::NodePtr> node_vec = {node};
+
+      auto instance_ptr = ge::GELib::GetInstance();
+      if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+        GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
+        return GE_CLI_GE_NOT_INITIALIZED;
+      }
+
+      OpsKernelInfoStorePtr kernel_info =
+        instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(op_desc->GetOpKernelLibName());
+      if (kernel_info == nullptr) {
+        GELOGE(FAILED, "Get op kernel info store failed");
+        return FAILED;
+      }
+
+      ret = kernel_info->CompileOp(node_vec);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "Compile op failed, op = %s, graph_id = %u.", op_desc->GetName().c_str(), graph_id);
+        return ret;
+      }
+    }
+  }
+
+  GM_RUN_AND_DUMP_PERF("Build", Build, graph_node, compute_graph, ge_root_model, session_id);
+
+  return SUCCESS;
 }
 
 Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
@@ -1711,9 +1767,11 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   ConstantFoldingPass constant_folding_pass;
   ReshapeRemovePass reshape_remove_pass;
   CondRemovePass condition_remove_pass;
+  BitcastPass bitcast_pass;
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("CondRemovePass", &condition_remove_pass);
+  names_to_passes.emplace_back("BitcastPass", &bitcast_pass);
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "OptimizeStage2::MergedGraphNameToPasses");
@@ -1750,19 +1808,31 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
                                                            new (std::nothrow) VariableRefDeleteOpPass))
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::CompileNodesPass",
                                                            new (std::nothrow) CompileNodesPass))
+  GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass(
+    "OptimizeStage2::AfterMergePasses::MarkGraphUnknownStatusPass", new (std::nothrow) MarkGraphUnknownStatusPass))
+  GE_CHK_STATUS_RET(
+    pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::InputOutputConnectionIdentifyPass",
+                                           new (std::nothrow) InputOutputConnectionIdentifyPass))
   // When the input node to be cleared is after a `Data` node, the atomic-clean-node should not be inserted.
   // So The ComputeGraph should not delete nodes after `AtomicAddrCleanPass`
   // to prevent unexpected deletion of nodes after a `Data` node
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::AtomicAddrCleanPass",
                                                            new (std::nothrow) AtomicAddrCleanPass))
+  GE_CHK_STATUS_RET(
+    pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::"
+                                           "EndOfSequenceAddControlPass",
+                                           new (std::nothrow) EndOfSequenceAddControlPass))
 
   const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
   if (unknown_shape_skip == nullptr) {
     // SubgraphPass solves memory_assign_conflicts by insert MemcpyAsync node, which depends on multi attrs and
     // graph-structure. So try not to add new pass after SubgraphPass.
     GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::SubgraphPass",
-                                                             new (std::nothrow) SubgraphPass));
+                                                             new (std::nothrow) SubgraphPass))
   }
+  // AttachStreamLabelPass modifies attr without changing structure of compute_graph
+  GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::AttachStreamLabelPass",
+                                                           new (std::nothrow) AttachStreamLabelPass))
 
   GE_TIMESTAMP_START(pass_for_control_attr_optimize);
   ret = pass_for_control_attr_optimize.Run(compute_graph);
@@ -1840,6 +1910,8 @@ Status GraphManager::OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_gra
     after_merge_fusion_passes.AddPass("VariableRefDeleteOpPass", new (std::nothrow) VariableRefDeleteOpPass));
   GE_CHK_STATUS_RET(after_merge_fusion_passes.AddPass("SameTransdataBreadthFusionPass",
                                                       new (std::nothrow) SameTransdataBreadthFusionPass));
+  GE_CHK_STATUS_RET(
+    after_merge_fusion_passes.AddPass("MarkGraphUnknownStatusPass", new (std::nothrow) MarkGraphUnknownStatusPass));
   GE_CHK_STATUS_RET(after_merge_fusion_passes.AddPass("AtomicAddrCleanPass", new (std::nothrow) AtomicAddrCleanPass));
   GE_CHK_STATUS_RET(after_merge_fusion_passes.AddPass(
     "LinkGenMaskNodesPass", new (std::nothrow) LinkGenMaskNodesPass(options_.stream_max_parallel_num)));

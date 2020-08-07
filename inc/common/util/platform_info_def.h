@@ -73,6 +73,8 @@ typedef struct tagAiCoreSpec {
 
 typedef struct tagAiCoreMemoryRates {
   double ddrRate;
+  double ddrReadRate;
+  double ddrWriteRate;
   double l2Rate;
   double l2ReadRate;
   double l2WriteRate;
@@ -86,6 +88,7 @@ typedef struct tagAiCoreMemoryRates {
 } AiCoreMemoryRates;
 
 typedef struct tagVectorCoreSpec {
+  double vecFreq;
   uint64_t vecCalcSize;
   uint64_t smaskBuffer;
   uint64_t ubSize;
@@ -94,16 +97,26 @@ typedef struct tagVectorCoreSpec {
   uint64_t ubbankNum;
   uint64_t ubburstInOneBlock;
   uint64_t ubbankGroupNum;
+  uint64_t vectorRegSize;
+  uint64_t predicateRegSize;
+  uint64_t addressRegSize;
 } VectorCoreSpec;
 
 typedef struct tagVectorCoreMemoryRates {
   double ddrRate;
+  double ddrReadRate;
+  double ddrWriteRate;
   double l2Rate;
   double l2ReadRate;
   double l2WriteRate;
   double ubToL2Rate;
   double ubToDdrRate;
 } VectorCoreMemoryRates;
+
+typedef struct tagCPUCache {
+  uint32_t AICPUSyncBySW;
+  uint32_t TSCPUSyncBySW;
+} CPUCache;
 
 typedef struct tagPlatformInfo {
   StrInfo strInfo;
@@ -113,6 +126,7 @@ typedef struct tagPlatformInfo {
   map<string, vector<string>> aiCoreIntrinsicDtypeMap;
   VectorCoreSpec vectorCoreSpec;
   VectorCoreMemoryRates vectorCoreMemoryRates;
+  CPUCache cpucache;
   map<string, vector<string>> vectorCoreIntrinsicDtypeMap;
 } PlatformInfo;
 

@@ -170,6 +170,7 @@ graphStatus RefRelations::Impl::BuildRefRelationsForWhile(
   // data_nodes has been sorted
   // for while, input num must be same as output num
   auto input_num = root_node->GetAllInDataAnchorsSize();
+  NodePtr netoutput = nullptr;
 
   size_t ref_i = 0;
   while (ref_i < input_num) {
@@ -212,9 +213,43 @@ graphStatus RefRelations::Impl::BuildRefRelationsForWhile(
       cell_netoutput_in.in_out = NODE_IN;
       cell_netoutput_in.in_out_idx = ele.second;
       ref_i_all_refs.emplace_back(cell_netoutput_in);
+      netoutput = ele.first;
     }
     node_refs.emplace_back(ref_i_all_refs);
     ref_i++;
+  }
+  /* There exist scene like the follows, it means data0 data1 netoutput 0'th
+   * and 1'th tensor should be the same addr.
+   * Data0  Data1
+   *      \/
+   *      /\
+   *   netoutput
+   */
+  if (netoutput == nullptr) {
+    return GRAPH_SUCCESS;
+  }
+  for (const auto &in_anchor : netoutput->GetAllInDataAnchors()) {
+    auto peer_out_data_anchor = in_anchor->GetPeerOutAnchor();
+    if (peer_out_data_anchor == nullptr) {
+      continue;
+    }
+    auto peer_out_data_node = peer_out_data_anchor->GetOwnerNode();
+    if (peer_out_data_node == nullptr || peer_out_data_node->GetOpDesc() == nullptr) {
+      GELOGW("Node[%s]\'s peer_out_data_node or peer_out_data_node desc is null", (netoutput->GetName()).c_str());
+      continue;
+    }
+    if (peer_out_data_node->GetType() != DATA) {
+      continue;
+    }
+    auto in_data_anchor_idx = in_anchor->GetIdx();
+    auto net_in_desc = netoutput->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_data_anchor_idx));
+    int ref_d;
+    int ref_n;
+    (void)AttrUtils::GetInt(peer_out_data_node->GetOpDesc(), kRefIndex, ref_d);
+    (void)AttrUtils::GetInt(net_in_desc, kRefIndex, ref_n);
+
+    node_refs[ref_d].insert(node_refs[ref_d].end(), node_refs[ref_n].begin(), node_refs[ref_n].end());
+    node_refs[ref_n].insert(node_refs[ref_n].end(), node_refs[ref_d].begin(), node_refs[ref_d].end());
   }
 
   return GRAPH_SUCCESS;

@@ -19,6 +19,10 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 
+namespace {
+const uint32_t kAlignBytes = 64;
+}
+
 namespace ge {
 Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("MemcpyAddrAsyncTaskInfo Init Start");
@@ -55,39 +59,40 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
 
   // malloc args memory
   size_t args_size = sizeof(void *) * io_addrs.size();
-  rtError_t rt_ret = rtMalloc(&args_, args_size, RT_MEMORY_HBM);
+  rtError_t rt_ret = rtMalloc(&args_, args_size + kAlignBytes, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
+  args_align_ = reinterpret_cast<void *>((reinterpret_cast<uintptr_t>(args_) / kAlignBytes + 1) * kAlignBytes);
   // copy orign src/dst
-  GELOGI("src_args:%p, destMax:%zu, src_:%p, dst_args:%p, dst_:%p, count=%zu", args_, args_size, src_,
-         static_cast<uint8_t *>(args_) + args_size, dst_, io_addrs.size());
-  rt_ret = rtMemcpy(args_, args_size, io_addrs.data(), args_size, RT_MEMCPY_HOST_TO_DEVICE);
+  GELOGI("src_args:%p, destMax:%zu, src_:%p, dst_args:%p, dst_:%p, count=%zu", args_align_, args_size, src_,
+         static_cast<uint8_t *>(args_align_) + args_size, dst_, io_addrs.size());
+  rt_ret = rtMemcpy(args_align_, args_size, io_addrs.data(), args_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api for src failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   count_ = memcpy_async.count();
   kind_ = memcpy_async.kind();
   dst_max_ = memcpy_async.dst_max();
   GELOGI("InitMemcpyAddrAsyncTaskInfo, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu, args:%p, size:%zu",
-         memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_, args_, args_size);
+         memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_, args_align_, args_size);
 
-  davinci_model->SetZeroCopyAddr(op_desc, io_addrs, io_addrs.data(), args_, args_size, 0);
+  davinci_model->SetZeroCopyAddr(op_desc, io_addrs, io_addrs.data(), args_align_, args_size, 0);
   return SUCCESS;
 }
 
 Status MemcpyAddrAsyncTaskInfo::Distribute() {
   GELOGI("MemcpyAddrAsyncTaskInfo Distribute Start, dst_max:%lu, count:%lu, kind:%u", dst_max_, count_, kind_);
 
-  rtError_t rt_ret = rtMemcpyAsync(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_) + sizeof(void *)),
-                                   dst_max_, args_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
+  rtError_t rt_ret = rtMemcpyAsync(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_align_) + sizeof(void *)),
+                                   dst_max_, args_align_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   return SUCCESS;

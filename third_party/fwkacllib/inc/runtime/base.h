@@ -62,6 +62,10 @@ typedef enum tagRtError {
     RT_ERROR_DEVICE_POWER_DOWN_FAIL = 0x16,
     RT_ERROR_FEATURE_NOT_SUPPROT = 0x17,
     RT_ERROR_KERNEL_DUPLICATE = 0x18,         // register same kernel repeatly
+    RT_ERROR_STREAM_DUPLICATE = 0x19,         // streamId Map is repeatly
+    RT_ERROR_STREAM_NOT_EXIST = 0x1a,         // streamId is not exist
+    RT_ERROR_SQ_NO_EXIST_SQ_TO_REUSE = 0x1b,  // no exist sq to reuse
+    RT_ERROR_SQID_FULL = 0x3C,
     RT_ERROR_MODEL_STREAM_EXE_FAILED = 0x91,  // the model stream failed
     RT_ERROR_MODEL_LOAD_FAILED = 0x94,        // the model stream failed
     RT_ERROR_END_OF_SEQUENCE = 0x95,          // end of sequence
@@ -70,6 +74,8 @@ typedef enum tagRtError {
     RT_ERROR_CALLBACK_THREAD_UNSUBSTRIBE = 0x98,    // callback thread unsubstribe
     RT_ERROR_DEBUG_REGISTER_FAILED = 0x99,    // debug register fail
     RT_ERROR_DEBUG_UNREGISTER_FAILED = 0x9A,    // debug unregister fail
+    RT_ERROR_GROUP_NOT_SET = 0x9B,
+    RT_ERROR_GROUP_NOT_CREATE = 0x9C,
     RT_ERROR_RESERVED
 } rtError_t;
 
@@ -155,6 +161,12 @@ RTS_API rtError_t rtSetProfDirEx(const char *profDir, const char *address, const
  * @brief init profiler object.
  */
 RTS_API rtError_t rtProfilerInit(const char *profdir, const char *address, const char *job_ctx);
+
+/**
+ * @ingroup profiling_base
+ * @brief config rts profiler.
+ */
+RTS_API rtError_t rtProfilerConfig(uint16_t type);
 
 /**
  * @ingroup profiling_base

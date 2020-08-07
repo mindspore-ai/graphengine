@@ -59,7 +59,7 @@ Status LabelGotoExTaskInfo::Distribute() {
   rtError_t rt_ret = rtLabelGotoEx(label_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   GELOGI("LabelGotoExTaskInfo Distribute Success.");

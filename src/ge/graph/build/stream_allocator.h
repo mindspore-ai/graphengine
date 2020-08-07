@@ -55,6 +55,7 @@ class StreamAllocator {
   Status OptimizeByStreamActivate();
   // Determine if the successor node of RecvNode is directly or indirectly activated by the SendNode precursor node
   bool IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr, const NodePtr &recv_node_ptr) const;
+  bool IsActiveAfterNextIteration(const NodePtr &active_node_ptr) const;
 
   Status SplitStreams(std::vector<std::set<int64_t>> &split_streams);
   bool NeedSpiltNewStream(int64_t stream_node_num, int64_t max_node_num_one_stream, const OpDescPtr &op_desc) const;

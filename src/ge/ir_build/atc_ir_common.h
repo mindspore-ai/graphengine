@@ -49,12 +49,14 @@ bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>>
 bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
                                           const std::string input_format, std::string &dynamic_image_size);
 
-Status CheckDynamicBatchSizeOrImageSizeParamValid(std::string &dynamic_batch_size, std::string &dynamic_image_size,
-                                                  const std::string input_shape, const std::string input_format,
-                                                  bool &is_dynamic_input);
+bool CheckDynamicDimsInputShapeValid(const std::unordered_map<std::string, std::vector<int64_t>> &shape_map,
+                                     std::string input_format, std::string &dynamic_dims);
 
-bool ParseInputShape(const std::string &input_shape, std::unordered_map<string, std::vector<int64_t>> &shape_map,
-                     std::vector<std::pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input = false);
+bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims);
+
+Status CheckDynamicInputParamValid(std::string &dynamic_batch_size, std::string &dynamic_image_size,
+                                   std::string &dynamic_dims, const std::string input_shape,
+                                   const std::string input_format, bool &is_dynamic_input);
 
 Status CheckOutputTypeParamValid(const std::string output_type);
 Status CheckBufferOptimizeParamValid(const std::string buffer_optimize);
@@ -65,5 +67,6 @@ Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory)
 Status CheckEnableSingleStreamParamValid(const std::string enable_single_stream);
 Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::string &op_select_implmode);
 void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips);
+void EraseEndSemicolon(std::string &param);
 }  // namespace ge
 #endif  // FRAMEWORK_DOMI_ATC_IR_COMMON_H_

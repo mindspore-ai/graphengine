@@ -87,11 +87,14 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   // AddNode with NodePtr
   NodePtr AddNode(NodePtr node);
   NodePtr AddNode(OpDescPtr op);
-  NodePtr AddNode(OpDescPtr op, int64_t id);  // for unserialize.
+  NodePtr AddNode(OpDescPtr op, int64_t id);  // for unserialize
   NodePtr AddNodeFront(NodePtr node);
   NodePtr AddNodeFront(const OpDescPtr &op);
   NodePtr AddInputNode(NodePtr node);
   NodePtr AddOutputNode(NodePtr node);
+  // insert node with specific pre_node
+  NodePtr AddNodeAfter(OpDescPtr &op, const NodePtr &pre_node);
+  NodePtr AddNodeAfter(NodePtr node, const NodePtr &pre_node);
 
   graphStatus RemoveNode(const NodePtr &node);
   graphStatus RemoveInputNode(const NodePtr &node);

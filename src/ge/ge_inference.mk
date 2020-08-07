@@ -70,6 +70,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/resource_pair_remove_control_pass.cc \
     graph/passes/pass_utils.cc \
     graph/passes/base_pass.cc \
+    graph/passes/bitcast_pass.cc \
     graph/passes/constant_folding_pass.cc \
     graph/passes/aicpu_constant_folding_pass.cc \
     graph/passes/reshape_remove_pass.cc \
@@ -91,8 +92,10 @@ OMG_HOST_SRC_FILES := \
     graph/passes/print_op_pass.cc \
     graph/passes/no_use_reshape_remove_pass.cc \
     graph/passes/iterator_op_pass.cc \
+    graph/passes/input_output_connection_identify_pass.cc \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
+    graph/passes/mark_graph_unknown_status_pass.cc \
     graph/common/omg_util.cc \
     graph/common/bcast.cc \
     graph/passes/dimension_compute_pass.cc \
@@ -107,6 +110,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/isolated_op_remove_pass.cc \
     graph/passes/permute_pass.cc \
     graph/passes/ctrl_edge_transfer_pass.cc \
+    graph/passes/end_of_sequence_add_control_pass.cc \
     host_kernels/broadcast_gradient_args_kernel.cc \
     host_kernels/greater_kernel.cc \
     host_kernels/gather_v2_kernel.cc  \
@@ -185,6 +189,8 @@ OMG_HOST_SRC_FILES := \
     graph/passes/hccl_group_pass.cc \
     graph/passes/switch_fusion_pass.cc \
     graph/passes/switch_split_pass.cc \
+    graph/passes/memcpy_addr_async_pass.cc \
+    graph/passes/set_input_output_offset_pass.cc \
 
 OMG_DEVICE_SRC_FILES := $(OMG_HOST_SRC_FILES)
 
@@ -203,6 +209,7 @@ OME_HOST_SRC_FILES := \
     graph/load/new_model_manager/tbe_handle_store.cc                     \
     graph/load/new_model_manager/cpu_queue_schedule.cc                   \
     graph/load/new_model_manager/zero_copy_task.cc                       \
+    graph/load/new_model_manager/zero_copy_offset.cc                     \
     graph/load/new_model_manager/data_dumper.cc                          \
     graph/load/new_model_manager/task_info/task_info.cc                  \
     graph/load/new_model_manager/task_info/event_record_task_info.cc     \

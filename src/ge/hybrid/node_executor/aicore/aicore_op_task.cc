@@ -284,6 +284,14 @@ Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices(const OpDesc &op_desc) 
 
 std::string AtomicAddrCleanOpTask::GetKeyForOpParamSize() const { return kAttrAtomicOpParamSize; }
 
+Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
+  GELOGD("[%s] Start to invoke OpAtomicCalculate.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(OpAtomicCalculate(*node, tiling_info), "Failed calc tiling data of node %s.",
+                    node->GetName().c_str());
+  GELOGD("[%s] Done invoking OpAtomicCalculate successfully.", node->GetName().c_str());
+  return SUCCESS;
+}
+
 Status AtomicAddrCleanOpTask::UpdateArgs(TaskContext &task_context) {
   // refresh atomic output addr
   int index = 0;

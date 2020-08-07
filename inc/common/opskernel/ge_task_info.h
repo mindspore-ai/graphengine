@@ -63,5 +63,12 @@ struct HcomOpertion {
   int32_t root;
 };
 
+struct HcomRemoteAccessAddrInfo {
+  uint32_t remotetRankID;
+  uint64_t remoteAddr;  // host embedding table address
+  uint64_t localAddr;   // device HBM address
+  uint64_t length;      // memory Length in Bytes
+};
+
 }  // namespace ge
 #endif  // INC_COMMON_OPSKERNEL_GE_TASK_INFO_H_

@@ -21,6 +21,35 @@
 
 namespace ge {
 /**
+*@brief This operation convert output dataType and shape
+
+*@par Inputs:
+*The input handle must have the resource type. Inputs include: \n
+*@li x:A list of Tensor objects. One or more tensors from which \n
+the enqueued tensors should be taken.
+
+*@par Outputs:
+*@li y:A list of Tensor objects. One or more tensors from which \n
+the enqueued tensors should be taken.
+
+*@par Attributes:
+*@li type: An optional ge::DataType. It refers to the target data type of outputs.
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueIsClosed operator.
+*/
+
+REG_OP(Bitcast)
+    .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+                          DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
+                          DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
+    .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+                           DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
+                           DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
+    .REQUIRED_ATTR(type, Type)
+    .OP_END_FACTORY_REG(Bitcast)
+
+/**
 *@brief Convert tensor format from HWCN to C1HWNCoC0.
 
 *@par Inputs:

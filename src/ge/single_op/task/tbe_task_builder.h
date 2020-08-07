@@ -65,12 +65,13 @@ class KernelBinRegistry {
 
 class TbeTaskBuilder {
  public:
-  TbeTaskBuilder(const std::string &model_name, const OpDescPtr &op_desc, const domi::KernelDef &kernel_def);
+  TbeTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::KernelDef &kernel_def);
   ~TbeTaskBuilder() = default;
 
   Status BuildTask(TbeOpTask &task, const SingleOpModelParam &param);
 
  private:
+  Status InitTilingInfo(TbeOpTask &task);
   Status SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param);
   Status GetSmDesc(void **sm_desc, const SingleOpModelParam &param) const;
 
@@ -82,7 +83,8 @@ class TbeTaskBuilder {
 
   static Status DoRegisterFunction(void *bin_handle, const char *stub_name, const char *kernel_name);
 
-  const OpDescPtr &op_desc_;
+  const NodePtr node_;
+  const OpDescPtr op_desc_;
   const domi::KernelDef &kernel_def_;
   const std::string stub_name_;
 };

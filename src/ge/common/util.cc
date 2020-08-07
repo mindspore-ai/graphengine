@@ -363,7 +363,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   std::map<std::string, std::string> args_map;
   if (file_path.empty()) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {atc_param});
-    GELOGW("Input parameter's value is empty.");
+    GELOGW("Input parameter %s is empty.", file_path.c_str());
     return false;
   }
   std::string real_path = RealPath(file_path.c_str());

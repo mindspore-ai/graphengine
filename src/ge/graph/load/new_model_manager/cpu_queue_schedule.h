@@ -22,6 +22,7 @@
 
 #include "common/ge_inner_error_codes.h"
 #include "graph/load/new_model_manager/task_info/task_info.h"
+#include "graph/load/new_model_manager/zero_copy_offset.h"
 #include "runtime/kernel.h"
 
 namespace ge {
@@ -93,7 +94,7 @@ class CpuTaskZeroCopy : public CpuTaskInfo {
   ~CpuTaskZeroCopy() override;
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override { return SUCCESS; }
-  Status Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, std::vector<void *>> &outside_addrs);
+  Status Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, ZeroCopyOffset> &outside_addrs);
 
   Status Distribute() override;
 

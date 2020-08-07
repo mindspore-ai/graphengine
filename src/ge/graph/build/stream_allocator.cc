@@ -612,6 +612,33 @@ bool StreamAllocator::IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr
             AttrUtils::HasAttr(activate_stream_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE)) {
           return false;
         }
+
+        ///
+        /// stream_0  -->  stream_2  -->  stream_3  -->  stream_4
+        ///                   /\             |
+        ///                   |             \/
+        ///                   |           stream_1  -->  stream_5  -->  stream_6  -->  stream_7
+        ///                   |                             /\             |              |
+        ///                   |                             |             \/              |
+        ///                   |                             |---------- stream_8          |
+        ///                   |                                                           |
+        ///                   |-----------------------------------------------------------|
+        ///
+        ///  Exit1(S7) Exit2(S7)  Exit3(S7)
+        ///     \       /           |
+        ///     AddN(S1)     NextIteration(S7)
+        ///       |                 |
+        ///     NextIteration(S1)  /
+        ///          |            /
+        ///          |           /
+        ///        StreamActive(S7)
+        ///
+        /// Event between Exit1/Exit2 and AddN should not be optimized
+        ///
+        if (IsActiveAfterNextIteration(activate_stream_node)) {
+          continue;
+        }
+
         visited_nodes.insert(activate_stream_node);
         // nodes in stream link to streamActivate no need to add event before activated node
         for (const auto &pre_activate_stream_node : activate_stream_node->GetInNodes()) {
@@ -637,6 +664,18 @@ bool StreamAllocator::IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr
     }
   }
   return false;
+}
+
+bool StreamAllocator::IsActiveAfterNextIteration(const NodePtr &active_node_ptr) const {
+  if ((active_node_ptr == nullptr) || active_node_ptr->GetInControlNodes().empty()) {
+    return false;
+  }
+  for (const auto &in_node : active_node_ptr->GetInControlNodes()) {
+    if ((in_node->GetType() != NEXTITERATION) && (in_node->GetType() != REFNEXTITERATION)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Split the stream according to the maximum number of nodes in the stream.

@@ -17,6 +17,8 @@
 #include "node_item.h"
 #include <sstream>
 #include "common/debug/log.h"
+#include "graph/debug/ge_attr_define.h"
+#include "graph/utils/node_utils.h"
 #include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
@@ -31,16 +33,34 @@ NodeItem::NodeItem(NodePtr node) : node(std::move(node)) {
 }
 
 Status NodeItem::Init() {
-  for (int i = 0; i < num_inputs; ++i) {
-    const auto &input_desc = op_desc->MutableInputDesc(i);
-    GE_CHECK_NOTNULL(input_desc);
-    if (input_desc->MutableShape().IsUnknownShape()) {
-      is_input_shape_static.push_back(false);
-    } else {
-      num_static_input_shapes++;
-      is_input_shape_static.push_back(true);
-      GELOGD("[%s] The shape of input[%d] is static. shape = [%s]", NodeName().c_str(), i,
-             input_desc->MutableShape().ToString().c_str());
+  int32_t unknown_shape_type_val = 0;
+  (void)AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+  shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+
+  GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic), "[%s] Failed to get shape status.",
+                    node->GetName().c_str());
+
+  if (is_dynamic) {
+    for (int i = 0; i < num_inputs; ++i) {
+      const auto &input_desc = op_desc->MutableInputDesc(i);
+      GE_CHECK_NOTNULL(input_desc);
+      if (input_desc->MutableShape().IsUnknownShape()) {
+        is_input_shape_static.push_back(false);
+      } else {
+        num_static_input_shapes++;
+        is_input_shape_static.push_back(true);
+        GELOGD("[%s] The shape of input[%d] is static. shape = [%s]", NodeName().c_str(), i,
+               input_desc->MutableShape().ToString().c_str());
+      }
+    }
+
+    for (int i = 0; i < num_outputs; ++i) {
+      const auto &output_desc = op_desc->MutableOutputDesc(i);
+      GE_CHECK_NOTNULL(output_desc);
+      if (output_desc->MutableShape().IsUnknownShape()) {
+        is_output_shape_static = false;
+        break;
+      }
     }
   }
 
@@ -59,6 +79,7 @@ std::string NodeItem::DebugString() const {
   ss << ", name = [" << node->GetName();
   ss << "], type = " << node->GetType();
   ss << ", is_dynamic = " << (is_dynamic ? "True" : "False");
+  ss << ", is_output_static = " << (is_output_shape_static ? "True" : "False");
   ss << ", unknown_shape_op_type = " << shape_inference_type;
   ss << ", input_start = " << input_start;
   ss << ", num_inputs = " << num_inputs;
@@ -91,6 +112,5 @@ void NodeItem::SetToDynamic() {
     kernel_task = nullptr;
   }
 }
-
 }  // namespace hybrid
 }  // namespace ge

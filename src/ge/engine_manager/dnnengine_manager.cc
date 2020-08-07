@@ -181,13 +181,12 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
     GELOGI("DNNEngineManager: Can not get op info by op type %s", op_desc->GetType().c_str());
     return "";
   }
-  string ge_core_type;
+  std::string ge_core_type;
   Status ret = ge::GetContext().GetOption(ge::CORE_TYPE, ge_core_type);
-  if (ret != SUCCESS) {
-    GELOGD("get the option CORE_TYPE fail, set it to default value VECTOR_ENGINE");
-  }
-  string exclude_core_Type = (ge_core_type == kVectorCore) ? kAIcoreEngine : kVectorEngine;
+  GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGD("get the option CORE_TYPE fail, set it to default value VECTOR_ENGINE"));
+  std::string exclude_core_Type = (ge_core_type == kVectorCore) ? kAIcoreEngine : kVectorEngine;
   GELOGD("engine type will exclude: %s", exclude_core_Type.c_str());
+
   std::map<std::string, std::string> unsupported_reasons;
   for (const auto &it : op_infos) {
     if (it.engine == exclude_core_Type) {
@@ -204,7 +203,7 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
         checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
         op_desc->SetOpEngineName(it.engine);
         op_desc->SetOpKernelLibName(kernel_name);
-        GELOGD("DNNEngineManager:Set OpKernelLibName %s and engine name %s into op_desc %s", kernel_name.c_str(),
+        GELOGD("DNNEngineManager:Set OpKernelLibName %s and engine name %s to op_desc %s", kernel_name.c_str(),
                it.engine.c_str(), op_desc->GetName().c_str());
         return it.engine;
       } else {
@@ -222,6 +221,9 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
         unsupported_reasons.emplace(kernel_name, unsupported_reason);
         GELOGI("DNNEngineManager:Check support failed, kernel_name is %s, op type is %s, op name is %s",
                kernel_name.c_str(), op_desc->GetType().c_str(), op_desc->GetName().c_str());
+        if (!op_desc->HasAttr("_is_ge_op")) {
+          ErrorManager::GetInstance().ATCReportErrMessage("W11001", {"opname"}, {op_desc->GetName()});
+        }
       }
     } else {
       GELOGW(
@@ -371,7 +373,7 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
 }
 
 Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle handle) {
-  GELOGI("Begin to read json file");
+  GELOGD("Begin to read json file");
   if (file_path.empty()) {
     GELOGE(FAILED, "Json path %s is not valid", file_path.c_str());
     return FAILED;
@@ -406,12 +408,12 @@ Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle h
     return FAILED;
   }
   ifs.close();
-  GELOGI("Read json file success");
+  GELOGD("Read json file success");
   return SUCCESS;
 }
 
 Status DNNEngineManager::CheckJsonFile() {
-  GELOGI("Begin to check json file");
+  GELOGD("Begin to check json file");
   for (auto &it : engines_map_) {
     std::string engine_name = it.first;
     int count = 0;
@@ -431,7 +433,7 @@ Status DNNEngineManager::CheckJsonFile() {
       return FAILED;
     }
   }
-  GELOGI("Check json file success");
+  GELOGD("Check json file success");
   return SUCCESS;
 }
 }  // namespace ge

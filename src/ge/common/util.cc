@@ -20,12 +20,12 @@
 #include <sys/stat.h>
 
 #include <unistd.h>
+#include <regex.h>
 #include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
-#include <regex>
 
 #include "external/ge/ge_api_error_codes.h"
 #include "common/util/error_manager/error_manager.h"
@@ -56,6 +56,8 @@ const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 /// The maximum length of the file.
 /// Based on the security coding specification and the current actual (protobuf) model size, it is determined as 2G-1
 const int kMaxFileSizeLimit = INT_MAX;
+const int kMaxBuffSize = 256;
+const char *const kPathValidReason = "The path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
 }  // namespace
 
 namespace ge {
@@ -77,7 +79,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromBinaryFile(co
 
   std::ifstream fs(real_path, std::ifstream::in | std::ifstream::binary);
   if (!fs.is_open()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19004", {"realpath"}, {file});
+    ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {file, "ifstream is_open failed"});
     GELOGE(ge::FAILED, "Open real path[%s] failed.", file);
     return false;
   }
@@ -90,7 +92,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromBinaryFile(co
   fs.close();
 
   if (!ret) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19005", {"filepath"}, {file});
+    ErrorManager::GetInstance().ATCReportErrMessage("E19005", {"file"}, {file});
     GELOGE(ge::FAILED, "Parse file[%s] failed.", file);
     return ret;
   }
@@ -114,17 +116,18 @@ long GetFileLength(const std::string &input_file) {
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), return -1, "input_file path '%s' not valid", input_file.c_str());
   unsigned long long file_length = 0;
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mmGetFileSize(input_file.c_str(), &file_length) != EN_OK,
-                                 ErrorManager::GetInstance().ATCReportErrMessage("E10037", {"filepath"}, {input_file});
-                                 return -1, "Open file[%s] failed", input_file.c_str());
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+    mmGetFileSize(input_file.c_str(), &file_length) != EN_OK,
+    ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {input_file, strerror(errno)});
+    return -1, "Open file[%s] failed. %s", input_file.c_str(), strerror(errno));
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_length == 0),
-                                 ErrorManager::GetInstance().ATCReportErrMessage("E10038", {"filepath"}, {input_file});
+                                 ErrorManager::GetInstance().ATCReportErrMessage("E19015", {"filepath"}, {input_file});
                                  return -1, "File[%s] size is 0, not valid.", input_file.c_str());
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     file_length > kMaxFileSizeLimit, ErrorManager::GetInstance().ATCReportErrMessage(
-                                       "E10039", {"filepath", "filesize", "maxlen"},
+                                       "E19016", {"filepath", "filesize", "maxlen"},
                                        {input_file, std::to_string(file_length), std::to_string(kMaxFileSizeLimit)});
     return -1, "File[%s] size %lld is out of limit: %d.", input_file.c_str(), file_length, kMaxFileSizeLimit);
   return static_cast<long>(file_length);
@@ -219,7 +222,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
         if (ret != 0) {
           if (errno != EEXIST) {
             ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {directory_path});
-            GELOGW("Cannot create directory %s. Make sure the directory exists and writable.", directory_path.c_str());
+            GELOGW("Can not create directory %s. Make sure the directory exists and writable.", directory_path.c_str());
             return ret;
           }
         }
@@ -230,7 +233,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
   if (ret != 0) {
     if (errno != EEXIST) {
       ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {directory_path});
-      GELOGW("Cannot create directory %s. Make sure the directory exists and writable.", directory_path.c_str());
+      GELOGW("Can not create directory %s. Make sure the directory exists and writable.", directory_path.c_str());
       return ret;
     }
   }
@@ -258,16 +261,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
                                  "incorrect parameter. nullptr == file || nullptr == message");
 
   std::string real_path = RealPath(file);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(),
-                                 ErrorManager::GetInstance().ATCReportErrMessage("E10036", {"filepath"}, {file});
-                                 return false, "Get path[%s]'s real path failed", file);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), ErrorManager::GetInstance().ATCReportErrMessage(
+                                                      "E19000", {"path", "errmsg"}, {file, strerror(errno)});
+                                 return false, "Path[%s]'s realpath is empty, errmsg[%s]", file, strerror(errno));
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(GetFileLength(real_path) == -1, return false, "file size not valid.");
 
   std::ifstream fs(real_path.c_str(), std::ifstream::in);
 
   if (!fs.is_open()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10040", {"realpth", "protofile"}, {real_path, file});
+    ErrorManager::GetInstance().ATCReportErrMessage("E19017", {"realpth", "protofile"}, {real_path, file});
     GELOGE(ge::FAILED, "Fail to open proto file real path is '%s' when orginal file path is '%s'.", real_path.c_str(),
            file);
     return false;
@@ -275,7 +278,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
 
   google::protobuf::io::IstreamInputStream input(&fs);
   bool ret = google::protobuf::TextFormat::Parse(&input, message);
-  GE_IF_BOOL_EXEC(!ret, ErrorManager::GetInstance().ATCReportErrMessage("E10041", {"protofile"}, {file});
+  GE_IF_BOOL_EXEC(!ret, ErrorManager::GetInstance().ATCReportErrMessage("E19018", {"protofile"}, {file});
                   GELOGE(ret,
                          "Parse file[%s] through [google::protobuf::TextFormat::Parse] failed, "
                          "please check whether the file is a valid protobuf format file.",
@@ -339,17 +342,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char
     strlen(path) >= PATH_MAX,
     ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"}, {path, std::to_string(PATH_MAX)});
     return "", "Path[%s] len is too long, it must be less than %d", path, PATH_MAX);
-  // PATH_MAX is the system's own macro, indicating the maximum file path length supported
-  std::shared_ptr<char> resolved_path(new (std::nothrow) char[PATH_MAX](), std::default_delete<char[]>());
-
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(resolved_path == nullptr, return "", "Path[%s] new string object len[%d] failed.",
-                                 path, PATH_MAX);
 
   // Nullptr is returned when the path does not exist or there is no permission
   // Return absolute path when path is accessible
   std::string res;
-  if (realpath(path, resolved_path.get()) != nullptr) {
-    res = resolved_path.get();
+  char resolved_path[PATH_MAX] = {0};
+  if (realpath(path, resolved_path) != nullptr) {
+    res = resolved_path;
   }
 
   return res;
@@ -360,36 +359,34 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   // The specified path is empty
   std::map<std::string, std::string> args_map;
   if (file_path.empty()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {atc_param});
-    GELOGW("Input parameter's value is empty.");
+    ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {atc_param});
+    GELOGW("Input parameter %s is empty.", file_path.c_str());
     return false;
   }
   std::string real_path = RealPath(file_path.c_str());
   // Unable to get absolute path (does not exist or does not have permission to access)
   if (real_path.empty()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10002", {"path", "errmsg"}, {file_path.c_str(), strerror(errno)});
+    ErrorManager::GetInstance().ATCReportErrMessage("E19000", {"path", "errmsg"}, {file_path, strerror(errno)});
     GELOGW("Path[%s]'s realpath is empty, errmsg[%s]", file_path.c_str(), strerror(errno));
     return false;
   }
 
   // A regular matching expression to verify the validity of the input file path
   // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
-  // Path section：Support upper and lower case letters, numbers dots(.) chinese and underscores
-  // File name section：Support upper and lower case letters, numbers, underscores chinese and dots(.)
+  // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
+  // File name section: Support upper and lower case letters, numbers, underscores chinese and dots(.)
   std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     !ValidateStr(real_path, mode),
-    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "path"}, {atc_param, real_path});
-    return false,
-           "Input parameter[--%s]'s value[%s] is illegal. The path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' "
-           "and chinese character.",
-           atc_param.c_str(), real_path.c_str());
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {atc_param, real_path, kPathValidReason});
+    return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), real_path.c_str(), kPathValidReason);
 
   // The absolute path points to a file that is not readable
   if (access(real_path.c_str(), R_OK) != 0) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10003", {"path", "errmsg"}, {file_path.c_str(), strerror(errno)});
-    GELOGW("Read path[%s] failed, errmsg[%s]", file_path.c_str(), strerror(errno));
+    ErrorManager::GetInstance().ATCReportErrMessage("E19003", {"file", "errmsg"}, {file_path.c_str(), strerror(errno)});
+    GELOGW("Read file[%s] failed, errmsg[%s]", file_path.c_str(), strerror(errno));
     return false;
   }
 
@@ -400,34 +397,35 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
                                                                            const std::string &atc_param) {
   // The specified path is empty
   if (file_path.empty()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {atc_param});
+    ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {atc_param});
     GELOGW("Input parameter's value is empty.");
     return false;
   }
 
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+    strlen(file_path.c_str()) >= PATH_MAX, ErrorManager::GetInstance().ATCReportErrMessage(
+                                             "E19002", {"filepath", "size"}, {file_path, std::to_string(PATH_MAX)});
+    return "", "Path[%s] len is too long, it must be less than %d", file_path.c_str(), PATH_MAX);
+
+  // A regular matching expression to verify the validity of the input file path
+  // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
+  // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
+  // File name section: Support upper and lower case letters, numbers, underscores chinese and dots(.)
+  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
+
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+    !ValidateStr(file_path, mode),
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {atc_param, file_path, kPathValidReason});
+    return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), file_path.c_str(), kPathValidReason);
+
   std::string real_path = RealPath(file_path.c_str());
   // Can get absolute path (file exists)
   if (!real_path.empty()) {
-    // A regular matching expression to verify the validity of the input file path
-    // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
-    // Path section：Support upper and lower case letters, numbers dots(.) chinese and underscores
-    // File name section：Support upper and lower case letters, numbers, underscores chinese and dots(.)
-    std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
-
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      !ValidateStr(real_path, mode),
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "path"}, {atc_param, real_path});
-      return false,
-             "Input parameter[--%s]'s value[%s] is illegal. The path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' "
-             "and chinese character.",
-             atc_param.c_str(), real_path.c_str());
-
     // File is not readable or writable
     if (access(real_path.c_str(), W_OK | F_OK) != 0) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"realpath", "path", "errmsg"},
-                                                      {real_path, file_path, strerror(errno)});
-      GELOGW("Write file[%s] failed, input path is %s, errmsg[%s]", real_path.c_str(), file_path.c_str(),
-             strerror(errno));
+      ErrorManager::GetInstance().ATCReportErrMessage("E19004", {"file", "errmsg"}, {real_path, strerror(errno)});
+      GELOGW("Write file[%s] failed, errmsg[%s]", real_path.c_str(), strerror(errno));
       return false;
     }
   } else {
@@ -445,8 +443,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
       std::string prefix_path = std::string(file_path).substr(0, static_cast<size_t>(path_split_pos));
       // Determine whether the specified path is valid by creating the path
       if (CreateDirectory(prefix_path) != 0) {
-        ErrorManager::GetInstance().ATCReportErrMessage("E10005", {"path"}, {file_path});
-        GELOGW("Can not create prefix path for path[%s].", file_path.c_str());
+        ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {file_path});
+        GELOGW("Can not create directory[%s].", file_path.c_str());
         return false;
       }
     }
@@ -456,17 +454,26 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
 }
 
 FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::string &mode) {
-#ifndef OS_CENTOS
-  std::regex reg(mode);
+  char ebuff[kMaxBuffSize];
+  regex_t reg;
+  int cflags = REG_EXTENDED | REG_NOSUB;
+  int ret = regcomp(&reg, mode.c_str(), cflags);
+  if (ret) {
+    regerror(ret, &reg, ebuff, kMaxBuffSize);
+    GELOGE(ge::PARAM_INVALID, "regcomp failed, reason: %s", ebuff);
+    regfree(&reg);
+    return false;
+  }
 
-  // Matching string part
-  std::smatch match;
+  ret = regexec(&reg, str.c_str(), 0, nullptr, 0);
+  if (ret) {
+    regerror(ret, &reg, ebuff, kMaxBuffSize);
+    GELOGE(ge::PARAM_INVALID, "regexec failed, reason: %s", ebuff);
+    regfree(&reg);
+    return false;
+  }
 
-  bool res = regex_match(str, match, reg);
-  res = regex_search(str, std::regex("[`!@#$%^&*()|{}':;',\\[\\]<>?]"));
-  return !(res) && (str.size() == match.str().size());
-#else
+  regfree(&reg);
   return true;
-#endif
 }
 }  //  namespace ge

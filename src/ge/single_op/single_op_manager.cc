@@ -19,9 +19,6 @@
 #include <mutex>
 #include <string>
 
-#include "runtime/dev.h"
-#include "framework/common/debug/ge_log.h"
-
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOpManager::~SingleOpManager() {
   for (auto &it : stream_resources_) {
@@ -34,32 +31,15 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
                                                                                         const ModelData &model_data,
                                                                                         void *stream,
                                                                                         SingleOp **single_op) {
+  GELOGI("GetOpFromModel in. model name = %s", model_name.c_str());
   if (single_op == nullptr) {
     GELOGE(PARAM_INVALID, "single op is null");
     return PARAM_INVALID;
   }
-  uintptr_t resource_id;
-  // runtime uses NULL to denote a default stream for each device
-  if (stream == nullptr) {
-    // get current context
-    rtContext_t rt_cur_ctx = nullptr;
-    auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
-    if (rt_err != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
-      return RT_FAILED;
-    }
-    // use current context as resource key instead
-    GELOGI("use context as resource key instead when default stream");
-    resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
-  } else {
-    GELOGI("use stream as resource key instead when create stream");
-    resource_id = reinterpret_cast<uintptr_t>(stream);
-  }
 
-  GELOGI("GetOpFromModel in. model name = %s, resource id = 0x%lx", model_name.c_str(),
-         static_cast<uint64_t>(resource_id));
-
-  StreamResource *res = GetResource(resource_id);
+  uintptr_t resource_id = 0;
+  GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
+  StreamResource *res = GetResource(resource_id, stream);
   if (res == nullptr) {
     GELOGE(MEMALLOC_FAILED, "GetResource failed");
     return MEMALLOC_FAILED;
@@ -79,26 +59,19 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
     return ret;
   }
 
-  auto *new_op = new (std::nothrow) SingleOp();
+  auto new_op = std::unique_ptr<SingleOp>(new (std::nothrow) SingleOp());
   if (new_op == nullptr) {
     GELOGE(MEMALLOC_FAILED, "new SingleOp failed");
     return MEMALLOC_FAILED;
   }
 
   GELOGI("To build operator: %s", model_name.c_str());
-  ret = model.BuildOp(*res, *new_op);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Build op failed. op = %s, resource id = 0x%lx, ret = %u", model_name.c_str(),
-           static_cast<uint64_t>(resource_id), ret);
-    delete new_op;
-    new_op = nullptr;
-    return ret;
-  }
+  GE_CHK_STATUS_RET(model.BuildOp(*res, *new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
 
   // stream is nullable
   new_op->SetStream(stream);
-  res->CacheOperator(model_data.model_data, new_op);
-  *single_op = new_op;
+  *single_op = new_op.get();
+  res->CacheOperator(model_data.model_data, std::move(new_op));
   return SUCCESS;
 }
 
@@ -116,13 +89,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::Release
   return SUCCESS;
 }
 
-StreamResource *SingleOpManager::GetResource(uintptr_t resource_id) {
+StreamResource *SingleOpManager::GetResource(uintptr_t resource_id, rtStream_t stream) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = stream_resources_.find(resource_id);
   StreamResource *res = nullptr;
   if (it == stream_resources_.end()) {
     res = new (std::nothrow) StreamResource();
     if (res != nullptr) {
+      res->SetStream(stream);
       stream_resources_.emplace(resource_id, res);
     }
   } else {
@@ -140,5 +114,75 @@ StreamResource *SingleOpManager::TryGetResource(uintptr_t resource_id) {
   }
 
   return it->second;
+}
+
+Status SingleOpManager::GetDynamicOpFromModel(const string &model_name, const ModelData &model_data, void *stream,
+                                              DynamicSingleOp **single_op) {
+  GE_CHECK_NOTNULL(single_op);
+  uintptr_t resource_id = 0;
+  GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
+  StreamResource *res = GetResource(resource_id, stream);
+  if (res == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "GetResource failed");
+    return MEMALLOC_FAILED;
+  }
+
+  DynamicSingleOp *op = res->GetDynamicOperator(model_data.model_data);
+  if (op != nullptr) {
+    GELOGD("Got operator from stream cache");
+    *single_op = op;
+    return SUCCESS;
+  }
+
+  if (!tiling_func_registered_) {
+    RegisterTilingFunc();
+  }
+
+  SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
+  auto ret = model.Init();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
+    return ret;
+  }
+
+  auto new_op = std::unique_ptr<DynamicSingleOp>(new (std::nothrow) DynamicSingleOp(resource_id, stream));
+  GE_CHECK_NOTNULL(new_op);
+
+  GELOGI("To build operator: %s", model_name.c_str());
+  GE_CHK_STATUS_RET(model.BuildDynamicOp(*new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
+  *single_op = new_op.get();
+  res->CacheDynamicOperator(model_data.model_data, std::move(new_op));
+  return SUCCESS;
+}
+
+void SingleOpManager::RegisterTilingFunc() {
+  std::lock_guard<std::mutex> lk(mutex_);
+  if (tiling_func_registered_) {
+    return;
+  }
+
+  op_tiling_manager_.LoadSo();
+  tiling_func_registered_ = true;
+}
+
+Status SingleOpManager::GetResourceId(rtStream_t stream, uintptr_t &resource_id) {
+  // runtime uses NULL to denote a default stream for each device
+  if (stream == nullptr) {
+    // get current context
+    rtContext_t rt_cur_ctx = nullptr;
+    auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
+    if (rt_err != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
+      return RT_FAILED;
+    }
+    // use current context as resource key instead
+    GELOGI("use context as resource key instead when default stream");
+    resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
+  } else {
+    GELOGI("use stream as resource key instead when create stream");
+    resource_id = reinterpret_cast<uintptr_t>(stream);
+  }
+
+  return SUCCESS;
 }
 }  // namespace ge

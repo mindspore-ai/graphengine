@@ -27,12 +27,15 @@
 namespace ge {
 namespace multibatch {
 Status ProcessMultiBatch(ComputeGraphPtr &graph);
+void ParseDynamicSize(std::string dynamic_size, std::vector<std::vector<int64_t>> &shapes);
+
 Status GetDynamicOutputShape(ComputeGraphPtr &graph);
 
 enum NodeStatus {
   kNodeInBatchBranch,
   kNodeOutBatchBranch,
   kNodeStartNode,
+  kNodeNotSupportNode,
 };
 
 class MultiBatchGraphCopyer {
@@ -53,6 +56,7 @@ class MultiBatchGraphCopyer {
 
   NodePtr InsertShapeDataNode();
   Status InsertSwitchNForData(const NodePtr &data);
+  Status StampDynamicTypeForSwitchN(OpDescPtr &switchn_desc);
   Status UpdateMaxShapeToData(const NodePtr &data);
 
   Status InsertMergeForEdgeNode(const NodePtr &node);

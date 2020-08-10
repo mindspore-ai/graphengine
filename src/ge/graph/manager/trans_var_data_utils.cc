@@ -397,10 +397,11 @@ Status TransVarDataUtils::SyncTensorToHost(const string &var_name, const ge::GeT
 
   uint8_t *src_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, src_tensor_desc, &src_addr));
-  uint8_t *mem_addr = src_addr -
-                      static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(0)->GetVarMemLogicBase())) +
-                      static_cast<int64_t>(
-                        reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
+  uint8_t *mem_addr =
+    src_addr -
+    static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemLogicBase())) +
+    static_cast<int64_t>(
+      reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
   GE_CHK_RT_RET(rtMallocHost(reinterpret_cast<void **>(host_addr), src_tensor_size));
 
   GE_CHK_RT_RET(rtMemcpy(*host_addr, src_tensor_size, mem_addr, src_tensor_size, RT_MEMCPY_DEVICE_TO_HOST));
@@ -413,10 +414,11 @@ Status TransVarDataUtils::SyncTensorToDevice(const string &var_name, const uint8
                                              const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id) {
   uint8_t *dst_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, dst_tensor_desc, &dst_addr));
-  uint8_t *mem_addr = dst_addr -
-                      static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(0)->GetVarMemLogicBase())) +
-                      static_cast<int64_t>(
-                        reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
+  uint8_t *mem_addr =
+    dst_addr -
+    static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemLogicBase())) +
+    static_cast<int64_t>(
+      reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
   GE_CHK_RT_RET(rtMemcpy(mem_addr, addr_size, host_addr, addr_size, RT_MEMCPY_HOST_TO_DEVICE));
 
   GELOGI("SyncTensorToDevice var_name %s, addr_size %u", var_name.c_str(), addr_size);
@@ -442,7 +444,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
         rtError_t rt_ret = rtCtxSetCurrent(ctx);
         if (rt_ret != RT_ERROR_NONE) {
           GELOGE(RT_FAILED, "Failed to set context, error_code is: 0x%X.", rt_ret);
-          return RT_FAILED;
+          return RT_ERROR_TO_GE_STATUS(rt_ret);
         }
         uint32_t allocated_graph_id = 0;
         Status ret = VarManager::Instance(session_id)->GetAllocatedGraphId(node->GetName(), allocated_graph_id);

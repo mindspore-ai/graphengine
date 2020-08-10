@@ -44,6 +44,21 @@ class TransOpSymmetryEliminationPass : public BaseNodePass {
   static bool DescAreSymmetry(const NodePtr &src_node, const NodePtr &dst_node);
 
   ///
+  /// get the number of unknown shape of node
+  /// @param node_desc: node to be checked
+  /// @return  0 , is not dynamic shape; UNKNOWN_DIM_NUM , all dims are unknown; n , n > 0 , has n dims unknown
+  ///
+  static int GetUnknownDimsNum(const GeTensorDesc &node_desc);
+
+  ///
+  /// judge after two transposed op transform the raw data will be the same
+  /// @param src_node: first transposed op
+  /// @param dst_node: second transposed op
+  /// @return True or False, same or not
+  ///
+  static bool JudgeTransposeDBack2Raw(const NodePtr &src_node, const NodePtr &dst_node);
+
+  ///
   /// two transform nodes can not be offset if there is precision loss, like FP32->BOOL BOOL->FP32.
   /// keep this pair of transform nodes if it has precision loss.
   /// @param src_node: the front node

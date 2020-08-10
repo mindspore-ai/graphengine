@@ -74,6 +74,9 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
 
   size_t GetAllNodesSize() const;
   Vistor<NodePtr> GetAllNodes() const;
+  // is_unknown_shape: false, same with GetAllNodes func
+  // is_unknown_shape: true, same with GetDirectNodes func
+  Vistor<NodePtr> GetNodes(bool is_unknown_shape) const;
   size_t GetDirectNodesSize() const;
   Vistor<NodePtr> GetDirectNode() const;
   Vistor<NodePtr> GetInputNodes() const;
@@ -81,14 +84,18 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
 
   NodePtr FindNode(const std::string &name) const;
   NodePtr FindFirstNodeMatchType(const std::string &name) const;
+  /*lint -e504*/
   // AddNode with NodePtr
   NodePtr AddNode(NodePtr node);
   NodePtr AddNode(OpDescPtr op);
-  NodePtr AddNode(OpDescPtr op, int64_t id);  // for unserialize.
+  NodePtr AddNode(OpDescPtr op, int64_t id);  // for unserialize
   NodePtr AddNodeFront(NodePtr node);
   NodePtr AddNodeFront(const OpDescPtr &op);
   NodePtr AddInputNode(NodePtr node);
   NodePtr AddOutputNode(NodePtr node);
+  // insert node with specific pre_node
+  NodePtr AddNodeAfter(OpDescPtr &op, const NodePtr &pre_node);
+  NodePtr AddNodeAfter(NodePtr node, const NodePtr &pre_node);
 
   graphStatus RemoveNode(const NodePtr &node);
   graphStatus RemoveInputNode(const NodePtr &node);
@@ -133,6 +140,8 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   bool IsValid() const;
   void Dump() const;
 
+  void Swap(ComputeGraph &graph);
+
   graphStatus IsolateNode(const NodePtr &node);
   graphStatus Verify();
   graphStatus InferShape();
@@ -141,6 +150,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   graphStatus InsertEventNodes();
   bool operator==(const ComputeGraph &r_compute_graph) const;
 
+  /*lint +e504*/
   const std::map<std::vector<std::string>, std::vector<std::string>> &GetShareParamLayer() const {
     return params_share_map_;
   }
@@ -173,6 +183,10 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   uint32_t GetOutputSize() const { return output_size_; }
   void SetInputSize(uint32_t size) { input_size_ = size; }
   uint32_t GetInputSize() const { return input_size_; }
+
+  // false: known shape  true: unknow shape
+  bool GetGraphUnknownFlag() const { return is_unknown_shape_graph_; }
+  void SetGraphUnknownFlag(bool flag) { is_unknown_shape_graph_ = flag; }
 
   ///
   /// Set is need train iteration.
@@ -249,6 +263,8 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   bool VectorInputNodePtrIsEqual(const std::vector<NodePtr> &r_node_ptr_vector,
                                  const std::vector<NodePtr> &l_node_ptr_vector) const;
 
+  void SetNodesOwner();
+
   friend class ModelSerializeImp;
   friend class GraphDebugImp;
   friend class OnnxUtils;
@@ -282,7 +298,8 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   std::map<uint32_t, std::string> op_name_map_;
   uint64_t session_id_ = 0;
   ge::Format data_format_ = ge::FORMAT_ND;
+  // unknown graph indicator, default is false, mean known shape
+  bool is_unknown_shape_graph_ = false;
 };
 }  // namespace ge
-
 #endif  // INC_GRAPH_COMPUTE_GRAPH_H_

@@ -64,7 +64,7 @@ Status RsqrtKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
   if (data_count > 0) {
     unique_ptr<float[]> buf(new (std::nothrow) float[data_count]());
     if (buf == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "new buf failed");
+      GELOGW("new buf failed");
       return NOT_CHANGED;
     }
 
@@ -81,13 +81,13 @@ Status RsqrtKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
     auto output_tensor_desc = op_desc_ptr->GetOutputDesc(0);
     GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
     if (output_ptr == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "MakeShared GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
+      GELOGW("MakeShared GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
       return NOT_CHANGED;
     }
 
     output_ptr->MutableTensorDesc().SetDataType(DT_FLOAT);
     GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()), data_size) != GRAPH_SUCCESS,
-                    GELOGE(INTERNAL_ERROR, "set data failed");
+                    GELOGW("set data failed");
                     return NOT_CHANGED);
     output_ptr->MutableTensorDesc().SetShape(x_shape);
     v_output.push_back(output_ptr);

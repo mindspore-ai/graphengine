@@ -88,10 +88,8 @@ bool ModelSerializeImp::SerializeEdge(const NodePtr &node, proto::OpDef *op_def_
 }
 
 bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::OpDef *op_def_proto, bool is_dump) {
-  if (op_desc == nullptr || op_def_proto == nullptr) {
-    GELOGE(GRAPH_FAILED, "Input Para Invalid");
-    return false;
-  }
+  GE_CHK_BOOL_EXEC(op_desc != nullptr, return false, "op_desc is null.");
+  GE_CHK_BOOL_EXEC(op_def_proto != nullptr, return false, "op_def_proto is null.");
   if (op_desc->op_def_.GetProtoMsg() != nullptr) {
     *op_def_proto = *op_desc->op_def_.GetProtoMsg();
     // Delete unnecessary attr
@@ -130,18 +128,40 @@ bool ModelSerializeImp::SerializeOpDesc(const ConstOpDescPtr &op_desc, proto::Op
     for (const std::string &name : op_desc->GetSubgraphInstanceNames()) {
       op_def_proto->add_subgraph_name(name);
     }
-
-    proto::AttrDef key;
-    proto::AttrDef value;
-    for (auto &item : op_desc->output_name_idx_) {
-      key.mutable_list()->add_s(item.first);
-      value.mutable_list()->add_i(item.second);
-    }
-    auto op_desc_attr = op_def_proto->mutable_attr();
-    op_desc_attr->insert({"_output_name_key", key});
-    op_desc_attr->insert({"_output_name_value", value});
+    OpDescToAttrDef(op_desc, op_def_proto);
   }
   return true;
+}
+
+void ModelSerializeImp::OpDescToAttrDef(const ConstOpDescPtr &op_desc, proto::OpDef *op_def_proto) {
+  proto::AttrDef key_in;
+  proto::AttrDef value_in;
+  auto op_desc_attr = op_def_proto->mutable_attr();
+  if (!op_desc->input_name_idx_.empty()) {
+    for (auto &item : op_desc->input_name_idx_) {
+      key_in.mutable_list()->add_s(item.first);
+      value_in.mutable_list()->add_i(item.second);
+    }
+    op_desc_attr->insert({"_input_name_key", key_in});
+    op_desc_attr->insert({"_input_name_value", value_in});
+  }
+  proto::AttrDef key_out;
+  proto::AttrDef value_out;
+  if (!op_desc->output_name_idx_.empty()) {
+    for (auto &item : op_desc->output_name_idx_) {
+      key_out.mutable_list()->add_s(item.first);
+      value_out.mutable_list()->add_i(item.second);
+    }
+    op_desc_attr->insert({"_output_name_key", key_out});
+    op_desc_attr->insert({"_output_name_value", value_out});
+  }
+  proto::AttrDef opt_input;
+  if (!op_desc->optional_input_names_.empty()) {
+    for (auto &item : op_desc->optional_input_names_) {
+      opt_input.mutable_list()->add_s(item);
+    }
+    op_desc_attr->insert({"_opt_input", opt_input});
+  }
 }
 
 bool ModelSerializeImp::SerializeNode(const NodePtr &node, proto::OpDef *op_def_proto, bool is_dump) {
@@ -237,13 +257,70 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ModelSerializeImp::Unseriali
   }
 }
 
+void ModelSerializeImp::AttrDefToOpDesc(OpDescPtr &op_desc, std::vector<string> &key_in, std::vector<string> &key_out,
+                                        std::vector<uint32_t> &value_in, std::vector<uint32_t> &value_out,
+                                        std::vector<string> &opt_input) {
+  if (!key_in.empty()) {
+    if (key_in.size() != value_in.size()) {
+      GELOGW("Key and value vector size is different. key_size: %zu, value_size: %zu.", key_out.size(),
+             value_in.size());
+    } else {
+      for (uint32_t i = 0; i < key_in.size(); ++i) {
+        op_desc->input_name_idx_.insert(std::pair<string, uint32_t>(key_in.at(i), value_in.at(i)));
+      }
+    }
+  }
+  if (!key_out.empty()) {
+    if (key_out.size() != value_out.size()) {
+      GELOGW("Key and value vector size is different. key_size: %zu, value_size: %zu.", key_out.size(),
+             value_out.size());
+    } else {
+      for (uint32_t i = 0; i < key_out.size(); ++i) {
+        op_desc->output_name_idx_.insert(std::pair<string, uint32_t>(key_out.at(i), value_out.at(i)));
+      }
+    }
+  }
+  if (!opt_input.empty()) {
+    for (const auto &i : opt_input) {
+      op_desc->optional_input_names_.insert(i);
+    }
+  }
+}
+
 bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_def_proto) {
-  std::vector<string> key;
-  std::vector<uint32_t> value;
+  std::vector<string> opt_input;
+  std::vector<string> key_in;
+  std::vector<uint32_t> value_in;
+  if (op_def_proto.attr().count("_opt_input") > 0) {
+    auto &name_list = op_def_proto.attr().at("_opt_input").list();
+    for (const auto &item_s : name_list.s()) {
+      opt_input.push_back(item_s);
+    }
+    auto op_desc_attr = op_def_proto.mutable_attr();
+    op_desc_attr->erase("_opt_input");
+  }
+  if (op_def_proto.attr().count("_input_name_key") > 0) {
+    auto &output_name_key_list = op_def_proto.attr().at("_input_name_key").list();
+    for (const auto &item_s : output_name_key_list.s()) {
+      key_in.push_back(item_s);
+    }
+    auto op_desc_attr = op_def_proto.mutable_attr();
+    op_desc_attr->erase("_input_name_key");
+  }
+  if (op_def_proto.attr().count("_input_name_value") > 0) {
+    auto &input_name_value_list = op_def_proto.attr().at("_input_name_value").list();
+    for (const auto &item_i : input_name_value_list.i()) {
+      value_in.push_back(static_cast<uint32_t>(item_i));
+    }
+    auto op_desc_attr = op_def_proto.mutable_attr();
+    op_desc_attr->erase("_input_name_value");
+  }
+  std::vector<string> key_out;
+  std::vector<uint32_t> value_out;
   if (op_def_proto.attr().count("_output_name_key") > 0) {
     auto &output_name_key_list = op_def_proto.attr().at("_output_name_key").list();
     for (const auto &item_s : output_name_key_list.s()) {
-      key.push_back(item_s);
+      key_out.push_back(item_s);
     }
     auto op_desc_attr = op_def_proto.mutable_attr();
     op_desc_attr->erase("_output_name_key");
@@ -251,7 +328,7 @@ bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_d
   if (op_def_proto.attr().count("_output_name_value") > 0) {
     auto &output_name_value_list = op_def_proto.attr().at("_output_name_value").list();
     for (const auto &item_i : output_name_value_list.i()) {
-      value.push_back(static_cast<uint32_t>(item_i));
+      value_out.push_back(static_cast<uint32_t>(item_i));
     }
     auto op_desc_attr = op_def_proto.mutable_attr();
     op_desc_attr->erase("_output_name_value");
@@ -282,15 +359,8 @@ bool ModelSerializeImp::UnserializeOpDesc(OpDescPtr &op_desc, proto::OpDef &op_d
     op_desc->SetSubgraphInstanceName(graph_index++, name);
   }
 
-  if (key.size() != 0) {
-    if (key.size() != value.size()) {
-      GELOGE(GRAPH_FAILED, "twe vector size is different. key_size: %zu, value_size: %zu.", key.size(), value.size());
-    } else {
-      for (uint32_t i = 0; i < key.size(); ++i) {
-        op_desc->output_name_idx_.insert(std::pair<string, uint32_t>(key.at(i), value.at(i)));
-      }
-    }
-  }
+  // insert name index by key and value
+  AttrDefToOpDesc(op_desc, key_in, key_out, value_in, value_out, opt_input);
 
   return true;
 }
@@ -338,13 +408,13 @@ bool ModelSerializeImp::HandleNodeNameRef() {
                item.dst_node_name.c_str(), item.dst_in_index);
         return false;
       }
-      GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");
+      GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");  // lint !e737
     } else {
       // Control edge
       auto src_anchor = src_node_it->second->GetOutControlAnchor();
       auto dst_anchor = item.dst_node->GetInControlAnchor();
       if (src_anchor != nullptr && dst_anchor != nullptr) {
-        GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");
+        GE_CHK_BOOL_ONLY_LOG((src_anchor->LinkTo(dst_anchor) == GRAPH_SUCCESS), " linkTo failed.");  // lint !e737
       }
     }
   }

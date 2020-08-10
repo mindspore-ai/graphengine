@@ -46,31 +46,31 @@ Status StridedSliceKernel::CheckAndGetAttr(const OpDescPtr &attr, const std::vec
   int64_t shrink_axis_mask = 0;
 
   if (attr == nullptr) {
-    GELOGE(PARAM_INVALID, "input opdescptr is nullptr.");
+    GELOGW("input opdescptr is nullptr.");
     return PARAM_INVALID;
   }
   if (input.size() != kStridedSliceInputSize) {
-    GELOGE(PARAM_INVALID, "The number of input for strided slice must be %zu.", kStridedSliceInputSize);
+    GELOGW("The number of input for strided slice must be %zu.", kStridedSliceInputSize);
     return PARAM_INVALID;
   }
   if (!AttrUtils::GetInt(attr, STRIDE_SLICE_ATTR_BEGIN_MASK, begin_mask)) {
-    GELOGE(PARAM_INVALID, "get begin_mask attr failed.");
+    GELOGW("get begin_mask attr failed.");
     return PARAM_INVALID;
   }
   if (!AttrUtils::GetInt(attr, STRIDE_SLICE_ATTR_END_MASK, end_mask)) {
-    GELOGE(PARAM_INVALID, "get end_mask attr failed.");
+    GELOGW("get end_mask attr failed.");
     return PARAM_INVALID;
   }
   if (!AttrUtils::GetInt(attr, STRIDE_SLICE_ATTR_ELLIPSIS_MASK, ellipsis_mask)) {
-    GELOGE(PARAM_INVALID, "get ellipsis_mask attr failed.");
+    GELOGW("get ellipsis_mask attr failed.");
     return PARAM_INVALID;
   }
   if (!AttrUtils::GetInt(attr, STRIDE_SLICE_ATTR_NEW_AXIS_MASK, new_axis_mask)) {
-    GELOGE(PARAM_INVALID, "get new_axis_mask attr failed.");
+    GELOGW("get new_axis_mask attr failed.");
     return PARAM_INVALID;
   }
   if (!AttrUtils::GetInt(attr, STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK, shrink_axis_mask)) {
-    GELOGE(PARAM_INVALID, "get shrink_axis_mask attr failed.");
+    GELOGW("get shrink_axis_mask attr failed.");
     return PARAM_INVALID;
   }
   if ((ellipsis_mask != 0) || (new_axis_mask != 0)) {
@@ -98,7 +98,7 @@ Status StridedSliceKernel::CheckAndGetAttr(const OpDescPtr &attr, const std::vec
   ConstGeTensorPtr weight2 = input[kStridedSliceInputIndex2];
   ConstGeTensorPtr weight3 = input[kStridedSliceInputIndex3];
   if (CheckWeight(weight0, weight1, weight2, weight3) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Check And Get Attr failed.");
+    GELOGW("Check And Get Attr failed.");
     return PARAM_INVALID;
   }
 
@@ -168,6 +168,17 @@ void StridedSliceKernel::GetOutputDims(uint32_t dims_size, const std::vector<int
   }
 }
 
+Status StridedSliceKernel::CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr) {
+  // check dim not all less than 0
+  for (auto dim : output_dims) {
+    if (dim > 0) {
+      return SUCCESS;
+    }
+  }
+  GELOGW("all output dim <=0, can't be processed. op_name : %s", attr->GetName().c_str());
+  return NOT_CHANGED;
+}
+
 Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<ge::ConstGeTensorPtr> &input,
                                    vector<ge::GeTensorPtr> &v_output) {
   GELOGI("StridedSliceKernel in.");
@@ -191,7 +202,7 @@ Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<g
   const int32_t *end = reinterpret_cast<const int32_t *>(weight2->GetData().data());
   const int32_t *stride = reinterpret_cast<const int32_t *>(weight3->GetData().data());
   if ((begin == nullptr) || (end == nullptr) || (stride == nullptr)) {
-    GELOGE(PARAM_INVALID, "input weight tensor is nullptr.");
+    GELOGW("input weight tensor is nullptr.");
     return NOT_CHANGED;
   }
 
@@ -237,16 +248,22 @@ Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<g
   auto output_tensor_desc = attr->GetOutputDesc(0);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "MakeShared GeTensor failed, node name %s.", attr->GetName().c_str());
+    GELOGW("MakeShared GeTensor failed, node name %s.", attr->GetName().c_str());
     return NOT_CHANGED;
   }
 
   void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(weight0->GetData().data()));
   GE_CHECK_NOTNULL(data);
+
+  ret = CheckOutputDims(output_dims, attr);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+
   ret = OpUtils::SetOutputSliceData(data, static_cast<int64_t>(data_size), args.data_type, input_dims, begin_vec,
                                     output_dims, output_ptr.get(), stride_vec);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "SetOutputSliceData failed.");
+    GELOGW("SetOutputSliceData failed.");
     return NOT_CHANGED;
   }
 

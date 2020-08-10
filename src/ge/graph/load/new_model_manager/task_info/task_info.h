@@ -72,6 +72,8 @@ class TaskInfo {
 
   virtual uint32_t GetTaskID() { return 0xFFFFFFFF; }
 
+  virtual bool CallSaveDumpInfo() { return false; }
+
   virtual uint32_t GetStreamId() { return 0xFFFFFFFF; }
 
   virtual uintptr_t GetDumpArgs() { return 0; }

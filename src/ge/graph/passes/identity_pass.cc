@@ -18,26 +18,35 @@
 
 #include <string>
 #include <vector>
-
 #include "framework/common/debug/ge_log.h"
-#include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
+#include "graph/utils/node_utils.h"
 
 namespace ge {
 namespace {
 ///
-/// A `Identity` node may after a `Switch` node and has control-dependency-out nodes.
+/// 1. A `Identity` node may after a `Switch` node and has control-dependency-out nodes.
 /// Or a `Identity` node may before a `Merge` node and has control-dependency-in nodes.
 /// The identity nodes are used to represent control dependencies in condition branch, and can not be deleted.
-///
+/// 2. Check identity is near subgraph.
+///    Eg. As output of Data node in subgraph
+///        or as input of Netoutput of subgraph
+///        or as input of one node with subgraph
+///        or as output of one node with subgraph
 Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
   std::string node_type;
   for (auto &in_node : node->GetInDataNodes()) {
-    auto ret = GetOriginalType(in_node, node_type);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to get node type from node %s", node->GetName().c_str());
-      return ret;
+    auto in_node_opdesc = in_node->GetOpDesc();
+    GE_CHECK_NOTNULL(in_node_opdesc);
+    // near entrance of subgraph || near subgraph
+    if ((in_node->GetType() == DATA && NodeUtils::IsSubgraphInput(in_node)) ||
+        !in_node_opdesc->GetSubgraphInstanceNames().empty()) {
+      usable = true;
+      return SUCCESS;
     }
+
+    GE_CHK_STATUS_RET(GetOriginalType(in_node, node_type), "Failed to get node type from node %s",
+                      node->GetName().c_str());
     if ((node_type != SWITCH) && (node_type != REFSWITCH)) {
       GELOGD("skip identity %s connected to switch", node->GetName().c_str());
       break;
@@ -49,11 +58,15 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
     }
   }
   for (auto &out_node : node->GetOutDataNodes()) {
-    auto ret = GetOriginalType(out_node, node_type);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to get node type from node %s", node->GetName().c_str());
-      return ret;
+    auto out_node_opdesc = out_node->GetOpDesc();
+    GE_CHECK_NOTNULL(out_node_opdesc);
+    // near output of subgraph || near subgraph
+    if (NodeUtils::IsSubgraphOutput(out_node) || !out_node_opdesc->GetSubgraphInstanceNames().empty()) {
+      usable = true;
+      return SUCCESS;
     }
+    GE_CHK_STATUS_RET(GetOriginalType(out_node, node_type), "Failed to get node type from node %s",
+                      node->GetName().c_str());
     if ((node_type != MERGE) && (node_type != REFMERGE)) {
       GELOGD("skip identity %s connected to merge", node->GetName().c_str());
       break;
@@ -79,7 +92,7 @@ Status IdentityPass::Run(NodePtr &node) {
     GELOGE(status_ret, "Identity pass get original type fail.");
     return status_ret;
   }
-  if ((type != IDENTITY) && (type != IDENTITYN)) {
+  if ((type != IDENTITY) && (type != IDENTITYN) && (type != READVARIABLEOP)) {
     return SUCCESS;
   }
 

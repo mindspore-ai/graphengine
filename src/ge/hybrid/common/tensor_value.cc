@@ -24,7 +24,7 @@ namespace hybrid {
 TensorBuffer::TensorBuffer(NpuMemoryAllocator *allocator, void *buffer, size_t size)
     : allocator_(allocator), buffer_(buffer), size_(size) {}
 
-std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator, size_t size) {
+std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator, size_t size, AllocationAttr *attr) {
   void *buffer = nullptr;
   if (size == 0) {
     GELOGD("size is 0");
@@ -36,7 +36,7 @@ std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator
     return nullptr;
   }
 
-  buffer = allocator->Allocate(size);
+  buffer = allocator->Allocate(size, attr);
   if (buffer == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to allocate memory. size = %zu", size);
     return nullptr;

@@ -162,7 +162,7 @@ Status SubKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge:
   auto output_tensor_desc = op_desc_ptr->GetOutputDesc(kSubFirstOutput);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
+    GELOGW("make_shared ge::GeTensor failed, node name %s.", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;
   }
 

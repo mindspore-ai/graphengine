@@ -22,8 +22,9 @@
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/debug/ge_attr_define.h"
 #include "framework/common/util.h"
+#include "graph/common/ge_call_wrapper.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
 #include "model/ge_root_model.h"
@@ -33,8 +34,9 @@ thread_local uint32_t device_count = 0;
 namespace {
 const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
-const char *const kNeedDestroySpecifiedAicpuKernel = "need_destroy_specified_aicpu_kernel";
 }  // namespace
+
+DumpProperties ModelManager::dump_properties_;
 
 std::shared_ptr<ModelManager> ModelManager::GetInstance() {
   static const std::shared_ptr<ModelManager> instance_ptr =
@@ -68,11 +70,11 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
       auto kernel_size = sizeof(uint64_t) * (v_aicpu_kernel.size());
       rtError_t rt_ret = rtMalloc(&aicpu_kernel_addr, kernel_size, RT_MEMORY_HBM);
       GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
-                      return RT_FAILED;)
+                      return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
       rt_ret = rtMemcpy(aicpu_kernel_addr, kernel_size, v_aicpu_kernel.data(), kernel_size, RT_MEMCPY_HOST_TO_DEVICE);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
-                      GE_CHK_RT(rtFree(aicpu_kernel_addr)); return FAILED;)
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
+                      GE_CHK_RT(rtFree(aicpu_kernel_addr)); return RT_ERROR_TO_GE_STATUS(rt_ret);)
       uint64_t kernel_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(aicpu_kernel_addr));
       param_base.fwkKernelBase.fwk_kernel.kernelID = kernel_id_addr;
       // In the scene of loading once and running many times, the kernel needs to be destroyed many times,
@@ -82,64 +84,64 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 
   rtError_t rt_ret = rtMalloc(&(devicebase), sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "malloc device memory failed.");
+    GELOGE(RT_FAILED, "malloc device memory failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret =
     rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "memory copy to device failed.");
+    GELOGE(RT_FAILED, "memory copy to device failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rtStream_t stream = nullptr;
   rt_ret = rtStreamCreate(&stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "create stream failed.");
+    GELOGE(RT_FAILED, "create stream failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtKernelLaunchEx(devicebase, sizeof(STR_FWK_OP_KERNEL), 0, stream);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtKernelLaunchEx failed.");
+    GELOGE(RT_FAILED, "rtKernelLaunchEx failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
     GE_CHK_RT(rtStreamDestroy(stream));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtStreamSynchronize(stream);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtStreamSynchronize failed.");
+    GELOGE(RT_FAILED, "rtStreamSynchronize failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
     GE_CHK_RT(rtStreamDestroy(stream));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   if (aicpu_kernel_addr != nullptr) {
     rt_ret = rtFree(aicpu_kernel_addr);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "free memory failed.");
+      GELOGE(RT_FAILED, "free memory failed. ret: 0x%X", rt_ret);
       GE_CHK_RT(rtFree(devicebase));
       GE_CHK_RT(rtStreamDestroy(stream));
-      return FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
   rt_ret = rtFree(devicebase);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "free memory failed.");
+    GELOGE(RT_FAILED, "free memory failed. ret: 0x%X", rt_ret);
     GE_CHK_RT(rtStreamDestroy(stream));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtStreamDestroy(stream);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtStreamDestroy failed.");
-    return FAILED;
+    GELOGE(RT_FAILED, "rtStreamDestroy failed. ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   return SUCCESS;
 }
@@ -166,8 +168,8 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
-    GELOGE(PARAM_INVALID, "model id %u does not exists.", model_id);
-    return PARAM_INVALID;
+    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
+    return GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
   GELOGI("Destroy aicpu session for infer, session id is %u.", session_id);
@@ -221,10 +223,11 @@ Status ModelManager::SetDevice(int32_t deviceId) const {
   return SUCCESS;
 }
 
-ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num) {
+ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num,
+                                        int32_t dynamic_type) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHECK_NOTNULL(davinci_model);
-  davinci_model->SetDynamicSize(batch_num);
+  davinci_model->SetDynamicSize(batch_num, dynamic_type);
   return SUCCESS;
 }
 
@@ -272,6 +275,10 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   davinci_model->SetId(model_id);
   davinci_model->SetDeviceId(GetContext().DeviceId());
 
+  const DumpProperties &dump_properties = PropertiesManager::Instance().GetDumpProperties(GetContext().SessionId());
+  davinci_model->SetDumpProperties(dump_properties);
+  dump_properties_ = dump_properties;
+
   auto root_graph = ge_root_model->GetRootGraph();
   GE_CHECK_NOTNULL(root_graph);
   string root_model_name = root_graph->GetName();
@@ -296,9 +303,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
       davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
                                                        timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
       davinci_model->SetProfileTime(MODEL_LOAD_END);
-      if (davinci_model->SinkModelProfile() != SUCCESS) {
-        GELOGW("Sink model profile failed.");
-      }
     }
   } while (0);
 
@@ -325,12 +329,18 @@ Status ModelManager::DeleteModel(uint32_t id) {
   auto it = model_map_.find(id);
   auto hybrid_model_it = hybrid_model_map_.find(id);
   if (it != model_map_.end()) {
+    uint64_t session_id = it->second->GetSessionId();
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id);
+    auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
+    if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
+      (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
+    }
     (void)model_map_.erase(it);
   } else if (hybrid_model_it != hybrid_model_map_.end()) {
     (void)hybrid_model_map_.erase(hybrid_model_it);
   } else {
-    GELOGE(PARAM_INVALID, "model id %u does not exists.", id);
-    return PARAM_INVALID;
+    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
+    return GE_EXEC_MODEL_ID_INVALID;
   }
 
   return SUCCESS;
@@ -383,7 +393,7 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 
   std::shared_ptr<DavinciModel> model = GetModel(model_id);
 
-  GE_CHK_BOOL_RET_STATUS(model != nullptr, PARAM_INVALID, "Invalid Model ID %u in InputData! ", model_id);
+  GE_CHK_BOOL_RET_STATUS(model != nullptr, PARAM_INVALID, "Invalid model id %u in InputData! ", model_id);
 
   GE_IF_BOOL_EXEC(model->GetDataInputTid() == 0, model->SetDataInputTid(mmGetTid()));
 
@@ -419,7 +429,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
   for (size_t i = 0; i < inputs.size(); ++i) {
     DataBuffer data;
     data.data = inputs[i].data;
-    data.length = static_cast<uint32_t>(inputs[i].length);
+    data.length = inputs[i].length;
     input_data.blobs.push_back(data);
   }
 
@@ -439,7 +449,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
     return SUCCESS;
   }
 
-  GE_CHK_BOOL_RET_STATUS(model != nullptr, PARAM_INVALID, "Invalid Model ID %u in InputData! ", model_id);
+  GE_CHK_BOOL_RET_STATUS(model != nullptr, PARAM_INVALID, "Invalid model id %u in InputData! ", model_id);
 
   DataInputer *inputer = model->GetDataInputer();
   GE_CHECK_NOTNULL(inputer);
@@ -469,7 +479,7 @@ Status ModelManager::Start(uint32_t model_id) {
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
 
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid Model ID %u to start! ", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u to start! ", model_id);
 
   Status status = davinci_model->ModelRunStart();
   if (status == SUCCESS) {
@@ -496,7 +506,7 @@ Status ModelManager::Stop(uint32_t model_id) {
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid Model ID %u to stop!", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u to stop!", model_id);
 
   Status status = davinci_model->ModelRunStop();
   if (status == SUCCESS) {
@@ -611,10 +621,10 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
     GELOGE(PARAM_INVALID, "parser dump model failed");
     return FAILED;
   }
-  GELOGI("dump status = %s.", dump_model.c_str());
+  GELOGI("dump model = %s.", dump_model.c_str());
 
   if (dump_status == "off" || dump_status == "OFF") {
-    PropertiesManager::Instance().DeleteDumpPropertyValue(dump_model);
+    dump_properties_.DeletePropertyValue(dump_model);
     return SUCCESS;
   }
 
@@ -631,9 +641,10 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
     return FAILED;
   }
   if (!dump_path.empty() && dump_path[dump_path.size() - 1] != '/') {
-    dump_path = dump_path + "/" + CurrentTimeInStr() + "/";
+    dump_path = dump_path + "/";
   }
-  GELOGI("dump status = %s.", dump_path.c_str());
+  dump_path = dump_path + CurrentTimeInStr() + "/";
+  GELOGI("dump path = %s.", dump_path.c_str());
 
   ret = ParserPara(command, DUMP_MODE, dump_mode);
   if (ret != SUCCESS) {
@@ -642,20 +653,10 @@ Status ModelManager::HandleDumpCommand(const Command &command) {
   }
   GELOGI("dump mode = %s", dump_mode.c_str());
 
-  auto iter_dump_mode = std::find(command.cmd_params.begin(), command.cmd_params.end(), DUMP_MODE);
-  if (iter_dump_mode != command.cmd_params.end()) {
-    ++iter_dump_mode;
-    if (iter_dump_mode == command.cmd_params.end()) {
-      GELOGE(PARAM_INVALID, "Invalid access.");
-      return PARAM_INVALID;
-    }
-    dump_mode = *iter_dump_mode;
-    GELOGI("dump mode = %s", dump_mode.c_str());
-  }
+  dump_properties_.AddPropertyValue(dump_model, dump_layers);
+  dump_properties_.SetDumpPath(dump_path);
+  dump_properties_.SetDumpMode(dump_mode);
 
-  PropertiesManager::Instance().AddDumpPropertyValue(dump_model, dump_layers);
-  PropertiesManager::Instance().SetDumpOutputPath(dump_path);
-  PropertiesManager::Instance().SetDumpMode(dump_mode);
   return SUCCESS;
 }
 
@@ -667,7 +668,7 @@ Status ModelManager::GetMaxUsedMemory(const uint32_t model_id, uint64_t &max_siz
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetMaxUsedMemory Failed, Invalid Model ID %u !",
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetMaxUsedMemory Failed, Invalid model id %u!",
                          model_id);
 
   max_size = davinci_model->TotalMemSize();
@@ -677,8 +678,8 @@ Status ModelManager::GetMaxUsedMemory(const uint32_t model_id, uint64_t &max_siz
 Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                             vector<InputOutputDescInfo> &output_desc) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetInputOutputDescInfo Failed, Invalid model id %u!",
+                         model_id);
 
   return davinci_model->GetInputOutputDescInfo(input_desc, output_desc);
 }
@@ -688,8 +689,8 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
                                             std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats,
                                             bool new_model_desc) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+                         "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
   davinci_model->SetModelDescVersion(new_model_desc);
 
@@ -703,18 +704,35 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
 /// @param [out] batch_info
 /// @return execute result
 ///
-Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
+Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
+                                         int32_t &dynamic_type) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetDynamicBatchInfo Failed, Invalid Model ID %u !",
-                         model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+                         "GetDynamicBatchInfo failed, Invalid model id %u!", model_id);
 
-  return davinci_model->GetDynamicBatchInfo(batch_info);
+  return davinci_model->GetDynamicBatchInfo(batch_info, dynamic_type);
 }
 
-Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info) {
+///
+/// @ingroup ge
+/// @brief Get combined dynamic dims info
+/// @param [in] model_id
+/// @param [out] batch_info
+/// @return execute result
+///
+Status ModelManager::GetCombinedDynamicDims(const uint32_t model_id, vector<vector<int64_t>> &batch_info) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetCombinedDynamicDims Failed, Invalid Model ID %u!",
+                         model_id);
+
+  davinci_model->GetCombinedDynamicDims(batch_info);
+  return SUCCESS;
+}
+
+Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHECK_NOTNULL(davinci_model);
-  davinci_model->GetCurShape(batch_info);
+  davinci_model->GetCurShape(batch_info, dynamic_type);
   return SUCCESS;
 }
 
@@ -730,8 +748,8 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
                                                        std::vector<uint32_t> &inputFormats,
                                                        std::vector<uint32_t> &outputFormats) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
-                         "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetInputOutputDescInfo Failed, Invalid model id %u!",
+                         model_id);
 
   return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
 }
@@ -771,21 +789,10 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::UpdateSessionId(std::shared_ptr<DavinciModel> &davinci_model, uint64_t session_id) {
-  GeModelPtr ge_model_current = davinci_model->GetGeModel();
-  GE_CHECK_NOTNULL(ge_model_current);
-  if (!ge::AttrUtils::SetInt(ge_model_current, ge::MODEL_ATTR_SESSION_ID, static_cast<int64_t>(session_id))) {
-    GELOGW("Set attr[%s] failed in updating session_id.", MODEL_ATTR_SESSION_ID.c_str());
-  }
-
-  GELOGD("Update session id: %lu.", session_id);
-  return SUCCESS;
-}
-
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
-  GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0, PARAM_INVALID,
-                         "input key file path is not valid, %s", strerror(errno));
+  GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0, GE_EXEC_MODEL_KEY_PATH_INVALID,
+                         "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
   shared_ptr<DavinciModel> davinci_model = nullptr;
@@ -803,11 +810,11 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     try {
       davinci_model = std::make_shared<DavinciModel>(model.priority, listener);
     } catch (std::bad_alloc &) {
-      GELOGE(FAILED, "Make shared failed");
-      return FAILED;
+      GELOGE(MEMALLOC_FAILED, "Make shared failed");
+      return MEMALLOC_FAILED;
     } catch (...) {
-      GELOGE(FAILED, "Make shared failed since other exception raise");
-      return FAILED;
+      GELOGE(INTERNAL_ERROR, "Make shared failed since other exception raise");
+      return INTERNAL_ERROR;
     }
     ret = davinci_model->Assign(ge_model);
     if (ret != SUCCESS) {
@@ -820,10 +827,11 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     rtError_t rt_ret = rtGetDevice(&device_id);
     if (rt_ret != RT_ERROR_NONE || device_id < 0) {
       GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
-      return FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     davinci_model->SetDeviceId(device_id);
     davinci_model->SetOmName(model.om_name);
+    davinci_model->SetDumpProperties(dump_properties_);
 
     /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
     /// These session_ids come from the same model, so the values of session_id are the same.
@@ -831,7 +839,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     uint64_t new_session_id;
     ret = GenSessionId(new_session_id);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Generate session_id for infer failed.");
-    ret = UpdateSessionId(davinci_model, new_session_id);
+    ret = davinci_model->UpdateSessionId(new_session_id);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Update session_id for infer failed.");
 
     ret = davinci_model->Init(dev_ptr, mem_size, weight_ptr, weight_size);
@@ -846,9 +854,6 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
                                                        timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
       davinci_model->SetProfileTime(MODEL_LOAD_END);
-      if (davinci_model->SinkModelProfile() != SUCCESS) {
-        GELOGW("Sink model profile failed.");
-      }
     }
 
     GE_IF_BOOL_EXEC(ret == SUCCESS, device_count++);
@@ -870,8 +875,9 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_data,
                                     const std::vector<uint32_t> &input_queue_ids,
                                     const std::vector<uint32_t> &output_queue_ids) {
-  GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0, PARAM_INVALID,
-                         "input key file path is not valid, %s", strerror(errno));
+  GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0,
+                         GE_EXEC_MODEL_KEY_PATH_INVALID, "input key file path %s is not valid, %s",
+                         model_data.key.c_str(), strerror(errno));
 
   ModelHelper model_helper;
   Status ret = model_helper.LoadModel(model_data);
@@ -882,8 +888,8 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
 
   shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(model_data.priority, nullptr);
   if (davinci_model == nullptr) {
-    GELOGE(FAILED, "create model failed.");
-    return FAILED;
+    GELOGE(MEMALLOC_FAILED, "create model failed.");
+    return MEMALLOC_FAILED;
   }
 
   ret = davinci_model->Assign(model_helper.GetGeModel());
@@ -898,7 +904,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
   uint64_t new_session_id;
   ret = GenSessionId(new_session_id);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
-  ret = UpdateSessionId(davinci_model, new_session_id);
+  ret = davinci_model->UpdateSessionId(new_session_id);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
 
   GenModelId(&model_id);
@@ -908,6 +914,8 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
     GELOGE(ret, "set model queue ids failed.");
     return ret;
   }
+
+  davinci_model->SetDumpProperties(dump_properties_);
 
   ret = davinci_model->Init();
   if (ret != SUCCESS) {
@@ -933,14 +941,10 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
 Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool async_mode, const InputData &input_data,
                                   OutputData &output_data) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid Model ID %u to start! ", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u.", model_id);
 
-  GeModelPtr ge_model_current = davinci_model->GetGeModel();
-  bool need_destroy_aicpu_kernel = false;
-  bool result = ge::AttrUtils::GetBool(ge_model_current, kNeedDestroySpecifiedAicpuKernel, need_destroy_aicpu_kernel);
-  if (result && need_destroy_aicpu_kernel) {
-    GELOGI("Get attr %s successfully, start to destroy specified aicpu kernel.", kNeedDestroySpecifiedAicpuKernel);
-
+  if (davinci_model->NeedDestroyAicpuKernel()) {
+    GELOGI("Start to destroy specified aicpu kernel.");
     // Zero copy is enabled by default, no need to judge.
     uint64_t session_id_davinci = davinci_model->GetSessionId();
     uint32_t model_id_davinci = davinci_model->GetModelId();
@@ -994,29 +998,30 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
 
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
   if (partition_table->num == 1) {
-    GELOGE(FAILED, "om model is error,please use executable om model");
-    return FAILED;
+    GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
+    return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }
   ModelPartition task_partition;
   if (om_file_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
-    GELOGE(FAILED, "get task model partition failed.");
-    return FAILED;
+    GELOGE(GE_EXEC_LOAD_TASK_PARTITION_FAILED, "get task model partition failed.");
+    return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
   }
 
   std::shared_ptr<domi::ModelTaskDef> model_task_def = MakeShared<domi::ModelTaskDef>();
   if (model_task_def == nullptr) {
-    return FAILED;
+    return MEMALLOC_FAILED;
   }
   if (task_partition.size != 0) {
     if (!ReadProtoFromArray(task_partition.data, static_cast<int>(task_partition.size), model_task_def.get())) {
-      GELOGE(FAILED, "ReadProtoFromArray failed.");
-      return FAILED;
+      GELOGE(GE_EXEC_LOAD_TASK_PARTITION_FAILED, "ReadProtoFromArray failed.");
+      return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
     }
   }
 
   ModelPartition partition_weight;
   ret = om_file_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition_weight);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Get weight partition failed. ret = %u", ret);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED,
+                                 "Get weight partition failed. ret = %u", ret);
 
   mem_size = model_task_def->memory_size();
   weight_size = partition_weight.size;
@@ -1050,4 +1055,19 @@ Status ModelManager::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index
   return davinci_model->GetAllAippInputOutputDims(index, input_dims, output_dims);
 }
 
+bool ModelManager::IsDynamicShape(uint32_t model_id) {
+  auto model = GetHybridModel(model_id);
+  return model != nullptr;
+}
+
+ge::Status ModelManager::SyncExecuteModel(uint32_t model_id, const vector<GeTensor> &inputs,
+                                          vector<GeTensor> &outputs) {
+  auto model = GetHybridModel(model_id);
+  if (model == nullptr) {
+    GELOGE(FAILED, "Hybrid model not found. model id = %u.", model_id);
+    return FAILED;
+  }
+
+  return model->Execute(inputs, outputs);
+}
 }  // namespace ge

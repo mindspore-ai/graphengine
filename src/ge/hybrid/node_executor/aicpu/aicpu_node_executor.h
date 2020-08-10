@@ -24,7 +24,6 @@
 
 namespace ge {
 namespace hybrid {
-
 class AicpuNodeTaskBase : public NodeTask {
  public:
   AicpuNodeTaskBase(const NodeItem *node_item, const domi::TaskDef &task_def)
@@ -70,8 +69,10 @@ class AicpuNodeTaskBase : public NodeTask {
 
   const std::string node_type_;
 
+  // valid when node_item_->is_dynamic is true
   UnknowShapeOpType unknown_type_ = DEPEND_IN_SHAPE;
 
+  // valid when node_item_->is_dynamic is true
   AicpuExtInfoHandler aicpu_ext_handle_;
 
   // ext info addr, device mem
@@ -169,7 +170,6 @@ class AiCpuNodeExecutor : public NodeExecutor {
 
   Status PrepareTask(NodeTask &task, TaskContext &context) const override;
 };
-
 }  // namespace hybrid
 }  // namespace ge
 #endif  // GE_HYBRID_KERNEL_AICPU_NODE_EXECUTOR_H_

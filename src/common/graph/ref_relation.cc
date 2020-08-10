@@ -37,7 +37,7 @@ const string kWhile = "While";
 const string kIf = "If";
 const string kCase = "Case";
 
-const int kMaxElementNum = 100;
+const uint16_t kMaxElementNum = 100;
 
 std::unordered_set<string> function_op = {kWhile, kIf, kCase};
 }  // namespace
@@ -170,6 +170,7 @@ graphStatus RefRelations::Impl::BuildRefRelationsForWhile(
   // data_nodes has been sorted
   // for while, input num must be same as output num
   auto input_num = root_node->GetAllInDataAnchorsSize();
+  NodePtr netoutput = nullptr;
 
   size_t ref_i = 0;
   while (ref_i < input_num) {
@@ -212,9 +213,43 @@ graphStatus RefRelations::Impl::BuildRefRelationsForWhile(
       cell_netoutput_in.in_out = NODE_IN;
       cell_netoutput_in.in_out_idx = ele.second;
       ref_i_all_refs.emplace_back(cell_netoutput_in);
+      netoutput = ele.first;
     }
     node_refs.emplace_back(ref_i_all_refs);
     ref_i++;
+  }
+  /* There exist scene like the follows, it means data0 data1 netoutput 0'th
+   * and 1'th tensor should be the same addr.
+   * Data0  Data1
+   *      \/
+   *      /\
+   *   netoutput
+   */
+  if (netoutput == nullptr) {
+    return GRAPH_SUCCESS;
+  }
+  for (const auto &in_anchor : netoutput->GetAllInDataAnchors()) {
+    auto peer_out_data_anchor = in_anchor->GetPeerOutAnchor();
+    if (peer_out_data_anchor == nullptr) {
+      continue;
+    }
+    auto peer_out_data_node = peer_out_data_anchor->GetOwnerNode();
+    if (peer_out_data_node == nullptr || peer_out_data_node->GetOpDesc() == nullptr) {
+      GELOGW("Node[%s]\'s peer_out_data_node or peer_out_data_node desc is null", (netoutput->GetName()).c_str());
+      continue;
+    }
+    if (peer_out_data_node->GetType() != DATA) {
+      continue;
+    }
+    auto in_data_anchor_idx = in_anchor->GetIdx();
+    auto net_in_desc = netoutput->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_data_anchor_idx));
+    int ref_d;
+    int ref_n;
+    (void)AttrUtils::GetInt(peer_out_data_node->GetOpDesc(), kRefIndex, ref_d);
+    (void)AttrUtils::GetInt(net_in_desc, kRefIndex, ref_n);
+
+    node_refs[ref_d].insert(node_refs[ref_d].end(), node_refs[ref_n].begin(), node_refs[ref_n].end());
+    node_refs[ref_n].insert(node_refs[ref_n].end(), node_refs[ref_d].begin(), node_refs[ref_d].end());
   }
 
   return GRAPH_SUCCESS;
@@ -242,6 +277,10 @@ void RefRelations::Impl::GetDataAndNetoutputOfSubGraph(const ge::ComputeGraph &r
   int sub_graph_idx = 0;
   for (const auto &name : sub_graph_names) {
     auto sub_graph = root_graph.GetSubgraph(name);
+    if (sub_graph == nullptr) {
+      GELOGW("Can not find the sub graph %s for root graph %s.", name.c_str(), root_graph.GetName().c_str());
+      continue;
+    }
     for (const auto &sub_graph_node : sub_graph->GetDirectNode()) {
       auto sub_graph_node_type = sub_graph_node->GetType();
 
@@ -296,6 +335,9 @@ graphStatus RefRelations::Impl::ProcessSubgraphDataNodes(vector<NodePtr> &data_n
     data_nodes.pop_back();
     int ref_idx = 0;
     (void)AttrUtils::GetInt(data->GetOpDesc(), kRefIndex, ref_idx);
+    if (ref_idx >= static_cast<int>(classed_data_nodes.size())) {
+      return GRAPH_FAILED;
+    }
     classed_data_nodes[ref_idx].emplace_back(data);
   }
   return GRAPH_SUCCESS;
@@ -317,7 +359,7 @@ graphStatus RefRelations::Impl::ProcessSubgraphNetoutput(
       }
       int ref_o;
       if (AttrUtils::GetInt(in_desc, kRefIndex, ref_o)) {
-        if (ref_o >= kMaxElementNum) {
+        if (ref_o >= static_cast<int>(classed_netoutput_nodes.size())) {
           return GRAPH_FAILED;
         }
         classed_netoutput_nodes[ref_o].emplace_back(
@@ -349,8 +391,9 @@ graphStatus RefRelations::Impl::BuildRefRelations(ge::ComputeGraph &graph) {
     vector<NodePtr> netoutput_nodes;
     // Get data and netoutput of sub_graph
     GetDataAndNetoutputOfSubGraph(root_graph, data_nodes, netoutput_nodes, sub_graph_names, node_type);
-    vector<vector<NodePtr>> classed_data_nodes(kMaxElementNum);                          // according to ref_idx
-    vector<vector<std::pair<NodePtr, size_t>>> classed_netoutput_nodes(kMaxElementNum);  // according to ref_idx
+    size_t max_elem_num = (data_nodes.size() > kMaxElementNum) ? data_nodes.size() : kMaxElementNum;
+    vector<vector<NodePtr>> classed_data_nodes(max_elem_num);                          // according to ref_idx
+    vector<vector<std::pair<NodePtr, size_t>>> classed_netoutput_nodes(max_elem_num);  // according to ref_idx
     status = ProcessSubgraphDataNodes(data_nodes, classed_data_nodes);
     if (status != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "classfy data nodes failed!");

@@ -20,7 +20,7 @@
 #define  LINUX    0
 #define  WIN      1
 
-#if(OS_TYPE == LINUX)
+#if(OS_TYPE == LINUX) //lint !e553
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -84,7 +84,7 @@
 #endif
 
 
-#if(OS_TYPE == WIN)
+#if(OS_TYPE == WIN) //lint !e553
 #include <winsock2.h>
 #include <winsock.h>
 #include "Windows.h"

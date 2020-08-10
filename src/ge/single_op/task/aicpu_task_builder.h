@@ -36,7 +36,7 @@ class AiCpuTaskBuilder {
   Status SetInputOutputAddr(void **io_addr, const std::vector<void *> &addresses);
   Status SetFmkOpKernel(void *io_addr, void *ws_addr, STR_FWK_OP_KERNEL &kernel);
 
-  const OpDescPtr &op_desc_;
+  const OpDescPtr op_desc_;
   const domi::KernelExDef &kernel_def_;
 };
 }  // namespace ge

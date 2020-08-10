@@ -343,6 +343,7 @@ class OpReg {
     auto x_type = op.GetInputDesc(in_name).GetDataType();         \
     TensorDesc op_output_desc = op.GetOutputDesc(out_name);       \
     op_output_desc.SetShape(ge::Shape(x_shape));                  \
+    op_output_desc.SetOriginShape(ge::Shape(x_shape));            \
     op_output_desc.SetDataType(x_type);                           \
     return op.UpdateOutputDesc(out_name, op_output_desc);         \
   }

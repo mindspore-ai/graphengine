@@ -1084,6 +1084,43 @@ REG_OP(TransShape)
     .ATTR(outShape,ListInt ,{})
     .OP_END_FACTORY_REG(TransShape);
 
+/**
+*@brief Computes the (possibly normalized) Levenshtein Edit Distance.
+
+*@par Inputs:
+*@li hypothesis_indices: The indices of the hypothesis list SparseTensor.\n
+This is an N x R int64 matrix.
+*@li hypothesis_shape: The values of the hypothesis list SparseTensor.\n
+This is an N-length vector.
+*@li hypothesis_shape: The shape of the hypothesis list SparseTensor.\n
+This is an R-length vector.
+*@li truth_indices: The indices of the truth list SparseTensor.\n
+This is an M x R int64 matrix.
+*@li truth_shape: The values of the truth list SparseTensor.\n
+This is an M-length vector.
+*@li truth_shape: The shape of the truth list SparseTensor.\n
+This is an R-length vector
+
+*@par Attributes:
+*@li normalize: boolean (if true, edit distances are normalized by length of truth).
+
+*@par Outputs:
+*@li output: A dense float tensor with rank R - 1.
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow EditDistance operator.
+*/
+REG_OP(EditDistance)
+    .INPUT(hypothesis_indices, TensorType({DT_INT64}))
+    .INPUT(hypothesis_values, TensorType::BasicType())
+    .INPUT(hypothesis_shape, TensorType({DT_INT64}))
+    .INPUT(truth_indices, TensorType({DT_INT64}))
+    .INPUT(truth_values, TensorType::BasicType())
+    .INPUT(truth_shape, TensorType({DT_INT64}))
+    .ATTR(normalize, Bool, true)
+    .OUTPUT(output, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(EditDistance)
+
 }  // namespace ge
 
 #endif  // GE_OP_ARRAY_OPS_H_

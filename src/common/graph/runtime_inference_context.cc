@@ -30,6 +30,7 @@ graphStatus RuntimeInferenceContext::CreateContext(const std::string &context_id
     return GRAPH_FAILED;
   }
 
+  std::lock_guard<std::mutex> lk(ctx_mu_);
   auto emplace_ret = contexts_.emplace(context_id, std::move(ctx));
   if (!emplace_ret.second) {
     GELOGE(GRAPH_FAILED, "Old context not destroyed");

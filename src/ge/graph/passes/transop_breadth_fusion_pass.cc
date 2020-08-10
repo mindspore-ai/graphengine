@@ -19,14 +19,12 @@
 #include <set>
 #include <string>
 
-#include "framework/common/debug/ge_log.h"
 #include "common/types.h"
 #include "graph/common/transop_util.h"
 #include "graph/utils/node_utils.h"
 
 namespace ge {
 Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
-  GE_TIMESTAMP_START(TransOpBreadthFusionPass);
   if (graph == nullptr) {
     return SUCCESS;
   }
@@ -47,7 +45,6 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
       }
     }
   }
-  GE_TIMESTAMP_END(TransOpBreadthFusionPass, "GraphManager::TransOpBreadthFusionPass");
   return SUCCESS;
 }
 

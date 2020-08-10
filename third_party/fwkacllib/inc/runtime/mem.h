@@ -17,7 +17,9 @@
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
 
+/*lint -e7*/
 #include <stddef.h>
+/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"
@@ -222,17 +224,15 @@ RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag);
  * @return RT_ERROR_INVALID_DEVICE_POINTER for error device memory pointer
  */
 RTS_API rtError_t rtMemFreeManaged(void *ptr);
-
 /**
  * @ingroup dvrt_mem
- * @brief advise memory
- * @param [in] ptr    memory pointer
- * @param [in] size   memory size
- * @param [in] advise memory advise
+ * @brief alloc cached device memory
+ * @param [in| devPtr   memory pointer
+ * @param [in] size     memory size
+ * @param [in] type     memory type
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error device memory pointer
  */
-RTS_API rtError_t rtMemAdvise(void *ptr, uint64_t size, uint32_t advise);
+RTS_API rtError_t rtMallocCached(void **devPtr, uint64_t size, rtMemType_t type);
 
 /**
  * @ingroup dvrt_mem
@@ -241,7 +241,7 @@ RTS_API rtError_t rtMemAdvise(void *ptr, uint64_t size, uint32_t advise);
  * @param [in] len    memory size
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtFlushCache(uint64_t base, uint32_t len);
+RTS_API rtError_t rtFlushCache(void *base, size_t len);
 
 /**
  * @ingroup dvrt_mem
@@ -250,7 +250,7 @@ RTS_API rtError_t rtFlushCache(uint64_t base, uint32_t len);
  * @param [in] len    memory size
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtInvalidCache(uint64_t base, uint32_t len);
+RTS_API rtError_t rtInvalidCache(void *base, size_t len);
 
 /**
  * @ingroup dvrt_mem
@@ -425,19 +425,6 @@ RTS_API rtError_t rtIpcCloseMemory(const void *ptr);
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqe_index, rtStream_t stream);
-
-/**
- * @ingroup dvrt_mem
- * @brief Set the memory readCount value
- * @param [in] devPtr memory pointer
- * @param [in] size  memory size
- * @param [in] readCount  readCount value
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
- * @return RT_ERROR_DRV_ERR for driver error
- */
-RTS_API rtError_t rtMemSetRC(const void *devPtr, uint64_t size, uint32_t readCount);
 
 /**
  * @ingroup dvrt_mem

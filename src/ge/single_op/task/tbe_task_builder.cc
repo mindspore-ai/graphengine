@@ -17,20 +17,18 @@
 #include "single_op/task/tbe_task_builder.h"
 
 #include <mutex>
-#include <utility>
 #include <vector>
 
-#include "common/helper/model_helper.h"
-#include "framework/common/debug/ge_log.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/task_info/task_info.h"
 #include "graph/manager/graph_var_manager.h"
 #include "runtime/rt.h"
 #include "single_op/task/build_task_utils.h"
 
 namespace ge {
 namespace {
+constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
+constexpr char const *kAttrOpParamSize = "op_para_size";
 std::mutex g_reg_mutex;
 
 inline void GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) {
@@ -85,9 +83,11 @@ bool KernelBinRegistry::AddKernel(const std::string &stub_name, const KernelHold
   return ret.second;
 }
 
-TbeTaskBuilder::TbeTaskBuilder(const std::string &model_name, const OpDescPtr &op_desc,
-                               const domi::KernelDef &kernel_def)
-    : op_desc_(op_desc), kernel_def_(kernel_def), stub_name_(model_name + "/" + op_desc->GetName() + "_tvmbin") {}
+TbeTaskBuilder::TbeTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::KernelDef &kernel_def)
+    : node_(node),
+      op_desc_(node->GetOpDesc()),
+      kernel_def_(kernel_def),
+      stub_name_(model_name + "/" + node->GetName() + "_tvmbin") {}
 
 Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle,
                                         const SingleOpModelParam &param) const {
@@ -246,17 +246,11 @@ Status TbeTaskBuilder::GetSmDesc(void **sm_desc, const SingleOpModelParam &param
 }
 
 Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param) {
-  uint8_t *args = nullptr;
   size_t arg_size = kernel_def_.args_size();
-  auto rtRet = rtMallocHost(reinterpret_cast<void **>(&args), arg_size);
-  if (rtRet != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMallocHost failed, size = %zu, ret = %d", arg_size, static_cast<int>(rtRet));
-    return RT_FAILED;
-  }
+  auto args = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[arg_size]);
+  GE_CHECK_NOTNULL(args);
 
-  task.SetKernelArgs(args, arg_size, kernel_def_.block_dim());
-
-  rtRet = rtMemcpy(args, arg_size, kernel_def_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
+  auto rtRet = rtMemcpy(args.get(), arg_size, kernel_def_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
   if (rtRet != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpy args failed, size = %zu, ret = %d", arg_size, static_cast<int>(rtRet));
     return RT_FAILED;
@@ -266,16 +260,23 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
   const auto *args_offset_tmp = reinterpret_cast<const uint16_t *>(context.args_offset().data());
   uint16_t offset = *args_offset_tmp;
 
-  // copy args
-  std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
-  void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
-  uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
-  rtRet = rtMemcpy(args + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
-  if (rtRet != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMemcpy addresses failed, ret = %d", static_cast<int>(rtRet));
-    return RT_FAILED;
+  bool is_dynamic = false;
+  (void)AttrUtils::GetBool(op_desc_, kAttrSupportDynamicShape, is_dynamic);
+  if (is_dynamic) {
+    GE_CHK_STATUS_RET_NOLOG(InitTilingInfo(task));
+  } else {
+    // copy args
+    std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
+    void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
+    uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
+    rtRet = rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
+    if (rtRet != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "rtMemcpy addresses failed, ret = %d", static_cast<int>(rtRet));
+      return RT_FAILED;
+    }
   }
 
+  task.SetKernelArgs(std::move(args), arg_size, kernel_def_.block_dim());
   return SUCCESS;
 }
 
@@ -290,6 +291,8 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
   if (ret != SUCCESS) {
     return ret;
   }
+  auto task_info = BuildTaskUtils::GetTaskInfo(op_desc_);
+  GELOGI("[TASK_INFO] %s %s", stub_name_.c_str(), task_info.c_str());
 
   void *stub_func = nullptr;
   auto rtRet = rtGetFunctionByName(stub_name_.c_str(), &stub_func);
@@ -299,6 +302,25 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
   }
 
   task.SetStubFunc(stub_name_, stub_func);
+  return SUCCESS;
+}
+
+Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
+  GELOGD("Start alloc tiling data of node %s.", op_desc_->GetName().c_str());
+  int64_t max_size = -1;
+  (void)AttrUtils::GetInt(op_desc_, kAttrOpParamSize, max_size);
+  GELOGD("Got op param size by key: %s, ret = %ld", kAttrOpParamSize, max_size);
+  if (max_size <= 0) {
+    GELOGE(PARAM_INVALID, "[%s] Invalid op_param_size: %ld.", op_desc_->GetName().c_str(), max_size);
+    return PARAM_INVALID;
+  }
+
+  void *tiling_buffer = nullptr;
+  GE_CHK_RT_RET(rtMalloc(&tiling_buffer, static_cast<uint64_t>(max_size), RT_MEMORY_HBM));
+  GE_CHECK_NOTNULL(tiling_buffer);
+  GELOGD("[%s] Done allocating tiling buffer, size=%ld.", op_desc_->GetName().c_str(), max_size);
+
+  task.EnableDynamicSupport(node_, tiling_buffer, static_cast<size_t>(max_size));
   return SUCCESS;
 }
 }  // namespace ge

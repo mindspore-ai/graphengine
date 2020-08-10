@@ -44,8 +44,11 @@ const char *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
 const char *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
 const char *const OPTION_EXEC_DUMP_MODE = "ge.exec.dumpMode";
+const char *const OPTION_EXEC_ENABLE_DUMP_DEBUG = "ge.exec.enableDumpDebug";
+const char *const OPTION_EXEC_DUMP_DEBUG_MODE = "ge.exec.dumpDebugMode";
 const char *const OPTION_EXEC_ENABLE_INCRE_BUILD = "ge.exec.enableIncreBuild";
 const char *const OPTION_EXEC_INCRE_BUILD_CACHE_PATH = "ge.exec.increBuildCachePath";
+const char *const OPTION_EXEC_ENABLE_SCOPE_FUSION_PASSES = "ge.exec.enableScopeFusionPasses";
 // profiling flag
 const char *const OPTION_EXEC_PROFILING_MODE = "ge.exec.profilingMode";
 const char *const OPTION_EXEC_PROFILING_OPTIONS = "ge.exec.profilingOptions";
@@ -170,6 +173,9 @@ const char *const kDynamicBatchSize = "ge.dynamicBatchSize";
 // configure whether to use dynamic image size
 const char *const kDynamicImageSize = "ge.dynamicImageSize";
 
+// Configure whether to use dynamic dims
+const char *const kDynamicDims = "ge.dynamicDims";
+
 // Configure auto tune mode, this option only take effect while AUTO_TUNE_FLAG is Y,
 // example: GA|RL, support configure multiple, split by |
 const std::string AUTO_TUNE_MODE = "ge.autoTuneMode";
@@ -219,6 +225,10 @@ const char *const ENABLE_SINGLE_STREAM = "ge.enableSingleStream";
 // Configure input fp16 nodes
 const std::string INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
 
+// Configure debug level, its value should be 0(default), 1 or 2.
+// 0: close debug; 1: open TBE compiler; 2: open ccec compiler
+const std::string OP_DEBUG_LEVEL = "ge.opDebugLevel";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -261,6 +271,7 @@ static const char *const INPUT_SHAPE = "input_shape";
 static const char *const OP_NAME_MAP = "op_name_map";
 static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
 static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
+static const char *const DYNAMIC_DIMS = kDynamicDims;
 static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
 static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
 static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
@@ -283,10 +294,11 @@ static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c
 
 // for interface: aclgrphBuildModel
 const std::set<std::string> ir_builder_suppported_options = {
-  INPUT_FORMAT,       INPUT_SHAPE,    OP_NAME_MAP,    DYNAMIC_BATCH_SIZE,
-  DYNAMIC_IMAGE_SIZE, INSERT_OP_FILE, PRECISION_MODE, EXEC_DISABLE_REUSED_MEMORY,
-  AUTO_TUNE_MODE,     OUTPUT_TYPE,    OUT_NODES,      INPUT_FP16_NODES,
-  LOG_LEVEL};
+  INPUT_FORMAT,       INPUT_SHAPE,        OP_NAME_MAP,
+  DYNAMIC_BATCH_SIZE, DYNAMIC_IMAGE_SIZE, DYNAMIC_DIMS,
+  INSERT_OP_FILE,     PRECISION_MODE,     EXEC_DISABLE_REUSED_MEMORY,
+  AUTO_TUNE_MODE,     OUTPUT_TYPE,        OUT_NODES,
+  INPUT_FP16_NODES,   LOG_LEVEL};
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,
                                               SOC_VERSION,

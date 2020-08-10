@@ -104,12 +104,11 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   GE_CHECK_NOTNULL(cond_out_desc);
 
   GeTensorDesc pred_desc = cond_out_desc->GetInputDesc(kCondOutputIndex);
-  GeTensorDesc cond_desc(GeShape(pred_desc.GetShape().GetDims()), pred_desc.GetFormat(), DT_INT32);
 
   // false ==> 0 ==> switch_labels[0] ==> body_leave_index
   // true  ==> 1 ==> switch_labels[1] ==> body_enter_name
   const std::vector<uint32_t> switch_labels = {body_leave_index, body_enter_index};
-  NodePtr switch_node = AddLabelSwitchLeave(cond_graph, cond_leave_name, cond_desc, switch_labels);
+  NodePtr switch_node = AddLabelSwitchLeave(cond_graph, cond_leave_name, pred_desc, switch_labels);
   if (switch_node == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", cond_graph->GetName().c_str());
     return FAILED;

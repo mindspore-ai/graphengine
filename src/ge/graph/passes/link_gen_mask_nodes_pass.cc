@@ -97,9 +97,16 @@ void LinkGenMaskNodesPass::GetAllGenMaskNodes(ComputeGraphPtr graph, vector<Node
       continue;
     }
 
+    if ((node->GetOpDesc() == nullptr) || (node->GetOpDesc()->HasAttr(ATTR_NAME_STREAM_LABEL))) {
+      continue;
+    }
+
     auto in_data_nodes = node->GetInDataNodes();
     if (in_data_nodes.size() > kGenMaskInputIndex) {
       NodePtr &gen_mask = in_data_nodes.at(kGenMaskInputIndex);
+      if ((gen_mask->GetOpDesc() == nullptr) || (gen_mask->GetOpDesc()->HasAttr(ATTR_NAME_STREAM_LABEL))) {
+        continue;
+      }
       if (AreAllInputsConst(gen_mask) && nodes_set.count(gen_mask) == 0) {
         gen_mask_nodes.emplace_back(gen_mask);
         nodes_set.emplace(gen_mask);

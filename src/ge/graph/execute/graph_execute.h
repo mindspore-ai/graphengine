@@ -56,7 +56,7 @@ class GraphExecutor {
 
   Status SetGraphContext(GraphContextPtr graph_context_ptr);
 
-  static Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num);
+  static Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
 
   void SetTrainFlag(bool is_train_graph);
 
@@ -80,11 +80,22 @@ class GraphExecutor {
   /// @brief Get dynamic batch_info
   /// @param [in] model_id
   /// @param [out] batch_info
+  /// @param [out] dynamic_type
   /// @return execute result
   ///
-  static Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+  static Status GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
+                                    int32_t &dynamic_type);
 
-  static Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info);
+  ///
+  /// @ingroup ge
+  /// @brief Get combined dynamic dims info
+  /// @param [in] model_id
+  /// @param [out] batch_info
+  /// @return execute result
+  ///
+  static Status GetCombinedDynamicDims(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
+
+  static Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
   static Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
@@ -110,7 +121,7 @@ class GraphExecutor {
 
   Status FreeInOutBuffer();
 
-  Status MallocInOutBuffer(const std::vector<uint32_t> &buffer_size, std::vector<void *> &data_addr);
+  Status MallocInOutBuffer(const std::vector<uint64_t> &buffer_size, std::vector<void *> &data_addr);
 
   bool init_flag_;
 
@@ -129,7 +140,7 @@ class GraphExecutor {
 
   bool malloc_flag_;
   std::vector<void *> buffer_addr_;
-  std::vector<uint32_t> buffer_size_;
+  std::vector<uint64_t> buffer_size_;
 };
 }  // namespace ge
 

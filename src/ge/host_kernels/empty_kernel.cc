@@ -38,7 +38,7 @@ const size_t kShapeMaxDims = 1;
 }  // namespace
 Status EmptyKernel::EmptyCheck(const OpDescPtr &op_desc_ptr, const std::vector<ConstGeTensorPtr> &input) {
   if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "Parameter's invalid, Input opDescPtr is nullptr.");
+    GELOGW("Parameter's invalid, Input opDescPtr is nullptr.");
     return PARAM_INVALID;
   }
   // check input size
@@ -46,20 +46,19 @@ Status EmptyKernel::EmptyCheck(const OpDescPtr &op_desc_ptr, const std::vector<C
     ((op_desc_ptr->GetAllInputsDesc().size() != kEmptyInputsSize) || (input.size() != kEmptyInputsSize) ||
      (op_desc_ptr->GetAllOutputsDesc().size() != kEmptyOutputsSize));
   if (size_check) {
-    GELOGE(PARAM_INVALID, "Input/Output size error. InDesc size:%zu, OutDesc size:%zu, in size:%zu ",
+    GELOGW("Input/Output size error. InDesc size:%zu, OutDesc size:%zu, in size:%zu ",
            op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
     return PARAM_INVALID;
   }
 
   if (input.at(kEmptyFirstInput) == nullptr) {
-    GELOGE(PARAM_INVALID, "Parameter's invalid, first input is nullptr.");
+    GELOGW("Parameter's invalid, first input is nullptr.");
     return PARAM_INVALID;
   }
   ConstGeTensorPtr shape = input.at(kEmptyFirstInput);
   // Check if the dimension is 1-D
   if (shape->GetTensorDesc().GetShape().GetDimNum() > kShapeMaxDims) {
-    GELOGE(PARAM_INVALID, "Check if the dimension is 1-D failed, dims:%zu",
-           shape->GetTensorDesc().GetShape().GetDimNum());
+    GELOGW("Check if the dimension is 1-D failed, dims:%zu", shape->GetTensorDesc().GetShape().GetDimNum());
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -84,7 +83,7 @@ Status EmptyKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
   } else if (shape_type == DT_INT64) {
     ret = KernelUtils::CalcDims<int64_t>(shape, shape_vec, total_data_size);
   } else {
-    GELOGE(PARAM_INVALID, "shape type must be DT_INT32 or DT_INT64.");
+    GELOGW("shape type must be DT_INT32 or DT_INT64.");
     return NOT_CHANGED;
   }
 

@@ -19,7 +19,9 @@
 #include "runtime/rt.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/utils/type_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace {
@@ -61,5 +63,43 @@ std::vector<void *> BuildTaskUtils::JoinAddresses(const std::vector<std::vector<
 std::vector<void *> BuildTaskUtils::GetKernelArgs(const OpDescPtr &op_desc, const SingleOpModelParam &param) {
   auto addresses = GetAddresses(op_desc, param);
   return JoinAddresses(addresses);
+}
+
+std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
+  std::stringstream ss;
+  if (op_desc != nullptr) {
+    auto op_type = op_desc->GetType();
+    if (op_type == ge::NETOUTPUT || op_type == ge::DATA) {
+      return ss.str();
+    }
+    // Conv2D IN[DT_FLOAT16 NC1HWC0[256, 128, 7, 7, 16],DT_FLOAT16 FRACTAL_Z[128, 32, 16, 16]]
+    // OUT[DT_FLOAT16 NC1HWC0[256, 32, 7, 7, 16]]
+    ss << op_type << " IN[";
+    for (uint32_t idx = 0; idx < op_desc->GetInputsSize(); idx++) {
+      const GeTensorDescPtr &input = op_desc->MutableInputDesc(idx);
+      ss << TypeUtils::DataTypeToSerialString(input->GetDataType()) << " ";
+      ss << TypeUtils::FormatToSerialString(input->GetFormat());
+      ss << VectorToString(input->GetShape().GetDims());
+      if (idx < op_desc->GetInputsSize() - 1) {
+        ss << ",";
+      }
+    }
+    ss << "] OUT[";
+
+    for (uint32_t idx = 0; idx < op_desc->GetOutputsSize(); idx++) {
+      const GeTensorDescPtr &output = op_desc->MutableOutputDesc(idx);
+      ss << TypeUtils::DataTypeToSerialString(output->GetDataType()) << " ";
+      Format out_format = output->GetFormat();
+      const GeShape &out_shape = output->GetShape();
+      const auto &dims = out_shape.GetDims();
+      ss << TypeUtils::FormatToSerialString(out_format);
+      ss << VectorToString(dims);
+      if (idx < op_desc->GetOutputsSize() - 1) {
+        ss << ",";
+      }
+    }
+    ss << "]\n";
+  }
+  return ss.str();
 }
 }  // namespace ge

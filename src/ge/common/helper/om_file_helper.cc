@@ -41,8 +41,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(c
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(uint8_t *model_data,
                                                                                const uint32_t model_data_size) {
-  if (LoadModelPartitionTable(model_data, model_data_size) != SUCCESS) {
-    return FAILED;
+  Status status = LoadModelPartitionTable(model_data, model_data_size);
+  if (status != SUCCESS) {
+    return status;
   }
   is_inited_ = true;
   return SUCCESS;
@@ -66,7 +67,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetMod
   }
 
   if (!found) {
-    if (type != ModelPartitionType::TBE_KERNELS) {
+    if (type != ModelPartitionType::TBE_KERNELS && type != ModelPartitionType::WEIGHTS_DATA) {
       GELOGE(FAILED, "GetModelPartition:type:%d is not in partition_datas!", static_cast<int>(type));
       return FAILED;
     }
@@ -83,7 +84,9 @@ Status OmFileLoadHelper::CheckModelValid(const ge::ModelData &model) const {
 
   // Model length too small
   if (model.model_len < (sizeof(ModelFileHeader) + sizeof(ModelPartitionTable))) {
-    GELOGE(PARAM_INVALID, "Invalid model. length < sizeof(ModelFileHeader) + sizeof(ModelPartitionTable).");
+    GELOGE(PARAM_INVALID,
+           "Invalid model. length[%u] < sizeof(ModelFileHeader)[%zu] + sizeof(ModelPartitionTable)[%zu].",
+           model.model_len, sizeof(ModelFileHeader), sizeof(ModelPartitionTable));
     return PARAM_INVALID;
   }
 
@@ -93,9 +96,9 @@ Status OmFileLoadHelper::CheckModelValid(const ge::ModelData &model) const {
   if ((model_header->length != model.model_len - sizeof(ModelFileHeader)) ||
       (MODEL_FILE_MAGIC_NUM != model_header->magic)) {
     GELOGE(PARAM_INVALID,
-           "Invalid model. file_header->length(%u) + sizeof(ModelFileHeader)(%zu) != model->model_len(%u) || "
-           "MODEL_FILE_MAGIC_NUM != file_header->magic",
-           model_header->length, sizeof(ModelFileHeader), model.model_len);
+           "Invalid model. file_header->length[%u] + sizeof(ModelFileHeader)[%zu] != model->model_len[%u] || "
+           "MODEL_FILE_MAGIC_NUM[%u] != file_header->magic[%u]",
+           model_header->length, sizeof(ModelFileHeader), model.model_len, MODEL_FILE_MAGIC_NUM, model_header->magic);
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -112,16 +115,16 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
   // Original model partition include graph-info
   if ((partition_table->num != PARTITION_SIZE) && (partition_table->num != (PARTITION_SIZE - 1)) &&
       (partition_table->num != 1)) {
-    GELOGE(PARAM_INVALID, "Invalid partition_table->num:%u", partition_table->num);
-    return PARAM_INVALID;
+    GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "Invalid partition_table->num:%u", partition_table->num);
+    return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }
   size_t mem_offset = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);
   GELOGI("ModelPartitionTable num :%u, ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
          partition_table->num, sizeof(ModelFileHeader), mem_offset);
   if (model_data_size <= mem_offset) {
-    GELOGE(PARAM_INVALID, "invalid model data, partition_table->num:%u, model data size %u", partition_table->num,
-           model_data_size);
-    return PARAM_INVALID;
+    GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "invalid model data, partition_table->num:%u, model data size %u",
+           partition_table->num, model_data_size);
+    return GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
   for (uint32_t i = 0; i < partition_table->num; i++) {
     ModelPartition partition;
@@ -131,9 +134,9 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
     context_.partition_datas_.push_back(partition);
 
     if (partition.size > model_data_size || mem_offset > model_data_size - partition.size) {
-      GELOGE(PARAM_INVALID, "The partition size %zu is greater than the model data size %u.",
+      GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %zu is greater than the model data size %u.",
              partition.size + mem_offset, model_data_size);
-      return PARAM_INVALID;
+      return GE_EXEC_MODEL_DATA_SIZE_INVALID;
     }
     mem_offset += partition.size;
     GELOGI("Partition, type:%d, size:%u", static_cast<int>(partition.type), partition.size);

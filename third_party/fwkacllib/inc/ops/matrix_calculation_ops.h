@@ -167,50 +167,6 @@ REG_OP(BatchMatMul)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(BatchMatMul)
 
-REG_OP(MeanCCE)
-    .INPUT(x, TensorType::ALL())
-    .INPUT(indices, TensorType::ALL())
-    .OUTPUT(y, TensorType::ALL())
-    .ATTR(keep_dims, Bool, false)
-    .ATTR(value1, ListInt, {})
-    .ATTR(mode, Int, 3)                 // 0:max pooling or 1:avg pooling
-    .ATTR(pad_mode, Int, 0)
-    .ATTR(global_pooling, Bool, true)  // tensorflow have no attr, set default value
-    .ATTR(window, ListInt, {1,1})      // kernel size
-    .ATTR(pad, ListInt, {0,0,0,0})     // pad size
-    .ATTR(stride, ListInt, {1,1})      // stride size
-    .ATTR(ceil_mode, Int, 0)
-    .ATTR(data_mode, Int, 1)
-    .ATTR(nan_opt, Int, 0)
-    .ATTR(fomart, Int, 0)
-    .OP_END_FACTORY_REG(MeanCCE)
-
-REG_OP(MeanGrad)
-    .INPUT(x, TensorType::ALL())
-    .OUTPUT(y, TensorType::ALL())
-    .ATTR(mode, Int, 1)                 // 0:max pooling or 1:avg pooling
-    .ATTR(pad_mode, Int, 0)
-    .ATTR(global_pooling, Bool, false)
-    .ATTR(window, ListInt, {1,1})      // kernel size
-    .ATTR(pad, ListInt, {0,0,0,0})     // pad size
-    .ATTR(stride, ListInt, {1,1})      // stride size
-    .ATTR(ceil_mode, Int, 0)
-    .ATTR(data_mode, Int, 1)
-    .ATTR(nan_opt, Int, 0)
-    .ATTR(mean_grad_output_shape_value, ListInt, {1,1,1,1})
-    .ATTR(mean_grad_output_shape_format, Int, 1) //must be NHWC
-    .OP_END_FACTORY_REG(MeanGrad)
-
-REG_OP(MatMulCCE)
-    .INPUT(x1, TensorType({DT_FLOAT}))
-    .INPUT(x2, TensorType({DT_FLOAT}))
-    .OPTIONAL_INPUT(x3, TensorType({DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT}))
-    .ATTR(transpose_a, Bool, false)
-    .ATTR(transpose_b, Bool, false)
-    .ATTR(has_bias, Bool, false)
-    .OP_END_FACTORY_REG(MatMulCCE)
-
 /**
 *@brief Computes half the L2 norm of a tensor without the sqrt.
 
@@ -673,8 +629,9 @@ REG_OP(DiagPart)
 
 *@par Attributes:
 *@li num_output: Reserved.
-*@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
-*@li axis: Optional. A int. 1 or 2.
+*@li transpose: A bool, specifying weight whether to transpose, either "true" or "false". Defaults to "false".
+*@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
+ * The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
 *@li offset_x: Reserved.
 
 *@par Outputs:
@@ -697,6 +654,45 @@ REG_OP(FullyConnection)
     .ATTR(axis, Int, 1)
     .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(FullyConnection)
+
+/**
+*@brief Also known as a "fully-connected-compress" layer, computes an inner product with a set of learned weights, and (optionally) adds biases.
+
+*@par Inputs:
+* Four inputs, including:
+*@li x: A Tensor of type uint8, int8.
+*@li w: A weight matrix of type int8, int8.
+*@li w: A compress index matrix of type int8, int8.
+*@li b: A Tensor of type float16, int32, int32.
+*@li offset_w: A Tensor of type int8.i
+
+*@par Attributes:
+*@li num_output: Reserved.
+*@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
+*@li axis: Reserved.
+*@li offset_x: Reserved.
+
+*@par Outputs:
+*y: The result tensor of type int32.
+
+*@par Third-party framework compatibility
+* Compatible with the Caffe operator InnerProduct.
+
+*@par Quantization supported or not
+* Yes
+*/
+REG_OP(FullyConnectionCompress)
+    .INPUT(x, TensorType({DT_UINT8, DT_INT8}))
+    .INPUT(w, TensorType({DT_INT8}))
+    .INPUT(comress_index, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(b, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(num_output, Int)
+    .ATTR(transpose, Bool, false)
+    .ATTR(axis, Int, 1)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(FullyConnectionCompress)
 
 /**
 *@brief Computes the confusion matrix from predictions and labels.

@@ -150,6 +150,8 @@ class DynamicShapePartitioner {
   std::vector<std::shared_ptr<Cluster>> ordered_cluster_;
   // Unique clusters left after merged clusters
   std::unordered_set<std::shared_ptr<Cluster>> unique_clusters_;
+  // Unique clusters left after merged clusters sorted by rank
+  std::vector<std::shared_ptr<Cluster>> sorted_unique_clusters_;
   // Nodes of root_graph_ that satisfy the unknowshape rules
   std::unordered_set<NodePtr> unknown_shape_nodes_;
 };

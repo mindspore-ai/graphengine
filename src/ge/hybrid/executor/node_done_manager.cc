@@ -15,35 +15,49 @@
  */
 
 #include "hybrid/executor/node_done_manager.h"
+#include <chrono>
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
 namespace hybrid {
+namespace {
+constexpr int kDefaultWaitTimeoutInSec = 10;
+}
 bool NodeDoneManager::Cond::Await() {
-  std::unique_lock<std::mutex> lk(mu_);
-  cv_.wait(lk, [&]() { return is_released_ || is_cancelled_; });
+  std::unique_lock<std::mutex> lk(cond_mu_);
+  if (!cv_.wait_for(lk, std::chrono::seconds(kDefaultWaitTimeoutInSec),
+                    [&]() { return is_released_ || is_cancelled_; })) {
+    GELOGE(INTERNAL_ERROR, "Wait timed out.");
+    return false;
+  }
+
   return is_released_;
 }
 
 void NodeDoneManager::Cond::Release() {
-  std::unique_lock<std::mutex> lk(mu_);
+  std::unique_lock<std::mutex> lk(cond_mu_);
   is_released_ = true;
   cv_.notify_all();
 }
 
 void NodeDoneManager::Cond::Cancel() {
-  std::unique_lock<std::mutex> lk(mu_);
+  std::unique_lock<std::mutex> lk(cond_mu_);
   is_cancelled_ = true;
   cv_.notify_all();
 }
 
 bool NodeDoneManager::Cond::IsRelease() {
-  std::unique_lock<std::mutex> lk(mu_);
+  std::unique_lock<std::mutex> lk(cond_mu_);
   return is_released_;
 }
 
 NodeDoneManager::Cond *NodeDoneManager::GetSubject(const NodePtr &node) {
   std::lock_guard<std::mutex> lk(mu_);
+  if (destroyed_) {
+    GELOGD("Already destroyed.");
+    return nullptr;
+  }
+
   auto it = subjects_.find(node);
   if (it == subjects_.end()) {
     return &subjects_[node];
@@ -52,8 +66,10 @@ NodeDoneManager::Cond *NodeDoneManager::GetSubject(const NodePtr &node) {
   return &it->second;
 }
 
-void NodeDoneManager::Reset() {
+void NodeDoneManager::Destroy() {
+  GELOGD("Start to reset NodeDoneManager.");
   std::lock_guard<std::mutex> lk(mu_);
+  GELOGD("Cond size = %zu.", subjects_.size());
   for (auto &sub : subjects_) {
     if (!sub.second.IsRelease()) {
       sub.second.Cancel();
@@ -62,15 +78,24 @@ void NodeDoneManager::Reset() {
   }
 
   subjects_.clear();
+  destroyed_ = true;
+  GELOGD("Done resetting NodeDoneManager successfully.");
 }
 
 void NodeDoneManager::NodeDone(const NodePtr &node) {
-  GetSubject(node)->Release();
-  GELOGD("[%s] Node released.", node->GetName().c_str());
+  auto sub = GetSubject(node);
+  if (sub != nullptr) {
+    sub->Release();
+    GELOGD("[%s] Node released.", node->GetName().c_str());
+  }
 }
 
 bool NodeDoneManager::Await(const NodePtr &node) {
   auto sub = GetSubject(node);
+  if (sub == nullptr) {
+    return false;
+  }
+
   GELOGD("[%s] Await start. is_released = %s", node->GetName().c_str(), sub->IsRelease() ? "true" : "false");
   bool ret = sub->Await();
   GELOGD("[%s] Await ended. is_released = %s", node->GetName().c_str(), sub->IsRelease() ? "true" : "false");

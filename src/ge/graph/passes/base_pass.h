@@ -53,7 +53,7 @@ class BaseNodePass {
 
   std::unordered_set<NodePtr> GetNodesNeedRePass() { return nodes_need_re_pass_; }
 
-  std::unordered_set<Node *> GetNodesDeleted() { return nodes_deleted_; }
+  std::unordered_set<NodePtr> GetNodesDeleted() { return nodes_deleted_; }
 
   void SetOption(NodePassOption option, const std::string &value) { options_[option] = value; }
 
@@ -103,13 +103,13 @@ class BaseNodePass {
   /// next iterations.
   /// @param node
   ///
-  void AddNodeDeleted(Node *node) { nodes_deleted_.insert(node); }
+  void AddNodeDeleted(const NodePtr &node) { nodes_deleted_.insert(node); }
 
   bool OptionExists(NodePassOption option) { return options_.count(option) > 0; }
 
  private:
   std::unordered_set<NodePtr> nodes_need_re_pass_;
-  std::unordered_set<Node *> nodes_deleted_;
+  std::unordered_set<NodePtr> nodes_deleted_;
   std::map<NodePassOption, std::string> options_;
 };
 

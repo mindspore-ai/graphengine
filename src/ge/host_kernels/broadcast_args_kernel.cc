@@ -55,7 +55,6 @@ Status BroadcastArgsKernel::Compute(const OpDescPtr op_desc_ptr, const std::vect
   vector<int64_t> x2_dims;
   const auto &op_in_desc = op_desc_ptr->MutableInputDesc(0);
   GE_CHECK_NOTNULL(op_in_desc);
-  ;
   DataType data_type = op_in_desc->GetDataType();
   bool result = (OpUtils::GetShapeDataFromConstTensor(input[0], data_type, x1_dims) == SUCCESS) &&
                 (OpUtils::GetShapeDataFromConstTensor(input[1], data_type, x2_dims) == SUCCESS);

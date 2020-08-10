@@ -135,7 +135,7 @@ Status TransposeTransDataPass::RemoveTranspose(NodePtr &node) {
     GE_CHECK_NOTNULL(anchor);
     anchor->UnlinkAll();
   }
-  AddNodeDeleted(node.get());
+  AddNodeDeleted(node);
   if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
     return FAILED;

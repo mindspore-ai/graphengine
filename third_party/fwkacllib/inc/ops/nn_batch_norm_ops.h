@@ -22,95 +22,6 @@
 namespace ge {
 
 /**
-*@brief A fusion operator for batchnorm.
-
-*@par Inputs:
-*Ten inputs, including:
-* @li x: A Tensor. Must be one of the following types: float32.
-* @li scale: A Tensor. Must be one of the following types: float32.
-* @li b: A Tensor. Must be one of the following types: float32.
-* @li mean: A Tensor. Must be one of the following types: float32.
-* @li variance: A Tensor. Must be one of the following types: float32.
-
-*@par Attributes:
-* @li mode: A Tensor. Must be one of the following types: int.
-* @li epsilon: A Tensor. Must be one of the following types: float32.
-* @li momentum: A Tensor. Must be one of the following types: float32.
-* @li is_training: A Tensor. Must be one of the following types: bool.
-* @li is_training_fusion: A Tensor. Must be one of the following types: bool.
-* @li moving_average_fraction: A Tensor. Must be one of the following types: float32.
-
-*@par Outputs:
-*Three outputs, including:
-* @li y: A Tensor. Must be one of the following types: float32.
-* @li running_mean: A Tensor. Must be one of the following types: float32.
-* @li running_variance: A Tensor. Must be one of the following types: float32.
-* @li save_mean: A Tensor. Must be one of the following types: float32.
-* @li save_inv_variance: A Tensor. Must be one of the following types: float32.
-* @li save_inv_variance1: A Tensor. Must be one of the following types: float32.
-
-*/
-REG_OP(FusedBatchNorm)
-    .INPUT(x, TensorType{DT_FLOAT})
-    .INPUT(scale, TensorType{DT_FLOAT})
-    .INPUT(b, TensorType{DT_FLOAT})
-    .INPUT(mean, TensorType{DT_FLOAT})
-    .INPUT(variance, TensorType{DT_FLOAT})
-    .OUTPUT(y, TensorType{DT_FLOAT})
-    .OUTPUT(running_mean, TensorType{DT_FLOAT})
-    .OUTPUT(running_variance, TensorType{DT_FLOAT})
-    .OUTPUT(save_mean, TensorType{DT_FLOAT})
-    .OUTPUT(save_inv_variance, TensorType{DT_FLOAT})
-    .OUTPUT(save_inv_variance1, TensorType{DT_FLOAT})
-    .ATTR(mode, Int, 1)
-    .ATTR(epsilon, Float,  1e-5f)
-    .ATTR(momentum, Float, 0.9)
-    .ATTR(is_training, Bool, true)
-    .ATTR(is_training_fusion, Bool, true)
-    .ATTR(moving_average_fraction, Float, 0.00300002098)
-    .OP_END_FACTORY_REG(FusedBatchNorm)
-
-/**
-*@brief A fusion operator for batchnorm.
-
-*@par Inputs:
-*Ten inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float32.
-* @li x: A Tensor. Must be one of the following types: float32.
-* @li scale: A Tensor. Must be one of the following types: float32.
-* @li save_mean: A Tensor. Must be one of the following types: float32.
-* @li save_inv_variance: A Tensor. Must be one of the following types: float32.
-* @li save_inv_variance1: A Tensor. Must be one of the following types: float32.
-
-*@par Attributes:
-* @li epsilon: A Tensor. Must be one of the following types: float32.
-* @li momentum: A Tensor. Must be one of the following types: float32.
-
-*@par Outputs:
-*Three outputs, including:
-* @li dx: A Tensor. Must be one of the following types: float32.
-* @li bn_scale: A Tensor. Must be one of the following types: float32.
-* @li bn_bias: A Tensor. Must be one of the following types: float32.
-
-*@par Third-party framework compatibility
-* Compatible with the L2 scenario of PyTorch operator Normalize.
-*/
-
-REG_OP(FusedBatchNormGrad)
-    .INPUT(dy, TensorType{DT_FLOAT})
-    .INPUT(x, TensorType{DT_FLOAT})
-    .INPUT(scale, TensorType{DT_FLOAT})
-    .INPUT(save_mean, TensorType{DT_FLOAT})
-    .INPUT(save_inv_variance, TensorType{DT_FLOAT})
-    .INPUT(save_inv_variance1, TensorType{DT_FLOAT})
-    .OUTPUT(dx, TensorType{DT_FLOAT})
-    .OUTPUT(bn_scale, TensorType{DT_FLOAT})
-    .OUTPUT(bn_bias, TensorType{DT_FLOAT})
-    .ATTR(epsilon, Float, 0.0)
-    .ATTR(momentum, Float, 0.0)
-    .OP_END_FACTORY_REG(FusedBatchNormGrad)
-
-/**
 *@brief Normalizes elements of a specific dimension of eigenvalues (L2).
 
 *@par Inputs:
@@ -361,14 +272,14 @@ REG_OP(BatchNormGradExt2)
 *@par Inputs:
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum:  A Tensor of type float32 or float16, represents the mean and the variance's scale factor
+*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
+*@li momentum: A Tensor,represents the mean and the variance's scale factor
 *@li scale: An optional tensor of type float16 or float32, no use
 *@li offset: An optional tensor of type float16 or float32, no use
 *@par Attributes:
 *@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional attr, not use
+*@li mode: An optional input, not use
 *@par Outputs:\n
 *@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
 */
@@ -391,11 +302,11 @@ REG_OP(BNInference)
 
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum: A Tensor of type float32 or float16, the mean and the variance's Scale factor
+*@li momentum: An optional float, mean and variance's Scale factor
 *@par Attributes:
 *@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional inpout, not use
+*@li mode: An optional attr, not use
 *@par Outputs:
 *@li alpha: A Tensor of type float16 or float32 for the cpu calculate mean
 *@li beta: A Tensor of type float16 or float32 for the cpu calculate variance
@@ -418,8 +329,8 @@ REG_OP(BnHost)
 
 *@par Inputs:
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
-*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
+*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x" Specifies the mean used for inference.
+*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x" Specifies the variance used for inference.
 *@li scale: An optional tensor of type float16 or float32, no use
 *@li offset: An optional tensor of type float16 or float32, no use
 *@par Attributes:

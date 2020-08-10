@@ -61,5 +61,6 @@ REGISTER_OP_CREATOR(SwitchN, GeDeletedOp);
 REGISTER_OP_CREATOR(RefMerge, GeDeletedOp);
 REGISTER_OP_CREATOR(RefSwitch, GeDeletedOp);
 REGISTER_OP_CREATOR(TransShape, GeDeletedOp);
+REGISTER_OP_CREATOR(Bitcast, GeDeletedOp);
 }  // namespace ge_local
 }  // namespace ge

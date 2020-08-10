@@ -600,5 +600,5 @@ int16_t GetManBitLength(T man) {
   }
   return len;
 }
-};      // namespace ge
+}  // namespace ge
 #endif  // GE_COMMON_FP16_T_H_

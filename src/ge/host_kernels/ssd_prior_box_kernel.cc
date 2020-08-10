@@ -365,7 +365,7 @@ Status SsdPriorboxKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> 
   // make TensorDesc
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Create shared ptr for GeTensor failed");
+    GELOGW("Create shared ptr for GeTensor failed");
     return NOT_CHANGED;
   }
   GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(output_data.get()),

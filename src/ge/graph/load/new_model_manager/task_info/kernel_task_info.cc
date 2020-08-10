@@ -47,16 +47,16 @@ const uint32_t kAddrLen = sizeof(void *);
 
 namespace ge {
 KernelTaskInfo::SuperKernelTaskInfo KernelTaskInfo::skt_info_ = {
-  0, 0, 0, 0, nullptr, nullptr, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
+  0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
 
 Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    GELOGE(PARAM_INVALID, "davinci model is null!");
     return PARAM_INVALID;
   }
   davinci_model_ = davinci_model;
   is_l1_fusion_enable_ = davinci_model_->GetL1FusionEnableOption();
-  GELOGD("KernelTaskInfo Init Start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
+  GELOGD("KernelTaskInfo init start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
 
   Status ret = SetStream(task_def.stream_id(), davinci_model_->GetStreamList());
   if (ret != SUCCESS) {
@@ -73,7 +73,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   // get opdesc
   op_desc_ = davinci_model_->GetOpByIndex(context.op_index());
   if (op_desc_ == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Get op_desc failed, index is out of range!");
+    GELOGE(INTERNAL_ERROR, "Get op desc failed, index is out of range!");
     return INTERNAL_ERROR;
   }
   (void)AttrUtils::GetBool(*op_desc_, ATTR_N_BATCH_SPILT, is_n_batch_spilt_);
@@ -99,13 +99,13 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     rt_ret = rtGetFunctionByName(const_cast<char *>(kernel_def.stub_func().c_str()), &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. stub_func: %s",
                                                     kernel_def.stub_func().c_str());
-                    return RT_FAILED;);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret););
   } else if (kernel_type_ != cce::ccKernelType::AI_CPU) {
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. bin_file_key: %s", bin_file_key);
-                    return RT_FAILED;);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret););
   }
 
   if (context.origin_op_index_size() > CC_FUSION_OP_MAX) {
@@ -138,14 +138,21 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     ret = InitCceTask(kernel_def);
   }
 
-  GELOGD("KernelTaskInfo Init finish, result=%u.", ret);
+  GELOGD("KernelTaskInfo init finish, result=%u.", ret);
   return ret;
 }
 
 Status KernelTaskInfo::SaveSKTDumpInfo() {
   GE_CHECK_NOTNULL(davinci_model_);
-  davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_stream_id, skt_info_.last_op,
-                               skt_info_.last_dump_args);
+  if (skt_dump_flag_ == RT_KERNEL_DEFAULT) {
+    GELOGD("no need save skt dump info");
+    return SUCCESS;
+  }
+  // all op in super kernel share one taskid and streamid
+  for (size_t i = 0; i < skt_info_.op_desc_list.size(); i++) {
+    davinci_model_->SaveDumpTask(skt_info_.last_task_id, skt_info_.last_stream_id, skt_info_.op_desc_list[i],
+                                 skt_info_.dump_args_list[i]);
+  }
   return SUCCESS;
 }
 
@@ -187,6 +194,9 @@ Status KernelTaskInfo::SKTFinalize() {
   GELOGI("SuperKernel Distribute [skt_id:%u]", skt_id_);
   skt_info_.kernel_list.clear();
   skt_info_.arg_list.clear();
+  skt_info_.dump_flag_list.clear();
+  skt_info_.op_desc_list.clear();
+  skt_info_.dump_args_list.clear();
   skt_info_.last_stream = nullptr;
   skt_info_.last_block_dim = 0;
   skt_info_.last_sm_desc = sm_desc_;
@@ -195,6 +205,15 @@ Status KernelTaskInfo::SKTFinalize() {
   skt_info_.last_dump_args = 0;
   skt_info_.last_op = nullptr;
   return SUCCESS;
+}
+
+uint32_t KernelTaskInfo::GetDumpFlag() {
+  for (auto flag : skt_info_.dump_flag_list) {
+    if (flag == RT_KERNEL_DUMPFLAG) {
+      return RT_KERNEL_DUMPFLAG;
+    }
+  }
+  return RT_KERNEL_DEFAULT;
 }
 
 Status KernelTaskInfo::SuperKernelLaunch() {
@@ -206,38 +225,46 @@ Status KernelTaskInfo::SuperKernelLaunch() {
   auto &skt_kernel_list = skt_info_.kernel_list;
   auto &skt_arg_list = skt_info_.arg_list;
   GELOGI("SuperKernelLaunch: Skt_kernel_list size[%d] skt_arg_list[%d]", skt_kernel_list.size(), skt_arg_list.size());
-  if (skt_kernel_list.size() == kSKTSingleSize) {
+  if (skt_kernel_list.size() == kSKTSingleSize && skt_arg_list.size() == kSKTSingleSize) {
     rt_ret = rtKernelLaunchWithFlag(skt_info_.kernel_list[0], static_cast<uint32_t>(skt_info_.last_block_dim),
                                     skt_info_.arg_list[0], skt_info_.last_args_size,
                                     static_cast<rtSmDesc_t *>(skt_info_.last_sm_desc), skt_info_.last_stream,
                                     skt_info_.last_dump_flag);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "SuperKernelLaunch: Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
+    call_save_dump_ = true;
     GE_CHK_STATUS_RET(SKTFinalize(), "Skt finalize failed");
     return SUCCESS;
   }
   // Create super kernel factory
   skt::SuperKernelFactory *factory = &skt::SuperKernelFactory::GetInstance();
   // Init super kernel factory
-  if (factory->Init() != SUCCESS) {
-    GELOGE(RT_FAILED, "SuperKernelLaunch: SuperKernelFactory init failed");
-    return RT_FAILED;
+  Status ge_ret = factory->Init();
+  if (ge_ret != SUCCESS) {
+    GELOGE(ge_ret, "SuperKernelLaunch: SuperKernelFactory init failed");
+    return ge_ret;
   }
   // Call the fuse API
-  skt::SuperKernel *superKernel = nullptr;
-  if (factory->FuseKernels(skt_kernel_list, skt_arg_list, skt_info_.last_block_dim, superKernel) != SUCCESS) {
-    GELOGE(RT_FAILED, "SuperKernelLaunch: fuse call failed");
-    return RT_FAILED;
+  std::unique_ptr<skt::SuperKernel> superKernel = nullptr;
+  ge_ret = factory->FuseKernels(skt_kernel_list, skt_arg_list, skt_info_.last_block_dim, superKernel);
+  if (ge_ret != SUCCESS) {
+    GELOGE(ge_ret, "SuperKernelLaunch: fuse call failed");
+    return ge_ret;
   }
   // Launch a super kernel
-  if (superKernel->Launch(skt_info_.last_stream, RT_KERNEL_DUMPFLAG) != SUCCESS) {
-    GELOGE(RT_FAILED, "SuperKernelLaunch: launch failed");
-    return RT_FAILED;
+  skt_dump_flag_ = GetDumpFlag();
+  ge_ret = superKernel->Launch(skt_info_.last_stream, skt_dump_flag_);
+  if (ge_ret != SUCCESS) {
+    GELOGE(ge_ret, "SuperKernelLaunch: launch failed");
+    return ge_ret;
   }
   GELOGI("SuperKernelLaunch: success[skt_kernel_list size[%zu] skt_arg_list[%zu]]", skt_kernel_list.size(),
          skt_arg_list.size());
+  // record skt addr for release
+  superkernel_dev_nav_table_ = superKernel->GetNavTablePtr();
+  superkernel_device_args_addr_ = superKernel->GetDeviceArgsPtr();
   GE_CHK_STATUS_RET(SKTFinalize(), "Skt finalize failed");
   return SUCCESS;
 }
@@ -250,8 +277,11 @@ Status KernelTaskInfo::SaveSuperKernelInfo() {
   skt_info_.last_args_size = args_size_;
   skt_info_.last_sm_desc = sm_desc_;
   skt_info_.last_dump_flag = dump_flag_;
+  skt_info_.dump_flag_list.push_back(dump_flag_);
+  skt_info_.op_desc_list.push_back(op_desc_);
+  skt_info_.dump_args_list.push_back(reinterpret_cast<uintptr_t>(skt_dump_args_));
   skt_info_.last_group_key = group_key_;
-  skt_info_.last_dump_args = reinterpret_cast<uintptr_t>(dump_args_);
+  skt_info_.last_dump_args = reinterpret_cast<uintptr_t>(skt_dump_args_);
   skt_info_.last_op = op_desc_;
   // last node in a stream, just launch
   if (IsMarkedLastNode()) {
@@ -318,23 +348,24 @@ Status KernelTaskInfo::SuperKernelDistribute() {
     // 1.launch before
     ret = SuperKernelLaunch();
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Call SuperKernelLaunch failed!");
-      return FAILED;
+      GELOGE(ret, "Call SuperKernelLaunch failed!");
+      return ret;
     }
     // 2.launch current
     rtError_t rt_ret = rtKernelLaunchWithFlag(stub_func_, block_dim_, args_, args_size_,
                                               static_cast<rtSmDesc_t *>(sm_desc_), stream_, dump_flag_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return FAILED;
+      return rt_ret;
     }
+    call_save_dump_ = true;
     UpdateTaskId();
     GELOGI("Current Common Task Distribute [taskid:%u]", task_id_);
   } else {
     ret = SaveSuperKernelInfo();
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Call SuperKernelLaunch failed!");
-      return FAILED;
+      GELOGE(ret, "Call SuperKernelLaunch failed!");
+      return ret;
     }
     GELOGI("Save Current task [block_dim:%u, size:%zu].", block_dim_, skt_info_.kernel_list.size());
   }
@@ -356,6 +387,7 @@ Status KernelTaskInfo::Distribute() {
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
                                        reinterpret_cast<const void *>(kernel_name_.c_str()), 1, args_, args_size_,
                                        nullptr, stream_, dump_flag_);
+    call_save_dump_ = true;
   } else {
     /* default: not skt launch */
     GELOGI(
@@ -369,11 +401,12 @@ Status KernelTaskInfo::Distribute() {
       // call rtKernelLaunch for current task
       rt_ret = rtKernelLaunchWithFlag(stub_func_, block_dim_, args_, args_size_, static_cast<rtSmDesc_t *>(sm_desc_),
                                       stream_, dump_flag_);
+      call_save_dump_ = true;
     }
   }
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   // set for task_id_
   UpdateTaskId();
@@ -392,13 +425,33 @@ Status KernelTaskInfo::UpdateArgs() {
   vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc_);
 
   vector<void *> io_addrs;
-  io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
-  io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
-  io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+  if (!op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
+    io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+    io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+    io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+  } else {
+    string peer_input_name;
+    if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name)) {
+      uint32_t output_index = davinci_model_->GetFixedAddrOutputIndex(peer_input_name);
+      if (output_index > output_data_addrs.size()) {
+        GELOGE(FAILED, "The output data addr size[%zu] and output index[%u] are inconsistent.",
+               output_data_addrs.size(), output_index);
+        return FAILED;
+      }
+      io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+      for (size_t i = 0; i < output_data_addrs.size(); ++i) {
+        if (i == output_index) {
+          void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
+          io_addrs.emplace_back(fixed_addr);
+          continue;
+        }
+        io_addrs.emplace_back(output_data_addrs[i]);
+      }
+      io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+    }
+  }
 
-  GE_CHK_STATUS_RET(davinci_model_->UpdateKnownZeroCopyAddr(io_addrs, args_offset_),
-                    "update known node %s zero copy addr failed.", op_desc_->GetName().c_str());
-
+  davinci_model_->SetTotalIOAddrs(io_addrs);
   GELOGI("KernelTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }
@@ -407,24 +460,31 @@ Status KernelTaskInfo::Release() {
   if (davinci_model_ != nullptr && davinci_model_->IsKnownNode()) {
     return SUCCESS;
   }
-  FreeRtMem(&args_);
-  FreeRtMem(&flowtable_);
-  FreeRtMem(&custom_info_.input_descs);
-  FreeRtMem(&custom_info_.input_addrs);
-  FreeRtMem(&custom_info_.output_descs);
-  FreeRtMem(&custom_info_.output_addrs);
-  FreeRtMem(&custom_info_.attr_handle);
-  FreeRtMem(&aicpu_ext_info_addr_);
+  rtContext_t ctx = nullptr;
+  rtError_t ret = rtCtxGetCurrent(&ctx);
+
+  if (ret == RT_ERROR_NONE) {
+    FreeRtMem(&args_);
+    FreeRtMem(&superkernel_device_args_addr_);
+    FreeRtMem(&superkernel_dev_nav_table_);
+    FreeRtMem(&flowtable_);
+    FreeRtMem(&custom_info_.input_descs);
+    FreeRtMem(&custom_info_.input_addrs);
+    FreeRtMem(&custom_info_.output_descs);
+    FreeRtMem(&custom_info_.output_addrs);
+    FreeRtMem(&custom_info_.attr_handle);
+    FreeRtMem(&aicpu_ext_info_addr_);
+  }
 
   if (ctx_.argsOffset != nullptr) {
     delete[] ctx_.argsOffset;
     ctx_.argsOffset = nullptr;
   }
 
-  rtError_t ret = (sm_desc_ != nullptr) ? rtMemFreeManaged(sm_desc_) : RT_ERROR_NONE;
+  ret = (sm_desc_ != nullptr) ? rtMemFreeManaged(sm_desc_) : RT_ERROR_NONE;
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", static_cast<int>(ret));
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(ret);
   }
   sm_desc_ = nullptr;
 
@@ -454,13 +514,13 @@ Status KernelTaskInfo::UpdateL2Data(const domi::KernelDef &kernel_def) {
   rtError_t rt_ret = rtMemAllocManaged(&sm_desc_, sm_desc.size(), RT_MEMORY_SPM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMemcpy(sm_desc_, sm_desc.size(), sm_desc.data(), sm_desc.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   return SUCCESS;
@@ -472,6 +532,29 @@ Status KernelTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel
   args_offset_ = davinci_model->GetTotalArgsSize();
   davinci_model->SetTotalArgsSize(args_size);
   GELOGI("kernel task name , args_size %u, args_offset %u", args_size, args_offset_);
+
+  // get opcontext stored in model
+  const domi::KernelContext &context = kernel_def.context();
+  // get opdesc
+  op_desc_ = davinci_model->GetOpByIndex(context.op_index());
+  GE_CHECK_NOTNULL(op_desc_);
+  // alloc fixed addr
+  string peer_input_name;
+  if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name) && !peer_input_name.empty()) {
+    uint32_t output_index = davinci_model->GetFixedAddrOutputIndex(peer_input_name);
+    if (output_index > op_desc_->GetOutputsSize()) {
+      GELOGE(FAILED, "The output size[%zu] and output index[%u] are inconsistent.", op_desc_->GetOutputsSize(),
+             output_index);
+      return FAILED;
+    }
+    fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(peer_input_name);
+    auto tensor_desc = op_desc_->GetOutputDesc(output_index);
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
+    davinci_model->SetTotalFixedAddrsSize(peer_input_name, tensor_size);
+    GELOGI("Calculate stream switch task args , tensor size is %ld, fixed addr offset %ld", tensor_size,
+           fixed_addr_offset_);
+  }
   return SUCCESS;
 }
 
@@ -514,14 +597,14 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   rt_ret = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   // copy orign args
   rt_ret = rtMemcpy(args_, args_size_, kernel_def.args().data(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   vector<uint8_t> args_info(args_size_);
   errno_t sec_ret = memcpy_s(args_info.data(), args_size_, kernel_def.args().data(), args_size_);
@@ -540,7 +623,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
                     kAddrLen * tensor_device_addrs.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   sec_ret = memcpy_s(args_info.data() + offset, args_size_ - offset, tensor_device_addrs.data(),
                      kAddrLen * tensor_device_addrs.size());
@@ -548,23 +631,22 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
     return FAILED;
   }
-
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                    op_desc->GetName())) {
+  skt_dump_args_ = static_cast<char *>(args_) + offset;
+  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                          op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + offset;
   }
 
+  Status ge_ret = UpdateL2Data(kernel_def);
   // update origin l2 data
-  if (UpdateL2Data(kernel_def) != SUCCESS) {
-    return RT_FAILED;
+  if (ge_ret != SUCCESS) {
+    return ge_ret;
   }
 
   vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
+  virtual_io_addrs.insert(virtual_io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+  virtual_io_addrs.insert(virtual_io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
   davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_info.data(), args_, args_size_, offset);
 
   GELOGD("Do InitTVMTask end");
@@ -602,7 +684,6 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
   const std::vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
   Status ret = StoreInputOutputTensor(input_data_addrs, output_data_addrs, ModelUtils::GetInputDescs(op_desc),
                                       ModelUtils::GetOutputDescs(op_desc));
-
   if (ret != SUCCESS) {
     GELOGE(ret, "StoreInputOutputTensor Failed");
     return ret;
@@ -624,13 +705,13 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
   rtError_t rt_ret = rtMalloc(&custom_info_.attr_handle, op_attr_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMemcpy(custom_info_.attr_handle, op_attr_size, buffer.GetData(), op_attr_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   // args
@@ -657,21 +738,19 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
   rt_ret = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret =
     rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_in_addrs, input_data_addrs.data(), custom_info_.input_addrs,
-                                  virtual_in_addrs.size() * kAddrLen, 0);
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_out_addrs, output_data_addrs.data(), custom_info_.output_addrs,
+  davinci_model_->SetZeroCopyAddr(op_desc, input_data_addrs, input_data_addrs.data(), custom_info_.input_addrs,
+                                  input_data_addrs.size() * kAddrLen, 0);
+  davinci_model_->SetZeroCopyAddr(op_desc, output_data_addrs, output_data_addrs.data(), custom_info_.output_addrs,
                                   output_data_addrs.size() * kAddrLen, 0);
   return SUCCESS;
 }
@@ -712,7 +791,8 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
   ctx_.genVariableBaseSize = davinci_model_->TotalVarMemSize();
   ctx_.l2ctrlSize = sm_contrl_size;
 
-  if (UpdateCceArgs(sm_desc, flowtable, kernel_def) != SUCCESS) {
+  ret = UpdateCceArgs(sm_desc, flowtable, kernel_def);
+  if (ret != SUCCESS) {
     GELOGE(ret, "update cce args fail");
     return ret;
   }
@@ -728,7 +808,7 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
   rtError_t rt_ret = rtMalloc(&args_, kernel_def.args_size(), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "cce task physical memory.", kernel_def.args_size())
 
@@ -736,7 +816,7 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
     rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   // L2
@@ -744,13 +824,13 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
     rt_ret = rtMemAllocManaged(&sm_desc_, sm_desc.size(), RT_MEMORY_SPM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
 
     rt_ret = rtMemcpy(sm_desc_, sm_desc.size(), sm_desc.data(), sm_desc.size(), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
   return SUCCESS;
@@ -801,6 +881,9 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     GELOGE(init_ret, "Init aicpu task ext info failed, ext_info size=%zu", ext_info.size());
     return init_ret;
   }
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, aicpu_ext_info_addr_=%p", op_desc_->GetName().c_str(),
+         op_desc_->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
+
   aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
   aicpu_param_head->extInfoLength = reinterpret_cast<uintptr_t>(ext_info.size());
 
@@ -808,7 +891,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   rtError_t rt_ret = rtMalloc(static_cast<void **>(&args_), args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api(rtMalloc) failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "cce task physical memory.", args_size_)
 
@@ -816,22 +899,16 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   rt_ret = rtMemcpy(args_, args_size_, args_addr.get(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                    op_desc->GetName())) {
+  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                          op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
 
-  vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_addr.get(), args_, args_size_,
-                                  sizeof(aicpu::AicpuParamHead));
+  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
 
   return SUCCESS;
 }
@@ -843,12 +920,12 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
   auto rt_ret = rtMalloc(&aicpu_ext_info_addr_, ext_info.size(), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
-    return FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   return SUCCESS;
@@ -865,7 +942,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
   rtError_t rt_ret = rtMalloc(&custom_info_.input_descs, sizeof(opTensor_t) * input_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   for (std::size_t i = 0; i < input_size; ++i) {
@@ -873,7 +950,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
                       const_cast<tagOpTensor *>(&input_descs[i]), sizeof(opTensor_t), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
 
@@ -881,7 +958,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
   rt_ret = rtMalloc(&custom_info_.input_addrs, sizeof(opTensor_t) * input_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   if (!input_data_addrs.empty()) {
@@ -889,7 +966,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
                       RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
 
@@ -897,14 +974,14 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
   rt_ret = rtMalloc(&custom_info_.output_descs, sizeof(opTensor_t) * output_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   for (std::size_t i = 0; i < output_size; ++i) {
     rt_ret = rtMemcpy(static_cast<opTensor_t *>(custom_info_.output_descs) + i, sizeof(opTensor_t),
                       const_cast<tagOpTensor *>(&input_descs[i]), sizeof(opTensor_t), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
 
@@ -912,7 +989,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
   rt_ret = rtMalloc(&custom_info_.output_addrs, sizeof(opTensor_t) * output_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   if (!output_data_addrs.empty()) {
@@ -920,7 +997,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
                       RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
 
@@ -982,8 +1059,8 @@ Status KernelTaskInfo::UpdateCceArgs(std::string &sm_desc, std::string &flowtabl
   Status status =
     CceUpdateKernelArgs(context, data_base_addr, weight_base_addr, var_base_addr, sm_desc, flowtable, kernel_def);
   if (status != SUCCESS) {
-    GELOGE(FAILED, "Call cce api failed");
-    return FAILED;
+    GELOGE(status, "Call cce api failed");
+    return status;
   }
   return SUCCESS;
 }
@@ -1049,14 +1126,14 @@ Status KernelTaskInfo::SetFlowtable(std::string &flowtable, const domi::KernelDe
     rtError_t rt_ret = rtMalloc(&flowtable_, flowtable.size(), RT_MEMORY_HBM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "flowtable refresh of cce scence.", flowtable.size())
 
     rt_ret = rtMemcpy(flowtable_, flowtable.size(), flowtable.data(), flowtable.size(), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return RT_FAILED;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
 
     // modify flowtable addr in args

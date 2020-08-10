@@ -72,12 +72,15 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     auto rt_ret = rtMalloc(&ext_info_addr_, ext_info.size(), RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
-                    return FAILED;)
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
     rt_ret = rtMemcpy(ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
-                    return FAILED;)
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
   }
+
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, ext_info_addr_=%p", op_desc_->GetName().c_str(),
+         op_desc_->GetType().c_str(), ext_info.size(), ext_info_addr_);
 
   // 2.1 get loop cond variable for tensor array write
   uint64_t step_id_addr = 0;
@@ -97,6 +100,11 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuKernel(session_id, davinci_model->Id(), kernel_id) != SUCCESS,
                   GELOGE(FAILED, "CreateAicpuKernel error.");
                   return FAILED;)
+  // 2.3 Create session
+  GE_CHECK_NOTNULL(ModelManager::GetInstance());
+  GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
+                  GELOGE(FAILED, "CreateAicpuSession error. session id: %lu", session_id);
+                  return FAILED;)
 
   kernel_buf_size_ = sizeof(STR_FWK_OP_KERNEL);
   if (davinci_model_->IsKnownNode()) {
@@ -105,7 +113,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr));
     void *workspace_base_addr = nullptr;
     rtError_t rt_ret = rtMalloc(&workspace_base_addr, kernel_ex_def.task_info_size(), RT_MEMORY_HBM);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc error, ret: Ox%X", rt_ret); return FAILED;);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: Ox%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret););
     rt_ret = rtMemcpy(workspace_base_addr, kernel_ex_def.task_info_size(), kernel_ex_def.task_info().data(),
                       kernel_ex_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
     fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr =
@@ -115,20 +124,23 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_);
 
     rt_ret = rtMalloc(&kernel_buf_, kernel_buf_size_, RT_MEMORY_HBM);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc error: 0x%X", rt_ret); return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error: 0x%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     rt_ret = rtMemcpy(kernel_buf_, kernel_buf_size_, static_cast<void *>(&fwk_op_kernel), kernel_buf_size_,
                       RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy error, ret: Ox%X", rt_ret); return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     GELOGI("KernelExTaskInfo knonw node Init Success.");
     return SUCCESS;
   }
 
   // 3. Set workspaceaddr, inputOutputDataAddr
-  if (CopyTaskInfo(kernel_ex_def, rts_param, op_desc) != SUCCESS) {
-    GELOGE(FAILED, "copy task info to workspace failed.");
-    return FAILED;
+  Status ge_ret = CopyTaskInfo(kernel_ex_def, rts_param, op_desc);
+  if (ge_ret != SUCCESS) {
+    GELOGE(ge_ret, "copy task info to workspace failed.");
+    return ge_ret;
   }
 
   const vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc);
@@ -147,14 +159,15 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   auto addrs_size = sizeof(uint64_t) * (io_addrs.size());
   if (addrs_size > 0) {
     rtError_t rt_ret = rtMalloc(&input_output_addr_, addrs_size, RT_MEMORY_HBM);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret); return RT_FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     rt_ret = rtMemcpy(input_output_addr_, addrs_size, io_addrs.data(), addrs_size, RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
-                    return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
+                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
-    if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                      op_desc->GetName())) {
+    if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                            op_desc->GetName())) {
       dump_flag_ = RT_KERNEL_DUMPFLAG;
       dump_args_ = input_output_addr_;
     }
@@ -167,25 +180,17 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info.size();
   fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_);
 
-  // 4. Create session
-  GE_CHECK_NOTNULL(ModelManager::GetInstance());
-  GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
-                  GELOGE(FAILED, "CreateAicpuSession error. session id: %lu", session_id);
-                  return FAILED;)
-  // 5. Return result
+  // 4. Return result
   rtError_t rt_ret = rtMalloc(&kernel_buf_, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMalloc error: 0x%X", rt_ret); return FAILED;)
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error: 0x%X", rt_ret);
+                  return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
   rt_ret = rtMemcpy(kernel_buf_, sizeof(STR_FWK_OP_KERNEL), static_cast<void *>(&fwk_op_kernel),
                     sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy error, ret: Ox%X", rt_ret); return FAILED;)
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", rt_ret);
+                  return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
-  vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
-  const vector<void *> virtual_in_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc, false);
-  const vector<void *> virtual_out_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc, false);
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_in_addrs.begin(), virtual_in_addrs.end());
-  virtual_io_addrs.insert(virtual_io_addrs.end(), virtual_out_addrs.begin(), virtual_out_addrs.end());
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, io_addrs.data(), input_output_addr_, addrs_size, 0);
+  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, io_addrs.data(), input_output_addr_, addrs_size, 0);
 
   GELOGI("KernelExTaskInfo Init Success. session id: %lu", session_id);
   return SUCCESS;
@@ -207,22 +212,56 @@ Status KernelExTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciMod
   uint32_t mem_size = sizeof(uint64_t) * mem_length;
   davinci_model->SetTotalArgsSize(mem_size);
   GELOGI("kernel task name %s, args_size %u, args_offset %u", op_desc->GetName().c_str(), mem_size, args_offset_);
+
+  // alloc fixed addr
+  string peer_input_name;
+  if (AttrUtils::GetStr(op_desc, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name) && !peer_input_name.empty()) {
+    uint32_t output_index = davinci_model->GetFixedAddrOutputIndex(peer_input_name);
+    if (output_index > outputs_size) {
+      GELOGE(FAILED, "The output size[%zu] and output index[%u] are inconsistent.", outputs_size, output_index);
+      return FAILED;
+    }
+    fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(peer_input_name);
+    auto tensor_desc = op_desc->GetOutputDesc(output_index);
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
+    davinci_model->SetTotalFixedAddrsSize(peer_input_name, tensor_size);
+    GELOGI("Calculate stream switch task args , tensor size is %ld, fixed addr offset %ld", tensor_size,
+           fixed_addr_offset_);
+  }
   return SUCCESS;
 }
 
 Status KernelExTaskInfo::UpdateArgs() {
   GELOGI("KernelExTaskInfo::UpdateArgs in.");
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
-  vector<void *> io_addrs;
   vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc_);
   vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc_);
-
-  io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
-  io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
-
-  GE_CHK_STATUS_RET(davinci_model_->UpdateKnownZeroCopyAddr(io_addrs, args_offset_),
-                    "update known node %s zero copy addr failed.", op_desc_->GetName().c_str());
-
+  vector<void *> io_addrs;
+  if (!op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
+    io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+    io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+  } else {
+    string peer_input_name;
+    if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name)) {
+      uint32_t output_index = davinci_model_->GetFixedAddrOutputIndex(peer_input_name);
+      if (output_index > output_data_addrs.size()) {
+        GELOGE(FAILED, "The output data addr size[%zu] and output index[%u] are inconsistent.",
+               output_data_addrs.size(), output_index);
+        return FAILED;
+      }
+      io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+      for (size_t i = 0; i < output_data_addrs.size(); ++i) {
+        if (i == output_index) {
+          void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
+          io_addrs.emplace_back(fixed_addr);
+          continue;
+        }
+        io_addrs.emplace_back(output_data_addrs[i]);
+      }
+    }
+  }
+  davinci_model_->SetTotalIOAddrs(io_addrs);
   GELOGI("KernelExTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }
@@ -231,7 +270,7 @@ Status KernelExTaskInfo::CopyTaskInfo(const domi::KernelExDef &kernel_def, const
                                       const OpDescPtr &op_desc) {
   // Userspace copy need virtual address.
   const vector<int64_t> workspace_data_sizes = ModelUtils::GetWorkspaceSize(op_desc);
-  const vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc, false);
+  const vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc);
   if (workspace_data_addrs.empty() || workspace_data_sizes.empty()) {
     GELOGE(FAILED, "Node:%s invalid workspace, addrs is %zu, size is %zu.", op_desc->GetName().c_str(),
            workspace_data_addrs.size(), workspace_data_sizes.size());
@@ -252,8 +291,8 @@ Status KernelExTaskInfo::CopyTaskInfo(const domi::KernelExDef &kernel_def, const
   rtError_t rt_ret = rtMemcpy(workspace_data_addrs[0], kernel_def.task_info_size(), kernel_def.task_info().data(),
                               kernel_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(FAILED, "rtMemcpy error: 0x%X", rt_ret);
-    return FAILED;
+    GELOGE(RT_FAILED, "rtMemcpy error: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   return SUCCESS;
@@ -264,7 +303,7 @@ Status KernelExTaskInfo::Distribute() {
   rtError_t rt_ret = rtKernelLaunchEx(kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   if (davinci_model_ == nullptr) {
@@ -277,7 +316,7 @@ Status KernelExTaskInfo::Distribute() {
   rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   task_id_ = task_id;
   stream_id_ = stream_id;
@@ -292,7 +331,7 @@ Status KernelExTaskInfo::Release() {
     rtError_t rt_ret = rtFree(kernel_buf_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGW("rtFree error, ret: 0x%X", rt_ret);
-      ret = FAILED;
+      ret = RT_ERROR_TO_GE_STATUS(rt_ret);
     } else {
       kernel_buf_ = nullptr;
     }
@@ -301,7 +340,7 @@ Status KernelExTaskInfo::Release() {
     rtError_t rt_ret = rtFree(input_output_addr_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGW("rtFree error, ret: 0x%X", rt_ret);
-      ret = FAILED;
+      ret = RT_ERROR_TO_GE_STATUS(rt_ret);
     } else {
       input_output_addr_ = nullptr;
     }
@@ -310,7 +349,7 @@ Status KernelExTaskInfo::Release() {
     rtError_t rt_ret = rtFree(ext_info_addr_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGW("rtFree ext_info_addr[%p] error, ret: 0x%X", ext_info_addr_, rt_ret);
-      ret = FAILED;
+      ret = RT_ERROR_TO_GE_STATUS(rt_ret);
     } else {
       ext_info_addr_ = nullptr;
     }

@@ -17,14 +17,12 @@
 #include "hybrid/node_executor/hostcpu/ge_local_node_executor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "framework/common/util.h"
-#include "framework/common/types.h"
+#include "hybrid/model/hybrid_model.h"
 #include "inc/kernel.h"
 #include "inc/kernel_factory.h"
-#include "common/ge/ge_util.h"
 
 namespace ge {
 namespace hybrid {
-
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::GE_LOCAL, GeLocalNodeExecutor);
 
 const std::unordered_map<std::string, std::vector<uint32_t>> RefInputTask::out_ref_input_index_ = {
@@ -64,7 +62,7 @@ Status RefInputTask::RefOneByOne(TaskContext &context) {
   for (uint32_t out_index = 0; out_index < output_num; ++out_index) {
     auto input = context.GetInput(out_index);
     GE_CHECK_NOTNULL(input);
-    context.SetOutput(out_index, *input);
+    GE_CHK_STATUS_RET(context.SetOutput(out_index, *input));
     GELOGD("node %s type %s output[%u] ref input[%u] addr=%p.", node_name_.c_str(), node_type_.c_str(), out_index,
            out_index, input->GetData());
   }
@@ -84,7 +82,7 @@ Status RefInputTask::RefByOrder(const std::vector<uint32_t> &ref_order, TaskCont
     auto ref_input_index = ref_order[out_index];
     auto input = context.GetInput(ref_input_index);
     GE_CHECK_NOTNULL(input);
-    context.SetOutput(out_index, *input);
+    GE_CHK_STATUS_RET(context.SetOutput(out_index, *input));
     GELOGD("node %s type %s output[%d] ref input[%u] addr=%p.", node_name_.c_str(), node_type_.c_str(), out_index,
            ref_input_index, input->GetData());
   }
@@ -132,7 +130,7 @@ Status DependInputShapeTask::Execute(TaskContext &context) {
   }
 
   // alloc output
-  GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
+  GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs(NpuMemoryAllocator::AttrWithDefaultPadding()));
 
   // copy data to output
   for (auto i = 0; i < output_num; ++i) {
@@ -194,6 +192,16 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
              node_type.c_str());
       return MEMALLOC_FAILED;
     }
+  } else if (node_type == CONSTANTOP || node_type == VARIABLE) {
+    GELOGI("node %s type %s, use ConstantNodeTask.", node->GetName().c_str(), node_type.c_str());
+    auto tensor = model.GetVariable(node->GetName());
+    if (tensor == nullptr) {
+      GELOGE(INTERNAL_ERROR, "Failed to get tensor by name: %s", node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    task = MakeShared<ConstantNodeTask>(tensor);
+    GE_CHECK_NOTNULL(task);
   } else {
     GELOGE(UNSUPPORTED, "node %s type %s is not support in GeLocalNodeExecutor now.", node->GetName().c_str(),
            node_type.c_str());
@@ -202,5 +210,20 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
   return SUCCESS;
 }
 
+ConstantNodeTask::ConstantNodeTask(const TensorValue *tensor) : tensor_(tensor) {}
+
+Status ConstantNodeTask::UpdateArgs(TaskContext &context) { return SUCCESS; }
+
+Status ConstantNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  GELOGD("[%s] Start execute.", context.GetNodeName());
+  GE_CHK_STATUS_RET(context.SetOutput(0, *tensor_), "[%s] Failed to set output.", context.GetNodeName());
+  if (done_callback) {
+    GELOGD("[%s] Start invoke callback.", context.GetNodeName());
+    done_callback();
+  }
+
+  GELOGD("[%s] Done execute successfully.", context.GetNodeName());
+  return SUCCESS;
+}
 }  // namespace hybrid
 }  // namespace ge

@@ -48,7 +48,7 @@ class TBEPluginManager {
 
   static void InitPreparation(const std::map<string, string> &options);
 
-  void LoadPluginSo();
+  void LoadPluginSo(const std::map<string, string> &options);
 
  private:
   TBEPluginManager() = default;

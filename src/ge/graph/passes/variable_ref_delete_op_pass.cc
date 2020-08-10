@@ -16,18 +16,16 @@
 
 #include "graph/passes/variable_ref_delete_op_pass.h"
 #include <string>
-#include "framework/common/debug/ge_log.h"
 
 namespace ge {
 Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
-  GE_TIMESTAMP_START(VariableRefDeleteOpPass);
   GE_CHECK_NOTNULL(graph);
-
-  for (auto &node : graph->GetDirectNode()) {
-    GELOGD("before VariableRefDeleteOpPass, graph has node: %s, and node name: %s", node->GetType().c_str(),
-           node->GetName().c_str());
+  std::set<std::string> all_var_names;
+  auto root_graph = GraphUtils::FindRootGraph(graph);
+  GE_CHECK_NOTNULL(root_graph);
+  for (const auto &n : root_graph->GetAllNodes()) {
+    all_var_names.insert(n->GetName());
   }
-
   for (auto &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     std::string ref_var_src_var_name;
@@ -36,19 +34,17 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
     if (!is_variable_ref) {
       continue;
     }
+    if (all_var_names.count(ref_var_src_var_name) == 0) {
+      GELOGE(FAILED, "Can not find source variable[%s] of variable ref[%s]", ref_var_src_var_name.c_str(),
+             node->GetName().c_str());
+      return FAILED;
+    }
     Status ret = DealVariableRef(graph, node, ref_var_src_var_name);
     if (ret != SUCCESS) {
       GELOGE(ret, "variable ref [%s] delete failed", node->GetName().c_str());
       return FAILED;
     }
   }
-
-  for (auto &node : graph->GetDirectNode()) {
-    GELOGD("after VariableRefDeleteOpPass, graph has node: %s, and node name: %s", node->GetType().c_str(),
-           node->GetName().c_str());
-  }
-  GE_TIMESTAMP_END(VariableRefDeleteOpPass, "GraphManager::VariableRefDeleteOpPass");
-
   return SUCCESS;
 }
 
@@ -68,23 +64,15 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   // get previous node of variable_ref
   NodePtr peer_node = inAnchor0->GetPeerOutAnchor()->GetOwnerNode();
 
-  // add attr [REF_VAR_SRC_VAR_NAME] to the previous node of the variable_ref
-  GE_CHECK_NOTNULL(peer_node->GetOpDesc());
-  bool is_set_str = ge::AttrUtils::SetStr(peer_node->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
-
-  ge::NodePtr ref_var_src_var = GraphUtils::FindNodeFromAllNodes(graph, ref_var_src_var_name);
-  if (ref_var_src_var == nullptr) {
-    GELOGE(FAILED, "get ref_var_src_var failed");
-    return FAILED;
+  // add attr [REF_VAR_SRC_VAR_NAME] to the previous op output desc of the variable_ref
+  auto op_desc = peer_node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  auto out_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+  bool is_set_str = ge::AttrUtils::SetStr(out_desc, REF_VAR_SRC_VAR_NAME, ref_var_src_var_name);
+  if (is_set_str) {
+    GELOGI("[%s-%d]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), index,
+           ref_var_src_var_name.c_str());
   }
-
-  GE_CHECK_NOTNULL(ref_var_src_var->GetOpDesc());
-  bool is_set_index = ge::AttrUtils::SetInt(ref_var_src_var->GetOpDesc(), REF_VAR_PRE_PEER_OUT_INDEX, index);
-  if (is_set_str && is_set_index) {
-    GELOGI("[%s]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), ref_var_src_var_name.c_str());
-    GELOGI("[%s]: add attr [REF_VAR_PRE_PEER_OUT_INDEX: %d]", ref_var_src_var->GetName().c_str(), index);
-  }
-
   // remove variable_ref
   if (GraphUtils::IsolateNode(variable_ref, {0}) != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", variable_ref->GetName().c_str(),

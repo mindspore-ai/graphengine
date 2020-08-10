@@ -17,14 +17,13 @@
 #ifndef GE_HYBRID_KERNEL_AICORE_TASK_BUILDER_H_
 #define GE_HYBRID_KERNEL_AICORE_TASK_BUILDER_H_
 
-#include <mutex>
+#include <vector>
 #include <string>
-#include <map>
-#include <set>
 #include "aicore_op_task.h"
-#include "proto/task.pb.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/op_kernel_bin.h"
+#include "proto/task.pb.h"
 
 namespace ge {
 namespace hybrid {
@@ -45,16 +44,16 @@ class AiCoreKernelRegistry {
 
 class AiCoreTaskBuilder {
  public:
-  AiCoreTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def);
+  AiCoreTaskBuilder(const OpDescPtr &op_desc, const std::vector<domi::TaskDef> &task_defs);
   ~AiCoreTaskBuilder() = default;
-  Status BuildTask(AiCoreOpTask &task);
+
+  Status BuildTask(std::unique_ptr<NodeTask> &node_task, bool ignore_failure_on_atomic);
 
  private:
-  Status SetKernelArgs(AiCoreOpTask &task);
-  Status SetStub(AiCoreOpTask &task);
-  const OpDescPtr &op_desc_;
-  const domi::KernelDef &kernel_def_;
-  std::string stub_name_;
+  bool ExpectAtomicAddrCleanTask();
+
+  OpDescPtr op_desc_;
+  const std::vector<domi::TaskDef> &task_defs_;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -44,16 +44,6 @@ REG_OP(LogSoftmaxGrad)
     .ATTR(axis, ListInt, {-1})
     .OP_END_FACTORY_REG(LogSoftmaxGrad)
 
-REG_OP(SparseSoftmaxCrossEntropyWithLogitsCCE)
-    .INPUT(features, TensorType{DT_FLOAT})
-    .INPUT(labels, TensorType{DT_FLOAT})
-    .OUTPUT(out, TensorType{DT_FLOAT})
-    .OUTPUT(non, TensorType{DT_FLOAT})
-    .ATTR(cross_entropy_is_grad, Bool, 0)
-    .ATTR(cross_entropy_mode, Int, 1)
-    .ATTR(softmax_cross_entropy_lossscale_div_batch, Float, 1.0)
-    .OP_END_FACTORY_REG(SparseSoftmaxCrossEntropyWithLogitsCCE)
-
 /**
 *@brief Computes sparse softmax cross entropy cost and gradients to backpropagate.
 
@@ -291,8 +281,8 @@ REG_OP(BinaryCrossEntropyGrad)
 * double. Should be a Variable Tensor.
 
 *@par Attributes:
-*axes: A list of ints. The dimension softmax would be performed on. Defaults
-* to "{-1}".
+*axes: A list of int. The dimension softmax would be performed on. Defaults
+* to "[-1]".
 
 *@par Outputs:
 *y: A Tensor. Has the same dimensionality and shape as the "x" with values in
@@ -329,22 +319,6 @@ REG_OP(LogSoftmaxV2)
     .OUTPUT(logsoftmax, TensorType({DT_DOUBLE, DT_FLOAT16, DT_FLOAT}))
     .ATTR(axes, ListInt, {-1})
     .OP_END_FACTORY_REG(LogSoftmaxV2)
-
-REG_OP(FusedBatchNormV2)
-    .INPUT(x, TensorType{DT_FLOAT})                  /* Input data tensor from the previous operator"" */
-    .INPUT(scale, TensorType{DT_FLOAT})              /* If spatial is true, the dimension of bias is (C) If spatial is false, the dimensions of scale are (C x D1 x ... x Dn)*/
-    .INPUT(b, TensorType{DT_FLOAT})                  /* If spatial is true, the dimension of bias is (C) If spatial is false, the dimensions of scale are (C x D1 x ... x Dn)*/
-    .OPTIONAL_INPUT(mean, TensorType{DT_FLOAT})               /* If spatial is true, the dimension of the running mean (training) or the estimated mean (testing) is (C).If spatial is false, the dimensions of the running mean (training) or the estimated mean (testing) are (C x D1 x ... x Dn)*/
-    .OPTIONAL_INPUT(variance, TensorType{DT_FLOAT})           /* If spatial is true, the dimension of the running variance(training) or the estimated variance (testing) is (C). If spatial is false, the dimensions of the running variance(training) or the estimated variance (testing) are (C x D1 x ... x Dn).*/
-    .OUTPUT(y, TensorType{DT_FLOAT})                 /* The output tensor of the same shape as X */
-    .ATTR(momentum, Float, 0.9)            // Factor used in computing the running mean and variance.
-    .ATTR(epsilon, Float, 1e-5f)           // The epsilon value to use to avoid division by zero
-    .ATTR(mode, Int, 1)                    // 1 means using "CC_BATCHNORM_SPATIAL"; 0 means using "CC_BATCHNORM_PER_ACTIVATION"; only support 1 now
-    .ATTR(use_global_stats, Bool, true)
-    .ATTR(alpha, Float, 1)
-    .ATTR(beta, Float, 0)
-    .OP_END_FACTORY_REG(FusedBatchNormV2)
-
 
 /**
 *@brief Confuse mul, sum and sub.
@@ -632,7 +606,7 @@ REG_OP(DropOutDoMask)
 * Three inputs, including:
 *@li x: An ND tensor of type float16 or float32.
 *@li scale: An ND tensor of type float16 or float32.
-*@li bias: An ND tensor of type float16 or float32.
+*@li bias: An optional ND tensor of type float16 or float32.
 
 *@par Attributes:
 *@li axis: An optional int32 used to compute the shape of scale and bias input from the online bottoms. Defaults to "1".
@@ -679,11 +653,11 @@ REG_OP(Scale)
 * depth_radius = (local_size - 1) / 2. local_size is the number of channels to sum over (for ACROSS_CHANNELS)
 * or the side length of the square region to sum over (for WITHIN_CHANNEL).
 *@li bias: An optional float32. An offset, usually > 0 to avoid dividing by 0.
-* Defaults to "1".
+* Defaults to "1.0".
 *@li alpha: An optional float32. A scaling factor, usually positive.
-* Defaults to "1".
+* Defaults to "1.0".
 *@li beta: An optional float32. An exponent. Defaults to "0.75" for the caffe framework, Defaults to "0.5" for others.
-*@li norm_region: An optional string. A mode option. "ACROSS_CHANNELS":0, "WITHIN_CHANNEL":1. Defaults to "ACROSS_CHANNELS".
+*@li norm_region: An optional string. A mode option. "ACROSS_CHANNELS":0. Defaults to "ACROSS_CHANNELS".
 
 *@par Outputs:
 *y: A Tensor. Has the same data type and shape as "x".
@@ -835,6 +809,56 @@ REG_OP(GroupNorm)
     .ATTR(is_training, Bool, true)
     .ATTR(num_groups, Int, 2)
     .OP_END_FACTORY_REG(GroupNorm)
+
+/**
+*@brief Performs instance normalization.
+
+*@par Inputs:\n
+* Five inputs, including: (NC1HWC0, supported)
+*@li x: A 5D Tensor of type float16 or float32, NC1HWC0.
+*@li gamma: A Tensor of type float32.
+A 5D Tensor for scaling factor, to scale the normalized x.
+*@li beta: A Tensor of type float32. 
+A 5D Tensor for offset, to shift to the normalized x.
+*@li mean: A Tensor of type float32. 
+A 5D Tensor Specifies the mean used for inference. Reserved.
+*@li variance: A Tensor of type float32. 
+A 5D Tensor Specifies the variance used for inference. Reserved.
+
+*@par Attributes:
+*@li is_training: An optional bool, specifying if the operation is used for \n
+training or inference. Defaults to "True".
+*@li momentum: An optional float32, \n
+the value used for the running_mean and running_var computation. Default: "0.1".
+*@li epsilon: An optional float32, specifying the small value added to \n
+variance to avoid dividing by zero. Defaults to "0.00001".
+
+*@par Outputs:\n
+* Three outputs, including: (NHWC, NCHW NC1HWC0 supported)
+*@li y: A 5D tensor of type float16 or float32 for the normalized "x", \n
+*@li batch_mean: A Tensor of type float32. 
+Specifies the mean of "x".
+*@li batch_variance: A Tensor of type float32. 
+Specifies the variance of "x".
+
+*@par Third-party framework compatibility
+*@li Compatible with the PyTorch operator InstanceNorm.
+*/
+REG_OP(InstanceNormV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(gamma, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(beta, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+
+    .ATTR(is_training, Bool, true)
+    .ATTR(momentum, Float, 0.1)
+    .ATTR(epsilon, Float, 0.00001)
+    .OP_END_FACTORY_REG(InstanceNormV2)
 
 }  // namespace ge
 

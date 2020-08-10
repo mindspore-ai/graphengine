@@ -187,14 +187,15 @@ REG_OP(ROIAlignGrad)
 *@li features: A 5HD Tensor of type float32 or float16.
 *@li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs, the value "5" indicates the indexes of images where the ROIs are located, 
 * "x0", "y0", "x1", and "y1".
-*@li rois_n: An optional input, specifying the number of valid ROIs. This parameter is reserved.
+*@li rois_n: An optional input of type int32, specifying the number of valid ROIs. This parameter is reserved.
 
 *@par Attributes:
-*@li spatial_scale: A required attribute of type float, specifying the scaling ratio of "features" to the original image.
-*@li pooled_height: A required attribute of type int, specifying the H dimension.
-*@li pooled_width: A required attribute of type int, specifying the W dimension.
-*@li sample_num: An optional attribute of type int, specifying the horizontal and vertical sampling frequency of each output. If this attribute is set to "0",
+*@li spatial_scale: A required attribute of type float32, specifying the scaling ratio of "features" to the original image.
+*@li pooled_height: A required attribute of type int32, specifying the H dimension.
+*@li pooled_width: A required attribute of type int32, specifying the W dimension.
+*@li sample_num: An optional attribute of type int32, specifying the horizontal and vertical sampling frequency of each output. If this attribute is set to "0",
 * the sampling frequency is equal to the rounded up value of "rois", which is a floating point number. Defaults to "2".
+*@li roi_end_mode: An optional attribute of type int32. Defaults to "1".
 
 *@par Outputs:
 * output: Outputs the feature sample of each ROI position. The format is 5HD Tensor of type float32 or float16. The axis N is the number of input ROIs. Axes H, W, and C are consistent
@@ -362,15 +363,15 @@ REG_OP(PSROIPooling)
 *@li im_info: An ND tensor of type float16 or float32, specifying the Image information.
 *@li actual_rois_num: An optional NCHW tensor of type int32, specifying the number of valid boxes per batch.
 *@par Attributes:
-*@li batch_rois: An optional int32, specifying the number of images to be predicted.
+*@li batch_rois: An optional int32, specifying the number of images to be predicted. Defaults to "1".
 *@li num_classes: An required int32, specifying the number of classes to be predicted. The value must be greater than 0.
 *@li score_threshold: An required float32, specifying the threshold for box filtering. The value range is [0.0, 1.0].
 *@li iou_threshold: An required float32, specifying the confidence threshold for box filtering, which is the output "obj" of operator Region. The value range is (0.0, 1.0).
 *@par Outputs:
-*@li box: An NCHW tensor of type float16 or float32, describing the information of each output box, including the coordinates, class, and confidence.
-Proposal of actual output, with output shape [batch, numBoxes,8], 8 means [x1, y1, x2, y2, score, label, batchID, NULL], the maximum value of numBoxes is 1024.
+*@li box: A tensor of type float16 or float32 for proposal of actual output, with output shape [batch, numBoxes,8].
+* 8 means [x1, y1, x2, y2, score, label, batchID, NULL], the maximum value of numBoxes is 1024.
 That is, take min (the maximum number of input boxes, 1024)
-*@li actual_bbox_num: An NCHW tensor of type int32 With shape [bacth, num_classes], specifying the number of output boxes.
+*@li actual_bbox_num: A tensor of type int32 With shape [bacth, num_classes], specifying the number of output boxes.
 
 *@attention Constraints:\n
 *@li totalnum < max_rois_num * batch_rois.
@@ -414,9 +415,9 @@ REG_OP(FSRDetectionOutput)
 *@li confidence_threshold: An optional float32, specify the topk filter threshold. Only consider detections with confidence greater than the threshold
 *@li kernel_name: An optional string, specifying the operator name. Defaults to "ssd_detection_output".
 *@par Outputs:
-*@li out_boxnum: An NCHW tensor of type int32, specifying the number of output boxes.
-*@li y: An NCHW tensor of type float16 or float32 with shape [batch,keep_top_k, 8], describing the information of each output box, including the coordinates,
-* class, and confidence. In output shape, 8 means (batchID, label(classID), score (class probability), xmin, ymin, xmax, ymax, null)
+*@li out_boxnum: A tensor of type int32, specifying the number of output boxes.
+*@li y: A tensor of type float16 or float32 with shape [batch,keep_top_k, 8], describing the information of each output box.
+* In output shape, 8 means (batchID, label(classID), score (class probability), xmin, ymin, xmax, ymax, null)
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(SSDDetectionOutput)
@@ -447,10 +448,10 @@ REG_OP(SSDDetectionOutput)
 *@li boxes: A required int32, specifying the number of anchor boxes. Defaults to "5" for V2 or "3" for V3.
 *@li coords: An int32, specifying the number of parameters required for locating an object. The value is fixed at "4", corresponding to (x,y,w,h).
 *@li classes: An int32, specifying the number of prediction classes. Defaults to "80". The value range is [1, 1024].
-*@li yolo_version: A string, specifying the YOLO version, either "V2" or "V3".
-*@li softmax: A bool, specifying whether to perform softmax, valid only when "yolo_version = V2".
-*@li background: A bool, specifying the operation types of the obj and classes, used in conjunction with "softmax" and valid only when "yolo_version = V2".
-*@li softmaxtree: A bool, Fixed to False, defined in Lite, but not used.
+*@li yolo_version: A string, specifying the YOLO version, either "V2" or "V3".Defaults to "V3"
+*@li softmax: A bool, specifying whether to perform softmax, valid only when "yolo_version = V2". Defaults to "false".
+*@li background: A bool, specifying the operation types of the obj and classes, used in conjunction with "softmax" and valid only when "yolo_version = V2". Defaults to "false".
+*@li softmaxtree: A bool, Fixed to False, defined in Lite, but not used. Defaults to "false".
 
 *@par Outputs:
 *@li coord_data: A float16 or float32 with shape [N, boxes*coords, ceilx(height*width*2+32, 32)/2], where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the coordinates of a detected box.
@@ -501,10 +502,10 @@ and the actual image height and width.
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
 *
 *@par Outputs:
-*@li boxout: An NCHW tensor of type float16 or float32 with shape [batch,6,post_nms_topn]. describing the information of each output box, including the coordinates, class,
-and confidence. In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
-*@li boxoutnum: An NCHW tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes. It means only the first one of the 8 numbers is valid,
-the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn]. describing the information of each output box,
+* In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
+*@li boxoutnum: A tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes. It means only the first one of the 8 numbers is valid,
+* the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
 *
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v2 network.
@@ -561,10 +562,10 @@ and the actual image height and width.
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
 *
 *@par Outputs:
-*@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
-With shape [batch,6,post_nms_topn], 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
-*@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
-With shape [batch,8,1,1], means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn]. describing the information of each output box,
+* In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
+*@li boxoutnum: A tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes. It means only the first one of the 8 numbers is valid,
+* the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
 *
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v2 network.
@@ -621,11 +622,11 @@ and the actual image height and width.
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
 *
 *@par Outputs:
-*@li boxout: An NCHW tensor of type float16 or float32 with shape [batch,6,post_nms_topn], describing the information of each output box, including the coordinates, class, and confidence.
-In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
-*@li boxoutnum: An NCHW tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes.
-The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
-
+*@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn], describing the information of each output box.
+* In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
+*@li boxoutnum: A tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes.
+* The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v3 network.
 *@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
@@ -688,12 +689,11 @@ and the actual image height and width.
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
 *
 *@par Outputs:
-*@li boxout: An NCHW tensor of type float16, describing the information of each output box, including the coordinates, class, and confidence.
-With shape [batch,6,post_nms_topn], 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
-*@li boxoutnum: An NCHW tensor of type int32, specifying the number of output boxes.
-With shape [batch,8,1,1], means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn], describing the information of each output box.
+* In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
+*@li boxoutnum: A tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes.
+* The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
 *
-
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v3 network.
 *@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
@@ -733,6 +733,65 @@ REG_OP(YoloV3DetectionOutputD)
     .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV3DetectionOutputD)
+
+/**
+*@brief Performs YOLO V3 detection.
+
+*@par Inputs:
+*16 Input, including:
+*@li The outputs of operator Yolo at the preceding layer (that is, three Yolo operators on YOLO v3) are used as the inputs of operator Yolov3DetectionOutput. \n
+A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+*@li imginfo: A float16, describing the image information including the required image height and width \n
+and the actual image height and width.
+*@li windex: A windex tensor with shape [height,weight]. Has the same type as the inputs. [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed for the three Yolo outputs, respectively.
+
+*@li hindex: A hindex tensor with shape [height,weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively.
+
+*
+*@par Attributes:
+*@li biases: A required float32. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
+*@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
+*@li coords: Specifies the number of coordinate parameters. Must be 4.
+*@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 80].
+*@li relative: An optional bool. Defaults to and must be "true".
+*@li obj_threshold: A required float, specifying the confidence threshold for box filtering, which is the output "obj" of operator Yolo). The value range is [0.0, 1.0].
+*@li post_nms_topn: An optional int32. This attribute is reserved.
+*@li score_threshold: A required float, specifying the class score threshold for box filtering, which is the output "class" of operator Yolo). The value range is [0.0, 1.0].
+*@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].\n
+*@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
+*
+*@par Outputs:
+*@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn], describing the information of each output box.
+* In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
+*@li boxoutnum: A tensor of type int32 with shape [batch,8,1,1], specifying the number of output boxes.
+* The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
+*
+*@attention Constraints:\n
+*@li This operator applies only to the YOLO v3 network.
+*@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
+*@see Yolo()
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*/
+REG_OP(YoloV3DetectionOutputV2)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .DYNAMIC_INPUT(windex, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .DYNAMIC_INPUT(hindex, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .REQUIRED_ATTR(biases, ListFloat)
+    .ATTR(boxes, Int, 3)
+    .ATTR(coords, Int, 4)
+    .ATTR(classes, Int, 80)
+    .ATTR(relative, Bool, true)
+    .ATTR(obj_threshold, Float, 0.5)
+    .ATTR(post_nms_topn, Int, 512)
+    .ATTR(score_threshold, Float, 0.5)
+    .ATTR(iou_threshold, Float, 0.45)
+    .ATTR(pre_nms_topn, Int, 512)
+    .ATTR(N, Int, 10)
+    .ATTR(resize_origin_img_to_net, Bool, false)
+    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out_num, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(YoloV3DetectionOutputV2)
 
 /**
 *@brief Spatial Pyramid Pooling, multi-level pooling.
@@ -1083,6 +1142,131 @@ REG_OP(DecodeWheelsTarget)
     .INPUT(anchors, TensorType({DT_FLOAT16}))
     .OUTPUT(boundary_encoded, TensorType({DT_FLOAT16}))
     .OP_END_FACTORY_REG(DecodeWheelsTarget)
+
+/**
+*@brief Computes nms for input boxes and score, support multiple batch and classes.
+* will do clip to window, score filter, top_k, and nms
+
+*@par Inputs:
+* Four inputs, including: \n
+*@li boxes: boxes, a 4D Tensor of type float16 with
+* shape (batch, num_anchors, num_classes, 4). "batch" indicates the batch size of image,
+* and "num_anchors" indicates num of boxes, and "num_classes" indicates classes of detect.
+* and the value "4" refers to "x0", "x1", "y0", and "y1".
+*@li scores: boxes, a 4D Tensor of type float16 with
+* shape (batch, num_anchors, num_classes).
+*@li clip_window: window size, a 2D Tensor of type float16 with
+* shape (batch, 4). 4" refers to "anchor_x0", "anchor_x1", "anchor_y0", and "anchor_y1".
+*@li num_valid_boxes: valid boxes number for each batch, a 1D Tensor of type int32 with
+* shape (batch,).
+
+*@par Attributes:
+*@li score_threshold: A required attribute of type float32, specifying the score filter iou iou_threshold.
+*@li iou_threshold: A required attribute of type float32, specifying the nms iou iou_threshold.
+*@li max_size_per_class: A required attribute of type int, specifying the nms output num per class.
+*@li max_total_size: A required attribute of type int, specifying the the nms output num per batch.
+*@li change_coordinate_frame: A required attribute of type bool, whether to normalize coordinates after clipping.
+*@li transpose_box: A required attribute of type bool, whether inserted transpose before this op.
+
+*@par Outputs:
+*@li nmsed_boxes: A 3D Tensor of type float16 with shape (batch, max_total_size, 4),
+* specifying the output nms boxes per batch.
+*@li nmsed_scores: A 2D Tensor of type float16 with shape (N, 4),
+* specifying the output nms score per batch.
+*@li nmsed_classes: A 2D Tensor of type float16 with shape (N, 4),
+* specifying the output nms class per batch.
+*@li nmsed_num: A 1D Tensor of type float16 with shape (N, 4), specifying the valid num of nmsed_boxes.
+
+*@attention Constraints:
+* Only computation of float16 data is supported.
+*/
+REG_OP(BatchMultiClassNonMaxSuppression)
+    .INPUT(boxes, TensorType({DT_FLOAT16}))
+    .INPUT(scores, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(clip_window, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(num_valid_boxes, TensorType({DT_INT32}))
+    .OUTPUT(nmsed_boxes, TensorType({DT_FLOAT16}))
+    .OUTPUT(nmsed_scores, TensorType({DT_FLOAT16}))
+    .OUTPUT(nmsed_classes, TensorType({DT_FLOAT16}))
+    .OUTPUT(nmsed_num, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(score_threshold, Float)
+    .REQUIRED_ATTR(iou_threshold, Float)
+    .REQUIRED_ATTR(max_size_per_class, Float)
+    .REQUIRED_ATTR(max_total_size, Float)
+    .ATTR(change_coordinate_frame, Bool, false)
+    .ATTR(transpose_box, Bool, false)
+    .OP_END_FACTORY_REG(BatchMultiClassNonMaxSuppression)
+
+/**
+* @brief To absolute the bounding box.
+
+* @par Inputs:
+* @li normalized_boxes: A 3D Tensor of type float16 or float32.
+* @li shape_hw: A 1D Tensor of type int32.
+
+* @par Attributes:
+* @li reversed_box: An optional bool, specifying the last two dims is "4,num" or
+* "num,4", "true" for "4,num", "false" for "num,4". Defaults to "false".
+
+* @par Outputs:
+* y: A Tensor. Has the same type and shape as "normalized_boxes".
+
+* @attention Constraints:
+* "normalized_boxes"'s shape must be (batch,num,4) or (batch,4,num).
+* "shape_hw"'s shape must be (4,)
+*/
+REG_OP(ToAbsoluteBBox)
+    .INPUT(normalized_boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(shape_hw, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reversed_box, Bool, false)
+    .OP_END_FACTORY_REG(ToAbsoluteBBox)
+
+/**
+*@brief Computes Normalize bbox function.
+*
+*@par Inputs:
+*Inputs include:
+* @li boxes: A Tensor. Must be float16 or float32.
+* @li shape_hw: A Tensor. Must be int32.
+*
+*@par Attributes:
+* reversed_box: optional, bool. Defaults to "False"
+*
+*@par Outputs:
+* y: A Tensor. Must have the same type and shape as boxes.
+*/
+REG_OP(NormalizeBBox)
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(shape_hw, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reversed_box, Bool, false)
+    .OP_END_FACTORY_REG(NormalizeBBox)
+
+/**
+*@brief Computes decode bboxv2 function.
+*
+*@par Inputs:
+*Inputs include:
+* @li boxes: A Tensor. Must be float16 or float32.
+* @li anchors: A Tensor. Must be int32.
+*
+*@par Attributes:
+* @li scales: optional, listfloat, .
+* @li decode_clip: optional, float, threahold of decode process.
+* @li reversed_boxes: optional, bool,.
+*
+*@par Outputs:
+* y: A Tensor. Must have the same type as box_predictions.
+*/
+REG_OP(DecodeBboxV2)
+    .INPUT(boxes, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(anchors, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(scales, ListFloat, {1.0, 1.0, 1.0, 1.0})
+    .ATTR(decode_clip, Float, 0.0)
+    .ATTR(reversed_box, Bool, false)
+    .OP_END_FACTORY_REG(DecodeBboxV2)
 
 }  // namespace ge
 

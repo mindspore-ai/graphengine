@@ -17,11 +17,13 @@
 #include "single_op/single_op.h"
 
 #include "common/fmk_types.h"
+#include "common/math/math_util.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/mem.h"
+#include "single_op/single_op_manager.h"
 
 namespace ge {
 namespace {
@@ -50,9 +52,13 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_inputs; ++i) {
     // preventing from read out of bound
     size_t aligned_size = GetAlignedSize(inputs[i].length);
+    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%u, input_sizes_:%u", i, aligned_size, inputs[i].length,
+           input_sizes_[i]);
     if (aligned_size < input_sizes_[i]) {
-      GELOGE(PARAM_INVALID, "Input size mismatch. index = %zu, model expect %zu, but given %zu(after align)", i,
-             input_sizes_[i], aligned_size);
+      GELOGE(PARAM_INVALID,
+             "Input size mismatch. index = %zu, model expect %zu,"
+             " but given %zu(after align)",
+             i, input_sizes_[i], aligned_size);
       return PARAM_INVALID;
     }
   }
@@ -66,9 +72,13 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_outputs; ++i) {
     // preventing from write out of bound
     size_t aligned_size = GetAlignedSize(outputs[i].length);
+    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%u, output_sizes_:%u", i, aligned_size, outputs[i].length,
+           output_sizes_[i]);
     if (aligned_size < output_sizes_[i]) {
-      GELOGE(PARAM_INVALID, "Output size mismatch. index = %zu, model expect %zu, but given %zu(after align)", i,
-             output_sizes_[i], aligned_size);
+      GELOGE(PARAM_INVALID,
+             "Output size mismatch. index = %zu, model expect %zu,"
+             "but given %zu(after align)",
+             i, output_sizes_[i], aligned_size);
       return PARAM_INVALID;
     }
   }
@@ -81,23 +91,11 @@ Status SingleOp::GetArgs(const std::vector<DataBuffer> &inputs, const std::vecto
   if (use_physical_addr_) {
     for (auto &input : inputs) {
       auto *addr = reinterpret_cast<uint8_t *>(input.data);
-      size_t aligned_size = GetAlignedSize(input.length);
-      auto ret = ModelUtils::ConvertVirtualAddressToPhysical(addr, aligned_size, addr);
-      if (ret != SUCCESS) {
-        GELOGE(ret, "ConvertVirtualAddressToPhysical failed. Arg index = %zu", arg_index);
-        return ret;
-      }
       args_[arg_index++] = reinterpret_cast<uintptr_t>(addr);
     }
 
     for (auto &output : outputs) {
       auto *addr = reinterpret_cast<uint8_t *>(output.data);
-      size_t aligned_size = GetAlignedSize(output.length);
-      auto ret = ModelUtils::ConvertVirtualAddressToPhysical(addr, aligned_size, addr);
-      if (ret != SUCCESS) {
-        GELOGE(ret, "ConvertVirtualAddressToPhysical failed. Arg index = %zu", arg_index);
-        return ret;
-      }
       args_[arg_index++] = reinterpret_cast<uintptr_t>(addr);
     }
   } else {
@@ -117,6 +115,7 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
   if (ret != SUCCESS) {
     return ret;
   }
+  // update tbe task args
   size_t num_args = arg_table_.size();
   for (size_t i = 0; i < num_args; ++i) {
     std::vector<uintptr_t *> &ptr_to_arg_in_tasks = arg_table_[i];
@@ -129,18 +128,34 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       *arg_addr = args_[i];
     }
   }
+  // update aicpu_TF or aicpu_CC args
   for (auto &task : tasks_) {
+    size_t io_addr_num = args_.size();
     if (task->GetOpTaskType() == OP_TASK_AICPU) {
-      GELOGD("Update aicpu task args");
+      GELOGD("Update aicpu_TF task args");
       AiCpuTask *task_aicpu = dynamic_cast<AiCpuTask *>(task);
       GE_CHECK_NOTNULL(task_aicpu);
-      auto *dstIOAddr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task_aicpu->GetIOAddr()));
-      auto rt_ret = rtMemcpyAsync(dstIOAddr, sizeof(uint64_t) * args_.size(), &args_[0],
+      auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task_aicpu->GetIOAddr()));
+      GE_CHECK_NOTNULL(dst_io_addr);
+      auto rt_ret = rtMemcpyAsync(dst_io_addr, sizeof(uint64_t) * args_.size(), &args_[0],
                                   sizeof(uint64_t) * args_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream_);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "rtMemcpyAsync addresses failed, ret = %d", rt_ret);
         return RT_FAILED;
       }
+    } else if (task->GetOpTaskType() == OP_TASK_AICPUCC) {
+      GELOGD("Update aicpu_CC task args");
+      AiCpuCCTask *task_aicpu_cc = dynamic_cast<AiCpuCCTask *>(task);
+      GE_CHECK_NOTNULL(task_aicpu_cc);
+      const uintptr_t *task_io_addr = reinterpret_cast<const uintptr_t *>(task_aicpu_cc->GetIOAddr());
+      GE_CHECK_NOTNULL(task_io_addr);
+      auto io_addr = reinterpret_cast<uint64_t *>(const_cast<uintptr_t *>(task_io_addr));
+      for (size_t i = 0; i < io_addr_num; ++i) {
+        io_addr[i] = reinterpret_cast<uintptr_t>(args_[i]);
+      }
+    } else {
+      GELOGW("Only TF_kernel aicpu and aicpu_CC are supported, but got %u", task->GetOpTaskType());
+      continue;
     }
   }
   return SUCCESS;
@@ -164,8 +179,90 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
       return ret;
     }
   }
+
   return ret;
 }
 
 void SingleOp::SetStream(rtStream_t stream) { stream_ = stream; }
+
+DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, rtStream_t stream)
+    : resource_id_(resource_id), stream_(stream) {}
+
+Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                                       std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const {
+  if (inputs.size() != input_desc.size()) {
+    GELOGE(PARAM_INVALID, "Input number mismatches input desc number. Input num = %zu, input desc num = %zu",
+           inputs.size(), input_desc.size());
+    return PARAM_INVALID;
+  }
+
+  if (outputs.size() != output_desc.size()) {
+    GELOGE(PARAM_INVALID, "Output number mismatches output desc number. Output num = %zu, output desc num = %zu",
+           outputs.size(), output_desc.size());
+    return PARAM_INVALID;
+  }
+
+  if (input_desc.size() != num_inputs_) {
+    GELOGE(PARAM_INVALID, "Input number mismatches. expect %zu, but given %zu", num_inputs_, input_desc.size());
+    return PARAM_INVALID;
+  }
+
+  if (output_desc.size() != num_outputs_) {
+    GELOGE(PARAM_INVALID, "Output number mismatches. expect %zu, but given %zu", num_outputs_, output_desc.size());
+    return PARAM_INVALID;
+  }
+
+  return SUCCESS;
+}
+
+Status DynamicSingleOp::AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes,
+                                           std::vector<void *> &workspaces) {
+  static const std::string kPurpose("malloc workspace memory for dynamic op.");
+  if (workspace_sizes.empty()) {
+    GELOGD("No need to allocate workspace.");
+    return SUCCESS;
+  }
+  int64_t total_size = 0;
+  std::vector<int64_t> ws_offsets;
+  for (auto ws_size : workspace_sizes) {
+    // alignment and padding should be done in OpParaCalculate
+    GE_CHK_STATUS_RET_NOLOG(CheckInt64AddOverflow(total_size, ws_size));
+    ws_offsets.emplace_back(total_size);
+    total_size += ws_size;
+  }
+
+  GELOGD("Total workspace size is %ld", total_size);
+  StreamResource *stream_resource = SingleOpManager::GetInstance().GetResource(resource_id_, stream_);
+  GE_CHECK_NOTNULL(stream_resource);
+  auto ws_base = stream_resource->MallocMemory(kPurpose, static_cast<size_t>(total_size));
+  if (ws_base == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "Failed to allocate memory of size: %ld", total_size);
+    return MEMALLOC_FAILED;
+  }
+  GELOGD("Done allocating workspace memory successfully.");
+
+  for (auto ws_offset : ws_offsets) {
+    workspaces.emplace_back(ws_base + ws_offset);
+  }
+
+  return SUCCESS;
+}
+
+Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc, const vector<DataBuffer> &input_buffers,
+                                     vector<GeTensorDesc> &output_desc, vector<DataBuffer> &output_buffers) {
+  GE_CHECK_NOTNULL(op_task_);
+  GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
+  GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
+  std::vector<void *> workspace_buffers;
+  GE_CHK_STATUS_RET_NOLOG(AllocateWorkspaces(op_task_->GetWorkspaceSizes(), workspace_buffers));
+  std::vector<void *> inputs;
+  std::vector<void *> outputs;
+  for (auto &buffer : input_buffers) {
+    inputs.emplace_back(buffer.data);
+  }
+  for (auto &buffer : output_buffers) {
+    outputs.emplace_back(buffer.data);
+  }
+  return op_task_->LaunchKernel(inputs, outputs, workspace_buffers, stream_);
+}
 }  // namespace ge

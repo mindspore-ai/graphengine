@@ -21,7 +21,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #include "external/graph/types.h"
 #include "graph/ge_tensor.h"
 
@@ -69,7 +68,6 @@ T Ceil(T n1, T n2) {
   }
   return (n2 != 0) ? (n1 - 1) / n2 + 1 : 0;
 }
-
 }  // namespace formats
 }  // namespace ge
 #endif  // GE_COMMON_FORMATS_UTILS_FORMATS_TRANS_UTILS_H_

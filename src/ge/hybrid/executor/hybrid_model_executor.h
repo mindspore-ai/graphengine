@@ -20,9 +20,7 @@
 #include "graph/load/new_model_manager/data_inputer.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/rt_callback_manager.h"
-#include "hybrid/executor/worker/execution_engine.h"
-#include "hybrid/executor/worker/shape_inference_engine.h"
-#include "hybrid/executor/worker/task_compile_engine.h"
+#include "hybrid/executor/subgraph_executor.h"
 
 namespace ge {
 namespace hybrid {
@@ -30,7 +28,9 @@ class HybridModelExecutor {
  public:
   struct ExecuteArgs {
     std::vector<TensorValue> inputs;
+    std::vector<ConstGeTensorDescPtr> input_desc;
     std::vector<TensorValue> outputs;
+    std::vector<ConstGeTensorDescPtr> output_desc;
   };
 
   HybridModelExecutor(HybridModel *model, uint32_t device_id, rtStream_t stream);
@@ -44,24 +44,15 @@ class HybridModelExecutor {
   Status Execute(ExecuteArgs &args);
 
  private:
-  Status ExecuteGraphInternal(ExecuteArgs &args);
+  Status ExecuteGraphInternal(SubgraphExecutor &executor, ExecuteArgs &args);
   Status Cleanup();
   Status InitExecutionContext();
   static Status ResetExecutionContext(GraphExecutionContext &context);
 
-  Status InitInputsAndOutputs(ExecuteArgs &args, GraphExecutionContext &context);
-  Status GetOutput(ExecuteArgs &args);
-
-  Status Synchronize();
-
-  ThreadPool pool_;
   HybridModel *model_;
   uint32_t device_id_;
   rtStream_t stream_;
   GraphExecutionContext context_;
-  std::unique_ptr<ShapeInferenceEngine> infer_shape_engine_;
-  std::unique_ptr<TaskCompileEngine> compile_engine_;
-  std::unique_ptr<ExecutionEngine> execute_engine_;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -225,41 +225,40 @@ bool CondRemovePass::CheckIfCondConstInput(const OutDataAnchorPtr &cond_out_anch
 
 Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, const ComputeGraphPtr &save_branch) {
   // Add compute graph to new node
-  const auto &input_anchors = node->GetAllInAnchors();
-  const auto &output_anchors = node->GetAllOutAnchors();
+  const auto &input_desc_size = node->GetOpDesc()->GetInputsSize();
+  const auto &output_desc_size = node->GetOpDesc()->GetOutputsSize();
   // Create subgraph opdesc & node
   auto partitioncall_opdesc =
-    CreateSubgraphOpDesc(save_branch->GetName(), input_anchors.size() - kConditionIndexNum, output_anchors.size());
+    CreateSubgraphOpDesc(save_branch->GetName(), input_desc_size - kConditionIndexNum, output_desc_size);
   auto partitioncall_node = node->GetOwnerComputeGraph()->AddNode(partitioncall_opdesc);
   // Link node's peerout anchors to new node's inanchors
-  for (const auto &input_anchor : input_anchors) {
+  for (const auto &input_anchor : node->GetAllInAnchors()) {
     for (const auto &peerout_anchor : input_anchor->GetPeerAnchors()) {
       if (GraphUtils::AddEdge(peerout_anchor, partitioncall_node->GetInAnchor(
                                                 input_anchor->GetIdx() - kConditionIndexNum)) != ge::GRAPH_SUCCESS) {
         GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
                peerout_anchor->GetOwnerNode()->GetName().c_str(), peerout_anchor->GetIdx(),
-               partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_anchors.size(),
-               output_anchors.size());
+               partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_desc_size, output_desc_size);
         return FAILED;
       }
     }
   }
   // Remove If / Case anchor and peer in anchor
   // Link new node's out anchors to node's peer inanchors
-  for (const auto &output_anchor : output_anchors) {
+  for (const auto &output_anchor : node->GetAllOutAnchors()) {
     for (const auto &peerin_anchor : output_anchor->GetPeerAnchors()) {
       if (GraphUtils::RemoveEdge(node->GetOutAnchor(output_anchor->GetIdx()), peerin_anchor) != ge::GRAPH_SUCCESS) {
         GELOGE(FAILED, "Remove edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
                node->GetName().c_str(), output_anchor->GetIdx(), peerin_anchor->GetOwnerNode()->GetName().c_str(),
-               peerin_anchor->GetIdx(), input_anchors.size(), output_anchors.size());
+               peerin_anchor->GetIdx(), input_desc_size, output_desc_size);
         return FAILED;
       }
       if (GraphUtils::AddEdge(partitioncall_node->GetOutAnchor(output_anchor->GetIdx()), peerin_anchor) !=
           ge::GRAPH_SUCCESS) {
         GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
                partitioncall_node->GetName().c_str(), output_anchor->GetIdx(),
-               peerin_anchor->GetOwnerNode()->GetName().c_str(), peerin_anchor->GetIdx(), input_anchors.size(),
-               output_anchors.size());
+               peerin_anchor->GetOwnerNode()->GetName().c_str(), peerin_anchor->GetIdx(), input_desc_size,
+               output_desc_size);
         return FAILED;
       }
     }

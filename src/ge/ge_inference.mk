@@ -32,6 +32,7 @@ COMMON_LOCAL_SRC_FILES := \
 
 GRAPH_MANAGER_LOCAL_SRC_FILES := \
     common/ge/plugin_manager.cc\
+    common/ge/op_tiling_manager.cc\
     init/gelib.cc \
     session/inner_session.cc \
     session/session_manager.cc \
@@ -45,6 +46,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     graph/execute/graph_execute.cc \
     graph/load/graph_loader.cc \
     graph/optimize/graph_optimize.cc \
+    graph/optimize/mem_rw_conflict_optimize.cc \
     graph/optimize/summary_optimize.cc \
     graph/build/graph_builder.cc \
     graph/partition/engine_place.cc \
@@ -69,6 +71,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/resource_pair_remove_control_pass.cc \
     graph/passes/pass_utils.cc \
     graph/passes/base_pass.cc \
+    graph/passes/bitcast_pass.cc \
     graph/passes/constant_folding_pass.cc \
     graph/passes/aicpu_constant_folding_pass.cc \
     graph/passes/reshape_remove_pass.cc \
@@ -90,7 +93,10 @@ OMG_HOST_SRC_FILES := \
     graph/passes/print_op_pass.cc \
     graph/passes/no_use_reshape_remove_pass.cc \
     graph/passes/iterator_op_pass.cc \
+    graph/passes/input_output_connection_identify_pass.cc \
     graph/passes/atomic_addr_clean_pass.cc \
+    graph/passes/mark_same_addr_pass.cc \
+    graph/passes/mark_graph_unknown_status_pass.cc \
     graph/common/omg_util.cc \
     graph/common/bcast.cc \
     graph/passes/dimension_compute_pass.cc \
@@ -105,6 +111,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/isolated_op_remove_pass.cc \
     graph/passes/permute_pass.cc \
     graph/passes/ctrl_edge_transfer_pass.cc \
+    graph/passes/end_of_sequence_add_control_pass.cc \
     host_kernels/broadcast_gradient_args_kernel.cc \
     host_kernels/greater_kernel.cc \
     host_kernels/gather_v2_kernel.cc  \
@@ -145,6 +152,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/stop_gradient_pass.cc \
     graph/passes/prevent_gradient_pass.cc \
     graph/passes/identity_pass.cc \
+    graph/passes/ref_identity_delete_op_pass.cc \
     graph/passes/placeholder_with_default_pass.cc \
     graph/passes/snapshot_pass.cc \
     graph/passes/guarantee_const_pass.cc \
@@ -153,7 +161,9 @@ OMG_HOST_SRC_FILES := \
     graph/passes/folding_pass.cc \
     graph/passes/cast_translate_pass.cc \
     graph/passes/prune_pass.cc \
-    graph/passes/switch_op_pass.cc \
+    graph/passes/merge_to_stream_merge_pass.cc \
+    graph/passes/switch_to_stream_switch_pass.cc \
+    graph/passes/attach_stream_label_pass.cc \
     graph/passes/multi_batch_pass.cc \
     graph/passes/next_iteration_pass.cc \
     graph/passes/control_trigger_pass.cc \
@@ -173,7 +183,6 @@ OMG_HOST_SRC_FILES := \
     graph/passes/variable_op_pass.cc \
     graph/passes/cast_remove_pass.cc \
     graph/passes/transpose_transdata_pass.cc \
-    graph/passes/identify_reference_pass.cc \
     graph/passes/hccl_memcpy_pass.cc \
     graph/passes/flow_ctrl_pass.cc \
     graph/passes/link_gen_mask_nodes_pass.cc \
@@ -181,6 +190,8 @@ OMG_HOST_SRC_FILES := \
     graph/passes/hccl_group_pass.cc \
     graph/passes/switch_fusion_pass.cc \
     graph/passes/switch_split_pass.cc \
+    graph/passes/memcpy_addr_async_pass.cc \
+    graph/passes/set_input_output_offset_pass.cc \
 
 OMG_DEVICE_SRC_FILES := $(OMG_HOST_SRC_FILES)
 
@@ -199,7 +210,7 @@ OME_HOST_SRC_FILES := \
     graph/load/new_model_manager/tbe_handle_store.cc                     \
     graph/load/new_model_manager/cpu_queue_schedule.cc                   \
     graph/load/new_model_manager/zero_copy_task.cc                       \
-    graph/load/output/output.cc                                          \
+    graph/load/new_model_manager/zero_copy_offset.cc                     \
     graph/load/new_model_manager/data_dumper.cc                          \
     graph/load/new_model_manager/task_info/task_info.cc                  \
     graph/load/new_model_manager/task_info/event_record_task_info.cc     \
@@ -224,6 +235,7 @@ OME_HOST_SRC_FILES := \
     single_op/task/build_task_utils.cc                                   \
     single_op/task/tbe_task_builder.cc                                   \
     single_op/task/aicpu_task_builder.cc                                 \
+    single_op/task/aicpu_kernel_task_builder.cc                          \
     single_op/single_op.cc                                               \
     single_op/single_op_model.cc                                         \
     single_op/stream_resource.cc                                         \
@@ -368,7 +380,7 @@ endif
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 
-LOCAL_SRC_FILES := ../../out/atc/lib64/stub/ge_ir_build.cc
+LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_ir_build.cc
 
 
 LOCAL_SHARED_LIBRARIES :=

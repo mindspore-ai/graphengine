@@ -264,7 +264,7 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
       GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", out_data_node->GetName().c_str());
       return FAILED;
     }
-    AddNodeDeleted(out_data_node.get());
+    AddNodeDeleted(out_data_node);
   }
 
   return SUCCESS;

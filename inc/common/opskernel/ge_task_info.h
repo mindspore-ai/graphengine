@@ -52,5 +52,23 @@ struct GETaskInfo {
 
   std::vector<GETaskKernelHcclInfo> kernelHcclInfo;
 };
+
+struct HcomOpertion {
+  std::string hcclType;
+  void *inputPtr;
+  void *outputPtr;
+  uint64_t count;
+  int32_t dataType;
+  int32_t opType;
+  int32_t root;
+};
+
+struct HcomRemoteAccessAddrInfo {
+  uint32_t remotetRankID;
+  uint64_t remoteAddr;  // host embedding table address
+  uint64_t localAddr;   // device HBM address
+  uint64_t length;      // memory Length in Bytes
+};
+
 }  // namespace ge
 #endif  // INC_COMMON_OPSKERNEL_GE_TASK_INFO_H_

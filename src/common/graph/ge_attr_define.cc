@@ -158,6 +158,10 @@ const std::string ATTR_NAME_AUTOMIC_ADD_MEM_SIZE = "automic_add_mem_size";
 const std::string ATTR_NAME_DYNAMIC_OUTPUT_DIMS = "_dynamic_output_dims";
 const std::string ATTR_NAME_INPUT_ORIGIN_SIZE = "input_origin_size";
 
+// Identify node connecting to input and output
+const std::string ATTR_NAME_NODE_CONNECT_INPUT = "_is_connected_to_data";
+const std::string ATTR_NAME_NODE_CONNECT_OUTPUT = "_is_connected_to_netoutput";
+
 // To be deleted
 const std::string ATTR_TO_BE_DELETED = "to_be_deleted";
 const std::string PERMUTE_RESHAPE_FUSION = "permute_reshape_fusion";
@@ -725,6 +729,10 @@ const std::string ATTR_MODEL_TASK_INDEX_OP_NAME = "task_index_op_name";
 
 const std::string ATTR_MODEL_CORE_TYPE = "core_type";
 
+const std::string ATTR_MODEL_ATC_VERSION = "atc_version";
+
+const std::string ATTR_MODEL_OPP_VERSION = "opp_version";
+
 // Public attribute
 const std::string ATTR_NAME_IMPLY_TYPE = "imply_type";
 
@@ -901,6 +909,7 @@ const std::string ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE = "is_end_of_inputmem_l
 const std::string ATTR_NAME_PRED_VALUE = "_pred_value";
 const std::string ATTR_NAME_BATCH_NUM = "_batch_num";
 const std::string ATTR_NAME_BATCH_LABEL = "_batch_label";
+const std::string ATTR_NAME_COMBINED_BATCH = "_combined_batch";
 
 // Control flow
 const std::string ATTR_NAME_STREAM_SWITCH_COND = "switch_condition";
@@ -910,6 +919,7 @@ const std::string ATTR_NAME_SWITCHN_PRED_VALUE = "switch_pred_value";
 const std::string ATTR_NAME_ITERATORS_PER_LOOP = "iterations_per_loop";
 const std::string ATTR_NAME_FLOW_CTRL_NODE_FLAG = "is_flow_ctrl_node";
 const std::string ATTR_NAME_SUBGRAPH_FIRST_ACTIVE = "subgraph_first_active";
+const std::string ATTR_NAME_COMBINED_DYNAMIC_DIMS = "combined_dynamic_dims";
 
 const std::string ATTR_NAME_SWITCH_BRANCH_NODE_LABEL = "_switch_branch_node_label";
 const std::string ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG = "_switch_true_branch_flag";
@@ -934,7 +944,7 @@ const std::string ATTR_NAME_MEMORY_TYPE_WORKSPACE = "memory_type_workspace";
 
 const std::string MODEL_ATTR_SESSION_ID = "session_id";
 
-// l1 fusion and other fusion in future
+// lx fusion
 const std::string ATTR_NAME_L1_FUSION_GROUP_ID = "_l1_fusion_group_id";
 const std::string ATTR_NAME_FUSION_GROUP_KEY = "_fusion_group_key";
 const std::string ATTR_NAME_L1_FUSION_GROUP_KEY = "_l1_fusion_group_key";
@@ -948,9 +958,17 @@ const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_L1_FUSION = "_output_offset_for_l1
 const std::string ATTR_NAME_SWITCH_FOR_L1_FUSION = "_enable_l1_fusion";
 const std::string ATTR_N_BATCH_SPILT = "_is_n_batch_split";
 const std::string ATTR_NO_TASK_AND_DUMP_NEEDED = "_no_task_and_dump_needed";
+const std::string ATTR_DATA_DUMP_REF = "_datadump_ref";
 const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_BUFFER_FUSION = "_output_offset_for_buffer_fusion";
 const std::string ATTR_NAME_L2_FUSION_GROUP_ID = "_l2_fusion_group_id";
 const std::string ATTR_NAME_SWITCH_FOR_L2_FUSION = "_enable_l2_fusion";
+const std::string ATTR_NAME_OP_INPUT_L1_FLAG = "_op_input_l1_flag";
+const std::string ATTR_NAME_OP_INPUT_L1_ADDR = "_op_input_l1_addr";
+const std::string ATTR_NAME_OP_INPUT_L1_VALID_SIZE = "_op_input_l1_valid_size";
+
+// Op debug attrs
+const std::string ATTR_OP_DEBUG_FLAG = "_op_debug_flag";
+const std::string ATTR_OP_DEBUG_MODE = "_op_debug_mode";
 
 // Atomic addr clean attrs
 const std::string ATOMIC_ATTR_INPUT_INDEX = "atomic_input_index";
@@ -970,6 +988,8 @@ const std::string ATTR_NEED_COMPILE = "_node_need_compile";
 const std::string ATTR_INSERT_BY_MBATCH = "mbatch-inserted-node";
 
 const std::string ATTR_MBATCH_ORIGIN_INPUT_DIMS = "_mbatch_origin_input_dims";
+
+const std::string ATTR_DYNAMIC_TYPE = "mbatch_dynamic_type";
 
 // For inserted op
 const std::string ATTR_INSERTED_BY_GE = "_inserted_by_ge";
@@ -1009,10 +1029,38 @@ const std::string ATTR_NAME_VALID_OUTPUT_SHAPE_LIST_LIST = "_valid_output_shape_
 const std::string ATTR_NAME_SLICE_INPUT_OFFSET_LIST_LIST = "_input_offset_list_list";
 const std::string ATTR_NAME_SLICE_OUTPUT_OFFSET_LIST_LIST = "_output_offset_list_list";
 
+// for unregistered op
+const std::string ATTR_NAME_UNREGST_OPPATH = "_unregst_oppath";
+const std::string ATTR_NAME_UNREGST_ATTRLIST = "_unregst_attrlist";
+
 // used for Horovod
 const std::string ATTR_INTER_EVENT_IDENTIFY = "event_id";
 const std::string ATTR_HOROVOD_ATTR_REDUCE_TYPE = "reduce_op";
 // used for allreduce tailing optimization
 const std::string ATTR_NAME_HCCL_FUSED_GROUP = "_hccl_fused_group";
 const std::string ATTR_NAME_HCCL_FUSED_FLAG = "_hccl_fused_node";
+
+// dynamic shape attr
+const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR = "_alloc_fixed_addr";
+const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX = "_alloc_fixed_addr_index";
+
+// atc user def dtype&format
+const std::string ATTR_ATC_USER_DEFINE_DATATYPE = "_user_defined_data_type";
+const std::string ATTR_ATC_USER_DEFINE_FORMAT = "_user_defined_format";
+
+// for fusion op plugin
+const std::string ATTR_NAME_FUSIONOP_ORIGINAL_TYPE = "_fusionop_original_type";
+
+// graph partition for aicpu
+const std::string ATTR_NAME_PLD_FRONT_NODE_ENGINE_NAME = "pld_front_node_engine_name";
+const std::string ATTR_NAME_END_REAR_NODE_ENGINE_NAME = "end_rear_node_engine_name";
+
+// input and output memory type
+const std::string ATTR_VARIABLE_PLACEMENT = "_variable_placement";
+const std::string ATTR_INPUT_MEMORY_TYPE = "_input_memory_type";
+const std::string ATTR_OUTPUT_MEMORY_TYPE = "_output_memory_type";
+
+// input_output_offset
+const std::string ATTR_ZERO_COPY_BASIC_OFFSET = "_zero_copy_basic_offset";
+const std::string ATTR_ZERO_COPY_RELATIVE_OFFSET = "_zero_copy_relative_offset";
 }  // namespace ge

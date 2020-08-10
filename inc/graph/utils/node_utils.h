@@ -63,6 +63,9 @@ class NodeUtils {
   static void UnlinkAll(const Node &node);
   static graphStatus UpdatePeerNodeInputDesc(const NodePtr &node_ptr);
 
+  static graphStatus AppendInputAnchor(const NodePtr &node, uint32_t index);
+  static graphStatus RemoveInputAnchor(const NodePtr &node, uint32_t index);
+
   static bool IsInNodesEmpty(const Node &node);
   static GeTensorDesc GetOutputDesc(const Node &node, uint32_t index);
   static GeTensorDesc GetInputDesc(const Node &node, uint32_t index);
@@ -100,6 +103,13 @@ class NodeUtils {
   static NodePtr GetParentInput(const NodePtr &node);
 
   ///
+  /// @brief Check is varying_input for while node
+  /// @param [in] node: Data node for subgraph
+  /// @return bool
+  ///
+  static bool IsWhileVaryingInput(const ge::NodePtr &node);
+
+  ///
   /// @brief Get subgraph input is constant.
   /// @param [in] node
   /// @param [out] string
@@ -113,6 +123,24 @@ class NodeUtils {
   /// @return return GRAPH_SUCCESS if remove successfully, other for failed.
   ///
   static graphStatus RemoveSubgraphsOnNode(const NodePtr &node);
+
+  ///
+  /// @brief Get subgraph input data node by index.
+  /// @param [in] node
+  /// @return Node
+  ///
+  static vector<NodePtr> GetSubgraphDataNodesByIndex(const Node &node, int index);
+
+  ///
+  /// @brief Get subgraph input data node by index.
+  /// @param [in] node
+  /// @return Node
+  ///
+  static vector<NodePtr> GetSubgraphOutputNodes(const Node &node);
+
+  static NodePtr GetInDataNodeByIndex(const Node &node, int index);
+
+  static vector<NodePtr> GetOutDataNodesByIndex(const Node &node, int index);
 
  private:
   static std::map<NodePtr, std::vector<uint32_t>> map_send_info_;

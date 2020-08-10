@@ -17,12 +17,6 @@
 #ifndef GE_GRAPH_PASSES_NEXT_ITERATION_PASS_H_
 #define GE_GRAPH_PASSES_NEXT_ITERATION_PASS_H_
 
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <vector>
-
 #include "inc/graph_pass.h"
 
 struct LoopCondGroup {
@@ -37,15 +31,64 @@ namespace ge {
 class NextIterationPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
+
+  ///
+  /// @brief Clear Status, used for subgraph pass
+  /// @return SUCCESS
+  ///
   Status ClearStatus() override;
 
  private:
-  Status HandleEnterNode(const NodePtr &enter_node);
+  ///
+  /// @brief Group Enter node
+  /// @param [in] enter_node
+  /// @return Status
+  ///
+  Status GroupEnterNode(const NodePtr &enter_node);
+
+  ///
+  /// @brief Find while groups
+  /// @return Status
+  ///
   Status FindWhileGroups();
+
+  ///
+  /// @brief Verify if valid
+  /// @return bool
+  ///
   bool VerifyWhileGroup();
+
+  ///
+  /// @brief Handle while group
+  /// @param [in] graph
+  /// @return Status
+  ///
   Status HandleWhileGroup(ComputeGraphPtr &graph);
+
+  ///
+  /// @brief Create Active Node
+  /// @param [in] graph
+  /// @param [in] name
+  /// @return ge::NodePtr
+  ///
   NodePtr CreateActiveNode(ComputeGraphPtr &graph, const std::string &name);
+
+  ///
+  /// @brief Break NextIteration Link & add name to merge attr
+  /// @param [in] next_node
+  /// @param [in] merge_node
+  /// @return Status
+  ///
   Status BreakNextIteration(const NodePtr &next_node, NodePtr &merge_node);
+
+  ///
+  /// @brief find target node
+  /// @param [in] node
+  /// @param [in] target_type
+  /// @param [in] is_input
+  /// @param [out] target_node
+  /// @return Status
+  ///
   Status FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input, NodePtr &target_node);
 
   // map<frame_name, LoopCondGroup>

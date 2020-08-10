@@ -50,9 +50,11 @@ class SingleOpModel {
 
   Status Init();
   Status BuildOp(StreamResource &resource, SingleOp &single_op);
+  Status BuildDynamicOp(DynamicSingleOp &single_op);
 
  private:
   Status InitModel();
+  Status LoadAllNodes();
   Status ParseInputsAndOutputs();
   Status SetInputsAndOutputs(SingleOp &single_op);
 
@@ -62,8 +64,10 @@ class SingleOpModel {
   void ParseOutputNode(const OpDescPtr &op_desc);
 
   Status BuildTaskList(SingleOp &single_op);
-  Status BuildKernelTask(const domi::KernelDef &kernel_def, SingleOp &single_op, OpTask **task);
+  Status BuildTaskListForDynamicOp(DynamicSingleOp &dynamic_single_op);
+  Status BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTask **task);
   Status BuildKernelExTask(const domi::KernelExDef &kernel_def, SingleOp &single_op, OpTask **task);
+  Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(TbeOpTask *task, SingleOp &op);
@@ -74,13 +78,15 @@ class SingleOpModel {
 
   ModelHelper model_helper_;
 
-  map<uint32_t, OpDescPtr> op_list_;
+  map<uint32_t, NodePtr> op_list_;
   SingleOpModelParam model_params_;
 
   std::vector<ptrdiff_t> input_offset_list_;
   std::vector<size_t> input_sizes_;
   std::vector<ptrdiff_t> output_offset_list_;
   std::vector<size_t> output_sizes_;
+  std::vector<OpDescPtr> data_ops_;
+  OpDescPtr netoutput_op_;
 };
 }  // namespace ge
 

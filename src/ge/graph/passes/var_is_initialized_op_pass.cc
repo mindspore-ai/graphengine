@@ -191,7 +191,7 @@ Status VarIsInitializedOpPass::ChangeNodeToConstant(NodePtr &node, bool inited) 
 
   AddRePassNodesWithInOut(const_node);
   // delete VarIsInitializedOp node from the graph
-  AddNodeDeleted(node.get());
+  AddNodeDeleted(node);
   return SUCCESS;
 }
 

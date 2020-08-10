@@ -23,7 +23,6 @@
 
 namespace ge {
 namespace hybrid {
-
 class RefInputTask : public NodeTask {
  public:
   explicit RefInputTask(const NodePtr &node) : node_name_(node->GetName()), node_type_(node->GetType()) {}
@@ -66,6 +65,18 @@ class DependInputShapeTask : public NodeTask {
 
   // ops depend input shape
   static const std::unordered_set<std::string> depend_input_shape_ops_;
+};
+
+class ConstantNodeTask : public NodeTask {
+ public:
+  explicit ConstantNodeTask(const TensorValue *tensor);
+  ~ConstantNodeTask() = default;
+  Status UpdateArgs(TaskContext &context) override;
+
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+
+ private:
+  const TensorValue *tensor_;
 };
 
 class GeLocalNodeExecutor : public NodeExecutor {

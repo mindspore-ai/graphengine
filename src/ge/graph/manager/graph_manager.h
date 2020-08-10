@@ -102,6 +102,9 @@ class GraphManager {
   ge::Status BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs, GeRootModelPtr &models,
                         uint64_t session_id = 0, bool async = false);
 
+  Status BuildGraphForUnregisteredOp(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
+                                     GeRootModelPtr &ge_root_model, uint64_t session_id);
+
   ///
   /// @ingroup ge_graph
   /// @brief Save extra attribute to Model
@@ -327,6 +330,6 @@ class GraphManager {
 
   std::mutex run_mutex_;
 };
-};  // namespace ge
+}  // namespace ge
 
 #endif  // GE_GRAPH_MANAGER_GRAPH_MANAGER_H_

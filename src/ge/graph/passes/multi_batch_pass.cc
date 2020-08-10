@@ -29,10 +29,13 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
+using std::string;
+using std::vector;
+
 namespace ge {
 Status MultiBatchPass::Run(ComputeGraphPtr graph) {
   GELOGD("MultiBatchPass Enter");
-  GE_CHECK_NOTNULL(graph);
+
   if (graph->GetParentGraph() != nullptr) {
     GELOGI("Subgraph %s skip the MultiBatchPass.", graph->GetName().c_str());
     return SUCCESS;
@@ -44,26 +47,32 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
     return SUCCESS;
   }
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "FindPredValue fail.");
+    GELOGE(FAILED, "FindPredValue failed.");
+    return FAILED;
+  }
+
+  if (GetDynamicType() != SUCCESS) {
+    GELOGE(FAILED, "Get dynamic type failed.");
     return FAILED;
   }
 
   std::vector<std::vector<int64_t>> batch_shape;
-  if (!CheckSwitchN(batch_shape)) {
-    GELOGE(FAILED, "CheckSwitchN fail.");
+  vector<vector<int64_t>> combined_batch;
+  if (!CheckSwitchN(batch_shape, combined_batch)) {
+    GELOGE(FAILED, "CheckSwitchN failed.");
     return FAILED;
   }
 
   FindSwitchOutNodes(batch_shape.size());
 
-  if (ReplaceSwitchN(graph, pred_value, batch_shape) != SUCCESS) {
-    GELOGE(FAILED, "Replace SwitchN nodes fail.");
+  if (ReplaceSwitchN(graph, pred_value, batch_shape, combined_batch) != SUCCESS) {
+    GELOGE(FAILED, "Replace SwitchN nodes failed.");
     return FAILED;
   }
 
-  for (NodePtr &node : bypass_nodes_) {
-    if (graph->RemoveNode(node) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Remove SwitchN nodes %s fail.", node->GetName().c_str());
+  for (const NodePtr &node : bypass_nodes_) {
+    if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "Remove SwitchN nodes %s failed.", node->GetName().c_str());
       return FAILED;
     }
   }
@@ -79,19 +88,19 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
 /// @return Status
 ///
 Status MultiBatchPass::FindPredValue(const ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value) {
-  for (NodePtr &node : graph->GetDirectNode()) {
+  for (const NodePtr &node : graph->GetDirectNode()) {
     if (node->GetType() != SWITCHN) {
       continue;
     }
 
     InDataAnchorPtr in_data_anchor = node->GetInDataAnchor(SWITCH_PRED_INPUT);
     if (in_data_anchor == nullptr) {
-      GELOGE(FAILED, "FindPredInput fail, in_data_anchor is null, node:%s.", node->GetName().c_str());
+      GELOGE(FAILED, "FindPredInput failed, in_data_anchor is null, node:%s.", node->GetName().c_str());
       return FAILED;
     }
     OutDataAnchorPtr pred_input = in_data_anchor->GetPeerOutAnchor();
     if (pred_input == nullptr) {
-      GELOGE(FAILED, "FindPredInput fail, pred_input is null, node:%s.", node->GetName().c_str());
+      GELOGE(FAILED, "FindPredInput failed, pred_input is null, node:%s.", node->GetName().c_str());
       return FAILED;
     }
 
@@ -110,7 +119,7 @@ Status MultiBatchPass::FindPredValue(const ComputeGraphPtr &graph, OutDataAnchor
   }
 
   if (pred_value == nullptr) {
-    GELOGE(FAILED, "FindPredInput fail, pred_value is null.");
+    GELOGE(FAILED, "FindPredInput failed, pred_value is null.");
     return FAILED;
   }
 
@@ -119,14 +128,47 @@ Status MultiBatchPass::FindPredValue(const ComputeGraphPtr &graph, OutDataAnchor
 }
 
 ///
+/// @brief Get dynamic type: dynamic batch size: 1, dynamic image size: 2, dynamic dims: 3
+/// @return Status
+///
+Status MultiBatchPass::GetDynamicType() {
+  for (const auto &switchn : switch_n_nodes_) {
+    auto switchn_desc = switchn->GetOpDesc();
+    GE_CHECK_NOTNULL(switchn_desc);
+    int32_t dynamic_type = static_cast<int32_t>(FIXED);
+    if (!AttrUtils::GetInt(switchn_desc, ATTR_DYNAMIC_TYPE, dynamic_type)) {
+      GELOGE(FAILED, "Get attr ATTR_DYNAMIC_TYPE of node: %s failed.", switchn->GetName().c_str());
+      return FAILED;
+    }
+    if (dynamic_type == static_cast<int32_t>(FIXED)) {
+      GELOGE(FAILED, "Attr ATTR_DYNAMIC_TYPE shouldn't be 0.");
+      return FAILED;
+    }
+    if (dynamic_type_ != static_cast<int32_t>(FIXED) && dynamic_type_ != dynamic_type) {
+      GELOGE(FAILED, "Attr ATTR_DYNAMIC_TYPE of all switchn node should be same, while one is %d and another is %d.",
+             dynamic_type, dynamic_type_);
+      return FAILED;
+    }
+    dynamic_type_ = dynamic_type;
+  }
+  if (dynamic_type_ == static_cast<int32_t>(FIXED)) {
+    GELOGE(FAILED, "Attr ATTR_DYNAMIC_TYPE shouldn't be 0.");
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+///
 /// @brief Check SwitchN nodes
 /// @param [out] batch_shape
+/// @param [out] combined_batch
 /// @return bool
 ///
-bool MultiBatchPass::CheckSwitchN(std::vector<std::vector<int64_t>> &batch_shape) {
+bool MultiBatchPass::CheckSwitchN(vector<vector<int64_t>> &batch_shape, vector<vector<int64_t>> &combined_batch) {
   // Check if output_num of different SwitchN is same
   uint32_t batch_num = 0;
-  for (NodePtr &node : switch_n_nodes_) {
+  for (const NodePtr &node : switch_n_nodes_) {
     uint32_t tmp_num = node->GetAllOutDataAnchorsSize();
     if (batch_num == 0) {
       batch_num = tmp_num;
@@ -136,45 +178,79 @@ bool MultiBatchPass::CheckSwitchN(std::vector<std::vector<int64_t>> &batch_shape
     }
   }
 
-  // Check if output_shape of different SwitchN is same
-  std::vector<std::vector<int64_t>> idx_batch_shape;
-  for (uint32_t i = 0; i < batch_num; i++) {
-    idx_batch_shape.clear();
-    for (NodePtr &node : switch_n_nodes_) {
-      std::vector<int64_t> output_dims;
-      OpDescPtr op_desc = node->GetOpDesc();
-      if (op_desc == nullptr) {
-        GELOGE(FAILED, "CheckDims fail, get op_desc fail, node: %s.", node->GetName().c_str());
-        return false;
-      }
-      if (!AttrUtils::GetListInt(op_desc->GetOutputDesc(i), ATTR_NAME_SWITCHN_PRED_VALUE, output_dims)) {
-        GELOGE(FAILED, "CheckDims fail, get attr ATTR_NAME_SWITCHN_PRED_VALUE fail, batch_index=%u.", i);
-        return false;
-      }
-      idx_batch_shape.emplace_back(output_dims);
-    }
-    if (!CheckDims(idx_batch_shape)) {
-      GELOGE(FAILED, "CheckDims fail, batch_index=%u.", i);
-      return false;
-    }
-
-    batch_shape.emplace_back(idx_batch_shape[0]);
+  if (!GetBatchInfo(batch_num, batch_shape, combined_batch)) {
+    GELOGE(FAILED, "Get batch info failed.");
+    return false;
   }
 
-  // Check if dim_num of different batch is same
   if (batch_shape.empty()) {
     GELOGE(FAILED, "batch_shape is empty.");
     return false;
   }
-  uint32_t dim_num = batch_shape[0].size();
+  if (combined_batch.empty()) {
+    GELOGE(FAILED, "combined_batch is empty.");
+    return false;
+  }
+  size_t dim_num = batch_shape[0].size();
+  size_t combined_dim_num = combined_batch[0].size();
   for (uint32_t i = 1; i < batch_num; i++) {
-    uint32_t tmp_dim_num = batch_shape[i].size();
+    size_t tmp_dim_num = batch_shape[i].size();
     if (dim_num != tmp_dim_num) {
-      GELOGE(FAILED, "dim_num not equal, batch_0:%u, batch_%u:%u.", dim_num, i, tmp_dim_num);
+      GELOGE(FAILED, "Dim num of batch_shape not equal, batch_0:%zu, batch_%u:%zu.", dim_num, i, tmp_dim_num);
+      return false;
+    }
+    size_t tmp_combined_dim_num = combined_batch[i].size();
+    if (combined_dim_num != tmp_combined_dim_num) {
+      GELOGE(FAILED, "Dim num of combined_batch not equal, batch_0:%zu, batch_%u:%zu.", dim_num, i, tmp_dim_num);
       return false;
     }
   }
 
+  return true;
+}
+
+///
+/// @brief Check SwitchN nodes
+/// @param [in] batch_num
+/// @param [out] batch_shape
+/// @param [out] combined_batch
+/// @return bool
+///
+bool MultiBatchPass::GetBatchInfo(uint32_t batch_num, vector<vector<int64_t>> &batch_shape,
+                                  vector<vector<int64_t>> &combined_batch) {
+  // Check if output_shape of different SwitchN is same
+  vector<vector<int64_t>> idx_batch_shape;
+  vector<vector<int64_t>> idx_combined_batch;
+  for (uint32_t i = 0; i < batch_num; i++) {
+    idx_batch_shape.clear();
+    idx_combined_batch.clear();
+    for (const NodePtr &node : switch_n_nodes_) {
+      OpDescPtr op_desc = node->GetOpDesc();
+      if (op_desc == nullptr) {
+        GELOGE(FAILED, "CheckDims failed, get op_desc failed, node: %s.", node->GetName().c_str());
+        return false;
+      }
+      vector<int64_t> output_dims;
+      if (!AttrUtils::GetListInt(op_desc->GetOutputDesc(i), ATTR_NAME_SWITCHN_PRED_VALUE, output_dims)) {
+        GELOGE(FAILED, "CheckDims failed, get attr ATTR_NAME_SWITCHN_PRED_VALUE failed, batch_index=%u.", i);
+        return false;
+      }
+      idx_batch_shape.emplace_back(output_dims);
+      output_dims.clear();
+      if (!AttrUtils::GetListInt(op_desc->GetOutputDesc(i), ATTR_NAME_COMBINED_DYNAMIC_DIMS, output_dims)) {
+        GELOGE(FAILED, "CheckDims failed, get attr ATTR_NAME_COMBINED_DYNAMIC_DIMS failed, batch_index=%u.", i);
+        return false;
+      }
+      idx_combined_batch.emplace_back(output_dims);
+    }
+    if (!CheckDims(idx_batch_shape)) {
+      GELOGE(FAILED, "CheckDims failed, batch_index=%u.", i);
+      return false;
+    }
+
+    batch_shape.emplace_back(idx_batch_shape[0]);
+    combined_batch.emplace_back(idx_combined_batch[0]);
+  }
   return true;
 }
 
@@ -187,11 +263,11 @@ void MultiBatchPass::FindSwitchOutNodes(uint32_t batch_num) {
   std::vector<NodePtr> output_nodes;
   for (uint32_t i = 0; i < batch_num; i++) {
     output_nodes.clear();
-    for (NodePtr &node : switch_n_nodes_) {
+    for (const NodePtr &node : switch_n_nodes_) {
       // idx is promised to be valid
       OutDataAnchorPtr out_data_anchor = node->GetOutDataAnchor(i);
       GE_CHECK_NOTNULL_JUST_RETURN(out_data_anchor);
-      for (InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+      for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
         output_nodes.emplace_back(peer_in_anchor->GetOwnerNode());
       }
     }
@@ -206,35 +282,37 @@ void MultiBatchPass::FindSwitchOutNodes(uint32_t batch_num) {
 /// @param [in] graph
 /// @param [in] pred_value
 /// @param [in] batch_shape
+/// @param [in] combined_batch
 /// @return Status
 ///
-Status MultiBatchPass::ReplaceSwitchN(ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value,
-                                      const std::vector<std::vector<int64_t>> &batch_shape) {
+Status MultiBatchPass::ReplaceSwitchN(const ComputeGraphPtr &graph, const OutDataAnchorPtr &pred_value,
+                                      const vector<vector<int64_t>> &batch_shape,
+                                      const vector<vector<int64_t>> &combined_batch) {
   NodePtr pred_value_node = pred_value->GetOwnerNode();
   // Create SwitchCase node
-  const std::string switch_case_name = pred_value_node->GetName() + "_" + STREAMSWITCHN;
-  NodePtr switch_case = CreateSwitchCaseNode(graph, switch_case_name, pred_value, batch_shape);
+  const std::string &switch_case_name = pred_value_node->GetName() + "_" + STREAMSWITCHN;
+  NodePtr switch_case = CreateSwitchCaseNode(graph, switch_case_name, pred_value, batch_shape, combined_batch);
   if (switch_case == nullptr) {
-    GELOGE(FAILED, "CreateSwitchCaseNode %s fail.", switch_case_name.c_str());
+    GELOGE(FAILED, "CreateSwitchCaseNode %s failed.", switch_case_name.c_str());
     return FAILED;
   }
 
-  for (NodePtr &switch_n_node : switch_n_nodes_) {
+  for (const NodePtr &switch_n_node : switch_n_nodes_) {
     if (BypassSwitchN(switch_n_node, switch_case) != SUCCESS) {
-      GELOGE(FAILED, "Bypass SwitchN %s fail.", switch_case_name.c_str());
+      GELOGE(FAILED, "Bypass SwitchN %s failed.", switch_case_name.c_str());
       return FAILED;
     }
   }
 
   // Add switchCase input edge
   if (GraphUtils::AddEdge(pred_value, switch_case->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Add SwitchCase in_data_edge fail, %s->%s.", pred_value_node->GetName().c_str(),
+    GELOGE(FAILED, "Add SwitchCase in_data_edge failed, %s->%s.", pred_value_node->GetName().c_str(),
            switch_case->GetName().c_str());
     return FAILED;
   }
 
   if (AttachLabel(switch_case) != SUCCESS) {
-    GELOGE(FAILED, "AttachLabel fail.");
+    GELOGE(FAILED, "AttachLabel failed.");
     return FAILED;
   }
 
@@ -248,7 +326,7 @@ Status MultiBatchPass::ReplaceSwitchN(ComputeGraphPtr &graph, OutDataAnchorPtr &
 ///
 bool MultiBatchPass::CheckDims(const std::vector<std::vector<int64_t>> &output_shape) const {
   if (output_shape.empty()) {
-    GELOGE(FAILED, "CheckDims fail: output_shape is empty.");
+    GELOGE(FAILED, "CheckDims failed: output_shape is empty.");
     return false;
   }
 
@@ -257,7 +335,7 @@ bool MultiBatchPass::CheckDims(const std::vector<std::vector<int64_t>> &output_s
   for (size_t i = 1; i < num; i++) {
     size_t tmp_dim_num = output_shape[i].size();
     if (dim_num != tmp_dim_num) {
-      GELOGE(FAILED, "CheckDims fail: dim_num not equal, output_0:%zu, output_%zu:%zu.", dim_num, i, tmp_dim_num);
+      GELOGE(FAILED, "CheckDims failed: dim_num not equal, output_0:%zu, output_%zu:%zu.", dim_num, i, tmp_dim_num);
       return false;
     }
   }
@@ -271,7 +349,7 @@ bool MultiBatchPass::CheckDims(const std::vector<std::vector<int64_t>> &output_s
     for (size_t j = 1; j < num; j++) {
       int64_t tmp_dim_value = output_shape[j][i];
       if (dim_value != tmp_dim_value) {
-        GELOGE(FAILED, "CheckDims fail: dim_value not equal, dim_index=%zu, dim_value_0:%ld, dim_value_%zu:%ld.", i,
+        GELOGE(FAILED, "CheckDims failed: dim_value not equal, dim_index=%zu, dim_value_0:%ld, dim_value_%zu:%ld.", i,
                dim_value, j, tmp_dim_value);
         return false;
       }
@@ -287,43 +365,54 @@ bool MultiBatchPass::CheckDims(const std::vector<std::vector<int64_t>> &output_s
 /// @param [in] name
 /// @param [in] pred_value
 /// @param [in] batch_shape
+/// @param [in] combined_batch
 /// @return ge::NodePtr
 ///
-NodePtr MultiBatchPass::CreateSwitchCaseNode(ComputeGraphPtr &graph, const std::string &name,
+NodePtr MultiBatchPass::CreateSwitchCaseNode(const ComputeGraphPtr &graph, const std::string &name,
                                              const OutDataAnchorPtr &pred_value,
-                                             const std::vector<std::vector<int64_t>> &batch_shape) {
+                                             const vector<vector<int64_t>> &batch_shape,
+                                             const vector<vector<int64_t>> &combined_batch) {
   OpDescPtr op_desc = MakeShared<OpDesc>(name, STREAMSWITCHN);
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "Create op_desc fail, StreamSwitchN:%s.", name.c_str());
+    GELOGE(FAILED, "Create op_desc failed, StreamSwitchN:%s.", name.c_str());
     return nullptr;
   }
 
   GELOGI("Create StreamSwitchN op:%s.", name.c_str());
   OpDescPtr pred_desc = pred_value->GetOwnerNode()->GetOpDesc();
   if (pred_desc == nullptr) {
-    GELOGE(FAILED, "Get pred_desc fail, StreamSwitchN:%s.", name.c_str());
+    GELOGE(FAILED, "Get pred_desc failed, StreamSwitchN:%s.", name.c_str());
     return nullptr;
   }
   if (op_desc->AddInputDesc(pred_desc->GetOutputDesc(pred_value->GetIdx())) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "AddInputDesc fail, StreamSwitchN:%s.", name.c_str());
+    GELOGE(FAILED, "AddInputDesc failed, StreamSwitchN:%s.", name.c_str());
     return nullptr;
   }
 
   NodePtr switch_case_node = graph->AddNode(op_desc);
   if (switch_case_node == nullptr) {
-    GELOGE(FAILED, "Create node fail, StreamSwitchN:%s.", name.c_str());
+    GELOGE(FAILED, "Create node failed, StreamSwitchN:%s.", name.c_str());
     return nullptr;
   }
 
   uint32_t batch_num = static_cast<uint32_t>(batch_shape.size());
   if (!AttrUtils::SetInt(op_desc, ATTR_NAME_BATCH_NUM, batch_num)) {
-    GELOGE(FAILED, "set attr ATTR_NAME_BATCH_NUM fail, StreamSwitchN:%s.", name.c_str());
+    GELOGE(FAILED, "set attr ATTR_NAME_BATCH_NUM failed, StreamSwitchN:%s.", name.c_str());
+    return nullptr;
+  }
+  if (!AttrUtils::SetInt(op_desc, ATTR_DYNAMIC_TYPE, dynamic_type_)) {
+    GELOGE(FAILED, "Set attr ATTR_DYNAMIC_TYPE failed, StreamSwitchN:%s.", name.c_str());
     return nullptr;
   }
   for (uint32_t i = 0; i < batch_num; i++) {
-    const std::string attr_name = ATTR_NAME_PRED_VALUE + "_" + std::to_string(i);
+    const std::string &attr_name = ATTR_NAME_PRED_VALUE + "_" + std::to_string(i);
     if (!AttrUtils::SetListInt(op_desc, attr_name, batch_shape[i])) {
-      GELOGE(FAILED, "set attr ATTR_NAME_PRED_VALUE fail, StreamSwitchN:%s.", name.c_str());
+      GELOGE(FAILED, "set attr ATTR_NAME_PRED_VALUE failed, StreamSwitchN:%s.", name.c_str());
+      return nullptr;
+    }
+    const string &attr_combined_batch = ATTR_NAME_COMBINED_BATCH + "_" + std::to_string(i);
+    if (!AttrUtils::SetListInt(op_desc, attr_combined_batch, combined_batch[i])) {
+      GELOGE(FAILED, "set attr ATTR_NAME_COMBINED_BATCH failed, StreamSwitchN:%s.", name.c_str());
       return nullptr;
     }
   }
@@ -337,43 +426,43 @@ NodePtr MultiBatchPass::CreateSwitchCaseNode(ComputeGraphPtr &graph, const std::
 /// @param [in] switch_case
 /// @return Status
 ///
-Status MultiBatchPass::BypassSwitchN(NodePtr &switch_n_node, NodePtr &switch_case) {
+Status MultiBatchPass::BypassSwitchN(const NodePtr &switch_n_node, const NodePtr &switch_case) {
   InDataAnchorPtr in_data_anchor = switch_n_node->GetInDataAnchor(SWITCH_DATA_INPUT);
   if (in_data_anchor == nullptr) {
-    GELOGE(FAILED, "Check in_data_anchor fail, SwitchN:%s.", switch_n_node->GetName().c_str());
+    GELOGE(FAILED, "Check in_data_anchor failed, SwitchN:%s.", switch_n_node->GetName().c_str());
     return FAILED;
   }
   OutDataAnchorPtr peer_data_anchor = in_data_anchor->GetPeerOutAnchor();
   if (peer_data_anchor == nullptr) {
-    GELOGE(FAILED, "Check peer_data_anchor fail, SwitchN:%s.", switch_n_node->GetName().c_str());
+    GELOGE(FAILED, "Check peer_data_anchor failed, SwitchN:%s.", switch_n_node->GetName().c_str());
     return FAILED;
   }
   NodePtr data_input = peer_data_anchor->GetOwnerNode();
 
   // Remove SwitchN data input
   if (GraphUtils::RemoveEdge(peer_data_anchor, in_data_anchor) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Remove SwitchN in_data_edge fail, %s->%s.", data_input->GetName().c_str(),
+    GELOGE(FAILED, "Remove SwitchN in_data_edge failed, %s->%s.", data_input->GetName().c_str(),
            switch_n_node->GetName().c_str());
     return FAILED;
   }
   if (GraphUtils::AddEdge(data_input->GetOutControlAnchor(), switch_case->GetInControlAnchor()) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Add StreamSwitchN in_control_edge fail, %s->%s.", data_input->GetName().c_str(),
+    GELOGE(FAILED, "Add StreamSwitchN in_control_edge failed, %s->%s.", data_input->GetName().c_str(),
            switch_case->GetName().c_str());
     return FAILED;
   }
 
   // Add SwitchCase control output
-  for (OutDataAnchorPtr &out_data_anchor : switch_n_node->GetAllOutDataAnchors()) {
-    for (InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+  for (const OutDataAnchorPtr &out_data_anchor : switch_n_node->GetAllOutDataAnchors()) {
+    for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
       NodePtr data_output = peer_in_anchor->GetOwnerNode();
       if ((GraphUtils::RemoveEdge(out_data_anchor, peer_in_anchor) != GRAPH_SUCCESS) ||
           (GraphUtils::AddEdge(peer_data_anchor, peer_in_anchor) != GRAPH_SUCCESS)) {
-        GELOGE(FAILED, "Bypass SwitchN data_edge fail, %s->%s->%s.", data_input->GetName().c_str(),
+        GELOGE(FAILED, "Bypass SwitchN data_edge failed, %s->%s->%s.", data_input->GetName().c_str(),
                switch_n_node->GetName().c_str(), data_output->GetName().c_str());
         return FAILED;
       }
       if (GraphUtils::AddEdge(switch_case->GetOutControlAnchor(), data_output->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Add SwitchCase out_control_edge fail, %s->%s.", switch_case->GetName().c_str(),
+        GELOGE(FAILED, "Add SwitchCase out_control_edge failed, %s->%s.", switch_case->GetName().c_str(),
                data_output->GetName().c_str());
         return FAILED;
       }
@@ -390,17 +479,17 @@ Status MultiBatchPass::BypassSwitchN(NodePtr &switch_n_node, NodePtr &switch_cas
 /// @param [in] switch_case_node
 /// @return Status
 ///
-Status MultiBatchPass::AttachLabel(NodePtr &switch_case_node) {
+Status MultiBatchPass::AttachLabel(const NodePtr &switch_case_node) {
   std::vector<std::string> stream_label_list;
   for (uint32_t i = 0; i < static_cast<uint32_t>(batch_head_nodes_.size()); i++) {
     if (AttachBatchLabel(i) != SUCCESS) {
-      GELOGE(FAILED, "AttachBatchLabel fail, batch_idx=%u", i);
+      GELOGE(FAILED, "AttachBatchLabel failed, batch_idx=%u", i);
       return FAILED;
     }
 
-    const std::string stream_label = "stream_label_batch_" + std::to_string(i);
+    const std::string &stream_label = "stream_label_batch_" + std::to_string(i);
     if (AttachStreamLabel(i, stream_label) != SUCCESS) {
-      GELOGE(FAILED, "AttachStreamLabel fail, stream_label=%s", stream_label.c_str());
+      GELOGE(FAILED, "AttachStreamLabel failed, stream_label=%s", stream_label.c_str());
       return FAILED;
     }
     stream_label_list.emplace_back(stream_label);
@@ -416,11 +505,11 @@ Status MultiBatchPass::AttachLabel(NodePtr &switch_case_node) {
 ///
 Status MultiBatchPass::AttachBatchLabel(uint32_t batch_idx) {
   std::stack<NodePtr> nodes;
-  for (auto &node : batch_head_nodes_[batch_idx]) {
+  for (const auto &node : batch_head_nodes_[batch_idx]) {
     nodes.push(node);
   }
 
-  const std::string batch_label = "Batch_" + std::to_string(batch_idx);
+  const std::string &batch_label = "Batch_" + std::to_string(batch_idx);
   std::unordered_set<NodePtr> handled_nodes;
   while (!nodes.empty()) {
     NodePtr cur_node = nodes.top();
@@ -434,7 +523,7 @@ Status MultiBatchPass::AttachBatchLabel(uint32_t batch_idx) {
     if (cur_desc->HasAttr(ATTR_NAME_BATCH_LABEL)) {
       std::string tmp_label;
       if (!AttrUtils::GetStr(cur_desc, ATTR_NAME_BATCH_LABEL, tmp_label)) {
-        GELOGE(FAILED, "get attr ATTR_NAME_BATCH_LABEL fail, node: %s.", cur_desc->GetName().c_str());
+        GELOGE(FAILED, "get attr ATTR_NAME_BATCH_LABEL failed, node: %s.", cur_desc->GetName().c_str());
         return FAILED;
       }
       if (tmp_label != batch_label) {
@@ -445,14 +534,14 @@ Status MultiBatchPass::AttachBatchLabel(uint32_t batch_idx) {
     }
     GELOGD("Attach batch_label %s to node %s.", batch_label.c_str(), cur_desc->GetName().c_str());
     if (!AttrUtils::SetStr(cur_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
-      GELOGE(FAILED, "set attr ATTR_NAME_BATCH_LABEL fail, node:%s.", cur_desc->GetName().c_str());
+      GELOGE(FAILED, "set attr ATTR_NAME_BATCH_LABEL failed, node:%s.", cur_desc->GetName().c_str());
       return FAILED;
     }
 
-    for (auto &out_node : cur_node->GetOutAllNodes()) {
+    for (const auto &out_node : cur_node->GetOutAllNodes()) {
       OpDescPtr op_desc = out_node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
-      const std::string type = op_desc->GetType();
+      const std::string &type = op_desc->GetType();
       if ((type == MERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
         continue;
       }
@@ -476,7 +565,7 @@ Status MultiBatchPass::AttachBatchLabel(uint32_t batch_idx) {
 ///
 Status MultiBatchPass::AttachStreamLabel(uint32_t batch_idx, const std::string &stream_label) {
   std::stack<NodePtr> nodes;
-  for (auto &node : batch_head_nodes_[batch_idx]) {
+  for (const auto &node : batch_head_nodes_[batch_idx]) {
     nodes.push(node);
   }
 
@@ -493,11 +582,11 @@ Status MultiBatchPass::AttachStreamLabel(uint32_t batch_idx, const std::string &
 
     GELOGD("Attach stream_label %s to node %s.", stream_label.c_str(), cur_desc->GetName().c_str());
     if (SetStreamLabel(cur_node, stream_label) != SUCCESS) {
-      GELOGE(FAILED, "SetStreamLabel fail, node:%s.", cur_node->GetName().c_str());
+      GELOGE(FAILED, "Set stream_label failed, node:%s.", cur_node->GetName().c_str());
       return FAILED;
     }
 
-    for (auto &out_node : cur_node->GetOutAllNodes()) {
+    for (const auto &out_node : cur_node->GetOutAllNodes()) {
       nodes.push(out_node);
     }
 

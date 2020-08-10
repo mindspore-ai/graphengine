@@ -34,7 +34,6 @@ Status AiCoreTaskCompiler::DoCompileOp(OpsKernelInfoStore &ops_store, const Node
   GE_CHECK_NOTNULL(node);
   vector<NodePtr> node_vec;
   node_vec.emplace_back(node);
-  std::lock_guard<std::mutex> lk(mu_);
   GE_CHK_STATUS_RET(ops_store.CompileOpRun(node_vec), "Failed to execute CompileOp, node = %s",
                     node->GetName().c_str());
   GE_CHK_STATUS_RET(ops_store.CalcOpRunningParam(*node), "Failed to execute CalcOpRunningParam, node = %s",
@@ -44,9 +43,8 @@ Status AiCoreTaskCompiler::DoCompileOp(OpsKernelInfoStore &ops_store, const Node
 
 Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) const {
   GE_CHECK_NOTNULL(node);
-  GELOGI("AiCoreTaskCompiler[%s] CompileOp Start.", node->GetName().c_str());
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(aic_kernel_store_ == nullptr, return FAILED,
-                                 "Failed to get AiCore kernel store, node = %s", node->GetName().c_str());
+  GELOGI("AiCoreTaskCompiler(%s) CompileOp Start.", node->GetName().c_str());
+  GE_CHECK_NOTNULL(aic_kernel_store_);
 
   GE_CHK_STATUS_RET_NOLOG(DoCompileOp(*aic_kernel_store_, node));
   GELOGD("successfully compiled op: %s", node->GetName().c_str());
@@ -56,9 +54,11 @@ Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::Task
   std::vector<int64_t> output_offsets(op_desc->GetOutputsSize(), kMemBase);
   op_desc->SetInputOffset(input_offsets);
   op_desc->SetOutputOffset(output_offsets);
+  std::vector<int64_t> workspaces(op_desc->GetWorkspaceBytes().size(), kMemBase);
+  op_desc->SetWorkspace(std::move(workspaces));
   GE_CHK_STATUS_RET_NOLOG(DoGenerateTask(*aic_kernel_store_, *node, tasks));
   GELOGD("successfully generated task: %s", node->GetName().c_str());
-  GELOGI("AiCoreTaskCompiler[%s] CompileOp End.", node->GetName().c_str());
+  GELOGI("AiCoreTaskCompiler(%s) CompileOp End.", node->GetName().c_str());
   return SUCCESS;
 }
 
@@ -91,6 +91,5 @@ Status AiCoreTaskCompiler::DoGenerateTask(OpsKernelInfoStore &store, const Node 
   GE_CHK_RT(rtModelDestroy(rt_model_));
   return ret;
 }
-
 }  // namespace hybrid
 }  // namespace ge

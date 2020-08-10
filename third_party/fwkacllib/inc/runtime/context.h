@@ -39,6 +39,17 @@ typedef enum tagCtxMode {
   RT_CTX_GEN_MODE = 1,
 } rtCtxMode_t;
 
+typedef struct tagRtGroupInfo {
+  int32_t groupId;
+  int32_t flag;
+  uint32_t aicoreNum;
+  uint32_t aicpuNum;
+  uint32_t aivectorNum;
+  uint32_t sdmaNum;
+  uint32_t activeStreamNum;
+  void*  extrPtr;
+} rtGroupInfo_t;
+
 /**
  * @ingroup rt_context
  * @brief create context and associates it with the calling thread
@@ -115,17 +126,32 @@ RTS_API rtError_t rtGetPriCtxByDeviceId(int32_t device, rtContext_t *ctx);
 RTS_API rtError_t rtCtxGetDevice(int32_t *device);
 
 /**
- * @ingroup rt_context
- * @brief set ctx run  mode: normal or dryrun
- * @param [in] ctx: context
- * @param [in] enable: set true means enable dryrun mode
- * @param [in] flag: reserved
- * @return RT_ERROR_NONE for ok
+ * @ingroup
+ * @brief set group id
+ * @param [in] groupid
+ * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtCtxSetDryRun(rtContext_t ctx, rtDryRunFlag_t enable, uint32_t flag);
+RTS_API rtError_t rtSetGroup(int32_t groupId);
+
+/**
+ * @ingroup
+ * @brief get group info
+ * @param [in] groupid count
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtGetGroupInfo(int32_t groupId, rtGroupInfo_t* groupInfo, uint32_t count);
+
+/**
+ * @ingroup
+ * @brief get group count
+ * @param [in] groupid count
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtGetGroupCount(uint32_t *count);
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif  // __CCE_RUNTIME_CONTEXT_H__

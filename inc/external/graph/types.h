@@ -145,7 +145,8 @@ enum Format {
   FORMAT_FRACTAL_ZN_LSTM,
   FORMAT_FRACTAL_Z_G,
   FORMAT_RESERVED,
-  FORMAT_ALL
+  FORMAT_ALL,
+  FORMAT_NULL
 };
 
 // for unknown shape op type

@@ -28,6 +28,8 @@
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/utils/op_desc_utils.h"
+#include "graph/operator_factory_impl.h"
 
 using Json = nlohmann::json;
 using std::map;
@@ -43,10 +45,14 @@ constexpr char const *kKeyAttr = "attr";
 constexpr char const *kKeyName = "name";
 constexpr char const *kKeyType = "type";
 constexpr char const *kKeyShape = "shape";
+constexpr char const *kKeyShapeRange = "shape_range";
 constexpr char const *kKeyValue = "value";
 constexpr char const *kKeyFormat = "format";
 constexpr char const *kFileSuffix = ".om";
 constexpr int kDumpJsonIndent = 2;
+constexpr int kShapeRangePairSize = 2;
+constexpr int kShapeRangeLow = 0;
+constexpr int kShapeRangeHigh = 1;
 
 map<string, GeAttrValue::ValueType> kAttrTypeDict = {
   {"bool", GeAttrValue::VT_BOOL},
@@ -90,6 +96,10 @@ T GetValue(const map<string, T> &dict, string &key, T default_val) {
 
 void from_json(const Json &j, SingleOpTensorDesc &desc) {
   desc.dims = j.at(kKeyShape).get<vector<int64_t>>();
+  auto it = j.find(kKeyShapeRange);
+  if (it != j.end()) {
+    desc.dim_ranges = j.at(kKeyShapeRange).get<vector<std::vector<int64_t>>>();
+  }
   string format_str = j.at(kKeyFormat).get<string>();
   string type_str = j.at(kKeyType).get<string>();
   desc.format = GetValue(kFormatDict, format_str, FORMAT_RESERVED);
@@ -200,13 +210,13 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.input_desc) {
     if (tensor_desc.type == DT_UNDEFINED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"input", std::to_string(index)});
-      GELOGE(false, "Input index[%d]'s dataType is invalid", index);
+      GELOGE(false, "Input's dataType is invalid when the index is %d", index);
       return false;
     }
 
     if (tensor_desc.format == FORMAT_RESERVED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10028", {"input", "index"}, {"input", std::to_string(index)});
-      GELOGE(PARAM_INVALID, "Input index[%d]'s format is invalid", index);
+      GELOGE(PARAM_INVALID, "Input's format is invalid when the index is %d", index);
       return false;
     }
     ++index;
@@ -216,13 +226,13 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.output_desc) {
     if (tensor_desc.type == DT_UNDEFINED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"output", std::to_string(index)});
-      GELOGE(PARAM_INVALID, "Output[%d] dataType is invalid", index);
+      GELOGE(PARAM_INVALID, "Output's dataType is invalid when the index is %d", index);
       return false;
     }
 
     if (tensor_desc.format == FORMAT_RESERVED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10028", {"input", "index"}, {"output", std::to_string(index)});
-      GELOGE(PARAM_INVALID, "Output[%d] format is invalid", index);
+      GELOGE(PARAM_INVALID, "Output's format is invalid when the index is %d", index);
       return false;
     }
     ++index;
@@ -245,11 +255,13 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   return true;
 }
 
-OpDesc *SingleOpParser::CreateOpDesc(const string &op_type) { return new (std::nothrow) OpDesc(op_type, op_type); }
+std::unique_ptr<OpDesc> SingleOpParser::CreateOpDesc(const string &op_type) {
+  return std::unique_ptr<OpDesc>(new (std::nothrow) OpDesc(op_type, op_type));
+}
 
 Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single_op_desc,
                                            SingleOpBuildParam &build_param) {
-  auto *op_desc = CreateOpDesc(single_op_desc.op);
+  auto op_desc = CreateOpDesc(single_op_desc.op);
   if (op_desc == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to create instance of opDesc");
     return MEMALLOC_FAILED;
@@ -265,6 +277,7 @@ Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single
     }
     GeTensorDesc ge_tensor_desc(GeShape(desc.dims), desc.format, desc.type);
     ge_tensor_desc.SetOriginFormat(desc.format);
+    GE_CHK_STATUS_RET_NOLOG(SetShapeRange(desc, ge_tensor_desc));
     TensorUtils::SetRealDimCnt(ge_tensor_desc, desc.dims.size());
     TensorUtils::SetInputTensor(ge_tensor_desc, true);
     TensorUtils::SetOutputTensor(ge_tensor_desc, false);
@@ -284,6 +297,7 @@ Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single
 
     GeTensorDesc ge_tensor_desc(GeShape(desc.dims), desc.format, desc.type);
     ge_tensor_desc.SetOriginFormat(desc.format);
+    GE_CHK_STATUS_RET_NOLOG(SetShapeRange(desc, ge_tensor_desc));
     TensorUtils::SetRealDimCnt(ge_tensor_desc, desc.dims.size());
     TensorUtils::SetInputTensor(ge_tensor_desc, false);
     TensorUtils::SetOutputTensor(ge_tensor_desc, true);
@@ -295,10 +309,78 @@ Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single
     op_desc->SetAttr(attr.name, attr.value);
   }
 
+  if (VerifyOpInputOutputSizeByIr(*op_desc) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "Verify op [%s] input or output size failed.", op_desc->GetType().c_str());
+    return PARAM_INVALID;
+  }
+
   file_name << kFileSuffix;
   build_param.file_name = file_name.str();
+  build_param.op_desc.reset(op_desc.release());
+  return SUCCESS;
+}
 
-  build_param.op_desc.reset(op_desc);
+Status SingleOpParser::VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc) {
+  ge::Operator operator_ir = ge::OperatorFactory::CreateOperator("tmp_operator", current_op_desc.GetType());
+  if (!operator_ir.IsEmpty()) {
+    auto opdesc_ir = ge::OpDescUtils::GetOpDescFromOperator(operator_ir);
+    GE_CHECK_NOTNULL(opdesc_ir);
+    size_t current_opdesc_inputs_num = current_op_desc.GetInputsSize();
+    size_t ir_opdesc_inputs_num = opdesc_ir->GetInputsSize();
+    if (current_opdesc_inputs_num < ir_opdesc_inputs_num) {
+      string reason = "is smaller than the ir needed input size " + std::to_string(ir_opdesc_inputs_num);
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19014", {"opname", "value", "reason"},
+        {current_op_desc.GetName(), "input size " + std::to_string(current_opdesc_inputs_num), reason});
+      GELOGE(PARAM_INVALID, "This op [%s] input size %zu is smaller than the ir needed input size %zu",
+             current_op_desc.GetName().c_str(), current_opdesc_inputs_num, ir_opdesc_inputs_num);
+      return PARAM_INVALID;
+    }
+    size_t current_opdesc_outputs_num = current_op_desc.GetOutputsSize();
+    size_t ir_opdesc_outputs_num = opdesc_ir->GetOutputsSize();
+    if (current_opdesc_outputs_num < ir_opdesc_outputs_num) {
+      string reason = "is smaller than the ir needed output size " + std::to_string(ir_opdesc_outputs_num);
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19014", {"opname", "value", "reason"},
+        {current_op_desc.GetName(), "output size " + std::to_string(current_opdesc_outputs_num), reason});
+      GELOGE(PARAM_INVALID, "This op [%s] output size %zu is smaller than the ir needed output size %zu",
+             current_op_desc.GetName().c_str(), current_opdesc_outputs_num, ir_opdesc_outputs_num);
+      return PARAM_INVALID;
+    }
+  }
+  return SUCCESS;
+}
+
+Status SingleOpParser::SetShapeRange(const SingleOpTensorDesc &tensor_desc, GeTensorDesc &ge_tensor_desc) {
+  if (tensor_desc.dim_ranges.empty()) {
+    return SUCCESS;
+  }
+
+  std::vector<std::pair<int64_t, int64_t>> shape_range;
+  size_t range_index = 0;
+  for (auto dim : tensor_desc.dims) {
+    if (dim >= 0) {
+      shape_range.emplace_back(dim, dim);
+      GELOGD("Adding shape range: [%ld, %ld]", dim, dim);
+    } else {
+      if (range_index >= tensor_desc.dim_ranges.size()) {
+        GELOGE(PARAM_INVALID, "The number of shape_range mismatches that of unknown dims.");
+        return PARAM_INVALID;
+      }
+
+      auto &range = tensor_desc.dim_ranges[range_index];
+      if (range.size() != kShapeRangePairSize) {
+        GELOGE(PARAM_INVALID, "Invalid shape range entry. index = %zu, size = %zu", range_index, range.size());
+        return PARAM_INVALID;
+      }
+
+      shape_range.emplace_back(range[kShapeRangeLow], range[kShapeRangeHigh]);
+      GELOGD("Adding shape range: [%ld, %ld]", range[kShapeRangeLow], range[kShapeRangeHigh]);
+      ++range_index;
+    }
+  }
+
+  ge_tensor_desc.SetShapeRange(shape_range);
   return SUCCESS;
 }
 
@@ -316,17 +398,15 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
     try {
       single_op_desc = single_op_json;
     } catch (const nlohmann::json::exception &e) {
-      ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10045", {"index", "jsonfile", "exception", "jsonStr"},
-        {std::to_string(index), file, e.what(), single_op_json.dump(kDumpJsonIndent)});
-      GELOGE(PARAM_INVALID, "Parse op[%d] failed when read json file[%s], exception[%s], jsonStr[%s]", index,
+      ErrorManager::GetInstance().ATCReportErrMessage("E10032", {"index", "jsonfile", "exception"},
+                                                      {std::to_string(index), file, e.what()});
+      GELOGE(PARAM_INVALID, "Parse the index[%d] of op failed when read json file[%s], exception %s, jsonStr %s", index,
              file.c_str(), e.what(), single_op_json.dump(kDumpJsonIndent).c_str());
       return PARAM_INVALID;
     }
 
     if (!Validate(single_op_desc)) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10046", {"index", "jsonfile"}, {std::to_string(index), file});
-      GELOGE(PARAM_INVALID, "Validate op[%d] failed when read json file[%s].", index, file.c_str());
+      GELOGE(PARAM_INVALID, "Validate the index[%d] of op failed when read json file[%s].", index, file.c_str());
       return PARAM_INVALID;
     }
 
@@ -337,7 +417,7 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
     }
 
     op_list.emplace_back(param);
-    GELOGI("Parse op[%d] success", index);
+    GELOGI("Parse the index[%d] of op success", index);
     index += 1;
   }
 

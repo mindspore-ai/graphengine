@@ -73,7 +73,7 @@ class NetOutputPass : public GraphPass {
   /// @return OTHERS:  Execution failed
   /// @author
   ///
-  Status CreateNetOutputNode(OpDescPtr &net_output_desc, ge::ComputeGraphPtr &graph);
+  Status CreateNetOutputNode(OpDescPtr &net_output_desc, const ge::ComputeGraphPtr &graph);
 
   ///
   /// Check if the network output node is legal
@@ -89,13 +89,12 @@ class NetOutputPass : public GraphPass {
   /// Set input and output for the NetOutput node
   /// @param [in] graph: Input ComputeGraph
   /// @param [in] net_output_desc: OpDesc of the NetOutput node
-  /// @param [in] src_node: Source node of the NetOutput
-  /// @param [in] src_index: Output index of the Source node
+  /// @param [in] output_nodes_info: RetvalInfos of the NetOutput
   /// @return void
   /// @author
   ///
-  void AddInOutForNetOutputOp(const ge::ComputeGraphPtr &graph, const ge::OpDescPtr &net_output_desc,
-                              const ge::NodePtr &src_node, int32_t src_index);
+  void AddInOutForNetOutputOp(const ComputeGraphPtr &graph, OpDescPtr &net_output_desc,
+                              vector<RetvalInfo> &output_nodes_info);
 
   ///
   /// Delete unwanted _Retval/Save/Summary nodes
@@ -198,6 +197,25 @@ class NetOutputPass : public GraphPass {
   /// @author
   ///
   bool CheckNodeIsInOutputNodes(const ge::ComputeGraphPtr &graph, const ge::NodePtr &node);
+
+  ///
+  /// Add netoutput node to graph with output node infos
+  /// @param [in] graph: ComputeGraph
+  /// @param [in] output_node: shared_ptr to netoutput node
+  /// @return SUCCESS: Execution succeed
+  /// @return OTHERS:  Execution failed
+  /// @author
+  ///
+  Status AddNetOutputNodeToGraph(const ge::ComputeGraphPtr &graph, NodePtr &output_node);
+
+  ///
+  /// Add user_def_dtype & format for netoutput node
+  /// @param [in] output_node: The netOutput node
+  /// @return SUCCESS: Execution succeed
+  /// @return OTHERS:  Execution failed
+  /// @author
+  ///
+  Status SetUserDefDTypeAndFormatFromAtcParams(const ge::NodePtr &output_node);
 
   bool is_include_special_node_ = false;
   std::set<NodePtr> targets_;

@@ -29,22 +29,28 @@ class MultiBatchPass : public GraphPass {
 
  private:
   Status FindPredValue(const ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value);
-  bool CheckSwitchN(std::vector<std::vector<int64_t>> &batch_shape);
+  Status GetDynamicType();
+  bool CheckSwitchN(std::vector<std::vector<int64_t>> &batch_shape, std::vector<std::vector<int64_t>> &combined_batch);
+  bool GetBatchInfo(uint32_t batch_num, std::vector<std::vector<int64_t>> &batch_shape,
+                    std::vector<std::vector<int64_t>> &combined_batch);
   void FindSwitchOutNodes(uint32_t batch_num);
-  Status ReplaceSwitchN(ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value,
-                        const std::vector<std::vector<int64_t>> &batch_shape);
+  Status ReplaceSwitchN(const ComputeGraphPtr &graph, const OutDataAnchorPtr &pred_value,
+                        const std::vector<std::vector<int64_t>> &batch_shape,
+                        const std::vector<std::vector<int64_t>> &combined_batch);
 
   bool CheckDims(const std::vector<std::vector<int64_t>> &output_shape) const;
-  NodePtr CreateSwitchCaseNode(ComputeGraphPtr &graph, const std::string &name, const OutDataAnchorPtr &pred_value,
-                               const std::vector<std::vector<int64_t>> &batch_shape);
-  Status BypassSwitchN(NodePtr &switch_n_node, NodePtr &switch_case_node);
-  Status AttachLabel(NodePtr &switch_case_node);
+  NodePtr CreateSwitchCaseNode(const ComputeGraphPtr &graph, const std::string &name,
+                               const OutDataAnchorPtr &pred_value, const std::vector<std::vector<int64_t>> &batch_shape,
+                               const std::vector<std::vector<int64_t>> &combined_batch);
+  Status BypassSwitchN(const NodePtr &switch_n_node, const NodePtr &switch_case_node);
+  Status AttachLabel(const NodePtr &switch_case_node);
   Status AttachBatchLabel(uint32_t batch_idx);
   Status AttachStreamLabel(uint32_t batch_idx, const std::string &stream_label);
 
   std::vector<NodePtr> switch_n_nodes_;
   std::vector<NodePtr> bypass_nodes_;
   std::vector<std::vector<NodePtr>> batch_head_nodes_;
+  int32_t dynamic_type_ = 0;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_MULTI_BATCH_PASS_H_

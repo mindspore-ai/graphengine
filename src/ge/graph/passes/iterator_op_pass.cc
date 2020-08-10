@@ -73,14 +73,14 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
       GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Fail to Get var_desc of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
                       continue);
       Status ret;
-      ret = SetRtContext(rtContext_t(), RT_CTX_NORMAL_MODE);
+      ret = SetRtContext(graph->GetSessionID(), rtContext_t(), RT_CTX_NORMAL_MODE);
 
       // EOS will not be considered if ret is not SUCCESS.
-      GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGW("Set rt context RT_CTX_GEN_MODE failed."); continue);
+      GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGW("Set rt context RT_CTX_NORMAL_MODE failed."); continue);
 
       status =
         GetVariableValue(graph->GetSessionID(), ge_tensor_desc, NODE_NAME_FLOWCTRL_LOOP_PER_ITER, &loop_per_iter);
-      ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE);
+      ret = SetRtContext(graph->GetSessionID(), rtContext_t(), RT_CTX_GEN_MODE);
 
       // The following process will be affected if ret is not SUCCESS.
       GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "Set rt context RT_CTX_GEN_MODE failed."); return ret);
@@ -108,7 +108,7 @@ Status IteratorOpPass::GetVariableValue(uint64_t session_id, const ge::GeTensorD
   // base_addr
   uint8_t *var_mem_base = VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM);
   GE_CHECK_NOTNULL(var_mem_base);
-  // offset
+  // offset + logic_base
   uint8_t *dev_ptr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, tensor_desc, &dev_ptr),
                     "Get variable %s address failed.", var_name.c_str());
@@ -279,11 +279,11 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
   return op_desc;
 }
 
-Status IteratorOpPass::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode) {
+Status IteratorOpPass::SetRtContext(uint64_t session_id, rtContext_t rt_context, rtCtxMode_t mode) {
   GELOGI("set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
-  RtContextUtil::GetInstance().AddrtContext(rt_context);
+  RtContextUtil::GetInstance().AddRtContext(session_id, rt_context);
   return SUCCESS;
 }
 }  // namespace ge

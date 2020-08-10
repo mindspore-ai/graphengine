@@ -26,7 +26,6 @@
 
 namespace ge {
 namespace hybrid {
-
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::COMPILED_SUBGRAPH, KnownNodeExecutor);
 
 Status KnownNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
@@ -50,19 +49,12 @@ Status KnownNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> d
 
   rtError_t rt_ret;
   GELOGI("rtModelExecute start.");
-  rt_ret = rtModelExecute(davinci_model_->GetRtModelHandle(), davinci_model_->GetRtModelStream(), 0);
+  rt_ret = rtModelExecute(davinci_model_->GetRtModelHandle(), context.GetStream(), 0);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtModelExecute error, ret: Ox%X", rt_ret); return FAILED;);
   GELOGI("rtModelExecute end");
 
-  GELOGI("rtStreamSynchronize start.");
-  rt_ret = rtStreamSynchronize(davinci_model_->GetRtModelStream());
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtStreamSynchronize error, ret: Ox%X", rt_ret);
-                  return FAILED;);
-  GELOGI("rtStreamSynchronize end.");
-
   context.RegisterCallback(done_callback);
   GELOGI("[%s] KnownNodeTask::ExecuteAsync success.", context.GetNodeName());
-
   return SUCCESS;
 }
 
@@ -89,7 +81,8 @@ Status KnownNodeTask::UpdateArgs(TaskContext &context) {
 
   GE_CHK_STATUS_RET(davinci_model_->UpdateKnownNodeArgs(inputs, outputs),
                     "known node task update known node args failed.");
-  GELOGI("[%s] KnownNodeExecutor::UpdateArgs success.", context.GetNodeName());
+  GELOGI("[%s] KnownNodeExecutor::UpdateArgs success, task_size = %d:", context.GetNodeName(),
+         davinci_model_->GetTaskList().size());
   return SUCCESS;
 }
 
@@ -98,13 +91,22 @@ Status KnownNodeTask::Init(TaskContext &context) {
   GE_CHK_STATUS_RET(context.AllocateOutputs(), "known node task allocate output failed.");
 
   // init davinicmodel
-  davinci_model_->InitRuntimeParams();
-  GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed.");
+  if (!load_flag_) {
+    davinci_model_->InitRuntimeParams();
+    GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed.");
+  }
+
   // allocate mem base
   void *buffer = nullptr;
   if (davinci_model_->TotalMemSize() != 0) {
-    GE_CHK_STATUS_RET(context.AllocateWorkspace(davinci_model_->TotalMemSize(), &buffer),
-                      "known node task allocate workspace failed.");
+    GE_CHK_STATUS_RET(
+      context.AllocateWorkspace(davinci_model_->TotalMemSize(), &buffer, davinci_model_->GetRuntimeParam().mem_base),
+      "known node task allocate workspace failed.");
+    bool addr_not_changed = false;
+    if (davinci_model_->GetRuntimeParam().mem_base == buffer) {
+      addr_not_changed = true;
+    }
+    davinci_model_->SetKnownNodeAddrNotChanged(addr_not_changed);
     // update mem base
     davinci_model_->UpdateMemBase(static_cast<uint8_t *>(buffer));
     GELOGI("KnownNodeTask::Init mem base is %p, size %u.", davinci_model_->GetRuntimeParam().mem_base,
@@ -124,7 +126,6 @@ Status KnownNodeTask::Init(TaskContext &context) {
 
 Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GELOGI("[%s] KnownNodeExecutor::PrepareTask in.", context.GetNodeName());
-
   GE_CHK_STATUS_RET(task.Init(context), "known node init davinci model failed.");
 
   GE_CHK_STATUS_RET(task.UpdateArgs(context), "known node task update args failed.");
@@ -161,6 +162,5 @@ Status KnownNodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context,
                     context.GetNodeItem().NodeName().c_str());
   return SUCCESS;
 }
-
 }  // namespace hybrid
 }  // namespace ge

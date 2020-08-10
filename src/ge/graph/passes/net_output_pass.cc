@@ -22,15 +22,21 @@
 #include <utility>
 #include <vector>
 
+#include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "common/ge/ge_util.h"
+#include "framework/omg/omg_inner_types.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
+static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
+  {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},    {"INT16", ge::DT_INT16},
+  {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
+  {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
+
 Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
                                           std::map<int32_t, RetvalInfo> &retval_node_index_map) {
   GE_CHECK_NOTNULL(node);
@@ -133,18 +139,6 @@ Status NetOutputPass::CheckOutputNodeInfo(const ComputeGraphPtr &graph, const st
     }
   }
   return SUCCESS;
-}
-
-void NetOutputPass::AddInOutForNetOutputOp(const ge::ComputeGraphPtr &graph, const ge::OpDescPtr &net_output_desc,
-                                           const ge::NodePtr &src_node, int32_t src_index) {
-  /// Get the output attribute of src_node,
-  /// and set to the input/output of net_out_node.
-  if (src_node == nullptr || src_node->GetOpDesc() == nullptr || net_output_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "src node or net output desc is null.");
-    return;
-  }
-  ge::GeTensorDesc out_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
-  GE_IF_BOOL_EXEC(net_output_desc->AddInputDesc(out_desc) != SUCCESS, GELOGW("add input desc failed"); return );
 }
 
 Status NetOutputPass::RemoveUnusedNode(const ge::ComputeGraphPtr &graph) {
@@ -401,6 +395,7 @@ Status NetOutputPass::ProcessWithNetoutput(const ge::ComputeGraphPtr &graph, con
     GELOGE(INTERNAL_ERROR, "Update net output desc failed.");
     return INTERNAL_ERROR;
   }
+
   if (UnLink(graph, output_node) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "UnLink connection between netoutput node and user set target node");
     return INTERNAL_ERROR;
@@ -415,6 +410,10 @@ Status NetOutputPass::ProcessWithNetoutput(const ge::ComputeGraphPtr &graph, con
 Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraphPtr &graph,
                                                           const ge::NodePtr &net_out_node) {
   GE_CHECK_NOTNULL(net_out_node);
+  if (!domi::GetContext().user_out_nodes.empty()) {
+    GELOGI("No need to add ctrl edge to netoutput because user out nodes have been set.");
+    return SUCCESS;
+  }
   for (const auto &node : graph->GetDirectNode()) {
     if (node == nullptr || node->GetOpDesc() == nullptr || node->GetOpDesc()->GetType() == NETOUTPUT) {
       continue;
@@ -430,7 +429,7 @@ Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraph
   return SUCCESS;
 }
 
-Status NetOutputPass::CreateNetOutputNode(OpDescPtr &net_output_desc, ge::ComputeGraphPtr &graph) {
+Status NetOutputPass::CreateNetOutputNode(OpDescPtr &net_output_desc, const ge::ComputeGraphPtr &graph) {
   // Only flush subgraph name
   string node_name =
     (graph->GetParentGraph() != nullptr) ? (graph->GetName() + "_" + NODE_NAME_NET_OUTPUT) : NODE_NAME_NET_OUTPUT;
@@ -451,83 +450,185 @@ Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
   }
   GELOGI("NetOutputPass Run.");
   NodePtr output_node = graph->FindFirstNodeMatchType(NETOUTPUT);
-  OpDescPtr net_output_desc = nullptr;
-  std::vector<RetvalInfo> output_nodes_info;
-
   // save user targets node
   SaveAndRemoveTargets(graph);
   // If graph already has a netoutput node, doesn't need to create it again.
   if (output_node != nullptr) {
     (void)AttrUtils::SetListStr(output_node->GetOpDesc(), ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES,
                                 std::move(std::vector<std::string>()));
-    return ProcessWithNetoutput(graph, output_node);
+    if (ProcessWithNetoutput(graph, output_node) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Process with netoutput node failed.");
+      return INTERNAL_ERROR;
+    }
   } else {
-    if (CreateNetOutputNode(net_output_desc, graph) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Get net output nodes failed.");
+    if (AddNetOutputNodeToGraph(graph, output_node) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Set user define dtype and format for netoutput failed.");
       return INTERNAL_ERROR;
     }
-    Status ret = GetOutputNode(graph, output_nodes_info);
-    if (ret != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Get net output nodes failed.");
-      return INTERNAL_ERROR;
-    }
-    GELOGI("[NETOUTPUT PASS] OutNodesInfo size:%zu, Targets Size:%zu, is_include_special_node_:%d",
-           graph->GetGraphOutNodesInfo().size(), graph->GetGraphTargetNodesInfo().size(), is_include_special_node_);
-    // If user does not set out nodes and targets and no retval node, return false
-    bool is_valid = (graph->GetGraphOutNodesInfo().size() == 0) && (graph->GetGraphTargetNodesInfo().size() == 0) &&
-                    (is_include_special_node_ == false);
-    if (is_valid) {
-      GELOGI("[NETOUTPUT PASS] output_nodes and target_nodes and special nodes is empty!It means no need netoutput!");
-      return SUCCESS;
-    }
-    GELOGI("[NETOUTPUT PASS] Output node size:%lu.", output_nodes_info.size());
-    if (output_nodes_info.empty()) {
-      // because retval node is contained by output_nodes_info, here means targets is non-empty
-      auto net_output_node = graph->AddNode(net_output_desc);
-      if (net_output_node == nullptr) {
-        GELOGE(INTERNAL_ERROR, "Add output node failed.");
-        return INTERNAL_ERROR;
-      }
-      GE_CHK_STATUS_RET(AddCtrlEdgeForTargets(net_output_node), "add ctrl edge for targets failed");
-      // Add true stream, netoutput is 0
-      GE_IF_BOOL_EXEC(!ge::AttrUtils::SetInt(net_output_node->GetOpDesc(), ATTR_NAME_TRUE_BRANCH_STREAM, 0),
-                      GELOGE(INTERNAL_ERROR, "set ATTR_NAME_TRUE_BRANCH_STREAM failed");
-                      return INTERNAL_ERROR);
-      return SUCCESS;
-    }
-    std::vector<bool> is_input_const;
-    for (auto iter = output_nodes_info.begin(); iter != output_nodes_info.end();) {
-      ge::NodePtr src_node = iter->output_node;
-      if (src_node == nullptr) {
-        continue;
-      }
-      int32_t src_index = iter->node_output_index;
-      // if src_node is in targets_, no need to Add in and out for netoutput
-      auto it = targets_.find(src_node);
-      if (it != targets_.end()) {
-        iter = output_nodes_info.erase(iter);
-        GELOGD("node [%s] is in processed targets, do not add inout for netoutput!", src_node->GetName().c_str());
-        continue;
-      }
-      AddInOutForNetOutputOp(graph, net_output_desc, src_node, src_index);
-      is_input_const.push_back(PassUtils::IsConstant(src_node));
-      ++iter;
-    }
-    net_output_desc->SetIsInputConst(is_input_const);
+  }
+  // Add userdef attrs to netoutput node
+  return SetUserDefDTypeAndFormatFromAtcParams(output_node);
+}
+
+Status NetOutputPass::AddNetOutputNodeToGraph(const ge::ComputeGraphPtr &graph, NodePtr &output_node) {
+  OpDescPtr net_output_desc = nullptr;
+  if (CreateNetOutputNode(net_output_desc, graph) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Get net output nodes failed.");
+    return INTERNAL_ERROR;
+  }
+  std::vector<RetvalInfo> output_nodes_info;
+  if (GetOutputNode(graph, output_nodes_info) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Get net output nodes failed.");
+    return INTERNAL_ERROR;
+  }
+  GELOGI("[NETOUTPUT PASS] OutNodesInfo size:%zu, Targets Size:%zu, is_include_special_node_:%d",
+         graph->GetGraphOutNodesInfo().size(), graph->GetGraphTargetNodesInfo().size(), is_include_special_node_);
+  // If user does not set out nodes and targets and no retval node, return false
+  if ((graph->GetGraphOutNodesInfo().empty()) && (graph->GetGraphTargetNodesInfo().empty()) &&
+      !is_include_special_node_) {
+    GELOGI("[NETOUTPUT PASS] output_nodes and target_nodes and special nodes is empty!It means no need netoutput!");
+    return SUCCESS;
+  }
+  GELOGI("[NETOUTPUT PASS] Output node size:%lu.", output_nodes_info.size());
+  if (output_nodes_info.empty()) {
+    // because retval node is contained by output_nodes_info, here means targets is non-empty
     output_node = graph->AddNode(net_output_desc);
     if (output_node == nullptr) {
       GELOGE(INTERNAL_ERROR, "Add output node failed.");
       return INTERNAL_ERROR;
     }
-    if (AddEdgesForNetOutput(graph, output_node, output_nodes_info) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Add edges for net output node failed.");
-      return INTERNAL_ERROR;
+    GE_CHK_STATUS_RET(AddCtrlEdgeForTargets(output_node), "add ctrl edge for targets failed");
+    // Add true stream, netoutput is 0
+    GE_IF_BOOL_EXEC(!ge::AttrUtils::SetInt(output_node->GetOpDesc(), ATTR_NAME_TRUE_BRANCH_STREAM, 0),
+                    GELOGE(INTERNAL_ERROR, "set ATTR_NAME_TRUE_BRANCH_STREAM failed");
+                    return INTERNAL_ERROR);
+    return SUCCESS;
+  }
+
+  AddInOutForNetOutputOp(graph, net_output_desc, output_nodes_info);
+  output_node = graph->AddNode(net_output_desc);
+  if (output_node == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Add output node failed.");
+    return INTERNAL_ERROR;
+  }
+  if (AddEdgesForNetOutput(graph, output_node, output_nodes_info) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Add edges for net output node failed.");
+    return INTERNAL_ERROR;
+  }
+  if (AddCtrlEdgesBetweenLeafAndNetOutput(graph, output_node) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Add control edges between leaf and netoutput failed.");
+    return INTERNAL_ERROR;
+  }
+  GELOGI("Add NetOutput node success.");
+  return SUCCESS;
+}
+void NetOutputPass::AddInOutForNetOutputOp(const ComputeGraphPtr &graph, OpDescPtr &net_output_desc,
+                                           vector<RetvalInfo> &output_nodes_info) {
+  std::vector<bool> is_input_const;
+  for (auto iter = output_nodes_info.begin(); iter != output_nodes_info.end();) {
+    NodePtr src_node = iter->output_node;
+    if (src_node == nullptr) {
+      continue;
     }
-    if (AddCtrlEdgesBetweenLeafAndNetOutput(graph, output_node) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Add control edges between leaf and netoutput failed.");
-      return INTERNAL_ERROR;
+    int32_t src_index = iter->node_output_index;
+    // if src_node is in targets_, no need to Add in and out for netoutput
+    auto it = targets_.find(src_node);
+    if (it != targets_.end()) {
+      iter = output_nodes_info.erase(iter);
+      GELOGD("node [%s] is in processed targets, do not add inout for netoutput!", src_node->GetName().c_str());
+      continue;
     }
-    GELOGI("Add NetOutput node success.");
+    /// Get the output attribute of src_node,
+    /// and set to the input/output of net_out_node.
+    if (src_node == nullptr || src_node->GetOpDesc() == nullptr || net_output_desc == nullptr) {
+      GELOGE(INTERNAL_ERROR, "src node or net output desc is null.");
+      return;
+    }
+    ge::GeTensorDesc out_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
+    GE_IF_BOOL_EXEC(net_output_desc->AddInputDesc(out_desc) != SUCCESS, GELOGW("add input desc failed"); return );
+    is_input_const.push_back(PassUtils::IsConstant(src_node));
+    ++iter;
+  }
+  net_output_desc->SetIsInputConst(is_input_const);
+}
+
+bool NeedUpdateOutputByOutputTypeParm(std::string &output_type, NodePtr &src_node, uint32_t src_index,
+                                      ge::DataType &dt) {
+  if (output_type_str_to_datatype.find(output_type) != output_type_str_to_datatype.end()) {
+    dt = output_type_str_to_datatype[output_type];
+    return true;
+  }
+
+  auto op_desc = src_node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  vector<ge::DataType> output_data_type_vec;
+  vector<uint32_t> index_vec;
+  if ((ge::AttrUtils::GetListDataType(op_desc, "_output_dt_list", output_data_type_vec)) &&
+      (ge::AttrUtils::GetListInt(op_desc, "_output_dt_index", index_vec))) {
+    if (output_data_type_vec.size() != index_vec.size()) {
+      GELOGW("output_dt_list size is not match output_dt_index size");
+      return false;
+    }
+    for (uint32_t i = 0; i < index_vec.size(); ++i) {
+      if (index_vec[i] == src_index) {
+        dt = output_data_type_vec[i];
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &output_node) {
+  if (output_node == nullptr) {
+    GELOGI("[NETOUTPUT PASS] The graph no need netoutput node!");
+    return SUCCESS;
+  }
+  auto output_type = domi::GetContext().output_type;
+  auto op_desc = output_node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  std::vector<std::string> userdef_dtypes;
+  std::vector<std::string> userdef_formats;
+
+  ge::DataType output_data_type = ge::DT_FLOAT;
+  for (const auto &in_anchor : output_node->GetAllInDataAnchors()) {
+    auto index = static_cast<uint32_t>(in_anchor->GetIdx());
+    auto peer_out = in_anchor->GetPeerOutAnchor();
+    if (peer_out == nullptr) {
+      // If user set target, peer_out anchor will be unlinked.
+      continue;
+    }
+    auto src_index = static_cast<uint32_t>(peer_out->GetIdx());
+    auto src_node = peer_out->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+
+    // Update datatype
+    if (NeedUpdateOutputByOutputTypeParm(output_type, src_node, src_index, output_data_type)) {
+      GELOGD("Add user-define datatype:%s to netoutput node.",
+             TypeUtils::DataTypeToSerialString(output_data_type).c_str());
+      userdef_dtypes.push_back(
+        std::to_string(index).append(":").append(TypeUtils::DataTypeToSerialString(output_data_type)));
+      continue;
+    }
+    // Output_node is not set,check if is_output_adjust_hw_layout is set
+    OpDescPtr src_op_desc = src_node->GetOpDesc();
+    GE_CHECK_NOTNULL(src_op_desc);
+    bool set_fp16_nc1hwc0 = false;
+    (void)AttrUtils::GetBool(src_op_desc, "output_set_fp16_nc1hwc0", set_fp16_nc1hwc0);
+    if (set_fp16_nc1hwc0) {
+      // Set DT_FLOAT16 & FORMAT_NC1HWC0
+      userdef_dtypes.push_back(std::to_string(index).append(":").append(TypeUtils::DataTypeToSerialString(DT_FLOAT16)));
+      userdef_formats.push_back(
+        std::to_string(index).append(":").append(TypeUtils::FormatToSerialString(FORMAT_NC1HWC0)));
+    }
+  }
+  if (!userdef_dtypes.empty() && !ge::AttrUtils::SetListStr(op_desc, ATTR_ATC_USER_DEFINE_DATATYPE, userdef_dtypes)) {
+    GELOGE(INTERNAL_ERROR, "Set user_define_dtype attr list for netoutput failed.");
+    return INTERNAL_ERROR;
+  }
+  if (!userdef_formats.empty() && !ge::AttrUtils::SetListStr(op_desc, ATTR_ATC_USER_DEFINE_FORMAT, userdef_formats)) {
+    GELOGE(INTERNAL_ERROR, "Set user_define_format attr list for netoutput failed.");
+    return INTERNAL_ERROR;
   }
   return SUCCESS;
 }

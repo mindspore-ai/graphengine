@@ -21,7 +21,7 @@
 #include <mutex>
 #include <queue>
 #include <set>
-#include "array_ops.h"
+#include "./array_ops.h"
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -36,6 +36,8 @@
 #include "graph/op_desc.h"
 #include "graph/runtime_inference_context.h"
 #include "graph/usr_types.h"
+#include "graph/utils/node_utils.h"
+#include "graph/debug/ge_attr_define.h"
 #include "utils/graph_utils.h"
 #include "utils/op_desc_utils.h"
 #include "utils/tensor_adapter.h"
@@ -54,11 +56,13 @@ using std::string;
 using std::to_string;
 using std::vector;
 
+/*lint -save -e529 -e728*/
+/*lint -e446 -e732*/
+/*lint -e665*/
 namespace ge {
 class OpIO {
  public:
-  explicit OpIO(const string &name, int index, const OperatorImplPtr &owner)
-      : name_(name), index_(index), owner_(owner) {}
+  OpIO(const string &name, int index, const OperatorImplPtr &owner) : name_(name), index_(index), owner_(owner) {}
 
   ~OpIO() = default;
 
@@ -546,56 +550,46 @@ Operator &Operator::AddControlInput(const Operator &src_oprt) {
 }
 
 graphStatus Operator::GetInputConstData(const string &dst_name, Tensor &data) const {
-  if (operator_impl_ == nullptr) {
-    GELOGE(GRAPH_FAILED, "operator impl is nullptr.");
-    return GRAPH_FAILED;
-  }
-  ge::ConstNodePtr node_ptr = operator_impl_->GetNode();
-  if (node_ptr) {
+  GE_CHECK_NOTNULL(operator_impl_);
+  auto node_ptr = operator_impl_->GetNode();
+  if (node_ptr != nullptr) {
     // For inner compute graph
     auto op_desc = node_ptr->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(GRAPH_FAILED, "op_desc is nullptr.");
-      return GRAPH_FAILED;
-    }
+    GE_CHECK_NOTNULL(op_desc);
     auto index = op_desc->GetInputIndexByName(dst_name);
     auto in_data_anchor = node_ptr->GetInDataAnchor(index);
-    if (in_data_anchor == nullptr) {
-      GELOGE(GRAPH_FAILED, "in_data_anchor is nullptr.");
-      return GRAPH_FAILED;
-    }
+    GE_CHECK_NOTNULL(in_data_anchor);
     auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    if (out_data_anchor == nullptr) {
-      GELOGE(GRAPH_FAILED, "out_data_anchor is nullptr.");
-      return GRAPH_FAILED;
-    }
-    std::shared_ptr<Node> peer_node_ptr = out_data_anchor->GetOwnerNode();
-    if (peer_node_ptr == nullptr) {
-      GELOGE(GRAPH_FAILED, "peer_node_ptr is nullptr.");
-      return GRAPH_FAILED;
-    }
-    ge::OperatorImplPtr operator_impl_ptr = nullptr;
-    operator_impl_ptr = ComGraphMakeShared<OperatorImpl>(peer_node_ptr);
-    if (operator_impl_ptr == nullptr) {
-      GELOGE(GRAPH_FAILED, "OperatorImpl make shared failed");
-      return GRAPH_FAILED;
-    }
-    Operator const_op(std::move(operator_impl_ptr));
-    if (peer_node_ptr->GetOpDesc() != nullptr) {
-      const auto &op_descType = peer_node_ptr->GetOpDesc()->GetType();
-      if (op_descType == CONSTANTOP) {
-        return const_op.GetAttr(op::Constant::name_attr_value(), data);
-      } else if (op_descType == CONSTANT) {
-        return const_op.GetAttr(op::Const::name_attr_value(), data);
+    GE_CHECK_NOTNULL(out_data_anchor);
+    auto peer_node = out_data_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(peer_node);
+    auto peer_op_desc = peer_node->GetOpDesc();
+    GE_CHECK_NOTNULL(peer_op_desc);
+    auto peer_op_type = peer_op_desc->GetType();
+    if (peer_op_type == CONSTANTOP || peer_op_type == CONSTANT) {
+      auto const_op_impl = ComGraphMakeShared<OperatorImpl>(peer_node);
+      GE_CHECK_NOTNULL(const_op_impl);
+      Operator const_op(std::move(const_op_impl));
+      return const_op.GetAttr(ATTR_NAME_WEIGHTS, data);
+    } else if (peer_op_type == DATA) {
+      auto parent_node = NodeUtils::GetParentInput(peer_node);
+      while ((parent_node != nullptr) && (parent_node->GetType() == DATA)) {
+        parent_node = NodeUtils::GetParentInput(parent_node);
+      }
+      if ((parent_node != nullptr) &&
+          ((parent_node->GetType() == CONSTANT) || (parent_node->GetType() == CONSTANTOP))) {
+        auto const_op_impl = ComGraphMakeShared<OperatorImpl>(parent_node);
+        GE_CHECK_NOTNULL(const_op_impl);
+        Operator const_op(std::move(const_op_impl));
+        return const_op.GetAttr(ATTR_NAME_WEIGHTS, data);
       }
     }
-
     // Try get from runtime inference context
     auto session_id = std::to_string(GetContext().SessionId());
     RuntimeInferenceContext *runtime_infer_ctx = nullptr;
     if (RuntimeInferenceContext::GetContext(session_id, &runtime_infer_ctx) == GRAPH_SUCCESS) {
       GELOGD("To get constant from runtime inference context. session_id = %s", session_id.c_str());
-      auto ret = runtime_infer_ctx->GetTensor(peer_node_ptr->GetOpDesc()->GetId(), out_data_anchor->GetIdx(), data);
+      auto ret = runtime_infer_ctx->GetTensor(peer_node->GetOpDesc()->GetId(), out_data_anchor->GetIdx(), data);
       if (ret == GRAPH_SUCCESS) {
         return GRAPH_SUCCESS;
       }
@@ -604,6 +598,8 @@ graphStatus Operator::GetInputConstData(const string &dst_name, Tensor &data) co
     // For outer graph
     return GetInputConstDataOut(dst_name, data);
   }
+  auto op_name = operator_impl_->GetName();
+  GELOGW("node[%s]'s input[%s]'s peer node is not const", op_name.c_str(), dst_name.c_str());
   return GRAPH_FAILED;
 }
 graphStatus Operator::GetInputConstDataOut(const string &dst_name, Tensor &data) const {
@@ -914,7 +910,7 @@ OperatorImplPtr Operator::GetOperatorImplPtr() const { return operator_impl_; }
       GELOGW("set attr name %s failed.", name.c_str());                                     \
     }                                                                                       \
     return *this;                                                                           \
-  }
+  }  // lint !e665
 
 #define OP_ATTR_GET_IMP(ArgType, AttrUtilsFun)                                              \
   graphStatus Operator::GetAttr(const string &name, ArgType attr_value) const {             \
@@ -927,7 +923,7 @@ OperatorImplPtr Operator::GetOperatorImplPtr() const { return operator_impl_; }
       return GRAPH_FAILED;                                                                  \
     }                                                                                       \
     return GRAPH_SUCCESS;                                                                   \
-  }
+  }  // lint !e665
 
 void Operator::BreakConnect() const {
   if (operator_impl_ == nullptr) {
@@ -948,7 +944,7 @@ void Operator::BreakConnect() const {
     if (!AttrUtils::Set##AttrUtilsFun(operator_impl_->GetOpDescImpl(), name, attr_value)) { \
       GELOGW("reg attr name %s failed.", name.c_str());                                     \
     }                                                                                       \
-  }
+  }  // lint !e665
 
 OP_ATTR_SET_IMP(int64_t, Int)
 OP_ATTR_SET_IMP(int32_t, Int)
@@ -969,22 +965,22 @@ OP_ATTR_SET_IMP(const vector<vector<int64_t>> &, ListListInt)
 OP_ATTR_SET_IMP(float, Float)
 OP_ATTR_GET_IMP(float &, Float)
 OP_ATTR_SET_IMP(const vector<float> &, ListFloat)
-OP_ATTR_GET_IMP(vector<float> &, ListFloat)
+OP_ATTR_GET_IMP(vector<float> &, ListFloat)  // lint !e665
 
 OP_ATTR_SET_IMP(bool, Bool)
 OP_ATTR_GET_IMP(bool &, Bool)
 OP_ATTR_SET_IMP(const vector<bool> &, ListBool)
-OP_ATTR_GET_IMP(vector<bool> &, ListBool)
+OP_ATTR_GET_IMP(vector<bool> &, ListBool)  // lint !e665
 
 OP_ATTR_SET_IMP(const string &, Str)
 OP_ATTR_GET_IMP(string &, Str)
 OP_ATTR_SET_IMP(const vector<string> &, ListStr)
-OP_ATTR_GET_IMP(vector<string> &, ListStr)
+OP_ATTR_GET_IMP(vector<string> &, ListStr)  // lint !e665
 
 OP_ATTR_SET_IMP(const GeAttrValue::NAMED_ATTRS &, NamedAttrs)
 OP_ATTR_GET_IMP(GeAttrValue::NAMED_ATTRS &, NamedAttrs)
 OP_ATTR_SET_IMP(const vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
-OP_ATTR_GET_IMP(vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
+OP_ATTR_GET_IMP(vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)  // lint !e665
 
 OP_ATTR_REG_IMP(int64_t, Int)
 OP_ATTR_REG_IMP(const vector<int64_t> &, ListInt)
@@ -1547,3 +1543,5 @@ void GraphUtils::BreakConnect(const std::map<OperatorImplPtr, NodePtr> &all_node
   }
 }
 }  // namespace ge
+/*lint +e446 +e732*/
+/*lint +e665*/

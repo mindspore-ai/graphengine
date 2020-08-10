@@ -28,6 +28,7 @@
 
 using std::vector;
 
+/*lint -e512 -e737 -e752*/
 namespace ge {
 const char OP_DESC_QUANT_PARAMS[] = "quantize_factor";
 static const int CONST_OP_NORMAL_WEIGHT_SIZE = 1;
@@ -132,11 +133,11 @@ graphStatus OpDescUtils::GetQuantizeFactorParams(const OpDesc &op_desc, Quantize
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 OpDescUtils::SetQuantizeFactorParams(const OpDescPtr &op_desc, const QuantizeFactorParams &quant) {
   GE_CHK_BOOL_EXEC_INFO(op_desc != nullptr, return GRAPH_FAILED, "op_desc is nullptr");
-  return op_desc->SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));
+  return op_desc->SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));  // lint !e732
 }
 
 graphStatus OpDescUtils::SetQuantizeFactorParams(OpDesc &op_desc, const QuantizeFactorParams &quant) {
-  return op_desc.SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));
+  return op_desc.SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));  // lint !e732
 }
 
 GeTensorPtr OpDescUtils::MutableWeights(OpDesc &op_desc) {
@@ -197,24 +198,33 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::
       continue;
     }
     auto in_node = out_anchor->GetOwnerNode();
-    if ((in_node->GetType() == CONSTANT) || (in_node->GetType() == CONSTANTOP)) {
-      ret.push_back(in_node);
-    } else if (in_node->GetType() == DATA) {
-      const ComputeGraphPtr &graph = node.GetOwnerComputeGraph();
-      GE_CHK_BOOL_EXEC(graph != nullptr, continue, "Owner graph is null");
-
-      const NodePtr &parent_node = graph->GetParentNode();
-      if (parent_node == nullptr) {
-        continue;  // Root graph.
+    while (true) {
+      if (in_node == nullptr) {
+        break;
       }
-
-      if (kWhileOpTypes.count(parent_node->GetType()) > 0) {
-        continue;  // Subgraph of While cond or body.
-      }
-
-      NodePtr input_node = NodeUtils::GetParentInput(in_node);
-      if ((input_node != nullptr) && ((input_node->GetType() == CONSTANT) || (input_node->GetType() == CONSTANTOP))) {
-        ret.push_back(input_node);
+      if ((in_node->GetType() == CONSTANT) || (in_node->GetType() == CONSTANTOP)) {
+        ret.push_back(in_node);
+        break;
+      } else if (in_node->GetType() == DATA) {
+        if (NodeUtils::IsWhileVaryingInput(in_node)) {
+          break;
+        }
+        in_node = NodeUtils::GetParentInput(in_node);
+      } else if ((in_node->GetType() == ENTER) || (in_node->GetType() == REFENTER)) {
+        bool is_constant = false;
+        (void)AttrUtils::GetBool(in_node->GetOpDesc(), ENTER_ATTR_CONSTANT_FLAG, is_constant);
+        if (!is_constant) {
+          break;
+        }
+        // Enter node has and only has one input
+        if (in_node->GetInDataNodes().size() != 1) {
+          GELOGW("Check number of input_nodes for Enter node %s failed, size=%zu.", node.GetName().c_str(),
+                 in_node->GetInDataNodes().size());
+          break;
+        }
+        in_node = in_node->GetInDataNodes().at(0);
+      } else {
+        break;
       }
     }
   }
@@ -245,7 +255,7 @@ size_t OpDescUtils::GetNonConstInputsSize(const ge::Node &node) {
         continue;
       }
     }
-    return input_num;
+    return input_num;  // lint !e712
   } else {
     GE_IF_BOOL_EXEC(
       node.GetInDataNodes().size() < GetConstInputs(node).size(),
@@ -350,7 +360,7 @@ bool OpDescUtils::IsNonConstInput(const ge::Node &node, const size_t index) {
   bool ret = false;
   if (index < node.GetAllInDataAnchors().size()) {
     if (NodeUtils::IsAnchorStatusSet(node)) {
-      ret = (ge::AnchorUtils::GetStatus(node.GetInDataAnchor(static_cast<int>(index))) == ANCHOR_DATA);
+      ret = (ge::AnchorUtils::GetStatus(node.GetInDataAnchor(static_cast<int>(index))) == ANCHOR_DATA);  // lint !e712
     } else {
       for (const auto &anchor : node.GetAllInDataAnchors()) {
         if (anchor->GetIdx() != static_cast<int>(index)) {
@@ -435,10 +445,27 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<GeTensorPtr> OpDescUtils::MutableWeights(const ge::Node &node) {
   vector<GeTensorPtr> ret;
-  GE_CHK_BOOL_EXEC(node.GetOpDesc() != nullptr, return ret, "node.GetOpDesc is nullptr!");
+  auto op_desc = node.GetOpDesc();
+  GE_CHK_BOOL_EXEC(op_desc != nullptr, return ret, "op_desc is nullptr!");
+  // Place holder operator, try to get the weight from parent node
+  // when parent node is const operator
+  if (node.GetType() == PLACEHOLDER) {
+    std::string parent_op;
+    (void)AttrUtils::GetStr(op_desc, "parentOpType", parent_op);
+    // This if judgment is necessary because the current subgraph optimization is multithreaded
+    // and the parent node of the PLD operation should be a stable type, such as const
+    if (parent_op == CONSTANT || parent_op == CONSTANTOP) {
+      NodePtr parent_node = nullptr;
+      parent_node = op_desc->TryGetExtAttr("parentNode", parent_node);
+      if (parent_node != nullptr) {
+        op_desc = parent_node->GetOpDesc();
+        GELOGD("pld[%s] get weight from const[%s]", node.GetName().c_str(), op_desc->GetName().c_str());
+      }
+    }
+  }
   // Const operator, take the weight directly
-  if (node.GetOpDesc()->GetType() == CONSTANT || (node.GetOpDesc()->GetType() == CONSTANTOP)) {
-    auto weight = MutableWeights(node.GetOpDesc());
+  if (op_desc->GetType() == CONSTANT || (op_desc->GetType() == CONSTANTOP)) {
+    auto weight = MutableWeights(op_desc);
     if (weight == nullptr) {
       GELOGI("const op has no weight, op name:%s", node.GetName().c_str());
       return ret;
@@ -733,3 +760,4 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDescUtils::SetSubgr
   return op_desc->SetSubgraphInstanceName(iter->second, subgraph_instance_name);
 }
 }  // namespace ge
+/*lint +e512 +e737 +e752*/

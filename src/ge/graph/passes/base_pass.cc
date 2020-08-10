@@ -66,7 +66,7 @@ void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::queue<NodePtr> &n
 }
 
 Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unordered_set<NodePtr> &nodes_re_pass,
-                 std::unordered_set<Node *> &nodes_deleted, std::unordered_set<Node *> &nodes_seen) {
+                 std::unordered_set<NodePtr> &nodes_deleted, std::unordered_set<Node *> &nodes_seen) {
   if (node == nullptr) {
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
@@ -106,7 +106,7 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unorder
 
     auto nodes_deleted_by_pass = name_to_pass.second->GetNodesDeleted();
     nodes_deleted.insert(nodes_deleted_by_pass.begin(), nodes_deleted_by_pass.end());
-    if (nodes_deleted_by_pass.count(node.get()) > 0) {
+    if (nodes_deleted_by_pass.count(node) > 0) {
       GELOGD("The node %s was deleted by pass %s, stop the remain passes", node->GetName().c_str(),
              name_to_pass.first.c_str());
       break;
@@ -153,7 +153,7 @@ Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> 
     return FAILED;
   }
 
-  AddNodeDeleted(node.get());
+  AddNodeDeleted(node);
   return SUCCESS;
 }
 
@@ -182,7 +182,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
   GELOGD("Begin to run pass on graph, passes count %zu", names_to_passes.size());
   std::queue<NodePtr> nodes;
   std::unordered_set<Node *> nodes_seen;
-  std::unordered_set<Node *> nodes_deleted;
+  std::unordered_set<NodePtr> nodes_deleted;
   std::unordered_set<NodePtr> nodes_re_pass;
   std::unordered_set<NodePtr> nodes_last;
   GetAllNodesNoInputEdge(graph_, nodes, nodes_seen, nodes_last);
@@ -202,7 +202,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
 
       (void)nodes_re_pass.erase(node);
       GE_IF_BOOL_EXEC(node == nullptr, GELOGW("node is null"); continue);
-      if (nodes_deleted.count(node.get()) > 0) {
+      if (nodes_deleted.count(node) > 0) {
         GELOGD("The node %s was deleted before, skip it.", node->GetName().c_str());
         continue;
       }

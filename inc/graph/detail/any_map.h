@@ -38,7 +38,7 @@ class TypeID {
   bool operator==(const TypeID &__arg) const { return type_ == __arg.type_; }
 
  private:
-  explicit TypeID(string type) : type_(std::move(type)) {}
+  explicit TypeID(string type) : type_(std::move(type)) {}  // lint !e30 !e32
 
   string type_;
 };
@@ -52,6 +52,8 @@ class AnyMap {
   bool Get(const string &name, T &retValue) const;
 
   bool Has(const string &name) const { return anyValues_.find(name) != anyValues_.end(); }
+
+  void Swap(AnyMap &other) { anyValues_.swap(other.anyValues_); }
 
  private:
   class Placeholder {

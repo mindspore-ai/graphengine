@@ -31,27 +31,37 @@ class ErrorManager {
 
   ///
   /// @brief init
-  /// @param [in] path current so path
+  /// @param [in] path: current so path
   /// @return int 0(success) -1(fail)
   ///
   int Init(std::string path);
 
   ///
   /// @brief Report error message
-  /// @param [in] errCode  error code
-  /// @param [in] mapArgs  parameter map
+  /// @param [in] error_code: error code
+  /// @param [in] args_map: parameter map
   /// @return int 0(success) -1(fail)
   ///
   int ReportErrMessage(std::string error_code, const std::map<std::string, std::string> &args_map);
 
+  ///
   /// @brief output error message
-  /// @param [in] handle  print handle
+  /// @param [in] handle: print handle
   /// @return int 0(success) -1(fail)
   ///
   int OutputErrMessage(int handle);
 
+  ///
+  /// @brief output  message
+  /// @param [in] handle: print handle
+  /// @return int 0(success) -1(fail)
+  ///
+  int OutputMessage(int handle);
+
+  ///
   /// @brief Report error message
-  /// @param [in] vector parameter key, vector parameter value
+  /// @param [in] key: vector parameter key
+  /// @param [in] value: vector parameter value
   ///
   void ATCReportErrMessage(std::string error_code, const std::vector<std::string> &key = {},
                            const std::vector<std::string> &value = {});
@@ -60,7 +70,7 @@ class ErrorManager {
   struct ErrorInfo {
     std::string error_id;
     std::string error_message;
-    std::vector<std::string> arglist;
+    std::vector<std::string> arg_list;
   };
 
   ErrorManager() {}
@@ -77,7 +87,8 @@ class ErrorManager {
 
   bool is_init_ = false;
   std::map<std::string, ErrorInfo> error_map_;
-  std::vector<std::string> error_message_evc_;
+  std::vector<std::string> error_messages_;
+  std::vector<std::string> warning_messages_;
 };
 
 #endif  // ERROR_MANAGER_H_

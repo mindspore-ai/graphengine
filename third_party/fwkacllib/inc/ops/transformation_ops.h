@@ -21,6 +21,35 @@
 
 namespace ge {
 /**
+*@brief This operation convert output dataType and shape
+
+*@par Inputs:
+*The input handle must have the resource type. Inputs include: \n
+*@li x:A list of Tensor objects. One or more tensors from which \n
+the enqueued tensors should be taken.
+
+*@par Outputs:
+*@li y:A list of Tensor objects. One or more tensors from which \n
+the enqueued tensors should be taken.
+
+*@par Attributes:
+*@li type: An optional ge::DataType. It refers to the target data type of outputs.
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow QueueIsClosed operator.
+*/
+
+REG_OP(Bitcast)
+    .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+                          DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
+                          DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
+    .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+                           DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE, DT_COMPLEX64,
+                           DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
+    .REQUIRED_ATTR(type, Type)
+    .OP_END_FACTORY_REG(Bitcast)
+
+/**
 *@brief Convert tensor format from HWCN to C1HWNCoC0.
 
 *@par Inputs:
@@ -94,6 +123,13 @@ REG_OP(Transpose)
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Transpose)
 
+REG_OP(TransData)
+    .INPUT(src, TensorType::BasicType())
+    .OUTPUT(dst, TensorType::BasicType())
+    .REQUIRED_ATTR(src_format, String)
+    .REQUIRED_ATTR(dst_format, String)
+    .OP_END_FACTORY_REG(TransData)
+
 /**
 *@brief Permutes the dimensions according to order.\n
         The returned tensor's dimension i will correspond to the input dimension order[i].
@@ -102,7 +138,7 @@ REG_OP(Transpose)
 *x: A Tensor. Must be one of the following types: float16, float32.
 
 *@par Attributes:
-*order: A permutation of the dimensions of "x".support any axis transformation
+*order: A permutation of the dimensions of "x".Type is int32.support any axis transformation.Defaults to "{0}"
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -291,7 +327,7 @@ REG_OP(DepthToSpace)
 *@brief Permutes data into spatial data blocks and then prunes them.
 
 *@par Inputs:
-*@li x: A 4D Tensor with format NC1HWC0.
+*@li x: A 4D Tensor with format NHWC.
 *@li crops: A 1D list or tuple of int32 or int64.
 
 *Must be one of the following types: float16, float32
@@ -300,7 +336,7 @@ REG_OP(DepthToSpace)
 *block_size: A required int8, int16, int32, or int64. No default value.
 
 *@par Outputs:
-*y: A 4D Tensor with format NC1HWC0,
+*y: A 4D Tensor with format NHWC,
 
 * of type float16 or float32.
 
@@ -365,7 +401,7 @@ REG_OP(BatchToSpaceD)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NC1HWC0 Tensor. Must be one of the following types:
+*@li x: An NHWC Tensor. Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 *@li paddings: A 2D tensor of type int, specifying the input.
@@ -389,7 +425,7 @@ REG_OP(SpaceToBatch)
 *@brief Outputs a copy of the input tensor where values from the "height" and "width" dimensions are padded and rearranged to the "batch" dimension.
 
 *@par Inputs:
-*x: An NC1HWC0 Tensor. Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+*x: An NHWC Tensor. Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
 
 
 *@par Attributes:
@@ -598,6 +634,13 @@ REG_OP(Compress)
     .OUTPUT(compress_index, TensorType({DT_INT8}))
     .REQUIRED_ATTR(compress_parameters, ListInt)
     .OP_END_FACTORY_REG(Compress)
+
+REG_OP(CompressFcOp)
+    .INPUT(weight, TensorType({DT_INT8}))
+    .OUTPUT(weight_compress, TensorType({DT_INT8}))
+    .OUTPUT(compress_index, TensorType({DT_INT8}))
+    .REQUIRED_ATTR(compress_parameters, ListInt)
+    .OP_END_FACTORY_REG(CompressFcOp)
 }  // namespace ge
 
 #endif  // GE_OP_TRANSFORMATION_OPS_H

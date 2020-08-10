@@ -22,20 +22,15 @@
 #include "graph/load/new_model_manager/model_utils.h"
 
 namespace {
-const uint32_t kDynamicBtachParamNum = 1;
-const uint32_t kDynamicResolutionParamNum = 2;
-}  // namespace
+const uint8_t kStreamSwitchnInputNum = 1;
+}
 
 namespace ge {
 Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("StreamSwitchNTaskInfo Init Start.");
-  if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
-    return PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(davinci_model);
 
-  Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
-  if (ret != SUCCESS) {
+  if (SetStream(task_def.stream_id(), davinci_model->GetStreamList()) != SUCCESS) {
     return FAILED;
   }
 
@@ -48,10 +43,6 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
 
   // set size_
   input_size_ = stream_switchn_def.size();
-  if (input_size_ != kDynamicBtachParamNum && input_size_ != kDynamicResolutionParamNum) {
-    GELOGE(FAILED, "The size of dynamic batch or imagesize input is 1 or 2, now it is %u.", input_size_);
-    return FAILED;
-  }
 
   // set value_ptr_
   auto value = stream_switchn_def.target_value();
@@ -75,14 +66,16 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
     GELOGE(FAILED, "Get true stream ptr of switchN op failed.");
     return FAILED;
   }
-
-  // set input_ptr_
-  auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-  if (input_data_addr.empty()) {
-    GELOGE(FAILED, "Input data addr is nullptr.");
-    return FAILED;
+  if (davinci_model->IsKnownNode()) {
+    input_ptr_ = davinci_model->GetCurrentFixedAddr(args_offset_);
+  } else {
+    auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
+    if (input_data_addr.empty()) {
+      GELOGE(FAILED, "Input data addr is nullptr.");
+      return FAILED;
+    }
+    input_ptr_ = input_data_addr[0];
   }
-  input_ptr_ = input_data_addr[0];
   davinci_model->DisableZeroCopy(input_ptr_);
   GELOGI("StreamSwitchNTaskInfo Init Success, inputSize:%u, elementSize:%d, trueStreamID:%ld.", input_size_,
          element_size_, op_desc->GetStreamId());
@@ -96,7 +89,7 @@ Status StreamSwitchNTaskInfo::Distribute() {
     rtStreamSwitchN(input_ptr_, input_size_, value_ptr_, true_stream_ptr_, element_size_, stream_, data_type_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   GELOGI("StreamSwitchNTaskInfo Distribute Success. inputSize:%u, elementSize:%d, datatype:%d.", input_size_,
@@ -140,5 +133,26 @@ Status StreamSwitchNTaskInfo::GetTrueStreamPtr(const OpDescPtr &op_desc, Davinci
   return SUCCESS;
 }
 
+Status StreamSwitchNTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
+  GE_CHECK_NOTNULL(davinci_model);
+  auto stream_switchn_def = task_def.stream_switch_n();
+  uint32_t op_index = stream_switchn_def.op_index();
+  GELOGI("Begin to calculate args, op_index is: %u", op_index);
+  auto op_desc = davinci_model->GetOpByIndex(op_index);
+  GE_CHECK_NOTNULL(op_desc);
+  GELOGI("Calc opType[%s] args size. Node name is [%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
+  if (op_desc->GetInputsSize() != kStreamSwitchnInputNum) {
+    GELOGE(FAILED, "Stream switchn op only have one data input. Now input size is %zu", op_desc->GetInputsSize());
+    return FAILED;
+  }
+  string input_tensor_name = op_desc->GetInputNameByIndex(0);
+  args_offset_ = davinci_model->GetFixedAddrsSize(input_tensor_name);
+  auto tensor_desc = op_desc->GetInputDesc(0);
+  int64_t tensor_size = 0;
+  GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
+  davinci_model->SetTotalFixedAddrsSize(input_tensor_name, tensor_size);
+  GELOGI("Calculate stream switchn task args , tensor_size %ld, args_offset %ld", tensor_size, args_offset_);
+  return SUCCESS;
+}
 REGISTER_TASK_INFO(RT_MODEL_TASK_STREAM_SWITCH_N, StreamSwitchNTaskInfo);
 }  // namespace ge

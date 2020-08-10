@@ -16,6 +16,7 @@
 
 #include "graph/load/new_model_manager/cpu_queue_schedule.h"
 #include "common/debug/ge_log.h"
+#include "common/debug/log.h"
 
 namespace {
 const uint32_t kCoreDim = 1;  // for rtCpuKernelLaunch
@@ -58,7 +59,7 @@ Status CpuTaskModelDequeue::Init(uint32_t queue_id, uintptr_t &in_mbuf) {
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
   in_mbuf = reinterpret_cast<uintptr_t>(args_) + sizeof(MbufQueueInfo);
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
@@ -69,7 +70,7 @@ Status CpuTaskModelDequeue::Init(uint32_t queue_id, uintptr_t &in_mbuf) {
   status = rtMemcpy(args_, args_size_, &queue_info, sizeof(MbufQueueInfo), RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   return SUCCESS;
@@ -84,7 +85,7 @@ Status CpuTaskModelDequeue::Distribute() {
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskModelDequeue, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ModelDequeue failed, status: 0x%X", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   GELOGI("Cpu kernel launch model dequeue task success.");
@@ -98,24 +99,24 @@ Status CpuTaskModelDequeue::Distribute() {
 /// @param [in] outside_addrs: model input/output memory addr
 /// @return: 0 for success / others for failed
 ///
-Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list,
-                             std::map<const void *, std::vector<void *>> &outside_addrs) {
+Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, ZeroCopyOffset> &outside_addrs) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
     GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
     return FAILED;
   }
 
   args_size_ = sizeof(AddrMapInfo);
-  rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
-  }
+  GE_CHK_RT_RET(rtMalloc(&args_, args_size_, RT_MEMORY_HBM));
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
   AddrMapInfo addr_map_info;
-  for (const auto &addrs : outside_addrs) {
-    addr_map_info.addr_num += addrs.second.size();
+  for (auto &addrs : outside_addrs) {
+    auto &addrs_mapping_list = addrs.second.GetOutsideAddrs();
+    GE_CHK_BOOL_EXEC(!addrs_mapping_list.empty(), return PARAM_INVALID, "not set outside_addrs");
+    std::map<const void *, std::vector<void *>> virtual_args_addrs = addrs_mapping_list[0];
+    for (const auto &virtual_args_addr : virtual_args_addrs) {
+      addr_map_info.addr_num += virtual_args_addr.second.size();
+    }
   }
   GELOGI("addr_map_info.addr_num is %u", addr_map_info.addr_num);
 
@@ -123,38 +124,31 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list,
   size_t index = 0;
   vector<uint64_t> src_addrs;
   vector<uint64_t> dst_addrs;
-  for (const auto &addrs : outside_addrs) {
-    for (size_t i = 0; i < addrs.second.size(); ++i) {
-      src_addrs.push_back(mbuf_list.at(index));
-      dst_addrs.push_back(reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(addrs.second.at(i))));
+  for (auto &addrs : outside_addrs) {
+    auto &addrs_mapping_list = addrs.second.GetOutsideAddrs();
+    GE_CHK_BOOL_EXEC(!addrs_mapping_list.empty(), return PARAM_INVALID, "not set outside_addrs");
+    std::map<const void *, std::vector<void *>> virtual_args_addrs = addrs_mapping_list[0];
+    for (const auto &virtual_args_addr : virtual_args_addrs) {
+      for (size_t i = 0; i < virtual_args_addr.second.size(); ++i) {
+        src_addrs.push_back(mbuf_list.at(index));
+        dst_addrs.push_back(reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(virtual_args_addr.second.at(i))));
+      }
     }
     index++;
   }
 
   // malloc mem for src_addrs/dst_addrs, and copy data of src_addrs/dst_addrs
-  status = rtMalloc(&src_addr_, src_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
-  }
-  status = rtMemcpy(src_addr_, src_addrs.size() * sizeof(uint64_t), src_addrs.data(),
-                    src_addrs.size() * sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
-  }
+  GE_CHK_RT_RET(rtMalloc(&src_addr_, src_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM));
+  rtError_t status = rtMemcpy(src_addr_, src_addrs.size() * sizeof(uint64_t), src_addrs.data(),
+                              src_addrs.size() * sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
+  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", status);
+                  return RT_ERROR_TO_GE_STATUS(status);)
 
-  status = rtMalloc(&dst_addr_, dst_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
-  }
+  GE_CHK_RT_RET(rtMalloc(&dst_addr_, dst_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM));
   status = rtMemcpy(dst_addr_, dst_addrs.size() * sizeof(uint64_t), dst_addrs.data(),
                     dst_addrs.size() * sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
-  }
+  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", status);
+                  return RT_ERROR_TO_GE_STATUS(status);)
 
   // src_addr_list is init to src_addr, which is the point to src_addrs
   if (!src_addrs.empty() && !dst_addrs.empty()) {
@@ -164,10 +158,8 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list,
   }
 
   status = rtMemcpy(args_, args_size_, &addr_map_info, sizeof(AddrMapInfo), RT_MEMCPY_HOST_TO_DEVICE);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
-  }
+  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", status);
+                  return RT_ERROR_TO_GE_STATUS(status);)
   return SUCCESS;
 }
 
@@ -180,7 +172,7 @@ Status CpuTaskZeroCopy::Distribute() {
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskZeroCopy, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ZeroCopy failed, status: 0x%X", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   GELOGI("Cpu kernel launch zero copy task success.");
@@ -225,7 +217,7 @@ Status CpuTaskPrepareOutput::Init(uintptr_t addr, uint32_t size, uintptr_t in_mb
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
   out_mbuf = reinterpret_cast<uintptr_t>(args_) + sizeof(PrepareOutputInfo);
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
@@ -239,7 +231,7 @@ Status CpuTaskPrepareOutput::Init(uintptr_t addr, uint32_t size, uintptr_t in_mb
   status = rtMemcpy(args_, args_size_, &prepare, sizeof(PrepareOutputInfo), RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   return SUCCESS;
@@ -254,7 +246,7 @@ Status CpuTaskPrepareOutput::Distribute() {
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskPrepareOutput, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt CpuKernelLaunch PrepareOutput failed, status: 0x%X", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   GELOGI("Cpu kernel launch prepare output task success.");
@@ -279,7 +271,7 @@ Status CpuTaskModelEnqueue::Init(uint32_t queue_id, uintptr_t out_mbuf) {
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
@@ -289,7 +281,7 @@ Status CpuTaskModelEnqueue::Init(uint32_t queue_id, uintptr_t out_mbuf) {
   status = rtMemcpy(args_, args_size_, &queue_info, args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   return SUCCESS;
@@ -304,7 +296,7 @@ Status CpuTaskModelEnqueue::Distribute() {
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskModelEnqueue, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ModelEnqueue failed, status: 0x%X", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   GELOGI("Cpu kernel launch model enqueue task success.");
@@ -336,10 +328,10 @@ Status CpuTaskActiveEntry::Distribute() {
   rtError_t ret = rtStreamActive(active_stream_, stream_);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt StreamActive failed, ret: 0x%X", ret);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(ret);
   }
 
-  GELOGI("Cpu kernel launch wait end task success.");
+  GELOGI("Cpu kernel launch active entry task success.");
   return SUCCESS;
 }
 
@@ -359,14 +351,14 @@ Status CpuTaskWaitEndGraph::Init(uint32_t model_id) {
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
   status = rtMemcpy(args_, args_size_, &model_id, args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   return SUCCESS;
@@ -381,7 +373,7 @@ Status CpuTaskWaitEndGraph::Distribute() {
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskWaitEndGraph, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt CpuKernelLaunch WaitEndGraph failed, status: 0x%X", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   GELOGI("Cpu kernel launch wait end task success.");
@@ -404,14 +396,14 @@ Status CpuTaskModelRepeat::Init(uint32_t model_id) {
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
   status = rtMemcpy(args_, args_size_, &model_id, args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   return SUCCESS;
@@ -426,7 +418,7 @@ Status CpuTaskModelRepeat::Distribute() {
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskModelRepeat, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ModelRepeat failed, status: 0x%x", status);
-    return RT_FAILED;
+    return RT_ERROR_TO_GE_STATUS(status);
   }
 
   GELOGI("Cpu kernel launch repeat task success.");

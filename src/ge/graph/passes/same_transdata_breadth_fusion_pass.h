@@ -42,7 +42,7 @@ class SameTransdataBreadthFusionPass : public GraphPass {
   void GetSubGraphNodesInfo();
 
   void EraseInvalidAnchorsPair();
-
+  std::set<std::string> GetInControlIdentityNodes(const NodePtr &node, int subgraph_index);
   OpDescPtr GetCastOp(const GeTensorDesc &in_desc, const GeTensorDesc &out_desc);
 
   graphStatus AddCastNode(const ComputeGraphPtr &graph, int anchors_index, OutDataAnchorPtr &pre_out_anchor,

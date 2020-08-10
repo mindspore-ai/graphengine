@@ -31,6 +31,7 @@ namespace ge {
 struct SingleOpTensorDesc {
   std::string name;
   std::vector<int64_t> dims;
+  std::vector<std::vector<int64_t>> dim_ranges;
   ge::Format format = ge::FORMAT_RESERVED;
   ge::DataType type = ge::DT_UNDEFINED;
 };
@@ -68,8 +69,10 @@ class SingleOpParser {
  private:
   static Status ReadJsonFile(const std::string &file, nlohmann::json &json_obj);
   static bool Validate(const SingleOpDesc &op_desc);
-  static OpDesc *CreateOpDesc(const std::string &op_type);
+  static std::unique_ptr<OpDesc> CreateOpDesc(const std::string &op_type);
   static Status ConvertToBuildParam(int index, const SingleOpDesc &single_op_desc, SingleOpBuildParam &build_param);
+  static Status VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc);
+  static Status SetShapeRange(const SingleOpTensorDesc &tensor_desc, GeTensorDesc &ge_tensor_desc);
 };
 }  // namespace ge
 

@@ -40,6 +40,7 @@ using std::to_string;
 using std::unique_ptr;
 using std::vector;
 
+/*lint -e148*/
 namespace ge {
 class Operator;
 class TensorDesc;
@@ -98,6 +99,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
 
   OpRegistrationData &DelInputWithOriginalType(int input_idx, const std::string &ori_type);
 
+  OpRegistrationData &InputReorderVector(const vector<int> &input_order);
+
   domi::ImplyType GetImplyType() const;
   std::string GetOmOptype() const;
   std::set<std::string> GetOriginOpTypeSet() const;
@@ -130,4 +133,5 @@ namespace ge {
 using OpRegistrationData = domi::OpRegistrationData;
 using OpReceiver = domi::OpReceiver;
 }  // namespace ge
+/*lint +e148*/
 #endif  // INC_EXTERNAL_REGISTER_REGISTER_H_

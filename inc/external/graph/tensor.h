@@ -126,5 +126,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Tensor {
   friend class TensorAdapter;
 };
 }  // namespace ge
+/*lint +e148*/
 
 #endif  // INC_EXTERNAL_GRAPH_TENSOR_H_

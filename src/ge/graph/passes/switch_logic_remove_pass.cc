@@ -145,7 +145,7 @@ Status SwitchLogicRemovePass::RemoveSwitchNodeLogically(int parent_index, NodePt
       GE_CHECK_NOTNULL(node);
       GELOGD("Remove node %s from inactivate branch from switch %s", node->GetName().c_str(),
              switch_node->GetName().c_str());
-      AddNodeDeleted(node.get());
+      AddNodeDeleted(node);
     }
     for (auto &node : end_nodes) {
       GE_CHECK_NOTNULL(node);

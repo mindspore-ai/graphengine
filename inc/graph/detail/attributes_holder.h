@@ -50,7 +50,7 @@ class OpDef;
 class GraphDef;
 }  // namespace proto
 
-using ProtoAttrMap = ::google::protobuf::Map<::std::string, ::ge::proto::AttrDef>;
+using ProtoAttrMap = ::google::protobuf::Map<::std::string, ::ge::proto::AttrDef>;  // lint !e1073
 using ProtoMsgOwner = std::shared_ptr<::google::protobuf::Message>;
 
 template <class ProtoType>
@@ -95,6 +95,14 @@ class GeIrProtoHelper {
     }
   }
 
+  void Swap(GeIrProtoHelper<ProtoType> &other) {
+    protoOwner_.swap(other.protoOwner_);
+
+    ProtoType *temp = protoMsg_;
+    protoMsg_ = other.protoMsg_;
+    other.protoMsg_ = temp;
+  }
+
   // protoMsg_ is part of protoOwner_, they have the same runtime
   ProtoMsgOwner protoOwner_ = nullptr;
   ProtoType *protoMsg_ = nullptr;
@@ -120,6 +128,11 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrHolder {
 
   void CopyAttrsFrom(const AttrHolder &holder);
 
+  void Swap(AttrHolder &holder) {
+    requiredAttrs_.swap(holder.requiredAttrs_);
+    extAttrs_.Swap(holder.extAttrs_);
+  }
+
   template <class T>
   bool SetExtAttr(const string &name, const T &value) {
     return extAttrs_.Set(name, value);
@@ -134,7 +147,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrHolder {
  protected:
   graphStatus AddRequiredAttr(const std::string &name);
   const std::unordered_set<string> GetAllAttrNames() const;
-  const std::map<string, GeAttrValue> GetAllAttrs() const;
+  const std::map<string, GeAttrValue> GetAllAttrs() const;  // lint !e1073
 
   virtual ProtoAttrMapHelper MutableAttrMap() = 0;
   virtual ConstProtoAttrMapHelper GetAttrMap() const = 0;
@@ -149,5 +162,4 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrHolder {
   AnyMap extAttrs_;
 };
 }  // namespace ge
-
 #endif  // INC_GRAPH_DETAIL_ATTRIBUTES_HOLDER_H_

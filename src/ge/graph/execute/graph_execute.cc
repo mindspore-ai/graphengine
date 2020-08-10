@@ -86,10 +86,10 @@ Status GraphExecutor::SetGraphContext(GraphContextPtr graph_context_ptr) {
   return SUCCESS;
 }
 
-Status GraphExecutor::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num) {
+Status GraphExecutor::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->SetDynamicSize(model_id, batch_num);
+  Status ret = model_manager->SetDynamicSize(model_id, batch_num, dynamic_type);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "SetDynamicSize failed");
     return ret;
@@ -120,7 +120,7 @@ Status GraphExecutor::FreeInOutBuffer() {
   }
 }
 
-Status GraphExecutor::MallocInOutBuffer(const std::vector<uint32_t> &buffer_size, std::vector<void *> &data_addr) {
+Status GraphExecutor::MallocInOutBuffer(const std::vector<uint64_t> &buffer_size, std::vector<void *> &data_addr) {
   if (malloc_flag_) {
     auto all_size_same = true;
     if (buffer_size.size() == buffer_size_.size()) {
@@ -169,7 +169,7 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
   graph_input_data.timestamp = 0;
   std::size_t inputSize = input_tensor.size();
   std::size_t output_size = output_desc.size();
-  std::vector<uint32_t> bufferSizeVec;
+  std::vector<uint64_t> bufferSizeVec;
   std::vector<void *> addrVec;
 
   for (std::size_t i = 0; i < inputSize; ++i) {
@@ -211,7 +211,7 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
 
   for (std::size_t j = 0; j < output_size; j++) {
     auto desc = output_desc[j];
-    uint32_t buffer_size = desc.size;
+    uint64_t buffer_size = desc.size;
 
     DataBuffer out_data_buf;
     out_data_buf.data = reinterpret_cast<uint8_t *>(addrVec[inputSize + j]);
@@ -225,6 +225,13 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
 
 Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                                        std::vector<GeTensor> &output_tensor) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  if (model_manager->IsDynamicShape(model_id)) {
+    GELOGI("[ExecuteGraph] GetInputOutputDescInfo via dynamic shape model executor, modelId=%u", model_id);
+    return model_manager->SyncExecuteModel(model_id, input_tensor, output_tensor);
+  }
+
   // Prepare input and output
   std::vector<InputOutputDescInfo> inputs_desc;
   std::vector<InputOutputDescInfo> output_desc;
@@ -479,12 +486,14 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
 /// @brief Get dynamic batch_info
 /// @param [in] model_id
 /// @param [out] batch_info
+/// @param [out] dynamic_type
 /// @return execute result
 ///
-Status GraphExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
+Status GraphExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
+                                          int32_t &dynamic_type) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->GetDynamicBatchInfo(model_id, batch_info);
+  Status ret = model_manager->GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
   if (ret != SUCCESS) {
     GELOGE(ret, "GetDynamicBatchInfo failed.");
     return ret;
@@ -492,12 +501,30 @@ Status GraphExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::ve
   return SUCCESS;
 }
 
-Status GraphExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info) {
+///
+/// @ingroup ge
+/// @brief Get combined dynamic dims info
+/// @param [in] model_id
+/// @param [out] batch_info
+/// @return execute result
+///
+Status GraphExecutor::GetCombinedDynamicDims(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->GetCurShape(model_id, batch_info);
+  Status ret = model_manager->GetCombinedDynamicDims(model_id, batch_info);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "GetCurShape failed");
+    GELOGE(ret, "GetCombinedDynamicDims failed.");
+    return ret;
+  }
+  return SUCCESS;
+}
+
+Status GraphExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetCurShape(model_id, batch_info, dynamic_type);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetCurShape failed");
     return ret;
   }
   return SUCCESS;
@@ -575,5 +602,4 @@ Status GraphExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t inde
 
   return SUCCESS;
 }
-
 }  // namespace ge

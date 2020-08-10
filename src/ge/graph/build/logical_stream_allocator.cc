@@ -22,18 +22,13 @@
 #include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/common/ge_call_wrapper.h"
 
 using std::map;
 using std::queue;
 using std::set;
 using std::string;
 using std::vector;
-
-namespace {
-const char *const kAICPUEngineName = "DNN_VM_AICPU";
-const char *const kAttrNameParentOpType = "parentOpType";
-const size_t kHeadNodeMaxNum = 820;  // calculated by 1024 * 0.8
-}  // namespace
 
 namespace ge {
 LogicalStreamPass::LogicalStreamPass(const string &name) : name_(name) {}
@@ -52,24 +47,6 @@ bool LogicalStreamPass::HasStreamLabel(const Subgraph &subgraph) const {
 
 bool LogicalStreamPass::HasAssignedStream(const Subgraph &subgraph) const {
   return subgraph.stream_id != kInvalidStream;
-}
-
-bool LogicalStreamPass::HasNonConstInputNode(const Subgraph &subgraph) const {
-  const SubGraphInfo &subgraph_info = subgraph.subgraph_info;
-  const auto &pld_to_end_map = subgraph_info.GetPld2EndMap();
-  for (const auto &pld_to_end : pld_to_end_map) {
-    const NodePtr &placeholder = pld_to_end.first;
-    if (placeholder != nullptr) {
-      string parent_op_type;
-      if (AttrUtils::GetStr(placeholder->GetOpDesc(), kAttrNameParentOpType, parent_op_type)) {
-        if ((parent_op_type != CONSTANT) && (parent_op_type != CONSTANTOP)) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
 }
 
 Status AssignByLabelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &subgraphs, Context &context) {
@@ -133,21 +110,6 @@ Status IndependentStreamPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
 
 Status AssignByDependencyPass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &subgraphs, Context &context) {
   bool changed = false;
-  if (IsHeadNodeExceeded(subgraphs)) {
-    int64_t &next_stream = context.next_stream;
-    for (const SubgraphPtr &subgraph : subgraphs) {
-      if (!HasAssignedStream(*subgraph)) {
-        subgraph->stream_id = next_stream;
-        changed = true;
-      }
-    }
-    if (changed) {
-      ++next_stream;
-      return SUCCESS;
-    }
-    return NOT_CHANGED;
-  }
-
   map<NodePtr, SubgraphPtr> end_subgraph_map;
   map<NodePtr, SubgraphPtr> pld_subgraph_map;
   InitEndSubgraphMap(subgraphs, end_subgraph_map);
@@ -188,24 +150,6 @@ Status AssignByDependencyPass::Run(ComputeGraphPtr graph, const vector<SubgraphP
   UpdateReusedSubgraphs();
 
   return changed ? SUCCESS : NOT_CHANGED;
-}
-
-bool AssignByDependencyPass::IsHeadNodeExceeded(const vector<SubgraphPtr> &subgraphs) const {
-  size_t aicpu_node_num = 0;
-  for (const SubgraphPtr &subgraph : subgraphs) {
-    if (subgraph->engine_conf.id == kAICPUEngineName && !HasNonConstInputNode(*subgraph)) {
-      const SubGraphInfo &subgraph_info = subgraph->subgraph_info;
-      auto compute_graph = subgraph_info.GetSubGraph();
-      aicpu_node_num += compute_graph->GetDirectNode().size() - subgraph_info.GetPld2EndMap().size() -
-                        subgraph_info.GetEnd2PldMap().size();
-      if (aicpu_node_num > kHeadNodeMaxNum) {
-        GELOGI("aicpu_node_num, %zu", aicpu_node_num);
-        return true;
-      }
-    }
-  }
-
-  return false;
 }
 
 void AssignByDependencyPass::InitEndSubgraphMap(const vector<SubgraphPtr> &subgraphs,
@@ -727,7 +671,7 @@ void LogicalStreamAllocator::RefreshContinuousStreams(const ComputeGraphPtr &gra
   int64_t stream_num = context_.next_stream;
   vector<bool> stream_has_node(stream_num);
 
-  for (const NodePtr &node : graph->GetAllNodes()) {
+  for (const NodePtr &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     if (node != nullptr) {
       auto op_desc = node->GetOpDesc();
       if (op_desc != nullptr) {
@@ -748,7 +692,7 @@ void LogicalStreamAllocator::RefreshContinuousStreams(const ComputeGraphPtr &gra
     }
   }
 
-  for (const NodePtr &node : graph->GetAllNodes()) {
+  for (const NodePtr &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     auto op_desc = node->GetOpDesc();
     if (op_desc != nullptr) {
       int64_t stream_id = op_desc->GetStreamId();

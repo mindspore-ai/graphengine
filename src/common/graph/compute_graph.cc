@@ -62,18 +62,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY string ComputeGraph::GetName() co
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ComputeGraph::SetName(const string &name) { name_ = name; }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY size_t ComputeGraph::GetAllNodesSize() const {
-  size_t s = nodes_.size();
-  for (const auto &sub_graph : sub_graph_) {
-    s += sub_graph->GetAllNodesSize();
-  }
-  return s;
+  return GetAllNodes().size();
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::Vistor<NodePtr> ComputeGraph::GetAllNodes() const {
-  if (sub_graph_.empty()) {
-    return Vistor<NodePtr>(shared_from_this(), nodes_);
-  }
-
   std::vector<std::shared_ptr<ComputeGraph>> subgraphs;
   return AllGraphNodes(subgraphs);
 }
@@ -104,6 +96,15 @@ ComputeGraph::Vistor<NodePtr> ComputeGraph::AllGraphNodes(std::vector<std::share
   }
 
   return Vistor<NodePtr>(shared_from_this(), all_nodes);
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraph::Vistor<NodePtr> ComputeGraph::GetNodes(
+  bool is_unknown_shape) const {
+  if (is_unknown_shape) {
+    return GetDirectNode();
+  } else {
+    return GetAllNodes();
+  }
 }
 
 size_t ComputeGraph::GetDirectNodesSize() const { return nodes_.size(); }
@@ -268,7 +269,7 @@ NodePtr ComputeGraph::AddNodeFront(NodePtr node) {
 
 NodePtr ComputeGraph::AddNodeFront(const OpDescPtr &op) {
   if (op == nullptr) {
-    GELOGE(GRAPH_FAILED, "The OpDesc ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The OpDesc ptr should not be null.");
     return nullptr;
   }
   op->SetId(nodes_.size());
@@ -278,9 +279,38 @@ NodePtr ComputeGraph::AddNodeFront(const OpDescPtr &op) {
   return AddNodeFront(node_ptr);
 }
 
+NodePtr ComputeGraph::AddNodeAfter(NodePtr node, const NodePtr &pre_node) {
+  if (node == nullptr || node->GetOpDesc() == nullptr || pre_node == nullptr) {
+    GELOGE(GRAPH_FAILED, "The node ptr or op desc should not be null.");
+    return nullptr;
+  }
+  node->GetOpDesc()->SetId(nodes_.size());
+  auto node_iter = std::find(nodes_.begin(), nodes_.end(), pre_node);
+  if (node_iter != nodes_.end()) {
+    nodes_.insert(node_iter + 1, node);
+  } else {
+    GELOGE(GRAPH_FAILED, "Cannot find pre_node in nodes_.");
+    return nullptr;
+  }
+
+  return node;
+}
+
+NodePtr ComputeGraph::AddNodeAfter(OpDescPtr &op, const NodePtr &pre_node) {
+  if (op == nullptr) {
+    GELOGE(GRAPH_FAILED, "The OpDesc ptr should not be null.");
+    return nullptr;
+  }
+  op->SetId(nodes_.size());
+  NodePtr node_ptr = shared_ptr<Node>(new (std::nothrow) Node(op, shared_from_this()));
+  GE_IF_BOOL_EXEC(node_ptr == nullptr, GELOGE(GRAPH_FAILED, "node_ptr is NULL!!!"); return nullptr);
+  GE_IF_BOOL_EXEC(node_ptr->Init() != GRAPH_SUCCESS, GELOGE(GRAPH_FAILED, "node init failed."); return nullptr);
+  return AddNodeAfter(node_ptr, pre_node);
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::AddNode(NodePtr node) {
   if (node == nullptr || node->GetOpDesc() == nullptr) {
-    GELOGE(GRAPH_FAILED, "The node ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
     return nullptr;
   }
   node->GetOpDesc()->SetId((int64_t)GetDirectNodesSize());
@@ -290,7 +320,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::AddNode(Nod
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::AddNode(OpDescPtr op) {
   if (op == nullptr) {
-    GELOGE(GRAPH_FAILED, "The OpDesc ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The OpDesc ptr should not be null.");
     return nullptr;
   }
   op->SetId(GetDirectNodesSize());
@@ -302,7 +332,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::AddNode(OpD
 
 NodePtr ComputeGraph::AddNode(OpDescPtr op, int64_t id) {  // for unserialize.
   if (op == nullptr) {
-    GELOGE(GRAPH_FAILED, "The OpDesc ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The OpDesc ptr should not be null.");
     return nullptr;
   }
   op->SetId(id);
@@ -315,7 +345,7 @@ NodePtr ComputeGraph::AddNode(OpDescPtr op, int64_t id) {  // for unserialize.
 
 NodePtr ComputeGraph::AddInputNode(NodePtr node) {
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "The node ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
     return nullptr;
   }
   input_nodes_.push_back(node);
@@ -327,7 +357,7 @@ NodePtr ComputeGraph::AddInputNode(NodePtr node) {
 
 NodePtr ComputeGraph::AddOutputNode(NodePtr node) {
   if (node == nullptr || node->GetOpDesc() == nullptr) {
-    GELOGE(GRAPH_FAILED, "The node ptr or opdesc should be not null.");
+    GELOGE(GRAPH_FAILED, "The node ptr or opdesc should not be null.");
     return nullptr;
   }
 
@@ -363,7 +393,7 @@ graphStatus ComputeGraph::RemoveConstInput(const NodePtr &node) {
     if (out_anchor->GetOwnerNode()->GetType() == CONSTANT || out_anchor->GetOwnerNode()->GetType() == CONSTANTOP) {
       GE_CHK_BOOL_RET_STATUS(GraphUtils::RemoveEdge(out_anchor, in_anchor) == GRAPH_SUCCESS, GRAPH_FAILED,
                              "Remove edge from const op failed.");
-      if (out_anchor->GetOwnerNode()->GetOutDataNodes().size() == 0) {
+      if (out_anchor->GetOwnerNode()->GetOutNodes().size() == 0) {
         GELOGI("Remove const op %s.", out_anchor->GetOwnerNode()->GetName().c_str());
         auto iter = find(nodes_.begin(), nodes_.end(), out_anchor->GetOwnerNode());
         if (iter != nodes_.end()) {
@@ -377,7 +407,7 @@ graphStatus ComputeGraph::RemoveConstInput(const NodePtr &node) {
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::RemoveNode(const NodePtr &node) {
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "The node ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
     return GRAPH_FAILED;
   }
 
@@ -406,7 +436,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::RemoveN
 // Used in sub_graph scenes
 graphStatus ComputeGraph::RemoveInputNode(const NodePtr &node) {
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "The node ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
     return GRAPH_FAILED;
   }
 
@@ -421,7 +451,7 @@ graphStatus ComputeGraph::RemoveInputNode(const NodePtr &node) {
 // Used in sub_graph scenes
 graphStatus ComputeGraph::RemoveOutputNode(const NodePtr &node) {
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "The node ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
     return GRAPH_FAILED;
   }
 
@@ -442,7 +472,7 @@ graphStatus ComputeGraph::RemoveOutputNode(const NodePtr &node) {
 
 std::shared_ptr<ComputeGraph> ComputeGraph::AddSubGraph(std::shared_ptr<ComputeGraph> sub_graph) {
   if (sub_graph == nullptr) {
-    GELOGE(GRAPH_FAILED, "The graph ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The graph ptr should not be null.");
     return nullptr;
   }
   sub_graph_.push_back(sub_graph);
@@ -452,7 +482,7 @@ std::shared_ptr<ComputeGraph> ComputeGraph::AddSubGraph(std::shared_ptr<ComputeG
 
 graphStatus ComputeGraph::RemoveSubGraph(const std::shared_ptr<ComputeGraph> &sub_graph) {
   if (sub_graph == nullptr) {
-    GELOGE(GRAPH_FAILED, "The graph ptr should be not null.");
+    GELOGE(GRAPH_FAILED, "The graph ptr should not be null.");
     return GRAPH_FAILED;
   }
 
@@ -491,11 +521,14 @@ ComputeGraph::AddSubgraph(const std::string &name, const std::shared_ptr<Compute
     return GRAPH_PARAM_INVALID;
   }
   if (!this->parent_graph_.expired()) {
-    GE_LOGE("The subgraphs can only be added to the root graph");
-    return GRAPH_PARAM_INVALID;
+    GELOGW("The subgraphs should only be added to the root graph");
   }
   if (name != subgraph->GetName()) {
     GELOGW("The subgraph name %s is different with input %s", subgraph->GetName().c_str(), name.c_str());
+  }
+  if (names_to_subgraph_.find(name) != names_to_subgraph_.end()) {
+    GE_LOGE("The subgraph %s existed", name.c_str());
+    return GRAPH_PARAM_INVALID;
   }
   sub_graph_.push_back(subgraph);
   names_to_subgraph_[name] = subgraph;
@@ -640,7 +673,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::InsertE
       GELOGW("node or OpDescPtr is nullptr.");
       continue;
     }
-    GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "The node should be not null."); return GRAPH_FAILED);
+    GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "The node should not be null."); return GRAPH_FAILED);
     if (node->GetOpDesc()->GetType() == RECV) {
       auto iter = find(node_vec.begin(), node_vec.end(), node);
       if (iter == node_vec.end()) {
@@ -786,7 +819,8 @@ graphStatus ComputeGraph::CollectBreadthOutNode(const NodePtr &node, std::map<No
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::TopologicalSorting() {
   auto ret = TopologicalSortingGraph();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Sub graph partition Failed");
+    GraphUtils::DumpGEGraphToOnnx(*this, "black_box");
+    GELOGE(ret, "Graph [%s] topological sort failed, saved to file black_box", name_.c_str());
     return ret;
   }
 
@@ -1001,6 +1035,54 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ComputeGraph::Dump() const {
   }
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ComputeGraph::Swap(ComputeGraph &graph) {
+  this->AttrHolder::Swap(graph);
+
+  origGraph_.swap(graph.origGraph_);
+
+  name_.swap(graph.name_);
+  std::swap(graph_id_, graph.graph_id_);
+  attrs_.Swap(graph.attrs_);
+  nodes_.swap(graph.nodes_);
+  all_nodes_infos_.swap(graph.all_nodes_infos_);
+  target_nodes_info_.swap(graph.target_nodes_info_);
+
+  input_nodes_.swap(graph.input_nodes_);
+  inputs_order_.swap(graph.inputs_order_);
+  std::swap(input_size_, graph.input_size_);
+  out_nodes_map_.swap(graph.out_nodes_map_);
+  std::swap(output_size_, graph.output_size_);
+  output_nodes_info_.swap(graph.output_nodes_info_);
+
+  sub_graph_.swap(graph.sub_graph_);
+  names_to_subgraph_.swap(graph.names_to_subgraph_);
+  parent_graph_.swap(graph.parent_graph_);
+  parent_node_.swap(graph.parent_node_);
+
+  // the members followed should not in the ComputeGraph class
+  std::swap(is_valid_flag_, graph.is_valid_flag_);
+  std::swap(is_summary_graph_, graph.is_summary_graph_);
+  std::swap(need_iteration_, graph.need_iteration_);
+  params_share_map_.swap(graph.params_share_map_);
+  op_name_map_.swap(graph.op_name_map_);
+  std::swap(session_id_, graph.session_id_);
+  std::swap(data_format_, graph.data_format_);
+  std::swap(is_unknown_shape_graph_, graph.is_unknown_shape_graph_);
+
+  // Update Node owner.
+  SetNodesOwner();
+  graph.SetNodesOwner();
+}
+
+void ComputeGraph::SetNodesOwner() {
+  for (const auto &node : nodes_) {
+    if (node == nullptr) {
+      continue;
+    }
+    node->SetOwnerComputeGraph(shared_from_this());
+  }
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::IsolateNode(const NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   auto next_nodes = node->GetOutAllNodes();
@@ -1104,9 +1186,11 @@ graphStatus ComputeGraph::RemoveExtraOutEdge(const NodePtr &node) {
 }
 
 graphStatus ComputeGraph::Verify() {
+  bool is_unknown_graph = GetGraphUnknownFlag();
   for (const auto &node_ptr : GetAllNodes()) {
     GE_CHECK_NOTNULL(node_ptr);
     GE_CHECK_NOTNULL(node_ptr->GetOpDesc());
+    GE_IF_BOOL_EXEC(is_unknown_graph, continue);
     GE_CHK_BOOL_EXEC(node_ptr->GetOpDesc()->CommonVerify() == GRAPH_SUCCESS, return GRAPH_FAILED,
                      "Verifying %s failed.", node_ptr->GetName().c_str());
   }

@@ -60,12 +60,19 @@ class GraphOptimize {
 
   const std::map<uint32_t, std::map<string, size_t>> &GetSummaryOutputIndexes() const {
     return summary_output_indexes_;
-  }
+  }  // lint !e1073
 
   void ClearSummaryOutputIndexes() { summary_output_indexes_.clear(); }
 
   // handle summary node before preRun graph
   Status HandleSummaryOp(ComputeGraphPtr &compute_graph);
+
+  // Identify reference node before optimize subgraph
+  Status IdentifyReference(ComputeGraphPtr &compute_graph);
+
+  Status HandleMemoryRWConflict(ComputeGraphPtr &compute_graph);
+
+  Status CheckRWConflict(ComputeGraphPtr &compute_graph, bool &has_conflict);
 
   void TranFrameOp(ComputeGraphPtr &compute_graph);
 
@@ -85,5 +92,5 @@ class GraphOptimize {
   std::map<uint32_t, std::map<string, size_t>> summary_output_indexes_ = {};
   std::string func_bin_path_;
 };
-};      // namespace ge
+}  // namespace ge
 #endif  // GE_GRAPH_OPTIMIZE_GRAPH_OPTIMIZE_H_

@@ -19,7 +19,6 @@
 
 namespace ge {
 namespace formats {
-
 static const int kCubeSize = 16;
 static const int kNiSize = 16;
 static const int64_t kShapeItemNumMAX = 1024UL * 1024UL * 1024UL * 1024UL;
@@ -47,7 +46,6 @@ enum FracZDimIndex { kFracZHWC1, kFracZN0, kFracZNi, kFracZC0, kFracZDimsNum };
 enum DhwcnDimIndex { kDhwcnD, kDhwcnH, kDhwcnW, kDhwcnC, kDhwcnN, kDhwcnDimsNum };
 
 enum DhwncDimIndex { kDhwncD, kDhwncH, kDhwncW, kDhwncN, kDhwncC, kDhwncDimsNum };
-
 }  // namespace formats
 }  // namespace ge
 #endif  // GE_COMMON_FORMATS_UTILS_FORMATS_DEFINITIONS_H_

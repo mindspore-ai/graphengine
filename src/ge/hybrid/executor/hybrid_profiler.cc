@@ -59,11 +59,10 @@ void HybridProfiler::Dump(std::ostream &output_stream) {
 
   auto first_evt = events_[0];
   auto start = first_evt.timestamp;
-  output_stream << "Start " << first_evt.desc << std::endl;
   std::vector<decltype(start)> prev_timestamps;
   prev_timestamps.resize(kMaxEventTypes, start);
 
-  for (int i = 1; i < counter_; ++i) {
+  for (int i = 0; i < counter_; ++i) {
     auto &evt = events_[i];
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(evt.timestamp - start).count();
     auto &prev_ts = prev_timestamps[evt.event_type];

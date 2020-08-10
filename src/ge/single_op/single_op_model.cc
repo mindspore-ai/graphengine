@@ -28,6 +28,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "runtime/rt.h"
 #include "task/aicpu_task_builder.h"
+#include "task/aicpu_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
 
 using domi::TaskDef;
@@ -42,12 +43,8 @@ SingleOpModel::SingleOpModel(const std::string &model_name, const void *model_da
     : model_name_(model_name), ori_model_data_(model_data), ori_model_size_(model_size) {}
 
 Status SingleOpModel::Init() {
-  auto ret = InitModel();
-  if (ret != SUCCESS) {
-    return ret;
-  }
-
-  return ParseInputsAndOutputs();
+  GE_CHK_STATUS_RET_NOLOG(InitModel());
+  return LoadAllNodes();
 }
 
 Status SingleOpModel::InitModel() {
@@ -149,7 +146,7 @@ void SingleOpModel::ParseOutputNode(const OpDescPtr &op_desc) {
   }
 }
 
-Status SingleOpModel::ParseInputsAndOutputs() {
+Status SingleOpModel::LoadAllNodes() {
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
   Graph graph = ge_model->GetGraph();
@@ -167,24 +164,31 @@ Status SingleOpModel::ParseInputsAndOutputs() {
     auto node = nodes.at(i);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    op_list_[i] = op_desc;
+    op_list_[i] = node;
     auto op_type = op_desc->GetType();
     GELOGI("[%s] node[%zu] = %s, type = %s", model_name_.c_str(), i, node->GetName().c_str(), op_type.c_str());
 
     if (op_type == DATA_TYPE || op_type == AIPP_DATA_TYPE) {
-      auto ret = ParseInputNode(op_desc);
-      if (ret != SUCCESS) {
-        return ret;
-      }
+      data_ops_.emplace_back(op_desc);
+      continue;
     }
 
     if (op_type == NETOUTPUT) {
-      ParseOutputNode(op_desc);
+      netoutput_op_ = op_desc;
+      continue;
     }
 
     ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(op_desc);
   }
 
+  return SUCCESS;
+}
+
+Status SingleOpModel::ParseInputsAndOutputs() {
+  for (auto &op_desc : data_ops_) {
+    GE_CHK_STATUS_RET_NOLOG(ParseInputNode(op_desc));
+  }
+  ParseOutputNode(netoutput_op_);
   return SUCCESS;
 }
 
@@ -198,11 +202,6 @@ Status SingleOpModel::SetInputsAndOutputs(SingleOp &single_op) {
   int arg_index = 0;
   for (size_t i = 0; i < input_offset_list_.size(); ++i) {
     auto *addr = model_params_.mem_base + input_offset_list_[i];
-    auto ret = ModelUtils::ConvertVirtualAddressToPhysical(addr, input_sizes_[i], addr);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "ConvertVirtualAddressToPhysical failed. Input index = %zu", i);
-      return ret;
-    }
     model_params_.addr_mapping_.emplace(reinterpret_cast<uintptr_t>(addr), arg_index++);
     single_op.input_sizes_.emplace_back(input_sizes_[i]);
     single_op.input_addr_list_.emplace_back(addr);
@@ -210,11 +209,6 @@ Status SingleOpModel::SetInputsAndOutputs(SingleOp &single_op) {
 
   for (size_t i = 0; i < output_offset_list_.size(); ++i) {
     auto *addr = model_params_.mem_base + output_offset_list_[i];
-    auto ret = ModelUtils::ConvertVirtualAddressToPhysical(addr, output_sizes_[i], addr);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "ConvertVirtualAddressToPhysical failed. Output index = %zu", i);
-      return ret;
-    }
     model_params_.addr_mapping_.emplace(reinterpret_cast<uintptr_t>(addr), arg_index++);
     single_op.output_sizes_.emplace_back(output_sizes_[i]);
     single_op.output_addr_list_.emplace_back(addr);
@@ -234,16 +228,34 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
     if (task_type == RT_MODEL_TASK_KERNEL) {
-      GELOGD("Building TBE task");
-      OpTask *task = nullptr;
-      auto ret = BuildKernelTask(task_def.kernel(), single_op, &task);
-      if (ret != SUCCESS) {
-        return ret;
-      }
+      const domi::KernelDef &kernel_def = task_def.kernel();
+      const auto &context = kernel_def.context();
+      auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
+      if (kernel_type == cce::ccKernelType::TE) {
+        GELOGD("Building TBE task");
+        TbeOpTask *tbe_task = nullptr;
+        auto ret = BuildKernelTask(task_def.kernel(), &tbe_task);
+        if (ret != SUCCESS) {
+          return ret;
+        }
 
-      single_op.tasks_.emplace_back(task);
+        single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
+        ParseArgTable(tbe_task, single_op);
+        single_op.tasks_.emplace_back(tbe_task);
+      } else if (kernel_type == cce::ccKernelType::AI_CPU) {
+        GELOGD("Building AICPU_CC task");
+        OpTask *task = nullptr;
+        auto ret = BuildCpuKernelTask(task_def.kernel(), &task);
+        if (ret != SUCCESS) {
+          return ret;
+        }
+        single_op.tasks_.emplace_back(task);
+      } else {
+        GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernek are supported, but got %u", context.kernel_type());
+        return UNSUPPORTED;
+      }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
-      GELOGD("Building AICPU task");
+      GELOGD("Building AICPU_TF task");
       OpTask *task = nullptr;
       auto ret = BuildKernelExTask(task_def.kernel_ex(), single_op, &task);
       if (ret != SUCCESS) {
@@ -278,15 +290,9 @@ void SingleOpModel::ParseArgTable(TbeOpTask *task, SingleOp &op) {
   }
 }
 
-Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, SingleOp &single_op, OpTask **task) {
+Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTask **task) {
   GE_CHECK_NOTNULL(task);
   const auto &context = kernel_def.context();
-  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-  if (kernel_type != cce::ccKernelType::TE) {
-    GELOGE(UNSUPPORTED, "Only TBE kernel is supported, but got %u", context.kernel_type());
-    return UNSUPPORTED;
-  }
-
   auto iter = op_list_.find(context.op_index());
   if (iter == op_list_.end()) {
     GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
@@ -307,9 +313,6 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, SingleO
     return ret;
   }
 
-  single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
-  ParseArgTable(tbe_task, single_op);
-
   *task = tbe_task;
   return SUCCESS;
 }
@@ -323,13 +326,13 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, Sin
 
   std::unique_ptr<AiCpuTask> aicpu_task(new (std::nothrow) AiCpuTask());
   if (aicpu_task == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create aicpu op task failed");
+    GELOGE(MEMALLOC_FAILED, "create aicpu_TF op task failed");
     return MEMALLOC_FAILED;
   }
-  auto builder = AiCpuTaskBuilder(iter->second, kernel_def);
+  auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
   auto ret = builder.BuildTask(*aicpu_task, model_params_);
   if (ret != SUCCESS) {
-    GELOGE(ret, "build aicpu op task failed");
+    GELOGE(ret, "build aicpu_TF op task failed");
     return ret;
   }
 
@@ -337,16 +340,63 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, Sin
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
-  auto ret = InitModelMem(resource);
+Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task) {
+  std::unique_ptr<AiCpuCCTask> aicpucc_task(new (std::nothrow) AiCpuCCTask());
+  if (aicpucc_task == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "create aicpu_CC op task failed");
+    return MEMALLOC_FAILED;
+  }
+
+  auto builder = AiCpuCCTaskBuilder(kernel_def);
+  auto ret = builder.BuildTask(*aicpucc_task);
   if (ret != SUCCESS) {
+    GELOGE(ret, "build aicpu_CC op task failed");
     return ret;
   }
 
-  ret = SetInputsAndOutputs(single_op);
-  if (ret != SUCCESS) {
-    return ret;
-  }
+  *task = aicpucc_task.release();
+  return SUCCESS;
+}
+
+Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
+  GE_CHK_STATUS_RET_NOLOG(ParseInputsAndOutputs());
+  GE_CHK_STATUS_RET_NOLOG(InitModelMem(resource));
+  GE_CHK_STATUS_RET_NOLOG(SetInputsAndOutputs(single_op));
   return BuildTaskList(single_op);
+}
+
+Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
+  auto ge_model = model_helper_.GetGeModel();
+  GE_CHECK_NOTNULL(ge_model);
+
+  auto tasks = ge_model->GetModelTaskDefPtr()->task();
+  for (int i = 0; i < tasks.size(); ++i) {
+    const TaskDef &task_def = tasks[i];
+    GELOGI("[%s] Task[%d], type = %u, DebugString = %s", model_name_.c_str(), i, task_def.type(),
+           task_def.DebugString().c_str());
+    auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+    if (task_type == RT_MODEL_TASK_KERNEL) {
+      if (single_op.op_task_ != nullptr) {
+        GELOGE(UNSUPPORTED, "Do not support dynamic op with multiple tasks.");
+        return UNSUPPORTED;
+      }
+
+      TbeOpTask *task = nullptr;
+      GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &task));
+      single_op.op_task_.reset(task);
+    } else {
+      // skip
+      GELOGD("Skip task type: %d", static_cast<int>(task_type));
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status SingleOpModel::BuildDynamicOp(DynamicSingleOp &single_op) {
+  single_op.num_inputs_ = data_ops_.size();
+  single_op.num_outputs_ = netoutput_op_->GetAllInputsSize();
+  ParseOpModelParams(model_helper_, model_params_);
+  return BuildTaskListForDynamicOp(single_op);
 }
 }  // namespace ge

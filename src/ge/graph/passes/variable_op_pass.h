@@ -66,6 +66,7 @@ class VariableOpPass : public GraphPass {
 
   Status UpdateIOFormatInfo(const GeTensorDesc &final_output, std::set<NodePtr> &nodes);
   Status RenewVarDesc(ge::ComputeGraphPtr &graph);
+  Status RenewVarDesc(uint64_t session_id, const NodePtr &node, const VarTransRoad &fusion_road);
 
   std::map<NodePtr, std::set<NodePtr>> var_and_var_ref_map_;
 

@@ -89,7 +89,8 @@ REG_OP(RangeD)
 
 *@par Inputs:
 *Two inputs, including:
-* @li x: A Tensor of type TensorType::BasicType().
+* @li x: A Tensor. 
+* Must be one of the following types: float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32. 
 * @li multiples: A 1D Tensor of type int32 or int64.
 *     The length must be the same as the number of dimensions in "input"
 
@@ -496,7 +497,7 @@ REG_OP(UnsortedSegmentSumD)
 *@par Inputs:
 * Two inputs, including:\n
 *@li x: An ND Tensor (up to 8D). \n
-*Must be one of the following types: int8, uint8, int16, uint16, int32, int64, bool, float32, double
+*Must be one of the following types: int8, uint8, int16, uint16, int32, int64, bool, float16, float32, double, complex64, complex128, string.
 *@li axis: A 1D Tensor.\n
 *Must be one of the following types: int32, int64
 
@@ -1003,9 +1004,8 @@ REG_OP(StridedSliceAssign)
 
 * @par Inputs:
 * Two inputs, including:
-* @li var: A mutable ND Tensor of type BasicType.
-* @li input_value: A mutable ND "Tensor" of type BasicType.
-
+* @li var: A mutable ND Tensor of the following types:int32, int16, float16, float32.
+* @li input_value: A mutable ND "Tensor" of the following types:int32, int16, float16, float32.
 
 * @par Attributes:
 * @li begin: A required list of ints.
@@ -1029,9 +1029,9 @@ REG_OP(StridedSliceAssign)
 * @see StridedSlice()
 */
 REG_OP(StridedSliceAssignD)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(var, TensorType(BasicType))
+    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .INPUT(input_value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
     .REQUIRED_ATTR(begin, ListInt)
     .REQUIRED_ATTR(end, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -1396,24 +1396,23 @@ REG_OP(UnsortedSegmentMin)
 * @brief Computes the minimum along segments of a tensor.
 
 * @par Inputs:
-* Three inputs, including:
-* @li x: A Tensor of type RealNumberType.
-* @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
+* Two inputs, including:
+* @li x: A Tensor of the following types:int32, int16, float16, float32.
+* @li segment_ids: A 1D Tensor of type int32, whose shape is a prefix
 * of "x.shape".
-* @li k: A Tensor.
 
 * @par Attributes:
 * num_segments: A required int32, specifying the number of distinct segment IDs.
 
 * @par Outputs:
-* y: A Tensor of type RealNumberType.
+* y: A Tensor.Must have the same type as input "x".
 
 * @see UnsortedSegmentProdD(),
 */
 REG_OP(UnsortedSegmentMinD)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .INPUT(segment_ids, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .REQUIRED_ATTR(num_segments, Int)
     .OP_END_FACTORY_REG(UnsortedSegmentMinD)
 
@@ -1446,24 +1445,23 @@ REG_OP(UnsortedSegmentProd)
 * @brief Computes the product along segments of a tensor.
 
 * @par Inputs:
-* Three inputs, including:
-* @li x: A Tensor of type RealNumberType.
-* @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
+* Two inputs, including:
+* @li x: A Tensor of the following types:int32, int16, float16, float32.
+* @li segment_ids: A 1D Tensor of type int32, whose shape is a prefix
 * of "x.shape".
-* @li k: A Tensor.
 
 * @par Attributes:
 * num_segments: An int32, specifying the number of distinct segment IDs.
 
 * @par Outputs:
-* y: A Tensor of type RealNumberType.
+* y: A Tensor.Must have the same type as input "x".
 
 * @see UnsortedSegmentMinD()
 */
 REG_OP(UnsortedSegmentProdD)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .INPUT(segment_ids, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
     .REQUIRED_ATTR(num_segments, Int)
     .OP_END_FACTORY_REG(UnsortedSegmentProdD)
 
@@ -1559,14 +1557,14 @@ REG_OP(ProposalD)
 * If reverse=false: (N, H, W, C)->(N, H/stride, W/stride, C*(stride*stride))
 
 *@par Inputs:
-*x: An (N, H, W, C) tensor. All types except double are supported.
+*x: An (N, H, W, C) tensor. Type is float16, float32, int8, uint8, int16, uint16, int32, uint32, int64 or uint64..
 
 *@par Attributes:
 *@li stride: An optional int32, specifying the plane or channel scaling factor. Defaults to "2".
 *@li reverse: An optional bool, specifying the conversion mode. If "true", depth to space conversion is performed. If "false", space to depth conversion is performed. Defaults to "false".
 
 *@par Outputs:
-*y: An (N, H, W, C) tensor. All types except double are supported.
+*y: An (N, H, W, C) tensor. Has same type as "x".
 
 *@attention Constraints:
 *@li If reverse=true: C/(stride*stride) yields an integer result. If reverse=false: W/stride and H/stride yield integer results.
@@ -1593,7 +1591,7 @@ REG_OP(PassThrough)
 * @li x: A required Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32,int64, uint64.
 * @li size: A required Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 *@par Attributes:
-*@li axis: A required int32, specifying the first dimension to crop.
+*@li axis: A required int32, specifying the first dimension to crop. Defaults to "2".
 *@li offset: A required array, specifying the shift for all/each dimension to align the cropped bottom with the reference bottom. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64.
 *@par Outputs:
 *y: A required Tensor. Has the same type and shape as "size".
@@ -1774,6 +1772,6 @@ REG_OP(CumulativeLogsumexpD)
     .ATTR(exclusive, Bool, false)
     .ATTR(reverse, Bool, false)
     .OP_END_FACTORY_REG(CumulativeLogsumexpD)
-
 } // namespace ge
+
 #endif // GE_OP_SELECTION_OPS_H

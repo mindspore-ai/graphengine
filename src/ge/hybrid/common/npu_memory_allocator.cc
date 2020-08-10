@@ -25,6 +25,11 @@ namespace hybrid {
 std::map<uint32_t, std::unique_ptr<NpuMemoryAllocator>> NpuMemoryAllocator::allocators_;
 std::mutex NpuMemoryAllocator::mu_;
 
+AllocationAttr::AllocationAttr(int padding, void *try_reuse_addr)
+    : padding_(padding), try_reuse_addr_(try_reuse_addr) {}
+AllocationAttr::AllocationAttr(int padding) : AllocationAttr(padding, nullptr) {}
+AllocationAttr::AllocationAttr(void *try_reuse_addr) : AllocationAttr(0, try_reuse_addr) {}
+
 NpuMemoryAllocator *NpuMemoryAllocator::GetAllocator() {
   int32_t device_id = 0;
   if (rtGetDevice(&device_id) != RT_ERROR_NONE) {
@@ -38,15 +43,26 @@ NpuMemoryAllocator *NpuMemoryAllocator::GetAllocator() {
 
 NpuMemoryAllocator::NpuMemoryAllocator(uint32_t device_id) : device_id_(device_id) {}
 
-void *NpuMemoryAllocator::Allocate(std::size_t size, void *try_reuse_addr) {
-  void *buffer =
-    MemManager::CachingInstance(RT_MEMORY_HBM).Malloc(size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
+void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
+  void *try_reuse_addr = nullptr;
+  size_t allocate_size = size;
+  if (attr != nullptr) {
+    try_reuse_addr = attr->try_reuse_addr_;
+    if (attr->padding_ != 0) {
+      // padding up to multiple of attr->padding, and add extra attr->padding_
+      allocate_size = (size + 2 * attr->padding_ - 1) / attr->padding_ * attr->padding_;
+      GELOGD("Padding size %ld by %d. final size = %zu.", size, attr->padding_, allocate_size);
+    }
+  }
+
+  void *buffer = MemManager::CachingInstance(RT_MEMORY_HBM)
+                   .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
   if (buffer == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Failed to malloc memory, device_id = %u, size = %zu", device_id_, size);
+    GELOGE(MEMALLOC_FAILED, "Failed to malloc memory, device_id = %u, size = %zu", device_id_, allocate_size);
     return nullptr;
   }
 
-  GELOGI("Allocating buffer of size %u successfully. device_id = %u, address = %p", size, device_id_, buffer);
+  GELOGI("Allocating buffer of size %zu successfully. device_id = %u, address = %p", allocate_size, device_id_, buffer);
   return buffer;
 }
 

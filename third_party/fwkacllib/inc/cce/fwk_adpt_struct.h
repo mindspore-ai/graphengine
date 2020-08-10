@@ -37,6 +37,7 @@ enum FWKAdptAPIRetCode {
   FWK_ADPT_SESSION_NOT_EXIST = 10,       // session id not exist
   FWK_ADPT_SESSION_ALREADY_EXIST = 11,   // session id alread exist for create session
   FWK_ADPT_NATIVE_END_OF_SEQUENCE = 12,  // end of sequence
+  FWK_ADPT_EXTEND_TYPE_NOT_EXIST = 13,   // extend info type not exist
   FWK_ADPT_UNKNOWN_ERROR = 99            // unknown error code
 };
 
@@ -55,7 +56,15 @@ enum FWKTaskExtInfoType {
   FWK_ADPT_EXT_SHAPE_TYPE = 0,
   FWK_ADPT_EXT_INPUT_SHAPE,
   FWK_ADPT_EXT_OUTPUT_SHAPE,
+  FWK_ADPT_EXT_UPDATE_ADDR,
   FWK_ADPT_EXT_INVALID
+};
+
+enum FWKExtUpdateAddrType {
+  FWK_ADPT_UPDATE_NULL = 0,
+  FWK_ADPT_UPDATE_INPUT,
+  FWK_ADPT_UPDATE_OUTPUT,
+  FWK_ADPT_UPDATE_INPUT_OUTPUT
 };
 
 // API Parameter Structure

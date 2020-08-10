@@ -18,6 +18,7 @@
 #include "hybrid_davinci_model.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/executor/hybrid_model_async_executor.h"
+#include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
 namespace hybrid {
@@ -25,12 +26,17 @@ class HybridDavinciModel::Impl {
  public:
   explicit Impl(GeRootModelPtr ge_model) : model_(std::move(ge_model)), executor_(&model_) {}
 
-  ~Impl() = default;
+  ~Impl() { NodeExecutorManager::GetInstance().FinalizeExecutors(); }
 
   Status Init() {
+    GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().EnsureInitialized(), "Failed to initialize executors");
     GE_CHK_STATUS_RET(model_.Init(), "Failed to init model.")
     GE_CHK_STATUS_RET(executor_.Init(), "Failed to init model executor.")
     return SUCCESS;
+  }
+
+  Status Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
+    return executor_.Execute(inputs, outputs);
   }
 
   Status ModelRunStart() { return executor_.Start(listener_); }
@@ -74,6 +80,11 @@ unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &
 Status HybridDavinciModel::Init() {
   GE_CHECK_NOTNULL(impl_);
   return impl_->Init();
+}
+
+Status HybridDavinciModel::Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->Execute(inputs, outputs);
 }
 
 Status HybridDavinciModel::ModelRunStart() {

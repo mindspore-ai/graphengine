@@ -23,12 +23,6 @@
 
 namespace ge {
 StreamResource::~StreamResource() {
-  for (auto it : op_map_) {
-    // it's safe to delete a nullptr
-    delete it.second;
-    it.second = nullptr;
-  }
-
   for (auto mem : memory_list_) {
     if (mem != nullptr) {
       auto rt_ret = rtFree(mem);
@@ -44,7 +38,13 @@ StreamResource::~StreamResource() {
   }
 }
 
-void StreamResource::CacheOperator(const void *key, SingleOp *single_op) { op_map_[key] = single_op; }
+void StreamResource::CacheOperator(const void *key, std::unique_ptr<SingleOp> &&single_op) {
+  op_map_[key] = std::move(single_op);
+}
+
+void StreamResource::CacheDynamicOperator(const void *key, std::unique_ptr<DynamicSingleOp> &&single_op) {
+  dynamic_op_map_[key] = std::move(single_op);
+}
 
 SingleOp *StreamResource::GetOperator(const void *key) {
   auto it = op_map_.find(key);
@@ -52,14 +52,39 @@ SingleOp *StreamResource::GetOperator(const void *key) {
     return nullptr;
   }
 
-  return it->second;
+  return it->second.get();
 }
+
+DynamicSingleOp *StreamResource::GetDynamicOperator(const void *key) {
+  auto it = dynamic_op_map_.find(key);
+  if (it == dynamic_op_map_.end()) {
+    return nullptr;
+  }
+
+  return it->second.get();
+}
+
+void StreamResource::SetStream(rtStream_t stream) { stream_ = stream; }
 
 uint8_t *StreamResource::DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
                                         std::vector<uint8_t *> &allocated) {
   if (size <= max_allocated && !allocated.empty()) {
     GELOGD("reuse last memory");
     return allocated.back();
+  }
+
+  if (!allocated.empty()) {
+    GELOGD("Expand workspace memory size from %zu to %zu", max_allocated, size);
+    auto ret = rtStreamSynchronize(stream_);
+    if (ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "rtStreamSynchronize failed, ret = %d", ret);
+      return nullptr;
+    }
+
+    auto addr = allocated.back();
+    allocated.pop_back();
+    (void)rtFree(addr);
+    max_allocated = 0;
   }
 
   uint8_t *buffer = nullptr;

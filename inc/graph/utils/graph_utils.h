@@ -23,6 +23,8 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <unordered_map>
+
 #include "graph/anchor.h"
 #include "graph/node.h"
 #include "graph/compute_graph.h"
@@ -130,7 +132,7 @@ struct NodeIndexIO {
   IOType io_type_ = kOut;
   std::string value_;
 
-  std::string ToString() const { return value_; }
+  const std::string &ToString() const { return value_; }
 };
 
 class GraphUtils {
@@ -188,8 +190,8 @@ class GraphUtils {
   /// @param [in] output_index
   /// @return graphStatus
   ///
-  static graphStatus InsertNodeBefore(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
-                                      const NodePtr &insert_node, uint32_t input_index = 0, uint32_t output_index = 0);
+  static graphStatus InsertNodeAfter(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
+                                     const NodePtr &insert_node, uint32_t input_index = 0, uint32_t output_index = 0);
 
   static graphStatus RemoveJustNode(ComputeGraphPtr compute_graph, const NodePtr &node);
 
@@ -303,7 +305,32 @@ class GraphUtils {
   ///
   static graphStatus MoveOutCtrlEdges(NodePtr &src_node, NodePtr &dst_node);
 
+  ///
+  /// Copy all in-data edges from `src_node` to `dst_node`
+  /// @param src_node
+  /// @param dst_node
+  /// @return
+  ///
+  static graphStatus CopyInDataEdges(const NodePtr &src_node, NodePtr &dst_node);
+
   static ComputeGraphPtr FindRootGraph(ComputeGraphPtr graph);
+
+  ///
+  /// Make a copy of ComputeGraph.
+  /// @param graph: original graph.
+  /// @param prefix: node name prefix of new graph.
+  /// @return ComputeGraphPtr
+  ///
+  static ComputeGraphPtr CloneGraph(const ComputeGraphPtr &graph, const string &prefix,
+                                    std::vector<NodePtr> &input_nodes, std::vector<NodePtr> &output_nodes);
+
+  ///
+  /// Copy tensor attribute to new node.
+  /// @param [in] dst_desc: cloned node.
+  /// @param [in] src_node: original node.
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus CopyTensorAttrs(const OpDescPtr &dst_desc, const NodePtr &src_node);
 
   static graphStatus TopologicalSortingByName(const ge::ComputeGraphPtr &compute_graph, vector<NodePtr> &node_vec);
 
@@ -391,6 +418,16 @@ class GraphUtils {
   static graphStatus HandleSubgraphOutput(const NodePtr &node,
                                           std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors,
                                           std::map<std::string, std::string> &anchor_to_symbol);
+
+  ///
+  /// Relink all edges for cloned ComputeGraph.
+  /// @param [in] node: original node.
+  /// @param [in] prefix: node name prefix of new node.
+  /// @param [in] all_nodes: all nodes in new graph.
+  /// @return success: GRAPH_SUCESS
+  ///
+  static graphStatus RelinkGraphEdges(const NodePtr &node, const string &prefix,
+                                      const std::unordered_map<string, NodePtr> &all_nodes);
 
   ///
   /// Union ref-mapping
@@ -728,5 +765,4 @@ class PartialGraphBuilder : public ComputeGraphBuilder {
   std::vector<NodePtr> exist_nodes_;
 };
 }  // namespace ge
-
 #endif  // INC_GRAPH_UTILS_GRAPH_UTILS_H_

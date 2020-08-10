@@ -22,15 +22,16 @@
 #include "common/convert/pb2json.h"
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
+#include "common/ge/ge_util.h"
+#include "common/helper/model_helper.h"
 #include "common/model_parser/base.h"
+#include "common/model_parser/graph_parser_util.h"
 #include "common/model_saver.h"
 #include "common/properties_manager.h"
 #include "common/string_util.h"
 #include "common/types.h"
 #include "common/util.h"
 #include "common/util/error_manager/error_manager.h"
-#include "common/helper/model_helper.h"
-#include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/parser/parser_inner_ctx.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
@@ -65,6 +66,9 @@ namespace ge {
 namespace {
 const std::string kGraphDefaultName = "domi_default";
 const std::string kScopeIdAttr = "fusion_scope";
+const char *const kOutputTypeSample = "correct sample is \"opname:index:dtype\"";
+const char *const kOutputTypeSupport = "only support FP32, FP16, UINT8";
+const char *const kOutputTypeError = "The multiple out nodes set in output_type must be found in out_nodes.";
 }  // namespace
 
 // When the model is converted to a JSON file, the following operator attributes in the blacklist will be ignored
@@ -78,7 +82,7 @@ static bool CheckInputTrueOrFalse(const std::string &s, const std::string &atc_p
   if ((s == "true") || (s == "false")) {
     return true;
   } else {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10033", {"parameter", "value"}, {atc_param, s});
+    ErrorManager::GetInstance().ATCReportErrMessage("E10005", {"parameter", "value"}, {atc_param, s});
     GELOGE(PARAM_INVALID, "Input parameter[--%s]'s value[%s] must be true or false.", atc_param.c_str(), s.c_str());
     return false;
   }
@@ -97,17 +101,33 @@ static Status CheckInputShapeNode(const ComputeGraphPtr &graph) {
     std::string node_name = it.first;
     ge::NodePtr node = graph->FindNode(node_name);
     if (node == nullptr) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10034", {"parameter", "opname"}, {"input_shape", node_name});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10016", {"parameter", "opname"}, {"input_shape", node_name});
       GELOGE(PARAM_INVALID, "Input parameter[--input_shape]'s opname[%s] is not exist in model", node_name.c_str());
       return PARAM_INVALID;
     }
     if (node->GetType() != DATA) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10035", {"parameter", "opname"}, {"input_shape", node_name});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10017", {"parameter", "opname"}, {"input_shape", node_name});
       GELOGE(PARAM_INVALID, "Input parameter[--input_shape]'s opname[%s] is not a input opname", node_name.c_str());
       return PARAM_INVALID;
     }
   }
   return SUCCESS;
+}
+
+void AddAttrsForInputNodes(const vector<string> &adjust_fp16_format_vec, const string &fp16_nodes_name, uint32_t index,
+                           OpDescPtr &op_desc) {
+  if (AttrUtils::SetBool(op_desc, "input_fp16", true) &&
+      AttrUtils::SetStr(op_desc, ATTR_ATC_USER_DEFINE_DATATYPE, TypeUtils::DataTypeToSerialString(DT_FLOAT16))) {
+    if ((index < adjust_fp16_format_vec.size()) && (adjust_fp16_format_vec[index] == "true")) {
+      GELOGI("This node [%s] should be set NC1HWC0", fp16_nodes_name.c_str());
+      if (!AttrUtils::SetBool(op_desc, "input_set_nc1hwc0", true)) {
+        GELOGW("This node [%s] set NC1HWC0 failed", fp16_nodes_name.c_str());
+      }
+      if (!AttrUtils::SetStr(op_desc, ATTR_ATC_USER_DEFINE_FORMAT, TypeUtils::FormatToSerialString(FORMAT_NC1HWC0))) {
+        GELOGW("This node [%s] set NC1HWC0 failed", fp16_nodes_name.c_str());
+      }
+    }
+  }
 }
 
 static Status CheckInputFp16Nodes(const ComputeGraphPtr &graph, const string &input_fp16_nodes,
@@ -133,28 +153,22 @@ static Status CheckInputFp16Nodes(const ComputeGraphPtr &graph, const string &in
   for (uint32_t i = 0; i < input_fp16_nodes_vec.size(); ++i) {
     ge::NodePtr node = graph->FindNode(input_fp16_nodes_vec[i]);
     if (node == nullptr) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10034", {"parameter", "opname"},
+      ErrorManager::GetInstance().ATCReportErrMessage("E10016", {"parameter", "opname"},
                                                       {"input_fp16_nodes", input_fp16_nodes_vec[i]});
-      GELOGE(PARAM_INVALID, "Can not find node [%s] in graph, please check input_fp16_nodes param",
+      GELOGE(PARAM_INVALID, "Input parameter[--input_fp16_nodes]'s opname[%s] is not exist in model",
              input_fp16_nodes_vec[i].c_str());
       return PARAM_INVALID;
     }
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     if (op_desc->GetType() != DATA) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10035", {"parameter", "opname"},
+      ErrorManager::GetInstance().ATCReportErrMessage("E10017", {"parameter", "opname"},
                                                       {"input_fp16_nodes", input_fp16_nodes_vec[i]});
-      GELOGE(PARAM_INVALID, "input_fp16_nodes: %s is not a input node name", input_fp16_nodes_vec[i].c_str());
+      GELOGE(PARAM_INVALID, "Input parameter[--input_fp16_nodes]'s opname[%s] is not a input opname",
+             input_fp16_nodes_vec[i].c_str());
       return PARAM_INVALID;
     }
-    if (ge::AttrUtils::SetBool(op_desc, "input_fp16", true)) {
-      if ((i < adjust_fp16_format_vec.size()) && (adjust_fp16_format_vec[i] == "true")) {
-        GELOGI("This node [%s] should be set NC1HWC0", input_fp16_nodes_vec[i].c_str());
-        if (!ge::AttrUtils::SetBool(op_desc, "input_set_nc1hwc0", true)) {
-          GELOGW("This node [%s] set NC1HWC0 failed", input_fp16_nodes_vec[i].c_str());
-        }
-      }
-    }
+    AddAttrsForInputNodes(adjust_fp16_format_vec, input_fp16_nodes_vec[i], i, op_desc);
   }
   return SUCCESS;
 }
@@ -192,30 +206,6 @@ static Status SetWeightCompressNodes(const ComputeGraphPtr &graph, const string 
     if (!ge::AttrUtils::SetBool(op_desc, ge::ATTR_NAME_COMPRESS_WEIGHT, true)) {
       GELOGE(domi::FAILED, "node %s SetBool failed.", compress_node_vec[i].c_str());
       return domi::FAILED;
-    }
-  }
-  return SUCCESS;
-}
-
-static Status ParseOutputFp16NodesFormat(const string &is_output_fp16) {
-  if (is_output_fp16.empty()) {
-    return SUCCESS;
-  }
-
-  vector<domiTensorFormat_t> &output_formats = domi::GetContext().output_formats;
-  output_formats.clear();
-  vector<string> node_format_vec = StringUtils::Split(is_output_fp16, ',');
-  for (auto &is_fp16 : node_format_vec) {
-    StringUtils::Trim(is_fp16);
-    if (!CheckInputTrueOrFalse(is_fp16, "is_output_adjust_hw_layout")) {
-      GELOGE(PARAM_INVALID, "Invalid Param, is_output_adjust_hw_layout only support true/false: but is [%s]",
-             is_output_fp16.c_str());
-      return PARAM_INVALID;
-    }
-    if (is_fp16 == "false") {
-      output_formats.push_back(DOMI_TENSOR_ND);
-    } else if (is_fp16 == "true") {
-      output_formats.push_back(domi::DOMI_TENSOR_NC1HWC0);
     }
   }
   return SUCCESS;
@@ -302,160 +292,6 @@ Status SetOutFormatAndDataTypeAttr(ge::OpDescPtr op_desc, const ge::Format forma
   return domi::SUCCESS;
 }
 
-Status StringToInt(std::string &str, int32_t &value) {
-  try {
-    value = stoi(str);
-  } catch (std::invalid_argument &) {
-    GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", str.c_str());
-    return PARAM_INVALID;
-  } catch (std::out_of_range &) {
-    GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", str.c_str());
-    return PARAM_INVALID;
-  }
-  return SUCCESS;
-}
-
-Status VerifyOutputTypeAndOutNodes(std::vector<std::string> &out_type_vec) {
-  std::vector<std::pair<std::string, int32_t>> user_out_nodes = domi::GetContext().user_out_nodes;
-  std::set<std::string> out_nodes_info;
-  for (uint32_t i = 0; i < user_out_nodes.size(); ++i) {
-    // out_nodes set should include output_type and output_format
-    std::string tmp = user_out_nodes[i].first + ":" + to_string(user_out_nodes[i].second);
-    out_nodes_info.emplace(tmp);
-  }
-  for (uint32_t i = 0; i < out_type_vec.size(); ++i) {
-    if (out_nodes_info.find(out_type_vec[i]) == out_nodes_info.end()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10059", {"value"}, {out_type_vec[i]});
-      GELOGE(domi::FAILED, "Can not find this node (%s) in out_nodes.", out_type_vec[i].c_str());
-      return domi::FAILED;
-    }
-  }
-  return domi::SUCCESS;
-}
-
-Status ParseOutputType(const std::string &output_type, std::map<std::string, vector<uint32_t>> &out_type_index_map,
-                       std::map<std::string, vector<ge::DataType>> &out_type_dt_map) {
-  if (output_type.find(':') == std::string::npos) {
-    GELOGI("output_type is not multiple nodes, means all out nodes");
-    auto it = output_type_str_to_datatype.find(output_type);
-    if (it == output_type_str_to_datatype.end()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10042", {"value"}, {output_type});
-      GELOGE(ge::PARAM_INVALID, "Invalid value for --output_type[%s], only support DT_FLOAT, DT_FLOAT16, DT_UINT8!!",
-             output_type.c_str());
-      return domi::FAILED;
-    }
-    return domi::SUCCESS;
-  }
-  std::vector<std::string> out_type_vec;
-  vector<string> nodes_v = StringUtils::Split(output_type, ';');
-  for (const string &node : nodes_v) {
-    vector<string> node_index_type_v = StringUtils::Split(node, ':');
-    if (node_index_type_v.size() != 3) {  // The size must be 3.
-      ErrorManager::GetInstance().ATCReportErrMessage("E10058", {"value"}, {node});
-      GELOGE(PARAM_INVALID,
-             "The param of output_type is invalid, the correct format is [opname:index:dtype],"
-             "while the actual input is %s.",
-             node.c_str());
-      return domi::FAILED;
-    }
-    ge::DataType tmp_dt;
-    std::string node_name = StringUtils::Trim(node_index_type_v[0]);
-    std::string index_str = StringUtils::Trim(node_index_type_v[1]);
-    int32_t index;
-    if (StringToInt(index_str, index) != SUCCESS) {
-      return domi::FAILED;
-    }
-    std::string dt_value = StringUtils::Trim(node_index_type_v[2]);
-    auto it = output_type_str_to_datatype.find(dt_value);
-    if (it == output_type_str_to_datatype.end()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10042", {"value"}, {dt_value});
-      GELOGE(ge::PARAM_INVALID, "output_type [%s] is invalid.", dt_value.c_str());
-      return domi::FAILED;
-    } else {
-      tmp_dt = it->second;
-    }
-    out_type_vec.push_back(node_name + ":" + index_str);
-    auto it_index = out_type_index_map.find(node_name);
-    if (it_index == out_type_index_map.end()) {
-      vector<uint32_t> tmp_vec;
-      tmp_vec.push_back(index);
-      out_type_index_map.emplace(node_name, tmp_vec);
-    } else {
-      it_index->second.push_back(index);
-    }
-
-    auto it_dt = out_type_dt_map.find(node_name);
-    if (it_dt == out_type_dt_map.end()) {
-      vector<ge::DataType> tmp_vec;
-      tmp_vec.push_back(tmp_dt);
-      out_type_dt_map.emplace(node_name, tmp_vec);
-    } else {
-      it_dt->second.push_back(tmp_dt);
-    }
-  }
-  return VerifyOutputTypeAndOutNodes(out_type_vec);
-}
-
-Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output) {
-  ge::ComputeGraphPtr compute_graph = ge::GraphUtils::GetComputeGraph(graph);
-  GE_CHECK_NOTNULL(compute_graph);
-
-  std::vector<std::pair<std::string, int32_t>> user_out_nodes = domi::GetContext().user_out_nodes;
-  std::vector<domiTensorFormat_t> output_formats = domi::GetContext().output_formats;
-  std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes_info;
-  std::vector<std::string> output_nodes_name;
-
-  std::map<std::string, vector<uint32_t>> out_type_index_map;
-  std::map<std::string, vector<ge::DataType>> out_type_dt_map;
-  if (!output_type.empty()) {
-    if (ParseOutputType(output_type, out_type_index_map, out_type_dt_map) != SUCCESS) {
-      GELOGE(domi::FAILED, "Parse output_type failed.");
-      return domi::FAILED;
-    }
-  }
-
-  // User declared outputs
-  for (uint32_t i = 0; i < user_out_nodes.size(); ++i) {
-    ge::NodePtr out_node = compute_graph->FindNode(user_out_nodes[i].first);
-    if (out_node == nullptr) {
-      GELOGE(domi::FAILED, "Can not find src node (%s) in graph.", user_out_nodes[i].first.c_str());
-      return domi::FAILED;
-    }
-    auto op_desc = out_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    if (i < output_formats.size()) {
-      if (output_formats[i] == domi::DOMI_TENSOR_NC1HWC0) {
-        GELOGI("The output node [%s] should be set NC1HWC0", user_out_nodes[i].first.c_str());
-        if (!ge::AttrUtils::SetBool(op_desc, "output_set_fp16_nc1hwc0", true)) {
-          GELOGW("The output node [%s] set NC1HWC0 failed", user_out_nodes[i].first.c_str());
-        }
-      }
-    }
-    auto it_index = out_type_index_map.find(user_out_nodes[i].first);
-    auto it_dt = out_type_dt_map.find(user_out_nodes[i].first);
-    if ((it_index != out_type_index_map.end()) && (it_dt != out_type_dt_map.end())) {
-      GELOGI("The output node [%s] need to be set output_type", user_out_nodes[i].first.c_str());
-      (void)ge::AttrUtils::SetListDataType(op_desc, "_output_dt_list", it_dt->second);
-      (void)ge::AttrUtils::SetListInt(op_desc, "_output_dt_index", it_index->second);
-    }
-    output_nodes_info.push_back(std::make_pair(out_node, user_out_nodes[i].second));
-    output_nodes_name.push_back(out_node->GetName() + ":" + std::to_string(user_out_nodes[i].second));
-  }
-  // default output node (leaf)
-  if (user_out_nodes.empty()) {
-    for (ge::NodePtr node : compute_graph->GetDirectNode()) {
-      if (!node->GetInDataNodes().empty() && node->GetOutDataNodes().empty()) {
-        Status ret = GetOutputLeaf(node, output_nodes_info);
-        GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "find leaf fail.");
-      }
-    }
-  }
-  GetOutputNodesNameAndIndex(output_nodes_info, output_nodes_name);
-  compute_graph->SetGraphOutNodesInfo(output_nodes_info);
-  domi::GetContext().net_out_nodes = output_nodes_name;
-  return domi::SUCCESS;
-}
-
 void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
                                 std::vector<std::string> &output_nodes_name) {
   output_nodes_name.clear();
@@ -479,32 +315,6 @@ void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &ou
       output_nodes_name.push_back(node_name + ":" + std::to_string(index));
     }
   }
-}
-
-Status GetOutputLeaf(NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info) {
-  ge::OpDescPtr tmpDescPtr = node->GetOpDesc();
-  if (tmpDescPtr == nullptr) {
-    GELOGE(domi::FAILED, "Get outnode op desc fail.");
-    return domi::FAILED;
-  }
-  size_t size = tmpDescPtr->GetOutputsSize();
-  if (node->GetType() != NETOUTPUT) {
-    for (size_t index = 0; index < size; ++index) {
-      output_nodes_info.push_back(std::make_pair(node, index));
-    }
-  } else {
-    const auto in_anchors = node->GetAllInDataAnchors();
-    for (auto in_anchor : in_anchors) {
-      auto out_anchor = in_anchor->GetPeerOutAnchor();
-      if (out_anchor == nullptr) {
-        GELOGE(domi::FAILED, "Get leaf node op desc fail.");
-        return domi::FAILED;
-      }
-      auto out_node = out_anchor->GetOwnerNode();
-      output_nodes_info.push_back(std::make_pair(out_node, out_anchor->GetIdx()));
-    }
-  }
-  return SUCCESS;
 }
 
 ///
@@ -550,55 +360,12 @@ Status InitDomiOmgContext(const string &input_shape, const string &input_format,
   return SUCCESS;
 }
 
-Status ParseOutNodes(const string &out_nodes) {
-  try {
-    // parse output node
-    if (!out_nodes.empty()) {
-      domi::GetContext().out_nodes_map.clear();
-      domi::GetContext().user_out_nodes.clear();
-
-      vector<string> nodes_v = StringUtils::Split(out_nodes, ';');
-      for (const string &node : nodes_v) {
-        vector<string> key_value_v = StringUtils::Split(node, ':');
-        if (key_value_v.size() != 2) {  // The size must be 2.
-          ErrorManager::GetInstance().ATCReportErrMessage("E10069", {"param", "value", "supports"},
-                                                          {"out_nodes", node, "opname:index"});
-          GELOGE(PARAM_INVALID,
-                 "The input format of --out_nodes is invalid, the correct format is "
-                 "\"node_name1:0;node_name1:1;node_name2:0\", while the actual input is %s.",
-                 node.c_str());
-          return PARAM_INVALID;
-        }
-        auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
-        // stoi: The method may throw an exception: invalid_argument/out_of_range
-        int32_t index = stoi(StringUtils::Trim(key_value_v[1]));
-        if (iter != domi::GetContext().out_nodes_map.end()) {
-          iter->second.emplace_back(index);
-        } else {
-          std::vector<int32_t> index_v;
-          index_v.emplace_back(index);
-          domi::GetContext().out_nodes_map.emplace(key_value_v[0], index_v);
-        }
-        domi::GetContext().user_out_nodes.push_back(std::make_pair(key_value_v[0], index));
-      }
-    }
-  } catch (std::invalid_argument &) {
-    GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", out_nodes.c_str());
-    return PARAM_INVALID;
-  } catch (std::out_of_range &) {
-    GELOGE(PARAM_INVALID, "Invalid of out_nodes: %s ", out_nodes.c_str());
-    return PARAM_INVALID;
-  }
-
-  return SUCCESS;
-}
-
 /// @ingroup domi_common
 ///  @brief Judge whether the op_Name_Map parameter matches the network
 ///  @param [in] graph Input network graph
 ///  @return SUCCESS: Input parameters are correct; PARAM_INVALID: Input parameters are incorrect
 ///
-static Status CheckOpNameMap(const ComputeGraphPtr &graph) {
+static Status CheckOpNameMap(const ComputeGraphPtr &graph, const std::string &op_conf) {
   GE_CHECK_NOTNULL(graph);
   unordered_map<string, string> graphNodeTypes;
   for (const NodePtr &node : graph->GetAllNodes()) {
@@ -613,7 +380,9 @@ static Status CheckOpNameMap(const ComputeGraphPtr &graph) {
   GE_RT_PARAM_INVALID_WITH_LOG_IF_TRUE(propertiesMap.empty(), "op_name_map file is empty, please check file!");
   for (auto iter = propertiesMap.begin(); iter != propertiesMap.end(); iter++) {
     GE_IF_BOOL_EXEC(graphNodeTypes.find(iter->second) == graphNodeTypes.end(),
-                    ErrorManager::GetInstance().ATCReportErrMessage("E10060", {"parameter"}, {"op_name_map"});
+                    ErrorManager::GetInstance().ATCReportErrMessage(
+                      "E10003", {"parameter", "value", "reason"},
+                      {"op_name_map", op_conf, "type[" + iter->second + "] is not found in model"});
                     GELOGE(PARAM_INVALID, "Invalid parameter for op_name_map."); return PARAM_INVALID;);
   }
   return SUCCESS;
@@ -659,7 +428,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
 
   std::string out_nodes;
   ParseAtcParms(atc_params, "out_nodes", out_nodes);
-  GE_RETURN_WITH_LOG_IF_ERROR(ParseOutNodes(out_nodes), "ATC Generate parse out nodes fail");
+  GE_RETURN_WITH_LOG_IF_ERROR(ParseOutputNodes(out_nodes), "ATC Generate parse out nodes fail");
 
   std::string output_type;
   ParseAtcParms(atc_params, "output_type", output_type);
@@ -670,7 +439,8 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
     PropertiesManager::Instance().SetPropertyDelimiter(OP_CONF_DELIMITER);
     // Parsing the op_conf configuration item file
     GE_IF_BOOL_EXEC(!PropertiesManager::Instance().Init(op_conf),
-                    ErrorManager::GetInstance().ATCReportErrMessage("E10060", {"parameter"}, {"op_name_map"});
+                    ErrorManager::GetInstance().ATCReportErrMessage("E10003", {"parameter", "value", "reason"},
+                                                                    {"op_name_map", op_conf, "file content error"});
                     GELOGE(FAILED, "op_name_map init failed!"); return FAILED);
     // Return map and put it into ATC global variable
     domi::GetContext().op_conf_map = PropertiesManager::Instance().GetPropertyMap();
@@ -689,7 +459,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
     std::string check_report;
     ParseAtcParms(atc_params, "check_report", check_report);
     GE_RETURN_WITH_LOG_IF_ERROR(PreChecker::Instance().Save(check_report), "Generate pre-checking report failed.");
-    GELOGI("The pre-checking report has been saved to %s.", check_report.c_str());
+    GEEVENT("The pre-checking report has been saved to %s.", check_report.c_str());
   }
 
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC model parse ret fail.");
@@ -709,7 +479,8 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
 
   // Verify the contents of the op_name_map
   if (op_conf != nullptr && *op_conf != '\0') {
-    GE_RETURN_WITH_LOG_IF_ERROR(CheckOpNameMap(compute_graph), "op_name_map parameter is not fit with input net!");
+    GE_RETURN_WITH_LOG_IF_ERROR(CheckOpNameMap(compute_graph, op_conf),
+                                "op_name_map parameter is not fit with input net!");
   }
 
   // Print parse network structure
@@ -726,7 +497,6 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
     ParseAtcParms(atc_params, "check_report", check_report);
     GE_RETURN_WITH_LOG_IF_ERROR(PreChecker::Instance().Save(check_report), "Generate pre-checking report failed.");
     GEEVENT("The pre-checking report has been saved to %s.", check_report.c_str());
-    return SUCCESS;
   }
   // Prevent data residue in multiple calls
   PreChecker::Instance().Clear();
@@ -783,7 +553,6 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
   // Load model from file
   Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
-
   if (ret != SUCCESS) {
     GELOGE(ret, "LoadFromFile failed.");
     return ret;
@@ -794,7 +563,6 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
   // Parse the contents of the file to get the modeldef object
   ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
-
   if (ret == SUCCESS) {
     OmFileLoadHelper omFileLoadHelper;
     ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
@@ -822,7 +590,6 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
     // De serialization
     bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
-
     if (flag) {
       GetGroupName(model_def);
 
@@ -891,14 +658,16 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType framework, const char *model_file,
                                                       const char *json_file) {
-  if (framework == domi::CAFFE || framework == domi::TENSORFLOW) {
+  if (framework == domi::CAFFE || framework == domi::TENSORFLOW || framework == domi::ONNX) {
     auto model_parser = ModelParserFactory::Instance()->CreateModelParser(framework);
     GE_CHK_BOOL_RET_STATUS(model_parser != nullptr, FAILED, "ATC create model parser ret fail, framework:%d.",
                            framework);
     return model_parser->ToJson(model_file, json_file);
   }
 
-  ErrorManager::GetInstance().ATCReportErrMessage("E10045", {"parameter"}, {"model"});
+  ErrorManager::GetInstance().ATCReportErrMessage(
+    "E10001", {"parameter", "value", "reason"},
+    {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow)"});
   GELOGE(PARAM_INVALID, "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow).");
   return PARAM_INVALID;
 }

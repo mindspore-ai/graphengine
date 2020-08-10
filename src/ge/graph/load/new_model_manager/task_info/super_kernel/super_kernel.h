@@ -34,22 +34,13 @@ class SuperKernel {
  public:
   SuperKernel(const void *stub, void *ptr, uint64_t sz, uint32_t dim)
       : func_stub_(stub), dev_nav_table_(ptr), nav_table_size_(sz), block_dim_(dim) {}
-  ~SuperKernel() {
-    // free memory when all releasing
-    if (device_args_addr_ != nullptr) {
-      GE_CHK_RT(rtFree(device_args_addr_));
-      GELOGI("SKT: super_kernel args addr free.");
-    }
-    if (dev_nav_table_ != nullptr) {
-      GE_CHK_RT(rtFree(dev_nav_table_));
-      GELOGI("SKT: super_kernel args addr free.");
-    }
-  }
+  ~SuperKernel() = default;
   Status Launch(rtStream_t stream, uint32_t dump_flag);
   const void *GetFuncStub() const { return func_stub_; }
-  const void *GetNavTablePtr() const { return dev_nav_table_; }
   uint64_t GetNavTableSize() const { return nav_table_size_; }
   uint32_t GetBlockDim() const { return block_dim_; }
+  void *GetNavTablePtr() const { return dev_nav_table_; }
+  void *GetDeviceArgsPtr() const { return device_args_addr_; }
 };
 }  // namespace skt
 }  // namespace ge

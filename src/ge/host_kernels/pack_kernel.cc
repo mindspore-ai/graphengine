@@ -63,7 +63,7 @@ Status PackKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge
 Status PackKernel::ValidateKernelParams(const ge::OpDescPtr &op_desc_ptr,
                                         const std::vector<ge::ConstGeTensorPtr> &input) {
   if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "input opdesc is nullptr.");
+    GELOGW("input opdesc is nullptr.");
     return PARAM_INVALID;
   }
   if (!(AttrUtils::GetInt(op_desc_ptr, PACK_ATTR_NAME_NUM, n_))) {
@@ -71,16 +71,15 @@ Status PackKernel::ValidateKernelParams(const ge::OpDescPtr &op_desc_ptr,
     GELOGD("Attr %s is not set, default value %ld is used.", PACK_ATTR_NAME_NUM.c_str(), n_);
   }
   if (!(AttrUtils::GetInt(op_desc_ptr, ATTR_NAME_AXIS, axis_))) {
-    GELOGE(PARAM_INVALID, "Attr %s is not exist.", ATTR_NAME_AXIS.c_str());
+    GELOGW("Attr %s is not exist.", ATTR_NAME_AXIS.c_str());
     return PARAM_INVALID;
   }
   if (input.empty()) {
-    GELOGE(PARAM_INVALID, "The number of input for Pack should be %ld, in fact it is %zu ", n_, input.size());
+    GELOGW("The number of input for Pack should be %ld, in fact it is %zu ", n_, input.size());
     return NOT_CHANGED;
   }
   if (input.size() != static_cast<size_t>(n_)) {
-    GELOGE(PARAM_INVALID, "The number of input for Pack should be %d, in fact it is %ld ", static_cast<int>(n_),
-           input.size());
+    GELOGW("The number of input for Pack should be %d, in fact it is %ld ", static_cast<int>(n_), input.size());
     return PARAM_INVALID;
   }
   data_type_ = op_desc_ptr->GetInputDesc(0).GetDataType();

@@ -17,12 +17,6 @@
 #ifndef GE_GRAPH_PASSES_SUBGRAPH_PASS_H_
 #define GE_GRAPH_PASSES_SUBGRAPH_PASS_H_
 
-#include <map>
-#include <set>
-#include <utility>
-#include <vector>
-
-#include "graph/types.h"
 #include "inc/graph_pass.h"
 
 namespace ge {
@@ -75,65 +69,32 @@ class SubgraphPass : public GraphPass {
 
   /**
    * @ingroup ge
-   * @brief Get body subgraph of While op
-   * @param [in] graph: ComputeGraph.
-   * @param [in] node: While node.
-   * @return: body subgraph
-   */
-  ComputeGraphPtr GetWhileBodySubgraph(const ComputeGraphPtr &graph, const NodePtr &node);
-
-  /**
-   * @ingroup ge
-   * @brief Mark output parent_node_index
-   * @param [in] peer_out_anchor: peer_out_anchor of NetOutput
-   * @param [in] index: parent_node_index of NetOutput
-   * @param [out] node_to_attr_index: key for node in subgraph, value for parent_node_index
-   * @return: void
-   */
-  void MarkOutputIndex(const OutDataAnchorPtr &peer_out_anchor, uint32_t index,
-                       std::unordered_map<NodePtr, std::vector<uint32_t>> &node_to_attr_index);
-
-  /**
-   * @ingroup ge
-   * @brief Get data_nodes / input_indexes of netoutput if need insert memcpy
-   * @param [in] node_to_attr_index: key for node in subgraph, value for parent_node_index
-   * @param [out] data_nodes: data_nodes need insert memcpy
-   * @param [out] netoutput_input_indexes: input_indexes of netoutput need insert memcpy
-   * @return: void
-   */
-  void GetExchangeInOut(const std::unordered_map<NodePtr, std::vector<uint32_t>> &node_to_attr_index,
-                        std::set<NodePtr> &data_nodes, std::set<uint32_t> &netoutput_input_indexes);
-
-  /**
-   * @ingroup ge
-   * @brief Insert memcpy node in while_body
+   * @brief Insert input memcpy node in while_body
    * @param [in] graph: while_body
-   * @param [in] data_nodes: data_nodes need insert memcpy
-   * @param [in] output_node: NetOutput in while_body
-   * @param [in] netoutput_input_indexes: input_indexes of netoutput need insert memcpy
+   * @param [in] data_nodes: data_nodes
    * @return: 0 for SUCCESS / others for FAILED
    */
-  Status InsertMemcpyInWhileBody(const ComputeGraphPtr &graph, const std::set<NodePtr> &data_nodes,
-                                 const NodePtr &output_node, const std::set<uint32_t> &netoutput_input_indexes);
+  Status InsertInputMemcpy(const ComputeGraphPtr &graph, const std::vector<NodePtr> &data_nodes);
 
   /**
    * @ingroup ge
-   * @brief Insert NoOp node between memcpy_nodes and loop_body_nodes
+   * @brief Insert output memcpy node in while_body
    * @param [in] graph: while_body
-   * @param [in] memcpy_nodes
-   * @param [in] loop_body_nodes
+   * @param [in] output_node: NetOutput
+   * @param [in] bypass_index
    * @return: 0 for SUCCESS / others for FAILED
    */
-  Status InsertNoOp(const ComputeGraphPtr &graph, const std::set<NodePtr> &memcpy_nodes,
-                    const std::set<NodePtr> &loop_body_nodes);
+  Status InsertOutputMemcpy(const ComputeGraphPtr &graph, const NodePtr &output_node,
+                            const std::set<uint32_t> &bypass_index);
 
   /**
    * @ingroup ge
-   * @brief Check is Data->NetOutput in while body
-   * @param [in] in_data_anchor
-   * @return: true for Data->NetOutput in while body / false for others
+   * @brief Check is data->netoutput without change in while body
+   * @param [in] node: data node
+   * @param [out] bypass_index
+   * @return: false for data->netoutput without change in while body / for true for others
    */
-  bool IsWhileBodyOutput(const InDataAnchorPtr &in_data_anchor);
+  bool CheckInsertInputMemcpy(const NodePtr &node, std::set<uint32_t> &bypass_index);
 
   /**
    * @ingroup ge
@@ -172,8 +133,17 @@ class SubgraphPass : public GraphPass {
   Status InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
                           const std::vector<InDataAnchorPtr> &in_anchors, const std::string &name);
 
-  // Append index for new memcpy node.
-  uint32_t memcpy_num_{0};
+  ///
+  /// @brief Insert node: src->insert_node:input_index, insert_node:output_index->dst
+  /// @param [in] src
+  /// @param [in] dsts
+  /// @param [in] insert_node
+  /// @param [in] input_index
+  /// @param [in] output_index
+  /// @return Status
+  ///
+  Status InsertNodeBetween(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
+                           const NodePtr &insert_node, uint32_t input_index, uint32_t output_index);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_SUBGRAPH_PASS_H_

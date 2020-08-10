@@ -26,17 +26,17 @@ HybridModelExecutor::HybridModelExecutor(HybridModel *model, uint32_t device_id,
 Status HybridModelExecutor::Init() {
   GELOGD("Start to init HybridGraphEngine.");
   GE_CHK_STATUS_RET_NOLOG(InitExecutionContext());
-  infer_shape_engine_.reset(new (std::nothrow) ShapeInferenceEngine(&context_));
-  compile_engine_.reset(new (std::nothrow) TaskCompileEngine(&context_));
-  execute_engine_.reset(new (std::nothrow) ExecutionEngine(&context_, context_.callback_manager.get()));
-  GE_CHK_STATUS_RET_NOLOG(compile_engine_->Init());
   GELOGD("HybridGraphEngine initialized successfully.");
   return SUCCESS;
 }
 
 Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   GELOGD("Start to execute model.");
-  auto ret = ExecuteGraphInternal(args);
+  auto root_graph_item = model_->GetRootGraphItem();
+  GE_CHECK_NOTNULL(root_graph_item);
+
+  SubgraphExecutor executor(model_->GetRootGraphItem(), &context_);
+  auto ret = ExecuteGraphInternal(executor, args);
   Cleanup();
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Cleanup] End");
   GE_CHK_STATUS_RET(ret, "Failed to execute model");
@@ -46,24 +46,22 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
     context_.profiler->Reset();
   }
 
+  context_.iteration += 1;
   return SUCCESS;
 }
 
-Status HybridModelExecutor::ExecuteGraphInternal(HybridModelExecutor::ExecuteArgs &args) {
+Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor, HybridModelExecutor::ExecuteArgs &args) {
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] Start");
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
-  GE_CHK_STATUS_RET_NOLOG(InitInputsAndOutputs(args, context_));
-  RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitInputsAndOutputs] End");
-  GE_CHK_STATUS_RET_NOLOG(compile_engine_->Start(pool_));
-  RECORD_MODEL_EXECUTION_EVENT(&context_, "[CompileProcess] Started");
-  GE_CHK_STATUS_RET_NOLOG(infer_shape_engine_->Start(pool_));
-  RECORD_MODEL_EXECUTION_EVENT(&context_, "[InferShapeProcess] Started");
-  GE_CHK_STATUS_RET(execute_engine_->Start(), "Run execution engine failed.");
-  RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecutionProcess] End");
-  GE_CHK_STATUS_RET_NOLOG(Synchronize());
+
+  GE_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc), "Failed to execute partitioned call.");
+  RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
+
+  GE_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
-  GE_CHK_STATUS_RET_NOLOG(GetOutput(args));
+
+  GE_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
   return SUCCESS;
 }
@@ -71,18 +69,16 @@ Status HybridModelExecutor::ExecuteGraphInternal(HybridModelExecutor::ExecuteArg
 Status HybridModelExecutor::Cleanup() {
   GELOGD("Start to cleanup.");
   context_.callback_manager->Destroy();
-  context_.cv_manager.Reset();
-  context_.node_states.clear();
-  context_.all_inputs.clear();
-  context_.all_outputs.clear();
-  context_.compile_queue.Clear();
-  context_.execution_queue.Clear();
   RuntimeInferenceContext::DestroyContext(to_string(context_.session_id));
   GELOGD("Cleanup successfully.");
   return SUCCESS;
 }
 
 Status HybridModelExecutor::InitExecutionContext() {
+  GE_CHK_RT_RET(rtCtxGetCurrent(&context_.rt_context));
+  GE_CHK_RT_RET(rtCtxCreate(&context_.rt_gen_context, RT_CTX_GEN_MODE, 0));
+  GE_CHK_RT_RET(rtCtxSetCurrent(context_.rt_context));
+
   context_.stream = stream_;
   context_.model = model_;
   context_.session_id = ::ge::GetContext().SessionId();
@@ -94,77 +90,14 @@ Status HybridModelExecutor::InitExecutionContext() {
   if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {
     context_.trace_enabled = true;
   }
-
   return SUCCESS;
 }
 
 Status HybridModelExecutor::ResetExecutionContext(GraphExecutionContext &context) {
-  auto &model = *context.model;
-  context.all_inputs.resize(model.TotalInputs());
-  context.all_outputs.resize(model.TotalOutputs());
-  context.compile_queue.Restart();
-  context.execution_queue.Restart();
   GE_CHK_STATUS_RET_NOLOG(context.callback_manager->Init());
-
-  for (auto const_node : model.GetConstNodes()) {
-    auto weight_tensor = model.GetWeight(const_node);
-    GE_CHECK_NOTNULL(weight_tensor);
-    for (auto &dst_aid_and_nid : const_node->outputs[0]) {
-      auto *dst_node_item = dst_aid_and_nid.second;
-      auto input_offset = dst_node_item->input_start + dst_aid_and_nid.first;
-      context.all_inputs[input_offset] = *weight_tensor;
-    }
-  }
-
   string ctx_id = std::to_string(context.session_id);
   RuntimeInferenceContext::DestroyContext(ctx_id);
   GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::CreateContext(ctx_id), "Failed to Destroy RuntimeInferenceContext");
-  return SUCCESS;
-}
-
-Status HybridModelExecutor::InitInputsAndOutputs(HybridModelExecutor::ExecuteArgs &args,
-                                                 GraphExecutionContext &context) {
-  for (const auto &it : model_->GetInputNodes()) {
-    uint32_t input_index = it.first;
-    if (input_index >= args.inputs.size()) {
-      GELOGE(PARAM_INVALID, "Not enough inputs. NumInputs = %zu, but input index = %u", args.inputs.size(),
-             input_index);
-      return PARAM_INVALID;
-    }
-
-    auto node_item = it.second;
-    auto &input_tensor = args.inputs[input_index];
-    GELOGD("Set input tensor[%u] to inputs with index = %d, addr = %p, size = %zu", input_index, node_item->input_start,
-           input_tensor.GetData(), input_tensor.GetSize());
-    context.all_inputs[node_item->input_start] = input_tensor;
-  }
-
-  for (size_t i = 0; i < model_->GetOutputOffsets().size(); ++i) {
-    auto offset = model_->GetOutputOffsets()[i];
-    if (i < args.outputs.size() && args.outputs[i].GetData() != nullptr) {
-      GELOGD("Use user allocated output memory. output index = %zu, output offset = %d", i, offset);
-      context.all_outputs[offset] = args.outputs[i];
-    }
-  }
-
-  return SUCCESS;
-}
-
-Status HybridModelExecutor::Synchronize() {
-  GE_CHK_RT_RET(rtStreamSynchronize(stream_));
-  return SUCCESS;
-}
-
-Status HybridModelExecutor::GetOutput(HybridModelExecutor::ExecuteArgs &args) {
-  auto &net_output_input_offsets = model_->GetNetOutputInputOffsets();
-  auto num_outputs = net_output_input_offsets.size();
-  args.outputs.resize(num_outputs);
-  for (size_t i = 0; i < num_outputs; ++i) {
-    auto offset = net_output_input_offsets[i];
-    GELOGI("Get output[%zu] from offset %d", i, offset);
-    args.outputs[i] = context_.all_inputs[offset];
-  }
-
   return SUCCESS;
 }
 }  // namespace hybrid

@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 project (GraphEngine[CXX])
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_BINARY_DIR})
@@ -94,8 +94,6 @@ else()
 endif()
 
 # add compile flags
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-std=c++11" SUPPORT_CXX11)
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     message("Build in Debug mode")
     set(CMAKE_C_FLAGS "-O0 -g -Wall -fstack-protector-all -Wl,-z,relro,-z,now,-z,noexecstack -pipe -fPIC ${CMAKE_C_FLAGS}")

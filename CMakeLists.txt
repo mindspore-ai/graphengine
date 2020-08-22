@@ -124,8 +124,6 @@ elseif(GE_ONLY)
     add_subdirectory(${GE_SOURCE_DIR}/src/ge/ge_local_engine)
     add_subdirectory(${GE_SOURCE_DIR}/src/ge/graph/build/memory)
     add_subdirectory(${GE_SOURCE_DIR}/src/ge/)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/executor)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/client)
     add_subdirectory(${GE_SOURCE_DIR}/src/ge/plugin/engine)
 endif()
 

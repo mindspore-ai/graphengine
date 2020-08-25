@@ -214,5 +214,7 @@ generate_package()
   tar -cf graphengine_lib.tar fwkacllib/ atc/
 }
 
-generate_package
+if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then
+  generate_package
+fi
 echo "---------------- GraphEngine package archive generated ----------------"

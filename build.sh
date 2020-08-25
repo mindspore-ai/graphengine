@@ -36,7 +36,7 @@ usage()
   echo "to be continued ..."
 }
 
-# parse and set optionss
+# parse and set options
 checkopts()
 {
   VERBOSE=""
@@ -172,13 +172,49 @@ echo "---------------- GraphEngine output generated ----------------"
 # fi
 
 # generate output package in tar form, including ut/st libraries/executables
-cd ${BASEPATH}
-mkdir -p output/plugin/nnengine/ge_config/
-mkdir -p output/plugin/opskernel/
-find output/ -name graphengine_lib.tar -exec rm {} \;
-cp src/ge/engine_manager/engine_conf.json output/plugin/nnengine/ge_config/
-find output/ -maxdepth 1 -name libengine.so -exec mv -f {} output/plugin/nnengine/ \;
-find output/ -maxdepth 1 -name libge_local_engine.so -exec mv -f {} output/plugin/opskernel/ \;
-tar -cf graphengine_lib.tar output/*
-mv -f graphengine_lib.tar output
+generate_package()
+{
+  cd "${BASEPATH}"
+  FWK_PATH="fwkacllib/lib64"
+  ATC_PATH="atc/lib64"
+  NNENGINE_PATH="plugin/nnengine/ge_config"
+  OPSKERNEL_PATH="plugin/opskernel"
+
+  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so")
+  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so")
+
+  rm -rf ${OUTPUT_PATH:?}/${FWK_PATH}/
+  rm -rf ${OUTPUT_PATH:?}/${ATC_PATH}/
+  mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}"
+  mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH}"
+
+  find output/ -name graphengine_lib.tar -exec rm {} \;
+  cp src/ge/engine_manager/engine_conf.json ${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}
+  cp src/ge/engine_manager/engine_conf.json ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}
+
+  find output/ -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}/../ \;
+  find output/ -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}/../ \;
+
+  find output/ -maxdepth 1 -name libge_local_engine.so -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH} \;
+  find output/ -maxdepth 1 -name libge_local_engine.so -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH} \;
+
+  cd "${OUTPUT_PATH}"
+  for lib in "${ATC_LIB[@]}";
+  do
+    cp "$lib" "${OUTPUT_PATH}/${ATC_PATH}"
+  done
+
+  for lib in "${FWK_LIB[@]}";
+  do
+    cp "$lib" "${OUTPUT_PATH}/${FWK_PATH}"
+  done
+
+  tar -cf graphengine_lib.tar fwkacllib/ atc/
+}
+
+if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then
+  generate_package
+fi
 echo "---------------- GraphEngine package archive generated ----------------"

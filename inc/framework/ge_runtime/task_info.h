@@ -161,12 +161,13 @@ class TbeTaskInfo : public TaskInfo {
 class AicpuTaskInfo : public TaskInfo {
  public:
   AicpuTaskInfo(const std::string &op_name, uint32_t stream_id, const string &so_name, const std::string &kernel_name,
-                const std::string &node_def, const std::vector<void *> &input_data_addrs,
+                const std::string &node_def, const std::string &ext_info, const std::vector<void *> &input_data_addrs,
                 const std::vector<void *> &output_data_addrs, bool dump_flag)
       : TaskInfo(op_name, stream_id, TaskInfoType::AICPU, dump_flag),
         so_name_(so_name),
         kernel_name_(kernel_name),
         node_def_(node_def),
+        ext_info_(ext_info),
         input_data_addrs_(input_data_addrs),
         output_data_addrs_(output_data_addrs) {}
   ~AicpuTaskInfo() override {}
@@ -176,11 +177,13 @@ class AicpuTaskInfo : public TaskInfo {
   const std::string &node_def() const { return node_def_; }
   const std::vector<void *> &input_data_addrs() const { return input_data_addrs_; }
   const std::vector<void *> &output_data_addrs() const { return output_data_addrs_; }
+  const std::string &ext_info() const { return ext_info_; }
 
  private:
   std::string so_name_;
   std::string kernel_name_;
   std::string node_def_;
+  std::string ext_info_;
   std::vector<void *> input_data_addrs_;
   std::vector<void *> output_data_addrs_;
 };

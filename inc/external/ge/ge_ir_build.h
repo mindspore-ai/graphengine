@@ -23,6 +23,12 @@
 #include "graph/graph.h"
 #include "graph/ge_error_codes.h"
 
+namespace {
+#define IR_MAJOR_VERSION (int(1))
+#define IR_MINOR_VERSION (int(0))
+#define IR_PATCH_VERSION (int(0))
+}  // namespace
+
 namespace ge {
 
 struct ModelBufferData {
@@ -70,6 +76,18 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string
  * @retval OtherValues Failure
  */
 graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model);
+
+/**
+ * @ingroup AscendCL
+ * @brief query IR interface version
+ *
+ * @param major_version[OUT] IR interface major version
+ * @param minor_version[OUT] IR interface minor version
+ * @param patch_version[OUT] IR interface patch version
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version);
 
 };  // namespace ge
 #endif

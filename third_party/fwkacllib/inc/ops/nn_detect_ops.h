@@ -909,20 +909,30 @@ REG_OP(DecodeBbox)
 
 /**
 *@brief Computes ClipBoxes function.
-*
+
 *@par Inputs:
-*Inputs include:
-* @li boxes_input: A Tensor. Must be float16. N-D with shape [N, 4].
-* @li img_size: A Tensor. Must be int32. shape [H, W].
-*
+*@li boxes_input: A Tensor. Must be float16. N-D with shape [N, 4].
+*@li img_size: A Tensor. Must be int32. shape [H, W].
+
 *@par Outputs:
-* @ boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
+*boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
 */
 REG_OP(ClipBoxes)
     .INPUT(boxes_input, TensorType({DT_FLOAT16}))
     .INPUT(img_size, TensorType({DT_INT32}))
     .OUTPUT(boxes_output, TensorType({DT_FLOAT16}))
     .OP_END_FACTORY_REG(ClipBoxes)
+
+/**
+*@brief Computes ClipBoxesD function.
+
+*@par Inputs:
+*@li boxes_input: A Tensor. Must be float16. N-D with shape [N, 4].
+*@li img_size: A Tensor. Must be int32. shape [H, W].
+
+*@par Outputs:
+*boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
+*/
 REG_OP(ClipBoxesD)
     .INPUT(boxes_input, TensorType({DT_FLOAT16}))
     .REQUIRED_ATTR(img_size, ListInt)
@@ -959,13 +969,13 @@ REG_OP(FastrcnnPredictions)
 
 /**
 *@brief Computes Fastrcnn RpnProposals function.
-*
+
 *@par Inputs:
 *Inputs include:
 * @li rois: A Tensor. Must be float16. N-D with shape [N, 4].
 * @li cls_bg_prob: A Tensor. Must be float16. N-D with shape [N, 1].
 * @li img_size: A Tensor. Must be int32. shape [H, W].
-*
+
 *@par Attributes:
 * @li score_threshold: required, float, threahold of topk process.
 * @li k: required, Int, threahold of topk process.
@@ -975,10 +985,14 @@ REG_OP(FastrcnnPredictions)
 * @li score_filter: bool, mark of score_filter. Defaults to "true"
 * @li box_filter: bool, mark of box_filter. Defaults to "true"
 * @li score_sigmoid: bool, mark of score_sigmoid. Defaults to "false"
+
 *@par Outputs:
 * @li sorted_rois: A Tensor. Must be float16. N-D with shape [N, 4].
 * @li sorted_scores: A Tensor. Must be float16. N-D with shape [N, 1].
 * @li sorted_classes: A Tensor. Must be float16. N-D with shape [N, 1].
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator Unpack.
 */
 REG_OP(RpnProposals)
     .INPUT(rois, TensorType({DT_FLOAT16}))
@@ -994,6 +1008,31 @@ REG_OP(RpnProposals)
     .ATTR(score_sigmoid, Bool, false)
     .OUTPUT(sorted_box, TensorType({DT_FLOAT16}))
     .OP_END_FACTORY_REG(RpnProposals)
+
+/**
+*@brief Computes Fastrcnn RpnProposalsD function.
+
+*@par Inputs:
+*@li rois: A Tensor. Must be float16. N-D with shape [N, 4].
+*@li cls_bg_prob: A Tensor. Must be float16. N-D with shape [N, 1].
+
+*@par Attributes:
+*@li img_size: A Tensor size of image. Must be int32. shape [H, W].
+*@li score_threshold: required, float, threahold of topk process.
+*@li k: required, Int, threahold of topk process.
+*@li min_size: required, float, threahold of nms process.
+*@li nms_threshold: required, float, threahold of nms process.
+*@li post_nms_num: required, float, threahold of nms process.
+*@li score_filter: bool, mark of score_filter. Defaults to "true"
+*@li box_filter: bool, mark of box_filter. Defaults to "true"
+*@li score_sigmoid: bool, mark of score_sigmoid. Defaults to "false"
+
+*@par Outputs:
+*sorted_box: A Tensor of output. Must be float16. N-D with shape [N, 1].
+
+* @par Third-party framework compatibility
+* Compatible with the pytorch operator RPNProposals.
+*/
 REG_OP(RpnProposalsD)
     .INPUT(rois, TensorType({DT_FLOAT16}))
     .INPUT(cls_bg_prob, TensorType({DT_FLOAT16}))
@@ -1165,17 +1204,17 @@ REG_OP(DecodeWheelsTarget)
 *@li iou_threshold: A required attribute of type float32, specifying the nms iou iou_threshold.
 *@li max_size_per_class: A required attribute of type int, specifying the nms output num per class.
 *@li max_total_size: A required attribute of type int, specifying the the nms output num per batch.
-*@li change_coordinate_frame: A required attribute of type bool, whether to normalize coordinates after clipping.
-*@li transpose_box: A required attribute of type bool, whether inserted transpose before this op.
+*@li change_coordinate_frame: A optional attribute of type bool, whether to normalize coordinates after clipping.
+*@li transpose_box: A optional attribute of type bool, whether inserted transpose before this op. must be "false".
 
 *@par Outputs:
 *@li nmsed_boxes: A 3D Tensor of type float16 with shape (batch, max_total_size, 4),
 * specifying the output nms boxes per batch.
-*@li nmsed_scores: A 2D Tensor of type float16 with shape (N, 4),
+*@li nmsed_scores: A 2D Tensor of type float16 with shape (batch, max_total_size),
 * specifying the output nms score per batch.
-*@li nmsed_classes: A 2D Tensor of type float16 with shape (N, 4),
+*@li nmsed_classes: A 2D Tensor of type float16 with shape (batch, max_total_size),
 * specifying the output nms class per batch.
-*@li nmsed_num: A 1D Tensor of type float16 with shape (N, 4), specifying the valid num of nmsed_boxes.
+*@li nmsed_num: A 1D Tensor of type int32 with shape (batch), specifying the valid num of nmsed_boxes.
 
 *@attention Constraints:
 * Only computation of float16 data is supported.
@@ -1191,8 +1230,8 @@ REG_OP(BatchMultiClassNonMaxSuppression)
     .OUTPUT(nmsed_num, TensorType({DT_INT32}))
     .REQUIRED_ATTR(score_threshold, Float)
     .REQUIRED_ATTR(iou_threshold, Float)
-    .REQUIRED_ATTR(max_size_per_class, Float)
-    .REQUIRED_ATTR(max_total_size, Float)
+    .REQUIRED_ATTR(max_size_per_class, Int)
+    .REQUIRED_ATTR(max_total_size, Int)
     .ATTR(change_coordinate_frame, Bool, false)
     .ATTR(transpose_box, Bool, false)
     .OP_END_FACTORY_REG(BatchMultiClassNonMaxSuppression)

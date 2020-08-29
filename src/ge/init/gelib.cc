@@ -47,6 +47,8 @@ namespace ge {
 namespace {
 const int kDecimal = 10;
 const int kSocVersionLen = 50;
+const int kDefaultDeviceIdForTrain = 0;
+const int kDefaultDeviceIdForInfer = -1;
 const uint32_t kAicoreOverflow = (0x1 << 0);
 const uint32_t kAtomicOverflow = (0x1 << 1);
 const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
@@ -157,8 +159,12 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
   // In train and infer, profiling is always needed.
   InitOptions(options);
   InitProfiling(this->options_);
-
-  if (is_train_mode_) {
+  // 1.`is_train_mode_` means case: train
+  // 2.`(!is_train_mode_) && (options_.device_id != kDefaultDeviceIdForInfer)` means case: online infer
+  // these two case need call `InitSystemWithOptions->rtGetDeviceIndexByPhyId`
+  // to convert phy device id to logical device id
+  // note:rtGetDeviceIndexByPhyId return `0` logical id when input phy device id is `0`
+  if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
     status = InitSystemWithOptions(this->options_);
   } else {
     status = InitSystemWithoutOptions();
@@ -200,7 +206,7 @@ void GELib::InitOptions(const map<string, string> &options) {
   if (iter != options.end()) {
     this->options_.session_id = std::strtoll(iter->second.c_str(), nullptr, kDecimal);
   }
-  this->options_.device_id = 0;
+  this->options_.device_id = is_train_mode_ ? kDefaultDeviceIdForTrain : kDefaultDeviceIdForInfer;
   iter = options.find(OPTION_EXEC_DEVICE_ID);
   if (iter != options.end()) {
     this->options_.device_id = static_cast<int32_t>(std::strtol(iter->second.c_str(), nullptr, kDecimal));
@@ -252,7 +258,8 @@ void GELib::InitOptions(const map<string, string> &options) {
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOptions(Options &options) {
-  GELOGI("Training init GELib. session Id:%ld, device id :%d ", options.session_id, options.device_id);
+  std::string mode = is_train_mode_ ? "Training" : "Online infer";
+  GELOGI("%s init GELib. session Id:%ld, device id :%d ", mode.c_str(), options.session_id, options.device_id);
   GEEVENT("System init with options begin, job id %s", options.job_id.c_str());
   std::lock_guard<std::mutex> lock(status_mutex_);
   GE_IF_BOOL_EXEC(is_system_inited && !is_shutdown,
@@ -292,14 +299,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   is_system_inited = true;
   is_shutdown = false;
 
-  GELOGI("Training init GELib success.");
+  GELOGI("%s init GELib success.", mode.c_str());
 
   return SUCCESS;
 }
 
 Status GELib::SystemShutdownWithOptions(const Options &options) {
-  GELOGI("Training finalize GELib begin.");
-
+  std::string mode = is_train_mode_ ? "Training" : "Online infer";
+  GELOGI("%s finalize GELib begin.", mode.c_str());
   std::lock_guard<std::mutex> lock(status_mutex_);
   GE_IF_BOOL_EXEC(is_shutdown || !is_system_inited,
                   GELOGW("System Shutdown with options is already is_shutdown or system does not inited. "
@@ -315,9 +322,7 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
 
   is_system_inited = false;
   is_shutdown = true;
-
-  GELOGI("Training finalize GELib success.");
-
+  GELOGI("%s finalize GELib success.", mode.c_str());
   return SUCCESS;
 }
 
@@ -387,7 +392,7 @@ Status GELib::Finalize() {
   // Shut down profiling
   ShutDownProfiling();
 
-  if (is_train_mode_) {
+  if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
     GELOGI("System ShutDown.");
     mid_state = SystemShutdownWithOptions(this->options_);
     if (mid_state != SUCCESS) {

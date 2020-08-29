@@ -34,6 +34,7 @@ class TypeUtils {
   static bool IsFormatValid(Format format);
   static bool IsInternalFormat(Format format);
 
+  static std::string ImplyTypeToSerialString(domi::ImplyType imply_type);
   static std::string DataTypeToSerialString(DataType data_type);
   static DataType SerialStringToDataType(const std::string &str);
   static std::string FormatToSerialString(Format format);

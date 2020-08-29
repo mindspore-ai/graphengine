@@ -187,8 +187,8 @@ void TBEPluginManager::LoadCustomOpLib() {
   std::vector<OpRegistrationData> registration_datas = domi::OpRegistry::Instance()->registrationDatas;
   GELOGI("The size of registration_datas is: %zu", registration_datas.size());
   for (OpRegistrationData reg_data : registration_datas) {
-    GELOGD("Begin to register optype: %s, imply_type: %u", reg_data.GetOmOptype().c_str(),
-           static_cast<uint32_t>(reg_data.GetImplyType()));
+    GELOGD("Begin to register optype: %s, imply_type: %s", reg_data.GetOmOptype().c_str(),
+           TypeUtils::ImplyTypeToSerialString(reg_data.GetImplyType()).c_str());
     domi::OpRegistry::Instance()->Register(reg_data);
   }
 }

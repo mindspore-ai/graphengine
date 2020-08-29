@@ -55,7 +55,6 @@ class VectorCoreDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
-
 class AICpuDNNEngine : public DNNEngine {
  public:
   AICpuDNNEngine() = default;
@@ -77,6 +76,21 @@ class GeLocalDNNEngine : public DNNEngine {
   explicit GeLocalDNNEngine(const std::string &engine_name);
   explicit GeLocalDNNEngine(const DNNEngineAttribute &attrs);
   ~GeLocalDNNEngine() = default;
+
+  Status Initialize(const std::map<std::string, std::string> &options);
+  Status Finalize();
+  void GetAttributes(DNNEngineAttribute &attr) const;
+
+ private:
+  DNNEngineAttribute engine_attribute_;
+};
+
+class HostCpuDNNEngine : public DNNEngine {
+ public:
+  HostCpuDNNEngine() = default;
+  explicit HostCpuDNNEngine(const std::string &engine_name);
+  explicit HostCpuDNNEngine(const DNNEngineAttribute &attrs);
+  ~HostCpuDNNEngine() = default;
 
   Status Initialize(const std::map<std::string, std::string> &options);
   Status Finalize();

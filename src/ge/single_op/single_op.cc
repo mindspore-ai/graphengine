@@ -34,6 +34,9 @@ size_t GetAlignedSize(uint32_t size) {
   return aligned_size;
 }
 }  // namespace
+
+SingleOp::SingleOp(std::mutex *stream_mutex, rtStream_t stream) : stream_mutex_(stream_mutex), stream_(stream) {}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOp::~SingleOp() {
   for (auto task : tasks_) {
     delete task;
@@ -52,7 +55,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_inputs; ++i) {
     // preventing from read out of bound
     size_t aligned_size = GetAlignedSize(inputs[i].length);
-    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%u, input_sizes_:%u", i, aligned_size, inputs[i].length,
+    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%lu, input_sizes_:%lu", i, aligned_size, inputs[i].length,
            input_sizes_[i]);
     if (aligned_size < input_sizes_[i]) {
       GELOGE(PARAM_INVALID,
@@ -72,7 +75,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_outputs; ++i) {
     // preventing from write out of bound
     size_t aligned_size = GetAlignedSize(outputs[i].length);
-    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%u, output_sizes_:%u", i, aligned_size, outputs[i].length,
+    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%lu, output_sizes_:%lu", i, aligned_size, outputs[i].length,
            output_sizes_[i]);
     if (aligned_size < output_sizes_[i]) {
       GELOGE(PARAM_INVALID,
@@ -133,9 +136,7 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
     size_t io_addr_num = args_.size();
     if (task->GetOpTaskType() == OP_TASK_AICPU) {
       GELOGD("Update aicpu_TF task args");
-      AiCpuTask *task_aicpu = dynamic_cast<AiCpuTask *>(task);
-      GE_CHECK_NOTNULL(task_aicpu);
-      auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task_aicpu->GetIOAddr()));
+      auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task->GetIOAddr()));
       GE_CHECK_NOTNULL(dst_io_addr);
       auto rt_ret = rtMemcpyAsync(dst_io_addr, sizeof(uint64_t) * args_.size(), &args_[0],
                                   sizeof(uint64_t) * args_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream_);
@@ -145,9 +146,7 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       }
     } else if (task->GetOpTaskType() == OP_TASK_AICPUCC) {
       GELOGD("Update aicpu_CC task args");
-      AiCpuCCTask *task_aicpu_cc = dynamic_cast<AiCpuCCTask *>(task);
-      GE_CHECK_NOTNULL(task_aicpu_cc);
-      const uintptr_t *task_io_addr = reinterpret_cast<const uintptr_t *>(task_aicpu_cc->GetIOAddr());
+      const uintptr_t *task_io_addr = reinterpret_cast<const uintptr_t *>(task->GetIOAddr());
       GE_CHECK_NOTNULL(task_io_addr);
       auto io_addr = reinterpret_cast<uint64_t *>(const_cast<uintptr_t *>(task_io_addr));
       for (size_t i = 0; i < io_addr_num; ++i) {
@@ -168,6 +167,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     return ret;
   }
 
+  std::lock_guard<std::mutex> lk(*stream_mutex_);
   ret = UpdateArgs(inputs, outputs);
   if (ret != SUCCESS) {
     return ret;
@@ -185,8 +185,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
 
 void SingleOp::SetStream(rtStream_t stream) { stream_ = stream; }
 
-DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, rtStream_t stream)
-    : resource_id_(resource_id), stream_(stream) {}
+DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex, rtStream_t stream)
+    : resource_id_(resource_id), stream_mutex_(stream_mutex), stream_(stream) {}
 
 Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
                                        std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const {
@@ -252,6 +252,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc, con
                                      vector<GeTensorDesc> &output_desc, vector<DataBuffer> &output_buffers) {
   GE_CHECK_NOTNULL(op_task_);
   GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
+  std::lock_guard<std::mutex> lk(*stream_mutex_);
   GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
   std::vector<void *> workspace_buffers;
   GE_CHK_STATUS_RET_NOLOG(AllocateWorkspaces(op_task_->GetWorkspaceSizes(), workspace_buffers));

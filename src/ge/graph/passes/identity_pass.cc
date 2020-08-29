@@ -21,6 +21,8 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/common/omg_util.h"
 #include "graph/utils/node_utils.h"
+#include "graph/utils/attr_utils.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 namespace {
@@ -33,8 +35,14 @@ namespace {
 ///        or as input of Netoutput of subgraph
 ///        or as input of one node with subgraph
 ///        or as output of one node with subgraph
+/// 3. identity with attr no_need_constant_folding should not be deleted too
 Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
   std::string node_type;
+  if (node->GetOpDesc()->HasAttr(ge::ATTR_NO_NEED_CONSTANT_FOLDING)) {
+    usable = true;
+    return SUCCESS;
+  }
+
   for (auto &in_node : node->GetInDataNodes()) {
     auto in_node_opdesc = in_node->GetOpDesc();
     GE_CHECK_NOTNULL(in_node_opdesc);
@@ -47,7 +55,8 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
 
     GE_CHK_STATUS_RET(GetOriginalType(in_node, node_type), "Failed to get node type from node %s",
                       node->GetName().c_str());
-    if ((node_type != SWITCH) && (node_type != REFSWITCH)) {
+    bool need_skip = (node_type != SWITCH) && (node_type != REFSWITCH) && (node_type != SWITCHN);
+    if (need_skip) {
       GELOGD("skip identity %s connected to switch", node->GetName().c_str());
       break;
     }

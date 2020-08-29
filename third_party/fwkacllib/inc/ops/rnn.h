@@ -67,6 +67,17 @@ REG_OP(BasicLSTMCell)
     .ATTR(activation, String, "tanh")
     .OP_END_FACTORY_REG(BasicLSTMCell)
 
+/**
+*@brief: Dynamic LSTM forward calculation.
+
+*@par Inputs:
+*@li x:A 4D Tensor. Must be the type float32. The format must be FRACTAL_NZ.
+*@li w:A 4D Tensor. Must be the type float32. The format must be FRACTAL_Z.
+*@li b:A 1D Tensor. Must be the type float32. The format must be ND.
+
+*@par Outputs:
+*output_h:A Tensor of output. Must be the type float32. The format must be FRACTAL_Z.
+*/
 REG_OP(DynamicLSTM)
     .INPUT(x, TensorType({DT_FLOAT32}))
     .INPUT(w, TensorType({DT_FLOAT32}))

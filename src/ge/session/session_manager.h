@@ -126,6 +126,16 @@ class SessionManager {
 
   ///
   /// @ingroup ge_graph
+  /// @brief get variables in the session with specific session id
+  /// @param [in] session_id: sssion id
+  /// @param [in] var_names: variable names
+  /// @param [out] var_values: variable values
+  /// @return Status result of function
+  ///
+  Status GetVariables(SessionId session_id, const std::vector<std::string> &var_names, std::vector<Tensor> &var_values);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief me register the callback function to get the result of summary or checkpoin
   /// @param [in] session_id session id
   /// @param [in] key: summary or checkpoint

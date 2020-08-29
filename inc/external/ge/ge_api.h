@@ -100,6 +100,15 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief get variables in the session with specific session id
+  /// @param [in] var_names: variable names
+  /// @param [out] var_values: variable values
+  /// @return Status result of function
+  ///
+  Status GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief register callback func with specific summary or checkpoint by users
   /// @param [in] key: func key
   /// @param [in] callback: callback  specific summary or checkpoint.

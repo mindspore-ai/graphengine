@@ -28,6 +28,7 @@
 #include "graph/common/ge_call_wrapper.h"
 #include "init/gelib.h"
 #include "model/ge_model.h"
+#include "graph/ge_context.h"
 
 using domi::BuildMode;
 
@@ -166,11 +167,15 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
   return SUCCESS;
 }
 
-Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
-                                             std::vector<SubGraphInfoPtr> &subgraph_ptr_list, GeModelPtr &ge_model_ptr,
-                                             uint64_t session_id) {
+Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_list,
+                                             GeModelPtr &ge_model_ptr, uint64_t session_id) {
+  if (ge::GetContext().GetHostExecFlag()) {
+    GE_CHK_STATUS_RET(BuildForHostCpuGraph(comp_graph, ge_model_ptr, session_id), "Build for host-cpu graph failed.");
+    return SUCCESS;
+  }
+
   GELOGI("Begin to build known shape graph[%s].", comp_graph->GetName().c_str());
-  Status ret = SecondPartition(comp_graph, subgraph_ptr_list);
+  Status ret = SecondPartition(comp_graph, subgraph_list);
   GE_CHK_STATUS_RET(ret, "Graph[%s] second partition Failed.", comp_graph->GetName().c_str());
   auto subgraph_map = graph_partitioner_.GetSubGraphMap();
 
@@ -255,6 +260,10 @@ Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeMo
                     "Graph[%s] builder SaveDataToModel() return fail.", comp_graph->GetName().c_str());
   GELOGI("Success to build graph[%s] model.", comp_graph->GetName().c_str());
   return SUCCESS;
+}
+
+Status GraphBuilder::BuildForHostCpuGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr, uint64_t session_id) {
+  return BuildForUnknownShapeGraph(comp_graph, ge_model_ptr, session_id);
 }
 
 Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,

@@ -855,6 +855,32 @@ void VarManager::RemoveAllocatedGraphId(const std::string &var_name) {
   var_resource_->RemoveAllocatedGraphId(var_name);
 }
 
+Status VarManager::GetAllVariables(std::map<std::string, GeTensorDesc> &all_variables) {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (var_resource_ == nullptr) {
+    GELOGW("VarManager has not been inited.");
+    return INTERNAL_ERROR;
+  }
+  auto new_variable_desc = var_resource_->GetAllVarDesc();
+  if (new_variable_desc.size() == 0) {
+    GELOGW("VarManager don't have variables.");
+    return INTERNAL_ERROR;
+  }
+
+  for (auto iter = new_variable_desc.begin(); iter != new_variable_desc.end(); ++iter) {
+    auto trans_road = var_resource_->GetTransRoad(iter->first);
+    if (trans_road == nullptr || trans_road->empty()) {
+      GELOGI("The variable %s does not have any trans road", iter->first.c_str());
+      all_variables[iter->first] = iter->second;
+      continue;
+    }
+    // get origin trans info : the first trans node info
+    auto origin_trans_node_info = trans_road->at(0);
+    all_variables[iter->first] = origin_trans_node_info.input;
+  }
+  return SUCCESS;
+}
+
 VarManagerPool::~VarManagerPool() { Destory(); }
 
 VarManagerPool &VarManagerPool::Instance() {
@@ -896,5 +922,23 @@ VarManager *VarManagerPool::GetVarManager(uint64_t session_id) {
   }
   var_manager_map_[session_id] = var_manager;
   return var_manager;
+}
+
+void VarManagerPool::RemoveVarManager(uint64_t session_id) {
+  VarManager *var_manager = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(var_manager_mutex_);
+    auto it = var_manager_map_.find(session_id);
+    if (it != var_manager_map_.end()) {
+      var_manager = it->second;
+      var_manager_map_.erase(it);
+    }
+  }
+
+  if (var_manager != nullptr) {
+    var_manager->Destory();
+    delete var_manager;
+    var_manager = nullptr;
+  }
 }
 }  // namespace ge

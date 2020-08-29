@@ -156,6 +156,19 @@ REG_OP(RefSwitch)
         DT_UINT64, DT_BOOL}))
     .OP_END_FACTORY_REG(RefSwitch)
 
+/**
+ *@brief Forwards "data" to the output port determined by "pred_value".
+
+ *@par Inputs:
+ *@li data: The tensor to be forwarded. \ n
+ *          Must be one of the following types: float16, float32, float64, \n
+ *          int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool.
+ *@li pred_value: A int64 tensor which determines the output port that will receive data.
+
+ *@par Outputs:
+ *output: The output tensors, one of which will become available. \n
+ *        Has the same type as "data".
+ */
 REG_OP(SwitchN)
     .INPUT(data, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE,
         DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32,
@@ -165,7 +178,6 @@ REG_OP(SwitchN)
         DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8, DT_UINT16, DT_UINT32,
         DT_UINT64, DT_BOOL}))
     .OP_END_FACTORY_REG(SwitchN)
-
 
 /**
  *@brief Creates or finds a child frame, and makes "x" available to the child \n

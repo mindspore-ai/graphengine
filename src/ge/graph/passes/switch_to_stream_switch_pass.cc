@@ -48,7 +48,7 @@ Status SwitchToStreamSwitchPass::Run(ComputeGraphPtr graph) {
 }
 
 ///
-/// @brief Clear Status, used for subgraph pass
+/// @brief Clear Status
 /// @return
 ///
 Status SwitchToStreamSwitchPass::ClearStatus() {

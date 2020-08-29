@@ -153,9 +153,6 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   graphStatus AddDynamicOutputDesc(const string &name, const unsigned int num, bool isPushBack = true);
 
-  void RemoveInputDesc(uint32_t index);
-  void RemoveOutputDesc(uint32_t index);
-
   bool IsOptionalInput(const string &name) const;
 
   bool IsOptionalInput(uint32_t index) const;

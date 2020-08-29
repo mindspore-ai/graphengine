@@ -282,6 +282,68 @@ Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id,
   }
   return innerSession->RunGraphAsync(graph_id, inputs, callback);
 }
+
+Status SessionManager::GetVariables(SessionId session_id, const std::vector<std::string> &var_names,
+                                    std::vector<Tensor> &var_values) {
+  // step 0: init session manager
+  if (!init_flag_) {
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    return GE_SESSION_MANAGER_NOT_INIT;
+  }
+  SessionPtr innerSession = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
+    if (it == session_manager_map_.end()) {
+      return GE_SESSION_NOT_EXIST;
+    } else {
+      innerSession = it->second;
+    }
+  }
+
+  // step 1: get all variable
+  std::map<std::string, GeTensorDesc> all_variables;
+  Status ret = innerSession->GetAllVariables(all_variables);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Get all variables failed.");
+    return FAILED;
+  }
+
+  // srep 2: create check point graph
+  Graph graph = Graph("checkpoint");
+  ret = innerSession->GenCheckPointGraph(all_variables, graph);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Build check point graph failed.");
+    return FAILED;
+  }
+
+  // step 3: run check point graph
+  uint32_t graph_id = GetCurrentSecondTimestap();
+  ret = AddGraph(session_id, graph_id, graph);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Add check point graph failed.");
+    return FAILED;
+  }
+
+  vector<Tensor> inputs;
+  vector<Tensor> outputs;
+  ret = RunGraph(session_id, graph_id, inputs, outputs);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Run check point graph failed.");
+    return FAILED;
+  }
+
+  // step 4: save variables
+  ret = innerSession->SaveVariables(graph, var_names, outputs, var_values);
+  GELOGD("[SessionManager] outputs size is [%zu], var values size is [%zu].", outputs.size(), var_values.size());
+
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Save variables failed.");
+    return FAILED;
+  }
+  return ret;
+}
+
 bool SessionManager::IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id) {
   if (!init_flag_) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT);

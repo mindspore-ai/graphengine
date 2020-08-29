@@ -59,7 +59,12 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
 
   // malloc args memory
   size_t args_size = sizeof(void *) * io_addrs.size();
-  rtError_t rt_ret = rtMalloc(&args_, args_size + kAlignBytes, RT_MEMORY_HBM);
+  rtMemType_t memory_type = RT_MEMORY_HBM;
+  if (op_desc->HasAttr(ATTR_NAME_MEMORY_TYPE_RANGE)) {
+    memory_type = RT_MEMORY_TS_4G;
+  }
+  GELOGI("memory_type: %u", memory_type);
+  rtError_t rt_ret = rtMalloc(&args_, args_size + kAlignBytes, memory_type);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);

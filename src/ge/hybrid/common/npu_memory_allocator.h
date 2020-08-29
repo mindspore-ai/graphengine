@@ -23,20 +23,25 @@
 #include <memory>
 #include <mutex>
 #include "external/ge/ge_api_error_codes.h"
+#include "memory/memory_api.h"
 
 namespace ge {
 namespace hybrid {
 class AllocationAttr {
  public:
+  AllocationAttr() = default;
   explicit AllocationAttr(int padding);
   explicit AllocationAttr(void *try_reuse_addr);
   AllocationAttr(int padding, void *try_reuse_addr);
   ~AllocationAttr() = default;
+  void SetMemType(MemStorageType memType) { mem_type_ = memType; }
+  MemStorageType GetMemType() { return mem_type_; }
 
  private:
   friend class NpuMemoryAllocator;
   int padding_ = 0;
   void *try_reuse_addr_ = nullptr;
+  MemStorageType mem_type_ = HBM;
 };
 
 class NpuMemoryAllocator {

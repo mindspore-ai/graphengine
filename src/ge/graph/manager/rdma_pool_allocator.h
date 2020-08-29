@@ -27,12 +27,11 @@
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/manager/block_memory.h"
+#include "graph/manager/graph_mem_allocator.h"
 #include "graph/node.h"
 #include "runtime/mem.h"
 
 namespace ge {
-class MemoryAllocator;
-
 class RdmaPoolAllocator {
  public:
   explicit RdmaPoolAllocator(rtMemType_t memory_type);

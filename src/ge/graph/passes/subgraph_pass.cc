@@ -98,21 +98,14 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
     return FAILED;
   }
 
-  NodePtr in_node = NodeUtils::GetParentInput(node);
-  GE_CHECK_NOTNULL(in_node);
   // Subgraph Data Node, check for constant input.
   std::string const_type;
-  if (!NodeUtils::GetConstOpType(in_node, const_type)) {
+  if (!NodeUtils::GetConstOpType(node, const_type)) {
     return SUCCESS;
   }
 
   const NodePtr &parent_node = graph->GetParentNode();
-  if (kWhileOpTypes.count(parent_node->GetType()) == 0) {
-    if (!AttrUtils::SetStr(node->GetOpDesc(), ATTR_NAME_PARENT_CONST_TYPE, const_type)) {
-      GELOGE(FAILED, "Set attr PARENT_NODE_INDEX failed, node:%s.", node->GetName().c_str());
-      return FAILED;
-    }
-  } else {
+  if (kWhileOpTypes.count(parent_node->GetType()) != 0) {
     // Constant input to While need memcpy.
     const ComputeGraphPtr &parent_graph = parent_node->GetOwnerComputeGraph();
     GE_CHECK_NOTNULL(parent_graph);
@@ -211,6 +204,10 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
     GELOGE(FAILED, "while_body of %s is NULL.", node->GetName().c_str());
     return FAILED;
   }
+  if (GraphUtils::IsUnknownShapeGraph(while_body)) {
+    GELOGI("Unknown shape while_body graph %s no need to insert memcpy.", while_body->GetName().c_str());
+    return SUCCESS;
+  }
 
   std::vector<NodePtr> data_nodes;
   std::set<uint32_t> bypass_index;
@@ -258,7 +255,7 @@ Status SubgraphPass::InsertInputMemcpy(const ComputeGraphPtr &graph, const std::
   }
 
   std::string in_name = graph->GetName() + "_input_Memcpy";
-  OpDescBuilder in_builder(in_name, MEMCPYASYNC);
+  OpDescBuilder in_builder(in_name, IDENTITY);
   for (size_t i = 0; i < data_nodes.size(); i++) {
     // Data node has and only has one output
     in_builder.AddInput("x" + std::to_string(i), data_nodes[i]->GetOpDesc()->GetOutputDesc(0))
@@ -300,7 +297,7 @@ Status SubgraphPass::InsertOutputMemcpy(const ComputeGraphPtr &graph, const Node
   }
 
   std::string out_name = graph->GetName() + "_output_Memcpy";
-  OpDescBuilder out_builder(out_name, MEMCPYASYNC);
+  OpDescBuilder out_builder(out_name, IDENTITY);
   for (size_t i = 0; i < output_node->GetAllInDataAnchorsSize(); i++) {
     if (bypass_index.count(i) == 0) {
       out_builder.AddInput("x" + std::to_string(i), output_node->GetOpDesc()->GetInputDesc(i))
@@ -438,12 +435,13 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
                                       const std::vector<InDataAnchorPtr> &in_anchors, const std::string &name) {
   GE_CHECK_NOTNULL(out_anchor);
   NodePtr in_node = out_anchor->GetOwnerNode();
-  OpDescBuilder op_desc_builder(name, MEMCPYASYNC);
+  OpDescBuilder op_desc_builder(name, IDENTITY);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(0))
                         .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
                         .Build();
+  (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
   if (GraphUtils::InsertNodeAfter(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Insert MemcpyAsync node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
+    GELOGE(FAILED, "Insert IDENTITY node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
     return FAILED;
   }
 

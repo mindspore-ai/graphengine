@@ -16,7 +16,6 @@
 
 #include "graph/manager/rdma_pool_allocator.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/manager/graph_mem_allocator.h"
 
 namespace {
 const size_t kAlignedSize = 512;

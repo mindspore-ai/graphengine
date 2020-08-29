@@ -144,6 +144,45 @@ REG_OP(CropAndResize)
     .OP_END_FACTORY_REG(CropAndResize)
 
 /**
+*@brief Extracts crops from the input image tensor and resizes them. Extracts \n
+crops from the input image tensor and resizes them using bilinear sampling or \n
+nearest neighbor sampling to a common output size specified by crop_size.
+
+*@par Inputs:
+*Input images must be a 5HD tensor. Inputs include: \n
+*@li images:A Tensor. Must be one of the following types:float. A 5HD tensor of shape \n
+[batch, C1, image_height, image_width, C0].
+*@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
+*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with \n
+int32 values in [0, batch - 1).
+
+*@par Attributes:
+*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches are resized to this size.
+*@li extrapolation_value: An optional float. Defaults to 0. Value used for \n
+extrapolation, when applicable.
+*@li method: An optional string from: '"bilinear"'. Defaults to \n
+"bilinear".
+
+*@par Outputs:
+*y:A Tensor of type float.
+
+*@attention Constraints: \n
+*Input images must be a 5HD tensor.
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow CropAndResize operator.
+*/
+REG_OP(CropAndResizeD)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(boxes, TensorType({DT_FLOAT}))
+    .INPUT(box_index, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(crop_size, ListInt)
+    .ATTR(extrapolation_value, Float, 0)
+    .ATTR(method, String, "bilinear")
+    .OP_END_FACTORY_REG(CropAndResizeD)
+
+/**
 *@brief Computes the gradient of the crop_and_resize op wrt the input \n
 boxes tensor.
 
@@ -1257,6 +1296,22 @@ REG_OP(CombinedNonMaxSuppression)
     .ATTR(clip_boxes, Bool, true)
     .OP_END_FACTORY_REG(CombinedNonMaxSuppression)
 
+/**
+*@brief Function spatial transformer.
+
+*@par Inputs:
+*@li x: A Tensor dtype of float16, float32.
+*@li theta: A Tensor dtype of float16, float32, auxiliary coefficients.
+
+*@par Attributes:
+*@li output_size: A tuple output size.
+*@li default_theta: A tuple default theta
+*@li use_default_theta: List use default theta
+*@li align_corners: Align corners
+
+*@par Outputs:
+*y: A Tensor dtype of float16, float32, should be same shape and type as x.
+*/
 REG_OP(SpatialTransformerD)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
     .OPTIONAL_INPUT(theta, TensorType({DT_FLOAT,DT_FLOAT16}))

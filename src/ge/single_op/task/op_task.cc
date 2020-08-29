@@ -16,13 +16,15 @@
 
 #include "single_op/task/op_task.h"
 
+#include <google/protobuf/extension_set.h>
 #include <chrono>
 #include <thread>
-#include <google/protobuf/extension_set.h>
 
-#include "runtime/rt.h"
-#include "register/op_tiling.h"
+#include "common/dump/dump_manager.h"
+#include "common/dump/dump_op.h"
 #include "framework/common/debug/log.h"
+#include "register/op_tiling.h"
+#include "runtime/rt.h"
 
 namespace ge {
 namespace {
@@ -30,15 +32,44 @@ constexpr int kLaunchRetryTimes = 1000;
 constexpr int kSleepTime = 10;
 }  // namespace
 
+Status OpTask::OpenDump(void *arg, const OpDescPtr &op_desc, rtStream_t stream) {
+  if (DumpManager::GetInstance().IsDumpOpen()) {
+    GELOGI("Dump is open in single op,start to set dump info");
+    std::vector<uint64_t> input_addrs;
+    std::vector<uint64_t> output_adds;
+    auto input_size = op_desc->GetAllInputsDesc().size();
+    auto output_size = op_desc->GetOutputsSize();
+    for (size_t i = 0; i < input_size; i++) {
+      uint64_t input_addr = *(reinterpret_cast<uint64_t *>(arg) + i);
+      input_addrs.emplace_back(input_addr);
+    }
+    for (size_t j = 0; j < output_size; j++) {
+      uint64_t output_addr = *(reinterpret_cast<uint64_t *>(arg) + input_size + j);
+      output_adds.emplace_back(output_addr);
+    }
+    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(), op_desc, input_addrs, output_adds, stream);
+    auto status = dump_op_.LaunchDumpOp();
+    if (status != SUCCESS) {
+      GELOGE(status, "Launch dump op failed in single op");
+      return status;
+    }
+    return SUCCESS;
+  }
+  GELOGI("Dump is not open in single op");
+  return SUCCESS;
+}
+
 void TbeOpTask::SetStubFunc(const std::string &name, const void *stub_func) {
   this->stub_name_ = name;
   this->stub_func_ = stub_func;
 }
 
-void TbeOpTask::SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim) {
+void TbeOpTask::SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
+                              const OpDescPtr &op_desc) {
   args_ = std::move(args);
   arg_size_ = arg_size;
   block_dim_ = block_dim;
+  op_desc_ = op_desc;
 }
 
 void TbeOpTask::SetSmDesc(void *sm_desc) { sm_desc_ = sm_desc; }
@@ -79,8 +110,13 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
     GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->stub_name_.c_str());
     return RT_FAILED;
   }
-
   GELOGI("[TASK_INFO] %s", this->stub_name_.c_str());
+
+  auto status = OpenDump(args_.get(), op_desc_, stream);
+  if (status != SUCCESS) {
+    GELOGE(status, "Open dump failed in tbe single op %s", stub_name_.c_str());
+    return status;
+  }
   return SUCCESS;
 }
 
@@ -89,6 +125,7 @@ Status TbeOpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const ve
   // invoke OpParaCalculate
   GELOGD("Start to invoke OpParaCalculate.");
   optiling::OpRunInfo run_info;
+  run_info.block_dim = 0;
   auto ret = optiling::OpParaCalculate(*node_, run_info);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Failed to invoke OpParaCalculate. ret = %u", ret);
@@ -194,6 +231,7 @@ AiCpuTask::~AiCpuTask() {
 const void *AiCpuTask::GetIOAddr() const { return io_addr_; }
 
 Status AiCpuTask::LaunchKernel(rtStream_t stream) {
+  GELOGD("Start to launch kernel. task = %s", this->op_type_.c_str());
   auto ret = rtMemcpyAsync(workspace_addr_, task_info_.size(), task_info_.data(), task_info_.size(),
                            RT_MEMCPY_HOST_TO_DEVICE_EX, stream);
   if (ret != RT_ERROR_NONE) {
@@ -201,20 +239,27 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
     return RT_FAILED;
   }
 
-  GELOGD("To invoke rtKernelLaunchEx. task = %s", this->op_type_.c_str());
+  GELOGI("To invoke rtKernelLaunchEx. task = %s", this->op_type_.c_str());
   ret = rtKernelLaunchEx(args_, arg_size_, 0, stream);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->op_type_.c_str());
     return RT_FAILED;
   }
-  GELOGI("[TASK_INFO] %s", this->task_info_.c_str());
+  GELOGI("[TASK_INFO] is %s", this->task_info_.c_str());
+
+  auto status = OpenDump(args_, op_desc_, stream);
+  if (status != SUCCESS) {
+    GELOGE(status, "Open dump failed in aicpu single op %s", op_type_.c_str());
+    return status;
+  }
+  GELOGD("Done launch kernel successfully. task = %s", this->op_type_.c_str());
   return SUCCESS;
 }
 
-void AiCpuCCTask::SetKernelArgs(void *args, size_t arg_size) {
-  args_ = args;
+void AiCpuCCTask::SetKernelArgs(std::unique_ptr<uint8_t[]> args, size_t arg_size) {
+  args_ = std::move(args);
   arg_size_ = arg_size;
-  // the blockdim value is defult "1" for rtCpuKernelLaunch
+  // The blockdim value is defult "1" for rtCpuKernelLaunch
   block_dim_ = 1;
 }
 
@@ -226,16 +271,11 @@ void AiCpuCCTask::SetIoAddr(void *io_addr) { io_addr_ = io_addr; }
 
 const void *AiCpuCCTask::GetIOAddr() const { return io_addr_; }
 
-const void *AiCpuCCTask::GetArgs() const { return args_; }
+const void *AiCpuCCTask::GetArgs() const { return args_.get(); }
 
 size_t AiCpuCCTask::GetArgSize() const { return arg_size_; }
 
-AiCpuCCTask::~AiCpuCCTask() {
-  if (args_ != nullptr) {
-    free(args_);
-    args_ = nullptr;
-  }
-}
+AiCpuCCTask::~AiCpuCCTask() {}
 
 Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   GELOGI("To invoke rtCpuKernelLaunch. block_dim = %u, so_name is %s, kernel_name is %s", block_dim_, so_name_.data(),
@@ -244,12 +284,18 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
   auto ret =
     rtCpuKernelLaunch(static_cast<const void *>(so_name_.data()), static_cast<const void *>(kernel_name_.data()),
-                      block_dim_, args_, static_cast<uint32_t>(arg_size_), sm_desc, stream);
+                      block_dim_, args_.get(), static_cast<uint32_t>(arg_size_), sm_desc, stream);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
     return RT_FAILED;
   }
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
+
+  auto status = OpenDump(args_.get(), op_desc_, stream);
+  if (status != SUCCESS) {
+    GELOGE(status, "Open dump failed in aicpucc single op");
+    return status;
+  }
   return SUCCESS;
 }
 }  // namespace ge

@@ -502,6 +502,7 @@ const uint32_t MODEL_FILE_HEAD_LEN = 256;
 /// @brief Input node type
 ///
 const std::string INPUT_TYPE = "Input";
+const std::string DUMMY_DATA = "DummyData";
 
 ///
 /// @ingroup domi_omg

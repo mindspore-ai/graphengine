@@ -184,10 +184,10 @@ class DavinciModel {
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
 
   // model name
-  string Name() { return name_; }
+  string Name() const { return name_; }
 
   // om_name
-  string OmName() { return om_name_; }
+  string OmName() const { return om_name_; }
   // version
   uint32_t Version() const { return version_; }
 
@@ -268,7 +268,7 @@ class DavinciModel {
   /// @brief For TVM Op, avoid Addr Reuse.
   /// @return void*
   ///
-  static const char *GetRegisterStub(const string &tvm_binfile_key, const string &session_graph_model_id = "");
+  const char *GetRegisterStub(const string &tvm_binfile_key, const string &session_graph_model_id = "");
 
   ///
   /// @ingroup ge
@@ -298,6 +298,8 @@ class DavinciModel {
   /// @return None
   ///
   void GetCombinedDynamicDims(std::vector<std::vector<int64_t>> &batch_info) const;
+
+  void GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order) const;
 
   void GetCurShape(std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
@@ -440,6 +442,10 @@ class DavinciModel {
 
   Status SinkTimeProfile(const InputData &current_data);
 
+  void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
+    data_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);
+  }
+
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args) {
     data_dumper_.SaveDumpTask(task_id, stream_id, op_desc, args);
   }
@@ -449,9 +455,8 @@ class DavinciModel {
 
   DavinciModel(const DavinciModel &model) = delete;
 
-  const vector<std::pair<rtStream_t, int64_t>> &GetHcclFolowStream() { return capacity_of_stream_; }
-  void CreateHcclFollowStream(rtStream_t stream, int64_t remain_cap);
-  void ReuseHcclFollowStream(int64_t remain_cap, int64_t &index);
+  const map<int64_t, std::vector<rtStream_t>> &GetHcclFolowStream() { return main_follow_stream_mapping_; }
+  void SaveHcclFollowStream(int64_t main_stream_id, rtStream_t stream);
 
   void InitRuntimeParams();
   Status InitVariableMem();
@@ -499,6 +504,16 @@ class DavinciModel {
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
+
+  void SetMemcpyOffsetAndAddr(map<int64_t, void *> &memcpy_4g_offset_addr) {
+    memcpy_4g_offset_addr_.insert(memcpy_4g_offset_addr.begin(), memcpy_4g_offset_addr.end());
+  }
+  const map<int64_t, void *> &GetMemcpyOffsetAndAddr() const { return memcpy_4g_offset_addr_; }
+
+  bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
+    return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
+  }
+  Status InitInputOutputForDynamic(const ComputeGraphPtr &compute_graph);
 
  private:
   // memory address of weights
@@ -575,6 +590,8 @@ class DavinciModel {
 
   void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
 
+  void SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format, InputOutputDescInfo &input);
+
   Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats);
 
   Status InitTaskInfo(domi::ModelTaskDef &modelTaskInfo);
@@ -619,7 +636,15 @@ class DavinciModel {
   /// @param [in/out] data_op_index: NetOutput addr size info.
   /// @return Status
   ///
-  Status InitDataOp(const NodePtr &node, uint32_t &data_op_index);
+  Status InitDataOp(const NodePtr &node, uint32_t &data_op_index, map<uint32_t, OpDescPtr> &data_by_index);
+
+  ///
+  /// @ingroup ge
+  /// @brief Sort Data op list by index.
+  /// @param [in] data_by_index: map of Data Op.
+  /// @return
+  ///
+  void AdjustDataOpList(const map<uint32_t, OpDescPtr> &data_by_index);
 
   ///
   /// @ingroup ge
@@ -665,6 +690,15 @@ class DavinciModel {
   Status InitStreamActive(const OpDescPtr &op_desc);
 
   Status InitStreamSwitchN(const OpDescPtr &op_desc);
+
+  ///
+  /// @ingroup ge
+  /// @brief Case Op Init.
+  /// @return Status
+  ///
+  Status InitCase(const OpDescPtr &op_desc);
+
+  Status SetDynamicBatchInfo(const OpDescPtr &op_desc, uint32_t batch_num);
 
   ///
   /// @ingroup ge
@@ -840,7 +874,7 @@ class DavinciModel {
 
   // for reuse hccl_follow_stream
   std::mutex capacity_of_stream_mutex_;
-  std::vector<std::pair<rtStream_t, int64_t>> capacity_of_stream_;
+  std::map<int64_t, std::vector<rtStream_t>> main_follow_stream_mapping_;
 
   vector<rtEvent_t> event_list_;
 
@@ -866,6 +900,7 @@ class DavinciModel {
 
   bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
 
+  bool is_stream_list_bind_{false};
   bool is_pure_head_stream_{false};
   rtStream_t rt_head_stream_{nullptr};
   rtStream_t rt_entry_stream_{nullptr};
@@ -891,8 +926,8 @@ class DavinciModel {
   std::set<uint32_t> hcom_streams_;
   RuntimeParam runtime_param_;
 
-  static std::mutex tvm_bin_mutex_;  // lock for tvm maps.
-  static std::set<std::string> tvm_bin_kernel_;
+  static std::mutex tvm_bin_mutex_;
+  std::set<std::string> tvm_bin_kernel_;
 
   std::map<std::string, uint32_t> used_tbe_handle_map_;
 
@@ -906,6 +941,7 @@ class DavinciModel {
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
   std::map<OpDescPtr, void *> saved_task_addrs_;
+  void *l1_fusion_addr_ = nullptr;
 
   bool known_node_ = false;
   uint32_t total_args_size_ = 0;
@@ -921,7 +957,9 @@ class DavinciModel {
 
   vector<vector<int64_t>> batch_info_;
   std::vector<std::vector<int64_t>> combined_batch_info_;
+  vector<string> user_designate_shape_order_;
   int32_t dynamic_type_ = 0;
+  bool is_dynamic_ = false;
 
   vector<uint64_t> batch_size_;
   // key: input tensor name, generally rts op;
@@ -938,6 +976,8 @@ class DavinciModel {
   void *op_debug_addr_ = nullptr;
   void *p2p_debug_addr_ = nullptr;
   bool is_new_model_desc_{false};
+
+  std::map<int64_t, void *> memcpy_4g_offset_addr_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

@@ -20,6 +20,7 @@
 
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
+#include "common/dump/dump_manager.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
@@ -172,7 +173,7 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
     return GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
-  GELOGI("Destroy aicpu session for infer, session id is %u.", session_id);
+  GELOGI("Destroy aicpu session for infer, session id is %lu.", session_id);
   DestroyAicpuSession(session_id);
   return SUCCESS;
 }
@@ -259,7 +260,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   bool is_shape_unknown = false;
   GE_CHK_STATUS_RET(ge_root_model->CheckIsUnknownShape(is_shape_unknown), "CheckIsUnknownShape failed, model id:%u",
                     model_id);
-  if (is_shape_unknown) {
+  if (is_shape_unknown || GetContext().GetHostExecFlag()) {
     return DoLoadHybridModelOnline(model_id, ge_root_model, listener);
   }
 
@@ -729,6 +730,22 @@ Status ModelManager::GetCombinedDynamicDims(const uint32_t model_id, vector<vect
   return SUCCESS;
 }
 
+///
+/// @ingroup ge
+/// @brief Get user designate shape order
+/// @param [in] model_id
+/// @param [out] user_input_shape_order
+/// @return execute result
+///
+Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
+                                                std::vector<std::string> &user_input_shape_order) {
+  auto davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
+                         "GetUserDesignateShapeOrder Failed, Invalid Model ID %u!", model_id)
+  davinci_model->GetUserDesignateShapeOrder(user_input_shape_order);
+  return SUCCESS;
+}
+
 Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHECK_NOTNULL(davinci_model);
@@ -831,7 +848,11 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     }
     davinci_model->SetDeviceId(device_id);
     davinci_model->SetOmName(model.om_name);
-    davinci_model->SetDumpProperties(dump_properties_);
+    if (DumpManager::GetInstance().IsDumpOpen()) {
+      davinci_model->SetDumpProperties(DumpManager::GetInstance().GetDumpProperties());
+    } else {
+      davinci_model->SetDumpProperties(dump_properties_);
+    }
 
     /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
     /// These session_ids come from the same model, so the values of session_id are the same.
@@ -1070,4 +1091,19 @@ ge::Status ModelManager::SyncExecuteModel(uint32_t model_id, const vector<GeTens
 
   return model->Execute(inputs, outputs);
 }
+
+Status ModelManager::GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) {
+  for (const auto &model : model_map_) {
+    auto davinci_model = model.second;
+    if (davinci_model->GetDeviceId() == device_id) {
+      GELOGI("Start to GetOpDescInfo of device_id: %u.", device_id);
+      if (davinci_model->GetOpDescInfo(stream_id, task_id, op_desc_info)) {
+        GELOGI("Find specific node of stream_id: %u, task_id: %u.", stream_id, task_id);
+        return SUCCESS;
+      }
+    }
+  }
+  return FAILED;
+}
+
 }  // namespace ge

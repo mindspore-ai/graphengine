@@ -21,9 +21,11 @@
 #include <string>
 #include <external/graph/tensor.h>
 
-#include "runtime/stream.h"
+#include "common/dump/dump_op.h"
+#include "common/dump/dump_properties.h"
 #include "common/ge_inner_error_codes.h"
 #include "graph/op_kernel_bin.h"
+#include "runtime/stream.h"
 #include "graph/node.h"
 
 namespace ge {
@@ -47,12 +49,17 @@ class OpTask {
     return UNSUPPORTED;
   }
   virtual OpTaskType GetOpTaskType() = 0;
-
+  virtual const void *GetIOAddr() const = 0;
   const vector<int64_t> &GetWorkspaceSizes() const;
   void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
 
  private:
   std::vector<int64_t> workspace_sizes_;
+
+ protected:
+  Status OpenDump(void *arg, const OpDescPtr &op_desc, rtStream_t stream);
+  DumpProperties dump_properties_;
+  DumpOp dump_op_;
 };
 
 class TbeOpTask : public OpTask {
@@ -60,10 +67,10 @@ class TbeOpTask : public OpTask {
   ~TbeOpTask() override;
   Status LaunchKernel(rtStream_t stream) override;
   OpTaskType GetOpTaskType() override { return OP_TASK_TBE; }
-
+  const void *GetIOAddr() const override { return nullptr; }
   void SetSmDesc(void *sm_desc);
   void SetStubFunc(const std::string &name, const void *stub_func);
-  void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim);
+  void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim, const OpDescPtr &op_desc);
 
   Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) override;
 
@@ -90,6 +97,7 @@ class TbeOpTask : public OpTask {
   uint32_t max_tiling_size_ = 0;
   std::string tiling_data_;
   NodePtr node_;
+  OpDescPtr op_desc_;
 };
 
 class AiCpuTask : public OpTask {
@@ -99,7 +107,7 @@ class AiCpuTask : public OpTask {
 
   Status LaunchKernel(rtStream_t stream) override;
   OpTaskType GetOpTaskType() override { return OP_TASK_AICPU; }
-  const void *GetIOAddr() const;
+  const void *GetIOAddr() const override;
 
  private:
   friend class AiCpuTaskBuilder;
@@ -109,6 +117,7 @@ class AiCpuTask : public OpTask {
   size_t arg_size_ = 0;
   std::string op_type_;
   void *io_addr_ = nullptr;
+  OpDescPtr op_desc_;
 };
 
 class AiCpuCCTask : public OpTask {
@@ -120,9 +129,9 @@ class AiCpuCCTask : public OpTask {
 
   Status LaunchKernel(rtStream_t stream) override;
   OpTaskType GetOpTaskType() override { return OP_TASK_AICPUCC; }
-  const void *GetIOAddr() const;
+  const void *GetIOAddr() const override;
   const void *GetArgs() const;
-  void SetKernelArgs(void *args, size_t arg_size);
+  void SetKernelArgs(std::unique_ptr<uint8_t[]> args, size_t arg_size);
   void SetSoName(const std::string &so_name);
   void SetkernelName(const std::string &kernel_Name);
   void SetIoAddr(void *io_addr);
@@ -132,11 +141,12 @@ class AiCpuCCTask : public OpTask {
   friend class AiCpuCCTaskBuilder;
   std::string so_name_;
   std::string kernel_name_;
-  void *args_ = nullptr;
+  std::unique_ptr<uint8_t[]> args_;
   size_t arg_size_ = 0;
   uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   void *io_addr_ = nullptr;
+  OpDescPtr op_desc_;
 };
 }  // namespace ge
 

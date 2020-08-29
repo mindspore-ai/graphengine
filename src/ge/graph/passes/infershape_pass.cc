@@ -24,8 +24,6 @@ namespace ge {
 Status InferShapePass::Run(NodePtr &node) {
   auto ret = ShapeRefiner::InferShapeAndType(node, !OptionExists(kOptimizeAfterSubGraph));
   if (ret != GRAPH_SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E35003", {"opname", "err_msg"},
-                                                    {node->GetName(), "check your model!"});
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }

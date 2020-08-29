@@ -130,6 +130,10 @@ class OpReg {
     Operator::SetInput(#x, v, srcName);                                        \
     return *this;                                                              \
   }                                                                            \
+  _THIS_TYPE &set_input_##x(Operator &v, uint32_t index) {                     \
+    Operator::SetInput(#x, v, index);                                          \
+    return *this;                                                              \
+  }                                                                            \
   _THIS_TYPE &set_input_##x(Operator &v) {                                     \
     Operator::SetInput(#x, v);                                                 \
     return *this;                                                              \
@@ -157,6 +161,10 @@ class OpReg {
   }                                                                            \
   _THIS_TYPE &set_input_##x(Operator &v, const string &srcName) {              \
     Operator::SetInput(#x, v, srcName);                                        \
+    return *this;                                                              \
+  }                                                                            \
+  _THIS_TYPE &set_input_##x(Operator &v, uint32_t index) {                     \
+    Operator::SetInput(#x, v, index);                                          \
     return *this;                                                              \
   }                                                                            \
   TensorDesc get_input_desc_##x() const { return Operator::GetInputDesc(#x); } \

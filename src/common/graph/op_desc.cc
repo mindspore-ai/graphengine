@@ -684,18 +684,6 @@ graphStatus OpDesc::AddDynamicOutputDesc(const string &name, const unsigned int 
   return GRAPH_SUCCESS;
 }
 
-void OpDesc::RemoveInputDesc(uint32_t index) {
-  while (inputs_desc_.size() > index) {
-    inputs_desc_.pop_back();
-  }
-}
-
-void OpDesc::RemoveOutputDesc(uint32_t index) {
-  while (outputs_desc_.size() > index) {
-    outputs_desc_.pop_back();
-  }
-}
-
 bool OpDesc::IsOptionalInput(const string &name) const {
   return optional_input_names_.find(name) != optional_input_names_.end();
 }

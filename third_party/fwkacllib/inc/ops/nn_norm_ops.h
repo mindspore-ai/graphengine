@@ -338,6 +338,21 @@ REG_OP(ConfusionSoftmaxGrad)
   .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
   .OP_END_FACTORY_REG(ConfusionSoftmaxGrad)
 
+/**
+*@brief Function softmax gradients ext.
+
+*@par Inputs:
+* @li grad: A Tensor dtype of float16.
+* @li x1: A Tensor dtype of float16, float32.
+* @li x2: A Tensor dtype of float16.
+
+*@par Attributes:
+*@li axis: A int Scalar. The axis for reduce.
+*@li keepdims: A bool Scalar. If true, retains reduced dimensions with length 1.
+
+*@par Outputs:
+*y: A Tensor dtype of float16, float32.
+*/
 REG_OP(SoftmaxGradExt)
   .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
   .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -346,7 +361,7 @@ REG_OP(SoftmaxGradExt)
   .ATTR(axes, Int, 1)
   .ATTR(keep_dims, Bool, false)
   .OP_END_FACTORY_REG(SoftmaxGradExt)
-  
+
 /**
 *@brief Normalizes the input.
 
@@ -860,6 +875,23 @@ REG_OP(InstanceNormV2)
     .ATTR(epsilon, Float, 0.00001)
     .OP_END_FACTORY_REG(InstanceNormV2)
 
+REG_OP(INInferV2D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(gamma, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(beta, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(mean, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(variance_sqrt, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(INInferV2D)
+
+REG_OP(InHost)
+     .INPUT(variance, TensorType({DT_FLOAT}))
+     .OUTPUT(variance_sqrt, TensorType({DT_FLOAT}))
+     .ATTR(epsilon, Float, 0.00001)
+     .OP_END_FACTORY_REG(InHost)
 }  // namespace ge
 
 #endif  //GE_OP_NN_NORM_OPS_H

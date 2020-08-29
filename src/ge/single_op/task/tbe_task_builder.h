@@ -44,8 +44,6 @@ class KernelHolder {
 
 class KernelBinRegistry {
  public:
-  ~KernelBinRegistry();
-
   static KernelBinRegistry &GetInstance() {
     static KernelBinRegistry instance;
     return instance;
@@ -55,10 +53,10 @@ class KernelBinRegistry {
 
   const char *GetStubFunc(const std::string &stub_name);
 
-  bool AddKernel(const std::string &stub_name, const KernelHolder *holder);
+  bool AddKernel(const std::string &stub_name, std::unique_ptr<KernelHolder> &&holder);
 
  private:
-  std::map<std::string, const KernelHolder *> registered_bins_;
+  std::map<std::string, std::unique_ptr<KernelHolder>> registered_bins_;
   std::set<std::string> unique_stubs_;
   std::mutex mutex_;
 };
@@ -72,7 +70,7 @@ class TbeTaskBuilder {
 
  private:
   Status InitTilingInfo(TbeOpTask &task);
-  Status SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param);
+  Status SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc);
   Status GetSmDesc(void **sm_desc, const SingleOpModelParam &param) const;
 
   Status RegisterKernel(TbeOpTask &task, const SingleOpModelParam &param);

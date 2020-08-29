@@ -31,22 +31,25 @@ class VariablePrepareOpPass : public GraphPass {
 
  private:
   Status DealVariableNode(ge::NodePtr &node);
-  Status DealWritableNode(const ge::NodePtr &writable_node, int input_index, const ge::NodePtr &var_node);
-  Status GetPeerNodeOfRefInput(const ge::NodePtr &node, int input_index, std::stack<pair<NodePtr, int>> &nodes);
+  Status DealWritableNode(const ge::NodePtr &writable_node, int input_index, int output_index,
+                          const ge::NodePtr &var_node);
+  Status GetPeerNodeOfRefOutput(const ge::NodePtr &node, int output_index,
+                                std::stack<pair<NodePtr, pair<int, int>>> &nodes);
   Status AddVariableRef(ge::NodePtr &node, const ge::NodePtr &var_node, int index);
   Status InsertVariableRef(ge::NodePtr &node, int in_index, const ge::NodePtr &var_node);
   Status AddControlEdge(const ge::NodePtr &node, const ge::NodePtr &variable_ref_node);
   NodePtr CreateVariableRef(const std::string &variable_ref_name, const ge::NodePtr &var_node);
   NodePtr CreateRefIdentity(const std::string &ref_identity_name, const ge::NodePtr &node, uint32_t input_index);
-  int GetWritableNodeOutIndex(const NodePtr &node, int input_index);
+  void GetWritableNodeOutIndex(const NodePtr &node, int input_index, std::vector<int> &output_indexes);
   void GenerateRefTypeAndInputOutputMap(const NodePtr &node);
-  int FindRefOutIndex(const std::string &node_type, int input_index,
-                      const std::map<std::string, std::map<int, int>> &ref_map);
+  void FindRefOutIndex(const std::string &node_type, int input_index,
+                       const std::map<std::string, std::map<int, vector<int>>> &ref_map,
+                       std::vector<int> &output_indexes);
   Status CheckStreamLabel(const ge::NodePtr &var_ref_node, const ge::NodePtr &final_writable_node);
   bool HasControlOut(const ge::NodePtr &node);
 
-  std::map<std::string, std::map<int, int>> ref_input_output_map_;
-  static std::map<std::string, std::map<int, int>> ref_node_without_prototype_map_;
+  std::map<std::string, std::map<int, std::vector<int>>> ref_input_output_map_;
+  static std::map<std::string, std::map<int, std::vector<int>>> ref_node_without_prototype_map_;
 };
 }  // namespace ge
 

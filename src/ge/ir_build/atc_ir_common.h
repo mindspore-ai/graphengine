@@ -58,6 +58,9 @@ Status CheckDynamicInputParamValid(std::string &dynamic_batch_size, std::string 
                                    std::string &dynamic_dims, const std::string input_shape,
                                    const std::string input_format, bool &is_dynamic_input);
 
+bool ParseInputShape(const std::string &input_shape, std::unordered_map<string, std::vector<int64_t>> &shape_map,
+                     std::vector<std::pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input = false);
+
 Status CheckOutputTypeParamValid(const std::string output_type);
 Status CheckBufferOptimizeParamValid(const std::string buffer_optimize);
 Status CheckCompressWeightParamValid(const std::string enable_compress_weight, const std::string compress_weight_conf);

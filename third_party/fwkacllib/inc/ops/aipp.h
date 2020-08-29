@@ -44,13 +44,20 @@ REG_OP(Aipp)
 } // namespace ge
 
 /**
-*@brief Performs This op is for dynamic aipp.If you set aipp-mode to dynamic in aipp config file, framework will auto add one input node to graph at last.
+*@brief Performs this op is for dynamic aipp.If you set aipp-mode to dynamic \n
+in aipp config file, framework will auto add one input node to graph at last.
+
+*@par Inputs:
+*data: An NCHW or NHWC tensor of type uint8, specifying the input to the data layer.
 
 *@par Attributes:
 *index: specify aipp serial num
 
 *@par Outputs:
-*features: The AIPP-processed output tensor of all types.
+*out: The AIPP-processed output tensor of all types.
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator AippData.
 */
 namespace ge {
 REG_OP(AippData)

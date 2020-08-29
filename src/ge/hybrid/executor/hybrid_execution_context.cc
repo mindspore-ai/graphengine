@@ -17,5 +17,15 @@
 #include "hybrid_execution_context.h"
 
 namespace ge {
-namespace hybrid {}  // namespace hybrid
+namespace hybrid {
+void GraphExecutionContext::SetErrorCode(Status error_code) {
+  std::lock_guard<std::mutex> lk(mu);
+  this->status = error_code;
+}
+
+Status GraphExecutionContext::GetStatus() const {
+  std::lock_guard<std::mutex> lk(mu);
+  return this->status;
+}
+}  // namespace hybrid
 }  // namespace ge

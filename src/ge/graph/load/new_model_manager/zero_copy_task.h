@@ -77,10 +77,11 @@ class ZeroCopyTask {
   /**
    * @ingroup ge
    * @brief Update task param to device.
+   * @param [in] async_mode: true for asychronous mode.
    * @param [in] stream: Stream for asychronous update.
    * @return: 0 SUCCESS / others FAILED
    */
-  ge::Status DistributeParam(rtStream_t stream);
+  ge::Status DistributeParam(bool async_mode, rtStream_t stream);
 
  protected:
   bool CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_addrs, const string &batch_label, uintptr_t addr);

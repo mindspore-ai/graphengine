@@ -26,7 +26,6 @@
 #include "framework/common/util.h"
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/omg_inner_types.h"
-#include "common/model_parser/graph_parser_util.h"
 #include "ge/ge_api_types.h"
 #include "generator/ge_generator.h"
 #include "graph/compute_graph.h"
@@ -184,7 +183,7 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   // 1. check options
   graphStatus ret = CheckOptions(options);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "user input options are illegal! Please check!");
+    GELOGE(ret, "User input options are illegal! Please check!");
     return ret;
   }
   // set log level
@@ -255,10 +254,10 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
       (void)AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
-      GELOGI("Data op inputDesc size is: %zu", op->GetAllInputsDesc().size());
+      GELOGI("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();
-      GELOGI("Data op name is: %s", data_op_name.c_str());
+      GELOGI("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;
       auto iter = GetContext().input_dims.find(data_op_name);
       if (iter != GetContext().input_dims.end()) {
@@ -279,7 +278,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
       inputs.push_back(inputTensor);
     }
   }
-  GELOGD("CreateInputsForIRBuild, inputs size is: %zu", inputs.size());
+  GELOGD("CreateInputsForIRBuild, inputs size: %zu", inputs.size());
   return GRAPH_SUCCESS;
 }
 graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
@@ -287,7 +286,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
   // 1. init GeGenerator with user optios
   graphStatus ret = Init(options);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "Build IR model Init Failed!");
+    GELOGE(ret, "Build ir model Init failed!");
     return ret;
   }
 
@@ -350,10 +349,21 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string
 graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model) {
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
-    GELOGE(GRAPH_PARAM_INVALID, "input model is not illegal");
+    GELOGE(GRAPH_PARAM_INVALID, "input model is illegal");
     return GRAPH_PARAM_INVALID;
   }
   return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
+}
+
+graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version) {
+  GELOGD("Enter aclgrphGetIRVersion process!");
+  GE_CHECK_NOTNULL(major_version);
+  GE_CHECK_NOTNULL(minor_version);
+  GE_CHECK_NOTNULL(patch_version);
+  *major_version = IR_MAJOR_VERSION;
+  *minor_version = IR_MINOR_VERSION;
+  *patch_version = IR_PATCH_VERSION;
+  return GRAPH_SUCCESS;
 }
 }  // namespace ge

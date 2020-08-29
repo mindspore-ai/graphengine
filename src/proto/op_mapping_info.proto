@@ -41,6 +41,16 @@ message Input {
     uint64 size = 5;
 }
 
+enum BufferType {
+    L1 = 0;
+}
+
+message OpBuffer {
+    BufferType buffer_type = 1;
+    uint64 address = 2;
+    uint64 size = 3;
+}
+
 message Op {
     string op_name = 1;
     string op_type = 2;
@@ -53,6 +63,7 @@ message Task {
     repeated Output output = 4;
     bool end_graph = 5;
     repeated Input input = 6;
+    repeated OpBuffer buffer = 7;
 }
 
 message OpMappingInfo {

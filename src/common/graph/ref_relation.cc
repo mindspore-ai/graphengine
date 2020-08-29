@@ -243,8 +243,8 @@ graphStatus RefRelations::Impl::BuildRefRelationsForWhile(
     }
     auto in_data_anchor_idx = in_anchor->GetIdx();
     auto net_in_desc = netoutput->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_data_anchor_idx));
-    int ref_d;
-    int ref_n;
+    int ref_d = 0;
+    int ref_n = 0;
     (void)AttrUtils::GetInt(peer_out_data_node->GetOpDesc(), kRefIndex, ref_d);
     (void)AttrUtils::GetInt(net_in_desc, kRefIndex, ref_n);
 

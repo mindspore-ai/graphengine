@@ -143,10 +143,11 @@ Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, void *buffer_addr, const ma
 /**
  * @ingroup ge
  * @brief Update task param to device.
+ * @param [in] async_mode: true for asychronous mode.
  * @param [in] stream: Stream for asychronous update.
  * @return: 0 SUCCESS / others FAILED
  */
-Status ZeroCopyTask::DistributeParam(rtStream_t stream) {
+Status ZeroCopyTask::DistributeParam(bool async_mode, rtStream_t stream) {
   if (!is_updated_) {
     return SUCCESS;
   }
@@ -154,7 +155,7 @@ Status ZeroCopyTask::DistributeParam(rtStream_t stream) {
   is_updated_ = false;
   GE_CHECK_NOTNULL(args_addr_);
   rtError_t rt_err = RT_ERROR_NONE;
-  if (stream != nullptr) {
+  if (async_mode) {
     rt_err =
       rtMemcpyAsync(args_addr_, args_size_, args_info_.data(), args_info_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream);
   } else {

@@ -56,6 +56,22 @@ REG_OP(CacheUpdate)
     .OUTPUT(x, TensorType::BasicType())
     .OP_END_FACTORY_REG(CacheUpdate)
 
+/**
+*@brief transfer data from L1 buffer to DDR or DDR to L1.
+
+*@par Inputs:
+*The input is dynamic for attribute func_name \n
+
+*@par Outputs:
+*The output is dynamic for attribute func_name.
+*/
+REG_OP(InternalDataMove)
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
+    .REQUIRED_ATTR(src_buf, String)
+    .REQUIRED_ATTR(dst_buf, String)
+    .OP_END_FACTORY_REG(InternalDataMove)
+
 }  // namespace ge
 
 #endif  // GE_OP_INTERNAL_OPS_H_

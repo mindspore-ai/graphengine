@@ -85,16 +85,17 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
     GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclRootId(op_desc, root_id), "GetHcclRootId failed");
   }
   op_info.root = root_id;
-  auto callback = [this](hcclResult_t status) {
+  auto callback = [this, op_desc](hcclResult_t status) {
     if (status != HCCL_SUCCESS) {
-      GELOGE(HCCL_E_INTERNAL, "Call HcomExcutorInitialize failed, ret: 0x%X", status);
+      GELOGE(HCCL_E_INTERNAL, "node %s call EnqueueHcomOpertion failed, ret: 0x%X", op_desc->GetName().c_str(), status);
     }
     std::lock_guard<std::mutex> lock(this->hccl_mutex_);
     this->cond_.notify_all();
-    GELOGI("hccl callback success.");
+    GELOGI("node %s hccl callback success.", op_desc->GetName().c_str());
   };
   int32_t count = 0;
-  GE_CHK_STATUS_RET(HcomOmeUtil::GetHcomCount(op_desc, static_cast<hcclDataType_t>(op_info.dataType), false, count),
+  GE_CHK_STATUS_RET(HcomOmeUtil::GetHcomCount(op_desc, static_cast<hcclDataType_t>(op_info.dataType),
+                                              op_desc->GetType() == HCOMALLGATHER, count),
                     "GetHcomCount failed");
   GELOGI("[%s] HcclNodeTask::ExecuteAsync hccl_type %s, count %d, data_type %d, op_type %d, root %d.",
          context.GetNodeName(), op_info.hcclType.c_str(), count, op_info.dataType, op_info.opType, op_info.root);
@@ -110,7 +111,7 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   std::unique_lock<std::mutex> ulock(hccl_mutex_);
   cond_.wait(ulock);
 
-  context.RegisterCallback(done_callback);
+  GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(done_callback));
   GELOGI("[%s] HcclNodeTask::ExecuteAsync success.", context.GetNodeName());
   return SUCCESS;
 }

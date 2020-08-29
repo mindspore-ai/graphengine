@@ -25,7 +25,6 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/l2_cache_optimize.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/kernel.h"
@@ -92,7 +91,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   string session_graph_model_id;
   davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
   // get bin_file_key
-  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
+  const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
   if (kernel_type_ == cce::ccKernelType::CCE_AI_CORE) {
     rtError_t rt_ret;
@@ -395,7 +394,14 @@ Status KernelTaskInfo::Distribute() {
       "stubfunc:%p blockdim:%u stream:%p",
       call_skt, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
     // l1 fusion enable and env flag open (kCloseSkt for skt debug)
-    if (call_skt && (env_flag != kCloseSkt)) {
+    bool open_dump = false;
+    auto all_dump_model = davinci_model_->GetDumpProperties().GetAllDumpModel();
+    if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
+        all_dump_model.find(davinci_model_->Name()) != all_dump_model.end() ||
+        all_dump_model.find(davinci_model_->OmName()) != all_dump_model.end()) {
+      open_dump = true;
+    }
+    if (call_skt && (env_flag != kCloseSkt) && !open_dump) {
       GE_RETURN_IF_ERROR(SuperKernelDistribute());
     } else {
       // call rtKernelLaunch for current task
@@ -577,7 +583,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   // When inferencing, stub_func_ is different from dynamic-registration to runtime, and needs to be modified.
   string session_graph_model_id;
   davinci_model_->GetUniqueId(op_desc, session_graph_model_id);
-  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc->GetName(), session_graph_model_id);
+  const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc->GetName(), session_graph_model_id);
   rtError_t rt_ret = rtQueryFunctionRegistered(const_cast<char *>(bin_file_key));
   if (rt_ret != RT_ERROR_NONE) {
     stub_func_ = const_cast<char *>(bin_file_key);
@@ -634,7 +640,11 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   skt_dump_args_ = static_cast<char *>(args_) + offset;
   if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
                                                           op_desc->GetName())) {
-    dump_flag_ = RT_KERNEL_DUMPFLAG;
+    if (IsL1FusionOp(op_desc)) {
+      dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
+    } else {
+      dump_flag_ = RT_KERNEL_DUMPFLAG;
+    }
     dump_args_ = static_cast<char *>(args_) + offset;
   }
 
@@ -651,6 +661,25 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
 
   GELOGD("Do InitTVMTask end");
   return SUCCESS;
+}
+
+bool KernelTaskInfo::IsL1FusionOp(const OpDescPtr &op_desc) {
+  std::vector<int64_t> input_memory_type;
+  (void)ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, input_memory_type);
+  for (size_t i = 0; i < input_memory_type.size(); ++i) {
+    if (input_memory_type.at(i) == RT_MEMORY_L1) {
+      return true;
+    }
+  }
+
+  std::vector<int64_t> output_memory_type;
+  (void)ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, output_memory_type);
+  for (size_t i = 0; i < output_memory_type.size(); ++i) {
+    if (output_memory_type.at(i) == RT_MEMORY_L1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::KernelDef &kernel_def) {
@@ -904,7 +933,11 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
 
   if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
                                                           op_desc->GetName())) {
-    dump_flag_ = RT_KERNEL_DUMPFLAG;
+    if (IsL1FusionOp(op_desc)) {
+      dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
+    } else {
+      dump_flag_ = RT_KERNEL_DUMPFLAG;
+    }
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
 

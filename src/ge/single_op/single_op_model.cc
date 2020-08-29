@@ -100,13 +100,18 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
     }
   }
 
-  if (model_params_.weight_size > 0) {
+  if (model_params_.weight_size > 0 && has_weight_) {
     const string purpose("malloc weights memory on model execute.");
     model_params_.weight_base = res.MallocWeight(purpose, model_params_.weight_size);
     if (model_params_.weight_base == nullptr) {
       // no need to free memory, for that was handled by StreamResources
       return RT_FAILED;
     }
+
+    auto weight_buffer = model_helper_.GetGeModel()->GetWeight();
+    GELOGI("To copy weight to device. weight size = %zu", weight_buffer.GetSize());
+    GE_CHK_RT_RET(rtMemcpy(model_params_.weight_base, model_params_.weight_size, weight_buffer.GetData(),
+                           weight_buffer.GetSize(), RT_MEMCPY_HOST_TO_DEVICE));
   }
 
   return SUCCESS;
@@ -170,6 +175,11 @@ Status SingleOpModel::LoadAllNodes() {
 
     if (op_type == DATA_TYPE || op_type == AIPP_DATA_TYPE) {
       data_ops_.emplace_back(op_desc);
+      continue;
+    }
+
+    if (op_type == CONSTANT || op_type == CONSTANTOP) {
+      has_weight_ = true;
       continue;
     }
 
@@ -341,13 +351,19 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, Sin
 }
 
 Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task) {
+  const auto &context = kernel_def.context();
+  auto iter = op_list_.find(context.op_index());
+  if (iter == op_list_.end()) {
+    GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
+    return INTERNAL_ERROR;
+  }
   std::unique_ptr<AiCpuCCTask> aicpucc_task(new (std::nothrow) AiCpuCCTask());
   if (aicpucc_task == nullptr) {
     GELOGE(MEMALLOC_FAILED, "create aicpu_CC op task failed");
     return MEMALLOC_FAILED;
   }
 
-  auto builder = AiCpuCCTaskBuilder(kernel_def);
+  auto builder = AiCpuCCTaskBuilder(iter->second->GetOpDesc(), kernel_def);
   auto ret = builder.BuildTask(*aicpucc_task);
   if (ret != SUCCESS) {
     GELOGE(ret, "build aicpu_CC op task failed");

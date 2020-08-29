@@ -17,12 +17,14 @@
 #include "./ge_context.h"
 #include "./ge_global_options.h"
 #include "./ge_local_context.h"
+#include "framework/common/ge_types.h"
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
 namespace {
 const int64_t kMinTrainingTraceJobId = 256;
 const int kDecimal = 10;
+const char *kHostExecPlacement = "HOST";
 }  // namespace
 GEContext &GetContext() {
   static GEContext ge_context{};
@@ -31,6 +33,16 @@ GEContext &GetContext() {
 
 graphStatus GEContext::GetOption(const std::string &key, std::string &option) {
   return GetThreadLocalContext().GetOption(key, option);
+}
+
+bool GEContext::GetHostExecFlag() {
+  std::string exec_placement;
+  if (GetThreadLocalContext().GetOption(GE_OPTION_EXEC_PLACEMENT, exec_placement) != GRAPH_SUCCESS) {
+    GELOGW("get option OPTION_EXEC_PLACEMENT failed.");
+    return false;
+  }
+  GELOGD("Option ge.exec.placement is %s.", exec_placement.c_str());
+  return exec_placement == kHostExecPlacement;
 }
 
 std::map<std::string, std::string> &GetMutableGlobalOptions() {

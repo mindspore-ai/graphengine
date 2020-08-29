@@ -74,7 +74,9 @@ Status PartitionedCallNodeExecutor::LoadTask(const ge::hybrid::HybridModel &mode
 }
 
 Status PartitionedCallNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[PartitionedCallPrepareTask] Start");
   GE_CHK_STATUS_RET(task.Init(context), "[%s] Failed to init task.", context.GetNodeName());
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[PartitionedCallPrepareTask] End");
   return SUCCESS;
 }
 }  // namespace hybrid

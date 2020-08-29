@@ -449,7 +449,7 @@ REG_OP(StridedSliceGrad)
 *@par Inputs:
 *Three inputs, including:
 * @li x: A Tensor of type NumberType.
-* @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
+* @li segment_ids: A Tensor of type IndexNumberType, whose shape is a prefix
 * of "x.shape".
 * @li num_segments: A Tensor of type IndexNumberType.
 
@@ -472,7 +472,7 @@ REG_OP(UnsortedSegmentSum)
 *@par Inputs:
 *Two inputs, including:
 * @li x: A Tensor of type float16, float32, int32, int8, uint8.
-* @li segment_ids: A 1D Tensor of type int32, whose shape is a prefix
+* @li segment_ids: A Tensor of type int32, whose shape is a prefix
 * of "x.shape".
 
 *@par Attributes:
@@ -794,7 +794,7 @@ REG_OP(SliceD)
 * @li k =< 5120
 * @li Size of the last dimension =< 65500
 * @li sorted = true
-* @li Don't support to get score on the platform of Ascend310
+* @li It's unstable sorted indices on the platform of Ascend310
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator TopK.
@@ -1416,6 +1416,54 @@ REG_OP(UnsortedSegmentMinD)
     .REQUIRED_ATTR(num_segments, Int)
     .OP_END_FACTORY_REG(UnsortedSegmentMinD)
 
+/**
+* @brief Computes the maximum along segments of a tensor.
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor of type RealNumberType.
+* @li segment_ids: A 1D Tensor of type IndexNumberType, whose shape is a prefix
+* of "x.shape".
+* @li num_segments: A Tensor of type IndexNumberType.
+
+* @par Outputs:
+* y: A Tensor of type RealNumberType.
+
+* @see UnsortedSegmentSum(), UnsortedSegmentProd(),
+
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator UnsortedSegmentMax.
+*/
+REG_OP(UnsortedSegmentMax)
+    .INPUT(x, TensorType::RealNumberType())
+    .INPUT(segment_ids, TensorType::IndexNumberType())
+    .INPUT(num_segments, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
+    .OP_END_FACTORY_REG(UnsortedSegmentMax)
+
+/**
+* @brief Computes the maximum along segments of a tensor.
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A Tensor of the following types:int32, int16, float16, float32.
+* @li segment_ids: A 1D Tensor of type int32, whose shape is a prefix
+* of "x.shape".
+
+* @par Attributes:
+* num_segments: A required int32, specifying the number of distinct segment IDs.
+
+* @par Outputs:
+* y: A Tensor.Must have the same type as input "x".
+
+* @see UnsortedSegmentProdD(),
+*/
+REG_OP(UnsortedSegmentMaxD)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
+    .INPUT(segment_ids, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
+    .REQUIRED_ATTR(num_segments, Int)
+    .OP_END_FACTORY_REG(UnsortedSegmentMaxD)
 /**
 * @brief Computes the product along segments of a tensor.
 

@@ -18,15 +18,8 @@
 
 #include <stack>
 #include <unordered_set>
-#include <utility>
-
 #include "common/ge/ge_util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/debug/log.h"
-#include "framework/common/ge_inner_error_codes.h"
-#include "framework/common/types.h"
 #include "graph/common/omg_util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 
 using std::string;
@@ -55,7 +48,10 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
     GELOGE(FAILED, "Get dynamic type failed.");
     return FAILED;
   }
-
+  if (GetUserDesignateShape() != SUCCESS) {
+    GELOGE(FAILED, "Get user designate shape failed.");
+    return FAILED;
+  }
   std::vector<std::vector<int64_t>> batch_shape;
   vector<vector<int64_t>> combined_batch;
   if (!CheckSwitchN(batch_shape, combined_batch)) {
@@ -63,7 +59,14 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
     return FAILED;
   }
 
-  FindSwitchOutNodes(batch_shape.size());
+  if (attach_label_only_) {
+    return AttachLabelOnly(batch_shape.size());
+  }
+
+  if (FindSwitchOutNodes(batch_shape.size()) != SUCCESS) {
+    GELOGE(FAILED, "Find SwitchN out nodes failed.");
+    return FAILED;
+  }
 
   if (ReplaceSwitchN(graph, pred_value, batch_shape, combined_batch) != SUCCESS) {
     GELOGE(FAILED, "Replace SwitchN nodes failed.");
@@ -78,6 +81,17 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
   }
 
   GELOGD("MultiBatchPass Leave");
+  return SUCCESS;
+}
+
+///
+/// @brief Clear Status
+/// @return
+///
+Status MultiBatchPass::ClearStatus() {
+  switch_n_nodes_.clear();
+  bypass_nodes_.clear();
+  batch_head_nodes_.clear();
   return SUCCESS;
 }
 
@@ -153,6 +167,40 @@ Status MultiBatchPass::GetDynamicType() {
   }
   if (dynamic_type_ == static_cast<int32_t>(FIXED)) {
     GELOGE(FAILED, "Attr ATTR_DYNAMIC_TYPE shouldn't be 0.");
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+///
+/// @brief Get user designate shape order. eg{"data","label","mask"}
+/// @return Status
+///
+Status MultiBatchPass::GetUserDesignateShape() {
+  data_name_order_.clear();
+  bool first_check = true;
+  for (const auto &switchn : switch_n_nodes_) {
+    auto switchn_desc = switchn->GetOpDesc();
+    GE_CHECK_NOTNULL(switchn_desc);
+    vector<string> cur_switchn_data_name_order;
+    if (!AttrUtils::GetListStr(switchn_desc, ATTR_USER_DESIGNEATE_SHAPE_ORDER, cur_switchn_data_name_order)) {
+      GELOGE(FAILED, "Get attr ATTR_USER_DESIGNEATE_SHAPE_ORDER of node: %s failed.", switchn->GetName().c_str());
+      return FAILED;
+    }
+    if (first_check) {
+      data_name_order_ = cur_switchn_data_name_order;
+      first_check = false;
+    } else {
+      if (data_name_order_ != cur_switchn_data_name_order) {
+        GELOGE(FAILED, "The ATTR_USER_DESIGNEATE_SHAPE_ORDER of switchN must be same: %s failed.",
+               switchn->GetName().c_str());
+        return FAILED;
+      }
+    }
+  }
+  if (data_name_order_.empty()) {
+    GELOGE(FAILED, "user shape order can not be empty");
     return FAILED;
   }
 
@@ -259,22 +307,41 @@ bool MultiBatchPass::GetBatchInfo(uint32_t batch_num, vector<vector<int64_t>> &b
 /// @param [in] batch_num
 /// @return void
 ///
-void MultiBatchPass::FindSwitchOutNodes(uint32_t batch_num) {
+Status MultiBatchPass::FindSwitchOutNodes(uint32_t batch_num) {
   std::vector<NodePtr> output_nodes;
   for (uint32_t i = 0; i < batch_num; i++) {
     output_nodes.clear();
     for (const NodePtr &node : switch_n_nodes_) {
       // idx is promised to be valid
       OutDataAnchorPtr out_data_anchor = node->GetOutDataAnchor(i);
-      GE_CHECK_NOTNULL_JUST_RETURN(out_data_anchor);
+      GE_CHECK_NOTNULL(out_data_anchor);
       for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-        output_nodes.emplace_back(peer_in_anchor->GetOwnerNode());
+        auto out_node = peer_in_anchor->GetOwnerNode();
+        if (out_node->GetType() != IDENTITY || !out_node->GetOutDataNodes().empty()) {
+          output_nodes.emplace_back(out_node);
+          continue;
+        }
+        bypass_nodes_.emplace_back(out_node);
+        if (GraphUtils::RemoveEdge(out_data_anchor, peer_in_anchor) != GRAPH_SUCCESS) {
+          GELOGE(FAILED, "Remove SwitchN out_data_edge failed, %s->%s.", node->GetName().c_str(),
+                 out_node->GetName().c_str());
+          return FAILED;
+        }
+        for (auto &identity_out_node : out_node->GetOutControlNodes()) {
+          output_nodes.emplace_back(identity_out_node);
+          if (GraphUtils::RemoveEdge(out_node->GetOutControlAnchor(), identity_out_node->GetInControlAnchor()) !=
+              GRAPH_SUCCESS) {
+            GELOGE(FAILED, "Remove SwitchN out_data_edge failed, %s->%s.", node->GetName().c_str(),
+                   out_node->GetName().c_str());
+            return FAILED;
+          }
+        }
       }
     }
     batch_head_nodes_.emplace_back(output_nodes);
   }
 
-  return;
+  return SUCCESS;
 }
 
 ///
@@ -355,7 +422,6 @@ bool MultiBatchPass::CheckDims(const std::vector<std::vector<int64_t>> &output_s
       }
     }
   }
-
   return true;
 }
 
@@ -402,6 +468,10 @@ NodePtr MultiBatchPass::CreateSwitchCaseNode(const ComputeGraphPtr &graph, const
   }
   if (!AttrUtils::SetInt(op_desc, ATTR_DYNAMIC_TYPE, dynamic_type_)) {
     GELOGE(FAILED, "Set attr ATTR_DYNAMIC_TYPE failed, StreamSwitchN:%s.", name.c_str());
+    return nullptr;
+  }
+  if (!AttrUtils::SetListStr(op_desc, ATTR_USER_DESIGNEATE_SHAPE_ORDER, data_name_order_)) {
+    GELOGE(FAILED, "Set attr ATTR_USER_DESIGNEATE_SHAPE_ORDER failed, StreamSwitchN:%s.", name.c_str());
     return nullptr;
   }
   for (uint32_t i = 0; i < batch_num; i++) {
@@ -468,6 +538,7 @@ Status MultiBatchPass::BypassSwitchN(const NodePtr &switch_n_node, const NodePtr
       }
     }
   }
+  GE_CHK_STATUS_RET(MoveCtrlEdges(switch_n_node, switch_case), "Move ctrl edges failed.");
 
   bypass_nodes_.emplace_back(switch_n_node);
   GELOGI("Bypass SwitchN node %s success.", switch_n_node->GetName().c_str());
@@ -495,7 +566,7 @@ Status MultiBatchPass::AttachLabel(const NodePtr &switch_case_node) {
     stream_label_list.emplace_back(stream_label);
   }
 
-  return SetActiveLabelList(switch_case_node, stream_label_list);
+  return switch_case_node == nullptr ? SUCCESS : SetActiveLabelList(switch_case_node, stream_label_list);
 }
 
 ///
@@ -594,5 +665,54 @@ Status MultiBatchPass::AttachStreamLabel(uint32_t batch_idx, const std::string &
   }
 
   return SUCCESS;
+}
+
+///
+/// @brief move edges from old_node to new_node
+/// @param [in] old_node
+/// @param [in] new_node
+/// @return Status
+///
+Status MultiBatchPass::MoveCtrlEdges(const NodePtr &old_node, const NodePtr &new_node) {
+  if (old_node == new_node) {
+    return SUCCESS;
+  }
+  for (const NodePtr &in_ctrl_node : old_node->GetInControlNodes()) {
+    GE_CHK_STATUS(GraphUtils::RemoveEdge(in_ctrl_node->GetOutControlAnchor(), old_node->GetInControlAnchor()),
+                  "Merge remove in ctrl edge failed.");
+    GE_CHK_STATUS(GraphUtils::AddEdge(in_ctrl_node->GetOutControlAnchor(), new_node->GetInControlAnchor()),
+                  "StreamMerge add in ctrl edge failed.");
+  }
+
+  for (const NodePtr &out_ctrl_node : old_node->GetOutControlNodes()) {
+    GE_CHK_STATUS(GraphUtils::RemoveEdge(old_node->GetOutControlAnchor(), out_ctrl_node->GetInControlAnchor()),
+                  "Merge remove out ctrl edge failed.");
+    GE_CHK_STATUS(GraphUtils::AddEdge(new_node->GetOutControlAnchor(), out_ctrl_node->GetInControlAnchor()),
+                  "StreamMerge add out ctrl edge failed.");
+  }
+  return SUCCESS;
+}
+
+///
+/// @brief attach stream_label & batch_label without change structure of graph
+/// @param [in] batch_num
+/// @return void
+///
+Status MultiBatchPass::AttachLabelOnly(uint32_t batch_num) {
+  std::vector<NodePtr> output_nodes;
+  for (uint32_t i = 0; i < batch_num; i++) {
+    output_nodes.clear();
+    for (const NodePtr &node : switch_n_nodes_) {
+      // idx is promised to be valid
+      OutDataAnchorPtr out_data_anchor = node->GetOutDataAnchor(i);
+      GE_CHECK_NOTNULL(out_data_anchor);
+      for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+        output_nodes.emplace_back(peer_in_anchor->GetOwnerNode());
+      }
+    }
+    batch_head_nodes_.emplace_back(output_nodes);
+  }
+
+  return AttachLabel(nullptr);
 }
 }  // namespace ge

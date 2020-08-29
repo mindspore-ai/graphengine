@@ -15,6 +15,7 @@
  */
 
 #include "utils/node_utils.h"
+#include "utils/op_desc_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -301,6 +302,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
   }
   for (const auto &out_anchor : node_ptr->GetAllOutDataAnchors()) {
     auto output_tensor = op_desc->MutableOutputDesc(out_anchor->GetIdx());
+    auto out_dims = output_tensor->GetShape().GetDims();
+    auto out_dtype = output_tensor->GetDataType();
     ge::TensorUtils::SetRealDimCnt(*output_tensor, static_cast<uint32_t>(output_tensor->GetShape().GetDims().size()));
     output_tensor->SetOriginShape(output_tensor->GetShape());
     output_tensor->SetOriginDataType(output_tensor->GetDataType());
@@ -319,6 +322,35 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
       if (peer_input_desc == nullptr) {
         GELOGE(GRAPH_FAILED, "peer_input_desc is nullptr");
         continue;
+      }
+      // check shape and dtype continuity. do not stop process
+      auto peer_input_dims = peer_input_desc->GetShape().GetDims();
+      auto peer_input_dtype = peer_input_desc->GetDataType();
+      if (out_dtype != peer_input_dtype) {
+        GELOGW(
+          "current node [%s] [%d]\'th out_dtype is [%s].peer input node [%s] [%d]\'th "
+          "input_dtype is [%s].The two dtype should be same! Please check graph and fix it",
+          node_ptr->GetName().c_str(), out_anchor->GetIdx(), TypeUtils::DataTypeToSerialString(out_dtype).c_str(),
+          peer_anchor->GetOwnerNode()->GetName().c_str(), peer_anchor->GetIdx(),
+          TypeUtils::DataTypeToSerialString(peer_input_dtype).c_str());
+      } else if ((!peer_input_dims.empty()) && (out_dims != peer_input_dims)) {
+        string out_shape_str, peer_in_shape_str;
+        out_shape_str += "[";
+        for (int64_t dim : out_dims) {
+          out_shape_str += std::to_string(dim) + " ";
+        }
+        out_shape_str += "]";
+        peer_in_shape_str += "[";
+        for (int64_t dim : peer_input_dims) {
+          peer_in_shape_str += std::to_string(dim) + " ";
+        }
+        peer_in_shape_str += "]";
+
+        GELOGW(
+          "current node [%s] [%d]\'th out_shape is [%s].peer input node [%s] [%d]\'th "
+          "input_shape is [%s].The two shape should be same! Please check graph and fix it",
+          node_ptr->GetName().c_str(), out_anchor->GetIdx(), out_shape_str.c_str(),
+          peer_anchor->GetOwnerNode()->GetName().c_str(), peer_anchor->GetIdx(), peer_in_shape_str.c_str());
       }
       GELOGI("Peer input opdesc name is %s, need to flush: shape size is %zu, datatype is %d, original datatype is %d",
              peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), output_tensor->GetShape().GetDimNum(),
@@ -341,15 +373,15 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::AppendInputAnchor(const NodePtr &node,
-                                                                                        uint32_t index) {
+                                                                                        uint32_t num) {
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "Nodeptr is nullptr");
+    GELOGE(GRAPH_FAILED, "Input node is null");
     return GRAPH_FAILED;
   }
 
   GeTensorDesc data_desc(GeShape(), FORMAT_ND, DT_FLOAT);
-  OpDescPtr op_desc = node->op_;
-  for (size_t i = op_desc->GetInputsSize(); i < index; ++i) {
+  const auto &op_desc = node->GetOpDesc();
+  for (size_t i = op_desc->GetInputsSize(); i < num; ++i) {
     if (op_desc->AddInputDesc(data_desc) != GRAPH_SUCCESS) {
       GELOGE(GRAPH_FAILED, "Add input desc failed");
       return GRAPH_FAILED;
@@ -357,7 +389,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::AppendInpu
 
     auto anchor = ComGraphMakeShared<InDataAnchor>(node, i);
     if (anchor == nullptr) {
-      GELOGE(GRAPH_FAILED, "Current in_data_anchor is null, malloc shared_ptr failed.");
+      GELOGE(OUT_OF_MEMORY, "Current in data anchor is null, make shared_ptr failed.");
       return GRAPH_FAILED;
     }
     node->in_data_anchors_.push_back(anchor);
@@ -367,17 +399,76 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::AppendInpu
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::RemoveInputAnchor(const NodePtr &node,
-                                                                                        uint32_t index) {
+                                                                                        uint32_t num) {
   if (node == nullptr) {
-    GELOGE(GRAPH_FAILED, "Nodeptr is nullptr");
+    GELOGE(GRAPH_FAILED, "Input node is null");
     return GRAPH_FAILED;
   }
 
-  OpDescPtr op_desc = node->op_;
-  op_desc->RemoveInputDesc(index);
+  const auto &op_desc = node->GetOpDesc();
+  while (op_desc->GetInputsSize() > num) {
+    if (!OpDescUtils::ClearInputDesc(op_desc, num)) {
+      return GRAPH_FAILED;
+    }
+  }
 
-  while (node->in_data_anchors_.size() > index) {
+  auto input_names = op_desc->GetAllInputName();
+  (void)op_desc->UpdateInputName(input_names);
+  auto is_input_const = op_desc->GetIsInputConst();
+  is_input_const.resize(num);
+  op_desc->SetIsInputConst(is_input_const);
+
+  while (node->in_data_anchors_.size() > num) {
     node->in_data_anchors_.pop_back();
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::AppendOutputAnchor(const NodePtr &node,
+                                                                                         uint32_t num) {
+  if (node == nullptr) {
+    GELOGE(GRAPH_FAILED, "Input node is null");
+    return GRAPH_FAILED;
+  }
+
+  GeTensorDesc data_desc(GeShape(), FORMAT_ND, DT_FLOAT);
+  const OpDescPtr &op_desc = node->GetOpDesc();
+  for (size_t i = op_desc->GetOutputsSize(); i < num; ++i) {
+    if (op_desc->AddOutputDesc(data_desc) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Add output desc failed");
+      return GRAPH_FAILED;
+    }
+
+    auto anchor = ComGraphMakeShared<OutDataAnchor>(node, i);
+    if (anchor == nullptr) {
+      GELOGE(OUT_OF_MEMORY, "Current out data anchor is null, make shared_ptr failed.");
+      return GRAPH_FAILED;
+    }
+    node->out_data_anchors_.push_back(anchor);
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::RemoveOutputAnchor(const NodePtr &node,
+                                                                                         uint32_t num) {
+  if (node == nullptr) {
+    GELOGE(GRAPH_FAILED, "Input node is null");
+    return GRAPH_FAILED;
+  }
+
+  const auto &op_desc = node->GetOpDesc();
+  auto output_names = op_desc->GetAllOutputName();
+  while (op_desc->GetOutputsSize() > num) {
+    if (!OpDescUtils::ClearOutputDesc(op_desc, num)) {
+      return GRAPH_FAILED;
+    }
+  }
+  (void)op_desc->UpdateOutputName(output_names);
+
+  while (node->out_data_anchors_.size() > num) {
+    node->out_data_anchors_.pop_back();
   }
 
   return GRAPH_SUCCESS;
@@ -488,9 +579,20 @@ std::string NodeUtils::GetNodeType(const Node &node) {
   if (node.GetType() != FRAMEWORKOP) {
     return node.GetType();
   }
+
   std::string type;
   (void)AttrUtils::GetStr(node.GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type);
   return type;
+}
+
+std::string NodeUtils::GetNodeType(const NodePtr &node) { return node == nullptr ? "" : GetNodeType(*node); }
+
+graphStatus NodeUtils::GetInputConstData(const ConstNodePtr &node_ptr, const string &dst_name, GeTensorPtr &ge_tensor) {
+  return GRAPH_SUCCESS;
+}
+
+graphStatus NodeUtils::GetInputConstData(const Node &node, const string &dst_name, GeTensorPtr &ge_tensor) {
+  return GRAPH_SUCCESS;
 }
 
 ComputeGraphPtr NodeUtils::GetSubgraph(const Node &node, uint32_t index) {
@@ -544,16 +646,17 @@ bool NodeUtils::IsSubgraphInput(const NodePtr &node) {
   if (parent_op_desc == nullptr) {
     return false;
   }
-  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
-    bool is_unknown_shape = false;
-    (void)AttrUtils::GetBool(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape);
-    if (is_unknown_shape) return false;
-  }
 
-  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE) &&
-      kCaseOpTypes.count(parent_op_desc->GetType()) == 0 && kWhileOpTypes.count(parent_op_desc->GetType()) == 0 &&
-      kForOpTypes.count(parent_op_desc->GetType()) == 0 && kIfOpTypes.count(parent_op_desc->GetType()) == 0) {
-    return false;
+  // dynamic shape unknown graph false
+  // dynamic shape known graph with functional subgraph maybe true
+  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
+    if (node->GetOwnerComputeGraph()->GetParentGraph()->GetGraphUnknownFlag()) {
+      return false;
+    } else {
+      if (node->GetOwnerComputeGraph()->GetParentNode()->GetOwnerComputeGraph()->GetParentNode() == nullptr) {
+        return false;
+      }
+    }
   }
 
   return node->GetOpDesc()->HasAttr(ATTR_NAME_PARENT_NODE_INDEX);
@@ -576,15 +679,13 @@ bool NodeUtils::IsSubgraphOutput(const NodePtr &node) {
   }
 
   if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE)) {
-    bool is_unknown_shape = false;
-    (void)AttrUtils::GetBool(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape);
-    if (is_unknown_shape) return false;
-  }
-
-  if (AttrUtils::HasAttr(parent_op_desc, ATTR_NAME_IS_UNKNOWN_SHAPE) &&
-      kCaseOpTypes.count(parent_op_desc->GetType()) == 0 && kWhileOpTypes.count(parent_op_desc->GetType()) == 0 &&
-      kForOpTypes.count(parent_op_desc->GetType()) == 0 && kIfOpTypes.count(parent_op_desc->GetType()) == 0) {
-    return false;
+    if (node->GetOwnerComputeGraph()->GetParentGraph()->GetGraphUnknownFlag()) {
+      return false;
+    } else {
+      if (node->GetOwnerComputeGraph()->GetParentNode()->GetOwnerComputeGraph()->GetParentNode() == nullptr) {
+        return false;
+      }
+    }
   }
 
   for (GeTensorDesc &tensor : node->GetOpDesc()->GetAllInputsDesc()) {
@@ -601,16 +702,14 @@ bool NodeUtils::IsSubgraphOutput(const NodePtr &node) {
 /// @param [in] node
 /// @return Node
 ///
-NodePtr NodeUtils::GetParentInput(const NodePtr &node) {
-  GE_CHECK_NOTNULL_EXEC(node, return nullptr);
-
+NodePtr NodeUtils::GetParentInput(const Node &node) {
   uint32_t parent_index = 0;
-  if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+  if (!AttrUtils::GetInt(node.GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
     return nullptr;
   }
 
   // Subgraph Data Node, check for constant input.
-  const ComputeGraphPtr &graph = node->GetOwnerComputeGraph();
+  const ComputeGraphPtr &graph = node.GetOwnerComputeGraph();
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
 
   const NodePtr &parent_node = graph->GetParentNode();
@@ -624,6 +723,26 @@ NodePtr NodeUtils::GetParentInput(const NodePtr &node) {
 
   return peer_out_anchor->GetOwnerNode();
 }
+
+NodePtr NodeUtils::GetParentInput(const NodePtr &node) { return node == nullptr ? node : GetParentInput(*node); }
+
+///
+/// @brief Get is dynamic shape graph from node.
+/// @param [in] node
+/// @return bool
+///
+bool NodeUtils::IsDynamicShape(const Node &node) {
+  const auto graph = GraphUtils::FindRootGraph(node.GetOwnerComputeGraph());
+  if (graph == nullptr) {
+    return false;
+  }
+
+  bool is_dynamic_shape = false;
+  (void)AttrUtils::GetBool(graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
+  return is_dynamic_shape;
+}
+
+bool NodeUtils::IsDynamicShape(const NodePtr &node) { return node == nullptr ? false : IsDynamicShape(*node); }
 
 ///
 /// @brief Check is varying_input for while node
@@ -678,27 +797,22 @@ bool NodeUtils::IsWhileVaryingInput(const ge::NodePtr &node) {
 /// @param [out] string
 /// @return bool
 ///
-bool NodeUtils::GetConstOpType(const NodePtr &in_node, std::string &op_type) {
-  GE_CHECK_NOTNULL_EXEC(in_node, return false);
+bool NodeUtils::GetConstOpType(const NodePtr &node, std::string &type) {
+  if (node == nullptr) {
+    return false;
+  }
 
-  if ((in_node->GetType() == CONSTANT) || (in_node->GetType() == CONSTANTOP)) {
-    op_type = in_node->GetType();
+  if ((node->GetType() == CONSTANT) || (node->GetType() == CONSTANTOP)) {
+    type = node->GetType();
     return true;
   }
 
-  if (in_node->GetType() == DATA) {
-    std::string const_type;
-    if (!AttrUtils::GetStr(in_node->GetOpDesc(), ATTR_NAME_PARENT_CONST_TYPE, const_type)) {
-      return false;
-    }
-
-    if ((const_type == CONSTANT) || (const_type == CONSTANTOP)) {
-      op_type = const_type;
-      return true;
-    }
+  if (node->GetType() != DATA) {
+    return false;  // not subgraph input node
   }
 
-  return false;
+  const auto &parent = GetParentInput(node);
+  return GetConstOpType(parent, type);
 }
 
 ///
@@ -809,7 +923,7 @@ vector<NodePtr> NodeUtils::GetSubgraphOutputNodes(const Node &node) {
   return out_data_node_vec;
 }
 
-NodePtr NodeUtils::GetInDataNodeByIndex(const Node &node, int index) {
+NodePtr NodeUtils::GetInDataNodeByIndex(const Node &node, const int index) {
   if (node.GetInDataAnchor(index) == nullptr) {
     return nullptr;
   }
@@ -819,12 +933,13 @@ NodePtr NodeUtils::GetInDataNodeByIndex(const Node &node, int index) {
   return node.GetInDataAnchor(index)->GetPeerOutAnchor()->GetOwnerNode();
 }
 
-vector<NodePtr> NodeUtils::GetOutDataNodesByIndex(const Node &node, int index) {
-  vector<NodePtr> out_data_nodes;
+vector<pair<InDataAnchorPtr, NodePtr>> NodeUtils::GetOutDataNodesWithAnchorByIndex(const Node &node, const int index) {
+  vector<pair<InDataAnchorPtr, NodePtr>> out_data_nodes;
   auto out_data_anchor = node.GetOutDataAnchor(index);
   if (out_data_anchor == nullptr) {
     return out_data_nodes;
   }
+
   for (const auto peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     if (peer_in_anchor == nullptr) {
       continue;
@@ -832,8 +947,10 @@ vector<NodePtr> NodeUtils::GetOutDataNodesByIndex(const Node &node, int index) {
     if (peer_in_anchor->GetOwnerNode() == nullptr) {
       continue;
     }
-    out_data_nodes.emplace_back(peer_in_anchor->GetOwnerNode());
+    out_data_nodes.emplace_back(std::make_pair(peer_in_anchor, peer_in_anchor->GetOwnerNode()));
   }
   return out_data_nodes;
 }
+
+ConstNodePtr NodeUtils::GetNodeFromOperator(const Operator &oprt) { return oprt.GetNode(); }
 }  // namespace ge

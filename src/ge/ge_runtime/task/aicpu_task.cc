@@ -37,7 +37,10 @@ AicpuTask::AicpuTask(const ModelContext &model_context, const std::shared_ptr<Ai
   }
 }
 
-AicpuTask::~AicpuTask() { ReleaseRtMem(&args_); }
+AicpuTask::~AicpuTask() {
+  ReleaseRtMem(&args_);
+  ReleaseRtMem(&ext_info_);
+}
 
 bool AicpuTask::Distribute() {
   GELOGI("InitAicpuTask start.");

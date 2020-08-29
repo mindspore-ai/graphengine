@@ -89,10 +89,13 @@ Status ReplaceWithEmptyConstPass::ReplaceWithEmptyConst(NodePtr &node_to_replace
     }
 
     // Repalce data anchors
-    if (GraphUtils::ReplaceNodeDataAnchors(const_node, node_to_replace, {}, shape_2_out_idx.second) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "[%s] ReplaceNodeAnchors failed.", node_to_replace->GetName().c_str());
-      return FAILED;
+    for (const auto &anchor_idx : shape_2_out_idx.second) {
+      if (GraphUtils::ReplaceNodeDataAnchors(const_node, node_to_replace, {}, {anchor_idx}) != GRAPH_SUCCESS) {
+        GELOGE(FAILED, "[%s] ReplaceNodeAnchors failed.", node_to_replace->GetName().c_str());
+        return FAILED;
+      }
     }
+
     // Copy in control edge
     if (GraphUtils::CopyInCtrlEdges(node_to_replace, const_node) != GRAPH_SUCCESS) {
       GELOGE(FAILED, "CopyInCtrlEdges from %s to %s failed.", node_to_replace->GetName().c_str(),

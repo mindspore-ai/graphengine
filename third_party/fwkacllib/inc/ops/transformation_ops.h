@@ -123,6 +123,22 @@ REG_OP(Transpose)
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Transpose)
 
+/**
+*@brief Doing format_transfer for various data format only \n
+support NHWC/NCHW to NC1HWC0 and NC1HWC0 to NHWC/NCHW \n
+NCHW to FRACTAL_Zn or FRACTAL_Zn to NCHW \n
+HWCN to FRACTAL_Zn or FRACTAL_Zn to HWCN.
+
+*@par Inputs:
+*src: A Tensor dtype of all types.
+
+*@par Attributes:
+*@li src_format: A string source data format, can be NHWC, NCHW, FRACTAL_Zn etc.
+*@li expose_hidden: A string target data format, can be NC1HWC0, NCHW, FRACTAL_Zn etc.
+
+*@par Outputs:
+*dst: A Tensor dtype of all types.
+*/
 REG_OP(TransData)
     .INPUT(src, TensorType::BasicType())
     .OUTPUT(dst, TensorType::BasicType())
@@ -505,6 +521,7 @@ REG_OP(Unpack)
 
 * @attention Constraints:
 * "ksizes", "strides" and "rates" are lists of integers.
+
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator ExtractImagePatches.
 */

@@ -3,6 +3,9 @@ LOCAL_PATH := $(call my-dir)
 local_ge_executor_src_files :=  \
     ge_executor.cc \
     ../common/profiling/profiling_manager.cc \
+    ../common/dump/dump_properties.cc \
+    ../common/dump/dump_manager.cc \
+    ../common/dump/dump_op.cc \
     ../common/ge/plugin_manager.cc \
     ../common/ge/op_tiling_manager.cc \
     ../graph/load/graph_loader.cc \

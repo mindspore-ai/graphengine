@@ -18,7 +18,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include "common/ge/ge_util.h"
 #include "external/graph/graph.h"
 #include "framework/common/debug/ge_log.h"
@@ -28,8 +27,8 @@
 #include "graph/utils/tensor_utils.h"
 
 namespace ge {
-std::map<std::string, std::map<int, int>> VariablePrepareOpPass::ref_node_without_prototype_map_{
-  {REFSWITCH, {{0, 0}, {0, 1}}}};
+std::map<std::string, std::map<int, std::vector<int>>> VariablePrepareOpPass::ref_node_without_prototype_map_ = {
+  {REFSWITCH, {{0, {0, 1}}}}};
 
 Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
@@ -55,14 +54,6 @@ Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
       }
     }
   }
-
-  for (auto iter = ref_input_output_map_.begin(); iter != ref_input_output_map_.end(); ++iter) {
-    GELOGI("ref type:[ %s ]", iter->first.c_str());
-    auto index_map = iter->second;
-    for (auto index_iter = index_map.begin(); index_iter != index_map.end(); ++index_iter) {
-      GELOGI("{ %d : %d }", index_iter->first, index_iter->second);
-    }
-  }
   return SUCCESS;
 }
 
@@ -74,54 +65,53 @@ Status VariablePrepareOpPass::DealVariableNode(NodePtr &var_node) {
     InDataAnchorPtr dst_in_data_anchor = dst_node_and_inanchor.second;
     GE_CHECK_NOTNULL(dst_in_data_anchor);
     auto input_index = dst_in_data_anchor->GetIdx();
-    int out_index = GetWritableNodeOutIndex(dst_node, input_index);
-    if (out_index >= 0) {
-      Status ret = DealWritableNode(dst_node, input_index, var_node);
-      if (ret != SUCCESS) {
-        GELOGE(FAILED, "Deal writable node[%s] failed, input index: %d, var: %s.", dst_node->GetName().c_str(),
-               input_index, var_node->GetName().c_str());
-        return FAILED;
+    vector<int> ref_output_indexes;
+    GetWritableNodeOutIndex(dst_node, input_index, ref_output_indexes);
+    if (!ref_output_indexes.empty()) {
+      for (auto output_index : ref_output_indexes) {
+        Status ret = DealWritableNode(dst_node, input_index, output_index, var_node);
+        if (ret != SUCCESS) {
+          GELOGE(FAILED, "Deal writable node[%s] failed, input index: %d, var: %s.", dst_node->GetName().c_str(),
+                 input_index, var_node->GetName().c_str());
+          return FAILED;
+        }
       }
     }
   }
   return SUCCESS;
 }
 
-Status VariablePrepareOpPass::DealWritableNode(const ge::NodePtr &writable_node, int input_index,
+Status VariablePrepareOpPass::DealWritableNode(const ge::NodePtr &writable_node, int input_index, int output_index,
                                                const ge::NodePtr &var_node) {
   // Find the last ref node:
   // If the ref input has corresponding output, add variable ref after it.
   // If the ref input has no corresponding output, insert RefIdentity and variable ref before it.
   // If ref node with control output was found while finding the last ref node, add variable ref after it.
-  std::stack<pair<NodePtr, int>> nodes_to_check;
-  nodes_to_check.push({writable_node, input_index});
+  std::stack<pair<NodePtr, pair<int, int>>> nodes_to_check;
+  nodes_to_check.push({writable_node, {input_index, output_index}});
   while (!nodes_to_check.empty()) {
     auto node_index = nodes_to_check.top();
     nodes_to_check.pop();
     auto cur_node = node_index.first;
-    int cur_input_index = node_index.second;
+    int cur_input_index = node_index.second.first;
+    int cur_output_index = node_index.second.second;
     // Collect ref node after cur node
     const auto nodes_size = nodes_to_check.size();
     // Add peer ref output node of current node to stack
-    CHECK_FALSE_EXEC(GetPeerNodeOfRefInput(cur_node, cur_input_index, nodes_to_check) == SUCCESS,
-                     GELOGE(FAILED, "GetPeerNodeOfRefInput for node[%s] failed.", cur_node->GetName().c_str());
-                     return FAILED);
-    auto output_index = GetWritableNodeOutIndex(cur_node, cur_input_index);
-    CHECK_FALSE_EXEC(output_index >= 0,
-                     GELOGE(FAILED, "Get writable node[%s] ref input[%d]'s corresponding out index failed: %d.",
-                            cur_node->GetName().c_str(), cur_input_index, output_index);
+    CHECK_FALSE_EXEC(GetPeerNodeOfRefOutput(cur_node, cur_output_index, nodes_to_check) == SUCCESS,
+                     GELOGE(FAILED, "GetPeerNodeOfRefOutput for node[%s] failed.", cur_node->GetName().c_str());
                      return FAILED);
     if (nodes_size == nodes_to_check.size()) {
       const auto &op_desc = cur_node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
-      // No need to add variable_ref for frameworkop
+      // No need to add variable_ref for framework op
       if (op_desc->GetType() == FRAMEWORKOP) {
         GELOGD("No need to add variable_ref for frameworkop");
         continue;
       }
-      if (static_cast<uint32_t>(output_index) < op_desc->GetOutputsSize()) {
+      if (static_cast<uint32_t>(cur_output_index) < op_desc->GetOutputsSize()) {
         // Add variable ref node after ref output for final ref node
-        CHECK_FALSE_EXEC(AddVariableRef(cur_node, var_node, output_index) == SUCCESS,
+        CHECK_FALSE_EXEC(AddVariableRef(cur_node, var_node, cur_output_index) == SUCCESS,
                          GELOGE(FAILED, "Add variable ref failed");
                          return FAILED);
       } else {
@@ -134,7 +124,7 @@ Status VariablePrepareOpPass::DealWritableNode(const ge::NodePtr &writable_node,
     }
     if (HasControlOut(cur_node)) {
       // Add variable ref node after ref output for ref node has control output.
-      CHECK_FALSE_EXEC(AddVariableRef(cur_node, var_node, output_index) == SUCCESS,
+      CHECK_FALSE_EXEC(AddVariableRef(cur_node, var_node, cur_output_index) == SUCCESS,
                        GELOGE(FAILED, "Add variable ref failed");
                        return FAILED);
     }
@@ -142,11 +132,10 @@ Status VariablePrepareOpPass::DealWritableNode(const ge::NodePtr &writable_node,
   return SUCCESS;
 }
 
-Status VariablePrepareOpPass::GetPeerNodeOfRefInput(const ge::NodePtr &node, int input_index,
-                                                    std::stack<pair<NodePtr, int>> &nodes) {
-  auto output_index = GetWritableNodeOutIndex(node, input_index);
-  if (output_index == -1) {
-    GELOGE(PARAM_INVALID, "Node[%s] is not a ref node.", node->GetName().c_str());
+Status VariablePrepareOpPass::GetPeerNodeOfRefOutput(const ge::NodePtr &node, int output_index,
+                                                     std::stack<pair<NodePtr, pair<int, int>>> &nodes) {
+  if (output_index < 0) {
+    GELOGE(PARAM_INVALID, "Invalid ref output index: %s-%d.", node->GetName().c_str(), output_index);
     return PARAM_INVALID;
   }
   const auto &op_desc = node->GetOpDesc();
@@ -166,8 +155,10 @@ Status VariablePrepareOpPass::GetPeerNodeOfRefInput(const ge::NodePtr &node, int
       continue;
     }
     const int peer_in_index = peer_in_anchor->GetIdx();
-    if (GetWritableNodeOutIndex(peer_node, peer_in_index) != -1) {
-      nodes.push({peer_node, peer_in_index});
+    vector<int> ref_output_indexes;
+    GetWritableNodeOutIndex(peer_node, peer_in_index, ref_output_indexes);
+    for (auto ref_output_index : ref_output_indexes) {
+      nodes.push({peer_node, {peer_in_index, ref_output_index}});
     }
   }
   return SUCCESS;
@@ -353,9 +344,10 @@ ge::NodePtr VariablePrepareOpPass::CreateVariableRef(const std::string &variable
   return variable_ref_node;
 }
 
-int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int input_index) {
+void VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int input_index,
+                                                    std::vector<int> &output_indexes) {
   if (node == nullptr) {
-    return -1;
+    return;
   }
   GELOGD("get writable node and input index %s:%d", node->GetName().c_str(), input_index);
   auto node_type = node->GetType();
@@ -363,9 +355,11 @@ int VariablePrepareOpPass::GetWritableNodeOutIndex(const NodePtr &node, int inpu
     std::string original_type;
     GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("Get node original type fail"));
     GELOGD("find frameworkop: [%s], original type is %s", node->GetName().c_str(), original_type.c_str());
-    return FindRefOutIndex(original_type, input_index, ref_node_without_prototype_map_);
+    FindRefOutIndex(original_type, input_index, ref_node_without_prototype_map_, output_indexes);
+    return;
   }
-  return FindRefOutIndex(node_type, input_index, ref_input_output_map_);
+  FindRefOutIndex(node_type, input_index, ref_input_output_map_, output_indexes);
+  return;
 }
 
 void VariablePrepareOpPass::GenerateRefTypeAndInputOutputMap(const NodePtr &node) {
@@ -378,29 +372,32 @@ void VariablePrepareOpPass::GenerateRefTypeAndInputOutputMap(const NodePtr &node
     // Record the index of output with the same name as input, thinking of them as a pair of ref input and output.
     const int out_index = op_desc->GetOutputIndexByName(name_index.first);
     if (out_index != -1) {
-      ref_input_output_map_[node->GetType()][name_index.second] = out_index;
+      ref_input_output_map_[node->GetType()][name_index.second] = {out_index};
       continue;
     }
     // Record the ref input without corresponding output.
     const auto &input_desc = op_desc->GetInputDesc(name_index.second);
     if (!input_desc.GetRefPortIndex().empty()) {
-      ref_input_output_map_[node->GetType()][name_index.second] = static_cast<int>(op_desc->GetOutputsSize());
+      ref_input_output_map_[node->GetType()][name_index.second] = {static_cast<int>(op_desc->GetOutputsSize())};
     }
   }
 }
 
-int VariablePrepareOpPass::FindRefOutIndex(const std::string &node_type, int input_index,
-                                           const std::map<std::string, std::map<int, int>> &ref_map) {
+void VariablePrepareOpPass::FindRefOutIndex(const std::string &node_type, int input_index,
+                                            const std::map<std::string, std::map<int, vector<int>>> &ref_map,
+                                            std::vector<int> &output_indexes) {
   auto node_iter = ref_map.find(node_type);
   if (node_iter == ref_map.end()) {
-    return -1;
+    return;
   }
 
   auto index_iter = node_iter->second.find(input_index);
   if (index_iter == node_iter->second.end()) {
-    return -1;
+    return;
   }
-  return index_iter->second;
+  for (const auto &out_index : index_iter->second) {
+    output_indexes.emplace_back(out_index);
+  }
 }
 
 Status VariablePrepareOpPass::CheckStreamLabel(const ge::NodePtr &var_ref_node,

@@ -28,6 +28,10 @@ void RtContextUtil::DestroyRtContexts(uint64_t session_id) {
   std::lock_guard<std::mutex> lock(ctx_mutex_);
   auto &contexts = rt_contexts_[session_id];
   DestroyRtContexts(session_id, contexts);
+  auto iter = rt_contexts_.find(session_id);
+  if (iter != rt_contexts_.end()) {
+    rt_contexts_.erase(iter);
+  }
 }
 
 void RtContextUtil::DestroyAllRtContexts() {

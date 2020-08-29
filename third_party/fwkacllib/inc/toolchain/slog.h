@@ -175,6 +175,8 @@ enum {
   AIVECTOR,
   TBE,
   FV,
+  MDCMAP,
+  TUNE,
   INVLID_MOUDLE_ID
 };
 
@@ -209,6 +211,7 @@ extern int dlog_setlevel(int moduleId, int level, int enableEvent);
 /**
  * @ingroup slog
  * @brief CheckLogLevel: check module level enable or not
+ * users no need to call it because all dlog interface(include inner interface) has already called
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
@@ -231,37 +234,46 @@ extern int CheckLogLevel(int moduleId, int logLevel);
 /**
  * @ingroup slog
  * @brief dlog_warn: print warning log
+ * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]fmt: log content
  */
-#define dlog_warn(moduleId, fmt, ...)                                          \
-  do {                                                                         \
-    DlogWarnInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+#define dlog_warn(moduleId, fmt, ...)                                               \
+  do {                                                                              \
+    if(CheckLogLevel(moduleId, DLOG_WARN) == 1) {                                   \
+        DlogWarnInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+    }                                                                               \
   } while (0)
 
 /**
  * @ingroup slog
  * @brief dlog_info: print info log
+ * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]fmt: log content
  */
-#define dlog_info(moduleId, fmt, ...)                                          \
-  do {                                                                         \
-    DlogInfoInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+#define dlog_info(moduleId, fmt, ...)                                               \
+  do {                                                                              \
+    if(CheckLogLevel(moduleId, DLOG_INFO) == 1) {                                   \
+        DlogInfoInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+    }                                                                               \
   } while (0)
 
 /**
  * @ingroup slog
  * @brief dlog_debug: print debug log
+ * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]fmt: log content
  */
-#define dlog_debug(moduleId, fmt, ...)                                          \
-  do {                                                                          \
-    DlogDebugInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+#define dlog_debug(moduleId, fmt, ...)                                              \
+  do {                                                                              \
+    if(CheckLogLevel(moduleId, DLOG_DEBUG) == 1) {                                  \
+        DlogDebugInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+    }                                                                               \
   } while (0)
 
 /**
@@ -279,33 +291,40 @@ extern int CheckLogLevel(int moduleId, int logLevel);
 /**
  * @ingroup slog
  * @brief Dlog: print log, need caller to specify level
+ * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
  * @param [in]fmt: log content
  */
-#define Dlog(moduleId, level, fmt, ...)                                           \
-  do {                                                                            \
-    DlogInner(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+#define Dlog(moduleId, level, fmt, ...)                                                 \
+  do {                                                                                  \
+    if(CheckLogLevel(moduleId, level) == 1) {                                           \
+        DlogInner(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
+     }                                                                                  \
   } while (0)
 
 /**
  * @ingroup slog
  * @brief DlogSub: print log, need caller to specify level and submodule
+ * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]submodule: eg: engine
  * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
  * @param [in]fmt: log content
  */
-#define DlogSub(moduleId, submodule, level, fmt, ...)                                            \
-  do {                                                                                           \
-    DlogInner(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__); \
+#define DlogSub(moduleId, submodule, level, fmt, ...)                                                   \
+  do {                                                                                                  \
+    if(CheckLogLevel(moduleId, level) == 1) {                                                           \
+        DlogInner(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
+    }                                                                                                   \
   } while (0)
 
 /**
  * @ingroup slog
  * @brief DlogWithKV: print log, need caller to specify level and other paramters
+ * call CheckLogLevel in advance to optimize performance, call interface with fmt input take time
  *
  * @param [in]moduleId: module id, eg: CCE
  * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
@@ -313,9 +332,11 @@ extern int CheckLogLevel(int moduleId, int logLevel);
  * @param [in]kvNum: key-value element num in array
  * @param [in]fmt: log content
  */
-#define DlogWithKV(moduleId, level, pstKVArray, kvNum, fmt, ...)                                           \
-  do {                                                                                                     \
-    DlogWithKVInner(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
+#define DlogWithKV(moduleId, level, pstKVArray, kvNum, fmt, ...)                                                \
+  do {                                                                                                          \
+    if(CheckLogLevel(moduleId, level) == 1) {                                                                   \
+        DlogWithKVInner(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+    }                                                                                                           \
   } while (0)
 
 /**

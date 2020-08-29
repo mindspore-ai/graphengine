@@ -183,14 +183,12 @@ Status AttachStreamLabelPass::UpdateEnterNode() {
   std::unordered_map<NodePtr, std::vector<NodePtr>> enter_active_map;
   for (const auto &enter_node : enter_nodes_) {
     for (const auto &out_ctrl_node : enter_node->GetOutControlNodes()) {
-      if (out_ctrl_node->GetType() != STREAMACTIVE) {
-        continue;
-      }
-      auto iter = enter_active_map.find(out_ctrl_node);
-      if (iter == enter_active_map.end()) {
-        enter_active_map[out_ctrl_node] = {enter_node};
-      } else {
-        iter->second.emplace_back(enter_node);
+      if (out_ctrl_node->GetType() == STREAMACTIVE) {
+        if (enter_active_map.find(out_ctrl_node) == enter_active_map.end()) {
+          enter_active_map[out_ctrl_node] = {enter_node};
+        } else {
+          enter_active_map[out_ctrl_node].emplace_back(enter_node);
+        }
       }
     }
   }
@@ -204,17 +202,29 @@ Status AttachStreamLabelPass::UpdateEnterNode() {
     NodePtr active_node = pair.first;
     GE_CHECK_NOTNULL(active_node);
     std::vector<std::string> active_label_list;
-    if (!AttrUtils::GetListStr(active_node->GetOpDesc(), ATTR_NAME_ACTIVE_LABEL_LIST, active_label_list) ||
-        (active_label_list.size() != 1) || active_label_list[0].empty()) {
+    bool get_attr = AttrUtils::GetListStr(active_node->GetOpDesc(), ATTR_NAME_ACTIVE_LABEL_LIST, active_label_list) &&
+                    (active_label_list.size() == 1) && !active_label_list[0].empty();
+    if (!get_attr) {
       GELOGE(INTERNAL_ERROR, "Get attr ATTR_NAME_ACTIVE_LABEL_LIST failed, node: %s.", active_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
 
     std::stack<NodePtr> enter_nodes;
+    std::string batch_label;
     for (const auto &enter_node : pair.second) {
       enter_nodes.emplace(enter_node);
+      std::string tmp_label;
+      (void)AttrUtils::GetStr(enter_node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, tmp_label);
+      if (!tmp_label.empty()) {
+        if (batch_label.empty()) {
+          batch_label = tmp_label;
+        } else if (batch_label != tmp_label) {
+          GELOGE(FAILED, "multi batch_label exist, label1=%s, label2=%s.", batch_label.c_str(), tmp_label.c_str());
+          return FAILED;
+        }
+      }
     }
-    if (UpdateLoopBranch(enter_nodes, active_label_list[0]) != SUCCESS) {
+    if (UpdateLoopBranch(enter_nodes, active_label_list[0], batch_label) != SUCCESS) {
       GELOGE(FAILED, "Update stream_label for loop_branch failed.");
       return FAILED;
     }
@@ -234,28 +244,16 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
   GE_CHECK_NOTNULL(active_node);
   (void)AttrUtils::GetStr(active_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label);
 
-  bool same_flag = true;
-  for (const auto &enter_node : enter_nodes) {
-    std::string tmp_label;
-    (void)AttrUtils::GetStr(enter_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, tmp_label);
-    if (tmp_label.empty() || (stream_label == tmp_label)) {
-      continue;
-    }
-    same_flag = false;
-    break;
-  }
-
   if (stream_label.empty()) {
-    if (same_flag) {
-      stream_label = active_node->GetName();
-    } else {
-      GELOGW("stream_label of enter_active is empty while stream_label of some enter_node is not.");
-      return SUCCESS;
-    }
+    GELOGW("stream_label of enter_active & enter_nodes is empty.");
+    return SUCCESS;
   }
 
   for (const auto &enter_node : enter_nodes) {
-    GE_CHK_STATUS_RET(SetStreamLabel(enter_node, stream_label), "Set stream label failed.");
+    GE_CHECK_NOTNULL(enter_node->GetOpDesc());
+    if (enter_node->GetOpDesc()->HasAttr(ATTR_NAME_STREAM_LABEL)) {
+      GE_CHK_STATUS_RET(SetStreamLabel(enter_node, stream_label), "Set stream label failed.");
+    }
   }
   GE_CHK_STATUS_RET(SetStreamLabel(active_node, stream_label), "Set stream label failed.");
   return SUCCESS;
@@ -265,10 +263,11 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
 /// @brief Update stream_label for loop_branch
 /// @param [in] enter_nodes
 /// @param [in] stream_label
+/// @param [in] batch_label
 /// @return Status
 ///
-Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes,
-                                               const std::string &stream_label) {
+Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const std::string &stream_label,
+                                               const std::string &batch_label) {
   std::stack<NodePtr> nodes(enter_nodes);
   NodePtr cur_node = nullptr;
   while (!nodes.empty()) {
@@ -277,8 +276,16 @@ Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_
     for (const NodePtr &out_node : cur_node->GetOutAllNodes()) {
       OpDescPtr out_desc = out_node->GetOpDesc();
       GE_CHECK_NOTNULL(out_desc);
+      std::string tmp_label;
+      (void)AttrUtils::GetStr(out_desc, ATTR_NAME_BATCH_LABEL, tmp_label);
+      if (!tmp_label.empty() && (tmp_label != batch_label)) {
+        continue;
+      }
       std::string out_type = out_desc->GetType();
-      if (out_desc->HasAttr(ATTR_NAME_STREAM_LABEL) || (out_type == ENTER) || (out_type == REFENTER)) {
+      bool need_skip =
+        out_desc->HasAttr(ATTR_NAME_STREAM_LABEL) || (out_type == ENTER) || (out_type == REFENTER) ||
+        (((cur_node->GetType() == ENTER) || (cur_node->GetType() == REFENTER)) && (out_type == STREAMACTIVE));
+      if (need_skip) {
         continue;
       }
       GELOGD("Attach label %s to node: %s.", stream_label.c_str(), out_node->GetName().c_str());

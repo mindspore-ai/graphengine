@@ -182,37 +182,25 @@ void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
   for (size_t i = 0; i < is_input_const.size(); i++) {
     is_input_const[i] = false;
   }
+
+  std::string const_type;
   auto in_data_anchors = n->GetAllInDataAnchors();
   for (size_t index = 0; index < in_data_anchors.size(); index++) {
     auto in_data_anchor = in_data_anchors.at(index);
     const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     const auto &src_node = peer_out_anchor->GetOwnerNode();
-    if (src_node->GetType() == CONSTANT) {
+    if (!NodeUtils::GetConstOpType(src_node, const_type)) {
+      continue;
+    }
+
+    if (const_type == CONSTANT) {
       if (!SetInputConst(node_op_desc, src_node, index, is_input_const)) {
         return;
       }
-    } else if (src_node->GetType() == CONSTANTOP) {
+    } else {
       if ((index < is_input_const.size()) && is_input_const[index]) {
         is_input_const[index] = false;
-      }
-    } else if (src_node->GetType() == DATA) {
-      uint32_t parent_index = 0;
-      if (!AttrUtils::GetInt(src_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-        continue;
-      }
-
-      // Subgraph Data Node, check for constant input.
-      std::string op_type;
-      const NodePtr in_node = NodeUtils::GetParentInput(src_node);
-      if (!NodeUtils::GetConstOpType(in_node, op_type)) {
-        continue;  // not constant input.
-      }
-
-      if (op_type == CONSTANT) {
-        if (!SetInputConst(node_op_desc, in_node, index, is_input_const)) {
-          return;
-        }
       }
     }
   }

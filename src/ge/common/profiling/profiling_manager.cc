@@ -76,8 +76,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     for (size_t i = 0; i < device_id_.size(); ++i) {
       ret = StartProfiling(0, device_id_[i]);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Profiling start failed on device %d.", device_id_[i]);
-        return FAILED;
+        GELOGW("Profiling start failed on device %d.", device_id_[i]);
+        continue;
       }
       GELOGI("Profiling init succ on device %d.", device_id_[i]);
     }
@@ -316,7 +316,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
     ProfMgrCfg prof_cfg = {send_profiling_config_};
     void *prof_handle = ProfMgrStartUp(&prof_cfg);
     if (prof_handle == nullptr) {
-      GELOGW("ProfMgrStartUp failed.");
+      GELOGW("ProfMgrStartUp failed on device %d ", device_id);
       return FAILED;
     }
     GELOGD("StartProfiling, prof_handle: %p", prof_handle);

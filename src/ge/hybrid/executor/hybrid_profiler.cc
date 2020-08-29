@@ -57,6 +57,7 @@ void HybridProfiler::Dump(std::ostream &output_stream) {
     return;
   }
 
+  auto start_dump = std::chrono::system_clock::now();
   auto first_evt = events_[0];
   auto start = first_evt.timestamp;
   std::vector<decltype(start)> prev_timestamps;
@@ -70,7 +71,11 @@ void HybridProfiler::Dump(std::ostream &output_stream) {
     prev_ts = evt.timestamp;
     output_stream << std::setw(kIndent) << elapsed << "\t\t" << cost << "\t\t" << evt.desc << std::endl;
   }
-
+  auto end_dump = std::chrono::system_clock::now();
+  auto elapsed_dump = std::chrono::duration_cast<std::chrono::microseconds>(end_dump - start).count();
+  auto cost_dump = std::chrono::duration_cast<std::chrono::microseconds>(end_dump - start_dump).count();
+  output_stream << std::setw(kIndent) << elapsed_dump << "\t\t" << cost_dump << "\t\t"
+                << "[Dump profiling]" << std::endl;
   events_.clear();
 }
 

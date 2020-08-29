@@ -59,15 +59,6 @@ class TransOpSymmetryEliminationPass : public BaseNodePass {
   static bool JudgeTransposeDBack2Raw(const NodePtr &src_node, const NodePtr &dst_node);
 
   ///
-  /// two transform nodes can not be offset if there is precision loss, like FP32->BOOL BOOL->FP32.
-  /// keep this pair of transform nodes if it has precision loss.
-  /// @param src_node: the front node
-  /// @param dst_node: the back node
-  /// @return True or False, whether can be offset or not
-  ///
-  static bool CheckPrecisionLoss(const NodePtr &src_node);
-
-  ///
   /// two transform nodes can be offset like A->T1->T2->B
   /// 1.unlink T1->T2
   /// 2.link A->T2
@@ -83,6 +74,8 @@ class TransOpSymmetryEliminationPass : public BaseNodePass {
   ///
   Status EliminateTransOp(NodePtr &src_node, const OutDataAnchorPtr &src_out_anchor, NodePtr &dst_node,
                           const InDataAnchorPtr &dst_in_anchor);
+
+  Status RemoveTransOpWithoutOutput(NodePtr &pre_node, NodePtr &trans_node);
 };
 }  // namespace ge
 

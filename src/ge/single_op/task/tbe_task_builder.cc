@@ -19,8 +19,8 @@
 #include <mutex>
 #include <vector>
 
-#include "graph/load/new_model_manager/model_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/load/new_model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
 #include "runtime/rt.h"
 #include "single_op/task/build_task_utils.h"
@@ -49,13 +49,6 @@ KernelHolder::~KernelHolder() {
   }
 }
 
-KernelBinRegistry::~KernelBinRegistry() {
-  for (auto &iter : registered_bins_) {
-    delete iter.second;
-    iter.second = nullptr;
-  }
-}
-
 const char *KernelBinRegistry::GetUnique(const string &stub_func) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = unique_stubs_.find(stub_func);
@@ -77,9 +70,9 @@ const char *KernelBinRegistry::GetStubFunc(const std::string &stub_name) {
   return nullptr;
 }
 
-bool KernelBinRegistry::AddKernel(const std::string &stub_name, const KernelHolder *holder) {
+bool KernelBinRegistry::AddKernel(const std::string &stub_name, std::unique_ptr<KernelHolder> &&holder) {
   std::lock_guard<std::mutex> lock(mutex_);
-  auto ret = registered_bins_.emplace(stub_name, holder);
+  auto ret = registered_bins_.emplace(stub_name, std::move(holder));
   return ret.second;
 }
 
@@ -184,7 +177,7 @@ Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task, const SingleOpModelParam 
       return PARAM_INVALID;
     }
 
-    auto *holder = new (std::nothrow) KernelHolder(stub_func, tbe_kernel);
+    auto holder = std::unique_ptr<KernelHolder>(new (std::nothrow) KernelHolder(stub_func, tbe_kernel));
     if (holder == nullptr) {
       GELOGE(MEMALLOC_FAILED, "create KernelHodler failed.");
       return MEMALLOC_FAILED;
@@ -194,16 +187,11 @@ Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task, const SingleOpModelParam 
     auto ret = DoRegisterKernel(*tbe_kernel, stub_func, &bin_handle, param);
     if (ret == SUCCESS) {
       holder->SetBinHandle(bin_handle);
-      if (!registry.AddKernel(stub_name_, holder)) {
+      if (!registry.AddKernel(stub_name_, std::move(holder))) {
         // should not happen. only one thread can reach here
-        delete holder;
-        holder = nullptr;
         GELOGE(INTERNAL_ERROR, "Add kernel failed. stub name = %s", stub_name_.c_str());
         return INTERNAL_ERROR;
       }
-    } else {
-      delete holder;
-      holder = nullptr;
     }
   }
 
@@ -245,7 +233,7 @@ Status TbeTaskBuilder::GetSmDesc(void **sm_desc, const SingleOpModelParam &param
   return SUCCESS;
 }
 
-Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param) {
+Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc) {
   size_t arg_size = kernel_def_.args_size();
   auto args = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[arg_size]);
   GE_CHECK_NOTNULL(args);
@@ -276,13 +264,13 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
     }
   }
 
-  task.SetKernelArgs(std::move(args), arg_size, kernel_def_.block_dim());
+  task.SetKernelArgs(std::move(args), arg_size, kernel_def_.block_dim(), op_desc);
   return SUCCESS;
 }
 
 Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &param) {
   GELOGD("Build tbe task begin");
-  auto ret = SetKernelArgs(task, param);
+  auto ret = SetKernelArgs(task, param, op_desc_);
   if (ret != SUCCESS) {
     return ret;
   }

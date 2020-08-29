@@ -29,6 +29,13 @@ namespace hybrid {
 class NodeTask;
 class NodeExecutor;
 
+struct FusedSubgraph {
+  std::map<uint32_t, std::vector<GeTensorDescPtr>> input_mapping;
+  std::map<uint32_t, OpDescPtr> output_mapping;
+  std::vector<NodePtr> nodes;
+  ComputeGraphPtr graph;
+};
+
 // for caching static information across execution
 struct NodeItem {
   explicit NodeItem(NodePtr node);
@@ -41,8 +48,6 @@ struct NodeItem {
   const std::string &NodeType() const { return node_type; }
 
   bool IsControlOp() const;
-
-  bool NeedInfershape() const;
 
   void SetToDynamic();
 
@@ -70,6 +75,7 @@ struct NodeItem {
   vector<vector<pair<uint32_t, NodeItem *>>> outputs;
 
   std::shared_ptr<NodeTask> kernel_task;
+  std::unique_ptr<FusedSubgraph> fused_subgraph;
   const NodeExecutor *node_executor = nullptr;
   std::map<int, ge::NodePtr> ref_outputs;
   std::map<int, int> reuse_inputs;

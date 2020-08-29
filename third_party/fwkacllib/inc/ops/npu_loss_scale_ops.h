@@ -19,15 +19,40 @@
 #include "graph/operator_reg.h"
 
 namespace ge {
+
+/**
+*@brief Computes NPU alloc float status operator function.
+
+*@par Outputs:
+*data: A Tensor of data value. Must be float32.
+*/
 REG_OP(NPUAllocFloatStatusOperator)
     .OUTPUT(data, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(NPUAllocFloatStatusOperator)
 
+/**
+*@brief Computes NPU clear float status operator function.
+
+*@par Inputs:
+*addr: A Tensor of data memory address. Must be float32.
+
+*@par Outputs:
+*data: A Tensor of data value. Must be float32.
+*/
 REG_OP(NPUClearFloatStatusOperator)
     .INPUT(addr, TensorType{DT_FLOAT})
     .OUTPUT(data, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(NPUClearFloatStatusOperator)
 
+/**
+*@brief Computes NPU get float status operator function.
+
+*@par Inputs:
+*addr: A Tensor of data memory address. Must be float32.
+
+*@par Outputs:
+*data: A Tensor of data value. Must be float32.
+*/
 REG_OP(NPUGetFloatStatusOperator)
     .INPUT(addr, TensorType{DT_FLOAT})
     .OUTPUT(data, TensorType({DT_FLOAT}))
@@ -47,7 +72,7 @@ REG_OP(NPUAllocFloatStatus)
 *@brief Set the value of address 0x40000 to 0 in each core.
 
 *@par Inputs:
-*@li addr: A tensor of type float32.
+*addr: A tensor of type float32.
 
 *@par Outputs:
 *data: A Tensor of type float32.
@@ -61,7 +86,7 @@ REG_OP(NPUClearFloatStatus)
 *@brief Get the value of address 0x40000.
 
 *@par Inputs:
-*@li addr: A tensor of type float32.
+*addr: A tensor of type float32.
 
 *@par Outputs:
 *data: A Tensor of type float32.

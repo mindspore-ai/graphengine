@@ -73,9 +73,11 @@ class AippOp : public InsertOpBase {
   void SetDtcDefaultValue();
   NodePtr FindDataByIndex(const ComputeGraphPtr &graph, int rank);
   Status GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr &target, std::set<uint32_t> &edge_indexes);
-  NodePtr CreateAipp(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                     const std::string &aippConfigPath, const uint32_t &index);
-  Status CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp);
+  Status GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_node, NodePtr &target);
+  NodePtr CreateAipp(const OutDataAnchorPtr &out_anchor, const std::string &aippConfigPath, const uint32_t &index);
+  Status CreateAippData(const NodePtr &aipp);
+  Status AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size);
+  Status AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aipp_cfg_path, const uint32_t &index);
 
   domi::AippOpParams *aipp_params_ = nullptr;
   ge::NodePtr aipp_node_ = nullptr;

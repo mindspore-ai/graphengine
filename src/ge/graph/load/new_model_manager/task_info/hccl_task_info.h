@@ -60,9 +60,7 @@ class HcclTaskInfo : public TaskInfo {
 
   void GetPrivateDefByTaskDef(const domi::TaskDef &task);
 
-  void ReuseStream(int64_t stream_num, DavinciModel *davinci_model);
-
-  ge::Status CreateStream(int64_t stream_num, DavinciModel *davinci_model);
+  ge::Status CreateStream(int64_t stream_num, DavinciModel *davinci_model, int64_t main_stream_id);
 
   Status SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciModel *davinci_model);
 
@@ -77,7 +75,6 @@ class HcclTaskInfo : public TaskInfo {
   void *private_def_;
   uint32_t private_def_len_;
   static std::mutex hccl_follow_stream_mutex_;
-  static uint32_t max_node_of_hccl_stream_;
   vector<GETaskKernelHcclInfo> kernel_hccl_infos_;
   vector<void *> input_data_addrs_;
   vector<void *> output_data_addrs_;

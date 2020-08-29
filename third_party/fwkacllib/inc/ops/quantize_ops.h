@@ -71,6 +71,7 @@ REG_OP(Dequantize)
 
 *@par Outputs:
 *y: The quantized output tensor of type int8 and with format NC1HWC0.
+
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
@@ -97,6 +98,7 @@ REG_OP(AscendQuant)
 
 *@par Outputs:
 *y: The dequantized output tensor of type float16 or float32 and with format NC1HWC0.
+
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
@@ -109,6 +111,24 @@ REG_OP(AscendDequant)
     .ATTR(dtype, Int, DT_FLOAT)
     .OP_END_FACTORY_REG(AscendDequant)
 
+/**
+*@brief Anti quantizes the input.
+
+*@par Inputs:
+*x: An NC1HWC0 tensor of type int8, specifying the input.
+
+*@par Attributes:
+*@li scale: A required float32 scale.
+*@li offset: A required float32 offset.
+*@li dtype: A optional int32, specifying the output data type. Defaults to "DT_FLOAT".
+*@li sqrt_mode: A optional bool, specifying whether to perform square root on "scale", either "True" or "False". Defaults to "False".
+
+*@par Outputs:
+*y: The dequantized output tensor of type float16 or float32 and with format NC1HWC0.
+
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*/
 REG_OP(AscendAntiQuant)
     .INPUT(x, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -118,6 +138,23 @@ REG_OP(AscendAntiQuant)
     .ATTR(sqrt_mode, Bool, false)
     .OP_END_FACTORY_REG(AscendAntiQuant)
 
+/**
+*@brief Dequantizes the input of int16.
+
+*@par Inputs:
+*@li x0: An NC1HWC0 tensor of type int32, specifying the input.
+*@li deq_scale: An NC1HWC0 tensor of type float16 or uint64, specifying the scaling ratio.
+*@li x1: An NC1HWC0 tensor of type int16, specifying the input.
+
+*@par Attributes:
+*relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
+
+*@par Outputs:
+*y: The dequantized output tensor of type float16 or float32 and with format NC1HWC0.
+
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*/
 REG_OP(AscendDequantS16)
   .INPUT(x0, TensorType({DT_INT32}))
   .INPUT(deq_scale, TensorType({DT_UINT64}))
@@ -126,6 +163,22 @@ REG_OP(AscendDequantS16)
   .ATTR(relu_flag, Bool, false)
   .OP_END_FACTORY_REG(AscendDequantS16)
 
+/**
+*@brief Requantizes the input.
+
+*@par Inputs:
+*@li x: An NC1HWC0 tensor of type int32, specifying the input.
+*@li req_scale: An NC1HWC0 tensor of type uint64, specifying the scaling ratio.
+
+*@par Attributes:
+*relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
+
+*@par Outputs:
+*y: The dequantized output tensor of type int8 and with format NC1HWC0.
+
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*/
 REG_OP(AscendRequant)
   .INPUT(x, TensorType({DT_INT32}))
   .INPUT(req_scale, TensorType({DT_UINT64}))
@@ -133,6 +186,25 @@ REG_OP(AscendRequant)
   .ATTR(relu_flag, Bool, false)
   .OP_END_FACTORY_REG(AscendRequant)
 
+/**
+*@brief Requantizes the input of int16.
+
+*@par Inputs:
+*@li x: An NC1HWC0 tensor of type int16, specifying the input.
+*@li req_scale: An NC1HWC0 tensor of type uint64, specifying the scaling ratio.
+*@li x1: An NC1HWC0 tensor of type int16.
+
+*@par Attributes:
+*@li dual_output: A optional bool, specifying whether to perform dual ouput, either "True" or "False". Defaults to "False".
+*@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
+
+*@par Outputs:
+*@li y: The dequantized output tensor of type int8 and with format NC1HWC0.
+*@li y1: The dequantized output tensor of type int16 and with format NC1HWC0.
+
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*/
 REG_OP(AscendRequantS16)
   .INPUT(x, TensorType({DT_INT16}))
   .INPUT(req_scale, TensorType({DT_UINT64}))

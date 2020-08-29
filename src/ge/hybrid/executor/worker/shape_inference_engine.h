@@ -30,9 +30,12 @@ class ShapeInferenceEngine {
 
   Status InferShape(NodeState &node_state);
 
+  Status InferShapeForSubgraph(const NodeItem &node_item, const FusedSubgraph &fused_subgraph);
+
   Status PropagateOutputShapes(const NodeItem &node_item);
 
  private:
+  static Status UpdatePeerNodeShape(const Node &node);
   Status AwaitDependentNodes(NodeState &node_state);
 
   GraphExecutionContext *execution_context_;

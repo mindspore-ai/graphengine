@@ -26,8 +26,8 @@ Status SubgraphContext::Init() {
   GE_CHECK_NOTNULL(graph_item_);
   GELOGD("[%s] Start to init subgraph context. total inputs = %d, total outputs = %d", graph_item_->GetName().c_str(),
          graph_item_->TotalInputs(), graph_item_->TotalOutputs());
-  all_inputs_.resize(graph_item_->TotalInputs());
-  all_outputs_.resize(graph_item_->TotalOutputs());
+  all_inputs_.resize(static_cast<unsigned long>(graph_item_->TotalInputs()));
+  all_outputs_.resize(static_cast<unsigned long>(graph_item_->TotalOutputs()));
 
   return SUCCESS;
 }
@@ -48,7 +48,6 @@ Status SubgraphContext::SetInput(int index, const TensorValue &tensor) {
            index);
     return INTERNAL_ERROR;
   }
-
   all_inputs_[index] = tensor;
   return SUCCESS;
 }
@@ -60,7 +59,7 @@ Status SubgraphContext::SetInput(const NodeItem &node_item, int input_index, con
 
 Status SubgraphContext::SetOutput(const NodeItem &node_item, int output_index, const TensorValue &tensor) {
   auto index = node_item.output_start + output_index;
-  if (output_index >= node_item.num_outputs || static_cast<size_t>(index) >= all_outputs_.size()) {
+  if ((output_index >= node_item.num_outputs) || (static_cast<size_t>(index) >= all_outputs_.size())) {
     GELOGE(INTERNAL_ERROR, "output index output range. all output num = %zu, node_item = %s, output index = %d",
            all_outputs_.size(), node_item.DebugString().c_str(), output_index);
     return INTERNAL_ERROR;

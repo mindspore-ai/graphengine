@@ -277,6 +277,22 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     return output_ptr;
   }
 
+  OutHandler GetOutput(uint32_t index) {
+    GE_CHK_BOOL_EXEC(op_desc_ != nullptr, return nullptr, "op_desc_ is nullptr.");
+
+    string name = op_desc_->GetOutputNameByIndex(index);
+    if (name.empty()) {
+      GELOGE(GRAPH_FAILED, "Find src name by index failed. index[%u]", index);
+      return nullptr;
+    }
+    shared_ptr<OpIO> output_ptr = ComGraphMakeShared<OpIO>(name, index, shared_from_this());
+    if (output_ptr == nullptr) {
+      GELOGE(GRAPH_FAILED, "OpIO make shared failed");
+      return nullptr;
+    }
+    return output_ptr;
+  }
+
   GeTensorDesc GetOutputDesc(const string &name) const {
     GE_CHK_BOOL_EXEC(op_desc_ != nullptr, return GeTensorDesc(), "op_desc_ is nullptr.");
 
@@ -540,6 +556,13 @@ Operator &Operator::SetInput(const std::string &dst_name, const ge::Operator &sr
   return *this;
 }
 
+Operator &Operator::SetInput(const std::string &dst_name, const ge::Operator &src_oprt, uint32_t index) {
+  auto out_handler = src_oprt.GetOutput(index);
+  GE_CHK_BOOL_EXEC(out_handler != nullptr, return *this, "out_handler is nullptr.");
+  (void)SetInput(dst_name, out_handler);
+  return *this;
+}
+
 Operator &Operator::AddControlInput(const Operator &src_oprt) {
   if (operator_impl_ == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr.");
@@ -621,6 +644,11 @@ graphStatus Operator::GetInputConstDataOut(const string &dst_name, Tensor &data)
   return GRAPH_FAILED;
 }
 
+std::shared_ptr<const Node> Operator::GetNode() const {
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return nullptr, "operator impl is nullptr.");
+  return operator_impl_->GetNode();
+}
+
 TensorDesc Operator::GetInputDesc(const std::string &name) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "operator impl is nullptr.");
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(name));
@@ -655,6 +683,11 @@ graphStatus Operator::UpdateInputDesc(const std::string &name, const ge::TensorD
 OutHandler Operator::GetOutput(const string &name) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return nullptr, "operator impl is nullptr.");
   return operator_impl_->GetOutput(name);
+}
+
+OutHandler Operator::GetOutput(uint32_t index) const {
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return nullptr, "operator impl is nullptr.");
+  return operator_impl_->GetOutput(index);
 }
 
 TensorDesc Operator::GetOutputDesc(const std::string &name) const {
@@ -1540,6 +1573,7 @@ void GraphUtils::BreakConnect(const std::map<OperatorImplPtr, NodePtr> &all_node
     }
     op_impl->ClearOutputLinks();
     op_impl->ClearInputLinks();
+    OperatorKeeper::GetInstance().CheckOutOperator(op_impl);
   }
 }
 }  // namespace ge

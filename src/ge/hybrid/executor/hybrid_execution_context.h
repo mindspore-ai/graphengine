@@ -20,6 +20,7 @@
 #include <atomic>
 #include <unordered_map>
 #include "common/blocking_queue.h"
+#include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/common/tensor_value.h"
@@ -32,6 +33,9 @@
 namespace ge {
 namespace hybrid {
 struct GraphExecutionContext {
+  void SetErrorCode(Status error_code);
+  Status GetStatus() const;
+
   uint64_t session_id = 0;
   const HybridModel *model = nullptr;
   rtStream_t stream = nullptr;
@@ -40,15 +44,18 @@ struct GraphExecutionContext {
   std::unique_ptr<CallbackManager> callback_manager;
   NpuMemoryAllocator *allocator = nullptr;
   mutable std::unique_ptr<HybridProfiler> profiler;
+  DumpProperties dump_properties;
   bool trace_enabled = false;
-  long profiling_level = 0;
   bool dump_enabled = false;
+  long profiling_level = 0;
   long iteration = 0;
+  Status status = SUCCESS;
+  mutable std::mutex mu;
 };
 
 #define RECORD_PROFILING_EVENT(context, evt_type, fmt, category, node_name, ...)                          \
   do {                                                                                                    \
-    if ((context)->profiler != nullptr) {                                                                 \
+    if ((context != nullptr) && (context)->profiler != nullptr) {                                         \
       if (node_name != nullptr) {                                                                         \
         context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GetTid(), node_name, category, \
                                        ##__VA_ARGS__);                                                    \

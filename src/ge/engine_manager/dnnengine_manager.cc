@@ -42,6 +42,8 @@ const char *const kVectorCore = "VectorCore";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kCustomOpFlag = "_custom_op_flag";
+const char *const kHostCpuEngineName = "DNN_VM_HOST_CPU";
+const char *const kHostCpuOpKernelLibName = "DNN_VM_HOST_CPU_OP_STORE";
 }  // namespace
 
 namespace ge {
@@ -181,6 +183,7 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
     GELOGI("DNNEngineManager: Can not get op info by op type %s", op_desc->GetType().c_str());
     return "";
   }
+  GE_IF_BOOL_EXEC(ge::GetContext().GetHostExecFlag(), return GetHostCpuEngineName(op_infos, op_desc));
   std::string ge_core_type;
   Status ret = ge::GetContext().GetOption(ge::CORE_TYPE, ge_core_type);
   GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGD("get the option CORE_TYPE fail, set it to default value VECTOR_ENGINE"));
@@ -242,6 +245,22 @@ std::string DNNEngineManager::GetDNNEngineName(const OpDescPtr &op_desc) {
                                                   {op_desc->GetName(), op_desc->GetType()});
   GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "Can't find any supported ops kernel and engine of %s, type is %s",
          op_desc->GetName().c_str(), op_desc->GetType().c_str());
+  return "";
+}
+
+std::string DNNEngineManager::GetHostCpuEngineName(const std::vector<OpInfo> &op_infos,
+                                                   const OpDescPtr &op_desc) const {
+  for (const auto &it : op_infos) {
+    if ((it.engine == kHostCpuEngineName) && (it.opKernelLib == kHostCpuOpKernelLibName)) {
+      op_desc->SetOpEngineName(kHostCpuEngineName);
+      op_desc->SetOpKernelLibName(kHostCpuOpKernelLibName);
+      GELOGI("DNNEngineManager: Set OpKernelLibName %s and OpEngineName %s to %s", kHostCpuOpKernelLibName,
+             kHostCpuEngineName, op_desc->GetName().c_str());
+      return kHostCpuEngineName;
+    }
+  }
+  GELOGE(FAILED, "DNNEngineManager: HostCpuEngine not support [%s, %s].", op_desc->GetName().c_str(),
+         op_desc->GetType().c_str());
   return "";
 }
 

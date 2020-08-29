@@ -203,6 +203,15 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ///
   /// @ingroup ge
+  /// @brief Get user designate shape order
+  /// @param [in] model_id
+  /// @param [out] user_input_shape_order
+  /// @return execute result
+  ///
+  Status GetUserDesignateShapeOrder(const uint32_t model_id, std::vector<std::string> &user_input_shape_order);
+
+  ///
+  /// @ingroup ge
   /// @brief Get AIPP info
   /// @param [in] model_id
   /// @param [in] index
@@ -263,6 +272,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
                                        std::vector<InputOutputDims> &output_dims);
 
   bool IsDynamicShape(uint32_t model_id);
+  ge::Status GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info);
 
  private:
   ///

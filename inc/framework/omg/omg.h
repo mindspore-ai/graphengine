@@ -96,6 +96,10 @@ Status CheckCustomAiCpuOpLib();
 
 Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
 
+Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output_format);
+
+Status GetOutputLeaf(ge::NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);
+
 void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
                                 std::vector<std::string> &output_nodes_name);
 

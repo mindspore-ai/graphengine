@@ -69,6 +69,8 @@ class HybridModel {
 
   const GraphItem *GetSubgraphItem(const ComputeGraphPtr &subgraph) const;
 
+  const string &GetModelName() const;
+
  private:
   friend class HybridModelBuilder;
   friend class HybridModelAsyncExecutor;

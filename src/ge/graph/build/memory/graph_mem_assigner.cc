@@ -1227,6 +1227,18 @@ ge::Status GraphMemoryAssigner::SetInputOffset() {
   return ge::SUCCESS;
 }
 
+NodePtr GraphMemoryAssigner::GetKnownInputNode(const NodePtr &node) const {
+  if (!node->GetOpDesc()->HasAttr(ATTR_NAME_PARENT_NODE_INDEX)) {
+    return node;
+  }
+
+  if (NodeUtils::IsDynamicShape(node)) {
+    return node;
+  }
+
+  return NodeUtils::GetParentInput(node);
+}
+
 ge::Status GraphMemoryAssigner::UpdateConstArgsOffset(const NodePtr &node, vector<int64_t> &input_list) const {
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
@@ -1235,13 +1247,29 @@ ge::Status GraphMemoryAssigner::UpdateConstArgsOffset(const NodePtr &node, vecto
 
   // Subgraph Data Node, check for constant input.
   std::string op_type;
-  NodePtr in_node = NodeUtils::GetParentInput(node);
-  if (!NodeUtils::GetConstOpType(in_node, op_type)) {
-    return SUCCESS;  // not constant input.
+  const auto &in_node = NodeUtils::GetParentInput(node);
+  if (NodeUtils::GetConstOpType(in_node, op_type)) {
+    input_list = in_node->GetOpDesc()->GetOutputOffset();
+    node->GetOpDesc()->SetOutputOffset(input_list);  // Set Data output same as const output.
+    return SUCCESS;                                  // Constant input.
   }
 
-  vector<int64_t> const_input_list = in_node->GetOpDesc()->GetOutputOffset();
-  node->GetOpDesc()->SetOutputOffset(const_input_list);  // Set Data output same as const output.
+  // Memory allocated for dynamic shape subgraph Data.
+  if (NodeUtils::IsDynamicShape(node)) {
+    return SUCCESS;
+  }
+
+  const auto &owner = node->GetOwnerComputeGraph();
+  const auto &parent_desc = owner->GetParentNode()->GetOpDesc();
+  const auto parent_inputs = parent_desc->GetInputOffset();
+  if (parent_inputs.size() <= parent_index) {
+    GELOGE(FAILED, "Get Parent input offset failed, node: %s, input size: %zu, parent index: %u",
+           node->GetName().c_str(), parent_inputs.size(), parent_index);
+    return FAILED;
+  }
+
+  input_list = {parent_inputs[parent_index]};
+  node->GetOpDesc()->SetOutputOffset(input_list);  // Set Data output same as parent input.
   return SUCCESS;
 }
 
@@ -1287,7 +1315,8 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
                input_list.back());
       } else {
         int64_t output_offset = output_list.at(peer_out_anchor->GetIdx());
-        if (peer_out_anchor->GetOwnerNode()->GetType() == CONSTANT) {
+        const auto &in_node = GetKnownInputNode(peer_out_anchor->GetOwnerNode());
+        if (in_node->GetType() == CONSTANT) {
           GeTensorDesc tensor_desc = tmp_op_desc->GetInputDesc(input_index);
           GE_CHK_STATUS(TensorUtils::GetDataOffset(tensor_desc, output_offset));
         }

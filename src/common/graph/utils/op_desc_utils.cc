@@ -438,6 +438,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<ge::NodePtr> OpDescUtils::
       if (switch_input.size() > 0) {
         ret.insert(ret.end(), switch_input.begin(), switch_input.end());
       }
+    } else if (in_node->GetType() == DATA) {
+      auto parent = NodeUtils::GetParentInput(in_node);
+      if ((parent != nullptr) && (parent->GetType() == CONSTANT)) {
+        ret.push_back(parent);
+      }
     }
   }
   return ret;

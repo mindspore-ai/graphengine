@@ -41,7 +41,7 @@ typedef enum tagCtxMode {
 
 typedef struct tagRtGroupInfo {
   int32_t groupId;
-  int32_t flag;
+  uint32_t flag;
   uint32_t aicoreNum;
   uint32_t aicpuNum;
   uint32_t aivectorNum;

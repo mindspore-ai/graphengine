@@ -95,6 +95,15 @@ class GraphExecutor {
   ///
   static Status GetCombinedDynamicDims(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
+  ///
+  /// @ingroup ge
+  /// @brief Get user designate shape order
+  /// @param [in] model_id
+  /// @param [out] user_input_shape_order
+  /// @return execute result
+  ///
+  static Status GetUserDesignateShapeOrder(uint32_t model_id, std::vector<std::string> &user_input_shape_order);
+
   static Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
   static Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
@@ -106,6 +115,8 @@ class GraphExecutor {
   static Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
   static Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,
                                           std::vector<InputOutputDims> &output_dims);
+
+  static Status GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info);
 
  private:
   Status PrepareInputData(const std::vector<GeTensor> &input_tensor, InputData &graph_input_data,

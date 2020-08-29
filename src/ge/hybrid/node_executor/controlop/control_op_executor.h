@@ -32,7 +32,7 @@ class ControlOpNodeTask : public NodeTask {
 
  protected:
   virtual Status DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const = 0;
-  static Status CopyTensorValueToHost(const TensorValue &tensor_value, int32_t &value);
+  static Status ToBool(const TensorValue &tensor_value, DataType data_type, bool &value);
   static Status ExecuteSubgraph(const GraphItem *subgraph, TaskContext &task_context,
                                 const std::function<void()> &done_callback);
 };
@@ -42,7 +42,6 @@ class IfOpNodeTask : public ControlOpNodeTask {
   Status Init(const NodePtr &node, const HybridModel &model) override;
 
  protected:
-  const GraphItem *SelectBranch(int32_t cond) const;
   Status DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const override;
 
  private:
@@ -85,6 +84,7 @@ class WhileOpNodeTask : public ControlOpNodeTask {
  private:
   static constexpr int kCondBranchIndex = 0;
   static constexpr int kBodyBranchIndex = 1;
+  static constexpr size_t kCondOutputSize = 1;
 
   const GraphItem *cond_ = nullptr;
   const GraphItem *body_ = nullptr;

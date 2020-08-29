@@ -19,8 +19,9 @@
 
 #include <string>
 #include <cstdint>
-#include <vector>
+#include <mutex>
 #include <unordered_map>
+#include <vector>
 
 #include "common/ge_inner_error_codes.h"
 #include "runtime/stream.h"
@@ -29,20 +30,20 @@
 namespace ge {
 class StreamResource {
  public:
-  StreamResource() = default;
+  explicit StreamResource(uintptr_t resource_id);
   ~StreamResource();
 
   StreamResource(const StreamResource &) = delete;
   StreamResource(StreamResource &&) = delete;
   StreamResource &operator=(const StreamResource &) = delete;
   StreamResource &operator=(StreamResource &&) = delete;
-
-  void CacheOperator(const void *key, std::unique_ptr<SingleOp> &&single_op);
-  void CacheDynamicOperator(const void *key, std::unique_ptr<DynamicSingleOp> &&single_op);
   void SetStream(rtStream_t stream);
 
   SingleOp *GetOperator(const void *key);
   DynamicSingleOp *GetDynamicOperator(const void *key);
+
+  Status BuildOperator(const std::string &model_name, const ModelData &model_data, SingleOp **single_op);
+  Status BuildDynamicOperator(const std::string &model_name, const ModelData &model_data, DynamicSingleOp **single_op);
 
   uint8_t *MallocMemory(const std::string &purpose, size_t size);
   uint8_t *MallocWeight(const std::string &purpose, size_t size);
@@ -51,13 +52,15 @@ class StreamResource {
   uint8_t *DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
                           std::vector<uint8_t *> &allocated);
 
+  uintptr_t resource_id_;
   size_t max_memory_size_ = 0;
-  size_t max_weight_size_ = 0;
   std::vector<uint8_t *> memory_list_;
   std::vector<uint8_t *> weight_list_;
   std::unordered_map<const void *, std::unique_ptr<SingleOp>> op_map_;
   std::unordered_map<const void *, std::unique_ptr<DynamicSingleOp>> dynamic_op_map_;
   rtStream_t stream_ = nullptr;
+  std::mutex mu_;
+  std::mutex stream_mu_;
 };
 }  // namespace ge
 

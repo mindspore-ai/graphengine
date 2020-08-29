@@ -47,6 +47,14 @@ Status CondPass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("Handle cond for node %s.", op_desc->GetName().c_str());
   GeTensorDesc cond_tensor = op_desc->GetInputDesc(cond_in_anchor->GetIdx());
+  if (cond_tensor.MutableShape().GetDim(0) == UNKNOWN_DIM_NUM) {
+    GELOGI("Output tensor rank of Cond is unknown.");
+    if (cond_tensor.GetDataType() == DT_STRING) {
+      GE_CHK_STATUS_RET(HandleStringCond(graph, cond_out_anchor, cond_in_anchor), "HandleStringCond for %s failed.",
+                        op_desc->GetName().c_str())
+    }
+    return SUCCESS;
+  }
   if (!cond_tensor.GetShape().IsScalar()) {
     GE_CHK_STATUS_RET(HandleNonScalarCond(graph, cond_out_anchor, cond_in_anchor), "HandleNonScalarCond for %s failed.",
                       op_desc->GetName().c_str())
@@ -255,8 +263,8 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   GeTensorDesc out_tensor = in_anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(out_anchor->GetIdx());
   out_tensor.SetDataType(DT_INT32);
   out_tensor.SetOriginDataType(DT_INT32);
-  out_tensor.SetShape(GeShape());
-  out_tensor.SetOriginShape(GeShape());
+  out_tensor.SetShape(in_tensor.GetShape());
+  out_tensor.SetOriginShape(in_tensor.GetOriginShape());
 
   OpDescBuilder op_desc_builder(out_anchor->GetOwnerNode()->GetName() + "_" + type, type);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_tensor).AddOutput("y", out_tensor).Build();

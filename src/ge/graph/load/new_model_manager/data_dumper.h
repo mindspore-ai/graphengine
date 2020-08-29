@@ -30,6 +30,7 @@
 #include "proto/op_mapping_info.pb.h"
 #include "runtime/mem.h"
 #include "task_info/task_info.h"
+#include "framework/common/ge_types.h"
 
 namespace ge {
 class DataDumper {
@@ -64,9 +65,13 @@ class DataDumper {
 
   void SetRefInfo(const std::map<OpDescPtr, void *> &ref_info) { ref_info_ = ref_info; };
 
+  void SetL1FusionAddr(void *addr) { l1_fusion_addr_ = addr; };
+
   void SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_cond);
 
   void SaveDumpInput(const std::shared_ptr<Node> &node);
+
+  void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id);
 
   // args is device memory stored first output addr
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args);
@@ -81,6 +86,7 @@ class DataDumper {
 
   void SetDumpProperties(const DumpProperties &dump_properties) { dump_properties_ = dump_properties; }
   const DumpProperties &GetDumpProperties() const { return dump_properties_; }
+  bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
 
  private:
   void ReleaseDevMem(void **ptr) noexcept;
@@ -100,6 +106,7 @@ class DataDumper {
   struct InnerDumpInfo;
   struct InnerInputMapping;
 
+  std::vector<OpDescInfo> op_desc_info_;
   std::vector<InnerDumpInfo> op_list_;
   uint32_t end_graph_task_id_ = 0;
   uint32_t end_graph_stream_id_ = 0;
@@ -111,6 +118,7 @@ class DataDumper {
   uintptr_t loop_cond_;
   ComputeGraphPtr compute_graph_;
   std::map<OpDescPtr, void *> ref_info_;
+  void *l1_fusion_addr_ = nullptr;
 
   uint32_t op_debug_task_id_ = 0;
   uint32_t op_debug_stream_id_ = 0;
@@ -135,6 +143,7 @@ class DataDumper {
                        const uintptr_t &addr, size_t index);
   Status GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
                         const uintptr_t &addr, size_t index);
+  void GenerateOpBuffer(const int64_t &size, aicpu::dump::Task &task);
 };
 struct DataDumper::InnerDumpInfo {
   uint32_t task_id;

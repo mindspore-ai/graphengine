@@ -519,6 +519,25 @@ Status GraphExecutor::GetCombinedDynamicDims(uint32_t model_id, std::vector<std:
   return SUCCESS;
 }
 
+///
+/// @ingroup ge
+/// @brief Get user designate shape order
+/// @param [in] model_id
+/// @param [out] user_input_shape_order
+/// @return execute result
+///
+ge::Status GraphExecutor::GetUserDesignateShapeOrder(uint32_t model_id,
+                                                     std::vector<std::string> &user_input_shape_order) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetUserDesignateShapeOrder(model_id, user_input_shape_order);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetUserDesignateShapeOrder failed.");
+    return ret;
+  }
+  return SUCCESS;
+}
+
 Status GraphExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
@@ -570,7 +589,7 @@ Status GraphExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigI
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->GetAIPPInfo(model_id, index, aipp_info);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GetAIPPInfo failed.");
+    GELOGW("GetAIPPInfo is not success.");
     return ret;
   }
 
@@ -600,6 +619,18 @@ Status GraphExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t inde
     return ret;
   }
 
+  return SUCCESS;
+}
+
+Status GraphExecutor::GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id,
+                                    OpDescInfo &op_desc_info) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetOpDescInfo(device_id, stream_id, task_id, op_desc_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetOpDescInfo failed.");
+    return ret;
+  }
   return SUCCESS;
 }
 }  // namespace ge

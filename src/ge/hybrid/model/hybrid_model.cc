@@ -118,5 +118,7 @@ const GraphItem *HybridModel::GetSubgraphItem(const ComputeGraphPtr &subgraph) c
   auto subgraph_name = subgraph->GetName();
   return GetSubgraphItem(subgraph_name);
 }
+
+const string &HybridModel::GetModelName() const { return model_name_; }
 }  // namespace hybrid
 }  // namespace ge

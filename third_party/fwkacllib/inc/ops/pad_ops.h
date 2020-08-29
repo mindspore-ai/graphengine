@@ -240,6 +240,28 @@ REG_OP(AscendPadding)
     .ATTR(pad_dim_size, Int, 8)
     .OP_END_FACTORY_REG(AscendPadding)
 
-} // namespace ge
 
+/**
+*@brief EmbeddingRankId, traverse the index calculation server and its position in the server.
+
+*@par Inputs:
+*One input, include:
+*addr_table: Tensor which last dimension must be 3. For example: [8, 3].
+*index: Tensor  For example: [640000].
+*@par Outputs:
+*rank_id: Tensor the first dimension of index to Size, [size, 3].
+ Tensor which last dimension must be 3.For example: [640000, 3]
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
+*/
+REG_OP(EmbeddingRankId)
+    .INPUT(addr_table, TensorType({DT_UINT64}))
+    .INPUT(index, TensorType({DT_UINT32}))
+    .OUTPUT(rank_id, TensorType({DT_UINT64}))
+    .ATTR(row_memory, Int, 320)
+    .ATTR(mode, String, "mod")
+    .OP_END_FACTORY_REG(EmbeddingRankId)
+
+
+} // namespace ge
 #endif //GE_OP_PAD_OPS_H

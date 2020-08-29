@@ -28,7 +28,6 @@ namespace {
 const uint32_t kMaxTaskOfStream = 200;
 }
 
-uint32_t HcclTaskInfo::max_node_of_hccl_stream_ = 0;
 std::mutex HcclTaskInfo::hccl_follow_stream_mutex_;
 
 HcclTaskInfo::~HcclTaskInfo() {
@@ -41,7 +40,6 @@ HcclTaskInfo::~HcclTaskInfo() {
   }
   davinci_model_ = nullptr;
   ops_kernel_store_ = nullptr;
-  max_node_of_hccl_stream_ = 0;
   args_ = nullptr;
 }
 Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
@@ -133,45 +131,39 @@ Status HcclTaskInfo::SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciM
   }
 
   std::lock_guard<std::mutex> lock(hccl_follow_stream_mutex_);
-  if (max_node_of_hccl_stream_ == 0) {
-    uint32_t max_stream_count;
-    uint32_t max_task_count;
-    ret = rtGetMaxStreamAndTask(RT_NORMAL_STREAM, &max_stream_count, &max_task_count);
-    if (ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Get max stream and task count by rts failed.");
-      return RT_ERROR_TO_GE_STATUS(ret);
-    }
-    max_node_of_hccl_stream_ = max_task_count / kMaxTaskOfStream;
-  }
+  int64_t main_stream_id = op_desc->GetStreamId();
+  const std::map<int64_t, std::vector<rtStream_t>> &main_follow_stream_mapping = davinci_model->GetHcclFolowStream();
 
-  if (static_cast<size_t>(hccl_stream_num) <= davinci_model->GetHcclFolowStream().size()) {
-    GELOGI("capacity of follow stream is enough to be reused.");
-    ReuseStream(hccl_stream_num, davinci_model);
+  if (main_follow_stream_mapping.find(main_stream_id) != main_follow_stream_mapping.end()) {
+    const std::vector<rtStream_t> &follow_stream_usage = main_follow_stream_mapping.at(main_stream_id);
+    if (static_cast<size_t>(hccl_stream_num) <= follow_stream_usage.size()) {
+      GELOGI("capacity of follow stream is enough to be reused.");
+      for (int64_t i = 0; i < hccl_stream_num; i++) {
+        hccl_stream_list_.emplace_back(follow_stream_usage.at(i));
+      }
+    } else {
+      GELOGI("need to reuse follow stream and create new follow stream.");
+      size_t created_stream_num = follow_stream_usage.size();
+      hccl_stream_list_ = follow_stream_usage;
+      ret = CreateStream(hccl_stream_num - created_stream_num, davinci_model, main_stream_id);
+      if (ret != SUCCESS) {
+        GELOGE(RT_FAILED, "Create hccl stream failed.");
+        return RT_ERROR_TO_GE_STATUS(ret);
+      }
+    }
+    GELOGI("Initialize hccl slave stream success, hcclStreamNum =%ld", hccl_stream_num);
   } else {
-    GELOGI("need to reuse follow stream and create new follow stream.");
-    size_t created_stream_num = davinci_model->GetHcclFolowStream().size();
-    ReuseStream(created_stream_num, davinci_model);
-    ret = CreateStream(hccl_stream_num - created_stream_num, davinci_model);
+    GELOGI("need to create follow stream for %s with new mainstream %ld.", op_desc->GetName().c_str(), main_stream_id);
+    ret = CreateStream(hccl_stream_num, davinci_model, main_stream_id);
     if (ret != SUCCESS) {
       GELOGE(RT_FAILED, "Create hccl stream failed.");
       return RT_ERROR_TO_GE_STATUS(ret);
     }
   }
-  GELOGI("Initialize hccl slave stream success, hcclStreamNum =%ld", hccl_stream_num);
   return SUCCESS;
 }
 
-void HcclTaskInfo::ReuseStream(int64_t stream_num, DavinciModel *davinci_model) {
-  GELOGI("Start to reuse %ld follow stream.", stream_num);
-  int64_t index = 0;
-  for (int64_t i = 0; i < stream_num; i++) {
-    hccl_stream_list_.emplace_back(davinci_model->GetHcclFolowStream().at(index).first);
-    int64_t remain_cap = davinci_model->GetHcclFolowStream().at(index).second - 1;
-    davinci_model->ReuseHcclFollowStream(remain_cap, index);
-  }
-}
-
-Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_model) {
+Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_model, int64_t main_stream_id) {
   GELOGI("Start to create %ld hccl stream.", stream_num);
   for (int64_t i = 0; i < stream_num; ++i) {
     rtStream_t stream = nullptr;
@@ -189,8 +181,7 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     GELOGD("hccl_stream addr is=%p", stream);
-    int64_t remain_cap = max_node_of_hccl_stream_ - 1;
-    davinci_model->CreateHcclFollowStream(stream, remain_cap);
+    davinci_model->SaveHcclFollowStream(main_stream_id, stream);
 
     hccl_stream_list_.emplace_back(stream);
     davinci_model->PushHcclStream(stream);

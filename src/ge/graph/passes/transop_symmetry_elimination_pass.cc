@@ -26,9 +26,7 @@
 #include "types.h"
 
 namespace {
-const int kTransOpOutIndex = 0;
 const std::set<std::string> white_list_op{ge::TRANSPOSED, ge::RESHAPE, ge::REFORMAT, ge::CAST, ge::TRANSDATA};
-std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOAT, ge::DT_BOOL}};
 }  // namespace
 namespace ge {
 Status TransOpSymmetryEliminationPass::Run(NodePtr &node) {
@@ -98,7 +96,7 @@ bool TransOpSymmetryEliminationPass::CheckCanBeEliminated(const ge::NodePtr &src
       return false;
     }
   }
-  return CheckPrecisionLoss(src_node) && DescAreSymmetry(src_node, dst_node);
+  return TransOpUtil::CheckPrecisionLoss(src_node) && DescAreSymmetry(src_node, dst_node);
 }
 
 bool TransOpSymmetryEliminationPass::DescAreSymmetry(const NodePtr &src_node, const NodePtr &dst_node) {
@@ -133,22 +131,6 @@ bool TransOpSymmetryEliminationPass::DescAreSymmetry(const NodePtr &src_node, co
       TypeUtils::FormatToSerialString(dst_output_format).c_str(), formats::ShapeToString(dst_output_shape).c_str());
   }
   return is_symmetry;
-}
-
-bool TransOpSymmetryEliminationPass::CheckPrecisionLoss(const ge::NodePtr &src_node) {
-  auto idx = TransOpUtil::GetTransOpDataIndex(src_node);
-  auto input_desc = src_node->GetOpDesc()->GetInputDesc(idx);
-  auto output_desc = src_node->GetOpDesc()->GetOutputDesc(kTransOpOutIndex);
-  auto src_dtype = input_desc.GetDataType();
-  auto dst_dtype = output_desc.GetDataType();
-  auto iter = precision_loss_transfer_map.find(src_dtype);
-  if (iter != precision_loss_transfer_map.end() && iter->second == dst_dtype) {
-    GELOGW("Node %s transfer data type from %s to %s ,it will cause precision loss. ignore pass.",
-           src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_dtype).c_str(),
-           TypeUtils::DataTypeToSerialString(dst_dtype).c_str());
-    return false;
-  }
-  return true;
 }
 
 int TransOpSymmetryEliminationPass::GetUnknownDimsNum(const GeTensorDesc &node_desc) {
@@ -246,22 +228,30 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
   }
   GELOGI("Trans op symmetry eliminate successfully. Node %s has been removed.", dst_node->GetName().c_str());
   // 6.If T1 has no data out, isolate and deleted it.
-  if (src_node->GetOutDataNodesSize() == 0) {
+  ret = RemoveTransOpWithoutOutput(pre_normal_node, src_node);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(ret, "Isolate removed node: %s, type: %s failed", src_node->GetName().c_str(), src_node->GetType().c_str());
+    return ret;
+  }
+  return SUCCESS;
+}
+Status TransOpSymmetryEliminationPass::RemoveTransOpWithoutOutput(NodePtr &pre_node, NodePtr &trans_node) {
+  if (trans_node->GetOutDataNodesSize() == 0) {
     // 6.1 Copy out control to pre normal node
-    ret = GraphUtils::CopyOutCtrlEdges(src_node, pre_normal_node);
+    Status ret = GraphUtils::CopyOutCtrlEdges(trans_node, pre_node);
     if (ret != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Copy control edge from %s to %s failed.", src_node->GetName().c_str(),
-             dst_node->GetName().c_str());
+      GELOGE(FAILED, "Copy control edge from %s to %s failed.", trans_node->GetName().c_str(),
+             pre_node->GetName().c_str());
       return ret;
     }
     // 6.2 Isolate and delete T1
-    ret = IsolateAndDeleteNode(src_node, {});
+    ret = IsolateAndDeleteNode(trans_node, {});
     if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", src_node->GetName().c_str(),
-             src_node->GetType().c_str());
+      GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", trans_node->GetName().c_str(),
+             trans_node->GetType().c_str());
       return ret;
     }
-    GELOGI("Trans op symmetry eliminate successfully. Node %s has been removed.", src_node->GetName().c_str());
+    GELOGI("Trans op symmetry eliminate successfully. Node %s has been removed.", trans_node->GetName().c_str());
   }
   return SUCCESS;
 }

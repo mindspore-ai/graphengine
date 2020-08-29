@@ -32,11 +32,6 @@ namespace ge {
 Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
 
-  if (AddGlobalStepVariableNode(compute_graph) != SUCCESS) {
-    GELOGE(FAILED, "Add global step variable node fail.");
-    return FAILED;
-  }
-
   if (!PassUtils::IsNeedTrainIteFlowCtrl(compute_graph)) {
     GELOGI("No need FlowCtrl for graph %u", compute_graph->GetGraphID());
     return NOT_CHANGED;
@@ -193,8 +188,9 @@ Status FlowCtrlPass::AddGlobalStepVariableNode(ComputeGraphPtr &compute_graph) {
     GELOGD("Node type %s can't be found in graph %u", NETOUTPUT, compute_graph->GetGraphID());
     return SUCCESS;
   }
-
-  if (compute_graph->GetParentGraph() != nullptr) {  // Global step just add to main graph.
+  // Global step just add to main graph's netoutput node.And the main graph must be known shape
+  if ((compute_graph->GetParentGraph() != nullptr) ||
+      ((compute_graph->GetParentGraph() == nullptr) && (GraphUtils::IsUnknownShapeGraph(compute_graph)))) {
     GELOGD("Subgraph %s no need global step variable.", compute_graph->GetName().c_str());
     return SUCCESS;
   }

@@ -17,9 +17,13 @@
 #include "graph/common/transop_util.h"
 
 #include "common/types.h"
+#include "graph/utils/type_utils.h"
+#include "framework/common/debug/ge_log.h"
 
 namespace {
 const int kInvalidTransopDataIndex = -1;
+const int kTransOpOutIndex = 0;
+std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOAT, ge::DT_BOOL}};
 }  // namespace
 
 namespace ge {
@@ -59,5 +63,21 @@ int TransOpUtil::GetTransOpDataIndex(const std::string &type) {
     return it->second;
   }
   return kInvalidTransopDataIndex;
+}
+
+bool TransOpUtil::CheckPrecisionLoss(const ge::NodePtr &src_node) {
+  auto idx = TransOpUtil::GetTransOpDataIndex(src_node);
+  auto input_desc = src_node->GetOpDesc()->GetInputDesc(idx);
+  auto output_desc = src_node->GetOpDesc()->GetOutputDesc(kTransOpOutIndex);
+  auto src_dtype = input_desc.GetDataType();
+  auto dst_dtype = output_desc.GetDataType();
+  auto iter = precision_loss_transfer_map.find(src_dtype);
+  if (iter != precision_loss_transfer_map.end() && iter->second == dst_dtype) {
+    GELOGW("Node %s transfer data type from %s to %s ,it will cause precision loss. ignore pass.",
+           src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_dtype).c_str(),
+           TypeUtils::DataTypeToSerialString(dst_dtype).c_str());
+    return false;
+  }
+  return true;
 }
 }  // namespace ge

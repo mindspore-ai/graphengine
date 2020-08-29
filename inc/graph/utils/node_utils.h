@@ -20,6 +20,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include "external/graph/operator.h"
 #include "graph/node.h"
 
 namespace ge {
@@ -63,8 +64,11 @@ class NodeUtils {
   static void UnlinkAll(const Node &node);
   static graphStatus UpdatePeerNodeInputDesc(const NodePtr &node_ptr);
 
-  static graphStatus AppendInputAnchor(const NodePtr &node, uint32_t index);
-  static graphStatus RemoveInputAnchor(const NodePtr &node, uint32_t index);
+  static graphStatus AppendInputAnchor(const NodePtr &node, uint32_t num);
+  static graphStatus RemoveInputAnchor(const NodePtr &node, uint32_t num);
+
+  static graphStatus AppendOutputAnchor(const NodePtr &node, uint32_t num);
+  static graphStatus RemoveOutputAnchor(const NodePtr &node, uint32_t num);
 
   static bool IsInNodesEmpty(const Node &node);
   static GeTensorDesc GetOutputDesc(const Node &node, uint32_t index);
@@ -77,6 +81,7 @@ class NodeUtils {
   static graphStatus GetNodeUnknownShapeStatus(const Node &node, bool &is_unknow);
 
   static std::string GetNodeType(const Node &node);
+  static std::string GetNodeType(const NodePtr &node);
 
   static ComputeGraphPtr GetSubgraph(const Node &node, uint32_t index);
   static graphStatus SetSubgraph(Node &node, uint32_t index, const ComputeGraphPtr &subgraph);
@@ -100,7 +105,16 @@ class NodeUtils {
   /// @param [in] node
   /// @return Node
   ///
+  static NodePtr GetParentInput(const Node &node);
   static NodePtr GetParentInput(const NodePtr &node);
+
+  ///
+  /// @brief Get is dynamic shape graph from node.
+  /// @param [in] node
+  /// @return bool
+  ///
+  static bool IsDynamicShape(const Node &node);
+  static bool IsDynamicShape(const NodePtr &node);
 
   ///
   /// @brief Check is varying_input for while node
@@ -115,7 +129,7 @@ class NodeUtils {
   /// @param [out] string
   /// @return bool
   ///
-  static bool GetConstOpType(const NodePtr &in_node, std::string &op_type);
+  static bool GetConstOpType(const NodePtr &node, std::string &type);
 
   ///
   /// @brief Remove node-related subgraphs, including subgraphs of nodes in the subgraph.
@@ -138,9 +152,15 @@ class NodeUtils {
   ///
   static vector<NodePtr> GetSubgraphOutputNodes(const Node &node);
 
-  static NodePtr GetInDataNodeByIndex(const Node &node, int index);
+  static NodePtr GetInDataNodeByIndex(const Node &node, const int index);
 
-  static vector<NodePtr> GetOutDataNodesByIndex(const Node &node, int index);
+  static vector<pair<InDataAnchorPtr, NodePtr>> GetOutDataNodesWithAnchorByIndex(const Node &node, const int index);
+
+  static ge::ConstNodePtr GetNodeFromOperator(const Operator &oprt);
+
+  static graphStatus GetInputConstData(const ConstNodePtr &node_ptr, const string &dst_name, GeTensorPtr &ge_tensor);
+
+  static graphStatus GetInputConstData(const Node &node, const string &dst_name, GeTensorPtr &ge_tensor);
 
  private:
   static std::map<NodePtr, std::vector<uint32_t>> map_send_info_;

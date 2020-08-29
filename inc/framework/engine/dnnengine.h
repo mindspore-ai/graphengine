@@ -31,6 +31,7 @@ enum PriorityEnum {
   COST_1,
   COST_2,
   COST_9 = 9,
+  COST_10 = 10,
 };
 
 struct DNNEngineAttribute {

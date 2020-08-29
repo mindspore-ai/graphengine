@@ -277,7 +277,7 @@ typedef rtError_t (*rtTaskGenCallback)(rtModel_t model, rtTaskInfo_t *taskInfo);
  * @brief set callback for generate model
  * @param [in] callBack   callback function
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtSetTaskGenCallback(rtTaskGenCallback callback);
 
@@ -287,7 +287,7 @@ RTS_API rtError_t rtSetTaskGenCallback(rtTaskGenCallback callback);
  * @param [out]    model   created model
  * @param [in]     flag    reserved
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelCreate(rtModel_t *model, uint32_t flag);
 
@@ -296,7 +296,7 @@ RTS_API rtError_t rtModelCreate(rtModel_t *model, uint32_t flag);
  * @brief destroy model instance
  * @param [in] model   model to destroy
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelDestroy(rtModel_t model);
 
@@ -307,7 +307,7 @@ RTS_API rtError_t rtModelDestroy(rtModel_t model);
  * @param [in] stream  binded stream
  * @param [in] flag    reserved
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelBindStream(rtModel_t model, rtStream_t stream, uint32_t flag);
 
@@ -317,7 +317,7 @@ RTS_API rtError_t rtModelBindStream(rtModel_t model, rtStream_t stream, uint32_t
  * @param [in] model   unbinded model
  * @param [in] stream  unbinded stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelUnbindStream(rtModel_t model, rtStream_t stream);
 
@@ -334,7 +334,7 @@ RTS_API rtError_t rtModelLoadComplete(rtModel_t model);
  * @brief execute model instance
  * @param [in] model   model to execute
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelExecute(rtModel_t model, rtStream_t stream, uint32_t flag);
 
@@ -345,7 +345,7 @@ RTS_API rtError_t rtModelExecute(rtModel_t model, rtStream_t stream, uint32_t fl
  * @param [out] taskid last task id of the model
  * @param [out] streamid last steam id of the model
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelGetTaskId(rtModel_t model, uint32_t *taskid, uint32_t *streamid);
 
@@ -355,7 +355,7 @@ RTS_API rtError_t rtModelGetTaskId(rtModel_t model, uint32_t *taskid, uint32_t *
  * @param [in] model   model to execute
  * @param [in] end graph stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEndGraph(rtModel_t model, rtStream_t stream);
 
@@ -366,7 +366,7 @@ RTS_API rtError_t rtEndGraph(rtModel_t model, rtStream_t stream);
  * @param [in] end graph stream
  * @param [in] flags   AICPU datadump
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEndGraphEx(rtModel_t model, rtStream_t stream, uint32_t flags);
 
@@ -376,7 +376,7 @@ RTS_API rtError_t rtEndGraphEx(rtModel_t model, rtStream_t stream, uint32_t flag
  * @param [in] model   model to execute
  * @param [in] flags EXECUTOR_TS | EXECUTOR_AICPU
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelExecutorSet(rtModel_t model, uint8_t flags);
 
@@ -385,7 +385,7 @@ RTS_API rtError_t rtModelExecutorSet(rtModel_t model, uint8_t flags);
  * @brief abort model
  * @param [in] model   model to abort
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelAbort(rtModel_t model);
 
@@ -396,7 +396,7 @@ RTS_API rtError_t rtModelAbort(rtModel_t model);
  * @param [in] queueId   queueId to bind
  * @param [in] flag
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelBindQueue(rtModel_t model, uint32_t queueId, rtModelQueueFlag_t flag);
 
@@ -406,7 +406,7 @@ RTS_API rtError_t rtModelBindQueue(rtModel_t model, uint32_t queueId, rtModelQue
  * @param [in] model
  * @param [out] modelId   model id
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId);
 
@@ -417,7 +417,7 @@ RTS_API rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId);
  * @param [in] model: model handle
  * @param [in] flag: debug flag
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *addr, uint32_t *streamId, uint32_t *taskId);
 
@@ -426,7 +426,7 @@ rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *addr, uint
  * @brief disable debug for dump overflow exception
  * @param [in] model: model handle
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDebugUnRegister(rtModel_t model);
 

@@ -349,6 +349,14 @@ uint64_t GetCurrentTimestap();
 
 ///
 /// @ingroup domi_common
+/// @brief Obtains the absolute time (timestamp) of the current system.
+/// @return Timestamp, in seconds (US)
+///
+///
+uint32_t GetCurrentSecondTimestap();
+
+///
+/// @ingroup domi_common
 /// @brief Check whether the product of two int64 numbers exceeds the int64 range.
 /// @param [in] a
 /// @param [in] b

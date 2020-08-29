@@ -37,16 +37,17 @@ static const int32_t kGeSizeUint16 = sizeof(uint16_t);
 static const int32_t kGeSizeUint32 = sizeof(uint32_t);
 
 static std::map<ge::DataType, int32_t> CONST_OPDATA_TYPE_SIZE_MAP = {
-    {ge::DT_FLOAT, kGeSizeFloat},   {ge::DT_FLOAT16, kGeSizeHalfFloat}, {ge::DT_INT8, kGeSizeInt8},
-    {ge::DT_INT16, kGeSizeInt16},   {ge::DT_INT32, kGeSizeInt32},        {ge::DT_INT64, kGeSizeInt64},
-    {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},      {ge::DT_UINT32, kGeSizeUint32},
-    {ge::DT_UINT64, kGeSizeUint64}, {ge::DT_DOUBLE, kGeSizeDouble},      {ge::DT_BOOL, kGeSizeBool}};
+  {ge::DT_FLOAT, kGeSizeFloat},   {ge::DT_FLOAT16, kGeSizeHalfFloat}, {ge::DT_INT8, kGeSizeInt8},
+  {ge::DT_INT16, kGeSizeInt16},   {ge::DT_INT32, kGeSizeInt32},       {ge::DT_INT64, kGeSizeInt64},
+  {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},     {ge::DT_UINT32, kGeSizeUint32},
+  {ge::DT_UINT64, kGeSizeUint64}, {ge::DT_DOUBLE, kGeSizeDouble},     {ge::DT_BOOL, kGeSizeBool}};
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY DataTypeUtil {
  public:
   static bool DataTypeTranslatable(const ge::DataType &src_out_data_type, const ge::DataType &dst_in_data_type);
   static const std::vector<ge::DataType> &GetTranslatableDataTypesBySrc(const ge::DataType &src_out_data_type);
   static const std::vector<ge::DataType> &GetTranslatableDataTypesByDst(const ge::DataType &dst_in_data_type);
+  static int32_t GetIrDataType(ge::DataType data_type);
 };
 }  // namespace ge
 #endif  // GE_COMMON_GE_DATATYPE_UTIL_H_

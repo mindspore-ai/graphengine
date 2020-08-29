@@ -35,7 +35,7 @@ extern "C" {
  * @brief create event instance
  * @param [in|out] event   created event
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEventCreate(rtEvent_t *event);
 
@@ -44,7 +44,7 @@ RTS_API rtError_t rtEventCreate(rtEvent_t *event);
  * @brief create event instance with flag
  * @param [in|out] event   created event  flag event op flag
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEventCreateWithFlag(rtEvent_t *event, uint32_t flag);
 
@@ -53,7 +53,7 @@ RTS_API rtError_t rtEventCreateWithFlag(rtEvent_t *event, uint32_t flag);
  * @brief destroy event instance
  * @param [in] event   event to destroy
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEventDestroy(rtEvent_t event);
 
@@ -63,7 +63,7 @@ RTS_API rtError_t rtEventDestroy(rtEvent_t event);
  * @param [int] event   event to record
  * @param [int] stream   stream handle
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEventRecord(rtEvent_t event, rtStream_t stream);
 
@@ -81,7 +81,7 @@ RTS_API rtError_t rtEventReset(rtEvent_t event, rtStream_t stream);
  * @brief wait event to be complete
  * @param [in] event   event to wait
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for error input handle
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtEventSynchronize(rtEvent_t event);
 
@@ -90,7 +90,7 @@ RTS_API rtError_t rtEventSynchronize(rtEvent_t event);
  * @brief Queries an event's status
  * @param [in] event   event to query
  * @return RT_ERROR_NONE for complete
- * @return RT_ERROR_NOT_READY for not complete
+ * @return RT_ERROR_EVENT_NOT_COMPLETE for not complete
  */
 RTS_API rtError_t rtEventQuery(rtEvent_t event);
 
@@ -131,7 +131,6 @@ RTS_API rtError_t rtNameEvent(rtEvent_t event_, const char *name);
  * @param [in|out] notify_   notify to be created
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
  */
 RTS_API rtError_t rtNotifyCreate(int32_t device_id, rtNotify_t *notify_);
 
@@ -152,8 +151,7 @@ RTS_API rtError_t rtNotifyDestroy(rtNotify_t notify_);
  * @param [in] stream_  input stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
- * @return RT_ERROR_INVALID_DEVICE for stream is not in current ctx
+ * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
  */
 RTS_API rtError_t rtNotifyRecord(rtNotify_t notify_, rtStream_t stream_);
 
@@ -164,8 +162,7 @@ RTS_API rtError_t rtNotifyRecord(rtNotify_t notify_, rtStream_t stream_);
  * @param [in] stream_  input stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
- * @return RT_ERROR_INVALID_DEVICE for stream is not in current ctx
+ * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
  */
 RTS_API rtError_t rtNotifyWait(rtNotify_t notify_, rtStream_t stream_);
 
@@ -206,7 +203,6 @@ RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char *name, uint32_t len
  * @param [in] name   identification name
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
  */
 RTS_API rtError_t rtIpcOpenNotify(rtNotify_t *notify, const char *name);
 

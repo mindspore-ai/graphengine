@@ -219,6 +219,39 @@ REG_OP(MaxPool)
     .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(MaxPool)
 
+/**
+*@brief Performs max 3d pooling on the input.
+
+*@par Inputs:
+*x: An NC1HWC0 Tensor. Supported type:float16, float32, double, int8, int16, \n
+int32, int64, uint8, uint16, qint8
+
+*@par Attributes:
+*@li ksize: A required list of int8, int16, int32, or int64 values, \n
+specifying the size of the window for each dimension of the input tensor. \n
+No default value.
+*@li strides: A required list of int8, int16, int32, or int64 values, \n
+specifying the stride of the sliding window for each dimension of  \n
+the input tensor. No default value.
+*@li padding: A required string. No default value.
+*@li pads: A list type of int32. Default value {0, 0, 0, 0, 0, 0}.
+*@li dilation: A list type of int32. Default value {0,0,0}.
+*@li ceil_mode: A ceil mode number of int32 . Default value 0.
+*@li data_format: An optional string. Defaults to "NHWC".
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "x".
+
+*@attention Constraints:
+*@li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
+ * ksize[1] * ksize[2] <= 255.
+*@li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
+ * strides[1] <= 63, strides[0] >= 1, strides[2] <= 63, strides[2] >= 1.
+*@li "padding" is either "SAME" or "VALID".
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator MaxPool3D.
+*/
 REG_OP(MaxPool3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))

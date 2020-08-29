@@ -531,6 +531,19 @@ REG_OP(LeakyReluGrad)
     .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(LeakyReluGrad)
 
+/**
+*@brief Thresholds grad each element of the input Tensor.
+
+*@par Inputs:
+* @li gradients: A Tensor shape and dtype of input gradients. Support float16, float32, int8, uint8, int32.
+* @li features: A Tensor shape and dtype of input features. Support float16, float32, int8, uint8, int32.
+
+*@par Attributes:
+*threshold: A float32 scale value to threshold at.
+
+*@par Outputs:
+*backprops: A Tensor of shape and dtype of output backprops, should be same shape and type as inputs.
+*/
 REG_OP(ThresholdGradV2D)
     .INPUT(gradients, TensorType({DT_INT32, DT_FLOAT16}))
     .INPUT(features, TensorType({DT_INT32, DT_FLOAT16}))
@@ -538,12 +551,44 @@ REG_OP(ThresholdGradV2D)
     .REQUIRED_ATTR(threshold, Float)
     .OP_END_FACTORY_REG(ThresholdGradV2D)
 
+/**
+*@brief Thresholds each element of the input Tensor y = (x > threshold) ? x : value.
+
+*@par Inputs:
+*x: A Tensor dtype of float16, float32, int8, uint8, int32.
+
+*@par Attributes:
+*@li threshold: A float32 scale value to threshold at.
+*@li value: A float32 scale value to replace with.
+
+*@par Outputs:
+*y: A Tensor of shape and dtype of output, should be same shape and type as input.
+*/
 REG_OP(ThresholdV2D)
     .INPUT(x, TensorType::RealNumberType())
     .OUTPUT(y, TensorType::RealNumberType())
     .REQUIRED_ATTR(threshold, Float)
     .REQUIRED_ATTR(value, Float)
     .OP_END_FACTORY_REG(ThresholdV2D)
+
+/**
+*@brief: Computes hyperbolic tangent of "x" element-wise.
+
+*@par Inputs:
+*One input:
+*x: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+* Compatible with TensorFlow operator Mish.
+*/
+
+REG_OP(Mish)
+    .INPUT(x, TensorType({ DT_FLOAT,DT_FLOAT16 }))
+    .OUTPUT(y, TensorType({ DT_FLOAT,DT_FLOAT16 }))
+    .OP_END_FACTORY_REG(Mish)
 
 } // namespace ge
 

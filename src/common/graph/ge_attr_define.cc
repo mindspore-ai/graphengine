@@ -830,6 +830,7 @@ const std::string REF_VAR_PRE_PEER_OUT_INDEX = "ref_var_pre_peer_out_index";
 
 // Assign
 const std::string ASSIGN_VALIDATE_SHAPE = "validate_shape";
+const std::string ASSIGN_VAR_NAME = "_assign_var_name";
 
 //  space2bacth batch2space
 const std::string BATCH_SPACE_ATTR_BLOCK = "block";
@@ -931,7 +932,6 @@ const std::string ATTR_NAME_NEXT_ITERATION = "_next_iteration_node";
 
 // Function Op
 const std::string ATTR_NAME_PARENT_NODE_INDEX = "_parent_node_index";
-const std::string ATTR_NAME_PARENT_CONST_TYPE = "_parent_const_type";
 
 // Used for mark the active node is for loop, type:bool
 const std::string ATTR_NAME_IS_LOOP_ACTIVE = "is_loop_active";
@@ -941,6 +941,8 @@ const std::string ATTR_NAME_MEMORY_TYPE_INPUT = "memory_type_input";
 const std::string ATTR_NAME_MEMORY_TYPE_OUTPUT = "memory_type_output";
 
 const std::string ATTR_NAME_MEMORY_TYPE_WORKSPACE = "memory_type_workspace";
+
+const std::string ATTR_NAME_MEMORY_TYPE_RANGE = "_memory_type_range";
 
 const std::string MODEL_ATTR_SESSION_ID = "session_id";
 
@@ -990,6 +992,8 @@ const std::string ATTR_INSERT_BY_MBATCH = "mbatch-inserted-node";
 const std::string ATTR_MBATCH_ORIGIN_INPUT_DIMS = "_mbatch_origin_input_dims";
 
 const std::string ATTR_DYNAMIC_TYPE = "mbatch_dynamic_type";
+
+const std::string ATTR_USER_DESIGNEATE_SHAPE_ORDER = "user_designate_shape_order";
 
 // For inserted op
 const std::string ATTR_INSERTED_BY_GE = "_inserted_by_ge";

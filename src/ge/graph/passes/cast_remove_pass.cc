@@ -50,6 +50,10 @@ Status CastRemovePass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
 
+  if (!CheckPrecisionLoss(nodes_to_fuse)) {
+    return SUCCESS;
+  }
+
   DataType type = DT_UNDEFINED;
   if (!HasSameDataType(op_desc, end_op_desc, type)) {
     return SUCCESS;
@@ -58,6 +62,15 @@ Status CastRemovePass::Run(NodePtr &node) {
     return FAILED;
   }
   return SUCCESS;
+}
+
+bool CastRemovePass::CheckPrecisionLoss(const std::vector<NodePtr> &nodes_to_fuse) {
+  for (const NodePtr &node : nodes_to_fuse) {
+    if (!TransOpUtil::CheckPrecisionLoss(node)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool CastRemovePass::HasSameDataType(OpDescPtr &begin_op_desc, OpDescPtr &end_op_desc, DataType &type) const {
@@ -81,7 +94,7 @@ bool CastRemovePass::HasSameDataType(OpDescPtr &begin_op_desc, OpDescPtr &end_op
 // op1->TransData->TransposeD->TransData->op2
 Status CastRemovePass::RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to_fuse) {
   string cast_name;
-  for (NodePtr node : nodes_to_fuse) {
+  for (NodePtr &node : nodes_to_fuse) {
     if (node->GetType() == CAST) {
       GELOGI("CastRemovePass, remove Cast %s.", node->GetName().c_str());
       cast_name = node->GetName();

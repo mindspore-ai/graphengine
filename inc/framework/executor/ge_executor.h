@@ -135,6 +135,15 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ///
   ge::Status GetCombinedDynamicDims(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info);
 
+  ///
+  /// @ingroup ge
+  /// @brief Get user designeate shape order
+  /// @param [in] model_id
+  /// @param [out] user_designate_shape_order
+  /// @return execute result
+  ///
+  ge::Status GetUserDesignateShapeOrder(uint32_t model_id, std::vector<std::string> &user_designate_shape_order);
+
   ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
   ///
@@ -161,6 +170,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
                        std::shared_ptr<ge::ModelListener> listener);
 
   ge::Status CommandHandle(const ge::Command &command);
+
+  ge::Status SetDump(const DumpConfig &dump_config);
 
   ///
   /// @ingroup ge
@@ -261,6 +272,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
   ge::Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,
                                        std::vector<InputOutputDims> &output_dims);
+  ge::Status GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info);
 
  private:
   static bool isInit_;

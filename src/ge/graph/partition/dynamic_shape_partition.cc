@@ -139,6 +139,7 @@ std::string DynamicShapePartitioner::DebugString() const {
   size_t known = 0;
   size_t data = 0;
   size_t netoutput = 0;
+  size_t is_inputnode = 0;
   std::stringstream ss;
   ss << "All unknown shape nodes:" << std::endl;
   for (const auto &node : unknown_shape_nodes_) {
@@ -153,10 +154,12 @@ std::string DynamicShapePartitioner::DebugString() const {
       data++;
     } else if (cluster->IsNetOutput()) {
       netoutput++;
+    } else if (cluster->IsInputNode()) {
+      is_inputnode++;
     }
   }
   ss << "All clusters:" << unique_clusters_.size() << ", data:" << data << ", known:" << known
-     << ", unknown:" << unknown << ", netoutput:" << netoutput << std::endl;
+     << ", unknown:" << unknown << ", netoutput:" << netoutput << ", is_inputnode:" << is_inputnode << std::endl;
   for (const auto &cluster : unique_clusters_) {
     ss << "  " << cluster->DebugString() << std::endl;
   }
@@ -195,8 +198,11 @@ Status DynamicShapePartitioner::InitClusters() {
   size_t rank = 0;
   for (const auto &node : graph->GetDirectNode()) {
     Cluster::Type type = Cluster::DATA;
+    bool is_input = ((node->GetType() == CONSTANT) || (node->GetType() == CONSTANTOP)) && node->GetInNodes().empty();
     if (node->GetType() == DATA) {
       type = Cluster::DATA;
+    } else if (is_input) {
+      type = Cluster::INPUT_NODE;
     } else if (node->GetType() == NETOUTPUT) {
       type = Cluster::NETOUTPUT;
     } else if (unknown_shape_nodes_.count(node) > 0) {
@@ -246,7 +252,7 @@ Status DynamicShapePartitioner::TopologicalSortClusters() {
     auto cluster = ready_clusters.front();
     ready_clusters.pop();
     cluster->UpdateRank(rank++);
-    if (cluster->IsKnownShape()) {
+    if (cluster->IsKnownShape() || cluster->IsInputNode()) {
       ordered_cluster_.push_back(cluster);
     }
     for (const auto &out_cluster : cluster->Outputs()) {
@@ -278,7 +284,7 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
 }
 }  // namespace
 
-Status DynamicShapePartitioner::MergeClusters() {
+void DynamicShapePartitioner::MergeClustersUnknownShape() {
   // Merge unknown shape clusters
   for (const auto &cluster : ordered_cluster_) {
     for (const auto &in_cluster : cluster->Inputs()) {
@@ -295,8 +301,9 @@ Status DynamicShapePartitioner::MergeClusters() {
       }
     }
   }
+}
 
-  REQUIRE_SUCCESS(TopologicalSortClusters(), "Failed topological sort clusters after merge unknown shape clusters.");
+void DynamicShapePartitioner::MergeClustersKnownShape() {
   // Merge known shape clusters
   for (const auto &cluster : ordered_cluster_) {
     if (cluster->IsRefVariable() && cluster->Inputs().size() == 1) {
@@ -318,6 +325,32 @@ Status DynamicShapePartitioner::MergeClusters() {
       }
     }
   }
+}
+
+void DynamicShapePartitioner::MergeClustersInputData() {
+  // Merge input clusters
+  std::shared_ptr<Cluster> cluster_pre = nullptr;
+  for (const auto &cluster : ordered_cluster_) {
+    if (!cluster->IsInputNode()) {
+      continue;
+    }
+    if (cluster_pre != nullptr) {
+      cluster_pre->Merge(cluster);
+    } else {
+      cluster_pre = cluster;
+    }
+    GELOGD("Success merge input node cluster from %lu to %lu.", cluster->Id(), cluster->Id());
+    for (const auto &node : cluster->Nodes()) {
+      node_2_cluster_[node] = cluster_pre;
+    }
+  }
+}
+
+Status DynamicShapePartitioner::MergeClusters() {
+  MergeClustersUnknownShape();
+  REQUIRE_SUCCESS(TopologicalSortClusters(), "Failed topological sort clusters after merge unknown shape clusters.");
+  MergeClustersKnownShape();
+  MergeClustersInputData();
   return SUCCESS;
 }
 
@@ -448,6 +481,9 @@ std::string Cluster::DebugString() const {
     case DATA:
       ss << "DATA";
       break;
+    case INPUT_NODE:
+      ss << "INPUT_NODE";
+      break;
     case NETOUTPUT:
       ss << "NETOUTPUT";
       break;
@@ -483,6 +519,7 @@ bool Cluster::IsData() const { return type_ == DATA; };
 bool Cluster::IsKnownShape() const { return type_ == KNOWN_SHAPE; };
 bool Cluster::IsUnknownShape() const { return type_ == UNKNOWN_SHAPE; };
 bool Cluster::IsNetOutput() const { return type_ == NETOUTPUT; };
+bool Cluster::IsInputNode() const { return type_ == INPUT_NODE; };
 bool Cluster::IsRefVariable() const {
   if ((nodes_.size() == 1) && ((nodes_[0]->GetType() == VARIABLE) || (nodes_[0]->GetType() == VARIABLEV2))) {
     std::string ref_variable_name;
@@ -492,27 +529,37 @@ bool Cluster::IsRefVariable() const {
   return false;
 }
 void Cluster::AddInput(ClusterPtr in) {
-  in_clusters_.insert(in);
-  in->out_clusters_.insert(shared_from_this());
+  if (std::find(in_clusters_.begin(), in_clusters_.end(), in) != in_clusters_.end()) return;
+  in_clusters_.insert(in_clusters_.end(), in);
+  if (std::find(in->out_clusters_.begin(), in->out_clusters_.end(), shared_from_this()) != in->out_clusters_.end())
+    return;
+  in->out_clusters_.insert(in->out_clusters_.end(), shared_from_this());
 };
 void Cluster::RemoveInput(ClusterPtr in) {
-  in_clusters_.erase(in);
-  in->out_clusters_.erase(shared_from_this());
+  in_clusters_.erase(std::remove(in_clusters_.begin(), in_clusters_.end(), in), in_clusters_.end());
+  in->out_clusters_.erase(std::remove(in->out_clusters_.begin(), in->out_clusters_.end(), shared_from_this()),
+                          in->out_clusters_.end());
 };
 void Cluster::AddOutput(ClusterPtr out) {
-  out_clusters_.insert(out);
-  out->in_clusters_.insert(shared_from_this());
+  if (std::find(out_clusters_.begin(), out_clusters_.end(), out) != out_clusters_.end()) return;
+  out_clusters_.insert(out_clusters_.end(), out);
+  if (std::find(out->in_clusters_.begin(), out->in_clusters_.end(), shared_from_this()) != out->in_clusters_.end())
+    return;
+  out->in_clusters_.insert(out->in_clusters_.end(), shared_from_this());
 };
 void Cluster::RemoveOutput(ClusterPtr out) {
-  out_clusters_.erase(out);
-  out->in_clusters_.erase(shared_from_this());
+  out_clusters_.erase(std::remove(out_clusters_.begin(), out_clusters_.end(), out), out_clusters_.end());
+  out->in_clusters_.erase(std::remove(out->in_clusters_.begin(), out->in_clusters_.end(), shared_from_this()),
+                          out->in_clusters_.end());
 };
 void Cluster::Merge(ClusterPtr other) {
   nodes_.insert(nodes_.end(), other->nodes_.begin(), other->nodes_.end());
-  other->in_clusters_.erase(shared_from_this());
-  other->out_clusters_.erase(shared_from_this());
-  in_clusters_.erase(other);
-  out_clusters_.erase(other);
+  other->in_clusters_.erase(std::remove(other->in_clusters_.begin(), other->in_clusters_.end(), shared_from_this()),
+                            other->in_clusters_.end());
+  other->out_clusters_.erase(std::remove(other->out_clusters_.begin(), other->out_clusters_.end(), shared_from_this()),
+                             other->out_clusters_.end());
+  in_clusters_.erase(std::remove(in_clusters_.begin(), in_clusters_.end(), other), in_clusters_.end());
+  out_clusters_.erase(std::remove(out_clusters_.begin(), out_clusters_.end(), other), out_clusters_.end());
   auto in_clusters = other->in_clusters_;
   for (const auto &cluster : in_clusters) {
     cluster->RemoveOutput(other);
@@ -555,7 +602,8 @@ std::vector<ClusterPtr> Cluster::MergeAllPathFrom(ClusterPtr other) {
   std::unordered_set<ClusterPtr> backward_reached_clusters;
   std::vector<ClusterPtr> path_clusters;
 
-  if (other->out_clusters_.count(shared_from_this()) == 0) {
+  if (std::find(other->out_clusters_.begin(), other->out_clusters_.end(), shared_from_this()) ==
+      other->out_clusters_.end()) {
     return path_clusters;
   }
   path_clusters.push_back(other);
@@ -590,8 +638,8 @@ std::vector<ClusterPtr> Cluster::MergeAllPathFrom(ClusterPtr other) {
   }
   return path_clusters;
 }
-std::unordered_set<ClusterPtr> Cluster::Inputs() const { return in_clusters_; };
-std::unordered_set<ClusterPtr> Cluster::Outputs() const { return out_clusters_; };
+std::vector<ClusterPtr> Cluster::Inputs() const { return in_clusters_; };
+std::vector<ClusterPtr> Cluster::Outputs() const { return out_clusters_; };
 std::vector<NodePtr> Cluster::Nodes() const { return nodes_; };
 
 void Cluster::AddFrameInput(InDataAnchorPtr anchor) {
@@ -617,7 +665,7 @@ InControlAnchorPtr Cluster::GetFrameInControlAnchor() { return partition_node_->
 OutControlAnchorPtr Cluster::GetFrameOutControlAnchor() { return partition_node_->GetOutControlAnchor(); };
 
 Status Cluster::BuildFrame() {
-  if (IsUnknownShape() || IsKnownShape()) {
+  if (IsUnknownShape() || IsKnownShape() || IsInputNode()) {
     return BuildPartitionFrame();
   } else {
     auto node = nodes_.front();
@@ -653,8 +701,10 @@ Status Cluster::BuildFrame() {
 Status Cluster::BuildPartitionFrame() {
   auto graph = partitioner_->root_graph_;
   bool is_unknown_shape = IsUnknownShape();
-  std::string sub_graph_name =
-    graph->GetName() + "_sub_" + std::to_string(unique_id_) + (is_unknown_shape ? "_unknow" : "_know");
+  bool is_input = IsInputNode();
+  string known_name = (is_unknown_shape ? "_unknow" : "_know");
+  string sub_graph_name_patten = (is_input ? "_input" : known_name);
+  std::string sub_graph_name = graph->GetName() + "_sub_" + std::to_string(unique_id_) + sub_graph_name_patten;
   subgraph_ = MakeShared<ComputeGraph>(sub_graph_name);
   REQUIRE_NOT_NULL(subgraph_, "Failed new memory for subgraph.");
   auto partition_op = MakeShared<OpDesc>("PartitionedCall_" + std::to_string(unique_id_++), "PartitionedCall");

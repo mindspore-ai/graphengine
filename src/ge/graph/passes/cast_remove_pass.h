@@ -26,6 +26,7 @@ class CastRemovePass : public BaseNodePass {
   Status Run(NodePtr &node) override;
 
  private:
+  bool CheckPrecisionLoss(const std::vector<NodePtr> &nodes_to_fuse);
   bool HasSameDataType(OpDescPtr &begin_op_desc, OpDescPtr &end_op_desc, DataType &type) const;
   Status RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to_fuse);
   NodePtr GetTheEndNode(NodePtr begin_node, std::vector<NodePtr> &nodes_to_fuse);

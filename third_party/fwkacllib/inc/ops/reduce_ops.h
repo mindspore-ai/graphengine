@@ -173,8 +173,8 @@ REG_OP(BNInfer)
 *@brief Performs reduced batch normalization. For some scene which don't contain
 assignmoving average.
 
-*@par Inputs:\n
-* Five inputs, including: (NC1HWC0 supported)
+*@par Inputs:
+*Five inputs, including: (NC1HWC0 supported)
 *@li x: A 5D Tensor of type float16 or float32.
 *@li sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
 *@li square_sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
@@ -184,15 +184,15 @@ assignmoving average.
 *@par Attributes:
 *epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero.
 
-*@par Outputs:\n
-* Three outputs, including: (NC1HWC0 supported)
+*@par Outputs:
+*Three outputs, including: (NC1HWC0 supported)
 *@li y: A 5D Tensor of type float16 or float32, for normalized "x".
 *@li batch_mean: A 5D Tensor of type float32, for the mean of "x".
 *@li batch_variance: A 5D Tensor of type float32, for the variance of "x".
 
 *@attention Constraints:
-*@li This operator is used in conjunction with BNTrainingReduce.
-*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*This operator is used in conjunction with BNTrainingReduce. \n
+For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
 */
 REG_OP(BNTrainingUpdateV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -206,6 +206,33 @@ REG_OP(BNTrainingUpdateV2)
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingUpdateV2)
 
+/**
+*@brief Performs reduced batch normalization v3. For some scene which don't contain
+assignmoving average.
+
+*@par Inputs:
+* Five inputs, including: (NC1HWC0 supported)
+*@li x: A 5D Tensor of type float16 or float32.
+*@li sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
+*@li square_sum: A 5D Tensor of type float32 for the output of operator BNTrainingReduce.
+*@li scale: A 5D Tensor of type float32, for the scaling factor.
+*@li offset: A 5D Tensor of type float32, for the scaling offset.
+
+*@par Attributes:
+*epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero.
+
+*@par Outputs:
+* Three outputs, including: (NC1HWC0 supported)
+*@li y: A 5D Tensor of type float16 or float32, for normalized "x".
+*@li batch_mean: A 5D Tensor of type float32, for the mean of "x".
+*@li batch_variance: A 5D Tensor of type float32, for the variance of "x".
+*@li reserve_1: A 5D Tensor of type float32, for the mean of batch "x". Has the same type as batch_mean.
+*@li reserve_2: A 5D Tensor of type float32, for the variance of batch "x". Has the same type as batch_mean.
+
+*@attention Constraints:
+*@li This operator is used in conjunction with BNTrainingReduce.
+*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*/
 REG_OP(BNTrainingUpdateV3)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(sum, TensorType({DT_FLOAT}))

@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-#include "common/fmk_error_codes.h"
+#include "framework/common/fmk_error_codes.h"
 #include "ge/ge_api_error_codes.h"
 #include "external/graph/types.h"
 #include "external/ge/ge_api_types.h"
@@ -49,6 +49,7 @@ enum OpEngineType {
 };
 
 const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
+const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 
 // Data cache, including data address and length
 struct DataBuffer {
@@ -128,6 +129,7 @@ struct OriginInputInfo {
 
 // The structure of AIPP info
 struct AippConfigInfo {
+  int8_t aipp_mode;
   int8_t input_format;
   int32_t src_image_size_w;
   int32_t src_image_size_h;
@@ -175,6 +177,9 @@ struct AippConfigInfo {
   float var_reci_chn_1;
   float var_reci_chn_2;
   float var_reci_chn_3;
+  int8_t support_rotation;
+  uint32_t related_input_rank;
+  uint32_t max_src_image_size;
 };
 
 // The structure of offline Modeldata
@@ -249,6 +254,32 @@ struct ComputeGraphDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
+};
+
+struct OpDescInfo {
+  std::string op_name;
+  uint32_t task_id;
+  uint32_t stream_id;
+  std::vector<Format> input_format;
+  std::vector<std::vector<int64_t>> input_shape;
+  std::vector<DataType> input_data_type;
+  std::vector<void *> input_addrs;
+  std::vector<Format> output_format;
+  std::vector<std::vector<int64_t>> output_shape;
+  std::vector<DataType> output_data_type;
+  std::vector<void *> output_addrs;
+};
+struct ModelDumpConfig {
+  std::string model_name;
+  std::vector<std::string> layers;
+};
+
+struct DumpConfig {
+  std::string dump_path;
+  std::string dump_mode;
+  std::string dump_status;
+  std::string dump_op_switch;
+  std::vector<ModelDumpConfig> dump_list;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_GE_TYPES_H_

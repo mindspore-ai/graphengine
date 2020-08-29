@@ -165,6 +165,7 @@ Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
 }
 
 Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AicpuNodeTaskBaseExecuteAsync] Start");
   GELOGI("Node[%s] execute async start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
 
   GE_CHK_STATUS_RET(LaunchTask(context));
@@ -187,6 +188,7 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
   GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(callback));
 
   GELOGI("Node[%s] execute async end.", node_name_.c_str());
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AicpuNodeTaskBaseExecuteAsync] End");
   return SUCCESS;
 }
 
@@ -557,7 +559,9 @@ Status AicpuTfNodeTask::UpdateIoAddr(TaskContext &context) {
 Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
   GELOGI("Node[%s] launch task start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
   uint32_t flag = RT_KERNEL_DEFAULT;
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] Start");
   GE_CHK_RT_RET(rtKernelLaunchEx(kernel_buf_->GetData(), kernel_buf_->GetSize(), flag, context.GetStream()));
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] End");
   GELOGI("Node[%s] launch end.", node_name_.c_str());
   return SUCCESS;
 }
@@ -704,7 +708,10 @@ Status AicpuNodeTask::TaskCallback(TaskContext &context) {
 
 Status AiCpuNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   // malloc HBM memory at Init, here just update them
-  return task.UpdateArgs(context);
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCpuNodeExecutorPrepareTask] Start");
+  Status status = task.UpdateArgs(context);
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCpuNodeExecutorPrepareTask] End");
+  return status;
 }
 
 Status AiCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,

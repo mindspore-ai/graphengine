@@ -87,6 +87,7 @@ class SingleOpModel {
   std::vector<size_t> output_sizes_;
   std::vector<OpDescPtr> data_ops_;
   OpDescPtr netoutput_op_;
+  bool has_weight_ = false;
 };
 }  // namespace ge
 

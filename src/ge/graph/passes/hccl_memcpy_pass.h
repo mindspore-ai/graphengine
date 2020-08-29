@@ -30,7 +30,7 @@ class HcclMemcpyPass : public GraphPass {
   Status ClearStatus() override;
 
  private:
-  NodePtr CreateMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor);
+  NodePtr CreateIdentityNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor);
 
   std::string CheckDuplicateName(const std::string &node_name);
 

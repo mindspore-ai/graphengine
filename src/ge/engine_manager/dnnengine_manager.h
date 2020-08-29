@@ -76,6 +76,7 @@ class DNNEngineManager {
   Status ParserEngineMessage(const json engines_json, const string &scheduler_mark,
                              map<string, EngineConfPtr> &engines);
   Status CheckJsonFile();
+  std::string GetHostCpuEngineName(const std::vector<OpInfo> &op_infos, const OpDescPtr &op_desc) const;
   PluginManager plugin_mgr_;
   std::map<std::string, DNNEnginePtr> engines_map_;
   std::map<std::string, ge::DNNEngineAttribute> engines_attrs_map_;

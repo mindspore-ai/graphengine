@@ -47,6 +47,13 @@ class InnerSession {
 
   Status Finalize();
 
+  Status GetAllVariables(std::map<std::string, GeTensorDesc> &all_variables);
+
+  Status GenCheckPointGraph(const std::map<std::string, GeTensorDesc> &all_variables, Graph &graph);
+
+  Status SaveVariables(const Graph &graph, const std::vector<std::string> &var_names,
+                       const std::vector<Tensor> &outputs, std::vector<Tensor> &var_values);
+
   Status GetVariable(const std::string &name, Tensor &val);
 
   Status RegisterCallBackFunc(

@@ -23,6 +23,7 @@
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
 #include "common/profiling/profiling_manager.h"
+#include "common/dump/dump_manager.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
@@ -35,6 +36,8 @@
 #include "graph/utils/graph_utils.h"
 #include "mmpa/mmpa_api.h"
 #include "single_op/single_op_manager.h"
+#include "graph/manager/graph_var_manager.h"
+#include "graph/load/new_model_manager/davinci_model.h"
 
 using std::string;
 using std::vector;
@@ -348,18 +351,46 @@ Status GeExecutor::SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, u
   }
 
   vector<uint64_t> cur_dynamic_dims;
-  if (GetCurDynamicDims(model_id, dynamic_dims, cur_dynamic_dims) != SUCCESS) {
-    GELOGE(FAILED, "GetCurDynamicDims failed.");
+  std::vector<ge::TensorDesc> input_desc;
+  std::vector<ge::TensorDesc> output_desc;
+  ret = GetModelDescInfo(model_id, input_desc, output_desc);
+  if (ret != ge::SUCCESS) {
+    GELOGE(FAILED, "GetModelDescInfo failed.");
     return FAILED;
   }
-
+  vector<string> user_designate_shape_order;
+  vector<int64_t> all_data_dims;
+  ret = GetUserDesignateShapeOrder(model_id, user_designate_shape_order);
+  if (ret != ge::SUCCESS) {
+    GELOGE(FAILED, "GetUserDesignateShapeOrder failed.");
+    return FAILED;
+  }
+  for (auto &data_name : user_designate_shape_order) {
+    for (size_t j = 0; j < input_desc.size(); ++j) {
+      if (input_desc.at(j).GetName() == data_name) {
+        for (auto dim : input_desc.at(j).GetShape().GetDims()) {
+          all_data_dims.push_back(dim);
+        }
+        break;
+      }
+    }
+  }
+  if (dynamic_dims.size() != all_data_dims.size()) {
+    GELOGE(FAILED, "Dynamic input size [%lu] is not equal with all data dims size [%lu]!", dynamic_dims.size(),
+           all_data_dims.size());
+    return FAILED;
+  }
+  for (std::size_t i = 0; i < all_data_dims.size(); ++i) {
+    if (all_data_dims[i] < 0) {
+      cur_dynamic_dims.push_back(dynamic_dims[i]);
+    }
+  }
   size_t dynamic_dim_num = cur_dynamic_dims.size();
   uint64_t dynamic_input_size = static_cast<uint64_t>(dynamic_dim_num * sizeof(uint64_t));
   if (length < dynamic_input_size) {
     GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
     return FAILED;
   }
-
   for (uint32_t i = 0; i < dynamic_dim_num; ++i) {
     // Memcpy dynamic dim[i] from host to device
     if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + sizeof(uint64_t) * i),
@@ -549,6 +580,12 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed. model id: %u", model_id);
     return FAILED;
   }
+
+  std::shared_ptr<DavinciModel> davinci_model = ModelManager::GetInstance()->GetModel(model_id);
+  if (davinci_model != nullptr) {
+    uint64_t session_id = davinci_model->GetSessionId();
+    VarManagerPool::Instance().RemoveVarManager(session_id);
+  }
   return GraphLoader::UnloadModel(model_id);
 }
 
@@ -660,6 +697,30 @@ Status GeExecutor::GetCombinedDynamicDims(uint32_t model_id, vector<vector<int64
 
 ///
 /// @ingroup ge
+/// @brief Get user designeate shape order
+/// @param [in] model_id
+/// @param [out] user_designate_shape_order
+/// @return execute result
+///
+Status GeExecutor::GetUserDesignateShapeOrder(uint32_t model_id, vector<string> &user_designate_shape_order) {
+  GELOGI("Begin to get user designate shape info.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
+    return GE_EXEC_NOT_INIT;
+  }
+
+  Status ret = GraphExecutor::GetUserDesignateShapeOrder(model_id, user_designate_shape_order);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetUserDesignateShapeOrder failed.");
+    return ret;
+  }
+
+  GELOGI("Get user designate shape order succ.");
+  return SUCCESS;
+}
+
+///
+/// @ingroup ge
 /// @brief Get AIPP input format
 /// @param [in] model_id
 /// @param [in] index
@@ -674,7 +735,7 @@ Status GeExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo
   }
   Status ret = GraphExecutor::GetAIPPInfo(model_id, index, aipp_info);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GetAIPPInfo failed.");
+    GELOGW("GetAIPPInfo is not success.");
     return ret;
   }
   GELOGI("GetAIPPInfo succ.");
@@ -1018,6 +1079,28 @@ Status GeExecutor::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index,
   }
 
   GELOGI("GetAllAippInputOutputDims succ.");
+  return SUCCESS;
+}
+
+Status GeExecutor::GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) {
+  GELOGI("Begin to GetOpDescInfo.");
+  Status ret = GraphExecutor::GetOpDescInfo(device_id, stream_id, task_id, op_desc_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetOpDescInfo failed.");
+    return ret;
+  }
+  GELOGI("GetOpDescInfo succ.");
+  return SUCCESS;
+}
+
+Status GeExecutor::SetDump(const DumpConfig &dump_config) {
+  GELOGI("Start to set dump config");
+  auto ret = DumpManager::GetInstance().SetDumpConf(dump_config);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Set dump conf failed");
+    return ret;
+  }
+  GELOGI("Set dump config succ.");
   return SUCCESS;
 }
 }  // namespace ge

@@ -17,12 +17,85 @@
 #include "node_item.h"
 #include <sstream>
 #include "common/debug/log.h"
+#include "graph/common/omg_util.h"
+#include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
 namespace hybrid {
+namespace {
+const char *const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
+const char *const kNodeTypeRetVal = "_RetVal";
+
+Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
+  uint32_t parent_index = 0;
+  if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+    GELOGE(FAILED, "[%s] Failed to get attr [%s]", op_desc.GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    return FAILED;
+  }
+
+  for (auto &node_and_anchor : node.GetOutDataNodesAndAnchors()) {
+    auto dst_op_desc = node_and_anchor.first->GetOpDesc();
+    GE_CHECK_NOTNULL(dst_op_desc);
+    auto in_idx = node_and_anchor.second->GetIdx();
+    auto tensor_desc = dst_op_desc->MutableInputDesc(in_idx);
+    fused_subgraph.input_mapping[parent_index].emplace_back(tensor_desc);
+    GELOGD("Input[%u] mapped to [%s:%u]", parent_index, dst_op_desc->GetName().c_str(), in_idx);
+  }
+
+  return SUCCESS;
+}
+
+Status ParseOutputMapping(OpDescPtr op_desc, FusedSubgraph &fused_subgraph) {
+  uint32_t parent_index = 0;
+  if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+    GELOGE(FAILED, "[%s] Failed to get attr [%s]", op_desc->GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    return FAILED;
+  }
+
+  fused_subgraph.output_mapping.emplace(parent_index, op_desc);
+  return SUCCESS;
+}
+
+Status ParseFusedSubgraph(NodeItem &node_item) {
+  if (!node_item.op_desc->HasAttr(kAttrNameOriginalFusionGraph)) {
+    return SUCCESS;
+  }
+
+  GELOGI("[%s] Start to parse fused subgraph.", node_item.node_name.c_str());
+  auto fused_subgraph = std::unique_ptr<FusedSubgraph>(new (std::nothrow) FusedSubgraph());
+  GE_CHECK_NOTNULL(fused_subgraph);
+
+  ComputeGraphPtr fused_graph;
+  (void)AttrUtils::GetGraph(*node_item.op_desc, kAttrNameOriginalFusionGraph, fused_graph);
+  GE_CHECK_NOTNULL(fused_graph);
+
+  fused_graph->SetGraphUnknownFlag(true);
+  fused_subgraph->graph = fused_graph;
+  GE_CHK_GRAPH_STATUS_RET(fused_graph->TopologicalSorting());
+
+  for (auto &node : fused_graph->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node);
+    auto op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    std::string node_type;
+    GE_CHK_STATUS_RET(GetOriginalType(node, node_type));
+    if (node_type == DATA) {
+      GE_CHK_GRAPH_STATUS_RET(ParseInputMapping(*node, *op_desc, *fused_subgraph));
+    } else if (node_type == kNodeTypeRetVal) {
+      GE_CHK_GRAPH_STATUS_RET(ParseOutputMapping(op_desc, *fused_subgraph));
+    } else {
+      fused_subgraph->nodes.emplace_back(node);
+    }
+  }
+
+  node_item.fused_subgraph = std::move(fused_subgraph);
+  GELOGI("[%s] Done parsing fused subgraph successfully.", node_item.NodeName().c_str());
+  return SUCCESS;
+}
+}  // namespace
 NodeItem::NodeItem(NodePtr node) : node(std::move(node)) {
   this->op_desc = this->node->GetOpDesc().get();
   this->node_id = this->op_desc->GetId();
@@ -39,7 +112,7 @@ Status NodeItem::Init() {
 
   GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic), "[%s] Failed to get shape status.",
                     node->GetName().c_str());
-
+  GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   if (is_dynamic) {
     for (int i = 0; i < num_inputs; ++i) {
       const auto &input_desc = op_desc->MutableInputDesc(i);

@@ -89,7 +89,7 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
 /// @param [in] ge::OutDataAnchorPtr in_node
 /// @return ge::NodePtr
 ///
-NodePtr HcclMemcpyPass::CreateMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+NodePtr HcclMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
   GE_IF_BOOL_EXEC(graph == nullptr, return nullptr);
   NodePtr pre_node = out_data_anchor->GetOwnerNode();
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
@@ -98,30 +98,32 @@ NodePtr HcclMemcpyPass::CreateMemcpyNode(const ComputeGraphPtr &graph, const Out
     return nullptr;
   }
 
-  std::string node_name = pre_node->GetName() + "_" + MEMCPYASYNC;
+  std::string node_name = pre_node->GetName() + "_" + IDENTITY;
   node_name = CheckDuplicateName(node_name);
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), MEMCPYASYNC);
+  OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), IDENTITY);
   if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Create MemcpyAsync op: MakeShared op_desc fail.");
+    GELOGE(INTERNAL_ERROR, "Create identity op: MakeShared op_desc fail.");
     return nullptr;
   }
-  GELOGI("Create MemcpyAsync op:%s.", op_desc->GetName().c_str());
+  GELOGI("Create identity op:%s.", op_desc->GetName().c_str());
 
-  graphStatus ret = op_desc->AddInputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
+  graphStatus ret = op_desc->AddInputDesc("x", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Create MemcpyAsync op: add input desc fail.");
+    GELOGE(INTERNAL_ERROR, "Create identity op: add input desc fail.");
     return nullptr;
   }
 
-  ret = op_desc->AddOutputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
+  ret = op_desc->AddOutputDesc("y", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Create MemcpyAsync op: add output desc fail.");
+    GELOGE(INTERNAL_ERROR, "Create identity op: add output desc fail.");
     return nullptr;
   }
+  // because history reason ,this pass can not do work after constant fold so mark it
+  (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
 
   NodePtr memcpy_node = graph->AddNode(op_desc);
   if (memcpy_node == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Insert MemcpyAsync node fail.");
+    GELOGE(INTERNAL_ERROR, "Insert identity node fail.");
     return nullptr;
   }
 
@@ -155,7 +157,7 @@ std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
 Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                                             const InDataAnchorPtr &hccl_in_anchor) {
   GELOGI("The op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str());
-  NodePtr memcpy_node = CreateMemcpyNode(graph, src_out_anchor);
+  NodePtr memcpy_node = CreateIdentityNode(graph, src_out_anchor);
   GE_CHECK_NOTNULL(memcpy_node);
 
   Status ret1 = src_out_anchor->Unlink(hccl_in_anchor);

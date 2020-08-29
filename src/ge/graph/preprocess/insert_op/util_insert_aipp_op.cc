@@ -380,10 +380,6 @@ Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std:
                          "Data node do not contain param aipp!");
   GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aipp_params.get()), "get aipp params failed");
 
-  if (aipp_params->aipp_mode() != domi::AippOpParams::static_) {
-    return SUCCESS;
-  }
-
   for (auto out_data_anchor : node->GetAllOutDataAnchors()) {
     GE_CHECK_NOTNULL(out_data_anchor);
     auto peer_in_anchors = out_data_anchor->GetPeerInDataAnchors();
@@ -448,6 +444,8 @@ Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
     std::vector<std::string> input_dims;
     std::vector<std::string> output_dims;
     auto data_node = it.first;
+    auto data_op_desc = data_node->GetOpDesc();
+    GE_CHECK_NOTNULL(data_op_desc);
     std::set<NodePtr> aipps_or_switchs = it.second;
     if (aipps_or_switchs.size() != 1) {
       GELOGW("The number of successors swith or aipp of data is more than 1");
@@ -469,15 +467,21 @@ Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
       // When static aipp is set, need to get the model input dims which processed by aipp
       GE_RETURN_IF_ERROR(SetModelInputDims(data_node, aipp_it));
     }
-
-    if (!AttrUtils::SetListStr(data_node->GetOpDesc(), ATTR_NAME_AIPP_INPUTS, input_dims)) {
-      GELOGE(FAILED, "SetListStr of %s failed.", ATTR_NAME_AIPP_INPUTS.c_str());
-      return FAILED;
-    }
-
-    if (!AttrUtils::SetListStr(data_node->GetOpDesc(), ATTR_NAME_AIPP_OUTPUTS, output_dims)) {
-      GELOGE(FAILED, "SetListStr of %s failed.", ATTR_NAME_AIPP_OUTPUTS.c_str());
-      return FAILED;
+    // if _all_origin_gears_inputs is set, use its value directly.
+    if (data_op_desc->HasAttr("_all_origin_gears_inputs")) {
+      std::vector<std::string> input_dims_str;
+      (void)AttrUtils::GetListStr(data_op_desc, "_all_origin_gears_inputs", input_dims_str);
+      (void)AttrUtils::SetListStr(data_op_desc, ATTR_NAME_AIPP_INPUTS, input_dims_str);
+      if ((input_dims_str.size() > output_dims.size()) && !output_dims.empty()) {
+        // make sure output and input counts is equal, appears in dynamic aipp and dynamic shape/batch scene.
+        std::vector<std::string> output_dims_str{input_dims_str.size(), output_dims[0]};
+        (void)AttrUtils::SetListStr(data_op_desc, ATTR_NAME_AIPP_OUTPUTS, output_dims_str);
+      } else {
+        (void)AttrUtils::SetListStr(data_op_desc, ATTR_NAME_AIPP_OUTPUTS, output_dims);
+      }
+    } else {
+      (void)AttrUtils::SetListStr(data_op_desc, ATTR_NAME_AIPP_INPUTS, input_dims);
+      (void)AttrUtils::SetListStr(data_op_desc, ATTR_NAME_AIPP_OUTPUTS, output_dims);
     }
   }
 
@@ -550,7 +554,7 @@ Status InsertNewOpUtil::SetModelInputDims(NodePtr &data_node, NodePtr &aipp_node
         }
       }
     }
-    GELOGD("After set H/W to -1, the model input dims: %s.", formats::JoinToString(model_input_dims).c_str());
+    GELOGD("After set N or H/W to -1, the model input dims: %s.", formats::JoinToString(model_input_dims).c_str());
     if (!AttrUtils::SetListInt(data_opdesc, ATTR_NAME_INPUT_DIMS, model_input_dims)) {
       GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_INPUT_DIMS.c_str());
       return FAILED;

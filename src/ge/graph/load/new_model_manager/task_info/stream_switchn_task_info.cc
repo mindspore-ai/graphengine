@@ -66,16 +66,13 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
     GELOGE(FAILED, "Get true stream ptr of switchN op failed.");
     return FAILED;
   }
-  if (davinci_model->IsKnownNode()) {
-    input_ptr_ = davinci_model->GetCurrentFixedAddr(args_offset_);
-  } else {
-    auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
-    if (input_data_addr.empty()) {
-      GELOGE(FAILED, "Input data addr is nullptr.");
-      return FAILED;
-    }
-    input_ptr_ = input_data_addr[0];
+
+  // update StreamSwitchN's input_ptr_
+  Status ret = InputPtrUpdate(op_desc, davinci_model);
+  if (ret != SUCCESS) {
+    return ret;
   }
+
   davinci_model->DisableZeroCopy(input_ptr_);
   GELOGI("StreamSwitchNTaskInfo Init Success, inputSize:%u, elementSize:%d, trueStreamID:%ld.", input_size_,
          element_size_, op_desc->GetStreamId());
@@ -152,6 +149,37 @@ Status StreamSwitchNTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davin
   GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
   davinci_model->SetTotalFixedAddrsSize(input_tensor_name, tensor_size);
   GELOGI("Calculate stream switchn task args , tensor_size %ld, args_offset %ld", tensor_size, args_offset_);
+  return SUCCESS;
+}
+
+Status StreamSwitchNTaskInfo::InputPtrUpdate(const OpDescPtr &op_desc, DavinciModel *davinci_model) {
+  bool is_4g_mem = false;
+  const map<int64_t, void *> memcpy_4g_offset_addr = davinci_model->GetMemcpyOffsetAndAddr();
+  vector<int64_t> input_offset = op_desc->GetInputOffset();
+  if (input_offset.empty()) {
+    GELOGE(FAILED, "Get StreamSwitchN's input offset failed.");
+    return FAILED;
+  }
+
+  auto iter = memcpy_4g_offset_addr.find(input_offset[0]);
+  if (iter != memcpy_4g_offset_addr.end()) {
+    input_ptr_ = iter->second;
+    is_4g_mem = true;
+  }
+
+  if (is_4g_mem == false) {
+    if (davinci_model->IsKnownNode()) {
+      input_ptr_ = davinci_model->GetCurrentFixedAddr(args_offset_);
+    } else {
+      auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
+      if (input_data_addr.empty()) {
+        return FAILED;
+      }
+      input_ptr_ = input_data_addr[0];
+    }
+  }
+
+  GELOGI("StreamSwitchN's input_ptr is %p, is_4g_mem: %d", input_ptr_, is_4g_mem);
   return SUCCESS;
 }
 REGISTER_TASK_INFO(RT_MODEL_TASK_STREAM_SWITCH_N, StreamSwitchNTaskInfo);

@@ -171,6 +171,44 @@ void DataDumper::SaveOpDebugId(uint32_t task_id, uint32_t stream_id, void *op_de
   is_op_debug_ = is_op_debug;
 }
 
+void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id,
+                                uint32_t stream_id) {
+  GELOGD("Start SaveDumpOpInfo of task_id: %u, stream_id: %u", task_id, stream_id);
+  OpDescInfo op_desc_info;
+  op_desc_info.op_name = op->GetName();
+  op_desc_info.task_id = task_id;
+  op_desc_info.stream_id = stream_id;
+  for (size_t i = 0; i < op->GetInputsSize(); ++i) {
+    GeTensorDesc input_desc = op->GetInputDesc(i);
+    op_desc_info.input_format.emplace_back(input_desc.GetFormat());
+    op_desc_info.input_shape.emplace_back(input_desc.GetShape().GetDims());
+    op_desc_info.input_data_type.emplace_back(input_desc.GetDataType());
+  }
+  for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
+    GeTensorDesc output_desc = op->GetOutputDesc(j);
+    op_desc_info.output_format.emplace_back(output_desc.GetFormat());
+    op_desc_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
+    op_desc_info.output_data_type.emplace_back(output_desc.GetDataType());
+  }
+  op_desc_info.input_addrs = ModelUtils::GetInputDataAddrs(model_param, op);
+  op_desc_info.output_addrs = ModelUtils::GetOutputDataAddrs(model_param, op);
+
+  op_desc_info_.emplace_back(op_desc_info);
+}
+
+bool DataDumper::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
+  GELOGI("There are %zu op need to dump.", op_desc_info_.size());
+  for (size_t index = 0; index < op_desc_info_.size(); ++index) {
+    OpDescInfo dump_op_info = op_desc_info_.at(index);
+    if (dump_op_info.task_id == task_id && dump_op_info.stream_id == stream_id) {
+      GELOGI("find exception op of task_id: %u, stream_id: %u.", task_id, stream_id);
+      op_desc_info = dump_op_info;
+      return true;
+    }
+  }
+  return false;
+}
+
 void DataDumper::SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc,
                               uintptr_t args) {
   if (op_desc == nullptr) {
@@ -325,17 +363,24 @@ Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicp
     // check dump output tensor desc is redirected by attr ATTR_DATA_DUMP_REF
     if (AttrUtils::GetStr(&output_desc, ATTR_DATA_DUMP_REF, node_name_index)) {
       GE_CHK_STATUS_RET(DumpRefOutput(inner_dump_info, output, i, node_name_index), "DumpRefOutput failed");
+      task.mutable_output()->Add(std::move(output));
     } else {
-      GE_IF_BOOL_EXEC(
-        IsTensorDescWithSkipDumpAddrType(has_mem_type_attr, v_memory_type, i),
-        GELOGD("DumpOutputWithTask[%s] output[%zu] is l1 addr, skip it", inner_dump_info.op->GetName().c_str(), i);
-        continue;);
-
-      const auto input_size = inner_dump_info.op->GetInputsSize();
-      auto addr = inner_dump_info.args + (i + input_size) * kAddrLen;
-      GE_CHK_STATUS_RET(GenerateOutput(output, output_descs, addr, i), "Generate output failed");
+      if (IsTensorDescWithSkipDumpAddrType(has_mem_type_attr, v_memory_type, i)) {
+        GELOGI("[L1Fusion] DumpOutputWithTask[%s] output[%zu] is l1 addr.", inner_dump_info.op->GetName().c_str(), i);
+        int64_t output_size = 0;
+        if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
+          GELOGE(PARAM_INVALID, "Get output size failed.");
+          return PARAM_INVALID;
+        }
+        GELOGI("Get output size of l1_fusion_dump is %ld", output_size);
+        GenerateOpBuffer(output_size, task);
+      } else {
+        const auto input_size = inner_dump_info.op->GetInputsSize();
+        auto addr = inner_dump_info.args + (i + input_size) * kAddrLen;
+        GE_CHK_STATUS_RET(GenerateOutput(output, output_descs, addr, i), "Generate output failed");
+        task.mutable_output()->Add(std::move(output));
+      }
     }
-    task.mutable_output()->Add(std::move(output));
   }
   return SUCCESS;
 }
@@ -468,18 +513,36 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
     // check dump input tensor desc is redirected by attr ATTR_DATA_DUMP_REF
     if (AttrUtils::GetStr(&input_descs.at(i), ATTR_DATA_DUMP_REF, node_name_index)) {
       GE_CHK_STATUS_RET(DumpRefInput(inner_dump_info, input, i, node_name_index), "DumpRefInput failed");
+      task.mutable_input()->Add(std::move(input));
       // normal dump without attr
     } else {
-      GE_IF_BOOL_EXEC(IsTensorDescWithSkipDumpAddrType(has_mem_type_attr, v_memory_type, i),
-                      GELOGD("DumpInput[%s] input[%zu] is l1 addr, skip it", inner_dump_info.op->GetName().c_str(), i);
-                      continue;);
-
-      auto addr = inner_dump_info.args + kAddrLen * i;
-      GE_CHK_STATUS_RET(GenerateInput(input, input_descs, addr, i), "Generate input failed");
+      if (IsTensorDescWithSkipDumpAddrType(has_mem_type_attr, v_memory_type, i)) {
+        GELOGI("[L1Fusion] DumpInput[%s] input[%zu] is l1 addr", inner_dump_info.op->GetName().c_str(), i);
+        int64_t input_size = 0;
+        if (AttrUtils::GetInt(input_descs.at(i), ATTR_NAME_INPUT_ORIGIN_SIZE, input_size)) {
+          GELOGI("Get aipp input size according to attr is %ld", input_size);
+        } else if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
+          GELOGE(PARAM_INVALID, "Get input size failed.");
+          return PARAM_INVALID;
+        }
+        GELOGI("Get input size of l1_fusion_dump is %ld", input_size);
+        GenerateOpBuffer(input_size, task);
+      } else {
+        auto addr = inner_dump_info.args + kAddrLen * i;
+        GE_CHK_STATUS_RET(GenerateInput(input, input_descs, addr, i), "Generate input failed");
+        task.mutable_input()->Add(std::move(input));
+      }
     }
-    task.mutable_input()->Add(std::move(input));
   }
   return SUCCESS;
+}
+
+void DataDumper::GenerateOpBuffer(const int64_t &size, aicpu::dump::Task &task) {
+  aicpu::dump::OpBuffer op_buffer;
+  op_buffer.set_buffer_type(aicpu::dump::BufferType::L1);
+  op_buffer.set_address(reinterpret_cast<uintptr_t>(l1_fusion_addr_));
+  op_buffer.set_size(size);
+  task.mutable_buffer()->Add(std::move(op_buffer));
 }
 
 Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
@@ -720,7 +783,7 @@ void DataDumper::PrintCheckLog(string &dump_list_key) {
   bool not_find_by_omname = model_list.find(om_name_) == model_list.end();
   bool not_find_by_modelname = model_list.find(model_name_) == model_list.end();
   dump_list_key = not_find_by_omname ? model_name_ : om_name_;
-  GELOGI("%zu op need dump in %s.", op_list_.size(), dump_list_key.c_str());
+  GELOGI("%zu op need dump in known shape model %s.", op_list_.size(), dump_list_key.c_str());
 
   if (model_list.find(DUMP_ALL_MODEL) == model_list.end()) {
     if (not_find_by_omname && not_find_by_modelname) {

@@ -20,6 +20,10 @@
 
 namespace ge {
 namespace hybrid {
+namespace {
+const int kIntBase = 10;
+const char *const kEnvProfilingLevel = "HYBRID_PROFILING_LEVEL";
+}  // namespace
 HybridModelExecutor::HybridModelExecutor(HybridModel *model, uint32_t device_id, rtStream_t stream)
     : model_(model), device_id_(device_id), stream_(stream) {}
 
@@ -43,6 +47,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   GELOGD("Model executed successfully.");
 
   if (context_.profiler != nullptr) {
+    context_.profiler->Dump(std::cout);
     context_.profiler->Reset();
   }
 
@@ -87,6 +92,17 @@ Status HybridModelExecutor::InitExecutionContext() {
   GE_CHECK_NOTNULL(context_.allocator);
   context_.callback_manager = std::unique_ptr<CallbackManager>(new (std::nothrow) CallbackManager(stream_));
   GE_CHECK_NOTNULL(context_.callback_manager);
+  context_.dump_properties = PropertiesManager::Instance().GetDumpProperties(context_.session_id);
+  const char *profiling_level = std::getenv(kEnvProfilingLevel);
+  if (profiling_level != nullptr) {
+    context_.profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
+    GELOGD("Got profiling level = %d", context_.profiling_level);
+    if (context_.profiling_level > 0) {
+      context_.profiler.reset(new (std::nothrow) HybridProfiler());
+      GE_CHECK_NOTNULL(context_.profiler);
+    }
+  }
+
   if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {
     context_.trace_enabled = true;
   }

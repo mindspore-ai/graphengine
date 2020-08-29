@@ -41,13 +41,14 @@ enum class OutputRWType {
   kWriteable,  // ref output. Like Assign/ApplyMomentum
   kInvalidRWType
 };
+
 // input and output rw_type of one node. key is anchor_idx, value is rw_type
 struct NodeInputOutputRWType {
   map<uint32_t, InputRWType> input_rw_type_map;
   map<uint32_t, OutputRWType> output_rw_type_map;
 };
 // input and output rw_type of node in current graph
-map<string, NodeInputOutputRWType> node_rwtype_map_;
+thread_local map<string, NodeInputOutputRWType> node_rwtype_map_;
 
 ///
 /// @brief Convert input rw_type enum to string. For log print.
@@ -110,21 +111,22 @@ OutputRWType GetSingleNodeOutputRWTypeByIndex(const Node &node, uint32_t index) 
 /// @param rw_type_set
 /// @return
 ///
-InputRWType GetInputRwTypeInConflict(std::set<int> rw_type_set) {
+InputRWType GetInputRwTypeInConflict(const std::set<int> &rw_type_set) {
   // for input rw type calc
   int total_rw_type = 0;
-  for (auto rw : rw_type_set) {
+  for (const auto rw : rw_type_set) {
     total_rw_type += rw;
   }
+
   switch (total_rw_type) {
     case 0:
-      return InputRWType::kReadOnly;
+      return InputRWType::kReadOnly;  // all input rw type is readonly
     case 2:
-      return InputRWType::kScopeWriteable;
+      return InputRWType::kScopeWriteable;  // readonly 2 scope_writeable
     case 3:
-      return InputRWType::kWriteable;
+      return InputRWType::kWriteable;  // all input rw type is writeable or readonly 2 writeable
     case 5:
-      return InputRWType::kInvalidRWType;
+      return InputRWType::kInvalidRWType;  // writeable 2 scope_writeable
     default:
       return InputRWType::kInvalidRWType;
   }
@@ -145,12 +147,12 @@ NodePtr CreateIdentityAfterSrcNode(const Node &src_node, int out_anchor_idx) {
   }
   auto data_desc = src_node.GetOpDesc()->GetOutputDesc(out_anchor_idx);
   // 2. add input_desc & output_desc for new identity
-  Status ret = identity_opdesc->AddInputDesc(data_desc);
+  Status ret = identity_opdesc->AddInputDesc("x", data_desc);
   if (ret != SUCCESS) {
     GELOGE(ret, "Add Input desc failed for new identity %s.", identity_name.c_str());
     return nullptr;
   }
-  ret = identity_opdesc->AddOutputDesc(data_desc);
+  ret = identity_opdesc->AddOutputDesc("y", data_desc);
   if (ret != SUCCESS) {
     GELOGE(ret, "Add Output desc failed for new Identity %s.", identity_name.c_str());
     return nullptr;
@@ -227,7 +229,7 @@ InputRWType GetSingleNodeInputRWTypeByIndex(const Node &node, uint32_t index) {
       return InputRWType::kWriteable;
     }
   }
-  // check if it is ref switch  todo
+  // check if it is ref switch
   std::string type;
   if ((node.GetType() == FRAMEWORK_OP_TYPE) && (AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) &&
       (type == REFSWITCH) && (index == 0)) {
@@ -283,12 +285,66 @@ InputRWType GetInputRWTypeByIndex(const Node &node, uint32_t index) {
     return GetInputRwTypeInConflict(anchor_rw_type_set);
   }
 }
+Status MarkRWTypeForSubgraph(const ComputeGraphPtr &sub_graph) {
+  for (const auto &node : sub_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(node);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    std::set<int> anchor_rw_type_set;
+    if (node->GetType() == DATA) {
+      // calc all input_rw_type of peer output , as input_rw_type of DATA. Index 0 is valid.
+      auto anchor_2_node_vec = NodeUtils::GetOutDataNodesWithAnchorByIndex(*node, 0);
+      for (const auto anchor_2_node_pair : anchor_2_node_vec) {
+        auto input_rw_type = GetInputRWTypeByIndex(*anchor_2_node_pair.second, anchor_2_node_pair.first->GetIdx());
+        GELOGD("Input rw type of Node %s %dth input anchor is %s", anchor_2_node_pair.second->GetName().c_str(),
+               anchor_2_node_pair.first->GetIdx(), InputRWTypeToSerialString(input_rw_type).c_str());
+        anchor_rw_type_set.emplace(static_cast<int>(input_rw_type));
+      }
+      auto anchor_rw_type = GetInputRwTypeInConflict(anchor_rw_type_set);
+      GELOGD("Input rw type of Node %s is %s", node->GetName().c_str(),
+             InputRWTypeToSerialString(anchor_rw_type).c_str());
+      map<uint32_t, InputRWType> input_rw_type_map{std::make_pair(0, anchor_rw_type)};
+      NodeInputOutputRWType data_rw_type{input_rw_type_map};
+      node_rwtype_map_.emplace(std::make_pair(node->GetName(), data_rw_type));
+    }
 
+    if (node->GetType() == NETOUTPUT) {
+      // calc all output_rw_type of peer input , as output_rw_type of DATA
+      map<uint32_t, OutputRWType> output_rw_type_map;
+      for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+        GE_CHECK_NOTNULL(in_data_anchor);
+        auto pre_out_anchor = in_data_anchor->GetPeerOutAnchor();
+        GE_CHECK_NOTNULL(pre_out_anchor);
+        auto pre_node = pre_out_anchor->GetOwnerNode();
+        GE_CHECK_NOTNULL(pre_node);
+
+        auto pre_output_rw_type = GetOutputRWTypeByIndex(*pre_node, pre_out_anchor->GetIdx());
+        GELOGD("Output rw type of Node %s %dth output anchor is %s", pre_node->GetName().c_str(),
+               pre_out_anchor->GetIdx(), OutputRWTypeToSerialString(pre_output_rw_type).c_str());
+        if (pre_output_rw_type == OutputRWType::kWriteable) {
+          // insert identity
+          auto identity_node = CreateIdentityAfterSrcNode(*pre_node, pre_out_anchor->GetIdx());
+          GE_CHECK_NOTNULL(identity_node);
+          auto ret = GraphUtils::InsertNodeBetweenDataAnchors(pre_out_anchor, in_data_anchor, identity_node);
+          if (ret != SUCCESS) {
+            GELOGE(ret, "Fail to insert identity");
+            return ret;
+          }
+          GELOGI("InsertNode %s between %s and %s successfully.", identity_node->GetName().c_str(),
+                 pre_node->GetName().c_str(), node->GetName().c_str());
+        }
+        output_rw_type_map.emplace(std::make_pair(in_data_anchor->GetIdx(), OutputRWType::kSoftRead));
+      }
+      NodeInputOutputRWType output_rw_type{{}, output_rw_type_map};
+      node_rwtype_map_.emplace(std::make_pair(node->GetName(), output_rw_type));
+    }
+  }
+  return SUCCESS;
+}
 ///
 /// @brief Reverse traversal all subgraph and mark rw_type for Data/Netoutput.
 /// @param sub_graph_vecgs
 ///
-Status MarkRWTypeForSubgraph(vector<std::shared_ptr<ComputeGraph>> sub_graph_vec) {
+Status MarkRWTypeForAllSubgraph(const vector<ComputeGraphPtr> &sub_graph_vec) {
   for (auto iter = sub_graph_vec.rbegin(); iter != sub_graph_vec.rend(); ++iter) {
     auto parent_node = (*iter)->GetParentNode();
     if (parent_node == nullptr) {
@@ -298,61 +354,9 @@ Status MarkRWTypeForSubgraph(vector<std::shared_ptr<ComputeGraph>> sub_graph_vec
     if (parent_node->GetType() == WHILE) {
       continue;
     }
-    for (const auto &node : (*iter)->GetDirectNode()) {
-      GE_CHECK_NOTNULL(node);
-      GE_CHECK_NOTNULL(node->GetOpDesc());
-      if (node->GetType() == DATA) {
-        // calc all input_rw_type of peer output , as input_rw_type of DATA. Index 0 is valid.
-        auto out_data_anchor = node->GetOutDataAnchor(0);
-        GE_CHECK_NOTNULL(out_data_anchor);
-        std::set<int> anchor_rw_type_set;
-        for (const auto peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-          GE_CHECK_NOTNULL(peer_in_anchor);
-          auto peer_in_node = peer_in_anchor->GetOwnerNode();
-          GE_CHECK_NOTNULL(peer_in_node);
-          auto input_rw_type = GetInputRWTypeByIndex(*peer_in_node, peer_in_anchor->GetIdx());
-          GELOGD("Input rw type of Node %s %dth input anchor is %s", peer_in_node->GetName().c_str(),
-                 peer_in_anchor->GetIdx(), InputRWTypeToSerialString(input_rw_type).c_str());
-          anchor_rw_type_set.emplace(static_cast<int>(input_rw_type));
-        }
-        auto anchor_rw_type = GetInputRwTypeInConflict(anchor_rw_type_set);
-        GELOGD("Input rw type of Node %s is %s", node->GetName().c_str(),
-               InputRWTypeToSerialString(anchor_rw_type).c_str());
-        map<uint32_t, InputRWType> input_rw_type_map{std::make_pair(0, anchor_rw_type)};
-        NodeInputOutputRWType data_rw_type{input_rw_type_map};
-        node_rwtype_map_.emplace(std::make_pair(node->GetName(), data_rw_type));
-      }
-
-      if (node->GetType() == NETOUTPUT) {
-        // calc all output_rw_type of peer input , as output_rw_type of DATA
-        map<uint32_t, OutputRWType> output_rw_type_map;
-        for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
-          GE_CHECK_NOTNULL(in_data_anchor);
-          auto pre_out_anchor = in_data_anchor->GetPeerOutAnchor();
-          GE_CHECK_NOTNULL(pre_out_anchor);
-          auto pre_node = pre_out_anchor->GetOwnerNode();
-          GE_CHECK_NOTNULL(pre_node);
-
-          auto pre_output_rw_type = GetOutputRWTypeByIndex(*pre_node, pre_out_anchor->GetIdx());
-          GELOGD("Output rw type of Node %s %dth output anchor is %s", pre_node->GetName().c_str(),
-                 pre_out_anchor->GetIdx(), OutputRWTypeToSerialString(pre_output_rw_type).c_str());
-          if (pre_output_rw_type == OutputRWType::kWriteable) {
-            // insert identity
-            auto identity_node = CreateIdentityAfterSrcNode(*pre_node, pre_out_anchor->GetIdx());
-            GE_CHECK_NOTNULL(identity_node);
-            auto ret = GraphUtils::InsertNodeBetweenDataAnchors(pre_out_anchor, in_data_anchor, identity_node);
-            if (ret != SUCCESS) {
-              GELOGE(ret, "Fail to insert identity");
-              return ret;
-            }
-            GELOGI("InsertNode %s between %s and %s successfully.", identity_node->GetName().c_str(),
-                   pre_node->GetName().c_str(), node->GetName().c_str());
-          }
-          output_rw_type_map.emplace(std::make_pair(in_data_anchor->GetIdx(), OutputRWType::kSoftRead));
-        }
-        NodeInputOutputRWType output_rw_type{{}, output_rw_type_map};
-        node_rwtype_map_.emplace(std::make_pair(node->GetName(), output_rw_type));
-      }
+    auto ret = MarkRWTypeForSubgraph(*iter);
+    if (ret != SUCCESS) {
+      return ret;
     }
   }
   return SUCCESS;
@@ -367,8 +371,8 @@ Status MarkRWTypeForSubgraph(vector<std::shared_ptr<ComputeGraph>> sub_graph_vec
 /// @param node
 /// @return is_near_subgraph
 ///
-bool CheckIdentityIsNearSubgraph(const NodePtr &node) {
-  for (const auto &in_node : node->GetInDataNodes()) {
+bool CheckIdentityIsNearSubgraph(const Node &node) {
+  for (const auto &in_node : node.GetInDataNodes()) {
     auto in_node_opdesc = in_node->GetOpDesc();
     if (in_node_opdesc == nullptr) {
       continue;
@@ -383,7 +387,7 @@ bool CheckIdentityIsNearSubgraph(const NodePtr &node) {
     }
   }
 
-  for (const auto &out_node : node->GetOutDataNodes()) {
+  for (const auto &out_node : node.GetOutDataNodes()) {
     auto out_node_opdesc = out_node->GetOpDesc();
     if (out_node_opdesc == nullptr) {
       continue;
@@ -419,74 +423,113 @@ ConflictResult GetConflictResultBetweenNode(const OutputRWType output_rw_type, c
 /// @return
 ///
 Status RemoveNoUseIdentity(const NodePtr &node) {
-  if (node->GetInDataNodes().empty()) {
-    return SUCCESS;
-  }
-  if (node->GetOutDataNodesSize() > 1) {
+  if (node->GetInDataNodes().empty() || node->GetOutDataNodesSize() > 1) {
     return SUCCESS;
   }
   if (node->GetOutDataNodesSize() == 1 && node->GetOutDataNodes().at(0)->GetType() == STREAMMERGE) {
     return SUCCESS;
   }
-  if (CheckIdentityIsNearSubgraph(node)) {
+  if (CheckIdentityIsNearSubgraph(*node)) {
     return SUCCESS;
   }
-  auto out_data_anchor = node->GetOutDataAnchor(kIdentityAnchorIndex);
-  GE_CHECK_NOTNULL(out_data_anchor);
   GE_CHECK_NOTNULL(node->GetInDataAnchor(kIdentityAnchorIndex));
   auto pre_out_anchor = node->GetInDataAnchor(kIdentityAnchorIndex)->GetPeerOutAnchor();
   GE_CHECK_NOTNULL(pre_out_anchor);
   auto pre_node = pre_out_anchor->GetOwnerNode();
   auto pre_output_rw_type = GetOutputRWTypeByIndex(*pre_node, pre_out_anchor->GetIdx());
 
+  auto anchor_2_outnode_vec = NodeUtils::GetOutDataNodesWithAnchorByIndex(*node, kIdentityAnchorIndex);
   ConflictResult conflict_result = WRONG_GRAPH;
-  if (!out_data_anchor->GetPeerInDataAnchors().empty()) {
-    auto peer_in_data_anchor = out_data_anchor->GetPeerInDataAnchors().at(0);
-    GE_CHECK_NOTNULL(peer_in_data_anchor);
-    auto peer_node = peer_in_data_anchor->GetOwnerNode();
-    auto peer_input_rw_type = GetInputRWTypeByIndex(*peer_node, peer_in_data_anchor->GetIdx());
+  if (!anchor_2_outnode_vec.empty()) {
+    auto anchor_2_outnode = anchor_2_outnode_vec.at(0);
+    auto peer_input_rw_type = GetInputRWTypeByIndex(*anchor_2_outnode.second, anchor_2_outnode.first->GetIdx());
 
     GELOGD("Pre Node %s %dth output rw type is %s, peer node %s %dth input rw type is %s.", pre_node->GetName().c_str(),
            pre_out_anchor->GetIdx(), OutputRWTypeToSerialString(pre_output_rw_type).c_str(),
-           peer_node->GetName().c_str(), peer_in_data_anchor->GetIdx(),
+           anchor_2_outnode.second->GetName().c_str(), anchor_2_outnode.first->GetIdx(),
            InputRWTypeToSerialString(peer_input_rw_type).c_str());
     conflict_result = GetConflictResultBetweenNode(pre_output_rw_type, peer_input_rw_type);
   } else {
     // identity node has no out data node, it can be removed
     conflict_result = DO_NOTHING;
   }
+  if (conflict_result != DO_NOTHING) {
+    return SUCCESS;
+  }
 
-  switch (conflict_result) {
-    case DO_NOTHING: {
-      GELOGI("No need insert Identity. Node %s need to remove.", node->GetName().c_str());
-      auto ret = GraphUtils::IsolateNode(node, {0});
-      if (ret != SUCCESS) {
-        GELOGE(ret, "Fail to isolate node %s.", node->GetName().c_str());
-        return ret;
-      }
-      ret = GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node);
-      if (ret != SUCCESS) {
-        GELOGE(ret, "Fail to isolate node %s.", node->GetName().c_str());
-        return ret;
-      }
-      GELOGI("Pre node is %s and %dth output rw type is %s. Isolate and remove Identity node %s.",
-             pre_node->GetName().c_str(), pre_out_anchor->GetIdx(),
-             OutputRWTypeToSerialString(pre_output_rw_type).c_str(), node->GetName().c_str());
-      return SUCCESS;
+  GELOGI("No need insert Identity. Node %s need to remove.", node->GetName().c_str());
+  auto ret = GraphUtils::IsolateNode(node, {0});
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Fail to isolate node %s.", node->GetName().c_str());
+    return ret;
+  }
+  ret = GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Fail to isolate node %s.", node->GetName().c_str());
+    return ret;
+  }
+  GELOGI("Pre node is %s and %dth output rw type is %s. Isolate and remove Identity node %s.",
+         pre_node->GetName().c_str(), pre_out_anchor->GetIdx(), OutputRWTypeToSerialString(pre_output_rw_type).c_str(),
+         node->GetName().c_str());
+  return SUCCESS;
+}
+
+Status SplitIdentityAlongAnchor(const OutDataAnchorPtr &out_data_anchor, const InDataAnchorPtr &peer_in_data_anchor,
+                                const OutDataAnchorPtr &pre_out_data_anchor, NodePtr &pre_node) {
+  // 1.check peer in node RW type.
+  GE_CHECK_NOTNULL(peer_in_data_anchor);
+  auto peer_in_data_node = peer_in_data_anchor->GetOwnerNode();
+  GE_CHECK_NOTNULL(peer_in_data_node);
+  auto input_rw_type = GetInputRWTypeByIndex(*peer_in_data_node, peer_in_data_anchor->GetIdx());
+  auto ret = out_data_anchor->Unlink(peer_in_data_anchor);
+  auto old_identity = out_data_anchor->GetOwnerNode();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed to unlink from %s %dth out to %s.", old_identity->GetName().c_str(), out_data_anchor->GetIdx(),
+           peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
+    return ret;
+  }
+  if (input_rw_type == InputRWType::kScopeWriteable || input_rw_type == InputRWType::kWriteable) {
+    auto new_identity = CreateIdentityAfterSrcNode(*pre_node, pre_out_data_anchor->GetIdx());
+    GE_CHECK_NOTNULL(new_identity);
+    if (GraphUtils::AddEdge(pre_out_data_anchor, new_identity->GetInDataAnchor(kIdentityAnchorIndex)) != SUCCESS &&
+        GraphUtils::AddEdge(new_identity->GetOutDataAnchor(kIdentityAnchorIndex), peer_in_data_anchor) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Failed to insert Identity between node %s and %s",
+             pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
+             peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
+      return INTERNAL_ERROR;
     }
-    default:
-      return SUCCESS;
+
+    // 2. copy in-control-edge from dst to Identity
+    if (GraphUtils::CopyInCtrlEdges(peer_in_data_node, new_identity) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Failed to copy in_control edges from node %s to %s", peer_in_data_node->GetName().c_str(),
+             new_identity->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    GELOGI("Node %s intput rw type is %s. Insert Identity between %s and %s.", peer_in_data_node->GetName().c_str(),
+           InputRWTypeToSerialString(input_rw_type).c_str(), pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
+           peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
+  } else {
+    // copy control edge to pre and peer node
+    if (GraphUtils::CopyInCtrlEdges(old_identity, peer_in_data_node) != SUCCESS ||
+        GraphUtils::CopyOutCtrlEdges(old_identity, pre_node) != SUCCESS) {
+      GELOGW("Fail to copy control edge from node %s.", old_identity->GetName().c_str());
+      return FAILED;
+    }
+    // link identity pre node to next node directly
+    if (GraphUtils::AddEdge(pre_out_data_anchor, peer_in_data_anchor) != SUCCESS) {
+      GELOGW("Fail to link data edge from node %s to %s.", pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
+             peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
+      return FAILED;
+    }
+    GELOGI("Node %s input rw type is %s, link data edge from Identity input node %s to out node %s directly.",
+           peer_in_data_node->GetName().c_str(), InputRWTypeToSerialString(input_rw_type).c_str(),
+           pre_node->GetName().c_str(), peer_in_data_node->GetName().c_str());
   }
   return SUCCESS;
 }
 
 Status SplitIdentity(const NodePtr &node) {
   GE_CHECK_NOTNULL(node);
-  auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-  if (op_desc->GetType() != IDENTITY) {
-    return SUCCESS;
-  }
   auto out_data_anchor = node->GetOutDataAnchor(kIdentityAnchorIndex);
   GE_CHECK_NOTNULL(out_data_anchor);
   if (out_data_anchor->GetPeerInDataNodesSize() <= 1) {
@@ -498,56 +541,17 @@ Status SplitIdentity(const NodePtr &node) {
   GE_CHECK_NOTNULL(pre_out_data_anchor);
   auto pre_node = pre_out_data_anchor->GetOwnerNode();
   GE_CHECK_NOTNULL(pre_node);
+  Status ret = SUCCESS;
   for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    // 1.check peer in node RW type.
-    GE_CHECK_NOTNULL(peer_in_data_anchor);
-    auto peer_in_data_node = peer_in_data_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(peer_in_data_node);
-    auto input_rw_type = GetInputRWTypeByIndex(*peer_in_data_node, peer_in_data_anchor->GetIdx());
-    auto ret = out_data_anchor->Unlink(peer_in_data_anchor);
+    ret = SplitIdentityAlongAnchor(out_data_anchor, peer_in_data_anchor, pre_out_data_anchor, pre_node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to unlink from %s %dth out to %s.", node->GetName().c_str(), out_data_anchor->GetIdx(),
-             peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
+      GELOGE(ret, "Split identity node along anchor failed.");
       return ret;
-    }
-    if (input_rw_type == InputRWType::kScopeWriteable || input_rw_type == InputRWType::kWriteable) {
-      auto identity_node = CreateIdentityAfterSrcNode(*pre_node, pre_out_data_anchor->GetIdx());
-      GE_CHECK_NOTNULL(identity_node);
-      ret = GraphUtils::AddEdge(pre_out_data_anchor, identity_node->GetInDataAnchor(kIdentityAnchorIndex));
-      if (ret != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Failed to insert Identity between node %s and %s",
-               pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
-               peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
-        return INTERNAL_ERROR;
-      }
-      ret = GraphUtils::AddEdge(identity_node->GetOutDataAnchor(kIdentityAnchorIndex), peer_in_data_anchor);
-      if (ret != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Failed to insert Identity between node %s and %s",
-               pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
-               peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
-        return INTERNAL_ERROR;
-      }
-      // 2. copy in-control-edge from dst to Identity
-      GraphUtils::CopyInCtrlEdges(peer_in_data_node, identity_node);
-      GELOGI("Node %s intput rw type is %s. Insert Identity between %s and %s.", peer_in_data_node->GetName().c_str(),
-             InputRWTypeToSerialString(input_rw_type).c_str(), pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
-             peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
-    } else {
-      // link identity pre node to next node directly
-      // todo control edge
-      if (GraphUtils::AddEdge(pre_out_data_anchor, peer_in_data_anchor) != SUCCESS) {
-        GELOGW("Fail to link data edge from node %s to %s.", pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
-               peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
-        return FAILED;
-      }
-      GELOGI("Node %s intput rw type is %s, link data edge from Identity input node %s to out node %s directly.",
-             peer_in_data_node->GetName().c_str(), InputRWTypeToSerialString(input_rw_type).c_str(),
-             pre_node->GetName().c_str(), peer_in_data_node->GetName().c_str());
     }
   }
   // 2.isolate Identity node with no data output
   if (node->GetOutDataNodesSize() == 0) {
-    auto ret = GraphUtils::IsolateNode(node, {});
+    ret = GraphUtils::IsolateNode(node, {});
     if (ret != SUCCESS) {
       GELOGE(FAILED, "IsolateAndDelete identity node %s.", node->GetName().c_str());
       return FAILED;
@@ -616,7 +620,7 @@ Status GraphOptimize::CheckRWConflict(ComputeGraphPtr &compute_graph, bool &has_
     return SUCCESS;
   }
   // 1.loop all subgraph, mark rw type from inside to outside
-  Status ret = MarkRWTypeForSubgraph(sub_graph_vec);
+  Status ret = MarkRWTypeForAllSubgraph(sub_graph_vec);
   if (ret != SUCCESS) {
     GELOGE(ret, "Fail to mark rw type for subgraph.");
     return ret;
@@ -671,7 +675,7 @@ Status GraphOptimize::HandleMemoryRWConflict(ComputeGraphPtr &compute_graph) {
   }
   GE_DUMP(compute_graph, "BeforeHandleMemConflict");
   // 1.loop all subgraph, mark rw type from inside to outside
-  Status ret = MarkRWTypeForSubgraph(sub_graph_vec);
+  Status ret = MarkRWTypeForAllSubgraph(sub_graph_vec);
   if (ret != SUCCESS) {
     GELOGE(ret, "Fail to mark rw type for subgraph.");
     return ret;

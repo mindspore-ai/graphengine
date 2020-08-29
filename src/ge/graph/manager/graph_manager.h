@@ -159,6 +159,13 @@ class GraphManager {
 
   void SetOptionsRunGraphFlag(bool run_graph_flag);
 
+  Status GenCheckPointGraph(const std::map<std::string, GeTensorDesc> &all_variables, Graph &graph);
+
+  Status SaveVariables(const Graph &graph, const std::vector<std::string> &var_names,
+                       const std::vector<Tensor> &outputs, std::vector<Tensor> &var_values);
+
+  Status SaveCheckPointResult(const Graph &graph, const std::vector<Tensor> &outputs, map<string, Tensor> &var_results);
+
  private:
   struct PreRunArgs {
     GraphId graph_id;
@@ -267,9 +274,8 @@ class GraphManager {
 
   Status OptimizeStage1(ComputeGraphPtr &compute_graph);
   Status OptimizeStage2(ComputeGraphPtr &compute_graph);
-  Status OptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph);
 
-  Status NewOptimizeAfterMergeSubGraph(ge::ComputeGraphPtr &compute_graph);
+  Status SubexpressionMigration(ComputeGraphPtr &compute_graph);
 
   Status LoadGraphAsync(const GeRootModelPtr &ge_root_model, const GraphNodePtr &graph_node);
 
@@ -288,10 +294,13 @@ class GraphManager {
   Status IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_model);
   void RemoveModelCacheHelper(const GraphId &graph_id);
 
+  static void ConstructGeInput(std::vector<ge::GeTensor> &ge_inputs, PreRunArgs &args);
   static void PreRunThread(GraphManager *graph_manager);
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);
   static void ReturnError(GraphManager *graph_manager, RunAsyncCallback callback, Status ret, const string &log);
+  static void ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback, Status ret,
+                          const string &log);
 
   void ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph);
 

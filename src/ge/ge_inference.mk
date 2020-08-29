@@ -26,6 +26,9 @@ COMMON_LOCAL_SRC_FILES := \
     common/formats/format_transfers/format_transfer_nchw_fz_c04.cc \
     common/formats/formats.cc \
     common/profiling/profiling_manager.cc \
+    common/dump/dump_properties.cc \
+    common/dump/dump_manager.cc \
+    common/dump/dump_op.cc \
     common/helper/model_cache_helper.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
 
@@ -42,6 +45,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     graph/manager/graph_manager_utils.cc \
     graph/manager/graph_context.cc \
     graph/preprocess/graph_preprocess.cc \
+    graph/preprocess/multi_batch_options.cc \
     graph/preprocess/multi_batch_copy_graph.cc \
     graph/execute/graph_execute.cc \
     graph/load/graph_loader.cc \
@@ -149,6 +153,7 @@ OMG_HOST_SRC_FILES := \
     host_kernels/slice_kernel.cc \
     host_kernels/slice_d_kernel.cc \
     host_kernels/dynamic_stitch_kernel.cc \
+    host_kernels/identity_kernel.cc \
     graph/passes/stop_gradient_pass.cc \
     graph/passes/prevent_gradient_pass.cc \
     graph/passes/identity_pass.cc \
@@ -165,12 +170,16 @@ OMG_HOST_SRC_FILES := \
     graph/passes/switch_to_stream_switch_pass.cc \
     graph/passes/attach_stream_label_pass.cc \
     graph/passes/multi_batch_pass.cc \
+    graph/passes/multi_batch_clone_pass.cc \
+    graph/passes/subexpression_migration_pass.cc \
+    graph/passes/unused_args_clean_pass.cc \
     graph/passes/next_iteration_pass.cc \
     graph/passes/control_trigger_pass.cc \
     graph/passes/cond_pass.cc \
     graph/passes/cond_remove_pass.cc \
     graph/passes/for_pass.cc \
     graph/passes/enter_pass.cc \
+    graph/passes/assign_pass.cc \
     graph/passes/addn_pass.cc \
     graph/passes/common_subexpression_elimination_pass.cc \
     graph/passes/transop_symmetry_elimination_pass.cc \
@@ -185,11 +194,10 @@ OMG_HOST_SRC_FILES := \
     graph/passes/transpose_transdata_pass.cc \
     graph/passes/hccl_memcpy_pass.cc \
     graph/passes/flow_ctrl_pass.cc \
+    graph/passes/global_step_insert_pass.cc \
     graph/passes/link_gen_mask_nodes_pass.cc \
     graph/passes/replace_with_empty_const_pass.cc \
     graph/passes/hccl_group_pass.cc \
-    graph/passes/switch_fusion_pass.cc \
-    graph/passes/switch_split_pass.cc \
     graph/passes/memcpy_addr_async_pass.cc \
     graph/passes/set_input_output_offset_pass.cc \
 

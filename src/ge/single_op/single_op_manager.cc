@@ -52,27 +52,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
     return SUCCESS;
   }
 
-  SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
-  auto ret = model.Init();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
-    return ret;
-  }
-
-  auto new_op = std::unique_ptr<SingleOp>(new (std::nothrow) SingleOp());
-  if (new_op == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "new SingleOp failed");
-    return MEMALLOC_FAILED;
-  }
-
-  GELOGI("To build operator: %s", model_name.c_str());
-  GE_CHK_STATUS_RET(model.BuildOp(*res, *new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
-
-  // stream is nullable
-  new_op->SetStream(stream);
-  *single_op = new_op.get();
-  res->CacheOperator(model_data.model_data, std::move(new_op));
-  return SUCCESS;
+  return res->BuildOperator(model_name, model_data, single_op);
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::ReleaseResource(void *stream) {
@@ -94,7 +74,7 @@ StreamResource *SingleOpManager::GetResource(uintptr_t resource_id, rtStream_t s
   auto it = stream_resources_.find(resource_id);
   StreamResource *res = nullptr;
   if (it == stream_resources_.end()) {
-    res = new (std::nothrow) StreamResource();
+    res = new (std::nothrow) StreamResource(resource_id);
     if (res != nullptr) {
       res->SetStream(stream);
       stream_resources_.emplace(resource_id, res);
@@ -118,6 +98,10 @@ StreamResource *SingleOpManager::TryGetResource(uintptr_t resource_id) {
 
 Status SingleOpManager::GetDynamicOpFromModel(const string &model_name, const ModelData &model_data, void *stream,
                                               DynamicSingleOp **single_op) {
+  if (!tiling_func_registered_) {
+    RegisterTilingFunc();
+  }
+
   GE_CHECK_NOTNULL(single_op);
   uintptr_t resource_id = 0;
   GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
@@ -134,25 +118,7 @@ Status SingleOpManager::GetDynamicOpFromModel(const string &model_name, const Mo
     return SUCCESS;
   }
 
-  if (!tiling_func_registered_) {
-    RegisterTilingFunc();
-  }
-
-  SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
-  auto ret = model.Init();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
-    return ret;
-  }
-
-  auto new_op = std::unique_ptr<DynamicSingleOp>(new (std::nothrow) DynamicSingleOp(resource_id, stream));
-  GE_CHECK_NOTNULL(new_op);
-
-  GELOGI("To build operator: %s", model_name.c_str());
-  GE_CHK_STATUS_RET(model.BuildDynamicOp(*new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
-  *single_op = new_op.get();
-  res->CacheDynamicOperator(model_data.model_data, std::move(new_op));
-  return SUCCESS;
+  return res->BuildDynamicOperator(model_name, model_data, single_op);
 }
 
 void SingleOpManager::RegisterTilingFunc() {

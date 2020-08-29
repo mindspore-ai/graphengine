@@ -27,6 +27,7 @@ namespace ge {
 enum MemStorageType {
   HBM = 0,
   RDMA_HBM,
+  HOST_DDR,
 };
 
 struct HostVarInfo {

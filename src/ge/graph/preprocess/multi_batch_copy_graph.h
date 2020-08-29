@@ -27,7 +27,6 @@
 namespace ge {
 namespace multibatch {
 Status ProcessMultiBatch(ComputeGraphPtr &graph);
-void ParseDynamicSize(std::string dynamic_size, std::vector<std::vector<int64_t>> &shapes);
 
 Status GetDynamicOutputShape(ComputeGraphPtr &graph);
 
@@ -44,19 +43,28 @@ class MultiBatchGraphCopyer {
   ~MultiBatchGraphCopyer() = default;
 
   void AddShape(const std::vector<int64_t> &shape) { shapes_.emplace_back(shape); }
-
+  void SetUserDesignateShape(const vector<pair<string, vector<int64_t>>> &designate_shape) {
+    user_designate_shape_ = designate_shape;
+    for (auto &item : designate_shape) {
+      data_name_order_.push_back(item.first);
+    }
+  }
+  void SetDataToDynamicInfo(const map<string, vector<vector<int64_t>>> &designate_shape) {
+    data_to_dynamic_info_ = designate_shape;
+  }
   Status CopyGraph();
 
  private:
   Status Init();
   Status CheckArguments();
 
+  // label status for origin_all_nodes_
+  Status LabelStatus();
   // add nodes functions
   Status CreateNewNodes();
 
   NodePtr InsertShapeDataNode();
   Status InsertSwitchNForData(const NodePtr &data);
-  Status StampDynamicTypeForSwitchN(OpDescPtr &switchn_desc);
   Status UpdateMaxShapeToData(const NodePtr &data);
 
   Status InsertMergeForEdgeNode(const NodePtr &node);
@@ -87,7 +95,7 @@ class MultiBatchGraphCopyer {
   Status CopyInControlEdges(const NodePtr &node, int batch_num, const NodePtr &copyed_node);
 
   bool IsInBatchBranch(const NodePtr &node);
-  NodeStatus GetNodeStatus(const NodePtr &node);
+  NodeStatus GetNodeStatus(const NodePtr &node) { return origin_nodes_status_[node.get()]; };
   Status CheckCopyResult(const std::vector<NodePtr> &start_nodes);
 
   // arguments
@@ -111,6 +119,16 @@ class MultiBatchGraphCopyer {
 
   // the nodes on the in/out-batch-branch edge, and the merge nodes inserted after it
   std::map<Node *, std::vector<NodePtr>> nodes_to_merge_nodes_;
+
+  // all nodes and their status
+  std::map<Node *, NodeStatus> origin_nodes_status_;
+
+  // user designate shape, decord the order of each input data
+  std::vector<std::pair<std::string, std::vector<int64_t>>> user_designate_shape_;
+  std::vector<std::string> data_name_order_;
+
+  // each data's own dynamic info
+  map<string, vector<vector<int64_t>>> data_to_dynamic_info_;
 };
 }  // namespace multibatch
 }  // namespace ge

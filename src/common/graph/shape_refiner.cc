@@ -351,6 +351,66 @@ graphStatus UpdateParentNodeOutTensor(const ConstNodePtr &node) {
   }
   return UpdateParentNodeForBranch(node, ref_out_tensors);
 }
+
+string Serial(const vector<int64_t> &dims) {
+  string serial_string;
+  serial_string += "[";
+  for (int64_t dim : dims) {
+    serial_string += std::to_string(dim) + " ";
+  }
+  serial_string += "]";
+  return serial_string;
+}
+
+graphStatus UpdateOpInputDesc(const ConstNodePtr &node_ptr) {
+  GE_IF_BOOL_EXEC(node_ptr == nullptr, GELOGE(GRAPH_FAILED, "node is null."); return GRAPH_FAILED);
+  GE_IF_BOOL_EXEC(node_ptr->GetOpDesc() == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return GRAPH_FAILED);
+  for (const auto &in_anchor : node_ptr->GetAllInDataAnchors()) {
+    auto in_idx = in_anchor->GetIdx();
+    auto peer_out_data_anchor = in_anchor->GetPeerOutAnchor();
+    if (peer_out_data_anchor == nullptr) {
+      continue;
+    }
+    auto peer_out_data_node = peer_out_data_anchor->GetOwnerNode();
+    if (peer_out_data_node == nullptr || peer_out_data_node->GetOpDesc() == nullptr) {
+      continue;
+    }
+    int peer_out_idx = peer_out_data_anchor->GetIdx();
+    auto in_desc = node_ptr->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_idx));
+    auto peer_out_desc = peer_out_data_node->GetOpDesc()->MutableOutputDesc(static_cast<uint32_t>(peer_out_idx));
+
+    // check shape and dtype continuity. do not stop process
+    auto in_shape = in_desc->GetShape().GetDims();
+    auto in_dtype = in_desc->GetDataType();
+    auto peer_out_shape = peer_out_desc->GetShape().GetDims();
+    auto peer_out_dtype = peer_out_desc->GetDataType();
+    if (peer_out_dtype != in_dtype) {
+      GELOGW(
+        "current node [%s] [%d]\'th out_dtype is [%s].peer output node [%s] [%d]\'th "
+        "output_dtype is [%s].The two dtype should be same! Please check graph and fix it",
+        node_ptr->GetName().c_str(), in_idx, TypeUtils::DataTypeToSerialString(in_dtype).c_str(),
+        peer_out_data_node->GetName().c_str(), peer_out_idx, TypeUtils::DataTypeToSerialString(peer_out_dtype).c_str());
+    } else if ((!in_shape.empty()) && (in_shape != peer_out_shape)) {
+      string in_shape_str = Serial(in_shape);
+      string peer_out_shape_str = Serial(peer_out_shape);
+      GELOGW(
+        "current node [%s] [%d]\'th out_shape is [%s].peer input node [%s] [%d]\'th "
+        "input_shape is [%s].The two shape should be same! Please check graph and fix it",
+        node_ptr->GetName().c_str(), in_idx, in_shape_str.c_str(), peer_out_data_node->GetName().c_str(), peer_out_idx,
+        peer_out_shape_str.c_str());
+    }
+    // refresh current node input desc
+    in_desc->SetOriginShape(peer_out_desc->GetOriginShape());
+    in_desc->SetShape(peer_out_desc->GetShape());
+    in_desc->SetDataType(peer_out_desc->GetDataType());
+    in_desc->SetOriginDataType(peer_out_desc->GetOriginDataType());
+    std::vector<std::pair<int64_t, int64_t>> shape_range;
+    (void)peer_out_desc->GetShapeRange(shape_range);
+    in_desc->SetShapeRange(shape_range);
+    ge::TensorUtils::SetRealDimCnt(*in_desc, static_cast<uint32_t>(peer_out_desc->GetShape().GetDims().size()));
+  }
+  return GRAPH_SUCCESS;
+}
 }  // namespace
 void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::string &phase) {
   if (!IsLogEnable(GE, DLOG_DEBUG)) {
@@ -427,9 +487,7 @@ graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &
   return InferShapeAndType(node, op, true);
 }
 graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &op, bool before_subgraph) {
-  GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "node is null."); return GRAPH_FAILED);
   auto op_desc = node->GetOpDesc();
-  GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return GRAPH_FAILED);
   const auto &op_type = op_desc->GetType();
 
   graphStatus ret;
@@ -554,6 +612,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferShapeAndType(const NodePtr &node,
                                                                                            bool before_subgraph) {
   GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "node is null."); return GRAPH_FAILED);
+  bool is_unknown_graph = node->GetOwnerComputeGraph()->GetGraphUnknownFlag();
+  auto opdesc = node->GetOpDesc();
+  GE_IF_BOOL_EXEC(opdesc == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return GRAPH_FAILED);
+  // some op can not infershape twice such as aipp
+  bool need_update_input = !is_unknown_graph && !opdesc->HasAttr("has_infered_verified");
+  if (need_update_input) {
+    auto status = UpdateOpInputDesc(node);
+    if (status != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "update op input_desc failed!");
+      return status;
+    }
+  }
+
   if (node->Verify() != GRAPH_SUCCESS) {
     GELOGE(GRAPH_FAILED, "Verifying %s failed.", node->GetName().c_str());
     return GRAPH_FAILED;
@@ -561,7 +632,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
   PrintInOutTensorShape(node, "before_infershape");
   Operator op = OpDescUtils::CreateOperatorFromNode(node);
 
-  bool is_unknown_graph = node->GetOwnerComputeGraph()->GetGraphUnknownFlag();
   if (!is_unknown_graph) {
     auto inference_context = CreateInferenceContext(context_map, node);
     if (inference_context == nullptr) {
@@ -574,7 +644,21 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
 
   graphStatus status = InferShapeAndType(node, op, before_subgraph);
   if (status == GRAPH_PARAM_INVALID || status == GRAPH_SUCCESS) {
-    (void)ge::NodeUtils::UpdatePeerNodeInputDesc(node);
+    if (is_unknown_graph) {
+      return GRAPH_SUCCESS;
+    }
+    auto op_desc = node->GetOpDesc();
+    for (const auto &out_anchor : node->GetAllOutDataAnchors()) {
+      auto output_tensor = op_desc->MutableOutputDesc(out_anchor->GetIdx());
+      ge::TensorUtils::SetRealDimCnt(*output_tensor, static_cast<uint32_t>(output_tensor->GetShape().GetDims().size()));
+      output_tensor->SetOriginShape(output_tensor->GetShape());
+      output_tensor->SetOriginDataType(output_tensor->GetDataType());
+
+      GELOGD("node name is %s, origin shape is %ld, origin format is %s, origin data type is %s",
+             node->GetName().c_str(), output_tensor->GetOriginShape().GetShapeSize(),
+             TypeUtils::FormatToSerialString(output_tensor->GetOriginFormat()).c_str(),
+             TypeUtils::DataTypeToSerialString(output_tensor->GetOriginDataType()).c_str());
+    }
   } else {
     GELOGE(GRAPH_FAILED, "%s call infer function failed.", node->GetName().c_str());
     return GRAPH_FAILED;

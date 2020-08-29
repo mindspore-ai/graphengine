@@ -20,6 +20,7 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include "common/properties_manager.h"
 #include "external/ge/ge_api_error_codes.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/common/npu_memory_allocator.h"
@@ -71,13 +72,16 @@ class TaskContext {
 
   bool IsDumpEnabled() const;
 
+  const DumpProperties &GetDumpProperties() const;
+
   const GraphExecutionContext *GetExecutionContext() { return execution_context_; }
 
-  Status AllocateTemp(size_t size, TensorValue &tensor);
+  Status AllocateTensor(size_t size, TensorValue &tensor, AllocationAttr *attr = nullptr);
   void *MutableWorkspace(int index);
   const void *GetVarBaseAddr();
 
   Status RegisterCallback(const std::function<void()> &callback_fun) const;
+  Status TryExecuteCallback(const std::function<void()> &callback_fun) const;
 
   Status PropagateOutputs();
 

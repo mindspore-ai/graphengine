@@ -27,6 +27,8 @@ const char *const kEngineNameAiCore = "AIcoreEngine";
 const char *const kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
 const char *const kEngineNameAiCpu = "aicpu_kernel";
 const char *const kEngineNameHccl = "ops_kernel_info_hccl";
+const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
+const char *const kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
 }  // namespace
 Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
@@ -61,6 +63,8 @@ Status NodeExecutorManager::EnsureInitialized() {
   engine_mapping_.emplace(kEngineNameGeLocal, NodeExecutorManager::ExecutorType::GE_LOCAL);
   engine_mapping_.emplace(kEngineNameAiCpu, NodeExecutorManager::ExecutorType::AICPU_TF);
   engine_mapping_.emplace(kEngineNameHccl, NodeExecutorManager::ExecutorType::HCCL);
+  engine_mapping_.emplace(kEngineNameRts, NodeExecutorManager::ExecutorType::RTS);
+  engine_mapping_.emplace(kEngineNameHostCpu, NodeExecutorManager::ExecutorType::HOST_CPU);
 
   std::shared_ptr<GELib> instance_ptr = GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
@@ -134,6 +138,10 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
   if (op_desc->GetType() == PARTITIONEDCALL) {
     GELOGD("[%s] Skipping CalcOpRunningParam for PartitionedCall.", node.GetName().c_str());
     return SUCCESS;
+  }
+  for (size_t i = 0; i < node.GetOpDesc()->GetOutputsSize(); ++i) {
+    GeTensorDescPtr output_tensor = op_desc->MutableOutputDesc(static_cast<uint32_t>(i));
+    TensorUtils::SetSize(*(output_tensor.get()), 0);
   }
 
   auto it = kernel_stores_.find(op_desc->GetOpKernelLibName());

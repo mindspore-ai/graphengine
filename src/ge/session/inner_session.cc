@@ -295,4 +295,17 @@ bool InnerSession::IsGraphNeedRebuild(uint32_t graph_id) {
   UpdateThreadContext(graph_id);
   return graph_manager_.IsGraphNeedRebuild(graph_id);
 }
+
+Status InnerSession::GetAllVariables(std::map<std::string, GeTensorDesc> &all_variables) {
+  return VarManager::Instance(session_id_)->GetAllVariables(all_variables);
+}
+
+Status InnerSession::GenCheckPointGraph(const std::map<std::string, GeTensorDesc> &all_variables, Graph &graph) {
+  return graph_manager_.GenCheckPointGraph(all_variables, graph);
+}
+
+Status InnerSession::SaveVariables(const Graph &graph, const std::vector<std::string> &var_names,
+                                   const std::vector<Tensor> &outputs, std::vector<Tensor> &var_values) {
+  return graph_manager_.SaveVariables(graph, var_names, outputs, var_values);
+}
 }  // namespace ge

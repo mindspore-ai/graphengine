@@ -16,7 +16,6 @@
 
 #include "atc_ir_common.h"
 #include "common/util/error_manager/error_manager.h"
-#include "common/model_parser/graph_parser_util.h"
 #include "external/ge/ge_api_types.h"
 #include "framework/common/string_util.h"
 #include "framework/common/types.h"
@@ -43,10 +42,25 @@ const std::set<std::string> kBufferOptimizeSupportOption = {"l1_optimize", "l2_o
 const char *const kBufferOptimizeSupport = "only support l2_optimize, off_optimize";
 const char *const IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT = "high_performance";
 const char *const IR_OPTION_OP_SELECT_IMPLMODE_PRECISON = "high_precision";
+const char *const kInputShapeSample1 = "\"input_name1:n1,c1,h1,w1\"";
+const char *const kInputShapeSample2 = "\"input_name1:1,3,224,224\"";
+const char *const kSplitError1 = "size not equal to 2 split by \":\"";
+const char *const kEmptyError = "can not be empty";
+const char *const kFloatNumError = "exist float number";
+const char *const kDigitError = "is not digit";
 const char *const kCompressWeightError = "it must be appointed when appoint parameter[--optypelist_for_implmode]";
 const char *const kSelectImplmodeError = "only support high_performance, high_precision";
 const char *const kDynamicBatchSizeError = "It can only contains digit, \",\", \" \"";
 
+vector<string> SplitInputShape(const std::string &input_shape) {
+  vector<string> shape_pair_vec;
+  size_t pos = input_shape.rfind(":");
+  if (pos != std::string::npos) {
+    shape_pair_vec.emplace_back(input_shape.substr(0, pos));
+    shape_pair_vec.emplace_back(input_shape.substr(pos + 1, input_shape.size() - pos));
+  }
+  return shape_pair_vec;
+}
 }  // namespace
 
 bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
@@ -182,15 +196,7 @@ bool CheckDynamicDimsInputShapeValid(const unordered_map<string, vector<int64_t>
       GELOGE(ge::PARAM_INVALID, "Dim num must within [%zu, %zu] when set dynamic_dims.", kMinNDDimNum, kMaxNDDimNum);
       return false;
     }
-    int tmp = std::count(shapes.begin(), shapes.end(), kDynamicInputDim);
-    if (dynamic_dim != 0 && dynamic_dim != tmp) {
-      ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"},
-        {"--input_shape's -1 num", std::to_string(tmp), "Every set's num of -1 must be same"});
-      GELOGE(ge::PARAM_INVALID, "input_shape's shape is invalid, every set's num of -1 must be same.");
-      return false;
-    }
-    dynamic_dim = tmp;
+    dynamic_dim += std::count(shapes.begin(), shapes.end(), kDynamicInputDim);
   }
   if (dynamic_dim == 0) {
     ErrorManager::GetInstance().ATCReportErrMessage(
@@ -229,10 +235,11 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
     vector<string> one_set = StringUtils::Split(split_dim, ',');
     if (one_set.size() != static_cast<size_t>(dynamic_dim_num)) {
       ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"},
-        {"--dynamic_dims's parameter num of each set", std::to_string(one_set.size()),
-         "must be same as input_shape's num of -1"});
-      GELOGE(ge::PARAM_INVALID, "dynamic_dims's parameter num of each set must be same as input_shape's num of -1.");
+        "E10042", {"parameter", "reason"},
+        {"dynamic_dims", "Each gear setting needs to be consistent with the number of -1 in the inputshape"});
+      GELOGE(ge::PARAM_INVALID,
+             "Input parameter --dynamic_dims parse failed, "
+             "reason: Each gear setting needs to be consistent with the number of -1 in the inputshape.");
       return false;
     }
     for (auto dim : one_set) {
@@ -301,6 +308,90 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
     }
   }
   return ge::SUCCESS;
+}
+
+bool ParseInputShape(const string &input_shape, unordered_map<string, vector<int64_t>> &shape_map,
+                     vector<pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input) {
+  vector<string> shape_vec = StringUtils::Split(input_shape, ';');
+  const int DEFAULT_SHAPE_PAIR_SIZE = 2;
+  for (const auto &shape : shape_vec) {
+    vector<string> shape_pair_vec = SplitInputShape(shape);
+    if (shape_pair_vec.size() != DEFAULT_SHAPE_PAIR_SIZE) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10002", {"shape", "reason", "sample"},
+                                                      {shape, kSplitError1, kInputShapeSample1});
+      GELOGW("Parse input parameter [--input_shape]'s shape[%s] failed, reason: %s, correct sample is %s.",
+             shape.c_str(), kSplitError1, kInputShapeSample1);
+      return false;
+    }
+    if (shape_pair_vec[1].empty()) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10002", {"shape", "reason", "sample"},
+                                                      {shape, kEmptyError, kInputShapeSample1});
+      GELOGW("Parse input parameter [--input_shape]'s shape[%s] failed, reason: %s, correct sample is %s.",
+             shape.c_str(), kEmptyError, kInputShapeSample1);
+      return false;
+    }
+
+    vector<string> shape_value_strs = StringUtils::Split(shape_pair_vec[1], ',');
+    vector<int64_t> shape_values;
+    for (auto &shape_value_str : shape_value_strs) {
+      // stoul: The method may throw an exception: invalid_argument/out_of_range
+      if (std::string::npos != shape_value_str.find('.')) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10002", {"shape", "reason", "sample"},
+                                                        {shape, kFloatNumError, kInputShapeSample2});
+        GELOGW("Parse input parameter [--input_shape]'s shape[%s] failed, reason: %s, correct sample is %s.",
+               shape.c_str(), kFloatNumError, kInputShapeSample2);
+        return false;
+      }
+
+      long left_result = 0;
+      try {
+        left_result = stol(StringUtils::Trim(shape_value_str));
+        if (!shape_value_str.empty() && (shape_value_str.front() == '-')) {
+          // The value maybe dynamic shape [-1], need substr it and verify isdigit.
+          shape_value_str = shape_value_str.substr(1);
+        }
+        for (char c : shape_value_str) {
+          if (!isdigit(c)) {
+            ErrorManager::GetInstance().ATCReportErrMessage("E10002", {"shape", "reason", "sample"},
+                                                            {shape, kDigitError, kInputShapeSample2});
+            GELOGE(PARAM_INVALID, "--input_shape's shape value[%s] is not digit", shape_value_str.c_str());
+            return false;
+          }
+        }
+      } catch (const std::out_of_range &) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10013", {"parameter", "value"},
+                                                        {"--input_shape", shape_value_str});
+        GELOGW("Input parameter[--input_shape]â€™s value[%s] cause out of range execption!", shape_value_str.c_str());
+        return false;
+      } catch (const std::invalid_argument &) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10014", {"parameter", "value"},
+                                                        {"--input_shape", shape_value_str});
+        GELOGW("Input parameter[--input_shape]â€™s value[%s] cause invalid argument!", shape_value_str.c_str());
+        return false;
+      } catch (...) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10015", {"parameter", "value"},
+                                                        {"--input_shape", shape_value_str});
+        GELOGW("Input parameter[--input_shape]â€™s value[%s] cause unkown execption!", shape_value_str.c_str());
+        return false;
+      }
+      int64_t result = left_result;
+      // - 1 is not currently supported
+      if (!is_dynamic_input && result <= 0) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10011", {"shape", "result"}, {shape, std::to_string(result)});
+        GELOGW(
+          "Input parameter[--input_shape]â€™s shape value[%s] is invalid, "
+          "expect positive integer, but value is %ld.",
+          shape.c_str(), result);
+        return false;
+      }
+      shape_values.push_back(result);
+    }
+
+    shape_map.emplace(make_pair(StringUtils::Trim(shape_pair_vec[0]), shape_values));
+    user_shape_map.push_back(make_pair(StringUtils::Trim(shape_pair_vec[0]), shape_values));
+  }
+
+  return true;
 }
 
 Status CheckOutputTypeParamValid(const std::string output_type) {

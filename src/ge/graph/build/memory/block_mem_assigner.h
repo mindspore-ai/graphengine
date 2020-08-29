@@ -352,6 +352,8 @@ class BlockMemAssigner : public MemAssigner {
 
   void AssignContinuousBlocks();
 
+  bool IsZeroCopyBlock(const NodePtr &node, bool continuous);
+
   bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
                                    uint32_t &peer_input_index);
 

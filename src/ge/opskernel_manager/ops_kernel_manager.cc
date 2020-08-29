@@ -73,7 +73,7 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     options.emplace("ge.exec.isUseHvd", to_string(0));
   }
 
-  GetExternalEnginePath(extern_engine_path);
+  GetExternalEnginePath(extern_engine_path, options);
   GELOGI("OPTION_EXEC_EXTERN_PLUGIN_PATH=%s.", extern_engine_path.c_str());
 
   op_tiling_manager_.LoadSo();
@@ -123,7 +123,7 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
   }
 }
 
-void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path) {
+void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path, const std::map<string, string> &options) {
   GELOGI("Enter get external engine so path schedule");
   const char *path_env = std::getenv("ASCEND_ENGINE_PATH");
   if (path_env != nullptr) {
@@ -136,7 +136,11 @@ void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path) {
   std::string path = path_base + so_path;
   extern_engine_path = (path + "libfe.so" + ":") + (path + "libge_local_engine.so" + ":") +
                        (path + "librts_engine.so" + ":") + (path + "libaicpu_engine.so" + ":") +
-                       (path_base + "libhcom_graph_adaptor.so");
+                       (path + "libhost_cpu_engine.so" + ":");
+  auto iter = options.find(OPTION_EXEC_HCCL_FLAG);
+  if (iter == options.end() || iter->second != "0") {
+    extern_engine_path += (path_base + "libhcom_graph_adaptor.so");
+  }
 }
 
 Status OpsKernelManager::InitPluginOptions(const map<string, string> &options) {

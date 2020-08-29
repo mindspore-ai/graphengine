@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@
 namespace ge {
 class SingleOp {
  public:
-  SingleOp() = default;
+  SingleOp(std::mutex *stream_mutex, rtStream_t stream);
   ~SingleOp();
 
   Status ExecuteAsync(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
@@ -42,6 +43,7 @@ class SingleOp {
   Status GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
 
   friend class SingleOpModel;
+  std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;
   std::vector<void *> input_addr_list_;
   std::vector<size_t> input_sizes_;
@@ -56,7 +58,7 @@ class SingleOp {
 
 class DynamicSingleOp {
  public:
-  DynamicSingleOp(uintptr_t resource_id, rtStream_t stream);
+  DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex_, rtStream_t stream);
   ~DynamicSingleOp() = default;
   Status ExecuteAsync(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
                       std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs);
@@ -70,6 +72,7 @@ class DynamicSingleOp {
 
   std::unique_ptr<TbeOpTask> op_task_;
   uintptr_t resource_id_ = 0;
+  std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;
   size_t num_inputs_ = 0;
   size_t num_outputs_ = 0;

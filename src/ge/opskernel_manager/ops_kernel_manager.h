@@ -91,7 +91,7 @@ class OpsKernelManager {
 
   Status CheckPluginPtr();
 
-  void GetExternalEnginePath(std::string &path);
+  void GetExternalEnginePath(std::string &path, const std::map<string, string> &options);
 
   void InitOpsKernelInfo();
 

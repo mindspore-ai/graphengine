@@ -37,6 +37,9 @@ static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
   {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
   {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
+// the size of user defined output datatype or format string after split by ":".
+const size_t kUserDefinedElementCount = 2;
+
 Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
                                           std::map<int32_t, RetvalInfo> &retval_node_index_map) {
   GE_CHECK_NOTNULL(node);
@@ -552,27 +555,43 @@ void NetOutputPass::AddInOutForNetOutputOp(const ComputeGraphPtr &graph, OpDescP
   net_output_desc->SetIsInputConst(is_input_const);
 }
 
-bool NeedUpdateOutputByOutputTypeParm(std::string &output_type, NodePtr &src_node, uint32_t src_index,
+bool NeedUpdateOutputByOutputTypeParm(std::string &output_type, OpDescPtr &op_desc, uint32_t &src_index,
                                       ge::DataType &dt) {
   if (output_type_str_to_datatype.find(output_type) != output_type_str_to_datatype.end()) {
     dt = output_type_str_to_datatype[output_type];
     return true;
   }
 
-  auto op_desc = src_node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-  vector<ge::DataType> output_data_type_vec;
-  vector<uint32_t> index_vec;
-  if ((ge::AttrUtils::GetListDataType(op_desc, "_output_dt_list", output_data_type_vec)) &&
-      (ge::AttrUtils::GetListInt(op_desc, "_output_dt_index", index_vec))) {
-    if (output_data_type_vec.size() != index_vec.size()) {
-      GELOGW("output_dt_list size is not match output_dt_index size");
-      return false;
+  vector<string> output_dt_str;
+  if (ge::AttrUtils::GetListStr(op_desc, "_user_defined_output_data_type", output_dt_str)) {
+    for (const auto &dt_str : output_dt_str) {
+      vector<string> dt_str_split = StringUtils::Split(dt_str, ':');
+      if (dt_str_split.size() == kUserDefinedElementCount) {
+        if (dt_str_split[0] == to_string(src_index)) {
+          dt = TypeUtils::SerialStringToDataType(dt_str_split[1]);
+          return true;
+        }
+      } else {
+        GELOGW("The size of [%s] is not 2 after split.", dt_str.c_str());
+        continue;
+      }
     }
-    for (uint32_t i = 0; i < index_vec.size(); ++i) {
-      if (index_vec[i] == src_index) {
-        dt = output_data_type_vec[i];
-        return true;
+  }
+  return false;
+}
+
+bool NeedUpdateOutputFp16Nc1hwc0(OpDescPtr &op_desc, uint32_t &src_index) {
+  vector<string> output_dt_str;
+  if (ge::AttrUtils::GetListStr(op_desc, "_user_defined_output_fp16_5hd", output_dt_str)) {
+    for (const auto &dt_str : output_dt_str) {
+      vector<string> dt_str_split = StringUtils::Split(dt_str, ':');
+      if (dt_str_split.size() == kUserDefinedElementCount) {
+        if (dt_str_split[0] == to_string(src_index)) {
+          return true;
+        }
+      } else {
+        GELOGW("The size of [%s] is not 2 after split.", dt_str.c_str());
+        continue;
       }
     }
   }
@@ -601,9 +620,11 @@ Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &outpu
     auto src_index = static_cast<uint32_t>(peer_out->GetIdx());
     auto src_node = peer_out->GetOwnerNode();
     GE_CHECK_NOTNULL(src_node);
+    OpDescPtr src_op_desc = src_node->GetOpDesc();
+    GE_CHECK_NOTNULL(src_op_desc);
 
     // Update datatype
-    if (NeedUpdateOutputByOutputTypeParm(output_type, src_node, src_index, output_data_type)) {
+    if (NeedUpdateOutputByOutputTypeParm(output_type, src_op_desc, src_index, output_data_type)) {
       GELOGD("Add user-define datatype:%s to netoutput node.",
              TypeUtils::DataTypeToSerialString(output_data_type).c_str());
       userdef_dtypes.push_back(
@@ -611,10 +632,7 @@ Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &outpu
       continue;
     }
     // Output_node is not set,check if is_output_adjust_hw_layout is set
-    OpDescPtr src_op_desc = src_node->GetOpDesc();
-    GE_CHECK_NOTNULL(src_op_desc);
-    bool set_fp16_nc1hwc0 = false;
-    (void)AttrUtils::GetBool(src_op_desc, "output_set_fp16_nc1hwc0", set_fp16_nc1hwc0);
+    bool set_fp16_nc1hwc0 = NeedUpdateOutputFp16Nc1hwc0(src_op_desc, src_index);
     if (set_fp16_nc1hwc0) {
       // Set DT_FLOAT16 & FORMAT_NC1HWC0
       userdef_dtypes.push_back(std::to_string(index).append(":").append(TypeUtils::DataTypeToSerialString(DT_FLOAT16)));

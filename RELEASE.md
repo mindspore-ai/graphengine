@@ -1,4 +1,4 @@
- Release 0.7.0-beta
+# Release 0.7.0-beta
 
 ## Major Features and Improvements
 * Conditional operator memory supports separate allocation of 4G memory space;

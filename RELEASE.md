@@ -1,3 +1,22 @@
+ Release 0.7.0-beta
+
+## Major Features and Improvements
+* Conditional operator memory supports separate allocation of 4G memory space;
+* In the zero-copy scenario, atomic_clean supports cleaning the memory of each part of the output when the network is multi-output;
+* Support profiling of multiple levels of data in inference scenarios;
+* In the online compilation scenarios, GE compilation time optimization.
+
+## Bugfixes 
+* Fix the issue that calculation result is wrong when the unknown subgraph contains conditional operations;
+* Fix the issue that the hccl executor fails to load the task when the input of hccl operator is unkown shape;
+* Fix the issue that allgather output is wrong when it exists in the unknown subgraph and its input is unkown shape;
+
+
+## Thanks to our Contributors
+Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
+
+Contributions of any kind are welcome!
+
 # Release 0.6.0-beta
 
 ## Major Features and Improvements

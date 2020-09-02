@@ -181,6 +181,8 @@ class GraphMemoryAssigner {
 
   ge::Status UpdateConstArgsOffset(const NodePtr &node, vector<int64_t> &input_list) const;
 
+  NodePtr GetKnownInputNode(const NodePtr &node) const;
+
   MemoryOffsetList memory_offset_;
   ge::ComputeGraphPtr compute_graph_;
   HybridMemAssignerPtr mem_assigner_;

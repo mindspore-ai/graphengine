@@ -745,6 +745,23 @@ bool BlockMemAssigner::IsContinuousOutput(const NodePtr &n) {
   return false;
 }
 
+bool BlockMemAssigner::IsZeroCopyBlock(const NodePtr &node, bool continuous) {
+  if (NodeUtils::IsDynamicShape(node)) {
+    return ((node->GetType() == DATA_TYPE) && !continuous) || (node->GetType() == NETOUTPUT);
+  }
+
+  if ((node->GetType() == DATA_TYPE) && !continuous) {
+    return !node->GetOpDesc()->HasAttr(ATTR_NAME_PARENT_NODE_INDEX);
+  }
+
+  if (node->GetType() == NETOUTPUT) {
+    const auto &owner = node->GetOwnerComputeGraph();
+    return owner->GetParentGraph() == nullptr;
+  }
+
+  return false;
+}
+
 MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, size_t no_align_size,
                                            MemoryType mem_type, const NodePtr &n, uint32_t out_index,
                                            const vector<bool> &workspace_reuse_flag, const bool is_op_reuse_mem,
@@ -793,9 +810,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(block == nullptr, return nullptr, "new an object failed.");
 
   // Data and netoutput need zero copy block
-  if ((node_op_desc->GetType() == DATA_TYPE && !continuous) || (node_op_desc->GetType() == NETOUTPUT)) {
-    block->is_zero_copy_ = true;
-  }
+  block->is_zero_copy_ = IsZeroCopyBlock(n, continuous);
 
   block->Init(real_size, mem_type, n, out_index, no_align_size);
   block->stream_id_ = node_op_desc->GetStreamId();
@@ -970,6 +985,14 @@ bool IsAtomicOutputMemory(const ge::NodePtr &node, uint32_t output_index, bool i
   return false;
 }
 
+bool IsKnownSubgraphData(const NodePtr &node) {
+  if (NodeUtils::IsDynamicShape(node)) {
+    return false;
+  }
+
+  return node->GetOpDesc()->HasAttr(ATTR_NAME_PARENT_NODE_INDEX);
+}
+
 void BlockMemAssigner::ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr, return, "Input parameter to_release is null.");
   GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0, return, "Release memory");
@@ -1092,7 +1115,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   (void)ge::AttrUtils::GetBool(op_desc, ATOMIC_ATTR_IS_ATOMIC_NODE, is_atomic);
   // Allocate memory for the current node and release node memory of the same size in the workspace
   GE_IF_BOOL_EXEC(ge_disable_reuse_mem_env_ != "1",
-                  ReleaseMemorys(stream_workspace_blocks_[stream_id], reusable_blocks_[stream_id]);)
+                  ReleaseMemorys(stream_workspace_blocks_[stream_id], reusable_blocks_[stream_id]));
   if (IsContinuousOutput(node)) {
     (void)ApplyContinuousMemory(node, ranges, is_op_reuse_mem_);
     return SUCCESS;
@@ -1118,6 +1141,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
       out_node_set_continuous_input = IsOutNodeSetContinuousInput(node, i, peer_name, peer_input_index);
       no_need_assign_memory = IsAtomicOutputMemory(node, i, is_atomic, out_node_set_continuous_input);
     }
+    no_need_assign_memory = (no_need_assign_memory || IsKnownSubgraphData(node));
     if (no_need_assign_memory) {
       zero_memory_list_.emplace_back(node, kOutput, i, false);
       continue;
@@ -1474,8 +1498,8 @@ void SetOffsetSize(const NodeTypeIndex &node_type, const MemoryBlock *block, siz
       return;
     }
 
-    if ((op_desc->GetType() == DATA) || (op_desc->GetType() == AIPP_DATA_TYPE) || (op_desc->GetType() == MULTISHAPE) ||
-        (op_desc->GetType() == NETOUTPUT)) {
+    static const set<string> kSetOffsetTypes = {DATA_TYPE, AIPP_DATA_TYPE, MULTISHAPE, NETOUTPUT};
+    if ((kSetOffsetTypes.count(op_desc->GetType()) > 0) && !IsKnownSubgraphData(node_type.node)) {
       if ((output_list[node_type.index] == kInvalidOffset) || (output_list[node_type.index] < offset)) {
         output_list.at(node_type.index) = offset;
       }

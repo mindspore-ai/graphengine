@@ -36,6 +36,12 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   count_ = memcpy_async.count();
   kind_ = memcpy_async.kind();
   dst_max_ = memcpy_async.dst_max();
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(memcpy_async.op_index());
+  if (op_desc == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
+    return INTERNAL_ERROR;
+  }
+
   if (davinci_model->IsKnownNode()) {
     src_ = reinterpret_cast<uint8_t *>(davinci_model_->GetCurrentArgsAddr(args_offset_));
     dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(src_) + sizeof(void *));
@@ -49,9 +55,17 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     return ret;
   }
 
-  ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.dst(), dst_);
-  if (ret != SUCCESS) {
-    return ret;
+  // dst_ needs different address for different chips
+  if (op_desc->HasAttr(ATTR_NAME_MEMORY_TYPE_RANGE)) {
+    ret = AllocTsMemoryForMemcpy(op_desc, davinci_model);
+    if (ret != SUCCESS) {
+      return ret;
+    }
+  } else {
+    ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.dst(), dst_);
+    if (ret != SUCCESS) {
+      return ret;
+    }
   }
 
   GELOGI("MemcpyAsyncTaskInfo Init Success, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu",
@@ -105,6 +119,34 @@ Status MemcpyAsyncTaskInfo::UpdateArgs() {
   davinci_model_->SetTotalIOAddrs(io_addrs);
 
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs success.");
+  return SUCCESS;
+}
+
+Status MemcpyAsyncTaskInfo::AllocTsMemoryForMemcpy(const OpDescPtr &op_desc, DavinciModel *davinci_model) {
+  int64_t size = 0;
+  auto tensor_desc = op_desc->GetOutputDescPtr(0);
+  if ((tensor_desc == nullptr) || (TensorUtils::GetTensorSizeInBytes(*tensor_desc, size) != GRAPH_SUCCESS)) {
+    GELOGE(FAILED, "GetTensorSizeInBytes failed!");
+    return FAILED;
+  }
+
+  rtError_t rt_ret = rtMalloc(&memory_4g_, size, RT_MEMORY_TS_4G);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtMalloc failed, ret: 0x%X", rt_ret);
+    return FAILED;
+  }
+
+  // map save the opdesc's offset and special address, for update the streamSwitchN's input address
+  std::map<int64_t, void *> memcpy_4g_offset_addr;
+  vector<int64_t> offsets = op_desc->GetOutputOffset();
+  if (offsets.empty()) {
+    GELOGE(FAILED, "GetOutputOffset failed!");
+    return FAILED;
+  }
+  memcpy_4g_offset_addr.insert(std::pair<int64_t, void *>(offsets[0], memory_4g_));
+  davinci_model->SetMemcpyOffsetAndAddr(memcpy_4g_offset_addr);
+
+  dst_ = reinterpret_cast<uint8_t *>(memory_4g_);
   return SUCCESS;
 }
 

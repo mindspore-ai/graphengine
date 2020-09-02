@@ -154,7 +154,7 @@ typedef struct tagRtPointerAttributes {
  * @param [in] size   memory size
  * @param [in] type   memory type
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_MEMORY_ALLOCATION for memory allocation failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMalloc(void **devPtr, uint64_t size, rtMemType_t type);
 
@@ -163,7 +163,7 @@ RTS_API rtError_t rtMalloc(void **devPtr, uint64_t size, rtMemType_t type);
  * @brief free device memory
  * @param [in|out] devPtr   memory pointer
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error device memory pointer
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtFree(void *devPtr);
 
@@ -173,7 +173,7 @@ RTS_API rtError_t rtFree(void *devPtr);
  * @param [in|out] devPtr   memory pointer
  * @param [in] size   memory size
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_MEMORY_ALLOCATION for memory allocation failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size);
 
@@ -182,7 +182,7 @@ RTS_API rtError_t rtDvppMalloc(void **devPtr, uint64_t size);
  * @brief free device memory for dvpp
  * @param [in|out] devPtr   memory pointer
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error device memory pointer
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDvppFree(void *devPtr);
 
@@ -192,7 +192,7 @@ RTS_API rtError_t rtDvppFree(void *devPtr);
  * @param [in|out] hostPtr   memory pointer
  * @param [in] size   memory size
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_MEMORY_ALLOCATION for memory allocation failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
 
@@ -201,7 +201,7 @@ RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
  * @brief free host memory
  * @param [in] hostPtr   memory pointer
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error device memory pointer
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtFreeHost(void *hostPtr);
 
@@ -212,7 +212,7 @@ RTS_API rtError_t rtFreeHost(void *hostPtr);
  * @param [in] size   memory size
  * @param [in] flag   reserved, set to 0.
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_MEMORY_ALLOCATION for memory allocation failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag);
 
@@ -221,7 +221,7 @@ RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag);
  * @brief free managed memory
  * @param [in] ptr   memory pointer
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error device memory pointer
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemFreeManaged(void *ptr);
 /**
@@ -261,9 +261,7 @@ RTS_API rtError_t rtInvalidCache(void *base, size_t len);
  * @param [in] count   the number of byte to copy
  * @param [in] kind   memcpy type
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of count
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error input memory pointer of dst,src
- * @return RT_ERROR_INVALID_MEMCPY_DIRECTION for error copy direction of kind
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_t count, rtMemcpyKind_t kind);
 
@@ -277,9 +275,7 @@ RTS_API rtError_t rtMemcpy(void *dst, uint64_t destMax, const void *src, uint64_
  * @param [in] kind   memcpy type
  * @param [in] stream   asynchronized task stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of count,stream
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error input memory pointer of dst,src
- * @return RT_ERROR_INVALID_MEMCPY_DIRECTION for error copy direction of kind
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, uint64_t count, rtMemcpyKind_t kind,
                                 rtStream_t stream);
@@ -295,9 +291,7 @@ RTS_API rtError_t rtMemcpyAsync(void *dst, uint64_t destMax, const void *src, ui
  * @param [in] type   data type
  * @param [in] stream   asynchronized task stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of count,stream
- * @return RT_ERROR_INVALID_DEVICE_POINTER for error input memory pointer of dst,src
- * @return RT_ERROR_INVALID_MEMCPY_DIRECTION for error copy direction of kind
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtReduceAsync(void *dst, uint64_t destMax, const void *src, uint64_t count, rtRecudeKind_t kind,
                                 rtDataType_t type, rtStream_t stream);
@@ -307,6 +301,7 @@ RTS_API rtError_t rtReduceAsync(void *dst, uint64_t destMax, const void *src, ui
  * @brief query memory size
  * @param [in] aiCoreMemorySize
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize);
 
@@ -316,6 +311,7 @@ RTS_API rtError_t rtAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize);
        integrated network due to memory limitations.Requirement come from JiaMinHu.Only use for Tiny.
  * @param [in] aiCoreMemorySize
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtSetAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize);
 
@@ -327,6 +323,7 @@ RTS_API rtError_t rtSetAiCoreMemorySizes(rtAiCoreMemorySize_t *aiCoreMemorySize)
  * @param [in] value
  * @param [in] count byte num
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemset(void *devPtr, uint64_t destMax, uint32_t value, uint64_t count);
 
@@ -339,6 +336,7 @@ RTS_API rtError_t rtMemset(void *devPtr, uint64_t destMax, uint32_t value, uint6
  * @param [in] count byte num
  * @param [in] stream
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemsetAsync(void *ptr, uint64_t destMax, uint32_t value, uint64_t count, rtStream_t stream);
 
@@ -348,6 +346,7 @@ RTS_API rtError_t rtMemsetAsync(void *ptr, uint64_t destMax, uint32_t value, uin
  * @param [out] free
  * @param [out] total
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemGetInfo(size_t *free, size_t *total);
 
@@ -358,6 +357,7 @@ RTS_API rtError_t rtMemGetInfo(size_t *free, size_t *total);
  * @param [in] len
  * @param [in] device
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemPrefetchToDevice(void *devPtr, uint64_t len, int32_t device);
 
@@ -367,6 +367,7 @@ RTS_API rtError_t rtMemPrefetchToDevice(void *devPtr, uint64_t len, int32_t devi
  * @param [in] ptr
  * @param [out] attributes
  * @return RT_ERROR_NONE for ok, errno for failed
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtPointerGetAttributes(rtPointerAttributes_t *attributes, const void *ptr);
 
@@ -377,7 +378,7 @@ RTS_API rtError_t rtPointerGetAttributes(rtPointerAttributes_t *attributes, cons
  * @param [in] name   identification name
  * @param [in] byteCount   identification byteCount
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of ptr, name, byteCount
+ * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *name, uint32_t len);
@@ -387,7 +388,7 @@ RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *
  * @brief destroy a interprocess shared memory
  * @param [in] name   identification name
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of name
+ * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
 rtError_t rtIpcDestroyMemoryName(const char *name);
@@ -398,7 +399,7 @@ rtError_t rtIpcDestroyMemoryName(const char *name);
  * @param [in|out] ptr    device memory address pointer
  * @param [in] name   identification name
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of ptr, name
+ * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtIpcOpenMemory(void **ptr, const char *name);
@@ -409,7 +410,7 @@ RTS_API rtError_t rtIpcOpenMemory(void **ptr, const char *name);
  * @param [in] ptr    device memory address pointer
  * @param [in] name   identification name
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of ptr, name
+ * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtIpcCloseMemory(const void *ptr);
@@ -421,7 +422,7 @@ RTS_API rtError_t rtIpcCloseMemory(const void *ptr);
  * @param [in] wqe_index moudle index
  * @param [in] stream asynchronized task stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of ptr, name
+ * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqe_index, rtStream_t stream);
@@ -434,7 +435,6 @@ RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqe_index, rtStream_t stre
  * @param [in] num  length of pid[]
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
- * @return RT_ERROR_INVALID_RESOURCE_HANDLE for invalid resource handle
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtSetIpcMemPid(const char *name, int32_t pid[], int num);
@@ -446,7 +446,7 @@ RTS_API rtError_t rtSetIpcMemPid(const char *name, int32_t pid[], int num);
  * @param [in] dbinfo doorbell info
  * @param [in] stream asynchronized task stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input of ptr, name
+ * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
 RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stream);

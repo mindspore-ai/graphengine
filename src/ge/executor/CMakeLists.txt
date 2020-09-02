@@ -26,6 +26,9 @@ file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ge_executor.cc"
+        "../common/dump/dump_properties.cc"
+        "../common/dump/dump_manager.cc"
+        "../common/dump/dump_op.cc"
         "../common/ge/op_tiling_manager.cc"
         "../common/ge/plugin_manager.cc"
         "../common/profiling/profiling_manager.cc"

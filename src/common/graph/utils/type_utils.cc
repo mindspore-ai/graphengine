@@ -244,6 +244,21 @@ static const std::map<domi::FrameworkType, std::string> kFmkTypeToString = {
   {domi::ANDROID_NN, "android_nn"}, {domi::ONNX, "onnx"},           {domi::FRAMEWORK_RESERVED, "framework_reserved"},
 };
 
+static const std::map<domi::ImplyType, std::string> kImplyTypeToString = {
+  {domi::ImplyType::BUILDIN, "buildin"}, {domi::ImplyType::TVM, "tvm"},        {domi::ImplyType::CUSTOM, "custom"},
+  {domi::ImplyType::AI_CPU, "ai_cpu"},   {domi::ImplyType::CCE, "cce"},        {domi::ImplyType::GELOCAL, "gelocal"},
+  {domi::ImplyType::HCCL, "hccl"},       {domi::ImplyType::INVALID, "invalid"}};
+
+std::string TypeUtils::ImplyTypeToSerialString(domi::ImplyType imply_type) {
+  auto it = kImplyTypeToString.find(imply_type);
+  if (it != kImplyTypeToString.end()) {
+    return it->second;
+  } else {
+    GELOGE(GRAPH_FAILED, "ImplyTypeToSerialString: imply_type not support %u", imply_type);
+    return "UNDEFINED";
+  }
+}
+
 bool TypeUtils::IsDataTypeValid(DataType dt) {
   uint32_t num = static_cast<uint32_t>(dt);
   GE_CHK_BOOL_EXEC((num <= DT_UNDEFINED), return false, "The DataType is invalid");

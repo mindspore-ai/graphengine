@@ -49,11 +49,11 @@ class GraphOptimize {
 
   Status OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_graph);
 
-  // new original graph optimize
-  Status NewOptimizeOriginalGraph(ComputeGraphPtr &compute_graph);
-
   // for fe prepare optimize in quantize scene
   Status OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_graph);
+
+  // for rts optimize before build to add attr and insert memcpy op
+  Status OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_graph);
 
   // set options
   Status SetOptions(const GraphManagerOptions &options);
@@ -61,8 +61,6 @@ class GraphOptimize {
   const std::map<uint32_t, std::map<string, size_t>> &GetSummaryOutputIndexes() const {
     return summary_output_indexes_;
   }  // lint !e1073
-
-  void ClearSummaryOutputIndexes() { summary_output_indexes_.clear(); }
 
   // handle summary node before preRun graph
   Status HandleSummaryOp(ComputeGraphPtr &compute_graph);

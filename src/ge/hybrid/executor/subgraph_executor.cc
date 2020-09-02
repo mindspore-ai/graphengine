@@ -106,7 +106,7 @@ Status SubgraphExecutor::InitInputsForKnownShape(const std::vector<TensorValue> 
     }
 
     auto &input_tensor = inputs[parent_input_index];
-    subgraph_context_->SetInput(i, input_tensor);
+    subgraph_context_->SetInput(static_cast<int>(i), input_tensor);
     GELOGD("[%s] Set input tensor[%zu] with inputs with index = %d, tensor = %s", graph_item_->GetName().c_str(), i,
            parent_input_index, input_tensor.DebugString().c_str());
   }
@@ -175,8 +175,8 @@ Status SubgraphExecutor::PrepareNodes() {
   GELOGD("[%s] Start to prepare nodes. force infer shape = %s.", graph_item_->GetName().c_str(),
          force_infer_shape_ ? "true" : "false");
   auto &all_nodes = graph_item_->GetAllNodes();
-  for (size_t i = 0; i < all_nodes.size(); ++i) {
-    auto &node_item = *all_nodes[i];
+  for (auto all_node : all_nodes) {
+    auto &node_item = *all_node;
     // for while op
     if (force_infer_shape_ && !node_item.is_dynamic) {
       GELOGD("[%s] Force infer shape is set, updating node to dynamic.", node_item.NodeName().c_str());
@@ -295,6 +295,7 @@ Status SubgraphExecutor::ScheduleTasks() {
   if (ret != SUCCESS) {
     GELOGE(ret, "[%s] Failed to execute subgraph.", graph_item_->GetName().c_str());
     subgraph_context_->OnError(ret);
+    context_->SetErrorCode(ret);
     ready_queue_.Stop();
     prepare_future.wait();
     return ret;
@@ -312,9 +313,13 @@ Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs, std::vector<Co
   GE_CHK_STATUS_RET(GetOutputs(outputs), "[%s] Failed to get output tensors.", graph_item_->GetName().c_str());
 
   // copy output data from op to designated position
-  std::vector<GeTensorDescPtr> output_tensor_desc_list;
   GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc), "[%s] Failed to get output tensor desc.",
                     graph_item_->GetName().c_str());
+  if (outputs.size() != output_desc.size()) {
+    GELOGE(INTERNAL_ERROR, "Number of output tensors(%zu) mismatch number of output tensor desc(%zu).", outputs.size(),
+           output_desc.size());
+    return INTERNAL_ERROR;
+  }
   return SUCCESS;
 }
 

@@ -134,6 +134,8 @@ class NodeExecutorManager {
     GE_LOCAL,
     CONTROL_OP,
     HCCL,
+    RTS,
+    HOST_CPU,
     RESERVED
   };
 

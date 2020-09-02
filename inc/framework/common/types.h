@@ -606,6 +606,7 @@ static constexpr uint32_t MODEL_FILE_RESERVED_LENGTH = 79;
 /// @brief INPUT node type
 ///
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string INPUT_TYPE;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string DUMMY_DATA;
 
 ///
 /// @ingroup domi_omg

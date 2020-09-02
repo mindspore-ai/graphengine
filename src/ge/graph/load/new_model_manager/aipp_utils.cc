@@ -38,7 +38,9 @@ namespace ge {
 
 Status AippUtils::ConvertAippParams2AippInfo(domi::AippOpParams *aipp_params, AippConfigInfo &aipp_info) {
   GE_CHECK_NOTNULL(aipp_params);
+  AIPP_CONVERT_TO_AIPP_INFO(aipp_mode);
   AIPP_CONVERT_TO_AIPP_INFO(input_format);
+  AIPP_CONVERT_TO_AIPP_INFO(related_input_rank);
   AIPP_CONVERT_TO_AIPP_INFO(src_image_size_w);
   AIPP_CONVERT_TO_AIPP_INFO(src_image_size_h);
   AIPP_CONVERT_TO_AIPP_INFO(crop);
@@ -85,6 +87,8 @@ Status AippUtils::ConvertAippParams2AippInfo(domi::AippOpParams *aipp_params, Ai
   AIPP_CONVERT_TO_AIPP_INFO_WITH_INDEX(var_reci_chn_1, 0);
   AIPP_CONVERT_TO_AIPP_INFO_WITH_INDEX(var_reci_chn_2, 0);
   AIPP_CONVERT_TO_AIPP_INFO_WITH_INDEX(var_reci_chn_3, 0);
+  AIPP_CONVERT_TO_AIPP_INFO(support_rotation);
+  AIPP_CONVERT_TO_AIPP_INFO(max_src_image_size);
   return SUCCESS;
 }
 }  // namespace ge

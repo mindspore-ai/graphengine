@@ -18,6 +18,7 @@
 #define GE_SINGLE_OP_TASK_AICPU_KERNEL_TASK_BUILDER_H_
 
 #include <vector>
+#include "graph/op_desc.h"
 #include "aicpu/common/aicpu_task_struct.h"
 #include "single_op/single_op.h"
 #include "single_op/single_op_model.h"
@@ -26,13 +27,14 @@
 namespace ge {
 class AiCpuCCTaskBuilder {
  public:
-  explicit AiCpuCCTaskBuilder(const domi::KernelDef &kernel_def);
+  explicit AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def);
   ~AiCpuCCTaskBuilder() = default;
 
   Status BuildTask(AiCpuCCTask &task);
 
  private:
   Status SetKernelArgs(AiCpuCCTask &task);
+  const OpDescPtr op_desc_;
   const domi::KernelDef &kernel_def_;
 };
 }  // namespace ge

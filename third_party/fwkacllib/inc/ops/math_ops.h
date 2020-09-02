@@ -575,25 +575,24 @@ REG_OP(Conj)
     .OP_END_FACTORY_REG(Conj)
 
 /**
- * *@brief The negative log likelihood loss.
- *
- * *@par Inputs:
- * *The input x and weight must have the same type. Inputs include: \n
- * *@li x:A Tensor. Must be the type: float32.
- * *@li target:A Tensor. Must be the type: int32.
- * *@li weight:A Tensor. Must be the type: float32.
- *
- * *@par Attributes:
- * *@li reduction: An optional attribute. Defaults to "mean".
- *
- * *@par Outputs:
- * *Two outputs, including:
- * *@li y: A Tensor. Must be the following type: float32.
- * *@li total_weight: A Tensor. Must be the type: float32.
- *
- * *@par Third-party framework compatibility
- * *Compatible with pytorch NLLLoss operator
- * */
+*@brief The negative log likelihood loss.
+
+*@par Inputs:
+*The input x and weight must have the same type. Inputs include: \n
+*@li x: A Tensor dtype of float32.
+*@li target: A Tensor dtype of int32.
+*@li weight: A Tensor dtype of float32.
+
+*@par Attributes:
+*reduction: An optional attribute. Defaults to "mean".
+
+*@par Outputs:
+*@li y: A Tensor dtype of float32.
+*@li total_weight: A Tensor dtype of float32.
+
+*@par Third-party framework compatibility
+*Compatible with pytorch NLLLoss operator
+*/
 REG_OP(NLLLoss)
     .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(target, TensorType({DT_INT32}))
@@ -604,26 +603,24 @@ REG_OP(NLLLoss)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
- * *@brief The negative log likelihood loss grad.
+*@brief The negative log likelihood loss grad.
 
- * *@par Inputs:
- * *Inputs include:
- * *@li x:A Tensor. Must be the type: float32.
- * *@li y_grad:A Tensor. Must be the type: float32.
- * *@li target:A Tensor. Must be the type: int32.
- * *@li weight:A Tensor. Must be the type: float32.
- * *@li total_weight:A Tensor. Must be the type: float32.
- *
- * *@par Attributes:
- * *@li reduction: An optional attribute. Defaults to "mean".
- *
- * *@par Outputs:
- * *One outputs, including:
- * *@li x_grad: A Tensor. Must be the following type: float32.
- *
- * *@par Third-party framework compatibility
- * *Compatible with pytorch NLLLossGrad operator
- * */
+*@par Inputs:
+*@li x:A Tensor dtype of float32.
+*@li y_grad:A Tensor dtype of float32.
+*@li target:A Tensor dtype of int32.
+*@li weight:A Tensor dtype of float32.
+*@li total_weight:A Tensor dtype of float32.
+
+*@par Attributes:
+*reduction: An optional attribute. Defaults to "mean".
+
+*@par Outputs:
+*x_grad: A Tensor. Must be the following type: float32.
+
+*@par Third-party framework compatibility
+*Compatible with pytorch NLLLossGrad operator
+*/
 REG_OP(NLLLossGrad)
     .INPUT(x, TensorType({DT_FLOAT}))
     .INPUT(y_grad, TensorType({DT_FLOAT}))

@@ -2909,6 +2909,26 @@ REG_OP(Bias)
     .ATTR(bias_from_blob, Bool, true)
     .OP_END_FACTORY_REG(Bias)
 
+/**
+*@brief Function multiply gradients calculation. \n
+output0 is the result of which input0 dot multily input1.
+output1 is the result of which input0 dot multily input1, then reducesum it.
+
+*@par Inputs:
+*@li input0: A Tensor of input of mul, and dtype supports float16, float32.
+*@li input1: A Tensor of input of mul and mul_1, and dtype supports float16, float32.
+*@li input2: A Tensor of input of mul_1, and dtype supports float16, float32'.
+
+*@par Attributes:
+*@li axes: The dimensions to reduce. Default:(), reduce all dimensions. \n
+Only constant value is allowed.
+*@li keep_dims: If true, keep these reduced dimensions and the length is 1. \n
+If false, don’t keep these dimensions. Default:False.
+
+*@par Outputs:
+*@li output0: A Tensor result of which input0 dot multily input1.
+*@li output1: A Tensor result of which input0 dot multily input1, then reducesum it.
+*/
 REG_OP(ConfusionMulGrad)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
     .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2919,6 +2939,19 @@ REG_OP(ConfusionMulGrad)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ConfusionMulGrad)
 
+/**
+*@brief Function fused multiply l2 loss calculation. \n
+
+*@par Inputs:
+*@li x1: A Tensor of type float16, float32.
+*@li x2: A Tensor of type float16, float32.
+*@li x3: A Tensor of type float16, float32.
+
+*@par Outputs:
+*@li y1: A Tensor of shape and dtype of first output, which should have \n
+shape (1,) and dtype as input.
+*@li y2: A Tensor of shape and dtype of second output, should be same shape and type as input.
+*/
 REG_OP(FusedMulAddNL2loss)
     .INPUT(x1, TensorType::NumberType())
     .INPUT(x2, TensorType::NumberType())
@@ -2926,7 +2959,6 @@ REG_OP(FusedMulAddNL2loss)
     .OUTPUT(y1, TensorType::NumberType())
     .OUTPUT(y2, TensorType::NumberType())
     .OP_END_FACTORY_REG(FusedMulAddNL2loss)
-
 
 /**
 *@brief Tests whether the input exceeds a threshold.
@@ -3056,6 +3088,23 @@ REG_OP(Fills)
      .OUTPUT(y, TensorType::NumberType())  /* "Result, has same element type as two inputs" */
      .OP_END_FACTORY_REG(MulNoNan)
 
+/**
+*@brief Add tensor with scale.
+
+*@par Inputs:
+*Five inputs, including:
+* @li x1: A Tensor dtype of int32, float16, float32.
+* @li x2: A Tensor dtype of int32, float16, float32.
+
+*@par Attributes:
+*alpha: Float scalar apply to x2:x2*alpha
+
+*@par Outputs:
+*y: A Tensor. should be same shape and type as "x1".
+
+*@par Third-party framework compatibility:
+* Compatible with the Pytorch operator Axpy.
+*/
 REG_OP(Axpy)
     .INPUT(x1, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))
     .INPUT(x2, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))

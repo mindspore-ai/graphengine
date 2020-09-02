@@ -95,8 +95,8 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
                    GELOGE(FAILED, "SetListStr failed.");
                    return FAILED);
 
-  GELOGI("Call GenerateTask Success, task_def_list.size:%zu, op_name_map.size:%zu", task_def_list.size(),
-         op_name_map.size());
+  GELOGI("GenerateTask Success, task list:%zu, op map:%zu, logic mem base:%p, logic weight base:%p, logic var base:%p",
+         task_def_list.size(), op_name_map.size(), run_context.dataMemBase, run_context.weightMemBase, var_mem_base_);
 
   // Init and serialize model_task_def
   ModelTaskDef model_task_def;
@@ -260,7 +260,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   int64_t group_key;
   uint32_t node_index = 0;
   rtStream_t stream = nullptr;
-  bool is_unknown_shape = graph->GetGraphUnknownFlag();
+  bool is_unknown_shape = graph->GetGraphUnknownFlag() || GetContext().GetHostExecFlag();
   if (is_unknown_shape) {
     GE_CHK_STATUS_RET(SetUnknownShapeStream(run_context, stream), "Set unknown shape stream failed.");
   }
@@ -479,7 +479,12 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
         GELOGE(INTERNAL_ERROR, "AnchorUtils::SetStatus failed.");
         return INTERNAL_ERROR;
       }
-    } else if (peer_anchor->GetOwnerNode()->GetType() == CONSTANT) {
+      continue;
+    }
+
+    std::string const_type;
+    bool is_const = NodeUtils::GetConstOpType(peer_anchor->GetOwnerNode(), const_type);
+    if (is_const && (const_type == CONSTANT)) {
       if (AnchorUtils::SetStatus(anchor, ANCHOR_CONST) != GRAPH_SUCCESS) {
         GELOGE(INTERNAL_ERROR, "AnchorUtils::SetStatus failed.");
         return INTERNAL_ERROR;

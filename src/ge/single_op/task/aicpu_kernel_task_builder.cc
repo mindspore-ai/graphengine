@@ -17,7 +17,8 @@
 #include "single_op/task/aicpu_kernel_task_builder.h"
 
 namespace ge {
-AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const domi::KernelDef &kernel_def) : kernel_def_(kernel_def) {}
+AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def)
+    : op_desc_(op_desc), kernel_def_(kernel_def) {}
 
 Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
   size_t aicpu_arg_size = kernel_def_.args_size();
@@ -25,20 +26,21 @@ Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
     GELOGE(RT_FAILED, "aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
     return RT_FAILED;
   }
-  void *aicpu_args = malloc(aicpu_arg_size);
+  std::unique_ptr<uint8_t[]> aicpu_args;
+  aicpu_args.reset(new (std::nothrow) uint8_t[aicpu_arg_size]());
   if (aicpu_args == nullptr) {
     GELOGE(RT_FAILED, "malloc failed, size = %zu", aicpu_arg_size);
     return RT_FAILED;
   }
 
-  task.SetKernelArgs(aicpu_args, aicpu_arg_size);
-  auto err = memcpy_s(aicpu_args, aicpu_arg_size, kernel_def_.args().data(), aicpu_arg_size);
+  auto err = memcpy_s(aicpu_args.get(), aicpu_arg_size, kernel_def_.args().data(), aicpu_arg_size);
   if (err != EOK) {
     GELOGE(RT_FAILED, "memcpy_s args failed, size = %zu, err = %d", aicpu_arg_size, err);
     return RT_FAILED;
   }
 
-  task.SetIoAddr(static_cast<uint8_t *>(aicpu_args) + sizeof(aicpu::AicpuParamHead));
+  task.SetIoAddr(aicpu_args.get() + sizeof(aicpu::AicpuParamHead));
+  task.SetKernelArgs(std::move(aicpu_args), aicpu_arg_size);
   return SUCCESS;
 }
 
@@ -51,6 +53,7 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
   const std::string &kernel_name = kernel_def_.kernel_name();
   task.SetSoName(so_name);
   task.SetkernelName(kernel_name);
+  task.op_desc_ = op_desc_;
   return SUCCESS;
 }
 }  // namespace ge

@@ -20,12 +20,17 @@
 #include <vector>
 
 #include "inc/kernel.h"
+#include "common/fp16_t.h"
 
 namespace ge {
 class RsqrtKernel : public Kernel {
  public:
   Status Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge::ConstGeTensorPtr> &input,
                  std::vector<ge::GeTensorPtr> &v_output) override;
+
+ private:
+  template <typename T>
+  Status RsqrtCompute(ConstGeTensorPtr &input_tensor_ptr, GeTensorPtr &output_tensor_ptr);
 };
 }  // namespace ge
 

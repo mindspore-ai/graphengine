@@ -63,10 +63,12 @@ class GraphBuilder {
   Status BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                                    GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);
-  Status BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+  Status BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_list,
                                  GeModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
   Status BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);
+  Status BuildForHostCpuGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
+                              uint64_t session_id = INVALID_SESSION_ID);
   int build_mode_;
 
   std::map<std::string, int> stream_max_parallel_num_;

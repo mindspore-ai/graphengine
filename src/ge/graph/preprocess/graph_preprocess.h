@@ -45,8 +45,6 @@ class GraphPrepare {
   virtual ~GraphPrepare();
   GraphPrepare(const GraphPrepare &in) = delete;
   GraphPrepare &operator=(const GraphPrepare &in) = delete;
-  Status Prepare(ConstGraphPtr graph, const std::vector<GeTensor> &user_input, ge::ComputeGraphPtr &compute_graph,
-                 VarAccelerateCtrl &var_acc_ctrl, uint64_t session_id = 0);
   Status PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
                          ge::ComputeGraphPtr &compute_graph, uint64_t session_id = 0);
   Status RecordAIPPInfo(ge::ComputeGraphPtr &compute_graph);
@@ -57,7 +55,6 @@ class GraphPrepare {
 
  private:
   Status Init(const ge::Graph &graph, uint64_t session_id = 0);
-  Status Preprocess(const std::vector<GeTensor> &user_input);
   Status CheckGraph();
   Status CheckRefInputNode(const NodePtr &node, const std::string &input_name, const std::set<NodePtr> &ref_nodes);
   Status CheckRefOp();
@@ -69,37 +66,19 @@ class GraphPrepare {
   Status VerifyConstOp(const NodePtr &node);
   Status CheckUserInput(const std::vector<GeTensor> &user_input);
   Status UpdateDataNetOutputByStorageFormat();
-  Status OptimizeForPreprocess();
   Status PrepareOptimize();
   Status InferShapeForPreprocess();
   Status TryDoAipp();
   Status UpdateVariableFormats(ComputeGraphPtr &graph);
-  Status UpdateVariableFormatsDynShape(ComputeGraphPtr &graph);
   Status FormatAndShapeProcess();
   Status ResourcePairProcess(const std::string &action);
-  void ProcessCCEFormat();
-  Status OptimizeBeforeInfershape();
-  Status OptimizeGraphBeforeSubGraph();
-  Status NewOptimizeGraphBeforeSubGraph(VarAccelerateCtrl &var_acc_ctrl);
   Status SaveOriginalGraphToOmModel();
   Status ProcessNetOutput();
   Status ProcessBeforeInfershape();
   Status UpdateInputOutputByOptions();
-  bool IsBroadCastOpData(const ge::NodePtr &var_node);
 
   bool IsTansDataOpData(const ge::NodePtr &var_node);
 
-  void AdjustBroadCastOpData(const ge::NodePtr &var_node);
-
-  bool IsAssignOpData(const ge::NodePtr &var_node);
-
-  void AdjustAssignOpData(const ge::NodePtr &var_node);
-
-  bool ConfirmUseOpAndIndexByAnchor(const ge::InDataAnchorPtr &in_anchor, const map<string, std::set<int>> &confirm_ops,
-                                    ge::NodePtr &use_node);
-
-  bool ConfirmUseOpAndIndexByNode(const ge::NodePtr &var_node, const map<string, std::set<int>> &confirm_ops,
-                                  ge::NodePtr &use_node);
   Status GraphEquivalentTransformation();
   void TypeConversionOfConstant();
 

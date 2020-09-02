@@ -22,12 +22,13 @@ namespace ge {
 namespace hybrid {
 Status TaskCompileEngine::Compile(NodeState &node_state, GraphExecutionContext *context) {
   const auto &node_item = *node_state.GetNodeItem();
-  RECORD_COMPILE_EVENT(context, node_item.NodeName().c_str(), "Start");
+  GE_CHECK_NOTNULL(context);
+  RECORD_COMPILE_EVENT(context, node_item.NodeName().c_str(), "[Compile] Start");
   GE_CHK_RT_RET(rtCtxSetCurrent(context->rt_gen_context));
 
   shared_ptr<NodeTask> kernel_task;
   auto ret = node_item.node_executor->CompileTask(*context->model, node_item.node, kernel_task);
-  RECORD_COMPILE_EVENT(context, node_state.GetName().c_str(), "End");
+  RECORD_COMPILE_EVENT(context, node_state.GetName().c_str(), "[Compile] End");
   GE_CHK_STATUS_RET(ret, "Failed to create task for node: %s", node_item.NodeName().c_str());
   node_state.SetKernelTask(kernel_task);
   GELOGI("Compiling node %s successfully", node_state.GetName().c_str());

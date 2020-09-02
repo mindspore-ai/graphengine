@@ -33,6 +33,8 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY TransOpUtil {
 
   static int GetTransOpDataIndex(const std::string &type);
 
+  static bool CheckPrecisionLoss(const NodePtr &src_node);
+
  private:
   TransOpUtil();
 

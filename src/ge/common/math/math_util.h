@@ -562,7 +562,6 @@ inline Status CheckUint64MulOverflow(uint64_t a, uint64_t b) {
 /// @return Status
 inline Status CheckFp16MulOverflow(fp16_t a, fp16_t b) {
   fp16_t result = static_cast<fp16_t>(a) * static_cast<fp16_t>(b);
-  printf("result: %u, 0x%x\n", result.val, result.val);
   if (FP16_IS_INVALID(result.val)) {
     return FAILED;
   }
@@ -885,6 +884,23 @@ inline Status CheckInt32DivOverflow(int32_t a, int32_t b) {
            static_cast<uint32_t>(b));                                                                                  \
     return INTERNAL_ERROR;                                                                                             \
   }
-}  // namespace ge
 
+#define FMK_FP16_ZEROCHECK(a)                               \
+  if (fabs(a) < DBL_EPSILON) {                              \
+    GELOGE(INTERNAL_ERROR, "fp16 %f can not be zero !", a); \
+    return INTERNAL_ERROR;                                  \
+  }
+
+#define FMK_FLOAT_ZEROCHECK(a)                               \
+  if (fabs(a) < FLT_EPSILON) {                               \
+    GELOGE(INTERNAL_ERROR, "float %f can not be zero !", a); \
+    return INTERNAL_ERROR;                                   \
+  }
+
+#define FMK_DOUBLE_ZEROCHECK(a)                                \
+  if (fabs(a) < DBL_EPSILON) {                                 \
+    GELOGE(INTERNAL_ERROR, "double %lf can not be zero !", a); \
+    return INTERNAL_ERROR;                                     \
+  }
+}  // namespace ge
 #endif  // GE_COMMON_MATH_MATH_UTIL_H_

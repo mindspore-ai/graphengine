@@ -21,7 +21,7 @@
 namespace ge {
 namespace hybrid {
 namespace {
-constexpr int kDefaultWaitTimeoutInSec = 10;
+constexpr int kDefaultWaitTimeoutInSec = 60 * 10;
 }
 bool NodeDoneManager::Cond::Await() {
   std::unique_lock<std::mutex> lk(cond_mu_);

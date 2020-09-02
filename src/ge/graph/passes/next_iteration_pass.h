@@ -47,6 +47,13 @@ class NextIterationPass : public GraphPass {
   Status GroupEnterNode(const NodePtr &enter_node);
 
   ///
+  /// @brief Group Enter nodes without batch_label attr
+  /// @param [in] compute_graph
+  /// @return Status
+  ///
+  Status GroupWithNoBatch(const ComputeGraphPtr &graph);
+
+  ///
   /// @brief Find while groups
   /// @return Status
   ///
@@ -86,13 +93,17 @@ class NextIterationPass : public GraphPass {
   /// @param [in] node
   /// @param [in] target_type
   /// @param [in] is_input
+  /// @param [in] batch_label
   /// @param [out] target_node
   /// @return Status
   ///
-  Status FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input, NodePtr &target_node);
+  Status FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input,
+                        const std::string &batch_label, NodePtr &target_node);
 
-  // map<frame_name, LoopCondGroup>
-  std::unordered_map<std::string, LoopCondGroupPtr> loop_group_map_;
+  // map<frame_name, vector<enter_node>>
+  std::unordered_map<std::string, std::vector<NodePtr>> frame_enter_map_;
+  // map<frame_name, map<batch_label, LoopCondGroup>>
+  std::unordered_map<std::string, std::unordered_map<std::string, LoopCondGroupPtr>> loop_group_map_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_NEXT_ITERATION_PASS_H_

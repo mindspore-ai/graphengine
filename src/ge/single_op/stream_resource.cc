@@ -16,12 +16,14 @@
 
 #include "single_op/stream_resource.h"
 
-#include "common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "runtime/rt.h"
+#include "single_op/single_op_model.h"
 
 namespace ge {
+StreamResource::StreamResource(uintptr_t resource_id) : resource_id_(resource_id) {}
+
 StreamResource::~StreamResource() {
   for (auto mem : memory_list_) {
     if (mem != nullptr) {
@@ -38,15 +40,8 @@ StreamResource::~StreamResource() {
   }
 }
 
-void StreamResource::CacheOperator(const void *key, std::unique_ptr<SingleOp> &&single_op) {
-  op_map_[key] = std::move(single_op);
-}
-
-void StreamResource::CacheDynamicOperator(const void *key, std::unique_ptr<DynamicSingleOp> &&single_op) {
-  dynamic_op_map_[key] = std::move(single_op);
-}
-
 SingleOp *StreamResource::GetOperator(const void *key) {
+  std::lock_guard<std::mutex> lk(mu_);
   auto it = op_map_.find(key);
   if (it == op_map_.end()) {
     return nullptr;
@@ -56,6 +51,7 @@ SingleOp *StreamResource::GetOperator(const void *key) {
 }
 
 DynamicSingleOp *StreamResource::GetDynamicOperator(const void *key) {
+  std::lock_guard<std::mutex> lk(mu_);
   auto it = dynamic_op_map_.find(key);
   if (it == dynamic_op_map_.end()) {
     return nullptr;
@@ -71,20 +67,6 @@ uint8_t *StreamResource::DoMallocMemory(const std::string &purpose, size_t size,
   if (size <= max_allocated && !allocated.empty()) {
     GELOGD("reuse last memory");
     return allocated.back();
-  }
-
-  if (!allocated.empty()) {
-    GELOGD("Expand workspace memory size from %zu to %zu", max_allocated, size);
-    auto ret = rtStreamSynchronize(stream_);
-    if (ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtStreamSynchronize failed, ret = %d", ret);
-      return nullptr;
-    }
-
-    auto addr = allocated.back();
-    allocated.pop_back();
-    (void)rtFree(addr);
-    max_allocated = 0;
   }
 
   uint8_t *buffer = nullptr;
@@ -117,7 +99,71 @@ uint8_t *StreamResource::MallocMemory(const std::string &purpose, size_t size) {
 
 uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
   GELOGD("To Malloc weight, size = %zu", size);
-  uint8_t *buffer = DoMallocMemory(purpose, size, max_weight_size_, weight_list_);
+  uint8_t *buffer = nullptr;
+  auto ret = rtMalloc(reinterpret_cast<void **>(&buffer), size, RT_MEMORY_HBM);
+  if (ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtMalloc failed, size = %zu, ret = %d", size, ret);
+    return nullptr;
+  }
+
+  GE_PRINT_DYNAMIC_MEMORY(rtMalloc, purpose.c_str(), size)
+  weight_list_.emplace_back(buffer);
   return buffer;
+}
+
+Status StreamResource::BuildDynamicOperator(const string &model_name, const ModelData &model_data,
+                                            DynamicSingleOp **single_op) {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto it = dynamic_op_map_.find(model_data.model_data);
+  if (it != dynamic_op_map_.end()) {
+    *single_op = it->second.get();
+    return SUCCESS;
+  }
+
+  SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
+  auto ret = model.Init();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
+    return ret;
+  }
+
+  auto new_op =
+    std::unique_ptr<DynamicSingleOp>(new (std::nothrow) DynamicSingleOp(resource_id_, &stream_mu_, stream_));
+  GE_CHECK_NOTNULL(new_op);
+
+  GELOGI("To build operator: %s", model_name.c_str());
+  GE_CHK_STATUS_RET(model.BuildDynamicOp(*new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
+  *single_op = new_op.get();
+  dynamic_op_map_[model_data.model_data] = std::move(new_op);
+  return SUCCESS;
+}
+
+Status StreamResource::BuildOperator(const string &model_name, const ModelData &model_data, SingleOp **single_op) {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto it = op_map_.find(model_data.model_data);
+  if (it != op_map_.end()) {
+    *single_op = it->second.get();
+    return SUCCESS;
+  }
+
+  SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
+  auto ret = model.Init();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
+    return ret;
+  }
+
+  auto new_op = std::unique_ptr<SingleOp>(new (std::nothrow) SingleOp(&stream_mu_, stream_));
+  if (new_op == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "new SingleOp failed");
+    return MEMALLOC_FAILED;
+  }
+
+  GELOGI("To build operator: %s", model_name.c_str());
+  GE_CHK_STATUS_RET(model.BuildOp(*this, *new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
+
+  *single_op = new_op.get();
+  op_map_[model_data.model_data] = std::move(new_op);
+  return SUCCESS;
 }
 }  // namespace ge

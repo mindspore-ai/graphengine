@@ -390,6 +390,22 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
   }
   return SUCCESS;
 }
+
+Status Session::GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values) {
+  auto instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
+    return FAILED;
+  }
+  GELOGT(TRACE_RUNNING, "Get Variables");
+  Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, var_names, var_values);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "SessionManager RunGraphAsync failed");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 bool Session::IsGraphNeedRebuild(uint32_t graph_id) {
   return ge::GELib::GetInstance()->SessionManagerObj().IsGraphNeedRebuild(sessionId_, graph_id);
 }

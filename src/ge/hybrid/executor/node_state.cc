@@ -24,8 +24,10 @@
 namespace ge {
 namespace hybrid {
 namespace {
-constexpr auto kMaxWaitTimeInSec = 10;
-}
+// 5s * 120, wait for 10m
+constexpr auto kWaitInternal = 5;
+constexpr auto kMaxWaitTimes = 120;
+}  // namespace
 ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(node_item) {
   this->num_pending_shapes_ = node_item.num_inputs - node_item.num_static_input_shapes;
   GELOGD("[%s] ShapeInferenceState created, pending shape count = %d", node_item.NodeName().c_str(),
@@ -72,11 +74,25 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
   std::unique_lock<std::mutex> lk(mu_);
   if (num_pending_shapes_ > 0) {
     GELOGD("[%s] Await pending shape or shape future start.", node_item.NodeName().c_str());
-    if (!ready_cv_.wait_for(lk, std::chrono::seconds(kMaxWaitTimeInSec), [&]() { return num_pending_shapes_ == 0; })) {
-      GELOGE(INTERNAL_ERROR, "[%s] Wait for shape timeout.", node_item.NodeName().c_str());
-      return INTERNAL_ERROR;
+    int try_count = 0;
+    bool wait_success = false;
+    while (try_count++ < kMaxWaitTimes) {
+      if (ready_cv_.wait_for(lk, std::chrono::seconds(kWaitInternal), [&]() { return num_pending_shapes_ == 0; })) {
+        GELOGD("[%s] Await pending shape or shape future end.", node_item.NodeName().c_str());
+        wait_success = true;
+        break;
+      }
+
+      if (context.GetStatus() != SUCCESS) {
+        GELOGE(FAILED, "[%s] Await pending shape cancelled", node_item.NodeName().c_str());
+        break;
+      }
     }
-    GELOGD("[%s] Await pending shape or shape future end.", node_item.NodeName().c_str());
+
+    if (!wait_success) {
+      GELOGE(FAILED, "[%s] Wait for shape timeout.", node_item.NodeName().c_str());
+      return FAILED;
+    }
   }
 
   for (auto &p : shape_futures) {

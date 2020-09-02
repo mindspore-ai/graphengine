@@ -57,7 +57,7 @@ DNNEnginePtr EngineManager::GetEngine(const std::string &engine_name) {
   return engine;
 }
 
-void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
+void RegisterAiCoreEngine() {
   const std::string ai_core = "AIcoreEngine";
   std::vector<std::string> mem_type_aicore;
   mem_type_aicore.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
@@ -70,7 +70,9 @@ void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
   if (EngineManager::RegisterEngine(ai_core, aicore_engine_ptr) != SUCCESS) {
     GELOGW("register ai_core failed");
   }
+}
 
+void RegisterVectorEngine() {
   const std::string vector_core = "VectorEngine";
   std::vector<std::string> mem_type_aivcore;
   mem_type_aivcore.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
@@ -81,11 +83,12 @@ void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
     GELOGE(ge::FAILED, "make vectorCoreEnginePtr failed");
     return;
   }
-
   if (EngineManager::RegisterEngine(vector_core, vectorcore_engine_ptr) != SUCCESS) {
     GELOGW("register vector_core failed");
   }
+}
 
+void RegisterAiCpuEngine() {
   const std::string vm_aicpu = "DNN_VM_AICPU";
   std::vector<std::string> mem_type_aicpu;
   mem_type_aicpu.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
@@ -98,7 +101,9 @@ void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
   if (EngineManager::RegisterEngine(vm_aicpu, vm_engine_ptr) != SUCCESS) {
     GELOGW("register vmAicpuEngine failed");
   }
+}
 
+void RegisterGeLocalEngine() {
   const std::string vm_ge_local = "DNN_VM_GE_LOCAL";
   std::vector<std::string> mem_type_ge_local;
   mem_type_ge_local.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
@@ -112,7 +117,25 @@ void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
   if (EngineManager::RegisterEngine(vm_ge_local, ge_local_engine) != SUCCESS) {
     GELOGW("register ge_local_engine failed");
   }
+}
 
+void RegisterHostCpuEngine() {
+  const std::string vm_host_cpu = "DNN_VM_HOST_CPU";
+  std::vector<std::string> mem_type_host_cpu;
+  mem_type_host_cpu.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
+  // HostCpu use minimum priority, set it as 10
+  DNNEngineAttribute attr_host_cpu = {vm_host_cpu, mem_type_host_cpu, COST_10, HOST, FORMAT_RESERVED, FORMAT_RESERVED};
+  DNNEnginePtr host_cpu_engine = MakeShared<HostCpuDNNEngine>(attr_host_cpu);
+  if (host_cpu_engine == nullptr) {
+    GELOGE(ge::FAILED, "make host_cpu_engine failed");
+    return;
+  }
+  if (EngineManager::RegisterEngine(vm_host_cpu, host_cpu_engine) != SUCCESS) {
+    GELOGW("register host_cpu_engine failed");
+  }
+}
+
+void RegisterRtsEngine() {
   const std::string vm_rts = "DNN_VM_RTS";
   std::vector<std::string> mem_type_rts;
   mem_type_rts.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
@@ -125,7 +148,9 @@ void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
   if (EngineManager::RegisterEngine(vm_rts, rts_engine) != SUCCESS) {
     GELOGW("register rts_engine failed");
   }
+}
 
+void RegisterHcclEngine() {
   const std::string dnn_hccl = "DNN_HCCL";
   std::vector<std::string> mem_type_hccl;
   mem_type_hccl.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
@@ -138,6 +163,16 @@ void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
   if (EngineManager::RegisterEngine(dnn_hccl, hccl_engine) != SUCCESS) {
     GELOGW("register hccl_engine failed");
   }
+}
+
+void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
+  RegisterAiCoreEngine();
+  RegisterVectorEngine();
+  RegisterAiCpuEngine();
+  RegisterGeLocalEngine();
+  RegisterHostCpuEngine();
+  RegisterRtsEngine();
+  RegisterHcclEngine();
 
   for (auto it = EngineManager::engine_map_->begin(); it != EngineManager::engine_map_->end(); ++it) {
     GELOGI("get engine %s from engine plugin.", it->first.c_str());

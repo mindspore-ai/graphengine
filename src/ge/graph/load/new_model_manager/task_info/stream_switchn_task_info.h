@@ -42,6 +42,7 @@ class StreamSwitchNTaskInfo : public TaskInfo {
 
  private:
   Status GetTrueStreamPtr(const OpDescPtr &op_desc, DavinciModel *davinci_model);
+  Status InputPtrUpdate(const OpDescPtr &op_desc, DavinciModel *davinci_model);
   void *input_ptr_;
   uint32_t input_size_;
   void *value_ptr_;

@@ -72,6 +72,10 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   if (is_set_str) {
     GELOGI("[%s-%d]: add attr [REF_VAR_SRC_VAR_NAME: %s ] ", peer_node->GetName().c_str(), index,
            ref_var_src_var_name.c_str());
+  } else {
+    GELOGE(FAILED, "[%s-%d]: add attr [REF_VAR_SRC_VAR_NAME: %s ] failed", peer_node->GetName().c_str(), index,
+           ref_var_src_var_name.c_str());
+    return FAILED;
   }
   // remove variable_ref
   if (GraphUtils::IsolateNode(variable_ref, {0}) != GRAPH_SUCCESS) {

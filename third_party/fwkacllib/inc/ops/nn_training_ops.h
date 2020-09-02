@@ -1480,20 +1480,21 @@ REG_OP(ApplyProximalAdagradD)
 
 *@par Inputs:
 * Seven inputs, including:\n
-* @li var: A mutable Tensor.
+* @li var: A mutable Tensor.\n
 *     TensorType::NumberType(). Should be a Variable Tensor.
-* @li accum: A mutable Tensor of the same type as "var".
-*     Should be a Variable Tensor.
-* @li lr: A Tensor of the same type as "var".
-*     Scaling factor. Must be a scalar.
-* @li l1: A Tensor of the same type as "var".
-*     L1 regulariation. Must be a scalar.
-* @li l2: A Tensor of the same type as "var".
-*     L2 regulariation. Must be a scalar.
-* @li grad: A Tensor. Has the same type as "var".
+* @li accum: A mutable Tensor of the same type as "var".\n
+*     Should be a Variable Tensor. Should be greater than or equal to zero.\n
+*     Accum and grad cannot be equal to zero at the same time.
+* @li lr: A Tensor of the same type as "var".\n
+*     Scaling factor. Must be a scalar. Should be greater than zero.
+* @li l1: A Tensor of the same type as "var".\n
+*     L1 regulariation. Must be a scalar. Should be greater than or equal to zero.
+* @li l2: A Tensor of the same type as "var".\n
+*     L2 regulariation. Must be a scalar. Should be greater than or equal to zero.
+* @li grad: A Tensor. Has the same type as "var".\n
 *     The gradient.
-* @li indices: A vector of indices into the first dimension of "var" and "accum".
-*     TensorType::IndexNumberType(). 
+* @li indices: A vector of indices into the first dimension of "var" and "accum".\n
+*     TensorType::IndexNumberType(). Can contain duplicate values.
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".\n
@@ -1528,17 +1529,18 @@ REG_OP(SparseApplyProximalAdagrad)
 * @li var: A mutable Tensor.\n
 *     TensorType::NumberType(). Should be a Variable Tensor.
 * @li accum: A mutable Tensor of the same type as "var".\n
-*     Should be a Variable Tensor.
+*     Should be a Variable Tensor. Should be greater than or equal to zero.\n
+*     Accum and grad cannot be equal to zero at the same time.
 * @li lr: A Tensor of the same type as "var".\n
-*     Scaling factor. Must be a scalar.
+*     Scaling factor. Must be a scalar. Should be greater than zero. 
 * @li l1: A Tensor of the same type as "var".\n
-*     L1 regulariation. Must be a scalar.
+*     L1 regulariation. Must be a scalar. Should be greater than or equal to zero.
 * @li l2: A Tensor of the same type as "var".\n
-*     L2 regulariation. Must be a scalar.
+*     L2 regulariation. Must be a scalar. Should be greater than or equal to zero.
 * @li grad: A Tensor. Has the same type as "var". \n
 *     The gradient.
 * @li indices: A vector of indices into the first dimension of "var" and "accum".\n
-*     TensorType::IndexNumberType().
+*     TensorType::IndexNumberType(). Can contain duplicate values.
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".\n
@@ -2113,11 +2115,12 @@ REG_OP(LarsV2Update)
 * @li var: A mutable Tensor. Must be of type TensorType::NumberType().
 * Should be a Variable Tensor.
 * @li accum: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+* Should be a Variable Tensor. The value of accum must be greater than 0.
 * @li linear: A mutable Tensor of the same type as "var".
 * Should be a Variable Tensor.
 * @li grad: A Tensor of the same type as "var", for the gradient.
 * @li indices: A vector of indices into the first dimension of var and accum.
+* The value of indices must be unique. Otherwise, the result is unpredictable.
 * @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
 * @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
 * @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
@@ -2157,11 +2160,12 @@ REG_OP(SparseApplyFtrl)
 * @li var: A mutable Tensor. Must be of type TensorType::NumberType().
 * Should be a Variable Tensor.
 * @li accum: A mutable Tensor of the same type as "var".
-* Should be a Variable Tensor.
+* Should be a Variable Tensor. The value of accum must be greater than 0.
 * @li linear: A mutable Tensor of the same type as "var".
 * Should be a Variable Tensor.
 * @li grad: A Tensor of the same type as "var", for the gradient.
 * @li indices: A vector of indices into the first dimension of var and accum.
+* The value of indices must be unique. Otherwise, the result is unpredictable.
 
 * @par Attributes:
 * @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.

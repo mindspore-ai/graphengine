@@ -26,6 +26,9 @@ LIBGE_LOCAL_SRC_FILES := \
     common/ge/op_tiling_manager.cc\
     common/helper/model_cache_helper.cc \
     common/profiling/profiling_manager.cc \
+    common/dump/dump_manager.cc \
+    common/dump/dump_properties.cc \
+    common/dump/dump_op.cc \
     engine_manager/dnnengine_manager.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
     generator/ge_generator.cc \
@@ -93,7 +96,6 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/manager/util/variable_accelerate_ctrl.cc               \
     graph/optimize/graph_optimize.cc \
     graph/optimize/mem_rw_conflict_optimize.cc \
-    graph/optimize/optimizer/allreduce_fusion_pass.cc \
     graph/optimize/summary_optimize.cc \
     graph/partition/engine_place.cc \
     graph/partition/graph_partition.cc \
@@ -119,10 +121,10 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/dimension_compute_pass.cc \
     graph/passes/dropout_pass.cc \
     graph/passes/hccl_group_pass.cc \
-    graph/passes/switch_fusion_pass.cc \
-    graph/passes/switch_split_pass.cc \
     graph/passes/enter_pass.cc \
+    graph/passes/assign_pass.cc \
     graph/passes/flow_ctrl_pass.cc \
+    graph/passes/global_step_insert_pass.cc \
     host_kernels/transpose_kernel.cc \
     host_kernels/add_kernel.cc \
     host_kernels/broadcast_args_kernel.cc \
@@ -131,6 +133,7 @@ LIBGE_LOCAL_SRC_FILES := \
     host_kernels/concat_offset_kernel.cc \
     host_kernels/concat_v2_kernel.cc \
     host_kernels/dynamic_stitch_kernel.cc \
+    host_kernels/identity_kernel.cc \
     host_kernels/empty_kernel.cc \
     host_kernels/expanddims_kernel.cc \
     host_kernels/fill_kernel.cc \
@@ -172,6 +175,9 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/link_gen_mask_nodes_pass.cc \
     graph/passes/merge_pass.cc \
     graph/passes/multi_batch_pass.cc \
+    graph/passes/multi_batch_clone_pass.cc \
+    graph/passes/subexpression_migration_pass.cc \
+    graph/passes/unused_args_clean_pass.cc \
     graph/passes/net_output_pass.cc \
     graph/passes/next_iteration_pass.cc \
     graph/passes/no_use_reshape_remove_pass.cc \
@@ -225,6 +231,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/preprocess/graph_preprocess.cc \
     graph/preprocess/insert_op/ge_aipp_op.cc \
     graph/preprocess/insert_op/util_insert_aipp_op.cc \
+    graph/preprocess/multi_batch_options.cc \
     graph/preprocess/multi_batch_copy_graph.cc \
     init/gelib.cc \
     model/ge_model.cc \
@@ -267,10 +274,17 @@ LIBGE_LOCAL_SRC_FILES := \
     hybrid/node_executor/aicpu/aicpu_ext_info.cc                         \
     hybrid/node_executor/aicpu/aicpu_node_executor.cc                    \
     hybrid/node_executor/compiledsubgraph/known_node_executor.cc         \
-    hybrid/node_executor/hostcpu/ge_local_node_executor.cc               \
+    hybrid/node_executor/ge_local/ge_local_node_executor.cc              \
+    hybrid/node_executor/host_cpu/host_cpu_node_executor.cc              \
+    hybrid/node_executor/host_cpu/kernel_factory.cc                      \
+    hybrid/node_executor/host_cpu/kernel/no_op_kernel.cc                 \
+    hybrid/node_executor/host_cpu/kernel/variable_kernel.cc              \
+    hybrid/node_executor/host_cpu/kernel/assign_kernel.cc                \
+    hybrid/node_executor/host_cpu/kernel/random_uniform_kernel.cc        \
     hybrid/node_executor/controlop/control_op_executor.cc                \
     hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc \
     hybrid/node_executor/hccl/hccl_node_executor.cc                      \
+    hybrid/node_executor/rts/rts_node_executor.cc                        \
     hybrid/node_executor/node_executor.cc                                \
     hybrid/node_executor/task_context.cc                                 \
     hybrid/hybrid_davinci_model.cc                                       \
@@ -343,7 +357,6 @@ LOCAL_SHARED_LIBRARIES := \
     libgraph \
     libregister \
     libge_common \
-    libhccl \
     libmsprof \
     liberror_manager \
 
@@ -425,7 +438,6 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libslog \
     libmmpa \
-    libhccl \
     libmsprof \
 
 LOCAL_LDFLAGS := -lrt -ldl
@@ -457,7 +469,6 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libslog \
     libmmpa \
-    libhccl \
     libmsprof \
 
 LOCAL_LDFLAGS := -lrt -ldl

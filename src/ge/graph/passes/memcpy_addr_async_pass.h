@@ -35,6 +35,7 @@ class MemcpyAddrAsyncPass : public GraphPass {
                                     const NodePtr &out_of_user_data);
   Status InsertMemcpyAddrAsyncNode(const OutDataAnchorPtr &out_anchor, const InDataAnchorPtr &in_anchor,
                                    const NodePtr &node);
+  Status InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeGraphPtr &graph, const NodePtr &node);
 
   NodePtr user_data_;
   NodePtr out_of_user_data_;

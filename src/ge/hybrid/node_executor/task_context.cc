@@ -210,20 +210,6 @@ Status TaskContext::AllocateOutput(int index, const GeTensorDesc &tensor_desc, T
     }
   }
 
-  // Temp modification
-  if (node_item_->node_type == "UnsortedSegmentSum" || node_item_->node_type == "UnsortedSegmentSumD" ||
-      node_item_->node_type == "ScatterNd") {
-    auto &out_tensor = outputs_start_[index];
-    GELOGD("[%s] clear output tensor: %s", GetNodeName(), out_tensor.DebugString().c_str());
-    auto *ctx = GetExecutionContext();
-    string name = "rtMemsetAsync" + node_item_->node_name;
-    RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] Start"); });
-    RECORD_EXECUTION_EVENT(GetExecutionContext(), node_item_->node_name.c_str(), "[rtMemsetAsync] Start");
-    GE_CHK_RT_RET(rtMemsetAsync(out_tensor.MutableData(), out_tensor.GetSize(), 0, out_tensor.GetSize(), GetStream()));
-    RECORD_EXECUTION_EVENT(GetExecutionContext(), node_item_->node_name.c_str(), "[rtMemsetAsync] End");
-    RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] End"); });
-  }
-
   if (execution_context_->trace_enabled) {
     outputs_start_[index].SetName(node_item_->NodeName() + "_out_" + std::to_string(index));
   }
@@ -245,8 +231,8 @@ Status TaskContext::AllocateOutputs(AllocationAttr *attr) {
   return SUCCESS;
 }
 
-Status TaskContext::AllocateTemp(size_t size, TensorValue &tensor) {
-  auto buffer = TensorBuffer::Create(execution_context_->allocator, size);
+Status TaskContext::AllocateTensor(size_t size, TensorValue &tensor, AllocationAttr *attr) {
+  auto buffer = TensorBuffer::Create(execution_context_->allocator, size, attr);
   if (buffer == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to allocate buffer of size: %zu", size);
     return MEMALLOC_FAILED;
@@ -275,7 +261,12 @@ int64_t TaskContext::GetSessionId() const { return execution_context_->session_i
 
 Status TaskContext::GetStatus() const { return status_; }
 
-void TaskContext::SetStatus(Status status) { status_ = status; }
+void TaskContext::SetStatus(Status status) {
+  status_ = status;
+  if (status != SUCCESS) {
+    execution_context_->SetErrorCode(status);
+  }
+}
 
 Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr) {
   GE_CHECK_NOTNULL(buffer);
@@ -322,7 +313,8 @@ Status TaskContext::PropagateOutputs() {
 
       subgraph_context_->all_inputs_[input_offset] = *tensor;
       if (execution_context_->trace_enabled) {
-        subgraph_context_->all_inputs_[input_offset].SetName(node_item_->NodeName() + "_in_" + std::to_string(i));
+        subgraph_context_->all_inputs_[input_offset].SetName(node_item_->NodeName() + "_in_" +
+                                                             std::to_string(dst_input_idx));
       }
     }
   }
@@ -364,7 +356,10 @@ void TaskContext::SetForceInferShape(bool force_infer_shape) { force_infer_shape
 
 void TaskContext::NodeDone() { subgraph_context_->NodeDone(node_item_->node); }
 
-void TaskContext::OnError(Status error) { subgraph_context_->OnError(error); }
+void TaskContext::OnError(Status error) {
+  subgraph_context_->OnError(error);
+  execution_context_->SetErrorCode(error);
+}
 
 bool TaskContext::IsTraceEnabled() const { return execution_context_->trace_enabled; }
 
@@ -373,5 +368,19 @@ TensorValue *TaskContext::GetVariable(const std::string &name) { return executio
 uint64_t TaskContext::GetIterationNumber() const { return iteration_; }
 
 bool TaskContext::IsDumpEnabled() const { return execution_context_->dump_enabled; }
+
+Status TaskContext::TryExecuteCallback(const function<void()> &callback_fun) const {
+  if (!callback_fun) {
+    return SUCCESS;
+  }
+
+  if (node_item_->has_observer) {
+    return RegisterCallback(callback_fun);
+  }
+
+  callback_fun();
+  return SUCCESS;
+}
+const DumpProperties &TaskContext::GetDumpProperties() const { return execution_context_->dump_properties; }
 }  // namespace hybrid
 }  // namespace ge

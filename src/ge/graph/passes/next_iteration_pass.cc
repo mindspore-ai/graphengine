@@ -35,6 +35,10 @@ Status NextIterationPass::Run(ComputeGraphPtr graph) {
       return INTERNAL_ERROR;
     }
   }
+  if (GroupWithNoBatch(graph) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Group enter_nodes failed without batch_label attr.");
+    return INTERNAL_ERROR;
+  }
 
   if (FindWhileGroups() != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Find while groups failed.");
@@ -69,17 +73,75 @@ Status NextIterationPass::GroupEnterNode(const NodePtr &enter_node) {
     return FAILED;
   }
 
-  auto iter = loop_group_map_.find(frame_name);
-  if (iter == loop_group_map_.end()) {
+  std::string batch_label;
+  (void)ge::AttrUtils::GetStr(enter_desc, ATTR_NAME_BATCH_LABEL, batch_label);
+  if (batch_label.empty()) {
+    auto frame_iter = frame_enter_map_.find(frame_name);
+    if (frame_iter == frame_enter_map_.end()) {
+      std::vector<NodePtr> enter_nodes;
+      enter_nodes.emplace_back(enter_node);
+      frame_enter_map_[frame_name] = enter_nodes;
+    } else {
+      frame_iter->second.emplace_back(enter_node);
+    }
+    return SUCCESS;
+  }
+
+  auto group_iter = loop_group_map_.find(frame_name);
+  if (group_iter == loop_group_map_.end()) {
     LoopCondGroupPtr loop_group = MakeShared<LoopCondGroup>();
     if (loop_group == nullptr) {
       GELOGE(FAILED, "MakeShared for LoopCondGroup failed.");
       return FAILED;
     }
     loop_group->enter_nodes.emplace_back(enter_node);
-    loop_group_map_[frame_name] = loop_group;
+    loop_group_map_[frame_name][batch_label] = loop_group;
   } else {
-    iter->second->enter_nodes.emplace_back(enter_node);
+    auto batch_iter = group_iter->second.find(batch_label);
+    if (batch_iter == group_iter->second.end()) {
+      LoopCondGroupPtr loop_group = MakeShared<LoopCondGroup>();
+      if (loop_group == nullptr) {
+        GELOGE(FAILED, "MakeShared for LoopCondGroup failed.");
+        return FAILED;
+      }
+      loop_group->enter_nodes.emplace_back(enter_node);
+      group_iter->second[batch_label] = loop_group;
+    } else {
+      batch_iter->second->enter_nodes.emplace_back(enter_node);
+    }
+  }
+
+  return SUCCESS;
+}
+
+///
+/// @brief Group Enter nodes without batch_label attr
+/// @param [in] compute_graph
+/// @return Status
+///
+Status NextIterationPass::GroupWithNoBatch(const ComputeGraphPtr &graph) {
+  if (frame_enter_map_.empty()) {
+    GELOGI("All enter nodes in graph %s has batch_label attr.", graph->GetName().c_str());
+    return SUCCESS;
+  }
+  for (const auto &item : frame_enter_map_) {
+    const std::string &frame_name = item.first;
+    auto iter = loop_group_map_.find(frame_name);
+    if (iter == loop_group_map_.end()) {
+      LoopCondGroupPtr loop_group = MakeShared<LoopCondGroup>();
+      if (loop_group == nullptr) {
+        GELOGE(FAILED, "MakeShared for LoopCondGroup failed.");
+        return FAILED;
+      }
+      loop_group->enter_nodes = item.second;
+      loop_group_map_[frame_name][""] = loop_group;
+    } else {
+      for (auto &batch_item : iter->second) {
+        for (const auto &enter_node : item.second) {
+          batch_item.second->enter_nodes.emplace_back(enter_node);
+        }
+      }
+    }
   }
 
   return SUCCESS;
@@ -92,39 +154,50 @@ Status NextIterationPass::GroupEnterNode(const NodePtr &enter_node) {
 Status NextIterationPass::FindWhileGroups() {
   for (const auto &loop_group_iter : loop_group_map_) {
     const std::string &frame_name = loop_group_iter.first;
-    for (const auto &enter_node : loop_group_iter.second->enter_nodes) {
-      for (const auto &out_node : enter_node->GetOutAllNodes()) {
-        const std::string &type = out_node->GetType();
-        if ((type != MERGE) && (type != REFMERGE)) {
-          continue;
-        }
+    for (const auto &batch_iter : loop_group_iter.second) {
+      const std::string &batch_label = batch_iter.first;
+      for (const auto &enter_node : batch_iter.second->enter_nodes) {
+        for (const auto &out_node : enter_node->GetOutAllNodes()) {
+          GELOGI("Find while_group for enter_node %s, frame_name:%s, batch_label:%s.", enter_node->GetName().c_str(),
+                 frame_name.c_str(), batch_label.c_str());
+          if ((out_node->GetType() != MERGE) && (out_node->GetType() != REFMERGE)) {
+            continue;
+          }
+          std::string tmp_label;
+          GE_CHECK_NOTNULL(out_node->GetOpDesc());
+          (void)AttrUtils::GetStr(out_node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, tmp_label);
+          bool need_skip = !(batch_label.empty() || tmp_label.empty() || (batch_label == tmp_label));
+          if (need_skip) {
+            continue;
+          }
 
-        NodePtr next_node = nullptr;
-        if (FindTargetNode(out_node, NEXTITERATION, true, next_node) != SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Get NextIteration node failed, frame_name: %s.", frame_name.c_str());
-          return INTERNAL_ERROR;
-        }
-        loop_group_iter.second->merge_next_pairs.emplace_back(std::make_pair(out_node, next_node));
+          NodePtr next_node = nullptr;
+          if (FindTargetNode(out_node, NEXTITERATION, true, batch_label, next_node) != SUCCESS) {
+            GELOGE(INTERNAL_ERROR, "Get NextIteration node failed.");
+            return INTERNAL_ERROR;
+          }
+          batch_iter.second->merge_next_pairs.emplace_back(std::make_pair(out_node, next_node));
 
-        NodePtr switch_node = nullptr;
-        if (FindTargetNode(out_node, SWITCH, false, switch_node) != SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Get Switch node failed, frame_name: %s.", frame_name.c_str());
-          return INTERNAL_ERROR;
-        }
-        if (switch_node == nullptr) {
-          continue;
-        }
+          NodePtr switch_node = nullptr;
+          if (FindTargetNode(out_node, SWITCH, false, batch_label, switch_node) != SUCCESS) {
+            GELOGE(INTERNAL_ERROR, "Get Switch node failed.");
+            return INTERNAL_ERROR;
+          }
+          if (switch_node == nullptr) {
+            continue;
+          }
 
-        NodePtr loop_cond = nullptr;
-        if (FindTargetNode(switch_node, LOOPCOND, true, loop_cond) != SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Get LoopCond node failed, frame_name: %s.", frame_name.c_str());
-          return INTERNAL_ERROR;
-        }
-        if (loop_group_iter.second->loop_cond == nullptr) {
-          loop_group_iter.second->loop_cond = loop_cond;
-        } else if (loop_group_iter.second->loop_cond != loop_cond) {
-          GELOGE(FAILED, "Multi LoopCond nodes exist, frame_name: %s.", frame_name.c_str());
-          return FAILED;
+          NodePtr loop_cond = nullptr;
+          if (FindTargetNode(switch_node, LOOPCOND, true, batch_label, loop_cond) != SUCCESS) {
+            GELOGE(INTERNAL_ERROR, "Get LoopCond node failed.");
+            return INTERNAL_ERROR;
+          }
+          if (batch_iter.second->loop_cond == nullptr) {
+            batch_iter.second->loop_cond = loop_cond;
+          } else if (batch_iter.second->loop_cond != loop_cond) {
+            GELOGE(FAILED, "Multi LoopCond nodes exist.");
+            return FAILED;
+          }
         }
       }
     }
@@ -145,17 +218,18 @@ bool NextIterationPass::VerifyWhileGroup() {
       GELOGE(INTERNAL_ERROR, "Verify while group failed, frame_name is empty.");
       return false;
     }
-
-    if (loop_group_iter.second->loop_cond == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Verify while group failed, LoopCond is null, frame_name: %s.", frame_name.c_str());
-      return false;
-    }
-
-    for (const auto &pair_iter : loop_group_iter.second->merge_next_pairs) {
-      if ((pair_iter.first == nullptr) || (pair_iter.second == nullptr)) {
-        GELOGE(INTERNAL_ERROR, "Verify while group failed, merge_node/next_node is null, frame_name: %s.",
-               frame_name.c_str());
+    for (const auto &batch_iter : loop_group_iter.second) {
+      if (batch_iter.second->loop_cond == nullptr) {
+        GELOGE(INTERNAL_ERROR, "Verify while group failed, LoopCond is null, frame_name: %s.", frame_name.c_str());
         return false;
+      }
+
+      for (const auto &pair_iter : batch_iter.second->merge_next_pairs) {
+        if ((pair_iter.first == nullptr) || (pair_iter.second == nullptr)) {
+          GELOGE(INTERNAL_ERROR, "Verify while group failed, merge_node/next_node is null, frame_name: %s.",
+                 frame_name.c_str());
+          return false;
+        }
       }
     }
   }
@@ -170,51 +244,55 @@ bool NextIterationPass::VerifyWhileGroup() {
 ///
 Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
   for (const auto &loop_cond_iter : loop_group_map_) {
-    const std::string &cond_name = loop_cond_iter.second->loop_cond->GetName();
-    GELOGI("Handle while group, LoopCond node: %s.", cond_name.c_str());
+    for (const auto &batch_iter : loop_cond_iter.second) {
+      const std::string &cond_name = batch_iter.second->loop_cond->GetName();
+      GELOGI("Handle while group, LoopCond node: %s.", cond_name.c_str());
 
-    // Create Active node, Enter->Active->Merge, NextIteration->Active->Merge
-    NodePtr enter_active = CreateActiveNode(graph, cond_name + "_Enter_" + STREAMACTIVE);
-    NodePtr next_active = CreateActiveNode(graph, cond_name + "_Next_" + STREAMACTIVE);
-    if ((enter_active == nullptr) || (next_active == nullptr)) {
-      GELOGE(INTERNAL_ERROR, "Create active node failed, cond_name: %s.", cond_name.c_str());
-      return INTERNAL_ERROR;
-    }
-
-    for (const auto &enter_node : loop_cond_iter.second->enter_nodes) {
-      // Enter --> Active
-      if (GraphUtils::AddEdge(enter_node->GetOutControlAnchor(), enter_active->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add control edge failed.");
-        return INTERNAL_ERROR;
-      }
-    }
-
-    for (const auto &pair : loop_cond_iter.second->merge_next_pairs) {
-      NodePtr merge_node = pair.first;
-      NodePtr next_node = pair.second;
-      // Active --> Merge
-      if (GraphUtils::AddEdge(enter_active->GetOutControlAnchor(), merge_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add control edge failed.");
+      // Create Active node, Enter->Active->Merge, NextIteration->Active->Merge
+      NodePtr enter_active = CreateActiveNode(graph, cond_name + "_Enter_" + STREAMACTIVE);
+      NodePtr next_active = CreateActiveNode(graph, cond_name + "_Next_" + STREAMACTIVE);
+      if ((enter_active == nullptr) || (next_active == nullptr)) {
+        GELOGE(INTERNAL_ERROR, "Create active node failed, cond_name: %s.", cond_name.c_str());
         return INTERNAL_ERROR;
       }
 
-      // NextIteration --> Active
-      if (GraphUtils::AddEdge(next_node->GetOutControlAnchor(), next_active->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add control edge failed.");
-        return INTERNAL_ERROR;
+      for (const auto &enter_node : batch_iter.second->enter_nodes) {
+        // Enter --> Active
+        if (GraphUtils::AddEdge(enter_node->GetOutControlAnchor(), enter_active->GetInControlAnchor()) !=
+            GRAPH_SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Add control edge failed.");
+          return INTERNAL_ERROR;
+        }
       }
 
-      // break link between NextIteration and Merge
-      if (BreakNextIteration(next_node, merge_node) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Break NextIteration failed");
+      for (const auto &pair : batch_iter.second->merge_next_pairs) {
+        NodePtr merge_node = pair.first;
+        NodePtr next_node = pair.second;
+        // Active --> Merge
+        if (GraphUtils::AddEdge(enter_active->GetOutControlAnchor(), merge_node->GetInControlAnchor()) !=
+            GRAPH_SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Add control edge failed.");
+          return INTERNAL_ERROR;
+        }
+
+        // NextIteration --> Active
+        if (GraphUtils::AddEdge(next_node->GetOutControlAnchor(), next_active->GetInControlAnchor()) != GRAPH_SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Add control edge failed.");
+          return INTERNAL_ERROR;
+        }
+
+        // break link between NextIteration and Merge
+        if (BreakNextIteration(next_node, merge_node) != SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Break NextIteration failed");
+          return INTERNAL_ERROR;
+        }
+      }
+
+      if ((SetActiveLabelList(enter_active, {cond_name}) != SUCCESS) ||
+          (SetActiveLabelList(next_active, {cond_name}) != SUCCESS)) {
+        GELOGE(INTERNAL_ERROR, "Set attr ACTIVE_LABEL_LIST failed.");
         return INTERNAL_ERROR;
       }
-    }
-
-    if ((SetActiveLabelList(enter_active, {cond_name}) != SUCCESS) ||
-        (SetActiveLabelList(next_active, {cond_name}) != SUCCESS)) {
-      GELOGE(INTERNAL_ERROR, "Set attr ACTIVE_LABEL_LIST failed.");
-      return INTERNAL_ERROR;
     }
   }
 
@@ -282,11 +360,12 @@ Status NextIterationPass::BreakNextIteration(const NodePtr &next_node, NodePtr &
 /// @param [in] node
 /// @param [in] target_type
 /// @param [in] is_input
+/// @param [in] batch_label
 /// @param [out] target_node
 /// @return Status
 ///
 Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input,
-                                         NodePtr &target_node) {
+                                         const std::string &batch_label, NodePtr &target_node) {
   if (node == nullptr) {
     GELOGE(PARAM_INVALID, "node is null.");
     return PARAM_INVALID;
@@ -303,6 +382,12 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
   }
 
   for (const auto &tmp_node : nodes) {
+    std::string tmp_label;
+    (void)AttrUtils::GetStr(tmp_node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, tmp_label);
+    bool need_skip = !(batch_label.empty() || tmp_label.empty() || (batch_label == tmp_label));
+    if (need_skip) {
+      continue;
+    }
     const std::string type = tmp_node->GetType();
     if ((target_type == LOOPCOND) && (type == target_type)) {
       target_node = tmp_node;
@@ -325,6 +410,7 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
 /// @return SUCCESS
 ///
 Status NextIterationPass::ClearStatus() {
+  frame_enter_map_.clear();
   loop_group_map_.clear();
   return SUCCESS;
 }

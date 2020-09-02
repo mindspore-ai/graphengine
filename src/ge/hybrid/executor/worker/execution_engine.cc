@@ -19,6 +19,9 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/tensor_adapter.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "common/dump/dump_manager.h"
+#include "common/dump/dump_op.h"
+#include "common/types.h"
 
 namespace ge {
 namespace hybrid {
@@ -59,8 +62,10 @@ class NodeDoneCallback {
 
  private:
   Status PrepareConstInputs(const NodeItem &node_item);
+  Status DumpDynamicNode();
   GraphExecutionContext *graph_context_;
   std::shared_ptr<TaskContext> context_;
+  DumpOp dump_op_;
 };
 
 NodeDoneCallback::NodeDoneCallback(GraphExecutionContext *graph_context, std::shared_ptr<TaskContext> task_context)
@@ -89,7 +94,7 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
       return INTERNAL_ERROR;
     }
 
-    vector<uint8_t> host_buffer(tensor_size);
+    vector<uint8_t> host_buffer(static_cast<unsigned long>(tensor_size));
     GELOGD("[%s] To cache output[%d] to host, size = %zu", node_item.NodeName().c_str(), output_idx,
            output_tensor->GetSize());
     GE_CHK_RT_RET(
@@ -113,10 +118,78 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
   return SUCCESS;
 }
 
+Status NodeDoneCallback::DumpDynamicNode() {
+  auto node = context_->GetNodeItem().node;
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "Get node is nullptr");
+    return PARAM_INVALID;
+  }
+  auto op_desc = node->GetOpDesc();
+  auto stream = context_->GetStream();
+  vector<uintptr_t> input_addrs;
+  vector<uintptr_t> output_addrs;
+  for (int i = 0; i < context_->NumInputs(); i++) {
+    auto tensor_value = context_->GetInput(i);
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "Tensor value is nullptr");
+    uint64_t input_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
+    input_addrs.emplace_back(input_addr);
+  }
+  for (int j = 0; j < context_->NumOutputs(); j++) {
+    auto tensor_value = context_->GetOutput(j);
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "Tensor value is nullptr");
+    uint64_t output_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
+    output_addrs.emplace_back(output_addr);
+  }
+
+  dump_op_.SetDumpInfo(context_->GetDumpProperties(), op_desc, input_addrs, output_addrs, stream);
+
+  GE_CHECK_NOTNULL(graph_context_);
+  const HybridModel *model = graph_context_->model;
+  GE_CHECK_NOTNULL(model);
+  std::string dynamic_model_name = model->GetModelName();
+  uint32_t model_id = model->GetModelId();
+  dump_op_.SetDynamicModelInfo(dynamic_model_name, model_id);
+
+  void *global_step = nullptr;
+  TensorValue *varible_global_step = context_->GetVariable(NODE_NAME_GLOBAL_STEP);
+  if (varible_global_step != nullptr) {
+    global_step = const_cast<void *>(varible_global_step->GetData());
+  }
+
+  void *loop_per_iter = nullptr;
+  TensorValue *varible_loop_per_iter = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);
+  if (varible_loop_per_iter != nullptr) {
+    loop_per_iter = const_cast<void *>(varible_loop_per_iter->GetData());
+  }
+
+  void *loop_cond = nullptr;
+  TensorValue *varible_loop_cond = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_COND);
+  if (varible_loop_cond != nullptr) {
+    loop_cond = const_cast<void *>(varible_loop_cond->GetData());
+  }
+  dump_op_.SetLoopAddr(global_step, loop_per_iter, loop_cond);
+
+  GE_CHK_STATUS_RET(dump_op_.LaunchDumpOp(), "Failed to launch dump op in hybird model");
+
+  auto rt_ret = rtStreamSynchronize(stream);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "rtStreamSynchronize failed");
+    return rt_ret;
+  }
+  return SUCCESS;
+}
+
 Status NodeDoneCallback::OnNodeDone() {
   auto &node_item = context_->GetNodeItem();
   GELOGI("[%s] Start callback process.", node_item.NodeName().c_str());
-  RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "Start");
+  RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[Compute] End");
+  RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[Callback] Start");
+
+  auto dump_path = context_->GetDumpProperties().GetDumpPath();
+  if (!dump_path.empty()) {
+    GELOGI("Start to dump dynamic shape,dump_path is %s", dump_path.c_str());
+    GE_CHK_STATUS_RET(DumpDynamicNode(), "Failed to dump dynamic node");
+  }
 
   // release inputs
   for (int i = 0; i < context_->NumInputs(); ++i) {
@@ -196,7 +269,12 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state, TaskContext &task_
   GE_CHK_STATUS_RET(ValidateInputTensors(node_state, task_context), "Failed to validate input tensors.");
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ValidateInputTensors] End");
 
-  GE_CHK_STATUS_RET(executor->ExecuteTask(*task, task_context, callback), "[%s] Failed to execute task",
+  if (context.profiling_level > 0) {
+    auto *ctx = &context;
+    const string &name = node_state.GetName();
+    task_context.RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] Start"); });
+  }
+  GE_CHK_STATUS_RET(node_item.node_executor->ExecuteTask(*task, task_context, callback), "[%s] Failed to execute task",
                     node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] End");
 

@@ -32,7 +32,7 @@ class DynamicShapePartitioner {
   // DATA:DATA, UNKNOWN_SHAPE:unknowshape, KNOWN_SHAPE:knowshape, NETOUTPUT:NETOUTPUT.
   class Cluster : public std::enable_shared_from_this<Cluster> {
    public:
-    enum Type { DATA, NETOUTPUT, KNOWN_SHAPE, UNKNOWN_SHAPE };
+    enum Type { DATA, INPUT_NODE, NETOUTPUT, KNOWN_SHAPE, UNKNOWN_SHAPE };
     Cluster(size_t rank, Type type, NodePtr node, DynamicShapePartitioner *partitioner)
         : id_(rank), min_(rank), max_(rank), type_(type), partitioner_(partitioner) {
       nodes_.push_back(node);
@@ -46,8 +46,9 @@ class DynamicShapePartitioner {
     bool IsKnownShape() const;
     bool IsUnknownShape() const;
     bool IsNetOutput() const;
-    std::unordered_set<std::shared_ptr<Cluster>> Inputs() const;
-    std::unordered_set<std::shared_ptr<Cluster>> Outputs() const;
+    std::vector<std::shared_ptr<Cluster>> Inputs() const;
+    std::vector<std::shared_ptr<Cluster>> Outputs() const;
+    bool IsInputNode() const;
     std::vector<NodePtr> Nodes() const;
     bool IsRefVariable() const;
     // Cluster modify functions
@@ -86,8 +87,8 @@ class DynamicShapePartitioner {
     size_t min_;  // maximum topological order
     size_t max_;  // minimum topological order
     Type type_;
-    std::unordered_set<std::shared_ptr<Cluster>> in_clusters_;
-    std::unordered_set<std::shared_ptr<Cluster>> out_clusters_;
+    std::vector<std::shared_ptr<Cluster>> in_clusters_;
+    std::vector<std::shared_ptr<Cluster>> out_clusters_;
     std::vector<NodePtr> nodes_;
     // Fileds for build partitoned call and subgraph
     DynamicShapePartitioner *partitioner_;  // Not owned, the partitioner this cluster belongs to
@@ -121,7 +122,14 @@ class DynamicShapePartitioner {
   //    merge all the clusters in the path(s) between the two clusters
   // 2) Iterate through the KNOWN_SHAPE clusters, if the input is KNOWN_SHAPE, and
   //    and there's only one path between the two clusters , merge the two clusters
+  // 3) Iterate through the INPUT_DATA clusters, merge all INPUT_DATA
   Status MergeClusters();
+  // Merge clusters step1
+  void MergeClustersUnknownShape();
+  // Merge clusters step2
+  void MergeClustersKnownShape();
+  // Merge clusters step3
+  void MergeClustersInputData();
   // Topological sort clusters after merge unknow shape clusters.
   Status TopologicalSortClusters();
   // Deduplicate merged clusters

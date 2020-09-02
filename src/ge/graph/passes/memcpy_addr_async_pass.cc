@@ -34,6 +34,17 @@ Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
         return ret;
       }
     }
+    // handle data->netoutput, const->netoutput in root graph, use mem_addr_async to improve performance
+    if (op_desc->GetType() == NETOUTPUT) {
+      // check this netoutput is on root graph
+      if (node->GetOwnerComputeGraph()->GetParentNode() == nullptr) {
+        Status ret = InsertMemAddrAsyncNodeBeforeNetoutput(node->GetOwnerComputeGraph(), node);
+        if (ret != SUCCESS) {
+          GELOGE(ret, "AddMemcpyAddrAsyncNode failed.");
+          return ret;
+        }
+      }
+    }
   }
   return SUCCESS;
 }
@@ -179,7 +190,7 @@ void MemcpyAddrAsyncPass::FindUserData(const NodePtr &parent_node, uint32_t &par
 NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &graph,
                                                        const OutDataAnchorPtr &out_data_anchor,
                                                        const NodePtr &out_of_user_data) {
-  GELOGI("Start CreateMemcpyAddrAsyncNode.");
+  GELOGD("Start CreateMemcpyAddrAsyncNode.");
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "Op_desc of pre node is invalid.");
   std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYADDRASYNC;
@@ -242,4 +253,27 @@ Status MemcpyAddrAsyncPass::InsertMemcpyAddrAsyncNode(const OutDataAnchorPtr &ou
   return SUCCESS;
 }
 
+Status MemcpyAddrAsyncPass::InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeGraphPtr &graph, const NodePtr &node) {
+  GELOGI("Start AddMemcpyAddrAsyncNode for %s.", node->GetName().c_str());
+  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+    auto in_node = NodeUtils::GetInDataNodeByIndex(*node, in_data_anchor->GetIdx());
+    GE_CHECK_NOTNULL(in_node);
+    auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+    if ((in_node->GetType() != CONSTANT) && (in_node->GetType() != CONSTANTOP) && (in_node->GetType() != DATA)) {
+      continue;
+    }
+    GELOGI("Need to insert MemcpyAddrAsync before netoutput on parent graph.");
+    NodePtr memcpy_addr_async_node = CreateMemcpyAddrAsyncNode(graph, peer_out_anchor, in_node);
+    GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr, GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode failed.");
+                    return INTERNAL_ERROR);
+
+    Status ret = InsertMemcpyAddrAsyncNode(peer_out_anchor, in_data_anchor, memcpy_addr_async_node);
+    GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode failed."); return ret);
+    GELOGI("Insert mem_addr_async node %s success between %s and %s.", memcpy_addr_async_node->GetName().c_str(),
+           in_node->GetName().c_str(), node->GetName().c_str());
+    NodeUtils::UpdateIsInputConst(memcpy_addr_async_node);
+  }
+  NodeUtils::UpdateIsInputConst(node);
+  return SUCCESS;
+}
 }  // namespace ge

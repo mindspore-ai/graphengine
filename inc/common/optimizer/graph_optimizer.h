@@ -42,6 +42,9 @@ class GraphOptimizer {
   // optimize original graph for FE quant optimize
   virtual Status OptimizeGraphPrepare(ComputeGraph &graph) { return SUCCESS; }
 
+  // optimize graph before build for RTS
+  virtual Status OptimizeGraphBeforeBuild(ComputeGraph &graph) { return SUCCESS; }
+
   // optimize original graph, using in graph preparation stage
   virtual Status OptimizeOriginalGraph(ComputeGraph &graph) = 0;
 

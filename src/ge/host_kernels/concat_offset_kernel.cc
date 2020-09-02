@@ -41,7 +41,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   // validate attrs
   int N = 0;
   if (!(AttrUtils::GetInt(op_desc_ptr, "N", N))) {
-    GELOGW("Attr %s is not exist.", "N");
+    GELOGW("Attr %s does not exist.", "N");
     return NOT_CHANGED;
   }
   // follow IR def, the first input is concat_dim
@@ -49,8 +49,8 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   GE_CHECK_NOTNULL(input_0);
   int32_t concat_dim = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(input_0->GetData().data())));
   // validate inputs
-  if (static_cast<int>(input.size()) != (N + kNumOne) || input.size() <= kConcatOffsetInputIndexOne) {
-    GELOGW("The number of input for concat offset must be equal with %d, and must be more than one.", (N + kNumOne));
+  if ((static_cast<int>(input.size()) != (N + kNumOne)) || (input.size() <= kConcatOffsetInputIndexOne)) {
+    GELOGW("The number of input for concat offset must be equal to %d, and must be more than one.", (N + kNumOne));
     return NOT_CHANGED;
   }
 
@@ -58,7 +58,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   GeShape output_shape = input[kConcatOffsetInputIndexOne]->GetTensorDesc().GetShape();
   int64_t output_size = output_shape.GetShapeSize();
   if (concat_dim >= output_size) {
-    GELOGW("Concat dim is biger than the size of output_shape.");
+    GELOGW("Concat dim is bigger than the size of output_shape.");
     return NOT_CHANGED;
   }
   GELOGI("Output shape size is %ld", output_size);
@@ -93,7 +93,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     const int32_t *input_shape =
       reinterpret_cast<const int32_t *>(input[i + kConcatOffsetInputIndexOne]->GetData().data());
     int64_t input_dim = input_shape[concat_dim];  // this index is valid, checked before
-    if (input_dim > (INT32_MAX - offset)) {
+    if (input_dim > (INT64_MAX - offset)) {
       GELOGE(PARAM_INVALID, " %d and %ld addition can result in overflow!.", offset, input_dim);
       return INTERNAL_ERROR;
     }

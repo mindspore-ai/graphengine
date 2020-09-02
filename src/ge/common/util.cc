@@ -57,7 +57,7 @@ const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 /// Based on the security coding specification and the current actual (protobuf) model size, it is determined as 2G-1
 const int kMaxFileSizeLimit = INT_MAX;
 const int kMaxBuffSize = 256;
-const char *const kPathValidReason = "The path can only contains 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
+const char *const kPathValidReason = "The path can only contain 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
 }  // namespace
 
 namespace ge {
@@ -311,6 +311,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestap() {
   return static_cast<uint64_t>(total_use_time);
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t GetCurrentSecondTimestap() {
+  struct timeval tv {};
+  int ret = gettimeofday(&tv, nullptr);
+  GE_LOGE_IF(ret != 0, "Func gettimeofday may failed: ret=%d", ret);
+  auto total_use_time = tv.tv_sec;  // seconds
+  return static_cast<uint32_t>(total_use_time);
+}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInt64MulOverflow(int64_t a, int64_t b) {
   if (a > 0) {
     if (b > 0) {
@@ -372,10 +380,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   }
 
   // A regular matching expression to verify the validity of the input file path
-  // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
   // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
   // File name section: Support upper and lower case letters, numbers, underscores chinese and dots(.)
-  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
+  std::string mode = "^[\u4e00-\u9fa5A-Za-z0-9./_-]+$";
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     !ValidateStr(real_path, mode),
@@ -408,10 +415,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
     return "", "Path[%s] len is too long, it must be less than %d", file_path.c_str(), PATH_MAX);
 
   // A regular matching expression to verify the validity of the input file path
-  // ^(/|./|(../)+|)([.]?[\u4e00-\u9fa5A-Za-z0-9_-]+/)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$
   // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
   // File name section: Support upper and lower case letters, numbers, underscores chinese and dots(.)
-  std::string mode = "^(/+|./+|(../+)+|)(../|([.]?[\u4e00-\u9fa5A-Za-z0-9_.-]+)/+)*[\u4e00-\u9fa5A-Za-z0-9_+.-]+$";
+  std::string mode = "^[\u4e00-\u9fa5A-Za-z0-9./_-]+$";
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     !ValidateStr(file_path, mode),
@@ -460,9 +466,9 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
   int ret = regcomp(&reg, mode.c_str(), cflags);
   if (ret) {
     regerror(ret, &reg, ebuff, kMaxBuffSize);
-    GELOGE(ge::PARAM_INVALID, "regcomp failed, reason: %s", ebuff);
+    GELOGW("regcomp failed, reason: %s", ebuff);
     regfree(&reg);
-    return false;
+    return true;
   }
 
   ret = regexec(&reg, str.c_str(), 0, nullptr, 0);

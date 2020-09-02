@@ -658,9 +658,12 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
 
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", id);
+    VarManagerPool::Instance().RemoveVarManager(session_id);
     return GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
   id += 1;
+
+  VarManagerPool::Instance().RemoveVarManager(session_id);
 
   return SUCCESS;
 }

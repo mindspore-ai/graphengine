@@ -58,7 +58,8 @@ class StreamAllocator {
   bool IsActiveAfterNextIteration(const NodePtr &active_node_ptr) const;
 
   Status SplitStreams(std::vector<std::set<int64_t>> &split_streams);
-  bool NeedSpiltNewStream(int64_t stream_node_num, int64_t max_node_num_one_stream, const OpDescPtr &op_desc) const;
+  bool NeedSpiltNewStream(int64_t stream_node_num, int64_t max_node_num_one_stream, const OpDescPtr &op_desc,
+                          bool is_stream_first_node) const;
 
   Status UpdateActiveStreams(const std::vector<std::set<int64_t>> &split_streams);
   void UpdateLabelStreams(const std::vector<std::set<int64_t>> &split_streams);

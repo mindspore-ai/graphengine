@@ -16,12 +16,21 @@
 
 #include "control_op_executor.h"
 #include "graph/utils/node_utils.h"
+#include "graph/utils/type_utils.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_executor.h"
 
 namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::CONTROL_OP, ControlOpNodeExecutor);
+namespace {
+template <typename T>
+Status CopyScalarValueToHost(const TensorValue &tensor, T &value) {
+  GE_CHECK_GE(tensor.GetSize(), sizeof(value));
+  GE_CHK_RT_RET(rtMemcpy(&value, sizeof(value), tensor.GetData(), sizeof(value), RT_MEMCPY_DEVICE_TO_HOST));
+  return SUCCESS;
+}
+}  // namespace
 
 Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph, TaskContext &task_context,
                                           const std::function<void()> &done_callback) {
@@ -45,10 +54,32 @@ Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph, TaskContext
   return SUCCESS;
 }
 
-Status ControlOpNodeTask::CopyTensorValueToHost(const TensorValue &tensor, int32_t &value) {
-  GE_CHECK_NOTNULL(tensor.GetData());
-  GE_CHECK_GE(tensor.GetSize(), sizeof(value));
-  GE_CHK_RT_RET(rtMemcpy(&value, sizeof(value), tensor.GetData(), sizeof(value), RT_MEMCPY_DEVICE_TO_HOST));
+Status ControlOpNodeTask::ToBool(const TensorValue &tensor, DataType data_type, bool &value) {
+  switch (data_type) {
+#define CASE(DT, T)                                        \
+  case (DT): {                                             \
+    T val{};                                               \
+    GE_CHK_STATUS_RET(CopyScalarValueToHost(tensor, val)); \
+    value = val != 0;                                      \
+    break;                                                 \
+  }
+    // DT_STRING was handled in CondPass
+    CASE(DT_FLOAT, float)
+    CASE(DT_DOUBLE, double)
+    CASE(DT_INT32, int32_t)
+    CASE(DT_UINT8, uint8_t)
+    CASE(DT_INT16, int16_t)
+    CASE(DT_INT8, int8_t)
+    CASE(DT_INT64, int64_t)
+#undef CASE
+    case DT_BOOL:
+      GE_CHK_STATUS_RET(CopyScalarValueToHost(tensor, value));
+      break;
+    default:
+      GELOGE(UNSUPPORTED, "Data type %s is not support by cond.", TypeUtils::DataTypeToSerialString(data_type).c_str());
+      return UNSUPPORTED;
+  }
+
   return SUCCESS;
 }
 
@@ -60,11 +91,6 @@ Status ControlOpNodeTask::UpdateArgs(TaskContext &context) {
 Status ControlOpNodeTask::ExecuteAsync(TaskContext &task_context, std::function<void()> done_callback) {
   auto ret = DoExecuteAsync(task_context, done_callback);
   task_context.SetStatus(ret);
-
-  if (done_callback) {
-    done_callback();
-  }
-
   return ret;
 }
 
@@ -86,16 +112,24 @@ Status IfOpNodeTask::Init(const NodePtr &node, const HybridModel &model) {
   return SUCCESS;
 }
 
-const GraphItem *IfOpNodeTask::SelectBranch(int32_t cond) const { return cond != 0 ? then_ : else_; }
-
 Status IfOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const {
-  auto cond_tensor = task_context.GetInput(kIfCondIndex);
-  GE_CHECK_NOTNULL(cond_tensor);
-  int32_t cond_val = 0;
-  GE_CHK_STATUS_RET(CopyTensorValueToHost(*cond_tensor, cond_val), "[%s] Failed to get cond value.",
-                    task_context.GetNodeName());
+  auto cond_tensor_desc = task_context.MutableInputDesc(kIfCondIndex);
+  auto data_type = cond_tensor_desc->GetDataType();
+  const auto &shape = cond_tensor_desc->MutableShape();
+  bool cond_val = false;
+  if (shape.IsScalar()) {
+    auto cond_tensor = task_context.GetInput(kIfCondIndex);
+    GE_CHECK_NOTNULL(cond_tensor);
+    GE_CHK_STATUS_RET(ToBool(*cond_tensor, data_type, cond_val), "[%s] Failed to get cond value.",
+                      task_context.GetNodeName());
+  } else {
+    // true if num elements is non-zero
+    cond_val = shape.GetShapeSize() != 0;
+    GELOGD("[%s] Cond tensor shape = [%s], cond value = %d", task_context.GetNodeName(), shape.ToString().c_str(),
+           cond_val);
+  }
 
-  auto subgraph = SelectBranch(cond_val);
+  auto subgraph = cond_val ? then_ : else_;
   GELOGD("[%s] Taking subgraph [%s] by cond = [%d]", task_context.GetNodeName(), subgraph->GetName().c_str(), cond_val);
   GE_CHK_STATUS_RET(ExecuteSubgraph(subgraph, task_context, done_callback),
                     "[%s] Failed to execute subgraph. cond = %d", task_context.GetNodeName(), cond_val);
@@ -139,9 +173,7 @@ Status CaseOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::func
   auto branch_tensor = task_context.GetInput(kCaseBranchIndex);
   GE_CHECK_NOTNULL(branch_tensor);
   int32_t branch_index = 0;
-  GE_CHK_STATUS_RET(CopyTensorValueToHost(*branch_tensor, branch_index), "[%s] Failed to get branch index.",
-                    task_context.GetNodeName());
-
+  GE_CHK_STATUS_RET(CopyScalarValueToHost(*branch_tensor, branch_index));
   const GraphItem *subgraph = SelectBranch(branch_index);
   GELOGI("[%s] Taking subgraph [%s] by branch = [%d]", task_context.GetNodeName(), subgraph->GetName().c_str(),
          branch_index);
@@ -201,6 +233,9 @@ Status WhileOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::fun
       *output_tensor_desc = *input_tensor_desc;
     }
 
+    if (done_callback) {
+      done_callback();
+    }
     return SUCCESS;
   }
 
@@ -236,6 +271,9 @@ Status WhileOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::fun
     GE_CHK_STATUS_RET_NOLOG(task_context.SetOutput(i, *input_tensor));
   }
 
+  if (done_callback) {
+    done_callback();
+  }
   return SUCCESS;
 }
 
@@ -261,16 +299,28 @@ Status WhileOpNodeTask::ExecuteCond(TaskContext &task_context, bool &is_continue
   // get cond output
   GE_CHK_STATUS_RET(executor->Synchronize(), "[%s] Failed to sync cond-subgraph result.", cond_->GetName().c_str());
   std::vector<TensorValue> cond_outputs;
-  GE_CHK_STATUS_RET(executor->GetOutputs(cond_outputs), "[%s] Failed to get cond-output.", cond_->GetName().c_str());
-  if (cond_outputs.empty()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Cond output is empty.", task_context.GetNodeName());
+  std::vector<ConstGeTensorDescPtr> cond_output_desc_list;
+  GE_CHK_STATUS_RET(executor->GetOutputs(cond_outputs, cond_output_desc_list), "[%s] Failed to get cond-output.",
+                    cond_->GetName().c_str());
+  if (cond_outputs.size() != kCondOutputSize || cond_output_desc_list.size() != kCondOutputSize) {
+    GELOGE(INTERNAL_ERROR, "[%s] Number of cond outputs is invalid. number = %zu", task_context.GetNodeName(),
+           cond_outputs.size());
     return INTERNAL_ERROR;
   }
 
-  int cond_val = 0;
-  GE_CHK_STATUS_RET(CopyTensorValueToHost(cond_outputs[0], cond_val), "[%s] Failed to get cond result.",
-                    task_context.GetNodeName());
-  is_continue = cond_val != 0;
+  auto &cond_tensor_desc = cond_output_desc_list[0];
+  const auto &shape = cond_tensor_desc->GetShape();
+  if (shape.IsScalar()) {
+    auto data_type = cond_tensor_desc->GetDataType();
+    GE_CHK_STATUS_RET(ToBool(cond_outputs[0], data_type, is_continue), "[%s] Failed to get cond value.",
+                      task_context.GetNodeName());
+  } else {
+    // true if num elements is non-zero
+    is_continue = shape.GetShapeSize() > 0;
+    GELOGD("[%s] Cond tensor shape = [%s], is_continue = %d", task_context.GetNodeName(), shape.ToString().c_str(),
+           is_continue);
+  }
+
   return SUCCESS;
 }
 

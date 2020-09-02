@@ -84,6 +84,8 @@ const uint32_t kAddrLen = sizeof(void *);
 const int kDecimal = 10;
 const int kBytes = 8;
 const uint32_t kDataMemAlignSizeCompare = 64;
+const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
+const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
 
 inline bool IsDataOp(const std::string &node_type) {
@@ -97,7 +99,6 @@ inline bool IsNoTaskAndDumpNeeded(const OpDescPtr &op_desc) {
 }  // namespace
 
 std::mutex DavinciModel::tvm_bin_mutex_;
-std::set<std::string> DavinciModel::tvm_bin_kernel_;
 
 DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener> &listener)
     : weights_mem_base_(nullptr),
@@ -178,6 +179,10 @@ DavinciModel::~DavinciModel() {
       FreeWeightsMem();
 
       FreeFeatureMapMem();
+
+      if (l1_fusion_addr_ != nullptr) {
+        GE_CHK_RT(rtFree(l1_fusion_addr_));
+      }
 
       if (rt_model_handle_ != nullptr) {
         GE_CHK_RT(rtModelDestroy(rt_model_handle_));
@@ -305,7 +310,7 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
     if (weight_ptr == nullptr) {
       weights_mem_base_ = MallocWeightsMem(weights_size);
       if (weights_mem_base_ == nullptr) {
-        GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc weight memory failed. size: %zu", weights_size);
+        GELOGE(GE_EXEC_ALLOC_WEIGHT_MEM_FAILED, "Alloc weight memory failed. size: %zu", weights_size);
         return GE_EXEC_ALLOC_WEIGHT_MEM_FAILED;
       }
       is_inner_weight_base_ = true;
@@ -367,7 +372,7 @@ void DavinciModel::InitRuntimeParams() {
   session_id_ = runtime_param_.session_id;
 
   GELOGI(
-    "InitRuntimeParams(), session_id:%u, stream_num:%lu, event_num:%u, label_num:%u, "
+    "InitRuntimeParams(), session_id:%lu, stream_num:%u, event_num:%u, label_num:%u, "
     "logic_mem_base:0x%lx, logic_weight_base:0x%lx, logic_var_base:0x%lx, "
     "memory_size:%lu, weight_size:%lu, var_size:%lu",
     runtime_param_.session_id, runtime_param_.stream_num, runtime_param_.event_num, runtime_param_.label_num,
@@ -401,6 +406,7 @@ void DavinciModel::CheckHasHcomOp() {
 ///
 Status DavinciModel::BindModelStream() {
   // Stream not in active_stream_indication_ is active stream.
+  is_stream_list_bind_ = false;
   if ((!input_queue_ids_.empty() || !output_queue_ids_.empty()) || (deploy_type_ == AICPU_DEPLOY_CROSS_THREAD)) {
     for (size_t i = 0; i < stream_list_.size(); ++i) {
       if (active_stream_indication_.count(i) == 0) {
@@ -419,7 +425,7 @@ Status DavinciModel::BindModelStream() {
       GE_CHK_RT_RET(rtModelBindStream(rt_model_handle_, stream_list_[i], RT_HEAD_STREAM));
     }
   }
-
+  is_stream_list_bind_ = true;
   return SUCCESS;
 }
 
@@ -600,6 +606,12 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   // create model_handle to load model
   GE_CHK_RT_RET(rtModelCreate(&rt_model_handle_, 0));
   GE_CHK_RT_RET(rtModelGetId(rt_model_handle_, &runtime_model_id_));
+  // malloc 2M for dump l1fusion op
+  GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
+
+  // send l1fusion dump addr to rts
+  GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
+
   // inference will use default graph_id 0;
   runtime_param_.graph_id = compute_graph->GetGraphID();
 
@@ -748,11 +760,18 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
   typedef Status (DavinciModel::*OpDescCall)(const OpDescPtr &);
   static std::map<std::string, OpDescCall> op_desc_handle = {
-    {VARIABLE, &DavinciModel::InitVariable},           {CONSTANTOP, &DavinciModel::InitConstant},
-    {STREAMACTIVE, &DavinciModel::InitStreamActive},   {STREAMSWITCH, &DavinciModel::InitStreamSwitch},
-    {STREAMSWITCHN, &DavinciModel::InitStreamSwitchN}, {LABELSET, &DavinciModel::InitLabelSet},
+    {VARIABLE, &DavinciModel::InitVariable},
+    {CONSTANTOP, &DavinciModel::InitConstant},
+    {STREAMACTIVE, &DavinciModel::InitStreamActive},
+    {STREAMSWITCH, &DavinciModel::InitStreamSwitch},
+    {STREAMSWITCHN, &DavinciModel::InitStreamSwitchN},
+    {LABELSET, &DavinciModel::InitLabelSet},
+    {CASE, &DavinciModel::InitCase},
   };
 
+  GE_CHK_STATUS_RET(InitInputOutputForDynamic(compute_graph), "InitInputOutputForDynamic failed.");
+
+  map<uint32_t, OpDescPtr> data_by_index;
   auto nodes = compute_graph->GetAllNodes();
   const TBEKernelStore &tbekernel_store = ge_model_->GetTBEKernelStore();
   for (size_t i = 0; i < nodes.size(); i++) {
@@ -770,7 +789,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     GE_TIMESTAMP_ADD(LoadTBEKernelBinToOpDesc);
 
     if (IsDataOp(op_desc->GetType())) {
-      if (InitDataOp(node, data_op_index) != SUCCESS) {
+      if (InitDataOp(node, data_op_index, data_by_index) != SUCCESS) {
         GELOGE(PARAM_INVALID, "Data init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
@@ -839,8 +858,32 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     GE_TIMESTAMP_ADD(InitTbeHandle);
   }
 
+  AdjustDataOpList(data_by_index);
   GE_TIMESTAMP_CALLNUM_END(LoadTBEKernelBinToOpDesc, "GraphLoader::LoadTBEKernelBinToOpDesc.");
   GE_TIMESTAMP_CALLNUM_END(InitTbeHandle, "GraphLoader::InitTbeHandle.");
+  return SUCCESS;
+}
+
+Status DavinciModel::InitInputOutputForDynamic(const ComputeGraphPtr &compute_graph) {
+  if (!known_node_) return SUCCESS;
+  // for dynamic shape
+  auto direct_nodes = compute_graph->GetDirectNode();
+  for (size_t i = 0; i < direct_nodes.size(); i++) {
+    auto node = direct_nodes.at(i);
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      GELOGE(PARAM_INVALID, "op_desc is null.");
+      return PARAM_INVALID;
+    }
+    if (IsDataOp(op_desc->GetType())) {
+      GELOGD("init data op %s", op_desc->GetName().c_str());
+      data_op_list_.push_back(op_desc);
+    }
+    if (op_desc->GetType() == NETOUTPUT) {
+      GELOGD("init netouput op %s", op_desc->GetName().c_str());
+      output_op_list_.push_back(op_desc);
+    }
+  }
   return SUCCESS;
 }
 
@@ -849,11 +892,10 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 /// @param [in] NodePtr: Data Op.
 /// @param [in/out] data_op_index: NetOutput addr size info.
 /// @return Status
-Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index) {
+Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, map<uint32_t, OpDescPtr> &data_by_index) {
   // op_desc Checked by Init: Data, valid.
   auto op_desc = node->GetOpDesc();
   if (known_node_) {
-    data_op_list_.push_back(op_desc);
     return SUCCESS;
   }
   uint32_t parent_index = 0;  // Ignore subgraph Data Node.
@@ -885,6 +927,7 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index) {
     return PARAM_INVALID;
   }
   new_input_data_info_[data_index] = zero_copy_offset;
+  data_by_index[data_index] = op_desc;
 
   for (size_t index = 0; index < virtual_addr_list.size(); ++index) {
     void *addr = virtual_addr_list.at(index);
@@ -902,6 +945,24 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index) {
     return PARAM_INVALID;
   }
   return SUCCESS;
+}
+
+///
+/// @ingroup ge
+/// @brief Sort Data op list by index.
+/// @param [in] data_by_index: map of Data Op.
+/// @return
+///
+void DavinciModel::AdjustDataOpList(const map<uint32_t, OpDescPtr> &data_by_index) {
+  if (data_by_index.size() != data_op_list_.size()) {
+    GELOGW("Data map size: %zu, Data list size: %zu.", data_by_index.size(), data_op_list_.size());
+    return;
+  }
+
+  data_op_list_.clear();
+  for (auto &item : data_by_index) {
+    data_op_list_.emplace_back(item.second);
+  }
 }
 
 ///
@@ -946,7 +1007,6 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
   auto op_desc = node->GetOpDesc();
   // excludes the function op sub graph, e.g. case,if
   if (known_node_) {
-    output_op_list_.push_back(op_desc);
     return SUCCESS;
   }
   ComputeGraphPtr owner_graph = node->GetOwnerComputeGraph();
@@ -989,9 +1049,6 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
     new_output_data_info_[num + idx] = zero_copy_offset;
     void *addr = virtual_addr_list.at(idx);
     int64_t input_offset = input_offset_list.at(idx);
-    if (new_output_outside_addrs_.find(addr) != new_output_outside_addrs_.end()) {
-      continue;
-    }
     vector<void *> tensor_addrs;
     zero_copy_offset.SetOutputOutsideAddrs(input_offset, fusion_flag, addr, tensor_addrs);
     auto rslt = new_output_outside_addrs_.insert(std::pair<void *, ZeroCopyOffset>(addr, zero_copy_offset));
@@ -1466,6 +1523,17 @@ void DavinciModel::GetCombinedDynamicDims(std::vector<std::vector<int64_t>> &bat
 
 ///
 /// @ingroup ge
+/// @brief Get user designate shape order
+/// @param [out] user_input_shape_order
+/// @return None
+///
+void DavinciModel::GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order) const {
+  user_input_shape_order.clear();
+  user_input_shape_order = user_designate_shape_order_;
+}
+
+///
+/// @ingroup ge
 /// @brief Get AIPP input info
 /// @param [in] index
 /// @param [out] aipp_info
@@ -1475,7 +1543,7 @@ Status DavinciModel::GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info) {
   GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
   OpDescPtr data_op = data_op_list_[index];
   if (!data_op->HasAttr(ATTR_NAME_AIPP)) {
-    GELOGE(GE_AIPP_NOT_EXIST, "GetAIPPInfo: there is not AIPP related with index %u.", index);
+    GELOGW("GetAIPPInfo: there is not AIPP related with index %u.", index);
     return GE_AIPP_NOT_EXIST;
   }
 
@@ -1488,10 +1556,6 @@ Status DavinciModel::GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info) {
   GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aipp_params.get()), "get aipp params failed");
   GELOGI("GetAIPPInfo: node data: %s, type: %s, current index: %u, current node related input rank: %u",
          data_op->GetName().c_str(), data_op->GetType().c_str(), index, aipp_params->related_input_rank());
-  if (aipp_params->aipp_mode() == domi::AippOpParams::dynamic) {
-    GELOGI("GetAIPPInfo,  dynamic Aipp is not support to query temporarily.");
-    return GE_DYNAMIC_AIPP_NOT_SUPPORT_QUERY;
-  }
 
   GE_CHK_STATUS_RET(AippUtils::ConvertAippParams2AippInfo(aipp_params.get(), aipp_info),
                     "convert aipp params to aipp config info failed");
@@ -1563,51 +1627,51 @@ Status DavinciModel::GetInputOutputDescInfoForZeroCopy(vector<InputOutputDescInf
   return SUCCESS;
 }
 
-void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
+void DavinciModel::SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format,
+                                    InputOutputDescInfo &input) {
   uint32_t n, c, h, w;
   n = format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N;
   c = format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C;
   h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
   w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
 
+  if (model_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+    input.shape_info.num = model_input_dims[n];
+    input.shape_info.height = model_input_dims[h];
+    input.shape_info.width = model_input_dims[w];
+    input.shape_info.channel = model_input_dims[c];
+  }
+  for (size_t k = 0; k < model_input_dims.size(); ++k) {
+    input.shape_info.dims.push_back(model_input_dims[k]);
+  }
+  return;
+}
+
+void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
   if (is_new_model_desc_ && op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
     // When static aipp is set, need to get the model input dims which processed by aipp
     vector<int64_t> model_input_dims;
     (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
-    if (model_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-      input.shape_info.num = model_input_dims[n];
-      input.shape_info.height = model_input_dims[h];
-      input.shape_info.width = model_input_dims[w];
-      input.shape_info.channel = model_input_dims[c];
-    }
-    for (size_t k = 0; k < model_input_dims.size(); ++k) {
-      input.shape_info.dims.push_back(model_input_dims[k]);
-    }
-    is_new_model_desc_ = false;
+    SetInputDimsInfo(model_input_dims, format, input);
     return;
   }
-
-  if (!op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
-    if (op_desc->GetInputDescPtr(0)->GetShape().GetDimNum() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-      input.shape_info.num = op_desc->GetInputDescPtr(0)->GetShape().GetDim(n);
-      input.shape_info.height = op_desc->GetInputDescPtr(0)->GetShape().GetDim(h);
-      input.shape_info.width = op_desc->GetInputDescPtr(0)->GetShape().GetDim(w);
-      input.shape_info.channel = op_desc->GetInputDescPtr(0)->GetShape().GetDim(c);
-    }
-    for (size_t k = 0; k < op_desc->GetInputDescPtr(0)->GetShape().GetDimNum(); k++) {
-      input.shape_info.dims.push_back(op_desc->GetInputDescPtr(0)->GetShape().GetDim(k));
-    }
+  // judge if this data is linked dynamic aipp first, multiply batch has been considered
+  if (op_desc->HasAttr("_dynamic_aipp_input_dims")) {
+    vector<int64_t> dynamic_aipp_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, "_dynamic_aipp_input_dims", dynamic_aipp_input_dims);
+    SetInputDimsInfo(dynamic_aipp_input_dims, format, input);
+    return;
   } else {
-    vector<int64_t> origin_input_dims;
-    (void)AttrUtils::GetListInt(op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
-    if (origin_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-      input.shape_info.num = origin_input_dims[n];
-      input.shape_info.height = origin_input_dims[h];
-      input.shape_info.width = origin_input_dims[w];
-      input.shape_info.channel = origin_input_dims[c];
-    }
-    for (size_t k = 0; k < origin_input_dims.size(); ++k) {
-      input.shape_info.dims.push_back(origin_input_dims[k]);
+    // judge if this data is multiply batch
+    if (!op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
+      vector<int64_t> input_dims = op_desc->GetInputDescPtr(0)->GetShape().GetDims();
+      SetInputDimsInfo(input_dims, format, input);
+      return;
+    } else {
+      vector<int64_t> origin_input_dims;
+      (void)AttrUtils::GetListInt(op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+      SetInputDimsInfo(origin_input_dims, format, input);
+      return;
     }
   }
 }
@@ -1630,6 +1694,8 @@ Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, s
     formats.push_back(format);
     input_desc.push_back(input);
   }
+  // cause GetInputDescInfo called not only once, set is_new_model_desc_ to false after calc the model input dims
+  is_new_model_desc_ = false;
   return SUCCESS;
 }
 
@@ -2106,21 +2172,23 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
       return FAILED;
     }
 
+    if ((kind == RT_MEMCPY_DEVICE_TO_DEVICE) && (copy_only_addrs_.count(output.second.GetBasicAddr()) == 0)) {
+      continue;  // Skip: Feed by zero copy.
+    }
+
     DataBuffer &buffer = blobs[output.first];
     uint64_t mem_size = static_cast<uint64_t>(output.second.GetDataSize());
     if ((buffer.length == 0) || (mem_size == 0)) {
       GELOGI("Length of data is zero, No need copy. output tensor index=%u", output.first);
       continue;
     }
-    if (buffer.length < mem_size) {
+    if (is_dynamic_) {
+      GELOGI("No need to check output data size.");
+    } else if (buffer.length < mem_size) {
       GELOGE(FAILED, "Tensor data size=%lu, buffer size=%u", mem_size, buffer.length);
       return FAILED;
     } else if (buffer.length > mem_size) {
       GELOGW("Tensor data size=%lu, buffer size=%u", mem_size, buffer.length);
-    }
-
-    if ((kind == RT_MEMCPY_DEVICE_TO_DEVICE) && (copy_only_addrs_.count(output.second.GetBasicAddr()) == 0)) {
-      continue;  // Skip: Feed by zero copy.
     }
     uint64_t data_size = output.second.GetDataSize();
     uint64_t buffer_length = buffer.length;
@@ -2564,10 +2632,12 @@ Status DavinciModel::ModelRunStop() {
 void DavinciModel::UnbindTaskSinkStream() {
   // unbinding hcom stream
   UnbindHcomStream();
-  for (size_t i = 0; i < stream_list_.size(); i++) {
-    // unbind rt_model_handle and streams
-    GE_LOGW_IF(rtModelUnbindStream(rt_model_handle_, stream_list_[i]) != RT_ERROR_NONE,
-               "Unbind stream from model failed! Index: %zu", i);
+  if (is_stream_list_bind_) {
+    for (size_t i = 0; i < stream_list_.size(); i++) {
+      // unbind rt_model_handle and streams
+      GE_LOGW_IF(rtModelUnbindStream(rt_model_handle_, stream_list_[i]) != RT_ERROR_NONE,
+                 "Unbind stream from model failed! Index: %zu", i);
+    }
   }
 
   if (is_inner_model_stream_) {
@@ -2610,11 +2680,7 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
     return SUCCESS;
   }
   const vector<void *> addr_list = ModelUtils::GetInputDataAddrs(runtime_param_, output_op_list_[kDataIndex]);
-  if (outputs.size() > addr_list.size()) {
-    GELOGE(FAILED, "output data addr %u should less than output op number %u.", outputs.size(), addr_list.size());
-    return FAILED;
-  }
-  for (size_t i = 0; i < addr_list.size(); ++i) {
+  for (size_t i = 0; i < addr_list.size() && i < outputs.size(); ++i) {
     knonw_output_data_info_[addr_list[i]] = outputs[i];
     GELOGI("DavinciModel::CreateKnownZeroCopyMap output %d,v addr %p,p addr %p .", i, addr_list[i], outputs[i]);
   }
@@ -2755,19 +2821,21 @@ Status DavinciModel::DistributeTask() {
   }
 
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
+  GELOGI("there are %zu task need to save.", task_list_.size());
   for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
     auto &task = task_list_.at(task_index);
     GE_CHK_STATUS_RET(task->Distribute(), "Task[%zu] distribute fail", task_index);
     // for data dump
-    if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
-      auto op_index = std::max(model_task_def->task(task_index).kernel().context().op_index(),
-                               model_task_def->task(task_index).kernel_ex().op_index());
-      OpDescPtr op = GetOpByIndex(op_index);
-      if (op == nullptr) {
-        GELOGE(PARAM_INVALID, "Op index %u is null, op list size %zu.", op_index, op_list_.size());
-        return PARAM_INVALID;
-      }
+    auto op_index = std::max(model_task_def->task(task_index).kernel().context().op_index(),
+                             model_task_def->task(task_index).kernel_ex().op_index());
+    OpDescPtr op = GetOpByIndex(op_index);
+    if (op == nullptr) {
+      GELOGE(PARAM_INVALID, "Op index %u is null, op list size %zu.", op_index, op_list_.size());
+      return PARAM_INVALID;
+    }
 
+    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
+    if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
       bool call_dump = GetDumpProperties().IsLayerNeedDump(name_, om_name_, op->GetName()) && task->CallSaveDumpInfo();
       if (call_dump) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
@@ -2873,7 +2941,7 @@ void DavinciModel::DisableZeroCopy(const void *addr) {
 void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<void *> &outside_addrs, const void *info,
                                    void *args, size_t size, size_t offset) {
   // Internal call has ensured that op_desc is not nullptr
-  GELOGI("[ZCPY] SetZeroCopyAddr for %s.", op_desc->GetName().c_str());
+  GELOGD("[ZCPY] SetZeroCopyAddr for %s.", op_desc->GetName().c_str());
   size_t nums = outside_addrs.size();
   ZeroCopyTask zero_copy_task(op_desc->GetName(), static_cast<uint8_t *>(args), size);
   for (size_t i = 0; i < nums; ++i) {
@@ -2994,7 +3062,7 @@ Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &outp
   }
 
   for (ZeroCopyTask &task : zero_copy_tasks_) {
-    GE_CHK_STATUS_RET(task.DistributeParam(is_async_mode_ ? rt_model_stream_ : nullptr), "[ZCPY] Update args failed.");
+    GE_CHK_STATUS_RET(task.DistributeParam(is_async_mode_, rt_model_stream_), "[ZCPY] Update args failed.");
   }
 
   output_data.index = input_data.index;
@@ -3106,7 +3174,6 @@ const char *DavinciModel::GetRegisterStub(const string &binfile, const string &s
   } else {
     binfile_key = session_graph_id + "_" + binfile;
   }
-  std::lock_guard<std::mutex> lock(tvm_bin_mutex_);
   auto it = tvm_bin_kernel_.find(binfile_key);
   if (it != tvm_bin_kernel_.end()) {
     return it->c_str();
@@ -3242,7 +3309,6 @@ void DavinciModel::StoreTbeHandle(const std::string &handle_key) {
   // Online mode FE may call rtFunctionRegister.
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
 
-  // Need protection of tvm_bin_mutex_.
   auto it = used_tbe_handle_map_.find(handle_key);
   if (it != used_tbe_handle_map_.end()) {
     // GE registered, increase reference.
@@ -3262,9 +3328,9 @@ void DavinciModel::StoreTbeHandle(const std::string &handle_key) {
 void DavinciModel::CleanTbeHandle() {
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
 
-  std::lock_guard<std::mutex> lock(tvm_bin_mutex_);
   kernel_store.EraseTBEHandle(used_tbe_handle_map_);
   used_tbe_handle_map_.clear();
+  tvm_bin_kernel_.clear();
 }
 
 ///
@@ -3315,21 +3381,26 @@ Status DavinciModel::InitStreamSwitchN(const OpDescPtr &op_desc) {
     GELOGI("StreamSwitchNOp node:%s, active_stream_id=%u.", op_desc->GetName().c_str(), active_stream_list[j]);
   }
 
-  (void)AttrUtils::GetInt(op_desc, ATTR_DYNAMIC_TYPE, dynamic_type_);
-
-  batch_info_.clear();
-  combined_batch_info_.clear();
   uint32_t batch_num = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_BATCH_NUM, batch_num)) {
     GELOGE(FAILED, "Failed to get attr ATTR_NAME_BATCH_NUM, StreamSwitchN: %s.", op_desc->GetName().c_str());
     return FAILED;
   }
 
-  for (uint32_t i = 0; i < batch_num; i++) {
+  return SetDynamicBatchInfo(op_desc, batch_num);
+}
+
+Status DavinciModel::SetDynamicBatchInfo(const OpDescPtr &op_desc, uint32_t batch_num) {
+  batch_info_.clear();
+  combined_batch_info_.clear();
+
+  (void)AttrUtils::GetInt(op_desc, ATTR_DYNAMIC_TYPE, dynamic_type_);
+  (void)AttrUtils::GetListStr(op_desc, ATTR_USER_DESIGNEATE_SHAPE_ORDER, user_designate_shape_order_);
+  for (uint32_t i = 0; i < batch_num; ++i) {
     std::vector<int64_t> batch_shape;
     const std::string attr_name = ATTR_NAME_PRED_VALUE + "_" + std::to_string(i);
     if (!AttrUtils::GetListInt(op_desc, attr_name, batch_shape)) {
-      GELOGE(FAILED, "Failed to get attr ATTR_NAME_PRED_VALUE, StreamSwitchN: %s.", op_desc->GetName().c_str());
+      GELOGE(FAILED, "Get attr ATTR_NAME_PRED_VALUE failed, Node: %s", op_desc->GetName().c_str());
       batch_info_.clear();
       return FAILED;
     }
@@ -3342,6 +3413,16 @@ Status DavinciModel::InitStreamSwitchN(const OpDescPtr &op_desc) {
   }
 
   return SUCCESS;
+}
+
+Status DavinciModel::InitCase(const OpDescPtr &op_desc) {
+  uint32_t batch_num = 0;
+  if (!AttrUtils::GetInt(op_desc, ATTR_NAME_BATCH_NUM, batch_num)) {
+    GELOGI("Not multi-batch Node: %s", op_desc->GetName().c_str());
+    return SUCCESS;
+  }
+
+  return SetDynamicBatchInfo(op_desc, batch_num);
 }
 
 bool DavinciModel::IsBroadCastOpData(const ge::NodePtr &var_node) {
@@ -3406,12 +3487,13 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   GELOGI("Model Run begin, model id:%u, data index:%u, flag:%d.", model_id_, input_data.index, is_async_mode_);
   GE_CHK_STATUS_RET(InitModelStream(stream), "Init model stream failed.");
 
-  if (!input_data.is_dynamic_batch) {
+  is_dynamic_ = input_data.is_dynamic_batch;
+  if (!is_dynamic_) {
     zero_copy_batch_label_addrs_.clear();
   }
 
   GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingOn(), SetProfileTime(MODEL_PRE_PROC_START));
-  Status ret = CopyModelData(input_data, output_data, input_data.is_dynamic_batch);
+  Status ret = CopyModelData(input_data, output_data, is_dynamic_);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Copy input data to model failed. model id: %u",
                                  model_id_);
 
@@ -3587,6 +3669,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
   data_dumper_.SetOmName(om_name_);
   data_dumper_.SetComputeGraph(compute_graph);
   data_dumper_.SetRefInfo(saved_task_addrs_);
+  data_dumper_.SetL1FusionAddr(l1_fusion_addr_);
 
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
@@ -3627,19 +3710,9 @@ void DavinciModel::PushHcclStream(rtStream_t value) {
   all_hccl_stream_list_.push_back(value);
 }
 
-void DavinciModel::CreateHcclFollowStream(rtStream_t stream, int64_t remain_cap) {
+void DavinciModel::SaveHcclFollowStream(int64_t main_stream_id, rtStream_t stream) {
   std::lock_guard<std::mutex> lock(capacity_of_stream_mutex_);
-  capacity_of_stream_.emplace_back(make_pair(stream, remain_cap));
-}
-
-void DavinciModel::ReuseHcclFollowStream(int64_t remain_cap, int64_t &index) {
-  std::lock_guard<std::mutex> lock(capacity_of_stream_mutex_);
-  if (remain_cap == 0) {
-    capacity_of_stream_.erase(capacity_of_stream_.begin() + index);
-  } else {
-    capacity_of_stream_.at(index).second = remain_cap;
-    index++;
-  }
+  main_follow_stream_mapping_[main_stream_id].emplace_back(stream);
 }
 
 Status DavinciModel::GetComputeGraphInfo(const ComputeGraphPtr &graph, vector<ComputeGraphDescInfo> &graph_desc_info) {
@@ -3756,8 +3829,7 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, std::vector<Input
       (void)TensorUtils::GetSize(*(data_op->GetInputDescPtr(kDataIndex)), data_input_size);
       GELOGD(
         "GetAllAippInputOutputDims related Data[%d]: tensor_name is %s, dim_num is %u, tensor_size: %zu, format: "
-        "%s, "
-        "data_type: %s, shape: %s .",
+        "%s, data_type: %s, shape: %s .",
         index, data_op->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
         TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
         TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),

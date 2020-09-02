@@ -16,6 +16,7 @@
 
 #include "hybrid/model/hybrid_model_builder.h"
 #include "common/math/math_util.h"
+#include "graph/ge_context.h"
 #include "graph/utils/node_utils.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
@@ -184,10 +185,8 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
       GELOGD("[%s] Input[%d] do not have peer anchor", node_item.NodeName().c_str(), in_anchor->GetIdx());
       continue;
     }
-
     auto src_node = peer_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(src_node);
-
     auto src_node_item = MutableNodeItem(src_node);
     GE_CHECK_NOTNULL(src_node_item);
 
@@ -205,6 +204,22 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
       src_node_item->has_observer = true;
       dependent_input_nodes.emplace(src_node);
     }
+  }
+
+  // cond or branch need to be prepared before the execution of IF or CASE
+  if (node_item.node_type == IF || node_item.node_type == CASE) {
+    const auto &in_anchor = ge_node->GetInDataAnchor(0);
+    GE_CHECK_NOTNULL(in_anchor);
+    const auto &peer_anchor = in_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_anchor);
+    auto src_node = peer_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+    auto src_node_item = MutableNodeItem(src_node);
+    GE_CHECK_NOTNULL(src_node_item);
+    src_node_item->has_observer = true;
+    node_item.dependents_for_execution.emplace_back(src_node);
+    GELOGD("[%s] Dependent added from %s for control op's cond/branch", node_item.NodeName().c_str(),
+           src_node_item->NodeName().c_str());
   }
 
   for (const auto &input_name : dependencies) {
@@ -416,16 +431,10 @@ Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGrap
     GE_CHECK_NOTNULL(op_desc);
 
     const auto &op_type = node->GetType();
-    if (op_type == DATA || op_type == AIPP_DATA_TYPE || op_type == NETOUTPUT) {
+    if (op_type != PARTITIONEDCALL) {
       merged_graph->AddNode(node);
       GELOGD("[%s] Node added to merged graph.", op_desc->GetName().c_str());
       continue;
-    }
-
-    if (op_type != PARTITIONEDCALL) {
-      GELOGE(INTERNAL_ERROR, "[%s] Unexpected node in root graph. type = %s", op_desc->GetName().c_str(),
-             op_type.c_str());
-      return INTERNAL_ERROR;
     }
 
     bool is_unknown_shape = false;
@@ -538,14 +547,16 @@ Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item, const NodeI
 
 Status HybridModelBuilder::LoadGraph() {
   auto root_graph = ge_root_model_->GetRootGraph();
-  std::shared_ptr<ComputeGraph> merged_graph;
-  GELOGI("Before merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu", root_graph->GetDirectNodesSize(),
-         root_graph->GetAllNodesSize());
-  GE_CHK_GRAPH_STATUS_RET(UnfoldSubgraphs(*root_graph, merged_graph), "Failed to unfold subgraphs.");
-  root_graph = std::move(merged_graph);
-  GELOGI("After merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu", root_graph->GetDirectNodesSize(),
-         root_graph->GetAllNodesSize());
-  GE_DUMP(root_graph, "hybrid_merged_graph");
+  if (!GetContext().GetHostExecFlag()) {
+    std::shared_ptr<ComputeGraph> merged_graph;
+    GELOGI("Before merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu", root_graph->GetDirectNodesSize(),
+           root_graph->GetAllNodesSize());
+    GE_CHK_GRAPH_STATUS_RET(UnfoldSubgraphs(*root_graph, merged_graph), "Failed to unfold subgraphs.");
+    root_graph = std::move(merged_graph);
+    GELOGI("After merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu", root_graph->GetDirectNodesSize(),
+           root_graph->GetAllNodesSize());
+    GE_DUMP(root_graph, "hybrid_merged_graph");
+  }
 
   GE_CHK_STATUS_RET(LoadDynamicSubgraph(*root_graph, true), "Failed to load root graph.");
   GELOGD("Done loading root graph successfully.");
@@ -641,6 +652,10 @@ Status HybridModelBuilder::HandleDtString(const GeTensor &tensor, void *var_addr
 }
 
 Status HybridModelBuilder::AssignUninitializedConstantOps() {
+  if (GetContext().GetHostExecFlag()) {
+    GELOGI("no need to assign when exec on host.");
+    return SUCCESS;
+  }
   for (auto &it : hybrid_model_.constant_op_nodes_) {
     const string &var_name = it.first;
     const NodePtr &var_node = it.second;
@@ -820,6 +835,7 @@ Status HybridModelBuilder::IndexSpecialNodes() {
     GE_CHECK_NOTNULL(node);
     GE_CHECK_NOTNULL(node->GetOpDesc());
     auto op_type = node->GetType();
+    GELOGD("node name = %s, node type = %s", node->GetName().c_str(), node->GetType().c_str());
     if (op_type == VARIABLE) {
       hybrid_model_.variable_nodes_.emplace(node->GetName(), node);
     } else if (op_type == CONSTANTOP) {
@@ -937,12 +953,19 @@ Status HybridModelBuilder::InitRuntimeParams() {
   // session id and var size is same for every model
   auto first_model = ge_root_model_->GetSubgraphInstanceNameToModel().begin()->second;
   ret = ge::AttrUtils::GetInt(first_model, ge::MODEL_ATTR_SESSION_ID, value);
-  runtime_param_.session_id = ret ? (uint64_t)value : 0;
+  runtime_param_.session_id = ret ? static_cast<uint64_t>(value) : 0;
   ret = ge::AttrUtils::GetInt(first_model, ATTR_MODEL_TASK_GEN_VAR_ADDR, value);
-  runtime_param_.logic_var_base = ret ? (uint64_t)value : 0;
-  ret = ge::AttrUtils::GetInt(first_model, ATTR_MODEL_VAR_SIZE, value);
-  runtime_param_.var_size = ret ? (uint64_t)value : 0;
+  runtime_param_.logic_var_base = ret ? static_cast<uint64_t>(value) : 0;
   runtime_param_.graph_id = ge_root_model_->GetRootGraph()->GetGraphID();
+  value = 0;
+  for (auto &it : ge_root_model_->GetSubgraphInstanceNameToModel()) {
+    (void)ge::AttrUtils::GetInt(it.second, ATTR_MODEL_VAR_SIZE, value);
+    if (value > 0) {
+      runtime_param_.var_size = static_cast<uint64_t>(value);
+      break;
+    }
+  }
+
   GELOGI("InitRuntimeParams(), session_id:%lu, var_size:%lu. graph_id = %u", runtime_param_.session_id,
          runtime_param_.var_size, runtime_param_.graph_id);
 
@@ -1178,6 +1201,8 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     }
 
     graph_item->node_items_.emplace_back(node_item);
+    // parse var outputs
+    GE_CHK_STATUS_RET_NOLOG(ParseVarOutputs(*node_item));
     GELOGD("NodeItem created: %s", node_item->DebugString().c_str());
   }
 
@@ -1194,6 +1219,20 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     hybrid_model_.subgraph_items_.emplace(graph.GetName(), std::move(graph_item));
   }
 
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::ParseVarOutputs(NodeItem &node_item) {
+  for (int i = 0; i < node_item.num_outputs; ++i) {
+    auto output_tensor_desc = node_item.op_desc->GetOutputDesc(i);
+    std::string var_name;
+    (void)AttrUtils::GetStr(output_tensor_desc, ASSIGN_VAR_NAME, var_name);
+    if (!var_name.empty()) {
+      auto var_node = hybrid_model_.GetVariableNode(var_name);
+      GE_CHECK_NOTNULL(var_node);
+      node_item.ref_outputs.emplace(i, var_node);
+    }
+  }
   return SUCCESS;
 }
 

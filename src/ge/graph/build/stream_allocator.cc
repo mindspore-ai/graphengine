@@ -16,6 +16,7 @@
 
 #include "graph/build/stream_allocator.h"
 #include <memory>
+#include <algorithm>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
@@ -374,8 +375,8 @@ Status StreamAllocator::InsertOneEventInTwoNodes(const NodePtr &cur_node, const 
     return SUCCESS;
   }
 
-  if ((cur_node->GetType() == ENTER) || (cur_node->GetType() == REFENTER)) {
-    GELOGD("No need to insert event after enter_node %s.", cur_node->GetName().c_str());
+  if (((cur_node->GetType() == ENTER) || (cur_node->GetType() == REFENTER)) && (next_node->GetType() != STREAMACTIVE)) {
+    GELOGD("No need to insert event between %s and %s.", cur_node->GetName().c_str(), next_node->GetName().c_str());
     return SUCCESS;
   }
 
@@ -721,6 +722,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
       GELOGE(FAILED, "SplitStreams:streamid(%ld) > last_stream_id(%ld)", stream_id, last_stream_id);
       return FAILED;
     }
+    bool is_stream_first_node = (stream_node_num_vec[stream_id] == 0);
     AddNodeNum(cur_node, stream_node_num_vec[stream_id]);
     stream_2_nodes_map[stream_id].push_back(cur_node);
     // The maximum number of tasks per stream.
@@ -737,7 +739,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
       stream_continuous_2_nodes_map[continuous_stream_label].push_back(cur_node);
     }
     // Split the stream if it exceeds the maximum number of nodes in the stream.
-    if (NeedSpiltNewStream(stream_node_num_vec[stream_id], max_node_num_one_stream, op_desc)) {
+    if (NeedSpiltNewStream(stream_node_num_vec[stream_id], max_node_num_one_stream, op_desc, is_stream_first_node)) {
       last_stream_id++;
       GELOGI(
         "stream_node_num_vec[%ld]= %ld > max_node_num_one_stream : %ld, "
@@ -801,7 +803,11 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
 }
 
 bool StreamAllocator::NeedSpiltNewStream(int64_t stream_node_num, int64_t max_node_num_one_stream,
-                                         const OpDescPtr &op_desc) const {
+                                         const OpDescPtr &op_desc, bool is_stream_first_node) const {
+  if (is_stream_first_node) {
+    GELOGD("First node of stream does not need to split new stream");
+    return false;
+  }
   const set<string> label_op_types({LABELSET, LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX});
   bool is_first_active_node = false;
   (void)AttrUtils::GetBool(op_desc, ATTR_NAME_SUBGRAPH_FIRST_ACTIVE, is_first_active_node);
@@ -1019,6 +1025,18 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
       loop_active_streams.emplace_back(static_cast<uint32_t>(stream_id));
     }
   }
+  map<int64_t, NodePtr> stream_id_to_last_node;
+  set<int64_t> streams_skip_iterator_event;
+  for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
+    int64_t stream_id = node->GetOpDesc()->GetStreamId();
+    if (find(loop_active_streams.begin(), loop_active_streams.end(), stream_id) != loop_active_streams.end()) {
+      stream_id_to_last_node[stream_id] = node;
+      // last node in stream which has streamswitch or IF may be not execute, it will cause block if add event on them
+      if (node->GetOpDesc()->GetType() == STREAMSWITCH) {
+        streams_skip_iterator_event.insert(stream_id);
+      }
+    }
+  }
   // Set the stream that needs to be activated
   for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
@@ -1031,7 +1049,31 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
                          GELOGE(FAILED, "SetListInt failed.");
                          return FAILED);
         for (const auto &stream_id : loop_active_streams) {
-          GELOGI("Active stream %u for node: %s", stream_id, node->GetName().c_str());
+          GELOGI("Active stream %u for node: %s.", stream_id, node->GetName().c_str());
+        }
+
+        // In switch group optimze case, some data input branch may exec slowly.
+        // when condition input branch judge false and some switch has no false branch,
+        // In this condition, data branch has no synchronize point,
+        // it may cause some stream actived by iterator next step when this stream still alive.
+        // If above situation happen, active message will lose, cause process block in next iteration.
+        // In order to avoid this abnormal happen,
+        // add event between each last node and iterator active node in target active stream
+        GELOGI("there are %zu next iterator target streams has streamswitch node.", streams_skip_iterator_event.size());
+        for (auto iter : stream_id_to_last_node) {
+          if (streams_skip_iterator_event.find(iter.first) != streams_skip_iterator_event.end()) {
+            GELOGI("skip stream %ld which has streamswitch node when add event to next iterator active node",
+                   iter.first);
+            continue;
+          }
+          if (iter.second->GetOwnerComputeGraph()->GetParentGraph() != nullptr) {
+            GELOGI("skip stream %ld which last node in subgraph when add event to next iterator active node",
+                   iter.first);
+            continue;
+          }
+          AddSendEventId(iter.second, event_num_);
+          AddRecvEventId(node, event_num_);
+          event_num_++;
         }
 
         break;
@@ -1132,7 +1174,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
         return status;
       }
 
-      GELOGI("Insert recv event %u before node: %s", event_id, node->GetName().c_str());
+      GELOGI("Insert recv event %u before node: %s.", event_id, node->GetName().c_str());
     }
 
     // Add the node corresponding to the send event
@@ -1160,7 +1202,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
         return status;
       }
 
-      GELOGI("Insert send event %u after node: %s", event_id, node->GetName().c_str());
+      GELOGI("Insert send event %u after node: %s.", event_id, node->GetName().c_str());
     }
   }
 

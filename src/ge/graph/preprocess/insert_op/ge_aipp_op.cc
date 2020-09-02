@@ -100,6 +100,7 @@ const uint64_t kMinTransferShape = 3;
 const int kAippImageInputIndex = 0;
 const int kAippParamsInputIndex = 1;
 const int kAippDataOutputIndex = 0;
+const int64_t kDynamicDim = -1;
 
 // the `format` must one NCHW or NHWC
 Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &batch) {
@@ -181,7 +182,7 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
   for (auto &out_in_anchors : target_edges) {
     auto iter = out_anchors_to_aipp.find(out_in_anchors.first);
     if (iter == out_anchors_to_aipp.end()) {
-      auto aipp = CreateAipp(graph, out_in_anchors.first, aippConfigPath, index);
+      auto aipp = CreateAipp(out_in_anchors.first, aippConfigPath, index);
       GE_CHECK_NOTNULL(aipp);
       out_anchors_to_aipp[out_in_anchors.first] = aipp;
 
@@ -193,7 +194,7 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
 
       // add aipp data if needed
       if (GetAippMode() == domi::AippOpParams::dynamic) {
-        ret = CreateAippData(graph, aipp);
+        ret = CreateAippData(aipp);
         if (ret != SUCCESS) {
           GELOGE(INTERNAL_ERROR, "Failed to create aipp data for aipp %s data %s", aipp->GetName().c_str(),
                  out_in_anchors.first->GetOwnerNode()->GetName().c_str());
@@ -215,10 +216,10 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
 
   return SUCCESS;
 }
-NodePtr AippOp::CreateAipp(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                           const std::string &aippConfigPath, const uint32_t &index) {
-  std::string current_name =
-    out_anchor->GetOwnerNode()->GetName() + "_" + std::to_string(out_anchor->GetIdx()) + "_huawei_aipp";
+NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor, const std::string &aippConfigPath,
+                           const uint32_t &index) {
+  const auto &node = out_anchor->GetOwnerNode();
+  std::string current_name = node->GetName() + "_" + std::to_string(out_anchor->GetIdx()) + "_huawei_aipp";
   auto aipp_opdesc_ptr = MakeShared<OpDesc>(current_name, AIPP);
   if (aipp_opdesc_ptr == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to alloc aipp desc, name %s", current_name.c_str());
@@ -226,42 +227,7 @@ NodePtr AippOp::CreateAipp(const ComputeGraphPtr &graph, const OutDataAnchorPtr 
   }
 
   // Update attributes
-  GeAttrValue::NAMED_ATTRS aipp_attr;
-  ConvertParamToAttr(aipp_attr);
-  if (!AttrUtils::SetNamedAttrs(aipp_opdesc_ptr, ATTR_NAME_AIPP, aipp_attr)) {
-    GELOGE(INTERNAL_ERROR, "Set name attrs for aipp node failed");
-    return nullptr;
-  }
-  if (!AttrUtils::SetStr(aipp_opdesc_ptr, kAippConfigPath, aippConfigPath)) {
-    GELOGE(INTERNAL_ERROR, "Set config file path attr for aipp node failed");
-    return nullptr;
-  }
-  if (!AttrUtils::SetListStr(aipp_opdesc_ptr, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::vector<std::string>())) {
-    GELOGE(INTERNAL_ERROR, "Set ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES attr for aipp node failed");
-    return nullptr;
-  }
-  if (!AttrUtils::SetInt(aipp_opdesc_ptr, kCurrentAippIndex, index)) {
-    GELOGE(INTERNAL_ERROR, "Set kCurrentAippIndex attr for aipp node failed");
-    return nullptr;
-  }
-
-  // add input/output desc
-  GeTensorDesc tensor;
-  auto ret = aipp_opdesc_ptr->AddInputDesc("images", tensor);
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to add input images for aipp node");
-    return nullptr;
-  }
-  if (GetAippMode() == domi::AippOpParams::dynamic) {
-    ret = aipp_opdesc_ptr->AddOptionalInputDesc("params", tensor);
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to add input params for aipp node");
-      return nullptr;
-    }
-  }
-  ret = aipp_opdesc_ptr->AddOutputDesc("features", tensor);
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to add output features for aipp node");
+  if (AddAippAttrbutes(aipp_opdesc_ptr, aippConfigPath, index) != SUCCESS) {
     return nullptr;
   }
 
@@ -287,7 +253,35 @@ NodePtr AippOp::CreateAipp(const ComputeGraphPtr &graph, const OutDataAnchorPtr 
     return nullptr;
   }
 
-  return graph->AddNode(aipp_opdesc_ptr);
+  return node->GetOwnerComputeGraph()->AddNode(aipp_opdesc_ptr);
+}
+
+Status AippOp::AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aipp_cfg_path, const uint32_t &index) {
+  GeAttrValue::NAMED_ATTRS aipp_attr;
+  ConvertParamToAttr(aipp_attr);
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr), INTERNAL_ERROR,
+                         "Set name attrs for aipp node failed");
+
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetStr(op_desc, kAippConfigPath, aipp_cfg_path), INTERNAL_ERROR,
+                         "Set config file path attr for aipp node failed");
+
+  std::vector<std::string> empty_names;
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, empty_names),
+                         INTERNAL_ERROR, "Set ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES attr for aipp node failed");
+
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetInt(op_desc, kCurrentAippIndex, index), INTERNAL_ERROR,
+                         "Set kCurrentAippIndex attr for aipp node failed");
+
+  // add input/output desc
+  GeTensorDesc tensor;
+  GE_CHK_GRAPH_STATUS_RET(op_desc->AddInputDesc("images", tensor), "Failed to add input images for aipp node");
+
+  if (GetAippMode() == domi::AippOpParams::dynamic) {
+    GE_CHK_GRAPH_STATUS_RET(op_desc->AddOptionalInputDesc("params", tensor), "Failed to add params for aipp node");
+  }
+  GE_CHK_GRAPH_STATUS_RET(op_desc->AddOutputDesc("features", tensor), "Failed to add output features for aipp node");
+
+  return SUCCESS;
 }
 
 domi::AippOpParams::AippMode AippOp::GetAippMode() { return aipp_params_->aipp_mode(); }
@@ -298,6 +292,12 @@ NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
     if (node->GetType() != DATA) {
       continue;
     }
+
+    // For functional multi batch, Skip Data for index.
+    if (node->GetOpDesc()->HasAttr(ATTR_INSERT_BY_MBATCH)) {
+      continue;
+    }
+
     // There is no `index` attribute on the `Data` node when compile in inference scene
     // so we can only use the order of all `Data` nodes to infer the data index
     if (data_index++ != rank) {
@@ -306,6 +306,8 @@ NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
     return node;
   }
   GELOGE(PARAM_INVALID, "Can not find the data node by index %d", rank);
+  string errormsg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
+  ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
   return nullptr;
 }
 Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr &target,
@@ -313,6 +315,17 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   auto data_node = FindDataByIndex(graph, rank);
   if (data_node == nullptr) {
     GELOGE(PARAM_INVALID, "Get target input node for rank %d failed", rank);
+    return PARAM_INVALID;
+  }
+  auto data_opdesc = data_node->GetOpDesc();
+  GE_CHECK_NOTNULL(data_opdesc);
+  string set_dt_str;
+  if (ge::AttrUtils::GetStr(data_opdesc, ATTR_ATC_USER_DEFINE_DATATYPE, set_dt_str)) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10034", {"opname"}, {data_opdesc->GetName()});
+    GELOGE(INTERNAL_ERROR,
+           "This input op [%s] is linked to aipp, can not be set to fp16, "
+           "please check your atc parameter --insert_op_conf, --input_fp16_nodes.",
+           data_opdesc->GetName().c_str());
     return PARAM_INVALID;
   }
 
@@ -333,13 +346,22 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   if (!edge_indexes.empty() && (*edge_indexes.rbegin() >= data_node->GetOutDataNodes().size())) {
     GELOGE(PARAM_INVALID, "input_edge_idx %u should smaller than out edge size of target input %zu",
            *edge_indexes.rbegin(), data_node->GetOutDataNodes().size());
+    string errormsg = "The aipp parameter input_edge_idx should be smaller than the target input's outnodes.";
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
     return PARAM_INVALID;
   }
   target = data_node;
 
+  return GetStaticTargetNode(graph, data_node, target);
+}
+
+Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_node, NodePtr &target) {
+  if (GetAippMode() != domi::AippOpParams::static_) {
+    return SUCCESS;
+  }
+
   std::string related_node_name;
-  if ((GetAippMode() == domi::AippOpParams::static_) &&
-      AttrUtils::GetStr(data_node->GetOpDesc(), kMbatchSwitchnName, related_node_name)) {
+  if (AttrUtils::GetStr(data_node->GetOpDesc(), kMbatchSwitchnName, related_node_name)) {
     if (related_node_name.empty()) {
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node flag, but the value is empty",
              data_node->GetName().c_str());
@@ -356,10 +378,26 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
       "Multi-batch/image size and static aipp for data %s, "
       "the aipp node will be insert after %s instead of origin data node",
       data_node->GetName().c_str(), switchn->GetName().c_str());
+
+    return SUCCESS;
+  }
+
+  const auto out_anchor = data_node->GetOutDataAnchor(0);
+  for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
+    if (in_anchor == nullptr) {
+      continue;
+    }
+
+    const auto &case_node = in_anchor->GetOwnerNode();
+    if (case_node->GetType() == CASE) {
+      target = case_node;
+      return SUCCESS;
+    }
   }
 
   return SUCCESS;
 }
+
 Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
                                  std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &target_edges) {
   GE_CHECK_NOTNULL(graph);
@@ -374,12 +412,39 @@ Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
   }
 
   target_edges.clear();
-  for (OutDataAnchorPtr &src_out : target_input->GetAllOutDataAnchors()) {
-    auto dst_ins = src_out->GetPeerInDataAnchors();
-    for (uint32_t i = 0; i < dst_ins.size(); ++i) {
-      auto dst_in = dst_ins.at(i);
-      if (edge_indexes.empty() || edge_indexes.count(i) > 0) {
-        target_edges.emplace_back(src_out, dst_in);
+  if (target_input->GetType() != CASE) {
+    for (OutDataAnchorPtr &src_out : target_input->GetAllOutDataAnchors()) {
+      auto dst_ins = src_out->GetPeerInDataAnchors();
+      for (uint32_t i = 0; i < dst_ins.size(); ++i) {
+        auto dst_in = dst_ins.at(i);
+        if (edge_indexes.empty() || edge_indexes.count(i) > 0) {
+          target_edges.emplace_back(src_out, dst_in);
+        }
+      }
+    }
+  } else {
+    const auto &func_desc = target_input->GetOpDesc();
+    for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
+      const auto &subgraph = graph->GetSubgraph(name);
+      if (subgraph == nullptr) {
+        GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
+        return GE_GRAPH_EMPTY_SUBGRAPH;
+      }
+
+      auto data_node = FindDataByIndex(subgraph, related_input_rank);
+      if (data_node == nullptr) {
+        GELOGE(PARAM_INVALID, "Get target input node for rank %d failed", related_input_rank);
+        return PARAM_INVALID;
+      }
+
+      for (OutDataAnchorPtr &src_out : data_node->GetAllOutDataAnchors()) {
+        auto dst_ins = src_out->GetPeerInDataAnchors();
+        for (uint32_t i = 0; i < dst_ins.size(); ++i) {
+          auto dst_in = dst_ins.at(i);
+          if (edge_indexes.empty() || edge_indexes.count(i) > 0) {
+            target_edges.emplace_back(src_out, dst_in);
+          }
+        }
       }
     }
   }
@@ -639,22 +704,41 @@ void AippOp::ConvertParamToAttr(GeAttrValue::NAMED_ATTRS &aipp_attrs) {
     SAVE_AIPP_ATTR(support_rotation, GeAttrValue::BOOL);
   }
 }
-Status AippOp::CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp_node) {
+Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   GELOGD("Enter add aipp data node process.");
   // get previous node, it should be DATA
   auto data_node = aipp_node->GetInDataNodes().at(kAippImageInputIndex);
-  GE_CHECK_NOTNULL(data_node->GetOpDesc());
+  auto data_op_desc = data_node->GetOpDesc();
+  GE_CHECK_NOTNULL(data_op_desc);
 
   auto ori_data_format = GetAndCheckFormat();
   if (ori_data_format != FORMAT_NCHW && ori_data_format != FORMAT_NHWC) {
+    string format_str = TypeUtils::FormatToSerialString(ori_data_format);
     GELOGE(PARAM_INVALID, "when dynamic aipp, input_format must be NCHW or NHWC, but [%s] format is %s",
-           data_node->GetName().c_str(), TypeUtils::FormatToSerialString(ori_data_format).c_str());
+           data_node->GetName().c_str(), format_str.c_str());
+    string reason = "format must be NCHW or NHWC in dynamic aipp process";
+    ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
+                                                    {data_node->GetName(), "format " + format_str, reason});
     return PARAM_INVALID;
   }
 
+  // dynamic aipp shape HWC is not fixed, need to be set -1
+  int64_t data_shape_n = 0;
+  // dynamic batch or HW, need acquire N from ATTR_MBATCH_ORIGIN_INPUT_DIMS
+  if (data_op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
+    vector<int64_t> origin_input_dims;
+    (void)AttrUtils::GetListInt(data_op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+    if (!origin_input_dims.empty()) {
+      data_shape_n = origin_input_dims[0];
+    }
+  } else {
+    data_shape_n = data_op_desc->MutableInputDesc(0)->GetShape().GetDim(0);
+  }
+  vector<int64_t> dynamic_aipp_linked_data_shape{data_shape_n, kDynamicDim, kDynamicDim, kDynamicDim};
+  (void)AttrUtils::SetListInt(data_op_desc, "_dynamic_aipp_input_dims", dynamic_aipp_linked_data_shape);
+
   int64_t batch_count = -1;
-  auto ret = GetDataDimN(data_node, ori_data_format, batch_count);
-  if (ret != ge::SUCCESS) {
+  if (GetDataDimN(data_node, ori_data_format, batch_count) != ge::SUCCESS) {
     GELOGE(PARAM_INVALID, "Get data_node dims and transfer to nchw_dims failed!");
     return PARAM_INVALID;
   }
@@ -670,6 +754,10 @@ Status AippOp::CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp_
   }
 
   GELOGI("Add aipp input data, batch count is %ld, max_dynamic_aipp_size is %ld", batch_count, max_dynamic_aipp_size);
+  return AddNodeToGraph(aipp_node, max_dynamic_aipp_size);
+}
+
+Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size) {
   std::vector<int64_t> input_shape_dim(1, max_dynamic_aipp_size);
   GeShape input_shape(input_shape_dim);
   // construct input tensor
@@ -677,14 +765,19 @@ Status AippOp::CreateAippData(const ComputeGraphPtr &graph, const NodePtr &aipp_
   TensorUtils::SetReuseInput(input_tensor, false);
   TensorUtils::SetSize(input_tensor, max_dynamic_aipp_size);
 
-  string node_name = kDynamicAippData;
   // Only flush subgraph name
-  if (graph->GetParentGraph() != nullptr) {
-    node_name = graph->GetName() + "_" + node_name;
-  }
+  const ComputeGraphPtr &graph = aipp_node->GetOwnerComputeGraph();
+  string node_name = (graph->GetParentGraph() == nullptr) ? kDynamicAippData : (graph->GetName() + "_" + node_name);
+
   // new add aipp_data ops for dynamic aipp param input
   OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(node_name, AIPPDATA);
   GE_CHECK_NOTNULL(op_desc_ptr_data);
+
+  // Add dynamic aipp config to aipp_data
+  GeAttrValue::NAMED_ATTRS aipp_attr;
+  ConvertParamToAttr(aipp_attr);
+  (void)AttrUtils::SetNamedAttrs(op_desc_ptr_data, ATTR_NAME_AIPP, aipp_attr);
+
   auto stat1 = op_desc_ptr_data->AddInputDesc(input_tensor);
 
   GeShape output_shape(input_shape_dim);

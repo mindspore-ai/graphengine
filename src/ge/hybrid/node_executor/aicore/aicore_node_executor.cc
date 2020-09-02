@@ -18,6 +18,7 @@
 #include "cce/taskdown_common.hpp"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "init/gelib.h"
+#include "hybrid/executor/hybrid_execution_context.h"
 
 namespace ge {
 namespace hybrid {
@@ -153,18 +154,25 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model, const NodePtr &
 }
 
 Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] Start");
   auto op_desc = context.GetNodeItem().op_desc;
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("[%s] ExecuteAsync Start.", op_desc->GetName().c_str());
   for (auto &task : tasks_) {
+    RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG(task->LaunchKernel(context.GetStream()));
+    RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
+    RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }
 
   if (done_callback != nullptr) {
+    RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeRegisterCallback] Start");
     GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(done_callback));
+    RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeRegisterCallback] End");
   }
 
   GELOGD("[%s] ExecuteAsync End.", op_desc->GetName().c_str());
+  RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] End");
   return SUCCESS;
 }
 

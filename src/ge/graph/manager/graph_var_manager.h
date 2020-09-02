@@ -157,6 +157,8 @@ class VarResource {
 
   bool IsVarAddr(const int64_t &offset);
 
+  std::unordered_map<std::string, ge::GeTensorDesc> GetAllVarDesc() const { return cur_var_tensor_desc_map_; }
+
  private:
   std::string VarKey(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
 
@@ -276,6 +278,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
 
   uint8_t *GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_type);
 
+  Status GetAllVariables(std::map<std::string, GeTensorDesc> &all_variables);
+
  private:
   uint32_t version_;
   uint64_t session_id_;
@@ -299,6 +303,8 @@ class VarManagerPool {
   static VarManagerPool &Instance();
 
   VarManager *GetVarManager(uint64_t session_id);
+
+  void RemoveVarManager(uint64_t session_id);
 
   void Destory() noexcept;
 

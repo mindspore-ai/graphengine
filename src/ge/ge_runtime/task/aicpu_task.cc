@@ -22,7 +22,12 @@
 namespace ge {
 namespace model_runner {
 AicpuTask::AicpuTask(const ModelContext &model_context, const std::shared_ptr<AicpuTaskInfo> &task_info)
-    : TaskRepeater<AicpuTaskInfo>(model_context, task_info), task_info_(task_info), stream_(nullptr), args_(nullptr) {
+    : TaskRepeater<AicpuTaskInfo>(model_context, task_info),
+      task_info_(task_info),
+      stream_(nullptr),
+      args_(nullptr),
+      ext_info_(nullptr),
+      input_output_addr_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
   }

@@ -112,7 +112,7 @@ bool EndOfSequenceAddControlPass::IsDataLikeNode(const NodePtr &node) {
   }
   string engine_name = op_desc->GetOpEngineName();
   if (engine_name.empty()) {
-    engine_name = instance_ptr->DNNEngineManagerObj().GetDNNEngineName(node->GetOpDesc());
+    engine_name = instance_ptr->DNNEngineManagerObj().GetDNNEngineName(node);
   }
   const map<string, SchedulerConf> schedulers = instance_ptr->DNNEngineManagerObj().GetSchedulers();
   // Only one scheduler has been supported by now

@@ -601,7 +601,7 @@ InferenceContextPtr CreateInferenceContext(const std::unordered_map<NodePtr, Inf
 }
 
 namespace {
-std::unordered_map<NodePtr, InferenceContextPtr> context_map;
+thread_local std::unordered_map<NodePtr, InferenceContextPtr> context_map;
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ShapeRefiner::ClearContextMap() { context_map.clear(); }
@@ -645,6 +645,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
   graphStatus status = InferShapeAndType(node, op, before_subgraph);
   if (status == GRAPH_PARAM_INVALID || status == GRAPH_SUCCESS) {
     if (is_unknown_graph) {
+      PrintInOutTensorShape(node, "after_infershape when running");
       return GRAPH_SUCCESS;
     }
     auto op_desc = node->GetOpDesc();

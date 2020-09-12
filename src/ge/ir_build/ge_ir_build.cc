@@ -31,11 +31,11 @@
 #include "graph/compute_graph.h"
 #include "graph/ge_tensor.h"
 #include "graph/utils/type_utils.h"
+#include "graph/ge_global_options.h"
 #include "init/gelib.h"
 #include "ir_build/atc_ir_common.h"
 #include "model/ge_model.h"
 
-using domi::GetContext;
 using std::string;
 using namespace std;
 
@@ -133,25 +133,24 @@ void aclgrphBuildFinalize() {
 class Impl {
  public:
   Impl() {
-    GetContext().format = domi::DOMI_TENSOR_ND;
-    GetContext().input_nodes_format_map.clear();
-    GetContext().output_formats.clear();
-    GetContext().user_input_dims.clear();
-    GetContext().input_dims.clear();
-    GetContext().op_conf_map.clear();
-    GetContext().out_nodes_map.clear();
-    GetContext().user_out_nodes.clear();
-    GetContext().net_format = domi::DOMI_TENSOR_RESERVED;
-    GetContext().type = domi::FRAMEWORK_RESERVED;
-    GetContext().run_mode = ONLY_PRE_CHECK;
-    GetContext().train_flag = false;
-    GetContext().fp16_high_precision = HIGH_PRECISION_DEFAULT;
-    GetContext().output_type.clear();
-    GetContext().net_name.clear();
-    GetContext().is_dynamic_input = false;
-    GetContext().dynamic_batch_size.clear();
-    GetContext().dynamic_image_size.clear();
-    GetContext().dynamic_dims.clear();
+    omg_context_ = domi::GetContext();
+    omg_context_.format = domi::DOMI_TENSOR_ND;
+    omg_context_.input_nodes_format_map.clear();
+    omg_context_.output_formats.clear();
+    omg_context_.user_input_dims.clear();
+    omg_context_.input_dims.clear();
+    omg_context_.op_conf_map.clear();
+    omg_context_.out_nodes_map.clear();
+    omg_context_.user_out_nodes.clear();
+    omg_context_.net_format = domi::DOMI_TENSOR_RESERVED;
+    omg_context_.type = domi::FRAMEWORK_RESERVED;
+    omg_context_.run_mode = ONLY_PRE_CHECK;
+    omg_context_.train_flag = false;
+    omg_context_.output_type.clear();
+    omg_context_.is_dynamic_input = false;
+    omg_context_.dynamic_batch_size.clear();
+    omg_context_.dynamic_image_size.clear();
+    omg_context_.dynamic_dims.clear();
   };
   ~Impl() { (void)generator_.Finalize(); };
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
@@ -161,24 +160,52 @@ class Impl {
                          ModelBufferData &ge_models);
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                  bool is_dynamic_input);
+  void SetRtSocVersion();
 
  public:
   ge::GeGenerator generator_;
   std::map<std::string, std::string> options_;
   bool is_dynamic_input_ = false;
+  OmgContext omg_context_;
 };
 
 graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options) {
   for (auto &ele : options) {
     auto it = ge::ir_option::ir_builder_suppported_options.find(ele.first);
     if (it == ge::ir_option::ir_builder_suppported_options.end()) {
-      GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!", ele.first.c_str());
-      return GRAPH_PARAM_INVALID;
+      auto it_lx_fusion = ir_builder_supported_options_for_lx_fusion.find(ele.first);
+      if (it_lx_fusion == ir_builder_supported_options_for_lx_fusion.end()) {
+        GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!", ele.first.c_str());
+        return GRAPH_PARAM_INVALID;
+      }
     }
     options_.insert(ele);
   }
+  // Check options build_mode and build_step.
+  std::string build_mode;
+  auto it = options_.find(BUILD_MODE);
+  if (it != options_.end() && !(it->second.empty())) {
+    if (build_mode_options.find(it->second) == build_mode_options.end()) {
+      GELOGE(GRAPH_PARAM_INVALID, "Build mode:%s is unsupported. Please check!", it->second.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
+    build_mode = it->second;
+  }
+  it = options_.find(BUILD_STEP);
+  if (it != options_.end() && !(it->second.empty())) {
+    if (build_step_options.find(it->second) == build_step_options.end()) {
+      GELOGE(GRAPH_PARAM_INVALID, "Build step:%s is unsupported. Please check!", it->second.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
+  } else {
+    if (build_mode == BUILD_MODE_TUNING) {
+      GELOGE(GRAPH_PARAM_INVALID, "Build mode tuning must specify build step. Please check!");
+      return GRAPH_PARAM_INVALID;
+    }
+  }
   return GRAPH_SUCCESS;
 }
+
 graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   // 1. check options
   graphStatus ret = CheckOptions(options);
@@ -186,6 +213,13 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
     GELOGE(ret, "User input options are illegal! Please check!");
     return ret;
   }
+
+  GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
+  GetThreadLocalContext().SetGraphOption(options_);
+  std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
+                             ? ""
+                             : options_[BUILD_MODE];
+  options_[BUILD_MODE] = build_mode;
   // set log level
   std::string log = options_.find(ge::ir_option::LOG_LEVEL) == options_.end() ? IR_OPTION_LOG_LEVEL_DEFAULT
                                                                               : options_[ge::ir_option::LOG_LEVEL];
@@ -212,9 +246,9 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   }
   GELOGD("User input dynamic_batch_size:%s, dynamic_image_size:%s, dynamic_dims:%s.", dynamic_batch_size.c_str(),
          dynamic_image_size.c_str(), dynamic_dims.c_str());
-  GetContext().dynamic_batch_size = dynamic_batch_size;
-  GetContext().dynamic_image_size = dynamic_image_size;
-  GetContext().dynamic_dims = dynamic_dims;
+  omg_context_.dynamic_batch_size = dynamic_batch_size;
+  omg_context_.dynamic_image_size = dynamic_image_size;
+  omg_context_.dynamic_dims = dynamic_dims;
   // check output_type
   std::string output_type =
     options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end() ? "" : options_[ge::ir_option::OUTPUT_TYPE];
@@ -235,8 +269,10 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   // print ge option map
   ge::PrintOptionMap(options_, "ge option");
 
+  SetRtSocVersion();
+
   // 3. init generator with options_
-  ret = generator_.Initialize(options_);
+  ret = generator_.Initialize(options_, omg_context_);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "generator Initialize failed!");
     return ret;
@@ -244,6 +280,20 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   // 4.parse and init Context with input shape format and net format info
   return this->InitDomiOmgContext(input_shape, input_format, net_format, is_dynamic_input_);
 }
+
+void Impl::SetRtSocVersion() {
+  auto &global_options = GetMutableGlobalOptions();
+  auto it = global_options.find(ge::SOC_VERSION);
+  if (it != global_options.end()) {
+    const char *soc_version = it->second.c_str();
+    rtError_t rt_ret = rtSetSocVersion(soc_version);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGW("Set soc version %s failed. ret:0x%X", soc_version, rt_ret);
+    }
+    GELOGI("Set soc version %s success.", soc_version);
+  }
+}
+
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
@@ -259,8 +309,8 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
       string data_op_name = op->GetName();
       GELOGI("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;
-      auto iter = GetContext().input_dims.find(data_op_name);
-      if (iter != GetContext().input_dims.end()) {
+      auto iter = omg_context_.input_dims.find(data_op_name);
+      if (iter != omg_context_.input_dims.end()) {
         data_shape = ge::GeShape(iter->second);
         GELOGI("Data op get shape from Context.");
       } else {
@@ -273,7 +323,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
       GELOGI("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
-      ge::GeTensorDesc desc(data_shape, ge::Format(GetContext().format), data_type);
+      ge::GeTensorDesc desc(data_shape, ge::Format(omg_context_.format), data_type);
       inputTensor.SetTensorDesc(desc);
       inputs.push_back(inputTensor);
     }
@@ -292,7 +342,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
 
   // 2. construct input
   std::vector<GeTensor> inputs;
-  if (!GetContext().is_dynamic_input) {  // if dynamic input , no need to creat inputs
+  if (!omg_context_.is_dynamic_input) {  // if dynamic input , no need to creat inputs
     ret = CreateInputsForIRBuild(graph, inputs);
     if (ret != GRAPH_SUCCESS) {
       GELOGE(ret, "CreateInputsForIRBuild failed!");
@@ -312,15 +362,15 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
 graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                      bool is_dynamic_input) {
   // Clear omgcontext data first
-  GetContext().input_dims.clear();
-  GetContext().user_input_dims.clear();
-  GetContext().is_dynamic_input = is_dynamic_input;
+  omg_context_.input_dims.clear();
+  omg_context_.user_input_dims.clear();
+  omg_context_.is_dynamic_input = is_dynamic_input;
   // the default value is ND
-  GetContext().format = domi::DOMI_TENSOR_ND;
+  omg_context_.format = domi::DOMI_TENSOR_ND;
   if (!input_format.empty()) {
     auto iter = ge::input_format_str_to_geformat.find(input_format);
     if (iter != ge::input_format_str_to_geformat.end()) {
-      GetContext().format = iter->second;
+      omg_context_.format = iter->second;
     } else {
       GELOGE(GRAPH_PARAM_INVALID, "Input format %s not support , expect ND/NCHW/NHWC/CHWN/NC1HWC0/NHWC1C0.",
              input_format.c_str());
@@ -332,7 +382,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
     return GRAPH_SUCCESS;
   }
 
-  if (!ParseInputShape(input_shape, GetContext().input_dims, GetContext().user_input_dims, is_dynamic_input)) {
+  if (!ParseInputShape(input_shape, omg_context_.input_dims, omg_context_.user_input_dims, is_dynamic_input)) {
     GELOGE(GRAPH_PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
     return GRAPH_PARAM_INVALID;
   }

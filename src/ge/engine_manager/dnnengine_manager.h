@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "nlohmann/json.hpp"
 
@@ -29,6 +30,7 @@
 #include "common/opskernel/ops_kernel_info_types.h"
 #include "engine/dnnengine.h"
 #include "graph/op_desc.h"
+#include "graph/node.h"
 
 using JsonHandle = void *;
 namespace ge {
@@ -61,7 +63,7 @@ class DNNEngineManager {
   std::shared_ptr<ge::DNNEngine> GetEngine(const std::string &name) const;
   bool IsEngineRegistered(const std::string &name);
   // If can't find appropriate engine name, return "", report error
-  string GetDNNEngineName(const OpDescPtr &op_desc);
+  string GetDNNEngineName(const ge::NodePtr &node_ptr);
   const map<string, SchedulerConf> &GetSchedulers() const;
   const map<string, uint64_t> &GetCheckSupportCost() const;
   void InitPerformanceStaistic();
@@ -83,6 +85,7 @@ class DNNEngineManager {
   std::map<string, SchedulerConf> schedulers_;
   std::map<string, uint64_t> checksupport_cost_;
   bool init_flag_;
+  mutable std::mutex mutex_;
 };
 }  // namespace ge
 

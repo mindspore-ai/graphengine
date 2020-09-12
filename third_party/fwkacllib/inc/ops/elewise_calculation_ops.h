@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file elewise_calculation_ops.h
+ * \brief
+ */
 #ifndef GE_OP_ELEWISE_CALCULATION_OPS_H
 #define GE_OP_ELEWISE_CALCULATION_OPS_H
 #include "graph/operator_reg.h"
@@ -2910,14 +2914,14 @@ REG_OP(Bias)
     .OP_END_FACTORY_REG(Bias)
 
 /**
-*@brief Function multiply gradients calculation. \n
+*@brief Function multiply gradients calculation.
 output0 is the result of which input0 dot multily input1.
 output1 is the result of which input0 dot multily input1, then reducesum it.
 
 *@par Inputs:
 *@li input0: A Tensor of input of mul, and dtype supports float16, float32.
 *@li input1: A Tensor of input of mul and mul_1, and dtype supports float16, float32.
-*@li input2: A Tensor of input of mul_1, and dtype supports float16, float32'.
+*@li input2: A Tensor of input of mul_1, and dtype supports float16, float32.
 
 *@par Attributes:
 *@li axes: The dimensions to reduce. Default:(), reduce all dimensions. \n
@@ -2940,12 +2944,12 @@ REG_OP(ConfusionMulGrad)
     .OP_END_FACTORY_REG(ConfusionMulGrad)
 
 /**
-*@brief Function fused multiply l2 loss calculation. \n
+*@brief Function fused multiply l2 loss calculation.
 
 *@par Inputs:
-*@li x1: A Tensor of type float16, float32.
-*@li x2: A Tensor of type float16, float32.
-*@li x3: A Tensor of type float16, float32.
+*@li x1: A Tensor of number type.
+*@li x2: A Tensor of number type.
+*@li x3: A Tensor of number type.
 
 *@par Outputs:
 *@li y1: A Tensor of shape and dtype of first output, which should have \n
@@ -3092,7 +3096,6 @@ REG_OP(Fills)
 *@brief Add tensor with scale.
 
 *@par Inputs:
-*Five inputs, including:
 * @li x1: A Tensor dtype of int32, float16, float32.
 * @li x2: A Tensor dtype of int32, float16, float32.
 
@@ -3178,6 +3181,27 @@ REG_OP(TensorMove)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
     .OP_END_FACTORY_REG(TensorMove)
+
+/**
+*@brief copy data from x to x.
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool.
+
+*@par Outputs:
+*x: A Tensor. Has the same type as "x".
+
+*@par Third-party framework compatibility
+*/
+REG_OP(TensorRedirect)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
+                           DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
+                           DT_COMPLEX64}))
+    .OUTPUT(output_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
+                           DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
+                           DT_COMPLEX64}))
+    .OP_END_FACTORY_REG(TensorRedirect)
 }  // namespace ge
 
 

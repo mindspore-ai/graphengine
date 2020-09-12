@@ -40,6 +40,7 @@ const char *const OPTION_EXEC_DEPLOY_MODE = "ge.exec.deployMode";
 const char *const OPTION_EXEC_RANK_TABLE_FILE = "ge.exec.rankTableFile";
 const char *const GE_AICPU_FLAG = "ge.aicpuFlag";
 const char *const OPTION_EXEC_EXTERN_PLUGIN_PATH = "ge.soLoadPath";
+// Dump flag and para
 const char *const OPTION_EXEC_ENABLE_DUMP = "ge.exec.enableDump";
 const char *const OPTION_EXEC_DUMP_PATH = "ge.exec.dumpPath";
 const char *const OPTION_EXEC_DUMP_STEP = "ge.exec.dumpStep";
@@ -48,7 +49,10 @@ const char *const OPTION_EXEC_ENABLE_DUMP_DEBUG = "ge.exec.enableDumpDebug";
 const char *const OPTION_EXEC_DUMP_DEBUG_MODE = "ge.exec.dumpDebugMode";
 const char *const OPTION_EXEC_ENABLE_INCRE_BUILD = "ge.exec.enableIncreBuild";
 const char *const OPTION_EXEC_INCRE_BUILD_CACHE_PATH = "ge.exec.increBuildCachePath";
+const char *const OPTION_EXEC_ENABLE_EXCEPTION_DUMP = "ge.exec.enable_exception_dump";
 const char *const OPTION_EXEC_ENABLE_SCOPE_FUSION_PASSES = "ge.exec.enableScopeFusionPasses";
+const char *const OPTION_EXEC_PROFILING_FPPONIT_OPTIONS = "ge.exec.profilingFpPointOptions";
+const char *const OPTION_EXEC_PROFILING_BPPONIT_OPTIONS = "ge.exec.profilingBpPointOptions";
 // profiling flag
 const char *const OPTION_EXEC_PROFILING_MODE = "ge.exec.profilingMode";
 const char *const OPTION_EXEC_PROFILING_OPTIONS = "ge.exec.profilingOptions";

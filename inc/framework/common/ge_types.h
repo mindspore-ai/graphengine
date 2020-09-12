@@ -258,16 +258,19 @@ struct ComputeGraphDescInfo {
 
 struct OpDescInfo {
   std::string op_name;
+  std::string op_type;
   uint32_t task_id;
   uint32_t stream_id;
   std::vector<Format> input_format;
   std::vector<std::vector<int64_t>> input_shape;
   std::vector<DataType> input_data_type;
   std::vector<void *> input_addrs;
+  std::vector<int64_t> input_size;
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
   std::vector<void *> output_addrs;
+  std::vector<int64_t> output_size;
 };
 struct ModelDumpConfig {
   std::string model_name;

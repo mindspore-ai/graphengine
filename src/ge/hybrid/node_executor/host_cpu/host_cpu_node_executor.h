@@ -17,58 +17,41 @@
 #ifndef GE_HYBRID_KERNEL_HOST_CPU_NODE_EXECUTOR_H_
 #define GE_HYBRID_KERNEL_HOST_CPU_NODE_EXECUTOR_H_
 
-#include "inc/kernel.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "inc/kernel.h"
 
 namespace ge {
 namespace hybrid {
 class HostNodeTaskBase : public NodeTask {
  public:
   explicit HostNodeTaskBase(const NodePtr &node) : node_(node) {}
-  ~HostNodeTaskBase() = default;
-  virtual Status UpdateArgs(TaskContext &context);
-  virtual Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback);
+  ~HostNodeTaskBase() override = default;
+  Status UpdateArgs(TaskContext &context) override;
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
 
  protected:
   NodePtr node_;
 
  private:
-  virtual Status Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                         std::vector<GeTensorPtr> &outputs) = 0;
-  virtual Status ProcessInputs(TaskContext &context, std::vector<GeTensorPtr> &inputs);
-  virtual Status ProcessOutputs(TaskContext &context, std::vector<GeTensorPtr> &outputs);
+  virtual Status Execute(TaskContext &context) = 0;
 };
 
 class CpuKernelNodeTask : public HostNodeTaskBase {
  public:
   explicit CpuKernelNodeTask(const NodePtr &node) : HostNodeTaskBase(node) {}
-  ~CpuKernelNodeTask() = default;
+  ~CpuKernelNodeTask() override = default;
 
  private:
-  Status Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                 std::vector<GeTensorPtr> &outputs) override;
-};
-
-class HostKernelNodeTask : public HostNodeTaskBase {
- public:
-  explicit HostKernelNodeTask(const NodePtr &node) : HostNodeTaskBase(node) {}
-  ~HostKernelNodeTask() = default;
-
- private:
-  Status Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                 std::vector<GeTensorPtr> &outputs) override;
+  Status Execute(TaskContext &context) override;
 };
 
 class HostCpuNodeTask : public HostNodeTaskBase {
  public:
   explicit HostCpuNodeTask(const NodePtr &node) : HostNodeTaskBase(node) {}
-  ~HostCpuNodeTask() = default;
+  ~HostCpuNodeTask() override = default;
 
  private:
-  Status Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                 std::vector<GeTensorPtr> &outputs) override;
-  Status ProcessInputs(TaskContext &context, std::vector<GeTensorPtr> &inputs) override;
-  Status ProcessOutputs(TaskContext &context, std::vector<GeTensorPtr> &outputs) override;
+  Status Execute(TaskContext &context) override;
 };
 
 class HostCpuNodeExecutor : public NodeExecutor {

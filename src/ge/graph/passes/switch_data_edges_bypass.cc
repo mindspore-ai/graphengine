@@ -16,6 +16,7 @@
 
 #include "switch_data_edges_bypass.h"
 
+#include <atomic>
 #include "common/debug/log.h"
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
@@ -78,7 +79,8 @@ std::pair<NodePtr, OutDataAnchorPtr> GetInDataNodeByIndex(const NodePtr &node, i
   return {out_anchor->GetOwnerNode(), out_anchor};
 }
 NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
-  static int identity_counter = 0;
+  static std::atomic_long atomic_identity_counter(0);
+  auto identity_counter = atomic_identity_counter.fetch_add(1);
 
   auto node_desc = node->GetOpDesc();
   if (node_desc == nullptr) {
@@ -100,7 +102,7 @@ NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
   }
 
   auto identity_opdesc =
-    MakeShared<OpDesc>("SwitchDataEdgesByPass_Identity_" + std::to_string(identity_counter++), IDENTITY);
+    MakeShared<OpDesc>("SwitchDataEdgesByPass_Identity_" + std::to_string(identity_counter), IDENTITY);
   if (identity_opdesc == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to add identity after node %s index %d", node->GetName().c_str(), index);
     return nullptr;
@@ -117,7 +119,8 @@ NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
   return identity;
 }
 NodePtr AddMemcpyBeforeNode(const NodePtr &node, int index) {
-  static int counter = 0;
+  static std::atomic_long atomic_counter(0);
+  auto counter = atomic_counter.fetch_add(1);
 
   auto node_desc = node->GetOpDesc();
   if (node_desc == nullptr) {
@@ -138,7 +141,7 @@ NodePtr AddMemcpyBeforeNode(const NodePtr &node, int index) {
     return nullptr;
   }
 
-  auto memcpy_opdesc = MakeShared<OpDesc>("SwitchDataEdgesByPass_Memcpy_" + std::to_string(counter++), MEMCPYASYNC);
+  auto memcpy_opdesc = MakeShared<OpDesc>("SwitchDataEdgesByPass_Memcpy_" + std::to_string(counter), MEMCPYASYNC);
   if (memcpy_opdesc == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to add memcpy before node %s index %d", node->GetName().c_str(), index);
     return nullptr;

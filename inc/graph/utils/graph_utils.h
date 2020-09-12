@@ -36,8 +36,8 @@
   do {                                                                                                 \
     GraphUtils::DumpGEGraph(compute_graph, name);                                                      \
     GraphUtils::DumpGEGraphToOnnx(*compute_graph, name);                                               \
+    uint64_t i = 0;                                                                                    \
     for (const auto &sub_graph_func : compute_graph->GetAllSubgraphs()) {                              \
-      static int8_t i = 0;                                                                             \
       auto sub_graph_func_name = std::string(name) + std::string("_sub_graph_") + std::to_string(i++); \
       GraphUtils::DumpGEGraph(sub_graph_func, sub_graph_func_name);                                    \
       GraphUtils::DumpGEGraphToOnnx(*sub_graph_func, sub_graph_func_name);                             \
@@ -203,9 +203,12 @@ class GraphUtils {
 
   static bool MatchDumpStr(const std::string &suffix);
 
-  static void DumpGEGraph(const ge::ComputeGraphPtr &graph, const std::string &suffix, bool is_always_dump = false);
+  static void DumpGEGraph(const ge::ComputeGraphPtr &graph, const std::string &suffix, bool is_always_dump = false,
+                          const std::string &user_graph_name = "");
 
   static bool LoadGEGraph(const char *file, ge::ComputeGraph &compute_graph);
+
+  static bool LoadGEGraph(const char *file, ge::ComputeGraphPtr &compute_graph);
 
   static void BreakConnect(const std::map<OperatorImplPtr, NodePtr> &all_nodes_infos);
 

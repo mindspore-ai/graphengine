@@ -15,8 +15,8 @@
  */
 
 #include "graph/build/stream_allocator.h"
-#include <memory>
 #include <algorithm>
+#include <memory>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
@@ -1062,12 +1062,12 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
         GELOGI("there are %zu next iterator target streams has streamswitch node.", streams_skip_iterator_event.size());
         for (auto iter : stream_id_to_last_node) {
           if (streams_skip_iterator_event.find(iter.first) != streams_skip_iterator_event.end()) {
-            GELOGI("skip stream %ld which has streamswitch node when add event to next iterator active node",
+            GELOGI("Skip stream %ld which has streamswitch node when adding event to next iterator active node",
                    iter.first);
             continue;
           }
           if (iter.second->GetOwnerComputeGraph()->GetParentGraph() != nullptr) {
-            GELOGI("skip stream %ld which last node in subgraph when add event to next iterator active node",
+            GELOGI("Skip stream %ld which is last node in subgraph when adding event to next iterator active node",
                    iter.first);
             continue;
           }
@@ -1264,15 +1264,6 @@ void StreamAllocator::DumpEvents() {
 }
 
 Status StreamAllocator::GetMaxStreamAndTask(bool huge_stream, uint32_t &max_stream_count, uint32_t &max_task_count) {
-  const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
-  if (buffer_optimize_on != nullptr) {
-    rtError_t ret = rtSetPlatformType(PLATFORM_MINI_V1);
-    if (ret != RT_ERROR_NONE) {
-      GELOGE(FAILED, "Get max stream and task count by rts failed.");
-      return FAILED;
-    }
-  }
-
   uint32_t stream_type = RT_NORMAL_STREAM;
   if (huge_stream) {
     stream_type = RT_HUGE_STREAM;

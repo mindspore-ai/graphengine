@@ -479,6 +479,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<GeTensorPtr> OpDescUtils::
     return ret;
   }
 
+  if (node.GetType() == DATA) {
+    auto parent = NodeUtils::GetParentInput(node);
+    if ((parent != nullptr) && NodeUtils::IsConst(*parent)) {
+      auto weight = MutableWeights(parent->GetOpDesc());
+      if (weight == nullptr) {
+        GELOGI("const op has no weight, op name:%s", parent->GetName().c_str());
+        return ret;
+      }
+      ret.push_back(weight);
+    }
+    return ret;
+  }
+
   // Other operators, get weights from connected constop
   auto input_nodes = GetConstInputs(node);
   for (const auto &input_node : input_nodes) {
@@ -560,11 +573,9 @@ OpDescPtr OpDescUtils::CreateConstOp(const GeTensorPtr &tensor_ptr) {
 
   const_opdesc->SetType(CONSTANT);
 
-  static int const_count = 0;
-  const_opdesc->SetName("dynamic_const_" + std::to_string(const_count));
-
+  thread_local int64_t const_count = 0;
+  const_opdesc->SetName("dynamic_const_" + std::to_string(GetTid()) + "_" + std::to_string(const_count));
   GELOGI("add const op: %s", const_opdesc->GetName().c_str());
-
   ++const_count;
 
   (void)const_opdesc->AddOutputDesc(tensor_ptr->GetTensorDesc());

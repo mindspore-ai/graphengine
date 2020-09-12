@@ -32,7 +32,7 @@ constexpr int kLaunchRetryTimes = 1000;
 constexpr int kSleepTime = 10;
 }  // namespace
 
-Status OpTask::OpenDump(void *arg, const OpDescPtr &op_desc, rtStream_t stream) {
+Status OpTask::OpenDump(const void *arg, const OpDescPtr &op_desc, rtStream_t stream) {
   if (DumpManager::GetInstance().IsDumpOpen()) {
     GELOGI("Dump is open in single op,start to set dump info");
     std::vector<uint64_t> input_addrs;
@@ -40,11 +40,11 @@ Status OpTask::OpenDump(void *arg, const OpDescPtr &op_desc, rtStream_t stream) 
     auto input_size = op_desc->GetAllInputsDesc().size();
     auto output_size = op_desc->GetOutputsSize();
     for (size_t i = 0; i < input_size; i++) {
-      uint64_t input_addr = *(reinterpret_cast<uint64_t *>(arg) + i);
+      uint64_t input_addr = *(reinterpret_cast<const uint64_t *>(arg) + i);
       input_addrs.emplace_back(input_addr);
     }
     for (size_t j = 0; j < output_size; j++) {
-      uint64_t output_addr = *(reinterpret_cast<uint64_t *>(arg) + input_size + j);
+      uint64_t output_addr = *(reinterpret_cast<const uint64_t *>(arg) + input_size + j);
       output_adds.emplace_back(output_addr);
     }
     dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(), op_desc, input_addrs, output_adds, stream);

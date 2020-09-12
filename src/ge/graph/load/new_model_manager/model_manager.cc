@@ -18,9 +18,9 @@
 
 #include <string>
 
+#include "common/dump/dump_manager.h"
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
-#include "common/dump/dump_manager.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
@@ -38,6 +38,7 @@ const int kDumpCmdPairSize = 2;
 }  // namespace
 
 DumpProperties ModelManager::dump_properties_;
+std::mutex ModelManager::exeception_infos_mutex_;
 
 std::shared_ptr<ModelManager> ModelManager::GetInstance() {
   static const std::shared_ptr<ModelManager> instance_ptr =
@@ -154,6 +155,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
     GELOGI("The session: %lu not created.", session_id);
     return;
   } else {
+    GE_CHK_RT(rtSetDevice(static_cast<int32_t>(GetContext().DeviceId())));
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0);
     if (ret != SUCCESS) {
       GELOGW("The session: %lu destroy failed.", session_id);
@@ -161,6 +163,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
       (void)sess_ids_.erase(session_id);
       GELOGI("The session: %lu destroyed.", session_id);
     }
+    GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
   }
 }
 
@@ -369,7 +372,8 @@ Status ModelManager::Unload(uint32_t model_id) {
   } else {
     GELOGI("Unload model %u success.no need reset device,device_count: %u", model_id, device_count);
   }
-
+  std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
+  exception_infos_.clear();
   return SUCCESS;
 }
 
@@ -1104,6 +1108,25 @@ Status ModelManager::GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint3
     }
   }
   return FAILED;
+}
+
+Status ModelManager::EnableExceptionDump(const std::map<string, string> &options) {
+  auto iter = options.find(OPTION_EXEC_ENABLE_EXCEPTION_DUMP);
+  if (iter != options.end()) {
+    GELOGI("Find option enable_exeception_dump is %s", iter->second.c_str());
+    if (iter->second == "1") {
+      rtError_t rt_ret = rtSetTaskFailCallback(ExceptionCallback);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGE(RT_FAILED, "rtSetTaskFailCallback failed");
+        return RT_ERROR_TO_GE_STATUS(rt_ret);
+      }
+    } else {
+      GELOGI("Option enable exception dump is %s", iter->second.c_str());
+    }
+  } else {
+    GELOGI("Not find option enable exception dump");
+  }
+  return SUCCESS;
 }
 
 }  // namespace ge

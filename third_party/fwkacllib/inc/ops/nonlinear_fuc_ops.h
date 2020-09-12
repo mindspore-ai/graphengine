@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file nonlinear_fuc_ops.h
+ * \brief
+ */
 #ifndef GE_OP_NONLINEAR_FUC_OPS_H
 #define GE_OP_NONLINEAR_FUC_OPS_H
 
@@ -57,6 +61,43 @@ REG_OP(GeluGrad)
     .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(z, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(GeluGrad)
+
+/**
+*@brief Computes the for the fast_gelu of "x".
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FastGelu
+*/
+REG_OP(FastGelu)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(FastGelu)
+
+/**
+*@brief Computes the gradient for the fast_gelu of "x".
+
+*@par Inputs:
+*Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32
+* @li x: A Tensor of the same type as "dy".
+
+*@par Outputs:
+*z: A Tensor. Has the same type as "dy".
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FastGeluGrad
+*/
+REG_OP(FastGeluGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(z, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(FastGeluGrad)
+
 
 /**
 *@brief Computes the gradient for the tanh of "x".
@@ -153,6 +194,9 @@ REG_OP(Relu6)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Relu6.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Relu6 instead.
 */
 REG_OP(Relu6D)
     .INPUT(x, TensorType::RealNumberType())
@@ -535,14 +579,17 @@ REG_OP(LeakyReluGrad)
 *@brief Thresholds grad each element of the input Tensor.
 
 *@par Inputs:
-* @li gradients: A Tensor shape and dtype of input gradients. Support float16, float32, int8, uint8, int32.
-* @li features: A Tensor shape and dtype of input features. Support float16, float32, int8, uint8, int32.
+* @li gradients: A Tensor shape and dtype of input gradients. Support float16, int32.
+* @li features: A Tensor shape and dtype of input features. Support float16, int32.
 
 *@par Attributes:
 *threshold: A float32 scale value to threshold at.
 
 *@par Outputs:
 *backprops: A Tensor of shape and dtype of output backprops, should be same shape and type as inputs.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ThresholdGradV2D)
     .INPUT(gradients, TensorType({DT_INT32, DT_FLOAT16}))
@@ -555,7 +602,7 @@ REG_OP(ThresholdGradV2D)
 *@brief Thresholds each element of the input Tensor y = (x > threshold) ? x : value.
 
 *@par Inputs:
-*x: A Tensor dtype of float16, float32, int8, uint8, int32.
+*x: A Tensor dtype of real number.
 
 *@par Attributes:
 *@li threshold: A float32 scale value to threshold at.
@@ -563,6 +610,9 @@ REG_OP(ThresholdGradV2D)
 
 *@par Outputs:
 *y: A Tensor of shape and dtype of output, should be same shape and type as input.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ThresholdV2D)
     .INPUT(x, TensorType::RealNumberType())

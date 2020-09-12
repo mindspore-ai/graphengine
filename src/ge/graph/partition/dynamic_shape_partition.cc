@@ -43,18 +43,13 @@
 #define REQUIRE_SUCCESS(cond, ...) REQUIRE(((cond) == SUCCESS), __VA_ARGS__)
 #define REQUIRE_GRAPH_SUCCESS(cond, ...) REQUIRE(((cond) == GRAPH_SUCCESS), __VA_ARGS__)
 
-bool IsExperimental() {
-  const static bool kIsExperimental = (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") != nullptr);
-  return kIsExperimental;
-}
-
 namespace ge {
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
 Status DynamicShapePartitioner::Partition() {
   REQUIRE_NOT_NULL(root_graph_, "Graph is nullptr.");
-  if (!IsExperimental()) {
+  if (!GraphUtils::IsUnknownShapeGraph(root_graph_)) {
     GELOGD("Skip dynamic shape partition as not in experimental mode.");
     REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
             "Failed set dynamic shape partitioned flag on root graph.");
@@ -872,7 +867,8 @@ void Cluster::Clear() {
   control_outputs_.clear();
   partition_node_.reset();
   subgraph_.reset();
+  unique_id_ = 0;
 }
 
-size_t Cluster::unique_id_ = 0;
+thread_local size_t Cluster::unique_id_ = 0;
 }  // namespace ge

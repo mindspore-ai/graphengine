@@ -95,7 +95,28 @@ static void ParseAtcParms(const std::map<std::string, std::string> &atc_params, 
   }
 }
 
-static Status CheckInputShapeNode(const ComputeGraphPtr &graph) {
+static Status CheckInputShapeNode(const ComputeGraphPtr &graph, const bool is_dynamic_input) {
+  if (!is_dynamic_input) {
+    for (auto node : graph->GetDirectNode()) {
+      if (node->GetType() == DATA) {
+        auto data_op_desc = node->GetOpDesc();
+        GE_CHECK_NOTNULL(data_op_desc);
+        auto tensor_desc = data_op_desc->MutableInputDesc(0);
+        GE_CHECK_NOTNULL(tensor_desc);
+        for (auto dim : tensor_desc->GetShape().GetDims()) {
+          if (dim < 0) {
+            GELOGE(PARAM_INVALID,
+                   "Input op [%s] shape %ld is negative, maybe you should set input_shape to specify its shape",
+                   node->GetName().c_str(), dim);
+            const string reason = "maybe you should set input_shape to specify its shape";
+            ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                            {node->GetName(), to_string(dim), reason});
+            return PARAM_INVALID;
+          }
+        }
+      }
+    }
+  }
   for (auto it : domi::GetContext().user_input_dims) {
     std::string node_name = it.first;
     ge::NodePtr node = graph->FindNode(node_name);
@@ -758,7 +779,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_RETURN_IF_ERROR(CheckInputFp16Nodes(compute_graph, input_fp16_nodes, is_input_adjust_hw_layout));
 
-  GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph));
+  GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph, is_dynamic_input));
 
   std::string compress_weight_conf;
   ParseAtcParms(atc_params, "compress_weight_conf", compress_weight_conf);
@@ -919,9 +940,16 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
     GELOGE(ret, "LoadFromFile failed.");
     return ret;
   }
-
+  bool flag = false;
   ge::proto::ModelDef model_def;
-  bool flag = google::protobuf::TextFormat::ParseFromString(reinterpret_cast<char *>(model.model_data), &model_def);
+  try {
+    flag = google::protobuf::TextFormat::ParseFromString(reinterpret_cast<char *>(model.model_data), &model_def);
+  } catch (google::protobuf::FatalException &e) {
+    free_model_data(&model.model_data);
+    GELOGE(FAILED, "ParseFromString fail. exception message : %s", e.what());
+    return FAILED;
+  }
+
   if (!flag) {
     free_model_data(&model.model_data);
     GELOGE(FAILED, "ParseFromString fail.");

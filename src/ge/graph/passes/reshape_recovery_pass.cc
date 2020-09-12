@@ -20,7 +20,7 @@
 namespace ge {
 namespace {
 NodePtr CreateReshape(const ConstGeTensorDescPtr &src, const ConstGeTensorDescPtr &dst, const ComputeGraphPtr &graph) {
-  static std::atomic<int> reshape_num(0);
+  static std::atomic_long reshape_num(0);
   auto next_num = reshape_num.fetch_add(1);
   auto reshape = MakeShared<OpDesc>("Reshape_ReshapeRecoveryPass_" + std::to_string(next_num), RESHAPE);
   if (reshape == nullptr) {

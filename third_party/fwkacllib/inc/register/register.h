@@ -18,6 +18,7 @@
 #define INC_REGISTER_REGISTRY_H_
 
 #include "external/register/register.h"
+#include "external/ge/ge_api_error_codes.h"
 
 namespace ge {
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY HostCpuOp {

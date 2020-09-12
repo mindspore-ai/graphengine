@@ -345,21 +345,6 @@ class DavinciModel {
 
   Status ReturnNoOutput(uint32_t data_id);
 
-  ///
-  /// @ingroup ge
-  /// @brief dump all op input and output information
-  /// @return void
-  ///
-  void DumpOpInputOutput();
-
-  ///
-  /// @ingroup ge
-  /// @brief dump single op input and output information
-  /// @param [in] dump_op model_id
-  /// @return Status
-  ///
-  Status DumpSingleOpInputOutput(const OpDescPtr &dump_op);
-
   Status ModelRunStart();
 
   ///

@@ -37,6 +37,13 @@ enum NodeStatus {
   kNodeNotSupportNode,
 };
 
+enum DynamicType {
+  kDynamicBatch,
+  kDynamicImageSize,
+  kDynamicDims,
+  kDynamicUnknown,
+};
+
 class MultiBatchGraphCopyer {
  public:
   explicit MultiBatchGraphCopyer(ComputeGraphPtr &graph) : graph_(graph) {}
@@ -52,6 +59,7 @@ class MultiBatchGraphCopyer {
   void SetDataToDynamicInfo(const map<string, vector<vector<int64_t>>> &designate_shape) {
     data_to_dynamic_info_ = designate_shape;
   }
+  void SetDynamicType(const DynamicType dynamic_type) { dynamic_type_ = dynamic_type; }
   Status CopyGraph();
 
  private:
@@ -65,6 +73,7 @@ class MultiBatchGraphCopyer {
 
   NodePtr InsertShapeDataNode();
   Status InsertSwitchNForData(const NodePtr &data);
+  Status InsertIdentityAfterSwitchN();
   Status UpdateMaxShapeToData(const NodePtr &data);
 
   Status InsertMergeForEdgeNode(const NodePtr &node);
@@ -93,7 +102,7 @@ class MultiBatchGraphCopyer {
   Status LinkNodeToMerge(const NodePtr &node, int out_index, const NodePtr &merge);
   Status CopyInDataEdges(const NodePtr &origin_node, int batch_num, const NodePtr &copyed_node);
   Status CopyInControlEdges(const NodePtr &node, int batch_num, const NodePtr &copyed_node);
-
+  Status UpdateDataToDynamicInfo(const NodePtr &node);
   bool IsInBatchBranch(const NodePtr &node);
   NodeStatus GetNodeStatus(const NodePtr &node) { return origin_nodes_status_[node.get()]; };
   Status CheckCopyResult(const std::vector<NodePtr> &start_nodes);
@@ -129,6 +138,9 @@ class MultiBatchGraphCopyer {
 
   // each data's own dynamic info
   map<string, vector<vector<int64_t>>> data_to_dynamic_info_;
+
+  // dynamic type : dynamic batch,, dynamic image size, dynamic dims.
+  DynamicType dynamic_type_ = DynamicType::kDynamicUnknown;
 };
 }  // namespace multibatch
 }  // namespace ge

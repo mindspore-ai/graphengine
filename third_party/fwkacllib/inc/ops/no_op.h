@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file no_op.h
+ * \brief
+ */
 #ifndef GE_NO_OP_H_
 #define GE_NO_OP_H_
 

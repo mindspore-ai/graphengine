@@ -15,6 +15,9 @@
  */
 
 #include "generator/ge_generator.h"
+
+#include <atomic>
+
 #include "common/ge/ge_util.h"
 #include "common/ge/plugin_manager.h"
 #include "common/helper/model_helper.h"
@@ -212,6 +215,9 @@ static void GetOpsProtoPath(string &opsproto_path) {
 
 class GeGenerator::Impl {
  public:
+  Impl(OmgContext &omg_context) : omg_context_(omg_context), graph_manager_(omg_context) {}
+  ~Impl() = default;
+
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GeRootModelPtr &ge_models);
 
   Status SaveModel(const string &file_name_prefix, GeModelPtr &models, ModelBufferData &model);
@@ -221,10 +227,14 @@ class GeGenerator::Impl {
 
   Status GenerateInfershapeGraph(const Graph &graph);
 
+  OmgContext &omg_context_;
   GraphManager graph_manager_;
   SaveParam save_param_;
   bool is_offline_ = true;
   bool is_singleop_unregistered_ = false;
+  std::string build_mode_;
+  std::string build_step_;
+  static std::mutex mutex_;
 
  private:
   static std::string Trim(const std::string &str);
@@ -234,8 +244,10 @@ class GeGenerator::Impl {
   bool SetOppVersionInfo(AttrHolder &obj);
 };
 
-Status GeGenerator::Initialize(const map<string, string> &options) {
-  impl_ = ge::MakeShared<Impl>();
+Status GeGenerator::Initialize(const map<string, string> &options) { return Initialize(options, domi::GetContext()); }
+
+Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &omg_context) {
+  impl_ = ge::MakeShared<Impl>(omg_context);
   if (impl_ == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;
@@ -272,6 +284,17 @@ Status GeGenerator::Initialize(const map<string, string> &options) {
   iter = options.find(PRIVATE_KEY_FILE);
   if (iter != options.end()) {
     impl_->save_param_.pri_key_file = iter->second;
+  }
+
+  // get build mode
+  iter = options.find(BUILD_MODE);
+  if (iter != options.end()) {
+    impl_->build_mode_ = iter->second;
+  }
+  // get build step
+  iter = options.find(BUILD_STEP);
+  if (iter != options.end()) {
+    impl_->build_step_ = iter->second;
   }
   return SUCCESS;
 }
@@ -311,6 +334,8 @@ Status GeGenerator::GenerateInfershapeGraph(const Graph &graph) {
   GELOGI("Generate infer shape graph success");
   return SUCCESS;
 }
+
+std::mutex GeGenerator::Impl::mutex_;
 
 // Remove the space and tab before and after the string
 std::string GeGenerator::Impl::Trim(const std::string &str) {
@@ -436,8 +461,7 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   auto rt = rtCtxGetCurrent(&ctx);
   if (rt != RT_ERROR_NONE) {
     GELOGW("Current ctx is null.");
-  } else {
-    ge::RtContextUtil::GetInstance().SetNormalModeContext(ctx);
+    ctx = nullptr;
   }
 
   GeRootModelPtr ge_root_model = nullptr;
@@ -451,6 +475,17 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     }
     return ret;
   }
+
+  /// BUILD_MODE_TUNING with BUILD_STEP_BEFORE_UB_MATCH no need save model;
+  /// BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER no need save model;
+  /// BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER_SUB no need save model.
+  if ((impl_->build_mode_ == BUILD_MODE_TUNING) &&
+      (impl_->build_step_ == BUILD_STEP_BEFORE_UB_MATCH || impl_->build_step_ == BUILD_STEP_AFTER_BUILDER ||
+       impl_->build_step_ == BUILD_STEP_AFTER_BUILDER_SUB)) {
+    GELOGI("Build mode:%s with step:%s no need SaveModel.", impl_->build_mode_.c_str(), impl_->build_step_.c_str());
+    return SUCCESS;
+  }
+
   GE_CHECK_NOTNULL(ge_root_model);
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
   ModelHelper model_helper;
@@ -474,8 +509,8 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     return ret;
   }
 
-  if (RtContextUtil::GetInstance().GetNormalModeContext() != nullptr) {
-    (void)rtCtxSetCurrent(RtContextUtil::GetInstance().GetNormalModeContext());
+  if (ctx != nullptr) {
+    (void)rtCtxSetCurrent(ctx);
   }
 
   GELOGI("GenerateOfflineModel success.");
@@ -495,7 +530,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     return PARAM_INVALID;
   }
 
-  domi::GetContext().is_dynamic_input = ContainsDynamicInpus(*op_desc);
+  OmgContext &omg_context = (impl_ == nullptr) ? domi::GetContext() : impl_->omg_context_;
+  omg_context.is_dynamic_input = ContainsDynamicInpus(*op_desc);
 
   if (op_desc->HasAttr(ATTR_NAME_UNREGST_OPPATH)) {
     impl_->is_singleop_unregistered_ = true;
@@ -633,35 +669,32 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &
 
 Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> &inputs,
                                      GeRootModelPtr &ge_root_model) {
-  static GraphId id = 0;
+  static std::atomic<GraphId> atomic_graph_id(0);
+  auto graph_id = atomic_graph_id.fetch_add(1);
   const std::map<std::string, std::string> options;
-  Status ret = graph_manager_.AddGraph(id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph fail, graph id: %u", id);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph fail, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();
     return GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED;
   }
 
   GELOGI("Model inputs size is %zu", inputs.size());
   graph_manager_.SetOptionsRunGraphFlag(false);
-  struct timeval tv;
-  if (gettimeofday(&tv, nullptr) != 0) {
-    GELOGE(INTERNAL_ERROR, "get the time of day failed.");
-    return INTERNAL_ERROR;
-  }
-  uint64_t session_id = static_cast<uint64_t>(tv.tv_sec * 1000000 + tv.tv_usec);  // 1000000us
+
+  static std::atomic<uint64_t> atomic_session_id(0);
+  auto session_id = atomic_session_id.fetch_add(1);
   if (is_singleop_unregistered_) {
-    ret = graph_manager_.BuildGraphForUnregisteredOp(id, inputs, ge_root_model, session_id);
+    ret = graph_manager_.BuildGraphForUnregisteredOp(graph_id, inputs, ge_root_model, session_id);
   } else {
-    ret = graph_manager_.BuildGraph(id, inputs, ge_root_model, session_id);
+    ret = graph_manager_.BuildGraph(graph_id, inputs, ge_root_model, session_id);
   }
 
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", id);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", graph_id);
     VarManagerPool::Instance().RemoveVarManager(session_id);
     return GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
-  id += 1;
 
   VarManagerPool::Instance().RemoveVarManager(session_id);
 
@@ -669,21 +702,21 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
 }
 
 Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph) {
-  static GraphId id = 0;
+  static std::atomic<GraphId> atomic_graph_id(0);
+  auto graph_id = atomic_graph_id.fetch_add(1);
   const std::map<std::string, std::string> options;
-  Status ret = graph_manager_.AddGraph(id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph failed, graph id: %u", id);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph failed, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();
     return GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED;
   }
 
-  ret = graph_manager_.GenerateInfershapeGraph(id);
+  ret = graph_manager_.GenerateInfershapeGraph(graph_id);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager generate graph failed");
     return GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
-  id += 1;
 
   return SUCCESS;
 }

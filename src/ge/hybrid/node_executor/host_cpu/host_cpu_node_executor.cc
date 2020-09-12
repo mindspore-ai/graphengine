@@ -18,7 +18,6 @@
 #include "hybrid/node_executor/host_cpu/kernel_factory.h"
 #include "graph/passes/folding_pass.h"
 #include "hybrid/model/hybrid_model.h"
-#include "inc/kernel_factory.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
 
 namespace ge {
@@ -32,16 +31,8 @@ Status HostNodeTaskBase::UpdateArgs(TaskContext &) {
 
 Status HostNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Start execute.", context.GetNodeName());
-
-  std::vector<GeTensorPtr> inputs;
-  std::vector<GeTensorPtr> outputs;
-  GE_CHK_STATUS_RET(ProcessInputs(context, inputs), "node:%s type:%s, process inputs failed.", node_->GetName().c_str(),
-                    node_->GetType().c_str());
-  GE_CHK_STATUS_RET(Execute(context, inputs, outputs), "node:%s type:%s, task execute failed.",
-                    node_->GetName().c_str(), node_->GetType().c_str());
-  GE_CHK_STATUS_RET(ProcessOutputs(context, outputs), "node:%s type:%s, process outputs failed.",
-                    node_->GetName().c_str(), node_->GetType().c_str());
-
+  GE_CHK_STATUS_RET(Execute(context), "node:%s type:%s, task execute failed.", node_->GetName().c_str(),
+                    node_->GetType().c_str())
   if (done_callback) {
     GELOGD("[%s] Start invoke callback.", context.GetNodeName());
     done_callback();
@@ -50,98 +41,48 @@ Status HostNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()
   return SUCCESS;
 }
 
-Status HostNodeTaskBase::ProcessInputs(TaskContext &context, std::vector<GeTensorPtr> &inputs) {
-  int32_t input_num = context.NumInputs();
-  for (auto i = 0; i < input_num; ++i) {
-    auto tensor_value = context.GetInput(i);
-    GE_CHECK_NOTNULL(tensor_value);
-    GeTensorPtr input_ptr =
-      MakeShared<GeTensor>(node_->GetOpDesc()->GetInputDesc(i),
-                           reinterpret_cast<const uint8_t *>(tensor_value->GetData()), tensor_value->GetSize());
-    if (input_ptr == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "Make shared failed");
-      return MEMALLOC_FAILED;
+Status CpuKernelNodeTask::Execute(TaskContext &context) {
+  const auto &op_desc = node_->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+
+  std::vector<ConstGeTensorPtr> inputs;
+  for (int32_t i = 0; i < context.NumInputs(); ++i) {
+    const auto &input_desc = op_desc->GetInputDesc(i);
+    auto in_tensor = MakeShared<GeTensor>(input_desc, reinterpret_cast<const uint8_t *>(context.GetInput(i)->GetData()),
+                                          context.GetInput(i)->GetSize());
+    GE_CHECK_NOTNULL(in_tensor);
+    in_tensor->MutableTensorDesc().SetDataType(input_desc.GetDataType());
+    in_tensor->MutableTensorDesc().SetShape(input_desc.GetShape());
+    inputs.emplace_back(in_tensor);
+    GELOGI("node:%s allocate input %zu, addr=%p, size=%lld", op_desc->GetName().c_str(), i,
+           reinterpret_cast<const uint8_t *>(in_tensor->GetData().data()), in_tensor->GetData().size());
+  }
+
+  std::vector<GeTensorPtr> outputs;
+  for (int32_t i = 0; i < context.NumOutputs(); ++i) {
+    const auto &output_desc = op_desc->GetOutputDesc(i);
+    AllocationAttr attr;
+    attr.SetMemType(HOST_DDR);
+    if (context.AllocateOutput(i, output_desc, nullptr, &attr) != SUCCESS) {
+      GELOGE(FAILED, "node:%s Failed to allocate output %d", context.GetNodeName(), i);
+      return FAILED;
     }
-    inputs.push_back(input_ptr);
-  }
-  return SUCCESS;
-}
-
-Status HostNodeTaskBase::ProcessOutputs(TaskContext &context, std::vector<GeTensorPtr> &outputs) {
-  int32_t output_num = context.NumOutputs();
-  if (static_cast<size_t>(output_num) != outputs.size()) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %d output, but kernel compute only has %zu output.",
-           node_->GetName().c_str(), node_->GetType().c_str(), output_num, outputs.size());
-    return INTERNAL_ERROR;
-  }
-
-  // alloc output
-  GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
-
-  // copy data to output
-  for (auto i = 0; i < output_num; ++i) {
-    GeTensorPtr &tensor = outputs[i];
+    auto tensor = context.GetOutput(i);
     GE_CHECK_NOTNULL(tensor);
-    auto tensor_data = tensor->GetData();
-    auto tensor_value = context.MutableOutput(i);
-    GE_CHECK_NOTNULL(tensor_value);
-    if (tensor_data.GetSize() > tensor_value->GetSize()) {
-      GELOGE(INTERNAL_ERROR, "node:%s type:%s [%d]th compute data size=%zu, but context data size=%zu.",
-             node_->GetName().c_str(), node_->GetType().c_str(), i, tensor_data.GetSize(), tensor_value->GetSize());
-      return INTERNAL_ERROR;
-    }
-
-    GELOGI("node:%s type:%s [%d]th output data=%p, out size=%zu, data size=%zu.", node_->GetName().c_str(),
-           node_->GetType().c_str(), i, tensor_value->GetData(), tensor_value->GetSize(), tensor_data.GetSize());
-    if (tensor_data.GetSize() > 0) {
-      GE_CHK_RT_RET(rtMemcpy(tensor_value->MutableData(), tensor_value->GetSize(), tensor_data.GetData(),
-                             tensor_data.GetSize(), RT_MEMCPY_HOST_TO_HOST));
-    }
-    GELOGI("node:%s type:%s [%d]th set data success, data size=%zu.", node_->GetName().c_str(),
-           node_->GetType().c_str(), i, tensor_data.GetSize());
+    auto out_tensor =
+      MakeShared<GeTensor>(output_desc, reinterpret_cast<const uint8_t *>(tensor->GetData()), tensor->GetSize());
+    GE_CHECK_NOTNULL(out_tensor);
+    out_tensor->MutableTensorDesc().SetDataType(output_desc.GetDataType());
+    out_tensor->MutableTensorDesc().SetShape(output_desc.GetShape());
+    outputs.emplace_back(out_tensor);
+    GELOGI("node:%s allocate output %d, addr=%p, size=%zu", op_desc->GetName().c_str(), i,
+           reinterpret_cast<const uint8_t *>(out_tensor->GetData().data()), out_tensor->GetData().size());
   }
 
-  return SUCCESS;
+  return HostCpuEngine::GetInstance().Run(node_, inputs, outputs);
 }
 
-Status CpuKernelNodeTask::Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                                  std::vector<GeTensorPtr> &outputs) {
-  std::vector<ConstGeTensorPtr> const_inputs;
-  for (const auto &input : inputs) {
-    const_inputs.emplace_back(input);
-  }
-  return FoldingPass::RunOpKernel(node_, const_inputs, outputs);
-}
-
-Status HostKernelNodeTask::Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                                   std::vector<GeTensorPtr> &outputs) {
-  auto kernel = KernelFactory::Instance().Create(node_->GetType());
-  if (kernel == nullptr) {
-    GELOGE(UNSUPPORTED, "node %s type %s is not supported by host kernel.", node_->GetName().c_str(),
-           node_->GetType().c_str());
-    return UNSUPPORTED;
-  }
-
-  std::vector<ConstGeTensorPtr> const_inputs;
-  for (const auto &input : inputs) {
-    const_inputs.emplace_back(input);
-  }
-  Status compute_ret = kernel->Compute(node_->GetOpDesc(), const_inputs, outputs);
-  if (compute_ret != SUCCESS) {
-    GELOGE(compute_ret, "node %s type %s compute failed or not imply.", node_->GetName().c_str(),
-           node_->GetType().c_str());
-    return compute_ret;
-  }
-
-  return SUCCESS;
-}
-
-Status HostCpuNodeTask::ProcessInputs(TaskContext &context, std::vector<GeTensorPtr> &inputs) { return SUCCESS; }
-
-Status HostCpuNodeTask::ProcessOutputs(TaskContext &context, std::vector<GeTensorPtr> &outputs) { return SUCCESS; }
-
-Status HostCpuNodeTask::Execute(TaskContext &context, const std::vector<GeTensorPtr> &inputs,
-                                std::vector<GeTensorPtr> &outputs) {
+Status HostCpuNodeTask::Execute(TaskContext &context) {
   RunContext run_context;
   auto host_kernel = hybrid::host_cpu::KernelFactory::Instance().CreateKernel(node_);
   if (host_kernel == nullptr) {
@@ -174,10 +115,6 @@ Status HostCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
   if (HostCpuEngine::GetInstance().CheckSupported(type)) {
     GELOGI("create CpuKernelNodeTask for node %s, type %s.", name.c_str(), type.c_str());
     task = MakeShared<CpuKernelNodeTask>(node);
-    GE_CHECK_NOTNULL(task);
-  } else if (KernelFactory::Instance().Create(type) != nullptr) {
-    GELOGI("create HostKernelNodeTask for node %s, type %s.", name.c_str(), type.c_str());
-    task = MakeShared<HostKernelNodeTask>(node);
     GE_CHECK_NOTNULL(task);
   } else if (hybrid::host_cpu::KernelFactory::Instance().CreateKernel(node) != nullptr) {
     GELOGI("create HostCpuNodeTask for node %s, type %s.", name.c_str(), type.c_str());

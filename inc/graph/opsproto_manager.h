@@ -23,6 +23,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <mutex>
 
 namespace ge {
 class OpsProtoManager {
@@ -30,14 +31,15 @@ class OpsProtoManager {
   static OpsProtoManager *Instance();
 
   bool Initialize(const std::map<std::string, std::string> &options);
-
   void Finalize();
 
+ private:
   void LoadOpsProtoPluginSo(std::string &path);
 
- private:
   std::string pluginPath_;
   std::vector<void *> handles_;
+  bool is_init_ = false;
+  std::mutex mutex_;
 };
 }  // namespace ge
 

@@ -33,7 +33,9 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/ge_types.h"
+#include "analyzer/analyzer.h"
 #include "graph/common/ge_call_wrapper.h"
+#include "graph/common/local_context.h"
 #include "graph/common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
@@ -42,6 +44,7 @@
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/util/rt_context_util.h"
 #include "graph/partition/dynamic_shape_partition.h"
+#include "graph/passes/enter_pass.h"
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/bitcast_pass.h"
 #include "graph/passes/atomic_addr_clean_pass.h"
@@ -110,6 +113,9 @@ const char *const kSend = "Send";
 const char *const kRecv = "Recv";
 const char *const kCheckPointForGetVar = "CheckPointGraphForGetVar";
 const char *const kCheckPointGraph = "checkpoint_graph";
+const char *const kVectorEngine = "VectorEngine";
+const char *const kAIcoreEngine = "AIcoreEngine";
+const char *const kOffOptimize = "off_optimize";
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;
@@ -125,7 +131,10 @@ bool IsTailingOptimization() {
 }  // namespace
 
 namespace ge {
-GraphManager::GraphManager() : thread_run_flag_(false), graph_run_listener_(nullptr), init_flag_(false) {}
+GraphManager::GraphManager(OmgContext &omg_context)
+    : thread_run_flag_(false), graph_run_listener_(nullptr), init_flag_(false), omg_context_(omg_context) {
+  SetLocalOmgContext(omg_context);
+}
 
 Status GraphManager::Initialize(const std::map<string, string> &options) {
   if (init_flag_) {
@@ -321,14 +330,56 @@ Status GraphManager::MergeSubGraph(ComputeGraphPtr &compute_graph, const ge::Com
   return SUCCESS;
 }
 
-Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph) {
+Status GraphManager::CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_graph,
+                                               Graph2SubGraphInfoList &sub_graph_map,
+                                               std::unordered_map<std::string, ComputeGraphPtr> &copy_graphs) {
+  GE_CHECK_NOTNULL(compute_graph);
+  vector<ComputeGraphPtr> old_compute_graphs;
+  const auto &root_subgraph_list = sub_graph_map[compute_graph];
+  for (const auto &subgraph : root_subgraph_list) {
+    old_compute_graphs.emplace_back(subgraph->GetSubGraph());
+  }
+  for (const auto &function_graph : compute_graph->GetAllSubgraphs()) {
+    const auto &subgraph_list = sub_graph_map[function_graph];
+    for (const auto &subgraph : subgraph_list) {
+      old_compute_graphs.emplace_back(subgraph->GetSubGraph());
+    }
+  }
+
+  for (const auto &old_compute_graph : old_compute_graphs) {
+    std::vector<NodePtr> input_nodes;
+    std::vector<NodePtr> output_nodes;
+    ComputeGraphPtr new_compute_graph = GraphUtils::CloneGraph(old_compute_graph, "", input_nodes, output_nodes);
+    if (new_compute_graph == nullptr) {
+      GELOGE(INTERNAL_ERROR, "Clone graph failed.");
+      return INTERNAL_ERROR;
+    }
+    copy_graphs.emplace(old_compute_graph->GetName(), new_compute_graph);
+    if (!AttrUtils::SetBool(old_compute_graph, ATTR_NAME_NEED_LX_FUSION, true)) {
+      GELOGE(INTERNAL_ERROR, "Set attr lx_fusion to graph failed.");
+      return INTERNAL_ERROR;
+    }
+  }
+
+  GELOGI("Copy %zu graphs successfully.", copy_graphs.size());
+  return SUCCESS;
+}
+
+Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph,
+                                                      Graph2SubGraphInfoList &sub_graph_map, uint64_t session_id) {
+  GE_CHECK_NOTNULL(compute_graph);
   // use default 16 multi thread
   const uint32_t thread_num = 16;
   ThreadPool executor(thread_num);
-  auto sub_graph_map = graph_partitioner_.GetSubGraphMap();
   std::vector<std::future<Status>> vector_future;
   const auto &root_subgraph_list = sub_graph_map[compute_graph];
+  std::string op_compile_strategy;
+  (void)AttrUtils::GetStr(compute_graph, ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
+  GELOGI("OptimizeSubGraphWithMultiThreads Process op_compile_strategy:%s", op_compile_strategy.c_str());
   for (const auto &subgraph : root_subgraph_list) {
+    if (!op_compile_strategy.empty()) {
+      (void)AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
+    }
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, subgraph, session_id,
                                             GetThreadLocalContext());
     if (!f.valid()) {
@@ -341,6 +392,9 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
   for (auto &function_graph : compute_graph->GetAllSubgraphs()) {
     auto subgraph_list = sub_graph_map[function_graph];
     for (const auto &subgraph : subgraph_list) {
+      if (!op_compile_strategy.empty()) {
+        (void)AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
+      }
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, subgraph, session_id,
                                               GetThreadLocalContext());
       if (!f.valid()) {
@@ -361,6 +415,130 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
   return SUCCESS;
 }
 
+bool GraphManager::CheckAllFusionOptimizeSuccess(const ComputeGraphPtr &compute_graph,
+                                                 Graph2SubGraphInfoList &sub_graph_map) {
+  if (compute_graph == nullptr) {
+    GELOGE(PARAM_INVALID, "Input param compute_graph is nullptr.");
+    return false;
+  }
+
+  /// 1. FE will set attr optimize_group with true(false) while lx fusion is success(fail);
+  /// 2. FE will not set attr optimize_group while fe.ini set l2fusion enable false;
+  /// 3. Other engine will not set attr optimize_group.
+  const auto &root_subgraph_list = sub_graph_map[compute_graph];
+  for (const auto &subgraph : root_subgraph_list) {
+    bool optimize_group = true;
+    (void)AttrUtils::GetBool(subgraph->GetSubGraph(), ATTR_NAME_OPTIMIZE_GROUP, optimize_group);
+    if (!optimize_group) {
+      GELOGW("Run lx optimize for subgraph:%s failed.", subgraph->GetSubGraph()->GetName().c_str());
+      return false;
+    }
+  }
+  for (auto &function_graph : compute_graph->GetAllSubgraphs()) {
+    const auto &subgraph_list = sub_graph_map[function_graph];
+    for (const auto &subgraph : subgraph_list) {
+      bool optimize_group = true;
+      (void)AttrUtils::GetBool(subgraph->GetSubGraph(), ATTR_NAME_OPTIMIZE_GROUP, optimize_group);
+      if (!optimize_group) {
+        GELOGW("Run lx optimize for subgraph:%s failed.", subgraph->GetSubGraph()->GetName().c_str());
+        return false;
+      }
+    }
+  }
+  GELOGI("All subgraph are optimized successfully, no need to reuse buffer optimize.");
+  return true;
+}
+
+Status GraphManager::ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_graph,
+                                                 Graph2SubGraphInfoList &sub_graph_map,
+                                                 std::unordered_map<std::string, ComputeGraphPtr> &copy_graphs) {
+  GE_CHECK_NOTNULL(compute_graph);
+  const auto &root_subgraph_list = sub_graph_map[compute_graph];
+  for (const auto &subgraph : root_subgraph_list) {
+    auto iter = copy_graphs.find(subgraph->GetSubGraph()->GetName());
+    if (iter == copy_graphs.end()) {
+      GELOGE(FAILED, "Can not find subgraph:%s in copy graphs.", subgraph->GetSubGraph()->GetName().c_str());
+      return FAILED;
+    }
+    subgraph->SetSubGraph(iter->second);
+  }
+
+  for (auto &function_graph : compute_graph->GetAllSubgraphs()) {
+    const auto &subgraph_list = sub_graph_map[function_graph];
+    for (const auto &subgraph : subgraph_list) {
+      auto iter = copy_graphs.find(subgraph->GetSubGraph()->GetName());
+      if (iter == copy_graphs.end()) {
+        GELOGE(FAILED, "Can not find subgraph:%s in copy graphs.", subgraph->GetSubGraph()->GetName().c_str());
+        return FAILED;
+      }
+      subgraph->SetSubGraph(iter->second);
+    }
+  }
+  GELOGI("All subgraphs are successfully replaced.");
+  return SUCCESS;
+}
+
+Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph) {
+  GE_CHECK_NOTNULL(compute_graph);
+  auto sub_graph_map = graph_partitioner_.GetSubGraphMap();
+  std::string buffer_optimize;
+  graphStatus graph_status = ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
+  bool need_lx_fusion = (graph_status == GRAPH_SUCCESS) && (buffer_optimize != kOffOptimize);
+  if (options_.build_mode.empty() && need_lx_fusion) {
+    GELOGI("Enter normal mode with buffer_optimize:%s.", buffer_optimize.c_str());
+    /// 1. Copy subgraph for buffer optimize while lx fusion failed.
+    /// 2. Set graph with attr "lx_fusion" for fusion optimize.
+    std::unordered_map<std::string, ComputeGraphPtr> copy_graphs;
+    GE_TIMESTAMP_START(CopySubGraphAndMarkFusion);
+    Status ret = CopySubGraphAndMarkFusion(compute_graph, sub_graph_map, copy_graphs);
+    GE_TIMESTAMP_EVENT_END(CopySubGraphAndMarkFusion, "SetSubgraph:CopySubGraphAndMarkFusion");
+    if (ret != SUCCESS) {
+      GELOGE(ret, "CopySubGraphAndMarkFusion failed.");
+      return ret;
+    }
+
+    // Multiply optimize subgraph with lx fusion
+    ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Multiply optimize subgraph with lx fusion failed.");
+      return ret;
+    }
+
+    // Check whether all subgraph lx fusion success
+    GE_TIMESTAMP_START(CheckAllFusionOptimizeSuccess);
+    if (CheckAllFusionOptimizeSuccess(compute_graph, sub_graph_map)) {
+      GE_TIMESTAMP_EVENT_END(CheckAllFusionOptimizeSuccess, "SetSubgraph:CheckAllFusionOptimizeSuccess");
+      return SUCCESS;
+    }
+
+    // Replace subgraph with original graph for lx buffer
+    ret = ReplaceSubgraphWithOriGraph(compute_graph, sub_graph_map, copy_graphs);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Replace subgraph with original graph failed.");
+      return ret;
+    }
+
+    // Multiply optimize subgraph with lx buffer
+    ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Multiply optimize subgraph with lx buffer failed.");
+      return ret;
+    }
+  } else {
+    /// Multiply optimize subgraph:
+    /// 1. run lx buffer while build_mode is normal and buffer_optimize is empty or "off_optimize";
+    /// 2. run lx fusion or buffer according build_mode and build_step in fe.
+    GELOGI("Directly optimize subgraph with build mode:%s, and step:%s, buffer_optimize:%s.",
+           options_.build_mode.c_str(), options_.build_step.c_str(), buffer_optimize.c_str());
+    Status ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Multiply optimize subgraph with lx buffer");
+      return ret;
+    }
+  }
+  return SUCCESS;
+}
+
 #define GM_RUN_AND_DUMP_PERF(name, func, ...)                                                                    \
   do {                                                                                                           \
     GE_RUN_PERF(GraphManager, func, __VA_ARGS__);                                                                \
@@ -368,18 +546,10 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
     GELOGI("Run %s on graph %s(%u) success.", name, compute_graph->GetName().c_str(), graph_node->GetGraphId()); \
   } while (0)
 
-Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
-                            GeRootModelPtr &ge_root_model, uint64_t session_id) {
+Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
+                                                 ge::ComputeGraphPtr &compute_graph, uint64_t session_id) {
   GE_CHECK_NOTNULL(graph_node);
-  GE_CHECK_NOTNULL(graph_node->GetGraph());
-  auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
   GE_CHECK_NOTNULL(compute_graph);
-
-  GEEVENT("PreRun start, graph node size %zu, session id %lu, graph id %u, graph name %s",
-          compute_graph->GetDirectNodesSize(), session_id, compute_graph->GetGraphID(),
-          compute_graph->GetName().c_str());
-  GE_DUMP(compute_graph, "PreRunBegin");
-
   GM_RUN_AND_DUMP_PERF("OptimizeGraphPrepare", graph_optimize_.OptimizeOriginalGraphForQuantize, compute_graph);
   GM_RUN_AND_DUMP_PERF("HandleSummaryOp", graph_optimize_.HandleSummaryOp, compute_graph);
   GM_RUN_AND_DUMP_PERF("Prepare", graph_preparer_.PrepareDynShape, graph_node->GetGraph(), inputs, compute_graph,
@@ -388,10 +558,6 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
 
   GM_RUN_AND_DUMP_PERF("PrepareRunningFormatRefiner", graph_preparer_.PrepareRunningFormatRefiner);
   GM_RUN_AND_DUMP_PERF("RefineRunningFormat", graph_optimize_.OptimizeOriginalGraphJudgeInsert, compute_graph);
-  if (std::getenv("AnalyzeMode")) {
-    GELOGI("Do return failed after refine_running_format when in analyze mode!");
-    return FAILED;
-  }
   GM_RUN_AND_DUMP_PERF("SubexpressionMigration", SubexpressionMigration, compute_graph);
   GE_RUN(GraphManager, graph_preparer_.RecordAIPPInfo, compute_graph);
   if (IsTailingOptimization()) {
@@ -399,18 +565,124 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   }
   GM_RUN_AND_DUMP_PERF("Optimize1", OptimizeStage1, compute_graph);
   GM_RUN_AND_DUMP_PERF("InferShape2", compute_graph->InferShapeInNeed);
-  const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
-  if (unknown_shape_skip != nullptr) {
-    PassManager graph_pass;
-    GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
-    GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
-  }
+
+  PassManager graph_pass;
+  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
+  GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
 
   GE_CHK_STATUS_RET(graph_optimize_.IdentifyReference(compute_graph), "Identify reference failed.");
+  GELOGI("PreRun:PreRunOptimizeOriginalGraph success.");
+  return SUCCESS;
+}
+
+Status GraphManager::PreRunOptimizeSubGraph(const GraphNodePtr &graph_node, ge::ComputeGraphPtr &compute_graph,
+                                            uint64_t session_id) {
+  GE_CHECK_NOTNULL(graph_node);
+  GE_CHECK_NOTNULL(compute_graph);
   GM_RUN_AND_DUMP_PERF("OptimizeSubgraph", OptimizeSubgraph, graph_node, compute_graph, session_id);
+
+  // Dump graph to tuning path
+  if (options_.build_mode == BUILD_MODE_TUNING && options_.build_step == BUILD_STEP_AFTER_UB_MATCH) {
+    std::string tuning_path;
+    (void)GetContext().GetOption(TUNING_PATH, tuning_path);
+    GELOGI("Dump path:%s.", tuning_path.c_str());
+    GraphUtils::DumpGEGraph(compute_graph, "", true, tuning_path);
+  }
+  GELOGI("PreRun:PreRunOptimizeSubGraph success.");
+  return SUCCESS;
+}
+
+Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph,
+                                                 GeRootModelPtr &ge_root_model, uint64_t session_id) {
+  GE_CHECK_NOTNULL(graph_node);
+  GE_CHECK_NOTNULL(compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
   GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts", graph_optimize_.OptimizeGraphBeforeBuildForRts, compute_graph);
   GM_RUN_AND_DUMP_PERF("Build", Build, graph_node, compute_graph, ge_root_model, session_id);
+  GELOGI("PreRun:PreRunAfterOptimizeSubGraph success.");
+  return SUCCESS;
+}
+
+Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint64_t session_id, uint32_t graph_id) {
+  GELOGI("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id, graph_id,
+         static_cast<int>(mode), ge::GetContext().DeviceId());
+
+  rtError_t rt_ret = rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId());
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    return FAILED;
+  }
+  rt_ret = rtCtxSetCurrent(rt_context);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    return FAILED;
+  }
+  RtContextUtil::GetInstance().AddRtContext(session_id, graph_id, rt_context);
+  return SUCCESS;
+}
+
+Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
+                            GeRootModelPtr &ge_root_model, uint64_t session_id) {
+  GE_CHECK_NOTNULL(graph_node);
+  GE_CHECK_NOTNULL(graph_node->GetGraph());
+  auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
+  GE_CHECK_NOTNULL(compute_graph);
+  compute_graph->SetSessionID(session_id);
+  auto analyzer_instance = Analyzer::GetInstance();
+  GE_CHK_STATUS_RET(analyzer_instance->BuildJsonObject(session_id, compute_graph->GetGraphID()),
+                    "BuildJsonObject Failed")
+
+  GEEVENT("PreRun start, graph node size %zu, session id %lu, graph id %u, graph name %s",
+          compute_graph->GetDirectNodesSize(), session_id, compute_graph->GetGraphID(),
+          compute_graph->GetName().c_str());
+  GE_DUMP(compute_graph, "PreRunBegin");
+  // rtContext_t
+  Status ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE, session_id, compute_graph->GetGraphID());
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Set rt context failed.");
+    return ret;
+  }
+
+  /// 1. BUILD_MODE_TUNING with BUILD_STEP_AFTER_UB_MATCH no need PreRunOptimizeOriginalGraph;
+  /// 2. BUILD_MODE_TUNING with BUILD_STEP_AFTER_MERGE no need PreRunOptimizeOriginalGraph.
+  /// 3. BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER_SUB no need PreRunOptimizeOriginalGraph.
+  bool run_optimize_original_graph =
+    !((options_.build_mode == BUILD_MODE_TUNING) &&
+      (options_.build_step == BUILD_STEP_AFTER_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_MERGE ||
+       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
+  if (run_optimize_original_graph) {
+    Status ret = PreRunOptimizeOriginalGraph(graph_node, inputs, compute_graph, session_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Run PreRunOptimizeOriginalGraph failed for graph:%s.", compute_graph->GetName().c_str());
+      return ret;
+    }
+  }
+
+  // BUILD_MODE_TUNING with BUILD_STEP_AFTER_MERGE no need PreRunOptimizeSubGraph.
+  bool run_optimize_subgraph =
+    !((options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_MERGE));
+  if (run_optimize_subgraph) {
+    Status ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Run PreRunOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
+      return ret;
+    }
+  }
+
+  /// 1. BUILD_MODE_TUNING with BUILD_STEP_BEFORE_UB_MATCH no need PreRunAfterOptimizeSubGraph;
+  /// 2. BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER no need PreRunAfterOptimizeSubGraph.
+  /// 3. BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER_SUB no need PreRunAfterOptimizeSubGraph.
+  bool run_after_optimize_subgraph =
+    !((options_.build_mode == BUILD_MODE_TUNING) &&
+      (options_.build_step == BUILD_STEP_BEFORE_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_BUILDER ||
+       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
+  if (run_after_optimize_subgraph) {
+    Status ret = PreRunAfterOptimizeSubGraph(graph_node, compute_graph, ge_root_model, session_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Run PreRunAfterOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
+      return ret;
+    }
+  }
 
   // when set incre build, save om model and var manager
   GeModelPtr ge_model = nullptr;
@@ -456,7 +728,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
     if (ret != SUCCESS) {
       ret = PreRun(graph_node, inputs, ge_root_model, session_id);
       // release rts generate context
-      RtContextUtil::GetInstance().DestroyRtContexts(session_id);
+      RtContextUtil::GetInstance().DestroyRtContexts(session_id, graph_node->GetGraphId());
       if (ret != SUCCESS) {
         GELOGE(ret, "PreRun Failed.");
         return ret;
@@ -1065,7 +1337,7 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   // net output node dataType
   ParseOption(options, OUTPUT_DATATYPE, options_.output_datatype);
   if (!options_.output_datatype.empty()) {
-    domi::GetContext().output_type = options_.output_datatype;
+    omg_context_.output_type = options_.output_datatype;
   }
 
   // Set save_original_model flag (ge.save_original_model)
@@ -1073,6 +1345,10 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   GELOGI("Set save original model flag %s", options_.save_original_model.c_str());
   // Original model file name
   ParseOption(options, ORIGINAL_MODEL_FILE, options_.original_model_file);
+
+  // Set Build model and step
+  ParseOption(options, BUILD_MODE, options_.build_mode);
+  ParseOption(options, BUILD_STEP, options_.build_step);
 
   return SUCCESS;
 }
@@ -1659,6 +1935,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   ReshapeRemovePass reshape_remove_pass;
   ConstantFoldingPass constant_folding_pass;
   DimensionAdjustPass dimension_adjust_pass;
+  EnterPass enter_pass;
   AddNPass addn_pass;
   SwitchDeadBranchElimination switch_dead_branch_elimination;
   SwitchLogicRemovePass switch_logic_remove_pass;
@@ -1667,15 +1944,16 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   TransposeTransDataPass transpose_transdata_pass;
   TransOpSymmetryEliminationPass symmetry_elimination_pass;
   DimensionComputePass dimension_compute_pass;
+  names_to_passes.emplace_back("EnterPass", &enter_pass);
   names_to_passes.emplace_back("AddNPass", &addn_pass);
   names_to_passes.emplace_back("SwitchDeadBranchElimination", &switch_dead_branch_elimination);
   names_to_passes.emplace_back("SwitchLogicRemovePass", &switch_logic_remove_pass);
   names_to_passes.emplace_back("MergePass", &merge_pass);
   names_to_passes.emplace_back("CastRemovePass", &cast_remove_pass);
   names_to_passes.emplace_back("TransposeTransDataPass", &transpose_transdata_pass);
+  names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("TransOpSymmetryEliminationPass", &symmetry_elimination_pass);
   names_to_passes.emplace_back("TransOpNearbyAllreduceFusionPass", &trans_op_nearby_allreduce_fusion_pass);
-  names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("DimensionAdjustPass", &dimension_adjust_pass);
@@ -1975,6 +2253,7 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
   Status ret = SUCCESS;
   GetThreadLocalContext() = ge_context;
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
+    SetLocalOmgContext(graph_manager->omg_context_);
     ComputeGraphPtr compute_graph_tmp = sub_graph_info_ptr->GetSubGraph();
     const std::string &engine_name = sub_graph_info_ptr->GetEngineName();
     GELOGI("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
@@ -2079,6 +2358,8 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
   if (prctl(PR_SET_NAME, ("GE_PreRun")) != 0) {
     GELOGW("Set thread name failed.");
   }
+  SetLocalOmgContext(graph_manager->omg_context_);
+
   PreRunArgs args;
   while (graph_manager->thread_run_flag_) {
     bool pop_status = graph_manager->prerun_args_q_.Pop(args);
@@ -2146,10 +2427,10 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       if (graph_manager->IncreBuild(graph_node, ge_model) != SUCCESS) {
         ret = graph_manager->PreRun(graph_node, ge_inputs, ge_root_model, args.session_id);
         // release rts generate context
-        RtContextUtil::GetInstance().DestroyRtContexts(args.session_id);
+        RtContextUtil::GetInstance().DestroyRtContexts(args.session_id, graph_node->GetGraphId());
         if (ret != SUCCESS) {
           graph_node->SetRunFlag(false);
-          if (!std::getenv("AnalyzeMode")) {
+          if (!ge::Analyzer::GetInstance()->IsEnableNetAnalyzeDebug()) {
             ReturnError(graph_manager, args.callback, ret, "PreRun Failed, thread exit..");
             graph_node->Unlock();
             return;
@@ -2176,6 +2457,8 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
   if (prctl(PR_SET_NAME, ("GE_Run")) != 0) {
     GELOGW("Set thread name failed.");
   }
+  SetLocalOmgContext(graph_manager->omg_context_);
+
   RunArgs args;
   while (graph_manager->thread_run_flag_) {
     bool pop_status = graph_manager->run_args_q_.Pop(args);
@@ -2287,17 +2570,11 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
         return;
       }
       tensor.length = len * size;
-      auto pbuff = new (std::nothrow) uint8_t[tensor.length];
-      if (!pbuff) {
-        GELOGE(MEMALLOC_FAILED, "new buff failed!");
-        callback(GRAPH_FAILED, outputs);
-        return;
-      }
+      tensor.data.reset(new (std::nothrow) uint8_t[tensor.length]);
       // To avoid global step too small and can not stop, totally set a bigger value
       for (int64_t i = 0; i < tensor.length; i++) {
-        *(pbuff + i) = 0x7F;  // here stands for a positive max value
+        tensor.data[i] = 0x7F;  // here stands for a positive max value
       }
-      tensor.data.reset(pbuff);
       outputs.emplace_back(std::move(tensor));
     }
   }
@@ -2373,6 +2650,20 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     return ret;
   }
   GE_TIMESTAMP_EVENT_END(SetSubgraph, "OptimizeSubgraph::SetSubGraph");
+  if ((options_.build_mode == BUILD_MODE_TUNING) &&
+      (options_.build_step == BUILD_STEP_BEFORE_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_BUILDER ||
+       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB)) {
+    GE_TIMESTAMP_START(ConvertGraphToFile);
+    std::string tuning_path;
+    (void)GetContext().GetOption(TUNING_PATH, tuning_path);
+    Status ret = ConvertGraphToFile(compute_graph, tuning_path, (options_.build_step == BUILD_STEP_AFTER_BUILDER));
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Convert graph[%s] to file failed", compute_graph->GetName().c_str());
+      return ret;
+    }
+    GE_TIMESTAMP_EVENT_END(ConvertGraphToFile, "OptimizeSubgraph::ConvertGraphToFile");
+    return SUCCESS;
+  }
 
   ComputeGraphPtr merged_compute_graph = nullptr;
   std::vector<ComputeGraphPtr> merged_sub_graph_list;
@@ -2400,6 +2691,32 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
   }
   return SUCCESS;
 }
+
+Status GraphManager::ConvertGraphToFile(ComputeGraphPtr &compute_graph, std::string path, bool exe_flag) {
+  GE_CHECK_NOTNULL(compute_graph);
+  GELOGI("compute_graph [%s] path [%s] Enter ConvertGraphToFile.", compute_graph->GetName().c_str(), path.c_str());
+  std::vector<ComputeGraphPtr> non_tuning_subgraphs;
+  auto input_node_sub_graph_map = graph_partitioner_.graph_2_input_subgraph_;
+  const auto &input_subgraph_info = input_node_sub_graph_map[compute_graph];
+  GE_CHECK_NOTNULL(input_subgraph_info);
+  ComputeGraphPtr input_graph_tmp = input_subgraph_info->GetSubGraph();
+  non_tuning_subgraphs.push_back(input_graph_tmp);
+  auto sub_graph_map = graph_partitioner_.GetSubGraphMap();
+  const auto &subgraph_infos = sub_graph_map[compute_graph];
+  std::vector<ComputeGraphPtr> tuning_subgraphs;
+  for (const auto &sub_graph_info_ptr : subgraph_infos) {
+    GE_CHECK_NOTNULL(sub_graph_info_ptr);
+    ComputeGraphPtr sub_graph_tmp = sub_graph_info_ptr->GetSubGraph();
+    // need to tuning
+    if (sub_graph_info_ptr->GetEngineName() == kVectorEngine || sub_graph_info_ptr->GetEngineName() == kAIcoreEngine) {
+      tuning_subgraphs.push_back(sub_graph_tmp);
+    } else {
+      non_tuning_subgraphs.push_back(sub_graph_tmp);
+    }
+  }
+  return TuningUtils::ConvertGraphToFile(tuning_subgraphs, non_tuning_subgraphs, exe_flag, path);
+}
+
 Status GraphManager::Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph,
                            GeRootModelPtr &ge_root_model, uint64_t session_id) {
   // build

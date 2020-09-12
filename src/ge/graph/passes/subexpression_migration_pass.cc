@@ -24,7 +24,6 @@ namespace ge {
 constexpr uint32_t kDataOutIndex = 0;
 constexpr uint32_t kCaseInputBase = 1;
 constexpr uint32_t kInvalidParent = 0x7fffffffU;
-const std::set<std::string> kTransOpTypes = {"Cast", "TransData", "Reshape", "BnHost"};
 
 bool IsSameTensor(ConstGeTensorDescPtr src_tensor, ConstGeTensorDescPtr dst_tensor) {
   if ((src_tensor == nullptr) && (dst_tensor == nullptr)) {
@@ -163,7 +162,6 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
       }
 
       data_nodes[parent_index] = data;
-      GELOGD("Subgraph %s has %zu Data nodes", subgraph->GetName().c_str(), data_nodes.size());
     }
   }
 
@@ -181,9 +179,9 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
 ///
 /// @ingroup ge
 /// @brief Get all Data nodes for all subgraph.
-/// @param [in] graph: Root compute graph.
-/// @param [in] func_desc: functional OpDesc of Case.
-/// @param [out] graph_nodes: Data groups of subgraph.
+/// @param [in] node: Node Directly to Data.
+/// @param [out] inputs: parent index of Input.
+/// @param [out] outputs: parent index of Output.
 /// @return true: SUCCESS / false: FAILED
 ///
 bool SubexpressionMigrationPass::GetAssociatedNodes(const NodePtr &node, map<uint32_t, uint32_t> &inputs,
@@ -227,9 +225,9 @@ bool SubexpressionMigrationPass::GetAssociatedNodes(const NodePtr &node, map<uin
 /// @ingroup ge
 /// @brief Get all Data nodes for all subgraph.
 /// @param [in] graph_nodes: Data groups of subgraph.
-/// @param [in] data_base: Data Node for migration.
-/// @param [in] data_idx: Data groups of subgraph.
-/// @param [in] data_idx: Data groups of subgraph.
+/// @param [in] base_node: Data Node for migration.
+/// @param [in] node_idx: Parent index of Data node.
+/// @param [in] anchor_idx: Anchor index of node.
 /// @return true: Same / false: not same
 ///
 bool SubexpressionMigrationPass::IsParallelNodeSame(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
@@ -245,10 +243,10 @@ bool SubexpressionMigrationPass::IsParallelNodeSame(const map<ComputeGraphPtr, m
 
     const auto &work_data = data_it->second;
     const auto &out_anchor = work_data->GetOutDataAnchor(kDataOutIndex);
-    const auto &in_ahchors = out_anchor->GetPeerInDataAnchors();
-    const auto &in_anchor = in_ahchors.at(anchor_idx);
+    const auto &in_anchors = out_anchor->GetPeerInDataAnchors();
+    const auto &in_anchor = in_anchors.at(anchor_idx);
     if (in_anchor == nullptr) {
-      GELOGE(FAILED, "Data anchor size: %u, anchor size: %zu", anchor_idx, in_ahchors.size());
+      GELOGE(FAILED, "Data anchor size: %u, anchor size: %zu", anchor_idx, in_anchors.size());
       return false;
     }
 
@@ -288,7 +286,8 @@ Status SubexpressionMigrationPass::GraphNodeMigration(const ComputeGraphPtr &gra
     for (size_t i = 0; i < in_anchors.size(); ++i) {
       const auto &in_anchor = in_anchors.at(i);
       const auto &base_node = in_anchor->GetOwnerNode();
-      if (kTransOpTypes.count(base_node->GetType()) == 0) {
+      GELOGD("Get Data direct node: %s", base_node->GetName().c_str());
+      if (!base_node->GetHostNode()) {
         continue;
       }
 
@@ -453,7 +452,7 @@ Status SubexpressionMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
       GELOGE(FAILED, "Node: %s parent index %u not found", attach->GetName().c_str(), i);
       return FAILED;
     }
-    if (it_idx->second == kInvalidParent) {  // Not connnect, Skip.
+    if (it_idx->second == kInvalidParent) {  // Not connect, Skip.
       continue;
     }
 
@@ -469,7 +468,7 @@ Status SubexpressionMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
     if (it_idx == outputs.end()) {
       return FAILED;
     }
-    if (it_idx->second == kInvalidParent) {  // Not connnect, Skip.
+    if (it_idx->second == kInvalidParent) {  // Not connect, Skip.
       continue;
     }
 

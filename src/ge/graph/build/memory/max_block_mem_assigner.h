@@ -23,7 +23,9 @@
 namespace ge {
 class MaxBlockMemAssigner : public BlockMemAssigner {
  public:
-  explicit MaxBlockMemAssigner(ge::ComputeGraphPtr compute_graph) : BlockMemAssigner(std::move(compute_graph)) {}
+  MaxBlockMemAssigner(ComputeGraphPtr compute_graph, const std::map<std::string, std::string> &anchor_to_symbol,
+                      const std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors)
+      : BlockMemAssigner(std::move(compute_graph), anchor_to_symbol, symbol_to_anchors) {}
 
   MaxBlockMemAssigner(const MaxBlockMemAssigner &) = delete;
 

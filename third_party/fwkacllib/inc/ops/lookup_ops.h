@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file lookup_ops.h
+ * \brief
+ */
 #ifndef GE_OP_LOOKUP_OPS_H_
 #define GE_OP_LOOKUP_OPS_H_
 

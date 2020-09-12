@@ -173,8 +173,10 @@ class GraphPartitioner {
   };
   std::unordered_map<ComputeGraphPtr, GraphPartitionInfo> graph_2_graph_partition_info_;
   Graph2SubGraphInfoList graph_2_subgraph_list_;
+  Graph2InputNodesSubGraphInfo graph_2_input_subgraph_;
   GraphPartitionInfo graph_info_;
   uint32_t partition_times_;  // times of call partition
+  friend class GraphManager;
 };
 }  // namespace ge
 

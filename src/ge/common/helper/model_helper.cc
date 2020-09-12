@@ -41,6 +41,7 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
                                        const uint8_t *data, size_t size) {
   if (size < 1 || size > UINT32_MAX) {
     GELOGE(PARAM_INVALID, "Add model partition failed, partition size %zu invalid", size);
+    ErrorManager::GetInstance().ATCReportErrMessage("E19022");
     return PARAM_INVALID;
   }
   if (data == nullptr) {
@@ -101,15 +102,21 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
   GELOGI("TBE_KERNELS size is %zu", tbe_kernel_store.DataSize());
   if (tbe_kernel_store.DataSize() > 0) {
-    if (SaveModelPartition(om_file_save_helper, ModelPartitionType::TBE_KERNELS, tbe_kernel_store.Data(),
-                           tbe_kernel_store.DataSize()) != SUCCESS) {
-      GELOGE(PARAM_INVALID, "Add tbe kernel partition failed");
-      return PARAM_INVALID;
-    }
+    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::TBE_KERNELS, tbe_kernel_store.Data(),
+                                         tbe_kernel_store.DataSize()),
+                      "Add tbe kernel partition failed");
   }
 
   // no need to check value, DATA->NetOutput
   (void)tbe_kernel_store.Load(tbe_kernel_store.Data(), tbe_kernel_store.DataSize());
+
+  CustAICPUKernelStore cust_aicpu_kernel_store = ge_model->GetCustAICPUKernelStore();
+  GELOGI("cust aicpu kernels size is %zu", cust_aicpu_kernel_store.DataSize());
+  if (cust_aicpu_kernel_store.DataSize() > 0) {
+    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::CUST_AICPU_KERNELS,
+                                         cust_aicpu_kernel_store.Data(), cust_aicpu_kernel_store.DataSize()),
+                      "Add cust aicpu kernel partition failed");
+  }
 
   std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
   if (model_task_def == nullptr) {
@@ -308,6 +315,10 @@ Status ModelHelper::GenerateGeModel(OmFileLoadHelper &om_load_helper) {
   if (ret != SUCCESS) {
     return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
   }
+  ret = LoadCustAICPUKernelStore(om_load_helper);
+  if (ret != SUCCESS) {
+    return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+  }
   return SUCCESS;
 }
 
@@ -381,6 +392,22 @@ Status ModelHelper::LoadTBEKernelStore(OmFileLoadHelper &om_load_helper) {
     }
   }
   model_->SetTBEKernelStore(kernel_store);
+  return SUCCESS;
+}
+
+Status ModelHelper::LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper) {
+  // Load cust aicpu kernels
+  ModelPartition partition_kernel_def;
+  CustAICPUKernelStore kernel_store;
+  if (om_load_helper.GetModelPartition(ModelPartitionType::CUST_AICPU_KERNELS, partition_kernel_def) == SUCCESS) {
+    GELOGI("Kernels partition size:%u", partition_kernel_def.size);
+    if (kernel_store.Load(partition_kernel_def.data, partition_kernel_def.size)) {
+      GELOGI("Load cust aicpu kernels success");
+    } else {
+      GELOGW("Load cust aicpu kernels failed");
+    }
+  }
+  model_->SetCustAICPUKernelStore(kernel_store);
   return SUCCESS;
 }
 

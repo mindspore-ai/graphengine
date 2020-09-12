@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file save_ops.h
+ * \brief
+ */
 #ifndef GE_OP_SAVE_OPS_H_
 #define GE_OP_SAVE_OPS_H_
 
@@ -21,6 +25,13 @@
 
 namespace ge {
 
+/**
+*@brief Mark which tensors need to be saved to the ckpt file.
+*@par Inputs:
+*tensors: A list of input tensor.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(Save)
     .DYNAMIC_INPUT(tensors, TensorType:ALL())
     .OP_END_FACTORY_REG(Save)

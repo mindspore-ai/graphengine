@@ -63,7 +63,7 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
     std::string kernel_lib_name = node_ptr->GetOpDesc()->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
       // reset op kernel lib
-      (void)instance_ptr->DNNEngineManagerObj().GetDNNEngineName(node_ptr->GetOpDesc());
+      (void)instance_ptr->DNNEngineManagerObj().GetDNNEngineName(node_ptr);
       kernel_lib_name = node_ptr->GetOpDesc()->GetOpKernelLibName();
       if (kernel_lib_name.empty()) {
         GELOGE(INTERNAL_ERROR, "Get node:%s(%s) kernel lib failed.", node_ptr->GetName().c_str(),
@@ -84,6 +84,7 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
         GELOGE(ret, "Calculate op running param failed, node name is %s", node_ptr->GetName().c_str());
         return ret;
       }
+      GE_CHK_STATUS_RET(AddOutputMemTypeForNode(node_ptr));
     } else {
       GELOGE(GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node_ptr->GetName().c_str());
       return INTERNAL_ERROR;
@@ -496,5 +497,25 @@ Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge:
   }
   GE_TIMESTAMP_END(GraphPartition2, "GraphPartitioner::Partition2");
   return ret;
+}
+
+Status GraphBuilder::AddOutputMemTypeForNode(const NodePtr &node) {
+  int64_t mem_type;
+  if (AttrUtils::GetInt(node->GetOpDesc(), ATTR_INPUT_MEMORY_TYPE, mem_type)) {
+    GELOGD("[%s] has attr input_memory_type %ld", node->GetName().c_str(), mem_type);
+    for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+      const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+      const auto &src_node = peer_out_anchor->GetOwnerNode();
+      const auto &src_op = src_node->GetOpDesc();
+      GE_IF_BOOL_EXEC(src_op == nullptr, continue);
+      if (!AttrUtils::SetInt(src_op, ATTR_OUTPUT_MEMORY_TYPE, mem_type)) {
+        GELOGE(INTERNAL_ERROR, "Set out_memory_type attr failed.");
+        return INTERNAL_ERROR;
+      }
+      return SUCCESS;
+    }
+  }
+  return SUCCESS;
 }
 }  // namespace ge

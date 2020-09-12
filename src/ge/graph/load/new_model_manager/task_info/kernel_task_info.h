@@ -106,6 +106,8 @@ class KernelTaskInfo : public TaskInfo {
 
   Status InitAicpuTaskExtInfo(const std::string &ext_info);
 
+  Status LaunchCustAicpuSo(const OpDescPtr op_desc, const domi::KernelDef &kernel_def);
+
   Status StoreInputOutputTensor(const std::vector<void *> &input_data_addrs,
                                 const std::vector<void *> &output_data_addrs,
                                 const std::vector<::tagCcAICPUTensor> &input_descs,

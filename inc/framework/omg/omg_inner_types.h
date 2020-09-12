@@ -98,24 +98,14 @@ struct OmgContext {
   std::vector<std::string> out_top_names;
   // path for the aicpu custom operator so_file
   std::vector<std::string> aicpu_op_run_paths;
-  // ddk version
-  std::string ddk_version;
   // preferential format used by the entire network
   domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
   RunMode run_mode = ONLY_PRE_CHECK;
   bool train_flag = false;
-  // whether to use FP16 high precision
-  int32_t fp16_high_precision = HIGH_PRECISION_DEFAULT;
 
   std::string output_type;
 
-  // Save the name of the entire network: Some special operators are used to determine a network. Some operators in the
-  // network require special processing based on the specific network. e.g：faster-rcnn, the FirstStageProcessor module
-  // is determined as the Faster-R-CNN network based on the scope fusion. Then, the conv+reshape operators in the
-  // FirstStageBoxPredictor/BoxEncodingPredictor scope are combined. The convolution kernel rearrangement reshape
-  // operator needs to be deleted for the convolution kernel.
-  std::string net_name;
   // Whether to use dynamic batch size or dynamic image size
   bool is_dynamic_input = false;
   std::string dynamic_batch_size;

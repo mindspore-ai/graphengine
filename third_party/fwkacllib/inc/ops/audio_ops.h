@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file audio_ops.h
+ * \brief
+ */
 #ifndef GE_OP_AUDIO_OPS_H_
 #define GE_OP_AUDIO_OPS_H_
 
@@ -43,11 +47,12 @@ per time slice.
 *@attention Constraints: \n
 *Mfcc runs on the Ascend AI CPU, which delivers poor performance. \n
 
-
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Mfcc.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(Mfcc)
     .INPUT(spectrogram, TensorType({DT_FLOAT}))
     .INPUT(sample_rate, TensorType({DT_INT32}))
@@ -79,6 +84,9 @@ poor performance.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AudioSpectrogram.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 
 REG_OP(AudioSpectrogram)
@@ -110,6 +118,9 @@ Length of audio requested.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator DecodeWav.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 
 REG_OP(DecodeWav)
@@ -136,6 +147,9 @@ REG_OP(DecodeWav)
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow Operator EncodeWav.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(EncodeWav)

@@ -30,6 +30,7 @@ class MemcpyAddrAsyncPass : public GraphPass {
   void FindUserData(const NodePtr &node, uint32_t &parent_index);
   void FindUserDataForKnown(const NodePtr &parent_node, uint32_t &parent_index);
   void FindUserDataForNonDynamic(const ge::NodePtr &parent_node, uint32_t &parent_index);
+  bool IsEmptyTenor(const GeShape &shape) const;
 
   NodePtr CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor,
                                     const NodePtr &out_of_user_data);

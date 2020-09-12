@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "runtime/mem.h"
@@ -136,6 +137,7 @@ class MemoryAllocator {
 
 using MemoryAllocatorPtr = std::shared_ptr<MemoryAllocator>;
 class CachingAllocator;
+class RdmaPoolAllocator;
 
 class MemManager {
  public:
@@ -143,7 +145,8 @@ class MemManager {
   virtual ~MemManager();
   static MemManager &Instance();
   static MemoryAllocator *Instance(rtMemType_t memory_type);
-  static CachingAllocator &CachingInstance(rtMemType_t memory_type);
+  CachingAllocator &CachingInstance(rtMemType_t memory_type);
+  RdmaPoolAllocator &RdmaPoolInstance(rtMemType_t memory_type);
   MemManager(const MemManager &) = delete;
   MemManager &operator=(const MemManager &) = delete;
   ///
@@ -172,22 +175,65 @@ class MemManager {
 
   ///
   /// @ingroup ge_graph
-  /// @brief ge caching allocator
   /// @param [in] memory_type memory type
-  /// @return CachingAllocator ptr
-  ///
-  CachingAllocator &GetCachingAllocator(rtMemType_t memory_type);
-
-  ///
-  /// @ingroup ge_graph
-  /// @brief ge create caching allocator
-  /// @param [in] memory_type memory type
+  /// @param [in] allocate_map memory allocator map
   /// @return Status result of function
   ///
-  Status InitCachingAllocator(const std::vector<rtMemType_t> &memory_type);
+  template <typename T>
+  Status InitAllocator(const std::vector<rtMemType_t> &memory_type, std::map<rtMemType_t, T *> &allocate_map) {
+    T *allocator = nullptr;
+    for (unsigned int index : memory_type) {
+      auto it = allocate_map.find(index);
+      if (it == allocate_map.end()) {
+        allocator = new (std::nothrow) T(index);
+        if (allocator != nullptr) {
+          allocate_map[index] = allocator;
+          GELOGI("Create Allocator memory type[%u] success.", index);
+        } else {
+          GELOGE(INTERNAL_ERROR, "Alloc Allocator failed.");
+        }
+      } else {
+        allocator = it->second;
+      }
+
+      if (allocator == nullptr) {
+        GELOGE(INTERNAL_ERROR, "Create Allocator failed.");
+        return INTERNAL_ERROR;
+      } else {
+        if (allocator->Initialize() != SUCCESS) {
+          return INTERNAL_ERROR;
+        }
+      }
+    }
+    return SUCCESS;
+  }
+  ///
+  /// @ingroup ge_graph
+  /// @param [in] memory_type memory type
+  /// @param [in] allocate_map memory allocator map
+  /// @return Allocator ptr
+  ///
+  template <typename T>
+  T &GetAllocator(rtMemType_t memory_type, std::map<rtMemType_t, T *> allocate_map) {
+    std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
+    T *allocator = nullptr;
+    auto it = allocate_map.find(memory_type);
+    if (it != allocate_map.end()) {
+      allocator = it->second;
+    }
+
+    // Usually impossible
+    if (allocator == nullptr) {
+      GELOGE(ge::INTERNAL_ERROR, "Get allocator failed, memory type is %u.", memory_type);
+      static T default_allocator(RT_MEMORY_RESERVED);
+      return default_allocator;
+    }
+    return *allocator;
+  }
 
   std::map<rtMemType_t, MemoryAllocator *> memory_allocator_map_;
   std::map<rtMemType_t, CachingAllocator *> caching_allocator_map_;
+  std::map<rtMemType_t, RdmaPoolAllocator *> rdma_allocator_map_;
   std::recursive_mutex allocator_mutex_;
 };
 }  // namespace ge

@@ -21,6 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "common/debug/log.h"
 #include "common/ge/plugin_manager.h"
@@ -74,9 +75,6 @@ class OpsKernelManager {
   // get enablePluginFlag
   bool GetEnablePluginFlag() const;
 
-  // Finalize other ops kernel resource
-  Status FinalizeOpsKernel();
-
  private:
   OpsKernelManager();
   ~OpsKernelManager();
@@ -89,7 +87,7 @@ class OpsKernelManager {
 
   Status InitOpKernelInfoStores(const map<string, string> &options);
 
-  Status CheckPluginPtr();
+  Status CheckPluginPtr() const;
 
   void GetExternalEnginePath(std::string &path, const std::map<string, string> &options);
 
@@ -104,6 +102,9 @@ class OpsKernelManager {
   Status LoadGEGraphOptimizer(map<string, GraphOptimizerPtr> &graphOptimizer);
 
   Status InitGraphOptimizerPriority();
+
+  // Finalize other ops kernel resource
+  Status FinalizeOpsKernel();
 
   PluginManager plugin_manager_;
   OpTilingManager op_tiling_manager_;

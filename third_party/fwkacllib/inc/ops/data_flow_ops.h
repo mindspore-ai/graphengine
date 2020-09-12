@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file data_flow_ops.h
+ * \brief
+ */
 #ifndef GE_OP_DATA_FLOW_OPS_H_
 #define GE_OP_DATA_FLOW_OPS_H_
 
@@ -486,8 +490,10 @@ DT_COMPLEX64, DT_COMPLEX128, DT_RESOURCE, DT_STRING.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator DynamicPartition.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(DynamicPartition)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
         DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_DOUBLE, \
@@ -521,8 +527,10 @@ DT_QUINT8, DT_QINT8, DT_STRING, DT_COMPLEX64, DT_COMPLEX128.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator DynamicStitch.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(DynamicStitch)
     .DYNAMIC_INPUT(indices, TensorType({DT_INT32}))
     .DYNAMIC_INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
@@ -1603,8 +1611,10 @@ the given name across multiple sessions.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Barrier.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(Barrier)
     .OUTPUT(handle, TensorType({DT_STRING_REF}))
     .REQUIRED_ATTR(component_types, ListType)
@@ -1635,8 +1645,10 @@ DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128,  DT_RESOURCE, DT_STRING.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BarrierInsertMany.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(BarrierInsertMany)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(keys, TensorType({DT_STRING}))
@@ -1683,8 +1695,10 @@ DT_RESOURCE, DT_STRING.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BarrierTakeMany.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(BarrierTakeMany)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(num_elements, TensorType(DT_INT32))
@@ -1718,8 +1732,10 @@ even if no new key is introduced.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BarrierClose.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(BarrierClose)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .ATTR(cancel_pending_enqueues, Bool, false)
@@ -1740,8 +1756,10 @@ REG_OP(BarrierClose)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BarrierReadySize.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(BarrierReadySize)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .OUTPUT(size, TensorType(DT_INT32))
@@ -1762,8 +1780,10 @@ REG_OP(BarrierReadySize)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BarrierIncompleteSize.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(BarrierIncompleteSize)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .OUTPUT(size, TensorType(DT_INT32))
@@ -1824,8 +1844,10 @@ name across multiple sessions.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ConditionalAccumulator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ConditionalAccumulator)
     .OUTPUT(handle, TensorType({DT_STRING_REF}))
     .REQUIRED_ATTR(dtype, Type)
@@ -1858,8 +1880,10 @@ which delivers poor performance.\n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AccumulatorApplyGradient.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(AccumulatorApplyGradient)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(local_step, TensorType({DT_INT64}))
@@ -1884,8 +1908,10 @@ which delivers poor performance.\n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AccumulatorNumAccumulated.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(AccumulatorNumAccumulated)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .OUTPUT(y, TensorType({DT_INT32}))
@@ -1904,8 +1930,10 @@ REG_OP(AccumulatorNumAccumulated)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AccumulatorSetGlobalStep.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(AccumulatorSetGlobalStep)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(new_global_step, TensorType({DT_INT64}))
@@ -1935,8 +1963,10 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AccumulatorTakeGradient.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(AccumulatorTakeGradient)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(num_required, TensorType({DT_INT32}))
@@ -1962,8 +1992,10 @@ default is "MEAN".
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow SparseConditionalAccumulator operator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(SparseConditionalAccumulator)
     .OUTPUT(handle, TensorType({DT_STRING_REF}))
     .REQUIRED_ATTR(shape, ListInt)
@@ -1996,8 +2028,10 @@ the type of the accumulator.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow SparseAccumulatorApplyGradient operator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(SparseAccumulatorApplyGradient)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(local_step, TensorType({DT_INT64}))
@@ -2030,8 +2064,10 @@ type of the accumulator.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow SparseAccumulatorTakeGradient operator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(SparseAccumulatorTakeGradient)
     .INPUT(handle, TensorType({DT_STRING_REF}))
     .INPUT(num_required, TensorType({DT_INT32}))
@@ -2062,8 +2098,10 @@ name across multiple sessions.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ResourceConditionalAccumulator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ResourceConditionalAccumulator)
     .OUTPUT(handle, TensorType({DT_RESOURCE}))
     .REQUIRED_ATTR(dtype, Type)
@@ -2089,8 +2127,10 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ResourceAccumulatorApplyGradient.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ResourceAccumulatorApplyGradient)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .INPUT(local_step, TensorType({DT_INT64}))
@@ -2111,8 +2151,10 @@ REG_OP(ResourceAccumulatorApplyGradient)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ResourceAccumulatorNumAccumulated.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ResourceAccumulatorNumAccumulated)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .OUTPUT(num_accumulated, TensorType({DT_INT32}))
@@ -2130,8 +2172,10 @@ REG_OP(ResourceAccumulatorNumAccumulated)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ResourceAccumulatorSetGlobalStep.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ResourceAccumulatorSetGlobalStep)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .INPUT(new_global_step, TensorType({DT_INT64}))
@@ -2158,8 +2202,10 @@ DT_FLOAT16, DT_FLOAT, DT_DOUBLE.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ResourceAccumulatorTakeGradient.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ResourceAccumulatorTakeGradient)
     .INPUT(handle, TensorType({DT_RESOURCE}))
     .INPUT(num_required, TensorType({DT_INT32}))

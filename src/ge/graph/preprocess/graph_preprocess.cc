@@ -32,6 +32,7 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/common/ge_call_wrapper.h"
+#include "graph/common/local_context.h"
 #include "graph/common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
@@ -1073,10 +1074,14 @@ Status GraphPrepare::CheckRefOp() {
 };
 
 Status GraphPrepare::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode) {
-  GELOGI("set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
+  GE_CHECK_NOTNULL(compute_graph_);
+  GELOGI("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id_,
+         compute_graph_->GetGraphID(), static_cast<int>(mode), ge::GetContext().DeviceId());
+
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
-  RtContextUtil::GetInstance().AddRtContext(session_id_, rt_context);
+  RtContextUtil::GetInstance().AddRtContext(session_id_, compute_graph_->GetGraphID(), rt_context);
+
   return SUCCESS;
 }
 
@@ -1109,14 +1114,14 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
 }
 
 Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
-  compute_graph_->SaveDataFormat(ge::TypeUtils::DomiFormatToFormat(domi::GetContext().format));
+  compute_graph_->SaveDataFormat(ge::TypeUtils::DomiFormatToFormat(GetLocalOmgContext().format));
   for (NodePtr &input_node : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
     OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
       GeAttrValue::INT index = 0;
-      if ((!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) || (domi::GetContext().is_dynamic_input)) {
+      if ((!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) || (GetLocalOmgContext().is_dynamic_input)) {
         GELOGW("Get index from data attr failed");
         continue;
       }
@@ -1357,7 +1362,7 @@ Status GraphPrepare::PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTe
   GE_CHECK_NOTNULL(graph);
   GE_CHECK_NOTNULL(compute_graph);
 
-  domi::GetContext().type = static_cast<domi::FrameworkType>(options_.framework_type);
+  GetLocalOmgContext().type = static_cast<domi::FrameworkType>(options_.framework_type);
   const Graph &const_graph = *graph;
 
   PP_RUN("Init", Init, const_graph, session_id);
@@ -1520,7 +1525,7 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
 }
 
 Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
-  if (domi::GetContext().is_dynamic_input) {
+  if (GetLocalOmgContext().is_dynamic_input) {
     return SUCCESS;
   }
   unsigned int node_num = 0;

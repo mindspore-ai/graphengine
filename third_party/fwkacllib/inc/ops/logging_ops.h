@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file logging_ops.h
+ * \brief
+ */
 #ifndef GE_OP_LOGGING_OPS_H
 #define GE_OP_LOGGING_OPS_H
 
@@ -35,8 +39,10 @@ the graph.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow Timestamp operator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(Timestamp)
   .OUTPUT(y, TensorType({DT_DOUBLE}))
   .OP_END_FACTORY_REG(Timestamp)
@@ -55,8 +61,10 @@ Inputs include: \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow Assert operator.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(Assert)
   .INPUT(input_condition, TensorType{DT_BOOL})
   .DYNAMIC_INPUT(input_data, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8,
@@ -72,6 +80,9 @@ REG_OP(Assert)
 *x: The tensor to print, it is a dynamic_input.
 
 *Compatible with aicpu Print operator.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(Print)
 .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16, DT_UINT16, DT_UINT8, DT_INT32,
@@ -91,6 +102,9 @@ to print to.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow PrintV2 operator.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(PrintV2)
   .INPUT(x, TensorType({DT_STRING}))

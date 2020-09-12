@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file nn_detect_ops.h
+ * \brief
+ */
 #ifndef GE_OP_NN_DETECT_OPS_H_
 #define GE_OP_NN_DETECT_OPS_H_
 
@@ -293,6 +297,8 @@ REG_OP(ROIAlign)
 *@see SSDDetectionOutput()
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+*@par Restrictions：
+*Warning: THIS FUNCTION IS DEPRECATED. Please use PriorBox instead.
 */
  REG_OP(PriorBoxD)
      .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -313,6 +319,55 @@ REG_OP(ROIAlign)
      .ATTR(offset, Float, 0.5)
      .ATTR(variance, ListFloat, {0.1})
      .OP_END_FACTORY_REG(PriorBoxD);
+
+/**
+*@brief Performs SSD prior box detection, with four additional matrices and the "aspect_ratio" attribute deleted compared to PriorBox.
+
+*@par Inputs:
+* Six inputs, including:
+*@li x: An NC1HWC0 or NCHW feature map of type is float32 or float16.
+*@li img: source image. Has the same type and format as "x".
+*@li boxes: An ND tensor of type float32 or float16, specifying the prior box information. Same as output y
+
+*@par Attributes:
+*@li min_size: A required float32, specifying the minimum edge length of a square prior box.
+*@li max_size: A required float32, specifying the maximum edge length of a square prior box: sqrt(min_size * max_size)
+*@li img_h: An optional int32, specifying the height of the source image.
+*@li img_w: An optional int32, specifying the width of the source image.
+*@li step_h: An optional float32, specifying the height step for mapping the center point from the feature map to the source image.
+*@li step_w: An optional float32, specifying the width step for mapping the center point from the feature map to the source image.
+*@li flip: An optional bool. If "True", "aspect_ratio" will be flipped. Defaults to "True".
+*@li clip: An optional bool. If "True", a prior box is clipped to within [0, 1]. Defaults to "False".
+*@li offset: An optional float32, specifying the offset. Defaults to "0.5".
+*@li variance: An optional float32, specifying the variance of a prior box, either one or four variances. Defaults to "0.1" (one value).
+
+*@par Outputs:
+*y: An ND tensor of type float32 or float16, specifying the prior box information, including its coordinates and variance.
+
+*@attention Constraints:\n
+* This operator applies only to SSD networks.
+*@see SSDDetectionOutput()
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*@par Restrictions：
+*Warning: THIS FUNCTION IS DEPRECATED. Please use PriorBox instead.
+*/
+ REG_OP(PriorBoxDV2)
+     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .REQUIRED_ATTR(min_size, ListFloat)
+     .REQUIRED_ATTR(max_size, ListFloat)
+     .ATTR(img_h, Int, 0)
+     .ATTR(img_w, Int, 0)
+     .ATTR(step_h, Float, 0.0)
+     .ATTR(step_w, Float, 0.0)
+     .ATTR(flip, Bool, true)
+     .ATTR(clip, Bool, false)
+     .ATTR(offset, Float, 0.5)
+     .ATTR(variance, ListFloat, {0.1})
+     .OP_END_FACTORY_REG(PriorBoxDV2);
 
 /**
 *@brief Performs Position Sensitive ROI Pooling.
@@ -574,6 +629,8 @@ and the actual image height and width.
 *@see Yolo()
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+*@par Restrictions：
+*Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV2DetectionOutput instead.
 */
 REG_OP(YoloV2DetectionOutputD)
     .INPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -700,6 +757,8 @@ and the actual image height and width.
 *@see Yolo()
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+*@par Restrictions：
+*Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV3DetectionOutput instead.
 */
 REG_OP(YoloV3DetectionOutputD)
     .INPUT(coord_data_low, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -926,12 +985,17 @@ REG_OP(ClipBoxes)
 /**
 *@brief Computes ClipBoxesD function.
 
+*@par Attributes:
+*img_size: A Tensor of shape [H, W].
+
 *@par Inputs:
-*@li boxes_input: A Tensor. Must be float16. N-D with shape [N, 4].
-*@li img_size: A Tensor. Must be int32. shape [H, W].
+*boxes_input: A Tensor. Must be float16. N-D with shape [N, 4].
 
 *@par Outputs:
 *boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ClipBoxesD)
     .INPUT(boxes_input, TensorType({DT_FLOAT16}))
@@ -1032,6 +1096,11 @@ REG_OP(RpnProposals)
 
 * @par Third-party framework compatibility
 * Compatible with the pytorch operator RPNProposals.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use RpnProposals instead.
 */
 REG_OP(RpnProposalsD)
     .INPUT(rois, TensorType({DT_FLOAT16}))

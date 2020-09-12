@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file stateful_random_ops.h
+ * \brief
+ */
 #ifndef GE_OP_STATEFUL_RANDOM_OPS_H
 #define GE_OP_STATEFUL_RANDOM_OPS_H
 

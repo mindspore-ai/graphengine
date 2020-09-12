@@ -15,7 +15,11 @@
  */
 
 #include "graph/manager/rdma_pool_allocator.h"
+
+#include <framework/common/debug/log.h>
 #include "framework/common/debug/ge_log.h"
+#include "graph/ge_context.h"
+#include "runtime/dev.h"
 
 namespace {
 const size_t kAlignedSize = 512;
@@ -52,31 +56,41 @@ Status RdmaPoolAllocator::Initialize() {
   return ge::SUCCESS;
 }
 void RdmaPoolAllocator::Finalize() {
+  GELOGD("Rdma pool finalize start.");
   for (auto it = allocated_blocks_.begin(); it != allocated_blocks_.end();) {
     auto block = it->second;
-    allocated_blocks_.erase(it);
+    it = allocated_blocks_.erase(it);
     delete block;
   }
   for (auto it = block_bin_.begin(); it != block_bin_.end();) {
     auto block = *it;
-    block_bin_.erase(it);
+    it = block_bin_.erase(it);
     delete block;
   }
 
   if (rdma_base_addr_ != nullptr) {
+    GELOGD("Start to free rdma pool memory.");
     if (memory_allocator_->FreeMemory(rdma_base_addr_) != SUCCESS) {
       GELOGW("Free rdma pool memory failed");
     }
+    rdma_base_addr_ = nullptr;
   }
 }
 
-Status RdmaPoolAllocator::InitMemory(size_t mem_size, uint32_t device_id) {
+Status RdmaPoolAllocator::InitMemory(size_t mem_size) {
+  auto device_id = GetContext().DeviceId();
+  GELOGD("Init Rdma Memory with size [%zu] for devid:[%u]", mem_size, device_id);
   if (rdma_base_addr_ != nullptr) {
     GELOGE(GE_MULTI_INIT, "Rdma pool has been malloced");
     return GE_MULTI_INIT;
   }
   const std::string purpose = "Memory for rdma pool.";
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  auto dev_id = static_cast<int32_t>(device_id);
+  GE_CHK_RT_RET(rtSetDevice(dev_id));
+  // DeviceReset before memory finished!
+  GE_MAKE_GUARD(not_used_var, [&] { GE_CHK_RT(rtDeviceReset(dev_id)); });
+
   rdma_base_addr_ = memory_allocator_->MallocMemory(purpose, mem_size, device_id);
   if (rdma_base_addr_ == nullptr) {
     GELOGE(GE_GRAPH_MALLOC_FAILED, "Rdma pool memory malloc failed");
@@ -94,6 +108,7 @@ Status RdmaPoolAllocator::InitMemory(size_t mem_size, uint32_t device_id) {
 }
 
 uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
+  GELOGI("start to malloc rdma memory size:%zu, device id = %u", size, device_id);
   auto aligned_size = GetAlignedBlockSize(size);
   Block key(device_id, aligned_size, nullptr);
   std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -107,9 +122,9 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
       return nullptr;
     }
     allocated_blocks_.emplace(block->ptr, block);
-    GELOGI("Find block size = %zu", block->size);
 
     if (ShouldSplit(block, aligned_size)) {
+      GELOGD("Block will be splited block size = %zu, aligned_size:%zu", block->size, aligned_size);
       auto *new_block =
         new (std::nothrow) Block(device_id, block->size - aligned_size, nullptr, block->ptr + aligned_size);
       if (new_block == nullptr) {
@@ -126,12 +141,14 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
       block_bin_.insert(new_block);
     }
     return block->ptr;
+    GELOGD("Find block size = %zu", block->size);
   }
+  GELOGW("Memory block not founded.");
   return nullptr;
 }
 
 Status RdmaPoolAllocator::Free(uint8_t *memory_addr, uint32_t device_id) {
-  GELOGI("Free device id = %u", device_id);
+  GELOGI("Free rdma memory, device id = %u", device_id);
   if (memory_addr == nullptr) {
     GELOGE(GE_GRAPH_FREE_FAILED, "Invalid memory pointer");
     return GE_GRAPH_FREE_FAILED;
@@ -143,27 +160,41 @@ Status RdmaPoolAllocator::Free(uint8_t *memory_addr, uint32_t device_id) {
     GELOGE(PARAM_INVALID, "Invalid memory pointer");
     return PARAM_INVALID;
   }
+
   Block *block = it->second;
   block->allocated = false;
   allocated_blocks_.erase(it);
+
+  Block *merge_blocks[] = {block->prev, block->next};
+  for (Block *merge_block : merge_blocks) {
+    MergeBlocks(block, merge_block);
+  }
   block_bin_.insert(block);
-  // Each time merge with its pre and next.
-  MergeBlockNearby(block, block->next);
-  MergeBlockNearby(block->prev, block);
+
   return SUCCESS;
 }
 
-void RdmaPoolAllocator::MergeBlockNearby(Block *pre_block, Block *block) {
-  if (!(CanMerge(pre_block) && CanMerge(block))) {
+void RdmaPoolAllocator::MergeBlocks(Block *dst, Block *src) {
+  if (!CanMerge(dst) || !CanMerge(src)) {
     return;
   }
-  pre_block->size += block->size;
-  pre_block->next = block->next;
-  if (block->next != nullptr) {
-    block->next->prev = pre_block;
+
+  if (dst->prev == src) {
+    dst->ptr = src->ptr;
+    dst->prev = src->prev;
+    if (dst->prev != nullptr) {
+      dst->prev->next = dst;
+    }
+  } else {
+    dst->next = src->next;
+    if (dst->next != nullptr) {
+      dst->next->prev = dst;
+    }
   }
-  block_bin_.erase(block);
-  delete block;
+
+  dst->size += src->size;
+  block_bin_.erase(src);
+  delete src;
 }
 
 Status RdmaPoolAllocator::GetBaseAddr(uint64_t &base_addr, uint64_t &mem_size) {

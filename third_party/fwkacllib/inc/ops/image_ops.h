@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file image_ops.h
+ * \brief
+ */
 #ifndef GE_OP_MAGE_OPS_H_
 #define GE_OP_MAGE_OPS_H_
 
@@ -144,36 +148,33 @@ REG_OP(CropAndResize)
     .OP_END_FACTORY_REG(CropAndResize)
 
 /**
-*@brief Extracts crops from the input image tensor and resizes them. Extracts \n
-crops from the input image tensor and resizes them using bilinear sampling or \n
-nearest neighbor sampling to a common output size specified by crop_size.
+*@brief Extracts crops from the input image tensor and resizes them.
+* Extracts crops from the input image tensor and resizes them using bilinear sampling or
+* nearest neighbor sampling to a common output size specified by crop_size.
 
 *@par Inputs:
-*Input images must be a 5HD tensor. Inputs include: \n
-*@li images:A Tensor. Must be one of the following types:float. A 5HD tensor of shape \n
-[batch, C1, image_height, image_width, C0].
+*Input images must be a 5HD tensor. Inputs include:
+*@li x:A Tensor. Must be one of the following types:float16, float. A 5HD tensor of shape
+* [batch, C1, image_height, image_width, C0].
 *@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
-*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with \n
-int32 values in [0, batch - 1).
+*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch).
 
 *@par Attributes:
 *@li crop_size: list int. [crop_height, crop_width]. All cropped image patches are resized to this size.
-*@li extrapolation_value: An optional float. Defaults to 0. Value used for \n
-extrapolation, when applicable.
-*@li method: An optional string from: '"bilinear"'. Defaults to \n
-"bilinear".
+*@li extrapolation_value: An optional float. Defaults to 0. Value used for extrapolation, when applicable.
+*@li method: An optional string from: '"bilinear"'. Defaults to "bilinear".
 
 *@par Outputs:
 *y:A Tensor of type float.
 
-*@attention Constraints: \n
+*@attention Constraints:
 *Input images must be a 5HD tensor.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResize operator.
 */
 REG_OP(CropAndResizeD)
-    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(boxes, TensorType({DT_FLOAT}))
     .INPUT(box_index, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT}))

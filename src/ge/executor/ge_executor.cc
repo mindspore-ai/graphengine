@@ -344,47 +344,19 @@ Status GeExecutor::SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, u
     return FAILED;
   }
 
-  Status ret = GraphExecutor::SetDynamicSize(model_id, dynamic_dims, static_cast<int32_t>(DYNAMIC_DIMS));
+  vector<uint64_t> cur_dynamic_dims;
+  Status ret = GetCurDynamicDims(model_id, dynamic_dims, cur_dynamic_dims);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Set cur gear dynmaic dims failed");
+    return FAILED;
+  }
+
+  ret = GraphExecutor::SetDynamicSize(model_id, cur_dynamic_dims, static_cast<int32_t>(DYNAMIC_DIMS));
   if (ret != SUCCESS) {
     GELOGE(FAILED, "Set dynamic size failed");
     return FAILED;
   }
 
-  vector<uint64_t> cur_dynamic_dims;
-  std::vector<ge::TensorDesc> input_desc;
-  std::vector<ge::TensorDesc> output_desc;
-  ret = GetModelDescInfo(model_id, input_desc, output_desc);
-  if (ret != ge::SUCCESS) {
-    GELOGE(FAILED, "GetModelDescInfo failed.");
-    return FAILED;
-  }
-  vector<string> user_designate_shape_order;
-  vector<int64_t> all_data_dims;
-  ret = GetUserDesignateShapeOrder(model_id, user_designate_shape_order);
-  if (ret != ge::SUCCESS) {
-    GELOGE(FAILED, "GetUserDesignateShapeOrder failed.");
-    return FAILED;
-  }
-  for (auto &data_name : user_designate_shape_order) {
-    for (size_t j = 0; j < input_desc.size(); ++j) {
-      if (input_desc.at(j).GetName() == data_name) {
-        for (auto dim : input_desc.at(j).GetShape().GetDims()) {
-          all_data_dims.push_back(dim);
-        }
-        break;
-      }
-    }
-  }
-  if (dynamic_dims.size() != all_data_dims.size()) {
-    GELOGE(FAILED, "Dynamic input size [%lu] is not equal with all data dims size [%lu]!", dynamic_dims.size(),
-           all_data_dims.size());
-    return FAILED;
-  }
-  for (std::size_t i = 0; i < all_data_dims.size(); ++i) {
-    if (all_data_dims[i] < 0) {
-      cur_dynamic_dims.push_back(dynamic_dims[i]);
-    }
-  }
   size_t dynamic_dim_num = cur_dynamic_dims.size();
   uint64_t dynamic_input_size = static_cast<uint64_t>(dynamic_dim_num * sizeof(uint64_t));
   if (length < dynamic_input_size) {
@@ -403,58 +375,43 @@ Status GeExecutor::SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, u
   return SUCCESS;
 }
 
-Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &combined_dims,
+Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &dynamic_dims,
                                      vector<uint64_t> &cur_dynamic_dims) {
-  vector<vector<int64_t>> combined_batch;
-  if (GraphExecutor::GetCombinedDynamicDims(model_id, combined_batch) != SUCCESS) {
-    GELOGE(FAILED, "Get combined dynamic dims info failed.");
+  cur_dynamic_dims.clear();
+  vector<ge::TensorDesc> input_desc;
+  vector<ge::TensorDesc> output_desc;
+  auto ret = GetModelDescInfo(model_id, input_desc, output_desc);
+  if (ret != ge::SUCCESS) {
+    GELOGE(FAILED, "GetModelDescInfo failed.");
     return FAILED;
   }
-  if (combined_batch.empty()) {
-    GELOGE(FAILED, "Combined dynamic dims is empty.");
+  vector<string> user_designate_shape_order;
+  vector<int64_t> all_data_dims;
+  ret = GetUserDesignateShapeOrder(model_id, user_designate_shape_order);
+  if (ret != ge::SUCCESS) {
+    GELOGE(FAILED, "GetUserDesignateShapeOrder failed.");
     return FAILED;
   }
-
-  if (combined_dims.size() != combined_batch[0].size()) {
-    GELOGE(FAILED, "Input dynamic dims's dimension size[%zu] is different from model[%zu].", combined_dims.size(),
-           combined_batch[0].size());
-    return FAILED;
-  }
-  bool matched = false;
-  size_t idx = 0;
-  for (size_t i = 0; i < combined_batch.size(); i++) {
-    bool is_match = true;
-    for (size_t j = 0; j < combined_dims.size(); j++) {
-      if (combined_dims[j] != static_cast<uint64_t>(combined_batch[i][j])) {
-        is_match = false;
+  for (auto &data_name : user_designate_shape_order) {
+    for (auto &desc : input_desc) {
+      if (desc.GetName() == data_name) {
+        for (auto dim : desc.GetShape().GetDims()) {
+          all_data_dims.push_back(dim);
+        }
         break;
       }
     }
-    if (is_match) {
-      idx = i;
-      matched = true;
-      break;
+  }
+  if (dynamic_dims.size() != all_data_dims.size()) {
+    GELOGE(FAILED, "Dynamic input size [%lu] is not equal with all data dims size [%lu]!", dynamic_dims.size(),
+           all_data_dims.size());
+    return FAILED;
+  }
+  for (std::size_t i = 0; i < all_data_dims.size(); ++i) {
+    if (all_data_dims[i] < 0) {
+      cur_dynamic_dims.push_back(dynamic_dims[i]);
     }
   }
-
-  if (!matched) {
-    GELOGE(FAILED, "Input dynamic dims can not match model.");
-    return FAILED;
-  }
-
-  // batch_info save the dynamic info of combined_dims
-  vector<vector<int64_t>> batch_info;
-  int32_t dynamic_type = static_cast<int32_t>(FIXED);
-  if (GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type) != SUCCESS) {
-    GELOGE(FAILED, "Get dynamic input info failed.");
-    return FAILED;
-  }
-
-  cur_dynamic_dims.clear();
-  for (size_t i = 0; i < batch_info[idx].size(); i++) {
-    cur_dynamic_dims.emplace_back(static_cast<uint64_t>(batch_info[idx][i]));
-  }
-
   return SUCCESS;
 }
 
@@ -923,13 +880,6 @@ Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModel
     if (ret != SUCCESS) {
       GELOGE(ret, "Get dynamic input info failed.");
       return ret;
-    }
-    if (dynamic_type == static_cast<int32_t>(DYNAMIC_DIMS)) {
-      ret = GraphExecutor::GetCombinedDynamicDims(model_id, batch_info);
-      if (ret != SUCCESS) {
-        GELOGE(FAILED, "Get dynamic input info failed.");
-        return FAILED;
-      }
     }
     if (!batch_info.empty()) {
       SetDynamicInputDataFlag(run_input_data, batch_info, input_data);

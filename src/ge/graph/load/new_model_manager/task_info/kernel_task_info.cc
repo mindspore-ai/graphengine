@@ -37,11 +37,17 @@ const uint8_t kL2NotLoadToDdr = 0;
 // for skt
 constexpr int64_t kInvalidGroupKey = -1;
 constexpr uint32_t kSKTSingleSize = 1;
-constexpr uint32_t kSKTMaxSizeLimit = 20000;
 const char *kIsLastNode = "is_last_node";
 const char *kIsFirstNode = "is_first_node";
 const int64_t kCloseSkt = 100;
 const uint32_t kAddrLen = sizeof(void *);
+const char *const kLoadOpFromBuf = "loadOpFromBuf";
+struct CustAicpuSoBuf {
+  uint64_t kernelSoBuf;
+  uint32_t kernelSoBufLen;
+  uint64_t kernelSoName;
+  uint32_t kernelSoNameLen;
+} __attribute__((packed));
 }  // namespace
 
 namespace ge {
@@ -49,10 +55,7 @@ KernelTaskInfo::SuperKernelTaskInfo KernelTaskInfo::skt_info_ = {
   0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
 
 Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
-  if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci model is null!");
-    return PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(davinci_model);
   davinci_model_ = davinci_model;
   is_l1_fusion_enable_ = davinci_model_->GetL1FusionEnableOption();
   GELOGD("KernelTaskInfo init start, ge.enableL1Fusion in davinci model is %d.", is_l1_fusion_enable_);
@@ -71,16 +74,12 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   kernel_type_ = static_cast<cce::ccKernelType>(context.kernel_type());
   // get opdesc
   op_desc_ = davinci_model_->GetOpByIndex(context.op_index());
-  if (op_desc_ == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Get op desc failed, index is out of range!");
-    return INTERNAL_ERROR;
-  }
+  GE_CHECK_NOTNULL(op_desc_);
   (void)AttrUtils::GetBool(*op_desc_, ATTR_N_BATCH_SPILT, is_n_batch_spilt_);
   GELOGD("node[%s] is_n_batch_spilt %d", op_desc_->GetName().c_str(), is_n_batch_spilt_);
   (void)AttrUtils::GetInt(*op_desc_, ATTR_NAME_FUSION_GROUP_KEY, group_key_);
   has_group_key_ = (group_key_ != kInvalidGroupKey);
   GELOGD("node[%s] has_group_key_ %ld, group key is [%ld]", op_desc_->GetName().c_str(), has_group_key_, group_key_);
-
   // fusion_op_info
   vector<std::string> original_op_names;
   bool result = AttrUtils::GetListStr(op_desc_, ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, original_op_names);
@@ -99,7 +98,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. stub_func: %s",
                                                     kernel_def.stub_func().c_str());
                     return RT_ERROR_TO_GE_STATUS(rt_ret););
-  } else if (kernel_type_ != cce::ccKernelType::AI_CPU) {
+  } else if (kernel_type_ == cce::ccKernelType::TE) {
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
@@ -127,7 +126,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     ret = InitTVMTask(args_offset_tmp[0], kernel_def);
   } else if (kernel_type_ == cce::ccKernelType::CUSTOMIZED) {
     ret = InitAICPUCustomTask(context.op_index(), kernel_def);
-  } else if (kernel_type_ == cce::ccKernelType::AI_CPU) {
+  } else if (kernel_type_ == cce::ccKernelType::AI_CPU || kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
     ret = InitAicpuTask(context.op_index(), kernel_def);
   } else {
     if (kernel_def.args().empty() || args_size_ == 0) {
@@ -332,10 +331,6 @@ bool KernelTaskInfo::DoubleCallSKTSaveCheck() { return (!is_n_batch_spilt_ && !h
 
 Status KernelTaskInfo::SuperKernelDistribute() {
   Status ret;
-  char *skt_task_num = getenv("SKT_TASK_NUM");
-  auto task_num = static_cast<uint64_t>((skt_task_num != nullptr) ? strtol(skt_task_num, nullptr, 10)
-                                                                  : kSKTMaxSizeLimit);  // 10 for decimal number
-  GELOGI("SKT: SuperKernel Distribute Task num[skt_id:%lu]", task_num);
   if (FirstCallSKTLaunchCheck()) {
     ret = SuperKernelLaunch();
     if (ret != SUCCESS) {
@@ -381,7 +376,8 @@ Status KernelTaskInfo::Distribute() {
   char *skt_enable_env = getenv("SKT_ENABLE");
   int64_t env_flag = (skt_enable_env != nullptr) ? strtol(skt_enable_env, nullptr, 10) : 0;
   bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
-  if (kernel_type_ == cce::ccKernelType::AI_CPU) {
+  if (kernel_type_ == cce::ccKernelType::AI_CPU || kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+    GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
     // blockDim is reserved parameter, set to 1
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
                                        reinterpret_cast<const void *>(kernel_name_.c_str()), 1, args_, args_size_,
@@ -865,15 +861,107 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
   return SUCCESS;
 }
 
+Status KernelTaskInfo::LaunchCustAicpuSo(const OpDescPtr op_desc, const domi::KernelDef &kernel_def) {
+  CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
+  if (aicpu_kernel == nullptr) {
+    GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  const void *aicpu_data = aicpu_kernel->GetBinData();
+  uint32_t aicpu_data_length = aicpu_kernel->GetBinDataSize();
+
+  void *d_aicpu_data = nullptr;
+  rtError_t status = rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  status = rtMemcpy(d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length, RT_MEMCPY_HOST_TO_DEVICE);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  void *d_so_name = nullptr;
+  status = rtMalloc(&d_so_name, so_name_.size(), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  status = rtMemcpy(d_so_name, so_name_.size(), reinterpret_cast<const void *>(so_name_.c_str()), so_name_.size(),
+                    RT_MEMCPY_HOST_TO_DEVICE);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  CustAicpuSoBuf cust_aicpu_so_buf;
+  cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
+  cust_aicpu_so_buf.kernelSoBufLen = aicpu_data_length;
+  cust_aicpu_so_buf.kernelSoName = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
+  cust_aicpu_so_buf.kernelSoNameLen = so_name_.size();
+
+  void *args = nullptr;
+  uint32_t args_size = sizeof(CustAicpuSoBuf);
+  status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  GELOGI("loadOpFromBuf kernelSoBuf %p, kernelSoBufLen %u, kernelSoName %p, kernelSoNameLen %u.", d_aicpu_data,
+         aicpu_data_length, d_so_name, so_name_.size());
+
+  status = rtMemcpy(args, args_size, static_cast<void *>(&cust_aicpu_so_buf), args_size, RT_MEMCPY_HOST_TO_DEVICE);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  rtStream_t stream = nullptr;
+  status = rtStreamCreate(&stream, 0);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt create stream failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  status = rtCpuKernelLaunch(nullptr, kLoadOpFromBuf, 1, args, args_size, nullptr, stream);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch loadOpFromBuf failed, status: 0x%X", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  GELOGI("Cpu kernel launch loadOpFromBuf.");
+
+  status = rtStreamSynchronize(stream);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  GE_CHK_RT(rtFree(args));
+  GE_CHK_RT(rtFree(d_aicpu_data));
+  GE_CHK_RT(rtFree(d_so_name));
+
+  GELOGI("Cpu kernel launch loadOpFromBuf task success.");
+  return SUCCESS;
+}
+
 Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &kernel_def) {
   GELOGI("Do InitAicpuTask");
   so_name_ = kernel_def.so_name();
   kernel_name_ = kernel_def.kernel_name();
+  GELOGI("node[%s] test so name %s, kernel name %s", op_desc_->GetName().c_str(), so_name_.c_str(),
+         kernel_name_.c_str());
 
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
   if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "index is out of range, index: %u", op_index);
     return INTERNAL_ERROR;
+  }
+
+  if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, kernel_def), "launch cust aicpu so failed");
   }
 
   // copy args to new host memory
@@ -939,6 +1027,9 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
       dump_flag_ = RT_KERNEL_DUMPFLAG;
     }
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
+  }
+  if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+    dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }
 
   davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
@@ -1195,16 +1286,6 @@ uint8_t KernelTaskInfo::IsL2CpToDDR(uint8_t origain_L2_load_to_ddr) {
   if (dump_flag_ == RT_KERNEL_DUMPFLAG) {
     return kL2LoadToDdr;
   }
-
-  static char *ge_dump_env = std::getenv("DUMP_OP");
-  if (ge_dump_env != nullptr) {
-    static std::string ge_dump_str(ge_dump_env);
-    static std::string open_ge_dump("1");
-    if (ge_dump_str == open_ge_dump) {
-      return kL2LoadToDdr;
-    }
-  }
-
   return kL2NotLoadToDdr;
 }
 

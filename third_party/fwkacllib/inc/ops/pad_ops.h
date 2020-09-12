@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file pad_ops.h
+ * \brief
+ */
 #ifndef GE_OP_PAD_OPS_H
 #define GE_OP_PAD_OPS_H
 

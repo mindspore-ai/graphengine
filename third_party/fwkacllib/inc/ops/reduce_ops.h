@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file reduce_ops.h
+ * \brief
+ */
 #ifndef GE_OP_REDUCE_OPS_H
 #define GE_OP_REDUCE_OPS_H
 
@@ -208,7 +212,7 @@ REG_OP(BNTrainingUpdateV2)
 
 /**
 *@brief Performs reduced batch normalization v3. For some scene which don't contain
-assignmoving average.
+assign moving average.
 
 *@par Inputs:
 * Five inputs, including: (NC1HWC0 supported)
@@ -222,7 +226,6 @@ assignmoving average.
 *epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero.
 
 *@par Outputs:
-* Three outputs, including: (NC1HWC0 supported)
 *@li y: A 5D Tensor of type float16 or float32, for normalized "x".
 *@li batch_mean: A 5D Tensor of type float32, for the mean of "x".
 *@li batch_variance: A 5D Tensor of type float32, for the variance of "x".

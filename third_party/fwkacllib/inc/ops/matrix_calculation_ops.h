@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file matrix_calculation_ops.h
+ * \brief
+ */
 #ifndef GE_OP_MATRIX_CALCULATION_OPS_H
 #define GE_OP_MATRIX_CALCULATION_OPS_H
 

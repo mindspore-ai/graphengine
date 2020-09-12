@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file string_ops.h
+ * \brief
+ */
 #ifndef GE_OP_STRING_OPS_H_
 #define GE_OP_STRING_OPS_H_
 
@@ -44,6 +48,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringSplit op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringSplit)
     .INPUT(input, TensorType({DT_STRING}))
@@ -76,6 +83,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringSplitV2 op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringSplitV2)
     .INPUT(input, TensorType({DT_STRING}))
@@ -108,6 +118,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with UnicodeScript op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(UnicodeScript)
     .INPUT(x, TensorType({DT_INT32}))
@@ -139,6 +152,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with Substr op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(Substr)
     .INPUT(input, TensorType({DT_STRING}))
@@ -169,6 +185,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringToHashBucketFast op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringToHashBucketFast)
     .INPUT(x, TensorType({DT_STRING}))
@@ -203,6 +222,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringToHashBucketStrong op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringToHashBucketStrong)
     .INPUT(x, TensorType({DT_STRING}))
@@ -228,6 +250,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringToHashBucket op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringToHashBucket)
     .INPUT(string_tensor, TensorType({DT_STRING}))
@@ -249,6 +274,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringStrip op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringStrip)
     .INPUT(x, TensorType({DT_STRING}))
@@ -277,6 +305,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringLength op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringLength)
     .INPUT(x, TensorType({DT_STRING}))
@@ -309,6 +340,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with StringJoin op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringJoin)
     .DYNAMIC_INPUT(x, TensorType({DT_STRING}))
@@ -341,6 +375,9 @@ include: \n
 
 *@par Third-party framework compatibility
 * compatible with StringFormat op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(StringFormat)
     .DYNAMIC_INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
@@ -372,6 +409,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with RegexFullMatch op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(RegexFullMatch)
     .INPUT(x, TensorType({DT_STRING}))
@@ -404,6 +444,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with RegexReplace op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(RegexReplace)
     .INPUT(x, TensorType({DT_STRING}))
@@ -439,6 +482,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with AsString op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(AsString)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, \
@@ -477,6 +523,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with EncodeBase64 op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(EncodeBase64)
     .INPUT(x, TensorType({DT_STRING}))
@@ -500,6 +549,9 @@ include: \n
 
 *@par Third-party framework compatibility
 *compatible with DecodeBase64 op of tensorflow
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(DecodeBase64)
     .INPUT(x, TensorType({DT_STRING}))

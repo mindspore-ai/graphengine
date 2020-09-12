@@ -28,6 +28,12 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
     return SUCCESS;
   }
+  // breadth fusion pass requires new topologic
+  Status ret_topo = graph->TopologicalSorting();
+  if (ret_topo != SUCCESS) {
+    GELOGE(ret_topo, "TopologicalSorting the merged graph failed.");
+    return ret_topo;
+  }
 
   for (auto const &node : graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node);

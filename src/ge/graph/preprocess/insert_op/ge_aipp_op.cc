@@ -39,6 +39,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "proto/insert_op.pb.h"
+#include "graph/common/local_context.h"
 
 #define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                       \
   do {                                                                                       \
@@ -144,13 +145,13 @@ int64_t CalcMaxSize(int64_t batch_count) {
 }
 
 Format GetAndCheckFormat() {
-  switch (domi::GetContext().format) {
+  switch (GetLocalOmgContext().format) {
     case domi::DOMI_TENSOR_NCHW:
       return FORMAT_NCHW;
     case domi::DOMI_TENSOR_NHWC:
       return FORMAT_NHWC;
     default:
-      GELOGE(PARAM_INVALID, "Unexpected format found %d", static_cast<int>(domi::GetContext().format));
+      GELOGE(PARAM_INVALID, "Unexpected format found %d", static_cast<int>(GetLocalOmgContext().format));
       return FORMAT_ND;
   }
 }
@@ -619,8 +620,9 @@ void AippOp::SetDtcDefaultValue() {
 Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
   GE_CHECK_NOTNULL(op_desc);
 
-  static int op_idx = 0;
-  op_desc->SetName(std::string("aipp_node").append(std::to_string(op_idx++)));
+  static std::atomic_long atomic_op_idx(0);
+  auto op_idx = atomic_op_idx.fetch_add(1);
+  op_desc->SetName(std::string("aipp_node").append(std::to_string(op_idx)));
   op_desc->SetType(AIPP);
 
   // Add two InputDesc, add the second after the first one is added successfully.

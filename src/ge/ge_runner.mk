@@ -42,6 +42,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/build/stream_graph_optimizer.cc \
     graph/build/task_generator.cc \
     graph/common/bcast.cc \
+    graph/common/local_context.cc \
     graph/common/omg_util.cc \
     graph/common/transop_util.cc \
     graph/execute/graph_execute.cc \
@@ -88,6 +89,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
     graph/manager/graph_var_manager.cc \
+    graph/manager/rdma_pool_allocator.cc \
     graph/manager/model_manager/event_manager.cc        \
     graph/manager/trans_var_data_utils.cc \
     graph/manager/util/debug.cc                       \
@@ -289,6 +291,7 @@ LIBGE_LOCAL_SRC_FILES := \
     hybrid/node_executor/task_context.cc                                 \
     hybrid/hybrid_davinci_model.cc                                       \
     executor/ge_executor.cc \
+    analyzer/analyzer.cc \
 
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
@@ -308,11 +311,13 @@ RUNNER_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
+    $(TOPDIR)framework/domi/analyzer \
     proto/fwk_adapter.proto \
     proto/ge_ir.proto \
     proto/insert_op.proto \
     proto/om.proto \
     proto/op_mapping_info.proto \
+    proto/dump_task.proto \
     proto/task.proto \
     proto/tensorflow/attr_value.proto \
     proto/tensorflow/function.proto \

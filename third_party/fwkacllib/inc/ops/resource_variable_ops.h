@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file resource_variable_ops.h
+ * \brief
+ */
 #ifndef GE_OP_RESOURCE_VARIABLE_OPS_H
 #define GE_OP_RESOURCE_VARIABLE_OPS_H
 

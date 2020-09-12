@@ -36,6 +36,7 @@
 namespace ge {
 namespace {
 const size_t OUTPUT_PARAM_SIZE = 2;
+const std::string alias_name_attr = "_aliasName";
 bool IsUseBFS() {
   string run_mode;
   const int base = 10;
@@ -132,6 +133,14 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::FindNode(co
     }
     if (node->GetName() == name) {
       return node;
+    }
+    std::vector<string> out_alias_name;
+    if (AttrUtils::GetListStr(node->GetOpDesc(), alias_name_attr, out_alias_name)) {
+      for (const auto &alias_name : out_alias_name) {
+        if (alias_name == name) {
+          return node;
+        }
+      }
     }
   }
   return nullptr;
@@ -258,6 +267,7 @@ NodePtr ComputeGraph::AddNodeFront(NodePtr node) {
     GELOGE(GRAPH_FAILED, "The node ptr or op desc should not be null.");
     return nullptr;
   }
+  node->SetHostNode(is_valid_flag_);
   node->GetOpDesc()->SetId(nodes_.size());
   if (nodes_.size() > 0 && nodes_[0]->GetType() == DATA) {
     (void)nodes_.insert(nodes_.begin() + 1, node);
@@ -284,6 +294,7 @@ NodePtr ComputeGraph::AddNodeAfter(NodePtr node, const NodePtr &pre_node) {
     GELOGE(GRAPH_FAILED, "The node ptr or op desc should not be null.");
     return nullptr;
   }
+  node->SetHostNode(is_valid_flag_);
   node->GetOpDesc()->SetId(nodes_.size());
   auto node_iter = std::find(nodes_.begin(), nodes_.end(), pre_node);
   if (node_iter != nodes_.end()) {
@@ -313,6 +324,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY NodePtr ComputeGraph::AddNode(Nod
     GELOGE(GRAPH_FAILED, "The node ptr should not be null.");
     return nullptr;
   }
+  node->SetHostNode(is_valid_flag_);
   node->GetOpDesc()->SetId((int64_t)GetDirectNodesSize());
   nodes_.push_back(node);
   return node;
@@ -339,6 +351,7 @@ NodePtr ComputeGraph::AddNode(OpDescPtr op, int64_t id) {  // for unserialize.
   NodePtr node = shared_ptr<Node>(new (std::nothrow) Node(op, shared_from_this()));
   GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "node_ptr is NULL!!!"); return nullptr);
   GE_IF_BOOL_EXEC(node->Init() != GRAPH_SUCCESS, GELOGE(GRAPH_FAILED, "node init fail."); return nullptr);
+  node->SetHostNode(is_valid_flag_);
   nodes_.push_back(node);
   return node;
 }
@@ -355,7 +368,9 @@ NodePtr ComputeGraph::AddInputNode(NodePtr node) {
   return node;
 }
 
-NodePtr ComputeGraph::AddOutputNode(NodePtr node) {
+NodePtr ComputeGraph::AddOutputNode(NodePtr node) { return AddOutputNodeByIndex(node, 0); }
+
+NodePtr ComputeGraph::AddOutputNodeByIndex(NodePtr node, int32_t index) {
   if (node == nullptr || node->GetOpDesc() == nullptr) {
     GELOGE(GRAPH_FAILED, "The node ptr or opdesc should not be null.");
     return nullptr;
@@ -365,7 +380,7 @@ NodePtr ComputeGraph::AddOutputNode(NodePtr node) {
   NodePtr result = node;
   // [output_nodes_info_ : should not be null]
   for (const auto &item : output_nodes_info_) {
-    if (item.first->GetName() == node->GetName()) {
+    if (item.first->GetName() == node->GetName() && item.second == index) {
       already_have = true;
       result = item.first;
       break;
@@ -373,7 +388,8 @@ NodePtr ComputeGraph::AddOutputNode(NodePtr node) {
   }
 
   if (!already_have) {
-    output_nodes_info_.emplace_back(std::make_pair(node, 0));
+    output_nodes_info_.emplace_back(std::make_pair(node, index));
+    GELOGI("Push back node name:%s, index:%ld, into output_nodes_info_.", node->GetName().c_str(), index);
   }
 
   if (std::find(nodes_.begin(), nodes_.end(), node) == nodes_.end()) {

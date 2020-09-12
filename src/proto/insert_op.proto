@@ -40,16 +40,22 @@ message AippOpParams {
 		RAW12 = 12;
 		RAW16 = 13;
 		RAW24 = 14;
+		RGB16 = 15;
+		RGB20 = 16;
+		RGB24 = 17;
+		RGB8_IR = 18;
+		RGB16_IR = 19;
+		RGB24_IR = 20;
 	}
-  
+
 	enum AippMode {
 		undefined = 0;
 		static = 1;
 		dynamic = 2;
 	}
-  
+
 	// AIPP模式，区分静态AIPP和动态AIPP
-	AippMode aipp_mode = 1;			
+	AippMode aipp_mode = 1;
 
 	// related_input_rank参数为必填，类型为整型，配置范围>=0, <=输入Data算子的个数，默认值为0。
 	// 标识对模型的第几个输入做AIPP处理，例如模型有两个输入，需要对第2个输入做AIPP，则配置related_input_rank为1。
@@ -126,6 +132,10 @@ message AippOpParams {
 	repeated int32 input_bias_2 = 44;
 
 	// [End] 静态AIPP参数
+
+       // The n number that is used for raw/rgbir data into f16 transformation.
+       // The transformation equation is x/(2^n). If set to 0, no transform is performed.
+       uint32 raw_rgbir_to_f16_n = 45;
 }
 
 message MultiShapeOpParams {

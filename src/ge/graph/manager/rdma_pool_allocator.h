@@ -40,12 +40,12 @@ class RdmaPoolAllocator {
 
   RdmaPoolAllocator &operator=(const RdmaPoolAllocator &) = delete;
 
-  ~RdmaPoolAllocator() { Finalize(); }
+  ~RdmaPoolAllocator() = default;
 
   Status Initialize();
   void Finalize();
 
-  Status InitMemory(size_t mem_size, uint32_t device_id = 0);
+  Status InitMemory(size_t mem_size);
 
   uint8_t *Malloc(size_t size, uint32_t device_id = 0);
 
@@ -54,7 +54,7 @@ class RdmaPoolAllocator {
   Status GetBaseAddr(uint64_t &base_addr, uint64_t &mem_size);
 
  private:
-  void MergeBlockNearby(Block *pre_block, Block *block);
+  void MergeBlocks(Block *dst, Block *src);
 
   rtMemType_t memory_type_;
   size_t rdma_mem_size_ = 0;  // Total rdma memory size to be allocated.

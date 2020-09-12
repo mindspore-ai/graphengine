@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file ragged_math_ops.h
+ * \brief
+ */
 #ifndef GE_OP_RAGGED_MATH_OPS_H
 #define GE_OP_RAGGED_MATH_OPS_H
 

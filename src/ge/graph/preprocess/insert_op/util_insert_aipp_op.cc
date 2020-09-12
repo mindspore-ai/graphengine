@@ -39,6 +39,8 @@ using domi::AippOpParams;
 namespace ge {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
+const int64_t kFormatAgnosticSwitch = 1;
+const int64_t kFormatDependInputIndex = 1;
 }  // namespace
 static void ConvertShape2Nhwc(Format &format, vector<int64_t> &shape_vec) {
   if ((format == FORMAT_NHWC) || (shape_vec.size() != static_cast<size_t>(NORMAL_TENSOR_SIZE))) {
@@ -200,9 +202,28 @@ Status InsertNewOpUtil::GetAippParams(const std::unique_ptr<domi::AippOpParams> 
 
   return SUCCESS;
 }
+
+Status InsertNewOpUtil::AddFormatAgnosticAttrToSwitchn(const NodePtr &aipp_node) {
+  GE_CHECK_NOTNULL(aipp_node);
+  auto next_nodes = aipp_node->GetOutDataNodes();
+  for (const auto next_node : next_nodes) {
+    GE_CHECK_NOTNULL(next_node);
+    auto op_desc = next_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    if (op_desc->GetType() == SWITCHN) {
+      GELOGI("Find switchn node [%s] after aipp [%s]", op_desc->GetName().c_str(), aipp_node->GetName().c_str());
+      (void)AttrUtils::SetInt(op_desc, "_format_agnostic", kFormatAgnosticSwitch);
+      (void)AttrUtils::SetListInt(op_desc, "_format_agnostic_except_input",
+                                  std::vector<int64_t>({kFormatDependInputIndex}));
+    }
+  }
+  return SUCCESS;
+}
+
 Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
   std::map<std::string, NodePtr> switchn_names_to_data;
   std::set<NodePtr> updated_switchn;
+  NodePtr multbatch_case;
 
   for (auto &node : graph->GetDirectNode()) {
     if (node->GetType() == DATA) {
@@ -213,6 +234,12 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
     }
     if (node->GetType() == AIPP) {
       GE_RETURN_IF_ERROR(UpdatePrevNodeByAipp(node, updated_switchn));
+      // In dynamic batch/HW and dynamic aipp scend, switchn should be set format agnostic, otherwise transdata maybe
+      // inserted between aipp and switchn which introduce performance and memory increase problem.
+      GE_RETURN_IF_ERROR(AddFormatAgnosticAttrToSwitchn(node));
+    }
+    if (node->GetType() == CASE && node->GetOpDesc()->HasAttr(ATTR_NAME_BATCH_NUM)) {
+      multbatch_case = node;
     }
   }
 
@@ -225,8 +252,107 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
     GE_RETURN_IF_ERROR(UpdateDataBySwitchN(switchn, data_iter->second));
   }
 
+  if (multbatch_case != nullptr) {
+    GE_RETURN_IF_ERROR(UpdateCaseNode(graph, multbatch_case));
+  }
   return SUCCESS;
 }
+
+Status InsertNewOpUtil::FindMaxSizeNode(const ComputeGraphPtr &graph, const NodePtr &case_node,
+                                        map<uint32_t, int64_t> &max_sizes,
+                                        map<uint32_t, GeTensorDescPtr> &aipp_inputs) {
+  const auto &func_desc = case_node->GetOpDesc();
+  for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
+    const auto &subgraph = graph->GetSubgraph(name);
+    if (subgraph == nullptr) {
+      GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
+      return GE_GRAPH_EMPTY_SUBGRAPH;
+    }
+
+    std::set<NodePtr> updated_switchn;  // fix interface
+    for (auto &node : subgraph->GetDirectNode()) {
+      if (node->GetType() == AIPP) {
+        GE_RETURN_IF_ERROR(UpdatePrevNodeByAipp(node, updated_switchn));
+        int64_t size = 0;
+        auto in_data_anchor = node->GetInDataAnchor(0);
+        GE_CHECK_NOTNULL(in_data_anchor);
+        auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+        GE_CHECK_NOTNULL(peer_out_anchor);
+        const auto &src_node = peer_out_anchor->GetOwnerNode();
+        const auto &src_op = src_node->GetOpDesc();
+        GE_CHECK_NOTNULL(src_op);
+
+        uint32_t parent_index = 0;
+        if (!AttrUtils::GetInt(src_op, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+          GELOGE(FAILED, "Parent index not found, name: %s", src_op->GetName().c_str());
+          return FAILED;
+        }
+
+        auto aipp_op_desc = node->GetOpDesc();
+        GE_CHECK_NOTNULL(aipp_op_desc);
+        auto input = aipp_op_desc->MutableInputDesc(0);
+        GE_CHECK_NOTNULL(input);
+        if (TensorUtils::GetSize(*input, size) == GRAPH_SUCCESS) {
+          if (max_sizes[parent_index] < size) {
+            max_sizes[parent_index] = size;
+            aipp_inputs[parent_index] = input;
+          }
+        }
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::UpdateCaseNode(const ComputeGraphPtr &graph, const NodePtr &case_node) {
+  const auto &func_desc = case_node->GetOpDesc();
+  map<uint32_t, int64_t> max_sizes;
+  map<uint32_t, GeTensorDescPtr> aipp_inputs;
+
+  GE_RETURN_IF_ERROR(FindMaxSizeNode(graph, case_node, max_sizes, aipp_inputs));
+  for (const auto &item : aipp_inputs) {
+    uint32_t parent_index = item.first;
+    const GeTensorDescPtr &aipp_input = item.second;
+    GE_CHECK_NOTNULL(aipp_input);
+
+    const GeTensorDescPtr &input_desc = func_desc->MutableInputDesc(parent_index);
+    GE_CHECK_NOTNULL(input_desc);
+    input_desc->SetDataType(aipp_input->GetDataType());
+    input_desc->SetOriginDataType(aipp_input->GetOriginDataType());
+    input_desc->SetShape(aipp_input->GetShape());
+    input_desc->SetOriginShape(aipp_input->GetShape());
+    input_desc->SetFormat(aipp_input->GetFormat());
+    input_desc->SetOriginFormat(aipp_input->GetFormat());
+    ge::TensorUtils::SetSize(*input_desc, max_sizes[item.first]);
+
+    const auto &in_anchor = case_node->GetInDataAnchor(parent_index);
+    const auto &out_anchor = in_anchor->GetPeerOutAnchor();
+    const auto &data = out_anchor->GetOwnerNode();
+    auto data_opdesc = data->GetOpDesc();
+    GE_CHECK_NOTNULL(data_opdesc);
+    Format old_format = data_opdesc->MutableOutputDesc(0)->GetFormat();
+
+    auto ret = data_opdesc->UpdateOutputDesc(0, *input_desc);
+    if (ret != GRAPH_SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Failed to update data %s output using case %s", data->GetName().c_str(),
+             case_node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    ret = data_opdesc->UpdateInputDesc(0, *input_desc);
+    if (ret != GRAPH_SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Failed to update data %s input using case %s", data->GetName().c_str(),
+             case_node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    // Update attr _mbatch_origin_input_dims for data when it is linked to aipp
+    UpdateMultiBatchInputDims(data_opdesc, old_format);
+  }
+
+  return SUCCESS;
+}
+
 Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &switchns) {
   GELOGI("Start to update prev node size by aipp %s.", node->GetName().c_str());
   auto aipp_op_desc = node->GetOpDesc();
@@ -389,7 +515,7 @@ Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std:
       const auto &dst_op = dst_node->GetOpDesc();
       GE_CHECK_NOTNULL(dst_op);
 
-      if (dst_op->GetType() == AIPP || dst_op->GetType() == SWITCHN) {
+      if (dst_op->GetType() == AIPP || dst_op->GetType() == SWITCHN || dst_op->GetType() == CASE) {
         auto data_iter = data_next_node_map.find(node);
         if (data_iter == data_next_node_map.end()) {
           std::set<NodePtr> next_node_set;
@@ -407,7 +533,7 @@ Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std:
   return SUCCESS;
 }
 
-Status InsertNewOpUtil::GetAllAipps(const NodePtr &node, std::vector<NodePtr> &aipps) {
+Status InsertNewOpUtil::GetAllAipps(const NodePtr &data_node, const NodePtr &node, std::vector<NodePtr> &aipps) {
   GE_CHECK_NOTNULL(node);
   OpDescPtr op = node->GetOpDesc();
   GE_CHECK_NOTNULL(op);
@@ -424,6 +550,32 @@ Status InsertNewOpUtil::GetAllAipps(const NodePtr &node, std::vector<NodePtr> &a
         auto dst_aipp_node = peer_in_anchor->GetOwnerNode();
         if (dst_aipp_node->GetType() == AIPP) {
           aipps.emplace_back(dst_aipp_node);
+        }
+      }
+    }
+  } else if (op->GetType() == CASE) {
+    const ComputeGraphPtr &graph = node->GetOwnerComputeGraph();
+    for (const auto &name : op->GetSubgraphInstanceNames()) {
+      const auto &subgraph = graph->GetSubgraph(name);
+      if (subgraph == nullptr) {
+        GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
+        return GE_GRAPH_EMPTY_SUBGRAPH;
+      }
+
+      for (auto &subgraph_node : subgraph->GetDirectNode()) {
+        if (subgraph_node->GetType() == AIPP) {
+          auto src_node = subgraph_node->GetInDataNodes().at(0);
+          const auto &src_op = src_node->GetOpDesc();
+          GE_CHECK_NOTNULL(src_op);
+          uint32_t parent_index = 0;
+          if (!AttrUtils::GetInt(src_op, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+            GELOGE(FAILED, "Parent index not found, name: %s", src_op->GetName().c_str());
+            return FAILED;
+          }
+          auto data = node->GetInDataNodes().at(parent_index);
+          if (data->GetName() == data_node->GetName()) {
+            aipps.emplace_back(subgraph_node);
+          }
         }
       }
     }
@@ -446,14 +598,14 @@ Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
     auto data_node = it.first;
     auto data_op_desc = data_node->GetOpDesc();
     GE_CHECK_NOTNULL(data_op_desc);
-    std::set<NodePtr> aipps_or_switchs = it.second;
-    if (aipps_or_switchs.size() != 1) {
+    std::set<NodePtr> aipps_or_switchs_or_case = it.second;
+    if (aipps_or_switchs_or_case.size() != 1) {
       GELOGW("The number of successors swith or aipp of data is more than 1");
       continue;
     }
 
     std::vector<NodePtr> aipps;
-    GE_RETURN_IF_ERROR(GetAllAipps(*aipps_or_switchs.begin(), aipps));
+    GE_RETURN_IF_ERROR(GetAllAipps(data_node, *aipps_or_switchs_or_case.begin(), aipps));
     GELOGI("RecordAIPPInfoToData: Data: name[%s], type[%s], batch size[%u]", data_node->GetName().c_str(),
            data_node->GetType().c_str(), aipps.size());
 

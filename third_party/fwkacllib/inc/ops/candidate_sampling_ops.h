@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file candidate_sampling_ops.h
+ * \brief
+ */
 #ifndef GE_OP_CANDIDATE_SAMPLING_OPS_H_
 #define GE_OP_CANDIDATE_SAMPLING_OPS_H_
 
@@ -60,8 +64,10 @@ which delivers poor performance.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ThreadUnsafeUnigramCandidateSampler.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ThreadUnsafeUnigramCandidateSampler)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .OUTPUT(sampled_candidates, TensorType({ DT_INT64 }))
@@ -114,8 +120,10 @@ which delivers poor performance.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator UniformCandidateSampler.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(UniformCandidateSampler)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .OUTPUT(sampled_candidates, TensorType({ DT_INT64 }))
@@ -180,8 +188,10 @@ which delivers poor performance.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator FixedUnigramCandidateSampler.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(FixedUnigramCandidateSampler)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .OUTPUT(sampled_candidates, TensorType({ DT_INT64 }))
@@ -239,8 +249,10 @@ poor performance.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator LearnedUnigramCandidateSampler.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(LearnedUnigramCandidateSampler)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .OUTPUT(sampled_candidates, TensorType({ DT_INT64 }))
@@ -291,8 +303,10 @@ poor performance.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator LogUniformCandidateSampler.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(LogUniformCandidateSampler)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .OUTPUT(sampled_candidates, TensorType({ DT_INT64 }))
@@ -339,8 +353,10 @@ to occur in a batch of sampled candidates. If "unique" is true, then this is a p
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AllCandidateSampler.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(AllCandidateSampler)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .OUTPUT(sampled_candidates, TensorType({ DT_INT64 }))
@@ -379,8 +395,10 @@ each element is -FLOAT_MAX.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ComputeAccidentalHits.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(ComputeAccidentalHits)
     .INPUT(true_classes, TensorType({ DT_INT64 }))
     .INPUT(sampled_candidates, TensorType({ DT_INT64 }))

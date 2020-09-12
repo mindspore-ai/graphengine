@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include "common/tbe_kernel_store.h"
+#include "common/cust_aicpu_kernel_store.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "graph/buffer.h"
@@ -40,6 +41,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
   const Graph &GetGraph() const;
   std::shared_ptr<domi::ModelTaskDef> GetModelTaskDefPtr() const;
   const TBEKernelStore &GetTBEKernelStore() const;
+  const CustAICPUKernelStore &GetCustAICPUKernelStore() const;
   Buffer GetWeight() const;
 
   std::string GetName() const;
@@ -50,6 +52,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
   void SetGraph(const Graph &graph);
   void SetModelTaskDef(const std::shared_ptr<domi::ModelTaskDef> &task);
   void SetTBEKernelStore(const TBEKernelStore &tbe_kernal_store);
+  void SetCustAICPUKernelStore(const CustAICPUKernelStore &cust_aicpu_kernal_store);
   void SetWeight(const Buffer &weights_buffer);
 
   void SetName(const std::string &name);
@@ -79,6 +82,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
   Graph graph_;
   std::shared_ptr<domi::ModelTaskDef> task_;
   TBEKernelStore tbe_kernal_store_;
+  CustAICPUKernelStore cust_aicpu_kernal_store_;
   Buffer weights_buffer_;
 
   std::string name_;

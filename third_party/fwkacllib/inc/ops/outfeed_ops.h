@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file outfeed_ops.h
+ * \brief
+ */
 #ifndef GE_OP_OUTFEED_OPS_H
 #define GE_OP_OUTFEED_OPS_H
 

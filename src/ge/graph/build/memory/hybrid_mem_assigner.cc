@@ -41,10 +41,17 @@ Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_
 }
 
 Status HybridMemAssigner::Assign() {
-  std::unique_ptr<BlockMemAssigner> binary_assigner(new (std::nothrow) BinaryBlockMemAssigner(compute_graph_));
+  if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
+    return FAILED;
+  }
+
+  std::unique_ptr<BlockMemAssigner> binary_assigner(
+    new (std::nothrow) BinaryBlockMemAssigner(compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
   GE_CHECK_NOTNULL(binary_assigner);
 
-  std::unique_ptr<BlockMemAssigner> max_assigner(new (std::nothrow) MaxBlockMemAssigner(compute_graph_));
+  std::unique_ptr<BlockMemAssigner> max_assigner(
+    new (std::nothrow) MaxBlockMemAssigner(compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
   GE_CHECK_NOTNULL(max_assigner);
 
   size_t bin_mem_size = 0;

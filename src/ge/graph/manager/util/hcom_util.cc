@@ -63,7 +63,7 @@ Status HcomOmeUtil::GetHcclDataType(const ge::ConstOpDescPtr &op_desc,
   return SUCCESS;
 }
 
-Status HcomOmeUtil::GetHcclTypeSize(hcclDataType_t data_type, int32_t &size) {
+Status HcomOmeUtil::GetHcclTypeSize(HcclDataType data_type, int32_t &size) {
   auto iter = kConstOpHcclDataTypeSize.find(data_type);
   GE_CHK_BOOL_EXEC(iter != kConstOpHcclDataTypeSize.end(), return PARAM_INVALID,
                    "HcomOmeUtil::HcomDataTypeSize , No DataTypeSize!");
@@ -72,7 +72,7 @@ Status HcomOmeUtil::GetHcclTypeSize(hcclDataType_t data_type, int32_t &size) {
   return SUCCESS;
 }
 
-Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, hcclDataType_t data_type, bool is_allgather,
+Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, HcclDataType data_type, bool is_allgather,
                                  int &count) {
   GE_CHECK_NOTNULL(op_desc);
   if (!IsHCOMOp(op_desc->GetType())) {
@@ -149,7 +149,7 @@ Status HcomOmeUtil::GetHorovodCount(const ge::ConstOpDescPtr &op_desc,
   int64_t align_size = 512;
   int32_t size = 0;
   for (size_t i = 0; i < op_desc->GetInputsSize(); i++) {
-    GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclTypeSize(static_cast<tagHcclDataType>(kernel_hccl_infos[i].dataType), size),
+    GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclTypeSize(static_cast<HcclDataType>(kernel_hccl_infos[i].dataType), size),
                       "GetHorovodCount: GetHcclTypeSize fail!");
     int64_t input_size = 0;
     int64_t block_size = 0;
@@ -187,7 +187,7 @@ Status HcomOmeUtil::GetHcclCount(const ge::ConstOpDescPtr &op_desc,
   GELOGI("GetHcclCount start, node[%s], opType[%s].", op_desc->GetName().c_str(), op_desc->GetType().c_str());
   if (IsHCOMOp(op_desc->GetType())) {
     int32_t count = 0;
-    ret = GetHcomCount(op_desc, static_cast<tagHcclDataType>(kernel_hccl_infos[0].dataType),
+    ret = GetHcomCount(op_desc, static_cast<HcclDataType>(kernel_hccl_infos[0].dataType),
                        kernel_hccl_infos[0].hccl_type == HCOMALLGATHER, count);
     if (ret != SUCCESS) {
       GELOGE(ret, "HcomOmeUtil:: Node: %s Optype: %s get the Hcom operator hccl count fail.",
@@ -209,7 +209,7 @@ Status HcomOmeUtil::GetHcclCount(const ge::ConstOpDescPtr &op_desc,
   return SUCCESS;
 }
 
-Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, hcclRedOp_t &op_type) {
+Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, HcclReduceOp &op_type) {
   GE_CHECK_NOTNULL(op_desc);
 
   if (IsHCOMOp(op_desc->GetType())) {
@@ -219,13 +219,13 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, hccl
                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
 
     if (hcom_op_type == "min") {
-      op_type = HCCL_REP_OP_MIN;
+      op_type = HCCL_REDUCE_MIN;
     } else if (hcom_op_type == "max") {
-      op_type = HCCL_REP_OP_MAX;
+      op_type = HCCL_REDUCE_MAX;
     } else if (hcom_op_type == "prod") {
-      op_type = HCCL_REP_OP_PROD;
+      op_type = HCCL_REDUCE_PROD;
     } else if (hcom_op_type == "sum") {
-      op_type = HCCL_REP_OP_SUM;
+      op_type = HCCL_REDUCE_SUM;
     } else {
       GELOGE(PARAM_INVALID, "HcomOmeUtil::Get HCOM_ATTR_REDUCE_TYPE fail, [%s] not support!", hcom_op_type.c_str());
       return PARAM_INVALID;
@@ -239,7 +239,7 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, hccl
                      "HcomOmeUtil:: Node: %s Optype: %s Get ATTR_HOROVOD_ATTR_REDUCE_TYPE fail, not support!",
                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
 
-    auto iter = kHorovodRedOpToHcclRedOp.find(static_cast<horovodRedOp_t>(horovod_op_type));
+    auto iter = kHorovodRedOpToHcclRedOp.find(static_cast<HorovodReduceOp>(horovod_op_type));
     if (iter == kHorovodRedOpToHcclRedOp.end()) {
       GELOGE(PARAM_INVALID, "HcomOmeUtil::  Node: %s Optype: %s HcomOpType cann't support! Current HcomOpType : %ld",
              op_desc->GetName().c_str(), op_desc->GetType().c_str(), horovod_op_type);

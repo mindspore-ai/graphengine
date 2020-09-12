@@ -16,9 +16,9 @@
 
 #ifndef HYBRID_HCCL_NODE_EXECUTOR_H_
 #define HYBRID_HCCL_NODE_EXECUTOR_H_
-#include "hybrid/node_executor/node_executor.h"
-#include "hybrid/model/hybrid_model.h"
 #include "graph/op_desc.h"
+#include "hybrid/model/hybrid_model.h"
+#include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
 namespace hybrid {
@@ -37,6 +37,24 @@ class HcclNodeTask : public NodeTask {
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
   bool load_flag_ = false;
+  std::mutex hccl_mutex_;
+  std::condition_variable cond_;
+};
+
+class RdmaNodeTask : public NodeTask {
+ public:
+  RdmaNodeTask() = default;
+
+  ~RdmaNodeTask() override {}
+
+  Status UpdateArgs(TaskContext &context) override;
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+  Status Init(TaskContext &context) override;
+
+ private:
+  Status ExtractTensor(TaskContext &context, vector<HcomRemoteAccessAddrInfo> &addr_infos);
+  std::pair<int64_t, int64_t> remote_index_;
+  int32_t local_index_ = 0;
   std::mutex hccl_mutex_;
   std::condition_variable cond_;
 };

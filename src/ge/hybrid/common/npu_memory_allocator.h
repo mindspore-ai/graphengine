@@ -32,7 +32,7 @@ class AllocationAttr {
   AllocationAttr() = default;
   explicit AllocationAttr(int padding);
   explicit AllocationAttr(void *try_reuse_addr);
-  AllocationAttr(int padding, void *try_reuse_addr);
+  AllocationAttr(int padding, void *try_reuse_addr, MemStorageType = HBM);
   ~AllocationAttr() = default;
   void SetMemType(MemStorageType memType) { mem_type_ = memType; }
   MemStorageType GetMemType() { return mem_type_; }
@@ -56,7 +56,7 @@ class NpuMemoryAllocator {
   }
 
   void *Allocate(std::size_t size, AllocationAttr *attr = nullptr);
-  void Deallocate(void *data);
+  void Deallocate(void *data, MemStorageType mem_type = HBM);
 
   static constexpr int kDefaultPadding = 32;
 

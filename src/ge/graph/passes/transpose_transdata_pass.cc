@@ -43,7 +43,7 @@ Status TransposeTransDataPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
 
-  if (op_desc->GetType() != TRANSPOSE && op_desc->GetType() != TRANSPOSED) {
+  if (op_desc->GetType() != TRANSPOSED) {
     return SUCCESS;
   }
   if (CheckOneInAndOneOutDataAnchor(node) != SUCCESS) {

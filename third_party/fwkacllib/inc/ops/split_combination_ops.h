@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file split_combination_ops.h
+ * \brief
+ */
 #ifndef GE_OP_SPLIT_COMBINATION_OPS_H
 #define GE_OP_SPLIT_COMBINATION_OPS_H
 #include "graph/operator_reg.h"
@@ -197,6 +201,8 @@ REG_OP(ParallelConcat)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ConcatV2.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ConcatV2 instead.
 */
 REG_OP(ConcatV2D)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_INT64, DT_UINT64, DT_UINT32, DT_INT16, DT_UINT16, DT_UINT8}))
@@ -254,6 +260,8 @@ REG_OP(ConcatV2)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Concat.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Concat instead.
 */
 REG_OP(ConcatD)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_INT8,DT_INT16,DT_INT32,DT_INT64,DT_UINT8,DT_UINT16,DT_UINT32,DT_UINT64}))
@@ -360,6 +368,8 @@ REG_OP(ConcatOffset)
 
 *@par Third-party framework compatibility
 *@ Compatible with the TensorFlow operator ConcatOffset.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ConcatOffset instead.
 */
 REG_OP(ConcatOffsetD)
     .DYNAMIC_INPUT(x, TensorType({DT_INT32}))

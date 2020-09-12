@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/*!
+ * \file npu_loss_scale_ops.h
+ * \brief
+ */
+
 #ifndef GE_OP_NN_LOSS_SCALE_OPS_H
 #define GE_OP_NN_LOSS_SCALE_OPS_H
 #include "graph/operator_reg.h"

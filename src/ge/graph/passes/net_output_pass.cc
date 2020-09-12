@@ -27,6 +27,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/omg/omg_inner_types.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/common/local_context.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
@@ -413,7 +414,7 @@ Status NetOutputPass::ProcessWithNetoutput(const ge::ComputeGraphPtr &graph, con
 Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraphPtr &graph,
                                                           const ge::NodePtr &net_out_node) {
   GE_CHECK_NOTNULL(net_out_node);
-  if (!domi::GetContext().user_out_nodes.empty()) {
+  if (!GetLocalOmgContext().user_out_nodes.empty()) {
     GELOGI("No need to add ctrl edge to netoutput because user out nodes have been set.");
     return SUCCESS;
   }
@@ -603,7 +604,7 @@ Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &outpu
     GELOGI("[NETOUTPUT PASS] The graph no need netoutput node!");
     return SUCCESS;
   }
-  auto output_type = domi::GetContext().output_type;
+  auto output_type = GetLocalOmgContext().output_type;
   auto op_desc = output_node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
   std::vector<std::string> userdef_dtypes;

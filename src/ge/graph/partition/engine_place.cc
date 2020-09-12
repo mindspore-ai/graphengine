@@ -15,19 +15,25 @@
  */
 
 #include "graph/partition/engine_place.h"
+
 #include <climits>
 #include <memory>
 #include <string>
 #include <utility>
+#include <mutex>
+
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "init/gelib.h"
 #include "opskernel_manager/ops_kernel_manager.h"
+#include "analyzer/analyzer.h"
 
 namespace ge {
-Status EnginePlacer::Run() {
-  GELOGI("Engine placer starts.");
+namespace {
+std::mutex check_support_cost_mutex;
+}
+Status EnginePlacer::Check() const {
   if (compute_graph_ == nullptr) {
     GELOGE(GE_GRAPH_NULL_INPUT, "compute_graph_ is null.");
     return FAILED;
@@ -37,23 +43,48 @@ Status EnginePlacer::Run() {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Run enginePlacer failed");
     return FAILED;
   }
+  return SUCCESS;
+}
+
+Status EnginePlacer::Run() {
+  std::lock_guard<std::mutex> lock(check_support_cost_mutex);
+
+  GELOGI("Engine placer starts.");
+  if (Check() != SUCCESS) {
+    return FAILED;
+  }
+  bool is_check_support_success = true;
   // Assign engine for each node in the graph
-  instance_ptr->DNNEngineManagerObj().InitPerformanceStaistic();
+  ge::GELib::GetInstance()->DNNEngineManagerObj().InitPerformanceStaistic();
   for (const auto &node_ptr : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(node_ptr);
-    GE_CHECK_NOTNULL(node_ptr->GetOpDesc());
+    auto op_desc = node_ptr->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
     std::string engine_name;
+    std::string kernel_name;
     // Check if this node has assigned engine
-    if ((!node_ptr->GetOpDesc()->GetOpKernelLibName().empty())) {
-      engine_name = node_ptr->GetOpDesc()->GetOpEngineName();
+    bool has_engine_attr =
+      AttrUtils::GetStr(op_desc, ATTR_NAME_ENGINE_NAME_FOR_LX, engine_name) && !engine_name.empty();
+    bool has_kernel_attr =
+      AttrUtils::GetStr(op_desc, ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX, kernel_name) && !kernel_name.empty();
+    bool use_exist_engine_name = !op_desc->GetOpKernelLibName().empty() || (has_kernel_attr && has_engine_attr);
+    if (use_exist_engine_name) {
+      if (op_desc->GetOpEngineName().empty()) {
+        GELOGI("Op %s set engine_name %s engine_name %s from attrs", op_desc->GetName().c_str(), engine_name.c_str(),
+               kernel_name.c_str());
+        op_desc->SetOpEngineName(engine_name);
+        op_desc->SetOpKernelLibName(kernel_name);
+      }
+      engine_name = op_desc->GetOpEngineName();
     } else {
       // Call placer cost model to get the "best" engine for this node
-      engine_name = instance_ptr->DNNEngineManagerObj().GetDNNEngineName(node_ptr->GetOpDesc());
-      // If can't get op's engine name, return failed
+      engine_name = ge::GELib::GetInstance()->DNNEngineManagerObj().GetDNNEngineName(node_ptr);
+      // If can't get op's engine name, keep check support finish and return failed
       if (engine_name.empty()) {
+        is_check_support_success = false;
         GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Can not find engine of op type %s",
                node_ptr->GetOpDesc()->GetType().c_str());
-        return FAILED;
+        continue;
       }
     }
     if (AssignEngineAndLog(node_ptr, engine_name) != SUCCESS) {
@@ -61,11 +92,12 @@ Status EnginePlacer::Run() {
       return FAILED;
     }
   }
-  for (auto &it : instance_ptr->DNNEngineManagerObj().GetCheckSupportCost()) {
+
+  for (auto &it : ge::GELib::GetInstance()->DNNEngineManagerObj().GetCheckSupportCost()) {
     GEEVENT("The time cost of %s::CheckSupported is [%lu] micro second.", it.first.c_str(), it.second);
   }
   GELOGI("Engine placer ends.");
-  return SUCCESS;
+  return is_check_support_success ? SUCCESS : FAILED;
 }
 
 Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::string &engine_name) {

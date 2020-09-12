@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file selection_ops.h
+ * \brief
+ */
 #ifndef GE_OP_SELECTION_OPS_H
 #define GE_OP_SELECTION_OPS_H
 #include "graph/operator_reg.h"
@@ -125,6 +129,8 @@ REG_OP(Tile)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Tile.
+*@par Restrictions：
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Tile instead.
 */
 REG_OP(TileD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
@@ -540,6 +546,8 @@ REG_OP(ReverseV2)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ReverseV2.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ReverseV2 instead.
 */
 REG_OP(ReverseV2D)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, DT_INT32,
@@ -755,6 +763,8 @@ REG_OP(Slice)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". The slice extracted from the tensor.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Slice instead.
 */
 REG_OP(SliceD)
     .INPUT(x, TensorType::BasicType())
@@ -915,6 +925,9 @@ REG_OP(ScatterNdD)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator InTopK.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use InTopK instead.
 */
 REG_OP(InTopKD)
     .INPUT(x1, TensorType({DT_FLOAT}))
@@ -1027,6 +1040,9 @@ REG_OP(StridedSliceAssign)
 * "value" shape must be exactly the shape produced by the slice of "var".
 
 * @see StridedSlice()
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use StridedSliceAssign instead.
 */
 REG_OP(StridedSliceAssignD)
     .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
@@ -1407,7 +1423,10 @@ REG_OP(UnsortedSegmentMin)
 * @par Outputs:
 * y: A Tensor.Must have the same type as input "x".
 
-* @see UnsortedSegmentProdD(),
+* @see UnsortedSegmentProdD(), UnsortedSegmentSumD(),
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use UnsortedSegmentMin instead.
 */
 REG_OP(UnsortedSegmentMinD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
@@ -1457,6 +1476,9 @@ REG_OP(UnsortedSegmentMax)
 * y: A Tensor.Must have the same type as input "x".
 
 * @see UnsortedSegmentProdD(),
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use UnsortedSegmentMax instead.
 */
 REG_OP(UnsortedSegmentMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
@@ -1505,6 +1527,9 @@ REG_OP(UnsortedSegmentProd)
 * y: A Tensor.Must have the same type as input "x".
 
 * @see UnsortedSegmentMinD()
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use UnsortedSegmentProd instead.
 */
 REG_OP(UnsortedSegmentProdD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
@@ -1580,6 +1605,8 @@ REG_OP(UnsortedSegmentProdD)
 *@li actual_rois_num: A Tensor with shape [batch, 8], of type int32, specifying the number of BBoxes output per batch.
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Proposal instead.
 */
 REG_OP(ProposalD)
      .INPUT(cls_prob, TensorType({DT_FLOAT16, DT_FLOAT}))

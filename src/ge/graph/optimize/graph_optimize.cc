@@ -17,6 +17,7 @@
 #include "graph/optimize/graph_optimize.h"
 
 #include "graph/ge_context.h"
+#include "graph/common/local_context.h"
 #include "graph/passes/dimension_adjust_pass.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
@@ -68,7 +69,7 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
       src_index_list.emplace_back(peer_out_anchor->GetIdx());
       node_op_desc->SetSrcName(src_name_list);
       node_op_desc->SetSrcIndex(src_index_list);
-      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && domi::GetContext().type == domi::TENSORFLOW),
+      GE_IF_BOOL_EXEC(!(node_op_desc->GetType() == NETOUTPUT && GetLocalOmgContext().type == domi::TENSORFLOW),
                       ge::NodePtr peer_owner_node = peer_out_anchor->GetOwnerNode();
                       input_name_list.emplace_back(
                         peer_owner_node->GetName() +
@@ -99,6 +100,17 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
 
     if (compute_graph->GetDirectNode().size() == 0) {
       GELOGW("[OptimizeSubGraph] compute_graph do not has any node.");
+      return SUCCESS;
+    }
+
+    if (build_mode_ == BUILD_MODE_TUNING && build_step_ == BUILD_STEP_AFTER_UB_MATCH) {
+      for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
+        Status ret = (*iter)->OptimizeFusedGraphAfterGraphSlice(*(compute_graph));
+        if (ret != SUCCESS) {
+          GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphStage2]: graph optimize failed, ret:%d", ret);
+          return ret;
+        }
+      }
       return SUCCESS;
     }
 
@@ -264,6 +276,8 @@ Status GraphOptimize::SetOptions(const ge::GraphManagerOptions &options) {
   local_fmk_op_flag_ = options.local_fmk_op_flag;
   func_bin_path_ = options.func_bin_path;
   core_type_ = options.core_type;
+  build_mode_ = options.build_mode;
+  build_step_ = options.build_step;
   return SUCCESS;
 }
 

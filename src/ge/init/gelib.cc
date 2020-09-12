@@ -29,15 +29,17 @@
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/util.h"
+#include "analyzer/analyzer.h"
 #include "ge/ge_api_types.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
-#include "graph/common/ge_call_wrapper.h"
 #include "omm/csa_interact.h"
 #include "runtime/kernel.h"
 
@@ -142,8 +144,15 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initHostCpuEngineStatus;
   }
 
+  GELOGI("Start to init Analyzer!");
+  Status init_analyzer_status = ge::Analyzer::GetInstance()->Initialize();
+  if (init_analyzer_status != SUCCESS) {
+    GELOGE(init_analyzer_status, "Failed to initialize HostCpuEngine");
+    RollbackInit();
+    return init_analyzer_status;
+  }
+
   init_flag_ = true;
-  GELOGI("GeLib initial success.");
   return SUCCESS;
 }
 
@@ -159,6 +168,11 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
   // In train and infer, profiling is always needed.
   InitOptions(options);
   InitProfiling(this->options_);
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  GE_IF_BOOL_EXEC(model_manager->EnableExceptionDump(options) != SUCCESS,
+                  GELOGE(FAILED, "Enable exception dump failed");
+                  return FAILED);
   // 1.`is_train_mode_` means case: train
   // 2.`(!is_train_mode_) && (options_.device_id != kDefaultDeviceIdForInfer)` means case: online infer
   // these two case need call `InitSystemWithOptions->rtGetDeviceIndexByPhyId`
@@ -278,20 +292,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
   GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
-  options.physical_device_id = options.device_id;
 
-  // The physical ID is transferred to the logical ID. FMK receives physical ID and needs to be converted
-  uint32_t dev_logic_index = 0;
-  rtError_t rt_ret = rtGetDeviceIndexByPhyId(static_cast<uint32_t>(options.device_id), &dev_logic_index);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "rtGetDeviceIndexByPhyId transform index by phyId %d failed", options.device_id);
-                  CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_ENV_INIT);
-                  return FAILED);
-  options.device_id = static_cast<int32_t>(dev_logic_index);
-  GELOGI("rtGetDeviceIndexByPhyId physical device id:%d,logical device id:%u", options.device_id, dev_logic_index);
-
-  GetContext().SetCtxDeviceId(dev_logic_index);
-
+  // set device id
+  GELOGI("set logical device id:%u", options.device_id);
+  GetContext().SetCtxDeviceId(static_cast<uint32_t>(options.device_id));
   GE_CHK_RT_RET(rtSetDevice(options.device_id));
 
   // In the scenario that the automatic add fusion is set, but there is no cleanaddr operator,
@@ -388,6 +392,9 @@ Status GELib::Finalize() {
 
   GELOGI("HostCpuEngine finalization.");
   HostCpuEngine::GetInstance().Finalize();
+
+  GELOGI("Analyzer finalization");
+  Analyzer::GetInstance()->Finalize();
 
   // Shut down profiling
   ShutDownProfiling();

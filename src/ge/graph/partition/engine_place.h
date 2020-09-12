@@ -46,6 +46,7 @@ class EnginePlacer {
 
  private:
   Status AssignEngineAndLog(ConstNodePtr node_ptr, const std::string &engine_name);
+  Status Check() const;
 
   ComputeGraphPtr compute_graph_;
   NodeEngineMap node_engine_map_;

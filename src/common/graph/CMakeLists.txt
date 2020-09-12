@@ -24,6 +24,7 @@ file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/task.proto"
         "../../proto/fwk_adaper.proto"
         "../../proto/op_mapping_info.proto"
+        "../proto/dump_task.proto"
         )
 
 file(GLOB_RECURSE ONNX_PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}

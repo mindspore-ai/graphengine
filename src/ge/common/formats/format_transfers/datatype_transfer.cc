@@ -44,6 +44,9 @@ enum DataTypeTransMode {
   kTransferWithDatatypeInt8ToFloat,
   kTransferWithDatatypeInt8ToInt32,
   kTransferWithDatatypeInt64ToInt32,
+  kTransferWithDatatypeInt32ToInt64,
+  kTransferWithDatatypeInt32ToDouble,
+  kTransferWithDatatypeDoubleToInt32,
 };
 
 std::map<std::pair<DataType, DataType>, DataTypeTransMode> trans_mode_map{
@@ -59,7 +62,11 @@ std::map<std::pair<DataType, DataType>, DataTypeTransMode> trans_mode_map{
   {std::pair<DataType, DataType>(DT_UINT8, DT_INT32), kTransferWithDatatypeUint8ToInt32},
   {std::pair<DataType, DataType>(DT_INT8, DT_FLOAT), kTransferWithDatatypeInt8ToFloat},
   {std::pair<DataType, DataType>(DT_INT8, DT_INT32), kTransferWithDatatypeInt8ToInt32},
-  {std::pair<DataType, DataType>(DT_INT64, DT_INT32), kTransferWithDatatypeInt64ToInt32}};
+  {std::pair<DataType, DataType>(DT_INT64, DT_INT32), kTransferWithDatatypeInt64ToInt32},
+  {std::pair<DataType, DataType>(DT_INT32, DT_INT64), kTransferWithDatatypeInt32ToInt64},
+  {std::pair<DataType, DataType>(DT_INT32, DT_DOUBLE), kTransferWithDatatypeInt32ToDouble},
+  {std::pair<DataType, DataType>(DT_DOUBLE, DT_INT32), kTransferWithDatatypeDoubleToInt32},
+};
 
 template <typename SrcT, typename DstT>
 Status TransDataSrc2Dst(const CastArgs &args, uint8_t *dst, const size_t data_size) {
@@ -82,38 +89,30 @@ Status TransDataSrc2Fp16(const CastArgs &args, uint8_t *dst, const size_t data_s
 }
 
 Status CastKernel(const CastArgs &args, uint8_t *dst, const size_t data_size, const DataTypeTransMode trans_mode) {
-  switch (trans_mode) {
-    case kTransferWithDatatypeFloatToFloat16:
-      return TransDataSrc2Fp16<float>(args, dst, data_size);
-    case kTransferWithDatatypeFloatToInt32:
-      return TransDataSrc2Dst<float, int32_t>(args, dst, data_size);
-    case kTransferWithDatatypeFloat16ToFloat:
-      return TransDataSrc2Dst<fp16_t, float>(args, dst, data_size);
-    case kTransferWithDatatypeFloat16ToInt32:
-      return TransDataSrc2Dst<fp16_t, int32_t>(args, dst, data_size);
-    case kTransferWithDatatypeInt32ToFloat:
-      return TransDataSrc2Dst<int32_t, float>(args, dst, data_size);
-    case kTransferWithDatatypeInt32ToFloat16:
-      return TransDataSrc2Fp16<int32_t>(args, dst, data_size);
-    case kTransferWithDatatypeInt32ToUint8:
-      return TransDataSrc2Dst<int32_t, uint8_t>(args, dst, data_size);
-    case kTransferWithDatatypeInt32ToInt8:
-      return TransDataSrc2Dst<int32_t, int8_t>(args, dst, data_size);
-    case kTransferWithDatatypeUint8ToFloat:
-      return TransDataSrc2Dst<uint8_t, float>(args, dst, data_size);
-    case kTransferWithDatatypeUint8ToInt32:
-      return TransDataSrc2Dst<uint8_t, int32_t>(args, dst, data_size);
-    case kTransferWithDatatypeInt8ToFloat:
-      return TransDataSrc2Dst<int8_t, float>(args, dst, data_size);
-    case kTransferWithDatatypeInt8ToInt32:
-      return TransDataSrc2Dst<int8_t, int32_t>(args, dst, data_size);
-    case kTransferWithDatatypeInt64ToInt32:
-      return TransDataSrc2Dst<int64_t, int32_t>(args, dst, data_size);
-    default:
-      GELOGE(PARAM_INVALID, "Trans data type from %s to %s is not supported.",
-             TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-             TypeUtils::DataTypeToSerialString(args.dst_data_type).c_str());
-      return UNSUPPORTED;
+  static std::map<DataTypeTransMode, std::function<Status(const CastArgs &, uint8_t *, const size_t)>> transfer_handle =
+    {
+      {kTransferWithDatatypeFloatToFloat16, TransDataSrc2Fp16<float>},
+      {kTransferWithDatatypeFloatToInt32, TransDataSrc2Dst<float, int32_t>},
+      {kTransferWithDatatypeFloat16ToFloat, TransDataSrc2Dst<fp16_t, float>},
+      {kTransferWithDatatypeFloat16ToInt32, TransDataSrc2Dst<fp16_t, int32_t>},
+      {kTransferWithDatatypeInt32ToFloat, TransDataSrc2Dst<int32_t, float>},
+      {kTransferWithDatatypeInt32ToFloat16, TransDataSrc2Fp16<int32_t>},
+      {kTransferWithDatatypeInt32ToUint8, TransDataSrc2Dst<int32_t, uint8_t>},
+      {kTransferWithDatatypeInt32ToInt8, TransDataSrc2Dst<int32_t, int8_t>},
+      {kTransferWithDatatypeUint8ToFloat, TransDataSrc2Dst<uint8_t, float>},
+      {kTransferWithDatatypeUint8ToInt32, TransDataSrc2Dst<uint8_t, int32_t>},
+      {kTransferWithDatatypeInt8ToFloat, TransDataSrc2Dst<int8_t, float>},
+      {kTransferWithDatatypeInt8ToInt32, TransDataSrc2Dst<int8_t, int32_t>},
+      {kTransferWithDatatypeInt64ToInt32, TransDataSrc2Dst<int64_t, int32_t>},
+      {kTransferWithDatatypeInt32ToInt64, TransDataSrc2Dst<int32_t, int64_t>},
+      {kTransferWithDatatypeInt32ToDouble, TransDataSrc2Dst<int32_t, double>},
+      {kTransferWithDatatypeDoubleToInt32, TransDataSrc2Dst<double, int32_t>},
+    };
+  auto it = transfer_handle.find(trans_mode);
+  if (it == transfer_handle.end()) {
+    return UNSUPPORTED;
+  } else {
+    return (it->second)(args, dst, data_size);
   }
 }
 }  // namespace

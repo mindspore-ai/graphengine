@@ -24,7 +24,9 @@
 namespace ge {
 class BinaryBlockMemAssigner : public BlockMemAssigner {
  public:
-  explicit BinaryBlockMemAssigner(ge::ComputeGraphPtr compute_graph) : BlockMemAssigner(std::move(compute_graph)) {}
+  BinaryBlockMemAssigner(ComputeGraphPtr compute_graph, const std::map<std::string, std::string> &anchor_to_symbol,
+                         const std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors)
+      : BlockMemAssigner(std::move(compute_graph), anchor_to_symbol, symbol_to_anchors) {}
 
   BinaryBlockMemAssigner(const BinaryBlockMemAssigner &) = delete;
 

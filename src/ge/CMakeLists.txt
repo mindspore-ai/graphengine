@@ -31,6 +31,7 @@ file(GLOB PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../proto/ge_ir.proto"
         "../proto/fwk_adapter.proto"
         "../proto/op_mapping_info.proto"
+        "../proto/dump_task.proto"
         )
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 ge_protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
@@ -39,6 +40,7 @@ ge_protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST}
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${GE_SOURCE_DIR})
 include_directories(${GE_SOURCE_DIR}/src)
+include_directories(${GE_SOURCE_DIR}/src/ge/analyzer)
 include_directories(${GE_SOURCE_DIR}/inc)
 include_directories(${GE_SOURCE_DIR}/inc/common/util)
 include_directories(${GE_SOURCE_DIR}/inc/external)
@@ -55,6 +57,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 ######### libge_runner.so #############
 # need to remove dependencies on pb files later
 file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "analyzer/analyzer.cc"
         "client/ge_api.cc"
         "common/dump/dump_manager.cc"
         "common/dump/dump_properties.cc"
@@ -105,12 +108,12 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/manager/graph_caching_allocator.cc"
         "graph/manager/graph_var_manager.cc"
         "graph/manager/model_manager/event_manager.cc"
+        "graph/manager/rdma_pool_allocator.cc"
         "graph/manager/trans_var_data_utils.cc"
         "graph/manager/util/debug.cc"
         "graph/manager/util/hcom_util.cc"
         "graph/manager/util/rt_context_util.cc"
         "graph/manager/util/variable_accelerate_ctrl.cc"
-        "graph/manager/model_manager/event_manager.cc"
         "graph/manager/util/debug.cc"
         "graph/manager/util/hcom_util.cc"
         "graph/manager/util/rt_context_util.cc"
@@ -228,6 +231,7 @@ target_link_libraries(ge_runner
 ######### libge_compiler.so #############
 # need to remove dependencies on pb files later
 file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "analyzer/analyzer.cc"
         "common/dump/dump_properties.cc"
         "common/dump/dump_manager.cc"
         "common/dump/dump_op.cc"
@@ -276,6 +280,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/manager/trans_var_data_utils.cc"
         "graph/manager/graph_var_manager.cc"
         "graph/manager/model_manager/event_manager.cc"
+        "graph/manager/rdma_pool_allocator.cc"
         "graph/manager/util/debug.cc"
         "graph/manager/util/rt_context_util.cc"
         "graph/manager/util/variable_accelerate_ctrl.cc"

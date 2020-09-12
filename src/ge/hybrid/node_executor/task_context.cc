@@ -18,6 +18,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_executor.h"
 
@@ -225,7 +226,15 @@ Status TaskContext::AllocateOutputs(AllocationAttr *attr) {
   for (int i = 0; i < node_item_->num_outputs; ++i) {
     const auto &output_desc = node_item_->op_desc->MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_desc);
-    GE_CHK_STATUS_RET_NOLOG(AllocateOutput(i, *output_desc, nullptr, attr));
+    uint32_t mem_type = 0;
+    (void)AttrUtils::GetInt(node_item_->op_desc, ATTR_OUTPUT_MEMORY_TYPE, mem_type);
+    if (attr == nullptr) {
+      auto tmp_attr = AllocationAttr(0, nullptr, static_cast<MemStorageType>(mem_type));
+      GE_CHK_STATUS_RET_NOLOG(AllocateOutput(i, *output_desc, nullptr, &tmp_attr));
+    } else {
+      attr->SetMemType(static_cast<MemStorageType>(mem_type));
+      GE_CHK_STATUS_RET_NOLOG(AllocateOutput(i, *output_desc, nullptr, attr));
+    }
   }
 
   return SUCCESS;

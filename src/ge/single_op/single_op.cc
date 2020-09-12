@@ -91,24 +91,12 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
 
 Status SingleOp::GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
   size_t arg_index = 0;
-  if (use_physical_addr_) {
-    for (auto &input : inputs) {
-      auto *addr = reinterpret_cast<uint8_t *>(input.data);
-      args_[arg_index++] = reinterpret_cast<uintptr_t>(addr);
-    }
+  for (auto &input : inputs) {
+    args_[arg_index++] = reinterpret_cast<uintptr_t>(input.data);
+  }
 
-    for (auto &output : outputs) {
-      auto *addr = reinterpret_cast<uint8_t *>(output.data);
-      args_[arg_index++] = reinterpret_cast<uintptr_t>(addr);
-    }
-  } else {
-    for (auto &input : inputs) {
-      args_[arg_index++] = reinterpret_cast<uintptr_t>(input.data);
-    }
-
-    for (auto &output : outputs) {
-      args_[arg_index++] = reinterpret_cast<uintptr_t>(output.data);
-    }
+  for (auto &output : outputs) {
+    args_[arg_index++] = reinterpret_cast<uintptr_t>(output.data);
   }
   return SUCCESS;
 }

@@ -967,6 +967,13 @@ const std::string ATTR_NAME_SWITCH_FOR_L2_FUSION = "_enable_l2_fusion";
 const std::string ATTR_NAME_OP_INPUT_L1_FLAG = "_op_input_l1_flag";
 const std::string ATTR_NAME_OP_INPUT_L1_ADDR = "_op_input_l1_addr";
 const std::string ATTR_NAME_OP_INPUT_L1_VALID_SIZE = "_op_input_l1_valid_size";
+const std::string ATTR_NAME_ENGINE_NAME_FOR_LX = "_lxfusion_engine_name";
+const std::string ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX = "_lxfusion_op_kernel_lib_name";
+const std::string ATTR_NAME_NEED_LX_FUSION = "_lx_fusion";
+const std::string ATTR_NAME_OPTIMIZE_GROUP = "_optimize_group";
+const std::string ATTR_NAME_OP_COMPILE_STRATEGY = "_op_compile_strategy";
+const std::string ATTR_NAME_TBE_KERNEL_NAME = "_tbe_kernel_name";
+const std::string ATTR_NAME_TBE_KERNEL_BUFFER = "_tbe_kernel_buffer";
 
 // Op debug attrs
 const std::string ATTR_OP_DEBUG_FLAG = "_op_debug_flag";

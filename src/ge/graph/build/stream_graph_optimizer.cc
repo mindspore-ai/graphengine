@@ -102,12 +102,9 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
           continue;
         }
 
-        const char *buffer_optimize_on = std::getenv("BUFFER_OPTIMIZE_ON");
-        if (buffer_optimize_on == nullptr) {
-          if (!IsSameStreamId(subgraph)) {
-            GELOGI("There are more than one stream in subgraph %s", subgraph->GetName().c_str());
-            continue;
-          }
+        if (!IsSameStreamId(subgraph)) {
+          GELOGI("There are more than one stream in subgraph %s", subgraph->GetName().c_str());
+          continue;
         }
         OpDescPtr op_desc = nodes.at(0)->GetOpDesc();
         GE_CHECK_NOTNULL(op_desc);

@@ -136,7 +136,7 @@ NodePtr CreateIdentityAfterSrcNode(const Node &src_node, int out_anchor_idx) {
   if (src_node.GetOpDesc() == nullptr) {
     return nullptr;
   }
-  static std::atomic<int> identity_num(0);
+  static std::atomic_long identity_num(0);
   auto next_num = identity_num.fetch_add(1);
   // 1. create new identity op desc
   string identity_name = src_node.GetName() + "_" + IDENTITY + std::to_string(next_num);
@@ -541,9 +541,8 @@ Status SplitIdentity(const NodePtr &node) {
   GE_CHECK_NOTNULL(pre_out_data_anchor);
   auto pre_node = pre_out_data_anchor->GetOwnerNode();
   GE_CHECK_NOTNULL(pre_node);
-  Status ret = SUCCESS;
   for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    ret = SplitIdentityAlongAnchor(out_data_anchor, peer_in_data_anchor, pre_out_data_anchor, pre_node);
+    Status ret = SplitIdentityAlongAnchor(out_data_anchor, peer_in_data_anchor, pre_out_data_anchor, pre_node);
     if (ret != SUCCESS) {
       GELOGE(ret, "Split identity node along anchor failed.");
       return ret;
@@ -551,7 +550,7 @@ Status SplitIdentity(const NodePtr &node) {
   }
   // 2.isolate Identity node with no data output
   if (node->GetOutDataNodesSize() == 0) {
-    ret = GraphUtils::IsolateNode(node, {});
+    Status ret = GraphUtils::IsolateNode(node, {});
     if (ret != SUCCESS) {
       GELOGE(FAILED, "IsolateAndDelete identity node %s.", node->GetName().c_str());
       return FAILED;

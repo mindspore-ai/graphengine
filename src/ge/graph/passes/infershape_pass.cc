@@ -18,12 +18,21 @@
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "analyzer/analyzer.h"
+#include "framework/common/util.h"
 #include "graph/shape_refiner.h"
 
 namespace ge {
 Status InferShapePass::Run(NodePtr &node) {
   auto ret = ShapeRefiner::InferShapeAndType(node, !OptionExists(kOptimizeAfterSubGraph));
   if (ret != GRAPH_SUCCESS) {
+    // select INFERSHAPE failed info
+    auto graph = node->GetOwnerComputeGraph();
+    GE_CHECK_NOTNULL(graph);
+    analyzer::DataInfo analyze_info{graph->GetSessionID(), graph->GetGraphID(), analyzer::INFER_SHAPE, node,
+                                    "InferShapeFailed!"};
+    (void)Analyzer::GetInstance()->DoAnalyze(analyze_info);
+
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }

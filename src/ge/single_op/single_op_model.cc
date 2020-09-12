@@ -85,11 +85,6 @@ void SingleOpModel::ParseOpModelParams(ModelHelper &model_helper, SingleOpModelP
 
 Status SingleOpModel::InitModelMem(StreamResource &res) {
   ParseOpModelParams(model_helper_, model_params_);
-  if (model_params_.memory_size > ALLOC_MEMORY_MAX_SIZE || model_params_.weight_size > ALLOC_MEMORY_MAX_SIZE) {
-    GELOGE(PARAM_INVALID, "Can not alloc memory larger than %lu. memory size = %lu, weight size = %lu",
-           ALLOC_MEMORY_MAX_SIZE, model_params_.memory_size, model_params_.weight_size);
-    return PARAM_INVALID;
-  }
 
   if (model_params_.memory_size > model_params_.zero_copy_mem_size) {
     const string purpose("malloc feature map memory on model execute.");
@@ -203,12 +198,6 @@ Status SingleOpModel::ParseInputsAndOutputs() {
 }
 
 Status SingleOpModel::SetInputsAndOutputs(SingleOp &single_op) {
-  // for lhisi
-  const char *use_physical_address = std::getenv("GE_USE_PHYSICAL_ADDRESS");
-  if (use_physical_address != nullptr) {
-    single_op.use_physical_addr_ = true;
-  }
-
   int arg_index = 0;
   for (size_t i = 0; i < input_offset_list_.size(); ++i) {
     auto *addr = model_params_.mem_base + input_offset_list_[i];

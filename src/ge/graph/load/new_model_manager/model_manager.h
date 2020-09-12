@@ -274,6 +274,22 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   bool IsDynamicShape(uint32_t model_id);
   ge::Status GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info);
 
+  ge::Status EnableExceptionDump(const std::map<string, string> &options);
+
+  const std::vector<rtExceptionInfo> &GetExceptionInfos() { return exception_infos_; }
+
+  void AddExceptionInfo(const rtExceptionInfo &exception_info) { exception_infos_.emplace_back(exception_info); }
+
+  static void ExceptionCallback(rtExceptionInfo *exception_info) {
+    std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
+    auto instance = ModelManager::GetInstance();
+    if (instance == nullptr) {
+      GELOGE(FAILED, "Instance is nullptr");
+      return;
+    }
+    instance->AddExceptionInfo(*exception_info);
+  }
+
  private:
   ///
   /// @ingroup domi_ome
@@ -309,8 +325,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::mutex map_mutex_;
   std::mutex sess_ids_mutex_;
   std::mutex session_id_create_mutex_;
+  static ::std::mutex exeception_infos_mutex_;
   uint64_t session_id_bias_;
   std::set<uint64_t> sess_ids_;
+  std::vector<rtExceptionInfo> exception_infos_;
 
   static DumpProperties dump_properties_;
 };

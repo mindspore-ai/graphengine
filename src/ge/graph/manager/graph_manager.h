@@ -39,12 +39,13 @@
 #include "graph/optimize/graph_optimize.h"
 #include "graph/partition/graph_partition.h"
 #include "graph/preprocess/graph_preprocess.h"
+#include "graph/tuning_utils.h"
 #include "model/ge_model.h"
 
 namespace ge {
 class GraphManager {
  public:
-  GraphManager();
+  GraphManager(OmgContext &omg_context);
 
   ~GraphManager() = default;
 
@@ -248,6 +249,8 @@ class GraphManager {
 
   Status MergeSubGraph(ComputeGraphPtr &compute_graph, const ge::ComputeGraphPtr &original_compute_graph);
 
+  Status ConvertGraphToFile(ComputeGraphPtr &compute_graph, std::string file_path, bool exe_flag = false);
+
   Status SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph);
 
   void SetAttrForHcomBroadCastOp(ge::ComputeGraphPtr &compute_graph);
@@ -304,6 +307,25 @@ class GraphManager {
 
   void ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph);
 
+  Status PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
+                                     ge::ComputeGraphPtr &compute_graph, uint64_t session_id);
+  Status PreRunOptimizeSubGraph(const GraphNodePtr &graph_node, ge::ComputeGraphPtr &compute_graph,
+                                uint64_t session_id);
+  Status PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph,
+                                     GeRootModelPtr &ge_root_model, uint64_t session_id);
+
+  Status CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_graph, Graph2SubGraphInfoList &sub_graph_map,
+                                   std::unordered_map<std::string, ComputeGraphPtr> &copy_graphs);
+
+  Status OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph, Graph2SubGraphInfoList &sub_graph_map,
+                                          uint64_t session_id);
+
+  bool CheckAllFusionOptimizeSuccess(const ComputeGraphPtr &compute_graph, Graph2SubGraphInfoList &sub_graph_map);
+
+  Status ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_graph, Graph2SubGraphInfoList &sub_graph_map,
+                                     std::unordered_map<std::string, ComputeGraphPtr> &copy_graphs);
+  Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint64_t session_id, uint32_t graph_id);
+
   std::atomic_bool thread_run_flag_;
   BlockingQueue<PreRunArgs> prerun_args_q_{};
   BlockingQueue<RunArgs> run_args_q_{};
@@ -326,6 +348,7 @@ class GraphManager {
   bool init_flag_;
 
   GraphManagerOptions options_;
+  OmgContext &omg_context_;
 
   GraphPrepare graph_preparer_;
   GraphOptimize graph_optimize_;

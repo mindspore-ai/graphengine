@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file aipp.h
+ * \brief
+ */
 #ifndef GE_OP_AIPP_H
 #define GE_OP_AIPP_H
 
@@ -41,7 +45,6 @@ REG_OP(Aipp)
     .OUTPUT(features, TensorType({DT_FLOAT16, DT_UINT8}))
     .ATTR(aipp_config_path, String, "./aipp.cfg")
     .OP_END_FACTORY_REG(Aipp)
-} // namespace ge
 
 /**
 *@brief Performs this op is for dynamic aipp.If you set aipp-mode to dynamic \n
@@ -59,12 +62,11 @@ in aipp config file, framework will auto add one input node to graph at last.
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AippData.
 */
-namespace ge {
 REG_OP(AippData)
     .INPUT(data, TensorType::ALL())
     .OUTPUT(out, TensorType::ALL())
     .ATTR(index, Int, 0)
     .OP_END_FACTORY_REG(AippData)
-}
+} // namespace ge
 
 #endif // GE_OP_AIPP_H

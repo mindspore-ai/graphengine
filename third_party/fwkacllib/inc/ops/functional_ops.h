@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file functional_ops.h
+ * \brief
+ */
 #ifndef GE_FUNCTIONAL_OPS_H_
 #define GE_FUNCTIONAL_OPS_H_
 

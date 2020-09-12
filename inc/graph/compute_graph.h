@@ -93,6 +93,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   NodePtr AddNodeFront(const OpDescPtr &op);
   NodePtr AddInputNode(NodePtr node);
   NodePtr AddOutputNode(NodePtr node);
+  NodePtr AddOutputNodeByIndex(NodePtr node, int32_t index);
   // insert node with specific pre_node
   NodePtr AddNodeAfter(OpDescPtr &op, const NodePtr &pre_node);
   NodePtr AddNodeAfter(NodePtr node, const NodePtr &pre_node);
@@ -138,6 +139,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
 
   graphStatus TopologicalSorting();
   bool IsValid() const;
+  void InValid() { is_valid_flag_ = false; }
   void Dump() const;
 
   void Swap(ComputeGraph &graph);
@@ -268,6 +270,7 @@ class ComputeGraph : public std::enable_shared_from_this<ComputeGraph>, public A
   friend class ModelSerializeImp;
   friend class GraphDebugImp;
   friend class OnnxUtils;
+  friend class TuningUtils;
 
   std::string name_;
   uint32_t graph_id_ = 0;

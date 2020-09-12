@@ -130,8 +130,8 @@ Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, void *buffer_addr, const ma
       }
 
       auto dst_addr = static_cast<uint8_t *>(buffer_addr);
-      GELOGI("[ZCPY] %s update task, args_addr: %p, size: %zu, offset: %zu, virtual_addr: 0x%lx", name_.c_str(),
-             args_addr_, args_size_, offset, addr);
+      GELOGI("[ZCPY] %s update task, args_addr: %p, size: %zu, offset: %zu, virtual_addr: 0x%lx, user_data_addr: %p",
+             name_.c_str(), args_addr_, args_size_, offset, addr, buffer_addr);
       *(uintptr_t *)(args_info + offset) = reinterpret_cast<uintptr_t>(dst_addr);
       is_updated_ = true;
     }

@@ -19,6 +19,8 @@
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/node_utils.h"
+#include "graph/utils/op_desc_utils.h"
+#include "graph/utils/tensor_utils.h"
 
 namespace ge {
 Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
@@ -262,6 +264,11 @@ Status MemcpyAddrAsyncPass::InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeG
     if ((in_node->GetType() != CONSTANT) && (in_node->GetType() != CONSTANTOP) && (in_node->GetType() != DATA)) {
       continue;
     }
+    auto desc = in_node->GetOpDesc();
+    GE_CHECK_NOTNULL(desc);
+    if (IsEmptyTenor(desc->GetOutputDesc(peer_out_anchor->GetIdx()).GetShape())) {
+      continue;
+    }
     GELOGI("Need to insert MemcpyAddrAsync before netoutput on parent graph.");
     NodePtr memcpy_addr_async_node = CreateMemcpyAddrAsyncNode(graph, peer_out_anchor, in_node);
     GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr, GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode failed.");
@@ -271,9 +278,30 @@ Status MemcpyAddrAsyncPass::InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeG
     GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode failed."); return ret);
     GELOGI("Insert mem_addr_async node %s success between %s and %s.", memcpy_addr_async_node->GetName().c_str(),
            in_node->GetName().c_str(), node->GetName().c_str());
-    NodeUtils::UpdateIsInputConst(memcpy_addr_async_node);
+    // if src node is const, need to update attr and offset here because this pass process is after offset set.
+    if ((in_node->GetType() == CONSTANT) || (in_node->GetType() == CONSTANTOP)) {
+      NodeUtils::UpdateIsInputConst(memcpy_addr_async_node);
+      auto output_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(output_desc);
+      auto output_tensor_desc = output_desc->MutableInputDesc(static_cast<uint32_t>(in_data_anchor->GetIdx()));
+      int64_t data_offset = 0;
+      (void)TensorUtils::GetDataOffset(*output_tensor_desc, data_offset);
+      auto input_tensor = memcpy_addr_async_node->GetOpDesc()->MutableInputDesc(0);
+      GELOGI("Need update const Offset %ld to op [%s]", data_offset, memcpy_addr_async_node->GetName().c_str());
+      TensorUtils::SetDataOffset(*input_tensor, data_offset);
+      TensorUtils::SetDataOffset(*output_tensor_desc, 0);
+    }
   }
   NodeUtils::UpdateIsInputConst(node);
   return SUCCESS;
+}
+
+bool MemcpyAddrAsyncPass::IsEmptyTenor(const GeShape &shape) const {
+  for (const auto dim : shape.GetDims()) {
+    if (dim == 0) {
+      return true;
+    }
+  }
+  return false;
 }
 }  // namespace ge

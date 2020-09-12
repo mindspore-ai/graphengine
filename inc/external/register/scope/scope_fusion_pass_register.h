@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include "ge/ge_api_error_codes.h"
 #include "register/register_error_codes.h"
 #include "register/register_types.h"
@@ -52,15 +53,16 @@ class ScopePassManager;
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY Scope {
  public:
-  explicit Scope(const std::string &name, const std::string &sub_type = "", Scope *father_scope = nullptr);
+  Scope();
+  Status Init(const std::string &name, const std::string &sub_type = "", Scope *father_scope = nullptr);
   ~Scope();
 
-  std::string Name() const;
-  std::string SubType() const;
-  std::map<std::string, ge::OperatorPtr> AllNodesMap() const;
+  const std::string &Name() const;
+  const std::string &SubType() const;
+  const std::unordered_map<std::string, ge::OperatorPtr> &AllNodesMap() const;
   Scope *GetSubScope(const std::string &scope_name) const;
-  std::string LastName() const;
-  std::vector<Scope *> GetAllSubScopes() const;
+  const std::string LastName() const;
+  const std::vector<Scope *> &GetAllSubScopes() const;
   const Scope *GetFatherScope() const;
 
  private:
@@ -76,12 +78,13 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY Scope {
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY FusionScopesResult {
  public:
   FusionScopesResult();
+  Status Init();
   ~FusionScopesResult();
   void SetName(const std::string &name);
   void SetType(const std::string &type);
   void SetDescription(const std::string &description);
-  std::string Name() const;
-  std::vector<ge::OperatorPtr> Nodes() const;
+  const std::string &Name() const;
+  const std::vector<ge::OperatorPtr> &Nodes() const;
   void InsertInputs(const std::string &inner_op_name, const std::vector<int32_t> &index_map);
   void InsertOutputs(const std::string &inner_op_name, const std::vector<int32_t> &index_map);
 
@@ -136,7 +139,7 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeTree {
   ScopeTree &operator=(const ScopeTree &scopetree) = delete;
   ~ScopeTree();
 
-  std::vector<Scope *> GetAllScopes() const;
+  const std::vector<Scope *> &GetAllScopes() const;
 
  private:
   class ScopeTreeImpl;
@@ -154,7 +157,7 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeGraph {
   ~ScopeGraph();
 
   const ScopeTree *GetScopeTree() const;
-  std::map<std::string, ge::OperatorPtr> GetNodesMap() const;
+  const std::unordered_map<std::string, ge::OperatorPtr> &GetNodesMap() const;
 
  private:
   class ScopeGraphImpl;
@@ -203,7 +206,7 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY NodeOpTypeFeature : ScopeBa
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY NodeAttrFeature : ScopeBaseFeature {
  public:
-  NodeAttrFeature(std::string nodeType, std::string attr_name, ge::DataType datatype, ScopeAttrValue attr_value);
+  NodeAttrFeature(std::string nodeType, std::string attr_name, ge::DataType datatype, ScopeAttrValue &attr_value);
   NodeAttrFeature(NodeAttrFeature const &feature);
   NodeAttrFeature &operator=(NodeAttrFeature const &feature);
   ~NodeAttrFeature();

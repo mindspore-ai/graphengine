@@ -174,6 +174,9 @@ class Node : public std::enable_shared_from_this<Node> {
     fusion_output_dataflow_list_ = fusion_output_list;
   }
 
+  bool GetHostNode() const { return host_node_; }
+  void SetHostNode(bool is_host) { host_node_ = is_host; }
+
   void SetOrigNode(const NodePtr &orignode) { orig_node_ = orignode; }
 
   NodePtr GetOrigNode() { return orig_node_; }
@@ -192,6 +195,7 @@ class Node : public std::enable_shared_from_this<Node> {
   OutControlAnchorPtr out_control_anchor_;
   map<string, GeAttrValue> attrs_;  // lint !e1073
   bool has_init_{false};
+  bool host_node_{false};
   bool anchor_status_updated_{false};
   std::vector<uint32_t> send_event_id_list_;
   std::vector<uint32_t> recv_event_id_list_;
@@ -202,6 +206,7 @@ class Node : public std::enable_shared_from_this<Node> {
   NodePtr orig_node_;
   friend class NodeUtils;
   friend class OnnxUtils;
+  friend class TuningUtils;
 };
 }  // namespace ge
 

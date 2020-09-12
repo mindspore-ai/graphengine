@@ -17,16 +17,17 @@
 #include "npu_memory_allocator.h"
 #include <mutex>
 #include "framework/common/debug/log.h"
-#include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_caching_allocator.h"
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/rdma_pool_allocator.h"
 
 namespace ge {
 namespace hybrid {
 std::map<uint32_t, std::unique_ptr<NpuMemoryAllocator>> NpuMemoryAllocator::allocators_;
 std::mutex NpuMemoryAllocator::mu_;
 
-AllocationAttr::AllocationAttr(int padding, void *try_reuse_addr)
-    : padding_(padding), try_reuse_addr_(try_reuse_addr) {}
+AllocationAttr::AllocationAttr(int padding, void *try_reuse_addr, MemStorageType mem_type)
+    : padding_(padding), try_reuse_addr_(try_reuse_addr), mem_type_(mem_type) {}
 AllocationAttr::AllocationAttr(int padding) : AllocationAttr(padding, nullptr) {}
 AllocationAttr::AllocationAttr(void *try_reuse_addr) : AllocationAttr(0, try_reuse_addr) {}
 
@@ -46,6 +47,7 @@ NpuMemoryAllocator::NpuMemoryAllocator(uint32_t device_id) : device_id_(device_i
 void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   void *try_reuse_addr = nullptr;
   size_t allocate_size = size;
+  MemStorageType mem_type = HBM;
   if (attr != nullptr) {
     try_reuse_addr = attr->try_reuse_addr_;
     if (attr->padding_ != 0) {
@@ -53,10 +55,24 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
       allocate_size = (size + 2 * attr->padding_ - 1) / attr->padding_ * attr->padding_;
       GELOGD("Padding size %ld by %d. final size = %zu.", size, attr->padding_, allocate_size);
     }
+    mem_type = attr->mem_type_;
   }
 
-  void *buffer = MemManager::CachingInstance(RT_MEMORY_HBM)
-                   .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
+  if (allocate_size == 0) {
+    GELOGE(MEMALLOC_FAILED, "Memory size is 0, device_id = %u, size = %zu", device_id_, allocate_size);
+    return nullptr;
+  }
+
+  void *buffer = nullptr;
+  if (mem_type == RDMA_HBM) {
+    buffer = MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Malloc(allocate_size, device_id_);
+  } else if (mem_type == HOST_DDR) {
+    buffer = malloc(allocate_size);
+  } else {
+    buffer = MemManager::Instance()
+               .CachingInstance(RT_MEMORY_HBM)
+               .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
+  }
   if (buffer == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to malloc memory, device_id = %u, size = %zu", device_id_, allocate_size);
     return nullptr;
@@ -66,11 +82,17 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   return buffer;
 }
 
-void NpuMemoryAllocator::Deallocate(void *data) {
+void NpuMemoryAllocator::Deallocate(void *data, MemStorageType mem_type) {
   GELOGI("To deallocating buffer, addr = %p", data);
   if (data != nullptr) {
     GELOGI("Deallocating buffer successfully. addr = %p", data);
-    MemManager::CachingInstance(RT_MEMORY_HBM).Free(reinterpret_cast<uint8_t *>(data), device_id_);
+    if (mem_type == RDMA_HBM) {
+      MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Free(reinterpret_cast<uint8_t *>(data), device_id_);
+    } else if (mem_type == HOST_DDR) {
+      free(data);
+    } else {
+      MemManager::Instance().CachingInstance(RT_MEMORY_HBM).Free(reinterpret_cast<uint8_t *>(data), device_id_);
+    }
   }
 }
 

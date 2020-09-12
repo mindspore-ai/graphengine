@@ -32,10 +32,12 @@
 
 #include "graph/debug/ge_attr_define.h"
 
+#include "graph/common/local_context.h"
 #include "graph/optimize/common/params.h"
 #include "omg/omg_inner_types.h"
 #include "runtime/mem.h"
 
+using std::list;
 using std::map;
 using std::pair;
 using std::set;
@@ -402,8 +404,13 @@ string MemoryBlock::String() {
   return ss.str();
 }
 
-BlockMemAssigner::BlockMemAssigner(ge::ComputeGraphPtr compute_graph)
-    : mem_offset_(0), compute_graph_(std::move(compute_graph)), life_time_(0) {}
+BlockMemAssigner::BlockMemAssigner(ComputeGraphPtr compute_graph, const map<string, string> &anchor_to_symbol,
+                                   const map<string, list<NodeIndexIO>> &symbol_to_anchors)
+    : mem_offset_(0),
+      compute_graph_(std::move(compute_graph)),
+      symbol_to_anchors_(symbol_to_anchors),
+      anchor_to_symbol_(anchor_to_symbol),
+      life_time_(0) {}
 
 BlockMemAssigner::~BlockMemAssigner() {
   for (MemoryBlock *memory_block : memory_blocks_) {
@@ -412,11 +419,6 @@ BlockMemAssigner::~BlockMemAssigner() {
 }
 
 void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
-  if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
-    return;
-  }
-
   vector<int64_t> temp;
   for (const NodePtr &n : compute_graph_->GetAllNodes()) {
     auto node_op_desc = n->GetOpDesc();
@@ -692,13 +694,16 @@ bool BlockMemAssigner::IsPostReuse(const MemoryBlock *mem_block) const {
 /// @ingroup GE
 /// @brief check if symbol of cur node_index_io has block
 /// @param [in] node_index_io
+/// @param [out] symbol
 /// @return bool
 ///
-bool BlockMemAssigner::IsSymbolExist(const NodeIndexIO &node_index_io) {
+bool BlockMemAssigner::IsSymbolExist(const NodeIndexIO &node_index_io, string &symbol) {
   auto iter = anchor_to_symbol_.find(node_index_io.ToString());
   if (iter == anchor_to_symbol_.end()) {
     return false;
   }
+
+  symbol = iter->second;
   return symbol_blocks_.find(iter->second) != symbol_blocks_.end();
 }
 
@@ -883,8 +888,8 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(GetNoAlignSize(*node_op_desc, index, no_align_size) != SUCCESS, return nullptr,
                                  "Get no align size failed");
 
-  if (IsSymbolExist(node_index_io)) {
-    const std::string &symbol = anchor_to_symbol_[node_index_io.ToString()];
+  std::string symbol;
+  if (IsSymbolExist(node_index_io, symbol)) {
     block = symbol_blocks_[symbol];
     block->AddNodeTypeIndex({n, kOutput, index, true}, size, no_align_size);
     block->ref_count_++;
@@ -949,8 +954,8 @@ bool IsOutputBlock(const ge::InDataAnchorPtr &in_data_anchor) {
   GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, GELOGE(FAILED, "Peer out anchor is nullptr."); return false);
   auto src = peer_out_anchor->GetOwnerNode();
   int32_t index = peer_out_anchor->GetIdx();
-  auto iter = domi::GetContext().out_nodes_map.find(src->GetName());
-  if (iter != domi::GetContext().out_nodes_map.end()) {
+  auto iter = GetLocalOmgContext().out_nodes_map.find(src->GetName());
+  if (iter != GetLocalOmgContext().out_nodes_map.end()) {
     for (auto id : iter->second) {
       if (index == id) {
         return true;

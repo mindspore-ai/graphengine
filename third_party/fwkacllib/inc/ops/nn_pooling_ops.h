@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file nn_pooling_ops.h
+ * \brief
+ */
 #ifndef GE_OP_NN_POOLING_OPS_H
 #define GE_OP_NN_POOLING_OPS_H
 
@@ -223,8 +227,7 @@ REG_OP(MaxPool)
 *@brief Performs max 3d pooling on the input.
 
 *@par Inputs:
-*x: An NC1HWC0 Tensor. Supported type:float16, float32, double, int8, int16, \n
-int32, int64, uint8, uint16, qint8
+*x: An NC1HWC0 Tensor. Supported type float16, float32, double.
 
 *@par Attributes:
 *@li ksize: A required list of int8, int16, int32, or int64 values, \n
@@ -233,11 +236,11 @@ No default value.
 *@li strides: A required list of int8, int16, int32, or int64 values, \n
 specifying the stride of the sliding window for each dimension of  \n
 the input tensor. No default value.
-*@li padding: A required string. No default value.
-*@li pads: A list type of int32. Default value {0, 0, 0, 0, 0, 0}.
-*@li dilation: A list type of int32. Default value {0,0,0}.
+*@li padding: A required string. Default value "SAME".
+*@li pads: A list type of int32. Default value {0, 0, 0}.
+*@li dilation: A list type of int32. Default value {1, 1, 1}.
 *@li ceil_mode: A ceil mode number of int32 . Default value 0.
-*@li data_format: An optional string. Defaults to "NHWC".
+*@li data_format: An optional string. Defaults to "NDHWC".
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x".
@@ -635,6 +638,9 @@ REG_OP(AvgPoolGrad)
 
 * @par Outputs:
 * @out_grad: A mutable tensor with the same shape and type as "orig_input".
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use AvgPoolGrad instead.
 */
 REG_OP(AvgPoolGradD)
     .INPUT(input_grad, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
@@ -956,6 +962,9 @@ REG_OP(AvgPool1D)
 
 *@par Third-party framework compatibility
 *@li compatible with pytorch AvgPool1D operator.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use AvgPool1D instead.
 */
 REG_OP(AvgPool1DD)
     .INPUT(x, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))

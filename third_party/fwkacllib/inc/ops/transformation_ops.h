@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file transformation_ops.h
+ * \brief
+ */
 #ifndef GE_OP_TRANSFORMATION_OPS_H
 #define GE_OP_TRANSFORMATION_OPS_H
 
@@ -93,6 +97,8 @@ REG_OP(DepthwiseWeight6DTo4D)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Transpose instead.
 */
 REG_OP(TransposeD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
@@ -124,17 +130,17 @@ REG_OP(Transpose)
     .OP_END_FACTORY_REG(Transpose)
 
 /**
-*@brief Doing format_transfer for various data format only \n
-support NHWC/NCHW to NC1HWC0 and NC1HWC0 to NHWC/NCHW \n
-NCHW to FRACTAL_Zn or FRACTAL_Zn to NCHW \n
-HWCN to FRACTAL_Zn or FRACTAL_Zn to HWCN.
+*@brief Doing format_transfer for various data format only
+support "NHWC/NCHW" to "NC1HWC0" and "NC1HWC0" to "NHWC/NCHW"
+"NCHW" to "FRACTAL_Zn" or "FRACTAL_Zn" to "NCHW".
+"HWCN" to "FRACTAL_Zn" or "FRACTAL_Zn" to "HWCN".
 
 *@par Inputs:
 *src: A Tensor dtype of all types.
 
 *@par Attributes:
-*@li src_format: A string source data format, can be NHWC, NCHW, FRACTAL_Zn etc.
-*@li expose_hidden: A string target data format, can be NC1HWC0, NCHW, FRACTAL_Zn etc.
+*@li src_format: A string source data format, can be "NHWC", "NCHW", "FRACTAL_Zn" etc.
+*@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc.
 
 *@par Outputs:
 *dst: A Tensor dtype of all types.

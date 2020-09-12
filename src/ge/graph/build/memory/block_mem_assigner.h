@@ -159,7 +159,8 @@ class MemoryBlock {
 
 class BlockMemAssigner : public MemAssigner {
  public:
-  explicit BlockMemAssigner(ge::ComputeGraphPtr compute_graph);
+  BlockMemAssigner(ComputeGraphPtr compute_graph, const std::map<std::string, std::string> &anchor_to_symbol,
+                   const std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors);
 
   BlockMemAssigner(const BlockMemAssigner &) = delete;
 
@@ -241,9 +242,10 @@ class BlockMemAssigner : public MemAssigner {
   /// @ingroup GE
   /// @brief check if symbol of cur node_index_io has block
   /// @param [in] node_index_io
+  /// @param [out] symbol
   /// @return bool
   ///
-  bool IsSymbolExist(const NodeIndexIO &node_index_io);
+  bool IsSymbolExist(const NodeIndexIO &node_index_io, std::string &symbol);
 
   ///
   /// @ingroup GE
@@ -261,8 +263,8 @@ class BlockMemAssigner : public MemAssigner {
   std::vector<NodeTypeIndex> zero_memory_list_;
 
   // ref mapping
-  std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors_;
-  std::map<std::string, std::string> anchor_to_symbol_;
+  const std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors_;
+  const std::map<std::string, std::string> &anchor_to_symbol_;
   std::map<std::string, bool> pre_reuse_flag_;
   std::map<std::string, bool> post_reuse_flag_;
   std::map<std::string, size_t> symbol_size_;

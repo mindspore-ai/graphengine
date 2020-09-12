@@ -8,6 +8,7 @@ COMMON_LOCAL_SRC_FILES := \
     ./proto/task.proto \
     ./proto/fwk_adapter.proto \
     ./proto/op_mapping_info.proto \
+    ./proto/dump_task.proto \
     ./anchor.cc \
     ./ge_attr_value.cc \
     ./attr_value.cc \
@@ -29,6 +30,7 @@ COMMON_LOCAL_SRC_FILES := \
     ./ge_tensor.cc \
     ./detail/attributes_holder.cc \
     ./utils/anchor_utils.cc \
+    ./utils/tuning_utils.cc \
     ./utils/graph_utils.cc \
     ./utils/ge_ir_utils.cc \
     ./utils/node_utils.cc \
@@ -51,6 +53,7 @@ COMMON_LOCAL_C_INCLUDES := \
     proto/task.proto \
     proto/fwk_adapter.proto \
     proto/op_mapping_info.proto \
+    proto/dump_task.proto \
     inc \
     inc/external \
     inc/external/graph \

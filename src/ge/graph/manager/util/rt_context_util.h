@@ -32,12 +32,9 @@ class RtContextUtil {
   }
 
   void AddRtContext(uint64_t session_id, rtContext_t context);
-
-  const rtContext_t GetNormalModeContext() const { return before_prerun_ctx_; }
-
-  void SetNormalModeContext(rtContext_t context) { before_prerun_ctx_ = context; }
-
+  void AddRtContext(uint64_t session_id, uint32_t graph_id, rtContext_t context);
   void DestroyRtContexts(uint64_t session_id);
+  void DestroyRtContexts(uint64_t session_id, uint32_t graph_id);
   void DestroyAllRtContexts();
 
   RtContextUtil &operator=(const RtContextUtil &) = delete;
@@ -47,11 +44,9 @@ class RtContextUtil {
   RtContextUtil() = default;
   ~RtContextUtil() {}
 
-  void DestroyRtContexts(uint64_t session_id, std::vector<rtContext_t> &contexts);
+  void DestroyRtContexts(uint64_t session_id, int64_t graph_id, std::vector<rtContext_t> &contexts);
 
-  std::map<uint64_t, std::vector<rtContext_t>> rt_contexts_;
-  rtContext_t before_prerun_ctx_ = nullptr;
-
+  std::map<uint64_t, std::map<int64_t, std::vector<rtContext_t>>> rt_contexts_;
   std::mutex ctx_mutex_;
 };
 }  // namespace ge

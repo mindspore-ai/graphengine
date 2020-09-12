@@ -25,6 +25,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "graph/ge_context.h"
+#include "graph/common/local_context.h"
 
 namespace ge {
 namespace multibatch {
@@ -59,9 +60,9 @@ void ParseDynamicSize(string dynamic_size, vector<vector<int64_t>> &shapes) {
 /// @return true: Configed for Multi batch / false: Not configed for Multi batch.
 ///
 bool InitDynamicParams(vector<vector<int64_t>> &shapes) {
-  if (!domi::GetContext().dynamic_batch_size.empty()) {
-    GELOGD("Found dynamic batch option, value %s", domi::GetContext().dynamic_batch_size.c_str());
-    std::vector<std::string> dims = ge::StringUtils::Split(domi::GetContext().dynamic_batch_size, ',');
+  if (!GetLocalOmgContext().dynamic_batch_size.empty()) {
+    GELOGD("Found dynamic batch option, value %s", GetLocalOmgContext().dynamic_batch_size.c_str());
+    std::vector<std::string> dims = ge::StringUtils::Split(GetLocalOmgContext().dynamic_batch_size, ',');
     for (const auto &dim : dims) {
       if (dim.empty()) {
         continue;
@@ -71,18 +72,18 @@ bool InitDynamicParams(vector<vector<int64_t>> &shapes) {
     }
   }
 
-  if (!domi::GetContext().dynamic_image_size.empty()) {
-    GELOGD("Found dynamic image size option, value %s", domi::GetContext().dynamic_image_size.c_str());
-    ParseDynamicSize(domi::GetContext().dynamic_image_size, shapes);
+  if (!GetLocalOmgContext().dynamic_image_size.empty()) {
+    GELOGD("Found dynamic image size option, value %s", GetLocalOmgContext().dynamic_image_size.c_str());
+    ParseDynamicSize(GetLocalOmgContext().dynamic_image_size, shapes);
 
     for (const auto &shape : shapes) {
       GELOGI("Found dynamic image size, shape %s", formats::JoinToString(shape).c_str());
     }
   }
 
-  if (!domi::GetContext().dynamic_dims.empty()) {
-    GELOGD("Found dynamic dims option, value %s", domi::GetContext().dynamic_dims.c_str());
-    ParseDynamicSize(domi::GetContext().dynamic_dims, shapes);
+  if (!GetLocalOmgContext().dynamic_dims.empty()) {
+    GELOGD("Found dynamic dims option, value %s", GetLocalOmgContext().dynamic_dims.c_str());
+    ParseDynamicSize(GetLocalOmgContext().dynamic_dims, shapes);
 
     for (const auto &shape : shapes) {
       GELOGI("Found dynamic dims, shape %s", formats::JoinToString(shape).c_str());
@@ -99,14 +100,11 @@ bool InitDynamicParams(vector<vector<int64_t>> &shapes) {
 /// @return true: Configed for Multi batch / false: Not configed for Multi batch.
 ///
 Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
+                               vector<pair<string, vector<int64_t>>> &data_name_and_shape,
                                map<string, vector<vector<int64_t>>> &data_to_dynamic_info) {
-  if (domi::GetContext().user_input_dims.empty()) {
-    GELOGD("Get user designed shape failed");
-    return FAILED;
-  }
   size_t cur_data_index = 0;
-  for (size_t index = 0; index < domi::GetContext().user_input_dims.size(); ++index) {
-    auto &cur_item = domi::GetContext().user_input_dims[index];
+  for (size_t index = 0; index < data_name_and_shape.size(); ++index) {
+    auto &cur_item = data_name_and_shape[index];
     auto &data_name = cur_item.first;
     auto &data_shape = cur_item.second;
     auto dynamic_dims_num =
@@ -239,13 +237,13 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
 Status StampDynamicType(const OpDescPtr &op_desc) {
   GE_CHECK_NOTNULL(op_desc);
   int32_t dynamic_type = static_cast<int32_t>(FIXED);
-  if (!domi::GetContext().dynamic_batch_size.empty()) {
+  if (!GetLocalOmgContext().dynamic_batch_size.empty()) {
     dynamic_type = static_cast<int32_t>(DYNAMIC_BATCH);
   }
-  if (!domi::GetContext().dynamic_image_size.empty()) {
+  if (!GetLocalOmgContext().dynamic_image_size.empty()) {
     dynamic_type = static_cast<int32_t>(DYNAMIC_IMAGE);
   }
-  if (!domi::GetContext().dynamic_dims.empty()) {
+  if (!GetLocalOmgContext().dynamic_dims.empty()) {
     dynamic_type = static_cast<int32_t>(DYNAMIC_DIMS);
   }
   if (!AttrUtils::SetInt(op_desc, ATTR_DYNAMIC_TYPE, dynamic_type)) {

@@ -142,8 +142,8 @@ Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
   for (auto iter = in_data_nodes_set.begin(); iter != in_data_nodes_set.end(); ++iter) {
     auto pre_node = *iter;
     if (pre_node->GetOutDataNodesSize() == 0) {
-      if (pre_node->GetType() == DATA) {
-        GELOGI("No need to remove data, node name:%s.", pre_node->GetName().c_str());
+      if ((pre_node->GetType() == DATA) || (pre_node->GetType() == ENTER)) {
+        GELOGI("No need to remove data/enter, node name:%s.", pre_node->GetName().c_str());
         continue;
       }
       if (IsolateAndDeleteNode(pre_node, {}) != SUCCESS) {
@@ -174,7 +174,7 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
     if (in_node == nullptr) {
       continue;
     }
-    if ((in_node->GetType() == SWITCH) || (in_node->GetType() == REFSWITCH) || (in_node->GetType() == SWITCHN)) {
+    if ((in_node->GetType() == SWITCH) || (in_node->GetType() == REFSWITCH)) {
       GELOGI("The in_node name is %s, and node type is %s.", in_node->GetName().c_str(), in_node->GetType().c_str());
       auto ret = in_node_anchor->Unlink(in_data_anchor);
       if (ret != SUCCESS) {

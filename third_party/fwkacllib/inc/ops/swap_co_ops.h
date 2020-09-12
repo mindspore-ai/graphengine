@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file swap_co_ops.h
+ * \brief
+ */
 #ifndef GE_OP_SWAP_CO_OPS_H_
 #define GE_OP_SWAP_CO_OPS_H_
 

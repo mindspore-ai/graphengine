@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file hvd_ops.h
+ * \brief Horovod collective communication library ops.
+ */
 #ifndef GE_OP_HVD_OPS_H_
 #define GE_OP_HVD_OPS_H_
 

@@ -362,13 +362,18 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   }
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "peerIndex", graph_info_.num_of_pld_end_),
                   GELOGW("SetInt peerIndex failed");)
+  GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "_peerNodeName", new_end_node->GetName()),
+                  GELOGW("SetStr _peerNodeName failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "parentOpType", src_node->GetType()),
                   GELOGW("SetStr parentOpType failed");)
+  GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "_parentNodeName", src_node->GetName()),
+                  GELOGW("SetStr parentOpName failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "parentId", end_graph->GetName() + ":" + std::to_string(node_id)),
                   GELOGW("SetStr parentId failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "anchorIndex", AnchorUtils::GetIdx(out_anchor)),
                   GELOGW("SetInt anchorIndex failed");)
   GE_IF_BOOL_EXEC(!pld_op_desc->SetExtAttr("parentNode", src_node), GELOGW("SetPldExtAttr parentNode failed");)
+
   OpDescPtr src_node_op_desc = src_node->GetOpDesc();
   GE_CHECK_NOTNULL(src_node_op_desc);
   GE_IF_BOOL_EXEC(
@@ -530,6 +535,10 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
       ClusterPtr cluster = MakeShared<Cluster>(temp_index, kEngineDefaultData, temp_stream);
       new_cluster = cluster;
     } else {
+      if (node_engine_map->count(node) == 0) {
+        GELOGE(FAILED, "node[%s] does not owner engine!", node->GetName().c_str());
+        return FAILED;
+      }
       ClusterPtr cluster = MakeShared<Cluster>(temp_index, node_engine_map->at(node), temp_stream);
       new_cluster = cluster;
     }
@@ -577,32 +586,33 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
     // flush parent node of subgraph
     sub_graph->SetParentNode(compute_graph->GetParentNode());
     (void)AttrUtils::SetStr(*sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
+    auto sgi = MakeShared<SubGraphInfo>();
+    if (sgi == nullptr) {
+      GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MakeShared sub graph info failed.");
+      return FAILED;
+    }
+    // set engine name
+    sgi->SetEngineName(engine_name);
+    // set stream label
+    string sub_graph_stream;
+    if (AttrUtils::GetStr(sub_graph->GetDirectNode().at(0)->GetOpDesc(), ATTR_NAME_STREAM_LABEL, sub_graph_stream)) {
+      sgi->SetStreamLabel(sub_graph_stream);
+    }
+    /// for now inputFlag is the same before and after partition. It should
+    /// be changed according to the real partition
+    std::vector<bool> sub_graph_input(graph_info_.input_size_, true);
+    std::vector<bool> sub_graph_output(graph_info_.output_size_, true);
+    sgi->SetSubGraph(sub_graph);
+    sgi->SetOutputFlag(sub_graph_output);
+    sgi->SetInputFlag(sub_graph_input);
+    sgi->SetOutputContext(graph_info_.output_name_);
+    AddEndPldInformationToSubGraphInfo(sgi);
+    GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s", engine_name.c_str(),
+           sub_graph->GetName().c_str(), sgi->GetStreamLabel().empty() ? "null" : sgi->GetStreamLabel().c_str());
     if (engine_name != input_subgraph_name) {  // do not add Data subGraph into SubGraphInfo
-      auto sgi = MakeShared<SubGraphInfo>();
-      if (sgi == nullptr) {
-        GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MakeShared sub graph info failed.");
-        return FAILED;
-      }
-      // set engine name
-      sgi->SetEngineName(engine_name);
-      // set stream label
-      string sub_graph_stream;
-      if (AttrUtils::GetStr(sub_graph->GetDirectNode().at(0)->GetOpDesc(), ATTR_NAME_STREAM_LABEL, sub_graph_stream)) {
-        sgi->SetStreamLabel(sub_graph_stream);
-      }
-      /// for now inputFlag is the same before and after partition. It should
-      /// be changed according to the real partition
-      std::vector<bool> sub_graph_input(graph_info_.input_size_, true);
-      std::vector<bool> sub_graph_output(graph_info_.output_size_, true);
-      sgi->SetSubGraph(sub_graph);
-      sgi->SetOutputFlag(sub_graph_output);
-      sgi->SetInputFlag(sub_graph_input);
-      sgi->SetOutputContext(graph_info_.output_name_);
-      AddEndPldInformationToSubGraphInfo(sgi);
-      GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s",
-             engine_name.c_str(), sub_graph->GetName().c_str(),
-             sgi->GetStreamLabel().empty() ? "null" : sgi->GetStreamLabel().c_str());
       output_subgraphs.push_back(sgi);
+    } else {
+      graph_2_input_subgraph_[compute_graph] = sgi;
     }
   }
   return SUCCESS;

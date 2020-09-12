@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file control_flow_ops.h
+ * \brief
+ */
 #ifndef GE_CONTROL_FLOW_OPS_H_
 #define GE_CONTROL_FLOW_OPS_H_
 
@@ -377,6 +381,27 @@ REG_OP(RefExit)
  */
 REG_OP(ControlTrigger)
     .OP_END_FACTORY_REG(ControlTrigger)
+
+/**
+*@brief Returns index of shape in the map.
+
+*@par Inputs:
+* Three inputs, including:
+*@li x: One dimensional tensore of type int32, specifying queried shape, max size is 8.
+*@li data_seq: One dimensional tensore of type int32, specifying the mapped table is queried.
+*@li level_index: One dimensional tensore of type int32, specifying secondary index.
+
+*@par Outputs:
+*@li y: A Tensor with shape [batch, 8], of type int32, specifying index of shape in the map.
+*@par Third-party framework compatibility
+* It is a custom operator. It has no corresponding operator in Caffe.
+*/
+REG_OP(MapIndex)
+    .INPUT(x, TensorType({DT_INT32}))
+    .INPUT(data_seq, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(level_index, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(MapIndex)
 }  // namespace ge
 
 #endif  // GE_CONTROL_FLOW_OPS_H_

@@ -219,6 +219,10 @@ graphStatus OpDesc::AddInputDesc(const string &name, const ge::GeTensorDesc &inp
     }
     inputs_desc_.push_back(in_desc);
     (void)input_name_idx_.insert(make_pair(name, index));
+    if (find(register_input_name_.begin(), register_input_name_.end(), name) == register_input_name_.end()) {
+      register_input_name_.push_back(name);
+    }
+
     return GRAPH_SUCCESS;
   }
 }
@@ -250,6 +254,38 @@ graphStatus OpDesc::AddInputDescMiddle(const string &name, const unsigned int nu
     }
 
     (void)input_name_idx_.insert(make_pair(input_name, i + index));
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+graphStatus OpDesc::AddOutputDescMiddle(const string &name, const unsigned int num, size_t index) {
+  for (unsigned int i = 0; i < num; i++) {
+    string output_name = name + std::to_string(i);
+    GE_CHK_BOOL_RET_STATUS((output_name_idx_.find(output_name) == output_name_idx_.end()), GRAPH_FAILED,
+                           "Add input tensor_desc is existed. name[%s]", output_name.c_str());
+
+    std::shared_ptr<GeTensorDesc> out_desc = ComGraphMakeShared<GeTensorDesc>(GeTensorDesc());
+    if (out_desc == nullptr) {
+      GELOGE(GRAPH_FAILED, "AddInputDescMiddle failed, malloc shared_ptr failed.");
+      return GRAPH_FAILED;
+    }
+
+    if (index > outputs_desc_.size()) {
+      GELOGE(GRAPH_FAILED, "AddInputDescMiddle failed, insert index should not more than inputs size.");
+      return GRAPH_FAILED;
+    }
+
+    (void)outputs_desc_.insert(outputs_desc_.begin() + index + i, out_desc);
+
+    // Update index in input_name_idx
+    for (auto it = output_name_idx_.begin(); it != output_name_idx_.end(); ++it) {
+      if (it->second >= (index + i)) {
+        it->second += 1;
+      }
+    }
+
+    (void)output_name_idx_.insert(make_pair(output_name, i + index));
   }
 
   return GRAPH_SUCCESS;
@@ -550,6 +586,9 @@ graphStatus OpDesc::AddOutputDesc(const string &name, const ge::GeTensorDesc &ou
   }
   outputs_desc_.push_back(tensor);
   (void)output_name_idx_.insert(make_pair(name, index));
+  if (find(register_output_name_.begin(), register_output_name_.end(), name) == register_output_name_.end()) {
+    register_output_name_.push_back(name);
+  }
   return GRAPH_SUCCESS;
 }
 
@@ -655,6 +694,16 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ConstGeTensorDescPtr OpDesc::GetI
   return inputs_desc_[it->second];
 }
 
+graphStatus OpDesc::AddRegisterInputName(const std::string &name) {
+  if (find(register_input_name_.begin(), register_input_name_.end(), name) == register_input_name_.end()) {
+    register_input_name_.push_back(name);
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+vector<string> OpDesc::GetRegisterInputName() const { return register_input_name_; }
+
 graphStatus OpDesc::AddDynamicInputDesc(const string &name, const unsigned int num, bool is_push_back) {
   if (is_push_back) {
     for (unsigned int i = 0; i < num; i++) {
@@ -663,6 +712,10 @@ graphStatus OpDesc::AddDynamicInputDesc(const string &name, const unsigned int n
   } else {
     if (AddInputDescForward(name, num) != GRAPH_SUCCESS) return GRAPH_FAILED;
   }
+  if (AddRegisterInputName(name) != GRAPH_SUCCESS) {
+    return GRAPH_FAILED;
+  }
+
   return GRAPH_SUCCESS;
 }
 
@@ -673,6 +726,16 @@ graphStatus OpDesc::AddDynamicInputDescByIndex(const string &name, const unsigne
   return GRAPH_SUCCESS;
 }
 
+graphStatus OpDesc::AddRegisterOutputName(const string &name) {
+  if (find(register_output_name_.begin(), register_output_name_.end(), name) == register_output_name_.end()) {
+    register_output_name_.push_back(name);
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+vector<string> OpDesc::GetRegisterOutputName() const { return register_output_name_; }
+
 graphStatus OpDesc::AddDynamicOutputDesc(const string &name, const unsigned int num, bool is_push_back) {
   if (is_push_back) {
     for (unsigned int i = 0; i < num; i++) {
@@ -680,6 +743,10 @@ graphStatus OpDesc::AddDynamicOutputDesc(const string &name, const unsigned int 
     }
   } else {
     if (AddOutputDescForward(name, num) != GRAPH_SUCCESS) return GRAPH_FAILED;
+  }
+
+  if (AddRegisterOutputName(name) != GRAPH_SUCCESS) {
+    return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;
 }

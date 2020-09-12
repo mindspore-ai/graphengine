@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file ragged_conversion_ops.h
+ * \brief
+ */
 #ifndef GE_OP_RAGGED_CONVERSION_OPS_H
 #define GE_OP_RAGGED_CONVERSION_OPS_H
 #include "graph/operator_reg.h"

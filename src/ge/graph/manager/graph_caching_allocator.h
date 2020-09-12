@@ -29,6 +29,7 @@
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
+#include "graph/manager/block_memory.h"
 #include "runtime/mem.h"
 
 namespace ge {
@@ -38,29 +39,7 @@ constexpr size_t kKByteSize = 1024;
 constexpr size_t kMByteSize = 1024 * 1024;
 constexpr size_t kGByteSize = 1024 * 1024 * 1024;
 
-struct Block;
-typedef bool (*Comparison)(const Block *, const Block *);
-using BlockBin = std::set<Block *, Comparison>;
 static const uint32_t kNumBins = 8;
-
-struct Block {
-  uint32_t device_id;  // npu device id
-  size_t size;         // block size in bytes
-  BlockBin *bin;       // owning block bin
-  uint8_t *ptr;        // memory address
-  bool allocated;      // in-use flag
-  Block *prev;         // prev block if split from a larger allocation
-  Block *next;         // next block if split from a larger allocation
-
-  Block(uint32_t device, size_t size, BlockBin *bin, uint8_t *ptr)
-      : device_id(device), size(size), bin(bin), ptr(ptr), allocated(0), prev(nullptr), next(nullptr) {}
-
-  // constructor for search key
-  Block(uint32_t device, size_t size, uint8_t *ptr)
-      : device_id(device), size(size), bin(nullptr), ptr(ptr), allocated(0), prev(nullptr), next(nullptr) {}
-
-  bool IsSplit() const { return (prev != nullptr) || (next != nullptr); }
-};
 
 class MemoryAllocator;
 

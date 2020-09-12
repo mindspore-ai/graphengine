@@ -89,6 +89,8 @@ class GraphOptimize {
   // record the summary names for filter sumarry result.
   std::map<uint32_t, std::map<string, size_t>> summary_output_indexes_ = {};
   std::string func_bin_path_;
+  std::string build_mode_;
+  std::string build_step_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_OPTIMIZE_GRAPH_OPTIMIZE_H_

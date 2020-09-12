@@ -258,7 +258,7 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
     return SUCCESS;
   }
 
-  hcclRedOp_t op_type = HCCL_REP_OP_SUM;
+  HcclReduceOp op_type = HCCL_REDUCE_SUM;
   GE_CHECK_NOTNULL(davinci_model_);
   GELOGI("Calc opType[%s] input address before. Node name[%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
   if (!davinci_model_->IsKnownNode()) {

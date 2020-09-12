@@ -16,8 +16,8 @@
 
 #include "graph/passes/multi_batch_clone_pass.h"
 
-#include "common/ge/ge_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "common/ge/ge_util.h"
 #include "graph/preprocess/multi_batch_options.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
@@ -30,7 +30,9 @@ constexpr uint8_t kDataOutIndex = 0;
 constexpr uint8_t kCaseArgIndex = 1;
 
 const std::string kMultiBatchCaseNode = "ascend_mbatch_shape_case";
-const std::string kMultiBatchIndexNode = "ascend_mbatch_shape_data";
+const std::string kMultiBatchDataNode = "ascend_mbatch_shape_data";
+const std::string kMultiBatchConstNode = "ascend_mbatch_shape_const";
+const std::string kMultiBatchMapIndexNode = "ascend_mbatch_shape_mapindex";
 }  // namespace
 
 Status MultiBatchClonePass::Run(ComputeGraphPtr graph) {
@@ -59,6 +61,7 @@ Status MultiBatchClonePass::Run(ComputeGraphPtr graph) {
   }
   (void)AttrUtils::SetStr(branch, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id_);
 
+  graph->InValid();  // Will modify, need topological again.
   graph->Swap(*branch);
   if (CreateRootGraph(graph) != SUCCESS) {
     return FAILED;
@@ -174,40 +177,130 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
 
 ///
 /// @ingroup ge
+/// @brief Create index data node for root graph.
+/// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+/// @param [in] NodePtr node: index data node.
+/// @return 0: SUCCESS / others: FAILED
+///
+Status MultiBatchClonePass::CreateIndexDataNode(const ComputeGraphPtr &graph, NodePtr &node) {
+  const OpDescPtr data_desc = MakeShared<OpDesc>(kMultiBatchDataNode, DATA);
+  if (data_desc == nullptr) {
+    GELOGE(OUT_OF_MEMORY, "Create multi-batch data node failed");
+    return FAILED;
+  }
+
+  GeTensorDesc data_tensor(GeShape({static_cast<int64_t>(batch_shapes_[0].size())}), FORMAT_ND, DT_INT32);
+  if (data_desc->AddInputDesc(data_tensor) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Add input desc failed");
+    return FAILED;
+  }
+  if (data_desc->AddOutputDesc(data_tensor) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Add output desc failed");
+    return FAILED;
+  }
+
+  size_t data_index = all_data_nodes_.size();
+  (void)AttrUtils::SetInt(data_desc, ATTR_NAME_INDEX, data_index);
+  (void)AttrUtils::SetBool(data_desc, ATTR_INSERT_BY_MBATCH, true);
+
+  node = graph->AddNode(data_desc);
+  if (node == nullptr) {
+    GELOGE(OUT_OF_MEMORY, "Create multi-batch data node failed");
+    return OUT_OF_MEMORY;
+  }
+
+  return SUCCESS;
+}
+
+///
+/// @ingroup ge
+/// @brief Create index const node for root graph.
+/// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+/// @param [in] NodePtr node: index const node.
+/// @return 0: SUCCESS / others: FAILED
+///
+Status MultiBatchClonePass::CreateIndexConstNode(const ComputeGraphPtr &graph, NodePtr &node) {
+  const OpDescPtr const_desc = MakeShared<OpDesc>(kMultiBatchConstNode, CONSTANT);
+  if (const_desc == nullptr) {
+    GELOGE(OUT_OF_MEMORY, "Create multi-batch const node failed");
+    return FAILED;
+  }
+
+  int64_t count = batch_shapes_.size() * batch_shapes_[0].size();
+  std::unique_ptr<int32_t[]> addr(new (std::nothrow) int32_t[count]);
+  GE_CHECK_NOTNULL(addr);
+
+  size_t i = 0;
+  for (auto &batch_shape : batch_shapes_) {
+    for (int64_t dim : batch_shape) {
+      addr[i++] = static_cast<int32_t>(dim);
+    }
+  }
+
+  GeTensorDesc const_tensor(GeShape({count}), FORMAT_ND, DT_INT32);
+  GeTensor tensor(const_tensor);
+  tensor.SetData(reinterpret_cast<uint8_t *>(addr.get()), count * sizeof(int32_t));
+  if (!AttrUtils::SetTensor(const_desc, ATTR_NAME_WEIGHTS, tensor)) {
+    GELOGE(OUT_OF_MEMORY, "Failed to init tensor value for const %s", const_desc->GetName().c_str());
+    return FAILED;
+  }
+
+  if (const_desc->AddOutputDesc(const_tensor) != GRAPH_SUCCESS) {
+    GELOGE(OUT_OF_MEMORY, "Failed to add output desc for const node %s", const_desc->GetName().c_str());
+    return FAILED;
+  }
+
+  node = graph->AddNode(const_desc);
+  if (node == nullptr) {
+    GELOGE(OUT_OF_MEMORY, "Create multi-batch const node failed");
+    return OUT_OF_MEMORY;
+  }
+
+  return SUCCESS;
+}
+
+///
+/// @ingroup ge
 /// @brief Create index node for root graph.
 /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status MultiBatchClonePass::CreateIndexNode(const ComputeGraphPtr &graph) {
   // Data --> MapIndex --> Case
-  const OpDescPtr op_desc = MakeShared<OpDesc>(kMultiBatchIndexNode, DATA);
+  NodePtr data_node;
+  GE_CHK_STATUS_RET(CreateIndexDataNode(graph, data_node), "Create data node failed");
+
+  NodePtr const_node;
+  GE_CHK_STATUS_RET(CreateIndexConstNode(graph, const_node), "Create const node failed");
+
+  OpDescBuilder op_builder(kMultiBatchMapIndexNode, "MapIndex");
+  op_builder.AddInput("x", data_node->GetOpDesc()->GetOutputDesc(0))
+    .AddInput("data_seq", const_node->GetOpDesc()->GetOutputDesc(0))
+    .AddOutput("y", GeTensorDesc(GeShape(), FORMAT_ND, DT_INT32));
+
+  const OpDescPtr op_desc = op_builder.Build();
   if (op_desc == nullptr) {
+    GELOGE(OUT_OF_MEMORY, "Create multi-batch index desc failed");
+    return FAILED;
+  }
+  NodePtr index_node = graph->AddNode(op_desc);
+  if (index_node == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Create multi-batch index node failed");
-    return FAILED;
-  }
-
-  GeTensorDesc data_desc(GeShape(), FORMAT_ND, DT_INT32);
-  if (op_desc->AddInputDesc(data_desc) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Add output desc failed");
-    return FAILED;
-  }
-  if (op_desc->AddOutputDesc(data_desc) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Add output desc failed");
-    return FAILED;
-  }
-
-  size_t data_index = all_data_nodes_.size();
-  (void)AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index);
-  (void)AttrUtils::SetBool(op_desc, ATTR_INSERT_BY_MBATCH, true);
-
-  index_node_ = graph->AddNode(op_desc);
-  if (index_node_ == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Create multi-batch case node failed");
     return OUT_OF_MEMORY;
   }
 
-  if (GraphUtils::AddEdge(index_node_->GetOutDataAnchor(0), case_node_->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Failed to add edge between Data:%s to Case:%s", index_node_->GetName().c_str(),
+  if (GraphUtils::AddEdge(data_node->GetOutDataAnchor(0), index_node->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Failed to add edge between node:%s to MapIndex:%s", data_node->GetName().c_str(),
+           index_node->GetName().c_str());
+    return FAILED;
+  }
+  if (GraphUtils::AddEdge(const_node->GetOutDataAnchor(0), index_node->GetInDataAnchor(1)) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Failed to add edge between node:%s to MapIndex:%s", const_node->GetName().c_str(),
+           index_node->GetName().c_str());
+    return FAILED;
+  }
+  if (GraphUtils::AddEdge(index_node->GetOutDataAnchor(0), case_node_->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Failed to add edge between MapIndex:%s to Case:%s", index_node->GetName().c_str(),
            case_node_->GetName().c_str());
     return FAILED;
   }
@@ -366,6 +459,7 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &data) {
     return SUCCESS;
   }
 
+  (void)AttrUtils::SetListInt(data->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
   size_t max_shape_index = 0;
   int64_t max_size = 0;
   for (size_t i = 0; i < batch_shapes_.size(); ++i) {

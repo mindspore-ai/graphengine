@@ -29,6 +29,7 @@
 #include <fstream>
 #include <iomanip>
 #include <queue>
+#include <atomic>
 
 #include "./ge_context.h"
 #include "debug/ge_util.h"
@@ -57,6 +58,7 @@ namespace {
 const int32_t kBaseOfIntegerValue = 10;
 #ifdef FMK_SUPPORT_DUMP
 const char *const kDumpGeGraph = "DUMP_GE_GRAPH";
+const int kDumpGraphIndexWidth = 5;
 #endif
 const char *const kDumpGraphLevel = "DUMP_GRAPH_LEVEL";
 const char *const kDumpStrBuild = "Build";
@@ -431,10 +433,15 @@ GraphUtils::InsertNodeAfter(const OutDataAnchorPtr &src, const std::vector<InDat
   OutControlAnchorPtr src_out_ctrl_anchor = src_node->GetOutControlAnchor();
   GE_CHECK_NOTNULL(src_out_ctrl_anchor);
 
+  bool ctrl_edge_flag = true;
+  std::string type = NodeUtils::GetNodeType(src->GetOwnerNode());
+  if ((type == SWITCH) || (type == REFSWITCH) || (type == SWITCHN)) {
+    ctrl_edge_flag = false;
+  }
+
   for (auto &dst : dsts) {
     GE_CHECK_NOTNULL(dst);
     NodePtr dst_node = dst->GetOwnerNode();
-    GE_CHECK_NOTNULL(dst_node);
     GELOGI("Insert node %s between %s->%s.", insert_node->GetName().c_str(), src_node->GetName().c_str(),
            dst_node->GetName().c_str());
     if (src_node->GetOwnerComputeGraph() != dst_node->GetOwnerComputeGraph()) {
@@ -450,11 +457,12 @@ GraphUtils::InsertNodeAfter(const OutDataAnchorPtr &src, const std::vector<InDat
       return GRAPH_FAILED;
     }
 
-    OutControlAnchorPtr new_out_ctrl_anchor = insert_node->GetOutControlAnchor();
-    GE_CHECK_NOTNULL(new_out_ctrl_anchor);
+    if (!ctrl_edge_flag) {
+      continue;
+    }
     for (const InControlAnchorPtr &peer_in_ctrl_anchor : src_out_ctrl_anchor->GetPeerInControlAnchors()) {
       if ((RemoveEdge(src_out_ctrl_anchor, peer_in_ctrl_anchor) != GRAPH_SUCCESS) ||
-          (AddEdge(new_out_ctrl_anchor, peer_in_ctrl_anchor) != GRAPH_SUCCESS)) {
+          (AddEdge(insert_node->GetOutControlAnchor(), peer_in_ctrl_anchor) != GRAPH_SUCCESS)) {
         GELOGE(GRAPH_FAILED, "ReplaceEdge from %s->%s to %s->%s failed.", src_node->GetName().c_str(),
                peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(), insert_node->GetName().c_str(),
                peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
@@ -552,7 +560,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::MatchDumpStr(con
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraph(const ge::ComputeGraphPtr &graph,
                                                                             const std::string &suffix,
-                                                                            bool is_always_dump) {
+                                                                            bool is_always_dump,
+                                                                            const std::string &user_graph_name) {
 #ifdef FMK_SUPPORT_DUMP
   char *dump_ge_graph = std::getenv(kDumpGeGraph);
   GE_IF_BOOL_EXEC(dump_ge_graph == nullptr && !is_always_dump, return;);
@@ -563,32 +572,33 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraph(cons
   }
 
   // file name
-  static int file_idx = 0;
-  const int dump_graph_index_width = 5;
-  file_idx++;
-  GELOGD("Start to dump om txt: %d", file_idx);
+  static std::atomic_long atomic_file_index(0);
+  auto file_index = atomic_file_index.fetch_add(1);
+  GELOGD("Start to dump om txt: %ld", file_index);
 
-  static int max_dumpfile_num = 0;
-  if (max_dumpfile_num == 0) {
+  thread_local long max_dump_file_num = 0;
+  if (max_dump_file_num == 0) {
     string opt = "0";
     (void)GetContext().GetOption(OPTION_GE_MAX_DUMP_FILE_NUM, opt);
-    max_dumpfile_num = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
+    max_dump_file_num = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
   }
-  if (max_dumpfile_num != 0 && file_idx > max_dumpfile_num) {
-    GELOGW("dump graph file cnt > maxDumpFileNum, maxDumpFileCnt=%d.", max_dumpfile_num);
+  if (max_dump_file_num != 0 && file_index > max_dump_file_num) {
+    GELOGW("dump graph file cnt > maxDumpFileNum, maxDumpFileCnt=%ld.", max_dump_file_num);
     return;
   }
 
   std::stringstream stream_file_name;
-  stream_file_name << "ge_proto_" << std::setw(dump_graph_index_width) << std::setfill('0') << file_idx;
+  stream_file_name << "ge_proto_" << std::setw(kDumpGraphIndexWidth) << std::setfill('0') << file_index;
   stream_file_name << "_" << suffix << ".txt";
-  std::string proto_file = stream_file_name.str();
+  std::string proto_file = user_graph_name.empty() ? stream_file_name.str() : user_graph_name;
 
   // Create buffer
   ge::Model model("", "");
   model.SetGraph(GraphUtils::CreateGraphFromComputeGraph(std::const_pointer_cast<ComputeGraph>(graph)));
   Buffer buffer;
-  model.Save(buffer, true);
+  const int64_t kDumpLevel =
+    (dump_ge_graph != nullptr) ? std::strtol(dump_ge_graph, nullptr, kBaseOfIntegerValue) : ge::OnnxUtils::NO_DUMP;
+  model.Save(buffer, kDumpLevel != ge::OnnxUtils::DUMP_ALL);
 
   // Write file
   ge::proto::ModelDef ge_proto;
@@ -631,6 +641,35 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::LoadGEGraph(cons
   }
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::LoadGEGraph(const char *file,
+                                                                            ge::ComputeGraphPtr &compute_graph) {
+  ge::proto::ModelDef model_def;
+  // Get ModelDef object from file generated by DumpGEGraph()
+  if (!ReadProtoFromTextFile(file, &model_def)) {
+    GELOGE(GRAPH_FAILED, "Get ModelDef failed from file");
+    return false;
+  }
+  ge::Model model;
+  // Get Model object from ModelDef by deserialize ModelDef
+  if (model.Load(model_def) == GRAPH_SUCCESS) {
+    GE_CHK_BOOL_EXEC(GraphUtils::GetComputeGraph(model.GetGraph()) != nullptr, return false,
+                     "Get computer graph is nullptr");
+    compute_graph = GraphUtils::GetComputeGraph(model.GetGraph());
+    for (const auto &node : compute_graph->GetDirectNode()) {
+      GELOGI("Node %s set owner graph", node->GetName().c_str());
+      GE_CHECK_NOTNULL(node);
+      if (node->SetOwnerComputeGraph(compute_graph) != GRAPH_SUCCESS) {
+        GELOGE(GRAPH_FAILED, "Node %s set owner graph failed", node->GetName().c_str());
+        return false;
+      }
+    }
+    return true;
+  } else {
+    GELOGE(GRAPH_FAILED, "Get Model failed from ModelDef");
+    return false;
+  }
+}
+
 // Printing protocol messages in text format is useful for debugging and human editing of messages.
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToTextFile(
   const google::protobuf::Message &proto, const char *real_path) {
@@ -666,16 +705,16 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
     return;
   }
   if (fseek(file, 0L, SEEK_END) == 0) {
-    int64_t fileSize = ftell(file);
-    static int64_t maxDumpFileSize = 0;
-    if (maxDumpFileSize == 0) {
+    long fileSize = ftell(file);
+    thread_local long max_dump_file_size = 0;
+    if (max_dump_file_size == 0) {
       string opt = "0";
       // Can not check return value
       (void)GetContext().GetOption(OPTION_GE_MAX_DUMP_FILE_SIZE, opt);
-      maxDumpFileSize = atol(opt.c_str());
+      max_dump_file_size = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
     }
-    if (maxDumpFileSize != 0 && fileSize != -1 && fileSize > maxDumpFileSize) {
-      GELOGW("dump graph file size > maxDumpFileSize, maxDumpFileSize=%ld.", maxDumpFileSize);
+    if (max_dump_file_size != 0 && fileSize != -1 && fileSize > max_dump_file_size) {
+      GELOGW("dump graph file size > maxDumpFileSize, maxDumpFileSize=%ld.", max_dump_file_size);
       GE_IF_BOOL_EXEC(std::remove(real_path) != 0, GELOGW("remove %s failed", real_path));
       GE_CHK_BOOL_EXEC(fclose(file) == 0, return, "Fclose %s failed", real_path);
       return;
@@ -734,25 +773,23 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraphToOnn
   }
 
   // 2.Set file name
-  static int file_index = 0;
-  file_index++;
-  GELOGD("Start to dump ge onnx file: %d", file_index);
+  static std::atomic_long atomic_file_index(0);
+  auto file_index = atomic_file_index.fetch_add(1);
+  GELOGD("Start to dump ge onnx file: %ld", file_index);
 
-  static int max_dumpfile_num = 0;
-  if (max_dumpfile_num == 0) {
+  thread_local long max_dump_file_num = 0;
+  if (max_dump_file_num == 0) {
     string opt = "0";
     (void)GetContext().GetOption(OPTION_GE_MAX_DUMP_FILE_NUM, opt);
-    max_dumpfile_num = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
+    max_dump_file_num = std::strtol(opt.c_str(), nullptr, kBaseOfIntegerValue);
   }
-  if (max_dumpfile_num != 0 && file_index > max_dumpfile_num) {
-    GELOGW("dump graph file cnt > maxDumpFileNum, maxDumpFileNum=%d.", max_dumpfile_num);
+  if (max_dump_file_num != 0 && file_index > max_dump_file_num) {
+    GELOGW("dump graph file cnt > maxDumpFileNum, maxDumpFileNum=%ld.", max_dump_file_num);
     return;
   }
 
-  /// 99999 graphs can be dumped at most at one time
-  /// setw(5) is for formatted sort
   std::stringstream stream_file_name;
-  stream_file_name << "ge_onnx_" << std::setw(5) << std::setfill('0') << file_index;
+  stream_file_name << "ge_onnx_" << std::setw(kDumpGraphIndexWidth) << std::setfill('0') << file_index;
   stream_file_name << "_graph_" << compute_graph.GetGraphID();
   stream_file_name << "_" << suffix << ".pbtxt";
   std::string proto_file = stream_file_name.str();
@@ -1363,6 +1400,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraphPtr GraphUtils::FindR
 /// Make a copy of ComputeGraph.
 /// @param graph: original graph.
 /// @param prefix: node name prefix of new graph.
+/// @param output_nodes: output nodes of new graph.
 /// @return ComputeGraphPtr
 ///
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ComputeGraphPtr
@@ -1399,6 +1437,14 @@ GraphUtils::CloneGraph(const ComputeGraphPtr &graph, const std::string &prefix, 
     }
   }
 
+  std::string session_graph_id;
+  if (AttrUtils::GetStr(*graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
+    bool ret = AttrUtils::SetStr(*new_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
+    if (!ret) {
+      GELOGE(GRAPH_FAILED, "Set attr ATTR_NAME_SESSION_GRAPH_ID failed.");
+      return nullptr;
+    }
+  }
   return new_graph;
 }
 

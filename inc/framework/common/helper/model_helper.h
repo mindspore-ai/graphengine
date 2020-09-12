@@ -64,6 +64,7 @@ class ModelHelper {
   Status LoadWeights(OmFileLoadHelper& om_load_helper);
   Status LoadTask(OmFileLoadHelper& om_load_helper);
   Status LoadTBEKernelStore(OmFileLoadHelper& om_load_helper);
+  Status LoadCustAICPUKernelStore(OmFileLoadHelper& om_load_helper);
   Status ReleaseLocalModelData() noexcept;
   Status SaveModelPartition(std::shared_ptr<OmFileSaveHelper>& om_file_save_helper, ModelPartitionType type,
                             const uint8_t* data, size_t size);

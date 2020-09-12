@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file math_ops.h
+ * \brief
+ */
 #ifndef GE_OP_MATH_OPS_H_
 #define GE_OP_MATH_OPS_H_
 
@@ -630,6 +634,44 @@ REG_OP(NLLLossGrad)
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(NLLLossGrad)
+
+/**
+*@brief The ifmr.
+
+*@par Inputs:
+*@li data:A Tensor of feature map
+*@li data_min:A Tensor of min value of feature map.
+*@li data_max:A Tensor of max value of feature map.
+*@li cumsum:A Tensor of cumsum bin of data.
+
+*@par Attributes:
+*min_percentile: min init percentile.
+*max_percentile: max init percentile.
+*search_range: search range.
+*search_step: step size of searching.
+*with_offset: whether using offset.
+
+*@par Outputs:
+*scale: optimal scale.
+*offset: optimal offset.
+
+*@par Third-party framework compatibility
+*Compatible with mindspore 
+*/
+
+REG_OP(IFMR)
+  .INPUT(data, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(data_min, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(data_max, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(cumsum, TensorType({DT_INT32}))
+  .OUTPUT(scale, TensorType({DT_FLOAT}))
+  .OUTPUT(offset, TensorType({DT_FLOAT}))
+  .REQUIRED_ATTR(min_percentile, Float)
+  .REQUIRED_ATTR(max_percentile, Float)
+  .REQUIRED_ATTR(search_range, ListFloat)
+  .REQUIRED_ATTR(search_step, Float)
+  .REQUIRED_ATTR(with_offset, Bool)
+  .OP_END_FACTORY_REG(IFMR)
 }  // namespace ge
 
 #endif  // GE_OP_MATH_OPS_H_

@@ -34,24 +34,24 @@ namespace ge {
 using std::string;
 using std::vector;
 
-static std::map<int64_t, hcclDataType_t> kConstOpHcclDataType = {
-  {ge::DT_FLOAT, HCCL_DATA_TYPE_FLOAT},
-  {ge::DT_FLOAT16, HCCL_DATA_TYPE_HALF},
+static std::map<int64_t, HcclDataType> kConstOpHcclDataType = {
+  {ge::DT_FLOAT, HCCL_DATA_TYPE_FP32},
+  {ge::DT_FLOAT16, HCCL_DATA_TYPE_FP16},
   {ge::DT_INT8, HCCL_DATA_TYPE_INT8},
-  {ge::DT_INT32, HCCL_DATA_TYPE_INT},
+  {ge::DT_INT32, HCCL_DATA_TYPE_INT32},
 };
 
-static std::map<hcclDataType_t, int32_t> kConstOpHcclDataTypeSize = {
-  {HCCL_DATA_TYPE_FLOAT, sizeof(float)},
-  {HCCL_DATA_TYPE_HALF, sizeof(float) / 2},
+static std::map<HcclDataType, int32_t> kConstOpHcclDataTypeSize = {
+  {HCCL_DATA_TYPE_FP32, sizeof(float)},
+  {HCCL_DATA_TYPE_FP16, sizeof(float) / 2},
   {HCCL_DATA_TYPE_INT8, sizeof(int8_t)},
-  {HCCL_DATA_TYPE_INT, sizeof(int32_t)},
+  {HCCL_DATA_TYPE_INT32, sizeof(int32_t)},
 };
 
-static std::map<horovodRedOp_t, hcclRedOp_t> kHorovodRedOpToHcclRedOp = {
-  {HOROVOD_REP_OP_SUM, HCCL_REP_OP_SUM},           {HOROVOD_REP_OP_MIN, HCCL_REP_OP_MIN},
-  {HOROVOD_REP_OP_MAX, HCCL_REP_OP_MAX},           {HOROVOD_REP_OP_PROD, HCCL_REP_OP_PROD},
-  {HOROVOD_REP_OP_RESERVED, HCCL_REP_OP_RESERVED},
+static std::map<HorovodReduceOp, HcclReduceOp> kHorovodRedOpToHcclRedOp = {
+  {HOROVOD_REDUCE_SUM, HCCL_REDUCE_SUM},           {HOROVOD_REDUCE_MIN, HCCL_REDUCE_MIN},
+  {HOROVOD_REDUCE_MAX, HCCL_REDUCE_MAX},           {HOROVOD_REDUCE_PROD, HCCL_REDUCE_PROD},
+  {HOROVOD_REDUCE_RESERVED, HCCL_REDUCE_RESERVED},
 };
 
 class HcomOmeUtil {
@@ -71,7 +71,7 @@ class HcomOmeUtil {
   /// @return SUCCESS
   /// @return FAIL
   ///
-  static Status GetHcclTypeSize(hcclDataType_t data_type, int32_t &size);
+  static Status GetHcclTypeSize(HcclDataType data_type, int32_t &size);
 
   ///
   /// @ingroup domi_ome
@@ -87,7 +87,7 @@ class HcomOmeUtil {
   /// @return SUCCESS
   /// @return FAIL
   ///
-  static Status GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, hcclRedOp_t &op_type);
+  static Status GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, HcclReduceOp &op_type);
 
   ///
   /// @ingroup domi_ome
@@ -150,8 +150,7 @@ class HcomOmeUtil {
   /// @return SUCCESS
   /// @return FAIL
   ///
-  static Status GetHcomCount(const ge::ConstOpDescPtr &op_desc, hcclDataType_t data_type, bool is_allgather,
-                             int &count);
+  static Status GetHcomCount(const ge::ConstOpDescPtr &op_desc, HcclDataType data_type, bool is_allgather, int &count);
 
  private:
   ///

@@ -227,7 +227,7 @@ Status CondPass::HandleScalarCond(const ComputeGraphPtr &graph, const OutDataAnc
   GELOGI("Handle cond with scalar cond-input.");
 
   GeTensorDesc tensor = out_anchor->GetOwnerNode()->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx());
-  std::string cast_name = out_anchor->GetOwnerNode()->GetName() + "_Cast";
+  std::string cast_name = in_anchor->GetOwnerNode()->GetName() + "_Cast";
   NodePtr cast_node = AddCastNode(graph, cast_name, tensor, src_type, DT_INT32);
   if (cast_node == nullptr) {
     GELOGE(FAILED, "Add Cast node failed, name:%s.", cast_name.c_str());
@@ -266,7 +266,7 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   out_tensor.SetShape(in_tensor.GetShape());
   out_tensor.SetOriginShape(in_tensor.GetOriginShape());
 
-  OpDescBuilder op_desc_builder(out_anchor->GetOwnerNode()->GetName() + "_" + type, type);
+  OpDescBuilder op_desc_builder(in_anchor->GetOwnerNode()->GetName() + "_" + type, type);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_tensor).AddOutput("y", out_tensor).Build();
   if (op_desc == nullptr) {
     GELOGE(FAILED, "Create op_desc failed.");

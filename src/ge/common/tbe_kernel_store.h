@@ -17,38 +17,17 @@
 #ifndef GE_COMMON_TBE_KERNEL_STORE_H_
 #define GE_COMMON_TBE_KERNEL_STORE_H_
 
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include "framework/common/fmk_types.h"
-#include "graph/op_desc.h"
-#include "graph/op_kernel_bin.h"
+#include "common/kernel_store.h"
 
 namespace ge {
-using TBEKernel = ge::OpKernelBin;
-using TBEKernelPtr = std::shared_ptr<ge::OpKernelBin>;
 
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY TBEKernelStore {
+class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY TBEKernelStore : public KernelStore {
  public:
   TBEKernelStore();
-  ~TBEKernelStore() = default;
+  ~TBEKernelStore() {}
   void AddTBEKernel(const TBEKernelPtr &kernel);
-  bool Build();
-
-  bool Load(const uint8_t *data, const size_t &len);
-  TBEKernelPtr FindTBEKernel(const std::string &name) const;
 
   void LoadTBEKernelBinToOpDesc(const std::shared_ptr<ge::OpDesc> &op_desc) const;
-
-  const uint8_t *Data() const;
-  size_t DataSize() const;
-
- private:
-  std::unordered_map<std::string, TBEKernelPtr> kernels_;
-  std::vector<uint8_t> buffer_;
 };
 }  // namespace ge
 

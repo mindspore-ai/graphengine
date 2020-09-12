@@ -93,7 +93,7 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   // reset op kernel lib, find supported kernel
   kernel_lib_name = op_desc->GetOpKernelLibName();
   if (kernel_lib_name.empty()) {
-    (void)instance->DNNEngineManagerObj().GetDNNEngineName(op_desc);
+    (void)instance->DNNEngineManagerObj().GetDNNEngineName(node);
     kernel_lib_name = op_desc->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
       GELOGE(GRAPH_FAILED, "Get node:%s, type:%s kernel lib failed.", node->GetName().c_str(),

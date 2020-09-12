@@ -36,7 +36,9 @@ GE_COMMON_LOCAL_SRC_FILES := \
     properties_manager.cc \
     types.cc\
     model_parser/base.cc \
+    kernel_store.cc \
     tbe_kernel_store.cc \
+    cust_aicpu_kernel_store.cc \
     op/attr_value_util.cc \
     op/ge_op_utils.cc \
     thread_pool.cc \

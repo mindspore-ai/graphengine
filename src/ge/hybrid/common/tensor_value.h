@@ -20,6 +20,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
+#include "memory/memory_api.h"
 
 namespace ge {
 namespace hybrid {
@@ -33,6 +34,8 @@ class TensorBuffer {
 
   static std::unique_ptr<TensorBuffer> Create(void *buffer, size_t size);
 
+  TensorBuffer(const TensorBuffer &) = delete;
+  TensorBuffer &operator=(const TensorBuffer &) = delete;
   ~TensorBuffer();
 
   void *GetData() { return buffer_; }
@@ -40,11 +43,12 @@ class TensorBuffer {
   size_t GetSize() const { return size_; }
 
  private:
-  TensorBuffer(NpuMemoryAllocator *allocator, void *buffer, size_t size);
+  TensorBuffer(NpuMemoryAllocator *allocator, void *buffer, size_t size, MemStorageType mem_type = HBM);
 
   NpuMemoryAllocator *allocator_ = nullptr;
   void *buffer_ = nullptr;
   size_t size_ = 0;
+  MemStorageType mem_type_;
 };
 
 class TensorValue {

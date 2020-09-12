@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file array_ops.h
+ * \brief
+ */
 #ifndef GE_OP_ARRAY_OPS_H_
 #define GE_OP_ARRAY_OPS_H_
 

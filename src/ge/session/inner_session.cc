@@ -31,28 +31,17 @@
 namespace ge {
 namespace {
 Status CheckReuseMemoryOption(const std::map<string, string> &options) {
-  const int kDecimal = 10;
-  auto dump_op_env = std::getenv("DUMP_OP");
-  int dump_op_flag = (dump_op_env != nullptr) ? std::strtol(dump_op_env, nullptr, kDecimal) : 0;
   auto iter = options.find(OPTION_EXEC_DISABLE_REUSED_MEMORY);
   if (iter != options.end()) {
     if (iter->second == "0") {
       GELOGD("%s=0, reuse memory is open", OPTION_EXEC_DISABLE_REUSED_MEMORY);
-      if (dump_op_flag) {
-        GELOGW("Will dump incorrect op data with ge option %s=0", OPTION_EXEC_DISABLE_REUSED_MEMORY);
-      }
     } else if (iter->second == "1") {
       GELOGD("%s=1, reuse memory is close", OPTION_EXEC_DISABLE_REUSED_MEMORY);
     } else {
       GELOGE(PARAM_INVALID, "option %s=%s is invalid", OPTION_EXEC_DISABLE_REUSED_MEMORY, iter->second.c_str());
       return FAILED;
     }
-  } else {
-    if (dump_op_flag) {
-      GELOGW("Will dump incorrect op data with default reuse memory");
-    }
   }
-
   return SUCCESS;
 }
 }  // namespace
@@ -60,7 +49,7 @@ Status CheckReuseMemoryOption(const std::map<string, string> &options) {
 static std::mutex mutex_;  // BuildGraph and RunGraph use
 
 InnerSession::InnerSession(uint64_t session_id, const std::map<string, string> &options)
-    : init_flag_(false), session_id_(session_id), options_(options) {}
+    : init_flag_(false), session_id_(session_id), options_(options), graph_manager_(domi::GetContext()) {}
 
 Status InnerSession::Initialize() {
   if (init_flag_) {

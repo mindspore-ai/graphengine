@@ -48,9 +48,9 @@ class SubexpressionMigrationPass : public GraphPass {
   ///
   /// @ingroup ge
   /// @brief Get all Data nodes for all subgraph.
-  /// @param [in] graph: Root compute graph.
-  /// @param [in] func_desc: functional OpDesc of Case.
-  /// @param [out] graph_nodes: Data groups of subgraph.
+  /// @param [in] node: Node Directly to Data.
+  /// @param [out] inputs: parent index of Input.
+  /// @param [out] outputs: parent index of Output.
   /// @return true: SUCCESS / false: FAILED
   ///
   bool GetAssociatedNodes(const NodePtr &node, map<uint32_t, uint32_t> &inputs, map<uint32_t, uint32_t> &outputs);
@@ -59,13 +59,13 @@ class SubexpressionMigrationPass : public GraphPass {
   /// @ingroup ge
   /// @brief Get all Data nodes for all subgraph.
   /// @param [in] graph_nodes: Data groups of subgraph.
-  /// @param [in] data_base: Data Node for migration.
-  /// @param [in] data_idx: Data groups of subgraph.
-  /// @param [in] data_idx: Data groups of subgraph.
+  /// @param [in] base_node: Data Node for migration.
+  /// @param [in] node_idx: Parent index of Data node.
+  /// @param [in] anchor_idx: Anchor index of node.
   /// @return true: Same / false: not same
   ///
   bool IsParallelNodeSame(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &base_node,
-                          uint32_t base_idx, uint32_t anchor_idx);
+                          uint32_t node_idx, uint32_t anchor_idx);
 
   ///
   /// @ingroup ge

@@ -476,13 +476,6 @@ Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory)
     GELOGE(ge::PARAM_INVALID, "Input parameter[--disable_reuse_memory]'s value must be 1 or 0.");
     return ge::PARAM_INVALID;
   }
-
-  const char *env_ge_dump = std::getenv("DUMP_OP");
-  const int decimal = 10;
-  int ge_dump_flag = (env_ge_dump != nullptr) ? std::strtol(env_ge_dump, nullptr, decimal) : 0;
-  if (ge_dump_flag && (disable_reuse_memory == "0")) {
-    GELOGW("Will dump uncorrect op data with param disable_reuse_memory=0");
-  }
   return ge::SUCCESS;
 }
 

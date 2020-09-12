@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file state_ops.h
+ * \brief
+ */
 #ifndef GE_OP_STATE_OPS_H_
 #define GE_OP_STATE_OPS_H_
 

@@ -177,6 +177,7 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_KERNEL_CONVERT (0x01)
 #define RT_KERNEL_DUMPFLAG (0x02)
 #define RT_FUSION_KERNEL_DUMPFLAG (0x04)
+#define RT_KERNEL_CUSTOM_AICPU (0x08)
 
 /**
  * @ingroup rt_kernel

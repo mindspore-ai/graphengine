@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file nn_norm_ops.h
+ * \brief
+ */
 #ifndef GE_OP_NN_NORM_OPS_H
 #define GE_OP_NN_NORM_OPS_H
 
@@ -342,9 +346,9 @@ REG_OP(ConfusionSoftmaxGrad)
 *@brief Function softmax gradients ext.
 
 *@par Inputs:
-* @li grad: A Tensor dtype of float16.
+* @li grad: A Tensor dtype of float16, float32.
 * @li x1: A Tensor dtype of float16, float32.
-* @li x2: A Tensor dtype of float16.
+* @li x2: A Tensor dtype of float16, float32.
 
 *@par Attributes:
 *@li axis: A int Scalar. The axis for reduce.

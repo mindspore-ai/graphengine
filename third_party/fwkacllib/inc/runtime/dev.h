@@ -164,7 +164,7 @@ RTS_API rtError_t rtGetDevicePhyIdByIndex(uint32_t devIndex, uint32_t *phyId);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtEnableP2P(uint32_t devIdDes, uint32_t phyIdSrc);
+RTS_API rtError_t rtEnableP2P(uint32_t devIdDes, uint32_t phyIdSrc, uint32_t flag);
 
 /**
  * @ingroup dvrt_dev
@@ -175,6 +175,17 @@ RTS_API rtError_t rtEnableP2P(uint32_t devIdDes, uint32_t phyIdSrc);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDisableP2P(uint32_t devIdDes, uint32_t phyIdSrc);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get cability of P2P omemry copy betwen device and peeredevic.
+ * @param [in] device   the logical device id
+ * @param [in] peerDevice   the physical device id
+ * @param [outv] *canAccessPeer   1:enable 0:disable
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDeviceCanAccessPeer(int32_t* canAccessPeer, uint32_t device, uint32_t peerDevice);
 
 /**
  * @ingroup dvrt_dev

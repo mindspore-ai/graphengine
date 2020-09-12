@@ -59,12 +59,16 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     generator/ge_generator.cc \
     generator/generator_api.cc \
     graph/manager/graph_var_manager.cc \
+    graph/manager/rdma_pool_allocator.cc \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
 
 BUILER_SRC_FILES := \
     ir_build/ge_ir_build.cc \
     ir_build/atc_ir_common.cc \
+
+ANALYZER_SRC_FILES:= \
+    analyzer/analyzer.cc \
 
 OMG_HOST_SRC_FILES := \
     model/ge_model.cc \
@@ -103,6 +107,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/mark_graph_unknown_status_pass.cc \
     graph/common/omg_util.cc \
     graph/common/bcast.cc \
+    graph/common/local_context.cc \
     graph/passes/dimension_compute_pass.cc \
     graph/passes/dimension_adjust_pass.cc \
     graph/passes/get_original_format_pass.cc \
@@ -260,6 +265,7 @@ COMMON_LOCAL_C_INCLUDES := \
     proto/ge_ir.proto \
     proto/fwk_adapter.proto    \
     proto/op_mapping_info.proto \
+    proto/dump_task.proto       \
     proto/tensorflow/attr_value.proto \
     proto/tensorflow/function.proto \
     proto/tensorflow/graph.proto \
@@ -283,6 +289,9 @@ COMMON_LOCAL_C_INCLUDES := \
     third_party/json/include \
     third_party/protobuf/include \
     third_party/opencv/include \
+
+ANALYZER_LOCAL_INCLUDES := \
+    $(TOPDIR)framework/domi/analyzer \
 
 NEW_OMG_HOST_SRC_FILES := \
     graph/preprocess/insert_op/util_insert_aipp_op.cc \
@@ -348,6 +357,7 @@ LOCAL_CFLAGS += -g -O0
 endif
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_C_INCLUDES += $(ANALYZER_LOCAL_INCLUDES)
 
 LOCAL_SRC_FILES := $(COMMON_LOCAL_SRC_FILES)
 LOCAL_SRC_FILES += $(GRAPH_MANAGER_LOCAL_SRC_FILES)
@@ -355,6 +365,7 @@ LOCAL_SRC_FILES += $(OMG_HOST_SRC_FILES)
 LOCAL_SRC_FILES += $(OME_HOST_SRC_FILES)
 LOCAL_SRC_FILES += $(NEW_OME_DEVICE_SRC_FILES)
 LOCAL_SRC_FILES += $(BUILER_SRC_FILES)
+LOCAL_SRC_FILES += $(ANALYZER_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
 
@@ -414,9 +425,11 @@ LOCAL_SRC_FILES += $(GRAPH_MANAGER_LOCAL_SRC_FILES)
 LOCAL_SRC_FILES += $(OMG_DEVICE_SRC_FILES)
 LOCAL_SRC_FILES += $(OME_DEVICE_SRC_FILES)
 LOCAL_SRC_FILES += $(BUILER_SRC_FILES)
+LOCAL_SRC_FILES += $(ANALYZER_SRC_FILES)
 
 
 LOCAL_C_INCLUDES := $(DEVICE_LOCAL_C_INCLUDES)
+LOCAL_C_INCLUDES += $(ANALYZER_LOCAL_INCLUDES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
 

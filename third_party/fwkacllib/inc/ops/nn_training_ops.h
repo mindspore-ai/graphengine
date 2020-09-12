@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file nn_training_ops.h
+ * \brief
+ */
 #ifndef GE_OP_TRAINING_OPS_H
 #define GE_OP_TRAINING_OPS_H
 
@@ -178,6 +182,9 @@ REG_OP(SparseApplyAdagrad)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseApplyAdagrad.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyAdagrad instead.
 */
 REG_OP(SparseApplyAdagradD)
     .INPUT(var, TensorType({DT_FLOAT}))
@@ -247,6 +254,9 @@ REG_OP(SparseApplyAdagradV2)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator SparseApplyAdagradV2.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyAdagradV2 instead.
 */
 REG_OP(SparseApplyAdagradV2D)
     .INPUT(var, TensorType({DT_FLOAT}))
@@ -440,6 +450,8 @@ REG_OP(ApplyKerasMomentum)
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ResourceApplyKerasMomentum.
 *
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyKerasMomentum instead.
 */
 REG_OP(ApplyKerasMomentumD)
     .INPUT(var, TensorType::NumberType())
@@ -499,6 +511,9 @@ REG_OP(ApplyKerasMomentumD)
 *
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ResourceApplyKerasMomentum.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdamWithAmsgrad instead.
 *
 */
 REG_OP(ApplyAdamWithAmsgradD)
@@ -1113,6 +1128,8 @@ REG_OP(ApplyAdagradV2)
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator ApplyAdagrad.
 *
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdagradV2 instead.
 */
 REG_OP(ApplyAdagradV2D)
     .INPUT(var, TensorType::NumberType())
@@ -1389,6 +1406,9 @@ REG_OP(ApplyRMSProp)
 *
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator ApplyRMSProp.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyRMSProp instead.
 */
 REG_OP(ApplyRMSPropD)
     .INPUT(var, TensorType::NumberType())
@@ -2184,6 +2204,9 @@ REG_OP(SparseApplyFtrl)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseApplyFtrl.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyFtrl instead.
 */
 REG_OP(SparseApplyFtrlD)
     .INPUT(var, TensorType({DT_FLOAT}))
@@ -2281,6 +2304,9 @@ REG_OP(SparseApplyFtrlV2)
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator SparseApplyFtrlV2D.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyFtrlV2 instead.
 */
 REG_OP(SparseApplyFtrlV2D)
     .INPUT(var, TensorType({DT_FLOAT}))
@@ -2389,6 +2415,9 @@ REG_OP(SparseApplyRMSProp)
 * @li Note that in this sparse implementation, "ms" and "mom" will not update
 * in iterations during which "grad" is 0.
 * @li The input tensors "var", "ms" and "mom" must have the same shape.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyRMSProp instead.
 */
 REG_OP(SparseApplyRMSPropD)
     .INPUT(var, TensorType::NumberType())
@@ -2492,6 +2521,9 @@ REG_OP(SparseApplyAdadelta)
 * @li Note that in this sparse implementation, "accum" and "accum_update" will not update
 * in iterations during which "grad" is 0.
 * @li The input tensors "var", "accum" and "accum_update" must have the same shape.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyAdadelta instead.
 */
 REG_OP(SparseApplyAdadeltaD)
     .INPUT(var, TensorType::NumberType())

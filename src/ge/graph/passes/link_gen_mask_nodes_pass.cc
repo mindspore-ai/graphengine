@@ -127,7 +127,7 @@ Status LinkGenMaskNodesPass::GetGenMaskGroupSize(vector<NodePtr> &gen_mask_nodes
 
   auto ge_lib = GELib::GetInstance();
   if ((ge_lib != nullptr) && ge_lib->InitFlag()) {
-    (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(gen_mask_op);
+    (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(gen_mask_node);
   }
 
   size_t gen_mask_group_num = kDefaultMaxParallelNum;

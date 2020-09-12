@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file spectral_ops.h
+ * \brief
+ */
 #ifndef GE_OP_SPECTRAL_OPS_H
 #define GE_OP_SPECTRAL_OPS_H
 

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file all_ops.h
+ * \brief
+ */
 #ifndef BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
 #define BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
 

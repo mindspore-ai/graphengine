@@ -64,7 +64,7 @@ class IteratorOpPass : public GraphPass {
   ///
   ge::OpDescPtr CreateMemcpyAsyncOp(const ge::NodePtr &pre_node);
 
-  Status SetRtContext(uint64_t session_id, rtContext_t rt_context, rtCtxMode_t mode);
+  Status SetRtContext(uint64_t session_id, uint32_t graph_id, rtContext_t rt_context, rtCtxMode_t mode);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_ITERATOR_OP_PASS_H_

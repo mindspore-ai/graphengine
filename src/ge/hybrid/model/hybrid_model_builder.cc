@@ -36,20 +36,24 @@ const uint32_t kAlignment = 32;
 const int kBytes = 8;
 
 int64_t CalcVarSizeInBytes(const GeTensorDesc &desc) {
-  int64_t var_size = GetSizeByDataType(desc.GetDataType());
-  if (var_size <= 0) {
-    GELOGE(PARAM_INVALID, "Failed to calc var data size from data type %s",
-           TypeUtils::DataTypeToSerialString(desc.GetDataType()).c_str());
-    return -1;
+  int64_t var_size = 0;
+  auto data_type = desc.GetDataType();
+  if (data_type == DT_STRING) {
+    (void)TensorUtils::GetSize(desc, var_size);
+  } else {
+    var_size = GetSizeByDataType(data_type);
+    if (var_size <= 0) {
+      GELOGW("Failed to calc var data size from data type %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
+      return -1;
+    }
+    auto shape = desc.GetShape();
+    auto dim_num = shape.GetDimNum();
+    for (size_t dim_index = 0; dim_index < dim_num; ++dim_index) {
+      var_size *= shape.GetDim(dim_index);
+    }
+    // padding up to multiple of kAlignment, and add extra kAlignment
+    var_size = (var_size + kAlignment * 2 - 1) / kAlignment * kAlignment;
   }
-  auto shape = desc.GetShape();
-  auto dim_num = shape.GetDimNum();
-  for (size_t dim_index = 0; dim_index < dim_num; ++dim_index) {
-    var_size *= shape.GetDim(dim_index);
-  }
-
-  // padding up to multiple of kAlignment, and add extra kAlignment
-  var_size = (var_size + kAlignment * 2 - 1) / kAlignment * kAlignment;
   return var_size;
 }
 }  // namespace
@@ -614,11 +618,6 @@ Status HybridModelBuilder::VarNodeToTensor(const NodePtr &var_node, std::unique_
   }
 
   int64_t var_size = CalcVarSizeInBytes(*tensor_desc);
-  if (var_size < 0) {
-    GELOGE(INTERNAL_ERROR, "[%s] Invalid var size: %ld", var_name.c_str(), var_size);
-    return INTERNAL_ERROR;
-  }
-
   tensor.reset(new (std::nothrow) TensorValue(dev_mem, var_size));
   GE_CHECK_NOTNULL(tensor);
   return SUCCESS;

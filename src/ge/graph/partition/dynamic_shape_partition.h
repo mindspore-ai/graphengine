@@ -81,7 +81,7 @@ class DynamicShapePartitioner {
     void Clear();
 
    private:
-    static size_t unique_id_;
+    static thread_local size_t unique_id_;
     size_t id_;
     // Each Cluster records the maximum and minimum topological order of its node
     size_t min_;  // maximum topological order

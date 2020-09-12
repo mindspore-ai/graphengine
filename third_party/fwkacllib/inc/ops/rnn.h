@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file rnn.h
+ * \brief
+ */
 #ifndef GE_OP_RNN_H
 #define GE_OP_RNN_H
 
@@ -84,6 +88,76 @@ REG_OP(DynamicLSTM)
     .INPUT(b, TensorType({DT_FLOAT32}))
     .OUTPUT(output_h, TensorType({DT_FLOAT32}))
     .OP_END_FACTORY_REG(DynamicLSTM)
+
+/**
+*@brief: DynamicRNN calculation.
+*@par Inputs:
+*ten inputs: \n
+*@li x:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li b:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li seq_length:A 1D Tensor. Must be one of the following types: int32. The format must be ND.
+*@li init_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li init_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li wci:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wcf:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wco:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li mask:A 1D Tensor. Must be one of the following types: uint8. The format must be ND.
+
+*@par Attributes:
+*@li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
+*@li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL". Only UNIDIRECTIONAL is currently supported.
+*@li cell_depth:An integer identifying the cell depth in the op. Default to 1.
+*@li use_peephole:An bool identifying if use peephole in the op. Default to false.
+*@li keep_prob:An float identifying the keep prob in the op. Default to 1.
+*@li cell_clip:An float identifying the cell clip in the op. Default to -1.
+*@li num_proj:An integer identifying the num projection in the op. Default to 0.
+*@li time_major:An bool identifying the time major in the op. Default to false.
+*@li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported.
+*@li forget_bias:An float identifying the forget bias in the op. Default to 0.
+*@li is_training:An bool identifying is training in the op. Default to true.
+
+*@par Outputs:
+*eight outputs: \n
+*@li y:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li output_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li output_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li i:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li j:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li f:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li o:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*/
+REG_OP(DynamicRNN)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(b, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_UINT32}))
+    .OPTIONAL_INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(init_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wci, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wcf, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wco, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(i, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(j, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(f, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(o, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(tanhc, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(cell_type, String, "LSTM")
+    .ATTR(direction, String, "UNIDIRECTIONAL")
+    .ATTR(cell_depth, Int, 1)
+    .ATTR(use_peephole, Bool, false)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(cell_clip, Float, -1.0)
+    .ATTR(num_proj, Int, 0)
+    .ATTR(time_major, Bool, false)
+    .ATTR(forget_bias, Float, 0.0)
+    .ATTR(is_training, Bool, true)
+    .OP_END_FACTORY_REG(DynamicRNN)
 
 /**
 *@brief: Basic LSTM Cell backward calculation.Calculate the gradient of input and hidden state.

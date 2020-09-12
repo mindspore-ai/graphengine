@@ -43,7 +43,7 @@ namespace ge {
 namespace {
 const std::unordered_set<string> kChangeDimNodes = {PERMUTE, EXPANDDIMS, SQUEEZE};
 const string kIsGraphInferred = "_is_graph_inferred";
-RefRelations reflection_builder;
+thread_local RefRelations reflection_builder;
 }  // namespace
 
 graphStatus ReflectionProcess(const std::unordered_set<RefCell, RefCellHash> &reflection,

@@ -163,42 +163,4 @@ bool HasCalcOp(const ComputeGraphPtr &graph) {
 
   return false;
 }
-
-Status ParseOutNodes(const string &out_nodes) {
-  try {
-    if (!out_nodes.empty()) {
-      domi::GetContext().out_nodes_map.clear();
-      domi::GetContext().user_out_nodes.clear();
-
-      vector<string> nodes_v = StringUtils::Split(out_nodes, ';');
-      for (const string &node : nodes_v) {
-        vector<string> key_value_v = StringUtils::Split(node, ':');
-        if (key_value_v.size() != 2) {  // must contain 2 items
-          GELOGE(GE_GRAPH_PARAM_NULLPTR, "Invalid outNodes: %s", node.c_str());
-          return GE_GRAPH_PARAM_NULLPTR;
-        }
-        auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
-        int32_t index = std::stoi(StringUtils::Trim(key_value_v[1]));
-        if (iter != domi::GetContext().out_nodes_map.end()) {
-          iter->second.emplace_back(index);
-        } else {
-          std::vector<int32_t> index_v;
-          index_v.emplace_back(index);
-          domi::GetContext().out_nodes_map.emplace(key_value_v[0], index_v);
-        }
-        domi::GetContext().user_out_nodes.emplace_back(key_value_v[0], index);
-      }
-    }
-  } catch (std::invalid_argument &) {
-    GELOGE(PARAM_INVALID, "out nodes: %s, key value[1] is invalid argument", out_nodes.c_str());
-    return PARAM_INVALID;
-  } catch (std::out_of_range &) {
-    GELOGE(PARAM_INVALID, "out nodes: %s, key value[1] is out of range", out_nodes.c_str());
-    return PARAM_INVALID;
-  } catch (...) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "Invalid outNodes: %s", out_nodes.c_str());
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-  return SUCCESS;
-}
 }  // namespace ge

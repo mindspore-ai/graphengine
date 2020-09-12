@@ -31,6 +31,7 @@
 #include "runtime/mem.h"
 #include "task_info/task_info.h"
 #include "framework/common/ge_types.h"
+#include "runtime/base.h"
 
 namespace ge {
 class DataDumper {
@@ -87,6 +88,11 @@ class DataDumper {
   void SetDumpProperties(const DumpProperties &dump_properties) { dump_properties_ = dump_properties; }
   const DumpProperties &GetDumpProperties() const { return dump_properties_; }
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
+
+  // Dump exception info
+  Status DumpExceptionInput(const OpDescInfo &op_desc_info, const string &dump_file);
+  Status DumpExceptionOutput(const OpDescInfo &op_desc_info, const string &dump_file);
+  Status DumpExceptionInfo(const std::vector<rtExceptionInfo> exception_infos);
 
  private:
   void ReleaseDevMem(void **ptr) noexcept;

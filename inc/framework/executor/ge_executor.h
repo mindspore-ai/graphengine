@@ -108,11 +108,11 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   /// @ingroup ge
   /// @brief Get current dynamic dims info by combined dims
   /// @param [in] model_id: model id allocate from manager
-  /// @param [in] combined_dims: array of combined dimensions
+  /// @param [in] dynamic_dims: cur gear dynamic dims value
   /// @param [out] cur_dynamic_dims: current dynamic dims
   /// @return execute result
   ///
-  ge::Status GetCurDynamicDims(uint32_t model_id, const std::vector<uint64_t> &combined_dims,
+  ge::Status GetCurDynamicDims(uint32_t model_id, const std::vector<uint64_t> &dynamic_dims,
                                std::vector<uint64_t> &cur_dynamic_dims);
 
   ///

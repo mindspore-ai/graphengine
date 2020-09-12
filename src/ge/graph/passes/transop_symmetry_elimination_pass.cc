@@ -163,9 +163,9 @@ bool TransOpSymmetryEliminationPass::JudgeTransposeDBack2Raw(const NodePtr &src_
   //  which we get through 3: i = perm_1[perm_2[i]]
   //
   vector<int64_t> src_node_perm;
-  AttrUtils::GetListInt(src_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, src_node_perm);
+  (void)AttrUtils::GetListInt(src_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, src_node_perm);
   vector<int64_t> dst_node_perm;
-  AttrUtils::GetListInt(dst_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, dst_node_perm);
+  (void)AttrUtils::GetListInt(dst_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, dst_node_perm);
 
   if (src_node_perm.size() != dst_node_perm.size()) {
     return false;

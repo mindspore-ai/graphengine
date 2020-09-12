@@ -67,6 +67,7 @@ class GraphBuilder {
                                  GeModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
   Status BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);
+  Status AddOutputMemTypeForNode(const NodePtr &node);
   Status BuildForHostCpuGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                               uint64_t session_id = INVALID_SESSION_ID);
   int build_mode_;

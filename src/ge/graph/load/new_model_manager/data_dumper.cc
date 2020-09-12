@@ -16,21 +16,28 @@
 
 #include "graph/load/new_model_manager/data_dumper.h"
 
+#include <sys/time.h>
+#include <cstdlib>
 #include <ctime>
 #include <map>
 #include <utility>
 #include <vector>
 
+#include "common/debug/memory_dumper.h"
 #include "common/properties_manager.h"
+#include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/manager/util/debug.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "proto/dump_task.pb.h"
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping_info.pb.h"
+#include "runtime/base.h"
 #include "runtime/mem.h"
 
 namespace {
@@ -65,6 +72,16 @@ static bool ParseNameIndex(const std::string &node_name_index, std::string &node
 
 static bool IsTensorDescWithSkipDumpAddrType(bool has_mem_type_attr, vector<int64_t> v_memory_type, size_t i) {
   return has_mem_type_attr && (v_memory_type[i] == RT_MEMORY_L1);
+}
+
+static uint64_t GetNowTime() {
+  uint64_t ret = 0;
+  struct timeval tv;
+  if (gettimeofday(&tv, NULL) == 0) {
+    ret = tv.tv_sec * 1000000ULL + tv.tv_usec;
+  }
+
+  return ret;
 }
 }  // namespace
 
@@ -176,6 +193,7 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
   GELOGD("Start SaveDumpOpInfo of task_id: %u, stream_id: %u", task_id, stream_id);
   OpDescInfo op_desc_info;
   op_desc_info.op_name = op->GetName();
+  op_desc_info.op_type = op->GetType();
   op_desc_info.task_id = task_id;
   op_desc_info.stream_id = stream_id;
   for (size_t i = 0; i < op->GetInputsSize(); ++i) {
@@ -183,12 +201,28 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
     op_desc_info.input_format.emplace_back(input_desc.GetFormat());
     op_desc_info.input_shape.emplace_back(input_desc.GetShape().GetDims());
     op_desc_info.input_data_type.emplace_back(input_desc.GetDataType());
+    int64_t input_size = 0;
+    auto tensor_descs = op->GetAllInputsDesc();
+    if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(i), input_size) != SUCCESS) {
+      GELOGW("Get input size failed");
+      return;
+    }
+    GELOGI("Save dump op info, the input size is %ld", input_size);
+    op_desc_info.input_size.emplace_back(input_size);
   }
   for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
     GeTensorDesc output_desc = op->GetOutputDesc(j);
     op_desc_info.output_format.emplace_back(output_desc.GetFormat());
     op_desc_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
     op_desc_info.output_data_type.emplace_back(output_desc.GetDataType());
+    int64_t output_size = 0;
+    auto tensor_descs = op->GetAllOutputsDesc();
+    if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(j), output_size) != SUCCESS) {
+      GELOGW("Get input size failed");
+      return;
+    }
+    GELOGI("Save dump op info, the output size is %ld", output_size);
+    op_desc_info.output_size.emplace_back(output_size);
   }
   op_desc_info.input_addrs = ModelUtils::GetInputDataAddrs(model_param, op);
   op_desc_info.output_addrs = ModelUtils::GetOutputDataAddrs(model_param, op);
@@ -809,5 +843,91 @@ void DataDumper::PrintCheckLog(string &dump_list_key) {
       GELOGW("Op %s set to dump but not exist in model %s or not a valid op.", dump_op.c_str(), dump_list_key.c_str());
     }
   }
+}
+
+Status DataDumper::DumpExceptionInput(const OpDescInfo &op_desc_info, const string &dump_file) {
+  GELOGI("Start to dump exception input");
+  for (size_t i = 0; i < op_desc_info.input_addrs.size(); i++) {
+    if (Debug::DumpDevMem(dump_file.data(), op_desc_info.input_addrs.at(i), op_desc_info.input_size.at(i)) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Dump the %zu input data failed", i);
+      return PARAM_INVALID;
+    }
+  }
+  return SUCCESS;
+}
+
+Status DataDumper::DumpExceptionOutput(const OpDescInfo &op_desc_info, const string &dump_file) {
+  GELOGI("Start to dump exception output");
+  for (size_t i = 0; i < op_desc_info.output_addrs.size(); i++) {
+    if (Debug::DumpDevMem(dump_file.data(), op_desc_info.output_addrs.at(i), op_desc_info.output_size.at(i)) !=
+        SUCCESS) {
+      GELOGE(PARAM_INVALID, "Dump the %zu input data failed", i);
+      return PARAM_INVALID;
+    }
+  }
+  return SUCCESS;
+}
+
+Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exception_infos) {
+  GELOGI("Start to dump exception info");
+  for (const rtExceptionInfo &iter : exception_infos) {
+    OpDescInfo op_desc_info;
+    if (GetOpDescInfo(iter.streamid, iter.taskid, op_desc_info)) {
+      toolkit::dumpdata::DumpData dump_data;
+      dump_data.set_version("2.0");
+      dump_data.set_dump_time(GetNowTime());
+      for (size_t i = 0; i < op_desc_info.input_format.size(); ++i) {
+        toolkit::dumpdata::OpInput input;
+        input.set_data_type(toolkit::dumpdata::OutputDataType(GetIrDataType(op_desc_info.input_data_type[i])));
+        input.set_format(toolkit::dumpdata::OutputFormat(op_desc_info.input_format[i]));
+        for (auto dim : op_desc_info.input_shape[i]) {
+          input.mutable_shape()->add_dim(dim);
+        }
+        input.set_size(op_desc_info.input_size[i]);
+        GELOGI("The input size int exception is %ld", op_desc_info.input_size[i]);
+        dump_data.mutable_input()->Add(std::move(input));
+      }
+      for (size_t j = 0; j < op_desc_info.output_format.size(); ++j) {
+        toolkit::dumpdata::OpOutput output;
+        output.set_data_type(toolkit::dumpdata::OutputDataType(GetIrDataType(op_desc_info.output_data_type[j])));
+        output.set_format(toolkit::dumpdata::OutputFormat(op_desc_info.output_format[j]));
+        for (auto dim : op_desc_info.output_shape[j]) {
+          output.mutable_shape()->add_dim(dim);
+        }
+        output.set_size(op_desc_info.output_size[j]);
+        GELOGI("The output size int exception is %ld", op_desc_info.output_size[j]);
+        dump_data.mutable_output()->Add(std::move(output));
+      }
+      uint64_t now_time = GetNowTime();
+      string dump_file_path = "./" + op_desc_info.op_type + "." + op_desc_info.op_name + "." +
+                              to_string(op_desc_info.task_id) + "." + to_string(now_time);
+      uint64_t proto_size = dump_data.ByteSizeLong();
+      unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
+      bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);
+      if (!ret || proto_size == 0) {
+        GELOGE(PARAM_INVALID, "Dump data proto serialize failed");
+        return PARAM_INVALID;
+      }
+
+      GE_CHK_STATUS_RET(MemoryDumper::DumpToFile(dump_file_path.c_str(), &proto_size, sizeof(uint64_t)),
+                        "Failed to dump proto size");
+      GE_CHK_STATUS_RET(MemoryDumper::DumpToFile(dump_file_path.c_str(), proto_msg.get(), proto_size),
+                        "Failed to dump proto msg");
+      if (DumpExceptionInput(op_desc_info, dump_file_path) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Dump exception input failed");
+        return PARAM_INVALID;
+      }
+
+      if (DumpExceptionOutput(op_desc_info, dump_file_path) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Dump exception output failed");
+        return PARAM_INVALID;
+      }
+      GELOGI("Dump exception info SUCCESS");
+    } else {
+      GELOGE(PARAM_INVALID, "Get op desc info failed,task id:%u,stream id:%u", iter.taskid, iter.streamid);
+      return PARAM_INVALID;
+    }
+  }
+  return SUCCESS;
 }
 }  // namespace ge

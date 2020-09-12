@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file quantize_ops.h
+ * \brief
+ */
 #ifndef GE_OP_QUANTIZE_OPS_H
 #define GE_OP_QUANTIZE_OPS_H
 #include "graph/operator_reg.h"
@@ -143,14 +147,14 @@ REG_OP(AscendAntiQuant)
 
 *@par Inputs:
 *@li x0: An NC1HWC0 tensor of type int32, specifying the input.
-*@li deq_scale: An NC1HWC0 tensor of type float16 or uint64, specifying the scaling ratio.
+*@li deq_scale: An NC1HWC0 tensor of type uint64, specifying the scaling ratio.
 *@li x1: An NC1HWC0 tensor of type int16, specifying the input.
 
 *@par Attributes:
 *relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False".
 
 *@par Outputs:
-*y: The dequantized output tensor of type float16 or float32 and with format NC1HWC0.
+*y: The dequantized output tensor of type int16 and with format NC1HWC0.
 
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.

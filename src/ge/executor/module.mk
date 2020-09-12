@@ -13,6 +13,7 @@ local_ge_executor_src_files :=  \
     ../omm/csa_interact.cc \
     ../graph/manager/graph_manager_utils.cc \
     ../graph/manager/graph_var_manager.cc \
+    ../graph/manager/rdma_pool_allocator.cc \
     ../graph/manager/graph_mem_allocator.cc \
     ../graph/manager/graph_caching_allocator.cc \
     ../graph/manager/trans_var_data_utils.cc \
@@ -63,6 +64,7 @@ local_ge_executor_src_files :=  \
 local_ge_executor_c_include :=             \
     proto/insert_op.proto                  \
     proto/op_mapping_info.proto            \
+    proto/dump_task.proto                  \
     proto/ge_ir.proto                      \
     proto/task.proto                       \
     proto/om.proto                         \

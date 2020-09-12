@@ -18,6 +18,7 @@
 #define INC_GRAPH_OP_DESC_H_
 
 #include <functional>
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -86,6 +87,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   graphStatus AddInputDescForward(const string &name, const unsigned int num);
 
   graphStatus AddInputDescMiddle(const string &name, const unsigned int num, size_t index);
+
+  graphStatus AddOutputDescMiddle(const string &name, const unsigned int num, size_t index);
 
   graphStatus AddOutputDescForward(const string &name, const unsigned int num);
 
@@ -186,6 +189,14 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   graphStatus OpVerify();
 
   graphStatus CommonVerify() const;
+
+  graphStatus AddRegisterInputName(const string &name);
+
+  graphStatus AddRegisterOutputName(const string &name);
+
+  vector<string> GetRegisterInputName() const;
+
+  vector<string> GetRegisterOutputName() const;
 
   using AttrHolder::AddRequiredAttr;
   using AttrHolder::DelAttr;
@@ -297,9 +308,11 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   vector<GeTensorDescPtr> inputs_desc_{};
   map<string, uint32_t> input_name_idx_{};
+  vector<string> register_input_name_{};
   std::unordered_set<string> optional_input_names_{};
   vector<GeTensorDescPtr> outputs_desc_{};
   map<string, uint32_t> output_name_idx_{};
+  vector<string> register_output_name_{};
   std::function<graphStatus(Operator &)> infer_func_ = nullptr;
   std::function<graphStatus(Operator &)> infer_format_func_ = nullptr;
   std::function<graphStatus(Operator &)> verifier_func_ = nullptr;

@@ -31,6 +31,8 @@
 #include "graph/utils/type_utils.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "init/gelib.h"
+#include "graph/ge_local_context.h"
+#include "ge/ge_api_types.h"
 
 using domi::LogTimeStampDef;
 using domi::ModelTaskDef;
@@ -527,7 +529,7 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
 
     // Reset op kernel lib name
     if (op_desc->GetOpKernelLibName().empty()) {
-      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(op_desc);
+      (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(node);
     }
 
     all_stream_ops[op_desc->GetStreamId()].emplace_back(op_desc);
@@ -762,24 +764,26 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
   return SUCCESS;
 }
 
-Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
-                                             vector<uint32_t> &all_reduce_nodes) const {
-  GELOGI("Start FindProfilingTaskIndex.");
-  GE_CHECK_NOTNULL(graph);
-  const char *profiling_mode = std::getenv(kProfilingMode);
-  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
-  if (!is_profiling) {
+Status TaskGenerator::GetFpBpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                                   vector<uint32_t> &all_reduce_nodes, std::string &fp_point_str,
+                                   std::string &bp_point_str) const {
+  if (ge::GetContext().GetOption(OPTION_EXEC_PROFILING_FPPONIT_OPTIONS, fp_point_str) == SUCCESS &&
+      ge::GetContext().GetOption(OPTION_EXEC_PROFILING_BPPONIT_OPTIONS, bp_point_str) == SUCCESS &&
+      !fp_point_str.empty() && !bp_point_str.empty()) {
     return SUCCESS;
   }
 
+  Status ret = SUCCESS;
   const char *fp_point = std::getenv(kProfilingFpPoint);
-  Status ret;
   if (fp_point == nullptr) {
     ret = AutoFindFpOpIndex(graph, profiling_point);
     if (ret != SUCCESS) {
       GELOGW("First forward profiling op_index not set and FindFpOpIndex failed.");
-      return SUCCESS;
+      return FAILED;
     }
+  } else {
+    fp_point_str = string(fp_point);
+    GELOGI("Get fp_point_str from env %s", fp_point_str.c_str());
   }
 
   const char *bp_point = std::getenv(kProfilingBpPoint);
@@ -787,20 +791,47 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
     ret = AutoFindBpOpIndex(graph, profiling_point, all_reduce_nodes);
     if (ret != SUCCESS) {
       GELOGW("Last backward profiling op_index not set and FindBpOpIndex failed.");
-      return SUCCESS;
+      return FAILED;
     }
+  } else {
+    bp_point_str = string(bp_point);
+    GELOGI("Get bp_point_str from env %s", bp_point_str.c_str());
   }
 
-  if (fp_point != nullptr) {
-    string fp_point_str = string(fp_point);
+  return SUCCESS;
+}
+
+Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                                             vector<uint32_t> &all_reduce_nodes) const {
+  GELOGI("Start FindProfilingTaskIndex.");
+  GE_CHECK_NOTNULL(graph);
+  const char *profiling_mode = std::getenv(kProfilingMode);
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  if (!is_profiling) {
+    GELOGW("Profiling is not open.");
+    return SUCCESS;
+  }
+
+  GELOGI("Start get FP/BP index.");
+  std::string fp_point_str;
+  std::string bp_point_str;
+  Status ret = GetFpBpIndex(graph, profiling_point, all_reduce_nodes, fp_point_str, bp_point_str);
+  if (ret != SUCCESS) {
+    GELOGW("Get FP_POINT BP_POINT failed.");
+    return SUCCESS;
+  }
+
+  GELOGI("fp_point_str:%s, bp_point_str:%s.", fp_point_str.c_str(), bp_point_str.c_str());
+
+  if (!fp_point_str.empty()) {
     ret = FindFpOfEnv(graph, fp_point_str, profiling_point);
     if (ret != SUCCESS) {
       GELOGW("First backward profiling op name set but FindFpOfEnv failed.");
       return SUCCESS;
     }
   }
-  if (bp_point != nullptr) {
-    string bp_point_str = string(bp_point);
+
+  if (!bp_point_str.empty()) {
     ret = FindBpOfEnv(graph, bp_point_str, profiling_point, all_reduce_nodes);
     if (ret != SUCCESS) {
       GELOGW("Last backward profiling op name set but FindBpOfEnv failed.");

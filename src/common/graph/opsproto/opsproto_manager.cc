@@ -31,6 +31,13 @@ OpsProtoManager *OpsProtoManager::Instance() {
 }
 
 bool OpsProtoManager::Initialize(const std::map<std::string, std::string> &options) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (is_init_) {
+    GELOGI("OpsProtoManager is already initialized.");
+    return true;
+  }
+
   /*lint -e1561*/
   auto proto_iter = options.find("ge.opsProtoLibPath");
   /*lint +e1561*/
@@ -42,10 +49,19 @@ bool OpsProtoManager::Initialize(const std::map<std::string, std::string> &optio
   pluginPath_ = proto_iter->second;
   LoadOpsProtoPluginSo(pluginPath_);
 
+  is_init_ = true;
+
   return true;
 }
 
 void OpsProtoManager::Finalize() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (!is_init_) {
+    GELOGI("OpsProtoManager is not initialized.");
+    return;
+  }
+
   for (auto handle : handles_) {
     if (handle != nullptr) {
       if (dlclose(handle) != 0) {
@@ -57,6 +73,8 @@ void OpsProtoManager::Finalize() {
       GELOGW("close opsprotomanager handler failure, handler is nullptr");
     }
   }
+
+  is_init_ = false;
 }
 
 static std::vector<std::string> Split(const std::string &str, char delim) {

@@ -28,6 +28,7 @@
 #include "graph/graph.h"
 #include "graph/op_desc.h"
 #include "graph/detail/attributes_holder.h"
+#include "omg/omg_inner_types.h"
 
 namespace ge {
 class GeGenerator {
@@ -45,6 +46,7 @@ class GeGenerator {
   GeGenerator &operator=(const GeGenerator &) = delete;
 
   Status Initialize(const std::map<std::string, std::string> &options);
+  Status Initialize(const std::map<std::string, std::string> &options, OmgContext &context);
 
   Status Finalize();
 

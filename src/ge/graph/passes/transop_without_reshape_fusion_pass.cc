@@ -19,6 +19,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <atomic>
 #include "common/ge/ge_util.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
@@ -451,9 +452,11 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkNodesWhenDescNotChanged(
 
 OpDescPtr TransOpWithoutReshapeFusionPass::GetFormatTransferOp(const GeTensorDesc &format_trans_input_desc,
                                                                const GeTensorDesc &format_trans_output_desc) {
-  static uint32_t fusion_format_transfer_op_count = 1;
+  static std::atomic_long atomic_fusion_format_transfer_op_count(1);
+  auto fusion_format_transfer_op_count = atomic_fusion_format_transfer_op_count.fetch_add(1);
+
   std::stringstream format_transfer_op_name;
-  format_transfer_op_name << "fusion_format_transfer_" << fusion_format_transfer_op_count++;
+  format_transfer_op_name << "fusion_format_transfer_" << fusion_format_transfer_op_count;
   OpDescPtr format_transfer_op = MakeShared<OpDesc>(format_transfer_op_name.str().c_str(), TRANSDATA);
   if (format_transfer_op == nullptr) {
     GELOGE(INTERNAL_ERROR, "new format transfer op failed!");
@@ -496,9 +499,11 @@ OpDescPtr TransOpWithoutReshapeFusionPass::GetFormatTransferOp(const GeTensorDes
 
 OpDescPtr TransOpWithoutReshapeFusionPass::GetCastOp(const GeTensorDesc &cast_input_desc,
                                                      const GeTensorDesc &cast_output_desc) {
+  static std::atomic_long atomic_fusion_cast_op_count(1);
+  auto fusion_cast_op_count = atomic_fusion_cast_op_count.fetch_add(1);
+
   std::stringstream cast_op_name;
-  static uint32_t fusion_cast_op_count = 1;
-  cast_op_name << "fusion_cast_op_" << fusion_cast_op_count++;
+  cast_op_name << "fusion_cast_op_" << fusion_cast_op_count;
   auto node_op = ge::OperatorFactory::CreateOperator(cast_op_name.str(), CAST);
   auto cast_op = ge::OpDescUtils::GetOpDescFromOperator(node_op);
   node_op.BreakConnect();

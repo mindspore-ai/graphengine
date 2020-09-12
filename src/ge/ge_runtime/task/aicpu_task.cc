@@ -75,7 +75,8 @@ bool AicpuTask::Distribute() {
       return false;
     }
 
-    flag = rtMemcpy(ext_info_, ext_size, reinterpret_cast<void *>(ext_info.data()), ext_size, RT_MEMCPY_HOST_TO_DEVICE);
+    flag = rtMemcpy(ext_info_, ext_size, const_cast<void *>(reinterpret_cast<const void *>(ext_info.data())), ext_size,
+                    RT_MEMCPY_HOST_TO_DEVICE);
     if (flag != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api(rtMemCpy) failed, ret: 0x%X.", flag);
       return false;

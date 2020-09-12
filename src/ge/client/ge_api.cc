@@ -32,7 +32,6 @@
 #include "register/op_registry.h"
 #include "common/ge/tbe_plugin_manager.h"
 
-using domi::GetContext;
 using domi::OpRegistry;
 using std::map;
 using std::string;

@@ -22,6 +22,7 @@ file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/insert_op.proto"
         "../../proto/op_mapping_info.proto"
         "../../proto/ge_ir.proto"
+        "../proto/dump_task.proto"
         )
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
@@ -68,6 +69,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../graph/manager/graph_manager_utils.cc"
         "../graph/manager/graph_mem_allocator.cc"
         "../graph/manager/graph_var_manager.cc"
+        "../graph/manager/rdma_pool_allocator.cc"
         "../graph/manager/trans_var_data_utils.cc"
         "../graph/manager/util/debug.cc"
         "../hybrid/hybrid_davinci_model_stub.cc"

@@ -116,6 +116,7 @@ class SubGraphInfo {
 
 using SubGraphInfoPtr = std::shared_ptr<ge::SubGraphInfo>;
 using Graph2SubGraphInfoList = std::unordered_map<ComputeGraphPtr, std::vector<SubGraphInfoPtr>>;
+using Graph2InputNodesSubGraphInfo = std::unordered_map<ComputeGraphPtr, SubGraphInfoPtr>;
 
 // for run graph async listener
 class RunAsyncListener : public ge::ModelListener {
@@ -220,8 +221,6 @@ class GraphModelListener : public ge::ModelListener {
   std::condition_variable &condition_;
 };
 
-Status ParseOutNodes(const string &out_nodes);
-
 struct GraphManagerOptions {
   int32_t stream_num;
   int32_t perf_level;
@@ -248,6 +247,8 @@ struct GraphManagerOptions {
   std::string output_datatype;
   std::string original_model_file;
   std::string save_original_model;
+  std::string build_mode;
+  std::string build_step;
   GraphManagerOptions()
       : stream_num(1),
         perf_level(domi::GEN_TASK_WITHOUT_FUSION),
@@ -269,7 +270,9 @@ struct GraphManagerOptions {
         hcom_parallel(false),
         enable_print_op_pass(true),
         is_single_op(false),
-        save_original_model("false") {}
+        save_original_model("false"),
+        build_mode(""),
+        build_step("") {}
 };
 }  // namespace ge
 

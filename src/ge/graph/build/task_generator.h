@@ -118,6 +118,9 @@ class TaskGenerator {
   Status FindBpOfEnv(const ComputeGraphPtr &graph, const std::string &bp_point_str, ProfilingPoint &profiling_point,
                      vector<uint32_t> &all_reduce_nodes) const;
 
+  Status GetFpBpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point, vector<uint32_t> &all_reduce_nodes,
+                      std::string &fp_point_str, std::string &bp_point_str) const;
+
   Status FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                                 std::vector<uint32_t> &all_reduce_nodes) const;
   Status InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,

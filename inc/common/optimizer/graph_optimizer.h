@@ -62,6 +62,9 @@ class GraphOptimizer {
 
   // optimize streamed Graph
   virtual Status OptimizeStreamGraph(ComputeGraph &graph, const RunContext &context) { return SUCCESS; }
+
+  // op compile
+  virtual Status OptimizeFusedGraphAfterGraphSlice(ComputeGraph &graph) { return SUCCESS; }
 };
 }  // namespace ge
 /*lint +e148*/

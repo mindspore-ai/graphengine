@@ -18,6 +18,7 @@
 #include <cstring>
 #include <set>
 #include "common/math/math_util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/var_mem_assign_util.h"
@@ -226,6 +227,7 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, size_t &mem_offse
   if (mem_offset > VarManager::Instance(session_id)->GetGraphMemoryMaxSize()) {
     GELOGE(ge::FAILED, "Current memoffset %zu is greater than memory manager malloc max size %zu", mem_offset,
            VarManager::Instance(session_id)->GetGraphMemoryMaxSize());
+    ErrorManager::GetInstance().ATCReportErrMessage("E19022");
     return ge::FAILED;
   }
   return SUCCESS;

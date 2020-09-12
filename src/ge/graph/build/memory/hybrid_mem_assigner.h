@@ -54,6 +54,9 @@ class HybridMemAssigner : public MemAssigner {
   ge::ComputeGraphPtr compute_graph_;
 
   BlockMemAssignerPtr priority_assigner_;
+
+  std::map<std::string, std::string> anchor_to_symbol_;
+  std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MEMORY_HYBRID_MEM_ASSIGNER_H_

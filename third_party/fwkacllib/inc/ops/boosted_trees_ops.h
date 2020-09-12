@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file boosted_trees_ops.h
+ * \brief
+ */
 #ifndef GE_OP_BOOSTED_TREES_OPS_H_
 #define GE_OP_BOOSTED_TREES_OPS_H_
 
@@ -44,8 +48,10 @@ a single feature.
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BoostedTreesBucketize.
-*/
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(BoostedTreesBucketize)
     .DYNAMIC_INPUT(float_values, TensorType({DT_FLOAT}))
     .DYNAMIC_INPUT(bucket_boundaries, TensorType({DT_FLOAT}))

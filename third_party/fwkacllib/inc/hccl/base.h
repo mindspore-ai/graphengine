@@ -37,75 +37,17 @@ typedef unsigned int u32;
 typedef unsigned long long u64;
 
 /**
- * @brief HCOM functions return value definition
- */
-typedef enum tagHcclResult {
-    HCCL_SUCCESS = 0,               /**< success */
-    HCCL_E_PARA = 1,                /**< parameter error */
-    HCCL_E_PTR = 2,                 /**< empty pointer */
-    HCCL_E_MEMORY = 3,              /**< memory error */
-    HCCL_E_INTERNAL = 4,            /**< internal error */
-    HCCL_E_NOT_SUPPORT = 5,         /**< not support feature */
-    HCCL_E_NOT_FOUND = 6,           /**< not found specific resource */
-    HCCL_E_UNAVAIL = 7,             /**< resource unavailable */
-    HCCL_E_SYSCALL = 8,             /**< call system interface error */
-    HCCL_E_TIMEOUT = 9,             /**< timeout */
-    HCCL_E_OPEN_FILE_FAILURE = 10,  /**< open file fail */
-    HCCL_E_TCP_CONNECT = 11,        /**< tcp connect fail */
-    HCCL_E_ROCE_CONNECT = 12,       /**< roce connect fail */
-    HCCL_E_TCP_TRANSFER = 13,       /**< tcp transfer fail */
-    HCCL_E_ROCE_TRANSFER = 14,      /**< roce transfer fail */
-    HCCL_E_RUNTIME = 15,            /**< call runtime api fail */
-    HCCL_E_DRV = 16,                /**< call driver api fail */
-    HCCL_E_PROFILING = 17,          /**< call profiling api fail */
-    HCCL_E_CCE = 18,                /**< call cce api fail */
-    HCCL_E_NETWORK = 19,            /**< call network api fail */
-    HCCL_E_RESERVED                 /**< reserved */
-} hcclResult_t;
-
-/* handle to communicator */
-typedef void *hcclComm_t;
-
-/**
- * @brief HCCL Reduction opperation
- */
-typedef enum tagHcclRedOp {
-    HCCL_REP_OP_SUM = 0,    /**< sum */
-    HCCL_REP_OP_PROD = 1,   /**< prod */
-    HCCL_REP_OP_MAX = 2,    /**< max */
-    HCCL_REP_OP_MIN = 3,    /**< min */
-    HCCL_REP_OP_RESERVED    /**< reserved */
-} hcclRedOp_t;
-
-/**
  * @brief Horovod Reduction opperation
  */
-typedef enum tagHorovodRedOp {
-    HOROVOD_REP_OP_AVERAGE = 0, /**< average */
-    HOROVOD_REP_OP_SUM = 1,     /**< sum */
-    HOROVOD_REP_OP_ADASUM = 2,  /**< adasum */
-    HOROVOD_REP_OP_MIN = 3,     /**< min */
-    HOROVOD_REP_OP_MAX = 4,     /**< max */
-    HOROVOD_REP_OP_PROD = 5,    /**< proo */
-    HOROVOD_REP_OP_RESERVED     /**< reserved */
-} horovodRedOp_t;
-
-/**
- * @brief HCCL data type
- */
-typedef enum tagHcclDataType {
-    HCCL_DATA_TYPE_INT8 = 0,  /**< int8 */
-    HCCL_DATA_TYPE_INT = 1,   /**< int32 */
-    HCCL_DATA_TYPE_HALF = 2,  /**< fp16 */
-    HCCL_DATA_TYPE_FLOAT = 3, /**< fp32 */
-    HCCL_DATA_TYPE_INT16 = 4, /**< int16 */
-    HCCL_DATA_TYPE_RESERVED   /**< reserved */
-} hcclDataType_t;
-
-constexpr u32 HCCL_UNIQUE_ID_BYTES =  2060; // 2060: unique id length
-using hcclUniqueId =  struct hcclUniqueIdDef {
-    char internal[HCCL_UNIQUE_ID_BYTES];
-};
+typedef enum {
+    HOROVOD_REDUCE_AVERAGE = 0, /**< average */
+    HOROVOD_REDUCE_SUM = 1,     /**< sum */
+    HOROVOD_REDUCE_ADASUM = 2,  /**< adasum */
+    HOROVOD_REDUCE_MIN = 3,     /**< min */
+    HOROVOD_REDUCE_MAX = 4,     /**< max */
+    HOROVOD_REDUCE_PROD = 5,    /**< proo */
+    HOROVOD_REDUCE_RESERVED     /**< reserved */
+} HorovodReduceOp;
 
 const u32 HCCL_MAX_SEGMENT_NUM = 8;   // The max number of gradient segments.
 

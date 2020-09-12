@@ -121,70 +121,50 @@ Status GraphLoader::GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size) {
 Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string &key_path, int32_t priority,
                                      ModelData &model_data) {
   Status ret;
-  try {
-    if (!CheckInputPathValid(path)) {
-      GELOGE(GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
-      return GE_EXEC_MODEL_PATH_INVALID;
-    }
-
-    GELOGI("Load model begin, model path is: %s", path.c_str());
-    if (!key_path.empty() && !CheckInputPathValid(key_path)) {
-      GELOGE(GE_EXEC_MODEL_KEY_PATH_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
-      return GE_EXEC_MODEL_KEY_PATH_INVALID;
-    }
-
-    ret = DavinciModelParser::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "LoadModelFromFile: Load failed. ret = %u", ret);
-      return ret;
-    }
-
-    return SUCCESS;
-  } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "Load model from file failed, bad memory allocation");
-    ret = MEMALLOC_FAILED;
-  } catch (...) {
-    GELOGE(FAILED, "Load model from file failed with exception");
-    ret = FAILED;
+  if (!CheckInputPathValid(path)) {
+    GELOGE(GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
+    return GE_EXEC_MODEL_PATH_INVALID;
   }
 
-  if (model_data.model_data != nullptr) {
-    delete[] static_cast<char *>(model_data.model_data);
-    model_data.model_data = nullptr;
+  GELOGI("Load model begin, model path is: %s", path.c_str());
+  if (!key_path.empty() && !CheckInputPathValid(key_path)) {
+    GELOGE(GE_EXEC_MODEL_KEY_PATH_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
+    return GE_EXEC_MODEL_KEY_PATH_INVALID;
   }
-  return ret;
+
+  ret = DavinciModelParser::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "LoadModelFromFile: Load failed. ret = %u", ret);
+    if (model_data.model_data != nullptr) {
+      delete[] static_cast<char *>(model_data.model_data);
+      model_data.model_data = nullptr;
+    }
+    return ret;
+  }
+  return SUCCESS;
 }
 
 Status GraphLoader::LoadModelFromFile(const std::string &path, const std::string &key_path, int32_t priority,
                                       const std::shared_ptr<ModelListener> &listener, uint32_t &model_id) {
   Status ret;
   ModelData model_data;
-
-  try {
-    ret = LoadDataFromFile(path, key_path, priority, model_data);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "LoadModelFromFile: Load failed. ret = %u", ret);
-      if (model_data.model_data != nullptr) {
-        delete[] static_cast<char *>(model_data.model_data);
-        model_data.model_data = nullptr;
-      }
-      return ret;
+  ret = LoadDataFromFile(path, key_path, priority, model_data);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "LoadModelFromFile: Load failed. ret = %u", ret);
+    if (model_data.model_data != nullptr) {
+      delete[] static_cast<char *>(model_data.model_data);
+      model_data.model_data = nullptr;
     }
+    return ret;
+  }
 
-    ret = LoadModel(model_data, listener, model_id);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
-      if (model_data.model_data != nullptr) {
-        delete[] static_cast<char *>(model_data.model_data);
-        model_data.model_data = nullptr;
-      }
+  ret = LoadModel(model_data, listener, model_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
+    if (model_data.model_data != nullptr) {
+      delete[] static_cast<char *>(model_data.model_data);
+      model_data.model_data = nullptr;
     }
-  } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "Load model from file failed, bad memory allocation");
-    ret = MEMALLOC_FAILED;
-  } catch (...) {
-    GELOGE(FAILED, "Load model from file failed with exception");
-    ret = FAILED;
   }
 
   if (model_data.model_data != nullptr) {
@@ -197,36 +177,27 @@ Status GraphLoader::LoadModelFromFile(const std::string &path, const std::string
 
 Status GraphLoader::LoadModel(const ModelData &model_data, const std::shared_ptr<ModelListener> &listener,
                               uint32_t &model_id) {
-  try {
-    GELOGI("Load model begin, model_id:%u.", model_id);
+  GELOGI("Load model begin, model_id:%u.", model_id);
 
-    // For GeOp, Open Device 0 here.
-    GE_CHK_RT_RET(rtSetDevice(0));
-    auto model_manager = ModelManager::GetInstance();
-    GE_CHECK_NOTNULL(model_manager);
-    Status ret = model_manager->LoadModelOffline(model_id, model_data, listener);
-    if (ret != SUCCESS) {
-      GE_CHK_RT(rtDeviceReset(0));
-      GELOGE(ret, "LoadModel: Load failed.");
-      return ret;
-    }
-    ret = model_manager->Start(model_id);
-    if (ret != SUCCESS) {
-      if (model_manager->Unload(model_id) != SUCCESS) {
-        GELOGE(FAILED, "LoadModel: Unload failed while trying to unload after a failed start.");
-      }
-      GELOGE(ret, "LoadModel: Start failed.");
-      return ret;
-    }
-    GELOGI("LoadModel: Start model success, model_id:%u.", model_id);
-  } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "Load model failed, bad memory allocation occur !");
-    return MEMALLOC_FAILED;
-  } catch (...) {
-    GELOGE(FAILED, "Load model failed, some exceptions occur !");
-    return FAILED;
+  // For GeOp, Open Device 0 here.
+  GE_CHK_RT_RET(rtSetDevice(0));
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->LoadModelOffline(model_id, model_data, listener);
+  if (ret != SUCCESS) {
+    GE_CHK_RT(rtDeviceReset(0));
+    GELOGE(ret, "LoadModel: Load failed.");
+    return ret;
   }
-
+  ret = model_manager->Start(model_id);
+  if (ret != SUCCESS) {
+    if (model_manager->Unload(model_id) != SUCCESS) {
+      GELOGE(FAILED, "LoadModel: Unload failed while trying to unload after a failed start.");
+    }
+    GELOGE(ret, "LoadModel: Start failed.");
+    return ret;
+  }
+  GELOGI("LoadModel: Start model success, model_id:%u.", model_id);
   return SUCCESS;
 }
 
@@ -255,28 +226,16 @@ Status GraphLoader::CommandHandle(const Command &command) {
 
 Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr, size_t memsize,
                                       void *weight_ptr, size_t weightsize) {
-  try {
-    GELOGI("Load model begin, model_id:%u.", model_id);
-
-    // For ACL, Open Device from App.
-    auto model_manager = ModelManager::GetInstance();
-    GE_CHECK_NOTNULL(model_manager);
-    Status ret =
-      model_manager->LoadModelOffline(model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Load model failed, model_id:%u.", model_id);
-      return ret;
-    }
-
-    GELOGI("Load model success, model_id:%u.", model_id);
-  } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "Load model failed, bad memory allocation occur !");
-    return MEMALLOC_FAILED;
-  } catch (...) {
-    GELOGE(FAILED, "Load model failed, some exceptions occur !");
-    return FAILED;
+  GELOGI("Load model begin, model_id:%u.", model_id);
+  // For ACL, Open Device from App.
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->LoadModelOffline(model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Load model failed, model_id:%u.", model_id);
+    return ret;
   }
-
+  GELOGI("Load model success, model_id:%u.", model_id);
   return SUCCESS;
 }
 

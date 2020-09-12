@@ -43,6 +43,8 @@ std::shared_ptr<domi::ModelTaskDef> GeModel::GetModelTaskDefPtr() const { return
 
 const TBEKernelStore &GeModel::GetTBEKernelStore() const { return this->tbe_kernal_store_; }
 
+const CustAICPUKernelStore &GeModel::GetCustAICPUKernelStore() const { return this->cust_aicpu_kernal_store_; }
+
 Buffer GeModel::GetWeight() const { return this->weights_buffer_; }
 
 std::string GeModel::GetName() const { return this->name_; }
@@ -58,6 +60,10 @@ void GeModel::SetGraph(const Graph &graph) { this->graph_ = graph; }
 void GeModel::SetModelTaskDef(const std::shared_ptr<domi::ModelTaskDef> &task) { this->task_ = task; }
 
 void GeModel::SetTBEKernelStore(const TBEKernelStore &tbe_kernal_store) { this->tbe_kernal_store_ = tbe_kernal_store; }
+
+void GeModel::SetCustAICPUKernelStore(const CustAICPUKernelStore &cust_aicpu_kernal_store) {
+  this->cust_aicpu_kernal_store_ = cust_aicpu_kernal_store;
+}
 
 void GeModel::SetWeight(const Buffer &weights_buffer) { this->weights_buffer_ = weights_buffer; }
 

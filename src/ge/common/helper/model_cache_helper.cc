@@ -310,7 +310,7 @@ Status ModelCacheHelper::GetNodesNeedRecompile(ComputeGraphPtr &graph, vector<No
     string kernel_lib_name = op_desc->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
       // reset op kernel lib
-      (void)instance->DNNEngineManagerObj().GetDNNEngineName(op_desc);
+      (void)instance->DNNEngineManagerObj().GetDNNEngineName(node);
       kernel_lib_name = op_desc->GetOpKernelLibName();
       if (kernel_lib_name.empty()) {
         GELOGW("Get node:%s, type:%s kernel lib failed.", node->GetName().c_str(), op_desc->GetType().c_str());

@@ -48,12 +48,24 @@ extern "C" {
 
 /**
  * @ingroup dvrt_mem
+ * @brief memory info type
+ */
+#define RT_MEM_INFO_TYPE_DDR_SIZE          ((uint32_t)0x1)
+#define RT_MEM_INFO_TYPE_HBM_SIZE          ((uint32_t)0x2)
+#define RT_MEM_INFO_TYPE_DDR_P2P_SIZE      ((uint32_t)0x3)
+#define RT_MEM_INFO_TYPE_HBM_P2P_SIZE      ((uint32_t)0x4)
+
+/**
+ * @ingroup dvrt_mem
  * @brief memory Policy
  */
 #define RT_MEMORY_POLICY_NONE ((uint32_t)0x0)                     // Malloc mem prior hage page, then default page
 #define RT_MEMORY_POLICY_HUGE_PAGE_FIRST ((uint32_t)0x1 << 10)    // Malloc mem prior hage page, then default page
 #define RT_MEMORY_POLICY_HUGE_PAGE_ONLY ((uint32_t)0x1 << 11)     // Malloc mem only use hage page
 #define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY ((uint32_t)0x1 << 12)  // Malloc mem only use default page
+#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST_P2P ((uint32_t)0x1 << 13)    // Malloc mem prior hage page, then default page, use for p2p
+#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY_P2P ((uint32_t)0x1 << 14)     // Malloc mem only use hage page, use for p2p
+#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY_P2P ((uint32_t)0x1 << 15)  // Malloc mem only use default page, use for p2p
 
 #define MEM_ALLOC_TYPE_BIT ((uint32_t)0x3FF)  // mem type bit in <0, 9>
 
@@ -87,6 +99,19 @@ typedef enum tagRtMemcpyKind {
   RT_MEMCPY_DEVICE_TO_HOST_EX, // device to host ex
   RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
+
+typedef enum tagRtMemInfoType {
+  RT_MEMORYINFO_DDR,
+  RT_MEMORYINFO_HBM,
+  RT_MEMORYINFO_DDR_HUGE,               // Hugepage memory of DDR
+  RT_MEMORYINFO_DDR_NORMAL,             // Normal memory of DDR
+  RT_MEMORYINFO_HBM_HUGE,               // Hugepage memory of HBM
+  RT_MEMORYINFO_HBM_NORMAL,             // Normal memory of HBM
+  RT_MEMORYINFO_DDR_P2P_HUGE,           // Hugepage memory of DDR
+  RT_MEMORYINFO_DDR_P2P_NORMAL,         // Normal memory of DDR
+  RT_MEMORYINFO_HBM_P2P_HUGE,           // Hugepage memory of HBM
+  RT_MEMORYINFO_HBM_P2P_NORMAL,         // Normal memory of HBM
+} rtMemInfoType_t;
 
 typedef enum tagRtRecudeKind {
   RT_MEMCPY_SDMA_AUTOMATIC_ADD = 10,  // D2D, SDMA inline reduce, include 1P, and P2P
@@ -349,6 +374,16 @@ RTS_API rtError_t rtMemsetAsync(void *ptr, uint64_t destMax, uint32_t value, uin
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemGetInfo(size_t *free, size_t *total);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief get current device memory total and free
+ * @param [in] memInfoType
+ * @param [out] free
+ * @param [out] total
+ * @return RT_ERROR_NONE for ok, errno for failed
+ */
+RTS_API rtError_t rtMemGetInfoEx(rtMemInfoType_t memInfoType, size_t *free, size_t *total);
 
 /**
  * @ingroup dvrt_mem

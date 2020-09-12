@@ -17,9 +17,9 @@
 #ifndef GE_GRAPH_PASSES_MULTI_BATCH_CLONE_PASS_H_
 #define GE_GRAPH_PASSES_MULTI_BATCH_CLONE_PASS_H_
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "inc/graph_pass.h"
 
@@ -44,6 +44,24 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CreateRootGraph(const ComputeGraphPtr &graph);
+
+  ///
+  /// @ingroup ge
+  /// @brief Create index data node for root graph.
+  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+  /// @param [in] NodePtr node: index data node.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status CreateIndexDataNode(const ComputeGraphPtr &graph, NodePtr &node);
+
+  ///
+  /// @ingroup ge
+  /// @brief Create index const node for root graph.
+  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+  /// @param [in] NodePtr node: index const node.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status CreateIndexConstNode(const ComputeGraphPtr &graph, NodePtr &node);
 
   ///
   /// @ingroup ge
@@ -149,7 +167,6 @@ class MultiBatchClonePass : public GraphPass {
   std::map<ComputeGraphPtr, NodePtr> all_branch_output_;
 
   NodePtr case_node_;
-  NodePtr index_node_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_MULTI_BATCH_CLONE_PASS_H_

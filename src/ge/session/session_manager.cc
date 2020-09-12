@@ -341,6 +341,13 @@ Status SessionManager::GetVariables(SessionId session_id, const std::vector<std:
     GELOGE(FAILED, "Save variables failed.");
     return FAILED;
   }
+
+  // step 5: remove graph
+  ret = innerSession->RemoveGraph(graph_id);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Remove graph failed.");
+    return FAILED;
+  }
   return ret;
 }
 

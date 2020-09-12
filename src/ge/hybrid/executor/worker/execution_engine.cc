@@ -272,8 +272,9 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state, TaskContext &task_
   if (context.profiling_level > 0) {
     auto *ctx = &context;
     const string &name = node_state.GetName();
-    task_context.RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] Start"); });
+    (void)task_context.RegisterCallback([ctx, name]() { RECORD_CALLBACK_EVENT(ctx, name.c_str(), "[Compute] Start"); });
   }
+  RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] Start");
   GE_CHK_STATUS_RET(node_item.node_executor->ExecuteTask(*task, task_context, callback), "[%s] Failed to execute task",
                     node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] End");
@@ -286,8 +287,18 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
   for (auto i = 0; i < task_context.NumInputs(); ++i) {
     const auto &input_tensor = task_context.GetInput(i);
     GE_CHECK_NOTNULL(input_tensor);
+    if (input_tensor->GetData() == nullptr) {
+      GELOGD("[%s] Skipping null input, index = %d", task_context.GetNodeName(), i);
+      continue;
+    }
+
     const auto &tensor_desc = node_state.GetOpDesc()->MutableInputDesc(i);
     GE_CHECK_NOTNULL(tensor_desc);
+    if (tensor_desc->GetDataType() == DT_STRING) {
+      GELOGD("[%s] Skipping DT_STRING input, index = %d", task_context.GetNodeName(), i);
+      continue;
+    }
+
     int64_t expected_size;
     GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, expected_size));
     GELOGD("[%s] Input[%d] expects [%ld] bytes.", task_context.GetNodeName(), i, expected_size);

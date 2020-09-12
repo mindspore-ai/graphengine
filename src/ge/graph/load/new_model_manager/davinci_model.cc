@@ -43,6 +43,7 @@
 #include "graph/graph.h"
 #include "graph/load/new_model_manager/cpu_queue_schedule.h"
 #include "graph/load/new_model_manager/tbe_handle_store.h"
+#include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
@@ -253,13 +254,7 @@ Status DavinciModel::Assign(const GeModelPtr &ge_model) {
 ///
 void DavinciModel::Shrink() {
   ge_model_.reset();  // delete object.
-
-  // Old dump need op list, clear when closed.
-  char *ge_dump_env = std::getenv("DUMP_OP");
-  int dump_op_switch = (ge_dump_env != nullptr) ? std::strtol(ge_dump_env, nullptr, kDecimal) : 0;
-  if (dump_op_switch == 0) {
-    op_list_.clear();
-  }
+  op_list_.clear();
 }
 
 Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
@@ -295,8 +290,8 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
       GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
       return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
     }
-    GELOGI("[IMAS]InitModelMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-           mem_base_, data_size);
+    GEEVENT("[IMAS]InitModelMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+            mem_base_, data_size);
 
     weights_mem_base_ = mem_base_;
 
@@ -337,8 +332,8 @@ Status DavinciModel::InitVariableMem() {
       return ret;
     }
     var_mem_base_ = VarManager::Instance(session_id_)->GetVarMemoryBase(RT_MEMORY_HBM);
-    GELOGI("[IMAS]InitVariableMem graph_%u MallocMemory type[V] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-           var_mem_base_, TotalVarMemSize());
+    GEEVENT("[IMAS]InitVariableMem graph_%u MallocMemory type[V] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+            var_mem_base_, TotalVarMemSize());
   }
   runtime_param_.var_base = var_mem_base_;
   return SUCCESS;
@@ -774,6 +769,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
   map<uint32_t, OpDescPtr> data_by_index;
   auto nodes = compute_graph->GetAllNodes();
   const TBEKernelStore &tbekernel_store = ge_model_->GetTBEKernelStore();
+  const CustAICPUKernelStore &aicpu_kernel_store = ge_model_->GetCustAICPUKernelStore();
   for (size_t i = 0; i < nodes.size(); i++) {
     auto node = nodes.at(i);
     auto op_desc = node->GetOpDesc();
@@ -786,6 +782,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
     GE_TIMESTAMP_RESTART(LoadTBEKernelBinToOpDesc);
     tbekernel_store.LoadTBEKernelBinToOpDesc(op_desc);
+    aicpu_kernel_store.LoadCustAICPUKernelBinToOpDesc(op_desc);
     GE_TIMESTAMP_ADD(LoadTBEKernelBinToOpDesc);
 
     if (IsDataOp(op_desc->GetType())) {
@@ -1076,30 +1073,42 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
 ///
 /// @ingroup ge
 /// @brief output zero copy node Initialize.
-/// @param [in] NodePtr: netoutput Op or merge op.
+/// @param [in] NodePtr: netoutput Op.
 /// @return Status
 ///
 Status DavinciModel::InitOutputZeroCopyNodes(const NodePtr &node) {
+  set<NodePtr> nodes_need_record;
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
     if (peer_out_data_anchor == nullptr) {
       continue;
     }
-    auto node = peer_out_data_anchor->GetOwnerNode();
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(FAILED, "Op desc is nullptr");
-      return FAILED;
-    }
+    auto peer_node = peer_out_data_anchor->GetOwnerNode();
+    nodes_need_record.emplace(peer_node);
 
     // Merge node output multiplexed input, upstream nodes need to be considered in multiple batch scenarios
-    if (node->GetType() == MERGE) {
-      if (InitOutputZeroCopyNodes(node) != SUCCESS) {
-        GELOGE(PARAM_INVALID, "Output merge zero copy nodes init failed!");
-        return PARAM_INVALID;
+    if (peer_node->GetType() == MERGE) {
+      for (const auto &merge_peer_in_data_anchor : peer_node->GetAllInDataAnchors()) {
+        auto merge_peer_out_data_anchor = merge_peer_in_data_anchor->GetPeerOutAnchor();
+        if (merge_peer_out_data_anchor == nullptr) {
+          continue;
+        }
+        auto merge_peer_node = merge_peer_out_data_anchor->GetOwnerNode();
+        nodes_need_record.emplace(merge_peer_node);
+      }
+    } else {
+      for (const auto &other_in_data_anchor : peer_out_data_anchor->GetPeerInDataAnchors()) {
+        auto other_in_node = other_in_data_anchor->GetOwnerNode();
+        if (other_in_node->GetType() != NETOUTPUT) {
+          nodes_need_record.emplace(other_in_node);
+        }
       }
     }
+  }
 
+  for (const auto &node_need_record : nodes_need_record) {
+    auto op_desc = node_need_record->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
     string batch_label;
     (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
     if (batch_label.empty()) {
@@ -2152,7 +2161,6 @@ void DavinciModel::SetProfileTime(ModelProcStage stage, int64_t endTime) {
 Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind) {
   if (output_op_list_.empty()) {
     Status ret = SyncVarData();
-    DumpOpInputOutput();
     return ret;
   }
 
@@ -2198,8 +2206,6 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
            runtime_param_.graph_id, output.first, output.second.GetBasicAddr(), data_size, buffer_length);
     GE_CHK_RT_RET(rtMemcpy(buffer_addr, buffer_length, output.second.GetBasicAddr(), data_size, kind));
   }
-
-  DumpOpInputOutput();
   return SUCCESS;
 }
 
@@ -2264,6 +2270,14 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
   // return result is not required
   if (!rslt_flg && !seq_end_flag) {
     GELOGW("Compute failed, model id: %u", model_id_);
+    auto model_manager = ModelManager::GetInstance();
+    GE_CHECK_NOTNULL(model_manager);
+    auto exception_infos = model_manager->GetExceptionInfos();
+    if (exception_infos.size() > 0) {
+      GE_CHK_STATUS_RET(data_dumper_.DumpExceptionInfo(exception_infos), "Dump exception info failed");
+    } else {
+      GELOGI("Exception info is null");
+    }
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, INTERNAL_ERROR, outputs), "OnComputeDone failed.");
     return INTERNAL_ERROR;
   }
@@ -2302,7 +2316,6 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
   GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, SUCCESS, outputs), "OnComputeDone failed");
   return SUCCESS;
 }
-
 ///
 /// @ingroup ge
 /// @brief return not output to upper layer for cloud case
@@ -2318,111 +2331,9 @@ Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
                      op_desc->GetName().c_str());
   }
 
-  DumpOpInputOutput();
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null!");
   std::vector<ge::OutputTensorInfo> outputs;
   GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, SUCCESS, outputs), "OnComputeDone failed.");
-  return SUCCESS;
-}
-
-///
-/// @ingroup ge
-/// @brief dump all op input and output information
-/// @return void
-///
-void DavinciModel::DumpOpInputOutput() {
-  char *ge_dump_env = std::getenv("DUMP_OP");
-  int dump_op_switch = (ge_dump_env != nullptr) ? std::strtol(ge_dump_env, nullptr, kDecimal) : 0;
-  if (dump_op_switch == 0) {
-    GELOGI("need to set DUMP_OP for dump op input and output");
-    return;
-  }
-
-  if (op_list_.empty()) {
-    GELOGW("op list is empty");
-    return;
-  }
-
-  int64_t cnt = 1;
-  for (auto it : op_list_) {
-    if (maxDumpOpNum_ != 0 && cnt > maxDumpOpNum_) {
-      GELOGW("dump op cnt > maxDumpOpNum, maxDumpOpNum: %ld", maxDumpOpNum_);
-      return;
-    }
-
-    cnt++;
-    if (DumpSingleOpInputOutput(it.second) != SUCCESS) {
-      GELOGW("dump single op failed, model_id: %u", model_id_);
-      return;
-    }
-  }
-}
-
-///
-/// @ingroup ge
-/// @brief dump single op input and output information
-/// @param [in] op_def: the op_desc which will be dump
-/// @return Status result
-///
-Status DavinciModel::DumpSingleOpInputOutput(const OpDescPtr &op_def) {
-  GE_CHK_BOOL_EXEC(nullptr != op_def, return PARAM_INVALID, "op_def is null!");
-  string op_name = ge::StringUtils::ReplaceAll(op_def->GetName(), "/", "-");
-  GELOGI("dump op name:%s, type:%s, model_id: %u.", op_def->GetName().c_str(), op_def->GetType().c_str(), model_id_);
-  string model_path = "./dump" + to_string(model_id_);
-  if (mmAccess(model_path.c_str()) != EN_OK) {
-    int32_t ret = mmMkdir(model_path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR);
-    if (ret != EN_OK) {
-      GELOGE(FAILED, "make dir failed, model_id: %u", model_id_);
-      return FAILED;
-    }
-  }
-  const vector<int64_t> input_size_vec = ModelUtils::GetInputSize(op_def);
-  const vector<void *> input_addr_vec = ModelUtils::GetInputDataAddrs(runtime_param_, op_def);
-  vector<int64_t> v_memory_type;
-  bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_def, ATTR_NAME_INPUT_MEM_TYPE_LIST, v_memory_type);
-  GELOGD("DumpSingleOp[%s], input size[%zu], input memory type size[%zu]", op_def->GetName().c_str(),
-         op_def->GetInputsSize(), v_memory_type.size());
-  for (size_t i = 0; i < input_addr_vec.size(); i++) {
-    if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {
-      continue;
-    }
-    int64_t input_size = input_size_vec.at(i);
-    char input_file_name[PATH_MAX] = {0};
-    if ((sprintf_s(input_file_name, PATH_MAX, "%s/dump_%u_%s_%s_input_%zu.bin", model_path.c_str(), model_id_,
-                   op_def->GetType().c_str(), op_name.c_str(), i)) == -1) {
-      GELOGE(FAILED, "construct input dump file path failed.");
-      return FAILED;
-    }
-    if ((Debug::DumpDevMem(input_file_name, input_addr_vec.at(i), input_size)) != SUCCESS) {
-      GELOGE(FAILED, "dump to input_file failed");
-      return FAILED;
-    }
-  }
-
-  const vector<int64_t> output_size_vec = ModelUtils::GetOutputSize(op_def);
-  const vector<void *> output_addr_vec = ModelUtils::GetOutputDataAddrs(runtime_param_, op_def);
-  v_memory_type.clear();
-  has_mem_type_attr = ge::AttrUtils::GetListInt(op_def, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, v_memory_type);
-  GELOGD("DumpSingleOp[%s], output size[%zu], output memory type size[%zu]", op_def->GetName().c_str(),
-         op_def->GetOutputsSize(), v_memory_type.size());
-  if (!(op_def->GetType() == "Const")) {
-    for (size_t i = 0; i < output_addr_vec.size(); i++) {
-      if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {
-        continue;
-      }
-      int64_t output_size = output_size_vec.at(i);
-      char output_file_name[PATH_MAX] = {0};
-      if ((sprintf_s(output_file_name, PATH_MAX, "%s/dump_%u_%s_%s_output_%zu.bin", model_path.c_str(), model_id_,
-                     op_def->GetType().c_str(), op_name.c_str(), i)) == -1) {
-        GELOGE(FAILED, "construct output dump file path failed.");
-        return FAILED;
-      }
-      if ((Debug::DumpDevMem(output_file_name, output_addr_vec.at(i), output_size)) != SUCCESS) {
-        GELOGE(FAILED, "dump to output_file failed");
-        return FAILED;
-      }
-    }
-  }
   return SUCCESS;
 }
 
@@ -3127,8 +3038,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
       void *addr = data.second.GetDataInfo().at(count).second;
       void *buffer_addr =
         reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data) + data.second.GetRelativeOffset().at(count));
-      GELOGI("[ZCPY] Copy blobs_index %u, virtual_addr: %p, size: %ld, user_data_addr: %p", data.first, addr, size,
-             buffer_addr);
+      GELOGI("[ZCPY] Copy %s blobs_index %u, virtual_addr: %p, size: %ld, user_data_addr: %p", input_or_output.c_str(),
+             data.first, addr, size, buffer_addr);
       // For input data, just copy for rts task.
       for (ZeroCopyTask &task : zero_copy_tasks_) {
         uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
@@ -3486,7 +3397,6 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   is_async_mode_ = async_mode;
   GELOGI("Model Run begin, model id:%u, data index:%u, flag:%d.", model_id_, input_data.index, is_async_mode_);
   GE_CHK_STATUS_RET(InitModelStream(stream), "Init model stream failed.");
-
   is_dynamic_ = input_data.is_dynamic_batch;
   if (!is_dynamic_) {
     zero_copy_batch_label_addrs_.clear();

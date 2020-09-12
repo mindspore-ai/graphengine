@@ -27,6 +27,9 @@
 
 using std::string;
 
+namespace {
+const int32_t kOptionalNum = 2;
+}
 namespace ge {
 // For Load
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(const ge::ModelData &model) {
@@ -67,7 +70,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetMod
   }
 
   if (!found) {
-    if (type != ModelPartitionType::TBE_KERNELS && type != ModelPartitionType::WEIGHTS_DATA) {
+    if (type != ModelPartitionType::TBE_KERNELS && type != ModelPartitionType::WEIGHTS_DATA &&
+        type != ModelPartitionType::CUST_AICPU_KERNELS) {
       GELOGE(FAILED, "GetModelPartition:type:%d is not in partition_datas!", static_cast<int>(type));
       return FAILED;
     }
@@ -114,7 +118,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
   // Davinici model partition include graph-info  weight-info  task-info  tbe-kernel :
   // Original model partition include graph-info
   if ((partition_table->num != PARTITION_SIZE) && (partition_table->num != (PARTITION_SIZE - 1)) &&
-      (partition_table->num != 1)) {
+      (partition_table->num != (PARTITION_SIZE - kOptionalNum)) && (partition_table->num != 1)) {
     GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "Invalid partition_table->num:%u", partition_table->num);
     return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }

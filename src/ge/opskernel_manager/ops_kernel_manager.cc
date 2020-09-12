@@ -34,6 +34,8 @@ const char *const kInitialize = "Initialize";
 const char *const kGetOpsKernelInfoStores = "GetOpsKernelInfoStores";
 const char *const kGetGraphOptimizerObjs = "GetGraphOptimizerObjs";
 const char *const kFinalize = "Finalize";
+
+std::mutex ops_kernel_info_mutex;
 }  // namespace
 
 namespace ge {
@@ -198,7 +200,7 @@ Status OpsKernelManager::ParsePluginOptions(const map<string, string> &options, 
   return SUCCESS;
 }
 
-Status OpsKernelManager::CheckPluginPtr() {
+Status OpsKernelManager::CheckPluginPtr() const {
   for (auto iter = ops_kernel_store_.begin(); iter != ops_kernel_store_.end(); ++iter) {
     if (iter->second == nullptr) {
       GELOGE(INTERNAL_ERROR, "CheckPluginPtr OpsKernelInfoStorePtr is null");
@@ -339,6 +341,8 @@ Status OpsKernelManager::Finalize() {
 }
 
 const vector<OpInfo> &OpsKernelManager::GetOpsKernelInfo(const string &op_type) {
+  std::lock_guard<std::mutex> lock(ops_kernel_info_mutex);
+
   auto find = ops_kernel_info_.find(op_type);
   if (find != ops_kernel_info_.end()) {
     return find->second;
@@ -353,7 +357,10 @@ const vector<OpInfo> &OpsKernelManager::GetOpsKernelInfo(const string &op_type) 
   }
 }
 
-const map<string, vector<OpInfo>> &OpsKernelManager::GetAllOpsKernelInfo() const { return ops_kernel_info_; }
+const map<string, vector<OpInfo>> &OpsKernelManager::GetAllOpsKernelInfo() const {
+  std::lock_guard<std::mutex> lock(ops_kernel_info_mutex);
+  return ops_kernel_info_;
+}
 
 OpsKernelInfoStorePtr OpsKernelManager::GetOpsKernelInfoStore(const std::string &name) const {
   auto find = ops_kernel_store_.find(name);

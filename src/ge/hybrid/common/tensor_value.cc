@@ -21,8 +21,8 @@
 
 namespace ge {
 namespace hybrid {
-TensorBuffer::TensorBuffer(NpuMemoryAllocator *allocator, void *buffer, size_t size)
-    : allocator_(allocator), buffer_(buffer), size_(size) {}
+TensorBuffer::TensorBuffer(NpuMemoryAllocator *allocator, void *buffer, size_t size, MemStorageType mem_type)
+    : allocator_(allocator), buffer_(buffer), size_(size), mem_type_(mem_type) {}
 
 std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator, size_t size, AllocationAttr *attr) {
   void *buffer = nullptr;
@@ -36,14 +36,18 @@ std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator
     return nullptr;
   }
 
+  MemStorageType mem_type = HBM;
+  if (attr != nullptr) {
+    mem_type = attr->GetMemType();
+  }
   buffer = allocator->Allocate(size, attr);
   if (buffer == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to allocate memory. size = %zu", size);
     return nullptr;
   }
 
-  GELOGD("Tensor created. addr = %p, size = %zu", buffer, size);
-  return std::unique_ptr<TensorBuffer>(new (std::nothrow) TensorBuffer(allocator, buffer, size));
+  GELOGD("Tensor created. addr = %p, size = %zu, mem_type = %d", buffer, size, static_cast<int32_t>(mem_type));
+  return std::unique_ptr<TensorBuffer>(new (std::nothrow) TensorBuffer(allocator, buffer, size, mem_type));
 }
 
 std::unique_ptr<TensorBuffer> TensorBuffer::Create(void *buffer, size_t size) {
@@ -53,7 +57,7 @@ std::unique_ptr<TensorBuffer> TensorBuffer::Create(void *buffer, size_t size) {
 
 TensorBuffer::~TensorBuffer() {
   if (allocator_ != nullptr && buffer_ != nullptr) {
-    allocator_->Deallocate(buffer_);
+    allocator_->Deallocate(buffer_, mem_type_);
   }
 }
 

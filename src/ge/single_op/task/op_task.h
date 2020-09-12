@@ -57,7 +57,7 @@ class OpTask {
   std::vector<int64_t> workspace_sizes_;
 
  protected:
-  Status OpenDump(void *arg, const OpDescPtr &op_desc, rtStream_t stream);
+  Status OpenDump(const void *arg, const OpDescPtr &op_desc, rtStream_t stream);
   DumpProperties dump_properties_;
   DumpOp dump_op_;
 };

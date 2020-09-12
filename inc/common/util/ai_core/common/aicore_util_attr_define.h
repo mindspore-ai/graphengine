@@ -35,5 +35,7 @@ static const std::string ATTR_NAME_L2_FUSION_EXTEND_PTR = "l2_fusion_extend_cont
 static const std::string L1_OPTIMIZED = "l1_optimized";
 
 static const std::string L2_OPTIMIZED = "l2_optimized";
+
+static const std::string OP_SLICE_INFO = "_op_slice_info";
 }  // namespace fe
 #endif

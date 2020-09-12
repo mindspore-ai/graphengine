@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file nn_batch_norm_ops.h
+ * \brief
+ */
 #ifndef GE_OP_NN_BATCH_NORM_OPS_H
 #define GE_OP_NN_BATCH_NORM_OPS_H
 
@@ -340,6 +344,8 @@ REG_OP(BnHost)
 *@li mode: An optional attr, not use
 *@par Outputs:\n
 *@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use BNInference instead.
 */
 REG_OP(BNInferenceD)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))

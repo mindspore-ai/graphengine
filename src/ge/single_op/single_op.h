@@ -53,7 +53,6 @@ class SingleOp {
 
   std::vector<OpTask *> tasks_;
   std::vector<std::vector<uintptr_t *>> arg_table_;
-  bool use_physical_addr_ = false;
 };
 
 class DynamicSingleOp {

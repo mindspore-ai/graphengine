@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file linalg_ops.h
+ * \brief
+ */
 #ifndef GE_OP_LINALG_OPS_H_
 #define GE_OP_LINALG_OPS_H_
 

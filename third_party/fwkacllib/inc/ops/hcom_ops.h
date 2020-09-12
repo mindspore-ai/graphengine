@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+/*!
+ * \file hcom_ops.h
+ * \brief huawei collective communication library ops.
+ */
 #ifndef GE_OP_HCOM_OPS_H_
 #define GE_OP_HCOM_OPS_H_
 

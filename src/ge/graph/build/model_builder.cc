@@ -28,6 +28,7 @@
 #include "graph/build/stream_allocator.h"
 #include "graph/common/omg_util.h"
 #include "graph/common/ge_call_wrapper.h"
+#include "graph/common/local_context.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
@@ -244,7 +245,7 @@ Status ModelBuilder::SetInputOutputDesc() {
     }
     // if user set input node format ND, the expected node for data and netoutput format is ND in
     // final graph.
-    if ((domi::GetContext().format == domi::DOMI_TENSOR_ND) && (!node_op_desc->HasAttr("_is_single_op")) &&
+    if ((GetLocalOmgContext().format == domi::DOMI_TENSOR_ND) && (!node_op_desc->HasAttr("_is_single_op")) &&
         ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
       GELOGI("The node [%s] format should be set ND.", node_op_desc->GetName().c_str());
       auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
@@ -406,7 +407,7 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_ZERO_COPY_MEMORY_SIZE, zero_copy_mem_size_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_ZERO_COPY_MEMORY_SIZE failed.");
                    return FAILED);
-  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, ATTR_MODEL_OUT_NODES_NAME, domi::GetContext().net_out_nodes),
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, ATTR_MODEL_OUT_NODES_NAME, GetLocalOmgContext().net_out_nodes),
                    GELOGE(FAILED, "SetListStr of ATTR_MODEL_OUT_NODES_NAME failed.");
                    return FAILED);
   GELOGI("For model, max_mem_offset_: %zu, zero_copy_mem_size_: %zu", max_mem_offset_, zero_copy_mem_size_);
@@ -571,26 +572,59 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
   // Add weight
   ge_model.SetWeight(weight_buffer_);
 
-  // Add TBE Kernels
-  std::set<std::string> name_set;
+  // Add TBE Kernels and custom aicpu op bin
+  std::set<std::string> tbe_name_set;
+  std::set<std::string> aicpu_name_set;
   for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
     TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+    if (tbe_kernel == nullptr) {
+      std::string kernel_name;
+      GeAttrValue::BYTES kernel_buffer;
+      (void)AttrUtils::GetStr(node_op_desc, ATTR_NAME_TBE_KERNEL_NAME, kernel_name);
+      (void)AttrUtils::GetBytes(node_op_desc, ATTR_NAME_TBE_KERNEL_BUFFER, kernel_buffer);
+      if (!kernel_name.empty() && (kernel_buffer.GetSize() > 0)) {
+        GE_CHECK_NOTNULL(kernel_buffer.GetData());
+        std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
+        tbe_kernel = std::make_shared<OpKernelBin>(kernel_name, std::move(data));
+      }
+    }
     GE_IF_BOOL_EXEC(tbe_kernel == nullptr, continue);
-    if (name_set.count(tbe_kernel->GetName()) > 0) {
+    if (tbe_name_set.count(tbe_kernel->GetName()) > 0) {
       GELOGE(FAILED, "tbe_kernel name %s can't be the same", tbe_kernel->GetName().c_str());
       return FAILED;
     }
-    name_set.insert(tbe_kernel->GetName());
+    tbe_name_set.insert(tbe_kernel->GetName());
     tbe_kernel_store_.AddTBEKernel(tbe_kernel);
-    GELOGD("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
+    GELOGI("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
   }
+
+  for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
+    auto node_op_desc = n->GetOpDesc();
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
+    CustAICPUKernelPtr cust_aicpu_kernel =
+      node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
+    GE_IF_BOOL_EXEC(cust_aicpu_kernel == nullptr, continue);
+    if (aicpu_name_set.count(cust_aicpu_kernel->GetName()) > 0) {
+      GELOGE(FAILED, "aicpu_kernel name %s can't be the same", cust_aicpu_kernel->GetName().c_str());
+      return FAILED;
+    }
+    aicpu_name_set.insert(cust_aicpu_kernel->GetName());
+    cust_aicpu_kernel_store_.AddCustAICPUKernel(cust_aicpu_kernel);
+    GELOGI("Add cust aicpu kernel bin %s", cust_aicpu_kernel->GetName().c_str());
+  }
+
   if (!tbe_kernel_store_.Build()) {
     GELOGE(FAILED, "TBE Kernels store build failed!");
     return FAILED;
   }
+  if (!cust_aicpu_kernel_store_.Build()) {
+    GELOGE(FAILED, "custom AICPU kernels store build failed!");
+    return FAILED;
+  }
   ge_model.SetTBEKernelStore(tbe_kernel_store_);
+  ge_model.SetCustAICPUKernelStore(cust_aicpu_kernel_store_);
 
   // Add task
   GeAttrValue::BYTES task_def_bytes;
@@ -744,7 +778,7 @@ Status ModelBuilder::CompileSingleOp() {
       string kernel_lib_name = op_desc->GetOpKernelLibName();
       if (kernel_lib_name.empty()) {
         // Reset op kernel lib
-        (void)instance->DNNEngineManagerObj().GetDNNEngineName(op_desc);
+        (void)instance->DNNEngineManagerObj().GetDNNEngineName(node);
         kernel_lib_name = op_desc->GetOpKernelLibName();
         if (kernel_lib_name.empty()) {
           GELOGE(ge::INTERNAL_ERROR, "Get node:%s(%s) kernel lib failed.", node->GetName().c_str(),

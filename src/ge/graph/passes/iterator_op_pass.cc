@@ -73,14 +73,14 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
       GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Fail to Get var_desc of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
                       continue);
       Status ret;
-      ret = SetRtContext(graph->GetSessionID(), rtContext_t(), RT_CTX_NORMAL_MODE);
+      ret = SetRtContext(graph->GetSessionID(), graph->GetGraphID(), rtContext_t(), RT_CTX_NORMAL_MODE);
 
       // EOS will not be considered if ret is not SUCCESS.
       GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGW("Set rt context RT_CTX_NORMAL_MODE failed."); continue);
 
       status =
         GetVariableValue(graph->GetSessionID(), ge_tensor_desc, NODE_NAME_FLOWCTRL_LOOP_PER_ITER, &loop_per_iter);
-      ret = SetRtContext(graph->GetSessionID(), rtContext_t(), RT_CTX_GEN_MODE);
+      ret = SetRtContext(graph->GetSessionID(), graph->GetGraphID(), rtContext_t(), RT_CTX_GEN_MODE);
 
       // The following process will be affected if ret is not SUCCESS.
       GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "Set rt context RT_CTX_GEN_MODE failed."); return ret);
@@ -279,11 +279,14 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
   return op_desc;
 }
 
-Status IteratorOpPass::SetRtContext(uint64_t session_id, rtContext_t rt_context, rtCtxMode_t mode) {
-  GELOGI("set rt_context %d, device id:%u.", static_cast<int>(mode), ge::GetContext().DeviceId());
+Status IteratorOpPass::SetRtContext(uint64_t session_id, uint32_t graph_id, rtContext_t rt_context, rtCtxMode_t mode) {
+  GELOGI("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id, graph_id,
+         static_cast<int>(mode), ge::GetContext().DeviceId());
+
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));
-  RtContextUtil::GetInstance().AddRtContext(session_id, rt_context);
+  RtContextUtil::GetInstance().AddRtContext(session_id, graph_id, rt_context);
+
   return SUCCESS;
 }
 }  // namespace ge

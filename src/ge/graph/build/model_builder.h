@@ -25,6 +25,7 @@
 #include <vector>
 #include "common/op/ge_op_utils.h"
 #include "common/tbe_kernel_store.h"
+#include "common/cust_aicpu_kernel_store.h"
 #include "common/types.h"
 #include "common/util.h"
 #include "graph/compute_graph.h"
@@ -108,6 +109,7 @@ class ModelBuilder {
   size_t zero_copy_mem_size_;
 
   TBEKernelStore tbe_kernel_store_;
+  CustAICPUKernelStore cust_aicpu_kernel_store_;
 
   uint8_t platform_type_;
   bool is_loop_graph_;

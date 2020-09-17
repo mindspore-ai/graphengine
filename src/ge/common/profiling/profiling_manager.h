@@ -18,6 +18,7 @@
 #define GE_COMMON_PROFILING_PROFILING_MANAGER_H_
 
 #include <nlohmann/json.hpp>
+#include <mutex>
 #include <map>
 #include <string>
 #include <vector>
@@ -27,14 +28,17 @@
 #include "external/register/register_types.h"
 #include "toolchain/prof_engine.h"
 #include "toolchain/prof_mgr_core.h"
+#include "toolchain/prof_acl_api.h"
 
 using std::map;
 using std::string;
 using std::vector;
 using Json = nlohmann::json;
 
-namespace ge {
+namespace {
 const std::string GE_PROFILING_MODULE = "Framework";
+}  // namespace
+namespace ge {
 // register Plugin
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY PluginImpl : public Msprof::Engine::PluginIntf {
  public:
@@ -69,10 +73,17 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   ge::Status InitFromOptions(const Options &options);
   ge::Status InitFromAclCfg(const std::string &config);
   ge::Status StartProfiling(int32_t iter, int32_t device_id);
+  ge::Status ProfInit(uint64_t module);
+  ge::Status ProfFinalize();
+  ge::Status ProfStartProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
+  ge::Status ProfStopProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
   void StopProfiling();
   bool ProfilingOpTraceOn() const { return is_op_trace_; }
   bool ProfilingLoadFlag() const { return is_load_; }
-  bool ProfilingOn() const { return is_profiling_; }
+  bool ProfilingTrainingTraceOn() const { return is_training_trace_; }
+  bool ProfilingModelLoadOn() const { return is_load_profiling_; }
+  bool ProfilingModelExecuteOn() const;
+  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; }  // only used  by command pattern
   int32_t GetOpTraceIterNum() const { return op_trace_iter_num_; }
   void ReportProfilingData(const std::vector<TaskDescInfo> &task_desc_info,
                            const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
@@ -87,9 +98,17 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
 
  private:
   ge::Status ParseFeaturesFromAclCfg(const Json &feature);
-  bool is_profiling_ = false;
+  ge::Status ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
+                            vector<int32_t> &device_list);
+  ge::Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para, vector<int32_t> &device_list);
+  uint64_t GetProfilingModule();
+  void UpdateDeviceIdModuleMap(string prof_type, uint64_t module, const vector<int32_t> &device_list);
+  bool is_load_profiling_ = false;
+  bool is_execute_profiling_ = false;
   bool is_op_trace_ = false;
   bool is_load_ = false;
+  bool is_training_trace_ = false;
+  bool is_acl_api_mode_ = false;
   int32_t op_trace_iter_num_ = 0;
   string job_id_;
   string prof_dir_;
@@ -102,6 +121,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   string system_trace_conf_;
   string task_trace_conf_;
   const ProfilingEngineImpl engine_;
+  map<int32_t, uint64_t> device_id_module_map_;  // key: device_id, value: profiling on module
+  std::mutex mutex_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

@@ -806,7 +806,8 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
   GELOGI("Start FindProfilingTaskIndex.");
   GE_CHECK_NOTNULL(graph);
   const char *profiling_mode = std::getenv(kProfilingMode);
-  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn() ||
+                      ProfilingManager::Instance().ProfilingTrainingTraceOn();
   if (!is_profiling) {
     GELOGW("Profiling is not open.");
     return SUCCESS;
@@ -853,7 +854,8 @@ Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const 
                                                 vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
                                                 vector<domi::TaskDef> &task_def_list) {
   const char *profiling_mode = std::getenv(kProfilingMode);
-  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn() ||
+                      ProfilingManager::Instance().ProfilingTrainingTraceOn();
   if (!is_profiling || (profiling_point.fp_index == 0) || (profiling_point.bp_index == 0) ||
       (profiling_point.end_index == 0)) {
     return SUCCESS;
@@ -909,7 +911,8 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
                                                vector<domi::TaskDef> &task_def_list) {
   GE_CHECK_NOTNULL(op_desc);
   const char *profiling_mode = std::getenv(kProfilingMode);
-  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn();
+  bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn() ||
+                      ProfilingManager::Instance().ProfilingTrainingTraceOn();
   if (!is_profiling || (profiling_point.fp_index == 0) || (profiling_point.bp_index == 0) ||
       (profiling_point.end_index == 0)) {
     return SUCCESS;

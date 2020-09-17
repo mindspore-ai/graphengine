@@ -35,6 +35,14 @@ thread_local uint32_t device_count = 0;
 namespace {
 const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
+const int kProfStartCmdParaSize = 2;
+const std::string kCmdTypeProfile = "profile";
+const std::string kCmdTypeDump = "dump";
+const std::string kCmdTypeProfiling = "profiling";
+const std::string kCmdTypeProfInit = "prof_init";
+const std::string kCmdTypeProfFinalize = "prof_finalize";
+const std::string kCmdTypeProfStart = "prof_start";
+const std::string kCmdTypeProfStop = "prof_stop";
 }  // namespace
 
 DumpProperties ModelManager::dump_properties_;
@@ -303,7 +311,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
 
-    if (ProfilingManager::Instance().ProfilingOn()) {
+    if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
       davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
                                                        timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
       davinci_model->SetProfileTime(MODEL_LOAD_END);
@@ -531,7 +539,10 @@ Status ModelManager::Stop(uint32_t model_id) {
 ///
 Status ModelManager::HandleCommand(const Command &command) {
   static const std::map<std::string, std::function<uint32_t(const Command &)>> cmds = {
-    {"profile", HandleProfileCommand}, {"dump", HandleDumpCommand}, {"profiling", HandleAclProfilingCommand}};
+    {kCmdTypeProfile, HandleProfileCommand},           {kCmdTypeDump, HandleDumpCommand},
+    {kCmdTypeProfiling, HandleAclProfilingCommand},    {kCmdTypeProfInit, HandleProfInitCommand},
+    {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
+    {kCmdTypeProfStop, HandleProfStopCommand}};
 
   auto iter = cmds.find(command.cmd_type);
   if (iter == cmds.end()) {
@@ -557,6 +568,71 @@ Status ModelManager::HandleAclProfilingCommand(const Command &command) {
   return SUCCESS;
 }
 
+Status ModelManager::HandleProfInitCommand(const Command &command) {
+  uint64_t module_index = command.module_index;
+  if (ProfilingManager::Instance().ProfInit(module_index) != SUCCESS) {
+    GELOGE(FAILED, "Handle prof init failed.");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status ModelManager::HandleProfFinalizeCommand(const Command &command) {
+  if (ProfilingManager::Instance().ProfFinalize() != SUCCESS) {
+    GELOGE(FAILED, "Handle prof finalize failed.");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+/*
+ * cmd para when prof start
+ * "devNums:2"
+ * "devIdList:1,2"
+ * "profilingOption:PROF_OP_TRACE"
+ * "aicoreMetrics:AICORE_ARITHMATIC_THROUGHPUT"
+ */
+Status ModelManager::HandleProfStartCommand(const Command &command) {
+  if (command.cmd_params.size() < kProfStartCmdParaSize) {
+    GELOGE(PARAM_INVALID, "When the cmd_type is 'profile start', the size of cmd_params must larger than 2.");
+    return PARAM_INVALID;
+  }
+  std::map<std::string, std::string> cmd_params_map;
+  uint32_t step = 2;
+  for (uint32_t i = 0; i < command.cmd_params.size(); i += step) {
+    if (i + 1 >= command.cmd_params.size()) {
+      continue;
+    }
+    cmd_params_map[command.cmd_params[i]] = command.cmd_params[i + 1];
+  }
+  uint64_t module_index = command.module_index;
+  if (ProfilingManager::Instance().ProfStartProfiling(module_index, cmd_params_map) != SUCCESS) {
+    GELOGE(FAILED, "Handle prof start failed.");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status ModelManager::HandleProfStopCommand(const Command &command) {
+  if (command.cmd_params.size() < kProfStartCmdParaSize) {
+    GELOGE(PARAM_INVALID, "When the cmd_type is 'profile stop', the size of cmd_params must larger than 2.");
+    return PARAM_INVALID;
+  }
+  std::map<std::string, std::string> cmd_params_map;
+  uint32_t step = 2;
+  for (uint32_t i = 0; i < command.cmd_params.size(); i += step) {
+    if (i + 1 >= command.cmd_params.size()) {
+      continue;
+    }
+    cmd_params_map[command.cmd_params[i]] = command.cmd_params[i + 1];
+  }
+  uint64_t module_index = command.module_index;
+  if (ProfilingManager::Instance().ProfStopProfiling(module_index, cmd_params_map) != SUCCESS) {
+    GELOGE(FAILED, "Handle prof finalize failed.");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 Status ModelManager::HandleProfileCommand(const Command &command) {
   if (command.cmd_params.size() < kCmdParSize) {
     GELOGE(PARAM_INVALID, "When the cmd_type is 'profile', the size of cmd_params must larger than 2.");
@@ -577,15 +653,6 @@ Status ModelManager::HandleProfileCommand(const Command &command) {
   if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
     PropertiesManager::Instance().SetPropertyValue(map_key, value);
   }
-
-  if ((map_key == PROFILE_STOP_KEY) && (value == PROFILE_STOP_VALUE)) {
-    rtError_t rt_ret = rtProfilerStop();
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(PARAM_INVALID, "Call rtProfilerStop ret:%d", rt_ret);
-      return PARAM_INVALID;
-    }
-  }
-
   return SUCCESS;
 }
 
@@ -875,7 +942,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 
     GELOGI("Parse model %u success.", model_id);
 
-    if (ProfilingManager::Instance().ProfilingOn()) {
+    if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
       davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
                                                        timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
       davinci_model->SetProfileTime(MODEL_LOAD_END);

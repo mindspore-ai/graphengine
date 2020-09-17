@@ -34,6 +34,11 @@ const char *const kName = "name";
 const char *const kTraceID = "traceId";
 const char *const kProfDir = "resultPath";
 const size_t kReportMaxLen = 2048;
+const int32_t kMaxDeviceNum = 256;
+const std::string kConfigNumsdev = "devNums";
+const std::string kConfigDevIdList = "devIdList";
+const std::string kProfStart = "prof_start";
+const std::string kProfStop = "prof_stop";
 }  // namespace
 
 namespace ge {
@@ -64,7 +69,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     return ret;
   }
 
-  if (is_profiling_) {
+  if (is_load_profiling_) {
     // register Framework to profiling
     int result = Msprof::Engine::Init(GE_PROFILING_MODULE, &engine_);
     if (result != 0) {
@@ -92,7 +97,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   const std::string &config) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   try {
-    is_profiling_ = false;
+    is_load_profiling_ = false;
+    is_execute_profiling_ = false;
     profiling_opts_.clear();
     op_trace_conf_.clear();
     Json start_prof_conf = Json::parse(config);
@@ -114,7 +120,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
         }
         device_id_.push_back(std::stoi(device_id_str));
       }
-      if (is_all == true) {
+      if (is_all) {
         int32_t count = 0;
         rtError_t rt_err = rtGetDeviceCount(&count);
         if (rt_err != RT_ERROR_NONE) {
@@ -133,7 +139,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
       GELOGE(FAILED, "Parse feature from acl cfg failed.");
       return FAILED;
     }
-    is_profiling_ = true;
+    is_load_profiling_ = true;
+    is_execute_profiling_ = true;
   } catch (...) {
     GELOGE(FAILED, "Json conf is not invalid !");
     return ge::PARAM_INVALID;
@@ -200,21 +207,25 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   const char *profiling_mode = std::getenv("PROFILING_MODE");
   const char *prof_options = std::getenv("PROFILING_OPTIONS");
   if ((profiling_mode == nullptr) || (strcmp("true", profiling_mode) != 0) || (prof_options == nullptr)) {
-    is_profiling_ = false;
+    is_load_profiling_ = false;
+    is_execute_profiling_ = false;
   } else {
     std::string prof_options_str = std::string(prof_options);
     profiling_opts_ = StringUtils::Split(prof_options_str, ':');
-    is_profiling_ = true;
+    is_load_profiling_ = true;
+    is_execute_profiling_ = true;
     GELOGI("The profiling in env is %s, %s", profiling_mode, prof_options);
   }
-  if (!is_profiling_) {
+  if (!is_load_profiling_) {
     const std::string enable_profiling = "1";
     if (options.profiling_mode != enable_profiling || options.profiling_options.empty()) {
-      is_profiling_ = false;
+      is_load_profiling_ = false;
+      is_execute_profiling_ = false;
       return SUCCESS;
     } else {
       profiling_opts_ = StringUtils::Split(options.profiling_options, ':');
-      is_profiling_ = true;
+      is_load_profiling_ = true;
+      is_execute_profiling_ = true;
       GELOGI("The profiling in options is %s, %s", options.profiling_mode.c_str(), options.profiling_options.c_str());
     }
   }
@@ -310,7 +321,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::St
     }
 
     // runtime startup for profiling
-    GE_CHK_RT_RET(rtProfilerStart());
+    uint64_t module = GetProfilingModule();
+    int32_t device_num = 1;
+    uint32_t device_id_rt = static_cast<uint32_t>(device_id);
+    GE_CHK_RT_RET(rtProfilerStart(module, device_num, &device_id_rt));
 
     // call profiling startup API
     ProfMgrCfg prof_cfg = {send_profiling_config_};
@@ -333,11 +347,22 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
     int ret = reporter->Flush();
     GELOGI("Report data end, ret is %d", ret);
   }
-
-  rtError_t rt_ret = rtProfilerStop();
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGI("Call rtProfilerStop ret:%d", rt_ret);
+  uint64_t module = GetProfilingModule();
+  int32_t device_num = static_cast<int32_t>(device_id_.size());
+  uint32_t *device_id_ptr = new (std::nothrow) uint32_t[device_num];
+  if (device_id_ptr == nullptr) {
+    GELOGE(FAILED, "Stop profiling device id ptr is null.");
+    return;
   }
+  for (int32_t i = 0; i < device_num; i++) {
+    device_id_ptr[i] = static_cast<uint32_t>(device_id_[i]);
+  }
+  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGW("Call rtProfilerStop failed, ret:%d", rt_ret);
+  }
+  delete[] device_id_ptr;
+  device_id_ptr = nullptr;
 
   for (size_t i = 0; i < prof_handle_vec_.size(); ++i) {
     int result = ProfMgrStop(prof_handle_vec_[i]);
@@ -526,13 +551,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
     return;
   }
   GELOGI("current phy_device_id:%d", phy_device_id);
-
-  auto ret = std::find(device_id_.begin(), device_id_.end(), phy_device_id);
-  if (ret == device_id_.end()) {
-    GELOGE(FAILED, "get valid phy_device_id failed, profiling report failed.");
-    return;
+  if (!is_acl_api_mode_) {
+    auto ret = std::find(device_id_.begin(), device_id_.end(), phy_device_id);
+    if (ret == device_id_.end()) {
+      GELOGE(FAILED, "get valid phy_device_id failed, profiling report failed.");
+      return;
+    }
   }
-
   GELOGI("start ProfilingTaskDescInfo.");
   ProfilingTaskDescInfo(task_desc_info, phy_device_id);
   GELOGI("start ProfilingGraphDescInfo.");
@@ -544,6 +569,305 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::SetProfilingConfig(
   const std::string &profiling_cfg) {
   recv_profiling_config_ = profiling_cfg;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t ProfilingManager::GetProfilingModule() {
+  uint64_t module = PROF_MODEL_EXECUTE_MASK | PROF_RUNTIME_API_MASK | PROF_RUNTIME_TRACE_MASK |
+                    PROF_SCHEDULE_TIMELINE_MASK | PROF_SCHEDULE_TRACE_MASK | PROF_TASK_TIME_MASK |
+                    PROF_SUBTASK_TIME_MASK | PROF_AICPU_TRACE_MASK | PROF_AICORE_METRICS_MASK |
+                    PROF_AIVECTORCORE_METRICS_MASK | PROF_MODEL_LOAD_MASK;
+  return module;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfInit(uint64_t module) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  std::lock_guard<std::mutex> lock(mutex_);
+  uint64_t model_load_mask = module & PROF_MODEL_LOAD_MASK;
+
+  if (model_load_mask == PROF_MODEL_LOAD_MASK) {
+    // register Framework to profiling
+    int32_t result = Msprof::Engine::Init(GE_PROFILING_MODULE, &engine_);
+    if (result != SUCCESS) {
+      GELOGE(FAILED, "Register profiling engine failed.");
+      return FAILED;
+    }
+    int32_t device_num = -1;
+    rtError_t rt_ret = rtProfilerStart(model_load_mask, device_num, nullptr);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(FAILED, "Runtime profiler start failed.");
+      return FAILED;
+    }
+    is_load_profiling_ = true;
+    GELOGI("Prof init: model load profiling on.");
+  }
+
+  uint64_t training_trace_mask = module & PROF_TRAINING_TRACE_MASK;
+  if (training_trace_mask == PROF_TRAINING_TRACE_MASK) {
+    is_training_trace_ = true;
+  }
+  is_acl_api_mode_ = true;
+  GELOGI("Prof init success.");
+#endif
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFinalize() {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  std::lock_guard<std::mutex> lock(mutex_);
+  is_load_profiling_ = false;
+  is_training_trace_ = false;
+  is_acl_api_mode_ = false;
+
+  int32_t ret = Msprof::Engine::UnInit(GE_PROFILING_MODULE);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Profiling plugin uninit failed, ret:%d", ret);
+  }
+  int32_t dev_num = -1;
+  rtError_t rt_ret = rtProfilerStop(PROF_MODEL_LOAD_MASK, dev_num, nullptr);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(FAILED, "Runtime profiler stop failed.");
+    return FAILED;
+  }
+
+  for (auto device_id_module : device_id_module_map_) {
+    if (device_id_module.second != 0) {
+      uint32_t device_id = static_cast<uint32_t>(device_id_module.first);
+      GELOGI("Prof finalize: device_id: %u, module: 0x%llx.", device_id, device_id_module.second);
+      rt_ret = rtProfilerStop(device_id_module.second, 1, &device_id);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGE(FAILED, "Runtime profiler stop failed.");
+        return FAILED;
+      }
+    }
+  }
+  device_id_module_map_.clear();
+  device_id_.clear();
+  GELOGI("Prof finalize success.");
+#endif
+  return SUCCESS;
+}
+
+Status ProfilingManager::ProfParseDeviceId(const std::map<std::string, std::string> &config_para,
+                                           vector<int32_t> &device_list) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  auto iter = config_para.find(kConfigDevIdList);
+  if (iter != config_para.end()) {
+    std::string device_id_list = iter->second;
+    std::string temp;
+    vector<std::string> decvice_id;
+    for (uint32_t i = 0; i < device_id_list.size(); i++) {
+      if (isdigit(device_id_list[i])) {
+        temp.append(1, device_id_list[i]);
+      } else {
+        if (!temp.empty()) {
+          decvice_id.emplace_back(temp);
+        }
+        temp.clear();
+      }
+    }
+    if (!temp.empty()) {
+      decvice_id.emplace_back(temp);
+    }
+
+    for (uint32_t i = 0; i < decvice_id.size(); i++) {
+      try {
+        int32_t dev_id = std::stoi(decvice_id[i]);
+        device_list.push_back(dev_id);
+      } catch (std::invalid_argument &) {
+        GELOGE(FAILED, "Device id: %s is invalid.", decvice_id[i].c_str());
+        return FAILED;
+      } catch (std::out_of_range &) {
+        GELOGE(FAILED, "Device id: %s is  out of range.", decvice_id[i].c_str());
+      } catch (...) {
+        GELOGE(FAILED, "Device id: %s cannot change to int.", decvice_id[i].c_str());
+        return FAILED;
+      }
+    }
+  } else {
+    GELOGE(FAILED, "Config para not contain device id list.");
+    return FAILED;
+  }
+#endif
+  return SUCCESS;
+}
+
+Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
+                                        vector<int32_t> &device_list) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  // device num
+  auto iter = config_para.find(kConfigNumsdev);
+  if (iter != config_para.end()) {
+    try {
+      device_num = std::stoi(iter->second);
+    } catch (std::invalid_argument &) {
+      GELOGE(FAILED, "Device nun: %s is invalid.", iter->second.c_str());
+      return FAILED;
+    } catch (std::out_of_range &) {
+      GELOGE(FAILED, "Device num: %s is  out of range.", iter->second.c_str());
+    } catch (...) {
+      GELOGE(FAILED, "Device num: %s cannot change to int.", iter->second.c_str());
+      return FAILED;
+    }
+  } else {
+    GELOGE(FAILED, "Config para not contain device num.");
+    return FAILED;
+  }
+  // device id
+  if (ProfParseDeviceId(config_para, device_list) != SUCCESS) {
+    GELOGE(FAILED, "Parse config para device id failed.");
+    return FAILED;
+  }
+
+  if (device_num == 0 || device_num > kMaxDeviceNum || device_num != static_cast<int32_t>(device_list.size())) {
+    GELOGE(FAILED, "Config para device num: %d not equal to device list size: %d.", device_num, device_list.size());
+    return FAILED;
+  }
+#endif
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
+ProfilingManager::ProfStartProfiling(uint64_t module, const std::map<std::string, std::string> &config_para) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  std::lock_guard<std::mutex> lock(mutex_);
+  int32_t device_num = 0;
+  vector<int32_t> device_list;
+  if (ProfParseParam(config_para, device_num, device_list) != SUCCESS) {
+    GELOGE(FAILED, "Prof start parse param failed.");
+    return FAILED;
+  }
+  auto *device_id = new (std::nothrow) uint32_t[device_num];
+  if (device_id == nullptr) {
+    GELOGE(FAILED, "Prof start parse param failed.");
+    return FAILED;
+  }
+  for (int32_t i = 0; i < device_num; i++) {
+    device_id[i] = static_cast<uint32_t>(device_list[i]);
+  }
+  GELOGI("Runtime config param: 0x%llx, device num: %d.", module, device_num);
+  rtError_t rt_ret = rtProfilerStart(module, device_num, device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    delete[] device_id;
+    GELOGE(FAILED, "Runtime profiler config proc failed.");
+    return FAILED;
+  }
+  delete[] device_id;
+  device_id = nullptr;
+  if ((module & PROF_MODEL_EXECUTE_MASK) == PROF_MODEL_EXECUTE_MASK) {
+    for (int32_t i = 0; i < device_num; i++) {
+      if (std::find(device_id_.begin(), device_id_.end(), device_list[i]) == device_id_.end()) {
+        device_id_.push_back(device_list[i]);
+      }
+    }
+    GELOGI("Prof start: ge execute model start profiling.");
+  }
+  if ((module & PROF_MODEL_LOAD_MASK) == PROF_MODEL_LOAD_MASK) {
+    GELOGW("Prof start: load model module is invalid.");
+  }
+  UpdateDeviceIdModuleMap(kProfStart, module, device_list);
+  GELOGI("Prof start profiling success.");
+#endif
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
+ProfilingManager::ProfStopProfiling(uint64_t module, const std::map<std::string, std::string> &config_para) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  std::lock_guard<std::mutex> lock(mutex_);
+  int32_t device_num = 0;
+  vector<int32_t> device_list;
+  if (ProfParseParam(config_para, device_num, device_list) != SUCCESS) {
+    GELOGE(FAILED, "Prof stop parse param failed.");
+    return FAILED;
+  }
+  auto *device_id = new (std::nothrow) uint32_t[device_num];
+  if (device_id == nullptr) {
+    GELOGE(FAILED, "Prof stop parse param failed.");
+    return FAILED;
+  }
+  for (int32_t i = 0; i < device_num; i++) {
+    device_id[i] = static_cast<uint32_t>(device_list[i]);
+  }
+  GELOGI("Prof stop: runtime config param: 0x%llx, device num: %d", module, device_num);
+  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    delete[] device_id;
+    GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
+    return FAILED;
+  }
+  delete[] device_id;
+  device_id = nullptr;
+  uint64_t execute_model_mask = module & PROF_MODEL_EXECUTE_MASK;
+  if (execute_model_mask == PROF_MODEL_EXECUTE_MASK) {
+    for (int32_t i = 0; i < device_num; i++) {
+      auto iter = std::find(device_id_.begin(), device_id_.end(), device_list[i]);
+      if (iter != device_id_.end()) {
+        device_id_.erase(iter);
+      }
+    }
+    GELOGI("Prof stop: ge execute model stop profiling.");
+  }
+  if ((module & PROF_MODEL_LOAD_MASK) == PROF_MODEL_LOAD_MASK) {
+    GELOGW("Prof stop: load model module is invalid.");
+  }
+  UpdateDeviceIdModuleMap(kProfStop, module, device_list);
+  GELOGI("Prof stop profiling success.");
+#endif
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::UpdateDeviceIdModuleMap(
+  string prof_type, uint64_t module, const vector<int32_t> &device_list) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  if (prof_type == kProfStart) {
+    for (uint32_t i = 0; i < device_list.size(); i++) {
+      auto iter = device_id_module_map_.find(device_list[i]);
+      if (iter != device_id_module_map_.end()) {
+        uint64_t prof_on_module = device_id_module_map_[device_list[i]];
+        // save all profiling on module of device
+        device_id_module_map_[device_list[i]] = prof_on_module | module;
+      } else {
+        device_id_module_map_[device_list[i]] = module;
+      }
+    }
+  } else if (prof_type == kProfStop) {
+    for (uint32_t i = 0; i < device_list.size(); i++) {
+      auto iter = device_id_module_map_.find(device_list[i]);
+      if (iter != device_id_module_map_.end()) {
+        uint64_t prof_on_module = device_id_module_map_[device_list[i]];
+        uint64_t prof_off_module = prof_on_module & module;
+        uint64_t prof_on_left_module = prof_on_module & (~prof_off_module);
+        // stop profiling on module of device
+        device_id_module_map_[device_list[i]] = prof_on_left_module;
+      }
+    }
+  } else {
+    GELOGI("No need to update device_id module map.");
+  }
+#endif
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::ProfilingModelExecuteOn() const {
+  int32_t logic_device_id = 0;
+  rtError_t rt_ret = rtGetDevice(&logic_device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "Runtime get logic_device_id failed, current logic_device_id:%d", logic_device_id);
+  }
+  GELOGI("Current logic_device_id:%d", logic_device_id);
+
+  uint32_t phy_device_id = 0;
+  rt_ret = rtGetDevicePhyIdByIndex((uint32_t)logic_device_id, &phy_device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%d", phy_device_id);
+  }
+  GELOGI("Current phy_device_id:%d", phy_device_id);
+  bool execute_model_prof_on = false;
+  auto iter = std::find(device_id_.begin(), device_id_.end(), phy_device_id);
+  if (iter != device_id_.end()) {
+    execute_model_prof_on = true;
+  }
+  GELOGI("Flag is_execute_profiling: %d, execute_model_prof_on: %d", is_execute_profiling_, execute_model_prof_on);
+  return is_execute_profiling_ || execute_model_prof_on;
 }
 
 /**

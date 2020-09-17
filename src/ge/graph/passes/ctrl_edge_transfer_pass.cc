@@ -20,7 +20,6 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 /* Pass Explaination:
@@ -42,12 +41,6 @@ namespace ge {
 Status CtrlEdgeTransferPass::Run(ge::ComputeGraphPtr graph) {
   GELOGD("CtrlEdgeTransferPass start running");
   GE_CHECK_NOTNULL(graph);
-
-  bool is_dynamic_shape = false;
-  (void)AttrUtils::GetBool(graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
-  if (!is_dynamic_shape) {
-    return SUCCESS;
-  }
 
   for (ge::NodePtr &n : graph->GetDirectNode()) {
     auto op_desc = n->GetOpDesc();

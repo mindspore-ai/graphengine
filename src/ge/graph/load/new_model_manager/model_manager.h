@@ -158,6 +158,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   static ge::Status HandleAclProfilingCommand(const Command &command);
   static ge::Status HandleProfileCommand(const Command &command);
   static ge::Status HandleDumpCommand(const Command &command);
+  static ge::Status HandleProfInitCommand(const Command &command);
+  static ge::Status HandleProfFinalizeCommand(const Command &command);
+  static ge::Status HandleProfStartCommand(const Command &command);
+  static ge::Status HandleProfStopCommand(const Command &command);
   ///
   /// @ingroup domi_ome
   /// @brief get model memory usage

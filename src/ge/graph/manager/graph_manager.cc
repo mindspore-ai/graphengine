@@ -565,10 +565,12 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
   }
   GM_RUN_AND_DUMP_PERF("Optimize1", OptimizeStage1, compute_graph);
   GM_RUN_AND_DUMP_PERF("InferShape2", compute_graph->InferShapeInNeed);
-
-  PassManager graph_pass;
-  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
-  GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
+  const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
+  if (unknown_shape_skip != nullptr) {
+    PassManager graph_pass;
+    GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
+    GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
+  }
 
   GE_CHK_STATUS_RET(graph_optimize_.IdentifyReference(compute_graph), "Identify reference failed.");
   GELOGI("PreRun:PreRunOptimizeOriginalGraph success.");
@@ -1951,9 +1953,9 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("MergePass", &merge_pass);
   names_to_passes.emplace_back("CastRemovePass", &cast_remove_pass);
   names_to_passes.emplace_back("TransposeTransDataPass", &transpose_transdata_pass);
-  names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("TransOpSymmetryEliminationPass", &symmetry_elimination_pass);
   names_to_passes.emplace_back("TransOpNearbyAllreduceFusionPass", &trans_op_nearby_allreduce_fusion_pass);
+  names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("DimensionAdjustPass", &dimension_adjust_pass);

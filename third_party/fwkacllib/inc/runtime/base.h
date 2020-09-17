@@ -426,13 +426,13 @@ RTS_API rtError_t rtProfilerConfig(uint16_t type);
  * @ingroup profiling_base
  * @brief start rts profiler.
  */
-RTS_API rtError_t rtProfilerStart(void);
+RTS_API rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t* deviceList);
 
 /**
  * @ingroup profiling_base
  * @brief stop rts profiler.
  */
-RTS_API rtError_t rtProfilerStop(void);
+RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t* deviceList);
 
 /**
  * @ingroup profiling_base

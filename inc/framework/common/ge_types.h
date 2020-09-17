@@ -93,6 +93,7 @@ struct OutputData {
 struct Command {
   std::string cmd_type;                 // Command type
   std::vector<std::string> cmd_params;  // Command params
+  uint64_t module_index;                // prof module
 };
 
 // The definition of I/O shape description

@@ -235,6 +235,7 @@ graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &
 
     GELOGD("get op from OperatorFactory success. opType: %s", op_type.c_str());
     auto temp_op_desc = ge::OpDescUtils::GetOpDescFromOperator(node_op);
+    node_op.BreakConnect();
     if (temp_op_desc == nullptr) {
       GELOGE(GRAPH_FAILED, "temp op desc is null");
       return GRAPH_FAILED;
@@ -328,6 +329,9 @@ InferenceContextPtr CreateInferenceContext(const std::unordered_map<NodePtr, Inf
 namespace {
 std::unordered_map<NodePtr, InferenceContextPtr> context_map;
 }
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ShapeRefiner::ClearContextMap() { context_map.clear(); }
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferShapeAndType(const NodePtr &node) {
   return InferShapeAndType(node, true);
 }

@@ -62,7 +62,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
 
   // Get input and output descriptor
   ge::Status GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
-                              std::vector<ge::TensorDesc> &output_desc);
+                              std::vector<ge::TensorDesc> &output_desc, bool new_model_desc = false);
 
   ///
   /// @ingroup ge

@@ -759,6 +759,7 @@ graphStatus Node::Verify() const {
         GELOGW("Verify UpdateOutputName failed");
       }
     }
+    node_op.BreakConnect();
   }
 
   if (op_->CommonVerify() == GRAPH_SUCCESS) {

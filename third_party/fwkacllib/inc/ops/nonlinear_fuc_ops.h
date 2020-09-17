@@ -203,11 +203,11 @@ REG_OP(Sigmoid)
 * @brief Computes z = (y - y*y)*dy.
 
 * @par Inputs:
-* @li y: the input is tensor , dtype is UnaryDataType.
-* @li dy the input is tensor , dtype is UnaryDataType.
+* @li y: The input is Tensor, dtype is UnaryDataType.
+* @li dy: The input is Tensor, dtype is UnaryDataType.
 
 * @par Outputs:
-* z: the shape of output, dtype is UnaryDataType.
+* z: The shape of output, dtype is UnaryDataType.
 */
 REG_OP(SigmoidGrad)
     .INPUT(y, TensorType(UnaryDataType))

@@ -40,6 +40,23 @@ namespace ge {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
 }  // namespace
+static void ConvertShape2Nhwc(Format &format, vector<int64_t> &shape_vec) {
+  if ((format == FORMAT_NHWC) || (shape_vec.size() != static_cast<size_t>(NORMAL_TENSOR_SIZE))) {
+    return;
+  }
+  if (format != FORMAT_NCHW) {
+    GELOGW("The format is not NCHW, current format is %s", TypeUtils::FormatToSerialString(format).c_str());
+    return;
+  }
+  vector<int64_t> shape_vec_tmp;
+  shape_vec.swap(shape_vec_tmp);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_N]);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_H]);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_W]);
+  shape_vec.push_back(shape_vec_tmp[NCHW_DIM_C]);
+  return;
+}
+
 Status InsertNewOpUtil::Init() {
   insert_op_conf_.reset((new (std::nothrow) domi::InsertNewOps()));
   GE_CHECK_NOTNULL(insert_op_conf_);
@@ -223,11 +240,13 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
     GELOGE(FAILED, "UpdateOutputDesc fail, graph_ret:%d", graph_ret);
     return FAILED;
   }
-  GELOGI("Get size [%ld] from aipp [%s].", size, aipp_op_desc->GetName().c_str());
+  GELOGI("Get input size [%ld] from aipp [%s].", size, aipp_op_desc->GetName().c_str());
   if (size == 0) {
     GELOGE(FAILED, "Can not get size from aipp [%s]", aipp_op_desc->GetName().c_str());
     return FAILED;
   }
+  // Save the input size of aipp node, which will be used in dumping aipp node or fused aipp node
+  (void)AttrUtils::SetInt(aipp_input, ATTR_NAME_INPUT_ORIGIN_SIZE, size);
 
   auto in_data_anchor = node->GetInDataAnchor(0);
   GE_CHECK_NOTNULL(in_data_anchor);
@@ -305,6 +324,8 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
 
   auto data_opdesc = data->GetOpDesc();
   GE_CHECK_NOTNULL(data_opdesc);
+  Format old_format = data_opdesc->MutableOutputDesc(0)->GetFormat();
+
   auto ret = data_opdesc->UpdateOutputDesc(0, *input_desc);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to update data %s output using switchn %s", data->GetName().c_str(),
@@ -317,7 +338,32 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
            switchn->GetName().c_str());
     return INTERNAL_ERROR;
   }
+  // Update attr _mbatch_origin_input_dims for data when it is linked to aipp
+  UpdateMultiBatchInputDims(data_opdesc, old_format);
   return SUCCESS;
+}
+
+void InsertNewOpUtil::UpdateMultiBatchInputDims(const OpDescPtr &data_opdesc, Format &old_format) {
+  if (!data_opdesc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
+    GELOGW("Failed to acquire _mbatch_origin_input_dims attr from node [%s]", data_opdesc->GetName().c_str());
+    return;
+  }
+  auto new_data_dims = data_opdesc->GetOutputDesc(0).GetShape().GetDims();
+  vector<int64_t> origin_input_dims;
+  (void)AttrUtils::GetListInt(data_opdesc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+  // Convert origin_input_dims to NHWC because data format is set to NHWC when it is linked to aipp.
+  ConvertShape2Nhwc(old_format, origin_input_dims);
+  if (new_data_dims.size() != origin_input_dims.size()) {
+    return;
+  }
+  for (size_t i = 0; i < origin_input_dims.size(); ++i) {
+    // Need to update shape when aipp has crop function because H,W is different, ignore -1.
+    if (origin_input_dims[i] > 0) {
+      origin_input_dims[i] = new_data_dims[i];
+    }
+  }
+  (void)AttrUtils::SetListInt(data_opdesc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+  return;
 }
 
 Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std::set<NodePtr>> &data_next_node_map) {
@@ -420,15 +466,18 @@ Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
       GetInputOutputInfo(data_node, aipp_it, input, output);
       input_dims.emplace_back(input);
       output_dims.emplace_back(output);
+
+      // When static aipp is set, need to get the model input dims which processed by aipp
+      GE_RETURN_IF_ERROR(SetModelInputDims(data_node, aipp_it));
     }
 
     if (!AttrUtils::SetListStr(data_node->GetOpDesc(), ATTR_NAME_AIPP_INPUTS, input_dims)) {
-      GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_AIPP_INPUTS.c_str());
+      GELOGE(FAILED, "SetListStr of %s failed.", ATTR_NAME_AIPP_INPUTS.c_str());
       return FAILED;
     }
 
     if (!AttrUtils::SetListStr(data_node->GetOpDesc(), ATTR_NAME_AIPP_OUTPUTS, output_dims)) {
-      GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_AIPP_OUTPUTS.c_str());
+      GELOGE(FAILED, "SetListStr of %s failed.", ATTR_NAME_AIPP_OUTPUTS.c_str());
       return FAILED;
     }
   }
@@ -471,6 +520,43 @@ Status InsertNewOpUtil::GetInputOutputInfo(NodePtr &data_node, NodePtr &aipp_nod
 
   GELOGI("GetInputOutputInfo: get data[%s] node related aipp[%s] node info, input[%s], output[%s].",
          data_node->GetName().c_str(), aipp_node->GetName().c_str(), input.c_str(), output.c_str());
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::SetModelInputDims(NodePtr &data_node, NodePtr &aipp_node) {
+  GE_CHECK_NOTNULL(data_node);
+  GE_CHECK_NOTNULL(aipp_node);
+  OpDescPtr data_opdesc = data_node->GetOpDesc();
+  GE_CHECK_NOTNULL(data_opdesc);
+  OpDescPtr aipp_opdesc = aipp_node->GetOpDesc();
+  GE_CHECK_NOTNULL(aipp_opdesc);
+
+  // In dynamic bacth/hw scenario, the new model input dims only need be set once
+  if (data_node->GetOpDesc()->HasAttr(ATTR_NAME_INPUT_DIMS)) {
+    GELOGD("Data %s already has attribute %s", data_node->GetOpDesc()->GetName().c_str(), ATTR_NAME_INPUT_DIMS.c_str());
+    return SUCCESS;
+  }
+  vector<int64_t> model_input_dims;
+  vector<int64_t> origin_input_dims;
+  if (AttrUtils::GetListInt(aipp_opdesc, ATTR_NAME_INPUT_DIMS, model_input_dims) && !model_input_dims.empty()) {
+    // When dynamic bacth/hw is set, N or HW need to be set to -1
+    if (AttrUtils::GetListInt(data_opdesc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims) &&
+        !origin_input_dims.empty()) {
+      GELOGI("In dynamic bacth/hw scenario, N or HW need to be set to -1. model_input_dims: %s, origin_input_dims: %s",
+             formats::JoinToString(model_input_dims).c_str(), formats::JoinToString(origin_input_dims).c_str());
+      for (size_t i = 0; i < origin_input_dims.size(); ++i) {
+        // N or HW need to be set to -1
+        if (origin_input_dims[i] < 0) {
+          model_input_dims[i] = origin_input_dims[i];
+        }
+      }
+    }
+    GELOGD("After set H/W to -1, the model input dims: %s.", formats::JoinToString(model_input_dims).c_str());
+    if (!AttrUtils::SetListInt(data_opdesc, ATTR_NAME_INPUT_DIMS, model_input_dims)) {
+      GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_INPUT_DIMS.c_str());
+      return FAILED;
+    }
+  }
   return SUCCESS;
 }
 }  // namespace ge

@@ -105,9 +105,8 @@ void ge::GraphPartitioner::SetMergedGraphId(ge::ComputeGraphPtr &output_merged_c
 
 Status ge::GraphPartitioner::RemoveNodeAndEdgeBetweenEndPld(ge::ComputeGraphPtr &output_merged_compute_graph,
                                                             const std::vector<SubGraphInfoPtr> &sub_graph_list) {
-  ComputeGraphPtr new_sub_graph = MakeShared<ComputeGraph>("mergedGraph");
-  output_merged_compute_graph = new_sub_graph;
-  if ((new_sub_graph == nullptr) || (MergeAllSubGraph(output_merged_compute_graph, sub_graph_list) != SUCCESS)) {
+  if ((output_merged_compute_graph == nullptr) ||
+      (MergeAllSubGraph(output_merged_compute_graph, sub_graph_list) != SUCCESS)) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MergeAllSubGraph failed.");
     return FAILED;
   }
@@ -229,6 +228,9 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
       return FAILED;
     }
   }
+  ComputeGraphPtr new_sub_graph = MakeShared<ComputeGraph>(original_compute_graph->GetName());
+  GE_CHECK_NOTNULL(new_sub_graph);
+  output_merged_compute_graph = new_sub_graph;
   GE_TIMESTAMP_START(MergeGraphRemoveNode);
   if (RemoveNodeAndEdgeBetweenEndPld(output_merged_compute_graph, sub_graph_list) != ge::SUCCESS) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: merging sub-graphs failed");

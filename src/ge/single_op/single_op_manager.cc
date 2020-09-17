@@ -41,17 +41,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
   uintptr_t resource_id;
   // runtime uses NULL to denote a default stream for each device
   if (stream == nullptr) {
-    // use device id as resource key instead
-    int32_t dev_id = 0;
-    auto rt_err = rtGetDevice(&dev_id);
+    // get current context
+    rtContext_t rt_cur_ctx = nullptr;
+    auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
     if (rt_err != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Get current device id failed. ret = %d", static_cast<int>(rt_err));
+      GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
       return RT_FAILED;
     }
-
-    GELOGI("GetOpFromModel with default stream. device id = %d", dev_id);
-    resource_id = static_cast<uintptr_t>(dev_id);
+    // use current context as resource key instead
+    GELOGI("use context as resource key instead when default stream");
+    resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
   } else {
+    GELOGI("use stream as resource key instead when create stream");
     resource_id = reinterpret_cast<uintptr_t>(stream);
   }
 

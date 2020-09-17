@@ -19,8 +19,6 @@
 #include <set>
 #include <string>
 #include <utility>
-#include "common/formats/format_transfers/format_transfer_fractal_nz.h"
-#include "common/formats/format_transfers/format_transfer_fractal_z.h"
 #include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
 #include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
 #include "common/formats/format_transfers/format_transfer_transpose.h"
@@ -34,6 +32,7 @@
 #include "graph/common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
+#include "graph/shape_refiner.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/util/rt_context_util.h"
 #include "graph/optimize/graph_optimize.h"
@@ -123,9 +122,6 @@ static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
   {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
-const int64_t kGemmNdShapeSize = 2;
-const int64_t kGemmAlignSize32 = 32;
-const int64_t kGemmAlignSize16 = 16;
 
 OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
   GeTensorPtr tensor = MakeShared<GeTensor>();
@@ -1135,114 +1131,9 @@ Status ProcessInputNC1HWC0DynShape(NodePtr &node_ptr, bool &is_dynamic_batch, No
   return SUCCESS;
 }
 
-Status ProcessGemmFractalZ(GeShape &src_shape, std::vector<int64_t> &dst_shape_vec) {
-  dst_shape_vec.clear();
-  if (src_shape.GetDims().size() != kGemmNdShapeSize) {
-    GELOGE(INTERNAL_ERROR, "gemm shape size must be 2");
-    return FAILED;
-  }
-  dst_shape_vec.push_back(formats::Ceil(src_shape.GetDim(0), kGemmAlignSize32));
-  dst_shape_vec.push_back(formats::Ceil(src_shape.GetDim(1), kGemmAlignSize16));
-  dst_shape_vec.push_back(kGemmAlignSize16);
-  dst_shape_vec.push_back(kGemmAlignSize32);
-  return SUCCESS;
-}
-Status SetInOutForGemm(GeTensorDescPtr &input, GeTensorDescPtr &output, GeShape shape, Format format) {
-  input->SetShape(shape);
-  input->SetFormat(format);
-  output->SetShape(shape);
-  output->SetFormat(format);
-  int64_t input_shape_size = 0;
-  int64_t output_shape_size = 0;
-  ge::graphStatus input_graph_status = ge::TensorUtils::GetTensorSizeInBytes(*input, input_shape_size);
-  ge::graphStatus output_graph_status = ge::TensorUtils::GetTensorMemorySizeInBytes(*output, output_shape_size);
-  if ((input_graph_status != ge::GRAPH_SUCCESS) && (output_graph_status != ge::GRAPH_SUCCESS)) {
-    GELOGE(GRAPH_FAILED, "GetTensorSize failed!");
-    return FAILED;
-  }
-  ge::TensorUtils::SetSize(*input, input_shape_size);
-  ge::TensorUtils::SetSize(*output, output_shape_size);
-  return SUCCESS;
-}
-
-Status ProcessSingleOpInput(NodePtr &node_ptr, string &single_op_input_format) {
-  ge::Format input_format = TypeUtils::SerialStringToFormat(single_op_input_format);
-  auto op_desc = node_ptr->GetOpDesc();
-  auto data_input = op_desc->MutableInputDesc(0);
-  auto data_output = op_desc->MutableOutputDesc(0);
-  ge::Format src_format = data_input->GetFormat();
-  ge::DataType src_dt = data_input->GetDataType();
-  ge::GeShape src_shape = data_input->GetShape();
-  std::vector<int64_t> dst_shape_vec;
-  if (input_format == FORMAT_FRACTAL_NZ) {
-    formats::FormatTransferFractalNz transfer;
-    if (transfer.TransShape(src_format, src_shape.GetDims(), src_dt, FORMAT_FRACTAL_NZ, dst_shape_vec) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Op [%s] trans FZ Shape failed.", op_desc->GetName().c_str());
-      return FAILED;
-    }
-    ge::GeShape dst_shape(dst_shape_vec);
-    if (SetInOutForGemm(data_input, data_output, dst_shape, FORMAT_FRACTAL_NZ) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Op [%s] set FRACTAL_NZ desc failed.", op_desc->GetName().c_str());
-      return FAILED;
-    }
-  } else if (input_format == FORMAT_FRACTAL_Z) {
-    if (ProcessGemmFractalZ(src_shape, dst_shape_vec) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Op [%s] trans FRACTAL_Z Shape failed.", op_desc->GetName().c_str());
-      return FAILED;
-    }
-    ge::GeShape dst_shape(dst_shape_vec);
-    if (SetInOutForGemm(data_input, data_output, dst_shape, FORMAT_FRACTAL_Z) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Op [%s] set FRACTAL_Z desc failed.", op_desc->GetName().c_str());
-      return FAILED;
-    }
-  }
-  // Gemm shape and format should be set at this stage, temporary solution.
-  auto out_anchor = node_ptr->GetOutDataAnchor(0);
-  for (auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
-    GE_CHECK_NOTNULL(in_anchor);
-    auto index = static_cast<uint32_t>(in_anchor->GetIdx());
-    ge::NodePtr next_node = in_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(next_node);
-    auto next_op_desc = next_node->GetOpDesc();
-    GE_CHECK_NOTNULL(next_op_desc);
-    auto input_desc = next_op_desc->MutableInputDesc(index);
-    GE_CHECK_NOTNULL(input_desc);
-    input_desc->SetFormat(input_format);
-    input_desc->SetShape(data_output->GetShape());
-  }
-  return SUCCESS;
-}
-
-Status ProcessSingleOpOutput(OpDescPtr &op_desc, string &single_op_output_format) {
-  ge::Format input_format = TypeUtils::SerialStringToFormat(single_op_output_format);
-  auto data_input = op_desc->MutableInputDesc(0);
-  ge::Format src_format = data_input->GetFormat();
-  ge::DataType src_dt = data_input->GetDataType();
-  ge::GeShape src_shape = data_input->GetShape();
-  std::vector<int64_t> dst_shape_vec;
-  if (input_format == FORMAT_FRACTAL_NZ) {
-    formats::FormatTransferFractalNz transfer;
-    if (transfer.TransShape(src_format, src_shape.GetDims(), src_dt, FORMAT_FRACTAL_NZ, dst_shape_vec) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Op [%s] trans FZ Shape failed.", op_desc->GetName().c_str());
-      return FAILED;
-    }
-    ge::GeShape dst_shape(dst_shape_vec);
-    data_input->SetShape(dst_shape);
-    data_input->SetFormat(FORMAT_FRACTAL_NZ);
-  }
-  return SUCCESS;
-}
-
-Status ProcessDataNodeDynShape(NodePtr &node_ptr, bool &is_single_op) {
+Status ProcessDataNodeDynShape(NodePtr &node_ptr) {
   auto op_desc = node_ptr->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  std::string single_op_input_format;
-  if (is_single_op && (ge::AttrUtils::GetStr(op_desc, "_single_input_format", single_op_input_format))) {
-    if (ProcessSingleOpInput(node_ptr, single_op_input_format) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Process single op input [%s] failed.", node_ptr->GetName().c_str());
-      return FAILED;
-    }
-  }
   bool set_fp16 = false;
   if (!ge::AttrUtils::GetBool(node_ptr->GetOpDesc(), "input_fp16", set_fp16) || !set_fp16) {
     return SUCCESS;
@@ -1375,16 +1266,9 @@ bool NeedUpdateOutputByOutputTypeParm(std::string &output_type, NodePtr &src_nod
   return false;
 }
 
-Status ProcessNetoutputNodeDynShape(NodePtr &node, std::string &output_type, bool &is_single_op) {
+Status ProcessNetoutputNodeDynShape(NodePtr &node, std::string &output_type) {
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  std::string single_op_output_format;
-  if (is_single_op && (ge::AttrUtils::GetStr(op_desc, "_single_output_format", single_op_output_format))) {
-    if (ProcessSingleOpOutput(op_desc, single_op_output_format) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Process single op output [%s] failed.", node->GetName().c_str());
-      return FAILED;
-    }
-  }
   ge::DataType output_data_type = ge::DT_FLOAT;
 
   for (const auto &in_anchor : node->GetAllInDataAnchors()) {
@@ -1717,7 +1601,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       auto format = desc.GetFormat();
       auto origin_format = desc.GetOriginFormat();
       bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
-      if (is_internal) {
+      bool need_check_internal_format = (!options_.is_single_op) && is_internal;
+      if (need_check_internal_format) {
         GELOGE(PARAM_INVALID, "Input format %s or origin_format %s is not support.",
                TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::FormatToSerialString(origin_format).c_str());
         return FAILED;
@@ -2164,6 +2049,7 @@ Status GraphPrepare::GenerateInfershapeGraph(ConstGraphPtr graph) {
     GELOGE(ret, "Run ge_passes infershape for preprocess failed, ret:%u.", ret);
     return ret;
   }
+  ShapeRefiner::ClearContextMap();
   return SUCCESS;
 }
 
@@ -2389,6 +2275,7 @@ Status GraphPrepare::InferShapeForPreprocess() {
       }
     }
   }
+  ShapeRefiner::ClearContextMap();
   if (ret != SUCCESS) {
     GELOGE(ret, "Run ge_passes infershape for preprocess failed, ret:%u.", ret);
     return ret;
@@ -2821,14 +2708,14 @@ Status GraphPrepare::UpdateInputOutputByOptions() {
     }
 
     if (node_ptr->GetType() == DATA) {
-      if (ProcessDataNodeDynShape(node_ptr, options_.is_single_op) != SUCCESS) {
+      if (ProcessDataNodeDynShape(node_ptr) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Process data node failed");
         return FAILED;
       }
     }
 
     if (node_ptr->GetType() == ge::NETOUTPUT) {
-      if (ProcessNetoutputNodeDynShape(node_ptr, options_.output_datatype, options_.is_single_op) != SUCCESS) {
+      if (ProcessNetoutputNodeDynShape(node_ptr, options_.output_datatype) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Process netoutput node failed");
         return FAILED;
       }

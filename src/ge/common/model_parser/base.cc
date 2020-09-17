@@ -15,7 +15,7 @@
  */
 
 #include "common/model_parser/base.h"
-
+#include "common/helper/model_helper.h"
 #include <securec.h>
 #include <sys/sysinfo.h>
 #include <fstream>
@@ -61,7 +61,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
 
   // read data as a block:
   (void)fs.read(data, len);
-
+  ModelHelper model_helper;
+  model_helper.GetBaseNameFromFileName(model_path, model_data.om_name);
   // Set the model data parameter
   model_data.model_data = data;
   model_data.model_len = len;

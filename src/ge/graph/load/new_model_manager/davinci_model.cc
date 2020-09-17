@@ -78,7 +78,7 @@ namespace {
 const uint32_t kDataIndex = 0;
 const uint32_t kOutputNum = 1;
 const uint32_t kTrueBranchStreamNum = 1;
-const uint32_t kThreadNum = 16;
+const uint32_t kThreadNum = 1;
 const uint32_t kAddrLen = sizeof(void *);
 const char *const kNeedDestroySpecifiedAicpuKernel = "need_destroy_specified_aicpu_kernel";
 const int kDecimal = 10;
@@ -94,42 +94,9 @@ inline bool IsCallDumpInputOp(const OpDescPtr &op_desc) {
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NO_TASK_AND_DUMP_NEEDED, skip_task_generate);
   return skip_task_generate;
 }
-
-void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
-  uint32_t n, c, h, w;
-  n = format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N;
-  c = format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C;
-  h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
-  w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
-
-  if (!op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
-    if (op_desc->GetInputDescPtr(0)->GetShape().GetDimNum() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-      input.shape_info.num = op_desc->GetInputDescPtr(0)->GetShape().GetDim(n);
-      input.shape_info.height = op_desc->GetInputDescPtr(0)->GetShape().GetDim(h);
-      input.shape_info.width = op_desc->GetInputDescPtr(0)->GetShape().GetDim(w);
-      input.shape_info.channel = op_desc->GetInputDescPtr(0)->GetShape().GetDim(c);
-    }
-    for (size_t k = 0; k < op_desc->GetInputDescPtr(0)->GetShape().GetDimNum(); k++) {
-      input.shape_info.dims.push_back(op_desc->GetInputDescPtr(0)->GetShape().GetDim(k));
-    }
-  } else {
-    vector<int64_t> origin_input_dims;
-    (void)AttrUtils::GetListInt(op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
-    if (origin_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-      input.shape_info.num = origin_input_dims[n];
-      input.shape_info.height = origin_input_dims[h];
-      input.shape_info.width = origin_input_dims[w];
-      input.shape_info.channel = origin_input_dims[c];
-    }
-    for (size_t k = 0; k < origin_input_dims.size(); ++k) {
-      input.shape_info.dims.push_back(origin_input_dims[k]);
-    }
-  }
-}
 }  // namespace
 
 std::mutex DavinciModel::tvm_bin_mutex_;
-std::set<std::string> DavinciModel::tvm_bin_kernel_;
 
 DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener> &listener)
     : weights_mem_base_(nullptr),
@@ -536,7 +503,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   compute_graph_ = GraphUtils::GetComputeGraph(graph);
   GE_CHK_BOOL_RET_STATUS(compute_graph_ != nullptr, INTERNAL_ERROR, "Get compute graph is nullptr.");
 
-  runtime_param_.graph_id = GetGraphID(compute_graph_->GetName());
+  runtime_param_.graph_id = compute_graph_->GetGraphID();
 
   GE_TIMESTAMP_START(TransAllVarData);
   GE_CHK_STATUS_RET(TransAllVarData(compute_graph_, runtime_param_.graph_id), "TransAllVarData failed.");
@@ -1447,6 +1414,55 @@ Status DavinciModel::GetInputOutputDescInfoForZeroCopy(vector<InputOutputDescInf
   return SUCCESS;
 }
 
+void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
+  uint32_t n, c, h, w;
+  n = format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N;
+  c = format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C;
+  h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
+  w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
+
+  if (is_new_model_desc_ && op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
+    // When static aipp is set, need to get the model input dims which processed by aipp
+    vector<int64_t> model_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
+    if (model_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+      input.shape_info.num = model_input_dims[n];
+      input.shape_info.height = model_input_dims[h];
+      input.shape_info.width = model_input_dims[w];
+      input.shape_info.channel = model_input_dims[c];
+    }
+    for (size_t k = 0; k < model_input_dims.size(); ++k) {
+      input.shape_info.dims.push_back(model_input_dims[k]);
+    }
+    is_new_model_desc_ = false;
+    return;
+  }
+
+  if (!op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
+    if (op_desc->GetInputDescPtr(0)->GetShape().GetDimNum() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+      input.shape_info.num = op_desc->GetInputDescPtr(0)->GetShape().GetDim(n);
+      input.shape_info.height = op_desc->GetInputDescPtr(0)->GetShape().GetDim(h);
+      input.shape_info.width = op_desc->GetInputDescPtr(0)->GetShape().GetDim(w);
+      input.shape_info.channel = op_desc->GetInputDescPtr(0)->GetShape().GetDim(c);
+    }
+    for (size_t k = 0; k < op_desc->GetInputDescPtr(0)->GetShape().GetDimNum(); k++) {
+      input.shape_info.dims.push_back(op_desc->GetInputDescPtr(0)->GetShape().GetDim(k));
+    }
+  } else {
+    vector<int64_t> origin_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
+    if (origin_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+      input.shape_info.num = origin_input_dims[n];
+      input.shape_info.height = origin_input_dims[h];
+      input.shape_info.width = origin_input_dims[w];
+      input.shape_info.channel = origin_input_dims[c];
+    }
+    for (size_t k = 0; k < origin_input_dims.size(); ++k) {
+      input.shape_info.dims.push_back(origin_input_dims[k]);
+    }
+  }
+}
+
 Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats) {
   for (size_t index = 0; index < data_op_list_.size(); ++index) {
     InputOutputDescInfo input;
@@ -1455,6 +1471,7 @@ Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, s
 
     Format format = data_op_list_[index]->GetInputDescPtr(0)->GetFormat();
     CreateInputDimsInfo(data_op_list_[index], format, input);
+
     input.data_type = data_op_list_[index]->GetInputDescPtr(0)->GetDataType();
     input.name = data_op_list_[index]->GetName();
     int64_t input_size = 0;
@@ -1535,7 +1552,10 @@ Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc,
                              "construct output_name failed.");
       // forward compatbility, if old om has no out_node_name, need to return output follow origin way
       if (out_size == out_node_name.size()) {
-        output_name = out_node_name[index] + ":" + std::to_string(src_index[index]);
+        // neweast plan, the index will add to name during generate model.
+        bool contains_colon = out_node_name[index].find(":") != std::string::npos;
+        output_name =
+          contains_colon ? out_node_name[index] : out_node_name[index] + ":" + std::to_string(src_index[index]);
       } else {
         output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" +
                       std::to_string(src_index[index]);
@@ -1966,6 +1986,10 @@ Status DavinciModel::CopyOutputDataToUser(OpDescPtr &op_desc, std::vector<DataBu
                            "Model output data size(%u) does not match required size(%u).", v_output_size[i],
                            data_buf.length);
 
+    if (copy_only_addrs_.count(v_output_data_addr[i]) == 0) {
+      GELOGI("[ZCPY] This addr[%p] has already feed by zero copy.", v_output_data_addr[i]);
+      continue;  // Skip: Feed by zero copy.
+    }
     GELOGI(
       "CopyOutputDataToUser memcpy graph_%u type[F] name[%s] output[%lu] dst[%p] src[%p] mem_size[%u] datasize[%u]",
       runtime_param_.graph_id, op_desc->GetName().c_str(), i, data_buf.data, v_output_data_addr[i], data_buf.length,
@@ -2510,51 +2534,19 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
 }
 
 Status DavinciModel::InitTaskInfo(domi::ModelTaskDef &model_task_def) {
-  GELOGI("InitTaskInfo in,task size %zu", model_task_def.task().size());
+  GELOGI("InitTaskInfo in,task size %d", model_task_def.task().size());
   task_list_.resize(model_task_def.task_size());
-  std::vector<std::future<Status>> futures(model_task_def.task_size());
-  ThreadPool executor(kThreadNum);
-  rtContext_t ctx = nullptr;
-  rtError_t rt_ret = rtCtxGetCurrent(&ctx);
-  if (rt_ret != RT_ERROR_NONE || ctx == nullptr) {
-    GELOGE(RT_FAILED, "Failed to get current context from rt, error-code 0x%X.", rt_ret);
-    return RT_FAILED;
-  }
-
-  for (int32_t i = 0; i < model_task_def.task_size(); ++i) {
-    std::future<Status> f = executor.commit(
-      [](const domi::TaskDef &task, DavinciModel *model, rtContext_t ctx, int32_t idx) -> Status {
-        rtError_t rt_ret = rtCtxSetCurrent(ctx);
-        if (rt_ret != RT_ERROR_NONE) {
-          GELOGE(RT_FAILED, "Failed to set context from rt, error-code 0x%X.", rt_ret);
-          return RT_FAILED;
-        }
-        Status ret = FAILED;
-        // dynamic shape will create task_list_ before
-        if (model->task_list_[idx] == nullptr) {
-          model->task_list_[idx] = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task.type()));
-          GE_CHECK_NOTNULL(model->task_list_[idx]);
-        }
-        ret = model->task_list_[idx]->Init(task, model);
-        return ret;
-      },
-      model_task_def.task(i), this, ctx, i);
-    if (!f.valid()) {
-      GELOGE(FAILED, "Future is invalid");
-      return FAILED;
-    }
-    futures[i] = std::move(f);
-  }
-
-  Status ret;
-  for (size_t i = 0; i < futures.size(); ++i) {
-    ret = futures[i].get();
+  for (int i = 0; i < model_task_def.task_size(); ++i) {
+    // dynamic shape will create task_list_ before
+    const domi::TaskDef &task = model_task_def.task(i);
+    task_list_[i] = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task.type()));
+    GE_CHECK_NOTNULL(task_list_[i]);
+    Status ret = task_list_[i]->Init(task, this);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Task index %zu init failed.", i);
+      GELOGE(ret, "Task index %d init failed.", i);
       return ret;
     }
   }
-
   GELOGI("InitTaskInfo out");
   return SUCCESS;
 }
@@ -2623,7 +2615,7 @@ Status DavinciModel::DistributeTask() {
         return PARAM_INVALID;
       }
 
-      if (PropertiesManager::Instance().IsLayerNeedDump(name_, op->GetName())) {
+      if (PropertiesManager::Instance().IsLayerNeedDump(name_, om_name_, op->GetName())) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
@@ -2661,8 +2653,9 @@ Status DavinciModel::DistributeTask() {
 
 void DavinciModel::SetEndGraphId(uint32_t task_id, uint32_t stream_id) {
   auto all_dump_model = PropertiesManager::Instance().GetAllDumpModel();
-  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
-      all_dump_model.find(name_) != all_dump_model.end()) {
+  bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
+  bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
+  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() || findByOmName || findByModelName) {
     GELOGI("start save end_graph_info to dumper, task_id is %u, stream_id is %u", task_id, stream_id);
     data_dumper_.SaveEndGraphId(task_id, stream_id);
   }
@@ -2696,7 +2689,7 @@ void DavinciModel::SetOutputOutsideAddr(const std::vector<void *> &outside_addrs
     if (output_outside_addrs_.find(addr) != output_outside_addrs_.end()) {
       continue;
     }
-
+    DisableZeroCopy(addr);  // Data to NetOutput directly.
     (void)output_outside_addrs_.emplace(std::pair<const void *, std::vector<void *>>(addr, {}));
     GELOGI("SetOutputOutsideAddr success.");
   }
@@ -2902,11 +2895,15 @@ Status DavinciModel::UpdateIoTaskArgs(const map<uint32_t, pair<int64_t, void *>>
     }
 
     // For input data, just copy for rts task.
-    if (is_input && copy_only_addrs_.count(addr) > 0) {
-      if (rtMemcpy(addr, size, buffer.data, buffer.length, RT_MEMCPY_DEVICE_TO_DEVICE) != RT_ERROR_NONE) {
-        GELOGE(FAILED, "Non-zero copy data node copy failed");
-        return FAILED;
+    if (copy_only_addrs_.count(addr) > 0) {
+      if (is_input) {
+        GELOGI("[IMAS] Find addr %p need direct copy from user malloc input %p.", addr, buffer.data);
+        if (rtMemcpy(addr, size, buffer.data, buffer.length, RT_MEMCPY_DEVICE_TO_DEVICE) != RT_ERROR_NONE) {
+          GELOGE(FAILED, "Non-zero copy data node copy failed");
+          return FAILED;
+        }
       }
+      GELOGI("No need to exeucte zero copy task because this addr %p need direct copy.", addr);
       continue;
     }
 
@@ -2953,7 +2950,6 @@ const char *DavinciModel::GetRegisterStub(const string &binfile, const string &s
   } else {
     binfile_key = session_graph_id + "_" + binfile;
   }
-  std::lock_guard<std::mutex> lock(tvm_bin_mutex_);
   auto it = tvm_bin_kernel_.find(binfile_key);
   if (it != tvm_bin_kernel_.end()) {
     return it->c_str();
@@ -3089,7 +3085,6 @@ void DavinciModel::StoreTbeHandle(const std::string &handle_key) {
   // Online mode FE may call rtFunctionRegister.
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
 
-  // Need protection of tvm_bin_mutex_.
   auto it = used_tbe_handle_map_.find(handle_key);
   if (it != used_tbe_handle_map_.end()) {
     // GE registered, increase reference.
@@ -3109,9 +3104,9 @@ void DavinciModel::StoreTbeHandle(const std::string &handle_key) {
 void DavinciModel::CleanTbeHandle() {
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
 
-  std::lock_guard<std::mutex> lock(tvm_bin_mutex_);
   kernel_store.EraseTBEHandle(used_tbe_handle_map_);
   used_tbe_handle_map_.clear();
+  tvm_bin_kernel_.clear();
 }
 
 ///
@@ -3246,15 +3241,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   bool is_dynamic_batch = input_data.is_dynamic_batch;
   InitZeroCopyUtil(is_dynamic_batch, input_use_zero_copy, output_use_zero_copy);
 
-  // Empty task, Just copy input to output, need direct copy.
-  if (task_list_.empty() && (input_use_zero_copy || output_use_zero_copy)) {
-    GELOGE(FAILED, "Empty task, Just copy input to output, need direct copy.");
-    return FAILED;
-  }
-
   GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingOn(), SetProfileTime(MODEL_PRE_PROC_START));
-  Status ret =
-    input_use_zero_copy ? CopyModelData(input_data, output_data, is_dynamic_batch) : CopyInputData(input_data, true);
+  Status ret = CopyModelData(input_data, output_data, is_dynamic_batch);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return INTERNAL_ERROR, "Copy input data to model failed.");
 
   GELOGI("current_data.index=%u", input_data.index);
@@ -3271,7 +3259,7 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
 
   if (!is_async_mode_) {
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingOn(), SetProfileTime(MODEL_AFTER_PROC_START));
-    ret = output_use_zero_copy ? SyncDataAndDump() : CopyOutputData(input_data.index, output_data);
+    ret = CopyOutputData(input_data.index, output_data);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return INTERNAL_ERROR, "Copy Output data to user failed.");
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingOn(), SetProfileTime(MODEL_AFTER_PROC_END));
   }
@@ -3344,17 +3332,6 @@ void DavinciModel::FreeWeightsMem() {
   }
 }
 
-uint32_t DavinciModel::GetGraphID(const std::string &session_graph_id) {
-  std::string session_id = "_";
-  auto pos = session_graph_id.find(session_id);
-  if (pos != std::string::npos) {
-    size_t graph_id_length = session_graph_id.length() - pos - session_id.length();
-    std::string graph_id = session_graph_id.substr(pos + session_id.length(), graph_id_length);
-    return static_cast<uint32_t>(std::strtol(graph_id.c_str(), nullptr, kDecimal));
-  }
-  return 0;
-}
-
 Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) {
   GELOGI("TransAllVarData start: session_id:%lu, graph_id: %u.", session_id_, graph_id);
   rtContext_t ctx = nullptr;
@@ -3387,6 +3364,7 @@ void DavinciModel::SetDataDumperArgs() {
   data_dumper_.SetModelName(name_);
   data_dumper_.SetModelId(model_id_);
   data_dumper_.SetMemory(runtime_param_);
+  data_dumper_.SetOmName(om_name_);
 
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);

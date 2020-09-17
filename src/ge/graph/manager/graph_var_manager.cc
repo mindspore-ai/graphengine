@@ -91,7 +91,7 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   std::string var_key = VarKey(var_name, tensor_desc);
   GELOGD("VarResource::SaveVarAddr, var_key = %s", var_key.c_str());
   if (var_addr_mgr_map_.count(var_key) == 0) {
-    uint64_t logic_address = VarManager::Instance(0)->GetVarMemLogicBase() +
+    uint64_t logic_address = VarManager::Instance(session_id_)->GetVarMemLogicBase() +
                              reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
     GELOGI("SaveVarAddr node_name %s, tensor_desc format %s, type %s.", var_name.c_str(),
            TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),

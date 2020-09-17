@@ -94,6 +94,8 @@ struct OmgContext {
   std::vector<std::pair<std::string, int32_t>> user_out_nodes;
   // net out nodes (where user_out_nodes or leaf nodes)
   std::vector<std::string> net_out_nodes;
+  // net out nodes top names(only caffe has top)
+  std::vector<std::string> out_top_names;
   // path for the aicpu custom operator so_file
   std::vector<std::string> aicpu_op_run_paths;
   // ddk version

@@ -450,11 +450,13 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
 
 Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                              vector<InputOutputDescInfo> &output_desc,
-                                             std::vector<uint32_t> &input_formats, std::vector<uint32_t> &out_formats) {
+                                             std::vector<uint32_t> &input_formats, std::vector<uint32_t> &out_formats,
+                                             bool new_model_desc) {
   try {
     auto model_manager = ge::ModelManager::GetInstance();
     GE_CHECK_NOTNULL(model_manager);
-    Status ret = model_manager->GetInputOutputDescInfo(model_id, input_desc, output_desc, input_formats, out_formats);
+    Status ret = model_manager->GetInputOutputDescInfo(model_id, input_desc, output_desc, input_formats, out_formats,
+                                                       new_model_desc);
     if (ret != SUCCESS) {
       GELOGE(ret, "GetInputOutputDescInfo  failed.");
       CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);

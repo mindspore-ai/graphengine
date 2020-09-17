@@ -84,7 +84,7 @@ class PropertiesManager {
   void AddDumpPropertyValue(const std::string &model, const std::set<std::string> &layers);
   std::set<std::string> GetAllDumpModel();
   std::set<std::string> GetDumpPropertyValue(const std::string &model);
-  bool IsLayerNeedDump(const std::string &model, const std::string &op_name);
+  bool IsLayerNeedDump(const std::string &model, const std::string &om_name, const std::string &op_name);
   void DeleteDumpPropertyValue(const std::string &model);
   void ClearDumpPropertyValue();
   bool QueryModelDumpStatus(const std::string &model);

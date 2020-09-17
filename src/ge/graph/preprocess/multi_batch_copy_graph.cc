@@ -44,6 +44,7 @@ const int kSwitchNPredIndex = 1;
 const int kDataOutIndex = 0;
 const int kDataInIndex = 0;
 const int kMergeDataOutIndex = 0;
+const int kStaticOutput = -1;
 const size_t kMaxShapesCount = 100;
 const size_t kMinShapesCount = 2;
 
@@ -947,15 +948,18 @@ Status GetDynamicOutputShape(ComputeGraphPtr &graph) {
     GELOGE(PARAM_INVALID, "Graph is null ,para is invalid");
     return PARAM_INVALID;
   }
-  for (auto &node : graph->GetAllNodes()) {
+  for (auto &node : graph->GetDirectNode()) {
     if (node->GetType() == NETOUTPUT) {
       auto netoutput_desc = node->GetOpDesc();
       auto inputnode_to_netoutput = node->GetInAllNodes();
+      std::vector<size_t> dynamic_output_index;
       for (size_t j = 0; j < inputnode_to_netoutput.size(); j++) {
         bool ret = false;
         (void)AttrUtils::GetBool(inputnode_to_netoutput.at(j)->GetOpDesc(), ATTR_INSERT_BY_MBATCH, ret);
         if (inputnode_to_netoutput.at(j)->GetType() == MERGE && ret) {
-          GELOGI("Find the merge node %s with mbatch attr", inputnode_to_netoutput.at(j)->GetName().c_str());
+          GELOGI("Find the merge node %s with mbatch attr and the index is %zu",
+                 inputnode_to_netoutput.at(j)->GetName().c_str(), j);
+          dynamic_output_index.emplace_back(j);
           for (size_t i = 0; i < inputnode_to_netoutput.at(j)->GetInNodes().size(); i++) {
             auto input_desc = inputnode_to_netoutput.at(j)->GetOpDesc();
             auto input_tensor_desc = input_desc->GetInputDesc(i);
@@ -967,6 +971,17 @@ Status GetDynamicOutputShape(ComputeGraphPtr &graph) {
         }
       }
       if (dynamic_output_dims.size() > 0) {
+        for (size_t k = 0; k < inputnode_to_netoutput.size(); k++) {
+          auto it = std::find(dynamic_output_index.begin(), dynamic_output_index.end(), k);
+          if (it != dynamic_output_index.end()) {
+            continue;
+          }
+          auto tensor_desc = netoutput_desc->GetInputDesc(k);
+          auto shape = tensor_desc.GetShape().ToString();
+          std::string static_output_shape = std::to_string(kStaticOutput) + "," + std::to_string(k) + "," + shape;
+          GELOGI("The static output shape msg is %s", static_output_shape.c_str());
+          dynamic_output_dims.emplace_back(static_output_shape);
+        }
         if (!AttrUtils::SetListStr(netoutput_desc, ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_dims)) {
           GELOGE(FAILED, "Set dynamic output dims attr failed");
           return FAILED;

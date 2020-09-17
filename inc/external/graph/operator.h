@@ -43,6 +43,7 @@
 #define DYNAMIC_INPUT_TD_NUM(name) ("__dynamic_input_" + name + "_cnt")
 
 namespace ge {
+class Operator;
 class OperatorImpl;
 class NamedAttrs;
 class Graph;
@@ -50,6 +51,7 @@ class AttrValue;
 
 using SubgraphBuilder = std::function<Graph()>;
 using OperatorImplPtr = std::shared_ptr<OperatorImpl>;
+using OperatorPtr = std::shared_ptr<Operator>;
 
 class OpIO;
 using OutHandler = std::shared_ptr<OpIO>;

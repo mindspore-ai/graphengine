@@ -39,6 +39,7 @@
 #include "ir_build/atc_ir_common.h"
 #include "omg/omg.h"
 #include "omg/parser/parser_factory.h"
+#include "omg/parser/parser_inner_ctx.h"
 #include "parser/common/register_tbe.h"
 #include "register/op_registry.h"
 #include "single_op_parser.h"
@@ -178,8 +179,6 @@ DEFINE_string(compress_weight_conf, "", "Optional; the config file to compress w
 
 DEFINE_string(enable_single_stream, "", "Optional; enable single stream. true: enable; false(default): disable");
 
-DEFINE_string(quant_optimize, "true", "Optional; enable quant optimize. true: enable; false(default): disable");
-
 DEFINE_string(log, "default", "Optional; generate atc log. Support debug, info, warning, error, null");
 
 DEFINE_string(dump_mode, "0", "Optional; generate infershape json,only support 1 , 0.");
@@ -203,10 +202,7 @@ class GFlagUtils {
       "arguments explain:\n"
       "  --model             Model file\n"
       "  --singleop          Single op definition file. atc will generate offline "
-      "model(s) for single op if --singleop is set. \n"
-      "                      Note: Only output, soc_verion, core_type, aicore_num, auto_tune_mode, precision_mode, "
-      "op_select_implmode, enable_small_channel, enable_compress_weight, compress_weight_conf "
-      "enable_single_stream and log are valid in this mode \n"
+      "model(s) for single op if --singleop is set.\n"
       "  --weight            Weight file. Required when framework is Caffe\n"
       "  --framework         Framework type(0:Caffe; 1:MindSpore; 3:Tensorflow)\n"
       "  --output            Output file path&name(needn't suffix, will add "
@@ -253,6 +249,9 @@ class GFlagUtils {
       "  --op_select_implmode    Set op select implmode. Support high_precision, high_performance."
       "default: high_performance\n"
       "disable\n"
+      "  --optypelist_for_implmode    Appoint which op to use op_select_implmode, used with op_select_implmode ."
+      "Separate multiple nodes with commas (,). Use double quotation marks (\") to enclose each argument."
+      "E.g.: \"node_name1,node_name2\"\n"
       "  --head_stream       Add head stream. 0(default): disable; 1: enable\n"
       "  --soc_version       The soc version. E.g.: \"Ascend310\"\n"
       "  --core_type         Set core type AiCore or VectorCore. VectorCore: use vector core. "
@@ -270,8 +269,7 @@ class GFlagUtils {
       "Use double quotation marks (\") to enclose each argument."
       "E.g: \"imagesize1_height,imagesize1_width;imagesize2_height,imagesize2_width\"\n"
       "  --auto_tune_mode    Set tune mode. E.g.: \"GA,RL\", support configure multiple, spit by ,\n"
-      "  --enable_single_stream    Enable single stream. true: enable; false(default): disable\n"
-      "  --quant_optimize Enable quant optimize. true(default): enable; false: disable\n");
+      "  --enable_single_stream    Enable single stream. true: enable; false(default): disable\n");
 
     gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
     // Using gflags to analyze input parameters
@@ -656,11 +654,34 @@ void LoadCustomOpLib() {
 
   std::vector<OpRegistrationData> registrationDatas = OpRegistry::Instance()->registrationDatas;
   for (OpRegistrationData reg_data : registrationDatas) {
-    bool ret = ge::OpRegistrationTbe::Instance()->Finalize(reg_data);
-    if (ret) {
-      OpRegistry::Instance()->Register(reg_data);
+    if (reg_data.GetFrameworkType() == static_cast<domi::FrameworkType>(FLAGS_framework)) {
+      bool ret = ge::OpRegistrationTbe::Instance()->Finalize(reg_data);
+      if (ret) {
+        (void)OpRegistry::Instance()->Register(reg_data);
+      }
     }
   }
+}
+
+void SaveCustomCaffeProtoPath() {
+  GELOGI("Enter save custom caffe proto path.");
+  string customop_path;
+
+  const char *path_env = std::getenv("ASCEND_OPP_PATH");
+  if (path_env != nullptr) {
+    std::string path = path_env;
+    customop_path = path + "/framework/custom/caffe/";
+    GELOGI("Get custom proto path from env : %s", path_env);
+    ge::GetParserContext().custom_proto_path = customop_path;
+    return;
+  }
+  std::string path_base = ge::GELib::GetPath();
+  GELOGI("path_base is %s", path_base.c_str());
+  path_base = path_base.substr(0, path_base.rfind('/'));
+  path_base = path_base.substr(0, path_base.rfind('/') + 1);
+  customop_path = path_base + "ops/framework/custom/caffe/";
+  ge::GetParserContext().custom_proto_path = customop_path;
+  return;
 }
 
 #endif
@@ -850,6 +871,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     atc_params.insert(std::pair<string, string>("is_output_adjust_hw_layout", FLAGS_is_output_adjust_hw_layout));
     atc_params.insert(std::pair<string, string>("compress_weight_conf", FLAGS_compress_weight_conf));
     atc_params.insert(std::pair<string, string>(string(ge::OUTPUT_DATATYPE), FLAGS_output_type));
+    atc_params.insert(std::pair<string, string>("output", output));
 
     Status ret =
       ParseGraph(graph, atc_params, FLAGS_model.c_str(), FLAGS_weight.c_str(), (domi::FrameworkType)FLAGS_framework,
@@ -982,6 +1004,8 @@ domi::Status GenerateOmModel() {
   // Load custom operator Library
   LoadCustomOpLib();
 
+  SaveCustomCaffeProtoPath();
+
   ret = ge::CheckCustomAiCpuOpLib();
 
   GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "check custom aicpu run so failed!");
@@ -1042,8 +1066,6 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::GRAPH_MEMORY_MAX_SIZE), kGraphMemoryManagerMallocMaxSize));
 
   options.insert(std::pair<string, string>(string(ge::ENABLE_SINGLE_STREAM), FLAGS_enable_single_stream));
-
-  options.insert(std::pair<string, string>(string(ge::QUANT_OPTIMIZE), FLAGS_quant_optimize));
 
   SetDynamicBatchSizeOrImagesizeOptions();
 

@@ -208,6 +208,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> Propertie
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::IsLayerNeedDump(const std::string &model,
+                                                                                         const std::string &om_name,
                                                                                          const std::string &op_name) {
   std::lock_guard<std::mutex> lock(dump_mutex_);
   // if dump all
@@ -216,9 +217,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::IsLayer
   }
 
   // if this model need dump
-  auto model_iter = model_dump_properties_map_.find(model);
-  if (model_iter != model_dump_properties_map_.end()) {
+  auto om_name_iter = model_dump_properties_map_.find(om_name);
+  auto model_name_iter = model_dump_properties_map_.find(model);
+  if (om_name_iter != model_dump_properties_map_.end() || model_name_iter != model_dump_properties_map_.end()) {
     // if no dump layer info, dump all layer in this model
+    auto model_iter = om_name_iter != model_dump_properties_map_.end() ? om_name_iter : model_name_iter;
     if (model_iter->second.empty()) {
       return true;
     }

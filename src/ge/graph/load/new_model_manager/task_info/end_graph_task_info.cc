@@ -47,7 +47,8 @@ Status EndGraphTaskInfo::Distribute() {
   GE_CHECK_NOTNULL(davinci_model_);
   auto all_dump_model = PropertiesManager::Instance().GetAllDumpModel();
   if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
-      all_dump_model.find(davinci_model_->Name()) != all_dump_model.end()) {
+      all_dump_model.find(davinci_model_->Name()) != all_dump_model.end() ||
+      all_dump_model.find(davinci_model_->OmName()) != all_dump_model.end()) {
     GELOGI("Start to call rtEndGraphEx");
     rtError_t rt_ret = rtEndGraphEx(model_, stream_, kDumpFlag);
     if (rt_ret != RT_ERROR_NONE) {

@@ -389,8 +389,8 @@ Status AippOp::SetDefaultParams() {
     GELOGI("parse aipp params:input_format:%s, csc_switch:%d.",
            domi::AippOpParams::InputFormat_Name(aipp_params_->input_format()).c_str(), aipp_params_->csc_switch());
 
-    GELOGI("parse aipp params:mean_chn_0:%d, mean_chn_1:%d, mean_chn_2:%d.", aipp_params_->mean_chn_0(),
-           aipp_params_->mean_chn_1(), aipp_params_->mean_chn_2());
+    GELOGI("parse aipp params:mean_chn_0:%d, mean_chn_1:%d, mean_chn_2:%d, mean_chn_3:%d.", aipp_params_->mean_chn_0(),
+           aipp_params_->mean_chn_1(), aipp_params_->mean_chn_2(), aipp_params_->mean_chn_3());
 
     GELOGI("parse aipp params:min_chn_0:%f, min_chn_1:%f, min_chn_2:%f.", aipp_params_->min_chn_0(),
            aipp_params_->min_chn_1(), aipp_params_->min_chn_2());

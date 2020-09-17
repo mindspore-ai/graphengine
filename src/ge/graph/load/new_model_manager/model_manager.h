@@ -178,7 +178,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status GetInputOutputDescInfo(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
                                     std::vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &inputFormats,
-                                    std::vector<uint32_t> &outputFormats);
+                                    std::vector<uint32_t> &outputFormats, bool new_model_desc = false);
   ///
   /// @ingroup ge
   /// @brief Get dynamic batch_info

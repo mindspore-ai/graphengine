@@ -501,6 +501,7 @@ OpDescPtr TransOpWithoutReshapeFusionPass::GetCastOp(const GeTensorDesc &cast_in
   cast_op_name << "fusion_cast_op_" << fusion_cast_op_count++;
   auto node_op = ge::OperatorFactory::CreateOperator(cast_op_name.str(), CAST);
   auto cast_op = ge::OpDescUtils::GetOpDescFromOperator(node_op);
+  node_op.BreakConnect();
   if (cast_op == nullptr) {
     GELOGE(INTERNAL_ERROR, "new cast op failed!");
     return nullptr;

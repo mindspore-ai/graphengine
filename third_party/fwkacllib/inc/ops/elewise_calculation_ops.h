@@ -1029,9 +1029,9 @@ REG_OP(BesselI1e)
 * y: A Tensor of type UnaryDataType.
 
 * @attention Constraints:
-* @li "base" is supposed to be greater than 0. Retaining the default \n
+* @li "base" is supposed to be greater than 0. Retaining the default
 * value "-1" sets "base" to "e".
-* @li If the input value of operator Log is within the range (0, 0.01] or \n
+* @li If the input value of operator Log is within the range (0, 0.01] or
 * [0.95, 1.05], the output accuracy is subject to change.
 
 * @par Third-party framework compatibility
@@ -1047,11 +1047,11 @@ REG_OP(Log)
     .OP_END_FACTORY_REG(Log)
 
 /**
-* @brief Returns x1 * x2 element-wise.\n
+* @brief Returns x1 * x2 element-wise.
 * y = x1 * x2
 
 * @par Inputs:
-* @li x1: A Tensor. Must be one of the following types: float16, float32,\n
+* @li x1: A Tensor. Must be one of the following types: float16, float32,
 * float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128.
 * @li x2: A Tensor. Must be one of the following types: float16, float32,
 * float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128.
@@ -1079,7 +1079,7 @@ REG_OP(Mul)
     .OP_END_FACTORY_REG(Mul)
 
 /**
-* @brief Computes the gradient of the square root of "x" with regard to its\n
+* @brief Computes the gradient of the square root of "x" with regard to its
 * input. grad = dy * 0.5/y, where y = sqrt(x), and "dy" is the corresponding
 * input gradient.
 
@@ -3022,6 +3022,7 @@ REG_OP(CosineEmbeddingLoss)
 *@brief Kullback-Leibler divergence.
 
 *@par Inputs:
+* Two inputs, including:
 *@li x: Tensor of arbitrary shape.
 *@li target: Tensor of the same shape and dtype as x.
 

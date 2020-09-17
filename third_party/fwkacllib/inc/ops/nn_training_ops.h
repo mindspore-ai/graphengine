@@ -41,7 +41,7 @@ namespace ge {
 *@li beta1: A scalar. Has the same type as "var".
 *@li beta2: A scalar. Has the same type as "var".
 *@li epsilon: A scalar. Has the same type as "var".
-*@li grad: A tensor for the gradient. Has the same type as "var". 
+*@li grad: A tensor for the gradient. Has the same type as "var".
 *
 *@par Attributes:
 * use_locking: An optional bool. Defaults to "False".
@@ -465,7 +465,7 @@ REG_OP(ApplyKerasMomentumD)
 
 
 /**
-*@brief Updates '*var' according to the Adam algorithm..
+*@brief Updates '*var' according to the Adam algorithm.
 *   lr_t := {learning_rate} * sqrt{1 - beta_2^t} / (1 - beta_1^t)
 *   m_t := beta_1 * m_{t-1} + (1 - beta_1) * g
 *   v_t := beta_2 * v_{t-1} + (1 - beta_2) * g * g
@@ -866,7 +866,7 @@ REG_OP(ApplyCenteredRMSProp)
     .OUTPUT(var, TensorType::NumberType())
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ApplyCenteredRMSProp)
-	
+
 /**
 *@brief Updates "var" according to the centered RMSProp algorithm.
 *  The centered RMSProp algorithm uses an estimate of the centered second moment
@@ -1262,7 +1262,7 @@ REG_OP(DataFormatDimMap)
     .OP_END_FACTORY_REG(DataFormatDimMap)
 
 /**
-* @brief Implements stochastic gradient descent (optionally with momentum).\n
+* @brief Implements stochastic gradient descent (optionally with momentum).
 * Nesterov momentum is based on the formula from
 * On the importance of initialization and momentum in deep learning.\n
 
@@ -1508,7 +1508,7 @@ REG_OP(ApplyProximalAdagradD)
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".\n
 *     If "True", updating of the var and accum tensors will be protected by a lock; \n
-*     If "False", the behavior is undefined, but may exhibit less contention. 
+*     If "False", the behavior is undefined, but may exhibit less contention.
 
 *@par Outputs:
 *var: A mutable Tensor. Has the same type as "var".
@@ -2172,13 +2172,13 @@ REG_OP(SparseApplyFtrl)
 * Should be a Variable Tensor.
 * @li grad: A Tensor of the same type as "var", for the gradient.
 * @li indices: A vector of indices into the first dimension of var and accum.
+
+* @par Attributes:
 * @li lr: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
 * @li l1: A Tensor of the same type as "var", for L1 regulariation. Must be a scalar.
 * @li l2: A Tensor of the same type as "var", for L2 regulariation. Must be a scalar.
 * @li lr_power: A Tensor of the same type as "var", for the scaling factor. Must be a scalar.
-
-* @par Attributes:
-* use_locking: An optional bool. Defaults to "False".
+* @li use_locking: An optional bool. Defaults to "False".
 * If "True", updating of the "var" and "accum" tensors will be
 * protected by a lock; otherwise the behavior is undefined,
 * but may exhibit less contention.
@@ -2314,6 +2314,7 @@ REG_OP(SparseApplyFtrlV2D)
 *    var <- var - mom\n
 *
 * @par Inputs:
+* Nine inputs, including:
 * @li var: A mutable tensor. Must be one of the data types defined in\n
 * TensorType::NumberType(). Should be from a Variable().
 * @li ms: A mutable tensor. Must have the same type as "var". Should be from a
@@ -2367,6 +2368,7 @@ REG_OP(SparseApplyRMSProp)
 *     var <- var - mom
 *
 * @par Inputs:
+* Six inputs, including:
 * @li var: A mutable tensor. Must be one of the data types defined in
 * TensorType::NumberType(). Should be from a Variable().
 * @li ms: A mutable tensor. Must have the same type as "var". Should be from a
@@ -2418,6 +2420,7 @@ REG_OP(SparseApplyRMSPropD)
 *    accum_update <- rho() * accum_update + (1 - rho()) * update.square()\n
 *
 * @par Inputs:
+* Eight inputs, including:
 * @li var: A mutable tensor. Must be one of the data types defined in\n
 * TensorType::NumberType(). Should be from a Variable().
 * @li accum: A mutable tensor. Must have the same type as "var". Should be from a
@@ -2468,6 +2471,7 @@ REG_OP(SparseApplyAdadelta)
 *    accum_update <- rho() * accum_update + (1 - rho()) * update.square()\n
 *
 * @par Inputs:
+* Seven inputs, including:
 * @li var: A mutable tensor. Must be one of the data types defined in
 * TensorType::NumberType(). Should be from a Variable().
 * @li accum: A mutable tensor. Must have the same type as "var". Should be from a

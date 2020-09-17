@@ -21,7 +21,7 @@
 #include <mutex>
 #include <queue>
 #include <set>
-#include "array_ops.h"
+#include "./array_ops.h"
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -931,7 +931,7 @@ OperatorImplPtr Operator::GetOperatorImplPtr() const { return operator_impl_; }
 
 void Operator::BreakConnect() const {
   if (operator_impl_ == nullptr) {
-    GELOGE(GRAPH_FAILED, "operator impl is nullptr.");
+    GELOGW("operator impl is nullptr.");
     return;
   }
   operator_impl_->ClearInputLinks();
@@ -1318,6 +1318,8 @@ class GraphBuilderImpl {
       string type = src_op_impl->op_desc_->GetType();
       auto node_op = ge::OperatorFactory::CreateOperator("node_op", type);
       auto tensor_desc = ge::OpDescUtils::GetOpDescFromOperator(node_op);
+      node_op.BreakConnect();
+
       GE_CHK_BOOL_EXEC(tensor_desc != nullptr, continue, "tensor_desc is null.");
       if ((tensor_desc->GetInputsSize() == 0 && tensor_desc->GetOutputsSize() > 0) || type == DATA ||
           type == VARIABLE || type == INITDATA || type == GETNEXT) {
@@ -1542,6 +1544,7 @@ void GraphUtils::BreakConnect(const std::map<OperatorImplPtr, NodePtr> &all_node
     }
     op_impl->ClearOutputLinks();
     op_impl->ClearInputLinks();
+    OperatorKeeper::GetInstance().CheckOutOperator(op_impl);
   }
 }
 }  // namespace ge

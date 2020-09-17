@@ -1,5 +1,5 @@
 LOCAL_PATH := $(call my-dir)
-
+include $(LOCAL_PATH)/stub/Makefile
 COMMON_LOCAL_SRC_FILES := \
     proto/fusion_model.proto \
     proto/optimizer_priority.proto \
@@ -352,6 +352,28 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
+
+include $(BUILD_HOST_SHARED_LIBRARY)
+
+#compiler for host infer
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := stub/libge_compiler
+
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -O2
+LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP
+ifeq ($(DEBUG), 1)
+LOCAL_CFLAGS += -g -O0
+endif
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+
+LOCAL_SRC_FILES := ../../out/atc/lib64/stub/ge_ir_build.cc
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
 
 include $(BUILD_HOST_SHARED_LIBRARY)
 

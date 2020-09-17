@@ -31,6 +31,7 @@ class ShapeRefiner {
   static graphStatus InferShapeAndType(const NodePtr &node, bool before_subgraph);
   static graphStatus InferShapeAndType(const NodePtr &node);
   static graphStatus InferShapeAndType(const ConstNodePtr &node, Operator &op);
+  static void ClearContextMap();
 
  private:
   static void PrintInOutTensorShape(const ge::NodePtr &node, const std::string &phase);

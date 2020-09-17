@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "common/debug/log.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
@@ -28,6 +29,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "graph/utils/attr_utils.h"
+#include "graph/utils/tensor_utils.h"
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping_info.pb.h"
 #include "runtime/mem.h"
@@ -106,6 +108,7 @@ void DataDumper::SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_
 }
 
 void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
+  GELOGI("Start to save data %s message", node->GetName().c_str());
   if (node != nullptr) {
     auto input_op_desc = node->GetOpDesc();
     if (input_op_desc == nullptr) {
@@ -126,6 +129,7 @@ void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
           {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
       }
     }
+    GELOGI("Save data message successfully");
   }
 }
 
@@ -159,30 +163,39 @@ void DataDumper::SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::s
       return;
     }
 
-    GELOGI("Save input dump task %s, id: %u.", data_op->GetName().c_str(), task_id);
+    int64_t data_size = 0;
+    if (AttrUtils::GetInt(input_tensor, ATTR_NAME_INPUT_ORIGIN_SIZE, data_size)) {
+      GELOGI("Get aipp data size according to attr is %ld", data_size);
+    } else if (TensorUtils::GetTensorSizeInBytes(*input_tensor, data_size) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Get input size filed");
+      return;
+    }
+
+    GELOGI("Save input dump task %s, id: %u,stream id :%u,data size :%ld", data_op->GetName().c_str(), task_id,
+           stream_id, data_size);
     op_list_.push_back({task_id, stream_id, data_op, args, false, inner_input_mapping.input_anchor_index,
-                        inner_input_mapping.output_anchor_index, input_tensor->GetShape().GetDims()});
+                        inner_input_mapping.output_anchor_index, input_tensor->GetShape().GetDims(), data_size});
   }
 }
 
 static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uintptr_t loop_cond,
                                  aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (step_id != 0) {
-    GELOGI("step_id exist.");
+    GELOGI("step_id exists.");
     op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
   } else {
     GELOGI("step_id is null.");
   }
 
   if (loop_per_iter != 0) {
-    GELOGI("loop_per_iter exist.");
+    GELOGI("loop_per_iter exists.");
     op_mapping_info.set_iterations_per_loop_addr(static_cast<uint64_t>(loop_per_iter));
   } else {
     GELOGI("loop_per_iter is null.");
   }
 
   if (loop_cond != 0) {
-    GELOGI("loop_cond exist.");
+    GELOGI("loop_cond exists.");
     op_mapping_info.set_loop_cond_addr(static_cast<uint64_t>(loop_cond));
   } else {
     GELOGI("loop_cond is null.");
@@ -211,10 +224,19 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
         output.mutable_shape()->add_dim(dim);
       }
 
+      int64_t output_size = 0;
+      if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Get output size filed");
+        return PARAM_INVALID;
+      }
+      GELOGI("Get output size in dump is %ld", output_size);
       std::string origin_name;
       int32_t origin_output_index = -1;
       (void)AttrUtils::GetStr(&output_descs.at(i), ATTR_NAME_DATA_DUMP_ORIGIN_NAME, origin_name);
       (void)AttrUtils::GetInt(&output_descs.at(i), ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX, origin_output_index);
+      GE_IF_BOOL_EXEC(output_size <= 0, GELOGE(PARAM_INVALID, "Output size %ld is less than zero", output_size);
+                      return PARAM_INVALID)
+      output.set_size(output_size);
       output.set_original_name(origin_name);
       output.set_original_output_index(origin_output_index);
       output.set_original_output_format(static_cast<int32_t>(output_descs.at(i).GetOriginFormat()));
@@ -247,6 +269,10 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
   int32_t origin_output_index = -1;
   (void)AttrUtils::GetStr(output_tensor, ATTR_NAME_DATA_DUMP_ORIGIN_NAME, origin_name);
   (void)AttrUtils::GetInt(output_tensor, ATTR_NAME_DATA_DUMP_ORIGIN_OUTPUT_INDEX, origin_output_index);
+  GE_IF_BOOL_EXEC(inner_dump_info.data_size <= 0,
+                  GELOGE(PARAM_INVALID, "The size of data %ld is less than zero", inner_dump_info.data_size);
+                  return PARAM_INVALID)
+  output.set_size(inner_dump_info.data_size);
   output.set_original_name(origin_name);
   output.set_original_output_index(origin_output_index);
   output.set_original_output_format(static_cast<int32_t>(output_tensor->GetOriginFormat()));
@@ -283,6 +309,17 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
       input.mutable_shape()->add_dim(dim);
     }
 
+    int64_t input_size = 0;
+    if (AttrUtils::GetInt(&input_descs.at(i), ATTR_NAME_INPUT_ORIGIN_SIZE, input_size)) {
+      GELOGI("Get aipp input size according to attr is %ld", input_size);
+    } else if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Get input size filed");
+      return PARAM_INVALID;
+    }
+    GELOGI("Get input size in dump is %ld", input_size);
+    GE_IF_BOOL_EXEC(input_size <= 0, GELOGE(PARAM_INVALID, "Input size %ld is less than zero", input_size);
+                    return PARAM_INVALID;)
+    input.set_size(input_size);
     input.set_address(static_cast<uint64_t>(inner_dump_info.args + sizeof(void *) * i));
     task.mutable_input()->Add(std::move(input));
   }
@@ -323,7 +360,7 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
   }
 
   load_flag_ = true;
-  GELOGI("LoadDumpInfo success, proto size: %zu.", proto_size);
+  GELOGI("LoadDumpInfo success, proto size is: %zu.", proto_size);
   return SUCCESS;
 }
 
@@ -360,11 +397,12 @@ Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_
     return RT_FAILED;
   }
   load_flag_ = false;
-  GELOGI("UnloadDumpInfo success, proto size: %zu.", proto_size);
+  GELOGI("UnloadDumpInfo success, proto size is: %zu.", proto_size);
   return SUCCESS;
 }
 Status DataDumper::LoadDumpInfo() {
-  PrintCheckLog();
+  std::string dump_list_key;
+  PrintCheckLog(dump_list_key);
 
   if (op_list_.empty()) {
     return SUCCESS;
@@ -374,12 +412,13 @@ Status DataDumper::LoadDumpInfo() {
 
   auto dump_path = PropertiesManager::Instance().GetDumpOutputPath();
   op_mapping_info.set_dump_path(PropertiesManager::Instance().GetDumpOutputPath() + std::to_string(device_id_) + "/");
-  op_mapping_info.set_model_name(model_name_);
+  op_mapping_info.set_model_name(dump_list_key);
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(PropertiesManager::Instance().GetDumpStep());
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGD("Dump step in load dump info is %s", PropertiesManager::Instance().GetDumpStep().c_str());
+  GELOGI("Dump step is %s and dump path  is %s in load dump info", PropertiesManager::Instance().GetDumpStep().c_str(),
+         dump_path.c_str());
 
   for (const auto &op_iter : op_list_) {
     aicpu::dump::Task task;
@@ -441,7 +480,7 @@ void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
   if (PropertiesManager::Instance().GetDumpMode() == kDumpOutput ||
       PropertiesManager::Instance().GetDumpMode() == kDumpInput ||
       PropertiesManager::Instance().GetDumpMode() == kDumpAll) {
-    GELOGI("add end_graph_info to aicpu, task_id is %u, stream_id is %u", end_graph_task_id_, end_graph_stream_id_);
+    GELOGI("Add end_graph_info to aicpu, task_id is %u, stream_id is %u", end_graph_task_id_, end_graph_stream_id_);
     aicpu::dump::Task task;
     task.set_end_graph(true);
     task.set_task_id(end_graph_task_id_);
@@ -477,7 +516,7 @@ Status DataDumper::UnloadDumpInfo() {
   return SUCCESS;
 }
 
-void DataDumper::PrintCheckLog() {
+void DataDumper::PrintCheckLog(string &dump_list_key) {
   std::set<std::string> model_list = PropertiesManager::Instance().GetAllDumpModel();
   if (model_list.empty()) {
     GELOGI("No model need dump.");
@@ -485,19 +524,21 @@ void DataDumper::PrintCheckLog() {
   }
 
   GELOGI("%zu op need dump in %s.", op_list_.size(), model_name_.c_str());
-  if (model_list.find(ge::DUMP_ALL_MODEL) == model_list.end()) {
-    if (model_list.find(model_name_) == model_list.end()) {
+  bool not_find_by_omname = model_list.find(om_name_) == model_list.end();
+  bool not_find_by_modelname = model_list.find(model_name_) == model_list.end();
+  if (model_list.find(DUMP_ALL_MODEL) == model_list.end()) {
+    if (not_find_by_omname && not_find_by_modelname) {
       std::string model_list_str;
       for (auto &model : model_list) {
         model_list_str += "[" + model + "].";
       }
 
-      GELOGW("Model %s not be set to dump, dump list: %s", model_name_.c_str(), model_list_str.c_str());
+      GELOGW("Model %s will not be set to dump, dump list: %s", model_name_.c_str(), model_list_str.c_str());
       return;
     }
   }
-
-  std::set<std::string> config_dump_op_list = PropertiesManager::Instance().GetDumpPropertyValue(model_name_);
+  dump_list_key = not_find_by_omname ? model_name_ : om_name_;
+  std::set<std::string> config_dump_op_list = PropertiesManager::Instance().GetDumpPropertyValue(dump_list_key);
   std::set<std::string> dump_op_list;
   for (auto &inner_dump_info : op_list_) {
     // oplist value OpDescPtr is not nullptr
@@ -506,7 +547,7 @@ void DataDumper::PrintCheckLog() {
 
   for (auto &dump_op : config_dump_op_list) {
     if (dump_op_list.find(dump_op) == dump_op_list.end()) {
-      GELOGW("Op %s set to dump but not exist in model %s or not a valid op.", dump_op.c_str(), model_name_.c_str());
+      GELOGW("Op %s set to dump but not exist in model %s or not a valid op.", dump_op.c_str(), dump_list_key.c_str());
     }
   }
 }

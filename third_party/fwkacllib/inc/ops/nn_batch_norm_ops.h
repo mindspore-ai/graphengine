@@ -361,14 +361,14 @@ REG_OP(BatchNormGradExt2)
 *@par Inputs:
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum: An optional string, input x's Scale factor
+*@li variance: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the variance used for inference.
+*@li momentum:  A Tensor of type float32 or float16, represents the mean and the variance's scale factor
 *@li scale: An optional tensor of type float16 or float32, no use
 *@li offset: An optional tensor of type float16 or float32, no use
 *@par Attributes:
 *@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional input, not use
+*@li mode: An optional attr, not use
 *@par Outputs:\n
 *@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
 */
@@ -391,7 +391,7 @@ REG_OP(BNInference)
 
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum: An optional float, input x's Scale factor
+*@li momentum: A Tensor of type float32 or float16, the mean and the variance's Scale factor
 *@par Attributes:
 *@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
@@ -420,13 +420,13 @@ REG_OP(BnHost)
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC or NCHW for 4D or NC1HWC0 for 5D.
 *@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
 *@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum: An optional float, input x's Scale factor
 *@li scale: An optional tensor of type float16 or float32, no use
 *@li offset: An optional tensor of type float16 or float32, no use
 *@par Attributes:
+*@li momentum: An optional float32 num, represents the mean and the variance's scale factor
 *@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
 *@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional inpout, not use
+*@li mode: An optional attr, not use
 *@par Outputs:\n
 *@li y: A 4D or 5D Tensor of type float16 or float32 for the normalized "x"
 */

@@ -121,6 +121,8 @@ const std::string NEW_AIPP_CONV_OP = "new_conv_op_for_aipp";
 const std::string ATTR_NAME_AIPP_INPUTS = "_aipp_inputs";
 const std::string ATTR_NAME_AIPP_OUTPUTS = "_aipp_outputs";
 
+const std::string ATTR_NAME_INPUT_DIMS = "input_dims";
+
 const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
 const std::string ATTR_NAME_PARENT_GRAPH_NAME = "_parent_graph_name";
 
@@ -154,6 +156,7 @@ const std::string ATTR_NAME_RTSWITCH_RECV_EVENT_ID = "rtswitch_event_id";
 const std::string ATTR_NAME_AUTOMIC_ADD_START = "automic_add_addr_start";
 const std::string ATTR_NAME_AUTOMIC_ADD_MEM_SIZE = "automic_add_mem_size";
 const std::string ATTR_NAME_DYNAMIC_OUTPUT_DIMS = "_dynamic_output_dims";
+const std::string ATTR_NAME_INPUT_ORIGIN_SIZE = "input_origin_size";
 
 // To be deleted
 const std::string ATTR_TO_BE_DELETED = "to_be_deleted";

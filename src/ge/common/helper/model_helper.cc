@@ -184,7 +184,8 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
   // Model
   ModelPtr model_ptr = ge::MakeShared<ge::Model>();
   GE_CHECK_NOTNULL_EXEC(model_ptr, return MEMALLOC_FAILED);
-  model_ptr->SetName(compute_graph->GetName());
+  std::string original_model_name = compute_graph->GetName() + "_original";
+  model_ptr->SetName(original_model_name);
   model_ptr->SetGraph(graph);
   model_ptr->SetVersion(static_cast<uint32_t>(OM_PROTO_VERSION));
   string framework_version;
@@ -503,5 +504,37 @@ Status ModelHelper::ReleaseLocalModelData() noexcept {
     model_len_tmp_ = 0;
   }
   return result;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetBaseNameFromFileName(const string &file_name,
+                                                                                             string &base_name) {
+  GELOGD("Get base_name from file, file_name:%s", file_name.c_str());
+  GE_CHK_BOOL_EXEC_WARN(!file_name.empty(), return FAILED, "File path may not valid, check params --output");
+  size_t start_position = 0;
+  // using output as base_name (ignore ".om")
+  size_t filename_suffixes = 3;
+  if (file_name.find_last_of('/') != string::npos) {
+    start_position = file_name.find_last_of('/') + 1;
+  }
+  size_t end_position = file_name.length() - filename_suffixes;
+  base_name = file_name.substr(start_position, end_position - start_position);
+  GE_CHK_BOOL_EXEC_WARN(!base_name.empty(), return FAILED, "Get base_name failed, check params --output");
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
+ModelHelper::GetModelNameFromMergedGraphName(const string &graph_name, string &model_name) {
+  GELOGD("Get model_name from graph_name, graph_name:%s", graph_name.c_str());
+  // this can only be used after merged graph(graph name will be append with "_x", x is index);
+  GE_CHK_BOOL_EXEC_WARN(!graph_name.empty(), return FAILED, "File path may not valid, check params --output");
+  size_t start_position = 0;
+  size_t end_position = graph_name.length();
+  // using graph as model_name (ignore "_x", x is the index of graph)
+  if (graph_name.find_last_of('_') != string::npos) {
+    end_position = graph_name.find_last_of('_');
+  }
+  model_name = graph_name.substr(start_position, end_position);
+  GE_CHK_BOOL_EXEC_WARN(!model_name.empty(), return FAILED, "Get model_name failed, check params --output");
+  return SUCCESS;
 }
 }  // namespace ge

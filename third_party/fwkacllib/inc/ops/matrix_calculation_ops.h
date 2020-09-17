@@ -93,31 +93,49 @@ REG_OP(MatMulV2)
 
 *@par Inputs:
 *Five inputs, including:
-*@li a: A matrix Tensor. 4D. Must be one of the following types:\n float16, int8. Has format [FRACTAL_NZ].
-*@li b: A matrix Tensor. 4D. Must be one of the following types:\n float16, int8. When type is int8, has format [FRACTAL_Z], \n otherwise has format [FRACTAL_NZ].
-*@li c: A matrix Tensor. 2D or higher. Must be one of the following types: \n float16, int32, float32. When type is int32, has format [ND], \n otherwise has format [FRACTAL_NZ].
-*@li alpha: A 1D Tensor. The shape of alpha is [1].\n Must be one of the following types: float16, int32, float32. Has format [ND].
-*@li beta: A 1D Tensor. The shape of beta is [1].\n Must be one of the following types: float16, int32, float32. Has format [ND].
+*@li a: A matrix Tensor. Must be one of the following types: float16, int8.
+* Has format [ND, FRACTAL_NZ]. 2D(ND) or 4D(FRACTAL_NZ).
+*@li b: A matrix Tensor. Must be one of the following types: float16, int8.
+* Has format [ND, FRACTAL_NZ, FRACTAL_Z]. 2D(ND) or 4D(FRACTAL_NZ, FRACTAL_Z).
+*@li c: A matrix Tensor. Must be one of the following types: float16, int32,
+* float32. has format [ND, FRACTAL_NZ]. 2D(ND) or 4D(FRACTAL_NZ).
+*@li alpha: A 1D Tensor. The shape of alpha is [1].Must be one of the following
+* types: float16, int32, float32. Has format [ND].
+*@li beta: A 1D Tensor. The shape of beta is [1]. Must be one of the following
+* types: float16, int32, float32. Has format [ND].
+* The format of a, b, c has restriction:\n
+* When type of a is int8 and type of c is int32, the format of a, b, c should
+* all be ND, or a is FRACTAL_NZ and b is FRACTAL_Z and c is ND.\n
+* When type of a is int8 and type of c is float32, the format of a, b, c should
+* all be ND or a is FRACTAL_NZ and b is FRACTAL_Z and c is FRACTAL_NZ.\n
+* When type of a is float16 and type of c is float16, the format of a, b, c
+* should all be ND or FRACTAL_NZ.\n
+* When type of a is float16 and type of c is float32, the format of a, b, c
+* should all be ND or FRACTAL_NZ.
 
 *@par Attributes:
 *Two attributes, including:
-*@li transpose_a: Optional. A bool.\n If True, changes the shape of "a" from [M, K] to [K, M].\n Reserved parameters, not used for now.
-*@li transpose_b: Optional. A bool.\n If True, changes the shape of "b" from [M, K] to [K, M].\n Reserved parameters, not used for now.
+*@li transpose_a: Optional. A bool. If True, changes the shape of "a" from
+* [M, K] to [K, M].
+*@li transpose_b: Optional. A bool. If True, changes the shape of "b" from
+* [K, N] to [N, K].
 
 *@par Outputs:
-*@out: The result matrix Tensor. 4D. Must be one of the following types:\n float16, float32, int32. Has format [FRACTAL_NZ].
+*y: The result matrix Tensor. Must be one of the following types: float16,
+* float32, int32. Has format [ND, FRACTAL_NZ], the format should be equal to a.
+* 2D(ND) or 4D(FRACTAL_NZ).
 */
 
-REG_OP(Gemm)
+REG_OP(GEMM)
     .INPUT(a, TensorType({DT_FLOAT16, DT_INT8}))
     .INPUT(b, TensorType({DT_FLOAT16, DT_INT8}))
     .INPUT(c, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OUTPUT(out, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .ATTR(transpose_a, Bool, false)
     .ATTR(transpose_b, Bool, false)
-    .OP_END_FACTORY_REG(Gemm)
+    .OP_END_FACTORY_REG(GEMM)
 
 /**
 *@brief Multiplies matrix "a" by matrix "b", producing "a * b".

@@ -325,6 +325,12 @@ Status ModelManager::DeleteModel(uint32_t id) {
   auto it = model_map_.find(id);
   auto hybrid_model_it = hybrid_model_map_.find(id);
   if (it != model_map_.end()) {
+    uint64_t session_id = it->second->GetSessionId();
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id);
+    auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
+    if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
+      (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
+    }
     (void)model_map_.erase(it);
   } else if (hybrid_model_it != hybrid_model_map_.end()) {
     (void)hybrid_model_map_.erase(hybrid_model_it);
@@ -685,10 +691,13 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
 
 Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                             vector<InputOutputDescInfo> &output_desc,
-                                            std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats) {
+                                            std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats,
+                                            bool new_model_desc) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid Model ID %u !", model_id);
+
+  davinci_model->SetModelDescVersion(new_model_desc);
 
   return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
 }
@@ -820,6 +829,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       return FAILED;
     }
     davinci_model->SetDeviceId(device_id);
+    davinci_model->SetOmName(model.om_name);
 
     /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
     /// These session_ids come from the same model, so the values of session_id are the same.

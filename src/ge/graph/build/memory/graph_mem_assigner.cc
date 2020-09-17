@@ -446,6 +446,7 @@ Status GraphMemoryAssigner::AssignContinuousOutputMemory(const ge::NodePtr &node
     return ge::FAILED;
   }
 
+  memory_offset_[0].mem_offset_ += MEM_ALIGN_SIZE;
   for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     output_list[out_data_anchor->GetIdx()] = memory_offset_[0].mem_offset_;
     size_t pre_mem_offset = memory_offset_[0].mem_offset_;

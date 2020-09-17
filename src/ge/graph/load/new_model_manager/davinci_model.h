@@ -187,6 +187,8 @@ class DavinciModel {
   // model name
   string Name() { return name_; }
 
+  // om_name
+  string OmName() { return om_name_; }
   // version
   uint32_t Version() const { return version_; }
 
@@ -273,7 +275,7 @@ class DavinciModel {
   /// @brief For TVM Op, avoid Addr Reuse.
   /// @return void*
   ///
-  static const char *GetRegisterStub(const string &tvm_binfile_key, const string &session_graph_model_id = "");
+  const char *GetRegisterStub(const string &tvm_binfile_key, const string &session_graph_model_id = "");
 
   ///
   /// @ingroup ge
@@ -471,6 +473,9 @@ class DavinciModel {
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
   Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
                                    std::vector<InputOutputDims> &output_dims);
+  void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
+  // om file name
+  void SetOmName(string om_name) { om_name_ = om_name; }
 
  private:
   // memory address of weights
@@ -559,6 +564,8 @@ class DavinciModel {
   Status SyncDataAndDump();
 
   Status InitModelMem(void *dev_ptr, size_t memsize, void *weight_ptr, size_t weightsize);
+
+  void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
 
   Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats);
 
@@ -752,8 +759,6 @@ class DavinciModel {
 
   void CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputDescInfo &output, uint32_t &format_result);
 
-  uint32_t GetGraphID(const std::string &session_graph_id);
-
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
   Status CopyVarData(ComputeGraphPtr &graph);
 
@@ -771,6 +776,10 @@ class DavinciModel {
   uint32_t model_id_;
   uint32_t runtime_model_id_;
   string name_;
+
+  // used for inference data dump
+  string om_name_;
+
   uint32_t version_;
   GeModelPtr ge_model_;
 
@@ -860,8 +869,8 @@ class DavinciModel {
   std::set<uint32_t> hcom_streams_;
   RuntimeParam runtime_param_;
 
-  static std::mutex tvm_bin_mutex_;  // lock for tvm maps.
-  static std::set<std::string> tvm_bin_kernel_;
+  static std::mutex tvm_bin_mutex_;
+  std::set<std::string> tvm_bin_kernel_;
 
   std::map<std::string, uint32_t> used_tbe_handle_map_;
 
@@ -884,6 +893,7 @@ class DavinciModel {
   std::map<const void *, void *> knonw_output_data_info_;
 
   vector<uint64_t> batch_size_;
+  bool is_new_model_desc_{false};
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

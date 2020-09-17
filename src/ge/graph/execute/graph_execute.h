@@ -71,7 +71,7 @@ class GraphExecutor {
 
   static Status GetInputOutputDescInfo(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
                                        vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &input_formats,
-                                       std::vector<uint32_t> &output_formats);
+                                       std::vector<uint32_t> &output_formats, bool new_model_desc = false);
 
   static Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 

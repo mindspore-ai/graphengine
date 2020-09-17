@@ -46,6 +46,8 @@ class ModelHelper {
 
   static Status TransModelToGeModel(const ModelPtr& model, GeModelPtr& ge_model);
   static Status TransGeModelToModel(const GeModelPtr& geModelPtr, ModelPtr& modelPtr);
+  Status GetBaseNameFromFileName(const std::string& file_name, std::string& base_name);
+  Status GetModelNameFromMergedGraphName(const std::string& graph_name, std::string& model_name);
 
  private:
   bool is_assign_model_ = false;

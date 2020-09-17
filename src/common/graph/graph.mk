@@ -1,5 +1,5 @@
 LOCAL_PATH := $(call my-dir)
-
+include $(LOCAL_PATH)/stub/Makefile
 COMMON_LOCAL_SRC_FILES := \
     ./proto/om.proto \
     ./proto/ge_ir.proto \
@@ -85,6 +85,29 @@ LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_HOST_SHARED_LIBRARY)
 
+#compiler for host
+include $(CLEAR_VARS)
+LOCAL_MODULE := stub/libgraph
+
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CPPFLAGS += -fexceptions
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES  := \
+    ../../out/atc/lib64/stub/graph.cc \
+    ../../out/atc/lib64/stub/operator.cc \
+    ../../out/atc/lib64/stub/tensor.cc \
+    ../../out/atc/lib64/stub/operator_factory.cc \
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+LOCAL_MULTILIB := 64
+LOCAL_PROPRIETARY_MODULE := true
+
+include $(BUILD_HOST_SHARED_LIBRARY)
 
 #compiler for device
 include $(CLEAR_VARS)
@@ -111,6 +134,32 @@ LOCAL_PROPRIETARY_MODULE := true
 
 include $(BUILD_SHARED_LIBRARY)
 
+#compiler for device
+include $(CLEAR_VARS)
+LOCAL_MODULE := stub/libgraph
+
+LOCAL_CFLAGS += -O2
+
+LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES  := \
+    ../../out/atc/lib64/stub/graph.cc \
+    ../../out/atc/lib64/stub/operator.cc \
+    ../../out/atc/lib64/stub/tensor.cc \
+    ../../out/atc/lib64/stub/operator_factory.cc \
+
+
+LOCAL_SHARED_LIBRARIES :=
+
+LOCAL_LDFLAGS := -lrt -ldl
+
+ifeq ($(device_os),android)
+LOCAL_LDFLAGS := -ldl
+endif
+
+LOCAL_MULTILIB := 64
+LOCAL_PROPRIETARY_MODULE := true
+
+include $(BUILD_SHARED_LIBRARY)
 
 # compile for ut/st
 include $(CLEAR_VARS)

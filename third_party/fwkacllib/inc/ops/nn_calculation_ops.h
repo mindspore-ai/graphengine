@@ -62,7 +62,7 @@ namespace ge {
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
 * Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
-* stride_h + 32 * filter_h) * ceil(Wi, 16) �?l1_size and Hf*Wf �?l0b_size/512.\n
+* stride_h + 32 * filter_h) * ceil(Wi, 16) <= l1_size and Hf*Wf <= l0b_size/512.
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2DBackpropFilter.
@@ -119,7 +119,7 @@ REG_OP(DepthwiseConv2DBackpropFilter)
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
 * Limited by Tiling and L1 / L0 buffer memory: 512 * ceil(Wo, 16) + (480 *
-* stride_h + 32 * filter_h) * ceil(Wi, 16) �?l1_size and Hf*Wf �?l0b_size/512.\n
+* stride_h + 32 * filter_h) * ceil(Wi, 16) <= l1_size and Hf*Wf <= l0b_size/512.
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2DBackpropFilter.
@@ -178,7 +178,7 @@ REG_OP(DepthwiseConv2DBackpropFilterD)
 * Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 �?C0, where max_h_in_l1 = (l1_size - Hf *
+* Limited by Tiling: max_h_in_l1 >= C0, where max_h_in_l1 = (l1_size - Hf *
 * Wf * C0 * C0 * 2) / (2 * Wo *C0).\n
 
 * @par Third-party framework compatibility
@@ -235,7 +235,7 @@ REG_OP(DepthwiseConv2DBackpropInput)
 * Output backprop is 4D with shape [N, C, Ho, Wo] or [N, Ho, Wo, C], but the
 * data is 5D with shape [N, C1, Ho, Wo, C0],
 * where C is the same as that of the feature map and C0 is 16.\n
-* Limited by Tiling: max_h_in_l1 �?C0, where max_h_in_l1 = (l1_size - Hf *
+* Limited by Tiling: max_h_in_l1 >= C0, where max_h_in_l1 = (l1_size - Hf *
 * Wf * C0 * C0 * 2) / (2 * Wo *C0).\n
 
 * @par Third-party framework compatibility
@@ -459,45 +459,44 @@ REG_OP(Conv2DBackpropInputD)
 *@brief Computes the Deconvolution with respect to the input.
 *@par Inputs:
  * Three inputs:
- * @li x: A Tensor. Must have the same type as "filter". 4D with shape
- * [batch, out_height, out_width, out_channels]
- * or [batch, out_channels, out_height, out_width]. Gradients with respect
+ * @li x: A Tensor of type float16 or int8.  4D with shape
+ * [batch, out_channels, out_height, out_width]. Gradients with respect
  * to the output of the convolution.
- * @li filter: A Tensor of type float16.
- * 4D with shape [filter_height, filter_width, in_channels, out_channels],
- * or [out_channels, filter_height, filter_width, in_channels],
- * or [out_channels, in_channel, filter_height, filter_width].
+ * @li filter: A Tensor. Must have the same type as "x".
+ * 4D with shape [out_channels, in_channel, filter_height, filter_width].\n
  * Two optional inputs:
- * @li bias: An optional tensor of type float16
- * @li offset_w: An optional 1D tensor for quantized deconvolution. Reserved.\n
+ * @li bias: An optional tensor. Must have the same type as "y".
+ * @li offset_w: An optional 1D tensor for quantized deconvolution.
+ * Type is int8. Reserved.\n
 *@par Attributes:
  * Six attributes:
  * @li strides: A tuple or list of 2 integers. The stride of the sliding window
  * for H/W dimension.
  * @li pads: A tuple or list of 4 integers. The [top, bottom, left, right]
- * padding on the feature map
+ * padding on the feature map.
  * @li dilations: A tuple or list of 4 integers. The dilation factor for each
  * dimension of input. Must be [1, 1, 1, 1].
- * @li groups: Number of blocked connections from input channels to \n
- output channels.
- * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to "NHWC".\n
+ * @li groups: Number of blocked connections from input channels to
+ output channels. Defaults to "1".
+ * @li data_format: An optional string from: "NCHW". Defaults to "NCHW". \n
   Specify the data format of the input and output data.
- * @li offset_x: An optional integer for quantized deconvolution.
+ * @li offset_x: An optional integer for quantized deconvolution. Defaults to "0".
 *@par Outputs:
- * y: A Tensor. Has the same type as "filter". 4D tensor with shape
- * [batch, height, width, channels] or [batch, channels, height, width].
+ * y: A Tensor. 4D tensor with shape [batch, channels, height, width].
+ * When type of x is float16, the type of y must be float16.
+ * When type of x is int8, the type of y must be int32.
 */
 REG_OP(Deconvolution)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
-    .ATTR(strides, ListInt, {1, 1, 1, 1})
-    .ATTR(pads, ListInt, {0, 0, 0, 0})
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(groups, Int, 1)
-    .ATTR(data_format, String, "NHWC")
+    .ATTR(data_format, String, "NCHW")
     .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(Deconvolution)
 /**
@@ -554,7 +553,7 @@ REG_OP(Conv2DBackpropFilter)
  * @li groups: Number of blocked connections from input channels to output channels.
  * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to "NHWC". Specify the data format of the input and output data.
 *@par Outputs:
- * y: A Tensor. Has the same type as x
+ * y: A Tensor. Type is float32
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv2d_backprop_filter
 */
@@ -586,8 +585,6 @@ REG_OP(Conv2DBackpropFilterD)
                |---------|---------|---------|----------|--------
                | float32 | float32 | float32 | _        | float32
                |---------|---------|---------|----------|--------
-               | float64 | float64 | float64 | _        | float64
-               |---------|---------|---------|----------|--------
                | int8    | int8    | int32   | int8     | int32
     -----------|---------|---------|---------|----------|--------
      Format    | NCHW    | NCHW    | ND      | ND       | NCHW
@@ -607,7 +604,7 @@ REG_OP(Conv2DBackpropFilterD)
 * for dilated convolution. Has the same dimension order and value as "strides".
 * @li groups: Number of blocked connections from input channels to output
 * channels. Input channels and output channels must both be divisible by
-* "groups". Must be set to 1.
+* "groups".
 * @li offset_x: An optional integer for quantized convolution.
 * @li data_format: An optional string from: "NHWC", "NCHW". Specifying the
 * data format of the input and output images. Reserved.
@@ -642,7 +639,7 @@ REG_OP(Conv2DBackpropFilterD)
 * @verbatim
      Output           | Restrictions
     ------------------|----------------------------------------------
-     W dimension == 1 | HxW(input) == HxW(filter) == 1x1,2x2...11x11.
+     W dimension == 1 | HxW(input) == HxW(filter)
      H dimension == 1 |
     ------------------|----------------------------------------------
      W dimension == 1 | Not supported
@@ -659,11 +656,11 @@ REG_OP(Conv2DBackpropFilterD)
 *@li Compatible with the Caffe operator 2D "Convolution".
 */
 REG_OP(Conv2D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})

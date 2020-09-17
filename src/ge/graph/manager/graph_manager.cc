@@ -396,8 +396,6 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   if (save_ret != SUCCESS) {
     GELOGW("Fail to save cache.");
   }
-  // release rts generate context
-  RtContextUtil::GetInstance().DestroyrtContexts();
   GEEVENT("[GEPERFTRACE] GE PreRun End");
   return SUCCESS;
 }
@@ -420,6 +418,8 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
     ret = IncreBuild(graph_node, ge_model);
     if (ret != SUCCESS) {
       ret = PreRun(graph_node, inputs, ge_root_model, session_id);
+      // release rts generate context
+      RtContextUtil::GetInstance().DestroyrtContexts();
       if (ret != SUCCESS) {
         GELOGE(ret, "PreRun Failed.");
         return ret;
@@ -2165,6 +2165,8 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       GeModelPtr ge_model = nullptr;
       if (graph_manager->IncreBuild(graph_node, ge_model) != SUCCESS) {
         ret = graph_manager->PreRun(graph_node, ge_inputs, ge_root_model, args.session_id);
+        // release rts generate context
+        RtContextUtil::GetInstance().DestroyrtContexts();
         if (ret != SUCCESS) {
           graph_node->SetRunFlag(false);
           ReturnError(graph_manager, args.callback, ret, "PreRun Failed, thread exit..");

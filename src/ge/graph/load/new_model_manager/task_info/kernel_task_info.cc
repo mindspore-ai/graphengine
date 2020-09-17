@@ -63,7 +63,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     return ret;
   }
 
-  domi::KernelDef kernel_def = task_def.kernel();
+  const domi::KernelDef &kernel_def = task_def.kernel();
   block_dim_ = kernel_def.block_dim();
   args_size_ = kernel_def.args_size();
   // get opcontext stored in model
@@ -92,7 +92,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   string session_graph_model_id;
   davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
   // get bin_file_key
-  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
+  const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
   if (kernel_type_ == cce::ccKernelType::CCE_AI_CORE) {
     rtError_t rt_ret;
@@ -494,7 +494,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   // When inferencing, stub_func_ is different from dynamic-registration to runtime, and needs to be modified.
   string session_graph_model_id;
   davinci_model_->GetUniqueId(op_desc, session_graph_model_id);
-  const char *bin_file_key = DavinciModel::GetRegisterStub(op_desc->GetName(), session_graph_model_id);
+  const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc->GetName(), session_graph_model_id);
   rtError_t rt_ret = rtQueryFunctionRegistered(const_cast<char *>(bin_file_key));
   if (rt_ret != RT_ERROR_NONE) {
     stub_func_ = const_cast<char *>(bin_file_key);
@@ -549,7 +549,8 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     return FAILED;
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
+  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                    op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + offset;
   }
@@ -818,7 +819,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return RT_FAILED;
   }
 
-  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), op_desc->GetName())) {
+  if (PropertiesManager::Instance().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                    op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }

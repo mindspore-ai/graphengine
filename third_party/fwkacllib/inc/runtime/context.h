@@ -100,6 +100,14 @@ RTS_API rtError_t rtCtxGetCurrent(rtContext_t *ctx);
 
 /**
  * @ingroup rt_context
+ * @brief returns the primary context of device.
+ * @param [out] ctx   returned context
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtGetPriCtxByDeviceId(int32_t device, rtContext_t *ctx);
+
+/**
+ * @ingroup rt_context
  * @brief returns the device ID for the current context
  * @param [out] device   returned device id
  * @return RT_ERROR_NONE for ok

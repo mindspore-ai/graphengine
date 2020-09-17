@@ -818,7 +818,9 @@ graphStatus OpDesc::InferShapeAndType() {
     }
   }
   Operator op_proxy = ge::OpDescUtils::CreateOperatorFromOpDesc(shared_from_this());
-  return (graphStatus)infer_func_(op_proxy);
+  graphStatus ret = (graphStatus)infer_func_(op_proxy);
+  op_proxy.BreakConnect();
+  return ret;
 }
 
 graphStatus OpDesc::DefaultInferFormat() {
@@ -863,12 +865,14 @@ graphStatus OpDesc::DefaultInferFormat() {
 }
 
 graphStatus OpDesc::OpVerify() {
-  Operator op_proxy = ge::OpDescUtils::CreateOperatorFromOpDesc(shared_from_this());
   if (verifier_func_ == nullptr) {
     verifier_func_ = OperatorFactoryImpl::GetVerifyFunc(GetType());
   }
   if (verifier_func_ != nullptr) {
-    return (graphStatus)verifier_func_(op_proxy);
+    Operator op_proxy = ge::OpDescUtils::CreateOperatorFromOpDesc(shared_from_this());
+    graphStatus ret = (graphStatus)verifier_func_(op_proxy);
+    op_proxy.BreakConnect();
+    return ret;
   }
   return GRAPH_SUCCESS;
 }

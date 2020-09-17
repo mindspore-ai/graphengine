@@ -219,7 +219,7 @@ REG_OP(MaxPool3D)
 * @attention Constraints:
 * @li Computing gradients of global pooling is not supported, which means
 * "ksize < x1".
-* @li "ksiez" is in the range [1, 255]. "strides" is in the range [1, 63]
+* @li "ksize" is in the range [1, 255]. "strides" is in the range [1, 63]
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator MaxPoolGrad.
@@ -239,10 +239,9 @@ REG_OP(MaxPoolGrad)
 * @brief Computes second-order gradients of the maxpooling function.
 
 * @par Inputs:
-* @li x1: Original forward input tensor. Supported type:float, double, int32,
- * uint8, int16, int8, int64, uint16, half, uint32, uint64.
-* @li x2: Has the same type and format as input "x1".
-* @li grad:Has the same type and format as input "x1".
+* @li x1: Original forward input tensor of type RealNumberType
+* @li x2: Original forward output tensor of type RealNumberType
+* @li grad: Gradient tensor of type RealNumberType
 
 * @par Attributes:
 * @li ksize: A required list or tuple,
@@ -258,9 +257,12 @@ REG_OP(MaxPoolGrad)
 * @li "x1" and "grads" must have the same shape.
 * @li "x2" and "y" must have the same shape. Otherwise, an error is reported.
 * @li "x1", "x2", "grads", and "y" must be 5D tensors.
+* @li ksize[H] and ksize[W] is in the range [1, 255].
+* @li strides[H] and strides[W] is in the range [1, 63].
+* @li Other dimensions of ksize and strides is 1.
 
 * @par Outputs:
-* @li y: Has the same type and format as input "x1".
+* @li y: Result tensor of type RealNumberType
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator MaxPoolGradGrad.
@@ -399,18 +401,15 @@ REG_OP(MaxPoolGradWithArgmax)
 * @brief Computes second-order gradients of the maxpooling function.
 
 * @par Inputs:
-* @li x: Original forward input tensor. Supported type: float, double, int32,
- * uint8, int16, int8, int64, uint16, half, uint32, uint64.
-* @li grad: Gradient tensor. Supported type: float, double, int32,
- * uint8, int16, int8, int64, uint16, half, uint32, uint64.
-* @li argmax: An tensor of type int32 or int64.
+* @li x: Original forward input tensor of type RealNumberType
+* @li grad: Gradient tensor of type RealNumberType
+* @li argmax: An tensor of type IndexNumberType
 * @par Attributes:
 * @li ksize: A required list, specifying the size of the sliding window.
 * @li strides: A required list, specifying the stride of the sliding window.
 * @li padding: A required string, window sliding mode. Either SAME or VALID.
 * @par Outputs:
-* @li y:Result tensor. Supported type: float, double, int32,
- * uint8, int16, int8, int64, uint16, half, uint32, uint64
+* @li y:Result tensor of type RealNumberType
 
 * @attention Constraints:
 * @li Only the cloud platform is supported.

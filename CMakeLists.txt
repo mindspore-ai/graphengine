@@ -20,7 +20,7 @@ add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  ${PROJECT_BINARY_DIR})
 set(GE_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(GE_PROTO_DIR ${GE_SOURCE_DIR}/src)
+set(GE_PROTO_DIR ${GE_SOURCE_DIR}/)
 
 if (NOT BUILD_PATH)
     set(BUILD_PATH "${CMAKE_SOURCE_DIR}/build")
@@ -112,19 +112,19 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILE__='\"$(subst $(realpath ${CMAKE
 
 # compile libraries from following directories
 # libgraph is compiled in any situation
-add_subdirectory(${GE_SOURCE_DIR}/src/common/graph)
+add_subdirectory(${GE_SOURCE_DIR}/metadef/graph)
 if(ENABLE_D)
     # if MindSpore compiles in D mode, compile the following libraries
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/common)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/ge_runtime)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/common)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/ge_runtime)
 elseif(GE_ONLY)
     # standalone GraphEngine compiles all following libraries
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/common)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/ge_runtime)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/ge_local_engine)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/graph/build/memory)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/)
-    add_subdirectory(${GE_SOURCE_DIR}/src/ge/plugin/engine)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/common)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/ge_runtime)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/ge_local_engine)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/graph/build/memory)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/)
+    add_subdirectory(${GE_SOURCE_DIR}/ge/plugin/engine)
 endif()
 
 # if (ENABLE_GE_COV OR ENABLE_GE_UT OR ENABLE_GE_ST)

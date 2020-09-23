@@ -22,7 +22,7 @@ file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/insert_op.proto"
         "../../proto/op_mapping_info.proto"
         "../../proto/ge_ir.proto"
-        "../proto/dump_task.proto"
+        "../../proto/dump_task.proto"
         )
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}

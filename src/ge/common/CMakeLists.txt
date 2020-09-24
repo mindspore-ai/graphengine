@@ -27,6 +27,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "context/ctx.cc"
         "cust_aicpu_kernel_store.cc"
         "debug/memory_dumper.cc"
+        "dump/dump_properties.cc"
         "fmk_error_codes.cc"
         "formats/format_transfers/datatype_transfer.cc"
         "formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"

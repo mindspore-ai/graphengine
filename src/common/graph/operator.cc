@@ -1504,7 +1504,9 @@ class GraphBuilderImpl {
           GE_CHK_BOOL_EXEC(dst_anchor != nullptr, return GRAPH_FAILED, "GetInDataAnchor failed.");
 
           auto ret = GraphUtils::AddEdge(src_anchor, dst_anchor);
-          GE_CHK_BOOL_EXEC(ret == GRAPH_SUCCESS, return GRAPH_FAILED, "AddEdge failed.");
+          GE_CHK_BOOL_EXEC(ret == GRAPH_SUCCESS, return GRAPH_FAILED,
+                           "from node[%s][%d] to node[%s][%d]AddEdge failed.", src_node_ptr->GetName().c_str(),
+                           src_anchor->GetIdx(), dst_node_info->second->GetName().c_str(), dst_anchor->GetIdx());
         }
       }
       auto out_control_anchor = src_node_ptr->GetOutControlAnchor();
@@ -1536,19 +1538,23 @@ inline bool HasSameNameNode(const ComputeGraphPtr &compute_graph) {
   for (const auto &graph : compute_graph->GetAllSubgraphs()) {
     std::set<string> node_names;
     for (auto const &node : graph->GetDirectNode()) {
-      node_names.insert(node->GetName());
-    }
-
-    if (node_names.size() != graph->GetDirectNodesSize()) {
-      return true;
+      auto result = node_names.insert(node->GetName());
+      if (!result.second) {
+        GELOGE(GRAPH_FAILED, "graph %s has same name node%s", graph->GetName().c_str(), node->GetName().c_str());
+        return true;
+      }
     }
   }
 
   std::set<string> node_names;
   for (auto const &node : compute_graph->GetDirectNode()) {
-    node_names.insert(node->GetName());
+    auto result = node_names.insert(node->GetName());
+    if (!result.second) {
+      GELOGE(GRAPH_FAILED, "graph %s has same name node%s", compute_graph->GetName().c_str(), node->GetName().c_str());
+      return true;
+    }
   }
-  return node_names.size() != compute_graph->GetDirectNodesSize();
+  return false;
 }
 
 ComputeGraphPtr GraphUtils::CreateGraphFromOperator(const string &name, const vector<ge::Operator> &inputs) {

@@ -23,6 +23,7 @@
 #include <mutex>
 
 #include "common/op/ge_op_utils.h"
+#include "common/util/error_manager/error_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "init/gelib.h"
@@ -82,6 +83,8 @@ Status EnginePlacer::Run() {
       // If can't get op's engine name, keep check support finish and return failed
       if (engine_name.empty()) {
         is_check_support_success = false;
+        ErrorManager::GetInstance().ATCReportErrMessage("E13003", {"opname", "optype"},
+                                                        {op_desc->GetName(), op_desc->GetType()});
         GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Can not find engine of op type %s",
                node_ptr->GetOpDesc()->GetType().c_str());
         continue;

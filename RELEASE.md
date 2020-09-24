@@ -1,3 +1,22 @@
+# Release 1.0.0
+
+## Major Features and Improvements
+* Automatically dump the input and output of the abnormal operator when the network execution is abnormal;
+* Realize dynamic multi-batch based on GotoLabel;
+* Optimize the performance of dynamic shape；
+* The dynamic resolution feature supports new scene that the network has multiple inputs and the shape of each input is different.
+
+## Bugfixes 
+* Fixed the issue that the input and output data of the AICPU operator cannot be dumped in the single-operator execution scenario.
+* Fixed the execution fails in the custom AICPU operator cascading scenario.
+* Fixed the issue that in the dynamic batch+dynamic AIPP scenario, the getinputformat and getinputdims parameters are inconsistent.
+
+
+## Thanks to our Contributors
+Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
+
+Contributions of any kind are welcome!
+
 # Release 0.7.0-beta
 
 ## Major Features and Improvements

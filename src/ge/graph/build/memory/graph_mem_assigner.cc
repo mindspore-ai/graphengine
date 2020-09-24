@@ -227,7 +227,10 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, size_t &mem_offse
   if (mem_offset > VarManager::Instance(session_id)->GetGraphMemoryMaxSize()) {
     GELOGE(ge::FAILED, "Current memoffset %zu is greater than memory manager malloc max size %zu", mem_offset,
            VarManager::Instance(session_id)->GetGraphMemoryMaxSize());
-    ErrorManager::GetInstance().ATCReportErrMessage("E19022");
+    ErrorManager::GetInstance().ATCReportErrMessage(
+      "E19022", {"size", "item", "maxsize"},
+      {std::to_string(mem_offset), "featuremap",
+       std::to_string(VarManager::Instance(session_id)->GetGraphMemoryMaxSize())});
     return ge::FAILED;
   }
   return SUCCESS;
@@ -908,6 +911,8 @@ Status GraphMemoryAssigner::AssignAtomicOutputAndWorkspaceMemory(const ge::NodeP
       GELOGE(ret, "Assign atomic workspace memory failed, node is %s.", node_op_desc->GetName().c_str());
       return ret;
     }
+  } else {
+    GELOGW("Current atomic node %s does not have attr ATOMIC_WORKSPACE_INFO.", node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -1452,14 +1457,56 @@ Status GraphMemoryAssigner::SetLoopGraphAtomicAttr(const ge::NodePtr &node, int6
   return SUCCESS;
 }
 
+ge::Status GraphMemoryAssigner::IsIndependentAtomicClean(const ge::NodePtr &node,
+                                                         bool &is_independent_atomic_clean_node) {
+  GE_CHECK_NOTNULL(node);
+  const auto &out_control_anchor = node->GetOutControlAnchor();
+  GE_CHECK_NOTNULL(out_control_anchor);
+  for (const auto &peer_in_control_anchor : out_control_anchor->GetPeerInControlAnchors()) {
+    if (peer_in_control_anchor != nullptr) {
+      auto peer_in_node = peer_in_control_anchor->GetOwnerNode();
+      auto peer_in_node_desc = peer_in_node->GetOpDesc();
+      if (peer_in_node_desc != nullptr) {
+        bool is_atomic_node = false;
+        // If GetBool fail, is_atomic_node is false.
+        (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATOMIC_ATTR_IS_ATOMIC_NODE, is_atomic_node);
+        if (is_atomic_node) {
+          vector<int> is_connect_netoutput;
+          // If GetBool fail, attr is_connect_netoutput is an empty vector.
+          (void)ge::AttrUtils::GetListInt(peer_in_node_desc, ATTR_NAME_NODE_CONNECT_OUTPUT, is_connect_netoutput);
+          if (!is_connect_netoutput.empty()) {
+            GELOGD("Peer in node %s is independent atomic clean node", peer_in_node->GetName().c_str());
+            is_independent_atomic_clean_node = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
 ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &n, const vector<int64_t> &atomic_mem_start,
                                                    const vector<int64_t> &atomic_mem_size) {
   for (ge::NodePtr &node : compute_graph_->GetAllNodes()) {
     auto node_op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
 
-    if (((n != nullptr) && (node->GetName() == n->GetName())) ||
-        ((n == nullptr) && (node_op_desc->GetType() == ATOMICADDRCLEAN))) {
+    bool is_valid_atomic_clean_node = (n != nullptr) && (node->GetName() == n->GetName());
+
+    if (((n == nullptr) && (node_op_desc->GetType() == ATOMICADDRCLEAN))) {
+      bool is_independent_atomic_clean = false;
+      if (IsIndependentAtomicClean(node, is_independent_atomic_clean) != SUCCESS) {
+        GELOGE(FAILED, "Failed to determine the connection relationship of atomic addr clean node.");
+        return PARAM_INVALID;
+      }
+
+      is_valid_atomic_clean_node = is_valid_atomic_clean_node || (!is_independent_atomic_clean);
+    }
+
+    if (is_valid_atomic_clean_node) {
+      GELOGD("Node %s, set atomic clean attr start.", node->GetName().c_str());
       vector<int64_t> workspace_vector = node_op_desc->GetWorkspace();
       vector<int64_t> workspace_byte_vector = node_op_desc->GetWorkspaceBytes();
       workspace_vector.insert(workspace_vector.end(), atomic_mem_start.begin(), atomic_mem_start.end());

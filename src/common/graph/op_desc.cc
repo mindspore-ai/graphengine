@@ -675,7 +675,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ConstGeTensorDescPtr OpDesc::GetI
     return nullptr;
   }
   if (inputs_desc_[index]->IsValid() != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "inputsDesc[%u] is InValid", index);
+    GELOGW("inputsDesc[%u] is InValid", index);
     return nullptr;
   } else {
     return inputs_desc_[static_cast<size_t>(index)];

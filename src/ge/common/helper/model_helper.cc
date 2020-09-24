@@ -41,7 +41,22 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
                                        const uint8_t *data, size_t size) {
   if (size < 1 || size > UINT32_MAX) {
     GELOGE(PARAM_INVALID, "Add model partition failed, partition size %zu invalid", size);
-    ErrorManager::GetInstance().ATCReportErrMessage("E19022");
+    if (size > UINT32_MAX) {
+      string item = "item";
+      if (type == MODEL_DEF) {
+        item = "model info";
+      } else if (type == WEIGHTS_DATA) {
+        item = "weight data";
+      } else if (type == TASK_INFO) {
+        item = "task info";
+      } else if (type == TBE_KERNELS) {
+        item = "tbe kernels";
+      } else if (type == CUST_AICPU_KERNELS) {
+        item = "aicpu kernels";
+      }
+      ErrorManager::GetInstance().ATCReportErrMessage("E19023", {"size", "item", "maxsize"},
+                                                      {std::to_string(size), item, std::to_string(UINT32_MAX)});
+    }
     return PARAM_INVALID;
   }
   if (data == nullptr) {
@@ -263,7 +278,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   }
 
   Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
-  if (ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_) != SUCCESS) {
+  if (status != SUCCESS) {
     GELOGE(status, "Parse model content failed!");
     return status;
   }

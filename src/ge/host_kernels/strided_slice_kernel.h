@@ -17,34 +17,33 @@
 #ifndef GE_GRAPH_PASSES_FOLDING_KERNEL_STRIDED_SLICE_KERNEL_H_
 #define GE_GRAPH_PASSES_FOLDING_KERNEL_STRIDED_SLICE_KERNEL_H_
 
+#include "inc/kernel.h"
 #include <vector>
 
-#include "inc/kernel.h"
-
 namespace ge {
-struct Attr {
-  int64_t begin_mask;
-  int64_t end_mask;
-  int64_t ellipsis_mask;
-  int64_t new_axis_mask;
-  int64_t data_type;
-  int64_t shrink_axis_mask;
-};
-
 class StridedSliceKernel : public Kernel {
  public:
   Status Compute(const OpDescPtr attr, const std::vector<ConstGeTensorPtr> &input,
                  vector<GeTensorPtr> &v_output) override;
 
  private:
-  Status CheckAndGetAttr(const OpDescPtr &attr, const std::vector<ConstGeTensorPtr> &input, Attr &args);
-  Status CheckWeight(const ConstGeTensorPtr &weight0, const ConstGeTensorPtr &weight1, const ConstGeTensorPtr &weight2,
-                     const ConstGeTensorPtr &weight3) const;
-  Status MaskCal(const bool &begin_mask_flag, const bool &end_mask_flag, const bool &shrink_mask_flag, int32_t &begin_i,
-                 int32_t &end_i, int32_t &dim_i) const;
-  void GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, const Attr &args,
-                     vector<int64_t> &v_dims);
-  Status CheckOutputDims(const std::vector<int64_t> &output_dims, const OpDescPtr attr);
+  Status CheckAndGetAttr(const OpDescPtr &attr);
+  Status CheckInputParam(const std::vector<ConstGeTensorPtr> &input) const;
+  Status InitParamWithAttrs(const std::vector<ConstGeTensorPtr> &input, std::vector<int64_t> &input_dims,
+                            std::vector<int64_t> &begin_vec, std::vector<int64_t> &output_dims,
+                            std::vector<int64_t> &stride_vec);
+  Status MaskCal(const size_t i, int64_t &begin_i, int64_t &end_i, int64_t &dim_i) const;
+  Status StrideCal(const int64_t x_dims_i, int64_t &begin_i, int64_t &end_i, int64_t &stride_i,
+                   int64_t &dim_final) const;
+  void ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_tensor, const size_t x_dims_num, vector<int64_t> &x_dims);
+
+  void GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, vector<int64_t> &v_dims);
+
+  map<string, uint32_t> attr_value_map_ = {{STRIDE_SLICE_ATTR_BEGIN_MASK, 0},
+                                           {STRIDE_SLICE_ATTR_END_MASK, 0},
+                                           {STRIDE_SLICE_ATTR_ELLIPSIS_MASK, 0},
+                                           {STRIDE_SLICE_ATTR_NEW_AXIS_MASK, 0},
+                                           {STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK, 0}};
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_FOLDING_KERNEL_STRIDED_SLICE_KERNEL_H_

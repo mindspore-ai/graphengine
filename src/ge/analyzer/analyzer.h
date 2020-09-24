@@ -24,6 +24,7 @@
 #include <mutex>
 #include <memory>
 #include <fstream>
+#include <atomic>
 
 #include "external/ge/ge_api_types.h"
 #include "graph/compute_graph.h"
@@ -181,6 +182,7 @@ class Analyzer {
   std::mutex file_mutex_;       // protect json_file_
   std::ofstream json_file_;
   std::string json_file_name_;
+  std::atomic_bool is_json_file_create_{false};
 };
 }  // namespace ge
 #endif  // DOMI_ANALYZER_ANANLYZER_H_

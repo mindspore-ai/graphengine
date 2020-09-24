@@ -68,7 +68,7 @@ graphStatus Node::Init() {
     return GRAPH_SUCCESS;
   }
   GE_CHK_BOOL_EXEC(op_ != nullptr, return GRAPH_FAILED, "original OpDesc is nullptr");
-  size_t size = op_->GetInputsSize();
+  size_t size = op_->GetAllInputsSize();
   for (size_t i = 0; i < size; i++) {
     std::shared_ptr<InDataAnchor> anchor = ComGraphMakeShared<InDataAnchor>(shared_from_this(), i);
     if (anchor == nullptr) {
@@ -305,13 +305,19 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus Node::AddLinkFrom(con
     GELOGE(GRAPH_FAILED, "add input desc failed.");
     return GRAPH_FAILED;
   }
-  std::shared_ptr<InDataAnchor> anchor = ComGraphMakeShared<InDataAnchor>(shared_from_this(), in_data_anchors_.size());
-  if (anchor == nullptr) {
-    GELOGE(GRAPH_FAILED, "out_anchor size is:%zu, malloc shared_ptr failed.", out_anchors.size());
-    return GRAPH_FAILED;
+
+  if (index < GetAllInDataAnchors().size()) {
+    (void)out_anchors.at(0)->LinkTo(in_data_anchors_[index]);
+  } else {
+    std::shared_ptr<InDataAnchor> anchor =
+      ComGraphMakeShared<InDataAnchor>(shared_from_this(), in_data_anchors_.size());
+    if (anchor == nullptr) {
+      GELOGE(GRAPH_FAILED, "out_anchor size is:%zu, malloc shared_ptr failed.", out_anchors.size());
+      return GRAPH_FAILED;
+    }
+    in_data_anchors_.push_back(anchor);
+    (void)out_anchors.at(0)->LinkTo(in_data_anchors_.back());
   }
-  in_data_anchors_.push_back(anchor);
-  (void)out_anchors.at(0)->LinkTo(in_data_anchors_.back());
 
   return GRAPH_SUCCESS;
 }
@@ -347,20 +353,30 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus Node::AddLinkFrom(con
   }
 
   GE_CHECK_NOTNULL(op_);
-  auto op_desc = input_node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-
-  if (op_->AddInputDesc(name, op_desc->GetOutputDesc(0)) != GRAPH_SUCCESS) {
+  auto input_op_desc = input_node->GetOpDesc();
+  GE_CHECK_NOTNULL(input_op_desc);
+  auto index = op_->GetInputIndexByName(name);
+  if (index != -1) {
+    if (index >= static_cast<int>(in_data_anchors_.size())) {
+      GELOGE(GRAPH_FAILED, "op %s get input name %s 's index %d is illegal.", op_->GetName().c_str(), name.c_str(),
+             index);
+      return GRAPH_FAILED;
+    }
+    (void)out_anchors.at(0)->LinkTo(in_data_anchors_[index]);
+  } else {
+    std::shared_ptr<InDataAnchor> anchor =
+      ComGraphMakeShared<InDataAnchor>(shared_from_this(), in_data_anchors_.size());
+    if (anchor == nullptr) {
+      GELOGE(GRAPH_FAILED, "in_data_anchors_size is:%zu, malloc shared_ptr failed.", in_data_anchors_.size());
+      return GRAPH_FAILED;
+    }
+    in_data_anchors_.push_back(anchor);
+    (void)out_anchors.at(0)->LinkTo(in_data_anchors_.back());
+  }
+  if (op_->AddInputDesc(name, input_op_desc->GetOutputDesc(0)) != GRAPH_SUCCESS) {
     GELOGE(GRAPH_FAILED, "add input desc failed.");
     return GRAPH_FAILED;
   }
-  std::shared_ptr<InDataAnchor> anchor = ComGraphMakeShared<InDataAnchor>(shared_from_this(), in_data_anchors_.size());
-  if (anchor == nullptr) {
-    GELOGE(GRAPH_FAILED, "out_anchor size is:%zu, malloc shared_ptr failed.", out_anchors.size());
-    return GRAPH_FAILED;
-  }
-  in_data_anchors_.push_back(anchor);
-  (void)out_anchors.at(0)->LinkTo(in_data_anchors_.back());
 
   return GRAPH_SUCCESS;
 }

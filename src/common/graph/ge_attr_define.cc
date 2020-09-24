@@ -123,6 +123,7 @@ const std::string ATTR_NAME_AIPP_OUTPUTS = "_aipp_outputs";
 
 const std::string ATTR_NAME_INPUT_DIMS = "input_dims";
 
+const std::string ATTR_NAME_GRAPH_HAS_BEEN_ADDED = "_graph_has_been_added";
 const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
 const std::string ATTR_NAME_PARENT_GRAPH_NAME = "_parent_graph_name";
 

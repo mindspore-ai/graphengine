@@ -118,13 +118,11 @@ bool ZeroCopyTask::CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_ad
  */
 Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, void *buffer_addr, const map<string, set<uintptr_t>> &batch_addrs,
                                      const string &batch_label) {
-  for (auto pair : task_addr_offset_) {
-    if (pair.first != addr) {
-      continue;
-    }
-
+  auto iter = task_addr_offset_.find(addr);
+  if (iter != task_addr_offset_.end()) {
+    auto &cur_pair = *iter;
     uint8_t *args_info = args_info_.data();
-    for (auto offset : pair.second) {
+    for (auto offset : cur_pair.second) {
       if (!CheckDynamicBatch(batch_addrs, batch_label, reinterpret_cast<uintptr_t>(args_addr_ + offset))) {
         continue;
       }

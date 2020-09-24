@@ -658,7 +658,7 @@ ComputeGraph::UpdateOutputMapping(const std::map<uint32_t, uint32_t> &output_map
     return GRAPH_FAILED;
   }
 
-  size_t num = op_desc->GetInputsSize();
+  size_t num = op_desc->GetAllInputsSize();
   for (size_t i = 0; i < num; i++) {
     GeTensorDesc tensor = op_desc->GetInputDesc(i);
     uint32_t cur_index = 0;

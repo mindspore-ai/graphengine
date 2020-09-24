@@ -254,6 +254,7 @@ OME_HOST_SRC_FILES := \
     single_op/stream_resource.cc                                         \
     single_op/single_op_manager.cc                                       \
     hybrid/hybrid_davinci_model_stub.cc                                  \
+    hybrid/node_executor/aicpu/aicpu_ext_info.cc                         \
     # graph/load/new_model_manager/task_info/hccl_task_info.cc
 
 OME_DEVICE_SRC_FILES := $(OME_HOST_SRC_FILES)
@@ -286,6 +287,7 @@ COMMON_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
+    $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \
     third_party/protobuf/include \
     third_party/opencv/include \
@@ -340,6 +342,7 @@ DEVICE_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi \
+    $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \
     third_party/protobuf/include \
     third_party/opencv/include \
@@ -368,6 +371,7 @@ LOCAL_SRC_FILES += $(BUILER_SRC_FILES)
 LOCAL_SRC_FILES += $(ANALYZER_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libadump_server_stub \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -432,6 +436,7 @@ LOCAL_C_INCLUDES := $(DEVICE_LOCAL_C_INCLUDES)
 LOCAL_C_INCLUDES += $(ANALYZER_LOCAL_INCLUDES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libadump_server_stub \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \

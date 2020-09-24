@@ -83,6 +83,10 @@ class ZeroCopyTask {
    */
   ge::Status DistributeParam(bool async_mode, rtStream_t stream);
 
+  void SetBatchLabel(const string &batch_label) { batch_label_ = batch_label; }
+
+  const string &GetBatchLabel() const { return batch_label_; }
+
  protected:
   bool CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_addrs, const string &batch_label, uintptr_t addr);
 
@@ -93,7 +97,7 @@ class ZeroCopyTask {
   const size_t args_size_;
   vector<uint8_t> args_info_;
   bool is_updated_;
-
+  string batch_label_;
   // <address from Op, {offset in args}>
   map<uintptr_t, vector<size_t>> task_addr_offset_;
 };

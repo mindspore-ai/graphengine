@@ -268,6 +268,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status DestroyAicpuSessionForInfer(uint32_t model_id);
 
+  ge::Status LoadCustAicpuSo(const OpDescPtr op_desc, string so_name);
+
+  ge::Status LaunchCustAicpuSo(const OpDescPtr op_desc, string so_name);
+
   ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
 
   ge::Status GenSessionId(uint64_t &session_id);
@@ -333,6 +337,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   uint64_t session_id_bias_;
   std::set<uint64_t> sess_ids_;
   std::vector<rtExceptionInfo> exception_infos_;
+  std::mutex cust_aicpu_mutex_;
+  std::set<std::string> cust_aicpu_so_;
 
   static DumpProperties dump_properties_;
 };

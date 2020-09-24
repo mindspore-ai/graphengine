@@ -19,16 +19,16 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include <unistd.h>
 #include <regex.h>
+#include <unistd.h>
 #include <algorithm>
 #include <climits>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
 
-#include "external/ge/ge_api_error_codes.h"
 #include "common/util/error_manager/error_manager.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_types.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -58,6 +58,7 @@ const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 const int kMaxFileSizeLimit = INT_MAX;
 const int kMaxBuffSize = 256;
 const char *const kPathValidReason = "The path can only contain 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
+constexpr uint32_t MAX_CONFIG_FILE_BYTE = 10 * 1024 * 1024;
 }  // namespace
 
 namespace ge {
@@ -481,5 +482,70 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
 
   regfree(&reg);
   return true;
+}
+
+FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
+  if (file_path == nullptr) {
+    GELOGE(PARAM_INVALID, "Config path is null.");
+    return false;
+  }
+  if (!CheckInputPathValid(file_path)) {
+    GELOGE(PARAM_INVALID, "Config path is invalid: %s", file_path);
+    return false;
+  }
+  // Normalize the path
+  std::string resolved_file_path = RealPath(file_path);
+  if (resolved_file_path.empty()) {
+    GELOGE(PARAM_INVALID, "Invalid input file path [%s], make sure that the file path is correct.", file_path);
+    return false;
+  }
+
+  mmStat_t stat = {0};
+  int32_t ret = mmStatGet(resolved_file_path.c_str(), &stat);
+  if (ret != EN_OK) {
+    GELOGE(PARAM_INVALID, "cannot get config file status, which path is %s, maybe not exist, return %d, errcode %d",
+           resolved_file_path.c_str(), ret, mmGetErrorCode());
+    return false;
+  }
+  if ((stat.st_mode & S_IFMT) != S_IFREG) {
+    GELOGE(PARAM_INVALID, "config file is not a common file, which path is %s, mode is %u", resolved_file_path.c_str(),
+           stat.st_mode);
+    return false;
+  }
+  if (stat.st_size > MAX_CONFIG_FILE_BYTE) {
+    GELOGE(PARAM_INVALID, "config file %s size[%ld] is larger than max config file Bytes[%u]",
+           resolved_file_path.c_str(), stat.st_size, MAX_CONFIG_FILE_BYTE);
+    return false;
+  }
+  return true;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CheckPath(const char *path, size_t length) {
+  if (path == nullptr) {
+    GELOGE(PARAM_INVALID, "Config path is invalid.");
+    return PARAM_INVALID;
+  }
+
+  if (strlen(path) != length) {
+    GELOGE(PARAM_INVALID, "Path is invalid or length of config path is not equal to given length.");
+    return PARAM_INVALID;
+  }
+
+  if (length == 0 || length > MMPA_MAX_PATH) {
+    GELOGE(PARAM_INVALID, "Length of config path is invalid.");
+    return PARAM_INVALID;
+  }
+
+  INT32 is_dir = mmIsDir(path);
+  if (is_dir != EN_OK) {
+    GELOGE(PATH_INVALID, "Open directory %s failed, maybe it is not exit or not a dir", path);
+    return PATH_INVALID;
+  }
+
+  if (mmAccess2(path, M_R_OK) != EN_OK) {
+    GELOGE(PATH_INVALID, "Read path[%s] failed, errmsg[%s]", path, strerror(errno));
+    return PATH_INVALID;
+  }
+  return SUCCESS;
 }
 }  //  namespace ge

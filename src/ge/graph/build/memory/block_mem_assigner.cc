@@ -1296,6 +1296,11 @@ void MergeBlocks(std::vector<MemoryBlock *> &dest, std::vector<MemoryBlock *> &s
       return;
     }
     if (dest[i] != nullptr && src[i] != nullptr) {
+      if (!dest[i]->reuse_mem_ || !src[i]->reuse_mem_) {
+        GELOGD("Diff batch's workspace can't be reused, i: %zu, dest[i]: %s, stream: %ld, src[i]: %s, stream: %ld.", i,
+               dest[i]->String().c_str(), dest[i]->stream_id_, src[i]->String().c_str(), src[i]->stream_id_);
+        continue;
+      }
       for (auto &symbol : src[i]->SymbolList()) {
         dest[i]->AddSymbol(symbol);
       }

@@ -68,7 +68,7 @@ class GELib {
   // get incre build cache path
   const std::string &GetIncreBuildCachePath() const { return incre_build_cache_path_; }
 
-  void InitProfiling(Options &options);
+  void InitProfiling(Options &options, bool convert_2_phy_device_id = false);
   void ShutDownProfiling();
 
   Status InitSystemWithoutOptions();

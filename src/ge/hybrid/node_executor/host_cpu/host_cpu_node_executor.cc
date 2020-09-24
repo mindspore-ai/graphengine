@@ -48,6 +48,7 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
   std::vector<ConstGeTensorPtr> inputs;
   for (int32_t i = 0; i < context.NumInputs(); ++i) {
     const auto &input_desc = op_desc->GetInputDesc(i);
+    GE_CHECK_NOTNULL(context.GetInput(i));
     auto in_tensor = MakeShared<GeTensor>(input_desc, reinterpret_cast<const uint8_t *>(context.GetInput(i)->GetData()),
                                           context.GetInput(i)->GetSize());
     GE_CHECK_NOTNULL(in_tensor);

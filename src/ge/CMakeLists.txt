@@ -58,6 +58,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 # need to remove dependencies on pb files later
 file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "analyzer/analyzer.cc"
+        "client/ge_prof.cc"
         "client/ge_api.cc"
         "common/dump/dump_manager.cc"
         "common/dump/dump_properties.cc"
@@ -225,6 +226,7 @@ target_link_libraries(ge_runner
         ${msprof}
         ${runtime}
         ${resouce}
+        ${ascend_hal}
         rt
         dl)
 
@@ -335,6 +337,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "host_kernels/unpack_kernel.cc"
         "host_kernels/unsqueeze_kernel.cc"
         "hybrid/hybrid_davinci_model_stub.cc"
+        "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
         "init/gelib.cc"
         "ir_build/atc_ir_common.cc"
         "ir_build/ge_ir_build.cc"

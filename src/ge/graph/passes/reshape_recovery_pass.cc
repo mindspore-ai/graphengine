@@ -50,9 +50,12 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
     GE_CHECK_NOTNULL(src_tensor);
     for (auto dst_anchor : src_anchor->GetPeerInDataAnchors()) {
       auto dst_node = dst_anchor->GetOwnerNode();
+      GELOGD("Try insert reshape between %s[%d] and %s[%d] to keep the shape continues", node->GetName().c_str(),
+             src_anchor->GetIdx(), dst_node->GetName().c_str(), dst_anchor->GetIdx());
       GE_CHECK_NOTNULL(dst_node);
       GE_CHECK_NOTNULL(dst_node->GetOpDesc());
       auto dst_tensor = dst_node->GetOpDesc()->GetInputDescPtr(dst_anchor->GetIdx());
+      GE_CHECK_NOTNULL(dst_tensor);
       bool is_need_insert_reshape = src_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
                                     dst_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
                                     src_tensor->GetShape().GetDims() != dst_tensor->GetShape().GetDims();

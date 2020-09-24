@@ -16,7 +16,6 @@
 
 #include "common/dump/dump_op.h"
 
-#include "aicpu/common/aicpu_task_struct.h"
 #include "common/dump/dump_manager.h"
 #include "common/ge/datatype_util.h"
 #include "framework/common/debug/ge_log.h"
@@ -28,6 +27,7 @@
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping_info.pb.h"
 #include "runtime/mem.h"
+#include "aicpu/common/aicpu_task_struct.h"
 
 namespace {
 const uint32_t kAicpuLoadFlag = 1;

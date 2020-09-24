@@ -15,10 +15,10 @@
 
 # libge_common.so
 file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "../../proto/om.proto"
-        "../../proto/ge_ir.proto"
-        "../../proto/task.proto"
-        "../../proto/insert_op.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/om.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/ge_ir.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/task.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/insert_op.proto"
         )
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}

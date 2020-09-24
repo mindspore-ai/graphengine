@@ -16,7 +16,7 @@
 # libge_local_engine.so
 # add all proto files, generate corresponding .h and .cc files
 file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "../../proto/task.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/task.proto"
         )
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}

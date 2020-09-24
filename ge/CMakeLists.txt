@@ -18,20 +18,20 @@
 # compiling proto files generates some warnings, use no-unused-variable to suppress them
 set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
 file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "../proto/fusion_model.proto"
-        "../proto/optimizer_priority.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/fusion_model.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/optimizer_priority.proto"
         )
 file(GLOB PROTO_CLIENT_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "../proto/ge_api.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/ge_api.proto"
         )
 file(GLOB PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "../proto/om.proto"
-        "../proto/task.proto"
-        "../proto/insert_op.proto"
-        "../proto/ge_ir.proto"
-        "../proto/fwk_adapter.proto"
-        "../proto/op_mapping_info.proto"
-        "../proto/dump_task.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/om.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/task.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/insert_op.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/ge_ir.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/fwk_adapter.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/op_mapping_info.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/dump_task.proto"
         )
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 ge_protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})

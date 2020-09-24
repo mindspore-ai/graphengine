@@ -18,6 +18,7 @@
 #define INC_OP_TILING_H_
 
 #include "external/register/register_types.h"
+#include "external/graph/tensor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/node.h"
 
@@ -73,7 +74,7 @@ struct OpRunInfo {
 
 
 using TeOpAttrArgs = std::vector<std::string>;
-using TeConstTensorData = std::tuple<const uint8_t*, size_t>;
+using TeConstTensorData = std::tuple<const uint8_t*, size_t, ge::Tensor>;
 
 struct TeOpParas {
     std::vector<TeOpTensorArg> inputs;
@@ -94,6 +95,7 @@ public:
     OpTilingInterf(std::string op_type, OpTilingFunc func);
     ~OpTilingInterf() = default;
     static std::map<std::string, OpTilingFunc> &RegisteredOpInterf();
+    static std::string OpTilingUuid;
 };
 
 

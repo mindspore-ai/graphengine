@@ -29,7 +29,7 @@ namespace ge {
 * This operation creates a tensor of shape "dims" and fills it with "value".
 *
 *@par Inputs:
-*@li dims: A 1D tensor of types int32 or int64. Represents the shape of the output tensor.
+*@li dims: A 1D tensor of types int32 or int64. Represents the shape of the output tensor . \n
 
 *@li value: A 0D scalar. Specifies the value to fill the returned tensor.
 *    Must be one of the following types:
@@ -66,6 +66,8 @@ REG_OP(Fill)
 *@par Outputs:
 * y: A tensor. Has the same type as "value".
 *
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Fill instead.
 */
 REG_OP(FillD)
     .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16,
@@ -124,6 +126,8 @@ REG_OP(BroadcastTo)
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BroadcastTo.
 *
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use BroadcastTo instead.
 */
 REG_OP(BroadcastToD)
     .INPUT(x, TensorType::BasicType())
@@ -132,17 +136,17 @@ REG_OP(BroadcastToD)
     .OP_END_FACTORY_REG(BroadcastToD)
 
 /**
-*@brief Pads a tensor.
+*@brief Pads a tensor . \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     complex128, uint32, uint64.
-* @li paddings: A Tensor of type int32 or int64.
+* @li paddings: A Tensor of type int32 or int64 . \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x" . \n
 
 *@par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
@@ -154,23 +158,26 @@ REG_OP(Pad)
     .OP_END_FACTORY_REG(Pad)
 
 /**
-*@brief Pads a tensor.
+*@brief Pads a tensor . \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32 . \n
 
 *@par Attributes:
 *paddings: An optional "vector<vector<int>>". Defaults to "{}".
 *     For each dimension D of input, paddings[D, 0] indicates how many
 *     values to add before the contents of tensor in that dimension,
 *     and paddings[D, 1] indicates how many values to add after the
-*     contents of tensor in that dimension.
+*     contents of tensor in that dimension . \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x" . \n
 
 *@par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
 */
 REG_OP(PadD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
@@ -184,17 +191,20 @@ REG_OP(PadD)
 *@par Inputs:
 *Two inputs, including:
 * @li x: A mutable Tensor. Must be one of the following types:
-*     float16, float32, int32.
+*     float16, float32, int32 . \n
 
 * @li assist: A mutable Tensor with rank k is at most 1,
-*     Has the same type as "x".
+*     Has the same type as "x" . \n
 
 *@par Outputs:
-*y: A mutable Tensor. Has the same type as "x".
+*y: A mutable Tensor. Has the same type as "x" . \n
 
 *@see Diag()
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Diag instead.
 */
 REG_OP(DiagD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -209,10 +219,10 @@ REG_OP(DiagD)
 *One input, include:
 * x: A mutable Tensor with rank k, where k is at most 1. Must be one of the
 *     following types:
-*     float16, float32, double, int32, int64, complex64, complex128.
+*     float16, float32, double, int32, int64, complex64, complex128 . \n
 
 *@par Outputs:
-*y: A mutable Tensor. Has the same type as "x".
+*y: A mutable Tensor. Has the same type as "x" . \n
 
 *@see DiagD()
 *@par Third-party framework compatibility
@@ -230,10 +240,10 @@ REG_OP(Diag)
 
 *@par Inputs:
 *One input, include:
-*x: Tensor which last dimension must be 1. For example: [624000, 1].
+*x: Tensor which last dimension must be 1. For example: [624000, 1] . \n
 
 *@par Outputs:
-*y: Padding the last dimension of x to padDimSize, [624000, padDimSize].
+*y: Padding the last dimension of x to padDimSize, [624000, padDimSize] . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
@@ -246,7 +256,7 @@ REG_OP(AscendPadding)
 
 
 /**
-*@brief EmbeddingRankId, traverse the index calculation server and its position in the server.
+*@brief EmbeddingRankId, traverse the index calculation server and its position in the server . \n
 
 *@par Inputs:
 *One input, include:

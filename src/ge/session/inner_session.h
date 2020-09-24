@@ -71,6 +71,7 @@ class InnerSession {
   std::mutex resource_mutex_;  // AddGraph, RemoveGraph and Finalize use
   void UpdateThreadContext(const std::map<std::string, std::string> &options);
   void UpdateThreadContext(uint32_t graph_id);
+  static bool is_dump_server_inited_;
 };
 }  // namespace ge
 

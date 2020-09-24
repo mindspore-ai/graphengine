@@ -15,14 +15,15 @@
  */
 
 #include "common/ge/op_tiling_manager.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/log.h"
 #include <string>
 
 namespace {
 const char *const kEnvName = "ASCEND_OPP_PATH";
 const std::string kDefaultPath = "/usr/local/Ascend/opp";
-const std::string kDefaultBuiltInTilingPath = "/op_impl/built-in/liboptiling.so";
-const std::string kDefaultCustomTilingPath = "/op_impl/custom/liboptiling.so";
+const std::string kDefaultBuiltInTilingPath = "/op_impl/built-in/ai_core/tbe/op_tiling/liboptiling.so";
+const std::string kDefaultCustomTilingPath = "/op_impl/custom/ai_core/tbe/op_tiling/liboptiling.so";
 const uint8_t kPrefixIndex = 9;
 }  // namespace
 
@@ -44,7 +45,9 @@ std::string OpTilingManager::GetPath() {
   if (opp_path_env != nullptr) {
     char resolved_path[PATH_MAX];
     if (realpath(opp_path_env, resolved_path) == NULL) {
-      GELOGE(PARAM_INVALID, "Failed load tiling lib as env 'ASCEND_OPP_PATH'(%s) is invalid path.", opp_path_env);
+      ErrorManager::GetInstance().ATCReportErrMessage("E19024", {"env", "value", "situation"},
+                                                      {"ASCEND_OPP_PATH", opp_path_env, "loading the tiling lib"});
+      GELOGE(PARAM_INVALID, "Failed load tiling lib as env 'ASCEND_OPP_PATH'[%s] is invalid path.", opp_path_env);
       return std::string();
     }
     opp_path = resolved_path;

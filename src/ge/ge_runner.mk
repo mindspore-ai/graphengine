@@ -296,6 +296,7 @@ LIBGE_LOCAL_SRC_FILES := \
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
     client/ge_api.cc \
+    client/ge_prof.cc \
 
 RUNNER_LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) ./ \
@@ -312,6 +313,7 @@ RUNNER_LOCAL_C_INCLUDES := \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi/analyzer \
+    $(TOPDIR)toolchain/ide/ide-daemon/external \
     proto/fwk_adapter.proto \
     proto/ge_ir.proto \
     proto/insert_op.proto \
@@ -353,6 +355,7 @@ LOCAL_SRC_FILES := $(LIBGE_LOCAL_SRC_FILES)
 LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libadump_server \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -371,6 +374,7 @@ LOCAL_LDFLAGS := -lrt -ldl
 LOCAL_SHARED_LIBRARIES += \
     libruntime \
     libresource \
+    stub/libascend_hal \
 
 include $(BUILD_HOST_SHARED_LIBRARY)
 
@@ -389,6 +393,7 @@ endif
 LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
 LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc
+LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_prof.cc
 
 
 LOCAL_SHARED_LIBRARIES :=
@@ -438,6 +443,7 @@ LOCAL_SRC_FILES := $(LIBGE_LOCAL_SRC_FILES)
 LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libadump_server \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -450,6 +456,7 @@ LOCAL_LDFLAGS := -lrt -ldl
 LOCAL_SHARED_LIBRARIES += \
     libruntime \
     libresource \
+    stub/libascend_hal \
 
 include $(BUILD_HOST_STATIC_LIBRARY)
 
@@ -469,6 +476,7 @@ LOCAL_SRC_FILES := $(LIBGE_LOCAL_SRC_FILES)
 LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libadump_server \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -481,5 +489,6 @@ LOCAL_LDFLAGS := -lrt -ldl
 LOCAL_SHARED_LIBRARIES += \
     libruntime \
     libresource \
+    libascend_hal \
 
 include $(BUILD_STATIC_LIBRARY)

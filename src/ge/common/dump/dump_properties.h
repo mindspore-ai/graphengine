@@ -61,9 +61,25 @@ class DumpProperties {
 
   const std::string &GetDumpMode() const;
 
+  void SetDumpStatus(const std::string &status);
+
+  const std::string &GetDumpStatus() const;
+
+  void SetDumpOpSwitch(const std::string &dump_op_switch);
+
+  const std::string &GetDumpOpSwitch() const;
+
   bool IsOpDebugOpen() const { return is_op_debug_; }
 
+  bool IsDumpOpen() const;
+
+  bool IsSingleOpNeedDump() const;
+
   uint32_t GetOpDebugMode() const { return op_debug_mode_; }
+
+  const std::string &GetEnableDump() const { return enable_dump_; }
+
+  const std::string &GetEnableDumpDebug() const { return enable_dump_debug_; }
 
  private:
   void CopyFrom(const DumpProperties &other);
@@ -76,6 +92,8 @@ class DumpProperties {
   std::string dump_path_;
   std::string dump_step_;
   std::string dump_mode_;
+  std::string dump_status_;
+  std::string dump_op_switch_;
   std::map<std::string, std::set<std::string>> model_dump_properties_map_;
 
   bool is_op_debug_ = false;

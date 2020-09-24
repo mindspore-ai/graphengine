@@ -197,7 +197,7 @@ void AicpuExtInfoHandler::GetShapeAndType(const AicpuShapeAndType *shape_and_typ
     dims.emplace_back(tmpDim);
   }
   data_type = static_cast<DataType>(shape_and_type->type);
-  shape = std::move(GeShape(dims));
+  shape = GeShape(dims);
 }
 }  // namespace hybrid
 }  // namespace ge

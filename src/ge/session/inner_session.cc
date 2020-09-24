@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "common/dump/dump_properties.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
@@ -30,6 +31,8 @@
 
 namespace ge {
 namespace {
+const int32_t kDumpStatus = 0;
+
 Status CheckReuseMemoryOption(const std::map<string, string> &options) {
   auto iter = options.find(OPTION_EXEC_DISABLE_REUSED_MEMORY);
   if (iter != options.end()) {
@@ -47,7 +50,7 @@ Status CheckReuseMemoryOption(const std::map<string, string> &options) {
 }  // namespace
 
 static std::mutex mutex_;  // BuildGraph and RunGraph use
-
+bool InnerSession::is_dump_server_inited_ = false;
 InnerSession::InnerSession(uint64_t session_id, const std::map<string, string> &options)
     : init_flag_(false), session_id_(session_id), options_(options), graph_manager_(domi::GetContext()) {}
 
@@ -71,12 +74,12 @@ Status InnerSession::Initialize() {
 
   GE_CHK_RT_RET(rtSetDevice(GetContext().DeviceId()));
 
-  PropertiesManager::Instance().GetDumpProperties(session_id_).InitByOptions();
+  DumpProperties dump_properties;
+  dump_properties.InitByOptions();
 
   ret = graph_manager_.Initialize(options_);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] initialize failed.", session_id_);
-    PropertiesManager::Instance().RemoveDumpProperties(session_id_);
     return ret;
   }
 
@@ -84,7 +87,6 @@ Status InnerSession::Initialize() {
   if (ret != SUCCESS) {
     GELOGE(ret, "failed to set malloc size");
     (void)graph_manager_.Finalize();
-    PropertiesManager::Instance().RemoveDumpProperties(session_id_);
     GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
     return ret;
   }
@@ -95,7 +97,6 @@ Status InnerSession::Initialize() {
   ret = VarManager::Instance(session_id_)->Init(version, session_id_, DEFAULT_DEVICE_ID, DEFAULT_JOB_ID);
   if (ret != SUCCESS) {
     GELOGE(ret, "failed to init session instance");
-    PropertiesManager::Instance().RemoveDumpProperties(session_id_);
   }
   init_flag_ = true;
   return SUCCESS;
@@ -119,8 +120,6 @@ Status InnerSession::Finalize() {
   // release var memory
   GELOGI("VarManager free var memory.");
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
-
-  PropertiesManager::Instance().RemoveDumpProperties(session_id_);
 
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
 
@@ -297,4 +296,5 @@ Status InnerSession::SaveVariables(const Graph &graph, const std::vector<std::st
                                    const std::vector<Tensor> &outputs, std::vector<Tensor> &var_values) {
   return graph_manager_.SaveVariables(graph, var_names, outputs, var_values);
 }
+
 }  // namespace ge

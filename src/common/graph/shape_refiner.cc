@@ -51,6 +51,9 @@ graphStatus ReverseBrushWhileBodySubGraph(const ConstNodePtr &node) {
   for (const auto &node_sub : sub_graph_body->GetAllNodes()) {
     for (size_t i = 0; i < node_sub->GetAllInDataAnchorsSize(); i++) {
       auto input_desc = node_sub->GetOpDesc()->MutableInputDesc(i);
+      GE_IF_BOOL_EXEC(input_desc == nullptr,
+                      GELOGW("Get null input by index %zu from node %s ", i, node_sub->GetName().c_str());
+                      continue);
       (void)input_desc->SetUnknownDimNumShape();
     }
     for (size_t i = 0; i < node_sub->GetAllOutDataAnchorsSize(); i++) {
@@ -376,10 +379,13 @@ graphStatus UpdateOpInputDesc(const ConstNodePtr &node_ptr) {
       continue;
     }
     int peer_out_idx = peer_out_data_anchor->GetIdx();
-    auto in_desc = node_ptr->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_idx));
     auto peer_out_desc = peer_out_data_node->GetOpDesc()->MutableOutputDesc(static_cast<uint32_t>(peer_out_idx));
 
     // check shape and dtype continuity. do not stop process
+    auto in_desc = node_ptr->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_idx));
+    if (in_desc == nullptr) {
+      continue;
+    }
     auto in_shape = in_desc->GetShape().GetDims();
     auto in_dtype = in_desc->GetDataType();
     auto peer_out_shape = peer_out_desc->GetShape().GetDims();

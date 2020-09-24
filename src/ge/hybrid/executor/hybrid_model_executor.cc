@@ -27,6 +27,12 @@ const char *const kEnvProfilingLevel = "HYBRID_PROFILING_LEVEL";
 HybridModelExecutor::HybridModelExecutor(HybridModel *model, uint32_t device_id, rtStream_t stream)
     : model_(model), device_id_(device_id), stream_(stream) {}
 
+HybridModelExecutor::~HybridModelExecutor() {
+  if (context_.rt_gen_context != nullptr) {
+    (void)rtCtxDestroy(context_.rt_gen_context);
+  }
+}
+
 Status HybridModelExecutor::Init() {
   GELOGD("Start to init HybridGraphEngine.");
   GE_CHK_STATUS_RET_NOLOG(InitExecutionContext());

@@ -27,23 +27,23 @@
 namespace ge {
 
 /**
-*@brief Gather ragged slices from `params` axis `0` according to `indices`.
+*@brief Gather ragged slices from `params` axis `0` according to `indices` . \n
 
 *@par Inputs:
-*@li params_nested_splits: The `nested_row_splits` tensors that define the row-partitioning for the \n
-*params` RaggedTensor input.
-*@li params_dense_values: The `flat_values` for the `params` RaggedTensor. There was a terminology change \n
-*at the python level from dense_values to flat_values, so dense_values is the \n
+*@li params_nested_splits: The `nested_row_splits` tensors that define the row-partitioning for the
+*params` RaggedTensor input. It's a dynamic input.
+*@li params_dense_values: The `flat_values` for the `params` RaggedTensor. There was a terminology change
+*at the python level from dense_values to flat_values, so dense_values is the
 *deprecated name.
-*@li indices: Indices in the outermost dimension of `params` of the values that should be \n
+*@li indices: Indices in the outermost dimension of `params` of the values that should be
 *gathered.
-*@li OUTPUT_RAGGED_RANK: The ragged rank of the output RaggedTensor. `output_nested_splits` will contain \n
-*this number of `row_splits` tensors. This value should equal \n
-*`indices.shape.ndims + params.ragged_rank - 1`.
+*@li OUTPUT_RAGGED_RANK: The ragged rank of the output RaggedTensor. `output_nested_splits` will contain
+*this number of `row_splits` tensors. This value should equal
+*`indices.shape.ndims + params.ragged_rank - 1` . \n
 
 *@par Outputs:
-*y:A Returns The `nested_row_splits` tensors that define the row-partitioning for the \n
-*returned RaggedTensor.The `flat_values` for the returned RaggedTensor.
+*y:A Returns The `nested_row_splits` tensors that define the row-partitioning for the
+*returned RaggedTensor.The `flat_values` for the returned RaggedTensor . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow RaggedGather operator.

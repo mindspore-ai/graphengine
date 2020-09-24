@@ -54,6 +54,29 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
   task.SetSoName(so_name);
   task.SetkernelName(kernel_name);
   task.op_desc_ = op_desc_;
+
+  task.num_inputs_ = op_desc_->GetInputsSize();
+  task.num_outputs_ = op_desc_->GetOutputsSize();
+
+  // get kernel_ext_info
+  auto &kernel_ext_info = kernel_def_.kernel_ext_info();
+  auto kernel_ext_info_size = kernel_def_.kernel_ext_info_size();
+  GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
+                         "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.", kernel_ext_info.size(),
+                         kernel_ext_info_size);
+
+  ret = task.SetExtInfoAndType(kernel_ext_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Init ext info failed.");
+    return ret;
+  }
+
+  auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(task.args_.get());
+  if (task.ext_info_addr_dev_ != nullptr) {
+    aicpu_param_head->extInfoLength = kernel_ext_info.size();
+    aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(task.ext_info_addr_dev_);
+  }
+
   return SUCCESS;
 }
 }  // namespace ge

@@ -39,7 +39,7 @@ using std::vector;
 
 namespace {
 const int32_t kMaxStrLen = 128;
-}
+}  // namespace
 
 static bool g_ge_initialized = false;
 static std::mutex g_ge_release_mutex;  // GEFinalize and ~Session use

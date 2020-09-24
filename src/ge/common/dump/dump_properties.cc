@@ -31,7 +31,7 @@
 
 namespace {
 const std::string kEnableFlag = "1";
-
+const std::string kDumpStatusOpen = "on";
 const uint32_t kAicoreOverflow = (0x1 << 0);
 const uint32_t kAtomicOverflow = (0x1 << 1);
 const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
@@ -81,12 +81,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::InitByOpti
   if (enable_dump_ == kEnableFlag) {
     std::string dump_step;
     if (GetContext().GetOption(OPTION_EXEC_DUMP_STEP, dump_step) == GRAPH_SUCCESS) {
-      GELOGD("Get dump step %s successfully", dump_step.c_str());
+      GELOGI("Get dump step %s successfully", dump_step.c_str());
       SetDumpStep(dump_step);
     }
     string dump_mode;
     if (GetContext().GetOption(OPTION_EXEC_DUMP_MODE, dump_mode) == GRAPH_SUCCESS) {
-      GELOGD("Get dump mode %s successfully", dump_mode.c_str());
+      GELOGI("Get dump mode %s successfully", dump_mode.c_str());
       SetDumpMode(dump_mode);
     }
     AddPropertyValue(DUMP_ALL_MODEL, {});
@@ -190,6 +190,37 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpMod
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperties::GetDumpMode() const {
   return dump_mode_;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpStatus(const std::string &status) {
+  dump_status_ = status;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperties::GetDumpStatus() const {
+  return dump_status_;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpOpSwitch(
+  const std::string &dump_op_switch) {
+  dump_op_switch_ = dump_op_switch;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperties::GetDumpOpSwitch() const {
+  return dump_op_switch_;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool DumpProperties::IsSingleOpNeedDump() const {
+  if (dump_op_switch_ == kDumpStatusOpen) {
+    return true;
+  }
+  return false;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool DumpProperties::IsDumpOpen() const {
+  if (enable_dump_ == kEnableFlag || dump_status_ == kDumpStatusOpen) {
+    return true;
+  }
+  return false;
 }
 
 void DumpProperties::CopyFrom(const DumpProperties &other) {

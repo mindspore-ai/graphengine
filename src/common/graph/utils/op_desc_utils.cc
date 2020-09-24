@@ -513,7 +513,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<GeTensorPtr> OpDescUtils::
   }
   return MutableWeights(*node);
 }
-
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 OpDescUtils::SetWeights(ge::Node &node, const vector<ge::GeTensorPtr> &weights) {
   GE_CHK_BOOL_EXEC(node.GetOpDesc() != nullptr, return GRAPH_PARAM_INVALID, "node.GetOpDesc is nullptr!");

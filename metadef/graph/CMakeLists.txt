@@ -18,13 +18,13 @@
 set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
 # add all proto files, generate corresponding .h and .cc files
 file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "../../proto/om.proto"
-        "../../proto/ge_ir.proto"
-        "../../proto/insert_op.proto"
-        "../../proto/task.proto"
-        "../../proto/fwk_adaper.proto"
-        "../../proto/op_mapping_info.proto"
-        "../../proto/dump_task.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/om.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/ge_ir.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/insert_op.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/task.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/fwk_adaper.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/op_mapping_info.proto"
+        "${GE_SOURCE_DIR}/metadef/proto/dump_task.proto"
         )
 
 file(GLOB_RECURSE ONNX_PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}

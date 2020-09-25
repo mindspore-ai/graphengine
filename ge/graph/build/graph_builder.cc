@@ -32,6 +32,7 @@
 
 using domi::BuildMode;
 
+
 namespace {
 const int32_t kInvalidPerfLevel = -1;
 }  // namespace

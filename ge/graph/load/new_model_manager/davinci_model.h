@@ -884,6 +884,7 @@ class DavinciModel {
   bool is_inner_model_stream_;
 
   bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
+  bool last_execute_mode_;
 
   bool is_stream_list_bind_{false};
   bool is_pure_head_stream_{false};

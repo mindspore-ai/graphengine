@@ -101,7 +101,7 @@ Status Analyzer::BuildJsonObject(uint64_t session_id, uint64_t graph_id) {
 
 ge::Status Analyzer::Initialize() {
   ClearHistoryFile();
-  return CreateAnalyzerFile();
+  return SUCCESS;
 }
 
 void Analyzer::Finalize() {
@@ -136,7 +136,7 @@ void Analyzer::DestroyGraphJsonObject(uint64_t session_id, uint64_t graph_id) {
   } else {
     auto iter1 = (iter->second).find(graph_id);
     if (iter1 == (iter->second).end()) {
-      GELOGW("can not find the graph json object by session_id[%lu] and graph_id[%lu].Do nothing", session_id,
+      GELOGW("Can not find the graph json object by session_id[%lu] and graph_id[%lu]. Do nothing.", session_id,
              graph_id);
     }
     (iter->second).erase(iter1);
@@ -169,6 +169,10 @@ void Analyzer::ClearHistoryFile() {
 }
 
 ge::Status Analyzer::CreateAnalyzerFile() {
+  if (is_json_file_create_) {
+    GELOGD("analyzer file has been created!No necessary to create again!");
+    return SUCCESS;
+  }
   GELOGD("start to create analyzer file!");
   // Check whether the manifest exists, if not, create it.
   string real_path = RealPath(kFilePath.c_str());
@@ -176,18 +180,19 @@ ge::Status Analyzer::CreateAnalyzerFile() {
     GELOGE(FAILED, "File path is invalid.");
     return FAILED;
   }
-  string file = real_path + "/" + kAnalyzeFile;
-  GELOGD("Created analyzer file:[%s]", file.c_str());
-  int fd = open(file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, kFileAuthority);
+  std::lock_guard<std::mutex> lg(file_mutex_);
+  json_file_name_ = real_path + "/" + kAnalyzeFile;
+  GELOGD("Created analyzer file:[%s]", json_file_name_.c_str());
+  int fd = open(json_file_name_.c_str(), O_WRONLY | O_CREAT | O_TRUNC, kFileAuthority);
   if (fd < 0) {
-    GELOGE(INTERNAL_ERROR, "Fail to open the file: %s.", file.c_str());
+    GELOGE(INTERNAL_ERROR, "Fail to open the file: %s.", json_file_name_.c_str());
     return INTERNAL_ERROR;
   }
   if (close(fd) != 0) {
-    GELOGE(INTERNAL_ERROR, "Fail to close the file: %s.", file.c_str());
+    GELOGE(INTERNAL_ERROR, "Fail to close the file: %s.", json_file_name_.c_str());
     return INTERNAL_ERROR;
   }
-  json_file_name_ = file;
+  is_json_file_create_ = true;
 
   GELOGD("success to create analyzer file[%s]!", json_file_name_.c_str());
   return SUCCESS;
@@ -230,6 +235,12 @@ ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
   if (status != SUCCESS) {
     GELOGE(status, "save op info failed!");
     return FAILED;
+  }
+  // create json file
+  status = CreateAnalyzerFile();
+  if (status != SUCCESS) {
+    GELOGE(status, "create analyzer file failed!");
+    return status;
   }
   // save data to file
   return SaveAnalyzerDataToFile();

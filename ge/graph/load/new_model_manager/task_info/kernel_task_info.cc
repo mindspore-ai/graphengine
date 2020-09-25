@@ -26,6 +26,7 @@
 #include "framework/common/l2_cache_optimize.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/new_model_manager/model_manager.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/kernel.h"
 #include "super_kernel/super_kernel.h"
@@ -41,13 +42,6 @@ const char *kIsLastNode = "is_last_node";
 const char *kIsFirstNode = "is_first_node";
 const int64_t kCloseSkt = 100;
 const uint32_t kAddrLen = sizeof(void *);
-const char *const kLoadOpFromBuf = "loadOpFromBuf";
-struct CustAicpuSoBuf {
-  uint64_t kernelSoBuf;
-  uint32_t kernelSoBufLen;
-  uint64_t kernelSoName;
-  uint32_t kernelSoNameLen;
-} __attribute__((packed));
 }  // namespace
 
 namespace ge {
@@ -861,92 +855,6 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
   return SUCCESS;
 }
 
-Status KernelTaskInfo::LaunchCustAicpuSo(const OpDescPtr op_desc, const domi::KernelDef &kernel_def) {
-  CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
-  if (aicpu_kernel == nullptr) {
-    GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
-    return INTERNAL_ERROR;
-  }
-  const void *aicpu_data = aicpu_kernel->GetBinData();
-  uint32_t aicpu_data_length = aicpu_kernel->GetBinDataSize();
-
-  void *d_aicpu_data = nullptr;
-  rtError_t status = rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  status = rtMemcpy(d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length, RT_MEMCPY_HOST_TO_DEVICE);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  void *d_so_name = nullptr;
-  status = rtMalloc(&d_so_name, so_name_.size(), RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  status = rtMemcpy(d_so_name, so_name_.size(), reinterpret_cast<const void *>(so_name_.c_str()), so_name_.size(),
-                    RT_MEMCPY_HOST_TO_DEVICE);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  CustAicpuSoBuf cust_aicpu_so_buf;
-  cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
-  cust_aicpu_so_buf.kernelSoBufLen = aicpu_data_length;
-  cust_aicpu_so_buf.kernelSoName = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
-  cust_aicpu_so_buf.kernelSoNameLen = so_name_.size();
-
-  void *args = nullptr;
-  uint32_t args_size = sizeof(CustAicpuSoBuf);
-  status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-  GELOGI("loadOpFromBuf kernelSoBuf %p, kernelSoBufLen %u, kernelSoName %p, kernelSoNameLen %u.", d_aicpu_data,
-         aicpu_data_length, d_so_name, so_name_.size());
-
-  status = rtMemcpy(args, args_size, static_cast<void *>(&cust_aicpu_so_buf), args_size, RT_MEMCPY_HOST_TO_DEVICE);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  rtStream_t stream = nullptr;
-  status = rtStreamCreate(&stream, 0);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt create stream failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  status = rtCpuKernelLaunch(nullptr, kLoadOpFromBuf, 1, args, args_size, nullptr, stream);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch loadOpFromBuf failed, status: 0x%X", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-  GELOGI("Cpu kernel launch loadOpFromBuf.");
-
-  status = rtStreamSynchronize(stream);
-  if (status != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
-
-  GE_CHK_RT(rtFree(args));
-  GE_CHK_RT(rtFree(d_aicpu_data));
-  GE_CHK_RT(rtFree(d_so_name));
-
-  GELOGI("Cpu kernel launch loadOpFromBuf task success.");
-  return SUCCESS;
-}
-
 Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &kernel_def) {
   GELOGI("Do InitAicpuTask");
   so_name_ = kernel_def.so_name();
@@ -961,7 +869,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   }
 
   if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
-    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, kernel_def), "launch cust aicpu so failed");
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_), "launch cust aicpu so failed");
   }
 
   // copy args to new host memory

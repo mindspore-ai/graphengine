@@ -12,6 +12,7 @@ GE_COMMON_LOCAL_SRC_FILES := \
     math/fp16_math.cc \
     debug/memory_dumper.cc \
     formats/utils/formats_trans_utils.cc \
+    dump/dump_properties.cc \
     formats/format_transfers/datatype_transfer.cc \
     formats/format_transfers/format_transfer_transpose.cc \
     formats/format_transfers/format_transfer_nchw_nc1hwc0.cc \

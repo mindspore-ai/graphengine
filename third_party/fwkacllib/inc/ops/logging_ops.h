@@ -27,18 +27,18 @@
 namespace ge {
 
 /**
-*@brief Provides the time since epoch in seconds.
+*@brief Provides the time since epoch in seconds . \n
 
 *@par Outputs:
-*y: A Tensor of type float64. The timestamp as a double for seconds since \n
-the Unix epoch.
+*y: A Tensor of type float64. The timestamp as a double for seconds since
+the Unix epoch . \n
 
-*@attention Constraints: \n
-*The timestamp is computed when the op is executed, not when it is added to \n
-the graph.
+*@attention Constraints:
+*The timestamp is computed when the op is executed, not when it is added to
+the graph . \n
 
 *@par Third-party framework compatibility
-*Compatible with tensorflow Timestamp operator.
+*Compatible with tensorflow Timestamp operator . \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -48,19 +48,20 @@ REG_OP(Timestamp)
   .OP_END_FACTORY_REG(Timestamp)
 
 /**
-*@brief Asserts that the given condition is true.
+*@brief Asserts that the given condition is true . \n
 
 *@par Inputs:
-*If input_condition evaluates to false, print the list of tensors in data. \n
-Inputs include: \n
+*If input_condition evaluates to false, print the list of tensors in data.
+*Inputs include:
 *@li input_condition: The condition to evaluate.
-*@li input_data: The tensors to print out when condition is false.
+*@li input_data: The tensors to print out when condition is false .
+ It's a dynamic input.  \n
 
 *@par Attributes:
-*summarize: Print this many entries of each tensor.
+*summarize: Print this many entries of each tensor . \n
 
 *@par Third-party framework compatibility
-*Compatible with tensorflow Assert operator.
+*Compatible with tensorflow Assert operator . \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -74,12 +75,12 @@ REG_OP(Assert)
   .OP_END_FACTORY_REG(Assert)
 
 /**
-*@brief Prints a tensor.
+*@brief Prints a tensor . \n
 
 *@par Inputs:
-*x: The tensor to print, it is a dynamic_input.
+*x: The tensor to print, it is a dynamic_input . \n
 
-*Compatible with aicpu Print operator.
+*Compatible with aicpu Print operator . \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -90,18 +91,18 @@ REG_OP(Print)
 .OP_END_FACTORY_REG(Print)
 
 /**
-*@brief Prints a string scalar.
+*@brief Prints a string scalar . \n
 
 *@par Inputs:
-*The dtype of input x must be string. Inputs include: \n
-*x: The string scalar to print.
+*The dtype of input x must be string. Inputs include:
+*x: The string scalar to print . \n
 
 *@par Attributes:
-*output_stream: A string specifying the output stream or logging level \n
-to print to.
+*output_stream: A string specifying the output stream or logging level
+to print to . \n
 
 *@par Third-party framework compatibility
-*Compatible with tensorflow PrintV2 operator.
+*Compatible with tensorflow PrintV2 operator . \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.

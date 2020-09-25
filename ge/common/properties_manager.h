@@ -23,8 +23,8 @@
 #include <string>
 #include <vector>
 
-#include "graph/op_desc.h"
 #include "common/dump/dump_properties.h"
+#include "graph/op_desc.h"
 
 namespace ge {
 // Configuration property management
@@ -83,6 +83,10 @@ class PropertiesManager {
   void SetPropertyDelimiter(const std::string &de);
 
   DumpProperties &GetDumpProperties(uint64_t session_id);
+
+  const map<uint64_t, DumpProperties> &GetDumpPropertiesMap() { return dump_properties_map_; }
+
+  void AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties);
   void RemoveDumpProperties(uint64_t session_id);
 
  private:

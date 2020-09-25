@@ -27,7 +27,7 @@
 namespace ge {
 
 /**
-*@brief Does nothing. Only useful as a placeholder for control edges.
+*@brief Does nothing. Only useful as a placeholder for control edges . \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator NoOp.

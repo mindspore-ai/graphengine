@@ -28,7 +28,6 @@ class DumpManager {
   static DumpManager &GetInstance();
 
   Status SetDumpConf(const DumpConfig &dump_config);
-  bool IsDumpOpen();
   const DumpProperties &GetDumpProperties();
   void SetModelName(const std::string &model_name);
   const std::string &GetModelName();

@@ -175,6 +175,8 @@ class GraphMemoryAssigner {
   ge::Status SetAtomicCleanAttr(const ge::NodePtr &n, const std::vector<int64_t> &atomic_mem_start,
                                 const std::vector<int64_t> &atomic_mem_size);
 
+  ge::Status IsIndependentAtomicClean(const ge::NodePtr &node, bool &is_independent_atomic_clean_node);
+
   void AlignMemOffset(const int64_t &mem_align_size);
 
   ge::Status UpdateOpInputOffset(const NodePtr &node, vector<int64_t> &input_list) const;

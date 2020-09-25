@@ -35,7 +35,7 @@ class HybridModelExecutor {
 
   HybridModelExecutor(HybridModel *model, uint32_t device_id, rtStream_t stream);
 
-  ~HybridModelExecutor() = default;
+  ~HybridModelExecutor();
 
   Status Init();
 

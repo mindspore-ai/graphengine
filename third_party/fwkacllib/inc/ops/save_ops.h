@@ -28,7 +28,7 @@ namespace ge {
 /**
 *@brief Mark which tensors need to be saved to the ckpt file.
 *@par Inputs:
-*tensors: A list of input tensor.
+*tensors: A list of input tensor.It's a dynamic input.
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */

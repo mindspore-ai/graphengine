@@ -24,6 +24,7 @@
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/mem.h"
 #include "single_op/single_op_manager.h"
+#include "graph/load/new_model_manager/model_manager.h"
 
 namespace ge {
 namespace {
@@ -42,6 +43,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOp::~SingleOp() {
     delete task;
     task = nullptr;
   }
+  GELOGI("SingleOp destory sessionId = %lu", aicpu_session_id_);
+  ModelManager::GetInstance()->DestroyAicpuSession(aicpu_session_id_);
 }
 
 Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
@@ -166,6 +169,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     if (ret != SUCCESS) {
       return ret;
     }
+    ret = task->OpenDump(args_, stream_);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Open dump failed");
+      return ret;
+    }
   }
 
   return ret;
@@ -173,8 +181,15 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
 
 void SingleOp::SetStream(rtStream_t stream) { stream_ = stream; }
 
+void SingleOp::SetSessionID(uint64_t session_id) { aicpu_session_id_ = session_id; }
+
 DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex, rtStream_t stream)
     : resource_id_(resource_id), stream_mutex_(stream_mutex), stream_(stream) {}
+
+DynamicSingleOp::~DynamicSingleOp() {
+  GELOGI("DynamicSingleOp destory sessionId = %lu", aicpu_session_id_);
+  ModelManager::GetInstance()->DestroyAicpuSession(aicpu_session_id_);
+}
 
 Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
                                        std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const {
@@ -236,14 +251,22 @@ Status DynamicSingleOp::AllocateWorkspaces(const std::vector<int64_t> &workspace
   return SUCCESS;
 }
 
+Status DynamicSingleOp::ExecuteTbeTask(const vector<GeTensorDesc> &input_desc, const vector<void *> &inputs,
+                                       vector<GeTensorDesc> &output_desc, vector<void *> &outputs) {
+  GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
+
+  std::vector<void *> workspace_buffers;
+  GE_CHK_STATUS_RET_NOLOG(AllocateWorkspaces(op_task_->GetWorkspaceSizes(), workspace_buffers));
+
+  return op_task_->LaunchKernel(inputs, outputs, workspace_buffers, stream_);
+}
+
 Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc, const vector<DataBuffer> &input_buffers,
                                      vector<GeTensorDesc> &output_desc, vector<DataBuffer> &output_buffers) {
   GE_CHECK_NOTNULL(op_task_);
   GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
   std::lock_guard<std::mutex> lk(*stream_mutex_);
-  GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
-  std::vector<void *> workspace_buffers;
-  GE_CHK_STATUS_RET_NOLOG(AllocateWorkspaces(op_task_->GetWorkspaceSizes(), workspace_buffers));
+
   std::vector<void *> inputs;
   std::vector<void *> outputs;
   for (auto &buffer : input_buffers) {
@@ -252,6 +275,17 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc, con
   for (auto &buffer : output_buffers) {
     outputs.emplace_back(buffer.data);
   }
-  return op_task_->LaunchKernel(inputs, outputs, workspace_buffers, stream_);
+
+  if (op_task_->GetOpTaskType() == OP_TASK_TBE) {
+    return ExecuteTbeTask(input_desc, inputs, output_desc, outputs);
+  } else if (op_task_->GetOpTaskType() == OP_TASK_AICPU || op_task_->GetOpTaskType() == OP_TASK_AICPUCC) {
+    return op_task_->LaunchKernel(input_desc, inputs, output_desc, outputs, stream_);
+  } else {
+    GELOGE(UNSUPPORTED, "Only TBE_Task, AI_CPU_Task and AI_CPUCC_Task are supported, but got %u",
+           op_task_->GetOpTaskType());
+    return UNSUPPORTED;
+  }
 }
+
+void DynamicSingleOp::SetSessionID(uint64_t session_id) { aicpu_session_id_ = session_id; }
 }  // namespace ge

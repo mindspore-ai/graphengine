@@ -125,6 +125,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       rt_model_stream_(nullptr),
       is_inner_model_stream_(false),
       is_async_mode_(false),
+      last_execute_mode_(false),
       session_id_(0),
       device_id_(0),
       maxDumpOpNum_(0),
@@ -2879,6 +2880,12 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
       }
     }
   }
+  auto it = zero_copy_op_id_batch_label_.find(op_desc->GetId());
+  if (it == zero_copy_op_id_batch_label_.end()) {
+    zero_copy_task.SetBatchLabel(kDefaultBatchLable);
+  } else {
+    zero_copy_task.SetBatchLabel(it->second);
+  }
 
   std::lock_guard<std::mutex> lock(outside_addrs_mutex_);
   if (zero_copy_task.IsTaskArgsSet()) {
@@ -3045,6 +3052,9 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
              data.first, addr, size, buffer_addr);
       // For input data, just copy for rts task.
       for (ZeroCopyTask &task : zero_copy_tasks_) {
+        if (task.GetBatchLabel() != kDefaultBatchLable && task.GetBatchLabel() != batch_label) {
+          continue;
+        }
         uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
         if (task.UpdateTaskParam(addr_val, buffer_addr, zero_copy_batch_label_addrs_, batch_label) != SUCCESS) {
           return FAILED;
@@ -3365,6 +3375,7 @@ Status DavinciModel::InitModelStream(rtStream_t stream) {
   if (is_async_mode_) {
     rt_model_stream_ = stream;
     is_inner_model_stream_ = false;
+    last_execute_mode_ = true;
     return SUCCESS;
   }
 
@@ -3376,12 +3387,14 @@ Status DavinciModel::InitModelStream(rtStream_t stream) {
 
     rt_model_stream_ = stream;
     is_inner_model_stream_ = false;
+    last_execute_mode_ = false;
     return SUCCESS;
   }
 
-  if (rt_model_stream_ == nullptr) {
+  if (last_execute_mode_ || (rt_model_stream_ == nullptr)) {
     GE_CHK_RT_RET(rtStreamCreateWithFlags(&rt_model_stream_, priority_, RT_STREAM_FORBIDDEN_DEFAULT));
     is_inner_model_stream_ = true;
+    last_execute_mode_ = false;
   }
 
   return SUCCESS;
@@ -3516,7 +3529,7 @@ uint8_t *DavinciModel::MallocWeightsMem(size_t weights_size) {
 }
 
 void DavinciModel::FreeFeatureMapMem() {
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+  if (std::getenv(kEnvGeuseStaticMemory) != nullptr && is_inner_mem_base_) {
     string weight_memory_key = std::to_string(0) + "_f";
     if (MemManager::Instance(RT_MEMORY_HBM)->GetMemoryAddr(weight_memory_key) != nullptr) {
       GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(weight_memory_key, GetDeviceId()),

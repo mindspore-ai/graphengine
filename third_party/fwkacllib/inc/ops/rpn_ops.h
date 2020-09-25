@@ -26,15 +26,15 @@ namespace ge {
 /**
 *@brief Iteratively removes lower scoring boxes which have an IoU greater than
 * iou_threshold with higher scoring box according to their
-* intersection-over-union (IoU).
+* intersection-over-union (IoU) . \n
 
 *@par Input:
 * @li box_scores: 2-D tensor with shape of [N, 8], including proposal boxes and
-* corresponding confidence scores.
+* corresponding confidence scores . \n
 
 * @par Attributes:
 * @li iou_threshold: An optional float. The threshold for deciding whether boxes
-* overlap too much with respect to IOU.
+* overlap too much with respect to IOU . \n
 
 * @par Outputs:
 * @li selected_boxes: 2-D tensor with shape of [N,5], representing filtered
@@ -42,7 +42,7 @@ namespace ge {
 * @li selected_idx: 1-D tensor with shape of [N], representing the index of
 * input proposal boxes.
 * @li selected_mask: 1-D tensor with shape of [N], the symbol judging whether
-* the output proposal boxes is valid.
+* the output proposal boxes is valid . \n
 
 * @attention Constraints:
 * The 2nd-dim of input box_scores must be equal to 8.\n

@@ -264,11 +264,11 @@ void OnnxUtils::AddAttrProtoForOpInAndOutDesc(onnx::NodeProto *node_proto, const
     return;
   }
   // Input describes
-  auto size_in = op_desc->GetInputsSize();
+  auto size_in = op_desc->GetAllInputsSize();
   AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_INT, "input_desc_nums", &size_in);
   if (size_in > 0) {
     for (uint32_t i = 0; i < size_in; i++) {
-      auto input_desc = op_desc->GetInputDescPtr(i);
+      auto input_desc = op_desc->GetInputDescPtrDfault(i);
       if (input_desc != nullptr) {
         auto data_type = TypeUtils::DataTypeToSerialString(input_desc->GetDataType());
         AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_STRING, "input_desc_dtype:" + std::to_string(i),
@@ -480,9 +480,20 @@ void OnnxUtils::AddAttrProtoFromNodeMembers(const NodePtr &node, onnx::NodeProto
   if (!recv_list.empty()) {
     AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_INTS, "recv_event_id_list", &recv_list);
   }
-  // 2.Attributes added from node's op_(message OpDef)
   auto op_desc = node->op_;
   if (op_desc != nullptr) {
+    // for input_name_idx_ in opdesc
+    auto input_name_2_indexs = op_desc->GetAllInputName();
+    ::google::protobuf::RepeatedPtrField<::std::string> input_names;
+    ::google::protobuf::RepeatedField<::google::protobuf::int64> input_indexes;
+    for (const auto &input_name_2_index : input_name_2_indexs) {
+      std::string input_name = input_name_2_index.first;
+      input_names.Add(std::move(input_name));
+      input_indexes.Add(input_name_2_index.second);
+    }
+    AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_STRINGS, "_input_name_key", input_names);
+    AddAttrProto(node_proto, onnx::AttributeProto_AttributeType_INTS, "_input_name_value", input_indexes);
+    // 2.Attributes added from node's op_(message OpDef)
     // Input and out describes
     AddAttrProtoForOpInAndOutDesc(node_proto, op_desc);
     // Others

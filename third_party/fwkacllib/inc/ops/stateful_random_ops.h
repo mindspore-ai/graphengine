@@ -27,15 +27,15 @@
 namespace ge {
 
 /**
-*@brief Non-deterministically generates some integers.
+*@brief Non-deterministically generates some integers . \n
 
 *@par Inputs:
-*This op may use some OS-provided source of non-determinism (e.g. an RNG), \n
+*This op may use some OS-provided source of non-determinism (e.g. an RNG),
 *so each execution will give different results. Inputs included:
-*@li shape: The shape of the output tensor.
+*@li shape: The shape of the output tensor . \n
 
 *@par Outputs:
-*y:A Returns Non-deterministic integer values with specified shape.
+*y:A Returns Non-deterministic integer values with specified shape . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow NonDeterministicInts operator.
@@ -48,18 +48,18 @@ REG_OP(NonDeterministicInts)
     .OP_END_FACTORY_REG(NonDeterministicInts)
 
 /**
-*@brief Advance the counter of a counter-based RNG. The state of the RNG after \n
-*`rng_skip(n)` will be the same as that after `stateful_uniform([n])` \n
-*(or any other distribution). The actual increment added to the \n
-*counter is an unspecified implementation detail.
+*@brief Advance the counter of a counter-based RNG. The state of the RNG after
+*`rng_skip(n)` will be the same as that after `stateful_uniform([n])`
+*(or any other distribution). The actual increment added to the
+*counter is an unspecified implementation detail . \n
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
-*@li delta: The amount of advancement.
+*@li delta: The amount of advancement . \n
 
 *@par Outputs:
-*y:A Returns the created operation.
+*y:A Returns the created operation . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow RngSkip operator.
@@ -72,23 +72,23 @@ REG_OP(RngSkip)
     .OP_END_FACTORY_REG(RngSkip)
 
 /**
-*@brief Outputs random integers from a uniform distribution. \n
-The generated values are uniform integers in the range `[minval, maxval)`. \n
-The lower bound `minval` is included in the range, while the upper bound \n
-`maxval` is excluded. \n
-The random integers are slightly biased unless `maxval - minval` is an exact \n
-power of two.  The bias is small for values of `maxval - minval` significantly \n
-smaller than the range of the output (either `2^32` or `2^64`).
+*@brief Outputs random integers from a uniform distribution.
+The generated values are uniform integers in the range `[minval, maxval)`.
+The lower bound `minval` is included in the range, while the upper bound
+`maxval` is excluded.
+The random integers are slightly biased unless `maxval - minval` is an exact
+power of two.  The bias is small for values of `maxval - minval` significantly
+smaller than the range of the output (either `2^32` or `2^64`) . \n
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor.
 *@li minval: Minimum value (inclusive, scalar).
-*@li maxval: Maximum value (exclusive, scalar).
+*@li maxval: Maximum value (exclusive, scalar) . \n
 
 *@par Outputs:
-*y:A Returns Random values with specified shape.
+*y:A Returns Random values with specified shape . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow StatefulRandomBinomial operator.
@@ -105,16 +105,16 @@ REG_OP(StatefulRandomBinomial)
     .OP_END_FACTORY_REG(StatefulRandomBinomial)
 
 /**
-*@brief Outputs random values from a normal distribution. \n
-*The generated values will have mean 0 and standard deviation 1.
+*@brief Outputs random values from a normal distribution.
+*The generated values will have mean 0 and standard deviation 1 . \n
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
-*@li shape: The shape of the output tensor.
+*@li shape: The shape of the output tensor . \n
 
 *@par Outputs:
-*y:A Returns A tensor of the specified shape filled with random normal values.
+*y:A Returns A tensor of the specified shape filled with random normal values . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow StatefulStandardNormalV2 operator.
@@ -128,18 +128,18 @@ REG_OP(StatefulStandardNormalV2)
     .OP_END_FACTORY_REG(StatefulStandardNormalV2)
 
 /**
-*@brief Outputs random values from a truncated normal distribution. \n
-*The generated values follow a normal distribution with mean 0 and standard \n
-*deviation 1, except that values whose magnitude is more than 2 standard \n
-*deviations from the mean are dropped and re-picked.
+*@brief Outputs random values from a truncated normal distribution.
+*The generated values follow a normal distribution with mean 0 and standard
+*deviation 1, except that values whose magnitude is more than 2 standard
+*deviations from the mean are dropped and re-picked . \n
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
-*@li shape: The shape of the output tensor.
+*@li shape: The shape of the output tensor . \n
 
 *@par Outputs:
-*y:A Returns Random values with specified shape.
+*y:A Returns Random values with specified shape . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow StatefulTruncatedNormal operator.
@@ -153,17 +153,17 @@ REG_OP(StatefulTruncatedNormal)
     .OP_END_FACTORY_REG(StatefulTruncatedNormal)
 
 /**
-*@brief Outputs random values from a uniform distribution. \n
-The generated values follow a uniform distribution in the range `[0, 1)`. The \n
-lower bound 0 is included in the range, while the upper bound 1 is excluded. \n
+*@brief Outputs random values from a uniform distribution.
+The generated values follow a uniform distribution in the range `[0, 1)`. The
+lower bound 0 is included in the range, while the upper bound 1 is excluded.
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
-*@li shape: The shape of the output tensor.
+*@li shape: The shape of the output tensor . \n
 
 *@par Outputs:
-*y:A Returns Random values with specified shape.
+*y:A Returns Random values with specified shape . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow StatefulUniform operator.
@@ -177,16 +177,16 @@ REG_OP(StatefulUniform)
     .OP_END_FACTORY_REG(StatefulUniform)
 
 /**
-*@brief Outputs random integers from a uniform distribution. \n
-The generated values are uniform integers covering the whole range of `dtype`.
+*@brief Outputs random integers from a uniform distribution.
+The generated values are uniform integers covering the whole range of `dtype` . \n
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
-*@li shape: The shape of the output tensor.
+*@li shape: The shape of the output tensor . \n
 
 *@par Outputs:
-*y:A  Returns Random values with specified shape.
+*y:A  Returns Random values with specified shape . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow StatefulUniformFullInt operator.
@@ -200,23 +200,23 @@ REG_OP(StatefulUniformFullInt)
     .OP_END_FACTORY_REG(StatefulUniformFullInt)
 
 /**
-*@brief Outputs random integers from a uniform distribution. \n
-The generated values are uniform integers in the range `[minval, maxval)`. \n
-The lower bound `minval` is included in the range, while the upper bound \n
-`maxval` is excluded. \n
-The random integers are slightly biased unless `maxval - minval` is an exact \n
-power of two.  The bias is small for values of `maxval - minval` significantly \n
-smaller than the range of the output (either `2^32` or `2^64`).
+*@brief Outputs random integers from a uniform distribution.
+The generated values are uniform integers in the range `[minval, maxval)`.
+The lower bound `minval` is included in the range, while the upper bound
+`maxval` is excluded.
+The random integers are slightly biased unless `maxval - minval` is an exact
+power of two.  The bias is small for values of `maxval - minval` significantly
+smaller than the range of the output (either `2^32` or `2^64`) . \n
 
 *@par Inputs:
 *@li resource: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor.
 *@li minval: Minimum value (inclusive, scalar).
-*@li maxval: Maximum value (exclusive, scalar).
+*@li maxval: Maximum value (exclusive, scalar) . \n
 
 *@par Outputs:
-*y:A Returns Random values with specified shape.
+*y:A Returns Random values with specified shape . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow StatefulUniformInt operator.

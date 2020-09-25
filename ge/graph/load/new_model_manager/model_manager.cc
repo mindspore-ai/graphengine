@@ -43,6 +43,13 @@ const std::string kCmdTypeProfInit = "prof_init";
 const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
 const std::string kCmdTypeProfStop = "prof_stop";
+const char *const kLoadOpFromBuf = "loadOpFromBuf";
+struct CustAicpuSoBuf {
+  uint64_t kernelSoBuf;
+  uint32_t kernelSoBufLen;
+  uint64_t kernelSoName;
+  uint32_t kernelSoNameLen;
+} __attribute__((packed));
 }  // namespace
 
 DumpProperties ModelManager::dump_properties_;
@@ -163,7 +170,13 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
     GELOGI("The session: %lu not created.", session_id);
     return;
   } else {
-    GE_CHK_RT(rtSetDevice(static_cast<int32_t>(GetContext().DeviceId())));
+    rtContext_t ctx = nullptr;
+    bool has_ctx = (rtCtxGetCurrent(&ctx) == RT_ERROR_NONE);
+    if (!has_ctx) {
+      GELOGI("Set device %u.", GetContext().DeviceId());
+      GE_CHK_RT(rtSetDevice(static_cast<int32_t>(GetContext().DeviceId())));
+    }
+
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0);
     if (ret != SUCCESS) {
       GELOGW("The session: %lu destroy failed.", session_id);
@@ -171,7 +184,11 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
       (void)sess_ids_.erase(session_id);
       GELOGI("The session: %lu destroyed.", session_id);
     }
-    GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
+
+    if (!has_ctx) {
+      GELOGI("Reset device %u.", GetContext().DeviceId());
+      GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
+    }
   }
 }
 
@@ -219,6 +236,7 @@ ModelManager::~ModelManager() {
   std::lock_guard<std::mutex> lock(map_mutex_);
   model_map_.clear();
   model_aicpu_kernel_.clear();
+  cust_aicpu_so_.clear();
 
   GE_IF_BOOL_EXEC(device_count > 0, GE_CHK_RT(rtDeviceReset(0)));
 }
@@ -919,7 +937,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     }
     davinci_model->SetDeviceId(device_id);
     davinci_model->SetOmName(model.om_name);
-    if (DumpManager::GetInstance().IsDumpOpen()) {
+    if (DumpManager::GetInstance().GetDumpProperties().IsDumpOpen()) {
       davinci_model->SetDumpProperties(DumpManager::GetInstance().GetDumpProperties());
     } else {
       davinci_model->SetDumpProperties(dump_properties_);
@@ -1067,6 +1085,67 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
     }
     return ret;
   }
+  return SUCCESS;
+}
+
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, string so_name) {
+  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
+  auto it = cust_aicpu_so_.find(so_name);
+  if (it == cust_aicpu_so_.end()) {
+    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
+                      op_desc->GetName().c_str(), so_name.c_str());
+    (void)cust_aicpu_so_.insert(so_name);
+    GELOGI("LaunchCustAicpuSo op name %s, so_name %s.", op_desc->GetName().c_str(), so_name.c_str());
+  }
+  return SUCCESS;
+}
+
+Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, string so_name) {
+  CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
+  if (aicpu_kernel == nullptr) {
+    GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  const void *aicpu_data = aicpu_kernel->GetBinData();
+  uint32_t aicpu_data_length = aicpu_kernel->GetBinDataSize();
+
+  void *d_aicpu_data = nullptr;
+  void *d_so_name = nullptr;
+  void *args = nullptr;
+  rtError_t status;
+  rtStream_t stream = nullptr;
+  GE_CHK_RT(rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM));
+  GE_CHK_RT(rtMemcpy(d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length, RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMalloc(&d_so_name, so_name.size(), RT_MEMORY_HBM));
+  GE_CHK_RT(rtMemcpy(d_so_name, so_name.size(), reinterpret_cast<const void *>(so_name.c_str()), so_name.size(),
+                     RT_MEMCPY_HOST_TO_DEVICE));
+
+  CustAicpuSoBuf cust_aicpu_so_buf;
+  cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
+  cust_aicpu_so_buf.kernelSoBufLen = aicpu_data_length;
+  cust_aicpu_so_buf.kernelSoName = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
+  cust_aicpu_so_buf.kernelSoNameLen = so_name.size();
+
+  uint32_t args_size = sizeof(CustAicpuSoBuf);
+  GE_CHK_RT(rtMalloc(&args, args_size, RT_MEMORY_HBM));
+  GE_CHK_RT(rtMemcpy(args, args_size, static_cast<void *>(&cust_aicpu_so_buf), args_size, RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtStreamCreate(&stream, 0));
+  GE_CHK_RT(rtCpuKernelLaunch(nullptr, kLoadOpFromBuf, 1, args, args_size, nullptr, stream));
+
+  status = rtStreamSynchronize(stream);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    GE_CHK_RT(rtStreamDestroy(stream));
+    GE_CHK_RT(rtFree(args));
+    GE_CHK_RT(rtFree(d_aicpu_data));
+    GE_CHK_RT(rtFree(d_so_name));
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  GE_CHK_RT(rtStreamDestroy(stream));
+  GE_CHK_RT(rtFree(args));
+  GE_CHK_RT(rtFree(d_aicpu_data));
+  GE_CHK_RT(rtFree(d_so_name));
+  GELOGI("Cpu kernel launch loadOpFromBuf task success.");
   return SUCCESS;
 }
 

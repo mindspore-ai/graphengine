@@ -618,7 +618,8 @@ Status HybridModelBuilder::VarNodeToTensor(const NodePtr &var_node, std::unique_
   }
 
   int64_t var_size = CalcVarSizeInBytes(*tensor_desc);
-  tensor.reset(new (std::nothrow) TensorValue(dev_mem, var_size));
+  // var size is only for checking, will not allocate any memory by it
+  tensor.reset(new (std::nothrow) TensorValue(dev_mem, static_cast<size_t>(var_size)));
   GE_CHECK_NOTNULL(tensor);
   return SUCCESS;
 }

@@ -26,7 +26,7 @@
 namespace ge {
 
 /**
-*@brief Computes NPU alloc float status operator function.
+*@brief Computes NPU alloc float status operator function . \n
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
@@ -36,10 +36,10 @@ REG_OP(NPUAllocFloatStatusOperator)
     .OP_END_FACTORY_REG(NPUAllocFloatStatusOperator)
 
 /**
-*@brief Computes NPU clear float status operator function.
+*@brief Computes NPU clear float status operator function . \n
 
 *@par Inputs:
-*addr: A Tensor of data memory address. Must be float32.
+*addr: A Tensor of data memory address. Must be float32 . \n
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
@@ -50,10 +50,10 @@ REG_OP(NPUClearFloatStatusOperator)
     .OP_END_FACTORY_REG(NPUClearFloatStatusOperator)
 
 /**
-*@brief Computes NPU get float status operator function.
+*@brief Computes NPU get float status operator function . \n
 
 *@par Inputs:
-*addr: A Tensor of data memory address. Must be float32.
+*addr: A Tensor of data memory address. Must be float32 . \n
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
@@ -64,7 +64,7 @@ REG_OP(NPUGetFloatStatusOperator)
     .OP_END_FACTORY_REG(NPUGetFloatStatusOperator)
 
 /**
-*@brief Produces a variable with 0 in memory.
+*@brief Produces a variable with 0 in memory . \n
 
 *@par Outputs:
 *y: A Tensor of type int32, output eight numbers with a value of zero.
@@ -74,10 +74,10 @@ REG_OP(NPUAllocFloatStatus)
     .OP_END_FACTORY_REG(NPUAllocFloatStatus)
 
 /**
-*@brief Set the value of address 0x40000 to 0 in each core.
+*@brief Set the value of address 0x40000 to 0 in each core . \n
 
 *@par Inputs:
-*addr: A tensor of type float32.
+*addr: A tensor of type float32 . \n
 
 *@par Outputs:
 *data: A Tensor of type float32.
@@ -88,10 +88,10 @@ REG_OP(NPUClearFloatStatus)
     .OP_END_FACTORY_REG(NPUClearFloatStatus)
 
 /**
-*@brief Get the value of address 0x40000.
+*@brief Get the value of address 0x40000 . \n
 
 *@par Inputs:
-*addr: A tensor of type float32.
+*addr: A tensor of type float32 . \n
 
 *@par Outputs:
 *data: A Tensor of type float32.

@@ -27,20 +27,20 @@
 namespace ge {
 
 /**
-*@brief Returns a `RaggedTensor` containing the specified sequences of numbers.
+*@brief Returns a `RaggedTensor` containing the specified sequences of numbers . \n
 
 *@par Inputs:
 *@li starts: The starts of each range.
 *@li limits: The limits of each range.
-*@li deltas: The deltas of each range.
+*@li deltas: The deltas of each range . \n
 
 *@par Outputs:
-*y:A Returns The `row_splits` for the returned `RaggedTensor`.The `flat_values` for the returned `RaggedTensor`.
+*y:A Returns The `row_splits` for the returned `RaggedTensor`.The `flat_values` for the returned `RaggedTensor` . \n
 
-*@attention Constraints: \n
-*The input tensors `starts`, `limits`, and `deltas` may be scalars or vectors. \n
-*The vector inputs must all have the same size.  Scalar inputs are broadcast \n
-*to match the size of the vector inputs.
+*@attention Constraints:
+*The input tensors `starts`, `limits`, and `deltas` may be scalars or vectors.
+*The vector inputs must all have the same size.  Scalar inputs are broadcast
+*to match the size of the vector inputs . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow RaggedRange operator.

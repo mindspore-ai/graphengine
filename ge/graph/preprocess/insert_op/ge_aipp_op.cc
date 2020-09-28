@@ -825,6 +825,7 @@ Status AippOp::AddAttrToAippData(const OpDescPtr &aipp_data_op_desc) {
 }
 
 Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size) {
+  static int index = 0;
   std::vector<int64_t> input_shape_dim(1, max_dynamic_aipp_size);
   GeShape input_shape(input_shape_dim);
   // construct input tensor

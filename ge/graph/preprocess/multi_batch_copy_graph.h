@@ -69,6 +69,8 @@ class MultiBatchGraphCopyer {
 
   // label status for origin_all_nodes_
   Status LabelStatus();
+  void InitStatus(std::map<string, vector<NodePtr>> &frame_enters);
+  void ResetEnterStatus(std::map<string, vector<NodePtr>> &frame_enters, const NodePtr &node);
   // add nodes functions
   Status CreateNewNodes();
 

@@ -725,14 +725,14 @@ REG_OP(Conv2D)
     |          | int8    | int8    | int32   | int8     | int32
     -----------|---------|---------|---------|----------|--------
     |Format    | NCHW    | NCHW    | ND      | ND       | NCHW
-    |          | NHWC    | NHWC    |         |          | NHWC
-    |          |         | HWCN    |         |          |
+    |          | NHWC    | HWCN    |         |          | NHWC
 @endverbatim
-* It should be noted that the data types must correspond to each other, but the
-* format does not need to . \n
-
+* Type float32 is allowed only in mixed precision (float32->float16) scenarios.
+* Mixed precision is enabled by default.
+* \n
+*
 *@par Attributes:
-* @li strides: A list of 4 integers. Specifying the strides of the
+*@li strides: Required. A list of 4 integers. Specifying the strides of the
 * convolution along the height and width. The dimension order is determined
 * by the data format of "x". By default the N and C dimensions are set to 1.
 * @li pads: A list of 4 integers. Specifying the top, bottom, left and right
@@ -865,8 +865,8 @@ REG_OP(Conv2DCompress)
 * "HxW(filter)" indicates the filter size after dilation.
 
 *@par Quantization supported or not
-* Yes
-
+*@li Yes
+*
 *@par Third-party framework compatibility
 *@li Compatible with the TensorFlow operator "conv2d".
 *@li Compatible with the Caffe operator 2D "Convolution".

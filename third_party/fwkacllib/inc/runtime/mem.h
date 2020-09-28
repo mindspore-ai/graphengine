@@ -159,7 +159,12 @@ typedef struct rtAiCoreMemorySize {
  * @ingroup dvrt_mem
  * @brief memory type
  */
-typedef enum tagRtMemoryType { RT_MEMORY_TYPE_HOST = 1, RT_MEMORY_TYPE_DEVICE = 2 } rtMemoryType_t;
+typedef enum tagRtMemoryType { 
+    RT_MEMORY_TYPE_HOST = 1, 
+    RT_MEMORY_TYPE_DEVICE = 2 , 
+    RT_MEMORY_TYPE_SVM = 3,
+    RT_MEMORY_TYPE_DVPP = 4
+} rtMemoryType_t;
 
 /**
  * @ingroup dvrt_mem
@@ -167,8 +172,8 @@ typedef enum tagRtMemoryType { RT_MEMORY_TYPE_HOST = 1, RT_MEMORY_TYPE_DEVICE = 
  */
 typedef struct tagRtPointerAttributes {
   rtMemoryType_t memoryType;  // host memory or device memory
+  rtMemoryType_t locationType;
   uint32_t deviceID;          // device ID
-  uint32_t isManaged;
   uint32_t pageSize;
 } rtPointerAttributes_t;
 

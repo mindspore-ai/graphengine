@@ -68,6 +68,9 @@ REG_OP(CacheUpdate)
 
 *@par Outputs:
 *The output is dynamic for attribute func_name.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(InternalDataMove)
     .INPUT(x, TensorType::ALL())

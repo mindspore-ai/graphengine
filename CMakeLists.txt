@@ -91,6 +91,7 @@ else()
     find_library(register libregister.so ${ASCEND_RUNTIME_DIR})
     find_library(resource libresource.so ${ASCEND_RUNTIME_DIR})
     find_library(error_manager liberror_manager.so ${ASCEND_RUNTIME_DIR})
+    find_library(adump_server libadump_server.a ${ASCEND_RUNTIME_DIR})
 endif()
 
 # add compile flags

@@ -224,6 +224,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   ge::Status GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
+  ge::Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
+
   ///
   /// @ingroup domi_ome
   /// @brief set model input and output size zero copy

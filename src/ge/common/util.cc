@@ -58,7 +58,7 @@ const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 const int kMaxFileSizeLimit = INT_MAX;
 const int kMaxBuffSize = 256;
 const char *const kPathValidReason = "The path can only contain 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
-constexpr uint32_t MAX_CONFIG_FILE_BYTE = 10 * 1024 * 1024;
+constexpr uint32_t kMaxConfigFileByte = 10 * 1024 * 1024;
 }  // namespace
 
 namespace ge {
@@ -512,9 +512,9 @@ FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
            stat.st_mode);
     return false;
   }
-  if (stat.st_size > MAX_CONFIG_FILE_BYTE) {
+  if (stat.st_size > kMaxConfigFileByte) {
     GELOGE(PARAM_INVALID, "config file %s size[%ld] is larger than max config file Bytes[%u]",
-           resolved_file_path.c_str(), stat.st_size, MAX_CONFIG_FILE_BYTE);
+           resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
     return false;
   }
   return true;

@@ -186,6 +186,73 @@ REG_OP(PadD)
     .OP_END_FACTORY_REG(PadD)
 
 /**
+*@brief Pads a tensor.
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, uint32, uint64.
+* @li paddings: A Tensor of type int32 or int64.
+* @li constant_values: A optional Tensor of int32 or int64
+
+*@par Attributes:
+* @li mode: An optional string, Defaults to "constant", indicates paddings mode,
+*     support "constant", "reflect", "edge"
+* @li paddings_contiguous: An optional bool value, Defaults to true.
+*     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
+*     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
+
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with ONNX operator Pad.
+*/
+REG_OP(PadV3)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(paddings, TensorType::IndexNumberType())
+    .OPTIONAL_INPUT(constant_values, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(mode, String, "constant")
+    .ATTR(paddings_contiguous, Bool, true)
+    .OP_END_FACTORY_REG(PadV3)
+
+/**
+*@brief Pads a tensor.
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
+
+*@par Attributes:
+* @li paddings: An required "vector<vector<int>>".
+*     For each dimension D of input, paddings[D, 0] indicates how many
+*     values to add before the contents of tensor in that dimension,
+*     and paddings[D, 1] indicates how many values to add after the
+*     contents of tensor in that dimension.
+* @li constant_values: An optional int value for pad.
+* @li mode: An optional string, Defaults to "constant", indicates paddings mode,
+*     support "constant", "reflect", "edge"
+* @li paddings_contiguous: An optional bool value, Defaults to true.
+*     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
+*     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
+
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with ONNX operator Pad.
+*/
+REG_OP(PadV3D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
+    .REQUIRED_ATTR(paddings, ListListInt)
+    .ATTR(constant_values, Int, 0)
+    .ATTR(mode, String, "constant")
+    .ATTR(paddings_contiguous, Bool, true)
+    .OP_END_FACTORY_REG(PadV3D)
+
+/**
 *@brief Create a diagonal tensor
 
 *@par Inputs:
@@ -257,6 +324,9 @@ REG_OP(AscendPadding)
 
 /**
 *@brief EmbeddingRankId, traverse the index calculation server and its position in the server . \n
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS DEPRECATED. Please do not use. \n
 
 *@par Inputs:
 *One input, include:

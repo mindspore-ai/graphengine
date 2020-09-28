@@ -1035,6 +1035,9 @@ REG_OP(ROIPooling)
 *@par Outputs:
 * @ decoded_boxes: A Tensor. Must have the same type as box_predictions.
 *                    N-D with shape [N, 4].
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeBbox)
     .INPUT(box_predictions, TensorType{DT_FLOAT16})
@@ -1052,6 +1055,9 @@ REG_OP(DecodeBbox)
 
 *@par Outputs:
 *boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ClipBoxes)
     .INPUT(boxes_input, TensorType({DT_FLOAT16}))
@@ -1270,6 +1276,9 @@ REG_OP(RpnProposalPostProcessing)
 *
 *@par Outputs:
 * @ boundary_encoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeBoundariesTarget)
     .INPUT(boundary_predictions, TensorType({DT_FLOAT16}))
@@ -1287,6 +1296,9 @@ REG_OP(DecodeBoundariesTarget)
 *
 *@par Outputs:
 * @ keypoints_decoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeCornerpointsTargetBG)
     .INPUT(keypoints_prediction, TensorType({DT_FLOAT16}))
@@ -1304,6 +1316,9 @@ REG_OP(DecodeCornerpointsTargetBG)
 *
 *@par Outputs:
 * @ keypoints_decoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeCornerpointsTargetWrtCenterV1)
     .INPUT(keypoints_prediction, TensorType({DT_FLOAT16}))
@@ -1321,6 +1336,9 @@ REG_OP(DecodeCornerpointsTargetWrtCenterV1)
 *
 *@par Outputs:
 * @ boundary_encoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeWheelsTarget)
     .INPUT(boundary_predictions, TensorType({DT_FLOAT16}))

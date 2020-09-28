@@ -125,7 +125,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       rt_model_stream_(nullptr),
       is_inner_model_stream_(false),
       is_async_mode_(false),
-      last_execute_mode_(false),
+      last_execute_mode_(INITIALIZATION),
       session_id_(0),
       device_id_(0),
       maxDumpOpNum_(0),
@@ -1573,6 +1573,48 @@ Status DavinciModel::GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info) {
   return SUCCESS;
 }
 
+Status DavinciModel::GetAippType(uint32_t index, InputAippType &type, size_t &aipp_index) {
+  GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
+  // Set default value
+  type = DATA_WITHOUT_AIPP;
+  aipp_index = 0xFFFFFFFF;  // default invalid value
+  OpDescPtr data_op = data_op_list_[index];
+  GE_CHECK_NOTNULL(data_op);
+  if (!data_op->HasAttr(ATTR_DATA_RELATED_AIPP_MODE)) {
+    GELOGW("There is no aipp releated info with index %u.", index);
+    return SUCCESS;
+  }
+  std::string data_mode;
+  (void)AttrUtils::GetStr(data_op, ATTR_DATA_RELATED_AIPP_MODE, data_mode);
+  if (data_mode == "static_aipp") {
+    type = DATA_WITH_STATIC_AIPP;
+  } else if (data_mode == "dynamic_aipp") {
+    type = DATA_WITH_DYNAMIC_AIPP;
+  } else if (data_mode == "dynamic_aipp_conf") {
+    type = DYNAMIC_AIPP_NODE;
+  } else {
+    GELOGE(INTERNAL_ERROR, "The info of aipp releated info %s is invalid with index %u.", data_mode.c_str(), index);
+    return INTERNAL_ERROR;
+  }
+
+  if (type == DATA_WITH_DYNAMIC_AIPP) {
+    string releated_name;
+    (void)AttrUtils::GetStr(data_op, ATTR_DATA_AIPP_DATA_NAME_MAP, releated_name);
+    for (size_t i = 0; i < data_op_list_.size(); ++i) {
+      GE_CHECK_NOTNULL(data_op_list_[i]);
+      if (data_op_list_[i]->GetName() == releated_name) {
+        GELOGI("Find aipp_data [%s] index %zu from index %u", releated_name.c_str(), i, index);
+        aipp_index = i;
+      }
+    }
+    if (aipp_index == 0xFFFFFFFF) {
+      GELOGE(INTERNAL_ERROR, "Can not find aipp data node from index %u", index);
+      return INTERNAL_ERROR;
+    }
+  }
+  return SUCCESS;
+}
+
 void DavinciModel::SetDynamicSize(const std::vector<uint64_t> &batch_num, int32_t dynamic_type) {
   batch_size_.clear();
   if (batch_num.empty()) {
@@ -1666,9 +1708,9 @@ void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, 
     return;
   }
   // judge if this data is linked dynamic aipp first, multiply batch has been considered
-  if (op_desc->HasAttr("_dynamic_aipp_input_dims")) {
+  if (op_desc->HasAttr(ATTR_DYNAMIC_AIPP_INPUT_DIMS)) {
     vector<int64_t> dynamic_aipp_input_dims;
-    (void)AttrUtils::GetListInt(op_desc, "_dynamic_aipp_input_dims", dynamic_aipp_input_dims);
+    (void)AttrUtils::GetListInt(op_desc, ATTR_DYNAMIC_AIPP_INPUT_DIMS, dynamic_aipp_input_dims);
     SetInputDimsInfo(dynamic_aipp_input_dims, format, input);
     return;
   } else {
@@ -3371,11 +3413,15 @@ bool DavinciModel::IsBroadCastOpData(const ge::NodePtr &var_node) {
 /// @return Status
 ///
 Status DavinciModel::InitModelStream(rtStream_t stream) {
+  ExecuteMode curr_mode = is_async_mode_ ? ASYNCHRONIZATION : SYNCHRONIZATION;
+  GE_CHK_BOOL_RET_STATUS((curr_mode == last_execute_mode_) || (last_execute_mode_ == INITIALIZATION), INTERNAL_ERROR,
+                         "NnExecute not support mix execute.");
+  last_execute_mode_ = curr_mode;
+
   // asynchronize mode, use user input stream.
   if (is_async_mode_) {
     rt_model_stream_ = stream;
     is_inner_model_stream_ = false;
-    last_execute_mode_ = true;
     return SUCCESS;
   }
 
@@ -3387,14 +3433,12 @@ Status DavinciModel::InitModelStream(rtStream_t stream) {
 
     rt_model_stream_ = stream;
     is_inner_model_stream_ = false;
-    last_execute_mode_ = false;
     return SUCCESS;
   }
 
-  if (last_execute_mode_ || (rt_model_stream_ == nullptr)) {
+  if (rt_model_stream_ == nullptr) {
     GE_CHK_RT_RET(rtStreamCreateWithFlags(&rt_model_stream_, priority_, RT_STREAM_FORBIDDEN_DEFAULT));
     is_inner_model_stream_ = true;
-    last_execute_mode_ = false;
   }
 
   return SUCCESS;

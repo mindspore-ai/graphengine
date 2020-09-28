@@ -491,7 +491,7 @@ Status SplitIdentityAlongAnchor(const OutDataAnchorPtr &out_data_anchor, const I
   if (input_rw_type == InputRWType::kScopeWriteable || input_rw_type == InputRWType::kWriteable) {
     auto new_identity = CreateIdentityAfterSrcNode(*pre_node, pre_out_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(new_identity);
-    if (GraphUtils::AddEdge(pre_out_data_anchor, new_identity->GetInDataAnchor(kIdentityAnchorIndex)) != SUCCESS &&
+    if (GraphUtils::AddEdge(pre_out_data_anchor, new_identity->GetInDataAnchor(kIdentityAnchorIndex)) != SUCCESS ||
         GraphUtils::AddEdge(new_identity->GetOutDataAnchor(kIdentityAnchorIndex), peer_in_data_anchor) != SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Failed to insert Identity between node %s and %s",
              pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),

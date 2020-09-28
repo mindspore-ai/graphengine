@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "utils/node_utils.h"
-#include "utils/op_desc_utils.h"
+#include "graph/utils/node_utils.h"
+#include "graph/utils/op_desc_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -23,8 +23,13 @@
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/types.h"
-#include "utils/tensor_utils.h"
-#include "utils/type_utils.h"
+#include "external/graph/operator.h"
+#include "graph/ge_context.h"
+#include "graph/runtime_inference_context.h"
+#include "graph/utils/op_desc_utils.h"
+#include "graph/utils/tensor_utils.h"
+#include "graph/utils/tensor_adapter.h"
+#include "graph/utils/type_utils.h"
 
 namespace ge {
 std::map<NodePtr, std::vector<uint32_t>> NodeUtils::map_send_info_{};
@@ -575,6 +580,58 @@ graphStatus NodeUtils::GetNodeUnknownShapeStatus(const Node &node, bool &is_unkn
   return GRAPH_SUCCESS;
 }
 
+graphStatus NodeUtils::GetInputConstData(const ConstNodePtr &node_ptr, const string &dst_name, GeTensorPtr &ge_tensor) {
+  GE_CHECK_NOTNULL(node_ptr);
+  return NodeUtils::GetInputConstData(*node_ptr, dst_name, ge_tensor);
+}
+
+graphStatus NodeUtils::GetInputConstData(const Node &node, const string &dst_name, GeTensorPtr &ge_tensor) {
+  // For inner compute graph
+  auto op_desc = node.GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  auto index = op_desc->GetInputIndexByName(dst_name);
+  auto in_data_anchor = node.GetInDataAnchor(index);
+  GE_CHECK_NOTNULL(in_data_anchor);
+  auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
+  GE_CHECK_NOTNULL(out_data_anchor);
+  auto peer_node = out_data_anchor->GetOwnerNode();
+  GE_CHECK_NOTNULL(peer_node);
+  auto peer_op_desc = peer_node->GetOpDesc();
+  GE_CHECK_NOTNULL(peer_op_desc);
+  auto peer_op_type = peer_op_desc->GetType();
+  if (peer_op_type == CONSTANTOP || peer_op_type == CONSTANT) {
+    if (!AttrUtils::MutableTensor(peer_node->GetOpDesc(), ATTR_NAME_WEIGHTS, ge_tensor)) {
+      GELOGW("get attr name %s failed.", ATTR_NAME_WEIGHTS.c_str());
+      return GRAPH_FAILED;
+    }
+    return GRAPH_SUCCESS;
+  } else if (peer_op_type == DATA) {
+    auto parent_node = NodeUtils::GetParentInput(peer_node);
+    while ((parent_node != nullptr) && (parent_node->GetType() == DATA)) {
+      parent_node = NodeUtils::GetParentInput(parent_node);
+    }
+    if ((parent_node != nullptr) && ((parent_node->GetType() == CONSTANT) || (parent_node->GetType() == CONSTANTOP))) {
+      if (!AttrUtils::MutableTensor(parent_node->GetOpDesc(), ATTR_NAME_WEIGHTS, ge_tensor)) {
+        GELOGW("get attr name %s failed.", ATTR_NAME_WEIGHTS.c_str());
+        return GRAPH_FAILED;
+      }
+      return GRAPH_SUCCESS;
+    }
+  }
+  // Try get from runtime inference context
+  auto session_id = std::to_string(GetContext().SessionId());
+  RuntimeInferenceContext *runtime_infer_ctx = nullptr;
+  if (RuntimeInferenceContext::GetContext(session_id, &runtime_infer_ctx) == GRAPH_SUCCESS) {
+    GELOGD("To get constant from runtime inference context. session_id = %s", session_id.c_str());
+    auto ret = runtime_infer_ctx->GetTensor(peer_node->GetOpDesc()->GetId(), out_data_anchor->GetIdx(), ge_tensor);
+    if (ret == GRAPH_SUCCESS) {
+      return GRAPH_SUCCESS;
+    }
+  }
+  GELOGW("node[%s]'s input[%s]'s peer node is not const", node.GetName().c_str(), dst_name.c_str());
+  return GRAPH_FAILED;
+}
+
 std::string NodeUtils::GetNodeType(const Node &node) {
   if (node.GetType() != FRAMEWORKOP) {
     return node.GetType();
@@ -586,14 +643,6 @@ std::string NodeUtils::GetNodeType(const Node &node) {
 }
 
 std::string NodeUtils::GetNodeType(const NodePtr &node) { return node == nullptr ? "" : GetNodeType(*node); }
-
-graphStatus NodeUtils::GetInputConstData(const ConstNodePtr &node_ptr, const string &dst_name, GeTensorPtr &ge_tensor) {
-  return GRAPH_SUCCESS;
-}
-
-graphStatus NodeUtils::GetInputConstData(const Node &node, const string &dst_name, GeTensorPtr &ge_tensor) {
-  return GRAPH_SUCCESS;
-}
 
 ComputeGraphPtr NodeUtils::GetSubgraph(const Node &node, uint32_t index) {
   auto op_desc = node.GetOpDesc();

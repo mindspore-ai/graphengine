@@ -2795,11 +2795,18 @@ Status GraphManager::SaveVariables(const Graph &graph, const std::vector<std::st
         GELOGE(FAILED, "Fetch var[%s] value failed.", var_name.c_str());
         return FAILED;
       } else {
+        auto var_tensor = var_results[var_name].GetTensorDesc();
+        var_tensor.SetName(var_name);
+        var_results[var_name].SetTensorDesc(var_tensor);
         var_values.emplace_back(var_results[var_name]);
       }
     }
   } else {
     for (auto iter = var_results.begin(); iter != var_results.end(); ++iter) {
+      string var_name = iter->first;
+      auto var_tensor = iter->second.GetTensorDesc();
+      var_tensor.SetName(var_name);
+      iter->second.SetTensorDesc(var_tensor);
       var_values.emplace_back(iter->second);
     }
   }

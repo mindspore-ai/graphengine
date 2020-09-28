@@ -29,13 +29,14 @@ using std::vector;
 
 namespace {
 const uint32_t kMaxDeviceNum = 64;
-const std::string PROFILING_INIT = "prof_init";
-const std::string PROFILING_FINALIZE = "prof_finalize";
-const std::string PROFILING_START = "prof_start";
-const std::string PROFILING_STOP = "prof_stop";
-const std::string DEVICES_NUMS = "devNums";
-const std::string DEVICE_ID_LIST = "devIdList";
-const std::string AICORE_METRICS = "aicoreMetrics";
+const uint32_t kDeviceListIndex = 3;
+const std::string kProfilingInit = "prof_init";
+const std::string kProfilingFinalize = "prof_finalize";
+const std::string kProfilingStart = "prof_start";
+const std::string kProfilingStop = "prof_stop";
+const std::string kDeviceNums = "devNums";
+const std::string kDeviceIdList = "devIdList";
+const std::string kAicoreMetrics = "aicoreMetrics";
 
 const std::map<ge::ProfilingAicoreMetrics, std::string> kProfAicoreMetricsToString = {
   {ge::kAicoreArithmaticThroughput, "AICORE_ARITHMATIC_THROUGHPUT"},
@@ -43,25 +44,7 @@ const std::map<ge::ProfilingAicoreMetrics, std::string> kProfAicoreMetricsToStri
   {ge::kAicoreSynchronization, "AICORE_SYNCHRONIZATION"},
   {ge::kAicoreMemory, "AICORE_MEMORY"},
   {ge::kAicoreInternalMemory, "AICORE_INTERNAL_MEMORY"},
-  {ge::kAicoreStall, "AICORE_STALL"},
-  {ge::kAicoreMetricsAll, "AICORE_METRICS_ALL"}};
-
-const std::map<uint64_t, uint64_t> kDataTypeConfigMapping = {{ge::kProfAcl, PROF_ACL_API},
-                                                             {ge::kProfTaskTime, PROF_TASK_TIME},
-                                                             {ge::kProfAiCoreMetrics, PROF_AICORE_METRICS},
-                                                             {ge::kProfAicpuTrace, PROF_AICPU_TRACE},
-                                                             {ge::kProfModelExecute, PROF_MODEL_EXECUTE},
-                                                             {ge::kProfRuntimeApi, PROF_RUNTIME_API},
-                                                             {ge::kProfRuntimeTrace, PROF_RUNTIME_TRACE},
-                                                             {ge::kProfScheduleTimeline, PROF_SCHEDULE_TIMELINE},
-                                                             {ge::kProfScheduleTrace, PROF_SCHEDULE_TRACE},
-                                                             {ge::kProfAiVectorCoreMetrics, PROF_AIVECTORCORE_METRICS},
-                                                             {ge::kProfSubtaskTime, PROF_SUBTASK_TIME},
-                                                             {ge::kProfTrainingTrace, PROF_TRAINING_TRACE},
-                                                             {ge::kProfHcclTrace, PROF_HCCL_TRACE},
-                                                             {ge::kProfDataProcess, PROF_DATA_PROCESS},
-                                                             {ge::kProfTaskTrace, PROF_TASK_TRACE},
-                                                             {ge::kProfModelLoad, PROF_MODEL_LOAD}};
+  {ge::kAicoreStall, "AICORE_STALL"}};
 }  // namespace
 
 static bool g_graph_prof_init_ = false;
@@ -107,11 +90,11 @@ Status aclgrphProfInit(const char *profiler_path, uint32_t length) {
   GraphLoader graph_loader;
   Command command;
   command.cmd_params.clear();
-  command.cmd_type = PROFILING_INIT;
-  command.module_index = kProfModelLoad | kProfTrainingTrace;
+  command.cmd_type = kProfilingInit;
+  command.module_index = PROF_MODEL_LOAD;
   ret = graph_loader.CommandHandle(command);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Handle profiling command %s failed, config = %s", PROFILING_INIT.c_str(), profiler_path);
+    GELOGE(ret, "Handle profiling command %s failed, config = %s", kProfilingInit.c_str(), profiler_path);
     return ret;
   }
   if (!g_graph_prof_init_) {
@@ -143,10 +126,10 @@ Status aclgrphProfFinalize() {
   GraphLoader graph_loader;
   Command command;
   command.cmd_params.clear();
-  command.cmd_type = PROFILING_FINALIZE;
+  command.cmd_type = kProfilingFinalize;
   Status ret = graph_loader.CommandHandle(command);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Handle profiling command %s failed.", PROFILING_FINALIZE.c_str());
+    GELOGE(ret, "Handle profiling command %s failed.", kProfilingFinalize.c_str());
     return ret;
   }
 
@@ -164,9 +147,9 @@ Status aclgrphProfFinalize() {
 
 bool TransProfConfigToParam(const aclgrphProfConfig *profiler_config, vector<string> &prof_config_params) {
   prof_config_params.clear();
-  prof_config_params.emplace_back(DEVICES_NUMS);
+  prof_config_params.emplace_back(kDeviceNums);
   prof_config_params.emplace_back(std::to_string(profiler_config->config.devNums));
-  prof_config_params.emplace_back(DEVICE_ID_LIST);
+  prof_config_params.emplace_back(kDeviceIdList);
   std::string devID = "";
   if (profiler_config->config.devNums == 0) {
     GELOGW("The device num is invalid.");
@@ -180,7 +163,7 @@ bool TransProfConfigToParam(const aclgrphProfConfig *profiler_config, vector<str
   }
 
   prof_config_params.push_back(devID);
-  prof_config_params.push_back(AICORE_METRICS);
+  prof_config_params.push_back(kAicoreMetrics);
   auto iter =
     kProfAicoreMetricsToString.find(static_cast<ProfilingAicoreMetrics>(profiler_config->config.aicoreMetrics));
   if (iter == kProfAicoreMetricsToString.end()) {
@@ -250,13 +233,7 @@ aclgrphProfConfig *aclgrphProfCreateConfig(uint32_t *deviceid_list, uint32_t dev
   }
 
   config->config.aicoreMetrics = static_cast<ProfAicoreMetrics>(aicore_metrics);
-  uint64_t data_type = 0;
-  for (auto &iter : kDataTypeConfigMapping) {
-    if ((iter.first & data_type_config) == iter.first) {
-      data_type |= iter.second;
-    }
-  }
-  config->config.dataTypeConfig = data_type;
+  config->config.dataTypeConfig = data_type_config;
   GELOGI("Successfully create prof config.");
   return config;
 }
@@ -309,9 +286,11 @@ Status aclgrphProfStart(aclgrphProfConfig *profiler_config) {
   GraphLoader graph_loader;
   Command command;
   command.cmd_params.clear();
-  command.cmd_type = PROFILING_START;
+  command.cmd_type = kProfilingStart;
   command.cmd_params = prof_params;
   command.module_index = profiler_config->config.dataTypeConfig;
+  GELOGI("Profiling will start, device nums:%s , deviceID:[%s], data type config: 0x%llx", prof_params[0].c_str(),
+         prof_params[kDeviceListIndex].c_str(), command.module_index);
   ret = graph_loader.CommandHandle(command);
   if (ret != SUCCESS) {
     GELOGE(ret, "Handle profiling command failed");
@@ -360,9 +339,11 @@ Status aclgrphProfStop(aclgrphProfConfig *profiler_config) {
   GraphLoader graph_loader;
   Command command;
   command.cmd_params.clear();
-  command.cmd_type = PROFILING_STOP;
+  command.cmd_type = kProfilingStop;
   command.cmd_params = prof_params;
   command.module_index = profiler_config->config.dataTypeConfig;
+  GELOGI("Profiling will stop, device nums:%s , deviceID:[%s], data type config: 0x%llx", prof_params[0].c_str(),
+         prof_params[kDeviceListIndex].c_str(), command.module_index);
   ret = graph_loader.CommandHandle(command);
   if (ret != SUCCESS) {
     GELOGE(ret, "Handle profiling command failed");

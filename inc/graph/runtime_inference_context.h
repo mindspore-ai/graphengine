@@ -23,6 +23,7 @@
 #include <vector>
 #include "external/graph/ge_error_codes.h"
 #include "external/graph/tensor.h"
+#include "ge_attr_value.h"
 
 namespace ge {
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY RuntimeInferenceContext {
@@ -32,10 +33,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY RuntimeInferenceContext {
   static void DestroyContext(const std::string &context_id);
 
   graphStatus SetTensor(int64_t node_id, int output_id, Tensor &&tensor);
+  graphStatus GetTensor(int64_t node_id, int output_id, GeTensorPtr &tensor);
   graphStatus GetTensor(int64_t node_id, int output_id, Tensor &tensor);
 
  private:
   std::map<int64_t, std::vector<Tensor>> tensors_;
+  std::map<int64_t, std::vector<GeTensorPtr>> ge_tensors_;
   std::mutex mu_;
 
   static std::map<std::string, std::unique_ptr<RuntimeInferenceContext>> contexts_;

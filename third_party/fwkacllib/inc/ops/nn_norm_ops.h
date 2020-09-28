@@ -335,6 +335,8 @@ REG_OP(LogSoftmaxV2)
 *@par Outputs:
 * y: A Tensor of the same type as "grad" . \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionSoftmaxGrad)
   .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -499,6 +501,9 @@ REG_OP(LayerNorm)
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormGrad)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -540,6 +545,9 @@ REG_OP(LayerNormGrad)
 *@par Outputs:
 *Three outputs, including:
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormXBackprop)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -579,6 +587,9 @@ REG_OP(LayerNormXBackprop)
 *Three outputs, including:
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormBetaGammaBackprop)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -811,6 +822,9 @@ instruction . \n
 
 *@par Third-party framework compatibility
 *@li Compatible with the PyTorch operator GroupNorm.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(GroupNorm)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -862,6 +876,9 @@ Specifies the variance of "x" . \n
 
 *@par Third-party framework compatibility
 *@li Compatible with the PyTorch operator InstanceNorm.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(InstanceNormV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

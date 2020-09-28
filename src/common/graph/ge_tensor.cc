@@ -431,7 +431,7 @@ graphStatus GeTensorDesc::GetShapeRange(std::vector<std::pair<int64_t, int64_t>>
       return GRAPH_FAILED;
     }
     std::pair<int64_t, int64_t> pair({ele[0], ele[1]});
-    range.push_back(pair);
+    range.emplace_back(pair);
   }
 
   return GRAPH_SUCCESS;

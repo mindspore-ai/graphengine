@@ -745,6 +745,22 @@ Status GeExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo
   GELOGI("GetAIPPInfo succ.");
   return SUCCESS;
 }
+
+Status GeExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
+  GELOGI("Begin to get aipp type.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetAippType(model_id, index, type, aipp_index);
+  if (ret != SUCCESS) {
+    GELOGW("Get aipp type is not success.");
+    return ret;
+  }
+  GELOGI("Get aipp type success.");
+  return SUCCESS;
+}
+
 Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dynamic_output_shape_info) {
   GELOGI("Begin to get dynamic batch output shape info");
   if (!isInit_) {

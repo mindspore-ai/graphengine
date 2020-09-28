@@ -876,6 +876,14 @@ Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippCo
   return davinci_model->GetAIPPInfo(index, aipp_info);
 }
 
+Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetAIPPInfo failed, invalid model_id is %u.",
+                         model_id);
+
+  return davinci_model->GetAippType(index, type, aipp_index);
+}
+
 Status ModelManager::GenSessionId(uint64_t &session_id) {
   std::lock_guard<std::mutex> lock(session_id_create_mutex_);
 

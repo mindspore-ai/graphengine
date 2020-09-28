@@ -63,6 +63,10 @@ class InnerSession {
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
 
+  Status AddDumpProperties(const DumpProperties &dump_properties);
+
+  Status RemoveDumpProperties();
+
  private:
   bool init_flag_;
   uint64_t session_id_;

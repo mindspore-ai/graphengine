@@ -30,6 +30,9 @@ namespace ge {
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUAllocFloatStatusOperator)
     .OUTPUT(data, TensorType({DT_FLOAT}))
@@ -43,6 +46,9 @@ REG_OP(NPUAllocFloatStatusOperator)
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUClearFloatStatusOperator)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -57,6 +63,9 @@ REG_OP(NPUClearFloatStatusOperator)
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUGetFloatStatusOperator)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -68,6 +77,9 @@ REG_OP(NPUGetFloatStatusOperator)
 
 *@par Outputs:
 *y: A Tensor of type int32, output eight numbers with a value of zero.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUAllocFloatStatus)
     .OUTPUT(data, TensorType({DT_FLOAT}))
@@ -81,6 +93,9 @@ REG_OP(NPUAllocFloatStatus)
 
 *@par Outputs:
 *data: A Tensor of type float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUClearFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -95,6 +110,9 @@ REG_OP(NPUClearFloatStatus)
 
 *@par Outputs:
 *data: A Tensor of type float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUGetFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})

@@ -1,5 +1,5 @@
 LOCAL_PATH := $(call my-dir)
-
+include $(LOCAL_PATH)/stub/Makefile
 LIBGE_LOCAL_SRC_FILES := \
     proto/fusion_model.proto \
     proto/optimizer_priority.proto \
@@ -392,8 +392,8 @@ endif
 
 LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
-LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc
-LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_prof.cc
+LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc \
+                   ../../out/ge/lib64/stub/ge_prof.cc \
 
 
 LOCAL_SHARED_LIBRARIES :=

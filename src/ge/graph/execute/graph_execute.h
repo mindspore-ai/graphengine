@@ -75,6 +75,8 @@ class GraphExecutor {
 
   static Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
+  static Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
+
   ///
   /// @ingroup ge
   /// @brief Get dynamic batch_info

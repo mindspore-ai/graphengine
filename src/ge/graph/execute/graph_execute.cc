@@ -592,7 +592,17 @@ Status GraphExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigI
     GELOGW("GetAIPPInfo is not success.");
     return ret;
   }
+  return SUCCESS;
+}
 
+Status GraphExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetAippType(model_id, index, type, aipp_index);
+  if (ret != SUCCESS) {
+    GELOGW("Get aipp type is not success.");
+    return ret;
+  }
   return SUCCESS;
 }
 

@@ -722,8 +722,15 @@ Status AiCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   GE_CHECK_NOTNULL(node_item);
   auto task_defs = model.GetTaskDefs(node);
   GE_CHECK_NOTNULL(task_defs);
-  GE_CHK_BOOL_RET_STATUS((*task_defs).size() == 1, PARAM_INVALID, "Node[%s] task_def num[%zu] != 1",
-                         node->GetName().c_str(), (*task_defs).size());
+  if (node_item->shape_inference_type != DEPEND_COMPUTE) {
+    GE_CHK_BOOL_RET_STATUS((*task_defs).size() == 1, PARAM_INVALID, "Node[%s] task_def num[%zu] != 1",
+                           node->GetName().c_str(), (*task_defs).size());
+  } else {
+    // The number of tasks of the fourth type operator may be 2
+    GE_CHK_BOOL_RET_STATUS((*task_defs).size() == 1 || (*task_defs).size() == 2, PARAM_INVALID,
+                           "Node[%s] DEPEND_COMPUTE task_def num[%zu] != 1 or 2", node->GetName().c_str(),
+                           (*task_defs).size());
+  }
   const auto &task_def = (*task_defs)[0];
   std::shared_ptr<AicpuNodeTaskBase> aicpu_task;
   if (task_def.type() == RT_MODEL_TASK_KERNEL_EX) {

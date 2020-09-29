@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "adx_datadump_server.h"
 #include "common/dump/dump_properties.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
@@ -76,10 +77,12 @@ Status InnerSession::Initialize() {
 
   DumpProperties dump_properties;
   dump_properties.InitByOptions();
+  GE_CHK_STATUS_RET(AddDumpProperties(dump_properties), "Add dump properties failed");
 
   ret = graph_manager_.Initialize(options_);
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] initialize failed.", session_id_);
+    GE_CHK_STATUS(RemoveDumpProperties(), "Remove dump properties failed");
     return ret;
   }
 
@@ -87,6 +90,7 @@ Status InnerSession::Initialize() {
   if (ret != SUCCESS) {
     GELOGE(ret, "failed to set malloc size");
     (void)graph_manager_.Finalize();
+    GE_CHK_STATUS(RemoveDumpProperties(), "Remove dump properties failed");
     GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
     return ret;
   }
@@ -97,6 +101,7 @@ Status InnerSession::Initialize() {
   ret = VarManager::Instance(session_id_)->Init(version, session_id_, DEFAULT_DEVICE_ID, DEFAULT_JOB_ID);
   if (ret != SUCCESS) {
     GELOGE(ret, "failed to init session instance");
+    GE_CHK_STATUS(RemoveDumpProperties(), "Remove dump properties failed");
   }
   init_flag_ = true;
   return SUCCESS;
@@ -122,6 +127,7 @@ Status InnerSession::Finalize() {
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
 
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
+  GE_CHK_STATUS_RET(RemoveDumpProperties(), "Remove dump properties failed");
 
   return ret;
 }
@@ -297,4 +303,27 @@ Status InnerSession::SaveVariables(const Graph &graph, const std::vector<std::st
   return graph_manager_.SaveVariables(graph, var_names, outputs, var_values);
 }
 
+Status InnerSession::AddDumpProperties(const DumpProperties &dump_properties) {
+  if (!is_dump_server_inited_) {
+    if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
+      GE_IF_BOOL_EXEC(AdxDataDumpServerInit() != kDumpStatus, GELOGE(PARAM_INVALID, "Data dump server init failed");
+                      return PARAM_INVALID)
+      GELOGI("Init adx data dump server success");
+      is_dump_server_inited_ = true;
+    }
+  }
+  PropertiesManager::Instance().AddDumpProperties(session_id_, dump_properties);
+  return SUCCESS;
+}
+
+Status InnerSession::RemoveDumpProperties() {
+  PropertiesManager::Instance().RemoveDumpProperties(session_id_);
+  if (is_dump_server_inited_ && PropertiesManager::Instance().GetDumpPropertiesMap().empty()) {
+    GE_IF_BOOL_EXEC(AdxDataDumpServerUnInit() != kDumpStatus, GELOGE(PARAM_INVALID, "Data dump server uninit failed");
+                    return PARAM_INVALID)
+    GELOGI("UnInit adx data dump server success");
+    is_dump_server_inited_ = false;
+  }
+  return SUCCESS;
+}
 }  // namespace ge

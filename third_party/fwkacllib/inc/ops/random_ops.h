@@ -32,7 +32,7 @@ namespace ge {
 
 *@par Inputs:
 *Inputs include:
-* @li logits: A Tensor. Must be one of the following types: float32, float64，double.
+* @li logits: A Tensor. Must be one of the following types: float16, float, double.
 2-D Tensor with shape [batch_size, num_classes].
 * @li num_samples: A Tensor of type int32. 0-D. Number of independent samples to draw for each row slice . \n
 

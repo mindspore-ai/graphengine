@@ -625,6 +625,9 @@ REG_OP(ConfusionTransposeD)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionTranspose)
     .INPUT(x, TensorType::BasicType())

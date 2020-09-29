@@ -2031,6 +2031,9 @@ REG_OP(ApplyAdadeltaD)
 *   Two outputs, including:
 *  @li var: A mutable Tensor has the same type as "var".
 *  @li accum: A mutable Tensor has the same type as "var".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(FusedMulApplyMomentum)
     .INPUT(var, TensorType::NumberType())
@@ -2079,6 +2082,9 @@ REG_OP(FusedMulApplyMomentum)
 *  @li var: A Tensor has the type float32.
 *  @li var_copy: A Tensor has the type float16.
 *  @li accum: A Tensor has the same type as input "accum".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(FusedMulApplyMomentumExtern)
     .INPUT(var, TensorType(DT_FLOAT))
@@ -2581,6 +2587,8 @@ REG_OP(SparseApplyAdadeltaD)
 *@par Attributes:
 * @li automic_add_mem_size: sizes of workspaces . \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AtomicAddrClean)
     .ATTR(automic_add_mem_size, ListInt, {})

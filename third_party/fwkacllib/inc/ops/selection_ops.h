@@ -1787,6 +1787,9 @@ REG_OP(TileWithAxis)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ReadSelect)
     .INPUT(x, TensorType::ALL())
@@ -1802,6 +1805,9 @@ REG_OP(ReadSelect)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(WriteSelect)
     .INPUT(x, TensorType::ALL())

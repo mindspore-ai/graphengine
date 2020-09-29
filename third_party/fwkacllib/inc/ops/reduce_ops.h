@@ -502,7 +502,7 @@ REG_OP(ReduceMean)
 
 *@par Inputs:
 *One input:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8 . \n
+* @li x: A Tensor. Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
 *@li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
@@ -521,8 +521,8 @@ REG_OP(ReduceMean)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMean instead.
 */
 REG_OP(ReduceMeanD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT, DT_INT8, DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT, DT_INT8, DT_UINT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMeanD)

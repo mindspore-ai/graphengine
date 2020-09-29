@@ -29,6 +29,7 @@ COMMON_LOCAL_SRC_FILES := \
     common/dump/dump_properties.cc \
     common/dump/dump_manager.cc \
     common/dump/dump_op.cc \
+    common/dump/dump_server.cc \
     common/helper/model_cache_helper.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
 
@@ -371,7 +372,6 @@ LOCAL_SRC_FILES += $(BUILER_SRC_FILES)
 LOCAL_SRC_FILES += $(ANALYZER_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
-                          libadump_server_stub \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -436,7 +436,6 @@ LOCAL_C_INCLUDES := $(DEVICE_LOCAL_C_INCLUDES)
 LOCAL_C_INCLUDES += $(ANALYZER_LOCAL_INCLUDES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
-                          libadump_server_stub \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \

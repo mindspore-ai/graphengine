@@ -39,6 +39,33 @@ const size_t kVirtualInputNodeOutputSize = 1;
 const size_t kVirtualOutputNodeInputSize = 1;
 const size_t kVirtualNodeDataIndex = 0;
 const char *const kMbatchNodeNameFlag = "_ascend_mbatch_batch_";
+int64_t GetSymbolOutputOffset(const std::map<std::string, std::string> &anchor_to_symbol,
+                              const std::map<std::string, std::list<ge::NodeIndexIO>> &symbol_to_anchors,
+                              const ge::NodePtr &node, const uint32_t i) {
+  ge::NodeIndexIO cur_node_index_io(node, i, ge::kOut);
+  auto iter1 = anchor_to_symbol.find(cur_node_index_io.ToString());
+  if (iter1 == anchor_to_symbol.end()) {
+    return ge::kInvalidOffset;
+  }
+  auto out_symbol = iter1->second;
+  auto iter2 = symbol_to_anchors.find(out_symbol);
+  if (iter2 == symbol_to_anchors.end()) {
+    return ge::kInvalidOffset;
+  }
+  for (const auto &node_index_io : iter2->second) {
+    if (node_index_io.value_ == out_symbol) {
+      vector<int64_t> output_list = node->GetOpDesc()->GetOutputOffset();
+      vector<int64_t> symbol_output_list = node_index_io.node_->GetOpDesc()->GetOutputOffset();
+      if (node_index_io.index_ >= symbol_output_list.size()) {
+        return ge::kInvalidOffset;
+      }
+      GELOGD("Node %s %uth output offset is %ld, Symbol %s output offset is %ld.", node->GetName().c_str(), i,
+             output_list[i], iter2->first.c_str(), symbol_output_list.at(node_index_io.index_));
+      return symbol_output_list.at(node_index_io.index_);
+    }
+  }
+  return ge::kInvalidOffset;
+}
 }  // namespace
 namespace ge {
 Status VariableMemoryAssigner::Assign() {
@@ -1191,6 +1218,12 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
 }
 
 Status GraphMemoryAssigner::CheckOffset() {
+  std::map<std::string, std::string> anchor_to_symbol;
+  std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors;
+  if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
+    return FAILED;
+  }
   for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     vector<int64_t> input_list = node->GetOpDesc()->GetInputOffset();
@@ -1200,13 +1233,26 @@ Status GraphMemoryAssigner::CheckOffset() {
         return FAILED;
       }
     }
+
+    bool need_update_output = false;
     vector<int64_t> output_list = node->GetOpDesc()->GetOutputOffset();
-    for (auto output : output_list) {
-      if (output == ge::kInvalidOffset) {
+    for (uint32_t i = 0; i < output_list.size(); ++i) {
+      if (output_list[i] == ge::kInvalidOffset) {
         GELOGE(FAILED, "Invalid offset in node: %s output: %ld.", node->GetName().c_str(), ge::kInvalidOffset);
         return FAILED;
       }
+      if (node->GetType() == IDENTITY || node->GetType() == READVARIABLEOP) {
+        auto symbol_offset = GetSymbolOutputOffset(anchor_to_symbol, symbol_to_anchors, node, i);
+        if (symbol_offset != ge::kInvalidOffset && output_list[i] != symbol_offset) {
+          output_list[i] = symbol_offset;
+          need_update_output = true;
+        }
+      }
     }
+    if (need_update_output) {
+      node->GetOpDesc()->SetOutputOffset(output_list);
+    }
+
     vector<int64_t> workspace_list = node->GetOpDesc()->GetWorkspace();
     for (auto workspace : workspace_list) {
       if (workspace == ge::kInvalidOffset) {

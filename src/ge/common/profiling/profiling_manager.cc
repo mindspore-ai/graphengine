@@ -55,19 +55,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
                                                                                    bool convert_2_phy_device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   vector<int32_t>().swap(device_id_);
-  // profiling need phy device id
-  if (!convert_2_phy_device_id) {
-    device_id_.push_back(options.device_id);
-  } else {
-    uint32_t phy_device_id = 0;
-    rtError_t rt_ret = rtGetDevicePhyIdByIndex(static_cast<uint32_t>(options.device_id), &phy_device_id);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-      return FAILED;
-    }
-    device_id_.push_back(phy_device_id);
-  }
-
   job_id_ = options.job_id;
 
   Status ret;
@@ -76,6 +63,20 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     ret = InitFromAclCfg(recv_profiling_config_);
   } else {
     ret = InitFromOptions(options);
+    if (ret == SUCCESS && is_load_profiling_) {
+      // profiling need phy device id
+      if (!convert_2_phy_device_id) {
+        device_id_.push_back(options.device_id);
+      } else {
+        uint32_t phy_device_id = 0;
+        rtError_t rt_ret = rtGetDevicePhyIdByIndex(static_cast<uint32_t>(options.device_id), &phy_device_id);
+        if (rt_ret != RT_ERROR_NONE) {
+          GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
+          return FAILED;
+        }
+        device_id_.push_back(phy_device_id);
+      }
+    }
   }
   if (ret != SUCCESS) {
     GELOGE(ret, "Failed to init profiling.");
@@ -868,14 +869,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
   }
   GELOGI("Current logic_device_id:%d", logic_device_id);
 
-  uint32_t phy_device_id = 0;
-  rt_ret = rtGetDevicePhyIdByIndex((uint32_t)logic_device_id, &phy_device_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%d", phy_device_id);
-  }
-  GELOGI("Current phy_device_id:%d", phy_device_id);
   bool execute_model_prof_on = false;
-  auto iter = std::find(device_id_.begin(), device_id_.end(), phy_device_id);
+  auto iter = std::find(device_id_.begin(), device_id_.end(), logic_device_id);
   if (iter != device_id_.end()) {
     execute_model_prof_on = true;
   }

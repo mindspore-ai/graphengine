@@ -28,6 +28,9 @@ namespace ge {
 /**
 *@brief Applies a perspective transformation to an image . \n
 
+*@par Restrictions:
+*Warning:THIS FUNCTION IS DEPRECATED. Please do not use. \n
+
 *@par Inputs:
 *@li x: input tensor, format NCHW, type must be float.
 *@li matrix: transformation matrix, format ND , shape must be (N, 9), type must be float . \n

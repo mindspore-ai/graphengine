@@ -24,9 +24,12 @@ namespace ge {
 namespace hybrid {
 class HybridDavinciModel::Impl {
  public:
-  explicit Impl(GeRootModelPtr ge_model) : model_(std::move(ge_model)), executor_(&model_) {}
+  explicit Impl(GeRootModelPtr ge_model) : model_(std::move(ge_model)), executor_(&model_) {
+  }
 
-  ~Impl() { NodeExecutorManager::GetInstance().FinalizeExecutors(); }
+  ~Impl() {
+    NodeExecutorManager::GetInstance().FinalizeExecutors();
+  }
 
   Status Init() {
     GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().EnsureInitialized(), "Failed to initialize executors");
@@ -39,13 +42,21 @@ class HybridDavinciModel::Impl {
     return executor_.Execute(inputs, outputs);
   }
 
-  Status ModelRunStart() { return executor_.Start(listener_); }
+  Status ModelRunStart() {
+    return executor_.Start(listener_);
+  }
 
-  Status ModelRunStop() { return executor_.Stop(); }
+  Status ModelRunStop() {
+    return executor_.Stop();
+  }
 
-  Status EnqueueData(const std::shared_ptr<InputDataWrapper> &data) { return executor_.EnqueueData(data); }
+  Status EnqueueData(const std::shared_ptr<InputDataWrapper> &data) {
+    return executor_.EnqueueData(data);
+  }
 
-  void SetListener(const shared_ptr<ModelListener> &listener) { listener_ = listener; }
+  void SetListener(const shared_ptr<ModelListener> &listener) {
+    listener_ = listener;
+  }
 
   void SetModelId(uint32_t model_id) {
     executor_.SetModelId(model_id);
@@ -63,10 +74,12 @@ class HybridDavinciModel::Impl {
   HybridModelAsyncExecutor executor_;
 };
 
-HybridDavinciModel::~HybridDavinciModel() { delete impl_; }
+HybridDavinciModel::~HybridDavinciModel() {
+  delete impl_;
+}
 
 unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &ge_root_model) {
-  auto instance = unique_ptr<HybridDavinciModel>(new (std::nothrow) HybridDavinciModel());
+  auto instance = unique_ptr<HybridDavinciModel>(new (std::nothrow)HybridDavinciModel());
   if (instance != nullptr) {
     instance->impl_ = new (std::nothrow) HybridDavinciModel::Impl(ge_root_model);
     if (instance->impl_ != nullptr) {

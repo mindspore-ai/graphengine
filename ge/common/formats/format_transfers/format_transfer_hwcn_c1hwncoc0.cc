@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,8 +122,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
               int64_t dst_idx = c0_idx + co_head_addr;
               auto dst_offset = dst_idx * size;
               auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                      ? total_size - dst_offset
-                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                        ? total_size - dst_offset
+                                        : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
               int64_t c_idx = c0_idx + c1_idx * c0;
               int64_t src_idx = h_idx * wcn + w_idx * cn + c_idx * n + n_idx;
               auto src_offset = src_idx * size;
@@ -141,7 +141,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                 }
               } else {
                 auto ret =
-                  memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
+                    memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
                 if (ret != EOK) {
                   GELOGE(INTERNAL_ERROR,
                          "Failed to set to 0 to C1HWNCoC0[%ld, %ld, %ld, %ld, %ld, %ld] offset %ld, "

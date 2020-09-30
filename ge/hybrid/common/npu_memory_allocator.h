@@ -50,7 +50,7 @@ class NpuMemoryAllocator {
   static NpuMemoryAllocator *GetAllocator(uint32_t device_id);
   static NpuMemoryAllocator *GetAllocator();
   static void DestroyAllocator();
-  static AllocationAttr *AttrWithDefaultPadding() {
+  static AllocationAttr* AttrWithDefaultPadding() {
     static AllocationAttr attr(kDefaultPadding, nullptr);
     return &attr;
   }
@@ -59,7 +59,6 @@ class NpuMemoryAllocator {
   void Deallocate(void *data, MemStorageType mem_type = HBM);
 
   static constexpr int kDefaultPadding = 32;
-
  private:
   explicit NpuMemoryAllocator(uint32_t device_id);
   uint32_t device_id_;
@@ -69,4 +68,4 @@ class NpuMemoryAllocator {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_COMMON_MEMORY_ALLOCATOR_H_
+#endif // GE_HYBRID_COMMON_MEMORY_ALLOCATOR_H_

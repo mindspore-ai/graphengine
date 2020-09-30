@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include "host_kernels/kernel_utils.h"
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace {

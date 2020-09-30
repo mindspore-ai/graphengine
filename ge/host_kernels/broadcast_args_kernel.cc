@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,12 @@ Status BroadcastArgsKernel::Compute(const OpDescPtr op_desc_ptr, const std::vect
   }
   // check input size
   bool size_check =
-    (op_desc_ptr->GetAllInputsDesc().size() != kBCastArgsInputsSize || input.size() != kBCastArgsInputsSize ||
-     op_desc_ptr->GetAllOutputsDesc().size() != kBCastArgsOutputsSize);
+      (op_desc_ptr->GetAllInputsDesc().size() != kBCastArgsInputsSize || input.size() != kBCastArgsInputsSize ||
+       op_desc_ptr->GetAllOutputsDesc().size() != kBCastArgsOutputsSize);
   if (size_check) {
-    GELOGW(
-      "input/output size error. InDesc size:%zu,"
-      "OutDesc size:%zu, in size:%zu ",
-      op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
+    GELOGW("input/output size error. InDesc size:%zu,"
+           "OutDesc size:%zu, in size:%zu ",
+           op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
     return NOT_CHANGED;
   }
 

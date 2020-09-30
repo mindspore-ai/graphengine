@@ -109,7 +109,8 @@ class MemoryAllocator {
   /// @param [in] device_id device id
   /// @return memory address
   ///
-  uint8_t *MallocMemory(const string &purpose, const string &memory_key, size_t memory_size, uint32_t device_id = 0);
+  uint8_t *MallocMemory(const string &purpose, const string &memory_key, size_t memory_size,
+                        uint32_t device_id = 0);
 
   ///
   /// @ingroup ge_graph

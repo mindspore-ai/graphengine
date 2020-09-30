@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,13 +94,6 @@ void TBEPluginManager::ProcessSoFullName(vector<string> &file_list, string &caff
       full_name.compare(full_name.size() - caffe_parser_so_suff.size(), caffe_parser_so_suff.size(),
                         caffe_parser_so_suff) == 0) {
     caffe_parser_path = full_name;
-  } else if ((full_name.size() >= aicpu_so_suff.size() &&
-              full_name.compare(full_name.size() - aicpu_so_suff.size(), aicpu_so_suff.size(), aicpu_so_suff) == 0) ||
-             (full_name.size() >= aicpu_host_so_suff.size() &&
-              full_name.compare(full_name.size() - aicpu_host_so_suff.size(), aicpu_host_so_suff.size(),
-                                aicpu_host_so_suff) == 0)) {
-    // aicpu so, Put the file path into the omgcontext and save into the model in the builder stage.
-    domi::GetContext().aicpu_op_run_paths.push_back(full_name);
   } else {
     // Save parser so path into file_list vector
     file_list.push_back(full_name);
@@ -193,8 +186,8 @@ void TBEPluginManager::LoadCustomOpLib() {
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::LoadPluginSo(
-  const std::map<string, string> &options) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
+void TBEPluginManager::LoadPluginSo(const std::map<string, string> &options) {
   vector<string> file_list;
   string caffe_parser_path;
   std::string plugin_path;
@@ -230,39 +223,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::LoadPlug
   }
 }
 
-Status TBEPluginManager::CheckCustomAiCpuOpLib() {
-  std::vector<std::string> vec_op_type;
-
-  domi::OpRegistry::Instance()->GetOpTypeByImplyType(vec_op_type, domi::ImplyType::CUSTOM);
-  for (size_t i = 0; i < vec_op_type.size(); i++) {
-    bool aicpu_so_exist = false;
-    std::string ai_cpu_so_name = "lib" + vec_op_type[i] + "_aicpu.so";
-    for (size_t j = 0; j < domi::GetContext().aicpu_op_run_paths.size(); j++) {
-      string bin_file_path = domi::GetContext().aicpu_op_run_paths[j];
-      if (bin_file_path.size() >= ai_cpu_so_name.size() &&
-          bin_file_path.compare(bin_file_path.size() - ai_cpu_so_name.size(), ai_cpu_so_name.size(), ai_cpu_so_name) ==
-            0) {
-        aicpu_so_exist = true;
-        break;
-      }
-    }
-    if (!aicpu_so_exist) {
-      GELOGE(FAILED, "Can't find aicpu run so(%s), please check the plugin path!", ai_cpu_so_name.c_str());
-      return FAILED;
-    }
-  }
-  return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::InitPreparation(
-  const std::map<string, string> &options) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
+void TBEPluginManager::InitPreparation(const std::map<string, string> &options) {
   options_.insert(options.begin(), options.end());
   // Load TBE plugin
   TBEPluginManager::Instance().LoadCustomOpLib();
-  Status ret = CheckCustomAiCpuOpLib();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Check custom aicpu run so failed!");
-    return;
-  }
 }
 }  // namespace ge

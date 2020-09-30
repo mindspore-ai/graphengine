@@ -52,4 +52,4 @@ class CallbackManager {
 }  // namespace hybrid
 }  // namespace ge
 
-#endif  // GE_HYBRID_EXECUTOR_RT_CALLBACK_MANAGER_H_
+#endif // GE_HYBRID_EXECUTOR_RT_CALLBACK_MANAGER_H_

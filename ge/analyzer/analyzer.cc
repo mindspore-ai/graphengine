@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,32 +40,34 @@ const std::string kFilePath = "./";
 const std::string kAnalyzeFile = "ge_check_op.json";
 
 const std::string kUnknownShape = "unknownshape";
-const std::string kUnsupport = "unsupport";
+const std::string kUnsupport    = "unsupport";
 
 const std::string kSessionId = "session_id";
-const std::string kGraphId = "graph_id";
-const std::string kOpInfo = "op_info";
+const std::string kGraphId   = "graph_id";
+const std::string kOpInfo    = "op_info";
 const std::string kErrorType = "error_type";
-const std::string kOpName = "name";
-const std::string kOpType = "type";
-const std::string kReason = "reason";
-const std::string kInput = "input";
-const std::string kOutput = "output";
-const std::string kShape = "shape";
-const std::string kDataType = "data_type";
-const std::string kLayout = "layout";
-const std::string kResult = "result";
-const std::string kOp = "op";
+const std::string kOpName    = "name";
+const std::string kOpType    = "type";
+const std::string kReason    = "reason";
+const std::string kInput     = "input";
+const std::string kOutput    = "output";
+const std::string kShape     = "shape";
+const std::string kDataType  = "data_type";
+const std::string kLayout    = "layout";
+const std::string kResult    = "result";
+const std::string kOp        = "op";
 
-std::map<analyzer::AnalyzeType, std::string> errors_map{{PARSER, "paser_error"},
-                                                        {INFER_SHAPE, "infer_shape_error"},
-                                                        {CHECKSUPPORT, "check_support_error"},
-                                                        {GRAPH_OPTIMIZE, "graph_optimize_error"},
-                                                        {GRAPH_PARTION, "graph_partion_error"},
-                                                        {GRAPH_BUILDER, "graph_builder_error"}};
-}  // namespace
+std::map<analyzer::AnalyzeType, std::string> errors_map {
+  {PARSER,         "paser_error"},
+  {INFER_SHAPE,    "infer_shape_error"},
+  {CHECKSUPPORT,   "check_support_error"},
+  {GRAPH_OPTIMIZE, "graph_optimize_error"},
+  {GRAPH_PARTION,  "graph_partion_error"},
+  {GRAPH_BUILDER,  "graph_builder_error"}
+};
+}
 
-Analyzer *Analyzer::GetInstance() {
+Analyzer* Analyzer::GetInstance() {
   static Analyzer instance;
   return &instance;
 }
@@ -75,7 +77,7 @@ Status Analyzer::BuildJsonObject(uint64_t session_id, uint64_t graph_id) {
   std::lock_guard<std::recursive_mutex> lg(mutex_);
   auto iter = graph_infos_.find(session_id);
   if (iter == graph_infos_.end()) {
-    auto p = new (std::nothrow) GraphInfo();
+    auto p = new(std::nothrow) GraphInfo();
     GE_CHECK_NOTNULL(p);
     std::shared_ptr<GraphInfo> graph_info(p);
     std::map<uint64_t, std::shared_ptr<GraphInfo>> graph_map;
@@ -86,7 +88,7 @@ Status Analyzer::BuildJsonObject(uint64_t session_id, uint64_t graph_id) {
   } else {
     auto iter1 = (iter->second).find(graph_id);
     if (iter1 == (iter->second).end()) {
-      auto p = new (std::nothrow) GraphInfo();
+      auto p = new(std::nothrow) GraphInfo();
       GE_CHECK_NOTNULL(p);
       std::shared_ptr<GraphInfo> graph_info(p);
       graph_info->session_id = session_id;
@@ -100,7 +102,14 @@ Status Analyzer::BuildJsonObject(uint64_t session_id, uint64_t graph_id) {
 }
 
 ge::Status Analyzer::Initialize() {
-  ClearHistoryFile();
+  // Initialize file
+  string real_path = RealPath(kFilePath.c_str());
+  if (real_path.empty()) {
+    GELOGE(FAILED, "File path is invalid.");
+    return FAILED;
+  }
+  json_file_name_ = real_path + "/" + kAnalyzeFile;
+
   return SUCCESS;
 }
 
@@ -174,15 +183,8 @@ ge::Status Analyzer::CreateAnalyzerFile() {
     return SUCCESS;
   }
   GELOGD("start to create analyzer file!");
-  // Check whether the manifest exists, if not, create it.
-  string real_path = RealPath(kFilePath.c_str());
-  if (real_path.empty()) {
-    GELOGE(FAILED, "File path is invalid.");
-    return FAILED;
-  }
+
   std::lock_guard<std::mutex> lg(file_mutex_);
-  json_file_name_ = real_path + "/" + kAnalyzeFile;
-  GELOGD("Created analyzer file:[%s]", json_file_name_.c_str());
   int fd = open(json_file_name_.c_str(), O_WRONLY | O_CREAT | O_TRUNC, kFileAuthority);
   if (fd < 0) {
     GELOGE(INTERNAL_ERROR, "Fail to open the file: %s.", json_file_name_.c_str());
@@ -198,25 +200,27 @@ ge::Status Analyzer::CreateAnalyzerFile() {
   return SUCCESS;
 }
 
-ge::Status Analyzer::SaveAnalyzerDataToFile() {
+ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_id) {
   GELOGD("start to save analyze file!");
+
+  auto graph_info = GetJsonObject(session_id, graph_id);
+  GE_CHECK_NOTNULL(graph_info);
+  if (graph_info->op_info.size() == 0) {
+    GELOGD("session_id:%lu graph_id:%lu does not owner op info, break it!", session_id, graph_id);
+    return SUCCESS;
+  }
   std::lock_guard<std::mutex> lg(file_mutex_);
-  json_file_.open(json_file_name_, std::ios::out);
+  json_file_.open(json_file_name_, std::ios::app);
   if (!json_file_.is_open()) {
     GELOGE(FAILED, "analyzer file does not exist[%s]", json_file_name_.c_str());
     return PARAM_INVALID;
   }
 
-  std::lock_guard<std::recursive_mutex> lk(mutex_);
-  for (auto &ele : graph_infos_) {
-    for (auto &ele2 : ele.second) {
-      json jsn;
-      GraphInfoToJson(jsn, *(ele2.second));
-      json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
-    }
-  }
-
+  json jsn;
+  GraphInfoToJson(jsn, *graph_info);
+  json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
   json_file_.close();
+
   return SUCCESS;
 }
 
@@ -237,13 +241,7 @@ ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
     return FAILED;
   }
   // create json file
-  status = CreateAnalyzerFile();
-  if (status != SUCCESS) {
-    GELOGE(status, "create analyzer file failed!");
-    return status;
-  }
-  // save data to file
-  return SaveAnalyzerDataToFile();
+  return CreateAnalyzerFile();
 }
 
 ge::Status Analyzer::SaveOpInfo(ge::OpDescPtr desc, DataInfo &data_info,
@@ -256,18 +254,18 @@ ge::Status Analyzer::SaveOpInfo(ge::OpDescPtr desc, DataInfo &data_info,
   op_info.error_type = iter->second;
   op_info.op_name = desc->GetName();
   op_info.op_type = desc->GetType();
-  op_info.reason = data_info.reason;
+  op_info.reason  = data_info.reason;
 
   for (const auto &ptr : desc->GetAllInputsDescPtr()) {
     TensorInfo tensor_info;
-    tensor_info.shape = ptr->GetShape().GetDims();
+    tensor_info.shape  = ptr->GetShape().GetDims();
     tensor_info.d_type = ge::TypeUtils::DataTypeToSerialString(ptr->GetDataType());
     tensor_info.layout = ge::TypeUtils::FormatToSerialString(ptr->GetFormat());
     op_info.input_info.emplace_back(tensor_info);
   }
   for (const auto &ptr : desc->GetAllOutputsDescPtr()) {
     TensorInfo tensor_info;
-    tensor_info.shape = ptr->GetShape().GetDims();
+    tensor_info.shape  = ptr->GetShape().GetDims();
     tensor_info.d_type = ge::TypeUtils::DataTypeToSerialString(ptr->GetDataType());
     tensor_info.layout = ge::TypeUtils::FormatToSerialString(ptr->GetFormat());
     op_info.output_info.emplace_back(tensor_info);
@@ -277,13 +275,13 @@ ge::Status Analyzer::SaveOpInfo(ge::OpDescPtr desc, DataInfo &data_info,
   return SUCCESS;
 }
 
-void Analyzer::TensorInfoToJson(json &j, const TensorInfo &tensor_info) {
+void Analyzer::TensorInfoToJson(json& j, const TensorInfo &tensor_info) {
   j[kShape] = tensor_info.shape;
   j[kDataType] = tensor_info.d_type;
   j[kLayout] = tensor_info.layout;
 }
 
-void Analyzer::OpInfoToJson(json &j, const OpInfo &op_info) {
+void Analyzer::OpInfoToJson(json& j, const OpInfo &op_info) {
   j[kErrorType] = op_info.error_type;
   j[kOpName] = op_info.op_name;
   j[kOpType] = op_info.op_type;
@@ -300,7 +298,7 @@ void Analyzer::OpInfoToJson(json &j, const OpInfo &op_info) {
   }
 }
 
-void Analyzer::GraphInfoToJson(json &j, const GraphInfo &graph_info) {
+void Analyzer::GraphInfoToJson(json& j, const GraphInfo &graph_info) {
   GELOGD("start to buff graph info!");
   j[kSessionId] = graph_info.session_id;
   j[kGraphId] = graph_info.graph_id;
@@ -312,4 +310,4 @@ void Analyzer::GraphInfoToJson(json &j, const GraphInfo &graph_info) {
   }
   j[kOp] = json_op_infos;
 }
-}  // namespace ge
+} // namespace ge

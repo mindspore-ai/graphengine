@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,8 @@ class InsertOpBase {
   /// @param [in] graph
   /// @param [in] aippConfigPath aipp
   ///
-  virtual Status InsertAippToGraph(ge::ComputeGraphPtr &graph, std::string &aippConfigPath, const uint32_t index) = 0;
+  virtual Status InsertAippToGraph(ge::ComputeGraphPtr &graph, std::string &aippConfigPath,
+                                   const uint32_t index) = 0;
 
   ///
   /// @ingroup ge_omg

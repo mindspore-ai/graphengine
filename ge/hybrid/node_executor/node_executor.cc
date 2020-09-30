@@ -19,27 +19,30 @@
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 #include "hybrid/model/hybrid_model.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 namespace hybrid {
 namespace {
 const char *const kEngineNameAiCore = "AIcoreEngine";
 const char *const kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
-const char *const kEngineNameAiCpu = "aicpu_kernel";
+const char *const kEngineNameAiCpu = "aicpu_ascend_kernel";
+const char *const kEngineNameAiCpuTf = "aicpu_tf_kernel";
 const char *const kEngineNameHccl = "ops_kernel_info_hccl";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
 const char *const kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
-}  // namespace
+}
 Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
-  GE_CHK_STATUS_RET_NOLOG(task.UpdateTilingData(context));  // update op_desc before alloc ws
+  GE_CHK_STATUS_RET_NOLOG(task.UpdateTilingData(context)); // update op_desc before alloc ws
   GE_CHK_STATUS_RET_NOLOG(context.AllocateWorkspaces());
   GE_CHK_STATUS_RET_NOLOG(task.UpdateArgs(context));
   return SUCCESS;
 }
 
 Status NodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const {
-  GE_CHK_STATUS_RET(task.ExecuteAsync(context, callback), "Failed to execute task. node = %s",
+  GE_CHK_STATUS_RET(task.ExecuteAsync(context, callback),
+                    "Failed to execute task. node = %s",
                     context.GetNodeItem().NodeName().c_str());
   return SUCCESS;
 }
@@ -61,6 +64,7 @@ Status NodeExecutorManager::EnsureInitialized() {
 
   engine_mapping_.emplace(kEngineNameAiCore, NodeExecutorManager::ExecutorType::AICORE);
   engine_mapping_.emplace(kEngineNameGeLocal, NodeExecutorManager::ExecutorType::GE_LOCAL);
+  engine_mapping_.emplace(kEngineNameAiCpuTf, NodeExecutorManager::ExecutorType::AICPU_TF);
   engine_mapping_.emplace(kEngineNameAiCpu, NodeExecutorManager::ExecutorType::AICPU_TF);
   engine_mapping_.emplace(kEngineNameHccl, NodeExecutorManager::ExecutorType::HCCL);
   engine_mapping_.emplace(kEngineNameRts, NodeExecutorManager::ExecutorType::RTS);
@@ -86,8 +90,13 @@ Status NodeExecutorManager::EnsureInitialized() {
 NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node &node) const {
   auto op_type = node.GetType();
   if (op_type == PARTITIONEDCALL) {
+    const auto &subgraph = NodeUtils::GetSubgraph(node, 0);
+    if (subgraph != nullptr && subgraph->GetGraphUnknownFlag()) {
+      GELOGD("node %s was marked as unknown shape in node_executor.", node.GetName().c_str());
+      return ExecutorType::DYNAMIC_SUBGRAPH;
+    }
     bool is_dynamic = false;
-    (void)NodeUtils::GetNodeUnknownShapeStatus(node, is_dynamic);
+    (void) NodeUtils::GetNodeUnknownShapeStatus(node, is_dynamic);
     if (is_dynamic) {
       return ExecutorType::DYNAMIC_SUBGRAPH;
     }
@@ -103,7 +112,7 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
     return ExecutorType::CONTROL_OP;
   }
 
-  auto op_desc = node.GetOpDesc();  // checked before
+  auto op_desc = node.GetOpDesc(); // checked before
   const auto &lib_name = op_desc->GetOpKernelLibName();
   auto it = engine_mapping_.find(lib_name);
   if (it == engine_mapping_.end()) {
@@ -146,8 +155,10 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
 
   auto it = kernel_stores_.find(op_desc->GetOpKernelLibName());
   if (it == kernel_stores_.end()) {
-    GELOGE(INTERNAL_ERROR, "Failed to get OpKernelStore. libName = %s, node = %s",
-           op_desc->GetOpKernelLibName().c_str(), op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR,
+           "Failed to get OpKernelStore. libName = %s, node = %s",
+           op_desc->GetOpKernelLibName().c_str(),
+           op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -163,8 +174,8 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
       int64_t output_mem_size = 0;
       GE_CHK_STATUS_RET(TensorUtils::CalcTensorMemSize(output_shape, format, data_type, output_mem_size),
                         "hccl calc tensor mem size failed.");
-      output_mem_size =
-        ((output_mem_size + MEMORY_ALIGN_RATIO * MEMORY_ALIGN_SIZE - 1) / MEMORY_ALIGN_SIZE) * MEMORY_ALIGN_SIZE;
+      output_mem_size = ((output_mem_size +
+                          MEMORY_ALIGN_RATIO * MEMORY_ALIGN_SIZE - 1) / MEMORY_ALIGN_SIZE) * MEMORY_ALIGN_SIZE;
       TensorUtils::SetSize(output_tensor, output_mem_size);
       GE_CHK_STATUS_RET(op_desc->UpdateOutputDesc(static_cast<uint32_t>(i), output_tensor),
                         "hccl update output size failed.");

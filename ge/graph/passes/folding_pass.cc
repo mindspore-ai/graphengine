@@ -30,6 +30,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
 
+
 namespace ge {
 namespace folding_pass {
 shared_ptr<Kernel> GetKernelByType(const NodePtr &node) {
@@ -83,7 +84,7 @@ NodePtr AddConstNodeToGraph(GeTensorPtr &tensor, ComputeGraphPtr &graph) {
   }
 
   GE_IF_BOOL_EXEC(graph == nullptr, GELOGW("input param graph is null"); return nullptr);
-  (void)AttrUtils::SetListStr(const_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>()));
+  (void) AttrUtils::SetListStr(const_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>()));
   return graph->AddNodeFront(const_desc);
 }
 
@@ -112,7 +113,8 @@ NodePtr AddIdentityNodeToGraph(const std::string &name, const GeTensorDesc &tens
 }
 }  // namespace
 
-Status FoldingPass::RunOpKernel(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
+Status FoldingPass::RunOpKernel(NodePtr &node,
+                                const vector<ConstGeTensorPtr> &inputs,
                                 std::vector<GeTensorPtr> &outputs) {
   return HostCpuEngine::GetInstance().Run(node, inputs, outputs);
 }
@@ -135,8 +137,8 @@ Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
   auto in_data_nodes = node->GetInDataNodes();
   std::unordered_set<NodePtr> in_data_nodes_set(in_data_nodes.begin(), in_data_nodes.end());
   if (IsolateAndDeleteNode(node, {}) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to isolate and delete node %s, type %s.", node->GetName().c_str(),
-           node->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "Failed to isolate and delete node %s, type %s.",
+           node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
   }
   for (auto iter = in_data_nodes_set.begin(); iter != in_data_nodes_set.end(); ++iter) {
@@ -147,8 +149,8 @@ Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
         continue;
       }
       if (IsolateAndDeleteNode(pre_node, {}) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Failed to isolate and delete in data node %s, type %s.", pre_node->GetName().c_str(),
-               pre_node->GetType().c_str());
+        GELOGE(INTERNAL_ERROR, "Failed to isolate and delete in data node %s, type %s.",
+               pre_node->GetName().c_str(), pre_node->GetType().c_str());
         return INTERNAL_ERROR;
       }
     }
@@ -186,7 +188,7 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
              node->GetName().c_str());
       auto identity_name = node->GetName() + "_ctrl_identity_" + std::to_string(in_data_anchor->GetIdx());
       auto identity =
-        AddIdentityNodeToGraph(identity_name, node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx()), graph);
+          AddIdentityNodeToGraph(identity_name, node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx()), graph);
       if (identity == nullptr) {
         GELOGE(INTERNAL_ERROR, "Failed to add identity node to graph.");
         return INTERNAL_ERROR;
@@ -235,8 +237,8 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
 
     auto const_node = AddConstNodeToGraph(weight, graph);
     if (const_node == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to add dynamic const node, node name:%s, index:%zu.", node->GetName().c_str(),
-             index);
+      GELOGE(INTERNAL_ERROR, "Failed to add dynamic const node, node name:%s, index:%zu.",
+             node->GetName().c_str(), index);
       return INTERNAL_ERROR;
     }
     GELOGI("add const_node:%s, replace node %s, type %s, index %zu.", const_node->GetName().c_str(),

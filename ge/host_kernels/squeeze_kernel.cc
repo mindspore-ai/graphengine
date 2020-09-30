@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@
 #include "host_kernels/kernel_utils.h"
 #include "inc/kernel_factory.h"
 
+
 namespace {
 constexpr uint32_t kInputDescIndex = 0;
 constexpr uint32_t kOutputDescIndex = 0;
 constexpr size_t kSqueezeInputSize = 1;
 constexpr size_t kSqueezeOutputSize = 1;
-}  // namespace
+}
 
 namespace ge {
 Status SqueezeKernel::Compute(const NodePtr &node_ptr) {

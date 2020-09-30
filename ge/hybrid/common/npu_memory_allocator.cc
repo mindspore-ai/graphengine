@@ -70,8 +70,8 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
     buffer = malloc(allocate_size);
   } else {
     buffer = MemManager::Instance()
-               .CachingInstance(RT_MEMORY_HBM)
-               .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
+                 .CachingInstance(RT_MEMORY_HBM)
+                 .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
   }
   if (buffer == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Failed to malloc memory, device_id = %u, size = %zu", device_id_, allocate_size);

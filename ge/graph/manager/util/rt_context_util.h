@@ -52,3 +52,4 @@ class RtContextUtil {
 }  // namespace ge
 
 #endif  // GE_GRAPH_MANAGER_UTIL_RT_CONTEXT_UTIL_H_
+

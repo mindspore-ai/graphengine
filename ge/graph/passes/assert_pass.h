@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 #ifndef GE_GRAPH_PASSES_ASSERT_PASS_H_
 #define GE_GRAPH_PASSES_ASSERT_PASS_H_
@@ -33,7 +34,7 @@ class AssertPass : public BaseNodePass {
   /// @param nodes_unused nodes to be deleted
   /// @return void
   ///
-  void CollectUnusedNode(const NodePtr& assert_node, std::vector<ge::NodePtr>& nodes_unused);
+  void CollectUnusedNode(const NodePtr &assert_node, std::vector<ge::NodePtr>& nodes_unused);
 
   ///
   /// remove unused nodes from graph

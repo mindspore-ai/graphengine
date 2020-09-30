@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #include <iostream>
 #include <memory>
 #include "common/auth/file_saver.h"
-#include "common/convert/pb2json.h"
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/ge/ge_util.h"
@@ -45,6 +44,7 @@
 #include "omg/parser/parser_factory.h"
 #include "omg/parser/weights_parser.h"
 #include "parser/common/pre_checker.h"
+#include "parser/common/convert/pb2json.h"
 #include "proto/ge_ir.pb.h"
 #include "register/op_registry.h"
 
@@ -75,7 +75,7 @@ const std::set<string> kOmBlackFields = {"output",      "data_offset", "data", "
                                          "memory_size", "weight_size", "size", "bt",        "quantize_factor"};
 
 static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
-  {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
+    {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
 
 static bool CheckInputTrueOrFalse(const std::string &s, const std::string &atc_param) {
   if ((s == "true") || (s == "false")) {
@@ -257,6 +257,11 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
   if (real_path.empty()) {  // plugin path does not exist
     return;
   }
+  struct stat stat_buf;
+  if ((stat(real_path.c_str(), &stat_buf) != 0) || (!S_ISDIR(stat_buf.st_mode))) {
+    GELOGI("The path %s is not a directory.", real_path.c_str());
+    return;
+  }
 
   struct dirent *dent(nullptr);
   DIR *dir = opendir(real_path.c_str());
@@ -272,21 +277,11 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
     string full_name = real_path + "/" + name;
     const string so_suff = ".so";
     const string caffe_parser_so_suff = "lib_caffe_parser.so";
-    const string aicpu_so_suff = "_aicpu.so";
-    const string aicpu_host_so_suff = "_online.so";
     if (name.size() >= so_suff.size() && name.compare(name.size() - so_suff.size(), so_suff.size(), so_suff) == 0) {
       if (full_name.size() >= caffe_parser_so_suff.size() &&
           full_name.compare(full_name.size() - caffe_parser_so_suff.size(), caffe_parser_so_suff.size(),
                             caffe_parser_so_suff) == 0) {
         caffe_parser_path = full_name;
-      } else if ((full_name.size() >= aicpu_so_suff.size() &&
-                  full_name.compare(full_name.size() - aicpu_so_suff.size(), aicpu_so_suff.size(), aicpu_so_suff) ==
-                    0) ||
-                 (full_name.size() >= aicpu_host_so_suff.size() &&
-                  full_name.compare(full_name.size() - aicpu_host_so_suff.size(), aicpu_host_so_suff.size(),
-                                    aicpu_host_so_suff) == 0)) {
-        // aicpu so, Put the file path into the omgcontext and save into the model in the builder stage;
-        domi::GetContext().aicpu_op_run_paths.push_back(full_name);
       } else {  // save parser so path into file_list vector
         file_list.push_back(full_name);
       }
@@ -297,29 +292,6 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
   }
   closedir(dir);
   return;
-}
-
-Status CheckCustomAiCpuOpLib() {
-  std::vector<std::string> vec_op_type;
-  domi::OpRegistry::Instance()->GetOpTypeByImplyType(vec_op_type, domi::ImplyType::CUSTOM);
-  for (uint32_t i = 0; i < vec_op_type.size(); i++) {
-    bool aicpu_so_exist = false;
-    std::string ai_cpu_so_name = "lib" + vec_op_type[i] + "_aicpu.so";
-    for (uint32_t j = 0; j < domi::GetContext().aicpu_op_run_paths.size(); j++) {
-      string bin_file_path = domi::GetContext().aicpu_op_run_paths[j];
-      if (bin_file_path.size() >= ai_cpu_so_name.size() &&
-          bin_file_path.compare(bin_file_path.size() - ai_cpu_so_name.size(), ai_cpu_so_name.size(), ai_cpu_so_name) ==
-            0) {
-        aicpu_so_exist = true;
-        break;
-      }
-    }
-    if (!aicpu_so_exist) {
-      GELOGE(domi::FAILED, "cant find aicpu run so(%s), please check the plugin path!", ai_cpu_so_name.c_str());
-      return domi::FAILED;
-    }
-  }
-  return domi::SUCCESS;
 }
 
 Status SetOutFormatAndDataTypeAttr(ge::OpDescPtr op_desc, const ge::Format format, const ge::DataType data_type) {
@@ -447,8 +419,8 @@ Status CheckOutNode(ge::OpDescPtr op_desc, int32_t index) {
            "out_node [%s] output index:%d must be smaller "
            "than node output size:%d and can not be negative!",
            op_desc->GetName().c_str(), index, out_size);
-    std::string fail_reason = "output index:" + to_string(index) +
-                              " must be smaller than output size:" + to_string(out_size) + " and can not be negative!";
+    std::string fail_reason = "output index:" + to_string(index) + " must be smaller than output size:" +
+                              to_string(out_size) + " and can not be negative!";
     ErrorManager::GetInstance().ATCReportErrMessage("E10003", {"parameter", "value", "reason"},
                                                     {"out_nodes", op_desc->GetName(), fail_reason});
     return domi::FAILED;
@@ -618,21 +590,31 @@ Status ParseOutNodes(const string &out_nodes) {
     if (!out_nodes.empty()) {
       domi::GetContext().out_nodes_map.clear();
       domi::GetContext().user_out_nodes.clear();
+      domi::GetContext().user_out_nodes_top_vec.clear();
 
       vector<string> nodes_v = StringUtils::Split(out_nodes, ';');
       for (const string &node : nodes_v) {
         vector<string> key_value_v = StringUtils::Split(node, ':');
         if (key_value_v.size() != 2) {  // The size must be 2.
+          if (key_value_v.size() == 1 && domi::GetContext().type == domi::CAFFE) {
+            domi::GetContext().user_out_nodes_top_vec.push_back(node);
+            continue;
+          }
           ErrorManager::GetInstance().ATCReportErrMessage(
-            "E10001", {"parameter", "value", "reason"},
-            {"--out_nodes", node, "the correct format is \"node_name1:0;node_name1:1;node_name2:0\""});
+              "E10001", {"parameter", "value", "reason"},
+              {"--out_nodes", node, "the correct format is \"node_name1:0;node_name1:1;node_name2:0\""});
           GELOGE(PARAM_INVALID,
                  "The input format of --out_nodes is invalid, the correct format is "
                  "\"node_name1:0;node_name1:1;node_name2:0\", while the actual input is %s.",
                  node.c_str());
           return PARAM_INVALID;
         }
-        auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
+        if (!domi::GetContext().user_out_nodes_top_vec.empty()) {
+          ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                          {"--out_nodes", out_nodes, "is not all index or top_name"});
+          GELOGE(PARAM_INVALID, "This out_nodes str must be all index or top_name, while the actual input is %s", out_nodes.c_str());
+          return PARAM_INVALID;
+        }
         // stoi: The method may throw an exception: invalid_argument/out_of_range
         if (!CheckDigitStr(key_value_v[1])) {
           ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
@@ -640,7 +622,10 @@ Status ParseOutNodes(const string &out_nodes) {
           GELOGE(PARAM_INVALID, "This str must be digit string, while the actual input is %s", out_nodes.c_str());
           return PARAM_INVALID;
         }
+
+        auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
         int32_t index = stoi(StringUtils::Trim(key_value_v[1]));
+        GELOGD("Get output info: node[%s] and index[%ld]", key_value_v[0].c_str(), index);
         if (iter != domi::GetContext().out_nodes_map.end()) {
           iter->second.emplace_back(index);
         } else {
@@ -681,16 +666,16 @@ static Status CheckOpNameMap(const ComputeGraphPtr &graph, const std::string &op
   }
   std::map<std::string, std::string> &propertiesMap = domi::GetContext().op_conf_map;
   if (propertiesMap.empty()) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10003", {"parameter", "value", "reason"},
-                                                    {"op_name_map", op_conf, "the file content is empty"});
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E10003", {"parameter", "value", "reason"}, {"op_name_map", op_conf, "the file content is empty"});
     GELOGE(PARAM_INVALID, "op_name_map file content is empty, please check file!");
     return PARAM_INVALID;
   }
   for (auto iter = propertiesMap.begin(); iter != propertiesMap.end(); iter++) {
     GE_IF_BOOL_EXEC(graphNodeTypes.find(iter->second) == graphNodeTypes.end(),
                     ErrorManager::GetInstance().ATCReportErrMessage(
-                      "E10003", {"parameter", "value", "reason"},
-                      {"op_name_map", op_conf, "type[" + iter->second + "] is not found in model"});
+                        "E10003", {"parameter", "value", "reason"},
+                        {"op_name_map", op_conf, "type[" + iter->second + "] is not found in model"});
                     GELOGE(PARAM_INVALID, "Invalid parameter for op_name_map."); return PARAM_INVALID;);
   }
   return SUCCESS;
@@ -820,35 +805,35 @@ void GetGroupName(ge::proto::ModelDef &model_def) {
   auto modelAttrMap = model_def.mutable_attr();
   auto fusionModelOpListIter = modelAttrMap->find(MODEL_ATTR_FUSION_MODEL_DEF);
   GE_IF_BOOL_EXEC(
-    fusionModelOpListIter != modelAttrMap->end(), int fusionOpIndex = 0;
-    for (int i = 0; i < model_def.graph_size(); i++) {
-      auto graph = model_def.mutable_graph(i);
-      for (int j = 0; j < graph->op_size(); j++) {
-        int64_t scope_id = 0;
-        auto bt = fusionModelOpListIter->second.list().bt(fusionOpIndex++);
-        ge::proto::OpDef fusion_op_def;
-        GE_CHK_BOOL_EXEC(bt.size() != 0, GELOGW("Invalid bt size"); return;);
+      fusionModelOpListIter != modelAttrMap->end(), int fusionOpIndex = 0;
+      for (int i = 0; i < model_def.graph_size(); i++) {
+        auto graph = model_def.mutable_graph(i);
+        for (int j = 0; j < graph->op_size(); j++) {
+          int64_t scope_id = 0;
+          auto bt = fusionModelOpListIter->second.list().bt(fusionOpIndex++);
+          ge::proto::OpDef fusion_op_def;
+          GE_CHK_BOOL_EXEC(bt.size() != 0, GELOGW("Invalid bt size"); return;);
 
-        (void)(fusion_op_def.ParseFromArray(bt.data(), bt.size()));
-        auto fusion_attr_map = fusion_op_def.mutable_attr();
-        auto fusion_iter = fusion_attr_map->find(kScopeIdAttr);
-        GE_IF_BOOL_EXEC(fusion_iter == fusion_attr_map->end(), continue;);
+          (void)(fusion_op_def.ParseFromArray(bt.data(), bt.size()));
+          auto fusion_attr_map = fusion_op_def.mutable_attr();
+          auto fusion_iter = fusion_attr_map->find(kScopeIdAttr);
+          GE_IF_BOOL_EXEC(fusion_iter == fusion_attr_map->end(), continue;);
 
-        scope_id = fusion_iter->second.i();
-        ge::proto::OpDef *opdef = graph->mutable_op(j);
-        auto attr_map = opdef->mutable_attr();
+          scope_id = fusion_iter->second.i();
+          ge::proto::OpDef *opdef = graph->mutable_op(j);
+          auto attr_map = opdef->mutable_attr();
 
-        int64_t stream_id = opdef->stream_id();
+          int64_t stream_id = opdef->stream_id();
 
-        uint16_t l1_id = (((uint64_t)scope_id & 0xFFFF0000)) >> 16;
-        GE_IF_BOOL_EXEC(l1_id != 0, ostringstream groupName; groupName << "group_op_l1_" << l1_id << "_" << stream_id;
-                        (*attr_map)["group_op_name"].set_s(groupName.str()); continue;);
+          uint16_t l1_id = (((uint64_t)scope_id & 0xFFFF0000)) >> 16;
+          GE_IF_BOOL_EXEC(l1_id != 0, ostringstream groupName; groupName << "group_op_l1_" << l1_id << "_" << stream_id;
+                          (*attr_map)["group_op_name"].set_s(groupName.str()); continue;);
 
-        uint16_t ub_id = ((uint64_t)scope_id & 0xFFFF);
-        GE_IF_BOOL_EXEC(ub_id != 0, ostringstream groupName; groupName << "group_op_ub_" << ub_id << "_" << stream_id;
-                        (*attr_map)["group_op_name"].set_s(groupName.str()););
-      }
-    });
+          uint16_t ub_id = ((uint64_t)scope_id & 0xFFFF);
+          GE_IF_BOOL_EXEC(ub_id != 0, ostringstream groupName; groupName << "group_op_ub_" << ub_id << "_" << stream_id;
+                          (*attr_map)["group_op_name"].set_s(groupName.str()););
+        }
+      });
 }
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, const char *json_file) {
@@ -981,8 +966,8 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType 
   }
 
   ErrorManager::GetInstance().ATCReportErrMessage(
-    "E10001", {"parameter", "value", "reason"},
-    {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow)"});
+      "E10001", {"parameter", "value", "reason"},
+      {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow)"});
   GELOGE(PARAM_INVALID, "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow).");
   return PARAM_INVALID;
 }
@@ -1014,13 +999,32 @@ FMK_FUNC_HOST_VISIBILITY Status DumpInfershapeJson(const ge::Graph &graph, const
 void UpdateOmgCtxWithParserCtx() {
   domi::GetContext().format = GetParserContext().format;
   domi::GetContext().input_dims = GetParserContext().input_dims;
-  return;
+  domi::GetContext().user_input_dims = GetParserContext().user_input_dims;
+  domi::GetContext().is_dynamic_input = GetParserContext().is_dynamic_input;
+  domi::GetContext().type = GetParserContext().type;
+  domi::GetContext().user_out_nodes = GetParserContext().user_out_nodes;
+  domi::GetContext().train_flag = GetParserContext().train_flag;
+  domi::GetContext().run_mode = GetParserContext().run_mode;
+  domi::GetContext().op_conf_map = GetParserContext().op_conf_map;
+  domi::GetContext().out_nodes_map = GetParserContext().out_nodes_map;
+  domi::GetContext().input_nodes_format_map = GetParserContext().input_nodes_format_map;
+  domi::GetContext().out_top_names = GetParserContext().out_top_names;
+  domi::GetContext().user_out_nodes_top_vec = GetParserContext().user_out_nodes_top_vec;
 }
 
 void UpdateParserCtxWithOmgCtx() {
   GetParserContext().format = domi::GetContext().format;
   GetParserContext().input_dims = domi::GetContext().input_dims;
+  GetParserContext().user_input_dims = domi::GetContext().user_input_dims;
+  GetParserContext().is_dynamic_input = domi::GetContext().is_dynamic_input;
+  GetParserContext().type = domi::GetContext().type;
+  GetParserContext().user_out_nodes = domi::GetContext().user_out_nodes;
+  GetParserContext().train_flag = domi::GetContext().train_flag;
   GetParserContext().run_mode = domi::GetContext().run_mode;
-  return;
+  GetParserContext().op_conf_map = domi::GetContext().op_conf_map;
+  GetParserContext().out_nodes_map = domi::GetContext().out_nodes_map;
+  GetParserContext().input_nodes_format_map = domi::GetContext().input_nodes_format_map;
+  GetParserContext().out_top_names = domi::GetContext().out_top_names;
+  GetParserContext().user_out_nodes_top_vec = domi::GetContext().user_out_nodes_top_vec;
 }
 }  // namespace ge

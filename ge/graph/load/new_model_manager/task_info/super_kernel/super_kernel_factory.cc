@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,8 +112,8 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy failed. error: 0x%X", rt_ret);
                   GE_CHK_RT(rtFree(hbm_nav_table_addr)); return RT_ERROR_TO_GE_STATUS(rt_ret);)
   // Create the necessary metadata for the super kernel
-  h =
-    std::unique_ptr<skt::SuperKernel>(new SuperKernel(this->func_stub_, hbm_nav_table_addr, nav_table_size, block_dim));
+  h = std::unique_ptr<skt::SuperKernel>(
+      new SuperKernel(this->func_stub_, hbm_nav_table_addr, nav_table_size, block_dim));
   return SUCCESS;
 }
 }  // namespace skt

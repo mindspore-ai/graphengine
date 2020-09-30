@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ void ReduceProdKernel::ShapeCal(const ge::OpDescPtr &op_desc_ptr, const std::vec
   vector<int64_t> data_dims = data_tensor->GetTensorDesc().GetShape().GetDims();
   int32_t data_dim_size = static_cast<int32_t>(data_dims.size());
   const uint8_t *axis_data = axis_tensor->GetData().GetData();
-  GE_CHECK_NOTNULL_EXEC(axis_data, return );
+  GE_CHECK_NOTNULL_EXEC(axis_data, return);
   int32_t axis = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(axis_data)));
   bool keep_dims = false;
   if (!AttrUtils::GetBool(op_desc_ptr, "keep_dims", keep_dims)) {

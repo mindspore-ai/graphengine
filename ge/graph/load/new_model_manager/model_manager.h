@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,6 +224,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   ge::Status GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
+  ge::Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
+
   ///
   /// @ingroup domi_ome
   /// @brief set model input and output size zero copy
@@ -333,7 +335,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::mutex map_mutex_;
   std::mutex sess_ids_mutex_;
   std::mutex session_id_create_mutex_;
-  static ::std::mutex exeception_infos_mutex_;
+  static::std::mutex exeception_infos_mutex_;
   uint64_t session_id_bias_;
   std::set<uint64_t> sess_ids_;
   std::vector<rtExceptionInfo> exception_infos_;

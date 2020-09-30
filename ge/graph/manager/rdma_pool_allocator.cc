@@ -126,7 +126,7 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
     if (ShouldSplit(block, aligned_size)) {
       GELOGD("Block will be splited block size = %zu, aligned_size:%zu", block->size, aligned_size);
       auto *new_block =
-        new (std::nothrow) Block(device_id, block->size - aligned_size, nullptr, block->ptr + aligned_size);
+          new (std::nothrow) Block(device_id, block->size - aligned_size, nullptr, block->ptr + aligned_size);
       if (new_block == nullptr) {
         GELOGW("Block split failed");
         return block->ptr;
@@ -140,8 +140,8 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
       block->size = aligned_size;
       block_bin_.insert(new_block);
     }
-    return block->ptr;
     GELOGD("Find block size = %zu", block->size);
+    return block->ptr;
   }
   GELOGW("Memory block not founded.");
   return nullptr;

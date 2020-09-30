@@ -17,6 +17,7 @@
 #ifndef GE_GRAPH_MANAGER_MODEL_MANAGER_EVENT_MANAGER_H_
 #define GE_GRAPH_MANAGER_MODEL_MANAGER_EVENT_MANAGER_H_
 
+
 #include <vector>
 
 #include "common/fmk_error_codes.h"

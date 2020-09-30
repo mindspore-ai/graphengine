@@ -61,9 +61,11 @@ TensorBuffer::~TensorBuffer() {
   }
 }
 
-TensorValue::TensorValue(std::shared_ptr<TensorBuffer> buffer) : buffer_(std::move(buffer)) {}
+TensorValue::TensorValue(std::shared_ptr<TensorBuffer> buffer) : buffer_(std::move(buffer)) {
+}
 
-TensorValue::TensorValue(void *buffer, size_t size) : ref_buffer_(buffer), ref_size_(size) {}
+TensorValue::TensorValue(void *buffer, size_t size) : ref_buffer_(buffer), ref_size_(size) {
+}
 
 TensorValue::~TensorValue() { Destroy(); }
 

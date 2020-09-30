@@ -28,8 +28,8 @@
 
 using std::map;
 using std::set;
-using std::string;
 using std::vector;
+using std::string;
 
 namespace ge {
 class ZeroCopyTask {
@@ -83,9 +83,13 @@ class ZeroCopyTask {
    */
   ge::Status DistributeParam(bool async_mode, rtStream_t stream);
 
-  void SetBatchLabel(const string &batch_label) { batch_label_ = batch_label; }
+  void SetBatchLabel(const string &batch_label) {
+    batch_label_ = batch_label;
+  }
 
-  const string &GetBatchLabel() const { return batch_label_; }
+  const string& GetBatchLabel() const {
+    return batch_label_;
+  }
 
  protected:
   bool CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_addrs, const string &batch_label, uintptr_t addr);
@@ -101,5 +105,5 @@ class ZeroCopyTask {
   // <address from Op, {offset in args}>
   map<uintptr_t, vector<size_t>> task_addr_offset_;
 };
-}  // namespace ge
+} // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_ZERO_COPY_TASK_H_

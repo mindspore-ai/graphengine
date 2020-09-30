@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ class StreamSwitchTaskInfo : public TaskInfo {
   Status Distribute() override;
 
   Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
-
  private:
   void SetInputAndValuePtr(DavinciModel *davinci_model, const vector<void *> &input_data_addrs);
   void *input_ptr_;

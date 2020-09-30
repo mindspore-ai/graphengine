@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,7 +200,7 @@ Status DynamicStitchKernel::StitchDataFollowIndices(int64_t data_unit, const vec
       dst_offset = input_indices[j] * data_unit;
       src_offset = j * data_unit;
       auto protected_size =
-        allowance < static_cast<int64_t>(SECUREC_MEM_MAX_LEN) ? allowance : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+          allowance < static_cast<int64_t>(SECUREC_MEM_MAX_LEN) ? allowance : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
       auto ret = memcpy_s(buf.get() + dst_offset, protected_size, input_data + src_offset, data_unit);
       if (ret != EOK) {
         GELOGW("Memory copy failed.");

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "graph/passes/cond_pass.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
@@ -21,9 +20,9 @@
 #include "graph/utils/node_utils.h"
 
 namespace {
-const std::string kStringLength = "StringLength";
-const size_t kScalarDimNum = 1;
-}  // namespace
+  const std::string kStringLength = "StringLength";
+  const size_t kScalarDimNum = 1;
+}
 
 namespace ge {
 Status CondPass::Run(NodePtr &node) {
@@ -172,8 +171,8 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
   // cond_graph has and only has one output
   uint32_t output_num = net_output_node->GetAllInDataAnchorsSize();
   if (output_num != 1) {
-    GELOGE(FAILED, "output size of cond_graph is invalid, expect 1 but %u exactly, while_node:%s.", output_num,
-           node->GetName().c_str());
+    GELOGE(FAILED, "output size of cond_graph is invalid, expect 1 but %u exactly, while_node:%s.",
+           output_num, node->GetName().c_str());
     return FAILED;
   }
 
@@ -234,9 +233,10 @@ Status CondPass::HandleScalarCond(const ComputeGraphPtr &graph, const OutDataAnc
     return FAILED;
   }
 
-  if (GraphUtils::InsertNodeAfter(out_anchor, {in_anchor}, cast_node) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Insert Cast node %s between %s->%s failed.", cast_node->GetName().c_str(),
-           out_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
+  if (GraphUtils::InsertNodeAfter(out_anchor, { in_anchor }, cast_node) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Insert Cast node %s between %s->%s failed.",
+           cast_node->GetName().c_str(), out_anchor->GetOwnerNode()->GetName().c_str(),
+           in_anchor->GetOwnerNode()->GetName().c_str());
     return FAILED;
   }
 
@@ -279,9 +279,10 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   }
   AddRePassNode(new_node);
 
-  if (GraphUtils::InsertNodeAfter(out_anchor, {in_anchor}, new_node) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Insert %s node %s between %s->%s failed.", type.c_str(), new_node->GetName().c_str(),
-           out_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
+  if (GraphUtils::InsertNodeAfter(out_anchor, { in_anchor }, new_node) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Insert %s node %s between %s->%s failed.", type.c_str(),
+           new_node->GetName().c_str(), out_anchor->GetOwnerNode()->GetName().c_str(),
+           in_anchor->GetOwnerNode()->GetName().c_str());
     return FAILED;
   }
 
@@ -313,7 +314,8 @@ NodePtr CondPass::AddCastNode(const ComputeGraphPtr &graph, const std::string &n
     GELOGE(FAILED, "Create cast op_desc failed, name: %s.", name.c_str());
     return nullptr;
   }
-  if (!(AttrUtils::SetInt(cast_desc, CAST_ATTR_SRCT, src) && AttrUtils::SetInt(cast_desc, CAST_ATTR_DSTT, dst) &&
+  if (!(AttrUtils::SetInt(cast_desc, CAST_ATTR_SRCT, src) &&
+        AttrUtils::SetInt(cast_desc, CAST_ATTR_DSTT, dst) &&
         AttrUtils::SetInt(cast_desc, CAST_ATTR_DST_TYPE, dst) &&
         AttrUtils::SetBool(cast_desc, CAST_ATTR_TRUNCATE, false))) {
     GELOGE(FAILED, "Set CAST_ATTR failed, node: %s.", name.c_str());

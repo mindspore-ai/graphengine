@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,8 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     return INTERNAL_ERROR;
   }
   if (is_unknown) {
-    GELOGI("Current node %s, type %s is unknown shape which should be skip.", node->GetName().c_str(),
-           node->GetType().c_str());
+    GELOGI("Current node %s, type %s is unknown shape which should be skip.",
+           node->GetName().c_str(), node->GetType().c_str());
     return SUCCESS;
   }
 

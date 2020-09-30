@@ -216,19 +216,19 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
     if (kernel_info_store != kernel_map.end()) {
       std::string unsupported_reason;
       // It will be replaced by engine' checksupport
-      uint64_t start_time = GetCurrentTimestap();
+      uint64_t start_time = GetCurrentTimestamp();
       if (kernel_info_store->second->CheckSupported(op_desc, unsupported_reason)) {
-        checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
+        checksupport_cost_[kernel_name] += GetCurrentTimestamp() - start_time;
         op_desc->SetOpEngineName(it.engine);
         op_desc->SetOpKernelLibName(kernel_name);
         // set attrs for taking information when load txt to graph object
-        (void)AttrUtils::SetStr(op_desc, ATTR_NAME_ENGINE_NAME_FOR_LX, it.engine);
-        (void)AttrUtils::SetStr(op_desc, ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX, kernel_name);
+        (void) AttrUtils::SetStr(op_desc, ATTR_NAME_ENGINE_NAME_FOR_LX, it.engine);
+        (void) AttrUtils::SetStr(op_desc, ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX, kernel_name);
         GELOGD("DNNEngineManager:Set OpKernelLibName %s and engine name %s to op_desc %s", kernel_name.c_str(),
                it.engine.c_str(), op_desc->GetName().c_str());
         return it.engine;
       } else {
-        checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
+        checksupport_cost_[kernel_name] += GetCurrentTimestamp() - start_time;
         bool is_custom_op = false;
         if ((ge::AttrUtils::GetBool(op_desc, kCustomOpFlag, is_custom_op)) && is_custom_op) {
           ErrorManager::GetInstance().ATCReportErrMessage("E13001", {"kernelname", "optype", "opname"},
@@ -237,9 +237,8 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
                  "The custom operator registered by the user does not support the logic function delivered by this "
                  "network. Check support failed, kernel_name is %s, op type is %s, op name is %s",
                  kernel_name.c_str(), op_desc->GetType().c_str(), op_desc->GetName().c_str());
-          std::string error_info =
-            "The custom operator registered by the user does not support the logic function"
-            "delivered by this network";
+          std::string error_info = "The custom operator registered by the user does not support the logic function"
+                                   "delivered by this network";
           return "";
         }
         unsupported_reasons.emplace(kernel_name, unsupported_reason);
@@ -251,9 +250,9 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
       }
     } else {
       GELOGW(
-        "DNNEngineManager:Can not find any supported ops kernel info store by kernel_name %s,"
-        "op type is %s, op name is %s",
-        kernel_name.c_str(), op_desc->GetType().c_str(), op_desc->GetName().c_str());
+          "DNNEngineManager:Can not find any supported ops kernel info store by kernel_name %s,"
+          "op type is %s, op name is %s",
+          kernel_name.c_str(), op_desc->GetType().c_str(), op_desc->GetName().c_str());
     }
   }
 
@@ -261,19 +260,19 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
   string reason;
   for (const auto &it : unsupported_reasons) {
     reason += it.first + ":" + it.second + ";";
-    ErrorManager::GetInstance().ATCReportErrMessage("E13002", {"optype", "opskernel", "reason"},
-                                                    {op_desc->GetType(), it.first, it.second});
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E13002", {"optype", "opskernel", "reason"}, {op_desc->GetType(), it.first, it.second});
     GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "GetDNNEngineName:Op type %s of ops kernel %s is unsupported, reason:%s",
            op_desc->GetType().c_str(), it.first.c_str(), it.second.c_str());
   }
 
-  analyzer::DataInfo analyze_info{root_graph->GetSessionID(), root_graph->GetGraphID(), analyzer::CHECKSUPPORT,
-                                  node_ptr, reason};
+  analyzer::DataInfo analyze_info{root_graph->GetSessionID(), root_graph->GetGraphID(),
+                                  analyzer::CHECKSUPPORT, node_ptr, reason};
   // do not change original process
   (void)Analyzer::GetInstance()->DoAnalyze(analyze_info);
 
-  ErrorManager::GetInstance().ATCReportErrMessage("E13003", {"opname", "optype"},
-                                                  {op_desc->GetName(), op_desc->GetType()});
+  ErrorManager::GetInstance().ATCReportErrMessage(
+      "E13003", {"opname", "optype"}, {op_desc->GetName(), op_desc->GetType()});
   GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "Can't find any supported ops kernel and engine of %s, type is %s",
          op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return "";
@@ -285,13 +284,13 @@ std::string DNNEngineManager::GetHostCpuEngineName(const std::vector<OpInfo> &op
     if ((it.engine == kHostCpuEngineName) && (it.opKernelLib == kHostCpuOpKernelLibName)) {
       op_desc->SetOpEngineName(kHostCpuEngineName);
       op_desc->SetOpKernelLibName(kHostCpuOpKernelLibName);
-      GELOGI("DNNEngineManager: Set OpKernelLibName %s and OpEngineName %s to %s", kHostCpuOpKernelLibName,
-             kHostCpuEngineName, op_desc->GetName().c_str());
+      GELOGI("DNNEngineManager: Set OpKernelLibName %s and OpEngineName %s to %s",
+             kHostCpuOpKernelLibName, kHostCpuEngineName, op_desc->GetName().c_str());
       return kHostCpuEngineName;
     }
   }
-  GELOGE(FAILED, "DNNEngineManager: HostCpuEngine not support [%s, %s].", op_desc->GetName().c_str(),
-         op_desc->GetType().c_str());
+  GELOGE(FAILED, "DNNEngineManager: HostCpuEngine not support [%s, %s].",
+         op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return "";
 }
 

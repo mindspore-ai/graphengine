@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,10 @@ class AtomicAddrCleanPass : public GraphPass {
 
  private:
   /**
-   * HandleLoopGraph
-   * @param graph
-   * @return
-   */
+    * HandleLoopGraph
+    * @param graph
+    * @return
+    */
   Status HandleLoopGraph(ComputeGraphPtr &graph, const vector<NodePtr> &atomic_node_vec);
   /**
    * HandleNormalGraph
@@ -83,6 +83,7 @@ class AtomicAddrCleanPass : public GraphPass {
 
   Status HandleDispersedAtomicNodes(ComputeGraphPtr &graph, const std::vector<NodePtr> &atomic_node_vec,
                                     std::vector<NodePtr> &common_atomic_nodes);
+
 
   vector<NodePtr> hcom_node_vec_;
   bool is_loop_graph_ = false;

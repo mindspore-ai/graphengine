@@ -34,12 +34,15 @@ const char *AiCoreKernelRegistry::GetUnique(const string &stub_key) {
 }
 
 AiCoreTaskBuilder::AiCoreTaskBuilder(const OpDescPtr &op_desc, const std::vector<domi::TaskDef> &task_defs)
-    : op_desc_(op_desc), task_defs_(task_defs) {}
+    : op_desc_(op_desc), task_defs_(task_defs) {
+}
 
 Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task, bool ignore_failure_on_atomic) {
   GE_CHECK_NOTNULL(op_desc_);
   if (task_defs_.size() > kNumTaskWithAtomicAddrCleanTask) {
-    GELOGE(INTERNAL_ERROR, "[%s] At most 2 task was supported, but got %zu", op_desc_->GetName().c_str(),
+    GELOGE(INTERNAL_ERROR,
+           "[%s] At most 2 task was supported, but got %zu",
+           op_desc_->GetName().c_str(),
            task_defs_.size());
     return INTERNAL_ERROR;
   }
@@ -48,32 +51,38 @@ Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task, bool i
   if (ExpectAtomicAddrCleanTask()) {
     if (task_defs_.size() != kNumTaskWithAtomicAddrCleanTask) {
       if (ignore_failure_on_atomic) {
-        GELOGI("[%s] AtomicAddrClean task was expected, but got %zu task_defs", op_desc_->GetName().c_str(),
+        GELOGI("[%s] AtomicAddrClean task was expected, but got %zu task_defs",
+               op_desc_->GetName().c_str(),
                task_defs_.size());
         return SUCCESS;
       } else {
-        GELOGE(INTERNAL_ERROR, "[%s] AtomicAddrClean task was expected, but got %zu task_defs",
-               op_desc_->GetName().c_str(), task_defs_.size());
+        GELOGE(INTERNAL_ERROR,
+               "[%s] AtomicAddrClean task was expected, but got %zu task_defs",
+               op_desc_->GetName().c_str(),
+               task_defs_.size());
         return INTERNAL_ERROR;
       }
     }
 
     GELOGD("[%s] Build AtomicAddrClean task.", op_desc_->GetName().c_str());
-    auto atomic_task = std::unique_ptr<AtomicAddrCleanOpTask>(new (std::nothrow) AtomicAddrCleanOpTask());
+    auto atomic_task =
+        std::unique_ptr<AtomicAddrCleanOpTask>(new(std::nothrow)AtomicAddrCleanOpTask());
     GE_CHECK_NOTNULL(atomic_task);
-    GE_CHK_STATUS_RET(atomic_task->Init(*op_desc_, task_defs_.front()), "[%s] Failed to init task for AtomicAddrClean",
+    GE_CHK_STATUS_RET(atomic_task->Init(*op_desc_, task_defs_.front()),
+                      "[%s] Failed to init task for AtomicAddrClean",
                       op_desc_->GetName().c_str());
     op_tasks.emplace_back(std::move(atomic_task));
   }
 
   // build aicore task
-  auto aicore_task = std::unique_ptr<AiCoreOpTask>(new (std::nothrow) AiCoreOpTask());
+  auto aicore_task = std::unique_ptr<AiCoreOpTask>(new(std::nothrow)AiCoreOpTask());
   GE_CHECK_NOTNULL(aicore_task);
-  GE_CHK_STATUS_RET(aicore_task->Init(*op_desc_, task_defs_.back()), "[%s] Failed to init task for AtomicAddrClean",
+  GE_CHK_STATUS_RET(aicore_task->Init(*op_desc_, task_defs_.back()),
+                    "[%s] Failed to init task for AtomicAddrClean",
                     op_desc_->GetName().c_str());
   op_tasks.emplace_back(std::move(aicore_task));
 
-  node_task.reset(new (std::nothrow) AiCoreNodeTask(std::move(op_tasks)));
+  node_task.reset(new(std::nothrow)AiCoreNodeTask(std::move(op_tasks)));
   GE_CHECK_NOTNULL(node_task);
   return SUCCESS;
 }

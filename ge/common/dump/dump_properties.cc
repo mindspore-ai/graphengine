@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,14 +35,14 @@ const std::string kDumpStatusOpen = "on";
 const uint32_t kAicoreOverflow = (0x1 << 0);
 const uint32_t kAtomicOverflow = (0x1 << 1);
 const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
-}  // namespace
+}
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties::DumpProperties(const DumpProperties &other) {
   CopyFrom(other);
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &DumpProperties::operator=(
-  const DumpProperties &other) {
+    const DumpProperties &other) {
   CopyFrom(other);
   return *this;
 }
@@ -97,7 +97,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::InitByOpti
 
 // The following is the new dump scenario of the fusion operator
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::AddPropertyValue(
-  const std::string &model, const std::set<std::string> &layers) {
+    const std::string &model, const std::set<std::string> &layers) {
   for (const std::string &layer : layers) {
     GELOGI("This model %s config to dump layer %s", model.c_str(), layer.c_str());
   }
@@ -136,7 +136,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> DumpPrope
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> DumpProperties::GetPropertyValue(
-  const std::string &model) const {
+    const std::string &model) const {
   auto iter = model_dump_properties_map_.find(model);
   if (iter != model_dump_properties_map_.end()) {
     return iter->second;
@@ -145,7 +145,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::set<std::string> DumpPrope
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool DumpProperties::IsLayerNeedDump(
-  const std::string &model, const std::string &om_name, const std::string &op_name) const {
+    const std::string &model, const std::string &om_name, const std::string &op_name) const {
   // if dump all
   if (model_dump_properties_map_.find(DUMP_ALL_MODEL) != model_dump_properties_map_.end()) {
     return true;
@@ -201,7 +201,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperti
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpOpSwitch(
-  const std::string &dump_op_switch) {
+    const std::string dump_op_switch) {
   dump_op_switch_ = dump_op_switch;
 }
 
@@ -266,4 +266,4 @@ void DumpProperties::SetDumpDebugOptions() {
     GELOGI("ge.exec.enableDumpDebug is false or is not set.");
   }
 }
-}  // namespace ge
+}  // namespace

@@ -29,6 +29,7 @@ COMMON_LOCAL_SRC_FILES := \
     common/dump/dump_properties.cc \
     common/dump/dump_manager.cc \
     common/dump/dump_op.cc \
+    common/dump/dump_server.cc \
     common/helper/model_cache_helper.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
 
@@ -59,6 +60,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     generator/ge_generator.cc \
     generator/generator_api.cc \
     graph/manager/graph_var_manager.cc \
+    graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
@@ -177,6 +179,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/multi_batch_pass.cc \
     graph/passes/multi_batch_clone_pass.cc \
     graph/passes/subexpression_migration_pass.cc \
+    graph/passes/subgraph_const_migration_pass.cc \
     graph/passes/unused_args_clean_pass.cc \
     graph/passes/next_iteration_pass.cc \
     graph/passes/control_trigger_pass.cc \
@@ -371,7 +374,6 @@ LOCAL_SRC_FILES += $(BUILER_SRC_FILES)
 LOCAL_SRC_FILES += $(ANALYZER_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
-                          libadump_server_stub \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -436,7 +438,6 @@ LOCAL_C_INCLUDES := $(DEVICE_LOCAL_C_INCLUDES)
 LOCAL_C_INCLUDES += $(ANALYZER_LOCAL_INCLUDES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
-                          libadump_server_stub \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \

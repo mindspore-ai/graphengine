@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ class SubKernel : public Kernel {
  public:
   Status Compute(const ge::OpDescPtr attr, const std::vector<ge::ConstGeTensorPtr> &input,
                  vector<ge::GeTensorPtr> &v_output) override;
-
  private:
   std::vector<int8_t> y_data_int8_t_;
   std::vector<int16_t> y_data_int16_t_;

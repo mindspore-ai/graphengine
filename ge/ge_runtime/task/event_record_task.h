@@ -33,7 +33,7 @@ class EventRecordTask : public TaskRepeater<EventRecordTaskInfo> {
  private:
   std::shared_ptr<EventRecordTaskInfo> task_info_;
   rtStream_t stream_;
-  rtEvent_t event_;
+  rtEvent_t  event_;
 };
 }  // namespace model_runner
 }  // namespace ge

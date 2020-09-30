@@ -1,31 +1,32 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #include "host_kernels/strided_slice_kernel.h"
 
+#include <memory>
 #include "common/fp16_t.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/math/math_util.h"
 #include "common/op/ge_op_utils.h"
 #include "external/graph/types.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/types.h"
 #include "graph/utils/type_utils.h"
 #include "host_kernels/kernel_utils.h"
 #include "inc/kernel_factory.h"
-#include <memory>
 
 namespace ge {
 namespace {
@@ -208,7 +209,7 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
   for (size_t i = 0; i < x_dims.size(); ++i) {
     auto i_temp = static_cast<uint64_t>(i);
     bool new_axis_mask_flag =
-      (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK)) & (1 << i_temp));
+        (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK)) & (1 << i_temp));
     if (new_axis_mask_flag) {
       output_dims.push_back(1);
       input_dims.push_back(1);
@@ -255,7 +256,7 @@ void StridedSliceKernel::ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_ten
   for (size_t i = 0; i < final_dim_num; i++) {
     auto i_temp = static_cast<uint64_t>(i);
     bool new_axis_mask_flag =
-      (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK)) & (1 << i_temp));
+        (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK)) & (1 << i_temp));
     if (new_axis_mask_flag) {
       x_dims.insert(x_dims.begin() + i, 1);
     }
@@ -266,9 +267,9 @@ Status StridedSliceKernel::MaskCal(const size_t i, int64_t &begin_i, int64_t &en
   bool begin_mask_flag = (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_BEGIN_MASK)) & (1 << i_temp));
   bool end_mask_flag = (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_END_MASK)) & (1 << i_temp));
   bool ellipsis_mask_flag =
-    (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_ELLIPSIS_MASK)) & (1 << i_temp));
+      (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_ELLIPSIS_MASK)) & (1 << i_temp));
   bool shrink_mask_flag =
-    (static_cast<uint32_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK)) & (1 << i_temp));
+      (static_cast<uint32_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK)) & (1 << i_temp));
   if (shrink_mask_flag) {
     begin_i = (begin_i < 0 ? (dim_i + begin_i) : begin_i);
     FMK_INT32_ADDCHECK(begin_i, kNumOne)

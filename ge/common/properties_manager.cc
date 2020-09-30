@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ std::string PropertiesManager::Trim(const std::string &str) {
 
 // Get property value, if not found, return ""
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::GetPropertyValue(
-  const std::string &map_key) {
+    const std::string &map_key) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = properties_map_.find(map_key);
   if (properties_map_.end() != iter) {
@@ -166,14 +166,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetProp
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &PropertiesManager::GetDumpProperties(
-  uint64_t session_id) {
+    uint64_t session_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   // If session_id is not found in dump_properties_map_, operator[] will insert one.
   return dump_properties_map_[session_id];
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::AddDumpProperties(
-  uint64_t session_id, const DumpProperties &dump_properties) {
+    uint64_t session_id, const DumpProperties &dump_properties) {
   std::lock_guard<std::mutex> lock(mutex_);
   dump_properties_map_.emplace(session_id, dump_properties);
 }

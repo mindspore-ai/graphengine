@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef GE_COMMON_SUBEXPRESSION_ELIMINATION_H_
 #define GE_COMMON_SUBEXPRESSION_ELIMINATION_H_
 
@@ -23,7 +22,7 @@
 namespace ge {
 class CommonSubexpressionEliminationPass : public GraphPass {
  public:
-  Status Run(ge::ComputeGraphPtr graph) override;
+  Status Run(ge::ComputeGraphPtr graph) override ;
 };
 }  // namespace ge
-#endif  // GE_COMMON_SUBEXPRESSION_ELIMINATION_H_
+#endif //GE_COMMON_SUBEXPRESSION_ELIMINATION_H_

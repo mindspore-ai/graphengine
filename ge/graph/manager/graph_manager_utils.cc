@@ -51,7 +51,9 @@ GraphNode::GraphNode(GraphId graph_id)
 
 GraphNode::~GraphNode() = default;
 
-void GraphNode::Lock() { sem_.Push(0); }
+void GraphNode::Lock() {
+  sem_.Push(0);
+}
 
 void GraphNode::Unlock() {
   uint8_t unused;
@@ -103,9 +105,9 @@ GraphModelListener::GraphModelListener(std::mutex &mutex, std::condition_variabl
 Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
                                          std::vector<ge::OutputTensorInfo> &outputs) {
   GELOGI(
-    "[GraphManager] graph compute call back, model_id:%u, task_id:%u, "
-    "resultCode:%u.",
-    model_id, task_id, result);
+      "[GraphManager] graph compute call back, model_id:%u, task_id:%u, "
+      "resultCode:%u.",
+      model_id, task_id, result);
 
   std::lock_guard<std::mutex> lock(mutex_);
   result_code_ = result;
@@ -138,7 +140,8 @@ void RunAsyncListener::SetCallback(const RunAsyncCallback &callback) {
 
 Status RunAsyncListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
                                        std::vector<ge::OutputTensorInfo> &outputs) {
-  GELOGI("[GraphManager] run graph async call back, modelId:%u, taskId:%u, resultCode:%u.", model_id, task_id, result);
+  GELOGI("[GraphManager] run graph async call back, modelId:%u, taskId:%u, resultCode:%u.",
+         model_id, task_id, result);
   GE_CHECK_NOTNULL(callback_);
   callback_(result, outputs);
   uint8_t unused;

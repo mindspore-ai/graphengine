@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ bool KernelStore::Build() {
     kernel_head.name_len = static_cast<uint32_t>(kernel->GetName().length());
     kernel_head.bin_len = static_cast<uint32_t>(kernel->GetBinDataSize());
 
-    GELOGI("get kernel bin name %s, addr %p, size %u", kernel->GetName().c_str(), kernel->GetBinData(),
-           kernel->GetBinDataSize());
+    GELOGI("get kernel bin name %s, addr %p, size %u",
+           kernel->GetName().c_str(), kernel->GetBinData(), kernel->GetBinDataSize());
     mem_ret = memcpy_s(next_buffer, remain_len, &kernel_head, sizeof(kernel_head));
     GE_CHK_BOOL_EXEC_NOLOG(mem_ret == EOK, return false);
     next_buffer += sizeof(kernel_head);

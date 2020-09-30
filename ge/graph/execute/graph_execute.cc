@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -293,8 +293,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
       return FAILED;
     }
     GE_PRINT_DYNAMIC_MEMORY(new, "the output memory of data on training.", sizeof(uint8_t) * outputDataTmp.length)
-    rtError_t ret_value =
-      rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length, RT_MEMCPY_HOST_TO_HOST);
+    rtError_t ret_value = rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length,
+                                   RT_MEMCPY_HOST_TO_HOST);
     CHECK_FALSE_EXEC(ret_value == RT_ERROR_NONE,
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Call rt api rtMemcpy failed, ret: 0x%X", ret);
                      return GE_GRAPH_EXECUTE_FAILED);
@@ -568,7 +568,7 @@ Status GraphExecutor::GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vecto
     auto model_manager = ge::ModelManager::GetInstance();
     GE_CHECK_NOTNULL(model_manager);
     Status ret =
-      model_manager->GetInputOutputDescInfoForZeroCopy(model_id, input_desc, output_desc, input_formats, out_formats);
+        model_manager->GetInputOutputDescInfoForZeroCopy(model_id, input_desc, output_desc, input_formats, out_formats);
     if (ret != SUCCESS) {
       GELOGE(ret, "GetInputOutputDescInfoForZeroCopy failed.");
       return ret;
@@ -592,7 +592,17 @@ Status GraphExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigI
     GELOGW("GetAIPPInfo is not success.");
     return ret;
   }
+  return SUCCESS;
+}
 
+Status GraphExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetAippType(model_id, index, type, aipp_index);
+  if (ret != SUCCESS) {
+    GELOGW("Get aipp type is not success.");
+    return ret;
+  }
   return SUCCESS;
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "partitioned_call_label_maker.h"
 
 #include "common/util.h"
@@ -50,7 +49,7 @@ Status PartitionedCallLabelMaker::Run(uint32_t &label_index) {
     return FAILED;
   }
 
-  const std::string stream_active_name = parent_node_->GetName() + "/StreamActive";  // rtStreamActive
+  const std::string stream_active_name = parent_node_->GetName() + "/StreamActive"; // rtStreamActive
   NodePtr stream_active = AddStreamActive(sub_graph, stream_active_name);
   if (stream_active == nullptr) {
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active node failed.", sub_graph->GetName().c_str());
@@ -71,3 +70,4 @@ Status PartitionedCallLabelMaker::Run(uint32_t &label_index) {
 REGISTER_LABEL_MAKER(PARTITIONEDCALL, PartitionedCallLabelMaker);
 REGISTER_LABEL_MAKER(STATEFULPARTITIONEDCALL, PartitionedCallLabelMaker);
 }  // namespace ge
+

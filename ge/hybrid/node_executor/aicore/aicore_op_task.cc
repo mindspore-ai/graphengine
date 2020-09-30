@@ -37,7 +37,9 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
 }
 
 Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
-  GE_CHK_STATUS_RET(ValidateTaskDef(task_def), "[%s] Failed to validate task def: [%s]", op_desc.GetName().c_str(),
+  GE_CHK_STATUS_RET(ValidateTaskDef(task_def),
+                    "[%s] Failed to validate task def: [%s]",
+                    op_desc.GetName().c_str(),
                     task_def.DebugString().c_str());
 
   const domi::KernelDef &kernel_def = task_def.kernel();
@@ -48,7 +50,7 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
   block_dim_ = kernel_def.block_dim();
 
   // malloc args memory
-  args_.reset(new (std::nothrow) uint8_t[args_size_]);
+  args_.reset(new(std::nothrow) uint8_t[args_size_]);
   GE_CHECK_NOTNULL(args_);
   errno_t err = memcpy_s(args_.get(), args_size_, kernel_def.args().data(), args_size_);
   if (err != EOK) {
@@ -64,7 +66,10 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
   const auto *args_offset_buffer = reinterpret_cast<const uint16_t *>(context.args_offset().data());
   uint32_t offset = *args_offset_buffer;
   if (offset > args_size_) {
-    GELOGE(INTERNAL_ERROR, "[%s] Arg offset out of range. offset = %u, arg size = %u", GetName().c_str(), offset,
+    GELOGE(INTERNAL_ERROR,
+           "[%s] Arg offset out of range. offset = %u, arg size = %u",
+           GetName().c_str(),
+           offset,
            args_size_);
     return INTERNAL_ERROR;
   }
@@ -72,7 +77,11 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
   arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset);
   max_arg_count_ = (args_size_ - offset) / sizeof(void *);
   GELOGD("[%s] Done setting kernel args successfully. stub_func = %s, block_dim = %d, arg base = %p, arg size = %u",
-         op_desc.GetName().c_str(), stub_name_.c_str(), block_dim_, arg_base_, args_size_);
+         op_desc.GetName().c_str(),
+         stub_name_.c_str(),
+         block_dim_,
+         arg_base_,
+         args_size_);
 
   return SUCCESS;
 }
@@ -111,7 +120,7 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 
   GELOGD("[%s] Start to update tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());
   OpRunInfo tiling_info;
-  tiling_info.block_dim = -1;  // codex: Using uninitialized value
+  tiling_info.block_dim = -1; // codex: Using uninitialized value
 
   auto execution_context = context.GetExecutionContext();
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CalcTilingInfo] Start");
@@ -135,8 +144,9 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   }
 
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] Start");
-  GE_CHK_RT_RET(rtMemcpy(tiling_buffer_->GetData(), tiling_buffer_->GetSize(), tiling_data_.c_str(),
-                         tiling_data_.size(), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(tiling_buffer_->GetData(), tiling_buffer_->GetSize(),
+                         tiling_data_.c_str(), tiling_data_.size(),
+                         RT_MEMCPY_HOST_TO_DEVICE));
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] End");
 
   GELOGD("[%s] Done updating tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());
@@ -145,7 +155,8 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 
 Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpParaCalculate.", node->GetName().c_str());
-  GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info), "Failed calc tiling data of node %s.",
+  GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
+                    "Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
   return SUCCESS;
@@ -157,8 +168,11 @@ Status AiCoreOpTask::UpdateArgs(TaskContext &task_context) {
     ++expected_arg_count;
   }
   if (expected_arg_count > max_arg_count_) {
-    GELOGE(INTERNAL_ERROR, "[%s] Invalid arg memory, max arg count = %u, but expect = %zu", GetName().c_str(),
-           max_arg_count_, expected_arg_count);
+    GELOGE(INTERNAL_ERROR,
+           "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
+           GetName().c_str(),
+           max_arg_count_,
+           expected_arg_count);
     return INTERNAL_ERROR;
   }
 
@@ -204,7 +218,7 @@ Status AiCoreOpTask::LaunchKernel(rtStream_t stream) {
 
 Status AiCoreOpTask::InitTilingInfo(const OpDesc &op_desc) {
   bool dynamic_supported = false;
-  (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, dynamic_supported);
+  (void) AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, dynamic_supported);
   if (!dynamic_supported) {
     GELOGD("[%s] Dynamic shape is not supported.", op_desc.GetName().c_str());
     return SUCCESS;
@@ -212,7 +226,7 @@ Status AiCoreOpTask::InitTilingInfo(const OpDesc &op_desc) {
 
   GELOGD("Start alloc tiling data of node %s.", op_desc.GetName().c_str());
   int64_t max_size = -1;
-  (void)AttrUtils::GetInt(op_desc, GetKeyForOpParamSize(), max_size);
+  (void) AttrUtils::GetInt(op_desc, GetKeyForOpParamSize(), max_size);
   GELOGD("Got op param size by key: %s, ret = %ld", GetKeyForOpParamSize().c_str(), max_size);
   if (max_size <= 0) {
     GELOGE(PARAM_INVALID, "[%s] Invalid op_param_size: %ld.", op_desc.GetName().c_str(), max_size);
@@ -228,11 +242,17 @@ Status AiCoreOpTask::InitTilingInfo(const OpDesc &op_desc) {
   return SUCCESS;
 }
 
-bool AiCoreOpTask::IsDynamicShapeSupported() { return tiling_buffer_ != nullptr; }
+bool AiCoreOpTask::IsDynamicShapeSupported() {
+  return tiling_buffer_ != nullptr;
+}
 
-const std::string &AiCoreOpTask::GetName() const { return stub_name_; }
+const std::string &AiCoreOpTask::GetName() const {
+  return stub_name_;
+}
 
-std::string AiCoreOpTask::GetKeyForOpParamSize() const { return kAttrOpParamSize; }
+std::string AiCoreOpTask::GetKeyForOpParamSize() const {
+  return kAttrOpParamSize;
+}
 
 Status AtomicAddrCleanOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   GE_CHK_STATUS_RET_NOLOG(AiCoreOpTask::Init(op_desc, task_def));
@@ -242,11 +262,12 @@ Status AtomicAddrCleanOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &t
 Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices(const OpDesc &op_desc) {
   GELOGD("[%s] Start to setup AtomicAddrClean task.", op_desc.GetName().c_str());
   std::vector<int64_t> atomic_output_indices;
-  (void)ge::AttrUtils::GetListInt(op_desc, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_indices);
-  map<string, map<int64_t, int64_t>> workspace_info;  // op_name, ws_index, ws_offset
+  (void) ge::AttrUtils::GetListInt(op_desc, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_indices);
+  map<string, map<int64_t, int64_t>> workspace_info; // op_name, ws_index, ws_offset
   workspace_info = op_desc.TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, workspace_info);
   if (atomic_output_indices.empty() && workspace_info.empty()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Neither ATOMIC_ATTR_OUTPUT_INDEX nor EXT_ATTR_ATOMIC_WORKSPACE_INFO is empty.",
+    GELOGE(INTERNAL_ERROR,
+           "[%s] Neither ATOMIC_ATTR_OUTPUT_INDEX nor EXT_ATTR_ATOMIC_WORKSPACE_INFO is empty.",
            op_desc.GetName().c_str());
     return INTERNAL_ERROR;
   }
@@ -274,19 +295,25 @@ Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices(const OpDesc &op_desc) 
   }
 
   if (arg_count > max_arg_count_) {
-    GELOGE(INTERNAL_ERROR, "[%s] Invalid arg memory, max arg count = %u, but expect = %zu", GetName().c_str(),
-           max_arg_count_, arg_count);
+    GELOGE(INTERNAL_ERROR,
+           "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
+           GetName().c_str(),
+           max_arg_count_,
+           arg_count);
     return INTERNAL_ERROR;
   }
 
   return SUCCESS;
 }
 
-std::string AtomicAddrCleanOpTask::GetKeyForOpParamSize() const { return kAttrAtomicOpParamSize; }
+std::string AtomicAddrCleanOpTask::GetKeyForOpParamSize() const {
+  return kAttrAtomicOpParamSize;
+}
 
 Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpAtomicCalculate.", node->GetName().c_str());
-  GE_CHK_STATUS_RET(OpAtomicCalculate(*node, tiling_info), "Failed calc tiling data of node %s.",
+  GE_CHK_STATUS_RET(OpAtomicCalculate(*node, tiling_info),
+                    "Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpAtomicCalculate successfully.", node->GetName().c_str());
   return SUCCESS;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@ class RandomUniformKernel : public Kernel {
    *  @brief compute for node_task.
    *  @return result
    */
-  Status Compute(TaskContext &context) override;
+  Status Compute(TaskContext& context) override;
 
  private:
   template <typename T>
-  Status Generate(const ge::OpDescPtr &op_desc_ptr, int64_t seed, int64_t seed2, TaskContext &context);
+  Status Generate(const ge::OpDescPtr &op_desc_ptr, int64_t seed, int64_t seed2, TaskContext& context);
 
-  static Status GenerateFP16(const ge::OpDescPtr &op_desc_ptr, int64_t seed, int64_t seed2, TaskContext &context);
+  static Status GenerateFP16(const ge::OpDescPtr &op_desc_ptr, int64_t seed, int64_t seed2, TaskContext& context);
 };
 }  // namespace host_cpu
 }  // namespace hybrid

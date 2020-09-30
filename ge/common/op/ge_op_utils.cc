@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/op/attr_value_util.h"
 #include "framework/common/util.h"
+#include "framework/common/types.h"
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,8 @@ class GraphExecutor {
                                        std::vector<uint32_t> &output_formats, bool new_model_desc = false);
 
   static Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+
+  static Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
 
   ///
   /// @ingroup ge

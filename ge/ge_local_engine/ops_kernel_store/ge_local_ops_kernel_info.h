@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,14 +78,14 @@ class GeLocalOpsKernelInfoStore : public OpsKernelInfoStore {
    * Create session
    * @param session_options Session Options
    * @return status whether this operation success
-   */
+  */
   Status CreateSession(const std::map<std::string, std::string> &session_options) override;
 
   /**
    * Destroy session
    * @param session_options Session Options
    * @return status whether this operation success
-   */
+  */
   Status DestroySession(const std::map<std::string, std::string> &session_options) override;
 
   // Copy prohibited

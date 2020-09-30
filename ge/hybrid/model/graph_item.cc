@@ -22,11 +22,17 @@ namespace hybrid {
 namespace {
 constexpr int kInvalidIndex = -1;
 }  // namespace
-GraphItem::~GraphItem() { GELOGD("[%s] GraphItem destroyed.", name_.c_str()); }
+GraphItem::~GraphItem() {
+  GELOGD("[%s] GraphItem destroyed.", name_.c_str());
+}
 
-const vector<NodeItem *> &hybrid::GraphItem::GetAllNodes() const { return node_items_; }
+const vector<NodeItem *> &hybrid::GraphItem::GetAllNodes() const {
+  return node_items_;
+}
 
-const vector<const NodeItem *> &GraphItem::GetInputNodes() const { return input_nodes_; }
+const vector<const NodeItem *> &GraphItem::GetInputNodes() const {
+  return input_nodes_;
+}
 
 Status GraphItem::GetOutputDescList(vector<ConstGeTensorDescPtr> &output_desc_list) const {
   if (output_node_ == nullptr) {
@@ -46,9 +52,13 @@ Status GraphItem::GetOutputDescList(vector<ConstGeTensorDescPtr> &output_desc_li
   return SUCCESS;
 }
 
-bool GraphItem::IsDynamic() const { return is_dynamic_; }
+bool GraphItem::IsDynamic() const {
+  return is_dynamic_;
+}
 
-const vector<int> &GraphItem::GetInputIndexMapping() const { return input_index_mapping_; }
+const vector<int> &GraphItem::GetInputIndexMapping() const {
+  return input_index_mapping_;
+}
 
 int GraphItem::GetParentOutputIndex(size_t index) const {
   if (index >= output_index_mapping_.size()) {
@@ -58,6 +68,8 @@ int GraphItem::GetParentOutputIndex(size_t index) const {
   return output_index_mapping_[index];
 }
 
-const NodeItem *GraphItem::GetOutputNode() const { return output_node_; }
+const NodeItem *GraphItem::GetOutputNode() const {
+  return output_node_;
+}
 }  // namespace hybrid
 }  // namespace ge

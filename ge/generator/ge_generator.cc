@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kFileNameSuffix = "online";
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
-  {ge::ENGINE_SYS, kEngineNameDefault}, {ge::ENGINE_AICORE, kAIcoreEngine}, {ge::ENGINE_VECTOR, kVectorEngine}};
+    {ge::ENGINE_SYS, kEngineNameDefault}, {ge::ENGINE_AICORE, kAIcoreEngine}, {ge::ENGINE_VECTOR, kVectorEngine}};
 
 bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.GetAllInputsDescPtr()) {
@@ -136,6 +136,13 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
                         bool attr) {
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
+
+  auto format = tensor.GetFormat();
+  auto data_type = tensor.GetDataType();
+  if (format == FORMAT_RESERVED && data_type == DT_UNDEFINED) {
+    return SUCCESS;
+  }
+
   string op_type;
   if (!AttrUtils::GetStr(tensor, kAttrOpType, op_type) || op_type.empty()) {
     op_type = DATA;
@@ -244,7 +251,9 @@ class GeGenerator::Impl {
   bool SetOppVersionInfo(AttrHolder &obj);
 };
 
-Status GeGenerator::Initialize(const map<string, string> &options) { return Initialize(options, domi::GetContext()); }
+Status GeGenerator::Initialize(const map<string, string> &options) {
+  return Initialize(options, domi::GetContext());
+}
 
 Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &omg_context) {
   impl_ = ge::MakeShared<Impl>(omg_context);
@@ -482,7 +491,9 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   if ((impl_->build_mode_ == BUILD_MODE_TUNING) &&
       (impl_->build_step_ == BUILD_STEP_BEFORE_UB_MATCH || impl_->build_step_ == BUILD_STEP_AFTER_BUILDER ||
        impl_->build_step_ == BUILD_STEP_AFTER_BUILDER_SUB)) {
-    GELOGI("Build mode:%s with step:%s no need SaveModel.", impl_->build_mode_.c_str(), impl_->build_step_.c_str());
+    GELOGI("Build mode:%s with step:%s no need SaveModel.",
+           impl_->build_mode_.c_str(),
+           impl_->build_step_.c_str());
     return SUCCESS;
   }
 
@@ -521,8 +532,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
-  if (!inputs.empty() && (inputs.size() != op_desc->GetInputsSize())) {
-    GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetInputsSize());
+  if (!inputs.empty() && (inputs.size() != op_desc->GetAllInputsSize())) {
+    GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetAllInputsSize());
     return PARAM_INVALID;
   }
   if (!outputs.empty() && (outputs.size() != op_desc->GetOutputsSize())) {

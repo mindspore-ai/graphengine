@@ -89,12 +89,12 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
       return GE_OPS_GET_NO_VALID_SO;
     }
     Status rst1 =
-      plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr> &>(kGetOpsKernelInfoStores, ops_kernel_store_);
+        plugin_manager_.InvokeAll<map<string, OpsKernelInfoStorePtr> &>(kGetOpsKernelInfoStores, ops_kernel_store_);
     if (rst1 != SUCCESS) {
       GELOGW("Initialize OpsKernelInfo failed.");
     }
     Status rst2 =
-      plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr> &>(kGetGraphOptimizerObjs, graph_optimizers_);
+        plugin_manager_.InvokeAll<map<string, GraphOptimizerPtr> &>(kGetGraphOptimizerObjs, graph_optimizers_);
     if (rst2 != SUCCESS) {
       GELOGW("Initialize GraphOptimizerObjs failed.");
     }
@@ -125,7 +125,7 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
   }
 }
 
-void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path, const std::map<string, string> &options) {
+void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path, const std::map<string, string>& options) {
   GELOGI("Enter get external engine so path schedule");
   const char *path_env = std::getenv("ASCEND_ENGINE_PATH");
   if (path_env != nullptr) {
@@ -137,8 +137,8 @@ void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path, co
   std::string so_path = "plugin/opskernel/";
   std::string path = path_base + so_path;
   extern_engine_path = (path + "libfe.so" + ":") + (path + "libge_local_engine.so" + ":") +
-                       (path + "librts_engine.so" + ":") + (path + "libaicpu_engine.so" + ":") +
-                       (path + "libhost_cpu_engine.so" + ":");
+                       (path + "librts_engine.so" + ":") + (path + "libaicpu_ascend_engine.so" + ":") +
+                       (path + "libhost_cpu_engine.so" + ":") + (path + "libaicpu_tf_engine.so" + ":");
   auto iter = options.find(OPTION_EXEC_HCCL_FLAG);
   if (iter == options.end() || iter->second != "0") {
     extern_engine_path += (path_base + "libhcom_graph_adaptor.so");

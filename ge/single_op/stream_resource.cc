@@ -22,7 +22,8 @@
 #include "single_op/single_op_model.h"
 
 namespace ge {
-StreamResource::StreamResource(uintptr_t resource_id) : resource_id_(resource_id) {}
+StreamResource::StreamResource(uintptr_t resource_id) : resource_id_(resource_id) {
+}
 
 StreamResource::~StreamResource() {
   for (auto mem : memory_list_) {
@@ -60,9 +61,13 @@ DynamicSingleOp *StreamResource::GetDynamicOperator(const void *key) {
   return it->second.get();
 }
 
-void StreamResource::SetStream(rtStream_t stream) { stream_ = stream; }
+void StreamResource::SetStream(rtStream_t stream) {
+  stream_ = stream;
+}
 
-uint8_t *StreamResource::DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
+uint8_t *StreamResource::DoMallocMemory(const std::string &purpose,
+                                        size_t size,
+                                        size_t &max_allocated,
                                         std::vector<uint8_t *> &allocated) {
   if (size <= max_allocated && !allocated.empty()) {
     GELOGD("reuse last memory");
@@ -111,7 +116,8 @@ uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
   return buffer;
 }
 
-Status StreamResource::BuildDynamicOperator(const string &model_name, const ModelData &model_data,
+Status StreamResource::BuildDynamicOperator(const string &model_name,
+                                            const ModelData &model_data,
                                             DynamicSingleOp **single_op) {
   std::lock_guard<std::mutex> lk(mu_);
   auto it = dynamic_op_map_.find(model_data.model_data);
@@ -127,8 +133,7 @@ Status StreamResource::BuildDynamicOperator(const string &model_name, const Mode
     return ret;
   }
 
-  auto new_op =
-    std::unique_ptr<DynamicSingleOp>(new (std::nothrow) DynamicSingleOp(resource_id_, &stream_mu_, stream_));
+  auto new_op = std::unique_ptr<DynamicSingleOp>(new(std::nothrow) DynamicSingleOp(resource_id_, &stream_mu_, stream_));
   GE_CHECK_NOTNULL(new_op);
 
   GELOGI("To build operator: %s", model_name.c_str());
@@ -153,7 +158,7 @@ Status StreamResource::BuildOperator(const string &model_name, const ModelData &
     return ret;
   }
 
-  auto new_op = std::unique_ptr<SingleOp>(new (std::nothrow) SingleOp(&stream_mu_, stream_));
+  auto new_op = std::unique_ptr<SingleOp>(new(std::nothrow) SingleOp(&stream_mu_, stream_));
   if (new_op == nullptr) {
     GELOGE(MEMALLOC_FAILED, "new SingleOp failed");
     return MEMALLOC_FAILED;

@@ -95,6 +95,7 @@
 #include "graph/passes/variable_ref_useless_control_out_delete_pass.h"
 #include "graph/passes/end_of_sequence_add_control_pass.h"
 #include "graph/passes/subexpression_migration_pass.h"
+#include "graph/passes/subgraph_const_migration_pass.h"
 #include "graph/passes/unused_args_clean_pass.h"
 #include "graph/passes/global_step_insert_pass.h"
 #include "graph/utils/tensor_adapter.h"
@@ -132,7 +133,10 @@ bool IsTailingOptimization() {
 
 namespace ge {
 GraphManager::GraphManager(OmgContext &omg_context)
-    : thread_run_flag_(false), graph_run_listener_(nullptr), init_flag_(false), omg_context_(omg_context) {
+    : thread_run_flag_(false),
+      graph_run_listener_(nullptr),
+      init_flag_(false),
+      omg_context_(omg_context) {
   SetLocalOmgContext(omg_context);
 }
 
@@ -240,6 +244,13 @@ Status GraphManager::Finalize() {
         continue;
       }
     }
+
+    // clear analyzer saved info(graph level)
+    auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
+    GE_CHECK_NOTNULL(compute_graph);
+    auto session_id = compute_graph->GetSessionID();
+    auto graph_id = compute_graph->GetGraphID();
+    Analyzer::GetInstance()->DestroyGraphJsonObject(session_id, graph_id);
   }
   graph_map_.clear();
   cache_helper_map_.clear();
@@ -268,10 +279,10 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   if (compute_graph != nullptr) {
     compute_graph->SetGraphID(graph_id);
     bool graph_has_been_added = false;
-    if (AttrUtils::GetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, graph_has_been_added) &&
-        graph_has_been_added) {
-      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] same graph object can not be added again, graph_id = %u.",
-             graph_id);
+    if (AttrUtils::GetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, graph_has_been_added)
+        && graph_has_been_added) {
+      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST,
+             "[GraphManager] same graph object can not be added again, graph_id = %u.", graph_id);
       return GE_GRAPH_GRAPH_ALREADY_EXIST;
     }
     (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
@@ -374,7 +385,8 @@ Status GraphManager::CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_gr
 }
 
 Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph,
-                                                      Graph2SubGraphInfoList &sub_graph_map, uint64_t session_id) {
+                                                      Graph2SubGraphInfoList &sub_graph_map,
+                                                      uint64_t session_id) {
   GE_CHECK_NOTNULL(compute_graph);
   // use default 16 multi thread
   const uint32_t thread_num = 16;
@@ -386,7 +398,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
   GELOGI("OptimizeSubGraphWithMultiThreads Process op_compile_strategy:%s", op_compile_strategy.c_str());
   for (const auto &subgraph : root_subgraph_list) {
     if (!op_compile_strategy.empty()) {
-      (void)AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
+      (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
     }
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, subgraph, session_id,
                                             GetThreadLocalContext());
@@ -401,7 +413,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     auto subgraph_list = sub_graph_map[function_graph];
     for (const auto &subgraph : subgraph_list) {
       if (!op_compile_strategy.empty()) {
-        (void)AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
+        (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
       }
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this, subgraph, session_id,
                                               GetThreadLocalContext());
@@ -436,7 +448,7 @@ bool GraphManager::CheckAllFusionOptimizeSuccess(const ComputeGraphPtr &compute_
   const auto &root_subgraph_list = sub_graph_map[compute_graph];
   for (const auto &subgraph : root_subgraph_list) {
     bool optimize_group = true;
-    (void)AttrUtils::GetBool(subgraph->GetSubGraph(), ATTR_NAME_OPTIMIZE_GROUP, optimize_group);
+    (void) AttrUtils::GetBool(subgraph->GetSubGraph(), ATTR_NAME_OPTIMIZE_GROUP, optimize_group);
     if (!optimize_group) {
       GELOGW("Run lx optimize for subgraph:%s failed.", subgraph->GetSubGraph()->GetName().c_str());
       return false;
@@ -446,7 +458,7 @@ bool GraphManager::CheckAllFusionOptimizeSuccess(const ComputeGraphPtr &compute_
     const auto &subgraph_list = sub_graph_map[function_graph];
     for (const auto &subgraph : subgraph_list) {
       bool optimize_group = true;
-      (void)AttrUtils::GetBool(subgraph->GetSubGraph(), ATTR_NAME_OPTIMIZE_GROUP, optimize_group);
+      (void) AttrUtils::GetBool(subgraph->GetSubGraph(), ATTR_NAME_OPTIMIZE_GROUP, optimize_group);
       if (!optimize_group) {
         GELOGW("Run lx optimize for subgraph:%s failed.", subgraph->GetSubGraph()->GetName().c_str());
         return false;
@@ -537,7 +549,9 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
     /// 1. run lx buffer while build_mode is normal and buffer_optimize is empty or "off_optimize";
     /// 2. run lx fusion or buffer according build_mode and build_step in fe.
     GELOGI("Directly optimize subgraph with build mode:%s, and step:%s, buffer_optimize:%s.",
-           options_.build_mode.c_str(), options_.build_step.c_str(), buffer_optimize.c_str());
+           options_.build_mode.c_str(),
+           options_.build_step.c_str(),
+           buffer_optimize.c_str());
     Status ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
     if (ret != SUCCESS) {
       GELOGE(ret, "Multiply optimize subgraph with lx buffer");
@@ -573,19 +587,18 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
   }
   GM_RUN_AND_DUMP_PERF("Optimize1", OptimizeStage1, compute_graph);
   GM_RUN_AND_DUMP_PERF("InferShape2", compute_graph->InferShapeInNeed);
-  const char *unknown_shape_skip = std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION");
-  if (unknown_shape_skip != nullptr) {
-    PassManager graph_pass;
-    GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
-    GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
-  }
+
+  PassManager graph_pass;
+  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
+  GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
 
   GE_CHK_STATUS_RET(graph_optimize_.IdentifyReference(compute_graph), "Identify reference failed.");
   GELOGI("PreRun:PreRunOptimizeOriginalGraph success.");
   return SUCCESS;
 }
 
-Status GraphManager::PreRunOptimizeSubGraph(const GraphNodePtr &graph_node, ge::ComputeGraphPtr &compute_graph,
+Status GraphManager::PreRunOptimizeSubGraph(const GraphNodePtr &graph_node,
+                                            ge::ComputeGraphPtr &compute_graph,
                                             uint64_t session_id) {
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(compute_graph);
@@ -594,7 +607,7 @@ Status GraphManager::PreRunOptimizeSubGraph(const GraphNodePtr &graph_node, ge::
   // Dump graph to tuning path
   if (options_.build_mode == BUILD_MODE_TUNING && options_.build_step == BUILD_STEP_AFTER_UB_MATCH) {
     std::string tuning_path;
-    (void)GetContext().GetOption(TUNING_PATH, tuning_path);
+    (void) GetContext().GetOption(TUNING_PATH, tuning_path);
     GELOGI("Dump path:%s.", tuning_path.c_str());
     GraphUtils::DumpGEGraph(compute_graph, "", true, tuning_path);
   }
@@ -607,7 +620,8 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
-  GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts", graph_optimize_.OptimizeGraphBeforeBuildForRts, compute_graph);
+  GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
+                       graph_optimize_.OptimizeGraphBeforeBuildForRts, compute_graph);
   GM_RUN_AND_DUMP_PERF("Build", Build, graph_node, compute_graph, ge_root_model, session_id);
   GELOGI("PreRun:PreRunAfterOptimizeSubGraph success.");
   return SUCCESS;
@@ -656,10 +670,10 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   /// 1. BUILD_MODE_TUNING with BUILD_STEP_AFTER_UB_MATCH no need PreRunOptimizeOriginalGraph;
   /// 2. BUILD_MODE_TUNING with BUILD_STEP_AFTER_MERGE no need PreRunOptimizeOriginalGraph.
   /// 3. BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER_SUB no need PreRunOptimizeOriginalGraph.
-  bool run_optimize_original_graph =
-    !((options_.build_mode == BUILD_MODE_TUNING) &&
-      (options_.build_step == BUILD_STEP_AFTER_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_MERGE ||
-       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
+  bool run_optimize_original_graph = !((options_.build_mode == BUILD_MODE_TUNING) &&
+                                        (options_.build_step == BUILD_STEP_AFTER_UB_MATCH ||
+                                         options_.build_step == BUILD_STEP_AFTER_MERGE ||
+                                         options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
   if (run_optimize_original_graph) {
     Status ret = PreRunOptimizeOriginalGraph(graph_node, inputs, compute_graph, session_id);
     if (ret != SUCCESS) {
@@ -670,7 +684,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
 
   // BUILD_MODE_TUNING with BUILD_STEP_AFTER_MERGE no need PreRunOptimizeSubGraph.
   bool run_optimize_subgraph =
-    !((options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_MERGE));
+      !((options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_MERGE));
   if (run_optimize_subgraph) {
     Status ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
     if (ret != SUCCESS) {
@@ -682,10 +696,10 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   /// 1. BUILD_MODE_TUNING with BUILD_STEP_BEFORE_UB_MATCH no need PreRunAfterOptimizeSubGraph;
   /// 2. BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER no need PreRunAfterOptimizeSubGraph.
   /// 3. BUILD_MODE_TUNING with BUILD_STEP_AFTER_BUILDER_SUB no need PreRunAfterOptimizeSubGraph.
-  bool run_after_optimize_subgraph =
-    !((options_.build_mode == BUILD_MODE_TUNING) &&
-      (options_.build_step == BUILD_STEP_BEFORE_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_BUILDER ||
-       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
+  bool run_after_optimize_subgraph = !((options_.build_mode == BUILD_MODE_TUNING) &&
+                                        (options_.build_step == BUILD_STEP_BEFORE_UB_MATCH ||
+                                         options_.build_step == BUILD_STEP_AFTER_BUILDER ||
+                                         options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
   if (run_after_optimize_subgraph) {
     Status ret = PreRunAfterOptimizeSubGraph(graph_node, compute_graph, ge_root_model, session_id);
     if (ret != SUCCESS) {
@@ -711,7 +725,7 @@ Status GraphManager::SubexpressionMigration(ComputeGraphPtr &compute_graph) {
 
   GE_TIMESTAMP_START(SubexpressionMigrationPass);
   auto ret = pass_manager.Run(compute_graph);
-  GE_TIMESTAMP_END(SubexpressionMigrationPass, "GraphManager::OptimizeStage1_1");
+  GE_TIMESTAMP_END(SubexpressionMigrationPass, "GraphManager::SubexpressionMigration");
   if (ret != SUCCESS && ret != NOT_CHANGED) {
     GELOGE(ret, "Run SubexpressionMigrationPass failed, ret:%u.", ret);
     return ret;
@@ -940,11 +954,11 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
   graph_node->SetRunFlag(true);
   ComputeGraphPtr compute_graph_tmp = GraphUtils::GetComputeGraph(*(graph_node->GetGraph()));
 
-  GE_IF_BOOL_EXEC(
-    GetTrainFlag(),
-    GE_IF_BOOL_EXEC(compute_graph_tmp == nullptr,
-                    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] compute_graph_tmp is NULL, graph id = %u.", graph_id);
-                    return GE_GRAPH_GRAPH_NODE_NULL;))
+  GE_IF_BOOL_EXEC(GetTrainFlag(),
+                  GE_IF_BOOL_EXEC(compute_graph_tmp == nullptr,
+                                  GELOGE(GE_GRAPH_GRAPH_NODE_NULL,
+                                         "[RunGraph] compute_graph_tmp is NULL, graph id = %u.", graph_id);
+                                  return GE_GRAPH_GRAPH_NODE_NULL;))
 
   // when set incre build, add cache helper map
   AddModelCacheHelperToMap(graph_id, session_id, compute_graph_tmp);
@@ -1050,7 +1064,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
       }
 
       OpsKernelInfoStorePtr kernel_info =
-        instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(op_desc->GetOpKernelLibName());
+          instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(op_desc->GetOpKernelLibName());
       if (kernel_info == nullptr) {
         GELOGE(FAILED, "Get op kernel info store failed");
         return FAILED;
@@ -1060,7 +1074,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
       if (ret != SUCCESS) {
         GELOGE(ret, "Compile op failed, op = %s, graph_id = %u.", op_desc->GetName().c_str(), graph_id);
         return ret;
-      }
+     }
     }
   }
 
@@ -1566,7 +1580,7 @@ Status GraphManager::SummaryHandle(const GraphId &graph_id, std::vector<GeTensor
   std::set<int> summary_output_index;
   GELOGI("[GraphManager] SummaryHandle, outputsSize=%zu.", outputs.size());
   const std::map<uint32_t, std::map<string, size_t>> &whole_summary_output_indexes =
-    graph_optimize_.GetSummaryOutputIndexes();
+      graph_optimize_.GetSummaryOutputIndexes();
   if (whole_summary_output_indexes.find(graph_id) == whole_summary_output_indexes.end()) {
     GELOGE(FAILED, "No Summary graph found in map.");
     return FAILED;
@@ -1660,7 +1674,8 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const ComputeGrap
 }
 
 Status GraphManager::RegisterCallBackFunc(
-  const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
+    const std::string &key,
+    const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
   GELOGI("[GraphManager] RegisterCallBackFunc, key=%s.", key.c_str());
   me_callback_map_[key] = callback;
   return SUCCESS;
@@ -1899,9 +1914,9 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   }
   PassManager after_merge_passes;
   GE_CHK_STATUS_RET(
-    after_merge_passes.AddPass("OptimizeStage1_1::SwitchDataEdgesBypass", new (std::nothrow) SwitchDataEdgesBypass));
+      after_merge_passes.AddPass("OptimizeStage1_1::SwitchDataEdgesBypass", new (std::nothrow) SwitchDataEdgesBypass));
   GE_CHK_STATUS_RET(
-    after_merge_passes.AddPass("OptimizeStage1_1::ConstantFuseSamePass", new (std::nothrow) ConstantFuseSamePass));
+      after_merge_passes.AddPass("OptimizeStage1_1::ConstantFuseSamePass", new (std::nothrow) ConstantFuseSamePass));
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::CommonSubexpressionEliminationPass",
                                                new (std::nothrow) CommonSubexpressionEliminationPass));
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::PermutePass", new (std::nothrow) PermutePass))
@@ -1938,7 +1953,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
     return ret;
   }
 
-  GraphUtils::DumpGEGraphToOnnx(*compute_graph, "OptimizeStage1_1");
+  GE_DUMP(compute_graph, "OptimizeStage1_1");
 
   NamesToPass names_to_passes;
   TransOpNearbyAllreduceFusionPass trans_op_nearby_allreduce_fusion_pass;
@@ -1978,28 +1993,30 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   uint64_t op_constant_folding_cost = 0;
   for (auto &it : constant_folding_pass.GetOpConstantFoldingPerfStatistic()) {
     op_constant_folding_cost += it.second.second;
-    GELOGI("The time cost of %s constant folding is [%lu] micro second, calls is %lu.", it.first.c_str(),
-           it.second.second, it.second.first);
+    GELOGI("The time cost of %s constant folding is [%lu] micro second, calls is %lu.",
+           it.first.c_str(), it.second.second, it.second.first);
   }
   GEEVENT("[GEPERFTRACE] The time cost of extern constant folding is [%lu] micro second.", op_constant_folding_cost);
   for (auto &it : constant_folding_pass.GetGeConstantFoldingPerfStatistic()) {
     op_constant_folding_cost += it.second.second;
-    GELOGI("The time cost of %s constant folding is [%lu] micro second, calls is %lu.", it.first.c_str(),
-           it.second.second, it.second.first);
+    GELOGI("The time cost of %s constant folding is [%lu] micro second, calls is %lu.",
+           it.first.c_str(), it.second.second, it.second.first);
   }
 
-  GraphUtils::DumpGEGraphToOnnx(*compute_graph, "OptimizeStage1_2");
+  GE_DUMP(compute_graph, "OptimizeStage1_2");
   PassManager graph_pass;
   // the prune pass should between SwitchPass and SwitchToStreamSwitchPass
+  GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::Migration", new (std::nothrow) SubgraphConstMigrationPass));
+  GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ArgsClean", new (std::nothrow) UnusedArgsCleanPass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::PrunePass", new (std::nothrow) PrunePass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::NextIterationPass", new (std::nothrow) NextIterationPass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ControlTriggerPass", new (std::nothrow) ControlTriggerPass))
   GE_CHK_STATUS_RET(
-    graph_pass.AddPass("OptimizeStage1_3::MergeToStreamMergePass", new (std::nothrow) MergeToStreamMergePass))
+      graph_pass.AddPass("OptimizeStage1_3::MergeToStreamMergePass", new (std::nothrow) MergeToStreamMergePass))
   GE_CHK_STATUS_RET(
-    graph_pass.AddPass("OptimizeStage1_3::SwitchToStreamSwitchPass", new (std::nothrow) SwitchToStreamSwitchPass))
+      graph_pass.AddPass("OptimizeStage1_3::SwitchToStreamSwitchPass", new (std::nothrow) SwitchToStreamSwitchPass))
   GE_CHK_STATUS_RET(
-    graph_pass.AddPass("OptimizeStage1_3::AttachStreamLabelPass", new (std::nothrow) AttachStreamLabelPass))
+      graph_pass.AddPass("OptimizeStage1_3::AttachStreamLabelPass", new (std::nothrow) AttachStreamLabelPass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::MultiBatchPass", new (std::nothrow) MultiBatchPass(true)))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::IteratorOpPass", new (std::nothrow) IteratorOpPass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::VariableRefUselessControlOutDeletePass",
@@ -2009,7 +2026,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
     // Priority: The GlobalStepInsertPass should work before graph partitioner.
     // Reason: Make sure that the var "global_step" can be partitioned to known sub graph and allocated memory
     GE_CHK_STATUS_RET(
-      graph_pass.AddPass("OptimizeStage1_3::GlobalStepInsertPass", new (std::nothrow) GlobalStepInsertPass))
+        graph_pass.AddPass("OptimizeStage1_3::GlobalStepInsertPass", new (std::nothrow) GlobalStepInsertPass))
   }
   GE_TIMESTAMP_START(graph_pass);
   ret = graph_pass.Run(compute_graph);
@@ -2037,7 +2054,7 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   PassManager after_merge_passes;
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage2::AfterMergePasses::LinkGenMaskNodesPass",
                                                new (std::nothrow)
-                                                 LinkGenMaskNodesPass(options_.stream_max_parallel_num)));
+                                                   LinkGenMaskNodesPass(options_.stream_max_parallel_num)));
 
   GE_TIMESTAMP_START(after_merge_passes);
   auto ret = after_merge_passes.Run(compute_graph);
@@ -2091,19 +2108,18 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::CompileNodesPass",
                                                            new (std::nothrow) CompileNodesPass))
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass(
-    "OptimizeStage2::AfterMergePasses::MarkGraphUnknownStatusPass", new (std::nothrow) MarkGraphUnknownStatusPass))
+      "OptimizeStage2::AfterMergePasses::MarkGraphUnknownStatusPass", new(std::nothrow) MarkGraphUnknownStatusPass))
   GE_CHK_STATUS_RET(
-    pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::InputOutputConnectionIdentifyPass",
-                                           new (std::nothrow) InputOutputConnectionIdentifyPass))
+          pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::InputOutputConnectionIdentifyPass",
+                                                 new (std::nothrow) InputOutputConnectionIdentifyPass))
   // When the input node to be cleared is after a `Data` node, the atomic-clean-node should not be inserted.
   // So The ComputeGraph should not delete nodes after `AtomicAddrCleanPass`
   // to prevent unexpected deletion of nodes after a `Data` node
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::AtomicAddrCleanPass",
                                                            new (std::nothrow) AtomicAddrCleanPass))
-  GE_CHK_STATUS_RET(
-    pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::"
-                                           "EndOfSequenceAddControlPass",
-                                           new (std::nothrow) EndOfSequenceAddControlPass))
+  GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::"
+                                                           "EndOfSequenceAddControlPass",
+                                                           new (std::nothrow) EndOfSequenceAddControlPass))
   // SubgraphPass solves memory_assign_conflicts by insert MemcpyAsync node, which depends on multi attrs and
   // graph-structure. So try not to add new pass after SubgraphPass.
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::SubgraphPass",
@@ -2124,8 +2140,8 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   auto result = graph_optimize_.HandleMemoryRWConflict(compute_graph);
   if (result != SUCCESS) {
     GELOGW(
-      "Mark node rw type failed. It will take some effect on memory_assign_conflicts handling."
-      "Please pay attention to it.");
+        "Mark node rw type failed. It will take some effect on memory_assign_conflicts handling."
+        "Please pay attention to it.");
   }
 
   ChangeConstTypeWhenTraining(compute_graph);
@@ -2171,7 +2187,7 @@ Status GraphManager::LoadGraphAsync(const GeRootModelPtr &ge_root_model, const G
     GE_TIMESTAMP_START(LoadGraph);
     GE_CHECK_NOTNULL(graph_node->graph_run_async_listener_);
     Status ret =
-      GraphLoader::LoadModelOnline(model_id_info.model_id, ge_root_model, graph_node->graph_run_async_listener_);
+        GraphLoader::LoadModelOnline(model_id_info.model_id, ge_root_model, graph_node->graph_run_async_listener_);
     GE_TIMESTAMP_EVENT_END(LoadGraph, "GraphManager::LoadGraphAsync");
     if (ret != SUCCESS) {
       GELOGE(ret, "[LoadGraphAsync] LoadGraphAsync Failed");
@@ -2202,9 +2218,9 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
   }
 
   GELOGI(
-    "CheckAndReleaseMemory Graph[%u] need memory_size[%ld], weight_size[%ld],"
-    " Device[%u] free_memory_size[%ld]",
-    graph_node->GetGraphId(), memory_size, weight_size, GetContext().DeviceId(), free_memory);
+      "CheckAndReleaseMemory Graph[%u] need memory_size[%ld], weight_size[%ld],"
+      " Device[%u] free_memory_size[%ld]",
+      graph_node->GetGraphId(), memory_size, weight_size, GetContext().DeviceId(), free_memory);
   if (ge::CheckInt64AddOverflow(memory_size, weight_size) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "The sum of Memory size and weight size exceeds INT64_MAX");
     return INTERNAL_ERROR;
@@ -2426,8 +2442,8 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       if (graph_node->GetBuildFlag()) {
         ReturnError(graph_manager, args.callback, PARAM_INVALID,
                     "The graph " + std::to_string(graph_node->GetGraphId()) +
-                      " need to re-build, you should remove it"
-                      " from GE first, then AddGraph again and rebuild it.");
+                        " need to re-build, you should remove it"
+                        " from GE first, then AddGraph again and rebuild it.");
         graph_node->Unlock();
         return;
       }
@@ -2458,7 +2474,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     }
 
     graph_manager->run_args_q_.Push(
-      RunArgs({graph_node, args.graph_id, args.input_tensor, ge_root_model, GetThreadLocalContext(), args.callback}));
+        RunArgs({graph_node, args.graph_id, args.input_tensor, ge_root_model, GetThreadLocalContext(), args.callback}));
     GELOGI("Loop end.");
   }
 }
@@ -2536,8 +2552,8 @@ void GraphManager::ReturnError(GraphManager *graph_manager, RunAsyncCallback cal
   callback(ret, outputs);
 }
 
-void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback,
-                               Status ret, const string &log) {
+void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node,
+                               RunAsyncCallback callback, Status ret, const string &log) {
   std::vector<ge::OutputTensorInfo> outputs;
   auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
   if (graph_manager == nullptr || compute_graph == nullptr) {
@@ -2580,10 +2596,10 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
         return;
       }
       tensor.length = len * size;
-      tensor.data.reset(new (std::nothrow) uint8_t[tensor.length]);
+      tensor.data.reset(new(std::nothrow) uint8_t[tensor.length]);
       // To avoid global step too small and can not stop, totally set a bigger value
       for (int64_t i = 0; i < tensor.length; i++) {
-        tensor.data[i] = 0x7F;  // here stands for a positive max value
+        tensor.data[i] = 0x7F; // here stands for a positive max value
       }
       outputs.emplace_back(std::move(tensor));
     }
@@ -2665,7 +2681,7 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
        options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB)) {
     GE_TIMESTAMP_START(ConvertGraphToFile);
     std::string tuning_path;
-    (void)GetContext().GetOption(TUNING_PATH, tuning_path);
+    (void) GetContext().GetOption(TUNING_PATH, tuning_path);
     Status ret = ConvertGraphToFile(compute_graph, tuning_path, (options_.build_step == BUILD_STEP_AFTER_BUILDER));
     if (ret != SUCCESS) {
       GELOGE(ret, "Convert graph[%s] to file failed", compute_graph->GetName().c_str());
@@ -2714,7 +2730,7 @@ Status GraphManager::ConvertGraphToFile(ComputeGraphPtr &compute_graph, std::str
   auto sub_graph_map = graph_partitioner_.GetSubGraphMap();
   const auto &subgraph_infos = sub_graph_map[compute_graph];
   std::vector<ComputeGraphPtr> tuning_subgraphs;
-  for (const auto &sub_graph_info_ptr : subgraph_infos) {
+  for (const auto &sub_graph_info_ptr: subgraph_infos) {
     GE_CHECK_NOTNULL(sub_graph_info_ptr);
     ComputeGraphPtr sub_graph_tmp = sub_graph_info_ptr->GetSubGraph();
     // need to tuning
@@ -2795,11 +2811,18 @@ Status GraphManager::SaveVariables(const Graph &graph, const std::vector<std::st
         GELOGE(FAILED, "Fetch var[%s] value failed.", var_name.c_str());
         return FAILED;
       } else {
+        auto var_tensor = var_results[var_name].GetTensorDesc();
+        var_tensor.SetName(var_name);
+        var_results[var_name].SetTensorDesc(var_tensor);
         var_values.emplace_back(var_results[var_name]);
       }
     }
   } else {
     for (auto iter = var_results.begin(); iter != var_results.end(); ++iter) {
+      string var_name = iter->first;
+      auto var_tensor = iter->second.GetTensorDesc();
+      var_tensor.SetName(var_name);
+      iter->second.SetTensorDesc(var_tensor);
       var_values.emplace_back(iter->second);
     }
   }

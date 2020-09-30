@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ const uint32_t kAddrLen = sizeof(void *);
 
 namespace ge {
 KernelTaskInfo::SuperKernelTaskInfo KernelTaskInfo::skt_info_ = {
-  0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
+    0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, kInvalidGroupKey, 0, nullptr};
 
 Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GE_CHECK_NOTNULL(davinci_model);
@@ -380,9 +380,9 @@ Status KernelTaskInfo::Distribute() {
   } else {
     /* default: not skt launch */
     GELOGI(
-      "KernelTaskInfo Distribute Start, sktenable:%d taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
-      "stubfunc:%p blockdim:%u stream:%p",
-      call_skt, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
+        "KernelTaskInfo Distribute Start, sktenable:%d taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
+        "stubfunc:%p blockdim:%u stream:%p",
+        call_skt, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
     // l1 fusion enable and env flag open (kCloseSkt for skt debug)
     bool open_dump = false;
     auto all_dump_model = davinci_model_->GetDumpProperties().GetAllDumpModel();
@@ -407,9 +407,9 @@ Status KernelTaskInfo::Distribute() {
   // set for task_id_
   UpdateTaskId();
   GELOGI(
-    "KernelTaskInfo Distribute Success. sktenable:%d taskid:%d sktid:%d stubfunc_name:%s stubfunc:%p "
-    "blockdim:%d stream:%p",
-    call_skt, task_id_, skt_id_, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
+      "KernelTaskInfo Distribute Success. sktenable:%d taskid:%d sktid:%d stubfunc_name:%s stubfunc:%p "
+      "blockdim:%d stream:%p",
+      call_skt, task_id_, skt_id_, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
   return SUCCESS;
 }
 
@@ -744,15 +744,15 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
     }
   }
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[0])) =
-    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_descs));  // arg 0
+      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_descs));  // arg 0
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[1])) =
-    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_addrs));  // arg 1
+      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_addrs));  // arg 1
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[2])) =
-    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_descs));  // arg 2
+      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_descs));  // arg 2
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[3])) =
-    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_addrs));  // arg 3
+      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_addrs));  // arg 3
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[4])) =
-    reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.attr_handle));  // arg 4
+      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.attr_handle));  // arg 4
 
   rt_ret = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
@@ -760,8 +760,8 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
-  rt_ret =
-    rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(),
+                    RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -831,8 +831,8 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "cce task physical memory.", kernel_def.args_size())
 
-  rt_ret =
-    rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(args_, kernel_def.args_size(), kernel_def.args().data(), kernel_def.args_size(),
+                    RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -859,8 +859,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   GELOGI("Do InitAicpuTask");
   so_name_ = kernel_def.so_name();
   kernel_name_ = kernel_def.kernel_name();
-  GELOGI("node[%s] test so name %s, kernel name %s", op_desc_->GetName().c_str(), so_name_.c_str(),
-         kernel_name_.c_str());
+  GELOGI("node[%s] test so name %s, kernel name %s",
+         op_desc_->GetName().c_str(), so_name_.c_str(), kernel_name_.c_str());
 
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
   if (op_desc == nullptr) {
@@ -869,7 +869,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   }
 
   if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_), "launch cust aicpu so failed");
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_),
+                      "launch cust aicpu so failed");
   }
 
   // copy args to new host memory
@@ -940,7 +941,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }
 
-  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
+  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_,
+                                  sizeof(aicpu::AicpuParamHead));
 
   return SUCCESS;
 }
@@ -954,7 +956,8 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
     GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(),
+                    ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
     return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -1085,11 +1088,11 @@ Status KernelTaskInfo::UpdateCceArgs(std::string &sm_desc, std::string &flowtabl
 
   uint64_t data_base_addr = reinterpret_cast<uintptr_t>(davinci_model_->MemBase()) - davinci_model_->GetRtBaseAddr();
   uint64_t weight_base_addr =
-    reinterpret_cast<uintptr_t>(davinci_model_->WeightsMemBase()) - davinci_model_->GetRtWeightAddr();
+      reinterpret_cast<uintptr_t>(davinci_model_->WeightsMemBase()) - davinci_model_->GetRtWeightAddr();
   uint64_t var_base_addr = reinterpret_cast<uintptr_t>(davinci_model_->VarMemBase()) - davinci_model_->GetRtVarAddr();
 
   Status status =
-    CceUpdateKernelArgs(context, data_base_addr, weight_base_addr, var_base_addr, sm_desc, flowtable, kernel_def);
+      CceUpdateKernelArgs(context, data_base_addr, weight_base_addr, var_base_addr, sm_desc, flowtable, kernel_def);
   if (status != SUCCESS) {
     GELOGE(status, "Call cce api failed");
     return status;
@@ -1180,8 +1183,8 @@ Status KernelTaskInfo::SetFlowtable(std::string &flowtable, const domi::KernelDe
     }
 
     *(reinterpret_cast<uint64_t *>(
-      args + (reinterpret_cast<uint16_t *>(const_cast<char *>(context.args_offset().data())))[0])) =
-      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(flowtable_));
+        args + (reinterpret_cast<uint16_t *>(const_cast<char *>(context.args_offset().data())))[0])) =
+        reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(flowtable_));
   }
   return SUCCESS;
 }

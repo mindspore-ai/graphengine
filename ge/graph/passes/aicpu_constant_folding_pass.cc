@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 #include "init/gelib.h"
 
 namespace {
-const char *const kKernelLibName = "aicpu_kernel";
+const char *const kKernelLibName = "aicpu_tf_kernel";
 const char *const kNotSupported = "0";
 const uint64_t kReleaseFlag = 1;
 const uint64_t kOpsFlag = 1;

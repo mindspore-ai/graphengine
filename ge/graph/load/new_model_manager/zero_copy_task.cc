@@ -154,8 +154,8 @@ Status ZeroCopyTask::DistributeParam(bool async_mode, rtStream_t stream) {
   GE_CHECK_NOTNULL(args_addr_);
   rtError_t rt_err = RT_ERROR_NONE;
   if (async_mode) {
-    rt_err =
-      rtMemcpyAsync(args_addr_, args_size_, args_info_.data(), args_info_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream);
+    rt_err = rtMemcpyAsync(args_addr_, args_size_, args_info_.data(), args_info_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX,
+                           stream);
   } else {
     __builtin_prefetch(args_addr_);
     rt_err = rtMemcpy(args_addr_, args_size_, args_info_.data(), args_info_.size(), RT_MEMCPY_HOST_TO_DEVICE);

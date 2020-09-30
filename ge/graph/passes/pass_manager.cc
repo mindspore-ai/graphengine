@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include "omg/omg_inner_types.h"
 
 namespace ge {
-const vector<std::pair<std::string, GraphPass *>> &PassManager::GraphPasses() const { return names_to_graph_passes_; }
+const vector<std::pair<std::string, GraphPass *>>& PassManager::GraphPasses() const { return names_to_graph_passes_; }
 
 Status PassManager::AddPass(const string &pass_name, GraphPass *pass) {
   GE_CHECK_NOTNULL(pass);
@@ -53,7 +53,7 @@ Status PassManager::Run(const ComputeGraphPtr &graph, vector<std::pair<std::stri
       GELOGE(status, "Pass Run failed on graph %s", graph->GetName().c_str());
       return status;
     }
-    for (const auto &subgraph : graph->GetAllSubgraphs()) {
+    for (const auto &subgraph :graph->GetAllSubgraphs()) {
       GE_CHECK_NOTNULL(subgraph);
       GE_CHK_STATUS_RET(pass->ClearStatus(), "pass clear status failed for subgraph %s", subgraph->GetName().c_str());
       string subgraph_pass_name = pass_name + "::" + graph->GetName();

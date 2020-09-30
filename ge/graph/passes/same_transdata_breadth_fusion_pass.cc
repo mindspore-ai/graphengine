@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,7 +223,7 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkDataOutput2PreNode(const NodeP
 }
 
 graphStatus SameTransdataBreadthFusionPass::ReLinkOutDataPeerInControlNodes2PreNode(
-  const NodePtr &transdata_node, const OutDataAnchorPtr &pre_out_anchor) {
+    const NodePtr &transdata_node, const OutDataAnchorPtr &pre_out_anchor) {
   GE_CHECK_NOTNULL(pre_out_anchor);
   GE_CHECK_NOTNULL(transdata_node);
   auto transdata_peer_out_control_anchor = pre_out_anchor->GetOwnerNode()->GetOutControlAnchor();
@@ -278,8 +278,8 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkTransdataOutput2PreNode(const 
 }
 
 graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInControlAnchors(
-  const NodePtr &transdata_node_keep, const OutDataAnchorPtr &pre_out_anchor,
-  const OutControlAnchorPtr &transdata_peer_out_control_anchor) {
+    const NodePtr &transdata_node_keep, const OutDataAnchorPtr &pre_out_anchor,
+    const OutControlAnchorPtr &transdata_peer_out_control_anchor) {
   GE_CHECK_NOTNULL(transdata_node_keep);
   GE_CHECK_NOTNULL(pre_out_anchor);
   auto out_control_anchor = transdata_node_keep->GetOutControlAnchor();
@@ -315,8 +315,8 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInControlAnchors
 }
 
 graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInDataAnchors(
-  const NodePtr &transdata_node_keep, const OutDataAnchorPtr &pre_out_anchor,
-  const OutControlAnchorPtr &transdata_peer_out_control_anchor) {
+    const NodePtr &transdata_node_keep, const OutDataAnchorPtr &pre_out_anchor,
+    const OutControlAnchorPtr &transdata_peer_out_control_anchor) {
   GE_CHECK_NOTNULL(transdata_node_keep);
   GE_CHECK_NOTNULL(pre_out_anchor);
   auto out_control_anchor = transdata_node_keep->GetOutControlAnchor();
@@ -354,8 +354,8 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInDataAnchors(
 }
 
 graphStatus SameTransdataBreadthFusionPass::ReLinkTransdataControlOutput2PreNode(
-  const NodePtr &transdata_node_keep, const OutDataAnchorPtr &pre_out_anchor,
-  const OutControlAnchorPtr &transdata_peer_out_control_anchor) {
+    const NodePtr &transdata_node_keep, const OutDataAnchorPtr &pre_out_anchor,
+    const OutControlAnchorPtr &transdata_peer_out_control_anchor) {
   if (ReLinkOutControlPeerInControlAnchors(transdata_node_keep, pre_out_anchor, transdata_peer_out_control_anchor) !=
       GRAPH_SUCCESS) {
     return GRAPH_FAILED;
@@ -595,8 +595,8 @@ void SameTransdataBreadthFusionPass::CopyTensorDesc(const ConstGeTensorDescPtr &
 }
 
 graphStatus SameTransdataBreadthFusionPass::LinkNewCastNode2RemainTransdata(
-  const ComputeGraphPtr &graph, const vector<int> &same_transdata_nodes, const OutDataAnchorPtr &transdata_out_anchor,
-  const NodePtr &transdata_node_keep) {
+    const ComputeGraphPtr &graph, const vector<int> &same_transdata_nodes, const OutDataAnchorPtr &transdata_out_anchor,
+    const NodePtr &transdata_node_keep) {
   for (size_t i = 1; i < same_transdata_nodes.size(); ++i) {
     int anchors_index = same_transdata_nodes[i];
     bool reuse_nodes = AllNodeBeforeTransdataHasOneDataOut(anchors_index);
@@ -734,8 +734,9 @@ graphStatus SameTransdataBreadthFusionPass::AddCastNode(const ComputeGraphPtr &g
 }
 
 graphStatus SameTransdataBreadthFusionPass::GetSubGraphsBetweenNormalAndTransdataNode(
-  OutDataAnchorPtr &out_anchor, std::vector<std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
-  std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list) {
+    OutDataAnchorPtr &out_anchor,
+    std::vector<std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
+    std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list) {
   graphStatus ret = GRAPH_SUCCESS;
   if (out_anchor == nullptr) {
     GELOGE(GRAPH_FAILED, "out data anchor is null!This should not happen!");

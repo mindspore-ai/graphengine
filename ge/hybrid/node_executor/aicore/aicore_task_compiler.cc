@@ -24,7 +24,7 @@ namespace {
 uintptr_t kWeightBase = 0x10000000;
 uintptr_t kMemBase = 0x20000000;
 uint64_t kFakeSize = 0x10000000UL;
-}  // namespace
+}
 std::mutex AiCoreTaskCompiler::mu_;
 
 AiCoreTaskCompiler::AiCoreTaskCompiler(OpsKernelInfoStorePtr aic_kernel_store)
@@ -34,9 +34,11 @@ Status AiCoreTaskCompiler::DoCompileOp(OpsKernelInfoStore &ops_store, const Node
   GE_CHECK_NOTNULL(node);
   vector<NodePtr> node_vec;
   node_vec.emplace_back(node);
-  GE_CHK_STATUS_RET(ops_store.CompileOpRun(node_vec), "Failed to execute CompileOp, node = %s",
+  GE_CHK_STATUS_RET(ops_store.CompileOpRun(node_vec),
+                    "Failed to execute CompileOp, node = %s",
                     node->GetName().c_str());
-  GE_CHK_STATUS_RET(ops_store.CalcOpRunningParam(*node), "Failed to execute CalcOpRunningParam, node = %s",
+  GE_CHK_STATUS_RET(ops_store.CalcOpRunningParam(*node),
+                    "Failed to execute CalcOpRunningParam, node = %s",
                     node->GetName().c_str());
   return SUCCESS;
 }
@@ -62,7 +64,8 @@ Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::Task
   return SUCCESS;
 }
 
-Status AiCoreTaskCompiler::DoGenerateTask(OpsKernelInfoStore &store, const Node &node,
+Status AiCoreTaskCompiler::DoGenerateTask(OpsKernelInfoStore &store,
+                                          const Node &node,
                                           std::vector<domi::TaskDef> &tasks) {
   rtModel_t rt_model_ = nullptr;
   GE_CHK_RT_RET(rtModelCreate(&rt_model_, 0));

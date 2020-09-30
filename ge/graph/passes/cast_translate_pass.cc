@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,13 +52,15 @@ bool CastTranslatePass::CheckInAndOutDataAnchor(NodePtr &node) const {
 
 bool CastTranslatePass::IsCastNode(NodePtr &node) const {
   std::string original_type;
-  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("get original type failed"); return false);
+  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS,
+          GELOGW("get original type failed"); return false);
   return (original_type == CAST);
 }
 
 bool CastTranslatePass::IsTranslateNode(NodePtr &node) const {
   std::string original_type;
-  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("get original type failed"); return false);
+  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS,
+                    GELOGW("get original type failed"); return false);
   return (original_type == TRANSLATE);
 }
 
@@ -176,14 +178,13 @@ bool CastTranslatePass::IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans
   }
 
   if (is_src_cast) {
-    GE_IF_BOOL_EXEC(!AttrUtils::SetInt(trans_op_desc, ATTR_NAME_INPUT_DATATYPE, static_cast<int64_t>(cast_in_datatype)),
-                    GELOGW("set ATTR_NAME_INPUT_DATATYPE failed");
-                    return false);
+    GE_IF_BOOL_EXEC(
+            !AttrUtils::SetInt(trans_op_desc, ATTR_NAME_INPUT_DATATYPE, static_cast<int64_t>(cast_in_datatype)),
+            GELOGW("set ATTR_NAME_INPUT_DATATYPE failed"); return false);
   } else {
     GE_IF_BOOL_EXEC(
-      !AttrUtils::SetInt(trans_op_desc, ATTR_NAME_OUTPUT_DATATYPE, static_cast<int64_t>(cast_out_datatype)),
-      GELOGW("set ATTR_NAME_INPUT_DATATYPE failed");
-      return false);
+            !AttrUtils::SetInt(trans_op_desc, ATTR_NAME_OUTPUT_DATATYPE, static_cast<int64_t>(cast_out_datatype)),
+            GELOGW("set ATTR_NAME_INPUT_DATATYPE failed"); return false);
   }
   GELOGI("CastTranslatePass, translate in %d out %d.", trans_op_indesc->GetDataType(), trans_op_outdesc->GetDataType());
   return true;

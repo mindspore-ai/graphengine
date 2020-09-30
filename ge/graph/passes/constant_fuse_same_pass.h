@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ struct SameConstKey {
   std::vector<int64_t> shape;
 
  public:
-  bool operator<(const SameConstKey &key) const {
+  bool operator< (const SameConstKey &key) const {
     if (data_size != key.data_size) {
       return data_size < key.data_size;
     }
@@ -66,9 +66,11 @@ class ConstantFuseSamePass : public GraphPass {
   Status Run(ge::ComputeGraphPtr graph) override;
 
  private:
-  void GetFuseConstNodes(ComputeGraphPtr &graph, std::map<SameConstKey, std::vector<NodePtr>> &fuse_nodes);
+  void GetFuseConstNodes(ComputeGraphPtr &graph,
+      std::map<SameConstKey, std::vector<NodePtr>> &fuse_nodes);
   Status MoveOutDataEdges(NodePtr &src_node, NodePtr &dst_node);
-  Status FuseConstNodes(ComputeGraphPtr &graph, std::map<SameConstKey, std::vector<NodePtr>> &fuse_nodes);
+  Status FuseConstNodes(ComputeGraphPtr &graph,
+      std::map<SameConstKey, std::vector<NodePtr>> &fuse_nodes);
 };
-}  // namespace ge
-#endif  // GE_GRAPH_PASSES_CONSTANT_FUSE_SAME_PASS_H_
+} // namespace ge
+#endif // GE_GRAPH_PASSES_CONSTANT_FUSE_SAME_PASS_H_

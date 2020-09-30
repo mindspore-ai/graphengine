@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ static const int32_t kGeSizeUint16 = sizeof(uint16_t);
 static const int32_t kGeSizeUint32 = sizeof(uint32_t);
 
 static std::map<ge::DataType, int32_t> CONST_OPDATA_TYPE_SIZE_MAP = {
-  {ge::DT_FLOAT, kGeSizeFloat},   {ge::DT_FLOAT16, kGeSizeHalfFloat}, {ge::DT_INT8, kGeSizeInt8},
-  {ge::DT_INT16, kGeSizeInt16},   {ge::DT_INT32, kGeSizeInt32},       {ge::DT_INT64, kGeSizeInt64},
-  {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},     {ge::DT_UINT32, kGeSizeUint32},
-  {ge::DT_UINT64, kGeSizeUint64}, {ge::DT_DOUBLE, kGeSizeDouble},     {ge::DT_BOOL, kGeSizeBool}};
+    {ge::DT_FLOAT, kGeSizeFloat},   {ge::DT_FLOAT16, kGeSizeHalfFloat}, {ge::DT_INT8, kGeSizeInt8},
+    {ge::DT_INT16, kGeSizeInt16},   {ge::DT_INT32, kGeSizeInt32},       {ge::DT_INT64, kGeSizeInt64},
+    {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},     {ge::DT_UINT32, kGeSizeUint32},
+    {ge::DT_UINT64, kGeSizeUint64}, {ge::DT_DOUBLE, kGeSizeDouble},     {ge::DT_BOOL, kGeSizeBool}};
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY DataTypeUtil {
  public:

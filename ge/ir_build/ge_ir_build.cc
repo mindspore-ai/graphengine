@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "external/ge/ge_ir_build.h"
 
 #include <vector>
@@ -35,6 +34,7 @@
 #include "init/gelib.h"
 #include "ir_build/atc_ir_common.h"
 #include "model/ge_model.h"
+#include "graph/shape_refiner.h"
 
 using std::string;
 using namespace std;
@@ -52,48 +52,51 @@ const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
 
 static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
   // check param disable_reuse_memory
-  std::string disable_reuse_memory =
-    global_options.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY) == global_options.end()
-      ? IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT
-      : global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY];
+  std::string disable_reuse_memory = global_options.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY) ==
+                                         global_options.end()
+                                         ? IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT
+                                         : global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY];
   GE_CHK_BOOL_EXEC(ge::CheckDisableReuseMemoryParamValid(disable_reuse_memory) == ge::SUCCESS,
-                   return ge::GRAPH_PARAM_INVALID, "check disable_reuse_memory failed!");
+      return ge::GRAPH_PARAM_INVALID, "check disable_reuse_memory failed!");
   global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY] = disable_reuse_memory;
   // check buffer_optimize
   std::string buffer_optimize = global_options.find(ge::ir_option::BUFFER_OPTIMIZE) == global_options.end()
-                                  ? IR_OPTION_BUFFER_OPTIMIZE_DEFAULT
-                                  : global_options[ge::ir_option::BUFFER_OPTIMIZE];
-  GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(buffer_optimize) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
-                   "check buffer optimize failed!");
+                                    ? IR_OPTION_BUFFER_OPTIMIZE_DEFAULT
+                                    : global_options[ge::ir_option::BUFFER_OPTIMIZE];
+  GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(buffer_optimize) == ge::SUCCESS,
+      return ge::GRAPH_PARAM_INVALID, "check buffer optimize failed!");
   global_options[ge::ir_option::BUFFER_OPTIMIZE] = buffer_optimize;
   // check enable_single_stream
   std::string enable_single_stream = global_options.find(ge::ir_option::ENABLE_SINGLE_STREAM) == global_options.end()
-                                       ? ""
-                                       : global_options[ge::ir_option::ENABLE_SINGLE_STREAM];
+                                         ? ""
+                                         : global_options[ge::ir_option::ENABLE_SINGLE_STREAM];
   GE_CHK_BOOL_EXEC(ge::CheckEnableSingleStreamParamValid(enable_single_stream) == ge::SUCCESS,
-                   return ge::GRAPH_PARAM_INVALID, "check enable single stream failed!");
+      return ge::GRAPH_PARAM_INVALID, "check enable single stream failed!");
   // check compress_weight
-  std::string enable_compress_weight =
-    global_options.find(ge::ir_option::ENABLE_COMPRESS_WEIGHT) == global_options.end()
-      ? IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT
-      : global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT];
+  std::string enable_compress_weight = global_options.find(ge::ir_option::ENABLE_COMPRESS_WEIGHT) ==
+                                           global_options.end()
+                                           ? IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT
+                                           : global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT];
   std::string compress_weight_conf = global_options.find(ge::ir_option::COMPRESS_WEIGHT_CONF) == global_options.end()
-                                       ? ""
-                                       : global_options[ge::ir_option::COMPRESS_WEIGHT_CONF];
+                                         ? ""
+                                         : global_options[ge::ir_option::COMPRESS_WEIGHT_CONF];
   GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(enable_compress_weight, compress_weight_conf) == ge::SUCCESS,
-                   return ge::GRAPH_PARAM_INVALID, "check compress weight failed!");
-  global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT] =
-    (enable_compress_weight == "true") ? ge::kEnableCompressWeightTrue : ge::kEnableCompressWeightFalse;
+      return ge::GRAPH_PARAM_INVALID, "check compress weight failed!");
+  global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT] = (enable_compress_weight == "true") ?
+                                                     ge::kEnableCompressWeightTrue :
+                                                     ge::kEnableCompressWeightFalse;
   // check optypelist_for_implmode and op_select_implmode
-  std::string optypelist_for_implmode =
-    global_options.find(ge::ir_option::OPTYPELIST_FOR_IMPLMODE) == global_options.end()
-      ? ""
-      : global_options[ge::ir_option::OPTYPELIST_FOR_IMPLMODE];
-  std::string op_select_implmode = global_options.find(ge::ir_option::OP_SELECT_IMPL_MODE) == global_options.end()
-                                     ? ""
-                                     : global_options[ge::ir_option::OP_SELECT_IMPL_MODE];
-  GE_CHK_BOOL_EXEC(ge::CheckImplmodeParamValid(optypelist_for_implmode, op_select_implmode) == ge::SUCCESS,
-                   return ge::GRAPH_PARAM_INVALID, "check optypelist_for_implmode and op_select_implmode failed!");
+  std::string optypelist_for_implmode = global_options.find(ge::ir_option::OPTYPELIST_FOR_IMPLMODE) ==
+                                            global_options.end()
+                                            ? ""
+                                            : global_options[ge::ir_option::OPTYPELIST_FOR_IMPLMODE];
+  std::string op_select_implmode = global_options.find(ge::ir_option::OP_SELECT_IMPL_MODE) ==
+                                       global_options.end()
+                                       ? ""
+                                       : global_options[ge::ir_option::OP_SELECT_IMPL_MODE];
+  GE_CHK_BOOL_EXEC(
+      ge::CheckImplmodeParamValid(optypelist_for_implmode, op_select_implmode) == ge::SUCCESS,
+      return ge::GRAPH_PARAM_INVALID, "check optypelist_for_implmode and op_select_implmode failed!");
   global_options[ge::ir_option::OP_SELECT_IMPL_MODE] = op_select_implmode;
 
   return GRAPH_SUCCESS;
@@ -175,7 +178,8 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
     if (it == ge::ir_option::ir_builder_suppported_options.end()) {
       auto it_lx_fusion = ir_builder_supported_options_for_lx_fusion.find(ele.first);
       if (it_lx_fusion == ir_builder_supported_options_for_lx_fusion.end()) {
-        GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!", ele.first.c_str());
+        GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!",
+               ele.first.c_str());
         return GRAPH_PARAM_INVALID;
       }
     }
@@ -217,12 +221,12 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GetThreadLocalContext().SetGraphOption(options_);
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
-                             ? ""
-                             : options_[BUILD_MODE];
+                           ? "" : options_[BUILD_MODE];
   options_[BUILD_MODE] = build_mode;
   // set log level
-  std::string log = options_.find(ge::ir_option::LOG_LEVEL) == options_.end() ? IR_OPTION_LOG_LEVEL_DEFAULT
-                                                                              : options_[ge::ir_option::LOG_LEVEL];
+  std::string log = options_.find(ge::ir_option::LOG_LEVEL) == options_.end()
+                        ? IR_OPTION_LOG_LEVEL_DEFAULT
+                        : options_[ge::ir_option::LOG_LEVEL];
   GE_CHK_BOOL_RET_STATUS_NOLOG(ge::CheckLogParamValidAndSetLogLevel(log) == 0, GRAPH_PARAM_INVALID);
   options_[ge::ir_option::LOG_LEVEL] = log;
 
@@ -230,13 +234,13 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   string input_format = options_.find("input_format") == options_.end() ? "" : options_["input_format"];
   string net_format = options_.find("net_format") == options_.end() ? "" : options_["net_format"];
   string dynamic_batch_size = options_.find(ge::ir_option::DYNAMIC_BATCH_SIZE) == options_.end()
-                                ? ""
-                                : options_[ge::ir_option::DYNAMIC_BATCH_SIZE];
+                                  ? ""
+                                  : options_[ge::ir_option::DYNAMIC_BATCH_SIZE];
   string dynamic_image_size = options_.find(ge::ir_option::DYNAMIC_IMAGE_SIZE) == options_.end()
-                                ? ""
-                                : options_[ge::ir_option::DYNAMIC_IMAGE_SIZE];
+                                  ? ""
+                                  : options_[ge::ir_option::DYNAMIC_IMAGE_SIZE];
   string dynamic_dims =
-    options_.find(ge::ir_option::DYNAMIC_DIMS) == options_.end() ? "" : options_[ge::ir_option::DYNAMIC_DIMS];
+      options_.find(ge::ir_option::DYNAMIC_DIMS) == options_.end() ? "" : options_[ge::ir_option::DYNAMIC_DIMS];
 
   auto status = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims, input_shape,
                                             input_format, is_dynamic_input_);
@@ -250,15 +254,20 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   omg_context_.dynamic_image_size = dynamic_image_size;
   omg_context_.dynamic_dims = dynamic_dims;
   // check output_type
-  std::string output_type =
-    options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end() ? "" : options_[ge::ir_option::OUTPUT_TYPE];
-  GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
-                   "check output type failed!");
+  std::string output_type = options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end()
+                                ? ""
+                                : options_[ge::ir_option::OUTPUT_TYPE];
+  GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS,
+      return ge::GRAPH_PARAM_INVALID, "check output type failed!");
   // check insert_op_conf
-  std::string insert_op_conf =
-    options_.find(ge::ir_option::INSERT_OP_FILE) == options_.end() ? "" : options_[ge::ir_option::INSERT_OP_FILE];
+  std::string insert_op_conf = options_.find(ge::ir_option::INSERT_OP_FILE) == options_.end()
+                                   ? ""
+                                   : options_[ge::ir_option::INSERT_OP_FILE];
   GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
-                   return ge::GRAPH_PARAM_INVALID, "check insert op conf failed!");
+      return ge::GRAPH_PARAM_INVALID, "check insert op conf failed!");
+
+  GE_CHK_BOOL_EXEC(insert_op_conf.empty() || dynamic_dims.empty(),
+                   return ge::GRAPH_PARAM_INVALID, "dynamic dims function does not support aipp");
 
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
@@ -402,7 +411,7 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
     GELOGE(GRAPH_PARAM_INVALID, "input model is illegal");
     return GRAPH_PARAM_INVALID;
   }
-  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
+  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 
@@ -416,4 +425,77 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
   *patch_version = IR_PATCH_VERSION;
   return GRAPH_SUCCESS;
 }
+
+graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+
+  for (auto &node: compute_graph->GetAllNodes()) {
+    graphStatus ret = ShapeRefiner::InferShapeAndType(node);
+    if (ret == GRAPH_PARAM_INVALID) {
+      GELOGW("Can not find infershape func.");
+      continue;
+    } else if (ret != GRAPH_SUCCESS) {
+      GELOGE(ret, "Acl infershape failed.");
+      return ret;
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len) {
+  GE_CHECK_NOTNULL(file);
+
+  if (len > PATH_MAX || len != strlen(file) || strlen(file) == 0) {
+    GELOGE(GRAPH_PARAM_INVALID, "File path invalid.");
+    return GRAPH_PARAM_INVALID;
+  }
+
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+
+  string full_path(file, len);
+  for (size_t i = 0; i < len; i++) {
+    if (full_path[i] == '\\') {
+      full_path.replace(i, 1, "/");
+    }
+  }
+
+  string suffix;
+  string file_path;
+  int pos = full_path.rfind("/");
+  if (pos != -1) {
+    suffix = full_path.substr(pos + 1, -1);
+    file_path = full_path.substr(0, pos);
+  } else {
+    suffix = full_path;
+    file_path = "./";
+  }
+
+  if (suffix.empty()) {
+    suffix = compute_graph->GetName();
+    if (suffix.empty()) {
+      suffix = "graph";
+    }
+  }
+
+  char path[PATH_MAX] = {0};
+  if (realpath(file_path.c_str(), path) == nullptr) {
+    GELOGE(GRAPH_PARAM_INVALID, "Dump file path:%s  is invalid.", file);
+    return GRAPH_PARAM_INVALID;
+  }
+
+  GraphUtils::DumpGEGrph(compute_graph, string(path), suffix);
+  GraphUtils::DumpGrphToOnnx(*compute_graph, string(path), suffix);
+  uint64_t i = 0;
+  for (const auto &sub_graph_func : compute_graph->GetAllSubgraphs()) {
+    auto sub_graph_func_name = suffix + std::string("_sub_graph_") + std::to_string(i++);
+    GraphUtils::DumpGEGrph(sub_graph_func, string(path), sub_graph_func_name);
+    GraphUtils::DumpGrphToOnnx(*sub_graph_func, string(path), sub_graph_func_name);
+  }
+
+  return GRAPH_SUCCESS;
+}
+
 }  // namespace ge

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,9 @@ class MemoryBlock {
     no_align_size_list_.emplace_back(no_align_size);
   }
 
-  void AddSymbol(const std::string &symbol) { symbol_list_.emplace_back(symbol); }
+  void AddSymbol(const std::string &symbol) {
+    symbol_list_.emplace_back(symbol);
+  }
 
   const std::vector<NodeTypeIndex> &NodeTypeIndexList() const { return node_type_index_list_; }
   const std::vector<std::string> &SymbolList() const { return symbol_list_; }
@@ -170,11 +172,11 @@ class BlockMemAssigner : public MemAssigner {
 
   Status Assign() override;
 
-  size_t GetMemOffset() const { return mem_offset_; };
+  size_t GetMemOffset() const { return mem_offset_; }
 
-  int64_t GetAtomicAddrCleanId() const { return atomic_addr_clean_id_; };
+  int64_t GetAtomicAddrCleanId() const { return atomic_addr_clean_id_; }
 
-  std::vector<MemoryBlock *> GetMemoryBlocks() const { return memory_blocks_; };
+  std::vector<MemoryBlock *> GetMemoryBlocks() const { return memory_blocks_; }
 
   ///
   /// @ingroup domi
@@ -259,6 +261,7 @@ class BlockMemAssigner : public MemAssigner {
   ge::ComputeGraphPtr compute_graph_;
 
   std::vector<MemoryBlock *> memory_blocks_;
+  std::vector<MemoryBlock *> blocks_store_;
 
   std::vector<NodeTypeIndex> zero_memory_list_;
 
@@ -309,8 +312,8 @@ class BlockMemAssigner : public MemAssigner {
   /// @return void
   /// @author
   ///
-  void CheckWorkspaceReuse(const vector<bool> &workspace_reuse_flag, uint32_t index, int64_t stream_id,
-                           MemoryBlock *mem_block);
+  void CheckWorkspaceReuse(const vector<bool> &workspace_reuse_flag, uint32_t index,
+                           int64_t stream_id, MemoryBlock *mem_block);
 
   ///
   /// @ingroup GE
@@ -357,7 +360,7 @@ class BlockMemAssigner : public MemAssigner {
   bool IsZeroCopyBlock(const NodePtr &node, bool continuous);
 
   bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
-                                   uint32_t &peer_input_index);
+                                   uint32_t &peer_input_index, bool &no_need_assign_memory);
 
   ///
   /// @ingroup GE

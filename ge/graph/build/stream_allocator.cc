@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,9 +221,9 @@ Status StreamAllocator::AssignSingleStream() {
       huge_streams_.emplace_back(huge_stream);
     } else {
       GELOGW(
-        "The estimated task count %ld is greater than the max count of normal stream,"
-        " but the huge stream is not supported.",
-        task_count);
+          "The estimated task count %ld is greater than the max count of normal stream,"
+          " but the huge stream is not supported.",
+          task_count);
     }
   }
 
@@ -742,9 +742,9 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
     if (NeedSpiltNewStream(stream_node_num_vec[stream_id], max_node_num_one_stream, op_desc, is_stream_first_node)) {
       last_stream_id++;
       GELOGI(
-        "stream_node_num_vec[%ld]= %ld > max_node_num_one_stream : %ld, "
-        "It's time to split the stream, split newly-added stream id is %ld",
-        stream_id, stream_node_num_vec[stream_id], max_node_num_one_stream, last_stream_id);
+          "stream_node_num_vec[%ld]= %ld > max_node_num_one_stream : %ld, "
+          "It's time to split the stream, split newly-added stream id is %ld",
+          stream_id, stream_node_num_vec[stream_id], max_node_num_one_stream, last_stream_id);
       NodePtr pre_node = pre_node_vec[stream_id];
       stream_node_num_vec[stream_id] = 0;
       AddNodeNum(cur_node, stream_node_num_vec[stream_id]);
@@ -770,8 +770,8 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
                cur_continuous_stream_label.c_str());
         auto iter = std::find(stream_2_nodes_map[stream_id].begin(), stream_2_nodes_map[stream_id].end(), not_cur);
         GE_RETURN_WITH_LOG_IF_FALSE(
-          (iter != stream_2_nodes_map[stream_id].end()) && (iter != stream_2_nodes_map[stream_id].begin()),
-          "split stream with continuous stream label %s failed", cur_continuous_stream_label.c_str());
+            (iter != stream_2_nodes_map[stream_id].end()) && (iter != stream_2_nodes_map[stream_id].begin()),
+            "split stream with continuous stream label %s failed", cur_continuous_stream_label.c_str());
         iter--;
         pre_node = *iter;
       }

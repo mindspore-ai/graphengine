@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@
 
 #include "common/debug/log.h"
 #include "common/fp16_t.h"
-#include "common/ge_inner_error_codes.h"
 #include "common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "host_kernels/kernel_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace {
@@ -116,7 +116,8 @@ Status ConcatV2Kernel::Compute(const ge::OpDescPtr op_desc_ptr, const vector<ge:
   return SUCCESS;
 }
 
-Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &input, int &tidx,
+Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &input,
+                                          int &tidx,
                                           ConstGeTensorPtr &tensor) {
   size_t input_size = input.size();
   // N >= 2 and N + 1 >= 3
@@ -137,7 +138,7 @@ Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &i
       continue;
     }
     if (tensor == nullptr) {
-      tensor = input.at(i);  // get first valid tensor with data
+      tensor = input.at(i); // get first valid tensor with data
     }
   }
 
@@ -160,7 +161,7 @@ Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &i
   GE_CHECK_NOTNULL(tensor_axis);
   const int *axis = reinterpret_cast<const int *>(tensor_axis->GetData().data());
   GE_CHECK_NOTNULL(axis);
-  tidx = axis[0];                                                               // [-rank(values), rank(values))
+  tidx = axis[0];                                                                // [-rank(values), rank(values))
   int rank = static_cast<int>(tensor->GetTensorDesc().GetShape().GetDimNum());  // rank
   if (tidx < 0) {
     tidx += rank;
@@ -169,8 +170,8 @@ Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &i
   // 2. empty tensor only support case: [n],[m],[]
   // case: [[],[]] ,[[],[]] ,[] or other case when rank >=2 is not supported
   if (tidx < 0 || tidx >= rank || (has_empty_tensor && rank > kSupportEmptyTensorRank)) {
-    GELOGW("ConcatV2 info: tidx[%d]_rank[%d]_has_empty_tensor[bool:%d] cannot be supported, skip fold.", tidx, rank,
-           has_empty_tensor);
+    GELOGW("ConcatV2 info: tidx[%d]_rank[%d]_has_empty_tensor[bool:%d] cannot be supported, skip fold.",
+           tidx, rank, has_empty_tensor);
     return NOT_CHANGED;
   }
 

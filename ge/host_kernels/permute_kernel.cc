@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "host_kernels/kernel_utils.h"
 #include "framework/common/ge_inner_error_codes.h"
+
 
 namespace ge {
 namespace {
@@ -74,21 +75,21 @@ Status PermuteKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Con
   GeTensorDesc op_desc = op_desc_ptr->GetOutputDesc(0);
   GeTensorDesc op_desc_in = op_desc_ptr->GetInputDesc(0);
   auto src_format = op_desc_in.GetFormat();
-  auto src_shape = op_desc_in.GetShape().GetDims();
+  auto src_shape  = op_desc_in.GetShape().GetDims();
   auto src_data_type = op_desc_in.GetDataType();
   auto data_shape = op_desc.GetShape().GetDims();
   auto data_format = op_desc.GetFormat();
   auto data_type = op_desc.GetDataType();
   GELOGD(
-    "current node %s, format %s, input shape %s, data type %s,  weight format %s, shape %s, data type %s. "
-    "output format %s, shape %s, data type %s",
-    op_desc_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(),
-    formats::ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
-    TypeUtils::FormatToSerialString(const_weight_ptr->GetTensorDesc().GetFormat()).c_str(),
-    formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str(),
-    TypeUtils::DataTypeToSerialString(const_weight_ptr->GetTensorDesc().GetDataType()).c_str(),
-    TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
-    TypeUtils::DataTypeToSerialString(data_type).c_str());
+      "current node %s, format %s, input shape %s, data type %s,  weight format %s, shape %s, data type %s. "
+      "output format %s, shape %s, data type %s",
+      op_desc_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(),
+      formats::ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
+      TypeUtils::FormatToSerialString(const_weight_ptr->GetTensorDesc().GetFormat()).c_str(),
+      formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str(),
+      TypeUtils::DataTypeToSerialString(const_weight_ptr->GetTensorDesc().GetDataType()).c_str(),
+      TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
+      TypeUtils::DataTypeToSerialString(data_type).c_str());
 
   vector<int64_t> perm_list;
   if (!AttrUtils::GetListInt(op_desc_ptr, kAttrOrder, perm_list) &&

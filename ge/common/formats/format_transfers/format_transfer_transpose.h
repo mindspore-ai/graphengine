@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ Status TransposeWithShapeCheck(const uint8_t *src, const std::vector<int64_t> &s
                                const std::vector<int64_t> &perm_arg, TransResult &result);
 
 Status GetPermByForamt(Format src_format, Format dst_format, std::vector<int64_t> &perm);
+
 
 class FormatTransferTranspose : public FormatTransfer {
  public:

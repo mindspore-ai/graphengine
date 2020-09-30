@@ -34,7 +34,8 @@ class SubgraphContext;
 
 class TaskContext {
  public:
-  static std::unique_ptr<TaskContext> Create(const NodeItem &node_item, GraphExecutionContext *execution_context,
+  static std::unique_ptr<TaskContext> Create(const NodeItem &node_item,
+                                             GraphExecutionContext *execution_context,
                                              SubgraphContext *subgraph_context);
 
   ~TaskContext();
@@ -62,7 +63,9 @@ class TaskContext {
   void OnError(Status error);
 
   Status SetOutput(int index, const TensorValue &tensor);
-  Status AllocateOutput(int index, const GeTensorDesc &tensor_desc, TensorValue **tensor,
+  Status AllocateOutput(int index,
+                        const GeTensorDesc &tensor_desc,
+                        TensorValue **tensor,
                         AllocationAttr *attr = nullptr);
   Status AllocateOutputs(AllocationAttr *attr = nullptr);
   Status AllocateWorkspaces();
@@ -72,9 +75,11 @@ class TaskContext {
 
   bool IsDumpEnabled() const;
 
-  const DumpProperties &GetDumpProperties() const;
+  const DumpProperties& GetDumpProperties() const;
 
-  const GraphExecutionContext *GetExecutionContext() { return execution_context_; }
+  const GraphExecutionContext *GetExecutionContext() {
+    return execution_context_;
+  }
 
   Status AllocateTensor(size_t size, TensorValue &tensor, AllocationAttr *attr = nullptr);
   void *MutableWorkspace(int index);
@@ -94,7 +99,9 @@ class TaskContext {
   void *handle_ = nullptr;
 
  private:
-  TaskContext(GraphExecutionContext *execution_context, const NodeItem *node_item, SubgraphContext *subgraph_context);
+  TaskContext(GraphExecutionContext *execution_context,
+              const NodeItem *node_item,
+              SubgraphContext *subgraph_context);
 
   static string TensorDesc2String(const GeTensorDesc &desc);
   Status AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue &tensor, AllocationAttr *attr);
@@ -111,4 +118,4 @@ class TaskContext {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_KERNEL_TASK_CONTEXT_H_
+#endif // GE_HYBRID_KERNEL_TASK_CONTEXT_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "tbe_handle_store.h"
 
 #include <limits>
@@ -40,9 +39,14 @@ void TbeHandleInfo::used_dec(uint32_t num) {
   used_ -= num;
 }
 
-uint32_t TbeHandleInfo::used_num() const { return used_; }
+uint32_t TbeHandleInfo::used_num() const {
+  return used_;
+}
 
-void *TbeHandleInfo::handle() const { return handle_; }
+void *TbeHandleInfo::handle() const {
+  return handle_;
+}
+
 
 TBEHandleStore &TBEHandleStore::GetInstance() {
   static TBEHandleStore instance;
@@ -77,7 +81,8 @@ bool TBEHandleStore::FindTBEHandle(const std::string &name, void *&handle) {
 /// @param [in] kernel: TBE kernel bin to store.
 /// @return NA
 ///
-void TBEHandleStore::StoreTBEHandle(const std::string &name, void *handle, std::shared_ptr<OpKernelBin> &kernel) {
+void TBEHandleStore::StoreTBEHandle(const std::string &name, void *handle,
+                                    std::shared_ptr<OpKernelBin> &kernel) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = kernels_.find(name);
   if (it == kernels_.end()) {
@@ -135,4 +140,4 @@ void TBEHandleStore::EraseTBEHandle(const std::map<std::string, uint32_t> &names
     }
   }
 }
-}  // namespace ge
+} // namespace ge

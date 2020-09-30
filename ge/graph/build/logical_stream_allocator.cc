@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,10 @@
 #include "graph/common/ge_call_wrapper.h"
 
 using std::map;
-using std::queue;
 using std::set;
 using std::string;
 using std::vector;
+using std::queue;
 
 namespace ge {
 LogicalStreamPass::LogicalStreamPass(const string &name) : name_(name) {}
@@ -210,8 +210,8 @@ bool AssignByDependencyPass::CouldReuse(const SubgraphPtr &subgraph, const Subgr
 }
 
 LogicalStreamPass::SubgraphPtr AssignByDependencyPass::GetReusableSubgraph(
-  const SubgraphPtr &subgraph, const map<NodePtr, SubgraphPtr> &end_subgraph_map,
-  const map<NodePtr, SubgraphPtr> &pld_subgraph_map) {
+    const SubgraphPtr &subgraph, const map<NodePtr, SubgraphPtr> &end_subgraph_map,
+    const map<NodePtr, SubgraphPtr> &pld_subgraph_map) {
   const SubGraphInfo &subgraph_info = subgraph->subgraph_info;
   for (const auto &pld_2_end : subgraph_info.GetPld2EndMap()) {
     const NodePtr &peer_end = pld_2_end.second;
@@ -481,7 +481,7 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
           (void)AttrUtils::GetStr(out_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, out_stream_label);
           // normally, Allreduce do not have streamLabel. when in horovod scenario Allreduce will have streamLabel
           bool isSuccessorParallel =
-            (out_stream_label == reduce_stream_label) || (!reduce_stream_label.empty() && out_stream_label.empty());
+              (out_stream_label == reduce_stream_label) || (!reduce_stream_label.empty() && out_stream_label.empty());
           if (isSuccessorParallel) {
             all_reduce_succs.emplace(out_node);
             all_out_data_nodes.emplace(out_node);
@@ -670,6 +670,7 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
 void LogicalStreamAllocator::RefreshContinuousStreams(const ComputeGraphPtr &graph) {
   int64_t stream_num = context_.next_stream;
   vector<bool> stream_has_node(stream_num);
+
 
   for (const NodePtr &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     if (node != nullptr) {

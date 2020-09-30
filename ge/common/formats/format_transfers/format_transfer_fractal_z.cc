@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,11 +124,11 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    dst == nullptr,
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;);
+      dst == nullptr,
+      GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+             TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+      return OUT_OF_MEMORY;);
 
   for (int64_t vfi = 0; vfi < vf_cnt; vfi++) {
     // vertical fractal matrix base index
@@ -152,8 +152,8 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
           auto idx = gfi * fractal_ele_cnt + col * c0 + row;
           auto offset = idx * size;
           auto protected_size = dst_size - offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                  ? dst_size - offset
-                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                    ? dst_size - offset
+                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           errno_t ret = EOK;
           if (need_pad_zero) {
             ret = memset_s(dst.get() + offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
@@ -209,11 +209,11 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    dst == nullptr,
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;);
+      dst == nullptr,
+      GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+             TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+      return OUT_OF_MEMORY;);
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
     for (int64_t hi = 0; hi < h; hi++) {
@@ -223,8 +223,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
             int64_t dst_idx = c1i * hwn1n0c0 + hi * wn1n0c0 + wi * n1n0c0 + n1n0i * c0 + c0i;
             int64_t dst_offset = dst_idx * data_size;
             auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                      ? dst_size - dst_offset
+                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
             errno_t ret = EOK;
             if (pad_zero) {
@@ -284,11 +284,11 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    dst == nullptr,
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;);
+      dst == nullptr,
+      GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+             TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+      return OUT_OF_MEMORY;);
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
     for (int64_t hi = 0; hi < h; hi++) {
@@ -298,8 +298,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
             int64_t dst_idx = c1i * hwn1n0c0 + hi * wn1n0c0 + wi * n1n0c0 + n1n0i * c0 + c0i;
             int64_t dst_offset = dst_idx * data_size;
             auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                      ? dst_size - dst_offset
+                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
             errno_t ret = EOK;
             if (pad_zero) {

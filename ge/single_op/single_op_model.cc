@@ -108,8 +108,11 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
 
     auto weight_buffer = model_helper_.GetGeModel()->GetWeight();
     GELOGI("To copy weight to device. weight size = %zu", weight_buffer.GetSize());
-    GE_CHK_RT_RET(rtMemcpy(model_params_.weight_base, model_params_.weight_size, weight_buffer.GetData(),
-                           weight_buffer.GetSize(), RT_MEMCPY_HOST_TO_DEVICE));
+    GE_CHK_RT_RET(rtMemcpy(model_params_.weight_base,
+                           model_params_.weight_size,
+                           weight_buffer.GetData(),
+                           weight_buffer.GetSize(),
+                           RT_MEMCPY_HOST_TO_DEVICE));
   }
 
   return SUCCESS;
@@ -323,8 +326,8 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTa
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, bool dynamic_flag,
-                                        bool &depend_compute_flag, uint64_t session_id) {
+Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
+                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t session_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
@@ -426,8 +429,8 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
       bool depend_compute_flag = false;
       uint64_t dynamic_singleop_sessionid = aicpu_sessionid++;
       GELOGI("Build dynamic singleOp, sessionId = %lu", dynamic_singleop_sessionid);
-      GE_CHK_STATUS_RET_NOLOG(
-        BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true, depend_compute_flag, dynamic_singleop_sessionid));
+      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true,
+                                                depend_compute_flag, dynamic_singleop_sessionid));
       if (depend_compute_flag) {
         if (i >= tasks.size() - 1) {
           GELOGE(FAILED, "The copy task of the fourth operator was not found.");

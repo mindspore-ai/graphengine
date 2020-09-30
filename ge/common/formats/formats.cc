@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_format,
                                                                  const std::vector<int64_t> &src_shape,
-                                                                 DataType data_type, Format dst_format,
+                                                                 DataType data_type,
+                                                                 Format dst_format,
                                                                  std::vector<int64_t> &dst_shape) {
   formats::TransArgs args;
   args.src_format = src_format;

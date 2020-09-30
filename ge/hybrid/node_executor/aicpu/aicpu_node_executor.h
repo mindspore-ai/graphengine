@@ -27,12 +27,12 @@ namespace hybrid {
 class AicpuNodeTaskBase : public NodeTask {
  public:
   AicpuNodeTaskBase(const NodeItem *node_item, const domi::TaskDef &task_def)
-      : node_item_(node_item),
-        task_def_(task_def),
-        node_name_(node_item->node_name),
-        node_type_(node_item->node_type),
+      : node_item_(node_item), task_def_(task_def),
+        node_name_(node_item->node_name), node_type_(node_item->node_type),
         unknown_type_(node_item->shape_inference_type),
-        aicpu_ext_handle_(node_item->node_name, node_item->num_inputs, node_item->num_outputs,
+        aicpu_ext_handle_(node_item->node_name,
+                          node_item->num_inputs,
+                          node_item->num_outputs,
                           node_item->shape_inference_type) {}
 
   ~AicpuNodeTaskBase() override = default;
@@ -42,7 +42,6 @@ class AicpuNodeTaskBase : public NodeTask {
   Status UpdateArgs(TaskContext &context) override;
 
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
-
  protected:
   virtual Status InitExtInfo(const std::string &kernel_ext_info);
 
@@ -81,13 +80,15 @@ class AicpuNodeTaskBase : public NodeTask {
 
 class AicpuTfNodeTask : public AicpuNodeTaskBase {
  public:
-  AicpuTfNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def) : AicpuNodeTaskBase(node_item, task_def) {}
+  AicpuTfNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def)
+      : AicpuNodeTaskBase(node_item, task_def) {}
 
   ~AicpuTfNodeTask() override = default;
 
   Status Init(const HybridModel &model) override;
 
  protected:
+
   Status LaunchTask(TaskContext &context) override;
 
   Status TaskCallback(TaskContext &context) override;
@@ -107,17 +108,19 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
   ///
   Status ReadResultSummaryAndPrepareMemory(TaskContext &context,
                                            std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
-  Status CopyDataToHbm(TaskContext &context, const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
+  Status CopyDataToHbm(TaskContext &context,
+                       const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
-  Status UpdateShapeByHbmBuffer(TaskContext &context, const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
+  Status UpdateShapeByHbmBuffer(TaskContext &context,
+                                const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
-  Status PrepareCopyInputs(const TaskContext &context, const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm,
+  Status PrepareCopyInputs(const TaskContext &context,
+                           const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm,
                            uint64_t &copy_num);
 
   static Status EnsureSessionCreated(uint64_t session_id);
   static Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, std::string &task_info);
   static uint64_t GetStepIdAddr(const HybridModel &model);
-
  private:
   // kernel buf, device mem
   std::unique_ptr<TensorBuffer> kernel_buf_;
@@ -143,13 +146,15 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
 
 class AicpuNodeTask : public AicpuNodeTaskBase {
  public:
-  AicpuNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def) : AicpuNodeTaskBase(node_item, task_def) {}
+  AicpuNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def)
+      : AicpuNodeTaskBase(node_item, task_def) {}
 
   ~AicpuNodeTask() override = default;
 
   Status Init(const HybridModel &model) override;
 
  protected:
+
   Status LaunchTask(TaskContext &context) override;
 
   Status TaskCallback(TaskContext &context) override;
@@ -166,10 +171,12 @@ class AicpuNodeTask : public AicpuNodeTaskBase {
 
 class AiCpuNodeExecutor : public NodeExecutor {
  public:
-  Status LoadTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const override;
+  Status LoadTask(const HybridModel &model,
+                  const NodePtr &node,
+                  std::shared_ptr<NodeTask> &task) const override;
 
   Status PrepareTask(NodeTask &task, TaskContext &context) const override;
 };
-}  // namespace hybrid
-}  // namespace ge
-#endif  // GE_HYBRID_KERNEL_AICPU_NODE_EXECUTOR_H_
+}
+}
+#endif //GE_HYBRID_KERNEL_AICPU_NODE_EXECUTOR_H_

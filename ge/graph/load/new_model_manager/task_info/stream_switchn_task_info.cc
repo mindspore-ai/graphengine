@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "graph/load/new_model_manager/task_info/stream_switchn_task_info.h"
 #include <vector>
 #include "framework/common/debug/ge_log.h"
@@ -83,7 +82,7 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
 Status StreamSwitchNTaskInfo::Distribute() {
   GELOGI("StreamSwitchNTaskInfo Distribute Start.");
   rtError_t rt_ret =
-    rtStreamSwitchN(input_ptr_, input_size_, value_ptr_, true_stream_ptr_, element_size_, stream_, data_type_);
+      rtStreamSwitchN(input_ptr_, input_size_, value_ptr_, true_stream_ptr_, element_size_, stream_, data_type_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,15 @@
 #include "inc/graph_pass.h"
 
 namespace ge {
-enum ControlNodeType { kNotControlOp, kCondSwitch, kCondMerge, kLoopSwitchT, kLoopSwitchF, kEnter, kInvalidType };
+enum ControlNodeType {
+  kNotControlOp,
+  kCondSwitch,
+  kCondMerge,
+  kLoopSwitchT,
+  kLoopSwitchF,
+  kEnter,
+  kInvalidType
+};
 
 class ControlTriggerPass : public GraphPass {
  public:

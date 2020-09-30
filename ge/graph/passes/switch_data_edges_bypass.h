@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef GE_SWITCH_DATA_EDGES_BYPASS_H_
 #define GE_SWITCH_DATA_EDGES_BYPASS_H_
 
@@ -23,10 +22,9 @@ namespace ge {
 class SwitchDataEdgesBypass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph) override;
-
  private:
   Status BypassSwitch(const NodePtr &node);
 };
 }  // namespace ge
 
-#endif  // GE_SWITCH_DATA_EDGES_BYPASS_H_
+#endif  //GE_SWITCH_DATA_EDGES_BYPASS_H_

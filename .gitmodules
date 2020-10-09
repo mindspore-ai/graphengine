@@ -1,0 +1,3 @@
+[submodule "parser"]
+	path = parser
+	url = https://gitee.com/ascend/parser.git

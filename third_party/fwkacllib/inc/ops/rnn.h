@@ -92,6 +92,7 @@ REG_OP(DynamicLSTM)
     .OUTPUT(output_h, TensorType({DT_FLOAT32}))
     .OP_END_FACTORY_REG(DynamicLSTM)
 
+
 /**
 *@brief: DynamicRNNGrad calculation.
 *@par Inputs:
@@ -126,7 +127,7 @@ REG_OP(DynamicLSTM)
 *@li keep_prob:An float identifying the keep prob in the op. Default to 1.
 *@li cell_clip:An float identifying the cell clip in the op. Default to -1.
 *@li num_proj:An integer identifying the num projection in the op. Default to 0.
-*@li time_major:An bool identifying the time major in the op. Default to false.
+*@li time_major:An bool identifying the time major in the op. Default to true.
 *@li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported.
 *@li forget_bias:An float identifying the forget bias in the op. Default to 0.
 *@li is_training:An bool identifying is training in the op. Default to true.

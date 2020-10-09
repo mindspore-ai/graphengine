@@ -158,18 +158,25 @@ REG_OP(Iou)
 *@par Inputs:
 * Three inputs, including:
 *@li ydiff: A 5HD gradient input of type float32.
-*@li rois: ROI position. A 2D Tensor of float32 with shape (N, 5). "N" indicates the number of ROIs,
-the value "5" indicates the indexes of images where the ROIs are located, "x0", "x1", "y0", and "y1".
-*@li rois_n: An optional input, specifying the number of valid ROIs. This parameter is reserved . \n
+*@li rois: ROI position. A 2D Tensor of float32 with shape (N, 5). "N" 
+indicates the number of ROIs,
+the value "5" indicates the indexes of images where the ROIs are located, "x0", 
+"x1", "y0", and "y1".
+*@li rois_n: An optional input, specifying the number of valid ROIs. This 
+parameter is reserved . \n
 
 *@par Attributes:
 *@li xdiff_shape: A required list of 4 ints, obtained based on the shape of "features" of ROIAlign.
 *@li pooled_width: A required attribute of type int, specifying the W dimension.
 *@li pooled_height: A required attribute of type int, specifying the H dimension.
-*@li spatial_scale: A required attribute of type float, specifying the scaling ratio of "features" to the original image.
-*@li sample_num: An optional attribute of type int, specifying the horizontal and vertical
-sampling frequency of each output. If this attribute is set to "0", the sampling frequency is
-equal to the rounded up value of "rois", which is a floating point number. Defaults to "2" . \n
+*@li spatial_scale: A required attribute of type float, specifying the scaling 
+ratio of "features" to the original image.
+*@li sample_num: An optional attribute of type int, specifying the horizontal 
+and vertical
+sampling frequency of each output. If this attribute is set to "0", the 
+sampling frequency is
+equal to the rounded up value of "rois", which is a floating point number. 
+Defaults to "2" . \n
 
 *@par Outputs:
 *xdiff: Gradient added to input "features". Has the same 5HD shape as input "features".

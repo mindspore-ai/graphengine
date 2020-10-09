@@ -168,9 +168,6 @@ REG_OP(AvgPoolV2)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator AvgPool3D.
-*
-* @par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AvgPool3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))

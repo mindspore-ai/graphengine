@@ -310,9 +310,6 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2D.
 * @li Compatible with the Caffe operator DepthwiseConv2D.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DepthwiseConv2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))

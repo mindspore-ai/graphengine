@@ -924,29 +924,7 @@ REG_OP(InstanceNormV2)
     .ATTR(epsilon, Float, 0.00001)
     .OP_END_FACTORY_REG(InstanceNormV2)
 
-/**
-*@brief Performs instance normalization for inference.
 
-*@par Inputs:\n
-* Five inputs, including: (NC1HWC0 supported)
-*@li x: A Tensor of type float16 or float32.
-*@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
-*@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
-*@li mean: A [N, C1, 1, 1, C0] ensor of type float32, for the mean.
-*@li variance: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance.
-*@li variance_sqrt: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance_sqrt.
-
-*@par Outputs:\n
-*y: A Tensor of type float16 or float32 for the normalized "x".
-*batch_mean: A Tensor of type float32 for the result mean.
-*batch_ variance: A Tensor of type float32 for the result variance.
-
-*@attention Constraints:
-*For Ascend 310, the result accuracy fails to reach 1<89> due to the square root instruction.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use INInferV2 instead.
-*/
 REG_OP(INInferV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(gamma, TensorType({DT_FLOAT}))

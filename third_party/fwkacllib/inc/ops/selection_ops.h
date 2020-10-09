@@ -79,9 +79,6 @@ REG_OP(Range)
 
 *@see Range()
 *@since V100R001C33
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Range instead.
 */
 REG_OP(RangeD)
     .INPUT(x, TensorType({DT_FLOAT,DT_INT32}))
@@ -226,9 +223,6 @@ REG_OP(GatherV2)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator GatherV2.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use GatherV2 instead.
 */
 REG_OP(GatherV2D)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_UINT32, DT_INT8, DT_UINT8,
@@ -331,9 +325,6 @@ REG_OP(StridedSlice)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSlice.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use StridedSlice instead.
 */
 REG_OP(StridedSliceD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_UINT8, DT_INT8,
@@ -389,9 +380,6 @@ REG_OP(StridedSliceD)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSliceGradD.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use StridedSliceGrad instead.
 */
 REG_OP(StridedSliceGradD)
     .INPUT(dy, TensorType::BasicType())
@@ -503,9 +491,6 @@ REG_OP(UnsortedSegmentSum)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator UnsortedSegmentSum.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use UnsortedSegmentSum instead.
 */
 REG_OP(UnsortedSegmentSumD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_UINT8}))
@@ -730,9 +715,6 @@ REG_OP(OneHot)
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator OneHot.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use OneHot instead.
 */
 REG_OP(OneHotD)
     .INPUT(x, TensorType({DT_UINT8, DT_INT32}))
@@ -808,7 +790,7 @@ REG_OP(SliceD)
 * @li assist_seq: A 1D tensor of type float16.
 * with size of 2N, which "N" is the last dimension.
 * The first N numbers is indices, and the next N numbers is deviation of casting
-* int32 to float16. \n
+* float16 to int32 . \n
 
 * @par Attributes:
 * @li k: A required int that is at least 0, specifying the number of top elements
@@ -817,7 +799,7 @@ REG_OP(SliceD)
 * If true, the resulting "k" elements will be sorted by the values in descending
 * order.
 * @li dim: An optional int. Defaults to -1. For reserved use.
-* @li largest: An optional bool. Defaults to true. For reserved use. \n
+* @li largest: An optional bool. Defaults to true. For reserved use.
 
 * @par Outputs:
 * @li values: A Tensor, specifying the sorted data. Has the same type as "input".
@@ -1280,9 +1262,6 @@ REG_OP(InplaceUpdate)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator InplaceUpdate.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use InplaceUpdate instead.
 */
 REG_OP(InplaceUpdateD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
@@ -1335,9 +1314,6 @@ REG_OP(InplaceAdd)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator InplaceAdd.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use InplaceAdd instead.
 */
 REG_OP(InplaceAddD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
@@ -1389,9 +1365,6 @@ REG_OP(InplaceSub)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator InplaceSub.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use InplaceSub instead.
 */
 REG_OP(InplaceSubD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
@@ -1443,9 +1416,6 @@ REG_OP(ScatterNonAliasingAdd)
 * @par Outputs:
 * y: A Tensor of type RealNumberType . \n
 
-* @attention Constraints:
-* @li segment_ids must be non-negative tensor.
-
 * @see UnsortedSegmentSum(), UnsortedSegmentProd(),
 
 * @par Third-party framework compatibility
@@ -1473,9 +1443,6 @@ REG_OP(UnsortedSegmentMin)
 * @par Outputs:
 * y: A Tensor.Must have the same type as input "x" . \n
 
-* @attention Constraints:
-* @li segment_ids must be non-negative tensor.
-
 * @see UnsortedSegmentProdD(), UnsortedSegmentSumD(),
 *
 * @par Restrictions:
@@ -1500,9 +1467,6 @@ REG_OP(UnsortedSegmentMinD)
 
 * @par Outputs:
 * y: A Tensor of type RealNumberType . \n
-
-* @attention Constraints:
-* @li segment_ids must be non-negative tensor.
 
 * @see UnsortedSegmentSum(), UnsortedSegmentProd(),
 
@@ -1531,9 +1495,6 @@ REG_OP(UnsortedSegmentMax)
 * @par Outputs:
 * y: A Tensor.Must have the same type as input "x" . \n
 
-* @attention Constraints:
-* @li segment_ids must be non-negative tensor.
-
 * @see UnsortedSegmentProdD(),
 *
 * @par Restrictions:
@@ -1557,9 +1518,6 @@ REG_OP(UnsortedSegmentMaxD)
 
 * @par Outputs:
 * y: A Tensor of type NumberType . \n
-
-* @attention Constraints:
-* @li segment_ids must be non-negative tensor.
 
 * @see UnsortedSegmentSum(), UnsortedSegmentMin(),
 
@@ -1592,9 +1550,6 @@ REG_OP(UnsortedSegmentProd)
 * @li segment_ids must be non-negative tensor.
 
 * @see UnsortedSegmentMinD()
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use UnsortedSegmentProd instead.
 */
 REG_OP(UnsortedSegmentProdD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
@@ -1910,9 +1865,6 @@ REG_OP(CumulativeLogsumexp)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumsum.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use CumulativeLogsumexp instead.
 */
 REG_OP(CumulativeLogsumexpD)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16}))

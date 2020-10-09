@@ -92,6 +92,7 @@ local_ge_executor_shared_library :=        \
     libregister                            \
     libmsprof                              \
     liberror_manager                       \
+    libascend_hal
 
 local_ge_executor_ldflags := -lrt -ldl     \
 

@@ -25,16 +25,21 @@
 
 namespace ge {
 /**
-*@brief Performs AI pre-processing (AIPP) on images including color space conversion (CSC),
-image normalization (by subtracting the mean value or multiplying a factor), image cropping
-(by specifying the crop start and cropping the image to the size required by the neural network), and much more. \n
+*@brief Performs AI pre-processing (AIPP) on images including color space 
+conversion (CSC),
+image normalization (by subtracting the mean value or multiplying a factor), 
+image cropping
+(by specifying the crop start and cropping the image to the size required by 
+the neural network), and much more. \n
 
 *@par Inputs:
-*@li images: An NCHW or NHWC tensor of type uint8, specifying the input to the data layer.
+*@li images: An NCHW or NHWC tensor of type uint8, specifying the input to the 
+data layer.
 *@li params: Dynamic AIPP configuration parameters of type uint8. \n
 
 *@par Attributes:
-*aipp_config_path: A required string, specifying the path of the AIPP configuration file. \n
+*aipp_config_path: A required string, specifying the path of the AIPP 
+configuration file. \n
 
 *@par Outputs:
 *features: The AIPP-processed output tensor of type float16 or uint8.

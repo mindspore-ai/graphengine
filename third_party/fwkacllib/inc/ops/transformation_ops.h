@@ -235,12 +235,8 @@ REG_OP(BatchToSpaceND)
 *@par Outputs:
 *y: A Tensor with format NC1HWC0. Has the same type as input "x".
 
-
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpaceND.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpaceND instead.
 */
 REG_OP(BatchToSpaceNDD)
     .INPUT(x, TensorType::BasicType())
@@ -287,9 +283,6 @@ REG_OP(SpaceToBatchND)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatchND.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatchND instead.
 */
 REG_OP(SpaceToBatchNDD)
     .INPUT(x, TensorType::BasicType())
@@ -411,9 +404,6 @@ REG_OP(BatchToSpace)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpace.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpace instead.
 */
 REG_OP(BatchToSpaceD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_UINT8,
@@ -467,9 +457,6 @@ REG_OP(SpaceToBatch)
 *y: A Tensor. Has the same type as input "x".
 *@par Third-party framework compatibility
 *@ Compatible with the TensorFlow operator SpaceToBatch.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatch instead.
 */
 REG_OP(SpaceToBatchD)
     .INPUT(x, TensorType::BasicType())
@@ -598,9 +585,6 @@ REG_OP(ExtractVolumePatches)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ConfusionTranspose instead.
 */
 REG_OP(ConfusionTransposeD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,

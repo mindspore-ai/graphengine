@@ -160,8 +160,10 @@ REG_OP(CropAndResize)
 *@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch) . \n
 
 *@par Attributes:
-*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches are resized to this size.
-*@li extrapolation_value: An optional float. Defaults to 0. Value used for extrapolation, when applicable.
+*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches 
+are resized to this size.
+*@li extrapolation_value: An optional float. Defaults to 0. Value used for 
+extrapolation, when applicable.
 *@li method: An optional string from: '"bilinear"'. Defaults to "bilinear" . \n
 
 *@par Outputs:
@@ -172,7 +174,6 @@ REG_OP(CropAndResize)
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResize operator.
-
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use CropAndResize instead.
 */

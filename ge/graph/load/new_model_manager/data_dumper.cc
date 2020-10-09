@@ -728,11 +728,7 @@ Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
     }
     if (dump_properties_.GetDumpMode() == kDumpInput) {
       if (op_iter.is_task) {
-        Status ret = DumpInput(op_iter, task);
-        if (ret != SUCCESS) {
-          GELOGE(ret, "Dump input failed");
-          return ret;
-        }
+        GE_CHK_STATUS_RET(DumpInput(op_iter, task), "Dump input failed");
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;

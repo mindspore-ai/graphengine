@@ -374,9 +374,6 @@ REG_OP(DropOutGenMask)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator lin_space.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use LinSpace instead.
 */
 REG_OP(LinSpaceD)
     .INPUT(assist, TensorType({DT_FLOAT}))

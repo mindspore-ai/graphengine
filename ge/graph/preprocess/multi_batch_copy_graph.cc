@@ -40,7 +40,6 @@
 #include "inc/pass_manager.h"
 #include "graph/common/local_context.h"
 
-using std::map;
 using std::set;
 using std::string;
 using std::vector;
@@ -264,24 +263,27 @@ Status MultiBatchGraphCopyer::Init() {
 }
 
 Status MultiBatchGraphCopyer::LabelStatus() {
-  map<string, vector<NodePtr>> frame_enters;
-  InitStatus(frame_enters);
-
+  for (const auto &data : origin_data_nodes_) {
+    auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
+    if (!IsAllDimsPositive(data_shape.GetDims())) {
+      origin_nodes_status_[data.get()] = kNodeInBatchBranch;
+    }
+  }
   bool changed = true;
   // If anyone of in node is kNodeInBatchBranch, it is also kNodeInBatchBranch
   while (changed) {
     changed = false;
     for (const auto &node : origin_all_nodes_) {
+      auto iter = origin_nodes_status_.find(node.get());
+      if (iter != origin_nodes_status_.end()) {
+        continue;
+      }
       for (auto &in_node : node->GetInAllNodes()) {
         bool is_in_batch = origin_nodes_status_.find(in_node.get()) != origin_nodes_status_.end() &&
                            origin_nodes_status_[in_node.get()] == kNodeInBatchBranch;
         if (is_in_batch) {
-          if (origin_nodes_status_.find(node.get()) == origin_nodes_status_.end() ||
-              origin_nodes_status_[node.get()] != kNodeInBatchBranch) {
-            origin_nodes_status_[node.get()] = kNodeInBatchBranch;
-            ResetEnterStatus(frame_enters, node);
-            changed = true;
-          }
+          origin_nodes_status_[node.get()] = kNodeInBatchBranch;
+          changed = true;
           break;
         }
       }

@@ -58,8 +58,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
 
   GELOGI("ProfilingManager::Init  job_id:%s", job_id_.c_str());
 
-
-
   Status ret;
   if (!recv_profiling_config_.empty()) {
     GELOGI("Profiling json config from acl:%s", recv_profiling_config_.c_str());

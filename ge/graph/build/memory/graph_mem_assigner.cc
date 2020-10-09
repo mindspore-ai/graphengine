@@ -907,7 +907,6 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
     int64_t atomic_mem_start = static_cast<int64_t>(mem_iter->second.mem_offset_);
     GELOGD("Begin to reAssign atomic memory, atomic address memory start = %ld", atomic_mem_start);
 
-    for (auto &atomic_node : iter.second) {
       vector<int64_t> mem_offset_end;
       status = AssignAtomicOutputAndWorkspaceMemory(atomic_node, mem_offset_end);
       if (status != SUCCESS) {

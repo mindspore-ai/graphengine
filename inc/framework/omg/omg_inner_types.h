@@ -92,6 +92,9 @@ struct OmgContext {
   std::map<std::string, std::vector<int32_t>> out_nodes_map;
   // user-designate out nodes (this is used for determing the orders)
   std::vector<std::pair<std::string, int32_t>> user_out_nodes;
+  // save the output node of the network, value = topName,
+  // topName indicates the output name of the operator.
+  std::vector<std::string> user_out_nodes_top_vec;
   // net out nodes (where user_out_nodes or leaf nodes)
   std::vector<std::string> net_out_nodes;
   // net out nodes top names(only caffe has top)

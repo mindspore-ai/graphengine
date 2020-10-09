@@ -89,6 +89,7 @@ local_ge_executor_shared_library :=        \
     libregister                            \
     libmsprof                              \
     liberror_manager                       \
+    libascend_hal
 
 local_ge_executor_ldflags := -lrt -ldl     \
 
@@ -104,6 +105,7 @@ LOCAL_SRC_FILES := $(local_ge_executor_src_files)
 LOCAL_C_INCLUDES := $(local_ge_executor_c_include)
 
 LOCAL_SHARED_LIBRARIES := $(local_ge_executor_shared_library)
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 ifeq ($(device_os),android)
 LOCAL_LDFLAGS += -ldl
 LOCAL_LDLIBS += -L$(PWD)/prebuilts/clang/linux-x86/aarch64/android-ndk-r21/sysroot/usr/lib/aarch64-linux-android/29 -llog
@@ -140,6 +142,9 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libregister                            \
     libmsprof                              \
     liberror_manager                       \
+    stub/libascend_hal
+
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 
 LOCAL_LDFLAGS += $(local_ge_executor_ldflags)
 

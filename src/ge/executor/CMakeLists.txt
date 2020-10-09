@@ -120,6 +120,7 @@ target_link_libraries(ge_executor
         ${mmpa}
         ${msprof}
         ${error_manager}
+        ${ascend_hal}
         rt
         dl)
 

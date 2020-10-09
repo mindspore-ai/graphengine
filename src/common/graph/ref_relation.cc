@@ -56,7 +56,7 @@ class RefRelations::Impl {
       }
       return GRAPH_SUCCESS;
     }
-    GELOGW("can not find any relations! key value is %s", lookup_key.c_str());
+    GELOGW("can not find any relations! key value of dest relation is %s", lookup_key.c_str());
     return GRAPH_SUCCESS;
   };
   graphStatus BuildRefRelations(ge::ComputeGraph &root_graph);

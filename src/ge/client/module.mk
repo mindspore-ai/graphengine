@@ -70,9 +70,10 @@ LOCAL_SHARED_LIBRARIES := \
     libregister \
     libge_compiler \
     libge_common \
-    libmsprof
+    libmsprof \
+    stub/libascend_hal
 
-
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -107,6 +108,7 @@ LOCAL_SHARED_LIBRARIES := \
     libge_common \
     libmsprof
 
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 
 LOCAL_LDFLAGS := -lrt -ldl
 LOCAL_CFLAGS += \

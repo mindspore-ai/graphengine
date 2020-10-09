@@ -111,9 +111,6 @@ REG_OP(ApplyAdaMax)
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyAdaMax.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdaMax instead.
 */
 REG_OP(ApplyAdaMaxD)
     .INPUT(var, TensorType::NumberType())
@@ -352,9 +349,6 @@ REG_OP(ApplyMomentum)
 * accum: A mutable tensor. Has the same type as input "accum".
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyMomentum.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyMomentum instead.
 */
 
 REG_OP(ApplyMomentumD)
@@ -681,9 +675,6 @@ REG_OP(ApplyPowerSign)
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyPowerSign.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyPowerSign instead.
 */
 REG_OP(ApplyPowerSignD)
     .INPUT(var, TensorType::NumberType())
@@ -804,9 +795,6 @@ REG_OP(ApplyAddSign)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ApplyAddSign.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAddSign instead.
 */
 REG_OP(ApplyAddSignD)
     .INPUT(var, TensorType::NumberType())
@@ -928,9 +916,6 @@ REG_OP(ApplyCenteredRMSProp)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyCenteredRMSPropD.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyCenteredRMSProp instead.
 */
 REG_OP(ApplyCenteredRMSPropD)
     .INPUT(var, TensorType::NumberType())
@@ -1049,9 +1034,6 @@ REG_OP(ApplyAdagrad)
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyAdagrad.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdagrad instead.
 */
 REG_OP(ApplyAdagradD)
     .INPUT(var, TensorType::NumberType())
@@ -1236,9 +1218,6 @@ REG_OP(ApplyAdagradDA)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyAdagradDA.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdagradDA instead.
 */
 REG_OP(ApplyAdagradDAD)
     .INPUT(var, TensorType::NumberType())
@@ -1496,9 +1475,6 @@ REG_OP(ApplyProximalAdagrad)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyProximalAdagradD.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyProximalAdagrad instead.
 */
 REG_OP(ApplyProximalAdagradD)
     .INPUT(var, TensorType::NumberType())
@@ -1592,9 +1568,6 @@ REG_OP(SparseApplyProximalAdagrad)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator SparseApplyProximalAdagrad.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use SparseApplyProximalAdagrad instead.
 */
 REG_OP(SparseApplyProximalAdagradD)
     .INPUT(var, TensorType::NumberType())
@@ -1681,9 +1654,6 @@ REG_OP(ApplyFtrl)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyFtrl.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyFtrl instead.
 */
 REG_OP(ApplyFtrlD)
     .INPUT(var, TensorType::NumberType())
@@ -1775,9 +1745,6 @@ REG_OP(ApplyFtrlV2)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyFtrlV2.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyFtrlV2 instead.
 */
 REG_OP(ApplyFtrlV2D)
     .INPUT(var, TensorType::NumberType())
@@ -1890,9 +1857,6 @@ REG_OP(ApplyAdam)
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ApplyAdam.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdam instead.
 */
 REG_OP(ApplyAdamD)
     .INPUT(var, TensorType::NumberType())
@@ -1981,9 +1945,6 @@ REG_OP(ApplyAdadelta)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ApplyAdadelta.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ApplyAdadelta instead.
 */
 REG_OP(ApplyAdadeltaD)
     .INPUT(var, TensorType::NumberType())

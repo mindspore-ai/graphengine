@@ -65,9 +65,6 @@ REG_OP(Fill)
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "value".
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Fill instead.
 */
 REG_OP(FillD)
     .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16,
@@ -125,9 +122,6 @@ REG_OP(BroadcastTo)
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BroadcastTo.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use BroadcastTo instead.
 */
 REG_OP(BroadcastToD)
     .INPUT(x, TensorType::BasicType())
@@ -175,9 +169,6 @@ REG_OP(Pad)
 
 *@par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
 */
 REG_OP(PadD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
@@ -269,9 +260,6 @@ REG_OP(PadV3D)
 *@see Diag()
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Diag instead.
 */
 REG_OP(DiagD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))

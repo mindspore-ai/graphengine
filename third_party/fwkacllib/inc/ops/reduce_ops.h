@@ -353,9 +353,6 @@ REG_OP(ReduceSum)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Sum.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceSum instead.
 */
 REG_OP(ReduceSumD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -381,9 +378,6 @@ REG_OP(ReduceSumD)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ReduceAll.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceAll instead.
 */
 REG_OP(ReduceAllD)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -459,9 +453,6 @@ REG_OP(ReduceProd)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ReduceProd.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceProd instead.
 */
 REG_OP(ReduceProdD)
     .INPUT(x,TensorType({DT_FLOAT, DT_UINT8, DT_INT8, DT_INT32, DT_FLOAT16}))
@@ -516,9 +507,6 @@ REG_OP(ReduceMean)
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator ReduceMean.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMean instead.
 */
 REG_OP(ReduceMeanD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -573,9 +561,6 @@ REG_OP(ReduceMax)
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Max.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMax instead.
 */
 REG_OP(ReduceMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_UINT8, DT_INT8,
@@ -630,9 +615,6 @@ REG_OP(ReduceMin)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator reduce_min.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMin instead.
 */
 REG_OP(ReduceMinD)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
@@ -699,9 +681,6 @@ REG_OP(ReduceAny)
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator reduce_any.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceAny instead.
 */
 REG_OP(ReduceAnyD)
     .INPUT(x, TensorType({DT_BOOL}))
@@ -787,9 +766,6 @@ REG_OP(EuclideanNorm)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator EuclideanNorm.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use EuclideanNorm instead.
 */
 REG_OP(EuclideanNormD)
     .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_FLOAT16}))

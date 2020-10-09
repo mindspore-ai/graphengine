@@ -136,6 +136,13 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
                         bool attr) {
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
+
+  auto format = tensor.GetFormat();
+  auto data_type = tensor.GetDataType();
+  if (format == FORMAT_RESERVED && data_type == DT_UNDEFINED) {
+    return SUCCESS;
+  }
+
   string op_type;
   if (!AttrUtils::GetStr(tensor, kAttrOpType, op_type) || op_type.empty()) {
     op_type = DATA;
@@ -521,8 +528,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
-  if (!inputs.empty() && (inputs.size() != op_desc->GetInputsSize())) {
-    GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetInputsSize());
+  if (!inputs.empty() && (inputs.size() != op_desc->GetAllInputsSize())) {
+    GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetAllInputsSize());
     return PARAM_INVALID;
   }
   if (!outputs.empty() && (outputs.size() != op_desc->GetOutputsSize())) {

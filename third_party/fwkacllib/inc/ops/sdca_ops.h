@@ -35,16 +35,16 @@ namespace ge {
 *rate . \n
 
 *@par Inputs:
-*@li sparse_example_indices: a list of vectors which contain example indices.It's a dynamic input.
-*@li sparse_feature_indices: a list of vectors which contain feature indices.It's a dynamic input.
-*@li sparse_feature_values: a list of vectors which contains feature value associated with each feature group.It's a dynamic input.
-*@li dense_features: a list of matrices which contains the dense feature values.It's a dynamic input.
+*@li sparse_example_indices: a list of vectors which contain example indices.
+*@li sparse_feature_indices: a list of vectors which contain feature indices.
+*@li sparse_feature_values: a list of vectors which contains feature value associated with each feature group.
+*@li dense_features: a list of matrices which contains the dense feature values.
 *@li example_weights: a vector which contains the weight associated with each example.
 *@li example_labels: a vector which contains the label/target associated with each example.
 *@li sparse_indices: a list of vectors where each value is the indices which has
-*corresponding weights in sparse_weights. This field maybe omitted for the dense approach.It's a dynamic input.
+*corresponding weights in sparse_weights. This field maybe omitted for the dense approach.
 *@li sparse_weights: a list of vectors where each value is the weight associated with a sparse feature group.
-*@li dense_weights: a list of vectors where the values are the weights associated with a dense feature group.It's a dynamic input.
+*@li dense_weights: a list of vectors where the values are the weights associated with a dense feature group.
 *@li example_state_data: a list of vectors containing the example state data.
 *@li loss_type: Type of the primal loss. Currently SdcaSolver supports logistic, squared and hinge losses.
 *@li l1: Symmetric l1 regularization strength.
@@ -61,7 +61,6 @@ namespace ge {
 *@par Third-party framework compatibility
 * Compatible with tensorflow SdcaOptimizerV2 operator.
 */
-
 REG_OP(SdcaOptimizerV2)
     .DYNAMIC_INPUT(sparse_example_indices, TensorType({DT_INT64}))
     .DYNAMIC_INPUT(sparse_feature_indices, TensorType({DT_INT64}))

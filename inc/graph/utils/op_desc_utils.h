@@ -53,6 +53,7 @@ class OpDescUtils {
   static vector<GeTensorPtr> MutableWeights(const ge::NodePtr node);
   static graphStatus SetWeights(ge::Node& node, const vector<ge::GeTensorPtr>& weights);
   static graphStatus SetWeights(ge::NodePtr node, const vector<ge::GeTensorPtr>& weights);
+  static graphStatus SetWeights(ge::Node& node, const map<int, ge::GeTensorPtr>& weights_map);
   static graphStatus ClearWeights(ge::NodePtr node);
 
   static bool ClearInputDesc(ge::OpDescPtr op_desc, uint32_t index);

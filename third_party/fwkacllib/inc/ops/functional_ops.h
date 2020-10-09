@@ -36,7 +36,7 @@ namespace ge {
  *          if "cond" is a numerical scalar, non-zero means True and zero means False;
  *          if "cond" is a string scalar, non-empty means True and empty means False;
  *          if "cond" is not a scalar, non-empty means True and empty means False.
- *@li input: The input tensors . It's a dynamic input. \n
+ *@li input: The input tensors . \n
 
  *@par Graphs:
  *@li then_branch: A subgraph takes 'input' and returns a list of tensors,
@@ -69,7 +69,7 @@ REG_OP(_If)
  *          if "cond" is a numerical scalar, non-zero means True and zero means False;
  *          if "cond" is a string scalar, non-empty means True and empty means False;
  *          if "cond" is not a scalar, non-empty means True and empty means False.
- *@li input: The input tensors . It's a dynamic input. \n
+ *@li input: The input tensors . \n
 
  *@par Graphs:
  *@li then_branch: A subgraph takes 'input' and returns a list of tensors,
@@ -102,7 +102,7 @@ REG_OP(StatelessIf)
  *          if "cond" is a numerical scalar, non-zero means True and zero means False;
  *          if "cond" is a string scalar, non-empty means True and empty means False;
  *          if "cond" is not a scalar, non-empty means True and empty means False.
- *@li input: The input tensors . It's a dynamic input. \n
+ *@li input: The input tensors . \n
 
  *@par Graphs:
  *@li then_branch: A subgraph takes 'input' and returns a list of tensors,
@@ -129,7 +129,7 @@ REG_OP(If)
 
  *@par Inputs:
  *@li branch_index: A int32 scalar which determines the selected subgraph.
- *@li input: The input tensors, which will be passed to the subgraph . It's a dynamic input. \n
+ *@li input: The input tensors, which will be passed to the subgraph . \n
 
  *@par Graphs:
  *branches: A list of subgraphs, each of which takes 'input' and returns a list of tensors,
@@ -152,7 +152,7 @@ REG_OP(Case)
  *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False . \n
 
  *@par Inputs:
- *input: The input tensors . It's a dynamic input. \n
+ *input: The input tensors . \n
 
  *@par Graphs:
  *@li cond: A subgraph takes 'input' and returns a tensor.
@@ -183,7 +183,7 @@ REG_OP(_While)
  *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False . \n
 
  *@par Inputs:
- *input: The input tensors . It's a dynamic input. \n
+ *input: The input tensors . \n
 
  *@par Graphs:
  *@li cond: A subgraph takes 'input' and returns a tensor.
@@ -215,7 +215,7 @@ REG_OP(While)
  *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False . \n
 
  *@par Inputs:
- *input: The input tensors . It's a dynamic input. \n
+ *input: The input tensors . \n
 
  *@par Graphs:
  *@li cond: A subgraph takes 'input' and returns a tensor.
@@ -250,7 +250,7 @@ REG_OP(StatelessWhile)
  *@li start: A int32 scalar. The lower bound.
  *@li limit: A int32 scalar. The upper bound.
  *@li delta: A int32 scalar. The step size.
- *@li input: The input tensors, which will be passed to "body" . It's a dynamic input. \n
+ *@li input: The input tensors, which will be passed to "body" . \n
 
  *@par Graphs:
  *body: A subgraph takes 'input' and returns a another list of tensors . \n
@@ -274,7 +274,7 @@ REG_OP(For)
  *@brief Pass the input tensors to the subgraph "f" and return the output tensors . \n
 
  *@par Inputs:
- *args: The input tensors, which will be passed to "f" . It's a dynamic input. \n
+ *args: The input tensors, which will be passed to "f" . \n
 
  *@par Graphs:
  *f: A subgraph takes 'args' and returns a another list of tensors . \n
@@ -303,7 +303,7 @@ REG_OP(PartitionedCall)
  *@brief Pass the input tensors to the subgraph "f" and return the output tensors . \n
 
  *@par Inputs:
- *args: The input tensors, which will be passed to "f" . It's a dynamic input. \n
+ *args: The input tensors, which will be passed to "f" . \n
 
  *@par Graphs:
  *f: A subgraph takes 'args' and returns a another list of tensors . \n

@@ -19,7 +19,7 @@
 
 #include "base.h"
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -56,7 +56,7 @@ RTS_API rtError_t rtUnsetDvfsProfile();
  */
 RTS_API rtError_t rtGetDvfsProfile(DvfsProfileMode *pmode);
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

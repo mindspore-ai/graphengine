@@ -69,7 +69,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   ProfilingManager();
   virtual ~ProfilingManager();
   static ProfilingManager &Instance();
-  ge::Status Init(const Options &options, bool convert_2_phy_device_id = false);
+  ge::Status Init(const Options &options);
   ge::Status InitFromOptions(const Options &options);
   ge::Status InitFromAclCfg(const std::string &config);
   ge::Status StartProfiling(int32_t iter, int32_t device_id);

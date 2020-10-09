@@ -328,15 +328,14 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
            op_desc->GetName().c_str(), v_memory_type.size(), inputs_size);
     return v_input_data_addr;
   }
-  for (size_t i = 0; i < inputs_size; ++i) {
+  for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+    const GeTensorDescPtr tensor_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
+    if (tensor_desc == nullptr) {
+      GELOGD("Op: %s, Index: %zu, has no input", op_desc->GetName().c_str(), i);
+      continue;
+    }
     if ((i < v_is_input_const.size()) && v_is_input_const[i] && (op_type != NETOUTPUT)) {
       // TBE: add weights address to input
-      const GeTensorDescPtr tensor_desc = op_desc->MutableInputDesc(i);
-      if (tensor_desc == nullptr) {
-        GELOGW("Op: %s, Index: %zu, Tensor Desc is null", op_desc->GetName().c_str(), i);
-        continue;
-      }
-
       int64_t tensor_size = 0;
       GE_CHK_STATUS(TensorUtils::GetSize(*tensor_desc, tensor_size));
       if (tensor_size) {

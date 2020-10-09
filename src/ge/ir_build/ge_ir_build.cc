@@ -96,6 +96,12 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
                    return ge::GRAPH_PARAM_INVALID, "check optypelist_for_implmode and op_select_implmode failed!");
   global_options[ge::ir_option::OP_SELECT_IMPL_MODE] = op_select_implmode;
 
+  // set precision mode default value
+  std::string precision_mode = global_options.find(ge::ir_option::PRECISION_MODE) == global_options.end()
+                                 ? "force_fp16"
+                                 : global_options[ge::ir_option::PRECISION_MODE];
+  global_options[ge::ir_option::PRECISION_MODE] = precision_mode;
+
   return GRAPH_SUCCESS;
 }
 

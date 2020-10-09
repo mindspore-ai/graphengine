@@ -20,7 +20,7 @@
 #include "base.h"
 #include "stream.h"
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -529,7 +529,7 @@ RTS_API rtError_t rtStopOnlineProf(rtStream_t stream);
  * @return RT_ERROR_INVALID_VALUE for error input 
  */
 RTS_API rtError_t rtGetOnlineProfData(rtStream_t stream, rtProfDataInfo_t *pProfData, uint32_t profDataNum);
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

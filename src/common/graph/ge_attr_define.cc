@@ -1060,6 +1060,10 @@ const std::string ATTR_NAME_HCCL_FUSED_FLAG = "_hccl_fused_node";
 const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR = "_alloc_fixed_addr";
 const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX = "_alloc_fixed_addr_index";
 
+// op dynamic input
+const std::string ATTR_NAME_DYNAMIC_INPUT_START = "_dynamic_input_index_start";
+const std::string ATTR_NAME_DYNAMIC_INPUT_END = "_dynamic_input_index_end";
+
 // atc user def dtype&format
 const std::string ATTR_ATC_USER_DEFINE_DATATYPE = "_user_defined_data_type";
 const std::string ATTR_ATC_USER_DEFINE_FORMAT = "_user_defined_format";

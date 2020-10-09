@@ -116,6 +116,7 @@ class DataDumper {
   std::vector<InnerDumpInfo> op_list_;
   uint32_t end_graph_task_id_ = 0;
   uint32_t end_graph_stream_id_ = 0;
+  bool is_end_graph_ = false;
   std::multimap<std::string, InnerInputMapping> input_map_;
   bool load_flag_;
   uint32_t device_id_;

@@ -695,11 +695,7 @@ Status DataDumper::LoadDumpInfo() {
     }
     if (dump_properties_.GetDumpMode() == kDumpInput) {
       if (op_iter.is_task) {
-        Status ret = DumpInput(op_iter, task);
-        if (ret != SUCCESS) {
-          GELOGE(ret, "Dump input failed");
-          return ret;
-        }
+        GE_CHK_STATUS_RET(DumpInput(op_iter, task), "Dump input failed");
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
@@ -726,7 +722,7 @@ Status DataDumper::LoadDumpInfo() {
 
   SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
 
-  if (!op_list_.empty() || is_op_debug_) {
+  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
     auto ret = ExecuteLoadDumpInfo(op_mapping_info);
     if (ret != SUCCESS) {
       GELOGE(ret, "Execute load dump info failed");
@@ -740,7 +736,6 @@ void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
                                       aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (dump_properties_.GetDumpMode() == kDumpOutput || dump_properties_.GetDumpMode() == kDumpInput ||
       dump_properties_.GetDumpMode() == kDumpAll) {
-    GELOGI("Add end_graph_info to aicpu, task_id is %u, stream_id is %u", end_graph_task_id_, end_graph_stream_id_);
     aicpu::dump::Task task;
     task.set_end_graph(true);
     task.set_task_id(end_graph_task_id_);
@@ -748,6 +743,14 @@ void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
     task.mutable_op()->set_op_name(NODE_NAME_END_GRAPH);
     task.mutable_op()->set_op_type(ENDGRAPH);
     op_mapping_info.mutable_task()->Add(std::move(task));
+
+    is_end_graph_ = true;
+    if (op_mapping_info.model_name_param_case() == aicpu::dump::OpMappingInfo::kModelName) {
+      GELOGI("Add end_graph_info to aicpu, model_name is %s, task_id is %u, stream_id is %u",
+             op_mapping_info.model_name().c_str(), end_graph_task_id_, end_graph_stream_id_);
+      return;
+    }
+    GELOGI("Add end_graph_info to aicpu, task_id is %u, stream_id is %u", end_graph_task_id_, end_graph_stream_id_);
   }
 }
 

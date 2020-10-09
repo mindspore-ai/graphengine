@@ -158,18 +158,25 @@ REG_OP(Iou)
 *@par Inputs:
 * Three inputs, including:
 *@li ydiff: A 5HD gradient input of type float32.
-*@li rois: ROI position. A 2D Tensor of float32 with shape (N, 5). "N" indicates the number of ROIs,
-the value "5" indicates the indexes of images where the ROIs are located, "x0", "x1", "y0", and "y1".
-*@li rois_n: An optional input, specifying the number of valid ROIs. This parameter is reserved . \n
+*@li rois: ROI position. A 2D Tensor of float32 with shape (N, 5). "N" 
+indicates the number of ROIs,
+the value "5" indicates the indexes of images where the ROIs are located, "x0", 
+"x1", "y0", and "y1".
+*@li rois_n: An optional input, specifying the number of valid ROIs. This 
+parameter is reserved . \n
 
 *@par Attributes:
 *@li xdiff_shape: A required list of 4 ints, obtained based on the shape of "features" of ROIAlign.
 *@li pooled_width: A required attribute of type int, specifying the W dimension.
 *@li pooled_height: A required attribute of type int, specifying the H dimension.
-*@li spatial_scale: A required attribute of type float, specifying the scaling ratio of "features" to the original image.
-*@li sample_num: An optional attribute of type int, specifying the horizontal and vertical
-sampling frequency of each output. If this attribute is set to "0", the sampling frequency is
-equal to the rounded up value of "rois", which is a floating point number. Defaults to "2" . \n
+*@li spatial_scale: A required attribute of type float, specifying the scaling 
+ratio of "features" to the original image.
+*@li sample_num: An optional attribute of type int, specifying the horizontal 
+and vertical
+sampling frequency of each output. If this attribute is set to "0", the 
+sampling frequency is
+equal to the rounded up value of "rois", which is a floating point number. 
+Defaults to "2" . \n
 
 *@par Outputs:
 *xdiff: Gradient added to input "features". Has the same 5HD shape as input "features".
@@ -876,9 +883,7 @@ REG_OP(YoloV3DetectionOutputV2)
 A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
 *@li imginfo: A float16, describing the image information including the required image height and width
 and the actual image height and width.
-*@li windex: A windex tensor with shape [height,weight]. Has the same type as the inputs.
-[[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)]
-is formed for the three Yolo outputs, respectively .It's a dynamic input. \n
+*@li windex: A windex tensor with shape [height,weight]. Has the same type as the inputs. [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed for the three Yolo outputs, respectively . \n
 
 *@li hindex: A hindex tensor with shape [height,weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively . \n
 

@@ -472,7 +472,7 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
     return true;
   }
 
-  ret = regexec(&reg, str.c_str(), 0, nullptr, 0);
+  ret = regexec(&reg, str.c_str(), 0, NULL, 0);
   if (ret) {
     regerror(ret, &reg, ebuff, kMaxBuffSize);
     GELOGE(ge::PARAM_INVALID, "regexec failed, reason: %s", ebuff);

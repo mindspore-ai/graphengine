@@ -50,13 +50,9 @@ class AttachStreamLabelPass : public GraphPass {
   /// @brief attach flag
   /// @param [in] node
   /// @param [out] stream_label
-  /// @param [out] merge_flag
-  /// @param [out] exit_flag
-  /// @param [out] net_output_flag
   /// @return Status
   ///
-  static Status AttachFlag(const NodePtr &node, std::string &stream_label, bool &merge_flag, bool &exit_flag,
-                           bool &net_output_flag);
+  static Status AttachFlag(const NodePtr &node, std::string &stream_label);
 
   ///
   /// @brief Update stream_label for loop_branch

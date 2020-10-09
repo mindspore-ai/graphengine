@@ -229,6 +229,7 @@ target_link_libraries(ge_runner
         ${resouce}
         ${ascend_hal}
         ${adump_server}
+        ${msprofiler}
         rt
         dl)
 
@@ -358,7 +359,10 @@ add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HD
 target_compile_definitions(ge_compiler PRIVATE
         PROTOBUF_INLINE_NOT_IN_HEADERS=0
         REUSE_MEMORY=1
-        FMK_HOST_INFER)
+        FMK_HOST_INFER
+        FMK_SUPPORT_DUMP
+        COMPILE_OMG_PACKAGE
+        REUSE_MEMORY=1)
 target_link_libraries(ge_compiler
         graph
         ge_common

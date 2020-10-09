@@ -20,13 +20,14 @@
 #include "framework/common/debug/log.h"
 #include "graph/utils/graph_utils.h"
 
+namespace {
+const size_t kOutNodesNum = 1;
+}
+
 namespace ge {
 Status EnterPass::Run(NodePtr &node) {
   GELOGD("EnterPass running");
-  if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "param [node] must not be null.");
-    return PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(node);
 
   if ((node->GetType() != ENTER) && (node->GetType() != REFENTER)) {
     return SUCCESS;
@@ -38,18 +39,17 @@ Status EnterPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
   NodePtr in_node = node->GetInDataNodes().at(0);
-  if (in_node == nullptr) {
-    GELOGE(PARAM_INVALID, "param [in_node] must not be null");
-    return PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(in_node);
 
   if ((in_node->GetType() != CONSTANT) && (in_node->GetType() != CONSTANTOP)) {
     return SUCCESS;
   }
 
-  bool need_remove_flag =
-    in_node->GetInControlNodes().empty() && node->GetInControlNodes().empty() && node->GetOutDataNodes().empty();
-  if (need_remove_flag) {
+  bool need_remove_flag = in_node->GetInControlNodes().empty() && node->GetInControlNodes().empty();
+  if (!need_remove_flag) {
+    return SUCCESS;
+  }
+  if (node->GetOutDataNodes().empty()) {
     for (auto &out_ctrl_node : node->GetOutControlNodes()) {
       if (out_ctrl_node == nullptr) {
         continue;
@@ -60,9 +60,47 @@ Status EnterPass::Run(NodePtr &node) {
         return FAILED;
       }
     }
+  } else {
+    if (OptimizeEnter(node, in_node) != SUCCESS) {
+      GELOGE(FAILED, "Optimize enter node[%s] failed.", node->GetName().c_str());
+      return FAILED;
+    }
   }
 
   GELOGD("EnterPass success");
+  return SUCCESS;
+}
+
+Status EnterPass::OptimizeEnter(NodePtr &node, NodePtr &in_node) {
+  auto out_nodes_of_in_node = in_node->GetOutAllNodes();
+  if (out_nodes_of_in_node.size() != kOutNodesNum) {
+    return SUCCESS;
+  }
+
+  if (!node->GetOutControlNodes().empty()) {
+    return SUCCESS;
+  }
+
+  for (const auto &out_node : node->GetOutDataNodes()) {
+    GE_CHECK_NOTNULL(out_node);
+    if (out_node->GetType() == MERGE) {
+      return SUCCESS;
+    }
+  }
+
+  GE_CHECK_NOTNULL(in_node->GetOutDataAnchor(0));
+  GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->Unlink(node->GetInDataAnchor(0)));
+  auto out_data_anchor = node->GetOutDataAnchor(0);
+  GE_CHECK_NOTNULL(out_data_anchor);
+  for (auto peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+    GE_CHK_STATUS_RET(out_data_anchor->Unlink(peer_in_data_anchor));
+    GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->LinkTo(peer_in_data_anchor));
+  }
+
+  auto graph = node->GetOwnerComputeGraph();
+  GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, node))
+  AddRePassNodesWithInOut(in_node);
+
   return SUCCESS;
 }
 }  // namespace ge

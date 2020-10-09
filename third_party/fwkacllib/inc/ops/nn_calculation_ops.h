@@ -310,9 +310,6 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2D.
 * @li Compatible with the Caffe operator DepthwiseConv2D.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DepthwiseConv2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
@@ -460,9 +457,9 @@ REG_OP(Conv2DBackpropInputD)
 *@par Attributes:
  * Six attributes:
  * @li strides: A tuple or list of 2 integers. The stride of the sliding window
- * for H/W dimension.
+ * for H/W dimension, defaults to [1,1].
  * @li pads: A tuple or list of 4 integers. The [top, bottom, left, right]
- * padding on the feature map.
+ * padding on the feature map, defaults to [0,0,0,0].
  * @li dilations: A tuple or list of 4 integers. The dilation factor for each
  * dimension of input, defaults to [1,1,1,1].
  * @li groups: Number of blocked connections from input channels to
@@ -482,8 +479,8 @@ REG_OP(Deconvolution)
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
-    .REQUIRED_ATTR(strides, ListInt)
-    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(strides, ListInt, {1, 1})
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NCHW")
@@ -593,7 +590,7 @@ REG_OP(Conv2DBackpropFilterD)
 
 *@li bias: An optional 1D tensor. Shape is [out_channels].
 *@li offset_w: An optional 1D tensor for quantized convolution. Shape is
-* [out_channels]. Reserved.
+* [out_channels]. Not supported.
 *\n
 *\n
 * Note that there is a strict data type mapping between the input and output
@@ -622,7 +619,8 @@ REG_OP(Conv2DBackpropFilterD)
 * and right padding.
 * @li dilations: Optional. A list of 4 integers. Specifying the dilation rate
 * to use for dilated convolution. Has the same dimension order and value as
-* "strides". Defaults to [1, 1, 1, 1].
+* "strides". Dilation > 1 is not supported for quantized convolution. Defaults
+* to [1, 1, 1, 1].
 * @li groups: Optional. An integer of type int32, for the number of blocked
 * connections from input channels to output channels. Input channels and output
 * channels must both be divisible by "groups". "x" in_channels must be equal to
@@ -704,13 +702,62 @@ REG_OP(Conv2D)
     .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(Conv2D)
 
+/**
+*@brief Computes a 2D convolution given 4D "x" and "filter_compress" tensors.
+*@par Inputs:
+* @li x: A 4D tensor of input images.
+* @li filter_compress: A 4D tensor of compressed filters.
+* @li compress_index: A 1D Tensor dtype of int8.
+* @li bias: An optional 1D tensor.
+* @li offset_w: An optional 1D tensor for quantized convolution. Reserved.
+*
+* The input and output tensor attributes are listed as follows:
+* @verbatim
+    |Tensor    | x       | filter_compress  | bias    | offset_w | y
+    -----------|---------|---------|---------|----------|--------
+    |Data Type | float16 | float16 | float16 | _        | float16
+    |          |---------|---------|---------|----------|--------
+    |          | float32 | float32 | float32 | _        | float32
+    |          |---------|---------|---------|----------|--------
+    |          | int8    | int8    | int32   | int8     | int32
+    -----------|---------|---------|---------|----------|--------
+    |Format    | NCHW    | NCHW    | ND      | ND       | NCHW
+    |          | NHWC    | NHWC    |         |          | NHWC
+    |          |         | HWCN    |         |          |
+@endverbatim
+* It should be noted that the data types must correspond to each other, but the
+* format does not need to . \n
+
+*@par Attributes:
+* @li strides: A list of 4 integers. Specifying the strides of the
+* convolution along the height and width. The dimension order is determined
+* by the data format of "x". By default the N and C dimensions are set to 1.
+* @li pads: A list of 4 integers. Specifying the top, bottom, left and right
+* padding.
+* @li dilations: A list of 4 integers. Specifying the dilation rate to use
+* for dilated convolution. Has the same dimension order and value as "strides".
+* @li groups: Number of blocked connections from input channels to output
+* channels. Input channels and output channels must both be divisible by
+* "groups".Type is int32.
+* @li offset_x: An optional integer for quantized convolution. Type is int32.
+* Defaults to "0".
+* @li data_format: An optional string from: "NHWC", "NCHW". Specifying the
+* data format of the input and output images. Type is string.
+* Defaults to "NHWC". Reserved . \n
+
+*@par Outputs:
+* @li y: A 4D Tensor of output images . \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED.
+*/
 REG_OP(Conv2DCompress)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .INPUT(filter_compress, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(filter_compress, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
     .INPUT(compress_index, TensorType({DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})

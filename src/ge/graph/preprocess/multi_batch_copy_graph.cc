@@ -41,7 +41,6 @@
 #include "inc/pass_manager.h"
 #include "graph/common/local_context.h"
 
-using std::map;
 using std::set;
 using std::string;
 using std::vector;
@@ -266,24 +265,27 @@ Status MultiBatchGraphCopyer::Init() {
 }
 
 Status MultiBatchGraphCopyer::LabelStatus() {
-  map<string, vector<NodePtr>> frame_enters;
-  InitStatus(frame_enters);
-
+  for (const auto &data : origin_data_nodes_) {
+    auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
+    if (!IsAllDimsPositive(data_shape.GetDims())) {
+      origin_nodes_status_[data.get()] = kNodeInBatchBranch;
+    }
+  }
   bool changed = true;
   // If anyone of in node is kNodeInBatchBranch, it is also kNodeInBatchBranch
   while (changed) {
     changed = false;
     for (const auto &node : origin_all_nodes_) {
+      auto iter = origin_nodes_status_.find(node.get());
+      if (iter != origin_nodes_status_.end()) {
+        continue;
+      }
       for (auto &in_node : node->GetInAllNodes()) {
         bool is_in_batch = origin_nodes_status_.find(in_node.get()) != origin_nodes_status_.end() &&
                            origin_nodes_status_[in_node.get()] == kNodeInBatchBranch;
         if (is_in_batch) {
-          if (origin_nodes_status_.find(node.get()) == origin_nodes_status_.end() ||
-              origin_nodes_status_[node.get()] != kNodeInBatchBranch) {
-            origin_nodes_status_[node.get()] = kNodeInBatchBranch;
-            ResetEnterStatus(frame_enters, node);
-            changed = true;
-          }
+          origin_nodes_status_[node.get()] = kNodeInBatchBranch;
+          changed = true;
           break;
         }
       }
@@ -312,45 +314,6 @@ Status MultiBatchGraphCopyer::LabelStatus() {
     }
   }
   return SUCCESS;
-}
-
-void MultiBatchGraphCopyer::InitStatus(map<string, vector<NodePtr>> &frame_enters) {
-  for (const auto &node : origin_all_nodes_) {
-    if (node->GetType() != ENTER && node->GetType() != REFENTER) {
-      continue;
-    }
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      continue;
-    }
-    string frame_name;
-    if (AttrUtils::GetStr(op_desc, ENTER_ATTR_FRAME_NAME, frame_name)) {
-      frame_enters[frame_name].emplace_back(node);
-    }
-  }
-
-  for (const auto &data : origin_data_nodes_) {
-    auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
-    if (!IsAllDimsPositive(data_shape.GetDims())) {
-      origin_nodes_status_[data.get()] = kNodeInBatchBranch;
-    }
-  }
-}
-
-void MultiBatchGraphCopyer::ResetEnterStatus(map<string, vector<NodePtr>> &frame_enters, const NodePtr &node) {
-  if (node->GetType() != ENTER && node->GetType() != REFENTER) {
-    return;
-  }
-
-  for (const auto &frame_enter : frame_enters) {
-    auto &enters = frame_enter.second;
-    if (std::find(enters.begin(), enters.end(), node) != enters.end()) {
-      for (const auto &enter : enters) {
-        origin_nodes_status_[enter.get()] = kNodeInBatchBranch;
-      }
-      break;
-    }
-  }
 }
 
 Status MultiBatchGraphCopyer::CreateNewNodes() {
@@ -1200,7 +1163,7 @@ void GetDynamicShapeByMerge(const ComputeGraphPtr &graph, const NodePtr &node, s
   }
 }
 
-// Connect NetOutput directly: DTS2020070612498
+// Connect NetOutput directly
 void GetDirectOutputShape(const ComputeGraphPtr &graph, const NodePtr &node, const set<size_t> &dynamic_output_index,
                           vector<string> &dynamic_output_dims) {
   GELOGD("Try get directly shape info, Graph: %s, Node: %s", graph->GetName().c_str(), node->GetName().c_str());

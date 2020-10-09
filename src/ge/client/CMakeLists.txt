@@ -68,5 +68,7 @@ target_link_libraries(ge_client
         ${mmpa}
         ${runtime}
         ${msprof}
+        ${msprofiler}
+        ${ascend_hal}
         rt
         dl)

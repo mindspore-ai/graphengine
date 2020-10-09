@@ -1928,13 +1928,7 @@ Status DavinciModel::SinkModelProfile() {
     name = name_;
   }
   size_t name_len = name.size();
-  // phy device id
-  uint32_t phy_device_id = 0;
-  rtError_t rt_ret = rtGetDevicePhyIdByIndex(device_id_, &phy_device_id);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-                  return FAILED);
-  reporter_data.deviceId = phy_device_id;
+  reporter_data.deviceId = device_id_;
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
   GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
@@ -2103,12 +2097,7 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
                    return FAILED, "Sink model tag memcpy error.");
   // device id
-  uint32_t phy_device_id = 0;
-  rtError_t rt_ret = rtGetDevicePhyIdByIndex(device_id_, &phy_device_id);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-                  return FAILED);
-  reporter_data.deviceId = phy_device_id;
+  reporter_data.deviceId = device_id_;
 
   // Model Header
   string name;

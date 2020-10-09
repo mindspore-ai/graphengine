@@ -34,8 +34,11 @@ class TransVarDataUtils {
   static ge::Status SyncBroadCastData2Var(uint8_t *src_addr, int64_t src_addr_size, const string &var_name,
                                           const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id_);
 
-  static ge::Status TransAllVarData(const std::vector<NodePtr> &variable_nodes, uint64_t session_id,
-                                    rtContext_t context, uint32_t graph_id, uint32_t thread_num = 16);
+  static ge::Status TransAllVarData(const std::vector<NodePtr> &variable_nodes,
+                                    uint64_t session_id,
+                                    rtContext_t context,
+                                    uint32_t graph_id,
+                                    uint32_t thread_num = 16);
 
   static ge::Status CopyVarData(const ComputeGraphPtr &compute_graph, uint64_t session_id, uint32_t device_id);
 

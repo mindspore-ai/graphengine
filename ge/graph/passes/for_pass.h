@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef GE_GRAPH_PASSES_FOR_PASS_H
 #define GE_GRAPH_PASSES_FOR_PASS_H
 
@@ -35,16 +34,8 @@ struct ForInfo {
 
 struct WhileInfo {
   WhileInfo()
-      : while_node(nullptr),
-        sub_graph_node(nullptr),
-        i(nullptr),
-        abs_delta(nullptr),
-        range(nullptr),
-        start(nullptr),
-        delta(nullptr),
-        for_body(nullptr),
-        while_cond(nullptr),
-        while_body(nullptr) {}
+      : while_node(nullptr), sub_graph_node(nullptr), i(nullptr), abs_delta(nullptr), range(nullptr),
+        start(nullptr), delta(nullptr), for_body(nullptr), while_cond(nullptr), while_body(nullptr) {}
   ge::NodePtr while_node;
   ge::NodePtr sub_graph_node;
   ge::OutDataAnchorPtr i;
@@ -196,4 +187,4 @@ class ForPass : public BaseNodePass {
   static OpDescPtr CreateSubgraphOpDesc(const std::string &name, uint32_t input_num, uint32_t output_num);
 };
 }  // namespace ge
-#endif  // GE_GRAPH_PASSES_FOR_PASS_H
+#endif //GE_GRAPH_PASSES_FOR_PASS_H

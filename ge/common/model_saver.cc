@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   // Write data to file
   mmSsize_t mmpa_ret = mmWrite(fd, const_cast<void *>((const void *)model_char), len);
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19004", {"file", "errmsg"}, {file_path, strerror(errno)});
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19004", {"file", "errmsg"}, {file_path, strerror(errno)});
     // Need to both print the error info of mmWrite and mmClose, so return ret after mmClose
     GELOGE(FAILED, "Write to file failed. errno = %d, %s", mmpa_ret, strerror(errno));
     ret = FAILED;

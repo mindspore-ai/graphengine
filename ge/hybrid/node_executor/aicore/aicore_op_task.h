@@ -44,7 +44,7 @@ class AiCoreOpTask {
 
   Status LaunchKernel(rtStream_t stream);
 
-  const std::string &GetName() const;
+  const std::string& GetName() const;
 
  protected:
   Status UpdateTilingInfo(TaskContext &context);
@@ -84,4 +84,4 @@ class AtomicAddrCleanOpTask : public AiCoreOpTask {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_KERNEL_AICORE_OP_TASK_H_
+#endif //GE_HYBRID_KERNEL_AICORE_OP_TASK_H_

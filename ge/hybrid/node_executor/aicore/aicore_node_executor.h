@@ -36,7 +36,6 @@ class AiCoreNodeTaskRegistry {
 
   std::shared_ptr<NodeTask> GetTask(const std::string &node_key);
   bool AddTask(const std::string &node_key, const std::shared_ptr<NodeTask> task);
-
  private:
   AiCoreNodeTaskRegistry() = default;
   std::map<std::string, std::shared_ptr<NodeTask>> reg_node_tasks_;
@@ -52,7 +51,6 @@ class AiCoreNodeTask : public NodeTask {
 
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
-
  private:
   std::vector<std::unique_ptr<AiCoreOpTask>> tasks_;
 };
@@ -61,7 +59,8 @@ class AiCoreNodeExecutor : public NodeExecutor {
  public:
   Status Initialize() override;
   Status LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const override;
-  Status CompileTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const override;
+  Status CompileTask(const HybridModel &model, const NodePtr &node,
+                     std::shared_ptr<NodeTask> &task) const override;
 
  private:
   static Status GenNodeKey(const NodePtr &node, std::string &node_key);
@@ -69,4 +68,4 @@ class AiCoreNodeExecutor : public NodeExecutor {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_KERNEL_AICORE_NODE_EXECUTOR_H_
+#endif //GE_HYBRID_KERNEL_AICORE_NODE_EXECUTOR_H_

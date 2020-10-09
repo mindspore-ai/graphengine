@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "inc/kernel_factory.h"
 #include "omg/omg_inner_types.h"
+#include "framework/common/types.h"
 
 namespace {
 const size_t kRankInputSize = 1;

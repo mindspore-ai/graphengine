@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,22 +33,22 @@ class EndOfSequenceAddControlPass : public GraphPass {
 
  private:
   /**
-   * Get EndOfSequence node in graph, nullptr if not exist.
-   * @param graph
-   * @return EndOfSequence node
-   */
+  * Get EndOfSequence node in graph, nullptr if not exist.
+  * @param graph
+  * @return EndOfSequence node
+  */
   inline NodePtr GetEndOfSequence(const ComputeGraphPtr &graph) const;
   /**
-   * Check whether this node is a data-like node.
-   * @param node
-   * @return
-   */
+  * Check whether this node is a data-like node.
+  * @param node
+  * @return
+  */
   bool IsDataLikeNode(const NodePtr &node);
   /**
-   * Check whether this node is a data-like node.
-   * @param node
-   * @return
-   */
+  * Check whether this node is a data-like node.
+  * @param node
+  * @return
+  */
   Status AddControlEdge(NodePtr &end_of_sequence, std::vector<NodePtr> &target_nodes);
 };
 }  // namespace ge

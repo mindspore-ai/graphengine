@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,10 @@ class GraphPrepare {
   virtual ~GraphPrepare();
   GraphPrepare(const GraphPrepare &in) = delete;
   GraphPrepare &operator=(const GraphPrepare &in) = delete;
-  Status PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
-                         ge::ComputeGraphPtr &compute_graph, uint64_t session_id = 0);
+  Status PrepareDynShape(ConstGraphPtr graph,
+                         const std::vector<GeTensor> &user_input,
+                         ge::ComputeGraphPtr &compute_graph,
+                         uint64_t session_id = 0);
   Status RecordAIPPInfo(ge::ComputeGraphPtr &compute_graph);
   Status PrepareRunningFormatRefiner();
   void SetOptions(const GraphManagerOptions &options);
@@ -56,7 +58,8 @@ class GraphPrepare {
  private:
   Status Init(const ge::Graph &graph, uint64_t session_id = 0);
   Status CheckGraph();
-  Status CheckRefInputNode(const NodePtr &node, const std::string &input_name, const std::set<NodePtr> &ref_nodes);
+  Status CheckRefInputNode(const NodePtr &node, const std::string &input_name,
+                           const std::set<NodePtr> &ref_nodes);
   Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,8 @@ std::string OpTilingManager::GetPath() {
   if (opp_path_env != nullptr) {
     char resolved_path[PATH_MAX];
     if (realpath(opp_path_env, resolved_path) == NULL) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E19024", {"env", "value", "situation"},
-                                                      {"ASCEND_OPP_PATH", opp_path_env, "loading the tiling lib"});
+      ErrorManager::GetInstance().ATCReportErrMessage(
+          "E19024", {"env", "value", "situation"}, {"ASCEND_OPP_PATH", opp_path_env, "loading the tiling lib"});
       GELOGE(PARAM_INVALID, "Failed load tiling lib as env 'ASCEND_OPP_PATH'[%s] is invalid path.", opp_path_env);
       return std::string();
     }

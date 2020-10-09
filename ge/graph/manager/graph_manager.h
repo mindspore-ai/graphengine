@@ -103,6 +103,7 @@ class GraphManager {
   ge::Status BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs, GeRootModelPtr &models,
                         uint64_t session_id = 0, bool async = false);
 
+
   Status BuildGraphForUnregisteredOp(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                                      GeRootModelPtr &ge_root_model, uint64_t session_id);
 
@@ -137,8 +138,8 @@ class GraphManager {
   /// @param [out] callback: callback while run graph async finish
   /// @return Status result of function
   ///
-  Status RunGraphAsync(const GraphId &graph_id, const std::vector<ge::InputTensorInfo> &inputs, uint64_t session_id,
-                       RunAsyncCallback callback);
+  Status RunGraphAsync(const GraphId &graph_id, const std::vector<ge::InputTensorInfo> &inputs,
+                       uint64_t session_id, RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph
@@ -148,7 +149,8 @@ class GraphManager {
   /// @return Status result of function
   ///
   Status RegisterCallBackFunc(
-    const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+      const std::string &key,
+      const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
   const bool GetTrainFlag() const { return options_.train_graph_flag; }
 
@@ -196,8 +198,8 @@ class GraphManager {
 
   Status OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, uint64_t session_id);
 
-  Status Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph, GeRootModelPtr &ge_root_model,
-               uint64_t session_id);
+  Status Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph,
+               GeRootModelPtr &ge_root_model, uint64_t session_id);
 
   Status StartForRunGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
                           GeRootModelPtr &ge_root_model, uint64_t session_id = INVALID_SESSION_ID);
@@ -302,27 +304,33 @@ class GraphManager {
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);
   static void ReturnError(GraphManager *graph_manager, RunAsyncCallback callback, Status ret, const string &log);
-  static void ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback, Status ret,
-                          const string &log);
+  static void ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback,
+                          Status ret, const string &log);
 
   void ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph);
 
   Status PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
                                      ge::ComputeGraphPtr &compute_graph, uint64_t session_id);
-  Status PreRunOptimizeSubGraph(const GraphNodePtr &graph_node, ge::ComputeGraphPtr &compute_graph,
+  Status PreRunOptimizeSubGraph(const GraphNodePtr &graph_node,
+                                ge::ComputeGraphPtr &compute_graph,
                                 uint64_t session_id);
-  Status PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph,
-                                     GeRootModelPtr &ge_root_model, uint64_t session_id);
+  Status PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
+                                     ComputeGraphPtr &compute_graph,
+                                     GeRootModelPtr &ge_root_model,
+                                     uint64_t session_id);
 
-  Status CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_graph, Graph2SubGraphInfoList &sub_graph_map,
+  Status CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_graph,
+                                   Graph2SubGraphInfoList &sub_graph_map,
                                    std::unordered_map<std::string, ComputeGraphPtr> &copy_graphs);
 
-  Status OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph, Graph2SubGraphInfoList &sub_graph_map,
+  Status OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph,
+                                          Graph2SubGraphInfoList &sub_graph_map,
                                           uint64_t session_id);
 
   bool CheckAllFusionOptimizeSuccess(const ComputeGraphPtr &compute_graph, Graph2SubGraphInfoList &sub_graph_map);
 
-  Status ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_graph, Graph2SubGraphInfoList &sub_graph_map,
+  Status ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_graph,
+                                     Graph2SubGraphInfoList &sub_graph_map,
                                      std::unordered_map<std::string, ComputeGraphPtr> &copy_graphs);
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint64_t session_id, uint32_t graph_id);
 

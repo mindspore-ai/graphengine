@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,12 +118,13 @@
 #include "graph/passes/variable_prepare_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
 
+
 namespace ge {
 namespace {
 static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
-  {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},    {"INT16", ge::DT_INT16},
-  {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
-  {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
+    {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},    {"INT16", ge::DT_INT16},
+    {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
+    {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
 
@@ -159,9 +160,9 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
     }
 
     GE_IF_BOOL_EXEC(
-      tensor->SetData(reinterpret_cast<const uint8_t *>(dst_shape.get()), dim_cnt * sizeof(int32_t)) != GRAPH_SUCCESS,
-      GELOGE(INTERNAL_ERROR, "tensor set data failed");
-      return nullptr;)
+        tensor->SetData(reinterpret_cast<const uint8_t *>(dst_shape.get()), dim_cnt * sizeof(int32_t)) != GRAPH_SUCCESS,
+        GELOGE(INTERNAL_ERROR, "tensor set data failed");
+        return nullptr;)
   }
 
   GELOGD("Create shape input dim [%s]", dst_ge_shape.ToString().c_str());
@@ -173,11 +174,11 @@ void AddTransNodeAttr(const std::string &node_type, const GeTensorDesc &input, c
   // For format transfer node, the IR definition has src/dst format attrs
   if (node_type == TRANSDATA) {
     GE_IF_BOOL_EXEC(
-      !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_SRC_FORMAT, TypeUtils::FormatToSerialString(input.GetFormat())),
-      GELOGW("SetStr FORMAT_TRANSFER_SRC_FORMAT failed");)
+        !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_SRC_FORMAT, TypeUtils::FormatToSerialString(input.GetFormat())),
+        GELOGW("SetStr FORMAT_TRANSFER_SRC_FORMAT failed");)
     GE_IF_BOOL_EXEC(
-      !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_DST_FORMAT, TypeUtils::FormatToSerialString(output.GetFormat())),
-      GELOGW("SetStr FORMAT_TRANSFER_DST_FORMAT failed");)
+        !AttrUtils::SetStr(op_desc, FORMAT_TRANSFER_DST_FORMAT, TypeUtils::FormatToSerialString(output.GetFormat())),
+        GELOGW("SetStr FORMAT_TRANSFER_DST_FORMAT failed");)
   }
 
   // For TransposeD node, the IR definition has perm attrs
@@ -228,8 +229,8 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
 
   // for data dump
   GE_IF_BOOL_EXEC(
-    !AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
-    GELOGW("CreateTransNode: SetListStr failed");)
+      !AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, std::move(std::vector<std::string>())),
+      GELOGW("CreateTransNode: SetListStr failed");)
 
   // Default single input and single output
   auto ret = op_desc->AddInputDesc(input);
@@ -554,12 +555,11 @@ Status ModifyDataNetOutputFormatAndShape(OpDescPtr &op_desc, uint32_t index, For
     ge::TensorUtils::SetSize(*input, size);
     ge::TensorUtils::SetSize(*output, size);
 
-    GELOGI(
-      "Modify Data NetOutput format and shape success, node:%s, index:%d, old_shape:%s, old_Format:%s, "
-      "new_shape:%s, new_format:%s, new_size:%lu",
-      op_desc->GetName().c_str(), index, formats::JoinToString(old_shape).c_str(),
-      ge::TypeUtils::FormatToSerialString(old_format).c_str(), formats::JoinToString(dst_shape_dims).c_str(),
-      ge::TypeUtils::FormatToSerialString(storage_format).c_str(), size);
+    GELOGI("Modify Data NetOutput format and shape success, node:%s, index:%d, old_shape:%s, old_Format:%s, "
+           "new_shape:%s, new_format:%s, new_size:%lu",
+           op_desc->GetName().c_str(), index, formats::JoinToString(old_shape).c_str(),
+           ge::TypeUtils::FormatToSerialString(old_format).c_str(), formats::JoinToString(dst_shape_dims).c_str(),
+           ge::TypeUtils::FormatToSerialString(storage_format).c_str(), size);
   }
 
   return SUCCESS;
@@ -742,8 +742,8 @@ Status ProcessDataNodeDynShape(NodePtr &node_ptr) {
   return SUCCESS;
 }
 
-Status GetStorageFormatAndShape(OpDescPtr &op_desc, const GeTensorDescPtr &tensor_desc_ptr, Format &storage_format,
-                                vector<int64_t> &dst_shape_dims) {
+Status GetStorageFormatAndShape(OpDescPtr &op_desc, const GeTensorDescPtr &tensor_desc_ptr,
+                                Format &storage_format, vector<int64_t> &dst_shape_dims) {
   GE_CHECK_NOTNULL(op_desc);
   GE_CHECK_NOTNULL(tensor_desc_ptr);
 
@@ -761,8 +761,7 @@ Status GetStorageFormatAndShape(OpDescPtr &op_desc, const GeTensorDescPtr &tenso
              op_desc->GetName().c_str(), TypeUtils::FormatToSerialString(storage_format).c_str(),
              formats::JoinToString(storage_shape).c_str());
     } else {
-      GELOGE(PARAM_INVALID,
-             "Update node by storage format failed, storage_shape not set. "
+      GELOGE(PARAM_INVALID, "Update node by storage format failed, storage_shape not set. "
              "node: [%s], storage_format [%s]",
              op_desc->GetName().c_str(), TypeUtils::FormatToSerialString(storage_format).c_str());
       return FAILED;
@@ -1066,7 +1065,7 @@ Status GraphPrepare::CheckRefOp() {
           GELOGE(PARAM_INVALID, "CheckRefInputNode failed.");
           return PARAM_INVALID;
         }
-        (void)ref_nodes.insert(node);  // no need to check value
+        (void)ref_nodes.insert(node); // no need to check value
       }
     }
   }
@@ -1099,8 +1098,8 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
   int64_t tensor_size = 0;
   graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(output, tensor_size);
   if (graph_status != GRAPH_SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
-                                                    {"GetTensorMemorySizeInBytes", "opname is " + node->GetName()});
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19012", {"function", "reason"}, {"GetTensorMemorySizeInBytes", "opname is " + node->GetName()});
     GELOGE(graph_status, "GetTensorMemorySizeInBytes failed!");
     return FAILED;
   }

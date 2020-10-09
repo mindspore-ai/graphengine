@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,8 +54,9 @@ class KernelExTaskInfo : public TaskInfo {
     auto ret = reinterpret_cast<uintptr_t>(dump_args_);
     return ret;
   }
-  bool CallSaveDumpInfo() override { return true; };
-
+  bool CallSaveDumpInfo() override {
+    return true;
+  };
  private:
   Status CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param, const OpDescPtr &op_desc);
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ class VarMemAssignUtil {
   static Status AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_graph);
   static Status AssignVarAttr2Nodes(ge::ComputeGraphPtr &compute_graph);
   static Status AssignMemory2HasRefAttrNode(ge::ComputeGraphPtr &compute_graph);
+  static Status AssignData2Fp32Var(const ge::NodePtr &node, uint64_t session_id);
 
  private:
   static Status AssignMemory2VariableNode(ge::ComputeGraphPtr &compute_graph);
@@ -40,7 +41,6 @@ class VarMemAssignUtil {
 
   static Status DealBroadCastNode(uint32_t graph_id, const ge::NodePtr &node, const ge::InDataAnchorPtr &in_data_anchor,
                                   const ge::NodePtr &var_node, uint64_t session_id);
-  static Status AssignData2Fp32Var(const ge::NodePtr &node, uint64_t session_id);
 
   static ge::NodePtr GetFinalTransNode(const ge::NodePtr &ref_node);
 

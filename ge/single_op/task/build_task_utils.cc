@@ -29,7 +29,7 @@ const uint64_t kSessionId = UINT64_MAX;
 uint8_t *kVarBase = nullptr;
 const uint64_t kLogicVarBase = 0;
 const uint64_t kVarSize = 0;
-}  // namespace
+}
 
 std::vector<std::vector<void *>> BuildTaskUtils::GetAddresses(const OpDescPtr &op_desc,
                                                               const SingleOpModelParam &param) {
@@ -60,7 +60,8 @@ std::vector<void *> BuildTaskUtils::JoinAddresses(const std::vector<std::vector<
   return ret;
 }
 
-std::vector<void *> BuildTaskUtils::GetKernelArgs(const OpDescPtr &op_desc, const SingleOpModelParam &param) {
+std::vector<void *> BuildTaskUtils::GetKernelArgs(const OpDescPtr &op_desc,
+                                                  const SingleOpModelParam &param) {
   auto addresses = GetAddresses(op_desc, param);
   return JoinAddresses(addresses);
 }
@@ -75,8 +76,11 @@ std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
     // Conv2D IN[DT_FLOAT16 NC1HWC0[256, 128, 7, 7, 16],DT_FLOAT16 FRACTAL_Z[128, 32, 16, 16]]
     // OUT[DT_FLOAT16 NC1HWC0[256, 32, 7, 7, 16]]
     ss << op_type << " IN[";
-    for (uint32_t idx = 0; idx < op_desc->GetInputsSize(); idx++) {
+    for (uint32_t idx = 0; idx < op_desc->GetAllInputsSize(); idx++) {
       const GeTensorDescPtr &input = op_desc->MutableInputDesc(idx);
+      if (input == nullptr) {
+        continue;
+      }
       ss << TypeUtils::DataTypeToSerialString(input->GetDataType()) << " ";
       ss << TypeUtils::FormatToSerialString(input->GetFormat());
       ss << VectorToString(input->GetShape().GetDims());

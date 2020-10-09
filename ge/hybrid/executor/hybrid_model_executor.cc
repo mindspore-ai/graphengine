@@ -23,13 +23,14 @@ namespace hybrid {
 namespace {
 const int kIntBase = 10;
 const char *const kEnvProfilingLevel = "HYBRID_PROFILING_LEVEL";
-}  // namespace
+} // namespace
 HybridModelExecutor::HybridModelExecutor(HybridModel *model, uint32_t device_id, rtStream_t stream)
-    : model_(model), device_id_(device_id), stream_(stream) {}
+    : model_(model), device_id_(device_id), stream_(stream) {
+}
 
 HybridModelExecutor::~HybridModelExecutor() {
   if (context_.rt_gen_context != nullptr) {
-    (void)rtCtxDestroy(context_.rt_gen_context);
+    (void) rtCtxDestroy(context_.rt_gen_context);
   }
 }
 
@@ -61,7 +62,8 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   return SUCCESS;
 }
 
-Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor, HybridModelExecutor::ExecuteArgs &args) {
+Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
+                                                 HybridModelExecutor::ExecuteArgs &args) {
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] Start");
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
@@ -96,15 +98,15 @@ Status HybridModelExecutor::InitExecutionContext() {
   GELOGD("session id from model = %lu, from context = %lu", model_->GetSessionId(), context_.session_id);
   context_.allocator = NpuMemoryAllocator::GetAllocator(device_id_);
   GE_CHECK_NOTNULL(context_.allocator);
-  context_.callback_manager = std::unique_ptr<CallbackManager>(new (std::nothrow) CallbackManager(stream_));
+  context_.callback_manager = std::unique_ptr<CallbackManager>(new(std::nothrow)CallbackManager(stream_));
   GE_CHECK_NOTNULL(context_.callback_manager);
   context_.dump_properties = PropertiesManager::Instance().GetDumpProperties(context_.session_id);
   const char *profiling_level = std::getenv(kEnvProfilingLevel);
   if (profiling_level != nullptr) {
     context_.profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
-    GELOGD("Got profiling level = %d", context_.profiling_level);
+    GELOGD("Got profiling level = %ld", context_.profiling_level);
     if (context_.profiling_level > 0) {
-      context_.profiler.reset(new (std::nothrow) HybridProfiler());
+      context_.profiler.reset(new(std::nothrow)HybridProfiler());
       GE_CHECK_NOTNULL(context_.profiler);
     }
   }

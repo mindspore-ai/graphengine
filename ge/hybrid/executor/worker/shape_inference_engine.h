@@ -44,4 +44,4 @@ class ShapeInferenceEngine {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_EXECUTOR_INFERSHAPE_SHAPE_INFERENCE_ENGINE_H_
+#endif // GE_HYBRID_EXECUTOR_INFERSHAPE_SHAPE_INFERENCE_ENGINE_H_

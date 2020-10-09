@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,13 +95,13 @@ Status HostCpuOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
     GeShape output_shape = output_tensor.GetShape();
     if ((TensorUtils::CalcTensorMemSize(output_shape, format, data_type, output_mem_size) != GRAPH_SUCCESS) ||
         (output_mem_size < 0)) {
-      GELOGE(FAILED, "Calc op[%s:%s] out[%zu] mem size failed, mem_size=%ld, format=%s, data_type=%s.", name.c_str(),
-             type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+      GELOGE(FAILED, "Calc op[%s:%s] out[%zu] mem size failed, mem_size=%ld, format=%s, data_type=%s.",
+             name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
              TypeUtils::DataTypeToSerialString(data_type).c_str());
       return FAILED;
     }
-    GELOGI("Calc op[%s:%s] out[%zu] mem size is %ld, format=%s, data_type=%s.", name.c_str(), type.c_str(), i,
-           output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+    GELOGI("Calc op[%s:%s] out[%zu] mem size is %ld, format=%s, data_type=%s.",
+           name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
            TypeUtils::DataTypeToSerialString(data_type).c_str());
 
     TensorUtils::SetSize(output_tensor, output_mem_size);

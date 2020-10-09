@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,8 +73,8 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
   bool is_shape_unknown = false;
   if (NodeUtils::GetNodeUnknownShapeStatus(ge_node, is_shape_unknown) == GRAPH_SUCCESS) {
     if (is_shape_unknown) {
-      GELOGI("op:%s is unknown shape, does not need to calc output size.", ge_node.GetName().c_str());
-      return SUCCESS;
+        GELOGI("op:%s is unknown shape, does not need to calc output size.", ge_node.GetName().c_str());
+        return SUCCESS;
     }
   }
 
@@ -126,10 +126,10 @@ Status GeLocalOpsKernelInfoStore::CalcOpRunningParam(Node &ge_node) {
       return FAILED;
     }
     GELOGI(
-      "Calc op[%s:%s] out[%zu] mem size is %ld,"
-      " format=%s, data_type=%s.",
-      node_name.c_str(), node_type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
-      TypeUtils::DataTypeToSerialString(data_type).c_str());
+        "Calc op[%s:%s] out[%zu] mem size is %ld,"
+        " format=%s, data_type=%s.",
+        node_name.c_str(), node_type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+        TypeUtils::DataTypeToSerialString(data_type).c_str());
 
     TensorUtils::SetSize(output_tensor, output_mem_size);
 
@@ -170,8 +170,9 @@ Status GeLocalOpsKernelInfoStore::GenerateTask(const Node &node, RunContext &con
   bool is_shape_unknown = false;
   if (NodeUtils::GetNodeUnknownShapeStatus(node, is_shape_unknown) == GRAPH_SUCCESS) {
     if (is_shape_unknown) {
-      GELOGI("op:%s is unknown shape, does not need to generate task", node.GetName().c_str());
-      return SUCCESS;
+        GELOGI("op:%s is unknown shape, does not need to generate task",
+               node.GetName().c_str());
+        return SUCCESS;
     }
   }
   string name = node.GetName();

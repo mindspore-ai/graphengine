@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ namespace ge {
 ///  in order to make the global step variable place in known subgraph
 ///
 class GlobalStepInsertPass : public GraphPass {
- public:
+public:
   ///
   /// @param compute_graph graph
   /// @return SUCCESS: do success
@@ -38,8 +38,7 @@ class GlobalStepInsertPass : public GraphPass {
   ///         Other: failed
   ///
   Status Run(ComputeGraphPtr compute_graph) override;
-
- private:
+private:
   ///
   /// Universal insert node to graph.
   /// @param compute_graph graph
@@ -49,9 +48,12 @@ class GlobalStepInsertPass : public GraphPass {
   /// @param output_list output desc list
   /// @return the inserted node. if insert failed return nullptr.
   ///
-  NodePtr InsertOp(ComputeGraphPtr &compute_graph, const string &node_type, const string &node_name,
-                   const std::vector<GeTensorDesc> &input_list, const std::vector<GeTensorDesc> &output_list);
+  NodePtr InsertOp(ComputeGraphPtr &compute_graph,
+                   const string &node_type,
+                   const string &node_name,
+                   const std::vector<GeTensorDesc> &input_list,
+                   const std::vector<GeTensorDesc> &output_list);
 };
-}  // namespace ge
+} // namespace ge
 
 #endif  // GE_GRAPH_PASSES_GLOBAL_STEP_INSERT_PASS_H_

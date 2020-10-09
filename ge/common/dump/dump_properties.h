@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ class DumpProperties {
 
   const std::string &GetDumpStatus() const;
 
-  void SetDumpOpSwitch(const std::string &dump_op_switch);
+  void SetDumpOpSwitch(const std::string dump_op_switch);
 
   const std::string &GetDumpOpSwitch() const;
 
@@ -77,9 +77,9 @@ class DumpProperties {
 
   uint32_t GetOpDebugMode() const { return op_debug_mode_; }
 
-  const std::string &GetEnableDump() const { return enable_dump_; }
+  const std::string &GetEnableDump() const {return enable_dump_;}
 
-  const std::string &GetEnableDumpDebug() const { return enable_dump_debug_; }
+  const std::string &GetEnableDumpDebug() const {return enable_dump_debug_;}
 
  private:
   void CopyFrom(const DumpProperties &other);
@@ -99,6 +99,6 @@ class DumpProperties {
   bool is_op_debug_ = false;
   uint32_t op_debug_mode_ = 0;
 };
-}  // namespace ge
+}
 
-#endif  // GE_COMMON_DUMP_DUMP_PROPERTIES_H_
+#endif //GE_COMMON_DUMP_DUMP_PROPERTIES_H_

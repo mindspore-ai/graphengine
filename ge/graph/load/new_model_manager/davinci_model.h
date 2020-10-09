@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,12 @@ struct timeInfo {
   int64_t inferenceEndTime;
   int64_t dumpBeginTime;
   int64_t dumpEndTime;
+};
+
+enum ExecuteMode {
+  INITIALIZATION,
+  SYNCHRONIZATION,
+  ASYNCHRONIZATION,
 };
 
 // comments
@@ -314,6 +320,8 @@ class DavinciModel {
   ///
   Status GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info);
 
+  Status GetAippType(uint32_t index, InputAippType &type, size_t &aipp_index);
+
   ///
   /// @ingroup ge
   /// @brief Get model_id.
@@ -440,7 +448,9 @@ class DavinciModel {
 
   DavinciModel(const DavinciModel &model) = delete;
 
-  const map<int64_t, std::vector<rtStream_t>> &GetHcclFolowStream() { return main_follow_stream_mapping_; }
+  const map<int64_t, std::vector<rtStream_t>> &GetHcclFolowStream() {
+    return main_follow_stream_mapping_;
+  }
   void SaveHcclFollowStream(int64_t main_stream_id, rtStream_t stream);
 
   void InitRuntimeParams();
@@ -657,6 +667,22 @@ class DavinciModel {
 
   ///
   /// @ingroup ge
+  /// @brief input zero copy node Initialize for Case.
+  /// @param [in] NodePtr: Data Op.
+  /// @return Status
+  ///
+  Status InitInputBatchLabel(const NodePtr &node);
+
+  ///
+  /// @ingroup ge
+  /// @brief output zero copy node Initialize for Case.
+  /// @param [in] NodePtr: netoutput Op.
+  /// @return Status
+  ///
+  Status InitOutputBatchLabel(const NodePtr &node);
+
+  ///
+  /// @ingroup ge
   /// @brief Constant Op Init.
   /// @return Status
   ///
@@ -837,7 +863,7 @@ class DavinciModel {
   std::map<const void *, ZeroCopyOffset> new_input_outside_addrs_;
   std::map<const void *, ZeroCopyOffset> new_output_outside_addrs_;
 
-  std::vector<void *> real_virtual_addrs_;
+  std::set<const void *> real_virtual_addrs_;
 
   // output op: save cce op actual needed memory size
   vector<int64_t> output_memory_size_list_;
@@ -884,7 +910,7 @@ class DavinciModel {
   bool is_inner_model_stream_;
 
   bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
-  bool last_execute_mode_;
+  ExecuteMode last_execute_mode_;
 
   bool is_stream_list_bind_{false};
   bool is_pure_head_stream_{false};

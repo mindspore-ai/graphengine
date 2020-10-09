@@ -33,7 +33,8 @@ class ControlOpNodeTask : public NodeTask {
  protected:
   virtual Status DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const = 0;
   static Status ToBool(const TensorValue &tensor_value, DataType data_type, bool &value);
-  static Status ExecuteSubgraph(const GraphItem *subgraph, TaskContext &task_context,
+  static Status ExecuteSubgraph(const GraphItem *subgraph,
+                                TaskContext &task_context,
                                 const std::function<void()> &done_callback);
 };
 
@@ -58,7 +59,7 @@ class CaseOpNodeTask : public ControlOpNodeTask {
   Status Init(const NodePtr &node, const HybridModel &model) override;
 
  protected:
-  const GraphItem *SelectBranch(int32_t branch_index) const;
+  const GraphItem* SelectBranch(int32_t branch_index) const;
   Status DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const override;
 
  private:
@@ -97,4 +98,4 @@ class ControlOpNodeExecutor : public NodeExecutor {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_CONTROLOP_CONTROL_OP_EXECUTOR_H_
+#endif // GE_HYBRID_CONTROLOP_CONTROL_OP_EXECUTOR_H_

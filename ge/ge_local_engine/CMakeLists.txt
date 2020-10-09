@@ -1,53 +1,215 @@
-# Copyright 2019-2020 Huawei Technologies Co., Ltd
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ============================================================================
+set(PROTO_LIST
+    "${METADEF_DIR}/proto/task.proto"
+)
 
-# libge_local_engine.so
-# add all proto files, generate corresponding .h and .cc files
-file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "${GE_SOURCE_DIR}/metadef/proto/task.proto"
-        )
+set(SRC_LIST
+    "engine/ge_local_engine.cc"
+    "ops_kernel_store/ge_local_ops_kernel_info.cc"
+    "ops_kernel_store/op/op_factory.cc"
+    "ops_kernel_store/op/op.cc"
+    "ops_kernel_store/op/ge_deleted_op.cc"
+    "ops_kernel_store/op/no_op.cc"
+)
 
-file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "engine/ge_local_engine.cc"
-        "ops_kernel_store/*.cc"
-        "ops_kernel_store/op/*.cc"
-        )
+set(OPS_KERNEL_SRC_LIST
+    "ops_kernel_store/ge_local_ops_kernel_builder.cc"
+    "ops_kernel_store/op/op_factory.cc"
+    "ops_kernel_store/op/op.cc"
+    "ops_kernel_store/op/ge_deleted_op.cc"
+    "ops_kernel_store/op/no_op.cc"
+)
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
-# include directories
-include_directories(${CMAKE_CURRENT_LIST_DIR})
-include_directories(${GE_SOURCE_DIR}/ge)
-include_directories(${GE_SOURCE_DIR}/inc)
-include_directories(${GE_SOURCE_DIR}/inc/external)
-include_directories(${GE_SOURCE_DIR}/inc/framework)
-include_directories(${GE_SOURCE_DIR}/metadef/inc)
-include_directories(${GE_SOURCE_DIR}/metadef/inc/graph)
-include_directories(${GE_SOURCE_DIR}/metadef/inc/external)
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
-include_directories(${CMAKE_BINARY_DIR})
-include_directories(${CMAKE_BINARY_DIR}/proto/ge)
-
-######### libge_local_engine.so #############
+############ libge_local_engine.so ############
 add_library(ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
-target_compile_definitions(ge_local_engine PRIVATE Werror)
-target_link_libraries(ge_local_engine
-        graph
-        ${PROTOBUF_LIBRARY}
-        ${register}
-        ${c_sec}
-        ${slog}
-        ${runtime})
+
+target_compile_options(ge_local_engine PRIVATE
+    -Werror
+)
+
+target_include_directories(ge_local_engine PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+)
+
+target_link_libraries(ge_local_engine PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    graph
+    protobuf
+    register
+    c_sec
+    slog
+    runtime
+    -Wl,--as-needed
+)
+
+######### atclib/libge_local_engine.so #############
+add_library(atc_ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
+
+target_compile_options(atc_ge_local_engine PRIVATE
+    -Werror
+)
+
+target_compile_definitions(atc_ge_local_engine PRIVATE
+    COMPILE_OMG_PACKAGE
+)
+
+target_include_directories(atc_ge_local_engine PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+)
+
+target_link_libraries(atc_ge_local_engine PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    graph
+    protobuf
+    register
+    c_sec
+    slog
+    runtime_compile
+    -Wl,--as-needed
+)
+
+set_target_properties(atc_ge_local_engine PROPERTIES
+    OUTPUT_NAME ge_local_engine
+    LIBRARY_OUTPUT_DIRECTORY atclib
+)
+
+############ libge_local_opskernel_builder.so ############
+add_library(ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+
+target_compile_options(ge_local_opskernel_builder PRIVATE
+    -Werror
+)
+
+target_include_directories(ge_local_opskernel_builder PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+)
+
+target_link_libraries(ge_local_opskernel_builder PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    protobuf
+    c_sec
+    slog
+    register
+    graph
+    -Wl,--as-needed
+)
+
+############ atclib/libge_local_opskernel_builder.so ############
+add_library(atc_ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+
+target_compile_options(atc_ge_local_opskernel_builder PRIVATE
+    -Werror
+)
+
+target_include_directories(atc_ge_local_opskernel_builder PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+)
+
+target_link_libraries(atc_ge_local_opskernel_builder PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    protobuf
+    c_sec
+    slog
+    register
+    graph
+    -Wl,--as-needed
+)
+
+set_target_properties(atc_ge_local_opskernel_builder PROPERTIES
+    OUTPUT_NAME ge_local_opskernel_builder
+    LIBRARY_OUTPUT_DIRECTORY atclib
+)
+
+############ libge_local_opskernel_builder.a ############
+add_library(ge_local_opskernel_builder_static SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+
+target_compile_options(ge_local_opskernel_builder_static PRIVATE
+    -Werror
+)
+
+target_include_directories(ge_local_opskernel_builder_static PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+)
+
+target_link_libraries(ge_local_opskernel_builder_static PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    protobuf
+    c_sec
+)
+
+############ install ############
+set(INSTALL_BASE_DIR "")
+set(INSTALL_LIBRARY_DIR lib)
+
+install(TARGETS ge_local_engine ge_local_opskernel_builder OPTIONAL
+    LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
+)
+
+install(TARGETS atc_ge_local_engine atc_ge_local_opskernel_builder OPTIONAL
+    LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}/atclib
+)

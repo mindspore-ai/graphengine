@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ class MultiBatchPass : public GraphPass {
 
   bool CheckDims(const std::vector<std::vector<int64_t>> &output_shape) const;
   NodePtr CreateSwitchCaseNode(const ComputeGraphPtr &graph, const std::string &name,
-                               const OutDataAnchorPtr &pred_value, const std::vector<std::vector<int64_t>> &batch_shape,
+                               const OutDataAnchorPtr &pred_value,
+                               const std::vector<std::vector<int64_t>> &batch_shape,
                                const std::vector<std::vector<int64_t>> &combined_batch);
   Status BypassSwitchN(const NodePtr &switch_n_node, const NodePtr &switch_case_node);
   Status AttachLabel(const NodePtr &switch_case_node);
@@ -52,6 +53,15 @@ class MultiBatchPass : public GraphPass {
   Status MoveCtrlEdges(const NodePtr &old_node, const NodePtr &new_node);
   Status AttachLabelOnly(uint32_t batch_num);
   Status GetUserDesignateShape();
+
+  ///
+  /// @ingroup ge
+  /// @brief Set batch label for Case mode.
+  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+  /// @param [in] const NodePtr &case_node: Case Node.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status SetCaseLabel(const ComputeGraphPtr &graph, const NodePtr &case_node);
 
   std::vector<NodePtr> switch_n_nodes_;
   std::vector<NodePtr> bypass_nodes_;

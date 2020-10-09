@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ namespace ge {
 class HcclGroupPass : public BaseNodePass {
  public:
   Status Run(NodePtr &node) override;
-
  private:
   Status MarkGroupForFusedNode(NodePtr &fused_node);
 };

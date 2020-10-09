@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@
 #include "graph/ge_global_options.h"
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/host_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "omm/csa_interact.h"
 #include "runtime/kernel.h"
@@ -287,6 +288,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
     return initMmStatus;
   }
 
+  GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
   // Update CSA file
   CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
@@ -339,6 +341,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithout
     GELOGE(initMmStatus, "[Initialize] MemoryAllocatorManager initialize failed.");
     return initMmStatus;
   }
+  GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
 
   static bool is_inited = false;
   if (is_inited) {
@@ -391,6 +394,9 @@ Status GELib::Finalize() {
 
   GELOGI("MemManager finalization.");
   MemManager::Instance().Finalize();
+
+  GELOGI("HostMemManager finalization.");
+  HostMemManager::Instance().Finalize();
 
   GELOGI("HostCpuEngine finalization.");
   HostCpuEngine::GetInstance().Finalize();
@@ -453,6 +459,7 @@ void GELib::RollbackInit() {
     (void)sessionManager_.Finalize();
   }
   MemManager::Instance().Finalize();
+  HostMemManager::Instance().Finalize();
   VarManagerPool::Instance().Destory();
 }
 }  // namespace ge

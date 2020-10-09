@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,8 +74,10 @@ class FileSaver {
                            ModelPartitionTable &model_partition_table,
                            const std::vector<ModelPartition> &partition_datas);
 
-  static Status SaveToBuffWithFileHeader(const ModelFileHeader &file_header, ModelPartitionTable &model_partition_table,
-                                         const std::vector<ModelPartition> &partitionDatas, ge::ModelBufferData &model);
+  static Status SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
+                                            ModelPartitionTable &model_partition_table,
+                                            const std::vector<ModelPartition> &partitionDatas,
+                                            ge::ModelBufferData& model);
 
   static Status SaveToFile(const string &file_path, const void *data, int len);
 

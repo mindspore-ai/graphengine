@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef GE_SINGLE_OP_TASK_AICPU_TASK_BUILDER_H_
 #define GE_SINGLE_OP_TASK_AICPU_TASK_BUILDER_H_
@@ -24,23 +24,23 @@
 #include "cce/aicpu_engine_struct.h"
 
 namespace ge {
-class AiCpuTaskBuilder {
- public:
-  AiCpuTaskBuilder(const OpDescPtr &op_desc, const domi::KernelExDef &kernel_def);
-  ~AiCpuTaskBuilder() = default;
+  class AiCpuTaskBuilder {
+  public:
+    AiCpuTaskBuilder(const OpDescPtr &op_desc, const domi::KernelExDef &kernel_def);
+    ~AiCpuTaskBuilder() = default;
 
-  Status BuildTask(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag, uint64_t session_id);
+    Status BuildTask(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag, uint64_t session_id);
 
- private:
-  static Status SetKernelArgs(void **args, STR_FWK_OP_KERNEL &kernel);
-  Status SetInputOutputAddr(void **io_addr, const std::vector<void *> &addresses);
-  Status SetFmkOpKernel(void *io_addr, void *ws_addr, STR_FWK_OP_KERNEL &kernel);
-  Status InitWorkspaceAndIO(void **io_addr, void **kernel_workspace, const SingleOpModelParam &param,
-                            bool dynamic_flag);
+  private:
+    static Status SetKernelArgs(void **args, STR_FWK_OP_KERNEL &kernel);
+    Status SetInputOutputAddr(void **io_addr, const std::vector<void *> &addresses);
+    Status SetFmkOpKernel(void *io_addr, void *ws_addr, STR_FWK_OP_KERNEL &kernel);
+    Status InitWorkspaceAndIO(void **io_addr, void **kernel_workspace,
+                              const SingleOpModelParam &param, bool dynamic_flag);
 
-  const OpDescPtr op_desc_;
-  const domi::KernelExDef &kernel_def_;
-};
+    const OpDescPtr op_desc_;
+    const domi::KernelExDef &kernel_def_;
+  };
 }  // namespace ge
 
 #endif  // GE_SINGLE_OP_TASK_AICPU_TASK_BUILDER_H_

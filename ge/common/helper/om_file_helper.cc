@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,8 +89,8 @@ Status OmFileLoadHelper::CheckModelValid(const ge::ModelData &model) const {
   // Model length too small
   if (model.model_len < (sizeof(ModelFileHeader) + sizeof(ModelPartitionTable))) {
     GELOGE(PARAM_INVALID,
-           "Invalid model. length[%u] < sizeof(ModelFileHeader)[%zu] + sizeof(ModelPartitionTable)[%zu].",
-           model.model_len, sizeof(ModelFileHeader), sizeof(ModelPartitionTable));
+        "Invalid model. length[%u] < sizeof(ModelFileHeader)[%zu] + sizeof(ModelPartitionTable)[%zu].",
+        model.model_len, sizeof(ModelFileHeader), sizeof(ModelPartitionTable));
     return PARAM_INVALID;
   }
 
@@ -101,7 +101,7 @@ Status OmFileLoadHelper::CheckModelValid(const ge::ModelData &model) const {
       (MODEL_FILE_MAGIC_NUM != model_header->magic)) {
     GELOGE(PARAM_INVALID,
            "Invalid model. file_header->length[%u] + sizeof(ModelFileHeader)[%zu] != model->model_len[%u] || "
-           "MODEL_FILE_MAGIC_NUM[%u] != file_header->magic[%u]",
+            "MODEL_FILE_MAGIC_NUM[%u] != file_header->magic[%u]",
            model_header->length, sizeof(ModelFileHeader), model.model_len, MODEL_FILE_MAGIC_NUM, model_header->magic);
     return PARAM_INVALID;
   }

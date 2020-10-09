@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,12 @@
 namespace ge {
 namespace analyzer {
 enum AnalyzeType {
-  PARSER = 0,
-  INFER_SHAPE = 1,
-  CHECKSUPPORT = 2,
+  PARSER         = 0,
+  INFER_SHAPE    = 1,
+  CHECKSUPPORT   = 2,
   GRAPH_OPTIMIZE = 3,
-  GRAPH_PARTION = 4,
-  GRAPH_BUILDER = 5,
+  GRAPH_PARTION  = 4,
+  GRAPH_BUILDER  = 5,
 };
 
 struct TensorInfo {
@@ -66,7 +66,8 @@ struct DataInfo {
   DataInfo() = default;
   ~DataInfo() = default;
 
-  DataInfo(uint64_t sess, uint64_t graph, AnalyzeType type, ge::NodePtr node, std::string error_info) {
+  DataInfo(uint64_t sess, uint64_t graph, AnalyzeType type,
+           ge::NodePtr node, std::string error_info) {
     session_id = sess;
     graph_id = graph;
     analyze_type = type;
@@ -79,10 +80,10 @@ struct DataInfo {
   ge::NodePtr node_ptr{nullptr};
   std::string reason;
 };
-}  // namespace analyzer
+}
 
 class Analyzer {
- public:
+public:
   /**
    * @ingroup ge
    * @brief: get analyzer instance.
@@ -156,33 +157,39 @@ class Analyzer {
    */
   ge::Status DoAnalyze(analyzer::DataInfo &data_info);
 
+  /**
+   * @ingroup ge
+   * @brief: Buff analyzed data and output to json file
+   * @param [in]: session id , graph id
+   * @return: 0: SUCCESS other: FAILED
+   */
+  ge::Status SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_id);
+
   Analyzer(const Analyzer &) = delete;
-  Analyzer &operator=(const Analyzer &) = delete;
+  Analyzer& operator=(const Analyzer&) = delete;
   Analyzer(Analyzer &&) = delete;
-  Analyzer &operator=(Analyzer &&) = delete;
+  Analyzer& operator=(Analyzer &&) = delete;
+private:
+  void TensorInfoToJson(nlohmann::json& j, const analyzer::TensorInfo &tensor_info);
+  void OpInfoToJson(nlohmann::json& j, const analyzer::OpInfo &op_info);
+  void GraphInfoToJson(nlohmann::json& j, const analyzer::GraphInfo &graph_info);
 
- private:
-  void TensorInfoToJson(nlohmann::json &j, const analyzer::TensorInfo &tensor_info);
-  void OpInfoToJson(nlohmann::json &j, const analyzer::OpInfo &op_info);
-  void GraphInfoToJson(nlohmann::json &j, const analyzer::GraphInfo &graph_info);
-
-  ge::Status SaveAnalyzerDataToFile();
   ge::Status SaveOpInfo(ge::OpDescPtr desc, analyzer::DataInfo &data_info,
-                        std::shared_ptr<analyzer::GraphInfo> graph_info);
+                                  std::shared_ptr<analyzer::GraphInfo> graph_info);
 
   void ClearHistoryFile();
   ge::Status CreateAnalyzerFile();
 
-  explicit Analyzer(){};
+  explicit Analyzer() {};
   ~Analyzer() = default;
 
- private:
+private:
   std::map<uint64_t, std::map<uint64_t, std::shared_ptr<analyzer::GraphInfo>>> graph_infos_;
-  std::recursive_mutex mutex_;  // protect graph_infos_
-  std::mutex file_mutex_;       // protect json_file_
+  std::recursive_mutex mutex_; // protect graph_infos_
+  std::mutex file_mutex_; // protect json_file_
   std::ofstream json_file_;
   std::string json_file_name_;
   std::atomic_bool is_json_file_create_{false};
 };
-}  // namespace ge
-#endif  // DOMI_ANALYZER_ANANLYZER_H_
+} // namespace ge
+#endif // DOMI_ANALYZER_ANANLYZER_H_

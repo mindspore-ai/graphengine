@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "graph/passes/reshape_recovery_pass.h"
 #include "common/ge/ge_util.h"
 
@@ -50,8 +49,8 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
     GE_CHECK_NOTNULL(src_tensor);
     for (auto dst_anchor : src_anchor->GetPeerInDataAnchors()) {
       auto dst_node = dst_anchor->GetOwnerNode();
-      GELOGD("Try insert reshape between %s[%d] and %s[%d] to keep the shape continues", node->GetName().c_str(),
-             src_anchor->GetIdx(), dst_node->GetName().c_str(), dst_anchor->GetIdx());
+      GELOGD("Try insert reshape between %s[%d] and %s[%d] to keep the shape continues",
+             node->GetName().c_str(), src_anchor->GetIdx(), dst_node->GetName().c_str(), dst_anchor->GetIdx());
       GE_CHECK_NOTNULL(dst_node);
       GE_CHECK_NOTNULL(dst_node->GetOpDesc());
       auto dst_tensor = dst_node->GetOpDesc()->GetInputDescPtr(dst_anchor->GetIdx());
@@ -64,12 +63,12 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
         GE_CHECK_NOTNULL(reshape);
         auto ret = GraphUtils::InsertNodeBetweenDataAnchors(src_anchor, dst_anchor, reshape);
         if (ret != GRAPH_SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Failed to insert reshape between node %s and %s", node->GetName().c_str(),
-                 dst_node->GetName().c_str());
+          GELOGE(INTERNAL_ERROR, "Failed to insert reshape between node %s and %s",
+                 node->GetName().c_str(), dst_node->GetName().c_str());
           return INTERNAL_ERROR;
         }
-        GELOGI("Insert reshape between %s and %s to keep the shape continues", node->GetName().c_str(),
-               dst_node->GetName().c_str());
+        GELOGI("Insert reshape between %s and %s to keep the shape continues",
+               node->GetName().c_str(), dst_node->GetName().c_str());
       }
     }
   }

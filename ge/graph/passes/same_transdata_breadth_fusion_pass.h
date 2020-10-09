@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,9 @@ class SameTransdataBreadthFusionPass : public GraphPass {
 
  private:
   graphStatus ExtractTransNode(const ComputeGraphPtr &graph);
-  graphStatus GetSubGraphsBetweenNormalAndTransdataNode(
-    OutDataAnchorPtr &out_anchor,
-    std::vector<std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
-    std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list);
+  graphStatus GetSubGraphsBetweenNormalAndTransdataNode(OutDataAnchorPtr &out_anchor,
+      std::vector<std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
+      std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list);
 
   void GetSubGraphNodesInfo();
 
@@ -45,7 +44,9 @@ class SameTransdataBreadthFusionPass : public GraphPass {
   std::set<std::string> GetInControlIdentityNodes(const NodePtr &node, int subgraph_index);
   OpDescPtr GetCastOp(const GeTensorDesc &in_desc, const GeTensorDesc &out_desc);
 
-  graphStatus AddCastNode(const ComputeGraphPtr &graph, int anchors_index, OutDataAnchorPtr &pre_out_anchor,
+  graphStatus AddCastNode(const ComputeGraphPtr &graph,
+                          int anchors_index,
+                          OutDataAnchorPtr &pre_out_anchor,
                           NodePtr &first_link_node);
 
   void GetSameTransdataNode(vector<int> &same_transdata_nodes);
@@ -53,10 +54,12 @@ class SameTransdataBreadthFusionPass : public GraphPass {
   graphStatus ReLinkTransdataOutput2PreNode(const NodePtr &transdata_node, const OutDataAnchorPtr &pre_out_anchor,
                                             const NodePtr &relink_node);
 
-  graphStatus RelinkTransdataControlEdge(ComputeGraphPtr graph, NodePtr transdata_node_remove,
+  graphStatus RelinkTransdataControlEdge(ComputeGraphPtr graph,
+                                         NodePtr transdata_node_remove,
                                          NodePtr transdata_node_keep);
 
-  graphStatus LinkNewCastNode2RemainTransdata(const ComputeGraphPtr &graph, const vector<int> &same_transdata_nodes,
+  graphStatus LinkNewCastNode2RemainTransdata(const ComputeGraphPtr &graph,
+                                              const vector<int> &same_transdata_nodes,
                                               const OutDataAnchorPtr &transdata_out_anchor,
                                               const NodePtr &transdata_node_keep);
 
@@ -76,7 +79,8 @@ class SameTransdataBreadthFusionPass : public GraphPass {
 
   graphStatus RelinkInControlEdge(const NodePtr &node_src, const NodePtr &node_dst);
 
-  graphStatus ReLinkDataOutput2PreNode(const NodePtr &transdata_node, const OutDataAnchorPtr &pre_out_anchor,
+  graphStatus ReLinkDataOutput2PreNode(const NodePtr &transdata_node,
+                                       const OutDataAnchorPtr &pre_out_anchor,
                                        const NodePtr &relink_node);
 
   graphStatus ReLinkOutDataPeerInControlNodes2PreNode(const NodePtr &transdata_node,

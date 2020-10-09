@@ -54,10 +54,13 @@ class HybridModelAsyncExecutor {
 
   Status SyncVarData();
 
-  Status HandleResult(Status exec_ret, uint32_t data_id, HybridModelExecutor::ExecuteArgs &args,
+  Status HandleResult(Status exec_ret,
+                      uint32_t data_id,
+                      HybridModelExecutor::ExecuteArgs &args,
                       OutputData *output_data);
 
-  Status CopyOutputs(HybridModelExecutor::ExecuteArgs &args, OutputData *output_data,
+  Status CopyOutputs(HybridModelExecutor::ExecuteArgs &args,
+                     OutputData *output_data,
                      std::vector<ge::OutputTensorInfo> &outputs);
 
   Status OnComputeDone(uint32_t data_index, uint32_t result_code, std::vector<ge::OutputTensorInfo> &outputs);
@@ -82,4 +85,4 @@ class HybridModelAsyncExecutor {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_EXECUTOR_MODEL_HYBRID_MODEL_ASYNC_EXECUTOR_H_
+#endif // GE_HYBRID_EXECUTOR_MODEL_HYBRID_MODEL_ASYNC_EXECUTOR_H_

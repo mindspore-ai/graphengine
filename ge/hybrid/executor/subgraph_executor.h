@@ -77,7 +77,8 @@ class SubgraphExecutor {
  private:
   static Status PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state);
   static Status InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state);
-  Status Init(const std::vector<TensorValue> &inputs, const std::vector<ConstGeTensorDescPtr> &input_desc);
+  Status Init(const std::vector<TensorValue> &inputs,
+              const std::vector<ConstGeTensorDescPtr> &input_desc);
   Status InitInputsForUnknownShape(const std::vector<TensorValue> &inputs,
                                    const std::vector<ConstGeTensorDescPtr> &input_desc);
   Status InitInputsForKnownShape(const std::vector<TensorValue> &inputs);
@@ -98,4 +99,4 @@ class SubgraphExecutor {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_EXECUTOR_EXECUTOR_SUBGRAPH_EXECUTOR_H_
+#endif // GE_HYBRID_EXECUTOR_EXECUTOR_SUBGRAPH_EXECUTOR_H_

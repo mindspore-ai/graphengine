@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
   }
 
   auto identity_opdesc =
-    MakeShared<OpDesc>("SwitchDataEdgesByPass_Identity_" + std::to_string(identity_counter), IDENTITY);
+      MakeShared<OpDesc>("SwitchDataEdgesByPass_Identity_" + std::to_string(identity_counter), IDENTITY);
   if (identity_opdesc == nullptr) {
     GELOGE(OUT_OF_MEMORY, "Failed to add identity after node %s index %d", node->GetName().c_str(), index);
     return nullptr;

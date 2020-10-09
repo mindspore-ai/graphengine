@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ Status LabelSetTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 
   uint32_t label_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, label_index)) {
-    GELOGE(INTERNAL_ERROR, "LabelSetTaskInfo: %s attr [%s] not exist.", op_desc->GetName().c_str(),
-           ATTR_NAME_LABEL_SWITCH_INDEX.c_str());
+    GELOGE(INTERNAL_ERROR, "LabelSetTaskInfo: %s attr [%s] not exist.",
+           op_desc->GetName().c_str(), ATTR_NAME_LABEL_SWITCH_INDEX.c_str());
     return INTERNAL_ERROR;
   }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@
 #include "common/ge_inner_error_codes.h"
 #include "common/ge_types.h"
 
-using std::map;
 using std::string;
+using std::map;
 using std::vector;
 
 namespace ge {

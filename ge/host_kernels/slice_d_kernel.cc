@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,11 +146,11 @@ Status SliceDKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Cons
 
   Status ret = CheckOutputDims(size_list, op_desc_ptr);
   if (ret != SUCCESS) {
-    return ret;
+      return ret;
   }
 
-  ret = OpUtils::SetOutputSliceData(data, x_data_size, x_data_type, x_dims, begin_list, size_list, output_ptr.get(),
-                                    stride_list);
+  ret = OpUtils::SetOutputSliceData(data, x_data_size, x_data_type, x_dims, begin_list, size_list,
+                                    output_ptr.get(), stride_list);
   if (ret != SUCCESS) {
     GELOGW("Set output data of SliceD failed.");
     return NOT_CHANGED;

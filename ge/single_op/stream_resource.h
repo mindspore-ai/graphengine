@@ -49,7 +49,9 @@ class StreamResource {
   uint8_t *MallocWeight(const std::string &purpose, size_t size);
 
  private:
-  uint8_t *DoMallocMemory(const std::string &purpose, size_t size, size_t &max_allocated,
+  uint8_t *DoMallocMemory(const std::string &purpose,
+                          size_t size,
+                          size_t &max_allocated,
                           std::vector<uint8_t *> &allocated);
 
   uintptr_t resource_id_;

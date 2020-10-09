@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ namespace formats {
  */
 Status TransFormat(const TransArgs &args, TransResult &result);
 
-Status TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type, Format dst_format,
-                  std::vector<int64_t> &dst_shape);
+Status TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type,
+                  Format dst_format, std::vector<int64_t> &dst_shape);
 
 Status TransDataType(const CastArgs &args, TransResult &result);
 

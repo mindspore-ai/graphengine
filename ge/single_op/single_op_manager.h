@@ -34,10 +34,14 @@ class SingleOpManager {
     return instance;
   }
 
-  Status GetOpFromModel(const std::string &model_name, const ge::ModelData &model_data, void *stream,
+  Status GetOpFromModel(const std::string &model_name,
+                        const ge::ModelData &model_data,
+                        void *stream,
                         SingleOp **single_op);
 
-  Status GetDynamicOpFromModel(const std::string &model_name, const ge::ModelData &model_data, void *stream,
+  Status GetDynamicOpFromModel(const std::string &model_name,
+                               const ge::ModelData &model_data,
+                               void *stream,
                                DynamicSingleOp **dynamic_single_op);
 
   StreamResource *GetResource(uintptr_t resource_id, rtStream_t stream);

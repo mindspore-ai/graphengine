@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,12 @@ Status HybridMemAssigner::Assign() {
     return FAILED;
   }
 
-  std::unique_ptr<BlockMemAssigner> binary_assigner(
-    new (std::nothrow) BinaryBlockMemAssigner(compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
+  std::unique_ptr<BlockMemAssigner> binary_assigner(new (std::nothrow) BinaryBlockMemAssigner(
+      compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
   GE_CHECK_NOTNULL(binary_assigner);
 
-  std::unique_ptr<BlockMemAssigner> max_assigner(
-    new (std::nothrow) MaxBlockMemAssigner(compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
+  std::unique_ptr<BlockMemAssigner> max_assigner(new (std::nothrow) MaxBlockMemAssigner(
+      compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
   GE_CHECK_NOTNULL(max_assigner);
 
   size_t bin_mem_size = 0;

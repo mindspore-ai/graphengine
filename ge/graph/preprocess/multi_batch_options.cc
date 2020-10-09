@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,18 @@
 #include "graph/utils/node_utils.h"
 #include "graph/ge_context.h"
 #include "graph/common/local_context.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace multibatch {
 constexpr int kDecimal = 10;
 constexpr uint8_t kMaxShapesCount = 100;
 constexpr uint8_t kMinShapesCount = 2;
+const int kDynmaicDims = -1;
+const int kDynamicBatchDynamicDimsNum = 1;
+const int kDynamicImgSizeDynamciDimsNum = 2;
+const size_t kMaxNDDimNum = 4;
+const size_t kMinNDDimNum = 1;
 
 void ParseDynamicSize(string dynamic_size, vector<vector<int64_t>> &shapes) {
   std::vector<std::string> shape_strs = ge::StringUtils::Split(dynamic_size, ';');
@@ -101,15 +107,15 @@ bool InitDynamicParams(vector<vector<int64_t>> &shapes) {
 ///
 Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
                                vector<pair<string, vector<int64_t>>> &data_name_and_shape,
-                               map<string, vector<vector<int64_t>>> &data_to_dynamic_info) {
+                               map<string, vector<vector<int64_t>> > &data_to_dynamic_info) {
   size_t cur_data_index = 0;
   for (size_t index = 0; index < data_name_and_shape.size(); ++index) {
     auto &cur_item = data_name_and_shape[index];
     auto &data_name = cur_item.first;
     auto &data_shape = cur_item.second;
-    auto dynamic_dims_num =
-      std::count_if(data_shape.begin(), data_shape.end(), [&data_shape](int64_t dim) { return dim < 0; });
-    vector<vector<int64_t>> dynamic_info;
+    auto dynamic_dims_num = std::count_if(data_shape.begin(), data_shape.end(),
+                                          [&data_shape](int64_t dim){ return dim < 0; });
+    vector<vector<int64_t> > dynamic_info;
     for (auto &dynamic_gear_info : shapes) {
       vector<int64_t> one_gear;
       if (dynamic_gear_info.size() == static_cast<size_t>(dynamic_dims_num)) {
@@ -137,6 +143,7 @@ Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
   return SUCCESS;
 }
 
+
 ///
 /// @ingroup ge
 /// @brief Check Dynamic Param is invalid.
@@ -146,7 +153,7 @@ Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
 Status CheckDynamicParams(const vector<vector<int64_t>> &shapes) {
   if (shapes.size() < kMinShapesCount) {
     ErrorManager::GetInstance().ATCReportErrMessage(
-      "E10035", {"shapesize", "minshapesize"}, {std::to_string(shapes.size()), std::to_string(kMinShapesCount - 1)});
+        "E10035", {"shapesize", "minshapesize"}, {std::to_string(shapes.size()), std::to_string(kMinShapesCount - 1)});
     GELOGE(PARAM_INVALID,
            "Input parameter[--dynamic_batch_size, --dynamic_image_size or --dynamic_dims]'s "
            "value size [%zu] must be greater than [%zu].",
@@ -155,7 +162,7 @@ Status CheckDynamicParams(const vector<vector<int64_t>> &shapes) {
   }
   if (shapes.size() > kMaxShapesCount) {
     ErrorManager::GetInstance().ATCReportErrMessage(
-      "E10036", {"shapesize", "maxshapesize"}, {std::to_string(shapes.size()), std::to_string(kMaxShapesCount + 1)});
+        "E10036", {"shapesize", "maxshapesize"}, {std::to_string(shapes.size()), std::to_string(kMaxShapesCount + 1)});
     GELOGE(PARAM_INVALID,
            "Input parameter[--dynamic_batch_size, --dynamic_image_size or --dynamic_dims]'s "
            "value size [%zu] must be less than [%zu].",
@@ -205,9 +212,9 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
     if (data_shape.GetDim(i) < 0) {
       if (batch_shape_index >= batch_shape.size()) {
         ErrorManager::GetInstance().ATCReportErrMessage(
-          "E19012", {"function", "reason"},
-          {"CalcShape", "the batch shape count " + std::to_string(batch_shape.size()) +
-                          " does not match the data shape " + data_shape.ToString()});
+            "E19012", {"function", "reason"},
+            {"CalcShape", "the batch shape count " + std::to_string(batch_shape.size()) +
+                              " does not match the data shape " + data_shape.ToString()});
         GELOGE(PARAM_INVALID,
                "Failed to calc tensor shape, the batch shape count %zu, does not match the data shape %s",
                batch_shape.size(), data_shape.ToString().c_str());
@@ -218,9 +225,8 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
   }
   if (batch_shape_index != batch_shape.size()) {
     ErrorManager::GetInstance().ATCReportErrMessage(
-      "E19012", {"function", "reason"},
-      {"CalcShape", "the batch shape count " + std::to_string(batch_shape.size()) + " does not match the data shape " +
-                      data_shape.ToString()});
+        "E19012", {"function", "reason"}, {"CalcShape", "the batch shape count " + std::to_string(batch_shape.size()) +
+                                                            " does not match the data shape " + data_shape.ToString()});
     GELOGE(PARAM_INVALID, "Failed to calc tensor shape, the batch shape count %zu, does not match the data shape %s",
            batch_shape.size(), data_shape.ToString().c_str());
     return PARAM_INVALID;
@@ -251,6 +257,63 @@ Status StampDynamicType(const OpDescPtr &op_desc) {
     return INTERNAL_ERROR;
   }
   return SUCCESS;
+}
+
+///
+/// @ingroup ge
+/// @brief Check dynamic batch Shape.
+/// @param [in] const vector<int64_t> &shape: data_shape to be checked.
+/// @param [in] const string &data_name: cur data name.
+/// @return 0: true/false
+///
+bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name) {
+  if (shape[0] == kDynmaicDims) {
+    for (size_t i = 1; i < shape.size(); ++i) {
+      if (shape[i] < 1) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10018", {"index", "shape"},
+                                                        {std::to_string(i), std::to_string(shape[i])});
+        GELOGE(ge::PARAM_INVALID,
+               "Only batch N can be -1 when set --dynamic_batch_size, current data: %s shape[%zu] is %ld",
+               data_name.c_str(), i, shape[i]);
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+///
+/// @ingroup ge
+/// @brief Check Dynamic image size shape.
+/// @param [in] unordered_map<string, vector<int64_t>> &shape_map: map of data_name and data_shape.
+/// @param [in]  const std::string &input_format: format of input.
+/// @return 0: true/false
+///
+bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
+                                const std::string &input_format) {
+  int64_t height = 0;
+  int64_t width = 0;
+  if (input_format == "NCHW") {
+    height = shape[NCHW_DIM_H];
+    width = shape[NCHW_DIM_W];
+  }
+
+  if (input_format == "NHWC") {
+    height = shape[NHWC_DIM_H];
+    width = shape[NHWC_DIM_W];
+  }
+
+  if (height == kDynmaicDims && width == kDynmaicDims &&
+      std::count(shape.begin(), shape.end(), kDynmaicDims) == kDynamicImgSizeDynamciDimsNum) {
+    return true;
+  } else {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10019");
+    GELOGE(ge::PARAM_INVALID,
+           "--input_shape's shape is invalid, only height and width can be -1 when set --dynamic_image_size.");
+    return false;
+  }
 }
 }  // namespace multibatch
 }  // namespace ge

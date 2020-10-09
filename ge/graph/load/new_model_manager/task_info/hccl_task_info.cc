@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
   for (int64_t i = 0; i < stream_num; ++i) {
     rtStream_t stream = nullptr;
     rtError_t rt_ret =
-      rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
+        rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -319,8 +319,8 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
         return;
       }
 
-      ret =
-        rtMemcpy(private_def_, private_def_len_, task.private_def().c_str(), private_def_len_, RT_MEMCPY_HOST_TO_HOST);
+      ret = rtMemcpy(private_def_, private_def_len_, task.private_def().c_str(), private_def_len_,
+                     RT_MEMCPY_HOST_TO_HOST);
       if (ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "Call rtMemcpy Fail, ret = 0x%X.", ret);
         return;

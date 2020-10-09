@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,23 +25,24 @@
 
 namespace ge {
 namespace {
-const char *kBase64Chars =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  "abcdefghijklmnopqrstuvwxyz"
-  "0123456789+/";
+const char* kBase64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                           "abcdefghijklmnopqrstuvwxyz"
+                           "0123456789+/";
 const char kEqualSymbol = '=';
 const size_t kBase64CharsNum = 64;
 const size_t kThreeByteOneGroup = 3;
 const size_t kFourByteOneGroup = 4;
-}  // namespace
+}
 
 namespace base64 {
-static inline bool IsBase64Char(const char &c) { return (isalnum(c) || (c == '+') || (c == '/')); }
+static inline bool IsBase64Char(const char &c) {
+  return (isalnum(c) || (c == '+') || (c == '/'));
+}
 
 static std::string EncodeToBase64(const std::string &raw_data) {
   size_t encode_length = raw_data.size() / kThreeByteOneGroup * kFourByteOneGroup;
   encode_length += raw_data.size() % kThreeByteOneGroup == 0 ? 0 : kFourByteOneGroup;
-  size_t raw_data_index = 0;
+  size_t raw_data_index = 0 ;
   size_t encode_data_index = 0;
   std::string encode_data;
   encode_data.resize(encode_length);
@@ -79,7 +80,8 @@ static std::string EncodeToBase64(const std::string &raw_data) {
 #pragma GCC diagnostic ignored "-Wunused-function"
 static Status DecodeFromBase64(const std::string &base64_data, std::string &decode_data) {
   if (base64_data.size() % kFourByteOneGroup != 0) {
-    GELOGE(PARAM_INVALID, "base64 data size must can be divided by 4, but given data size is %zu", base64_data.size());
+    GELOGE(PARAM_INVALID, "base64 data size must can be divided by 4, but given data size is %zu",
+           base64_data.size());
     return PARAM_INVALID;
   }
   decode_data.clear();
@@ -92,7 +94,8 @@ static Status DecodeFromBase64(const std::string &base64_data, std::string &deco
 
   for (std::size_t input_data_index = 0; input_data_index < base64_data_len; input_data_index += 4) {
     for (size_t i = 0; i < kFourByteOneGroup; ++i) {
-      if (base64_data[input_data_index + i] == kEqualSymbol && input_data_index >= base64_data_len - 4 && i > 1) {
+      if (base64_data[input_data_index + i] == kEqualSymbol &&
+          input_data_index >= base64_data_len - 4 && i > 1) {
         byte_4[i] = kBase64CharsNum;
       } else if (IsBase64Char(base64_data[input_data_index + i])) {
         byte_4[i] = FindCharInBase64Chars(base64_data[input_data_index + i]);
@@ -102,18 +105,18 @@ static Status DecodeFromBase64(const std::string &base64_data, std::string &deco
       }
     }
     decode_data += static_cast<char>((byte_4[0] << 2u) + ((byte_4[1] & 0x30) >> 4u));
-    if (byte_4[2] >= kBase64CharsNum) {
+    if (byte_4[2] >= kBase64CharsNum){
       break;
     } else if (byte_4[3] >= kBase64CharsNum) {
-      decode_data += static_cast<char>(((byte_4[1] & 0x0f) << 4u) + ((byte_4[2] & 0x3c) >> 2u));
+      decode_data += static_cast<char>(((byte_4[1] & 0x0f) << 4u)  + ((byte_4[2] & 0x3c) >> 2u));
       break;
     }
-    decode_data += static_cast<char>(((byte_4[1] & 0x0f) << 4u) + ((byte_4[2] & 0x3c) >> 2u));
-    decode_data += static_cast<char>(((byte_4[2] & 0x03) << 6u) + byte_4[3]);
+    decode_data += static_cast<char>(((byte_4[1] & 0x0f) << 4u)  + ((byte_4[2] & 0x3c) >> 2u));
+    decode_data += static_cast<char>(((byte_4[2] & 0x03) << 6u)  + byte_4[3]);
   }
   return SUCCESS;
 }
 #pragma GCC diagnostic pop
-}  // namespace base64
+}
 }  // namespace ge
 #endif  // GE_COMMON_BASE64_H_

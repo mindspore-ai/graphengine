@@ -58,8 +58,10 @@ class HostCpuNodeExecutor : public NodeExecutor {
  public:
   Status PrepareTask(NodeTask &task, TaskContext &context) const override;
 
-  Status LoadTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const override;
+  Status LoadTask(const HybridModel &model,
+                  const NodePtr &node,
+                  std::shared_ptr<NodeTask> &task) const override;
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_KERNEL_HOST_CPU_NODE_EXECUTOR_H_
+#endif // GE_HYBRID_KERNEL_HOST_CPU_NODE_EXECUTOR_H_

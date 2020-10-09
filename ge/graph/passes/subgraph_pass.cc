@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
   std::vector<InDataAnchorPtr> in_anchors;
   for (const InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     input_continues_required_flag =
-      input_continues_required_flag || IsInputContinuesRequired(peer_in_anchor->GetOwnerNode());
+        input_continues_required_flag || IsInputContinuesRequired(peer_in_anchor->GetOwnerNode());
     in_anchors.emplace_back(peer_in_anchor);
   }
   // Data->InputContinuesRequiredOp in subgraph need memcpy.
@@ -176,6 +176,9 @@ Status SubgraphPass::WhileInputNodes(const ComputeGraphPtr &graph, const NodePtr
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     NodePtr in_node = peer_out_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(in_node);
+    if (in_node->GetType() == VARIABLE || in_node->GetType() == VARHANDLEOP || in_node->GetType() == VARIABLEV2) {
+      continue;
+    }
     // Input->While and Input link to other nodes need insert memcpy
     if (peer_out_anchor->GetPeerInDataAnchors().size() > 1) {
       GELOGD("Input %s of While %s links to other nodes.", in_node->GetName().c_str(), node->GetName().c_str());
@@ -259,7 +262,7 @@ Status SubgraphPass::InsertInputMemcpy(const ComputeGraphPtr &graph, const std::
   for (size_t i = 0; i < data_nodes.size(); i++) {
     // Data node has and only has one output
     in_builder.AddInput("x" + std::to_string(i), data_nodes[i]->GetOpDesc()->GetOutputDesc(0))
-      .AddOutput("y" + std::to_string(i), data_nodes[i]->GetOpDesc()->GetOutputDesc(0));
+              .AddOutput("y"  + std::to_string(i), data_nodes[i]->GetOpDesc()->GetOutputDesc(0));
   }
   GELOGD("Insert memcpy after data_nodes of while_body %s.", graph->GetName().c_str());
   NodePtr in_memcpy = graph->AddNode(in_builder.Build());
@@ -301,7 +304,7 @@ Status SubgraphPass::InsertOutputMemcpy(const ComputeGraphPtr &graph, const Node
   for (size_t i = 0; i < output_node->GetAllInDataAnchorsSize(); i++) {
     if (bypass_index.count(i) == 0) {
       out_builder.AddInput("x" + std::to_string(i), output_node->GetOpDesc()->GetInputDesc(i))
-        .AddOutput("y" + std::to_string(i), output_node->GetOpDesc()->GetInputDesc(i));
+                 .AddOutput("y" + std::to_string(i), output_node->GetOpDesc()->GetInputDesc(i));
     }
   }
   GELOGD("Insert memcpy before NetOutput of while_body %s.", graph->GetName().c_str());
@@ -437,8 +440,8 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
   NodePtr in_node = out_anchor->GetOwnerNode();
   OpDescBuilder op_desc_builder(name, IDENTITY);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(0))
-                        .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
-                        .Build();
+                                     .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
+                                     .Build();
   (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
   if (GraphUtils::InsertNodeAfter(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Insert IDENTITY node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
@@ -460,8 +463,8 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
 Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
                                        const NodePtr &insert_node, uint32_t input_index, uint32_t output_index) {
   if (GraphUtils::AddEdge(src, insert_node->GetInDataAnchor(input_index)) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Add data_edge %s:%d->%s:%u failed.", src->GetOwnerNode()->GetName().c_str(), src->GetIdx(),
-           insert_node->GetName().c_str(), input_index);
+    GELOGE(FAILED, "Add data_edge %s:%d->%s:%u failed.",
+           src->GetOwnerNode()->GetName().c_str(), src->GetIdx(), insert_node->GetName().c_str(), input_index);
     return FAILED;
   }
   for (const auto &dst : dsts) {
@@ -469,9 +472,11 @@ Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::v
            dst->GetOwnerNode()->GetName().c_str());
     if ((GraphUtils::RemoveEdge(src, dst) != GRAPH_SUCCESS) ||
         (GraphUtils::AddEdge(insert_node->GetOutDataAnchor(output_index), dst) != GRAPH_SUCCESS)) {
-      GELOGE(FAILED, "Replace data_edge %s:%d->%s:%d by %s:%u->%s:%d failed.", src->GetOwnerNode()->GetName().c_str(),
-             src->GetIdx(), dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx(), insert_node->GetName().c_str(),
-             output_index, dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx());
+      GELOGE(FAILED, "Replace data_edge %s:%d->%s:%d by %s:%u->%s:%d failed.",
+             src->GetOwnerNode()->GetName().c_str(), src->GetIdx(),
+             dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx(),
+             insert_node->GetName().c_str(), output_index,
+             dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx());
       return FAILED;
     }
   }

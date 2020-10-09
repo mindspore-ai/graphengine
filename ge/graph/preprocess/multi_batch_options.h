@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,28 @@ Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
 /// @return 0: SUCCESS / others: INTERNAL_ERROR
 ///
 Status StampDynamicType(const OpDescPtr &op_desc);
+
+///
+/// @ingroup ge
+/// @brief Check dynamic batch Shape.
+/// @param [in] const vector<int64_t> &shape: data_shape to be checked.
+/// @param [in] const string &data_name: cur data name.
+/// @return 0: true/false
+///
+bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name);
+
+///
+/// @ingroup ge
+/// @brief Check Dynamic image size shape.
+/// @param [in] unordered_map<string, vector<int64_t>> &shape_map: map of data_name and data_shape.
+/// @param [in] const string &data_name: cur data name.
+/// @param [in] const std::string &input_format: cur data format.
+/// @param [in]  const std::string &input_format: format of input.
+/// @return 0: true/false
+///
+bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
+                                const std::string &input_format);
+
 }  // namespace multibatch
 }  // namespace ge
-#endif  // GE_GRAPH_PREPROCESS_MULTI_BATCH_OPTIONS_H_
+#endif // GE_GRAPH_PREPROCESS_MULTI_BATCH_OPTIONS_H_

@@ -1007,10 +1007,9 @@ Status ModelCacheHelper::RecoverVarAddrAndTensorDesc(const Json &json) const {
         return PARAM_INVALID;
       }
       // Offset is needed by SaveVarVddr instead of logic address
-      ret =
-        VarManager::Instance(session_id_)
-          ->SaveVarAddr(iter.first, tensor_addr_mgr.tensor_desc,
-                        reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(offset)), tensor_addr_mgr.memory_type);
+      ret = VarManager::Instance(session_id_)->SaveVarAddr(iter.first, tensor_addr_mgr.tensor_desc,
+                reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(offset)),
+                tensor_addr_mgr.memory_type);
       if (ret != SUCCESS) {
         GELOGW("Fail to recover VarAddr or TensorDesc of var[%s].", iter.first.c_str());
         return ret;

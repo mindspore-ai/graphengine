@@ -57,4 +57,4 @@ class HybridProfiler {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_EXECUTOR_HYBRID_PROFILER_H_
+#endif // GE_HYBRID_EXECUTOR_HYBRID_PROFILER_H_

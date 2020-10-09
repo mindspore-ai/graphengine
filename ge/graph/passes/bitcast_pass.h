@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ class BitcastPass : public BaseNodePass {
  private:
   Status CheckDstDataType(const OpDescPtr op_desc, ge::DataType &dst_data_type);
   Status CheckOutputShape(const OpDescPtr op_desc, const ge::DataType dst_data_type);
-  Status CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::DataType ori_data_type, ge::DataType dst_data_type);
+  Status CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::DataType ori_data_type,
+                            ge::DataType dst_data_type);
 };
 }  // namespace ge
 

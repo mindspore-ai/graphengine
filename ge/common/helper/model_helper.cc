@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,13 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 
-using domi::ModelTaskDef;
 using std::string;
+using domi::ModelTaskDef;
 
 namespace {
 const int64_t kOriginalOmPartitionNum = 1;
 }
+
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelHelper::~ModelHelper() { (void)ReleaseLocalModelData(); }
@@ -55,7 +56,7 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
         item = "aicpu kernels";
       }
       ErrorManager::GetInstance().ATCReportErrMessage("E19023", {"size", "item", "maxsize"},
-                                                      {std::to_string(size), item, std::to_string(UINT32_MAX)});
+        {std::to_string(size), item, std::to_string(UINT32_MAX)});
     }
     return PARAM_INVALID;
   }
@@ -77,7 +78,7 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model,
                                                                                    const SaveParam &save_param,
                                                                                    const std::string &output_file,
-                                                                                   ModelBufferData &model) {
+                                                                                   ModelBufferData& model) {
   if (output_file.empty()) {
     GELOGE(FAILED, "GraphBuilder SaveModel received invalid file name prefix");
     return FAILED;
@@ -109,17 +110,19 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   GELOGI("WEIGHTS_DATA size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
   // weight is not necessary
   if (ge_model_weight.GetSize() > 0) {
-    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::WEIGHTS_DATA,
-                                         ge_model_weight.GetData(), ge_model_weight.GetSize()),
-                      "Add weight partition failed");
+    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper,
+                                         ModelPartitionType::WEIGHTS_DATA,
+                                         ge_model_weight.GetData(),
+                                         ge_model_weight.GetSize()), "Add weight partition failed");
   }
 
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
   GELOGI("TBE_KERNELS size is %zu", tbe_kernel_store.DataSize());
   if (tbe_kernel_store.DataSize() > 0) {
-    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::TBE_KERNELS, tbe_kernel_store.Data(),
-                                         tbe_kernel_store.DataSize()),
-                      "Add tbe kernel partition failed");
+    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper,
+                                         ModelPartitionType::TBE_KERNELS,
+                                         tbe_kernel_store.Data(),
+                                         tbe_kernel_store.DataSize()), "Add tbe kernel partition failed");
   }
 
   // no need to check value, DATA->NetOutput
@@ -128,8 +131,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   CustAICPUKernelStore cust_aicpu_kernel_store = ge_model->GetCustAICPUKernelStore();
   GELOGI("cust aicpu kernels size is %zu", cust_aicpu_kernel_store.DataSize());
   if (cust_aicpu_kernel_store.DataSize() > 0) {
-    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::CUST_AICPU_KERNELS,
-                                         cust_aicpu_kernel_store.Data(), cust_aicpu_kernel_store.DataSize()),
+    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper,
+                                         ModelPartitionType::CUST_AICPU_KERNELS,
+                                         cust_aicpu_kernel_store.Data(),
+                                         cust_aicpu_kernel_store.DataSize()),
                       "Add cust aicpu kernel partition failed");
   }
 
@@ -454,8 +459,8 @@ Status ModelHelper::ReleaseLocalModelData() noexcept {
   return result;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetBaseNameFromFileName(const string &file_name,
-                                                                                             string &base_name) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetBaseNameFromFileName(
+    const string &file_name, string &base_name) {
   GELOGD("Get base_name from file, file_name:%s", file_name.c_str());
   GE_CHK_BOOL_EXEC_WARN(!file_name.empty(), return FAILED, "File path may not valid, check params --output");
   size_t start_position = 0;
@@ -470,8 +475,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetBaseName
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-ModelHelper::GetModelNameFromMergedGraphName(const string &graph_name, string &model_name) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetModelNameFromMergedGraphName(
+    const string &graph_name, string &model_name) {
   GELOGD("Get model_name from graph_name, graph_name:%s", graph_name.c_str());
   // this can only be used after merged graph(graph name will be append with "_x", x is index);
   GE_CHK_BOOL_EXEC_WARN(!graph_name.empty(), return FAILED, "File path may not valid, check params --output");

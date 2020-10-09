@@ -51,4 +51,4 @@ class PartitionedCallNodeExecutor : public NodeExecutor {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_NODE_EXECUTOR_SUBGRAPH_SUBGRAPH_EXECUTOR_H_
+#endif // GE_HYBRID_NODE_EXECUTOR_SUBGRAPH_SUBGRAPH_EXECUTOR_H_

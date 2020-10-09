@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,17 +62,17 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
     GE_CHECK_NOTNULL(tensor_desc);
     if (!VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(node_name, *tensor_desc)) {
       GE_CHK_STATUS_RET(
-        VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, RT_MEMORY_HBM));
+          VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, RT_MEMORY_HBM));
       GE_IF_BOOL_EXEC(n->GetType() == VARIABLE,
                       GE_CHK_STATUS_RET(AssignData2Fp32Var(n, compute_graph->GetSessionID())));
       GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
-                          ->SetAllocatedGraphId(node_name, compute_graph->GetGraphID()));
+                            ->SetAllocatedGraphId(node_name, compute_graph->GetGraphID()));
     }
 
     uint8_t *dev_ptr = nullptr;
     rtMemType_t memory_type = RT_MEMORY_HBM;
-    GE_CHK_STATUS_RET(
-      VarManager::Instance(compute_graph->GetSessionID())->GetVarAddr(node_name, *tensor_desc, &dev_ptr, memory_type));
+    GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
+                          ->GetVarAddr(node_name, *tensor_desc, &dev_ptr, memory_type));
     vector<int64_t> output_list = n->GetOpDesc()->GetOutputOffset();
     GE_IF_BOOL_EXEC(output_list.empty(), return FAILED);
     output_list[0] = static_cast<int64_t>(reinterpret_cast<intptr_t>(dev_ptr));
@@ -90,9 +90,9 @@ Status VarMemAssignUtil::AssignData2Fp32Var(const ge::NodePtr &node, uint64_t se
     rtMemType_t memory_type = RT_MEMORY_HBM;
     GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetCurVarDesc(src_var_name, cur_tensor_desc));
     GE_CHK_STATUS_RET(
-      VarManager::Instance(session_id)->GetVarAddr(src_var_name, cur_tensor_desc, &dev_ptr, memory_type));
+        VarManager::Instance(session_id)->GetVarAddr(src_var_name, cur_tensor_desc, &dev_ptr, memory_type));
     GE_CHK_STATUS_RET(
-      VarManager::Instance(session_id)->SetVarAddr(node->GetName(), cur_tensor_desc, dev_ptr, memory_type));
+        VarManager::Instance(session_id)->SetVarAddr(node->GetName(), cur_tensor_desc, dev_ptr, memory_type));
   }
   return SUCCESS;
 }
@@ -122,7 +122,7 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
   GeTensorDesc var_tensor_desc = var_node->GetOpDesc()->GetOutputDesc(0);
   rtMemType_t memory_type = RT_MEMORY_HBM;
   GE_CHK_STATUS_RET(
-    VarManager::Instance(session_id)->GetVarAddr(var_node->GetName(), var_tensor_desc, &dev_ptr, memory_type));
+      VarManager::Instance(session_id)->GetVarAddr(var_node->GetName(), var_tensor_desc, &dev_ptr, memory_type));
 
   int out_list_size = static_cast<int>(output_list.size());
   GE_CHK_BOOL_RET_STATUS(index < out_list_size, FAILED, "index %d >= output_list.size() %d", index, out_list_size);
@@ -171,7 +171,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
                          "Get broadcast op %s input tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),
                          input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr input_tensor_desc =
-    input_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
+      input_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
   int64_t input_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(*input_tensor_desc, input_size), "get input size failed.");
   broad_cast_info.input_size = input_size;
@@ -190,7 +190,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
                          "Get broadcast op %s output tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),
                          output_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr output_tensor_desc =
-    output_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
+      output_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
   int64_t output_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(*output_tensor_desc, output_size), "get input size failed.");
   broad_cast_info.output_size = output_size;
@@ -220,7 +220,7 @@ Status VarMemAssignUtil::DealVariableNode(uint32_t graph_id, const ge::NodePtr &
       }
       auto dst_type = dst_node->GetType();
       bool is_trans_node =
-        (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
+          (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
       if (is_trans_node) {
         NodePtr final_trans_node = GetFinalTransNode(dst_node);
         GE_CHK_STATUS_RET(DealTransNode(final_trans_node));
@@ -238,7 +238,7 @@ ge::NodePtr VarMemAssignUtil::GetFinalTransNode(const ge::NodePtr &trans_node) {
     NodePtr dst_node = dst_in_anchor->GetOwnerNode();
     auto dst_type = dst_node->GetType();
     bool is_trans_node =
-      (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
+        (dst_type == TRANSDATA) || (dst_type == CAST) || (dst_type == TRANSPOSE) || (dst_type == PERMUTE);
     if (is_trans_node && (dst_in_anchor->GetIdx() == 0)) {
       final_ref_node = GetFinalTransNode(dst_node);
     }
@@ -319,11 +319,11 @@ Status VarMemAssignUtil::AssignData2VarRef(const ge::NodePtr &has_ref_attr_node,
   ge::NodePtr var_ref_src_var = root_graph->FindNode(src_var_name);
   if (var_ref_src_var == nullptr) {
     for (auto sub_graph : root_graph->GetAllSubgraphs()) {
-      auto node_ptr = sub_graph->FindNode(src_var_name);
-      if (node_ptr != nullptr) {
-        var_ref_src_var = node_ptr;
-        break;
-      }
+        auto node_ptr = sub_graph->FindNode(src_var_name);
+        if (node_ptr != nullptr) {
+          var_ref_src_var = node_ptr;
+          break;
+        }
     }
   }
   GE_IF_BOOL_EXEC(var_ref_src_var == nullptr || var_ref_src_var->GetOpDesc() == nullptr, return FAILED);

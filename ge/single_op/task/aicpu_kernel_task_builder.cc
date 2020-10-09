@@ -27,7 +27,7 @@ Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
     return RT_FAILED;
   }
   std::unique_ptr<uint8_t[]> aicpu_args;
-  aicpu_args.reset(new (std::nothrow) uint8_t[aicpu_arg_size]());
+  aicpu_args.reset(new(std::nothrow) uint8_t[aicpu_arg_size]());
   if (aicpu_args == nullptr) {
     GELOGE(RT_FAILED, "malloc failed, size = %zu", aicpu_arg_size);
     return RT_FAILED;
@@ -62,8 +62,8 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
   auto &kernel_ext_info = kernel_def_.kernel_ext_info();
   auto kernel_ext_info_size = kernel_def_.kernel_ext_info_size();
   GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
-                         "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.", kernel_ext_info.size(),
-                         kernel_ext_info_size);
+                         "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
+                         kernel_ext_info.size(), kernel_ext_info_size);
 
   ret = task.SetExtInfoAndType(kernel_ext_info);
   if (ret != SUCCESS) {

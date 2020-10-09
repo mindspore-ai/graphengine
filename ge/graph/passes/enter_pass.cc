@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,16 +47,17 @@ Status EnterPass::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  bool need_remove_flag =
-    in_node->GetInControlNodes().empty() && node->GetInControlNodes().empty() && node->GetOutDataNodes().empty();
+  bool need_remove_flag = in_node->GetInControlNodes().empty() &&
+                          node->GetInControlNodes().empty() &&
+                          node->GetOutDataNodes().empty();
   if (need_remove_flag) {
     for (auto &out_ctrl_node : node->GetOutControlNodes()) {
       if (out_ctrl_node == nullptr) {
         continue;
       }
       if (GraphUtils::RemoveEdge(node->GetOutControlAnchor(), out_ctrl_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s", node->GetName().c_str(),
-               out_ctrl_node->GetName().c_str());
+        GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s",
+               node->GetName().c_str(), out_ctrl_node->GetName().c_str());
         return FAILED;
       }
     }

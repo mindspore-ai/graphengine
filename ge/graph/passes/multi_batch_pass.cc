@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,34 @@ Status MultiBatchPass::ClearStatus() {
 }
 
 ///
+/// @ingroup ge
+/// @brief Set batch label for Case mode.
+/// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+/// @param [in] const NodePtr &case_node: Case Node.
+/// @return 0: SUCCESS / others: FAILED
+///
+Status MultiBatchPass::SetCaseLabel(const ComputeGraphPtr &graph, const NodePtr &case_node) {
+  const auto &func_desc = case_node->GetOpDesc();
+  if (!func_desc->HasAttr(ATTR_NAME_BATCH_NUM)) {
+    GELOGD("Graph: %s Not multi-batch, Node: %s", graph->GetName().c_str(), case_node->GetName().c_str());
+    return SUCCESS;
+  }
+
+  const auto &dynamic_branch_names = func_desc->GetSubgraphInstanceNames();
+  for (size_t i = 0; i < dynamic_branch_names.size(); ++i) {
+    const auto &subgraph = graph->GetSubgraph(dynamic_branch_names[i]);
+    GE_CHECK_NOTNULL(subgraph);
+
+    const string batch_label = "Batch_" + std::to_string(i);
+    for (const auto &node : subgraph->GetDirectNode()) {
+      (void)AttrUtils::SetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label);
+    }
+  }
+
+  return SUCCESS;
+}
+
+///
 /// @brief Replace & Combine SwitchN nodes
 /// @param [in] graph
 /// @param [out] pred_value
@@ -103,6 +131,10 @@ Status MultiBatchPass::ClearStatus() {
 ///
 Status MultiBatchPass::FindPredValue(const ComputeGraphPtr &graph, OutDataAnchorPtr &pred_value) {
   for (const NodePtr &node : graph->GetDirectNode()) {
+    if (node->GetType() == CASE) {
+      GE_CHK_STATUS_RET(SetCaseLabel(graph, node), "Set batch label failed");
+      continue;
+    }
     if (node->GetType() != SWITCHN) {
       continue;
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "subexpression_migration_pass.h"
 
 #include "graph/utils/node_utils.h"
@@ -162,13 +161,14 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
       }
 
       data_nodes[parent_index] = data;
+      GELOGD("%s, Parent index: %u, Data: %s", subgraph->GetName().c_str(), parent_index, data->GetName().c_str());
     }
   }
 
   for (const auto &data_nodes : graph_nodes) {
     if (data_nodes.second.size() != graph_nodes.begin()->second.size()) {
-      GELOGE(FAILED, "Subgraph %s has invalid Data nodes[%zu != %zu]", data_nodes.first->GetName().c_str(),
-             data_nodes.second.size(), graph_nodes.begin()->second.size());
+      GELOGE(FAILED, "Subgraph %s has invalid Data nodes[%zu != %zu]",
+             data_nodes.first->GetName().c_str(), data_nodes.second.size(), graph_nodes.begin()->second.size());
       return FAILED;
     }
   }
@@ -195,8 +195,8 @@ bool SubexpressionMigrationPass::GetAssociatedNodes(const NodePtr &node, map<uin
     const auto &in_anchor = node->GetInDataAnchor(i);
     const auto &out_anchor = in_anchor->GetPeerOutAnchor();
     if (out_anchor == nullptr) {
-      inputs[i] = kInvalidParent;
-      continue;
+        inputs[i] = kInvalidParent;
+        continue;
     }
 
     // Has none Data input node, Can not move to parent.
@@ -302,7 +302,7 @@ Status SubexpressionMigrationPass::GraphNodeMigration(const ComputeGraphPtr &gra
         continue;
       }
 
-      GELOGI("Move to parent: %s", base_node->GetName().c_str());
+      GELOGI("Move to parent: %s, parent index: %u", base_node->GetName().c_str(), base_idx);
       if (AppendParallelNode(graph_nodes, func_node, outputs) != SUCCESS) {
         return FAILED;
       }
@@ -335,12 +335,12 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
     }
 
     // Add Data to subgraph.
+    map<ComputeGraphPtr, uint32_t> append_num;
     for (auto &groups : graph_nodes) {
       const auto &subgraph = groups.first;
       auto &data_nodes = groups.second;
 
-      uint32_t data_index = data_nodes.size();
-      item.second = data_index + kCaseInputBase;  // Update to valid parent index.
+      item.second = func_node->GetAllInDataAnchorsSize() + append_num[subgraph]; // Update to valid parent index.
       std::string data_name = subgraph->GetName() + "_data_" + std::to_string(item.second);
 
       OpDescBuilder op_builder(data_name, DATA);
@@ -350,6 +350,7 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
         return OUT_OF_MEMORY;
       }
 
+      uint32_t data_index = item.second - kCaseInputBase;
       if (!AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
         GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
         return FAILED;
@@ -360,11 +361,13 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
         return FAILED;
       }
 
+      append_num[subgraph]++;
       data_nodes[item.second] = subgraph->AddNode(op_desc);
+      GELOGI("Add Node: %s, parent index: %u", op_desc->GetName().c_str(), item.second);
     }
 
     // Add InputTensor to functional Node.
-    NodeUtils::AppendInputAnchor(func_node, item.second + 1);
+    GE_CHK_GRAPH_STATUS_RET(NodeUtils::AppendInputAnchor(func_node, item.second + 1), "Append input failed");
     migration_append_ = true;
   }
 
@@ -385,7 +388,7 @@ Status SubexpressionMigrationPass::DetachParallelNode(const map<uint32_t, NodePt
   for (const auto &in_anchor : detach->GetAllInDataAnchors()) {
     const auto &out_anchor = in_anchor->GetPeerOutAnchor();
     if (out_anchor == nullptr) {
-      continue;
+        continue;
     }
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
 
@@ -412,12 +415,12 @@ Status SubexpressionMigrationPass::DetachParallelNode(const map<uint32_t, NodePt
 
     const auto &out_desc = detach->GetOpDesc()->GetOutputDesc(i);
     const auto &data_desc = data_node->GetOpDesc();
-    (void)data_desc->UpdateInputDesc(kDataOutIndex, out_desc);   // Set Data Input to new connect Node.
-    (void)data_desc->UpdateOutputDesc(kDataOutIndex, out_desc);  // Set Data Output to new connect Node.
+    (void)data_desc->UpdateInputDesc(kDataOutIndex, out_desc);    // Set Data Input to new connect Node.
+    (void)data_desc->UpdateOutputDesc(kDataOutIndex, out_desc);   // Set Data Output to new connect Node.
 
     for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
       if (in_anchor == nullptr) {
-        continue;
+          continue;
       }
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
       const auto &owner_node = in_anchor->GetOwnerNode();
@@ -452,7 +455,7 @@ Status SubexpressionMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
       GELOGE(FAILED, "Node: %s parent index %u not found", attach->GetName().c_str(), i);
       return FAILED;
     }
-    if (it_idx->second == kInvalidParent) {  // Not connect, Skip.
+    if (it_idx->second == kInvalidParent) {   // Not connect, Skip.
       continue;
     }
 
@@ -468,13 +471,13 @@ Status SubexpressionMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
     if (it_idx == outputs.end()) {
       return FAILED;
     }
-    if (it_idx->second == kInvalidParent) {  // Not connect, Skip.
+    if (it_idx->second == kInvalidParent) {   // Not connect, Skip.
       continue;
     }
 
     const auto &out_desc = attach->GetOpDesc()->GetOutputDesc(i);
     const auto &func_desc = func_node->GetOpDesc();
-    (void)func_desc->UpdateInputDesc(it_idx->second, out_desc);  // Set Data Input to new connect Node.
+    (void)func_desc->UpdateInputDesc(it_idx->second, out_desc);    // Set Data Input to new connect Node.
 
     const auto &in_anchor = func_node->GetInDataAnchor(it_idx->second);
     const auto &out_anchor = in_anchor->GetPeerOutAnchor();

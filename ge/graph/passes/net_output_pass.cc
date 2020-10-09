@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@
 
 namespace ge {
 static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
-  {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},    {"INT16", ge::DT_INT16},
-  {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
-  {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
+    {"FP32", ge::DT_FLOAT},    {"FP16", ge::DT_FLOAT16},  {"INT8", ge::DT_INT8},    {"INT16", ge::DT_INT16},
+    {"UINT16", ge::DT_UINT16}, {"UINT8", ge::DT_UINT8},   {"INT32", ge::DT_INT32},  {"INT64", ge::DT_INT64},
+    {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
 // the size of user defined output datatype or format string after split by ":".
 const size_t kUserDefinedElementCount = 2;
@@ -436,7 +436,7 @@ Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraph
 Status NetOutputPass::CreateNetOutputNode(OpDescPtr &net_output_desc, const ge::ComputeGraphPtr &graph) {
   // Only flush subgraph name
   string node_name =
-    (graph->GetParentGraph() != nullptr) ? (graph->GetName() + "_" + NODE_NAME_NET_OUTPUT) : NODE_NAME_NET_OUTPUT;
+      (graph->GetParentGraph() != nullptr) ? (graph->GetName() + "_" + NODE_NAME_NET_OUTPUT) : NODE_NAME_NET_OUTPUT;
   net_output_desc = MakeShared<OpDesc>(node_name, NETOUTPUT);
   if (net_output_desc == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Make shared net output op failed.");
@@ -629,7 +629,7 @@ Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &outpu
       GELOGD("Add user-define datatype:%s to netoutput node.",
              TypeUtils::DataTypeToSerialString(output_data_type).c_str());
       userdef_dtypes.push_back(
-        std::to_string(index).append(":").append(TypeUtils::DataTypeToSerialString(output_data_type)));
+          std::to_string(index).append(":").append(TypeUtils::DataTypeToSerialString(output_data_type)));
       continue;
     }
     // Output_node is not set,check if is_output_adjust_hw_layout is set
@@ -638,7 +638,7 @@ Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &outpu
       // Set DT_FLOAT16 & FORMAT_NC1HWC0
       userdef_dtypes.push_back(std::to_string(index).append(":").append(TypeUtils::DataTypeToSerialString(DT_FLOAT16)));
       userdef_formats.push_back(
-        std::to_string(index).append(":").append(TypeUtils::FormatToSerialString(FORMAT_NC1HWC0)));
+          std::to_string(index).append(":").append(TypeUtils::FormatToSerialString(FORMAT_NC1HWC0)));
     }
   }
   if (!userdef_dtypes.empty() && !ge::AttrUtils::SetListStr(op_desc, ATTR_ATC_USER_DEFINE_DATATYPE, userdef_dtypes)) {

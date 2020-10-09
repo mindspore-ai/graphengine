@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,8 @@ Status ReFormatKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Co
     GELOGW("Create shared ptr for GeTensor failed");
     return NOT_CHANGED;
   }
-  GE_IF_BOOL_EXEC(output_ptr->SetData(input.at(0)->GetData()) != GRAPH_SUCCESS, GELOGW("set data failed");
+  GE_IF_BOOL_EXEC(output_ptr->SetData(input.at(0)->GetData()) != GRAPH_SUCCESS,
+                  GELOGW("set data failed");
                   return NOT_CHANGED);
   v_output.emplace_back(output_ptr);
   GELOGD("ReFormatKernel success.");

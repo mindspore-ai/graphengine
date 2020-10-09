@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class HcclMemcpyPass : public GraphPass {
   std::string CheckDuplicateName(const std::string &node_name);
 
   Status ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
-                              const InDataAnchorPtr &hccl_in_anchor);
+          const InDataAnchorPtr &hccl_in_anchor);
 
   std::unordered_map<std::string, uint32_t> node_num_map_;
 };

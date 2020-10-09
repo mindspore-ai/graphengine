@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,8 +115,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
             int64_t dst_index = c0_idx + w_head_addr;
             int64_t dst_offset = dst_index * size;
             auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? total_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                      ? total_size - dst_offset
+                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             int64_t cIdx = c0_idx + c1_idx * c0;
             int64_t srcIdx = n_idx * chw + cIdx * hw + h_idx * w + w_idx;
             auto src_offset = srcIdx * size;
@@ -133,7 +133,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
               }
             } else {
               auto ret =
-                memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
+                  memset_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
               if (ret != EOK) {
                 GELOGE(INTERNAL_ERROR,
                        "Failed to set to 0 to "
@@ -173,10 +173,10 @@ Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult
     return PARAM_INVALID;
   }
   GELOGD(
-    "Begin to trans format from NCHW to NC1HWC0, src shape %s, data type "
-    "%s, dst shape %s memory size %ld",
-    ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-    ShapeToString(args.dst_shape).c_str(), total_size);
+      "Begin to trans format from NCHW to NC1HWC0, src shape %s, data type "
+      "%s, dst shape %s memory size %ld",
+      ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+      ShapeToString(args.dst_shape).c_str(), total_size);
   if (GetDstDataAfterTrans(args, result, size, total_size) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),

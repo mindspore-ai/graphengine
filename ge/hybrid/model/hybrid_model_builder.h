@@ -49,7 +49,9 @@ class HybridModelBuilder {
   static Status UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGraphPtr &merged_graph);
   static Status UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph &parent_graph, ComputeGraph &sub_graph);
   static Status InitWeights();
-  static Status BuildInputMapping(GraphItem &graph_item, std::vector<NodeItem *> &data_nodes, bool is_root_graph);
+  static Status BuildInputMapping(GraphItem &graph_item,
+                                  std::vector<NodeItem *> &data_nodes,
+                                  bool is_root_graph);
   static Status ResolveRefIo(NodeItem &node_item);
   Status BuildOutputMapping(GraphItem &partitioned_call, const NodeItem &node_item, bool is_root_graph);
   Status ValidateParams();
@@ -74,7 +76,9 @@ class HybridModelBuilder {
   Status ParseVarOutputs(NodeItem &node_item);
   Status LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem *parent_node_item);
 
-  const char *GetGraphName() const { return hybrid_model_.model_name_.c_str(); }
+  const char* GetGraphName() const {
+    return hybrid_model_.model_name_.c_str();
+  }
 
   const NodeItem *GetNodeItem(const NodePtr &node) const;
   NodeItem *MutableNodeItem(const NodePtr &node);
@@ -91,4 +95,4 @@ class HybridModelBuilder {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_MODEL_HYBRID_MODEL_BUILDER_H_
+#endif // GE_HYBRID_MODEL_HYBRID_MODEL_BUILDER_H_

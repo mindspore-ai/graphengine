@@ -25,7 +25,7 @@ namespace {
 inline bool IsVariable(const std::string &node_type) {
   return node_type == VARIABLE || node_type == VARIABLEV2 || node_type == VARHANDLEOP;
 }
-}  // namespace
+}
 
 bool VarAccelerateCtrl::IsVarPermitToChangeFormats(const std::string &var_name) {
   auto iter = var_names_to_change_times_.find(var_name);
@@ -39,10 +39,9 @@ void VarAccelerateCtrl::SetVarChanged(const std::string &var_name) {
   auto times = ++var_names_to_change_times_[var_name];
   for (auto &graph_id_to_var_names : graph_ids_to_var_names_) {
     if (graph_id_to_var_names.second.count(var_name) > 0) {
-      GELOGI(
-        "The format of var %s has been changed, total changed times %d, "
-        "the graph %u contains which should be re-build before next run",
-        var_name.c_str(), times, graph_id_to_var_names.first);
+      GELOGI("The format of var %s has been changed, total changed times %d, "
+             "the graph %u contains which should be re-build before next run",
+             var_name.c_str(), times, graph_id_to_var_names.first);
       /// The graph being compiled right now is also added to the rebuild-list
       /// and can be deleted by calling `SetGraphBuildEnd` at the end of compilation.
       graph_ids_need_rebuild_.insert(graph_id_to_var_names.first);

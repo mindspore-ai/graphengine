@@ -57,4 +57,4 @@ class AiCoreTaskBuilder {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_KERNEL_AICORE_TASK_BUILDER_H_
+#endif //GE_HYBRID_KERNEL_AICORE_TASK_BUILDER_H_

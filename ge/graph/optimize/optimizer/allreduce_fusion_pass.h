@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,10 +45,11 @@ class AllReducePass : public GraphPass {
                                         vector<ge::InControlAnchorPtr> &peerInControlFromOutControlVec,
                                         ge::NodePtr &srcNodePtr);
   Status GetPeerOutDataToInData(std::unordered_set<void *> &anchorSet,
-                                std::vector<ge::OutDataAnchorPtr> &peerOutDataAnchorVec, ge::NodePtr &srcNodePtr);
+                                std::vector<ge::OutDataAnchorPtr> &peerOutDataAnchorVec,
+                                ge::NodePtr &srcNodePtr);
   Status GetPeerInAnchorToOutData(std::unordered_set<void *> &anchorSet,
                                   std::vector<std::pair<int, ge::InDataAnchorPtr>> &fusionOpPeerInDataAnchor,
-                                  std::vector<std::pair<int, ge::InControlAnchorPtr>> &fusionOpPeerInControlFromOutData,
+                                  std::vector<std::pair<int, ge::InControlAnchorPtr>>&fusionOpPeerInControlFromOutData,
                                   ge::NodePtr &srcNodePtr);
 };
 }  // namespace ge

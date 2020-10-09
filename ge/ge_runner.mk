@@ -1,5 +1,5 @@
 LOCAL_PATH := $(call my-dir)
-
+include $(LOCAL_PATH)/stub/Makefile
 LIBGE_LOCAL_SRC_FILES := \
     proto/fusion_model.proto \
     proto/optimizer_priority.proto \
@@ -89,7 +89,9 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
     graph/manager/graph_var_manager.cc \
+    graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
+    graph/manager/memory_api.cc \
     graph/manager/model_manager/event_manager.cc        \
     graph/manager/trans_var_data_utils.cc \
     graph/manager/util/debug.cc                       \
@@ -179,6 +181,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/multi_batch_pass.cc \
     graph/passes/multi_batch_clone_pass.cc \
     graph/passes/subexpression_migration_pass.cc \
+    graph/passes/subgraph_const_migration_pass.cc \
     graph/passes/unused_args_clean_pass.cc \
     graph/passes/net_output_pass.cc \
     graph/passes/next_iteration_pass.cc \
@@ -368,7 +371,6 @@ LOCAL_SHARED_LIBRARIES := \
     libmsprof \
     liberror_manager \
 
-
 LOCAL_LDFLAGS := -lrt -ldl
 
 LOCAL_SHARED_LIBRARIES += \
@@ -392,9 +394,8 @@ endif
 
 LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
-LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc
-LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_prof.cc
-
+LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc \
+                   ../../out/ge/lib64/stub/ge_prof.cc \
 
 LOCAL_SHARED_LIBRARIES :=
 

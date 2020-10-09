@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "graph/build/run_context.h"
 
 #include "common/util.h"
@@ -167,8 +166,9 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
   GELOGI("CreateRunContext: data_mem_base_ = %p, weight_mem_base_ = %p, memory_size = %lu, weight_size = %lu",
          data_mem_base_, weight_mem_base_, data_mem_size_, weight_mem_size_);
 
-  run_context_ = {rt_model_,        nullptr, session_id,   data_mem_size_, data_mem_base_, weight_mem_size_,
-                  weight_mem_base_, buffer,  stream_list_, event_list_,    label_list_};
+  run_context_ = {rt_model_,        nullptr,          session_id, data_mem_size_, data_mem_base_,
+                  weight_mem_size_, weight_mem_base_, buffer,     stream_list_,   event_list_,
+                  label_list_};
   return SUCCESS;
 }
 

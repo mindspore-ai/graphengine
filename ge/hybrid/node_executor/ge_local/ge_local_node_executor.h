@@ -25,14 +25,16 @@ namespace ge {
 namespace hybrid {
 class RefInputTask : public NodeTask {
  public:
-  explicit RefInputTask(const NodePtr &node) : node_name_(node->GetName()), node_type_(node->GetType()) {}
+  explicit RefInputTask(const NodePtr &node)
+      : node_name_(node->GetName()),
+        node_type_(node->GetType()) {
+  }
 
   ~RefInputTask() = default;
 
   virtual Status UpdateArgs(TaskContext &context) override;
   virtual Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
   static bool IsBelong(const std::string &op_type);
-
  private:
   Status Execute(TaskContext &context);
   Status RefOneByOne(TaskContext &context);
@@ -49,17 +51,16 @@ class RefInputTask : public NodeTask {
 
 class DependInputShapeTask : public NodeTask {
  public:
-  explicit DependInputShapeTask(const NodePtr &node) : node_(node) {}
+  explicit DependInputShapeTask(const NodePtr &node) : node_(node) {
+  }
 
   ~DependInputShapeTask() = default;
 
   virtual Status UpdateArgs(TaskContext &context) override;
   virtual Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
   static bool IsBelong(const std::string &op_type);
-
  private:
   Status Execute(TaskContext &context);
-
  private:
   const NodePtr node_;
 
@@ -81,11 +82,13 @@ class ConstantNodeTask : public NodeTask {
 
 class GeLocalNodeExecutor : public NodeExecutor {
  public:
+
   Status PrepareTask(NodeTask &task, TaskContext &context) const override;
 
-  virtual Status LoadTask(const HybridModel &model, const NodePtr &node,
+  virtual Status LoadTask(const HybridModel &model,
+                          const NodePtr &node,
                           std::shared_ptr<NodeTask> &task) const override;
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif  // GE_HYBRID_KERNEL_GE_LOCAL_NODE_EXECUTOR_H_
+#endif // GE_HYBRID_KERNEL_GE_LOCAL_NODE_EXECUTOR_H_

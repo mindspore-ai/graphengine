@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ class AippOp : public InsertOpBase {
   Status ValidateParams() override;
 
  protected:
+
   ///
   /// @ingroup domi_omg
   /// @brief Generate Op Desc
@@ -60,13 +61,15 @@ class AippOp : public InsertOpBase {
   Status GetTargetPosition(ge::ComputeGraphPtr graph, ge::NodePtr &target_input,
                            std::vector<std::pair<ge::OutDataAnchorPtr, ge::InDataAnchorPtr>> &target_edges) override;
 
-  Status InsertAippToGraph(ge::ComputeGraphPtr &graph, std::string &aippConfigPath, const uint32_t index) override;
+  Status InsertAippToGraph(ge::ComputeGraphPtr &graph,
+                           std::string &aippConfigPath,
+                           const uint32_t index) override ;
 
   domi::AippOpParams::AippMode GetAippMode() override;
 
  private:
-  AippOp &operator=(const AippOp &aipp_op);
-  AippOp(const AippOp &aipp_op);
+  AippOp& operator=(const AippOp& aipp_op);
+  AippOp(const AippOp& aipp_op);
 
   void ConvertParamToAttr(ge::GeAttrValue::NAMED_ATTRS &aipp_attrs);
   void SetCscDefaultValue();
@@ -78,10 +81,13 @@ class AippOp : public InsertOpBase {
   Status CreateAippData(const NodePtr &aipp);
   Status AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size);
   Status AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aipp_cfg_path, const uint32_t &index);
+  Status AddAttrToAippData(const OpDescPtr &aipp_data_op_desc);
 
   domi::AippOpParams *aipp_params_ = nullptr;
   ge::NodePtr aipp_node_ = nullptr;
+  ge::NodePtr data_node_linked_aipp = nullptr;
 };
 }  // namespace ge
 
 #endif  // GE_GRAPH_PREPROCESS_INSERT_OP_GE_AIPP_OP_H_
+

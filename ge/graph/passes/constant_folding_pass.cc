@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,46 @@
 #include "graph/passes/constant_folding_pass.h"
 
 #include <vector>
-
-#include "common/debug/log.h"
-#include "common/types.h"
-#include "framework/common/debug/ge_log.h"
 #include "graph/operator_factory.h"
-#include "graph/utils/attr_utils.h"
 #include "graph/utils/node_utils.h"
-#include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
-#include "inc/kernel.h"
+#include "init/gelib.h"
 
 namespace ge {
 const int64_t kStartCallNum = 1;
+const std::string kKernelLibName = "aicpu_tf_kernel";
+// tf_kernel.json opsFlag config
+const std::string kOpsFlagClose = "0";
+
+Status RunOpKernelWithCheck(NodePtr &node,
+                            const vector<ConstGeTensorPtr> &inputs,
+                            std::vector<GeTensorPtr> &outputs) {
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized.");
+    return UNSUPPORTED;
+  }
+  OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
+  if (kernel_info == nullptr) {
+    GELOGE(FAILED, "Get op kernel info store %s failed", kKernelLibName.c_str());
+    return UNSUPPORTED;
+  }
+
+  std::string ops_flag;
+  kernel_info->opsFlagCheck(*node, ops_flag);
+  if (ops_flag == kOpsFlagClose) {
+    return UNSUPPORTED;
+  }
+  return FoldingPass::RunOpKernel(node, inputs, outputs);
+}
 
 const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>>
-  &ConstantFoldingPass::GetGeConstantFoldingPerfStatistic() const {
+    &ConstantFoldingPass::GetGeConstantFoldingPerfStatistic() const {
   return statistic_of_ge_constant_folding_;
 }
 
 const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>>
-  &ConstantFoldingPass::GetOpConstantFoldingPerfStatistic() const {
+    &ConstantFoldingPass::GetOpConstantFoldingPerfStatistic() const {
   return statistic_of_op_constant_folding_;
 }
 
@@ -63,8 +82,8 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
   auto inputs = OpDescUtils::GetInputData(input_nodes);
   vector<GeTensorPtr> outputs;
   // Statistic of ge constant folding kernel
-  uint64_t start_time = GetCurrentTimestap();
-  auto ret = RunOpKernel(node, inputs, outputs);
+  uint64_t start_time = GetCurrentTimestamp();
+  auto ret = RunOpKernelWithCheck(node, inputs, outputs);
   if (ret != SUCCESS) {
     auto op_kernel = folding_pass::GetKernelByType(node);
     if (op_kernel == nullptr) {
@@ -74,9 +93,9 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
     }
 
     // Statistic of op and fe constant folding kernel
-    start_time = GetCurrentTimestap();
+    start_time = GetCurrentTimestamp();
     ret = op_kernel->Compute(node_desc, inputs, outputs);
-    uint64_t cost_time = GetCurrentTimestap() - start_time;
+    uint64_t cost_time = GetCurrentTimestamp() - start_time;
     if (statistic_of_ge_constant_folding_.find(node->GetType()) != statistic_of_ge_constant_folding_.end()) {
       uint64_t &cnt = statistic_of_ge_constant_folding_[node->GetType()].first;
       uint64_t &cur_cost_time = statistic_of_ge_constant_folding_[node->GetType()].second;
@@ -100,10 +119,10 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
       uint64_t &cnt = statistic_of_op_constant_folding_[node->GetType()].first;
       uint64_t &cost_time = statistic_of_op_constant_folding_[node->GetType()].second;
       cnt++;
-      cost_time += GetCurrentTimestap() - start_time;
+      cost_time += GetCurrentTimestamp() - start_time;
     } else {
       statistic_of_op_constant_folding_[node->GetType()] =
-        std::pair<uint64_t, uint64_t>(kStartCallNum, GetCurrentTimestap() - start_time);
+          std::pair<uint64_t, uint64_t>(kStartCallNum, GetCurrentTimestamp() - start_time);
     }
   }
 

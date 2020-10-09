@@ -74,8 +74,8 @@ bool RuntimeModel::InitStream(std::shared_ptr<DavinciModel> &davinci_model) {
   for (uint32_t i = 0; i < davinci_model->GetStreamNum(); ++i) {
     rtStream_t stream = nullptr;
     uint32_t flag = (force_copy_streams.find(i) != force_copy_streams.end())
-                      ? (RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY)
-                      : (RT_STREAM_PERSISTENT);
+                        ? (RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY)
+                        : (RT_STREAM_PERSISTENT);
 
     rtError_t rt_ret = rtStreamCreateWithFlags(&stream, davinci_model->GetPriority(), flag);
     if (rt_ret != RT_ERROR_NONE) {
@@ -115,34 +115,23 @@ bool RuntimeModel::InitEvent(uint32_t event_num) {
   return true;
 }
 
-bool RuntimeModel::InitLabel(std::shared_ptr<DavinciModel> &davinci_model) {
-  GELOGI("batch number:%u.", davinci_model->GetBatchNum());
-  label_list_.resize(davinci_model->GetBatchNum());
-  for (auto &task_info : davinci_model->GetTaskInfoList()) {
-    if (task_info == nullptr) {
-      GELOGE(PARAM_INVALID, "task_info is null.");
-      continue;
-    }
-
-    if (task_info->type() != TaskInfoType::LABEL_SET) {
-      continue;
-    }
-    auto label_set_task_info = std::static_pointer_cast<LabelSetTaskInfo>(task_info);
-
-    if (label_set_task_info->stream_id() >= stream_list_.size()) {
-      GELOGE(PARAM_INVALID, "Invalid stream id.");
-      return false;
-    }
-
-    rtLabel_t rt_label = nullptr;
-    rtError_t rt_ret = rtLabelCreateEx(&rt_label, stream_list_[label_set_task_info->stream_id()]);
+bool RuntimeModel::InitLabel(uint32_t batch_num) {
+  GELOGI("batch number:%u.", batch_num);
+  for (uint32_t i = 0; (batch_num != 0 && i <= batch_num); ++i) {
+    rtLabel_t rt_lLabel = nullptr;
+    rtError_t rt_ret = rtLabelCreate(&rt_lLabel);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, i; %u; ret: 0x%X", i, rt_ret);
       return false;
     }
-    label_list_[label_set_task_info->label_id()] = rt_label;
-  }
 
+    if (rt_lLabel == nullptr) {
+      GELOGE(RT_FAILED, "rtLabel is nullptr!");
+      return false;
+    }
+
+    label_list_.emplace_back(rt_lLabel);
+  }
   return true;
 }
 
@@ -174,7 +163,7 @@ bool RuntimeModel::InitResource(std::shared_ptr<DavinciModel> &davinci_model) {
     return false;
   }
 
-  if (!InitLabel(davinci_model)) {
+  if (!InitLabel(davinci_model->GetBatchNum())) {
     return false;
   }
 
@@ -292,6 +281,7 @@ bool RuntimeModel::DistributeTask() {
     GELOGE(FAILED, "DistributeTask failed");
     return false;
   }
+
   return true;
 }
 
@@ -303,14 +293,10 @@ bool RuntimeModel::Run() {
     return false;
   }
 
-  GELOGI("Run rtModelExecute success, ret = 0x%X", ret);
+  GELOGI("Run rtModelExecute success");
 
   ret = rtStreamSynchronize(rt_model_stream_);
   if (ret != RT_ERROR_NONE) {
-    if (ret == RT_ERROR_END_OF_SEQUENCE) {
-      GELOGI("Model stream RT_ERROR_END_OF_SEQUENCE signal received, ret = 0x%X", ret);
-      return true;
-    }
     GELOGE(RT_FAILED, "Model stream sync failed, ret = 0x%X", ret);
     return false;
   }
@@ -470,7 +456,7 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
     }
 
     if (constant->output_tensors[0].size < constant->weight_data.size()) {
-      GELOGE(PARAM_INVALID, "Output size:%u less than weight data size:%zu", constant->output_tensors[0].size,
+      GELOGE(PARAM_INVALID, "Output size:%u is less than weight data size:%zu", constant->output_tensors[0].size,
              constant->weight_data.size());
       return false;
     }
@@ -485,8 +471,11 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
       /// The logic of GetShapeSize is wrong, the scaler tensor's GetShapeSize is zero
       /// and that of unknown shape is zero too.
       /// Unknown shape will not appear here, so we can use zero judge a tensor is scaler or not.
-      int64_t elem_num =
-        (constant->weight_tensors[0].GetShapeSize() == 0) ? 1 : constant->weight_tensors[0].GetShapeSize();
+      int64_t elem_num = constant->weight_tensors[0].GetShapeSize();
+      if (elem_num == 0 && constant->weight_tensors[0].size == 0) {
+        elem_num = 1;
+      }
+
       if (constant->weight_data.size() < sizeof(uint64_t)) {
         GELOGE(FAILED, "weight_data size is smaller than sizeof(uint64_t)");
         return false;

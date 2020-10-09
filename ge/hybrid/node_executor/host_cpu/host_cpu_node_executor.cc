@@ -31,8 +31,8 @@ Status HostNodeTaskBase::UpdateArgs(TaskContext &) {
 
 Status HostNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Start execute.", context.GetNodeName());
-  GE_CHK_STATUS_RET(Execute(context), "node:%s type:%s, task execute failed.", node_->GetName().c_str(),
-                    node_->GetType().c_str())
+  GE_CHK_STATUS_RET(Execute(context), "node:%s type:%s, task execute failed.",
+                    node_->GetName().c_str(), node_->GetType().c_str())
   if (done_callback) {
     GELOGD("[%s] Start invoke callback.", context.GetNodeName());
     done_callback();
@@ -49,7 +49,8 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
   for (int32_t i = 0; i < context.NumInputs(); ++i) {
     const auto &input_desc = op_desc->GetInputDesc(i);
     GE_CHECK_NOTNULL(context.GetInput(i));
-    auto in_tensor = MakeShared<GeTensor>(input_desc, reinterpret_cast<const uint8_t *>(context.GetInput(i)->GetData()),
+    auto in_tensor = MakeShared<GeTensor>(input_desc,
+                                          reinterpret_cast<const uint8_t *>(context.GetInput(i)->GetData()),
                                           context.GetInput(i)->GetSize());
     GE_CHECK_NOTNULL(in_tensor);
     in_tensor->MutableTensorDesc().SetDataType(input_desc.GetDataType());
@@ -70,8 +71,9 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     }
     auto tensor = context.GetOutput(i);
     GE_CHECK_NOTNULL(tensor);
-    auto out_tensor =
-      MakeShared<GeTensor>(output_desc, reinterpret_cast<const uint8_t *>(tensor->GetData()), tensor->GetSize());
+    auto out_tensor = MakeShared<GeTensor>(output_desc,
+                                           reinterpret_cast<const uint8_t *>(tensor->GetData()),
+                                           tensor->GetSize());
     GE_CHECK_NOTNULL(out_tensor);
     out_tensor->MutableTensorDesc().SetDataType(output_desc.GetDataType());
     out_tensor->MutableTensorDesc().SetShape(output_desc.GetShape());
@@ -87,22 +89,24 @@ Status HostCpuNodeTask::Execute(TaskContext &context) {
   RunContext run_context;
   auto host_kernel = hybrid::host_cpu::KernelFactory::Instance().CreateKernel(node_);
   if (host_kernel == nullptr) {
-    GELOGE(UNSUPPORTED, "node %s type %s is not supported by host kernel.", node_->GetName().c_str(),
-           node_->GetType().c_str());
+    GELOGE(UNSUPPORTED, "node %s type %s is not supported by host kernel.",
+           node_->GetName().c_str(), node_->GetType().c_str());
     return UNSUPPORTED;
   }
 
   Status compute_ret = host_kernel->Compute(context);
   if (compute_ret != SUCCESS) {
-    GELOGE(compute_ret, "node %s type %s compute failed or not imply.", node_->GetName().c_str(),
-           node_->GetType().c_str());
+    GELOGE(compute_ret, "node %s type %s compute failed or not imply.",
+           node_->GetName().c_str(), node_->GetType().c_str());
     return compute_ret;
   }
 
   return SUCCESS;
 }
 
-Status HostCpuNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const { return task.UpdateArgs(context); }
+Status HostCpuNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
+  return task.UpdateArgs(context);
+}
 
 Status HostCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,
                                      std::shared_ptr<NodeTask> &task) const {
@@ -110,7 +114,9 @@ Status HostCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
   auto mem_type = static_cast<uint32_t>(HOST_DDR);
-  (void)AttrUtils::SetInt(op_desc, ATTR_OUTPUT_MEMORY_TYPE, mem_type);
+  for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
+    (void)AttrUtils::SetInt(op_desc->MutableOutputDesc(i), ATTR_OUTPUT_MEMORY_TYPE, mem_type);
+  }
   const std::string &name = node->GetName();
   const std::string &type = node->GetType();
   if (HostCpuEngine::GetInstance().CheckSupported(type)) {

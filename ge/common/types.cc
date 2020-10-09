@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,9 +49,9 @@ const std::string RTS_PROFILE_PATH = "RTS_PATH";
 const std::string PROFILE_STOP_KEY = "stop";
 const std::string PROFILE_STOP_VALUE = "enable";
 const std::map<std::string, std::string> PROFILE_COMPONENT_MAP{
-  {"ome", OME_PROFILE},
-  {"cce", CCE_PROFILE},
-  {"runtime", RTS_PROFILE},
+    {"ome", OME_PROFILE},
+    {"cce", CCE_PROFILE},
+    {"runtime", RTS_PROFILE},
 };
 const std::string PROFILE_CONFIG = "config";
 
@@ -794,7 +794,7 @@ const uint32_t XRGB_CHN_NUM = 4;
 ///
 const bool DEFAULT_GLOBAL_POOLING = false;
 
-const uint32_t MODEL_VERSION = 0x10000000;  ///< Model version 1.0///
+const uint32_t MODEL_VERSION = 0x10000000; ///< Model version 1.0///
 
 // Eltwise's input size
 const int ELTWISE_MIN_INPUT_SIZE = 2;

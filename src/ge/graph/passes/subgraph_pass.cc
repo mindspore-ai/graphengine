@@ -176,6 +176,9 @@ Status SubgraphPass::WhileInputNodes(const ComputeGraphPtr &graph, const NodePtr
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     NodePtr in_node = peer_out_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(in_node);
+    if (in_node->GetType() == VARIABLE || in_node->GetType() == VARHANDLEOP || in_node->GetType() == VARIABLEV2) {
+      continue;
+    }
     // Input->While and Input link to other nodes need insert memcpy
     if (peer_out_anchor->GetPeerInDataAnchors().size() > 1) {
       GELOGD("Input %s of While %s links to other nodes.", in_node->GetName().c_str(), node->GetName().c_str());

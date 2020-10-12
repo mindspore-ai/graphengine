@@ -20,7 +20,7 @@
 #include "base.h"
 #include "event.h"
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -188,7 +188,7 @@ RTS_API rtError_t rtStreamActive(rtStream_t active_stream, rtStream_t stream);
  */
 RTS_API rtError_t rtStreamSwitchN(void *ptr, uint32_t size, void *valuePtr, rtStream_t *trueStreamPtr,
                                   uint32_t elementSize, rtStream_t stream, rtSwitchDataType_t dataType);
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

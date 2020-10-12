@@ -27,13 +27,13 @@
 namespace ge {
 
 /**
-*@brief aicpu assit help op for auxiliary matrix generation.
+*@brief aicpu assit help op for auxiliary matrix generation. \n
 
 *@par Inputs:
-*The input is dynamic for attribute func_name \n
+*The input is dynamic for attribute func_name   \n
 
 *@par Attributes:
-*@li func_name:An required param, for example "topkv2". \n
+*@li func_name:An required param, for example "topkv2".   \n
 
 *@par Outputs:
 *The output is dynamic for attribute func_name.
@@ -47,10 +47,10 @@ REG_OP(AssistHelp)
     . OP_END_FACTORY_REG(AssistHelp)
 
 /**
-*@brief aicpu cache help for lhisi cache flush.
+*@brief aicpu cache help for lhisi cache flush. \n
 
 *@par Inputs:
-*The input is dynamic for attribute func_name \n
+*The input is dynamic for attribute func_name   \n
 
 *@par Outputs:
 *The output is dynamic for attribute func_name.
@@ -61,13 +61,16 @@ REG_OP(CacheUpdate)
     .OP_END_FACTORY_REG(CacheUpdate)
 
 /**
-*@brief transfer data from L1 buffer to DDR or DDR to L1.
+*@brief transfer data from L1 buffer to DDR or DDR to L1. \n
 
 *@par Inputs:
-*The input is dynamic for attribute func_name \n
+*The input is dynamic for attribute func_name   \n
 
 *@par Outputs:
 *The output is dynamic for attribute func_name.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(InternalDataMove)
     .INPUT(x, TensorType::ALL())

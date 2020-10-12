@@ -190,6 +190,10 @@ Status ForPass::FindInputsAndOutputs(const NodePtr &node, std::vector<OutDataAnc
       GELOGE(FAILED, "FindInputWithIndex %s:%u failed: in_data_anchor is NULL.", node->GetName().c_str(), index);
       return FAILED;
     }
+    GE_IF_BOOL_EXEC(
+      in_data_anchor->GetPeerOutAnchor() == nullptr,
+      GELOGW("Get null input by index %d from node %s ", in_data_anchor->GetIdx(), node->GetName().c_str());
+      continue);
     data_inputs.emplace_back(in_data_anchor->GetPeerOutAnchor());
   }
 

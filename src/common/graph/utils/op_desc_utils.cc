@@ -513,7 +513,6 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY vector<GeTensorPtr> OpDescUtils::
   }
   return MutableWeights(*node);
 }
-
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 OpDescUtils::SetWeights(ge::Node &node, const vector<ge::GeTensorPtr> &weights) {
   GE_CHK_BOOL_EXEC(node.GetOpDesc() != nullptr, return GRAPH_PARAM_INVALID, "node.GetOpDesc is nullptr!");
@@ -558,6 +557,53 @@ OpDescUtils::SetWeights(ge::Node &node, const vector<ge::GeTensorPtr> &weights) 
     std::vector<ge::NodePtr> original_nodes;
     ge::GraphUtils::RecordOriginalNames(original_nodes, const_node);
   }
+  return GRAPH_SUCCESS;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
+OpDescUtils::SetWeights(ge::Node &node, const map<int, ge::GeTensorPtr> &weights_map) {
+  GE_CHECK_NOTNULL(node.GetOpDesc());
+  // 1. node is const
+  if (node.GetOpDesc()->GetType() == CONSTANT) {
+    if (weights_map.size() == CONST_OP_NORMAL_WEIGHT_SIZE) {
+      return SetWeights(node.GetOpDesc(), weights_map.begin()->second);
+    }
+    GELOGE(GRAPH_PARAM_INVALID, "const op %s weight size %zu should be 1", node.GetName().c_str(), weights_map.size());
+    return GRAPH_PARAM_INVALID;
+  }
+  // 2. node is not const
+  for (const auto &pair : weights_map) {
+    auto in_data_anchor = node.GetInDataAnchor(pair.first);
+    if (in_data_anchor != nullptr && in_data_anchor->GetPeerOutAnchor() != nullptr) {
+      // a. update const input node
+      auto out_anchor = in_data_anchor->GetPeerOutAnchor();
+      auto peer_node = out_anchor->GetOwnerNode();
+      if (peer_node == nullptr) {
+        GELOGE(GRAPH_PARAM_INVALID, "op %s [%d]'s input node is null", node.GetName().c_str(), pair.first);
+        return GRAPH_PARAM_INVALID;
+      }
+      if (peer_node->GetType() != CONSTANT) {
+        GELOGE(GRAPH_PARAM_INVALID, " op %s [%d]'s input node should be const, but is %s type:%s ",
+               node.GetName().c_str(), pair.first, peer_node->GetName().c_str(), peer_node->GetType().c_str());
+      }
+      SetWeights(peer_node->GetOpDesc(), pair.second);
+    } else {
+      // b. create new const input node
+      auto const_opdesc = CreateConstOp(pair.second);
+      GE_CHECK_NOTNULL(const_opdesc);
+      auto owner_graph = node.GetOwnerComputeGraph();
+      if (owner_graph == nullptr) {
+        GELOGE(GRAPH_PARAM_INVALID, "node's graph is empty, name: %s", node.GetName().c_str());
+        return GRAPH_PARAM_INVALID;
+      }
+      auto const_node = owner_graph->AddNodeFront(const_opdesc);
+      if (node.AddLinkFrom(static_cast<uint32_t>(pair.first), const_node) != GRAPH_SUCCESS) {
+        GELOGE(GRAPH_FAILED, "op %s add const to input index[%d] failed", node.GetName().c_str(), pair.first);
+        return GRAPH_FAILED;
+      }
+    }
+  }
+  NodeUtils::UpdateIsInputConst(node);
   return GRAPH_SUCCESS;
 }
 

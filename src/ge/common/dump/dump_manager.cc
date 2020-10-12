@@ -49,7 +49,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
     dump_properties_.ClearDumpPropertyValue();
     return SUCCESS;
   }
+  dump_properties_.SetDumpStatus(dump_status);
+
   dump_op_switch = dump_config.dump_op_switch;
+  dump_properties_.SetDumpOpSwitch(dump_op_switch);
   if (dump_op_switch == kDumpoff && dump_config.dump_list.empty()) {
     GELOGE(PARAM_INVALID, "Dump list is invalid,dump_op_switch is %s", dump_op_switch.c_str());
     return PARAM_INVALID;
@@ -93,14 +96,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   dump_properties_.SetDumpMode(dump_mode);
 
   return SUCCESS;
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool DumpManager::IsDumpOpen() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (!dump_properties_.GetDumpPath().empty()) {
-    return true;
-  }
-  return false;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const DumpProperties &DumpManager::GetDumpProperties() {

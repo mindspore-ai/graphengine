@@ -239,7 +239,7 @@ Status MultiBatchClonePass::CreateIndexConstNode(const ComputeGraphPtr &graph, N
 
   GeTensorDesc const_tensor(GeShape({count}), FORMAT_ND, DT_INT32);
   GeTensor tensor(const_tensor);
-  tensor.SetData(reinterpret_cast<uint8_t *>(addr.get()), count * sizeof(int32_t));
+  (void)tensor.SetData(reinterpret_cast<uint8_t *>(addr.get()), count * sizeof(int32_t));
   if (!AttrUtils::SetTensor(const_desc, ATTR_NAME_WEIGHTS, tensor)) {
     GELOGE(OUT_OF_MEMORY, "Failed to init tensor value for const %s", const_desc->GetName().c_str());
     return FAILED;

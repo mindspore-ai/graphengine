@@ -413,7 +413,8 @@ BlockMemAssigner::BlockMemAssigner(ComputeGraphPtr compute_graph, const map<stri
       life_time_(0) {}
 
 BlockMemAssigner::~BlockMemAssigner() {
-  for (MemoryBlock *memory_block : memory_blocks_) {
+  GELOGD("blocks_store_ size : %lu", blocks_store_.size());
+  for (MemoryBlock *memory_block : blocks_store_) {
     GE_DELETE_NEW_SINGLE(memory_block);
   }
 }
@@ -544,7 +545,7 @@ bool CanReuseBySize(const map<string, uint64_t> &reusable_block_counts, const Me
 }
 
 bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
-                                                   uint32_t &peer_input_index) {
+                                                   uint32_t &peer_input_index, bool &no_need_assign_memory) {
   if (n == nullptr || n->GetAllOutDataAnchors().size() <= 0) {
     return false;
   }
@@ -571,6 +572,11 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
 
       // If GetBool fail, is_input_continuous is false.
       (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
+
+      GE_IF_BOOL_EXEC(is_input_continuous && CheckIsZeroMemNodeType(peer_node->GetType()),
+                      GELOGI("Node[%s] output[%u] no_need_assign_memory.", n->GetName().c_str(), out_index);
+                      no_need_assign_memory = true; return false;);
+
       if (is_input_continuous) {
         if (n->GetOwnerComputeGraph() != nullptr) {
           string graph_name = n->GetOwnerComputeGraph()->GetName();
@@ -828,6 +834,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
     }
   }
   memory_blocks_.emplace_back(block);
+  blocks_store_.emplace_back(block);
   return block;
 }
 
@@ -1143,8 +1150,10 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     bool out_node_set_continuous_input = false;
     bool no_need_assign_memory = ((size == 0) || CheckIsZeroMemNodeType(node->GetType()));
     if (!no_need_assign_memory) {
-      out_node_set_continuous_input = IsOutNodeSetContinuousInput(node, i, peer_name, peer_input_index);
-      no_need_assign_memory = IsAtomicOutputMemory(node, i, is_atomic, out_node_set_continuous_input);
+      out_node_set_continuous_input =
+        IsOutNodeSetContinuousInput(node, i, peer_name, peer_input_index, no_need_assign_memory);
+      GE_IF_BOOL_EXEC(!no_need_assign_memory,
+                      no_need_assign_memory = IsAtomicOutputMemory(node, i, is_atomic, out_node_set_continuous_input););
     }
     no_need_assign_memory = (no_need_assign_memory || IsKnownSubgraphData(node));
     if (no_need_assign_memory) {
@@ -1296,6 +1305,11 @@ void MergeBlocks(std::vector<MemoryBlock *> &dest, std::vector<MemoryBlock *> &s
       return;
     }
     if (dest[i] != nullptr && src[i] != nullptr) {
+      if (!dest[i]->reuse_mem_ || !src[i]->reuse_mem_) {
+        GELOGD("Diff batch's workspace can't be reused, i: %zu, dest[i]: %s, stream: %ld, src[i]: %s, stream: %ld.", i,
+               dest[i]->String().c_str(), dest[i]->stream_id_, src[i]->String().c_str(), src[i]->stream_id_);
+        continue;
+      }
       for (auto &symbol : src[i]->SymbolList()) {
         dest[i]->AddSymbol(symbol);
       }

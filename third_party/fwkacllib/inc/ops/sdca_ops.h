@@ -27,12 +27,12 @@
 namespace ge {
 
 /**
-*@brief Distributed version of Stochastic Dual Coordinate Ascent (SDCA) optimizer for \n
-*linear models with L1 + L2 regularization. As global optimization objective is \n
-*strongly-convex, the optimizer optimizes the dual objective at each step. The \n
-*optimizer applies each update one example at a time. Examples are sampled \n
-*uniformly, and the optimizer is learning rate free and enjoys linear convergence \n
-*rate.
+*@brief Distributed version of Stochastic Dual Coordinate Ascent (SDCA) optimizer for
+*linear models with L1 + L2 regularization. As global optimization objective is
+*strongly-convex, the optimizer optimizes the dual objective at each step. The
+*optimizer applies each update one example at a time. Examples are sampled
+*uniformly, and the optimizer is learning rate free and enjoys linear convergence
+*rate . \n
 
 *@par Inputs:
 *@li sparse_example_indices: a list of vectors which contain example indices.
@@ -41,7 +41,7 @@ namespace ge {
 *@li dense_features: a list of matrices which contains the dense feature values.
 *@li example_weights: a vector which contains the weight associated with each example.
 *@li example_labels: a vector which contains the label/target associated with each example.
-*@li sparse_indices: a list of vectors where each value is the indices which has \n
+*@li sparse_indices: a list of vectors where each value is the indices which has
 *corresponding weights in sparse_weights. This field maybe omitted for the dense approach.
 *@li sparse_weights: a list of vectors where each value is the weight associated with a sparse feature group.
 *@li dense_weights: a list of vectors where the values are the weights associated with a dense feature group.
@@ -50,18 +50,17 @@ namespace ge {
 *@li l1: Symmetric l1 regularization strength.
 *@li l2: Symmetric l2 regularization strength.
 *@li num_loss_partitions: Number of partitions of the global loss function.
-*@li num_inner_iterations: Number of iterations per mini-batch.
+*@li num_inner_iterations: Number of iterations per mini-batch . \n
 
 *@par Outputs:
-*y: A Returns a list of vectors containing the updated example state \n
-*data.a list of vectors where each value is the delta \n
-*weights associated with a sparse feature group.a list of vectors where the values are the delta \n
-*weights associated with a dense feature group.
+*y: A Returns a list of vectors containing the updated example state
+*data.a list of vectors where each value is the delta
+*weights associated with a sparse feature group.a list of vectors where the values are the delta
+*weights associated with a dense feature group . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow SdcaOptimizerV2 operator.
 */
-
 REG_OP(SdcaOptimizerV2)
     .DYNAMIC_INPUT(sparse_example_indices, TensorType({DT_INT64}))
     .DYNAMIC_INPUT(sparse_feature_indices, TensorType({DT_INT64}))

@@ -33,7 +33,6 @@ COMMON_LOCAL_SRC_FILES := \
     ./utils/tuning_utils.cc \
     ./utils/graph_utils.cc \
     ./utils/ge_ir_utils.cc \
-    ./utils/node_utils.cc \
     ./utils/op_desc_utils.cc \
     ./utils/type_utils.cc \
     ./utils/tensor_utils.cc \
@@ -44,6 +43,7 @@ COMMON_LOCAL_SRC_FILES := \
     option/ge_context.cc \
     option/ge_local_context.cc \
     ./runtime_inference_context.cc \
+    ./utils/node_utils.cc \
 
 COMMON_LOCAL_C_INCLUDES := \
     proto/om.proto \

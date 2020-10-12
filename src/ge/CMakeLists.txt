@@ -51,6 +51,7 @@ include_directories(${GE_SOURCE_DIR}/inc/graph)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/toolchain)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
@@ -58,6 +59,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 # need to remove dependencies on pb files later
 file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "analyzer/analyzer.cc"
+        "client/ge_prof.cc"
         "client/ge_api.cc"
         "common/dump/dump_manager.cc"
         "common/dump/dump_properties.cc"
@@ -225,6 +227,9 @@ target_link_libraries(ge_runner
         ${msprof}
         ${runtime}
         ${resouce}
+        ${ascend_hal}
+        ${adump_server}
+        ${msprofiler}
         rt
         dl)
 
@@ -235,6 +240,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "common/dump/dump_properties.cc"
         "common/dump/dump_manager.cc"
         "common/dump/dump_op.cc"
+        "common/dump/dump_server.cc"
         "common/formats/format_transfers/*.cc"
         "common/formats/formats.cc"
         "common/formats/utils/formats_trans_utils.cc"
@@ -335,6 +341,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "host_kernels/unpack_kernel.cc"
         "host_kernels/unsqueeze_kernel.cc"
         "hybrid/hybrid_davinci_model_stub.cc"
+        "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
         "init/gelib.cc"
         "ir_build/atc_ir_common.cc"
         "ir_build/ge_ir_build.cc"
@@ -352,7 +359,10 @@ add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS} ${PROTO_HEADER_HD
 target_compile_definitions(ge_compiler PRIVATE
         PROTOBUF_INLINE_NOT_IN_HEADERS=0
         REUSE_MEMORY=1
-        FMK_HOST_INFER)
+        FMK_HOST_INFER
+        FMK_SUPPORT_DUMP
+        COMPILE_OMG_PACKAGE
+        REUSE_MEMORY=1)
 target_link_libraries(ge_compiler
         graph
         ge_common

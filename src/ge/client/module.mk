@@ -4,6 +4,7 @@ LOCAL_PATH := $(call my-dir)
 COMMON_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
     ge_api.cc \
+    ge_prof.cc \
 
 
 COMMON_LOCAL_C_INCLUDES := \
@@ -69,7 +70,10 @@ LOCAL_SHARED_LIBRARIES := \
     libregister \
     libge_compiler \
     libge_common \
+    libmsprof \
+    stub/libascend_hal
 
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -102,7 +106,9 @@ LOCAL_SHARED_LIBRARIES := \
     libruntime \
     libge_compiler \
     libge_common \
+    libmsprof
 
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 
 LOCAL_LDFLAGS := -lrt -ldl
 LOCAL_CFLAGS += \

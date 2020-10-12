@@ -29,6 +29,7 @@ COMMON_LOCAL_SRC_FILES := \
     common/dump/dump_properties.cc \
     common/dump/dump_manager.cc \
     common/dump/dump_op.cc \
+    common/dump/dump_server.cc \
     common/helper/model_cache_helper.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
 
@@ -254,6 +255,7 @@ OME_HOST_SRC_FILES := \
     single_op/stream_resource.cc                                         \
     single_op/single_op_manager.cc                                       \
     hybrid/hybrid_davinci_model_stub.cc                                  \
+    hybrid/node_executor/aicpu/aicpu_ext_info.cc                         \
     # graph/load/new_model_manager/task_info/hccl_task_info.cc
 
 OME_DEVICE_SRC_FILES := $(OME_HOST_SRC_FILES)
@@ -286,6 +288,7 @@ COMMON_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
+    $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \
     third_party/protobuf/include \
     third_party/opencv/include \
@@ -340,6 +343,7 @@ DEVICE_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi \
+    $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \
     third_party/protobuf/include \
     third_party/opencv/include \
@@ -351,7 +355,7 @@ LOCAL_MODULE := libge_compiler
 
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -O2
 # from ome_inference.mk
-LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 endif
@@ -414,7 +418,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_compiler
 LOCAL_CFLAGS += -DGOOGLE_PROTOBUF_NO_RTTI -DDEV_VISIBILITY -DNONSUPPORT_SAVE_TO_FILE
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0
-LOCAL_CFLAGS += -DREUSE_MEMORY=1 -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -DREUSE_MEMORY=1 -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE
 LOCAL_CFLAGS += -DOMG_DEVICE_VERSION
 LOCAL_CFLAGS += -O2
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES

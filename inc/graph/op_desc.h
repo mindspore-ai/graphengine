@@ -235,7 +235,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   vector<string> GetOpInferDepends() const;
 
   string GetInputNameByIndex(uint32_t index) const;
-
+  string GetValidInputNameByIndex(uint32_t index) const;
+  int GetValidInputIndexByName(const string &name) const;
   int GetInputIndexByName(const string &name) const;
 
   string GetOutputNameByIndex(uint32_t index) const;

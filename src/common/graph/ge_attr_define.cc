@@ -122,6 +122,11 @@ const std::string ATTR_NAME_AIPP_INPUTS = "_aipp_inputs";
 const std::string ATTR_NAME_AIPP_OUTPUTS = "_aipp_outputs";
 
 const std::string ATTR_NAME_INPUT_DIMS = "input_dims";
+const std::string ATTR_DYNAMIC_AIPP_INPUT_DIMS = "_dynamic_aipp_input_dims";
+const std::string ATTR_DATA_RELATED_AIPP_MODE = "_data_related_aipp_mode";
+const std::string ATTR_DATA_AIPP_DATA_NAME_MAP = "_data_aipp_data_name_map";
+
+const std::string ATTR_NAME_GRAPH_HAS_BEEN_ADDED = "_graph_has_been_added";
 
 const std::string ATTR_NAME_SESSION_GRAPH_ID = "_session_graph_id";
 const std::string ATTR_NAME_PARENT_GRAPH_NAME = "_parent_graph_name";
@@ -1054,6 +1059,10 @@ const std::string ATTR_NAME_HCCL_FUSED_FLAG = "_hccl_fused_node";
 // dynamic shape attr
 const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR = "_alloc_fixed_addr";
 const std::string ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX = "_alloc_fixed_addr_index";
+
+// op dynamic input
+const std::string ATTR_NAME_DYNAMIC_INPUT_START = "_dynamic_input_index_start";
+const std::string ATTR_NAME_DYNAMIC_INPUT_END = "_dynamic_input_index_end";
 
 // atc user def dtype&format
 const std::string ATTR_ATC_USER_DEFINE_DATATYPE = "_user_defined_data_type";

@@ -27,16 +27,16 @@
 namespace ge {
 
 /**
-*@brief Real-valued fast Fourier transform.
+*@brief Real-valued fast Fourier transform . \n
 
 *@par Inputs:
 *@li input: A float32 tensor.
-*@li fft_length: An int32 tensor of shape [1]. The FFT length.
+*@li fft_length: An int32 tensor of shape [1]. The FFT length . \n
 
 *@par Outputs:
-*@li y: A complex64 tensor of the same rank as `input`. The inner-most \n
-dimension of `input` is replaced with the `fft_length / 2 + 1` unique \n
-frequency components of its 1D Fourier transform.
+*@li y: A complex64 tensor of the same rank as `input`. The inner-most
+dimension of `input` is replaced with the `fft_length / 2 + 1` unique
+frequency components of its 1D Fourier transform . \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow RFFT operator.

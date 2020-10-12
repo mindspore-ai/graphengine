@@ -26,28 +26,28 @@
 namespace ge {
 
 /**
-*@brief Bucketizes each feature based on bucket boundaries.
+*@brief Bucketizes each feature based on bucket boundaries . \n
 
-*@par Inputs: 
-*Input "float_values" is a 1D tensor. Input "bucket_boundaries" is \n
-a list of 1D tensors.
-* @li float_values: A list of rank 1 tensors each containing float \n
+*@par Inputs:
+*Input "float_values" is a 1D tensor. Input "bucket_boundaries" is
+a list of 1D tensors. It's a dynamic input.
+* @li float_values: A list of rank 1 tensors each containing float
 values for a single feature.
-* @li bucket_boundaries: A list of rank 1 tensors each containing \n
-the bucket boundaries for a single feature.
+* @li bucket_boundaries: A list of rank 1 tensors each containing
+the bucket boundaries for a single feature . It's a dynamic input. \n
 
-*@par Attributes: 
-*@li num_features: Number of features \n
+*@par Attributes:
+*@li num_features: Number of features
 
-*@par Outputs: 
-*@li y: A list of rank 1 tensors each containing the bucketized values for \n
-a single feature.
+*@par Outputs:
+*@li y: A list of rank 1 tensors each containing the bucketized values for
+a single feature . \n
 
-*@attention Constraints: \n
+*@attention Constraints:
 *BoostedTreesBucketize runs on the Ascend AI CPU, which delivers poor performance. \n
 
 *@par Third-party framework compatibility
-*Compatible with the TensorFlow operator BoostedTreesBucketize.
+*Compatible with the TensorFlow operator BoostedTreesBucketize . \n
 
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.

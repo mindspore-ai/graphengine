@@ -16,6 +16,7 @@
 
 #include "single_op/single_op_model.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,6 +31,8 @@
 #include "task/aicpu_task_builder.h"
 #include "task/aicpu_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
+
+static std::atomic<std::uint64_t> aicpu_sessionid(0);
 
 using domi::TaskDef;
 using std::unique_ptr;
@@ -250,17 +253,21 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         }
         single_op.tasks_.emplace_back(task);
       } else {
-        GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernek are supported, but got %u", context.kernel_type());
+        GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernel are supported, but got %u", context.kernel_type());
         return UNSUPPORTED;
       }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
       GELOGD("Building AICPU_TF task");
-      OpTask *task = nullptr;
-      auto ret = BuildKernelExTask(task_def.kernel_ex(), single_op, &task);
+      AiCpuTask *aicpu_task = nullptr;
+      bool depend_compute_flag = false;
+      uint64_t singleop_sessionid = aicpu_sessionid++;
+      GELOGI("Build singleOp, sessionId = %lu", singleop_sessionid);
+      auto ret = BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_sessionid);
       if (ret != SUCCESS) {
         return ret;
       }
-      single_op.tasks_.emplace_back(task);
+      single_op.tasks_.emplace_back(aicpu_task);
+      single_op.SetSessionID(singleop_sessionid);
     } else {
       // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
@@ -316,7 +323,8 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTa
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, SingleOp &single_op, OpTask **task) {
+Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, bool dynamic_flag,
+                                        bool &depend_compute_flag, uint64_t session_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
@@ -329,11 +337,12 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, Sin
     return MEMALLOC_FAILED;
   }
   auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpu_task, model_params_);
+  auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, session_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "build aicpu_TF op task failed");
     return ret;
   }
+  depend_compute_flag = (aicpu_task->GetUnknownType() == DEPEND_COMPUTE);
 
   *task = aicpu_task.release();
   return SUCCESS;
@@ -370,6 +379,27 @@ Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
   return BuildTaskList(single_op);
 }
 
+Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingleOp &single_op) {
+  const domi::KernelDef &kernel_def = task_def.kernel();
+  const auto &context = kernel_def.context();
+  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
+  if (kernel_type == cce::ccKernelType::TE) {
+    GELOGD("Building TBE task");
+    TbeOpTask *tbe_task = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &tbe_task));
+    single_op.op_task_.reset(tbe_task);
+  } else if (kernel_type == cce::ccKernelType::AI_CPU) {
+    GELOGD("Building AICPU_CC task");
+    OpTask *task = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task));
+    single_op.op_task_.reset(task);
+  } else {
+    GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernel are supported, but got %u", context.kernel_type());
+    return UNSUPPORTED;
+  }
+  return SUCCESS;
+}
+
 Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
@@ -385,10 +415,30 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
         GELOGE(UNSUPPORTED, "Do not support dynamic op with multiple tasks.");
         return UNSUPPORTED;
       }
-
-      TbeOpTask *task = nullptr;
-      GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &task));
-      single_op.op_task_.reset(task);
+      GE_CHK_STATUS_RET_NOLOG(BuildModelTaskKernel(task_def, single_op));
+    } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
+      if (single_op.op_task_ != nullptr) {
+        GELOGE(UNSUPPORTED, "Do not support dynamic op with multiple tasks.");
+        return UNSUPPORTED;
+      }
+      GELOGD("Building AICPU_TF task");
+      AiCpuTask *aicpu_task = nullptr;
+      bool depend_compute_flag = false;
+      uint64_t dynamic_singleop_sessionid = aicpu_sessionid++;
+      GELOGI("Build dynamic singleOp, sessionId = %lu", dynamic_singleop_sessionid);
+      GE_CHK_STATUS_RET_NOLOG(
+        BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true, depend_compute_flag, dynamic_singleop_sessionid));
+      if (depend_compute_flag) {
+        if (i >= tasks.size() - 1) {
+          GELOGE(FAILED, "The copy task of the fourth operator was not found.");
+          return FAILED;
+        }
+        ++i;
+        const TaskDef &copy_task_def = tasks[i];
+        GE_CHK_STATUS_RET_NOLOG(aicpu_task->SetMemCopyTask(copy_task_def.kernel_ex()));
+      }
+      single_op.op_task_.reset(aicpu_task);
+      single_op.SetSessionID(dynamic_singleop_sessionid);
     } else {
       // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));

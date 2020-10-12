@@ -135,6 +135,9 @@ class GraphMemoryAssigner {
 
   ge::Status ReAssignAtomicMemory(bool is_loop_graph);
 
+  ge::Status FilterAtomicNodesForMemoryAssign(std::map<NodePtr, vector<NodePtr>> &normal_atomic_nodes_map,
+                                              std::vector<NodePtr> &connecting_output_atomic_nodes);
+
   ge::Status AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
                                          int64_t &continuous_mem_size);
 
@@ -165,15 +168,11 @@ class GraphMemoryAssigner {
 
   ge::Status SetIndependentAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start,
                                       const std::vector<int64_t> &mem_offset_end);
-  ///
-  /// @brief set loop graph atomic attr
-  /// @param node, atomic memory assignment start offset
-  /// @param atomic_mem_start: atomic op memory start address
-  ///
-  ge::Status SetLoopGraphAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start);
 
-  ge::Status SetAtomicCleanAttr(const ge::NodePtr &n, const std::vector<int64_t> &atomic_mem_start,
+  ge::Status SetAtomicCleanAttr(const ge::NodePtr &node, const std::vector<int64_t> &atomic_mem_start,
                                 const std::vector<int64_t> &atomic_mem_size);
+
+  ge::Status IsIndependentAtomicClean(const ge::NodePtr &node, bool &is_independent_atomic_clean_node);
 
   void AlignMemOffset(const int64_t &mem_align_size);
 

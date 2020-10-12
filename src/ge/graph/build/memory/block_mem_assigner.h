@@ -259,6 +259,7 @@ class BlockMemAssigner : public MemAssigner {
   ge::ComputeGraphPtr compute_graph_;
 
   std::vector<MemoryBlock *> memory_blocks_;
+  std::vector<MemoryBlock *> blocks_store_;
 
   std::vector<NodeTypeIndex> zero_memory_list_;
 
@@ -357,7 +358,7 @@ class BlockMemAssigner : public MemAssigner {
   bool IsZeroCopyBlock(const NodePtr &node, bool continuous);
 
   bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
-                                   uint32_t &peer_input_index);
+                                   uint32_t &peer_input_index, bool &no_need_assign_memory);
 
   ///
   /// @ingroup GE

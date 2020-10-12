@@ -149,9 +149,10 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
     // consider special node save process
     // get all input desc format
     bool node_is_all_nd = false;
-    auto input_size = static_cast<uint32_t>(op_desc->GetInputsSize());
+    auto input_size = static_cast<uint32_t>(op_desc->GetAllInputsSize());
     for (uint32_t i = 0; i < input_size; i++) {
       // Operator pre-set format but not origin format
+      GE_IF_BOOL_EXEC(op_desc->MutableInputDesc(i) == nullptr, continue);
       auto input_format = op_desc->MutableInputDesc(i)->GetFormat();
       // Pre-save data node (only main graph data) and default infer fail
       if (node_ptr->GetType() == DATA) {
@@ -164,6 +165,7 @@ graphStatus FormatRefiner::GetAnchorPoints(const ge::ComputeGraphPtr &graph, std
     // Get all output desc format
     auto output_size = static_cast<uint32_t>(op_desc->GetOutputsSize());
     for (uint32_t i = 0; i < output_size; i++) {
+      GE_IF_BOOL_EXEC(op_desc->MutableOutputDesc(i) == nullptr, continue);
       auto output_format = op_desc->MutableOutputDesc(i)->GetFormat();
       if (output_format != FORMAT_ND && output_format != FORMAT_RESERVED) {
         node_is_all_nd = true;
@@ -222,8 +224,9 @@ graphStatus FormatRefiner::BackInferProcess(std::deque<ge::NodePtr> &nodes, ge::
   for (const auto &in_anchor : node->GetAllInDataAnchors()) {
     GELOGD("Node is [%s] [B]", (node->GetName()).c_str());
     auto in_data_anchor_idx = in_anchor->GetIdx();
-    auto to_be_set_format =
-      node->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_data_anchor_idx))->GetOriginFormat();
+    auto input_desc = node->GetOpDesc()->MutableInputDesc(static_cast<uint32_t>(in_data_anchor_idx));
+    GE_IF_BOOL_EXEC(input_desc == nullptr, continue);
+    auto to_be_set_format = input_desc->GetOriginFormat();
     if (to_be_set_format == FORMAT_ND) {
       GELOGD("Node [%s] [B], format is ND", (node->GetName()).c_str());
       continue;

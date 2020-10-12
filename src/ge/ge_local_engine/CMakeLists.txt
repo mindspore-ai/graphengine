@@ -42,7 +42,7 @@ include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 
 ######### libge_local_engine.so #############
 add_library(ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
-target_compile_definitions(ge_local_engine PRIVATE Werror)
+target_compile_definitions(ge_local_engine PRIVATE Werror COMPILE_OMG_PACKAGE)
 target_link_libraries(ge_local_engine
         graph
         ${PROTOBUF_LIBRARY}

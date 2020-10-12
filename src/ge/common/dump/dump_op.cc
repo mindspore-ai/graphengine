@@ -16,7 +16,6 @@
 
 #include "common/dump/dump_op.h"
 
-#include "aicpu/common/aicpu_task_struct.h"
 #include "common/dump/dump_manager.h"
 #include "common/ge/datatype_util.h"
 #include "framework/common/debug/ge_log.h"
@@ -28,6 +27,7 @@
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping_info.pb.h"
 #include "runtime/mem.h"
+#include "aicpu/common/aicpu_task_struct.h"
 
 namespace {
 const uint32_t kAicpuLoadFlag = 1;
@@ -172,18 +172,18 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
     return RT_FAILED;
   }
 
-  constexpr int32_t ioAddrNum = 2;
-  constexpr uint32_t argsSize = sizeof(aicpu::AicpuParamHead) + ioAddrNum * sizeof(uint64_t);
-  char args[argsSize] = {0};
-  auto paramHead = reinterpret_cast<aicpu::AicpuParamHead *>(args);
-  paramHead->length = argsSize;
-  paramHead->ioAddrNum = ioAddrNum;
-  auto ioAddr = reinterpret_cast<uint64_t *>(args + sizeof(aicpu::AicpuParamHead));
-  ioAddr[0] = reinterpret_cast<uintptr_t>(proto_dev_mem_);
-  ioAddr[1] = reinterpret_cast<uintptr_t>(proto_size_dev_mem_);
+  constexpr int32_t io_addr_num = 2;
+  constexpr uint32_t args_size = sizeof(aicpu::AicpuParamHead) + io_addr_num * sizeof(uint64_t);
+  char args[args_size] = {0};
+  auto param_head = reinterpret_cast<aicpu::AicpuParamHead *>(args);
+  param_head->length = args_size;
+  param_head->ioAddrNum = io_addr_num;
+  auto io_addr = reinterpret_cast<uint64_t *>(args + sizeof(aicpu::AicpuParamHead));
+  io_addr[0] = reinterpret_cast<uintptr_t>(proto_dev_mem_);
+  io_addr[1] = reinterpret_cast<uintptr_t>(proto_size_dev_mem_);
   rt_ret = rtCpuKernelLaunch(nullptr, kDumpKernelsDumpOp,
                              1,  // blockDim default 1
-                             args, argsSize,
+                             args, args_size,
                              nullptr,  // no need smDesc
                              stream_);
   if (rt_ret != RT_ERROR_NONE) {

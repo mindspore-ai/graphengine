@@ -26,20 +26,20 @@
 namespace ge {
 
 /**
-*@brief Adjust the hue of one or more images.
+*@brief Adjust the hue of one or more images . \n
 
 *@par Inputs:
-*Input images is a tensor of at least 3 dimensions. The last dimension is \n
-interpretted as channels, and must be three. Inputs include: \n
+*Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three. Inputs include:
 *@li images:A Tensor of type float. Images to adjust. At least 3-D.
-*@li delta:A Tensor of type float. A float delta to add to the hue.
+*@li delta:A Tensor of type float. A float delta to add to the hue . \n
 
 *@par Outputs:
-*y:A Tensor of type float.
+*y:A Tensor of type float . \n
 
-*@attention Constraints: \n
-*Input images is a tensor of at least 3 dimensions. The last dimension is \n
-interpretted as channels, and must be three.
+*@attention Constraints:
+*Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow AdjustHue operator.
@@ -52,20 +52,20 @@ REG_OP(AdjustHue)
     .OP_END_FACTORY_REG(AdjustHue)
 
 /**
-*@brief Adjust the saturation of one or more images.
+*@brief Adjust the saturation of one or more images . \n
 
 *@par Inputs:
-*Input images is a tensor of at least 3 dimensions. The last dimension is \n
-interpretted as channels, and must be three. Inputs include: \n
+*Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three. Inputs include:
 *@li images:A Tensor of type float. Images to adjust. At least 3-D.
-*@li scale:A Tensor of type float. A float scale to add to the saturation.
+*@li scale:A Tensor of type float. A float scale to add to the saturation . \n
 
 *@par Outputs:
-*y:A Tensor of type float.
+*y:A Tensor of type float . \n
 
-*@attention Constraints: \n
-*Input images is a tensor of at least 3 dimensions. The last dimension is \n
-interpretted as channels, and must be three.
+*@attention Constraints:
+*Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow AdjustSaturation operator.
@@ -78,20 +78,20 @@ REG_OP(AdjustSaturation)
     .OP_END_FACTORY_REG(AdjustSaturation)
 
 /**
-*@brief Adjust the contrast of one or more images.
+*@brief Adjust the contrast of one or more images . \n
 
 *@par Inputs:
-*Input images is a tensor of at least 3 dimensions. The last 3 dimensions are \n
-interpreted as '[height, width, channels]'. Inputs include: \n
+*Input images is a tensor of at least 3 dimensions. The last 3 dimensions are
+interpreted as '[height, width, channels]'. Inputs include:
 *@li images:A Tensor of type float. Images to adjust. At least 3-D.
-*@li scale:A Tensor of type float. A float multiplier for adjusting contrast.
+*@li scale:A Tensor of type float. A float multiplier for adjusting contrast . \n
 
 *@par Outputs:
-*y:A Tensor of type float.
+*y:A Tensor of type float . \n
 
-*@attention Constraints: \n
-*Input images is a tensor of at least 3 dimensions. The last dimension is \n
-interpretted as channels, and must be three.
+*@attention Constraints:
+*Input images is a tensor of at least 3 dimensions. The last dimension is
+interpretted as channels, and must be three . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow AdjustContrast operator.
@@ -104,33 +104,33 @@ REG_OP(AdjustContrast)
     .OP_END_FACTORY_REG(AdjustContrast)
 
 /**
-*@brief Extracts crops from the input image tensor and resizes them. Extracts \n
-crops from the input image tensor and resizes them using bilinear sampling or \n
-nearest neighbor sampling to a common output size specified by crop_size.
+*@brief Extracts crops from the input image tensor and resizes them. Extracts
+crops from the input image tensor and resizes them using bilinear sampling or
+nearest neighbor sampling to a common output size specified by crop_size . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
-*@li images:A Tensor. Must be one of the following types:uint8, uint16, int8, \n
-int16, int32, int64, float16, float, double. A 4-D tensor of shape \n
+*Input images must be a 4-D tensor. Inputs include:
+*@li images:A Tensor. Must be one of the following types:uint8, uint16, int8,
+int16, int32, int64, float16, float, double. A 4-D tensor of shape
 [batch, image_height, image_width, depth].
 *@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
-*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with \n
+*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with
 int32 values in [0, batch).
-*@li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements, crop_size \n
-= [crop_height, crop_width]. All cropped image patches are resized to this size.
+*@li crop_size: A Tensor of type int32. A 1-D tensor of 2 elements, crop_size
+= [crop_height, crop_width]. All cropped image patches are resized to this size . \n
 
 *@par Attributes:
-*@li extrapolation_value: An optional float. Defaults to 0. Value used for \n
+*@li extrapolation_value: An optional float. Defaults to 0. Value used for
 extrapolation, when applicable.
-*@li method: An optional string from: '"bilinear", "nearest"'. Defaults to \n
-"bilinear". Currently two sampling methods are supported: Bilinear and \n
-NearestNeighbor.
+*@li method: An optional string from: '"bilinear", "nearest"'. Defaults to
+"bilinear". Currently two sampling methods are supported: Bilinear and
+NearestNeighbor . \n
 
 *@par Outputs:
-*y:A Tensor of type float.
+*y:A Tensor of type float . \n
 
-*@attention Constraints: \n
-*Input images must be a 4-D tensor.
+*@attention Constraints:
+*Input images must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResize operator.
@@ -150,28 +150,32 @@ REG_OP(CropAndResize)
 /**
 *@brief Extracts crops from the input image tensor and resizes them.
 * Extracts crops from the input image tensor and resizes them using bilinear sampling or
-* nearest neighbor sampling to a common output size specified by crop_size.
+* nearest neighbor sampling to a common output size specified by crop_size . \n
 
 *@par Inputs:
 *Input images must be a 5HD tensor. Inputs include:
 *@li x:A Tensor. Must be one of the following types:float16, float. A 5HD tensor of shape
 * [batch, C1, image_height, image_width, C0].
 *@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
-*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch).
+*@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch) . \n
 
 *@par Attributes:
-*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches are resized to this size.
-*@li extrapolation_value: An optional float. Defaults to 0. Value used for extrapolation, when applicable.
-*@li method: An optional string from: '"bilinear"'. Defaults to "bilinear".
+*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches 
+are resized to this size.
+*@li extrapolation_value: An optional float. Defaults to 0. Value used for 
+extrapolation, when applicable.
+*@li method: An optional string from: '"bilinear"'. Defaults to "bilinear" . \n
 
 *@par Outputs:
-*y:A Tensor of type float.
+*y:A Tensor of type float . \n
 
 *@attention Constraints:
-*Input images must be a 5HD tensor.
+*Input images must be a 5HD tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResize operator.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use CropAndResize instead.
 */
 REG_OP(CropAndResizeD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -184,30 +188,30 @@ REG_OP(CropAndResizeD)
     .OP_END_FACTORY_REG(CropAndResizeD)
 
 /**
-*@brief Computes the gradient of the crop_and_resize op wrt the input \n
-boxes tensor.
+*@brief Computes the gradient of the crop_and_resize op wrt the input
+boxes tensor . \n
 
 *@par Inputs:
-*Input images and grads must be a 4-D tensor. Inputs include: \n
+*Input images and grads must be a 4-D tensor. Inputs include:
 *@li grads: A 4-D tensor of shape [num_boxes, crop_height, crop_width, depth].
-*@li images: A 4-D tensor of shape [batch, image_height, image_width, depth]. \n
+*@li images: A 4-D tensor of shape [batch, image_height, image_width, depth].
 Both image_height and image_width need to be positive.
-*@li boxes: A 2-D tensor of shape [num_boxes, 4]. The i-th row of the tensor \n
-specifies the coordinates of a box in the box_ind[i] image and is specified in \n
+*@li boxes: A 2-D tensor of shape [num_boxes, 4]. The i-th row of the tensor
+specifies the coordinates of a box in the box_ind[i] image and is specified in
 normalized coordinates [y1, x1, y2, x2].
-*@li box_index: A 1-D tensor of shape [num_boxes] with int32 values in \n
-[0, batch). The value of box_ind[i] specifies the image that the i-th box \n
-refers to.
+*@li box_index: A 1-D tensor of shape [num_boxes] with int32 values in
+[0, batch). The value of box_ind[i] specifies the image that the i-th box
+refers to . \n
 
 *@par Attributes:
-method: A string specifying the interpolation method. Only 'bilinear' is \n
-supported for now.
+method: A string specifying the interpolation method. Only 'bilinear' is
+supported for now . \n
 
 *@par Outputs:
-*y:A 2-D tensor of shape [num_boxes, 4].
+*y:A 2-D tensor of shape [num_boxes, 4] . \n
 
-*@attention Constraints: \n
-*Input images and grads must be a 4-D tensor.
+*@attention Constraints:
+*Input images and grads must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResizeGradBoxes operator.
@@ -224,31 +228,31 @@ REG_OP(CropAndResizeGradBoxes)
     .OP_END_FACTORY_REG(CropAndResizeGradBoxes)
 
 /**
-*@brief Computes the gradient of the crop_and_resize op wrt the input \n
-images tensor.
+*@brief Computes the gradient of the crop_and_resize op wrt the input
+images tensor . \n
 
 *@par Inputs:
-*Input grads must be a 4-D tensor. Inputs include: \n
+*Input grads must be a 4-D tensor. Inputs include:
 *@li grads: A 4-D tensor of shape [num_boxes, crop_height, crop_width, depth].
-*@li boxes: A 2-D tensor of shape [num_boxes, 4]. The i-th row of the tensor \n
-specifies the coordinates of a box in the box_ind[i] image and is specified \n
+*@li boxes: A 2-D tensor of shape [num_boxes, 4]. The i-th row of the tensor
+specifies the coordinates of a box in the box_ind[i] image and is specified
 in normalized coordinates [y1, x1, y2, x2].
-*@li box_index: A 1-D tensor of shape [num_boxes] with int32 values in \n
-[0, batch). The value of box_ind[i] specifies the image that the i-th box \n
+*@li box_index: A 1-D tensor of shape [num_boxes] with int32 values in
+[0, batch). The value of box_ind[i] specifies the image that the i-th box
 refers to.
-*@li image_size: A 1-D tensor with value [batch, image_height, image_width, \n
-depth] containing the original image size. Both image_height and image_width \n
-need to be positive.
+*@li image_size: A 1-D tensor with value [batch, image_height, image_width,
+depth] containing the original image size. Both image_height and image_width
+need to be positive . \n
 
 *@par Attributes:
-method: A string specifying the interpolation method. Only 'bilinear' is \n
-supported for now.
+method: A string specifying the interpolation method. Only 'bilinear' is
+supported for now . \n
 
 *@par Outputs:
-*y:A 4-D tensor of shape [batch, image_height, image_width, depth].
+*y:A 4-D tensor of shape [batch, image_height, image_width, depth] . \n
 
-*@attention Constraints: \n
-*Input grads must be a 4-D tensor.
+*@attention Constraints:
+*Input grads must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResizeGradImage operator.
@@ -265,35 +269,35 @@ REG_OP(CropAndResizeGradImage)
     .OP_END_FACTORY_REG(CropAndResizeGradImage)
 
 /**
-*@brief Extracts a glimpse from the input tensor.
+*@brief Extracts a glimpse from the input tensor . \n
 
 *@par Inputs:
-*Input x must be a 4-D tensor. Inputs include: \n
+*Input x must be a 4-D tensor. Inputs include:
 *@li x: A 4-D float tensor of shape [batch_size, height, width, channels].
-*@li size: A 1-D tensor of 2 elements containing the size of the glimpses to \n
-extract. The glimpse height must be specified first, following by the glimpse \n
+*@li size: A 1-D tensor of 2 elements containing the size of the glimpses to
+extract. The glimpse height must be specified first, following by the glimpse
 width.
-*@li offsets: A 2-D integer tensor of shape [batch_size, 2] containing the y, \n
-x locations of the center of each window.
+*@li offsets: A 2-D integer tensor of shape [batch_size, 2] containing the y,
+x locations of the center of each window . \n
 
 *@par Attributes:
-*@li centered: indicates if the offset coordinates are centered relative to \n
-the image, in which case the (0, 0) offset is relative to the center of the \n
-input images. If false, the (0,0) offset corresponds to the upper left corner \n
+*@li centered: indicates if the offset coordinates are centered relative to
+the image, in which case the (0, 0) offset is relative to the center of the
+input images. If false, the (0,0) offset corresponds to the upper left corner
 of the input images.
 *@li normalized: indicates if the offset coordinates are normalized.
-*@li uniform_noise: indicates if the noise should be generated using a \n
+*@li uniform_noise: indicates if the noise should be generated using a
 uniform distribution or a Gaussian distribution.
-*@li noise: indicates if the noise should uniform, gaussian, or zero. \n
-The default is uniform which means the the noise type will be decided by \n
-uniform_noise.
+*@li noise: indicates if the noise should uniform, gaussian, or zero.
+The default is uniform which means the the noise type will be decided by
+uniform_noise . \n
 
 *@par Outputs:
-*y:A tensor representing the glimpses [batch_size, glimpse_height, \n
-glimpse_width, channels].
+*y:A tensor representing the glimpses [batch_size, glimpse_height,
+glimpse_width, channels] . \n
 
-*@attention Constraints: \n
-*Input x must be a 4-D tensor.
+*@attention Constraints:
+*Input x must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResizeGradImage operator.
@@ -311,17 +315,17 @@ REG_OP(ExtractGlimpse)
     .OP_END_FACTORY_REG(ExtractGlimpse)
 
 /**
-*@brief Convert one or more images from HSV to RGB.
+*@brief Convert one or more images from HSV to RGB . \n
 
 *@par Inputs:
-*Last dimension of input x must be size 3. Inputs include: \n
-*images: 1-D or higher rank. HSV data to convert. Last dimension must be size 3.
+*Last dimension of input x must be size 3. Inputs include:
+*images: 1-D or higher rank. HSV data to convert. Last dimension must be size 3 . \n
 
 *@par Outputs:
-*y:images converted to RGB.
+*y:images converted to RGB . \n
 
-*@attention Constraints: \n
-*Last dimension of input x must be size 3.
+*@attention Constraints:
+*Last dimension of input x must be size 3 . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow HSVToRGB operator.
@@ -333,29 +337,29 @@ REG_OP(HSVToRGB)
     .OP_END_FACTORY_REG(HSVToRGB)
 
 /**
-*@brief Resize quantized images to size using quantized bilinear interpolation.
+*@brief Resize quantized images to size using quantized bilinear interpolation . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
+*Input images must be a 4-D tensor. Inputs include:
 *@li images: 4-D with shape [batch, height, width, channels].
-*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new \n
+*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new
 size for the images.
 *@li min: A Tensor of type float.
-*@li max: A Tensor of type float.
+*@li max: A Tensor of type float . \n
 
 *@par Attributes:
-*@li align_corners: An optional bool. Defaults to False. If true, the centers \n
-of the 4 corner pixels of the input and output tensors are aligned, preserving \n
+*@li align_corners: An optional bool. Defaults to False. If true, the centers
+of the 4 corner pixels of the input and output tensors are aligned, preserving
 the values at the corner pixels. Defaults to false.
-*@li half_pixel_centers: indicates if the offset coordinates are normalized.
+*@li half_pixel_centers: indicates if the offset coordinates are normalized . \n
 
 *@par Outputs:
 *@li resized_images: 4-D with shape [batch, new_height, new_width, channels].
 *@li y_min: A Tensor of type float.
-*@li y_max: A Tensor of type float.
+*@li y_max: A Tensor of type float . \n
 
-*@attention Constraints: \n
-*Input images and output images must be quantized types.
+*@attention Constraints:
+*Input images and output images must be quantized types . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow QuantizedResizeBilinear operator.
@@ -374,24 +378,24 @@ REG_OP(QuantizedResizeBilinear)
     .OP_END_FACTORY_REG(QuantizedResizeBilinear)
 
 /**
-*@brief Resize images to size using area interpolation.
+*@brief Resize images to size using area interpolation . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
+*Input images must be a 4-D tensor. Inputs include:
 *@li images: 4-D with shape [batch, height, width, channels].
-*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. \n
-The new size for the images.
+*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width.
+The new size for the images . \n
 
 *@par Attributes:
-*align_corners: If true, the centers of the 4 corner pixels of the input and \n
-output tensors are aligned, preserving the values at the corner pixels. \n
-Defaults to false.
+*align_corners: If true, the centers of the 4 corner pixels of the input and
+output tensors are aligned, preserving the values at the corner pixels.
+Defaults to false . \n
 
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels].
+*y: 4-D with shape [batch, new_height, new_width, channels] . \n
 
-*@attention Constraints: \n
-*Input images can be of different types but output images are always float.
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeArea operator.
@@ -406,27 +410,27 @@ REG_OP(ResizeArea)
     .OP_END_FACTORY_REG(ResizeArea)
 
 /**
-*@brief Computes the gradient of bicubic interpolation.
+*@brief Computes the gradient of bicubic interpolation . \n
 
 *@par Inputs:
-*Input grads must be a 4-D tensor. Inputs include: \n
-*@li grads: A Tensor of type float. 4-D with shape [batch, height, width, \n
+*Input grads must be a 4-D tensor. Inputs include:
+*@li grads: A Tensor of type float. 4-D with shape [batch, height, width,
 channels].
-*@li original_image: A Tensor. Must be one of the following types: float, \n
-double. 4-D with shape [batch, orig_height, orig_width, channels], The image \n
-tensor that was resized.
+*@li original_image: A Tensor. Must be one of the following types: float,
+double. 4-D with shape [batch, orig_height, orig_width, channels], The image
+tensor that was resized . \n
 
 *@par Attributes:
-*@li align_corners: An optional bool. Defaults to False. If true, the centers \n
-of the 4 corner pixels of the input and grad tensors are aligned. Defaults to \n
+*@li align_corners: An optional bool. Defaults to False. If true, the centers
+of the 4 corner pixels of the input and grad tensors are aligned. Defaults to
 false.
-*@li half_pixel_centers: An optional bool. Defaults to False.
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as original_image.
+*y: A Tensor. Has the same type as original_image . \n
 
-*@attention Constraints: \n
-*Input images can be of different types but output images are always float.
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeBicubicGrad operator.
@@ -441,25 +445,25 @@ REG_OP(ResizeBicubicGrad)
     .OP_END_FACTORY_REG(ResizeBicubicGrad)
 
 /**
-*@brief Resize images to size using bicubic interpolation.
+*@brief Resize images to size using bicubic interpolation . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
+*Input images must be a 4-D tensor. Inputs include:
 *@li images: 4-D with shape [batch, height, width, channels].
-*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new \n
-size for the images.
+*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new
+size for the images . \n
 
 *@par Attributes:
-*@li align_corners: If true, the centers of the 4 corner pixels of the input \n
-and output tensors are aligned, preserving the values at the corner pixels. \n
+*@li align_corners: If true, the centers of the 4 corner pixels of the input
+and output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false.
-*@li half_pixel_centers: An optional bool. Defaults to False.
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels].
+*y: 4-D with shape [batch, new_height, new_width, channels] . \n
 
-*@attention Constraints: \n
-*Input images can be of different types but output images are always float.
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeBicubic operator.
@@ -475,26 +479,26 @@ REG_OP(ResizeBicubic)
     .OP_END_FACTORY_REG(ResizeBicubic)
 
 /**
-*@brief Computes the gradient of nearest neighbor interpolation.
+*@brief Computes the gradient of nearest neighbor interpolation . \n
 
 *@par Inputs:
-*Input grads must be a 4-D tensor. Inputs include: \n
-*@li grads: A Tensor. Must be one of the following types: uint8, int8, int32, \n
+*Input grads must be a 4-D tensor. Inputs include:
+*@li grads: A Tensor. Must be one of the following types: uint8, int8, int32,
 float16, float, double. 4-D with shape [batch, height, width, channels].
-*@li size: A 1-D int32 Tensor of 2 elements: orig_height, orig_width. \n
-The original input size.
+*@li size: A 1-D int32 Tensor of 2 elements: orig_height, orig_width.
+The original input size . \n
 
 *@par Attributes:
-*@li align_corners: An optional bool. Defaults to False. If true, the centers \n
-of the 4 corner pixels of the input and grad tensors are aligned. Defaults to \n
+*@li align_corners: An optional bool. Defaults to False. If true, the centers
+of the 4 corner pixels of the input and grad tensors are aligned. Defaults to
 false.
-*@li half_pixel_centers: An optional bool. Defaults to False.
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as grads.
+*y: A Tensor. Has the same type as grads . \n
 
-*@attention Constraints: \n
-*Input grads must be a 4-D tensor.
+*@attention Constraints:
+*Input grads must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeNearestNeighborV2Grad operator.
@@ -511,24 +515,27 @@ REG_OP(ResizeNearestNeighborV2Grad)
     .OP_END_FACTORY_REG(ResizeNearestNeighborV2Grad)
 
 /**
-*@brief Computes the gradient of nearest neighbor interpolation.
+*@brief Computes the gradient of nearest neighbor interpolation . \n
 
 *@par Inputs:
-*Input grads must be a 4-D tensor. Inputs include: \n
+*Input grads must be a 4-D tensor. Inputs include:
 *grads: A Tensor. 4-D with shape [batch, height, width, channels].
 
 
 *@par Attributes:
-*@li align_corners: An optional bool. Defaults to False. If true, the centers \n
-of the 4 corner pixels of the input and grad tensors are aligned. Defaults to \n
+*@li align_corners: An optional bool. Defaults to False. If true, the centers
+of the 4 corner pixels of the input and grad tensors are aligned. Defaults to
 false.
-*@li size: An list type. Specify the images size.
+*@li size: An list type. Specify the images size . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as grads.
+*y: A Tensor. Has the same type as grads . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeNearestNeighborV2GradD operator.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ResizeNearestNeighborV2Grad instead.
 */
 
 REG_OP(ResizeNearestNeighborV2GradD)
@@ -540,25 +547,25 @@ REG_OP(ResizeNearestNeighborV2GradD)
     .OP_END_FACTORY_REG(ResizeNearestNeighborV2GradD)
 
 /**
-*@brief Computes the gradient of bilinear interpolation.
+*@brief Computes the gradient of bilinear interpolation . \n
 
 *@par Inputs:
-*Input grads must be a 4-D tensor. Inputs include: \n
-*@li grads: A Tensor of type float32. 4-D with shape [batch, height, width, \n
+*Input grads must be a 4-D tensor. Inputs include:
+*@li grads: A Tensor of type float32. 4-D with shape [batch, height, width,
 channels].
-*@li original_image: A Tensor. 4-D with shape [batch, orig_height, orig_width, \n
-channels], The image tensor that was resized.
+*@li original_image: A Tensor. 4-D with shape [batch, orig_height, orig_width,
+channels], The image tensor that was resized . \n
 
 *@par Attributes:
-*align_corners: An optional bool. Defaults to False. If true, the centers of \n
-the 4 corner pixels of the input and grad tensors are aligned. Defaults to \n
-false.
+*align_corners: An optional bool. Defaults to False. If true, the centers of
+the 4 corner pixels of the input and grad tensors are aligned. Defaults to
+false . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as original_image.
+*y: A Tensor. Has the same type as original_image . \n
 
-*@attention Constraints: \n
-*Input grads must be a 4-D tensor.
+*@attention Constraints:
+*Input grads must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeBilinearV2Grad operator.
@@ -573,24 +580,24 @@ REG_OP(ResizeBilinearV2Grad)
     .OP_END_FACTORY_REG(ResizeBilinearV2Grad)
 
 /**
-*@brief Resize images to size using bilinear interpolation.
+*@brief Resize images to size using bilinear interpolation . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
+*Input images must be a 4-D tensor. Inputs include:
 *@li x: 4-D with shape [batch, height, width, channels].
-*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new \n
-size for the images.
+*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. The new
+size for the images . \n
 
 *@par Attributes:
-*align_corners: If true, the centers of the 4 corner pixels of the input and \n
-output tensors are aligned, preserving the values at the corner pixels. \n
-Defaults to false.
+*align_corners: If true, the centers of the 4 corner pixels of the input and
+output tensors are aligned, preserving the values at the corner pixels.
+Defaults to false . \n
 
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels].
+*y: 4-D with shape [batch, new_height, new_width, channels] . \n
 
-*@attention Constraints: \n
-*Input images can be of different types but output images are always float.
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeBilinearV2 operator.
@@ -606,20 +613,20 @@ REG_OP(ResizeBilinearV2)
     .OP_END_FACTORY_REG(ResizeBilinearV2)
 
 /**
-*@brief Converts one or more images from RGB to HSV.
+*@brief Converts one or more images from RGB to HSV . \n
 
 *@par Inputs:
-*Last dimension of input images must be size 3. Inputs include: \n
-*images: A Tensor. Must be one of the following types: float, double. 1-D or \n
-higher rank. RGB data to convert. Last dimension must be size 3.
+*Last dimension of input images must be size 3. Inputs include:
+*images: A Tensor. Must be one of the following types: float, double. 1-D or
+higher rank. RGB data to convert. Last dimension must be size 3 . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as images.
+*y: A Tensor. Has the same type as images . \n
 
-*@attention Constraints: \n
-*Outputs a tensor of the same shape as the images tensor, containing the HSV \n
-value of the pixels. The output is only well defined if the value in images \n
-are in [0,1].
+*@attention Constraints:
+*Outputs a tensor of the same shape as the images tensor, containing the HSV
+value of the pixels. The output is only well defined if the value in images
+are in [0,1] . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow RGBToHSV operator.
@@ -631,38 +638,38 @@ REG_OP(RGBToHSV)
     .OP_END_FACTORY_REG(RGBToHSV)
 
 /**
-*@brief Generate a single randomly distorted bounding box for an image.
+*@brief Generate a single randomly distorted bounding box for an image . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
+*Input images must be a 4-D tensor. Inputs include:
 *@li image_size: 1-D, containing [height, width, channels].
-*@li bounding_boxes: 3-D with shape [batch, N, 4] describing the N bounding \n
+*@li bounding_boxes: 3-D with shape [batch, N, 4] describing the N bounding
 boxes associated with the image.
-*@li min_object_covered: The cropped area of the image must contain at least \n
-this fraction of any bounding box supplied. The value of this parameter should \n
-be non-negative. In the case of 0, the cropped area does not need to overlap \n
-any of the bounding boxes supplied.
+*@li min_object_covered: The cropped area of the image must contain at least
+this fraction of any bounding box supplied. The value of this parameter should
+be non-negative. In the case of 0, the cropped area does not need to overlap
+any of the bounding boxes supplied . \n
 
 *@par Attributes:
-*@li seed: If either seed or seed2 are set to non-zero, the random number \n
+*@li seed: If either seed or seed2 are set to non-zero, the random number
 generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
 *@li seed2: A second seed to avoid seed collision.
-*@li aspect_ratio_range: The cropped area of the image must have an aspect \n
+*@li aspect_ratio_range: The cropped area of the image must have an aspect
 ratio = width / height within this range.
-*@li max_attempts: Number of attempts at generating a cropped region of the \n
-image of the specified constraints. After max_attempts failures, return the \n
+*@li max_attempts: Number of attempts at generating a cropped region of the
+image of the specified constraints. After max_attempts failures, return the
 entire image.
-*@li use_image_if_no_bounding_boxes: Controls behavior if no bounding boxes \n
-supplied. If true, assume an implicit bounding box covering the whole input. \n
-If false, raise an error.
+*@li use_image_if_no_bounding_boxes: Controls behavior if no bounding boxes
+supplied. If true, assume an implicit bounding box covering the whole input.
+If false, raise an error . \n
 
 *@par Outputs:
 *@li begin: 1-D, containing [offset_height, offset_width, 0].
 *@li size: 1-D, containing [target_height, target_width, -1].
-*@li bboxes: 3-D with shape [1, 1, 4] containing the distorted bounding box.
+*@li bboxes: 3-D with shape [1, 1, 4] containing the distorted bounding box . \n
 
-*@attention Constraints: \n
-*Input images can be of different types but output images are always float.
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow SampleDistortedBoundingBoxExt2 operator.
@@ -687,21 +694,21 @@ REG_OP(SampleDistortedBoundingBoxExt2)
     .OP_END_FACTORY_REG(SampleDistortedBoundingBoxExt2)
 
 /**
-*@brief Resize images to size using nearest neighbor interpolation.
+*@brief Resize images to size using nearest neighbor interpolation . \n
 
 *@par Inputs:
-*Input x must be a 4-D tensor. Inputs include: \n
+*Input x must be a 4-D tensor. Inputs include:
 *@li x: 4-D with shape [batch, height, width, channels].
-*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width. \n
-The new size for the images.
+*@li size: A 1-D int32 Tensor of 2 elements: new_height, new_width.
+The new size for the images . \n
 
 *@par Attributes:
-*align_corners: If true, the centers of the 4 corner pixels of the input and \n
-output tensors are aligned, preserving the values at the corner pixels. \n
-Defaults to false.
+*align_corners: If true, the centers of the 4 corner pixels of the input and
+output tensors are aligned, preserving the values at the corner pixels.
+Defaults to false . \n
 
 *@par Outputs:
-*y: 4-D with shape [batch, new_height, new_width, channels].
+*y: 4-D with shape [batch, new_height, new_width, channels] . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ResizeNearestNeighborV2 operator.
@@ -718,20 +725,20 @@ REG_OP(ResizeNearestNeighborV2)
     .OP_END_FACTORY_REG(ResizeNearestNeighborV2)
 
 /**
-*@brief Draw bounding boxes on a batch of images.
+*@brief Draw bounding boxes on a batch of images . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include: \n
-*@li images: A Tensor. Must be one of the following types: float. 4-D with \n
+*Input images must be a 4-D tensor. Inputs include:
+*@li images: A Tensor. Must be one of the following types: float. 4-D with
 shape [batch, height, width, depth]. A batch of images.
-*@li boxes: A Tensor of type float32. 3-D with shape [batch, \n
-num_bounding_boxes, 4] containing bounding boxes.
+*@li boxes: A Tensor of type float32. 3-D with shape [batch,
+num_bounding_boxes, 4] containing bounding boxes . \n
 
 *@par Outputs:
-*A Tensor. Has the same type as images.
+*A Tensor. Has the same type as images . \n
 
-*@attention Constraints: \n
-*Input images must be a 4-D tensor.
+*@attention Constraints:
+*Input images must be a 4-D tensor . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow DrawBoundingBoxes operator.
@@ -744,27 +751,27 @@ REG_OP(DrawBoundingBoxes)
     .OP_END_FACTORY_REG(DrawBoundingBoxes)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of \n
-score.
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
 
 *@par Inputs:
-*Input boxes and  scores must be float type. Inputs include: \n
+*Input boxes and  scores must be float type. Inputs include:
 *@li boxes: A 2-D float tensor of shape [num_boxes, 4].
-*@li scores: A 1-D float tensor of shape [num_boxes] representing a single \n
+*@li scores: A 1-D float tensor of shape [num_boxes] representing a single
 score corresponding to each box (each row of boxes).
-*@li max_output_size: A scalar integer tensor representing the maximum number \n
-of boxes to be selected by non max suppression.
+*@li max_output_size: A scalar integer tensor representing the maximum number
+of boxes to be selected by non max suppression . \n
 
 *@par Attributes:
-*iou_threshold: A float representing the threshold for deciding whether boxes \n
-overlap too much with respect to IOU.
+*iou_threshold: A float representing the threshold for deciding whether boxes
+overlap too much with respect to IOU . \n
 
 *@par Outputs:
-*selected_indices: A 1-D integer tensor of shape [M] representing the selected \n
-indices from the boxes tensor, where M <= max_output_size.
+*selected_indices: A 1-D integer tensor of shape [M] representing the selected
+indices from the boxes tensor, where M <= max_output_size . \n
 
-*@attention Constraints: \n
-*Input boxes and  scores must be float type.
+*@attention Constraints:
+*Input boxes and  scores must be float type . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow NonMaxSuppression operator.
@@ -779,25 +786,25 @@ REG_OP(NonMaxSuppression)
     .OP_END_FACTORY_REG(NonMaxSuppression)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of \n
-score.
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
 
 *@par Inputs:
-*Input boxes and  scores must be float type. Inputs include: \n
+*Input boxes and  scores must be float type. Inputs include:
 *@li boxes: A 2-D float tensor of shape [num_boxes, 4].
-*@li scores: A 1-D float tensor of shape [num_boxes] representing a single \n
+*@li scores: A 1-D float tensor of shape [num_boxes] representing a single
 score corresponding to each box (each row of boxes).
-*@li max_output_size: A scalar integer tensor representing the maximum number \n
+*@li max_output_size: A scalar integer tensor representing the maximum number
 of boxes to be selected by non max suppression.
-*@li iou_threshold: A 0-D float tensor representing the threshold for deciding \n
-whether boxes overlap too much with respect to IOU.
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding
+whether boxes overlap too much with respect to IOU . \n
 
 *@par Outputs:
-*selected_indices: A 1-D integer tensor of shape [M] representing the selected \n
-indices from the boxes tensor, where M <= max_output_size.
+*selected_indices: A 1-D integer tensor of shape [M] representing the selected
+indices from the boxes tensor, where M <= max_output_size . \n
 
-*@attention Constraints: \n
-*Input boxes and  scores must be float type.
+*@attention Constraints:
+*Input boxes and  scores must be float type . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow NonMaxSuppressionV2 operator.
@@ -812,27 +819,27 @@ REG_OP(NonMaxSuppressionV2)
     .OP_END_FACTORY_REG(NonMaxSuppressionV2)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of \n
-score.
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
 
 *@par Inputs:
-*Input boxes and  scores must be float type. Inputs include: \n
+*Input boxes and  scores must be float type. Inputs include:
 *@li boxes: A 2-D float tensor of shape [num_boxes, 4].
-*@li scores: A 1-D float tensor of shape [num_boxes] representing a single \n
+*@li scores: A 1-D float tensor of shape [num_boxes] representing a single
 score corresponding to each box (each row of boxes).
-*@li max_output_size: A scalar integer tensor representing the maximum number \n
+*@li max_output_size: A scalar integer tensor representing the maximum number
 of boxes to be selected by non max suppression.
-*@li iou_threshold: A 0-D float tensor representing the threshold for deciding \n
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding
 whether boxes overlap too much with respect to IOU.
-*@li score_threshold: A 0-D float tensor representing the threshold for \n
-deciding when to remove boxes based on score.
+*@li score_threshold: A 0-D float tensor representing the threshold for
+deciding when to remove boxes based on score . \n
 
 *@par Outputs:
-*selected_indices: A 1-D integer tensor of shape [M] representing the selected \n
-indices from the boxes tensor, where M <= max_output_size.
+*selected_indices: A 1-D integer tensor of shape [M] representing the selected
+indices from the boxes tensor, where M <= max_output_size . \n
 
-*@attention Constraints: \n
-*Input boxes and  scores must be float type.
+*@attention Constraints:
+*Input boxes and  scores must be float type . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow NonMaxSuppressionV3 operator.
@@ -848,33 +855,33 @@ REG_OP(NonMaxSuppressionV3)
     .OP_END_FACTORY_REG(NonMaxSuppressionV3)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of \n
-score.
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
 
 *@par Inputs:
-*Input boxes and  scores must be float type. Inputs include: \n
+*Input boxes and  scores must be float type. Inputs include:
 *@li boxes: A 2-D float tensor of shape [num_boxes, 4].
-*@li scores: A 1-D float tensor of shape [num_boxes] representing a single \n
+*@li scores: A 1-D float tensor of shape [num_boxes] representing a single
 score corresponding to each box (each row of boxes).
-*@li max_output_size: A scalar integer tensor representing the maximum number \n
+*@li max_output_size: A scalar integer tensor representing the maximum number
 of boxes to be selected by non max suppression.
-*@li iou_threshold: A 0-D float tensor representing the threshold for deciding \n
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding
 whether boxes overlap too much with respect to IOU.
-*@li score_threshold: A 0-D float tensor representing the threshold for \n
-deciding when to remove boxes based on score.
+*@li score_threshold: A 0-D float tensor representing the threshold for
+deciding when to remove boxes based on score . \n
 
 *@par Attributes:
-*pad_to_max_output_size: If true, the output selected_indices is padded \n
-to be of length max_output_size. Defaults to false.
+*pad_to_max_output_size: If true, the output selected_indices is padded
+to be of length max_output_size. Defaults to false . \n
 
 *@par Outputs:
-*@li selected_indices: A 1-D integer tensor of shape [M] representing the \n
+*@li selected_indices: A 1-D integer tensor of shape [M] representing the
 selected indices from the boxes tensor, where M <= max_output_size.
-*@li valid_outputs: A 0-D integer tensor representing the number of valid \n
-elements in selected_indices, with the valid elements appearing first.
+*@li valid_outputs: A 0-D integer tensor representing the number of valid
+elements in selected_indices, with the valid elements appearing first . \n
 
-*@attention Constraints: \n
-*Input boxes and  scores must be float type.
+*@attention Constraints:
+*Input boxes and  scores must be float type . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow NonMaxSuppressionV4 operator.
@@ -892,29 +899,29 @@ REG_OP(NonMaxSuppressionV4)
     .OP_END_FACTORY_REG(NonMaxSuppressionV4)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of \n
-score.
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
 
 *@par Inputs:
-*Input overlaps and  scores must be float type. Inputs include: \n
-*@li overlaps: A 2-D float tensor of shape [num_boxes, num_boxes] \n
+*Input overlaps and  scores must be float type. Inputs include:
+*@li overlaps: A 2-D float tensor of shape [num_boxes, num_boxes]
 representing the n-by-n box overlap values.
-*@li scores: A 1-D float tensor of shape [num_boxes] representing a single \n
+*@li scores: A 1-D float tensor of shape [num_boxes] representing a single
 score corresponding to each box (each row of boxes).
-*@li max_output_size: A scalar integer tensor representing the maximum number \n
+*@li max_output_size: A scalar integer tensor representing the maximum number
 of boxes to be selected by non max suppression.
-*@li overlap_threshold: A 0-D float tensor representing the threshold for \n
+*@li overlap_threshold: A 0-D float tensor representing the threshold for
 deciding whether boxes overlap too.
-*@li score_threshold: A 0-D float tensor representing the threshold for \n
-deciding when to remove boxes based on score.
+*@li score_threshold: A 0-D float tensor representing the threshold for
+deciding when to remove boxes based on score . \n
 
 *@par Attributes:
-*pad_to_max_output_size: If true, the output selected_indices is padded \n
-to be of length max_output_size. Defaults to false.
+*pad_to_max_output_size: If true, the output selected_indices is padded
+to be of length max_output_size. Defaults to false . \n
 
 *@par Outputs:
-*selected_indices: A 1-D integer tensor of shape [M] representing the \n
-selected indices from the boxes tensor, where M <= max_output_size.
+*selected_indices: A 1-D integer tensor of shape [M] representing the
+selected indices from the boxes tensor, where M <= max_output_size . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow NonMaxSuppressionWithOverlaps operator.
@@ -930,29 +937,29 @@ REG_OP(NonMaxSuppressionWithOverlaps)
     .OP_END_FACTORY_REG(NonMaxSuppressionWithOverlaps)
 
 /**
-*@brief JPEG-encode an image.
+*@brief JPEG-encode an image . \n
 
 *@par Inputs:
-*Input image must be unit8 type. Inputs include: \n
-*image: A 3-D uint8 Tensor of shape [height, width, channels].
+*Input image must be unit8 type. Inputs include:
+*image: A 3-D uint8 Tensor of shape [height, width, channels] . \n
 
 *@par Attributes:
 *@li format: Per pixel image format.
-*@li quality: Quality of the compression from 0 to 100 (higher is better \n
+*@li quality: Quality of the compression from 0 to 100 (higher is better
 and slower).
-*@li progressive: If True, create a JPEG that loads progressively (coarse \n
+*@li progressive: If True, create a JPEG that loads progressively (coarse
 to fine).
-*@li optimize_size: If True, spend CPU/RAM to reduce size with no quality \n
+*@li optimize_size: If True, spend CPU/RAM to reduce size with no quality
 change.
 *@li chroma_downsampling: A boolean, default is true.
-*@li density_unit: Unit used to specify x_density and y_density: pixels per \n
+*@li density_unit: Unit used to specify x_density and y_density: pixels per
 inch ('in') or centimeter ('cm').
 *@li x_density: Horizontal pixels per density unit.
 *@li y_density: Vertical pixels per density unit.
-*@li xmp_metadata: If not empty, embed this XMP metadata in the image header.
+*@li xmp_metadata: If not empty, embed this XMP metadata in the image header . \n
 
 *@par Outputs:
-*contents: 0-D. JPEG-encoded image.
+*contents: 0-D. JPEG-encoded image . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow EncodeJpeg operator.
@@ -975,16 +982,16 @@ REG_OP(EncodeJpeg)
 /**
 *@brief PNG-encode an image.
 *@par Inputs:
-*Input image must be unit8 or uint16 type. Inputs include: \n
-*image: is a 3-D uint8 or uint16 Tensor of shape [height, width, channels] \n
-where channels is: 1: for grayscale; 2: for grayscale + alpha; 3: for RGB; \n
-4: for RGBA.
+*Input image must be unit8 or uint16 type. Inputs include:
+*image: is a 3-D uint8 or uint16 Tensor of shape [height, width, channels]
+where channels is: 1: for grayscale; 2: for grayscale + alpha; 3: for RGB;
+4: for RGBA . \n
 
 *@par Attributes:
-*compression: Compression level.
+*compression: Compression level . \n
 
 *@par Outputs:
-*contents: 0-D. PNG-encoded image.
+*contents: 0-D. PNG-encoded image . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow EncodePng operator.
@@ -997,30 +1004,33 @@ REG_OP(EncodePng)
     .OP_END_FACTORY_REG(EncodePng)
 
 /**
-*@brief Resizes "images" to "size" using bilinear interpolation.
+*@brief Resizes "images" to "size" using bilinear interpolation . \n
 
 *@par Inputs:
 * One input:
-*x: An NC1HWC0 Tensor. \n
-* Must be one of the following types: float16, float32.
+*x: An NC1HWC0 Tensor.
+* Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
-*@li size: A required int32 Tensor specifying the new size for the images. \n
+*@li size: A required int32 Tensor specifying the new size for the images.
 No default value.
-*@li align_corners: An optional bool. If "true", the centers of the corner \n
-pixels of the input and output tensors are aligned. Defaults to "false".
+*@li align_corners: An optional bool. If "true", the centers of the corner
+pixels of the input and output tensors are aligned. Defaults to "false" . \n
 
 *@par Outputs:
-*y: A Tensor with type float32 and the same format as input "images".
+*y: A Tensor with type float32 and the same format as input "images" . \n
 
 *@attention Constraints:
-*@li The input "size" must be a tensor of 2 elements: size[0] <= 2048, \n
+*@li The input "size" must be a tensor of 2 elements: size[0] <= 2048,
 size[1] <= 2048.
-*@li The input "images" must be a tensor of 5 elements: images[2] <= 2048, \n
-images[3] <= 2048.
+*@li The input "images" must be a tensor of 5 elements: images[2] <= 2048,
+images[3] <= 2048 . \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ResizeBilinearV2D.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ResizeBilinearV2 instead.
 */
 REG_OP(ResizeBilinearV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1031,12 +1041,12 @@ REG_OP(ResizeBilinearV2D)
     .OP_END_FACTORY_REG(ResizeBilinearV2D)
 
 /**
-*@brief Resizes "images" to "size" using bilinear interpolation and keep ration at the time.
+*@brief Resizes "images" to "size" using bilinear interpolation and keep ratio at the time. \n
 
 *@par Inputs:
 * One input:
-*images: An NC1HWC0 Tensor. \n
-* Must be one of the following types: float16, float32.
+*images: An NC1HWC0 Tensor.
+* Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
 *@li min_dimension: A required int32 attribute for the min dimension for the images.
@@ -1046,47 +1056,50 @@ REG_OP(ResizeBilinearV2D)
 *@li align_corners: An optional bool. If "true", the centers of the corner
 * pixels of the input and output tensors are aligned. Defaults to "false".
 *@li half_pixel_centers: indicates if the offset coordinates are normalized
-* Defaults to "false".
+* Defaults to "false" . \n
 
 *@par Outputs:
-*y: A Tensor with type float32 and the same format as input "images".
+*y: A Tensor with type float32 and the same format as input "images" . \n
 
 *@attention Constraints:
-* The input "images" must be a tensor of 5 elements: images[2] <= 2048, \n
+* The input "images" must be a tensor of 5 elements: images[2] <= 2048,
 images[3] <= 2048.
 */
-REG_OP(KeepRationResizeBilinear)
+REG_OP(KeepRatioResizeBilinear)
     .INPUT(images, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(min_dimension, Int)
     .REQUIRED_ATTR(max_dimension, Int)
     .ATTR(align_corners, Bool, false)
     .ATTR(half_pixel_centers, Bool, false)
-    .OP_END_FACTORY_REG(KeepRationResizeBilinear)
+    .OP_END_FACTORY_REG(KeepRatioResizeBilinear)
 
 /**
-*@brief Resizes "images" to "size" using nearest neighbor interpolation.
+*@brief Resizes "images" to "size" using nearest neighbor interpolation . \n
 
 *@par Inputs:
 * One input:
-*x: An NC1HWC0 Tensor. \n
+*x: An NC1HWC0 Tensor.
 * Must be one of the following types: float16, float32, int32, int8, uint8
 
 *@par Attributes:
-*@li size: A required int32 Tensor specifying the new size for the images. \n
+*@li size: A required int32 Tensor specifying the new size for the images.
 No default value.
-*@li align_corners: An optional bool. If "true", the centers of the corner \n
-pixels of the input and output tensors are aligned. Defaults to "false".
+*@li align_corners: An optional bool. If "true", the centers of the corner
+pixels of the input and output tensors are aligned. Defaults to "false" . \n
 
 *@par Outputs:
-*y: A Tensor with the same type and format as input "images".
+*y: A Tensor with the same type and format as input "images" . \n
 
 *@attention Constraints:
-* The input "size" must be a tensor of 2 elements: size[0] <= 7680, \n
+* The input "size" must be a tensor of 2 elements: size[0] <= 7680,
 size[1] <= 4320
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ResizeNearestNeighborV2.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ResizeNearestNeighborV2 instead.
 */
 REG_OP(ResizeNearestNeighborV2D)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
@@ -1097,18 +1110,18 @@ REG_OP(ResizeNearestNeighborV2D)
     .OP_END_FACTORY_REG(ResizeNearestNeighborV2D)
 
 /**
-*@brief Extract the shape information of a JPEG-encoded image.
+*@brief Extract the shape information of a JPEG-encoded image . \n
 
 *@par Inputs:
-*Input contents must be 0-D. Inputs include: \n
-*contents: 0-D. The JPEG-encoded image.
+*Input contents must be 0-D. Inputs include:
+*contents: 0-D. The JPEG-encoded image . \n
 
 *@par Attributes:
-*output_type: The output type of the operation (int32 or int64). Defaults \n
-to int32.
+*output_type: The output type of the operation (int32 or int64). Defaults
+to int32 . \n
 
 *@par Outputs:
-*image_shape: 1-D. The image shape with format [height, width, channels].
+*image_shape: 1-D. The image shape with format [height, width, channels] . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow ExtractJpegShape operator.
@@ -1121,18 +1134,18 @@ REG_OP(ExtractJpegShape)
     .OP_END_FACTORY_REG(ExtractJpegShape)
 
 /**
-*@brief Draw bounding boxes on a batch of images.
+*@brief Draw bounding boxes on a batch of images . \n
 
 *@par Inputs:
-*@li images: 4-D with shape `[batch, height, width, depth]`. \n
+*@li images: 4-D with shape `[batch, height, width, depth]`.
 A batch of images.
-*@li boxes: 3-D with shape `[batch, num_bounding_boxes, 4]` \n
+*@li boxes: 3-D with shape `[batch, num_bounding_boxes, 4]`
 containing bounding boxes.
-*@li colors: 2-D. A list of RGBA colors to cycle through for the boxes.
+*@li colors: 2-D. A list of RGBA colors to cycle through for the boxes . \n
 
 *@par Outputs:
-*y: Returns 4-D with the same shape as `images`. \n
-The batch of input images with bounding boxes drawn on the images.
+*y: Returns 4-D with the same shape as `images`.
+The batch of input images with bounding boxes drawn on the images . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow DrawBoundingBoxesV2 operator.
@@ -1146,33 +1159,33 @@ REG_OP(DrawBoundingBoxesV2)
     .OP_END_FACTORY_REG(DrawBoundingBoxesV2)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of score, \n
-pruning away boxes that have high intersection-over-union (IOU) overlap \n
-with previously selected boxes.
+*@brief Greedily selects a subset of bounding boxes in descending order of score,
+pruning away boxes that have high intersection-over-union (IOU) overlap
+with previously selected boxes . \n
 
 *@par Inputs:
 *@li boxes: A 2-D float tensor of shape `[num_boxes, 4]`.
-*@li scores: A 1-D float tensor of shape `[num_boxes]` representing a single \n
+*@li scores: A 1-D float tensor of shape `[num_boxes]` representing a single
 score corresponding to each box (each row of boxes).
-*@li max_output_size: A scalar integer tensor representing the maximum number of \n
+*@li max_output_size: A scalar integer tensor representing the maximum number of
 boxes to be selected by non max suppression.
-*@li iou_threshold: A 0-D float tensor representing the threshold for deciding whether \n
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding whether
 boxes overlap too much with respect to IOU.
-*@li score_threshold: A 0-D float tensor representing the threshold for deciding when to \n 
+*@li score_threshold: A 0-D float tensor representing the threshold for deciding when to
 remove boxes based on score.
-*@li soft_nms_sigma: A 0-D float tensor representing the sigma parameter for Soft NMS.
+*@li soft_nms_sigma: A 0-D float tensor representing the sigma parameter for Soft NMS . \n
 
 *@par Attributes:
-pad_to_max_output_size: If true, the output `selected_indices` is padded to be of length \n
-`max_output_size`. Defaults to false. If not specified, defaults to false.
+pad_to_max_output_size: If true, the output `selected_indices` is padded to be of length
+`max_output_size`. Defaults to false. If not specified, defaults to false . \n
 
 *@par Outputs:
-*@li selected_indices: A 1-D integer tensor of shape [M] representing the \n
+*@li selected_indices: A 1-D integer tensor of shape [M] representing the
 selected indices from the boxes tensor, where M <= max_output_size.
-*@li selected_scores: A 1-D float tensor of shape `[M]` representing the corresponding \n
+*@li selected_scores: A 1-D float tensor of shape `[M]` representing the corresponding
 scores for each selected box, where `M <= max_output_size`.
-*@li valid_outputs: A 0-D integer tensor representing the number of valid \n
-elements in selected_indices, with the valid elements appearing first.
+*@li valid_outputs: A 0-D integer tensor representing the number of valid
+elements in selected_indices, with the valid elements appearing first . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow NonMaxSuppressionV5 operator.
@@ -1193,17 +1206,20 @@ REG_OP(NonMaxSuppressionV5)
     .OP_END_FACTORY_REG(NonMaxSuppressionV5)
 
 /**
-*@brief Resizes "images" to "size" by scale and translate.
+*@brief Resizes "images" to "size" by scale and translate . \n
 
 *@par Inputs:
-*@li images: A `Tensor`. Must be one of the following types: `int8`, `uint8`, \n
-`int16`, `uint16`, `int32`, `int64`, `bfloat16`, `half`, `float32`, `float64`.
+*@li images: A `Tensor`. Must be one of the following types: `int8`, `uint8`,
+`int16`, `uint16`, `int32`, `int64`, `bfloat16`, `float32`, `float64`.
 *@li size: A `Tensor` of type `int32`.
 *@li scale: A `Tensor` of type `float32`.
-*@li translation: A `Tensor` of type `float32`.
+*@li translation: A `Tensor` of type `float32` . \n
+
+*@li kernel_type: type is string, default  lanczos3
+*@li antialias: type is bool, default true \n
 
 *@par Outputs:
-*y: A Tensor with type float32.
+*y: A Tensor with type float32 . \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow ScaleAndTranslate operator.
@@ -1221,16 +1237,19 @@ REG_OP(ScaleAndTranslate)
     .OP_END_FACTORY_REG(ScaleAndTranslate)
 
 /**
-*@brief Computes the gradient by scale and translate.
+*@brief Computes the gradient by scale and translate . \n
 
 *@par Inputs:
 *@li grads: A `Tensor`. Must be one of the following types: `float32`.
 *@li original_image: A `Tensor`. Must have the same type as `grads`.
 *@li scale: A `Tensor` of type `float32`.
-*@li translation: A `Tensor` of type `float32`.
+*@li translation: A `Tensor` of type `float32` . \n
+
+*@li kernel_type: type is string, default  lanczos3
+*@li antialias: type is bool, default true
 
 *@par Outputs:
-*y: A `Tensor`. Has the same type as `grads`.
+*y: A `Tensor`. Has the same type as `grads` . \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow ScaleAndTranslateGrad operator.
@@ -1247,36 +1266,37 @@ REG_OP(ScaleAndTranslateGrad)
     .OP_END_FACTORY_REG(ScaleAndTranslateGrad)
 
 /**
-*@brief Greedily selects a subset of bounding boxes in descending order of score, \n
-This operation performs non_max_suppression on the inputs per batch, across all classes.
+*@brief Greedily selects a subset of bounding boxes in descending order of score,
+This operation performs non_max_suppression on the inputs per batch, across all classes . \n
 
 *@par Inputs:
-*@li boxes: A 4-D float tensor of shape `[batch_size, num_boxes, q, 4]`. If `q` is 1 then \n
-same boxes are used for all classes otherwise, if `q` is equal to number of \n
+*@li boxes: A 4-D float tensor of shape `[batch_size, num_boxes, q, 4]`. If `q` is 1 then
+same boxes are used for all classes otherwise, if `q` is equal to number of
 classes, class-specific boxes are used.
-*@li scores: A 3-D float tensor of shape `[batch_size, num_boxes, num_classes]` \n
+*@li scores: A 3-D float tensor of shape `[batch_size, num_boxes, num_classes]`
 representing a single score corresponding to each box (each row of boxes).
-*@li max_output_size_per_class: A scalar integer tensor representing the maximum number of \n
+*@li max_output_size_per_class: A scalar integer tensor representing the maximum number of
 boxes to be selected by non max suppression per class.
-*@li max_total_size: A scalar representing maximum number of boxes retained over all classes. \n
-*@li iou_threshold: A 0-D float tensor representing the threshold for deciding whether \n
+*@li max_total_size: A scalar representing maximum number of boxes retained over all classes.
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding whether
 boxes overlap too much with respect to IOU.
-*@li score_threshold: A 0-D float tensor representing the threshold for deciding when to remove \n
-boxes based on score.
+*@li score_threshold: A 0-D float tensor representing the threshold for deciding when to remove
+boxes based on score . \n
 
 *@par Attributes:
-*@li pad_per_class: If false, the output nmsed boxes, scores and classes \n
-are padded/clipped to `max_total_size`. If true, the \n
-output nmsed boxes, scores and classes are padded to be of length \n
-`max_size_per_class`*`num_classes`, unless it exceeds `max_total_size` in \n
+*@li pad_per_class: If false, the output nmsed boxes, scores and classes
+are padded/clipped to `max_total_size`. If true, the
+output nmsed boxes, scores and classes are padded to be of length
+`max_size_per_class`*`num_classes`, unless it exceeds `max_total_size` in
 which case it is clipped to `max_total_size`. Defaults to false.
-*@li clip_boxes: If true, assume the box coordinates are between [0, 1] and clip the output boxes \n
-if they fall beyond [0, 1]. If false, do not do clipping and output the box \n
-coordinates as it is. If not specified, defaults to true.
+*@li clip_boxes: If true, assume the box coordinates are between [0, 1] and clip the output boxes
+if they fall beyond [0, 1]. If false, do not do clipping and output the box
+coordinates as it is. If not specified, defaults to true . \n
 
 *@par Outputs:
-*y: A 1-D integer tensor of shape `[M]` representing the selected \n
-indices from the boxes tensor, where `M <= max_output_size`.
+*nmsed_boxes:type is float
+*nmsed_scores:type is float
+*nmsed_classes:type is float  \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow CombinedNonMaxSuppression operator.
@@ -1298,11 +1318,11 @@ REG_OP(CombinedNonMaxSuppression)
     .OP_END_FACTORY_REG(CombinedNonMaxSuppression)
 
 /**
-*@brief Function spatial transformer.
+*@brief Function spatial transformer . \n
 
 *@par Inputs:
 *@li x: A Tensor dtype of float16, float32.
-*@li theta: A Tensor dtype of float16, float32, auxiliary coefficients.
+*@li theta: A Tensor dtype of float16, float32, auxiliary coefficients . \n
 
 *@par Attributes:
 *@li output_size: A tuple output size.

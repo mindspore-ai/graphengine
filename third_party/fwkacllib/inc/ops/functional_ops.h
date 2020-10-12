@@ -25,40 +25,27 @@
 #include "graph/operator.h"
 
 namespace ge {
-REG_OP(SymbolicGradient)
-    .DYNAMIC_INPUT(input, TensorType::ALL())
-    .DYNAMIC_OUTPUT(output, TensorType::ALL())
-    .GRAPH(f)
-    .OP_END_FACTORY_REG(SymbolicGradient)
-
-REG_OP(RemoteCall)
-    .INPUT(target, DT_STRING)
-    .DYNAMIC_INPUT(args, TensorType::ALL())
-    .DYNAMIC_OUTPUT(output, TensorType::ALL())
-    .GRAPH(f)
-    .OP_END_FACTORY_REG(RemoteCall)
-
 /**
- *@brief Select one of the subgraphs to pass the input tensors and return the output tensors. \n
- *       If "cond" means True, the selected subgraph is "then_branch". \n
- *       Otherwise, the selected subgraph is "else_branch".
+ *@brief Select one of the subgraphs to pass the input tensors and return the output tensors.
+ *       If "cond" means True, the selected subgraph is "then_branch".
+ *       Otherwise, the selected subgraph is "else_branch" . \n
 
  *@par Inputs:
- *@li cond: A Tensor. If "cond" is not a scalar of boolean type, \n
- *          it will be converted to a boolean according to the following rule: \n
- *          if "cond" is a numerical scalar, non-zero means True and zero means False; \n
- *          if "cond" is a string scalar, non-empty means True and empty means False; \n
+ *@li cond: A Tensor. If "cond" is not a scalar of boolean type,
+ *          it will be converted to a boolean according to the following rule:
+ *          if "cond" is a numerical scalar, non-zero means True and zero means False;
+ *          if "cond" is a string scalar, non-empty means True and empty means False;
  *          if "cond" is not a scalar, non-empty means True and empty means False.
- *@li input: The input tensors.
+ *@li input: The input tensors . \n
 
  *@par Graphs:
- *@li then_branch: A subgraph takes 'input' and returns a list of tensors, \n
+ *@li then_branch: A subgraph takes 'input' and returns a list of tensors,
  *                 whose types are the same as what else_branch returns.
- *@li else_branch: A subgraph takes 'input' and returns a list of tensors, \n
- *                 whose types are the same as what then_branch returns.
+ *@li else_branch: A subgraph takes 'input' and returns a list of tensors,
+ *                 whose types are the same as what then_branch returns . \n
 
  *@par Outputs:
- *output: The output tensors returned by either then_branch(input) or else_branch(input).
+ *output: The output tensors returned by either then_branch(input) or else_branch(input) . \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator _If.
@@ -72,26 +59,26 @@ REG_OP(_If)
     .OP_END_FACTORY_REG(_If)
 
 /**
- *@brief Select one of the subgraphs to pass the input tensors and return the output tensors. \n
- *       If "cond" means True, the selected subgraph is "then_branch". \n
- *       Otherwise, the selected subgraph is "else_branch".
+ *@brief Select one of the subgraphs to pass the input tensors and return the output tensors.
+ *       If "cond" means True, the selected subgraph is "then_branch".
+ *       Otherwise, the selected subgraph is "else_branch" . \n
 
  *@par Inputs:
- *@li cond: A Tensor. If "cond" is not a scalar of boolean type, \n
- *          it will be converted to a boolean according to the following rule: \n
- *          if "cond" is a numerical scalar, non-zero means True and zero means False; \n
- *          if "cond" is a string scalar, non-empty means True and empty means False; \n
+ *@li cond: A Tensor. If "cond" is not a scalar of boolean type,
+ *          it will be converted to a boolean according to the following rule:
+ *          if "cond" is a numerical scalar, non-zero means True and zero means False;
+ *          if "cond" is a string scalar, non-empty means True and empty means False;
  *          if "cond" is not a scalar, non-empty means True and empty means False.
- *@li input: The input tensors.
+ *@li input: The input tensors . \n
 
  *@par Graphs:
- *@li then_branch: A subgraph takes 'input' and returns a list of tensors, \n
+ *@li then_branch: A subgraph takes 'input' and returns a list of tensors,
  *                 whose types are the same as what else_branch returns.
- *@li else_branch: A subgraph takes 'input' and returns a list of tensors, \n
- *                 whose types are the same as what then_branch returns.
+ *@li else_branch: A subgraph takes 'input' and returns a list of tensors,
+ *                 whose types are the same as what then_branch returns . \n
 
  *@par Outputs:
- *output: The output tensors returned by either then_branch(input) or else_branch(input).
+ *output: The output tensors returned by either then_branch(input) or else_branch(input) . \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator StatelessIf.
@@ -105,26 +92,26 @@ REG_OP(StatelessIf)
     .OP_END_FACTORY_REG(StatelessIf)
 
 /**
- *@brief Select one of the subgraphs to pass the input tensors and return the output tensors. \n
- *       If "cond" means True, the selected subgraph is "then_branch". \n
- *       Otherwise, the selected subgraph is "else_branch".
+ *@brief Select one of the subgraphs to pass the input tensors and return the output tensors.
+ *       If "cond" means True, the selected subgraph is "then_branch".
+ *       Otherwise, the selected subgraph is "else_branch" . \n
 
  *@par Inputs:
- *@li cond: A Tensor. If "cond" is not a scalar of boolean type, \n
- *          it will be converted to a boolean according to the following rule: \n
- *          if "cond" is a numerical scalar, non-zero means True and zero means False; \n
- *          if "cond" is a string scalar, non-empty means True and empty means False; \n
+ *@li cond: A Tensor. If "cond" is not a scalar of boolean type,
+ *          it will be converted to a boolean according to the following rule:
+ *          if "cond" is a numerical scalar, non-zero means True and zero means False;
+ *          if "cond" is a string scalar, non-empty means True and empty means False;
  *          if "cond" is not a scalar, non-empty means True and empty means False.
- *@li input: The input tensors.
+ *@li input: The input tensors . \n
 
  *@par Graphs:
- *@li then_branch: A subgraph takes 'input' and returns a list of tensors, \n
+ *@li then_branch: A subgraph takes 'input' and returns a list of tensors,
  *                 whose types are the same as what else_branch returns.
- *@li else_branch: A subgraph takes 'input' and returns a list of tensors, \n
- *                 whose types are the same as what then_branch returns.
+ *@li else_branch: A subgraph takes 'input' and returns a list of tensors,
+ *                 whose types are the same as what then_branch returns . \n
 
  *@par Outputs:
- *output: The output tensors returned by either then_branch(input) or else_branch(input).
+ *output: The output tensors returned by either then_branch(input) or else_branch(input) . \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator If.
@@ -138,18 +125,18 @@ REG_OP(If)
     .OP_END_FACTORY_REG(If)
 
 /**
- *@brief Select one of the subgraphs to pass the input tensors and return the output tensors.
+ *@brief Select one of the subgraphs to pass the input tensors and return the output tensors . \n
 
  *@par Inputs:
  *@li branch_index: A int32 scalar which determines the selected subgraph.
- *@li input: The input tensors, which will be passed to the subgraph.
+ *@li input: The input tensors, which will be passed to the subgraph . \n
 
  *@par Graphs:
- *branches: A list of subgraphs, each of which takes 'input' and returns a list of tensors, \n
- *          whose types are the same as what every other subgraph returns.
+ *branches: A list of subgraphs, each of which takes 'input' and returns a list of tensors,
+ *          whose types are the same as what every other subgraph returns . \n
 
  *@par Outputs:
- *output: The output tensors returned by one of branches.
+ *output: The output tensors returned by one of branches . It's a dynamic output. \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator Case.
@@ -162,25 +149,25 @@ REG_OP(Case)
     .OP_END_FACTORY_REG(Case)
 
 /**
- *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False.
+ *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False . \n
 
  *@par Inputs:
- *input: The input tensors.
+ *input: The input tensors . \n
 
  *@par Graphs:
- *@li cond: A subgraph takes 'input' and returns a tensor. \n
- *          If the tensor is not a scalar of boolean type, \n
- *          it will be converted to a boolean according to the following rule: \n
- *          if it is a numerical scalar, non-zero means True and zero means False; \n
- *          if it is a string scalar, non-empty means True and empty means False; \n
+ *@li cond: A subgraph takes 'input' and returns a tensor.
+ *          If the tensor is not a scalar of boolean type,
+ *          it will be converted to a boolean according to the following rule:
+ *          if it is a numerical scalar, non-zero means True and zero means False;
+ *          if it is a string scalar, non-empty means True and empty means False;
  *          if it is not a scalar, non-empty means True and empty means False.
- *@li body: A subgraph takes 'input' and returns a another list of tensors.
+ *@li body: A subgraph takes 'input' and returns a another list of tensors .  \n
 
  *@par Attributes:
- *parallel_iterations: An optional int, default as 10.
+ *parallel_iterations: An optional int, default as 10 . \n
 
  *@par Outputs:
- *output: The output tensors returned by "body". Has the same type as "input".
+ *output: The output tensors returned by "body". Has the same type as "input" . \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator _While.
@@ -193,25 +180,25 @@ REG_OP(_While)
     .OP_END_FACTORY_REG(_While)
 
 /**
- *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False.
+ *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False . \n
 
  *@par Inputs:
- *input: The input tensors.
+ *input: The input tensors . \n
 
  *@par Graphs:
- *@li cond: A subgraph takes 'input' and returns a tensor. \n
- *          If the tensor is not a scalar of boolean type, \n
- *          it will be converted to a boolean according to the following rule: \n
- *          if it is a numerical scalar, non-zero means True and zero means False; \n
- *          if it is a string scalar, non-empty means True and empty means False; \n
+ *@li cond: A subgraph takes 'input' and returns a tensor.
+ *          If the tensor is not a scalar of boolean type,
+ *          it will be converted to a boolean according to the following rule:
+ *          if it is a numerical scalar, non-zero means True and zero means False;
+ *          if it is a string scalar, non-empty means True and empty means False;
  *          if it is not a scalar, non-empty means True and empty means False.
- *@li body: A subgraph takes 'input' and returns a another list of tensors.
+ *@li body: A subgraph takes 'input' and returns a another list of tensors . \n
 
  *@par Attributes:
- *parallel_iterations: An optional int, default as 10.
+ *parallel_iterations: An optional int, default as 10 . \n
 
  *@par Outputs:
- *output: The output tensors returned by "body". Has the same type as "input".
+ *output: The output tensors returned by "body". Has the same type as "input" . It's a dynamic output. \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator While.
@@ -225,25 +212,25 @@ REG_OP(While)
     .OP_END_FACTORY_REG(While)
 
 /**
- *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False.
+ *@brief Cyclic execute the "body" subgraph until the return tensor of "cond" subgraph means False . \n
 
  *@par Inputs:
- *input: The input tensors.
+ *input: The input tensors . \n
 
  *@par Graphs:
- *@li cond: A subgraph takes 'input' and returns a tensor. \n
- *          If the tensor is not a scalar of boolean type, \n
- *          it will be converted to a boolean according to the following rule: \n
- *          if it is a numerical scalar, non-zero means True and zero means False; \n
- *          if it is a string scalar, non-empty means True and empty means False; \n
+ *@li cond: A subgraph takes 'input' and returns a tensor.
+ *          If the tensor is not a scalar of boolean type,
+ *          it will be converted to a boolean according to the following rule:
+ *          if it is a numerical scalar, non-zero means True and zero means False;
+ *          if it is a string scalar, non-empty means True and empty means False;
  *          if it is not a scalar, non-empty means True and empty means False.
- *@li body: A subgraph takes 'input' and returns a another list of tensors.
+ *@li body: A subgraph takes 'input' and returns a another list of tensors . \n
 
  *@par Attributes:
- *parallel_iterations: An optional int, default as 10.
+ *parallel_iterations: An optional int, default as 10 . \n
 
  *@par Outputs:
- *output: The output tensors returned by "body". Has the same type as "input".
+ *output: The output tensors returned by "body". Has the same type as "input" . It's a dynamic output. \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator StatelessWhile.
@@ -257,19 +244,19 @@ REG_OP(StatelessWhile)
     .OP_END_FACTORY_REG(StatelessWhile)
 
 /**
- *@brief Cyclic execute the "body" subgraph until the first input of For op exceed upper bound.
+ *@brief Cyclic execute the "body" subgraph until the first input of For op exceed upper bound . \n
 
  *@par Inputs:
  *@li start: A int32 scalar. The lower bound.
  *@li limit: A int32 scalar. The upper bound.
  *@li delta: A int32 scalar. The step size.
- *@li input: The input tensors, which will be passed to "body".
+ *@li input: The input tensors, which will be passed to "body" . \n
 
  *@par Graphs:
- *body: A subgraph takes 'input' and returns a another list of tensors.
+ *body: A subgraph takes 'input' and returns a another list of tensors . \n
 
  *@par Outputs:
- *output: The output tensors returned by "body". Has the same type as "input".
+ *output: The output tensors returned by "body". Has the same type as "input" . It's a dynamic output. \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator For.
@@ -284,21 +271,21 @@ REG_OP(For)
     .OP_END_FACTORY_REG(For)
 
 /**
- *@brief Pass the input tensors to the subgraph "f" and return the output tensors.
+ *@brief Pass the input tensors to the subgraph "f" and return the output tensors . \n
 
  *@par Inputs:
- *args: The input tensors, which will be passed to "f".
+ *args: The input tensors, which will be passed to "f" . \n
 
  *@par Graphs:
- *f: A subgraph takes 'args' and returns a another list of tensors.
+ *f: A subgraph takes 'args' and returns a another list of tensors . \n
 
  *@par Attributes:
  *@li config: An optional string, default as "".
  *@li config_proto: An optional int, default as "".
- *@li executor_type: An optional int, default as "".
+ *@li executor_type: An optional int, default as "" . \n
 
  *@par Outputs:
- *output: The output tensors returned by "f".
+ *output: The output tensors returned by "f" . It's a dynamic output. \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator PartitionedCall.
@@ -313,21 +300,21 @@ REG_OP(PartitionedCall)
     .OP_END_FACTORY_REG(PartitionedCall)
 
 /**
- *@brief Pass the input tensors to the subgraph "f" and return the output tensors.
+ *@brief Pass the input tensors to the subgraph "f" and return the output tensors . \n
 
  *@par Inputs:
- *args: The input tensors, which will be passed to "f".
+ *args: The input tensors, which will be passed to "f" . \n
 
  *@par Graphs:
- *f: A subgraph takes 'args' and returns a another list of tensors.
+ *f: A subgraph takes 'args' and returns a another list of tensors . \n
 
  *@par Attributes:
  *@li config: An optional string, default as "".
  *@li config_proto: An optional int, default as "".
- *@li executor_type: An optional int, default as "".
+ *@li executor_type: An optional int, default as "" . \n
 
  *@par Outputs:
- *output: The output tensors returned by "f".
+ *output: The output tensors returned by "f" . It's a dynamic output. \n
 
  *@par Third-party framework compatibility
  *@Compatible with the TensorFlow operator StatefulPartitionedCall.
@@ -340,11 +327,6 @@ REG_OP(StatefulPartitionedCall)
     .ATTR(config_proto, String, "")
     .ATTR(executor_type, String, "")
     .OP_END_FACTORY_REG(StatefulPartitionedCall)
-
-REG_OP(FakeParam)
-    .OUTPUT(output, TensorType::ALL())
-    .ATTR(shape, ListInt, {})
-    .OP_END_FACTORY_REG(FakeParam)
 
 }  // namespace ge
 

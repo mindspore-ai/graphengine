@@ -29,6 +29,7 @@ file(GLOB PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ge_api.cc"
+        "ge_prof.cc"
         )
 
 ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -66,5 +67,8 @@ target_link_libraries(ge_client
         ${slog}
         ${mmpa}
         ${runtime}
+        ${msprof}
+        ${msprofiler}
+        ${ascend_hal}
         rt
         dl)

@@ -28,7 +28,7 @@ using std::unordered_set;
 void AttrHolder::CopyAttrsFrom(const AttrHolder &holder) { MutableAttrMap().CopyValueFrom(holder.GetAttrMap()); }
 graphStatus AttrHolder::SetAttr(const std::string &name, const GeAttrValue &value) {
   if (value.IsEmpty()) {
-    GELOGE(GRAPH_FAILED, "value is empty, key %s", name.c_str());
+    GELOGE(GRAPH_FAILED, "value is empty, key of the attr is %s", name.c_str());
     return GRAPH_FAILED;
   }
   auto proto_map = MutableAttrMap().GetProtoMsg();

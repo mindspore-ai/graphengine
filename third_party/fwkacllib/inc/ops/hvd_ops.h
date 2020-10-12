@@ -28,10 +28,10 @@ namespace ge {
  * @brief Outputs a tensor gathering all input tensors.
  * @par Inputs:
  * x: A tensor. Must be one of the following types: uint8, int8, uint16, int16, int32,
- * int64, float16, bool.
+ int64, float16, bool.
  * @par Attributes:
- * @li rank_size: A required integer identifying the number of ranks 
- * participating in the op.
+ * @li rank_size: A required integer identifying the number of ranks
+ participating in the op.
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
  */
@@ -44,13 +44,13 @@ REG_OP(HorovodAllgather)
     .OP_END_FACTORY_REG(HorovodAllgather)
 
 /**
- * @brief Outputs a tensor containing the reduction across all input tensors 
- * passed to op.
+ * @brief Outputs a tensor containing the reduction across all input tensors
+ passed to op.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int32, int64, float16, float32 
- * @par Attributes:
- * @li reduce_op: A required int identifying the reduction operation to 
- * perform.The supported operation are: "sum", "max", "min", "prod".
+ * x: A tensor. Must be one of the following types: int32, int64, float16, float32
+ @par Attributes:
+ * @li reduce_op: A required int identifying the reduction operation to
+ perform.The supported operation are: "sum", "max", "min", "prod".
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
  */
@@ -63,11 +63,11 @@ REG_OP(HorovodAllreduce)
 /**
  * @brief Broadcasts the input tensor in root rank to all ranks.
  * @par Inputs:
- * x: A list of dynamic input tensor. Must be one of the following types: 
- * int8, int32, float16, float32.
+ * x: A list of dynamic input tensor. Must be one of the following types:
+ int8, int32, float16, float32.
  * @par Attributes:
- * @li root_rank: A required integer identifying the root rank in the op 
- * input of this rank will be broadcast to other ranks.
+ * @li root_rank: A required integer identifying the root rank in the op
+ input of this rank will be broadcast to other ranks.
  * @par Outputs:
  * y: A list of dynamic output tensor. Has the same type and length as "x".
  */

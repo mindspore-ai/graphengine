@@ -27,20 +27,20 @@
 namespace ge {
 
 /**
-*@brief Converts each string in the input Tensor to the specified numeric type.
+*@brief Converts each string in the input Tensor to the specified numeric type . \n
 
 *@par Inputs:
-*Inputs include: \n
-*x: A Tensor. Must be one of the following types: string.
+*Inputs include:
+*x: A Tensor. Must be one of the following types: string . \n
 
 *@par Attributes:
-*out_type: The numeric type to interpret each string in string_tensor as.
+*out_type: The numeric type to interpret each string in string_tensor as . \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as x.
+*y: A Tensor. Has the same type as x . \n
 
-*@attention Constraints:\n
-*-The implementation for StringToNumber on Ascend uses AICPU, with bad performance.\n
+*@attention Constraints:
+*The implementation for StringToNumber on Ascend uses AICPU, with bad performance. \n
 
 *@par Third-party framework compatibility
 *@li compatible with tensorflow StringToNumber operator.

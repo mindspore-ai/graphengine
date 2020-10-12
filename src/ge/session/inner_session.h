@@ -63,6 +63,10 @@ class InnerSession {
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
 
+  Status AddDumpProperties(const DumpProperties &dump_properties);
+
+  Status RemoveDumpProperties();
+
  private:
   bool init_flag_;
   uint64_t session_id_;
@@ -71,6 +75,7 @@ class InnerSession {
   std::mutex resource_mutex_;  // AddGraph, RemoveGraph and Finalize use
   void UpdateThreadContext(const std::map<std::string, std::string> &options);
   void UpdateThreadContext(uint32_t graph_id);
+  static bool is_dump_server_inited_;
 };
 }  // namespace ge
 

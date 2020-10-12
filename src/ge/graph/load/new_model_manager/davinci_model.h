@@ -75,6 +75,12 @@ struct timeInfo {
   int64_t dumpEndTime;
 };
 
+enum ExecuteMode {
+  INITIALIZATION,
+  SYNCHRONIZATION,
+  ASYNCHRONIZATION,
+};
+
 // comments
 class DavinciModel {
  public:
@@ -313,6 +319,8 @@ class DavinciModel {
   /// @return execute result
   ///
   Status GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info);
+
+  Status GetAippType(uint32_t index, InputAippType &type, size_t &aipp_index);
 
   ///
   /// @ingroup ge
@@ -884,6 +892,7 @@ class DavinciModel {
   bool is_inner_model_stream_;
 
   bool is_async_mode_;  // For NN execute, Async mode use rtMemcpyAsync on rt_model_stream_.
+  ExecuteMode last_execute_mode_;
 
   bool is_stream_list_bind_{false};
   bool is_pure_head_stream_{false};

@@ -618,11 +618,16 @@ Status ParseOutNodes(const string &out_nodes) {
     if (!out_nodes.empty()) {
       domi::GetContext().out_nodes_map.clear();
       domi::GetContext().user_out_nodes.clear();
+      domi::GetContext().user_out_nodes_top_vec.clear();
 
       vector<string> nodes_v = StringUtils::Split(out_nodes, ';');
       for (const string &node : nodes_v) {
         vector<string> key_value_v = StringUtils::Split(node, ':');
         if (key_value_v.size() != 2) {  // The size must be 2.
+          if (key_value_v.size() == 1 && domi::GetContext().type == domi::CAFFE) {
+            domi::GetContext().user_out_nodes_top_vec.push_back(node);
+            continue;
+          }
           ErrorManager::GetInstance().ATCReportErrMessage(
             "E10001", {"parameter", "value", "reason"},
             {"--out_nodes", node, "the correct format is \"node_name1:0;node_name1:1;node_name2:0\""});
@@ -632,7 +637,13 @@ Status ParseOutNodes(const string &out_nodes) {
                  node.c_str());
           return PARAM_INVALID;
         }
-        auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
+        if (!domi::GetContext().user_out_nodes_top_vec.empty()) {
+          ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                          {"--out_nodes", out_nodes, "is not all index or top_name"});
+          GELOGE(PARAM_INVALID, "This out_nodes str must be all index or top_name, while the actual input is %s",
+                 out_nodes.c_str());
+          return PARAM_INVALID;
+        }
         // stoi: The method may throw an exception: invalid_argument/out_of_range
         if (!CheckDigitStr(key_value_v[1])) {
           ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
@@ -640,7 +651,10 @@ Status ParseOutNodes(const string &out_nodes) {
           GELOGE(PARAM_INVALID, "This str must be digit string, while the actual input is %s", out_nodes.c_str());
           return PARAM_INVALID;
         }
+
+        auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
         int32_t index = stoi(StringUtils::Trim(key_value_v[1]));
+        GELOGD("Get output info: node[%s] and index[%ld]", key_value_v[0].c_str(), index);
         if (iter != domi::GetContext().out_nodes_map.end()) {
           iter->second.emplace_back(index);
         } else {

@@ -26,17 +26,20 @@
 
 namespace ge {
 /**
-*@brief Applies a perspective transformation to an image.
+*@brief Applies a perspective transformation to an image . \n
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS DEPRECATED. Please do not use. \n
 
 *@par Inputs:
 *@li x: input tensor, format NCHW, type must be float.
-*@li matrix: transformation matrix, format ND , shape must be (N, 9), type must be float.
+*@li matrix: transformation matrix, format ND , shape must be (N, 9), type must be float . \n
 
 *@par Attributes:
 *@li out_height:output height.
 *@li out_width:output width.
 *@li borderType:border processing way, only support BORDER_CONSTANT and BORDER_REPLICATE, default BORDER_CONSTANT.
-*@li constant: border processed value when borderType is BORDER_CONSTANT.
+*@li constant: border processed value when borderType is BORDER_CONSTANT . \n
 
 *@par Outputs:
 *@li y: output tensor, format NCHW, type must be float.

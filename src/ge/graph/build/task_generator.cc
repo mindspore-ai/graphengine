@@ -266,6 +266,14 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   if (is_unknown_shape) {
     GE_CHK_STATUS_RET(SetUnknownShapeStream(run_context, stream), "Set unknown shape stream failed.");
   }
+  std::function<void()> callback = [&]() {
+    if (is_unknown_shape) {
+      if (DestroyUnknownShapeStream(run_context, stream) != SUCCESS) {
+        GELOGE(FAILED, "Destory unknown shape stream failed.");
+      }
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
 
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
@@ -351,9 +359,6 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task finished, generate %zu task(s).",
            op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id,
            task_list_size_after - task_list_size_before);
-  }
-  if (is_unknown_shape) {
-    GE_CHK_STATUS_RET(DestroyUnknownShapeStream(run_context, stream), "Destory unknown shape stream failed.");
   }
   GE_TIMESTAMP_CALLNUM_EVENT_END(GenerateTask, "GraphBuild::GenerateTask");
   return SUCCESS;
@@ -532,6 +537,9 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
       (void)ge_lib->DNNEngineManagerObj().GetDNNEngineName(node);
     }
 
+    (void)op_desc->DelAttr(kIsFirstNode);
+    (void)op_desc->DelAttr(kIsLastNode);
+
     all_stream_ops[op_desc->GetStreamId()].emplace_back(op_desc);
   }
 
@@ -645,8 +653,6 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
                                         vector<uint32_t> &all_reduce_nodes) const {
   GELOGI("Start AutoFindBpOpIndex");
   NodePtr bp_node = nullptr;
-  uint32_t last_bp = 0;
-  uint32_t iter_end = 0;
   uint32_t current_idx = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
@@ -662,20 +668,40 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
       all_reduce_nodes.emplace_back(current_idx);
       GELOGI("Allreduce name %s, idx %u", op_desc->GetName().c_str(), current_idx);
     }
-    if (op_desc->GetType() == NETOUTPUT) {
+    if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
       if (bp_node == nullptr) {
         bp_node = node;
       }
-      iter_end = current_idx;
-      GELOGI("Iter end name %s, idx %u", op_desc->GetName().c_str(), iter_end);
+    }
+    if (graph->GetNeedIteration()) {
+      if (op_desc->GetName() == NODE_NAME_NET_OUTPUT + '_' + NODE_NAME_STREAM_SWITCH + "_StreamActive") {
+        profiling_point.end_index.insert(current_idx);
+        GELOGI("Iter end name %s, idx %u, from Node_Output_IteratorCtrl_StreamSwitch_StreamActive",
+               op_desc->GetName().c_str(), current_idx);
+      }
+      if (op_desc->GetName() == NODE_NAME_FLOWCTRL_LOOP_ASSIGN) {
+        profiling_point.end_index.insert(current_idx);
+        GELOGI("Iter end name %s, idx %u, from FlowCtrl_LoopCond_ASSIGN", op_desc->GetName().c_str(), current_idx);
+      }
+    } else {
+      if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
+        profiling_point.end_index.insert(current_idx);
+        GELOGI("Iter end name %s, idx %u, from NETOUTPUT", op_desc->GetName().c_str(), current_idx);
+      }
     }
   }
-  profiling_point.end_index = iter_end;
 
   if (bp_node == nullptr) {
     GELOGW("not find bp_node.");
     return SUCCESS;
   }
+
+  profiling_point.bp_index = FindLastBpFromBpNode(graph, bp_node);
+  return SUCCESS;
+}
+
+uint32_t TaskGenerator::FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node) const {
+  uint32_t last_bp = 0;
   OpDescPtr bp_op_desc = nullptr;
   for (auto &in_anchor : bp_node->GetAllInDataAnchors()) {
     auto out_anchor = in_anchor->GetPeerOutAnchor();
@@ -691,7 +717,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   }
 
   GE_CHECK_NOTNULL(bp_op_desc);
-  current_idx = 0;
+  uint32_t current_idx = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
@@ -702,8 +728,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
       break;
     }
   }
-  profiling_point.bp_index = last_bp;
-  return SUCCESS;
+  return last_bp;
 }
 
 Status TaskGenerator::FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,
@@ -734,7 +759,6 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
                                   ProfilingPoint &profiling_point, vector<uint32_t> &all_reduce_nodes) const {
   GELOGI("Start FindBpOfEnv");
   uint32_t current_idx = 0;
-  uint32_t iter_end = 0;
   uint32_t last_bp = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
@@ -745,10 +769,23 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
       continue;
     }
 
-    if (op_desc->GetType() == NETOUTPUT) {
-      iter_end = current_idx;
-      GELOGI("Iter end name %s, idx %u", op_desc->GetName().c_str(), iter_end);
+    if (graph->GetNeedIteration()) {
+      if (op_desc->GetName() == NODE_NAME_NET_OUTPUT + '_' + NODE_NAME_STREAM_SWITCH + "_StreamActive") {
+        profiling_point.end_index.insert(current_idx);
+        GELOGI("Iter end name %s, idx %u, from Node_Output_IteratorCtrl_StreamSwitch_StreamActive",
+               op_desc->GetName().c_str(), current_idx);
+      }
+      if (op_desc->GetName() == NODE_NAME_FLOWCTRL_LOOP_ASSIGN) {
+        profiling_point.end_index.insert(current_idx);
+        GELOGI("Iter end name %s, idx %u, from FlowCtrl_LoopCond_ASSIGN", op_desc->GetName().c_str(), current_idx);
+      }
+    } else {
+      if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
+        profiling_point.end_index.insert(current_idx);
+        GELOGI("Iter end name %s, idx %u, from NETOUTPUT", op_desc->GetName().c_str(), current_idx);
+      }
     }
+
     if (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HVDCALLBACKALLREDUCE) {
       all_reduce_nodes.emplace_back(current_idx);
       GELOGI("Allreduce name %s, idx %u", op_desc->GetName().c_str(), current_idx);
@@ -760,7 +797,6 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
   }
 
   profiling_point.bp_index = last_bp;
-  profiling_point.end_index = iter_end;
   return SUCCESS;
 }
 
@@ -857,7 +893,7 @@ Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const 
   bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn() ||
                       ProfilingManager::Instance().ProfilingTrainingTraceOn();
   if (!is_profiling || (profiling_point.fp_index == 0) || (profiling_point.bp_index == 0) ||
-      (profiling_point.end_index == 0)) {
+      (profiling_point.end_index.empty())) {
     return SUCCESS;
   }
   if (profiling_point.fp_index == node_index) {
@@ -914,7 +950,7 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
   bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn() ||
                       ProfilingManager::Instance().ProfilingTrainingTraceOn();
   if (!is_profiling || (profiling_point.fp_index == 0) || (profiling_point.bp_index == 0) ||
-      (profiling_point.end_index == 0)) {
+      (profiling_point.end_index.empty())) {
     return SUCCESS;
   }
   if (profiling_point.bp_index == node_index) {
@@ -928,7 +964,7 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
     bp_log_def->set_notify(false);
     task_def_list.emplace_back(bp_task_def);
   }
-  if (profiling_point.end_index == node_index) {
+  if (profiling_point.end_index.find(node_index) != profiling_point.end_index.end()) {
     GELOGI("The iteration end operator is %s, idx %u", op_desc->GetName().c_str(), node_index);
     TaskDef end_task_def;
     end_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);

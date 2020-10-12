@@ -24,16 +24,17 @@
 
 namespace ge {
 /**
-*@brief Adds all input tensors element-wise.
+*@brief Adds all input tensors element-wise. \n
 
 *@par Inputs:
 *Dynamic inputs, including:
-* @li x: A list of Tensor objects, each with same shape and type. The supported types are:
+* @li x: A list of Tensor objects, each with same shape and type. The supported 
+types are:
 *   float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*   qint8, quint8, qint32, uint16, complex128, uint32, uint64.
+*   qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same shape and type as the elements of "x".
+*y: A Tensor. Has the same shape and type as the elements of "x". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AddN.
@@ -52,20 +53,20 @@ REG_OP(AddN)
 * @li grads: A mutable Tensor. Must be one of the following types:
 *     float16, float32, int32.
 * @li x1: A mutable Tensor of the same type as "grads".
-* @li x2: A mutable Tensor of the same type as "grads".
+* @li x2: A mutable Tensor of the same type as "grads". \n
 
 *@par Attributes:
 *@li grad_x: An optional bool. Defaults to "True".
 *     If "True", "y1" will be output.
-*     If "False", "y1" will not be output.
+*     If "False", "y1" will not be output. \n
 
 *@li grad_y: An optional bool. Defaults to "True".
 *     If "True", "y2" will be output.
-*     If "False", "y2" will not be output.
+*     If "False", "y2" will not be output. \n
 
 *@par Outputs:
 * @li y1: A mutable Tensor. Has the same type as "grads".
-* @li y2: A mutable Tensor. Has the same type as "grads".
+* @li y2: A mutable Tensor. Has the same type as "grads". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator MaximumGrad.
@@ -88,20 +89,20 @@ REG_OP(MaximumGrad)
 * @li grads: A mutable Tensor. Must be one of the following types:
 *     float16, float32, int32.
 * @li x1: A mutable Tensor of the same type as "grads".
-* @li x2: A mutable Tensor of the same type as "grads".
+* @li x2: A mutable Tensor of the same type as "grads". \n
 
 *@par Attributes:
 *@li grad_x: An optional bool. Defaults to "True".
 *     If "True", "y1" will be output.
-*     If "False", "y1" will not be output.
+*     If "False", "y1" will not be output. \n
 
 *@li grad_y: An optional bool. Defaults to "True".
 *     If "True", "y2" will be output.
-*     If "False", "y2" will not be output.
+*     If "False", "y2" will not be output. \n
 
 *@par Outputs:
 * @li y1: A mutable Tensor. Has the same type as "grads".
-* @li y2: A mutable Tensor. Has the same type as "grads".
+* @li y2: A mutable Tensor. Has the same type as "grads". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator MinimumGrad.
@@ -117,15 +118,16 @@ REG_OP(MinimumGrad)
     .OP_END_FACTORY_REG(MinimumGrad)
 
 /**
-*@brief Cast a tensor form src data type to dst data type.
+*@brief Cast a tensor form src data type to dst data type. \n
 
 *@par Inputs:
 *One input:
-*x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8,
-   int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+*x:A Tensor. Must be one of the following types: bool, float16, float, int8, 
+int32, uint32, uint8,
+   int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32. \n
 
 *@par Attributes:
-*dst_type: An required attribute of type int32, specifying the dst data type.
+*dst_type: An required attribute of type int32, specifying the dst data type. \n
 
 *@par Outputs:
 *y:A Tensor. Has the same type as x.
@@ -141,16 +143,16 @@ REG_OP(Cast)
     .OP_END_FACTORY_REG(Cast)
 
 /**
-*@brief Returns the truth value of (x1 >= x2) element-wise.
+*@brief Returns the truth value of (x1 >= x2) element-wise. \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32,
 *    double, int32, int8, uint8, int64, uint16, uint32, uint64.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator GreaterEqual.
@@ -162,16 +164,16 @@ REG_OP(GreaterEqual)
     .OP_END_FACTORY_REG(GreaterEqual)
 
 /**
-*@brief Returns the truth value of (x1 < x2) element-wise.
+*@brief Returns the truth value of (x1 < x2) element-wise. \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32, double, int32,
 *     uint8, int16, int8, int64, uint16, uint32, uint64.
-* @li x2: A Tensor with the same type as "x1".
+* @li x2: A Tensor with the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor of type bool.
+*y: A Tensor of type bool. \n
 
 *@par Third-party framework compatibility:
 * Compatible with TensorFlow operator Less.
@@ -183,17 +185,17 @@ REG_OP(Less)
     .OP_END_FACTORY_REG(Less)
 
 /**
-*@brief Returns x1/x2 element-wise for real types.
+*@brief Returns x1/x2 element-wise for real types. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types: float16, float32, double, uint16,
          int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128.
 *@li x2: A Tensor. Must be one of the following types: float16, float32, double, uint16,
-         int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128.
+         int8, uint8, int16, int32, int64, complex64, DT_COMPLEX128. \n
 
 *@par Outputs:
-* y: A Tensor. Has the same type and format as input "x1".
+* y: A Tensor. Has the same type and format as input "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator RealDiv.
@@ -211,10 +213,10 @@ REG_OP(RealDiv)
     .OP_END_FACTORY_REG(RealDiv)
 
 /**
-*@brief Computes square root of x element-wise.
+*@brief Computes square root of x element-wise. \n
 
 *@par Inputs:
-*  x: A Tensor. Must be one of the following types: float16, float32, complex128, complex64, float64.
+*  x: A Tensor. Must be one of the following types: float16, float32, complex128, complex64, float64. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -227,15 +229,15 @@ REG_OP(Sqrt)
     .OP_END_FACTORY_REG(Sqrt)
 
 /**
-*@brief Returns the max of "x" and "y" (i.e. x > y ? x: y) element-wise.
+*@brief Returns the max of "x" and "y" (i.e. x > y ? x: y) element-wise. \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32, double, int32, int64.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Maximum.
@@ -250,15 +252,15 @@ REG_OP(Maximum)
     .OP_END_FACTORY_REG(Maximum)
 
 /**
-*@brief Returns the min of x and y (i.e. x1 < x2 ? x1 : x2) element-wise.
+*@brief Returns the min of x and y (i.e. x1 < x2 ? x1 : x2) element-wise. \n
 
 *@par Inputs:
 *Two inputs, include:
 * @li x1: A Tensor. Must be one of the following types: float32, float16, double, int32, int64.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x1".
+*y: A Tensor of the same type as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator Minimum.
@@ -273,7 +275,7 @@ REG_OP(Minimum)
     .OP_END_FACTORY_REG(Minimum)
 
 /**
-*@brief: Computes the reciprocal of "x".
+*@brief: Computes the reciprocal of "x". \n
 
 *@par Inputs:
 *One inputs, include:
@@ -281,7 +283,7 @@ REG_OP(Minimum)
 *     complex64, complex128.the format can be [NCHW,NC1HWC0,NHWC,ND,NCHW,NC1HWC0,NHWC,ND]
 
 *@par Outputs:
-*y:A Tensor with same type as "x".
+*y:A Tensor with same type as "x". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Reciprocal.
@@ -299,7 +301,7 @@ REG_OP(Reciprocal)
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, float64,
 *     float16, float32, complex128, complex64, uint16.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -319,14 +321,14 @@ REG_OP(Sub)
     .OP_END_FACTORY_REG(Sub)
 
 /**
-*@brief computes the absolute value of a tensor.
+*@brief computes the absolute value of a tensor. \n
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32, int64.
+* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32, int64. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Abs.
@@ -337,7 +339,7 @@ REG_OP(Abs)
     .OP_END_FACTORY_REG(Abs)
 
 /**
-*@brief Computes gradients for absolute operation.
+*@brief Computes gradients for absolute operation. \n
 
 *
 *@par Inputs:
@@ -361,14 +363,14 @@ REG_OP(AbsGrad)
     .OP_END_FACTORY_REG(AbsGrad)
 
 /**
-*@brief: Computes the sign  of "x".
+*@brief: Computes the sign  of "x". \n
 
 *@par Inputs:
 *x:An ND Tensor of type float16, float32, int32, int64, double,
-*     complex64, complex128.
+*     complex64, complex128. \n
 
 *@par Outputs:
-*y:An ND Tensor with same type as "x".
+*y:An ND Tensor with same type as "x". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Sign.
@@ -381,15 +383,16 @@ REG_OP(Sign)
     .OP_END_FACTORY_REG(Sign)
 
 /**
-*@brief Returns (x1 - x2)(x1 - x2) element-wise.
+*@brief Returns (x1 - x2)(x1 - x2) element-wise. \n
 
 *@par Inputs:
 *Two inputs, including: \n
-*@li x1: A Tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64,complex128
-*@li x2: A Tensor. Has the same type as "x1".
+*@li x1: A Tensor. Must be one of the following types: float16, float32,
+ float64, int32, int64, complex64,complex128
+*@li x2: A Tensor. Has the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator SquaredDifference.
@@ -404,17 +407,17 @@ REG_OP(SquaredDifference)
     .OP_END_FACTORY_REG(SquaredDifference)
 
 /**
-*@brief Computes cosine of "x" element-wise.
+*@brief Computes cosine of "x" element-wise. \n
 
 *@par Inputs:
 *x: A Tensor of type float16, float32, double, complex64, complex128.
 * the format can be [NCHW,NC1HWC0,NHWC,ND]
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator Cos.
+* Compatible with the TensorFlow operator Cos. \n
 
 */
 REG_OP(Cos)
@@ -423,17 +426,17 @@ REG_OP(Cos)
     .OP_END_FACTORY_REG(Cos)
 
 /**
-*@brief Returns x1/x2 element-wise.
+*@brief Returns x1/x2 element-wise. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types:
 *    float16, float32, int32, int8, uint8, float64, int64, uint16, int16,
 *    complex64, complex128, the format can be [NCHW,NC1HWC0,NHWC,ND].
-*@li x2: A Tensor. Has the same type and format as input "x1".
+*@li x2: A Tensor. Has the same type and format as input "x1". \n
 
 *@par Outputs:
-* y: A Tensor. Has the same type and format as input "x1".
+* y: A Tensor. Has the same type and format as input "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Div.
@@ -451,7 +454,7 @@ REG_OP(Div)
     .OP_END_FACTORY_REG(Div)
 
 /**
-*@brief: Returns the truth value of (x = y) element-wise.
+*@brief: Returns the truth value of (x = y) element-wise. \n
 
 *@par Inputs:
 * Two inputs, including:
@@ -459,10 +462,10 @@ REG_OP(Div)
 *    float16, float32, int32, int8, uint8, double, int16, int64, complex64,
 *    complex128, quint8, qint8, qint32, string, bool. the format can be
 *    [NCHW, NC1HWC0, NHWC, ND]
-*@li x2: A Tensor of the same type and format as "x1".
+*@li x2: A Tensor of the same type and format as "x1". \n
 
 *@par Outputs:
-*y: A Tensor of type bool.
+*y: A Tensor of type bool. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Equal.
@@ -480,19 +483,23 @@ REG_OP(Equal)
     .OP_END_FACTORY_REG(Equal)
 
 /**
-*@brief Computes the exponential of "x" element-wise.
+*@brief Computes the exponential of "x" element-wise. \n
 
 *@par Inputs:
 *One input:\n
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
+*x: A Tensor. Must be one of the following types: float16, float32, double, 
+complex64, complex128. \n
 
 *@par Attributes:
-*@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1.0".
-*@li scale: An optional attribute of type float32, specifying the scale alpha. Defaults to "1.0".
-*@li shift: An optional attribute of type float32, specifying the shift beta. Defaults to "0.0".
+*@li base: An optional attribute of type float32, specifying the base gamma. 
+Defaults to "-1.0".
+*@li scale: An optional attribute of type float32, specifying the scale alpha. 
+Defaults to "1.0".
+*@li shift: An optional attribute of type float32, specifying the shift beta. 
+Defaults to "0.0". \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Exp.
@@ -506,14 +513,15 @@ REG_OP(Exp)
     .OP_END_FACTORY_REG(Exp)
 
 /**
-*@brief Computes the exp(x) - 1 element-wise, y = e^x - 1.
+*@brief Computes the exp(x) - 1 element-wise, y = e^x - 1. \n
 
 *@par Inputs:
 *One input:
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
+*x: A Tensor. Must be one of the following types: float16, float32, double, 
+complex64, complex128. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Expm1.
@@ -524,13 +532,15 @@ REG_OP(Expm1)
     .OP_END_FACTORY_REG(Expm1)
 
 /**
-*@brief: Computes the reciprocal of "x".
+*@brief: Computes the reciprocal of "x". \n
 
 *@par Inputs:\n
-*x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double, complex64, complex128.
+*x: A Tensor. Must be one of the following types: float16, float32,
+int32, int64, double,
+complex64, complex128. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Inv.
@@ -542,15 +552,15 @@ REG_OP(Inv)
 
 /**
 *@brief: Computes "x" reciprocal grad, dx = -1*dy*y*y, where, "y = 1/x", and "dy"
-    is the corresponding input gradient.
+    is the corresponding input gradient. \n
 
 *@par Inputs:
 * Two inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32, int32, int8.
-* @li grad: A Tensor. Has the same type as "x".
+* @li grad: A Tensor. Has the same type as "x". \n
 
 *@par Outputs:
-*y: A Tensor, Has the same type as "x".
+*y: A Tensor, Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator InvGrad.
@@ -562,17 +572,17 @@ REG_OP(InvGrad)
     .OP_END_FACTORY_REG(InvGrad)
 
 /**
-*@brief: Returns the truth value of (x <= y) element-wise.
+*@brief: Returns the truth value of (x <= y) element-wise. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types: float32, float64,
 * int32, uint8, int16, int8, int64, qint8, quint8, qint32, uint16,
 * float16, uint32, uint64.
-*@li x2: A Tensor of the same type as "x1".
+*@li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor of type bool.
+*y: A Tensor of type bool. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator LessEqual.
@@ -584,14 +594,14 @@ REG_OP(LessEqual)
     .OP_END_FACTORY_REG(LessEqual)
 
 /**
-*@brief Computes the logarithm of (x + 1) element-wise, y = ln(x + 1).
+*@brief Computes the logarithm of (x + 1) element-wise, y = ln(x + 1). \n
 
 *@par Inputs:
 *One input:\n
-*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128.
+*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Log1p.
@@ -607,7 +617,7 @@ REG_OP(Log1p)
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32,
  * int32, int64, int8, uint8, double.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
@@ -624,16 +634,16 @@ REG_OP(Mod)
     .OP_END_FACTORY_REG(Mod)
 
 /**
-*@brief: Returns the truth value of (x != y) element-wise.
+*@brief: Returns the truth value of (x != y) element-wise. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types: float16, float32, int32,
  * int8, uint8, double, int16, int64, uint16, half, uint32, uint64
-*@li x2: A Tensor of the same type as "x1".
+*@li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor of type bool.
+*y: A Tensor of type bool. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator NotEqual.
@@ -650,10 +660,10 @@ REG_OP(NotEqual)
 *@par Inputs:
 * One input:
 *x: A Tensor. Must be one of the following types: float16, float32, int32,
- * int64, complex64, complex128.
+ * int64, complex64, complex128. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type and format as input "x".
+*y: A Tensor. Has the same type and format as input "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Neg.
@@ -664,23 +674,23 @@ REG_OP(Neg)
     .OP_END_FACTORY_REG(Neg)
 
 /**
-*@brief Returns x1/x2 element-wise for integer types.
+*@brief Returns x1/x2 element-wise for integer types. \n
 
 *@par Inputs:
 *@li x1: A Tensor. Must be one of the following types:
 *     float32, float64, int32, uint8, int16, int8,
 *     complex64, int64, qint8, quint8, qint32, uint16,
 *     complex128, float16, uint32, uint64, complex64, complex128.
-*@li x2: A Tensor of the same data type as "x1".
+*@li x2: A Tensor of the same data type as "x1". \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x1".
- 
+
 *@attention Constraints:
-* Broadcasting is supported.
+* Broadcasting is supported. \n
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator TruncateDiv.
+* Compatible with the TensorFlow operator TruncateDiv. \n
 
 */
 REG_OP(TruncateDiv)
@@ -696,16 +706,16 @@ REG_OP(TruncateDiv)
     .OP_END_FACTORY_REG(TruncateDiv)
 
 /**
-*@brief Computes x1/x2 element-wise, if x1 == 0, return 0. 
+*@brief Computes x1/x2 element-wise, if x1 == 0, return 0.
 
 *@par Inputs:
 * Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32,
 * double, complex64, complex128.
-* @li x2: A Tensor. Has the same type as "x1".
+* @li x2: A Tensor. Has the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Xdivy.
@@ -721,16 +731,16 @@ REG_OP(Xdivy)
 
 /**
 *@brief Computes "x" multiplied by the logarithm of y element-wise,
-* if "x" == 0, return "0".
+* if "x" == 0, return "0". \n
 
 *@par Inputs:
 * Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32,
-* double, complex64, complex128. 
-* @li x2: A Tensor. Has the same type as "x1".
+* double, complex64, complex128.
+* @li x2: A Tensor. Has the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Xlogy.
@@ -745,14 +755,15 @@ REG_OP(Xlogy)
     .OP_END_FACTORY_REG(Xlogy)
 
 /**
-*@brief Computes square of "x" element-wise.
+*@brief Computes square of "x" element-wise. \n
 
 *@par Inputs:
 *One input: \n
-*x: A Tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128
+*x: A Tensor. Must be one of the following types: float16, float32, float64,
+int32, int64, complex64, complex128
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Square.
@@ -766,7 +777,7 @@ REG_OP(Square)
 
 
 /**
-*@brief Computes reciprocal of square root of "x" element-wise: y = 1/sqrt{x}.
+*@brief Computes reciprocal of square root of "x" element-wise: y = 1/sqrt{x}. \n
 
 *
 *@par Inputs:
@@ -786,11 +797,12 @@ REG_OP(Rsqrt)
     .OP_END_FACTORY_REG(Rsqrt)
 
 /**
-*@brief Computes the trignometric inverse sine of "x" element-wise.
+*@brief Computes the trignometric inverse sine of "x" element-wise. \n
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64, 
+int32, int64, complex64, complex128.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -807,11 +819,12 @@ REG_OP(Asin)
     .OP_END_FACTORY_REG(Asin)
 
 /**
-*@brief Computes gradients for Asin operation.
+*@brief Computes gradients for Asin operation. \n
 
 *
 *@par Inputs:
-*@li y: A tensor of type float16, float32, float64, int32, int64, complex64, complex128.
+*@li y: A tensor of type float16, float32, float64, 
+int32, int64, complex64, complex128.
 *@li dy: A tensor of the same type as "y".
 *
 *@attention Constraints:
@@ -834,11 +847,12 @@ REG_OP(AsinGrad)
   .OP_END_FACTORY_REG(AsinGrad)
 
 /**
-*@brief Computes acos of x element-wise.
+*@brief Computes acos of x element-wise. \n
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64,
+int32, int64, complex64, complex128.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -855,7 +869,7 @@ REG_OP(Acos)
     .OP_END_FACTORY_REG(Acos)
 
 /**
-*@brief Computes gradients for Acos operation.
+*@brief Computes gradients for Acos operation. \n
 
 *
 *@par Inputs:
@@ -879,11 +893,12 @@ REG_OP(AcosGrad)
   .OP_END_FACTORY_REG(AcosGrad)
 
 /**
-*@brief Computes inverse hyperbolic cosine of x element-wise.
+*@brief Computes inverse hyperbolic cosine of x element-wise. \n
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64,
+ complex64, complex128.
 *
 *@attention Constraints:
 * x Given an input tensor, the function computes inverse hyperbolic cosine of every element.\n
@@ -902,7 +917,7 @@ REG_OP(Acosh)
     .OP_END_FACTORY_REG(Acosh)
 
 /**
-*@brief Computes gradients for Acosh operation.
+*@brief Computes gradients for Acosh operation. \n
 
 *
 *@par Inputs:
@@ -926,7 +941,7 @@ REG_OP(AcoshGrad)
   .OP_END_FACTORY_REG(AcoshGrad)
 
 /**
-*@brief Returns the truth value of x1 OR x2 element-wise.
+*@brief Returns the truth value of x1 OR x2 element-wise. \n
 
 *
 *@par Inputs:
@@ -950,7 +965,7 @@ REG_OP(LogicalOr)
     .OP_END_FACTORY_REG(LogicalOr)
 
 /**
-*@brief Returns the truth value of x1 AND x2 element-wise.
+*@brief Returns the truth value of x1 AND x2 element-wise. \n
 
 *
 *@par Inputs:
@@ -975,7 +990,7 @@ REG_OP(LogicalAnd)
 
 /**
 *@brief Computes the Bessel i0e function of "x" element-wise.
-* Exponentially scaled modified Bessel function of order 0 
+* Exponentially scaled modified Bessel function of order 0
 * defined as: bessel_i0e(x) = exp(-abs(x)) bessel_i0(x).
 * This function is faster and numerically stabler than "bessel_i0(x)".
 *
@@ -996,7 +1011,7 @@ REG_OP(BesselI0e)
 
 /**
 *@brief Computes the Bessel i1e function of "x" element-wise.
-* Exponentially scaled modified Bessel function of order 0 
+* Exponentially scaled modified Bessel function of order 0
 * defined as: bessel_i1e(x) = exp(-abs(x)) bessel_i1(x).
 * This function is faster and numerically stabler than "bessel_i1(x)".
 *
@@ -1017,10 +1032,10 @@ REG_OP(BesselI1e)
 
 /**
 * @brief Computes logarithm of x element-wise.
-* y = log_base(shift + scale * x), with "base" > 0.
+* y = log_base(shift + scale * x), with "base" > 0. \n
 
 * @par Inputs:
-* @li x: A Tensor of type complex64, complex128, float16, float32 or double.
+* @li x: A Tensor of type complex64, complex128, float16, float32 or double. \n
 
 * @par Attributes:
 * @li base: An optional float32, specifying the base "e". Defaults to "-1.0"
@@ -1030,13 +1045,13 @@ REG_OP(BesselI1e)
 * @li shift: An optional float32, specifying the shift. Defaults to "0.0"
 
 * @par Outputs:
-* y: A Tensor has same type as "x".
+* y: A Tensor has same type as "x". \n
 
 * @attention Constraints:
 * @li "base" is supposed to be greater than 0. Retaining the default
 * value "-1" sets "base" to "e".
 * @li If the input value of operator Log is within the range (0, 0.01] or
-* [0.95, 1.05], the output accuracy is subject to change.
+* [0.95, 1.05], the output accuracy is subject to change. \n
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator Log.
@@ -1058,14 +1073,14 @@ REG_OP(Log)
 * @li x1: A Tensor. Must be one of the following types: float16, float32,
 * float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128.
 * @li x2: A Tensor. Must be one of the following types: float16, float32,
-* float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128.
+* float64, uint8, int8, uint16, int16, int32, int64, complex64, complex128. \n
 
 * @par Outputs:
 * y: A Tensor. Must be one of the following types: float16, float32, float64,
-* uint8, int8, uint16, int16, int32, int64, complex64, complex128.
+* uint8, int8, uint16, int16, int32, int64, complex64, complex128. \n
 
 * @attention Constraints:
-* @li "x1" and "x2" have incompatible shapes or types.
+* @li "x1" and "x2" have incompatible shapes or types. \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Multiply.
@@ -1085,15 +1100,15 @@ REG_OP(Mul)
 /**
 * @brief Computes the gradient of the square root of "x" with regard to its
 * input. grad = dy * 0.5/y, where y = sqrt(x), and "dy" is the corresponding
-* input gradient.
+* input gradient. \n
 
 * @par Inputs:
 * Two inputs, including:
 * @li y: A Tensor of type float32 or float16.
-* @li dy: A Tensor. Has the same type as "y".
+* @li dy: A Tensor. Has the same type as "y". \n
 
 * @par Outputs:
-* z: A Tensor. Has the same type as "y".
+* z: A Tensor. Has the same type as "y". \n
 
 * @attention Constraints:
 * "dy" has the same shape and type as "y".
@@ -1110,7 +1125,7 @@ REG_OP(SqrtGrad)
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, float64,
 *     float16, float32, complex128, complex64, string.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -1130,19 +1145,22 @@ REG_OP(Add)
     .OP_END_FACTORY_REG(Add)
 
 /**
-*@brief Confuse broadcast, add and mul.
+*@brief Confuse broadcast, add and mul. \n
 
 *@par Inputs:
 *Five inputs, including:
 * @li x1: A Tensor. Must be one of the following types:int32 float16, float32.
 * @li x2: A Tensor of the same type as "x1".
-* @li x3: A Tensor of the same type as "x1".
+* @li x3: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type as "x1".
+*@li y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator LRN.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 
 REG_OP(FusedMulAdd)
@@ -1153,11 +1171,12 @@ REG_OP(FusedMulAdd)
     .OP_END_FACTORY_REG(FusedMulAdd)
 
 /**
-*@brief Returns x1 + x2 element-wise.
+*@brief Returns x1 + x2 element-wise. \n
 
 *
 *@par Inputs:
-*@li x1: A tensor. Must be one of the following types: float16, float32, float64, uint8, int8, int16, int32, int64, complex64, complex128.
+*@li x1: A tensor. Must be one of the following types: float16, float32, float64,
+uint8, int8, int16, int32, int64, complex64, complex128.
 *@li x2: A tensor of the same type as "x1".
 *
 *@attention Constraints:
@@ -1183,23 +1202,24 @@ REG_OP(AddV2)
     .OP_END_FACTORY_REG(AddV2)
 
 /**
-*@brief Updates "ref" by adding "value" to it.
+*@brief Updates "ref" by adding "value" to it. \n
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-*@li value: A Tensor of the same type as "ref".
+*@li ref: A Tensor. Must be one of the following types: float16, float32, int8,
+int16, int32, int64, uint8, uint16, uint32, uint64.
+*@li value: A Tensor of the same type as "ref". \n
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".
               If "True", the addition will be protected by a lock;
               otherwise the behavior is undefined, but may exhibit less contention.
-*             This attribute is reserved.
+*             This attribute is reserved. \n
 
 *@par Outputs:
-*ref: A Tensor that holds the new value of ref after the value has been added.
+*ref: A Tensor that holds the new value of ref after the value has been added. \n
 
 *@attention Constraints:
-*An input tensor of type int64 must have a shape with size 1.
+*An input tensor of type int64 must have a shape with size 1. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AssignAdd.
@@ -1212,24 +1232,26 @@ REG_OP(AssignAdd)
     .OP_END_FACTORY_REG(AssignAdd)
 
 /**
-*@brief Updates "ref" by assigning "value" to it.
+*@brief Updates "ref" by assigning "value" to it. \n
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
-*@li value: A Tensor of the same type as "ref".
+*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, 
+int32, int64, uint8, uint16, uint32, uint64.
+*@li value: A Tensor of the same type as "ref". \n
 
 *@par Attributes:
 *@li validate_shape: An optional bool. Defaults to "true".
-                     If "true", the operation will validate that the shape of "value" matches the shape of the Tensor being assigned to.
+                     If "true", the operation will validate that the shape of "value"
+                     matches the shape of the Tensor being assigned to.
 *                    If "false", "ref" will take on the shape of "value".
 *                    This attribute is reserved.
 *@li use_locking: An optional bool. Defaults to True.
                   If True, the assignment will be protected by a lock;
                   otherwise the behavior is undefined, but may exhibit less contention.
-*                 This attribute is reserved.
+*                 This attribute is reserved. \n
 
 *@par Outputs:
-*ref: A Tensor that holds the new value of ref after the value has been assigned.
+*ref: A Tensor that holds the new value of ref after the value has been assigned. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Assign.
@@ -1245,11 +1267,12 @@ REG_OP(Assign)
 /**
 *@brief Updates "var" by subtracting "value" from it.\n
 * This operation outputs "var" after the update is done. \n
-* This makes it easier to chain operations that need to use the reset value.
+* This makes it easier to chain operations that need to use the reset value. \n
 
 *
 *@par Inputs:
-*@li var: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128, uint32, uint64
+*@li var: A tensor. Must be one of the following types: float32, float64,
+int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128, uint32, uint64
 *@li value: A tensor of the same type as "var".
 *
 *@par Attributes:
@@ -1271,16 +1294,16 @@ REG_OP(AssignSub)
     .OP_END_FACTORY_REG(AssignSub)
 
 /**
-*@brief: Computes the backpropagation of the square root operation.
+*@brief: Computes the backpropagation of the square root operation. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li y: An NCHW, NC1HWC0, NHWC, ND Tensor. Must be one of the following types: \
  * float, int32, int8, double, complex64, complex128, half.
-*@li dy: A Tensor of the same type and format as "y".
+*@li dy: A Tensor of the same type and format as "y". \n
 
 *@par Outputs:
-*z: A Tensor of the same type and format as "y".
+*z: A Tensor of the same type and format as "y". \n
 
 *@see Matmul() | Rsqrt ()
 
@@ -1294,18 +1317,18 @@ REG_OP(RsqrtGrad)
     .OP_END_FACTORY_REG(RsqrtGrad)
 
 /**
-*@brief Computes hyperbolic sine of "x" element-wise.
+*@brief Computes hyperbolic sine of "x" element-wise. \n
 
 *@par Inputs:
 *x: An NCHW, NC1HWC0, NHWC,or ND Tensor of type float, double, complex64,
- * complex128, half.
+ * complex128, half. \n
 
 *@par Outputs:
 *y: A NCHW, NC1HWC0, NHWC,or ND Tensor of type float, double, complex64,
- * complex128, half.
+ * complex128, half. \n
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator Sinh.
+* Compatible with the TensorFlow operator Sinh. \n
 
 */
 REG_OP(Sinh)
@@ -1314,17 +1337,17 @@ REG_OP(Sinh)
     .OP_END_FACTORY_REG(Sinh)
 
 /**
-*@brief: Clips tensor values to a specified min and max.
+*@brief: Clips tensor values to a specified min and max. \n
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64, 
+*@li x: A Tensor of type  float32, float64, int32, uint8, int16, int8, complex64, int64,
 *qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
 *@li clip_value_min: A Tensor of the same type as "x".
-*@li clip_value_max: A Tensor of the same type as "x".
+*@li clip_value_max: A Tensor of the same type as "x". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ClipByValue.
@@ -1337,17 +1360,17 @@ REG_OP(ClipByValue)
     .OP_END_FACTORY_REG(ClipByValue)
 
 /**
-*@brief Computes cosine of "x" element-wise.
+*@brief Computes cosine of "x" element-wise. \n
 
 *@par Inputs:
 *x: A Tensor of type float16, float32, double, complex64, complex128.
-* the format can be [NCHW,NC1HWC0,NHWC,ND].
+* the format can be [NCHW,NC1HWC0,NHWC,ND]. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator Cosh.
+* Compatible with the TensorFlow operator Cosh. \n
 
 */
 REG_OP(Cosh)
@@ -1356,16 +1379,16 @@ REG_OP(Cosh)
     .OP_END_FACTORY_REG(Cosh)
 
 /**
-*@brief: Returns 0 if the denominator is zero, else, like Div.
+*@brief: Returns 0 if the denominator is zero, else, like Div. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types:float16, float32, int32,
 *    int8, uint8, double, the format can be [NCHW,NC1HWC0,NHWC,ND].
-*@li x2: A Tensor of the same type as "x1".
+*@li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator DivNoNan.
@@ -1380,7 +1403,7 @@ REG_OP(DivNoNan)
     .OP_END_FACTORY_REG(DivNoNan)
 
 /**
-*@brief Reverses specific dimensions of a tensor.
+*@brief Reverses specific dimensions of a tensor. \n
 
 *@par Inputs:
 * One input: \n
@@ -1404,10 +1427,10 @@ REG_OP(Invert)
 *@par Inputs:
 *One input: \n
 *x: A Tensor. Must be one of the following types: float16, float32, int8, uint8,
- * int16, uint16, int32, int64, complex128, bool.
+ * int16, uint16, int32, int64, complex128, bool. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator OnesLike.
@@ -1422,20 +1445,20 @@ REG_OP(OnesLike)
     .OP_END_FACTORY_REG(OnesLike)
 
 /**
-*@brief Computes the gradient for the inverse of "x" with regard its input.
+*@brief Computes the gradient for the inverse of "x" with regard its input. \n
 
 *@par Inputs:
 *@li input_y: A Tensor. Must be one of the following types: float, double,
  * complex64, complex128, half.
 *@li input_dy: A Tensor. Must be one of the following types: float, double,
- * complex64, complex128, half.
+ * complex64, complex128, half. \n
 
 *@par Outputs:
 *output_data: A Tensor. Must be one of the following types: float, double,
- * complex64, complex128, half.
+ * complex64, complex128, half. \n
 
 *@attention Constraints:
-* "input_dy" has the same shape and type as "input_y".
+* "input_dy" has the same shape and type as "input_y". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator reciprocal_grad.
@@ -1447,21 +1470,21 @@ REG_OP(ReciprocalGrad)
     .OP_END_FACTORY_REG(ReciprocalGrad)
 
 /**
-*@brief Returns the truth value of (x1 > x2) element-wise.
+*@brief Returns the truth value of (x1 > x2) element-wise. \n
 
 *@par Inputs:
 *@li x1: A Tensor of type float16, float32, double, int64, int32, int16, int8,
 *    uint8, uint16, uint32, uint64.
-*@li x2: A Tensor of the same data type as "x1".
+*@li x2: A Tensor of the same data type as "x1". \n
 
 *@par Outputs:
 *y: A Tensor of type bool.
- 
+
 *@attention Constraints:
-* Broadcasting is supported.
+* Broadcasting is supported. \n
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator Greater.
+* Compatible with the TensorFlow operator Greater. \n
 
 */
 REG_OP(Greater)
@@ -1471,19 +1494,19 @@ REG_OP(Greater)
     .OP_END_FACTORY_REG(Greater)
 
 /**
-*@brief Returns a tensor of the same type and shape as the input tensor with all elements set to zero.
+*@brief Returns a tensor of the same type and shape as the input tensor with all elements set to zero. \n
 
 *@par Inputs:
 *x: A Tensor. Must be one of the following types:
 *     float32, float64, int32, uint8, int16, int8,
 *     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
-*     complex128, float16, uint32, uint64, complex64, complex128.
+*     complex128, float16, uint32, uint64, complex64, complex128. \n
 
 *@par Outputs:
-*y: A Tensor of the same data type as "x".
+*y: A Tensor of the same data type as "x". \n
 
 *@attention Constraints:
-* The output has the same shape and type as the input.
+* The output has the same shape and type as the input. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator zeros_like.
@@ -1494,16 +1517,16 @@ REG_OP(ZerosLike)
     .OP_END_FACTORY_REG(ZerosLike)
 
 /**
-*@brief Returns the truth value of NOT "x" element-wise.
+*@brief Returns the truth value of NOT "x" element-wise. \n
 
 *@par Inputs:
-*x: A Tensor of type bool.
+*x: A Tensor of type bool. \n
 
 *@par Outputs:
-*y: A Tensor of type bool.
+*y: A Tensor of type bool. \n
 
 *@attention Constraints:
-* The input and output values are "1" or "0", corresponding to bool values "true" and "false".
+* The input and output values are "1" or "0", corresponding to bool values "true" and "false". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator logical_not.
@@ -1515,7 +1538,7 @@ REG_OP(LogicalNot)
 
 /**
 *@brief Computes inverse hyperbolic sine of x element-wise.
-* Given an input tensor, this function computes inverse hyperbolic sine for every element in the tensor.
+* Given an input tensor, this function computes inverse hyperbolic sine for every element in the tensor. \n
 
 *
 *@par Inputs:
@@ -1534,7 +1557,7 @@ REG_OP(Asinh)
     .OP_END_FACTORY_REG(Asinh)
 
 /**
-*@brief Computes gradients for Asinh operation.
+*@brief Computes gradients for Asinh operation. \n
 
 *
 *@par Inputs:
@@ -1556,7 +1579,7 @@ REG_OP(AsinhGrad)
 
 /**
 *@brief Computes inverse hyperbolic tangent of x element-wise.\n
-* Given an input tensor, this function computes inverse hyperbolic tangent for every element in the tensor. \n Input range is [-1,1] and output range is [-inf, inf]. If input is -1, \n output will be -inf and if the input is 1, output will be inf.\n  Values outside the range will have nan as output.
+* Given an input tensor, this function computes inverse hyperbolic tangent for every element in the tensor. \n Input range is [-1,1] and output range is [-inf, inf]. If input is -1, \n output will be -inf and if the input is 1, output will be inf.\n  Values outside the range will have nan as output. \n
 
 *
 *@par Inputs:
@@ -1576,7 +1599,7 @@ REG_OP(Atanh)
 
 /**
 *@brief Computes the trignometric inverse tangent of x element-wise.
-* The atan operation returns the inverse of tan, such that if y = tan(x) then, x = atan(y).
+* The atan operation returns the inverse of tan, such that if y = tan(x) then, x = atan(y). \n
 
 *
 *@par Inputs:
@@ -1595,7 +1618,7 @@ REG_OP(Atan)
     .OP_END_FACTORY_REG(Atan)
 
 /**
-*@brief Computes gradients for Atan operation.
+*@brief Computes gradients for Atan operation. \n
 
 *
 *@par Inputs:
@@ -1616,7 +1639,7 @@ REG_OP(AtanGrad)
   .OP_END_FACTORY_REG(AtanGrad)
 
 /**
-*@brief Computes arctangent of x1/x2 element-wise, respecting signs of the arguments.
+*@brief Computes arctangent of x1/x2 element-wise, respecting signs of the arguments. \n
 
 *
 *@par Inputs:
@@ -1637,11 +1660,13 @@ REG_OP(Atan2)
     .OP_END_FACTORY_REG(Atan2)
 
 /**
-*@brief Returns the truth value of abs(x1-x2) < tolerance element-wise.
+*@brief Returns the truth value of abs(x1-x2) < tolerance element-wise. \n
 
 *
 *@par Inputs:
-*@li x1: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64
+*@li x1: A tensor. Must be one of the following types: float32, float64, int32,
+ uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128,
+float16, uint32, uint64
 *@li x2: A tensor of the same type as "x1".
 *
 *@par Attributes:
@@ -1663,12 +1688,18 @@ REG_OP(ApproximateEqual)
 
 /**
 *@brief Returns the element-wise sum of a list of tensors.\n
-* AccumulateNV2 performs the same operation as AddN, but does not wait for all of its inputs to be ready before beginning to sum.\n This can save memory if inputs are ready at different times, \n since minimum temporary storage is proportional to the output size rather than the inputs size.\n Returns a Tensor of same shape and type as the elements of inputs.
+* AccumulateNV2 performs the same operation as AddN, but does not wait for all 
+of its inputs to be ready before beginning to sum.\n This can save memory if 
+inputs are ready at different times, \n since minimum temporary storage is 
+proportional to the output size rather than the inputs size.\n Returns a Tensor 
+of same shape and type as the elements of inputs. \n
 
 *
 *@par Inputs:
 *Dynamic inputs, including:
-* x: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, \n qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
+* x: A tensor. Must be one of the following types: float32, float64, int32, 
+uint8, int16, int8, complex64, int64, \n qint8, quint8, qint32, uint16, 
+complex128, float16, uint32, uint64.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -1694,18 +1725,18 @@ REG_OP(AccumulateNV2)
 *  num_bits is the bit width of the quantization, between 2 and 16, inclusive. \n
 *  Quantization is called fake since the output is still in floating point. \n
 
-*@par Inputs: 
+*@par Inputs:
 *One input:
-*x: A Tensor of type float32.
+*x: A Tensor of type float32. \n
 
 *@par Attributes:
 *@li min: An optional attribute. Defaults to "-6.0".
 *@li max: An optional attribute. Defaults to "6.0".
 *@li num_bits: An optional attribute. Defaults to "8".
-*@li narrow_range: An optional bool. Defaults to "false".
+*@li narrow_range: An optional bool. Defaults to "false". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same shape and type of "x".
+*y: A Tensor. Has the same shape and type of "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator FakeQuantWithMinMaxArgs.
@@ -1720,11 +1751,12 @@ REG_OP(FakeQuantWithMinMaxArgs)
     .OP_END_FACTORY_REG(FakeQuantWithMinMaxArgs)
 
 /**
-*@brief Computes gradients for a FakeQuantWithMinMaxArgs operation.
+*@brief Computes gradients for a FakeQuantWithMinMaxArgs operation. \n
 
 *@par Inputs:
 *Two inputs, including: \n
-*@li gradients: A Tensor of type float32. Backpropagated gradients above the FakeQuantWithMinMaxArgs operation.
+*@li gradients: A Tensor of type float32. Backpropagated gradients 
+above the FakeQuantWithMinMaxArgs operation.
 *@li x: A Tensor of type float32. Has the same type and format as "gradients".\n
 * This is the input Tensor of the FakeQuantWithMinMaxArgs operator.\n
 
@@ -1732,10 +1764,10 @@ REG_OP(FakeQuantWithMinMaxArgs)
 *@li min: An optional attribute. Defaults to "-6.0".
 *@li max: An optional attribute. Defaults to "6.0".
 *@li num_bits: An optional attribute. Defaults to "8".
-*@li narrow_range: An optional bool. Defaults to "False".
+*@li narrow_range: An optional bool. Defaults to "False". \n
 
 *@par Outputs:
-*y: A Tensor of type float32.
+*y: A Tensor of type float32. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator FakeQuantWithMinMaxArgsGradient.
@@ -1751,7 +1783,7 @@ REG_OP(FakeQuantWithMinMaxArgsGradient)
     .OP_END_FACTORY_REG(FakeQuantWithMinMaxArgsGradient)
 
 /**
-*@brief Fake-quantize the 'inputs' tensor of type float via global float scalars.
+*@brief Fake-quantize the 'inputs' tensor of type float via global float scalars. \n
 
 *@par Inputs:
 *Three inputs, including:
@@ -1762,10 +1794,10 @@ REG_OP(FakeQuantWithMinMaxArgsGradient)
 
 *@par Attributes:
 *@li num_bits: An optional attribute. Defaults to "8".
-*@li narrow_range: An optional bool. Defaults to "False".
+*@li narrow_range: An optional bool. Defaults to "False". \n
 
 *@par Outputs:
-*y: A Tensor of type float32.
+*y: A Tensor of type float32. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator FakeQuantWithMinMaxVars.
@@ -1780,23 +1812,23 @@ REG_OP(FakeQuantWithMinMaxVars)
     .OP_END_FACTORY_REG(FakeQuantWithMinMaxVars)
 
 /**
-*@brief Computes gradients for a FakeQuantWithMinMaxVars operation.
+*@brief Computes gradients for a FakeQuantWithMinMaxVars operation. \n
 
 *@par Inputs:
 *Four inputs, including:
 *@li gradients: A Tensor of type float32.
 *@li x: A Tensor of type float32.
 *@li min: A Tensor of type float32.
-*@li max: A Tensor of type float32.
+*@li max: A Tensor of type float32. \n
 
 *@par Attributes:
 *@li num_bits: An integer specifying the quantization bit width. Defaults to "8".
-*@li narrow_range: A Boolean specifying whether to use a narrow range for quantization. Defaults to "False".
+*@li narrow_range: A Boolean specifying whether to use a narrow range for quantization. Defaults to "False". \n
 
 *@par Outputs:
 *@li backprops_wrt_x: A Tensor. Has the same type as input "x".
 *@li backprops_wrt_min: A Tensor. Has the same type as input "min".
-*@li backprops_wrt_max: A Tensor. Has the same type as input "max".
+*@li backprops_wrt_max: A Tensor. Has the same type as input "max". \n
 
 *@attention Constraints:
 *@li "gradients" has the same shape as "x".
@@ -1829,11 +1861,11 @@ tensor of same shape as inputs
 *Three inputs, including:
 *@li x: A Tensor of type float32.
 *@li min: A Tensor of type float32.
-*@li max: A Tensor of type float32.
+*@li max: A Tensor of type float32. \n
 
 *@par Attributes:
 *@li num_bits: An integer specifying the quantization bit width. Defaults to "8".
-*@li narrow_range: A Boolean specifying whether to use a narrow range for quantization. Defaults to "False".
+*@li narrow_range: A Boolean specifying whether to use a narrow range for quantization. Defaults to "False". \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as input "x".
@@ -1859,23 +1891,23 @@ REG_OP(FakeQuantWithMinMaxVarsPerChannel)
     .OP_END_FACTORY_REG(FakeQuantWithMinMaxVarsPerChannel)
 
 /**
-*@brief Computes gradients for a FakeQuantWithMinMaxVarsPerChannel operation.
+*@brief Computes gradients for a FakeQuantWithMinMaxVarsPerChannel operation. \n
 
 *@par Inputs:
 *Four inputs, including:
 *@li gradients: A Tensor of type float32.
 *@li x: A Tensor of type float32.
 *@li min: A Tensor of type float32.
-*@li max: A Tensor of type float32.
+*@li max: A Tensor of type float32. \n
 
 *@par Attributes:
 *@li num_bits: An integer specifying the quantization bit width. Defaults to "8".
-*@li narrow_range: A Boolean specifying whether to use a narrow range for quantization. Defaults to "False".
+*@li narrow_range: A Boolean specifying whether to use a narrow range for quantization. Defaults to "False". \n
 
 *@par Outputs:
 *@li backprops_wrt_x: A Tensor. Has the same type as input "x".
 *@li backprops_wrt_min: A Tensor. Has the same type as input "min".
-*@li backprops_wrt_max: A Tensor. Has the same type as input "max".
+*@li backprops_wrt_max: A Tensor. Has the same type as input "max". \n
 
 *@attention Constraints:
 *@li "gradients" has the same shape as "x".
@@ -1901,16 +1933,16 @@ REG_OP(FakeQuantWithMinMaxVarsPerChannelGradient)
     .OP_END_FACTORY_REG(FakeQuantWithMinMaxVarsPerChannelGradient)
 
 /**
-*@brief Element-wise computes the bitwise AND of "x1" and "x2".
+*@brief Element-wise computes the bitwise AND of "x1" and "x2". \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16,
 *     int32, int64, uint8, uint16, uint32, uint64. Broadcasting is supported.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BitwiseAnd.
@@ -1922,16 +1954,16 @@ REG_OP(BitwiseAnd)
     .OP_END_FACTORY_REG(BitwiseAnd)
 
 /**
-*@brief Element-wise computes the bitwise OR of "x1" and "x2".
+*@brief Element-wise computes the bitwise OR of "x1" and "x2". \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: int8, int16,
 *     int32, int64, uint8, uint16, uint32, uint64. Broadcasting is supported.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BitwiseOr.
@@ -1943,16 +1975,16 @@ REG_OP(BitwiseOr)
     .OP_END_FACTORY_REG(BitwiseOr)
 
 /**
-*@brief Elementwise computes the bitwise XOR of "x1" and "x2".
+*@brief Elementwise computes the bitwise XOR of "x1" and "x2". \n
 
 *@par Inputs:
-*Two inputs, including: 
+*Two inputs, including:
 *@li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, uint32, uint64.
 *       The format is NC1HWC0 or ND. Broadcasting is supported.
-*@li x2: A Tensor. Has the same type and format as "x1".
+*@li x2: A Tensor. Has the same type and format as "x1". \n
 
 *@par Outputs:
-*y: Output result. Has the same type as "x1".
+*y: Output result. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator BitwiseXor.
@@ -1964,10 +1996,10 @@ REG_OP(BitwiseXor)
     .OP_END_FACTORY_REG(BitwiseXor)
 
 /**
-*@brief Returns element-wise smallest integer not less than "x".
+*@brief Returns element-wise smallest integer not less than "x". \n
 
 *@par Inputs:
-* x: A Tensor of type float16 or float32 or float64.
+* x: A Tensor of type float16 or float32 or float64. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -1980,13 +2012,13 @@ REG_OP(Ceil)
   .OP_END_FACTORY_REG(Ceil)
 
 /**
-*@brief Returns element-wise largest integer not greater than "x".
+*@brief Returns element-wise largest integer not greater than "x". \n
 
 *@par Inputs:
-*x: A Tensor of type float16, float32 or double.
+*x: A Tensor of type float16, float32 or double. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
 *@par Third-party framework compatibility:
 * Compatible with TensorFlow operator Floor.
@@ -1998,16 +2030,16 @@ REG_OP(Floor)
 
 /**
 *@brief Divides "x1/x2" element-wise, rounding toward the
-*        most negative integer.
+*        most negative integer. \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32, int32, int64, int8,
 *     uint8, int16, uint16, double, complex64, complex128.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator FloorDiv.
@@ -2025,7 +2057,7 @@ REG_OP(FloorDiv)
     .OP_END_FACTORY_REG(FloorDiv)
 
 /**
-*@brief Returns element-wise remainder of division. Consistent with: floor(x1/x2) * x2 + mod(x1, x2) = x1.
+*@brief Returns element-wise remainder of division. Consistent with: floor(x1/x2) * x2 + mod(x1, x2) = x1. \n
 
 *@par Inputs:
 * Two inputs, including:
@@ -2048,16 +2080,16 @@ REG_OP(FloorMod)
     .OP_END_FACTORY_REG(FloorMod)
 
 /**
-*@brief Computes the power of "x1" to "x2".
+*@brief Computes the power of "x1" to "x2". \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types:
 *     float16, float32, int32, int64, int8, uint8, double, complex64, complex128.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Pow.
@@ -2072,15 +2104,15 @@ REG_OP(Pow)
     .OP_END_FACTORY_REG(Pow)
 
 /**
-*@brief Return element-wise integer closest to x.
+*@brief Return element-wise integer closest to x. \n
 
 *@par Inputs:
 *One input, include:
 *x: A mutable Tensor. Must be one of the following types:
-*     float16, float32, double.
+*     float16, float32, double. \n
 
 *@par Outputs:
-*y: A mutable Tensor. Has the same type as "x".
+*y: A mutable Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Rint.
@@ -2092,7 +2124,7 @@ REG_OP(Rint)
 
 /**
 *@brief Rounds the values of a tensor to the nearest integer, element-wise.
- * Rounds half to even.
+ * Rounds half to even. \n
 
 *@par Inputs:
 *Inputs including:
@@ -2111,7 +2143,7 @@ REG_OP(Round)
     .OP_END_FACTORY_REG(Round)
 
 /**
-*@brief: Computes sine of "x" element-wise.
+*@brief: Computes sine of "x" element-wise. \n
 
 *@par Inputs:
 *One input:
@@ -2119,7 +2151,7 @@ REG_OP(Round)
  * complex64, complex128, int32, int64
 
 *@par Outputs:
-*y: An ND Tensor. Has the same type as "x".
+*y: An ND Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Sin.
@@ -2130,14 +2162,14 @@ REG_OP(Sin)
     .OP_END_FACTORY_REG(Sin)
 
 /**
-*@brief: Computes tan of "x" element-wise.
+*@brief: Computes tan of "x" element-wise. \n
 
 *@par Inputs:
 *One input:
 *x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128, int32, int64
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator Tan.
@@ -2150,16 +2182,16 @@ REG_OP(Tan)
     .OP_END_FACTORY_REG(Tan)
 
 /**
-*@brief Returns element-wise remainder of division.
+*@brief Returns element-wise remainder of division. \n
 
 *@par Inputs:
 *Two inputs, including:
 * @li x1: A Tensor. Must be one of the following types: float16, float32,
 * double, int32, int64.
-* @li x2: A Tensor of the same type as "x1".
+* @li x2: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x1".
+*y: A Tensor. Has the same type as "x1". \n
 
 *@par Third-party framework compatibility
 *@li Compatible with the TensorFlow operator TruncateMod.
@@ -2174,19 +2206,19 @@ REG_OP(TruncateMod)
     .OP_END_FACTORY_REG(TruncateMod)
 
 /**
-*@brief Adds 'bias' to 'x'.
+*@brief Adds 'bias' to 'x'. \n
 
 *@par Inputs:
 *Two inputs, including:
-* @li x: A Tensor of type NumberType. Must be one of the following types: float32, float64, int32, uint8, int16, 
+* @li x: A Tensor of type NumberType. Must be one of the following types: float32, float64, int32, uint8, int16,
 *int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, complex128, float16, uint32, uint64.
-* @li bias: A 1D Tensor with size the C dimension of value.
+* @li bias: A 1D Tensor with size the C dimension of value. \n
 
 *@par Attributes:
-*data_format: An optional string. Defaults to "NHWC".
+*data_format: An optional string. Defaults to "NHWC". \n
 
 *@par Outputs:
-*y: A Tensor with same type as "x".
+*y: A Tensor with same type as "x". \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BiasAdd.
@@ -2199,19 +2231,23 @@ REG_OP(BiasAdd)
     .OP_END_FACTORY_REG(BiasAdd)
 
 /**
-*@brief Returns the index with the smallest value across dimensions of a tensor.
+*@brief Returns the index with the smallest value across dimensions of a tensor. \n
 
 *@par Inputs:
 *Two inputs, including:
-*@li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, complex128, float16, uint32, uint64.
+*@li x: A Tensor. Must be one of the following types: float32, float64, int32, 
+uint8, int16, int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, 
+complex128, float16, uint32, uint64.
 *format is ND.
-*@li dimension: A Tensor. Must be one of the following types: int32, int64. Must be in the range [-rank(input x), rank(input x)]. Describes which dimension of the input Tensor to reduce across.
+*@li dimension: A Tensor. Must be one of the following types: int32, int64. 
+Must be in the range [-rank(input x), rank(input x)]. Describes which dimension 
+of the input Tensor to reduce across.
 * The format is ND.
 *@par Attributes:
-*dtype: The output type, either "int32" or "int64". Defaults to "int64".
+*dtype: The output type, either "int32" or "int64". Defaults to "int64". \n
 
 *@par Outputs:
-*y: A Tensor of type "dtype".
+*y: A Tensor of type "dtype". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ArgMin.
@@ -2224,22 +2260,25 @@ REG_OP(ArgMin)
     .OP_END_FACTORY_REG(ArgMin)
 
 /**
-*@brief Returns the index with the smallest value across dimensions of a tensor.
+*@brief Returns the index with the smallest value across dimensions of a tensor. \n
 
 *@par Inputs:
 *One input:
 
-*x: A Tensor of type float16 or float32 in ND format.
+*x: A Tensor of type float16 or float32 in ND format. \n
 
 *@par Attributes:
 *@li dimension: The dimension of the input Tensor to reduce across.
-*@li dtype: An optional attribute, specifying the output data type. Must be "int32". Defaults to "int64".
+*@li dtype: An optional attribute, specifying the output data type. Must be "int32". Defaults to "int64". \n
 
 *@par Outputs:
-*y: A Tensor of type dtype.
+*y: A Tensor of type dtype. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ArgMin.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ArgMin instead.
 */
 REG_OP(ArgMinD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -2249,22 +2288,22 @@ REG_OP(ArgMinD)
     .OP_END_FACTORY_REG(ArgMinD)
 
 /**
-*@brief Returns the index with the largest value across axes of a tensor.
+*@brief Returns the index with the largest value across axes of a tensor. \n
 
 *@par Inputs:
-* Two inputs, including: 
+* Two inputs, including:
 *@li x: A multi-dimensional Tensor of type float16, float32, or int16.
-*@li dimension: A Scalar of type int32, specifying the index with the largest value.
+*@li dimension: A Scalar of type int32, specifying the index with the largest value. \n
 
 *@par Attributes:
-*dtype: The output type, either "int32" or "int64". Defaults to "int64".
+*dtype: The output type, either "int32" or "int64". Defaults to "int64". \n
 
-*@par Outputs: 
-*y: A multi-dimensional Tensor of type int32 or int64, specifying the index with the largest value. The dimension is one less than that of "x".
+*@par Outputs:
+*y: A multi-dimensional Tensor of type int32 or int64, specifying the index with the largest value. The dimension is one less than that of "x". \n
 
 *@attention Constraints:
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ArgMax.
@@ -2276,26 +2315,31 @@ REG_OP(ArgMaxV2)
     .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(ArgMaxV2)
 
+
 /**
-*@brief Returns the index with the largest value across axes of a tensor.
+*@brief Returns the index with the largest value across axes of a tensor. \n
 
 *@par Inputs:
-* One input, including: 
-*x: A multi-dimensional Tensor of type float16, float32.
+* One input, including:
+*x: A multi-dimensional Tensor of type float16, float32. \n
 
 *@par Attributes:
 *@li dimension: An integer of type int32, specifying the axis information of the index with the maximum value.
-*@li dtype: The output type, either "int32" or "int64". Defaults to "int64".
+*@li dtype: The output type, either "int32" or "int64". Defaults to "int64". \n
 
-*@par Outputs: 
-*y: A multi-dimensional Tensor of type int32, specifying the index with the largest value. The dimension is one less than that of "x".
+*@par Outputs:
+*y: A multi-dimensional Tensor of type int32, specifying the index with the 
+largest value. The dimension is one less than that of "x". \n
 
 *@attention Constraints:
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the 
+dimension length of "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ArgMax.
+* @par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ArgMaxD)
     .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -2306,17 +2350,17 @@ REG_OP(ArgMaxD)
 
 /**
 *@brief Returns the maximum value of all elements in the input in the given
-* dimension.
+* dimension. \n
 
 *@par Inputs:
 *One input: \n
-*x: A multi-dimensional Tensor of type float16 or float32.
+*x: A multi-dimensional Tensor of type float16 or float32. \n
 
 *@par Attributes:
 *@li dimension: An integer of type int32, specifying the axis information of
 * the index with the maximum value.
 *@li keep_dims: A bool, specifying whether to keep dimensions for the output
-* Tensor. Defaults to "false".
+* Tensor. Defaults to "false". \n
 
 *@par Outputs:
 *@li indice: A multi-dimensional Tensor of type int32, specifying the index.
@@ -2324,13 +2368,13 @@ REG_OP(ArgMaxD)
 * "dimension" compared with that of "x". Otherwise, the output has one fewer
 * dimension than "x".)
 *@li values: A Tensor, specifying the maximum value. Has the same dimensions
-* as "indice" and the same type as "x".
+* as "indice" and the same type as "x". \n
 
 *@attention Constraints:
 *@li If there are multiple maximum values, the index of the first maximum
 * value is used.
 *@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the
-* dimension length of "x".
+* dimension length of "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with the two output scenarios of PyTorch operator Max (the output
@@ -2347,13 +2391,13 @@ REG_OP(ArgMaxWithValue)
 /**
 *@par Inputs:
 *One input: \n
-*x: A multi-dimensional Tensor of type float16 or float32.
+*x: A multi-dimensional Tensor of type float16 or float32. \n
 
 *@par Attributes:
 *@li dimension: An integer of type int32, specifying the axis information of
 * the index with the maximum value.
 *@li keep_dims: A bool, specifying whether to keep dimensions for the output
-* Tensor. Defaults to "false".
+* Tensor. Defaults to "false". \n
 
 *@par Outputs:
 *@li indice: A multi-dimensional Tensor of type int32, specifying the index.
@@ -2361,7 +2405,7 @@ REG_OP(ArgMaxWithValue)
 * "dimension" compared with that of "x". Otherwise, the output has one fewer
 * dimension than "x".)
 *@li values: A Tensor, specifying the minimum value. Has the same dimensions
-* as "indice" and the same type as "x".
+* as "indice" and the same type as "x". \n
 
 *@attention Constraints:
 *@li If there are multiple minimum values, the index of the first minimum
@@ -2369,7 +2413,7 @@ REG_OP(ArgMaxWithValue)
 *@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the
 * dimension length of "x".
 *@li Performing the ArgMinWithValue operation on the last axis of float32 data
-* is not supported on a mini platform.
+* is not supported on a mini platform. \n
 
 *@par Third-party framework compatibility
 * Compatible with the two output scenarios of PyTorch operator Min (the output
@@ -2390,10 +2434,10 @@ REG_OP(ArgMinWithValue)
 *One input: \n
 *x: the list of input data, the type of element in Tensor should be same.
 *   the max size of x is 32.
-*   should met one of the following types: float16, float32
+*   should met one of the following types: float16, float32. It's a dynamic input. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type and format as "x".
+*y: A Tensor. Has the same type and format as "x". \n
 
 *@par Attributes:
 *@li N: A required attribute. the number of input x, max size is 32. Type is int.
@@ -2412,13 +2456,13 @@ REG_OP(Eltwise)
     .OP_END_FACTORY_REG(Eltwise)
 
 /**
-*@brief Computes element-wise population count.
+*@brief Computes element-wise population count. \n
 
 *@par Inputs:
-*x: A Tensor of type TensorType::IntegerDataType().
+*x: A Tensor of type TensorType::IntegerDataType(). \n
 
 *@par Outputs:
-*y: A Tensor of type uint8.
+*y: A Tensor of type uint8. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator PopulationCount.
@@ -2429,7 +2473,7 @@ REG_OP(PopulationCount)
   .OP_END_FACTORY_REG(PopulationCount)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Thirteen inputs, including:
@@ -2445,15 +2489,17 @@ REG_OP(PopulationCount)
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_sub1: A Tensor. Must be one of the following types: float16, float32.
 * @li mul4_x: A Tensor. Must be one of the following types: float16, float32.
-* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
 *Four outputs, including:
 * @li y1: A Tensor. Must be one of the following types: float16, float32.
 * @li y2: A Tensor. Must be one of the following types: float16, float32.
 * @li y3: A Tensor. Must be one of the following types: float16, float32.
-* @li y4: A Tensor. Must be one of the following types: float16, float32.
+* @li y4: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambNextMVWithDecay)
     .INPUT(input_mul3, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2476,7 +2522,7 @@ REG_OP(LambNextMVWithDecay)
     .OP_END_FACTORY_REG(LambNextMVWithDecay)
 
 /**
-*@brief Confuse real_div, rsqrt, sqrt, maximum, minimum, sub and add.
+*@brief Confuse real_div, rsqrt, sqrt, maximum, minimum, sub and add. \n
 
 *@par Inputs:
 *Thirteen inputs, including:
@@ -2492,7 +2538,7 @@ REG_OP(LambNextMVWithDecay)
 * @li mul2_x: A Tensor of the same type as "input1".
 * @li mul3_sub1: A Tensor. Must be one of the following types: float16, float32.
 * @li mul4_x: A Tensor of the same type as "input1".
-* @li add2_y: A Tensor of the same type as "input1".
+* @li add2_y: A Tensor of the same type as "input1". \n
 
 *@par Outputs:
 *Four outputs, including:
@@ -2500,6 +2546,9 @@ REG_OP(LambNextMVWithDecay)
 *@li y2: A Tensor. Has the same type as "input_mul3".
 *@li y3: A Tensor. Has the same type as "input_mul3".
 *@li y4: A Tensor. Has the same type as "input_mul3".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambNextMV)
     .INPUT(input_mul3, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2522,7 +2571,7 @@ REG_OP(LambNextMV)
     .OP_END_FACTORY_REG(LambNextMV)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Six inputs, including:
@@ -2531,13 +2580,15 @@ REG_OP(LambNextMV)
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
 * @li truediv1_recip: A Tensor. Must be one of the following types: float16, float32.
-* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
 *Two outputs, including:
 * @li y1: A Tensor of the same type as "input_square".
-* @li y2: A Tensor of the same type as "input_square".
+* @li y2: A Tensor of the same type as "input_square". \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambNextRight)
     .INPUT(input_square, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2551,7 +2602,7 @@ REG_OP(LambNextRight)
     .OP_END_FACTORY_REG(LambNextRight)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Six inputs, including:
@@ -2563,11 +2614,13 @@ REG_OP(LambNextRight)
 * @li input_sub: A Tensor. Must be one of the following types: float16, float32.
 * @li greater_y: A Tensor. Must be one of the following types: float16, float32.
 * @li select_e: A Tensor. Must be one of the following types: float16, float32.
-* @li minimum_y: A Tensor. Must be one of the following types: float16, float32.
+* @li minimum_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "input_greater1".
+*y: A Tensor of the same type as "input_greater1". \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambUpdateWithLr)
     .INPUT(input_greater1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2583,7 +2636,7 @@ REG_OP(LambUpdateWithLr)
     .OP_END_FACTORY_REG(LambUpdateWithLr)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Seven inputs, including:
@@ -2593,11 +2646,13 @@ REG_OP(LambUpdateWithLr)
 * @li x4: A Tensor. Must be one of the following types: float16, float32.
 * @li x5: A Tensor. Must be one of the following types: float16, float32.
 * @li greater_y: A Tensor. Must be one of the following types: float16, float32.
-* @li select_e: A Tensor. Must be one of the following types: float16, float32.
+* @li select_e: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as input.
+*y: A Tensor of the same type as input. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambUpdateWithLrV2)
     .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2611,7 +2666,7 @@ REG_OP(LambUpdateWithLrV2)
     .OP_END_FACTORY_REG(LambUpdateWithLrV2)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Eleven inputs, including:
@@ -2625,14 +2680,16 @@ REG_OP(LambUpdateWithLrV2)
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul4_x: A Tensor. Must be one of the following types: float16, float32.
-* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
 *Three outputs, including:
 * @li output0: A Tensor. Must be one of the following types: float16, float32.
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32.
+* @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOneWithDecay)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2652,7 +2709,7 @@ REG_OP(AdamApplyOneWithDecay)
     .OP_END_FACTORY_REG(AdamApplyOneWithDecay)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Ten inputs, including:
@@ -2665,14 +2722,16 @@ REG_OP(AdamApplyOneWithDecay)
 * @li mul1_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
-* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
 *Three outputs, including:
 * @li output0: A Tensor. Must be one of the following types: float16, float32.
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32.
+* @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOne)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2691,7 +2750,7 @@ REG_OP(AdamApplyOne)
     .OP_END_FACTORY_REG(AdamApplyOne)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Eleven inputs, including:
@@ -2705,14 +2764,16 @@ REG_OP(AdamApplyOne)
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul4_x: A Tensor. Must be one of the following types: float16, float32.
-* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
 *Three outputs, including:
 * @li output0: A Tensor. Must be one of the following types: float16, float32.
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32.
+* @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOneWithDecayAssign)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2732,7 +2793,7 @@ REG_OP(AdamApplyOneWithDecayAssign)
     .OP_END_FACTORY_REG(AdamApplyOneWithDecayAssign)
 
 /**
-*@brief A fusion operator for bert lamb.
+*@brief A fusion operator for bert lamb. \n
 
 *@par Inputs:
 *Ten inputs, including:
@@ -2745,14 +2806,16 @@ REG_OP(AdamApplyOneWithDecayAssign)
 * @li mul1_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
 * @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
-* @li add2_y: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
 *Three outputs, including:
 * @li output0: A Tensor. Must be one of the following types: float16, float32.
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
-* @li output2: A Tensor. Must be one of the following types: float16, float32.
+* @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOneAssign)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2771,18 +2834,20 @@ REG_OP(AdamApplyOneAssign)
     .OP_END_FACTORY_REG(AdamApplyOneAssign)
 
 /**
-*@brief Confuse select, maximum, greater and sqrt.
+*@brief Confuse select, maximum, greater and sqrt. \n
 
 *@par Inputs:
 *Four inputs, including:
 * @li x: A Tensor. Must be one of the following types: float16, float32.
 * @li greater_zeros: A Tensor. Must be one of the following types: float16, float32.
 * @li select_ones: A Tensor. Must be one of the following types: float16, float32.
-* @li maximum_ones: A Tensor. Must be one of the following types: float16, float32.
+* @li maximum_ones: A Tensor. Must be one of the following types: float16, float32. \n
 
 *@par Outputs:
-*y: A Tensor of the same type as "x".
+*y: A Tensor of the same type as "x". \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ClipByNormNoDivSum)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2793,20 +2858,23 @@ REG_OP(ClipByNormNoDivSum)
     .OP_END_FACTORY_REG(ClipByNormNoDivSum)
 
 /**
-*@brief Confuse reducesumd and square.
+*@brief Confuse reducesumd and square. \n
 
 *@par Inputs:
-*x: A Tensor of type float16, float32.
+*x: A Tensor of type float16, float32. \n
 
 *@par Attributes:
 * Two attributes, including: \n
 *@li axis: A optional listint, specifies the dimensions to reduce.
-*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false".
+*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false". \n
 
 *@par Outputs:
 *Two outputs, including: \n
 *@li y1: A Tensor. Has the same type as "x".
 *@li y2: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2817,18 +2885,21 @@ REG_OP(SquareSumV2)
     .OP_END_FACTORY_REG(SquareSumV2)
 
 /**
-*@brief Confuse reducesumd and square.
+*@brief Confuse reducesumd and square. \n
 
 *@par Inputs:
-*x: A Tensor of type float16, float32.
+*x: A Tensor of type float16, float32. \n
 
 *@par Attributes:
 * Two attributes, including: \n
 *@li axis: A optional listint, specifies the dimensions to reduce.
-*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false".
+*@li keep_dims: A bool, specifying whether to keep dimensions for the output Tensor. Defaults to "false". \n
 
 *@par Outputs:
 y: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumV1)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2842,11 +2913,14 @@ REG_OP(SquareSumV1)
 
 *@par Inputs:
 *x1: A Tensor of type float32.
-*x2: A Tensor of type float32.
+*x2: A Tensor of type float32. \n
 
 *@par Outputs:
 y1: A Tensor. Has the same type as "x1".The result of "x1".
 y2: A Tensor. Has the same type as "x2".The result of "x2".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumAll)
     .INPUT(x1, TensorType({DT_FLOAT}))
@@ -2856,16 +2930,19 @@ REG_OP(SquareSumAll)
     .OP_END_FACTORY_REG(SquareSumAll)
 
 /**
-*@brief Confuse broadcast, addn and mul.
+*@brief Confuse broadcast, addn and mul. \n
 
 *@par Inputs:
 *Three inputs, including:
 * @li x1: A Tensor. Must be one of the following types:int32, int16, float16, float32.
 * @li x2: A Tensor of the same type as "x1".
-* @li x3: A Tensor of the same type as "x1".
+* @li x3: A Tensor of the same type as "x1". \n
 
 *@par Outputs:
 * y: A Tensor. Has the same type as "x1".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(FusedMulAddN)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
@@ -2875,31 +2952,47 @@ REG_OP(FusedMulAddN)
     .OP_END_FACTORY_REG(FusedMulAddN)
 
 /**
-*@brief Add 'bias' to 'x'.
+*@brief Add 'bias' to 'x'. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x: An ND tensor of type float16 or float32.
-*@li bias: An ND tensor of type float16 or float32.
+*@li bias: An ND tensor of type float16 or float32. \n
 
 *@par Attributes:
-*@li axis: An optional int32 used to compute the shape of bias input from the online bottoms. Defaults to "1".
-*@li num_axes: An optional int32 used to compute the shape of bias input from a Caffe model trained offline. Defaults to "1".
-*@li bias_from_blob: An optional bool. If "true", bias is input from a Caffe model trained offline. If "false", bias is input from online bottoms. Defaults to "true".
+*@li axis: An optional int32 used to compute the shape of bias input from the 
+online bottoms. Defaults to "1".
+*@li num_axes: An optional int32 used to compute the shape of bias input from a 
+Caffe model trained offline. Defaults to "1".
+*@li bias_from_blob: An optional bool. If "true", bias is input from a Caffe 
+model trained offline. If "false", bias is input from online bottoms. Defaults 
+to "true". \n
 
 *@par Outputs:
-*y: An ND tensor of type float16 or float32.
+*y: An ND tensor of type float16 or float32. \n
 
 *@attention Constraints:\n
 * Assume that the shape length of "x" is "n" and that of "bias" is "m".
 *@li "axis" is within the range [-n, n-1]. num_axes >= -1.
-*@li If "bias_from_blob = true", "num_axes = -1", and "axis >= 0", the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < n-axis).\n  
-* If "axis < 0", the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < -axis).
-*@li If "bias_from_blob = true" and "num_axes = 0", "bias" is a scalar with shape length 1 and dimension size 1.
-*@li If "bias_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + num_axes" must be less than or equal to "n" and the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).\n
-* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
-*@li If "bias_from_blob = false", "bias" is not a scalar, and "axis >= 0","axis + m" must be less than or equal to "n" and the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).\n
-* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
+*@li If "bias_from_blob = true", "num_axes = -1", and "axis >= 0", the ith axis 
+of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < 
+n-axis).\n
+* If "axis < 0", the ith axis of "bias" and the (i+n+"axis")th axis of "x" must 
+have the same size (0 <= i < -axis).
+*@li If "bias_from_blob = true" and "num_axes = 0", "bias" is a scalar with 
+shape length 1 and dimension size 1.
+*@li If "bias_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + 
+num_axes" must be less than or equal to "n" and the ith axis of "bias" and the 
+(i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).\n
+* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and 
+the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same 
+size (0 <= i < num_axes).
+*@li If "bias_from_blob = false", "bias" is not a scalar, and "axis >= 0","axis 
++ m" must be less than or equal to "n" and the ith axis of "bias" and the (i
++"axis")th axis of "x" must have the same size (0 <= i < m).\n
+* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith 
+axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= 
+i < m).
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Bias.
 */
@@ -2916,22 +3009,25 @@ REG_OP(Bias)
 /**
 *@brief Function multiply gradients calculation.
 output0 is the result of which input0 dot multily input1.
-output1 is the result of which input0 dot multily input1, then reducesum it.
+output1 is the result of which input0 dot multily input1, then reducesum it. \n
 
 *@par Inputs:
 *@li input0: A Tensor of input of mul, and dtype supports float16, float32.
 *@li input1: A Tensor of input of mul and mul_1, and dtype supports float16, float32.
-*@li input2: A Tensor of input of mul_1, and dtype supports float16, float32.
+*@li input2: A Tensor of input of mul_1, and dtype supports float16, float32. \n
 
 *@par Attributes:
 *@li axes: The dimensions to reduce. Default:(), reduce all dimensions. \n
 Only constant value is allowed.
 *@li keep_dims: If true, keep these reduced dimensions and the length is 1. \n
-If false, don’t keep these dimensions. Default:False.
+If false, don’t keep these dimensions. Default:False. \n
 
 *@par Outputs:
 *@li output0: A Tensor result of which input0 dot multily input1.
 *@li output1: A Tensor result of which input0 dot multily input1, then reducesum it.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionMulGrad)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2944,17 +3040,20 @@ REG_OP(ConfusionMulGrad)
     .OP_END_FACTORY_REG(ConfusionMulGrad)
 
 /**
-*@brief Function fused multiply l2 loss calculation.
+*@brief Function fused multiply l2 loss calculation. \n
 
 *@par Inputs:
-*@li x1: A Tensor of number type.
-*@li x2: A Tensor of number type.
-*@li x3: A Tensor of number type.
+*@li x1: A Tensor of type float16, float32.
+*@li x2: A Tensor of type float16, float32.
+*@li x3: A Tensor of type float16, float32. \n
 
 *@par Outputs:
 *@li y1: A Tensor of shape and dtype of first output, which should have \n
 shape (1,) and dtype as input.
 *@li y2: A Tensor of shape and dtype of second output, should be same shape and type as input.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(FusedMulAddNL2loss)
     .INPUT(x1, TensorType::NumberType())
@@ -2965,16 +3064,18 @@ REG_OP(FusedMulAddNL2loss)
     .OP_END_FACTORY_REG(FusedMulAddNL2loss)
 
 /**
-*@brief Tests whether the input exceeds a threshold.
+*@brief Tests whether the input exceeds a threshold. \n
 
 *@par Inputs:
-*@li x: A Tensor with any format. Must be one of the following types: float16, float32.
+*@li x: A Tensor with any format. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
-*@li threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise.
+*@li threshold: A required float32. Defaults to "0.0". "x" is compared with 
+"threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
 
 *@par Outputs:
-*@li y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
+*@li y: A Tensor with any format. Has the same type as the input. Must be one 
+of the following types: float16, float32.
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Threshold.
 */
@@ -2986,17 +3087,22 @@ REG_OP(FusedMulAddNL2loss)
      .OP_END_FACTORY_REG(Threshold);
 
 /**
-*@brief Returns the index number corresponding to the maximum value entered.
+*@brief Returns the index number corresponding to the maximum value entered. \n
 
 *@par Inputs:
-*@li x: A tensor. Must be one of the following types: float16, float32.
+*@li x: A tensor. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
-*@li axis: An optional int. Specify the axis to be cut at the input tensor. If this parameter is not provided, find the topk for each batch. Defaults to 10000
-*@li out_max_val: An optional bool. Whether to output the maximum value. If it is True, the maximum value and index are output, otherwise only the index is output.
+*@li axis: An optional int. Specify the axis to be cut at the input tensor. If 
+this parameter is not provided, find the topk for each batch. Defaults to 10000
+*@li out_max_val: An optional bool. Whether to output the maximum value. If it 
+is True, the maximum value and index are output, otherwise only the index is 
+output.
 * Defaults to False
-*@li topk: An optional int. It means the number of top tok in each axis (the value is greater than or equal to 1), and the value range must be in [1,x.shape(axis)].
-* Defaults to 1
+*@li topk: An optional int. It means the number of top tok in each axis (the 
+value is greater than or equal to 1), and the value range must be in [1,x.shape
+(axis)].
+* Defaults to 1 \n
 
 *@par Outputs:
 *@li indices: A tensor of type float16, float32, int32. The index of the maximum value of the output.
@@ -3014,15 +3120,15 @@ REG_OP(ArgMaxWithK)
      .OP_END_FACTORY_REG(ArgMaxWithK)
 
 /**
-*@brief Multiply tensor with scale.
+*@brief Multiply tensor with scale. \n
 
 *@par Inputs:
 *Five inputs, including:
 * @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float.
+* @li x2: A scale. Must be float. \n
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1".
+*@li y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator muls.
@@ -3034,15 +3140,15 @@ REG_OP(Muls)
      .OP_END_FACTORY_REG(Muls)
 
 /**
-*@brief Fill tensor with scale.
+*@brief Fill tensor with scale. \n
 
 *@par Inputs:
 *Five inputs, including:
 * @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float.
+* @li x2: A scale. Must be float. \n
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1".
+*@li y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator fills.
@@ -3054,15 +3160,15 @@ REG_OP(Fills)
      .OP_END_FACTORY_REG(Fills)
 
 /**
-*@brief Add tensor with scale.
+*@brief Add tensor with scale. \n
 
 *@par Inputs:
 *Five inputs, including:
 * @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float.
+* @li x2: A scale. Must be float. \n
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1".
+*@li y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator adds.
@@ -3074,14 +3180,14 @@ REG_OP(Fills)
      .OP_END_FACTORY_REG(Adds)
 
 /**
-*@brief Computes the product of x and y and returns 0 if the y is zero, even if x is NaN or infinite.
+*@brief Computes the product of x and y and returns 0 if the y is zero, even if x is NaN or infinite. \n
 
 *@par Inputs:
 * @li x1: A Tensor. Must be one of the following types:float16, float32, double, complex64, complex128.
-* @li x2: A Tensor. Has the same type and shape as "x1".
+* @li x2: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type and shape as "x1".
+*y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator MulNoNan.
@@ -3093,17 +3199,17 @@ REG_OP(Fills)
      .OP_END_FACTORY_REG(MulNoNan)
 
 /**
-*@brief Add tensor with scale.
+*@brief Add tensor with scale. \n
 
 *@par Inputs:
 * @li x1: A Tensor dtype of int32, float16, float32.
-* @li x2: A Tensor dtype of int32, float16, float32.
+* @li x2: A Tensor dtype of int32, float16, float32. \n
 
 *@par Attributes:
 *alpha: Float scalar apply to x2:x2*alpha
 
 *@par Outputs:
-*y: A Tensor. should be same shape and type as "x1".
+*y: A Tensor. should be same shape and type as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator Axpy.
@@ -3116,16 +3222,17 @@ REG_OP(Axpy)
     .OP_END_FACTORY_REG(Axpy)
 
 /**
-*@brief Creates a criterion that measures the loss given input tensors x1 x2 and a Tensor label y with values 1 or -1.
+*@brief Creates a criterion that measures the loss given input tensors x1 x2 
+and a Tensor label y with values 1 or -1. \n
 
 *@par Inputs:
 *@li x1: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
 *@li x2: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
-*@li target: A ND Tensor with one of the following types: int8, int32, float16, float32.
+*@li target: A ND Tensor with one of the following types: int8, int32, float16, float32. \n
 
 *@par Attributes:
 *@li margin: A optional float32. Defaults to "0.0".
-*@li reduction: A optional string. Defaults to "mean".
+*@li reduction: A optional string. Defaults to "mean". \n
 
 *@par Outputs:
 *@li y: A ND Tensor with Must be float32.
@@ -3142,16 +3249,16 @@ REG_OP(CosineEmbeddingLoss)
     .OP_END_FACTORY_REG(CosineEmbeddingLoss)
 
 /**
-*@brief Kullback-Leibler divergence.
+*@brief Kullback-Leibler divergence. \n
 
 *@par Inputs:
 * Two inputs, including:
 *@li x: Tensor of arbitrary shape.
-*@li target: Tensor of the same shape and dtype as x.
+*@li target: Tensor of the same shape and dtype as x. \n
 
 *@par Attributes:
 *reduction: An required "string", Specifies the reduction to apply to the output;
-* Reduction only supports the two modes of "sum" and "batchmean".
+* Reduction only supports the two modes of "sum" and "batchmean". \n
 
 *@par Outputs:
 *y: A ND Tensor of the same dtype as x.
@@ -3166,16 +3273,19 @@ REG_OP(KLDiv)
     .OP_END_FACTORY_REG(KLDiv)
 
 /**
-*@brief copy data from x to y..
+*@brief copy data from x to y.. \n
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool.
+* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x".
+*y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(TensorMove)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
@@ -3183,24 +3293,22 @@ REG_OP(TensorMove)
     .OP_END_FACTORY_REG(TensorMove)
 
 /**
-*@brief copy data from x to x.
+*@brief copy data from x to x. \n
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool.
+* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
 
 *@par Outputs:
-*x: A Tensor. Has the same type as "x".
+*output_x: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 */
 REG_OP(TensorRedirect)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
-                           DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64}))
+                           DT_INT64, DT_INT16, DT_UINT16, DT_UINT64, DT_UINT32}))
     .OUTPUT(output_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
-                           DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64}))
+                           DT_INT64, DT_INT16, DT_UINT16, DT_UINT64, DT_UINT32}))
     .OP_END_FACTORY_REG(TensorRedirect)
 }  // namespace ge
 

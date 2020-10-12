@@ -66,8 +66,10 @@ class SingleOpModel {
   Status BuildTaskList(SingleOp &single_op);
   Status BuildTaskListForDynamicOp(DynamicSingleOp &dynamic_single_op);
   Status BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTask **task);
-  Status BuildKernelExTask(const domi::KernelExDef &kernel_def, SingleOp &single_op, OpTask **task);
+  Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, bool dynamic_flag,
+                           bool &depend_compute_flag, uint64_t session_id);
   Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task);
+  Status BuildModelTaskKernel(const domi::TaskDef &task_def, DynamicSingleOp &single_op);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(TbeOpTask *task, SingleOp &op);

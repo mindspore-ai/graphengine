@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -130,6 +130,7 @@ typedef enum tagRtError {
     RT_ERROR_KERNEL_TYPE,
     RT_ERROR_KERNEL_OFFSET,
     RT_ERROR_KERNEL_DUPLICATE,
+    RT_ERROR_KERNEL_UNREGISTERING,
 
     RT_ERROR_PROGRAM_BASE                   = 0x07090000,
     RT_ERROR_PROGRAM_NULL,
@@ -579,7 +580,8 @@ RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *d
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
-#ifdef __cplusplus
+
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

@@ -347,7 +347,10 @@ graphStatus OpDesc::AddOptionalInputDesc(const string &name, const ge::GeTensorD
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 OpDesc::UpdateInputDesc(uint32_t index, const ge::GeTensorDesc &tensor_Desc) {
-  GE_CHK_BOOL_RET_STATUS((index < inputs_desc_.size()), GRAPH_FAILED, "The index is invalid. index[%u]", index);
+  if (index >= inputs_desc_.size()) {
+    GELOGW("The index is invalid. index[%u]", index);
+    return GRAPH_FAILED;
+  }
 
   inputs_desc_[index] = ComGraphMakeShared<GeTensorDesc>(tensor_Desc);
   if (inputs_desc_[index] == nullptr) {
@@ -675,7 +678,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ConstGeTensorDescPtr OpDesc::GetI
     return nullptr;
   }
   if (inputs_desc_[index]->IsValid() != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "inputsDesc[%u] is InValid", index);
+    GELOGW("inputsDesc[%u] is InValid", index);
     return nullptr;
   } else {
     return inputs_desc_[static_cast<size_t>(index)];
@@ -947,6 +950,43 @@ int OpDesc::GetInputIndexByName(const string &name) const {
   auto it_find = input_name_idx_.find(name);
   GE_CHK_BOOL_RET_STATUS_NOLOG(it_find != input_name_idx_.end(), -1);
   return static_cast<int>(it_find->second);
+}
+
+int OpDesc::GetValidInputIndexByName(const string &name) const {
+  map<string, uint32_t> valid_input_name_idx{};
+  uint32_t j = 0;
+  for (size_t i = 0; i < GetAllInputsSize(); i++) {
+    if (MutableInputDesc(static_cast<uint32_t>(i)) != nullptr) {
+      auto valid_name = GetInputNameByIndex(static_cast<uint32_t>(i));
+      GE_CHK_BOOL_RET_STATUS_NOLOG(!valid_name.empty(), -1);
+      valid_input_name_idx.insert({valid_name, j});
+      j++;
+    }
+  }
+  auto it_find = valid_input_name_idx.find(name);
+  GE_CHK_BOOL_RET_STATUS_NOLOG(it_find != valid_input_name_idx.end(), -1);
+  return static_cast<int>(it_find->second);
+}
+
+string OpDesc::GetValidInputNameByIndex(uint32_t index) const {
+  map<string, uint32_t> valid_input_name_idx{};
+  uint32_t j = 0;
+  for (size_t i = 0; i < GetAllInputsSize(); i++) {
+    if (MutableInputDesc(static_cast<uint32_t>(i)) != nullptr) {
+      auto valid_name = GetInputNameByIndex(static_cast<uint32_t>(i));
+      GE_CHK_BOOL_RET_STATUS_NOLOG(!valid_name.empty(), "");
+      valid_input_name_idx.insert({valid_name, j});
+      j++;
+    }
+  }
+  auto it = valid_input_name_idx.begin();
+  for (; it != valid_input_name_idx.end(); ++it) {
+    if (it->second == index) {
+      break;
+    }
+  }
+  GE_CHK_BOOL_RET_STATUS_NOLOG(it != valid_input_name_idx.end(), "");
+  return it->first;
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY string OpDesc::GetOutputNameByIndex(uint32_t index) const {

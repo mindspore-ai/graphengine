@@ -125,6 +125,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       rt_model_stream_(nullptr),
       is_inner_model_stream_(false),
       is_async_mode_(false),
+      last_execute_mode_(INITIALIZATION),
       session_id_(0),
       device_id_(0),
       maxDumpOpNum_(0),
@@ -1572,6 +1573,48 @@ Status DavinciModel::GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info) {
   return SUCCESS;
 }
 
+Status DavinciModel::GetAippType(uint32_t index, InputAippType &type, size_t &aipp_index) {
+  GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
+  // Set default value
+  type = DATA_WITHOUT_AIPP;
+  aipp_index = 0xFFFFFFFF;  // default invalid value
+  OpDescPtr data_op = data_op_list_[index];
+  GE_CHECK_NOTNULL(data_op);
+  if (!data_op->HasAttr(ATTR_DATA_RELATED_AIPP_MODE)) {
+    GELOGW("There is no aipp releated info with index %u.", index);
+    return SUCCESS;
+  }
+  std::string data_mode;
+  (void)AttrUtils::GetStr(data_op, ATTR_DATA_RELATED_AIPP_MODE, data_mode);
+  if (data_mode == "static_aipp") {
+    type = DATA_WITH_STATIC_AIPP;
+  } else if (data_mode == "dynamic_aipp") {
+    type = DATA_WITH_DYNAMIC_AIPP;
+  } else if (data_mode == "dynamic_aipp_conf") {
+    type = DYNAMIC_AIPP_NODE;
+  } else {
+    GELOGE(INTERNAL_ERROR, "The info of aipp releated info %s is invalid with index %u.", data_mode.c_str(), index);
+    return INTERNAL_ERROR;
+  }
+
+  if (type == DATA_WITH_DYNAMIC_AIPP) {
+    string releated_name;
+    (void)AttrUtils::GetStr(data_op, ATTR_DATA_AIPP_DATA_NAME_MAP, releated_name);
+    for (size_t i = 0; i < data_op_list_.size(); ++i) {
+      GE_CHECK_NOTNULL(data_op_list_[i]);
+      if (data_op_list_[i]->GetName() == releated_name) {
+        GELOGI("Find aipp_data [%s] index %zu from index %u", releated_name.c_str(), i, index);
+        aipp_index = i;
+      }
+    }
+    if (aipp_index == 0xFFFFFFFF) {
+      GELOGE(INTERNAL_ERROR, "Can not find aipp data node from index %u", index);
+      return INTERNAL_ERROR;
+    }
+  }
+  return SUCCESS;
+}
+
 void DavinciModel::SetDynamicSize(const std::vector<uint64_t> &batch_num, int32_t dynamic_type) {
   batch_size_.clear();
   if (batch_num.empty()) {
@@ -1665,9 +1708,9 @@ void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, 
     return;
   }
   // judge if this data is linked dynamic aipp first, multiply batch has been considered
-  if (op_desc->HasAttr("_dynamic_aipp_input_dims")) {
+  if (op_desc->HasAttr(ATTR_DYNAMIC_AIPP_INPUT_DIMS)) {
     vector<int64_t> dynamic_aipp_input_dims;
-    (void)AttrUtils::GetListInt(op_desc, "_dynamic_aipp_input_dims", dynamic_aipp_input_dims);
+    (void)AttrUtils::GetListInt(op_desc, ATTR_DYNAMIC_AIPP_INPUT_DIMS, dynamic_aipp_input_dims);
     SetInputDimsInfo(dynamic_aipp_input_dims, format, input);
     return;
   } else {
@@ -1885,13 +1928,7 @@ Status DavinciModel::SinkModelProfile() {
     name = name_;
   }
   size_t name_len = name.size();
-  // phy device id
-  uint32_t phy_device_id = 0;
-  rtError_t rt_ret = rtGetDevicePhyIdByIndex(device_id_, &phy_device_id);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-                  return FAILED);
-  reporter_data.deviceId = phy_device_id;
+  reporter_data.deviceId = device_id_;
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
   GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
@@ -2060,12 +2097,7 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
                    return FAILED, "Sink model tag memcpy error.");
   // device id
-  uint32_t phy_device_id = 0;
-  rtError_t rt_ret = rtGetDevicePhyIdByIndex(device_id_, &phy_device_id);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-                  return FAILED);
-  reporter_data.deviceId = phy_device_id;
+  reporter_data.deviceId = device_id_;
 
   // Model Header
   string name;
@@ -2879,6 +2911,12 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
       }
     }
   }
+  auto it = zero_copy_op_id_batch_label_.find(op_desc->GetId());
+  if (it == zero_copy_op_id_batch_label_.end()) {
+    zero_copy_task.SetBatchLabel(kDefaultBatchLable);
+  } else {
+    zero_copy_task.SetBatchLabel(it->second);
+  }
 
   std::lock_guard<std::mutex> lock(outside_addrs_mutex_);
   if (zero_copy_task.IsTaskArgsSet()) {
@@ -3045,6 +3083,9 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
              data.first, addr, size, buffer_addr);
       // For input data, just copy for rts task.
       for (ZeroCopyTask &task : zero_copy_tasks_) {
+        if (task.GetBatchLabel() != kDefaultBatchLable && task.GetBatchLabel() != batch_label) {
+          continue;
+        }
         uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
         if (task.UpdateTaskParam(addr_val, buffer_addr, zero_copy_batch_label_addrs_, batch_label) != SUCCESS) {
           return FAILED;
@@ -3361,6 +3402,11 @@ bool DavinciModel::IsBroadCastOpData(const ge::NodePtr &var_node) {
 /// @return Status
 ///
 Status DavinciModel::InitModelStream(rtStream_t stream) {
+  ExecuteMode curr_mode = is_async_mode_ ? ASYNCHRONIZATION : SYNCHRONIZATION;
+  GE_CHK_BOOL_RET_STATUS((curr_mode == last_execute_mode_) || (last_execute_mode_ == INITIALIZATION), INTERNAL_ERROR,
+                         "NnExecute not support mix execute.");
+  last_execute_mode_ = curr_mode;
+
   // asynchronize mode, use user input stream.
   if (is_async_mode_) {
     rt_model_stream_ = stream;
@@ -3516,7 +3562,7 @@ uint8_t *DavinciModel::MallocWeightsMem(size_t weights_size) {
 }
 
 void DavinciModel::FreeFeatureMapMem() {
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+  if (std::getenv(kEnvGeuseStaticMemory) != nullptr && is_inner_mem_base_) {
     string weight_memory_key = std::to_string(0) + "_f";
     if (MemManager::Instance(RT_MEMORY_HBM)->GetMemoryAddr(weight_memory_key) != nullptr) {
       GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(weight_memory_key, GetDeviceId()),

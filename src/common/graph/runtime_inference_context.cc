@@ -15,6 +15,7 @@
  */
 
 #include "graph/runtime_inference_context.h"
+#include "graph/utils/tensor_adapter.h"
 #include <cstdint>
 #include "framework/common/debug/ge_log.h"
 
@@ -67,6 +68,14 @@ graphStatus RuntimeInferenceContext::SetTensor(int64_t node_id, int output_id, T
 
   GELOGD("Set tensor for node_id = %ld, output_id = %d", node_id, output_id);
   output_tensors[output_id] = std::move(tensor);
+
+  auto &output_ge_tensors = ge_tensors_[node_id];
+  if (static_cast<uint32_t>(output_id) >= output_ge_tensors.size()) {
+    output_ge_tensors.resize(output_id + 1);
+  }
+
+  GELOGD("Set ge tensor for node_id = %ld, output_id = %d", node_id, output_id);
+  output_ge_tensors[output_id] = TensorAdapter::AsGeTensorPtr(tensor);
   return GRAPH_SUCCESS;
 }
 
@@ -90,6 +99,30 @@ graphStatus RuntimeInferenceContext::GetTensor(int64_t node_id, int output_id, T
   }
 
   GELOGD("Get tensor for node_id = %ld, output_id = %d", node_id, output_id);
+  tensor = output_tensors[output_id];
+  return GRAPH_SUCCESS;
+}
+
+graphStatus RuntimeInferenceContext::GetTensor(int64_t node_id, int output_id, GeTensorPtr &tensor) {
+  if (output_id < 0) {
+    GELOGE(GRAPH_PARAM_INVALID, "Invalid output index: %d", output_id);
+    return GRAPH_PARAM_INVALID;
+  }
+
+  std::lock_guard<std::mutex> lk(mu_);
+  auto iter = ge_tensors_.find(node_id);
+  if (iter == ge_tensors_.end()) {
+    GELOGE(INTERNAL_ERROR, "Node not register. Id = %ld", node_id);
+    return INTERNAL_ERROR;
+  }
+
+  auto &output_tensors = iter->second;
+  if (static_cast<uint32_t>(output_id) >= output_tensors.size()) {
+    GELOGE(GRAPH_FAILED, "Node output is not registered. node_id = %ld, output index = %d", node_id, output_id);
+    return GRAPH_FAILED;
+  }
+
+  GELOGD("Get ge tensor for node_id = %ld, output_id = %d", node_id, output_id);
   tensor = output_tensors[output_id];
   return GRAPH_SUCCESS;
 }

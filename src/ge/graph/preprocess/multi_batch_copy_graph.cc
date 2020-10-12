@@ -113,10 +113,9 @@ NodePtr InsertCopyNode(const NodePtr &node, size_t n) {
   desc->CopyAttrsFrom(*src_op_desc);
   for (uint32_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
     auto input_desc = desc->MutableInputDesc(i);
-    GE_IF_BOOL_EXEC(input_desc == nullptr,
-                    GELOGE(INTERNAL_ERROR, "Failed to get input desc by index %u from node %s when copy from %s", i,
-                           desc->GetName().c_str(), node->GetName().c_str());
-                    return nullptr);
+    GE_IF_BOOL_EXEC(input_desc == nullptr, GELOGW("Get null input desc by index %u from node %s when copy from %s", i,
+                                                  desc->GetName().c_str(), node->GetName().c_str());
+                    continue);
 
     input_desc->CopyAttrsFrom(src_op_desc->GetInputDesc(i));
   }
@@ -991,12 +990,17 @@ Status MultiBatchGraphCopyer::InsertIdentityAfterSwitchN() {
     size_t i = 0;
     for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
       for (auto &in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-        auto identity_desc = MakeShared<OpDesc>(node->GetName() + "_identity_" + std::to_string(i), IDENTITY);
-        GE_CHECK_NOTNULL(identity_desc);
-
         auto out_node = in_data_anchor->GetOwnerNode();
         auto op_desc = out_node->GetOpDesc();
         GE_CHECK_NOTNULL(op_desc);
+        if ((out_node->GetType() == MERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
+          GELOGD("No need to insert identity between %s and %s.", node->GetName().c_str(), out_node->GetName().c_str());
+          continue;
+        }
+
+        auto identity_desc = MakeShared<OpDesc>(node->GetName() + "_identity_" + std::to_string(i), IDENTITY);
+        GE_CHECK_NOTNULL(identity_desc);
+
         string batch_label;
         if (AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
           if (!AttrUtils::SetStr(identity_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
@@ -1159,7 +1163,7 @@ void GetDynamicShapeByMerge(const ComputeGraphPtr &graph, const NodePtr &node, s
   }
 }
 
-// Connect NetOutput directly: DTS2020070612498
+// Connect NetOutput directly
 void GetDirectOutputShape(const ComputeGraphPtr &graph, const NodePtr &node, const set<size_t> &dynamic_output_index,
                           vector<string> &dynamic_output_dims) {
   GELOGD("Try get directly shape info, Graph: %s, Node: %s", graph->GetName().c_str(), node->GetName().c_str());

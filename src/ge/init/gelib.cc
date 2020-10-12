@@ -165,8 +165,9 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
     }
   }
 
-  // In train and infer, profiling is always needed.
   InitOptions(options);
+
+  // In train and infer, profiling is always needed.
   InitProfiling(this->options_);
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
@@ -175,9 +176,7 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
                   return FAILED);
   // 1.`is_train_mode_` means case: train
   // 2.`(!is_train_mode_) && (options_.device_id != kDefaultDeviceIdForInfer)` means case: online infer
-  // these two case need call `InitSystemWithOptions->rtGetDeviceIndexByPhyId`
-  // to convert phy device id to logical device id
-  // note:rtGetDeviceIndexByPhyId return `0` logical id when input phy device id is `0`
+  // these two case with logical device id
   if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
     status = InitSystemWithOptions(this->options_);
   } else {
@@ -362,6 +361,9 @@ Status GELib::Finalize() {
     GELOGW("not initialize");
     return SUCCESS;
   }
+  if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
+    GE_CHK_RT_RET(rtSetDevice(options_.device_id));
+  }
   Status final_state = SUCCESS;
   Status mid_state;
   GELOGI("engineManager finalization.");
@@ -412,10 +414,14 @@ Status GELib::Finalize() {
 
   GetMutableGlobalOptions().erase(ENABLE_SINGLE_STREAM);
 
+  if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
+    GE_CHK_RT_RET(rtDeviceReset(options_.device_id));
+  }
+
   instancePtr_ = nullptr;
   init_flag_ = false;
   if (final_state != SUCCESS) {
-    GELOGE(FAILED, "MemManager finalization.");
+    GELOGE(FAILED, "finalization failed.");
     return final_state;
   }
   GELOGI("finalization success.");

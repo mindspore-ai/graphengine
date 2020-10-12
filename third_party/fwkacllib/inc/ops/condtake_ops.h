@@ -26,17 +26,17 @@
 
 namespace ge {
 /**
-*@brief Take elements from data if specific condition is satisfied on mask.
+*@brief Take elements from data if specific condition is satisfied on mask. \n
 
 *@par Inputs:
-*@li data: input tensor from which to take elements, High-dimension input would \n
+*@li data: input tensor from which to take elements, High-dimension input would
 first be flattened.
-*@li mask: condition param; must be the same shape with data.
+*@li mask: condition param; must be the same shape with data. \n
 
 *@par Attributes:
 *@li mode:convert by convert in Mode.
 *@li val:convert by <class 'float'>
-*@li eps:convert by <class 'float'> (default: 1e-06)
+*@li eps:convert by <class 'float'> (default: 1e-06) \n
 
 *@par Outputs:
 *@li out_data: the elements taken

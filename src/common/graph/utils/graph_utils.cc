@@ -1470,8 +1470,7 @@ graphStatus GraphUtils::CopyTensorAttrs(const OpDescPtr &dst_desc, const NodePtr
   for (uint32_t i = 0; i < src_node->GetAllInDataAnchorsSize(); ++i) {
     auto input_desc = dst_desc->MutableInputDesc(i);
     if (input_desc == nullptr) {
-      GELOGE(GRAPH_FAILED, "Param dst node not valid");
-      return GRAPH_FAILED;
+      continue;
     }
     input_desc->CopyAttrsFrom(src_desc->GetInputDesc(i));
   }

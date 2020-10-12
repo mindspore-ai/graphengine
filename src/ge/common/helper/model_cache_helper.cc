@@ -497,7 +497,25 @@ Status ModelCacheHelper::LoadJsonFromFile(const string &file_name, Json &json) c
     GELOGW("Fail to open the file: %s.", path.c_str());
     return INTERNAL_ERROR;
   }
-  ifs >> json;
+  try {
+    ifs >> json;
+  } catch (nlohmann::detail::parse_error e) {
+    GELOGW("Fail to load json from file, json throw an error:%s.", e.what());
+    return INTERNAL_ERROR;
+  } catch (nlohmann::detail::invalid_iterator e) {
+    GELOGW("Fail to load json from file, json throw an error:%s.", e.what());
+    return INTERNAL_ERROR;
+  } catch (nlohmann::detail::type_error e) {
+    GELOGW("Fail to load json from file, json throw an error:%s.", e.what());
+    return INTERNAL_ERROR;
+  } catch (nlohmann::detail::out_of_range e) {
+    GELOGW("Fail to load json from file, json throw an error:%s.", e.what());
+    return INTERNAL_ERROR;
+  } catch (nlohmann::detail::other_error e) {
+    GELOGW("Fail to load json from file, json throw an error:%s.", e.what());
+    return INTERNAL_ERROR;
+  }
+
   if (!json.is_object()) {
     GELOGW("Fail to load the json file: %s.", path.c_str());
     return INTERNAL_ERROR;

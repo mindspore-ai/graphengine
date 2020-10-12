@@ -182,6 +182,37 @@ bool IsDynamicImageSizeMatchModel(uint64_t image_height, uint64_t image_width,
   GELOGE(ge::FAILED, "Dynamic resolution (%lu,%lu) can not match the gear of model.", image_height, image_width);
   return false;
 }
+
+bool IsDynmaicDimsSizeMatchModel(const vector<uint64_t> cur_dynamic_dims, const vector<vector<int64_t>> &batch_info) {
+  if (batch_info.empty()) {
+    GELOGE(ge::FAILED, "Dynamic batch info is empty.");
+    return false;
+  }
+
+  bool find_match = false;
+  for (auto resolution : batch_info) {
+    if (cur_dynamic_dims.size() != resolution.size()) {
+      GELOGE(ge::FAILED, "Cur dynamic dims param num is %zu, current resolution size is %zu.", cur_dynamic_dims.size(),
+             resolution.size());
+      return false;
+    }
+    bool flag = true;
+    for (std::size_t i = 0; i < resolution.size(); ++i) {
+      if (cur_dynamic_dims[i] != static_cast<uint64_t>(resolution[i])) {
+        flag = false;
+        break;
+      }
+    }
+    if (flag) {
+      find_match = true;
+      break;
+    }
+  }
+  if (!find_match) {
+    GELOGE(ge::FAILED, "choose dynamic dims can not match the gear of model.");
+  }
+  return find_match;
+}
 }  // namespace
 
 namespace ge {
@@ -347,8 +378,20 @@ Status GeExecutor::SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, u
   vector<uint64_t> cur_dynamic_dims;
   Status ret = GetCurDynamicDims(model_id, dynamic_dims, cur_dynamic_dims);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Set cur gear dynmaic dims failed");
+    GELOGE(FAILED, "Set cur gear dynamic dims failed");
     return FAILED;
+  }
+  std::vector<std::vector<int64_t>> batch_info;
+  int32_t dynamic_type = static_cast<int32_t>(FIXED);
+  ret = GraphExecutor::GetDynamicBatchInfo(model_id, batch_info, dynamic_type);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Get dynamic input info failed.");
+    return ret;
+  }
+
+  if (!IsDynmaicDimsSizeMatchModel(cur_dynamic_dims, batch_info)) {
+    GELOGE(PARAM_INVALID, "The current dynamic input does not match the gear of the model.");
+    return PARAM_INVALID;
   }
 
   ret = GraphExecutor::SetDynamicSize(model_id, cur_dynamic_dims, static_cast<int32_t>(DYNAMIC_DIMS));
@@ -410,6 +453,10 @@ Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &
   for (std::size_t i = 0; i < all_data_dims.size(); ++i) {
     if (all_data_dims[i] < 0) {
       cur_dynamic_dims.push_back(dynamic_dims[i]);
+    } else if (static_cast<uint64_t>(all_data_dims[i]) != dynamic_dims[i]) {
+      GELOGE(PARAM_INVALID, "Static dims should be same, index: %zu value: %d should be %d", i, dynamic_dims[i],
+             all_data_dims[i]);
+      return PARAM_INVALID;
     }
   }
   return SUCCESS;
@@ -698,6 +745,22 @@ Status GeExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo
   GELOGI("GetAIPPInfo succ.");
   return SUCCESS;
 }
+
+Status GeExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
+  GELOGI("Begin to get aipp type.");
+  if (!isInit_) {
+    GELOGE(GE_EXEC_NOT_INIT, "not inited yet!");
+    return GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetAippType(model_id, index, type, aipp_index);
+  if (ret != SUCCESS) {
+    GELOGW("Get aipp type is not success.");
+    return ret;
+  }
+  GELOGI("Get aipp type success.");
+  return SUCCESS;
+}
+
 Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dynamic_output_shape_info) {
   GELOGI("Begin to get dynamic batch output shape info");
   if (!isInit_) {

@@ -36,7 +36,7 @@ class OpsKernelManager;
 struct ProfilingPoint {
   uint32_t fp_index = 0;
   uint32_t bp_index = 0;
-  uint32_t end_index = 0;
+  std::set<uint32_t> end_index;
 };
 // Describes infos needed by generate task for fusion node
 struct FusionTaskInfo {
@@ -112,6 +112,7 @@ class TaskGenerator {
   Status AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point) const;
   Status AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                            vector<uint32_t> &all_reduce_nodes) const;
+  uint32_t FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node) const;
 
   Status FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,
                      ProfilingPoint &profiling_point) const;

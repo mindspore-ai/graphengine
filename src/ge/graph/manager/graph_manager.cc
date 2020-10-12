@@ -267,6 +267,14 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   if (compute_graph != nullptr) {
     compute_graph->SetGraphID(graph_id);
+    bool graph_has_been_added = false;
+    if (AttrUtils::GetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, graph_has_been_added) &&
+        graph_has_been_added) {
+      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] same graph object can not be added again, graph_id = %u.",
+             graph_id);
+      return GE_GRAPH_GRAPH_ALREADY_EXIST;
+    }
+    (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
   } else {
     GELOGE(FAILED, "compute graph is null");
     return FAILED;
@@ -1953,9 +1961,9 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("MergePass", &merge_pass);
   names_to_passes.emplace_back("CastRemovePass", &cast_remove_pass);
   names_to_passes.emplace_back("TransposeTransDataPass", &transpose_transdata_pass);
+  names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("TransOpSymmetryEliminationPass", &symmetry_elimination_pass);
   names_to_passes.emplace_back("TransOpNearbyAllreduceFusionPass", &trans_op_nearby_allreduce_fusion_pass);
-  names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("DimensionAdjustPass", &dimension_adjust_pass);
@@ -2787,11 +2795,18 @@ Status GraphManager::SaveVariables(const Graph &graph, const std::vector<std::st
         GELOGE(FAILED, "Fetch var[%s] value failed.", var_name.c_str());
         return FAILED;
       } else {
+        auto var_tensor = var_results[var_name].GetTensorDesc();
+        var_tensor.SetName(var_name);
+        var_results[var_name].SetTensorDesc(var_tensor);
         var_values.emplace_back(var_results[var_name]);
       }
     }
   } else {
     for (auto iter = var_results.begin(); iter != var_results.end(); ++iter) {
+      string var_name = iter->first;
+      auto var_tensor = iter->second.GetTensorDesc();
+      var_tensor.SetName(var_name);
+      iter->second.SetTensorDesc(var_tensor);
       var_values.emplace_back(iter->second);
     }
   }

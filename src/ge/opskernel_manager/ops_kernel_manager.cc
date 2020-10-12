@@ -175,25 +175,25 @@ Status OpsKernelManager::ParsePluginOptions(const map<string, string> &options, 
       } else if (flag == 1) {
         enable_flag = true;
       } else {
-        GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:%s, its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(),
-               iter->second.c_str());
+        GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:%s, its value %s is invalid, it must be 0 or 1.",
+               plugin_name.c_str(), iter->second.c_str());
         return GE_GRAPH_OPTIONS_INVALID;
       }
     } catch (std::invalid_argument &) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
              iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     } catch (std::out_of_range &) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
              iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     } catch (...) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:%s, its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(),
-             iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:%s, its value %s is invalid, it must be 0 or 1.",
+             plugin_name.c_str(), iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
   } else {
-    GELOGI("Not find key %s, set to default value false.", plugin_name.c_str());
+    GELOGI("Not find option_key %s, set to default value false.", plugin_name.c_str());
     enable_flag = false;
   }
 

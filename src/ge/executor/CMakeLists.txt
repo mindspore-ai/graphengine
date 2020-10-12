@@ -22,7 +22,7 @@ file(GLOB PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/insert_op.proto"
         "../../proto/op_mapping_info.proto"
         "../../proto/ge_ir.proto"
-        "../proto/dump_task.proto"
+        "../../proto/dump_task.proto"
         )
 
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
@@ -73,6 +73,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../graph/manager/trans_var_data_utils.cc"
         "../graph/manager/util/debug.cc"
         "../hybrid/hybrid_davinci_model_stub.cc"
+        "../hybrid/node_executor/aicpu/aicpu_ext_info.cc"
         "../model/ge_model.cc"
         "../model/ge_root_model.cc"
         "../omm/csa_interact.cc"
@@ -118,6 +119,8 @@ target_link_libraries(ge_executor
         ${slog}
         ${mmpa}
         ${msprof}
+        ${error_manager}
+        ${ascend_hal}
         rt
         dl)
 

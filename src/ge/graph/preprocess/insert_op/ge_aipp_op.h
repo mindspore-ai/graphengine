@@ -78,9 +78,11 @@ class AippOp : public InsertOpBase {
   Status CreateAippData(const NodePtr &aipp);
   Status AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size);
   Status AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aipp_cfg_path, const uint32_t &index);
+  Status AddAttrToAippData(const OpDescPtr &aipp_data_op_desc);
 
   domi::AippOpParams *aipp_params_ = nullptr;
   ge::NodePtr aipp_node_ = nullptr;
+  ge::NodePtr data_node_linked_aipp = nullptr;
 };
 }  // namespace ge
 

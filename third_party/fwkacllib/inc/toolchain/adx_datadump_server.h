@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-/*!
- * \file no_op.h
- * \brief
+#ifndef ADX_DATADUMP_SERVER_H
+#define ADX_DATADUMP_SERVER_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+/**
+ * @brief initialize server for normal datadump function.
+ * @return
+ *      IDE_DAEMON_OK:    datadump server init success
+ *      IDE_DAEMON_ERROR: datadump server init failed
  */
-#ifndef GE_NO_OP_H_
-#define GE_NO_OP_H_
-
-#include "graph/operator_reg.h"
-#include "graph/operator.h"
-
-namespace ge {
+int AdxDataDumpServerInit();
 
 /**
-*@brief Does nothing. Only useful as a placeholder for control edges . \n
+ * @brief uninitialize server for normal datadump function.
+ * @return
+ *      IDE_DAEMON_OK:    datadump server uninit success
+ *      IDE_DAEMON_ERROR: datadump server uninit failed
+ */
+int AdxDataDumpServerUnInit();
 
-*@par Third-party framework compatibility
-*Compatible with the TensorFlow operator NoOp.
-*/
+#ifdef __cplusplus
+}
+#endif
+#endif
 
-REG_OP(NoOp)
-    .OP_END_FACTORY_REG(NoOp)
-
-}  // namespace ge
-
-#endif  // GE_NO_OP_H_

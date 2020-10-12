@@ -26,20 +26,20 @@
 namespace ge {
 
 /**
-*@brief Element-wise computes the bitwise right-shift of x and y.
+*@brief Element-wise computes the bitwise right-shift of x and y . \n
 
-*@par Inputs: 
-*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper" \n
+*@par Inputs:
+*Input "x" is a k-dimensional tensor. Inputs "num_lower" and "num_upper"
 are 0D scalars.
-* @li x: A Tensor. Must be one of the following types: int8, int16, int32, \n
-int64, uint8, uint16, uint32, uint64. \n
-* @li y: A Tensor. Has the same type as "x". \n
+* @li x: A Tensor. Must be one of the following types: int8, int16, int32,
+int64, uint8, uint16, uint32, uint64.
+* @li y: A Tensor. Has the same type as "x".  \n
 
-*@par Outputs: 
-* z: A Tensor. Has the same type as "x". \n
+*@par Outputs:
+* z: A Tensor. Has the same type as "x".  \n
 
-*@attention Constraints: \n
-*Unique runs on the Ascend AI CPU, which delivers poor performance. \n
+*@attention Constraints:
+*Unique runs on the Ascend AI CPU, which delivers poor performance.  \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator RightShift.

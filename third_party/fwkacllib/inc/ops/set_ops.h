@@ -27,24 +27,24 @@
 namespace ge {
 
 /**
-*@brief Applies set operation along last dimension of 2 Tensor inputs.
+*@brief Applies set operation along last dimension of 2 Tensor inputs . \n
 
 *@par Inputs:
-*Inputs include: \n
+*Inputs include:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, string.
-* @li x2: A Tensor. Must have the same type as x1.
+* @li x2: A Tensor. Must have the same type as x1 . \n
 
 *@par Attributes:
 *@li set_operation: A string.
-*@li validate_indices: An optional bool. Defaults to True.
+*@li validate_indices: An optional bool. Defaults to True . \n
 
 *@par Outputs:
 *@li y_indices: A Tensor of type int64.
 *@li y_values: A Tensor. Has the same type as x1.
-*@li y_shape: A Tensor of type int64.
+*@li y_shape: A Tensor of type int64 . \n
 
-*@attention Constraints:\n
-*-The implementation for DenseToDenseSetOperation on Ascend uses AICPU, with bad performance.\n
+*@attention Constraints:
+*The implementation for DenseToDenseSetOperation on Ascend uses AICPU, with bad performance.
 
 *@par Third-party framework compatibility
 *@li compatible with tensorflow DenseToDenseSetOperation operator.
@@ -63,26 +63,26 @@ REG_OP(DenseToDenseSetOperation)
   .OP_END_FACTORY_REG(DenseToDenseSetOperation)
 
 /**
-*@brief Applies set operation along last dimension of Tensor and SparseTensor.
+*@brief Applies set operation along last dimension of Tensor and SparseTensor . \n
 
 *@par Inputs:
-*Inputs include: \n
+*Inputs include:
 * @li x1: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16, string.
 * @li x2_indices: A Tensor of type int64. 2D Tensor, indices of a SparseTensor.
 * @li x2_values: A Tensor. Must have the same type as set1. 1D Tensor, values of a SparseTensor.
-* @li x2_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor.
+* @li x2_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor . \n
 
 *@par Attributes:
 *@li set_operation: A string.
-*@li validate_indices: An optional bool. Defaults to True.
+*@li validate_indices: An optional bool. Defaults to True . \n
 
 *@par Outputs:
 *@li y_indices: A Tensor of type int64.
 *@li y_values: A Tensor. Has the same type as x1.
-*@li y_shape: A Tensor of type int64.
+*@li y_shape: A Tensor of type int64 . \n
 
-*@attention Constraints:\n
-*-The implementation for DenseToSparseSetOperation on Ascend uses AICPU, with bad performance.\n
+*@attention Constraints:
+*The implementation for DenseToSparseSetOperation on Ascend uses AICPU, with bad performance.
 
 *@par Third-party framework compatibility
 *@li compatible with tensorflow DenseToSparseSetOperation operator.
@@ -103,29 +103,29 @@ REG_OP(DenseToSparseSetOperation)
     .OP_END_FACTORY_REG(DenseToSparseSetOperation)
 
 /**
-*@brief Applies set operation along last dimension of 2 SparseTensor inputs.
+*@brief Applies set operation along last dimension of 2 SparseTensor inputs . \n
 
 *@par Inputs:
-*Inputs include: \n
+*Inputs include:
 * @li x1_indices: A Tensor of type int64. 2D Tensor, indices of a SparseTensor.
-* @li x1_values: A Tensor. Must be one of the following types: int8, int16, \n
+* @li x1_values: A Tensor. Must be one of the following types: int8, int16,
       int32, int64, uint8, uint16, string. 1D Tensor, values of a SparseTensor.
 * @li x1_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor.
 * @li x2_indices: A Tensor of type int64. 2D Tensor, indices of a SparseTensor.
 * @li x2_values: A Tensor. Must have the same type as set1_values. 1D Tensor, values of a SparseTensor.
-* @li x2_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor.
+* @li x2_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor . \n
 
 *@par Attributes:
 *@li set_operation: A string.
-*@li validate_indices: An optional bool. Defaults to True.
+*@li validate_indices: An optional bool. Defaults to True . \n
 
 *@par Outputs:
 *@li y_indices: A Tensor of type int64.
 *@li y_values: A Tensor. Has the same type as x1_values.
-*@li y_shape: A Tensor of type int64.
+*@li y_shape: A Tensor of type int64 . \n
 
-*@attention Constraints:\n
-*-The implementation for SparseToSparseSetOperation on Ascend uses AICPU, with bad performance.\n
+*@attention Constraints:
+*The implementation for SparseToSparseSetOperation on Ascend uses AICPU, with bad performance.
 
 *@par Third-party framework compatibility
 *@li compatible with tensorflow SparseToSparseSetOperation operator.
@@ -148,22 +148,22 @@ REG_OP(SparseToSparseSetOperation)
     .OP_END_FACTORY_REG(SparseToSparseSetOperation)
 
 /**
-*@brief Number of unique elements along last dimension of input set.
+*@brief Number of unique elements along last dimension of input set . \n
 
 *@par Inputs:
-*Inputs include: \n
+*Inputs include:
 * @li set_indices: A Tensor of type int64. 2D Tensor, indices of a SparseTensor.
 * @li set_values: A Tensor. Must be one of the following types: int8, int16, int32, int64, uint8, uint16.
-* @li set_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor.
+* @li set_shape: A Tensor of type int64. 1D Tensor, shape of a SparseTensor . \n
 
 *@par Attributes:
-*validate_indices: An optional bool. Defaults to True.
+*validate_indices: An optional bool. Defaults to True . \n
 
 *@par Outputs:
-*size: A Tensor of type int32.
+*size: A Tensor of type int32 . \n
 
-*@attention Constraints:\n
-*-The implementation for SetSize on Ascend uses AICPU, with bad performance.\n
+*@attention Constraints:
+*The implementation for SetSize on Ascend uses AICPU, with bad performance.
 
 *@par Third-party framework compatibility
 *@li compatible with tensorflow SetSize operator.

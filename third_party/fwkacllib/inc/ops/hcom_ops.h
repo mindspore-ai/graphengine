@@ -27,18 +27,18 @@ namespace ge {
 /**
  * @brief Outputs a tensor gathering all input tensors.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
- * float32.
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+  float32.
  * @par Attributes:
- * @li rank_size: A required integer identifying the number of ranks 
- * participating in the op.
- * @li group: A required string identifying the group name of ranks 
- * participating in the op.
+ * @li rank_size: A required integer identifying the number of ranks
+  participating in the op.
+ * @li group: A required string identifying the group name of ranks
+  participating in the op.
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
- * @attention Constraints:\n
- * "group" is limited to 128 characters. Use "hccl_world_group" 
- * as the name of a world group.
+ * @attention Constraints:
+  "group" is limited to 128 characters. Use "hccl_world_group"
+  as the name of a world group.
  */
 REG_OP(HcomAllGather)
     .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
@@ -50,25 +50,25 @@ REG_OP(HcomAllGather)
     .OP_END_FACTORY_REG(HcomAllGather)
 
 /**
- * @brief Outputs a tensor containing the reduction across all input tensors 
- * passed to op.
+ * @brief Outputs a tensor containing the reduction across all input tensors
+  passed to op.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
- * float32.
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+  float32.
  * @par Attributes:
- * @li reduction: A required string identifying the reduction operation to 
- * perform.The supported operation are: "sum", "max", "min", "prod".
- * @li group: A required string identifying the group name of ranks 
- * participating in the op.
- * @li fusion: An optional integer identifying the fusion flag of the op. \n
- * 0: no fusion; 1 (default): fusion; 2: fusion the ops by fusion id.
+ * @li reduction: A required string identifying the reduction operation to
+  perform.The supported operation are: "sum", "max", "min", "prod".
+ * @li group: A required string identifying the group name of ranks
+  participating in the op.
+ * @li fusion: An optional integer identifying the fusion flag of the op.
+  0: no fusion; 1 (default): fusion; 2: fusion the ops by fusion id.
  * @li fusion_id: An optional integer identifying the fusion id of the op.
  * The HcomAllReduce ops with the same fusion id will be fused.
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
- * @attention Constraints: \n
- * "group" is limited to 128 characters. Use "hccl_world_group" 
- * as the name of a world group.
+ * @attention Constraints:
+ *"group" is limited to 128 characters. Use "hccl_world_group"
+  as the name of a world group.
  */
 REG_OP(HcomAllReduce)
     .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
@@ -84,18 +84,19 @@ REG_OP(HcomAllReduce)
 /**
  * @brief Broadcasts the input tensor in root rank to all ranks.
  * @par Inputs:
- * x: A list of dynamic input tensor. Must be one of the following types: 
- * int8, int16, int32, float16, float32.
+ * x: A list of dynamic input tensor. Must be one of the following types:
+  int8, int16, int32, float16, float32. It's a dynamic input.
  * @par Attributes:
- * @li root_rank: A required integer identifying the root rank in the op 
- * input of this rank will be broadcast to other ranks.
- * @li group: A required string identifying the group name of ranks 
- * participating in the op.
+ * @li root_rank: A required integer identifying the root rank in the op
+  input of this rank will be broadcast to other ranks.
+ * @li group: A required string identifying the group name of ranks
+  participating in the op.
  * @par Outputs:
  * y: A list of dynamic output tensor. Has the same type and length as "x".
- * @attention Constraints:\n
- * "group" is limited to 128 characters. Use "hccl_world_group" 
- * as the name of a world group.
+ * It's a dynamic output.
+ * @attention Constraints:
+  "group" is limited to 128 characters. Use "hccl_world_group"
+  as the name of a world group.
  */
 REG_OP(HcomBroadcast)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
@@ -107,24 +108,24 @@ REG_OP(HcomBroadcast)
     .OP_END_FACTORY_REG(HcomBroadcast)
 
 /**
- * @brief Performs reduction across all input tensors, scattering in equal 
- * blocks among ranks, each rank getting a chunk of data based on its rank 
- * index.
+ * @brief Performs reduction across all input tensors, scattering in equal
+  blocks among ranks, each rank getting a chunk of data based on its rank
+  index.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
- * float32.
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+  float32.
  * @par Attributes:
- * @li reduction: A required string identifying the reduction operation to 
- * perform. The supported operation are: "sum", "max", "min", "prod".
- * @li group: A required string identifying the group name of ranks 
- * participating in the op.
- * @li rank_size: A required integer identifying the number of ranks 
- * participating in the op.
+ * @li reduction: A required string identifying the reduction operation to
+  perform. The supported operation are: "sum", "max", "min", "prod".
+ * @li group: A required string identifying the group name of ranks
+  participating in the op.
+ * @li rank_size: A required integer identifying the number of ranks
+  participating in the op.
  * @par Outputs:
  * y: A Tensor. Has the same type as "x".
- * @attention Constraints:\n
- * "group" is limited to 128 characters. Use "hccl_world_group" 
- * as the name of a world group.
+ * @attention Constraints:
+  "group" is limited to 128 characters. Use "hccl_world_group"
+  as the name of a world group.
  */
 REG_OP(HcomReduceScatter)
     .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
@@ -139,19 +140,19 @@ REG_OP(HcomReduceScatter)
 /**
  * @brief Sends the input tensor to destination rank.
  * @par Inputs:
- * x: A tensor. Must be one of the following types: int8, int16, int32, float16, 
- * float32.
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+  float32.
  * @par Attributes:
- * @li sr_tag: A required integer identifying the send/recv message tag. The 
- *  message will be received by the HcomReceive op with the same "sr_tag".
+ * @li sr_tag: A required integer identifying the send/recv message tag. The
+   message will be received by the HcomReceive op with the same "sr_tag".
  * @li dest_rank: A required integer identifying the destination rank.
- * @li group: A string identifying the group name of ranks participating in 
- * the op.
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
  * @par Outputs:
  * None.
- * @attention Constraints:\n
- * @li "group" is limited to 128 characters. Use 
- * "hccl_world_group" as the name of a world group.
+ * @attention Constraints:
+  @li "group" is limited to 128 characters. Use
+  "hccl_world_group" as the name of a world group.
  * @li Operators HcomSend and HcomReceive have the same "sr_tag".
  * @see HcomReceive
 */
@@ -169,20 +170,20 @@ REG_OP(HcomSend)
  * @par Inputs:
  * None.
  * @par Attributes:
- * @li sr_tag: A required integer identifying the send/recv message tag. The 
- * message will be send by the HcomSend op with the same "sr_tag".
+ * @li sr_tag: A required integer identifying the send/recv message tag. The
+  message will be send by the HcomSend op with the same "sr_tag".
  * @li src_rank: A required integer identifying the source rank.
  * @li group: A required string identifying the group name of ranks
  * participating in the op.
- * @li shape: A required list identifying the shape of the tensor to be 
- * received.
- * @li dtype: A required integer identifying the type of the tensor to be 
- * received. The supported types are: int8, int16, int32, float16, float32.
+ * @li shape: A required list identifying the shape of the tensor to be
+  received.
+ * @li dtype: A required integer identifying the type of the tensor to be
+  received. The supported types are: int8, int16, int32, float16, float32.
  * @par Outputs:
  * y: A tensor with type identified in "dtype".
- * @attention Constraints:\n
- * @li "group" is limited to 128 characters. Use 
- * "hccl_world_group" as the name of a world group.
+ * @attention Constraints:
+  @li "group" is limited to 128 characters. Use
+  "hccl_world_group" as the name of a world group.
  * @li Operators HcomSend and HcomReceive have the same "sr_tag".
  * @li "shape" should be same as the input tensor of HcomSend.
  * @li "dtype" should be same as the input tensor of HcomSend.

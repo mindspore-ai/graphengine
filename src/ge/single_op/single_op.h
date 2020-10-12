@@ -27,6 +27,7 @@
 #include "framework/executor/ge_executor.h"
 #include "runtime/stream.h"
 #include "task/op_task.h"
+#include "cce/aicpu_engine_struct.h"
 
 namespace ge {
 class SingleOp {
@@ -36,6 +37,7 @@ class SingleOp {
 
   Status ExecuteAsync(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   void SetStream(rtStream_t stream);
+  void SetSessionID(uint64_t session_id);
 
  private:
   Status ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
@@ -50,6 +52,7 @@ class SingleOp {
   std::vector<void *> output_addr_list_;
   std::vector<size_t> output_sizes_;
   std::vector<uintptr_t> args_;
+  uint64_t aicpu_session_id_ = 0;
 
   std::vector<OpTask *> tasks_;
   std::vector<std::vector<uintptr_t *>> arg_table_;
@@ -58,9 +61,10 @@ class SingleOp {
 class DynamicSingleOp {
  public:
   DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex_, rtStream_t stream);
-  ~DynamicSingleOp() = default;
+  ~DynamicSingleOp();
   Status ExecuteAsync(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
                       std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs);
+  void SetSessionID(uint64_t session_id);
 
  private:
   friend class SingleOpModel;
@@ -69,12 +73,16 @@ class DynamicSingleOp {
 
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes, std::vector<void *> &workspaces);
 
-  std::unique_ptr<TbeOpTask> op_task_;
+  Status ExecuteTbeTask(const vector<GeTensorDesc> &input_desc, const vector<void *> &inputs,
+                        vector<GeTensorDesc> &output_desc, vector<void *> &outputs);
+
+  std::unique_ptr<OpTask> op_task_;
   uintptr_t resource_id_ = 0;
   std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;
   size_t num_inputs_ = 0;
   size_t num_outputs_ = 0;
+  uint64_t aicpu_session_id_ = 0;
 };
 }  // namespace ge
 #endif  // GE_SINGLE_OP_SINGLE_OP_H_

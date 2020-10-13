@@ -18,8 +18,8 @@
  * \file string_ops.h
  * \brief
  */
-#ifndef GE_OP_STRING_OPS_H_
-#define GE_OP_STRING_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_STRING_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_STRING_OPS_H_
 
 #include <sstream>
 #include "graph/operator_reg.h"
@@ -559,4 +559,4 @@ REG_OP(DecodeBase64)
     .OP_END_FACTORY_REG(DecodeBase64)
 }  // namespace ge
 
-#endif  // GE_OP_STRING_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_STRING_OPS_H_

@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef AICORE_PARAM_CALCULATOR
-#define AICORE_PARAM_CALCULATOR
+#ifndef GE_GE_RUNTIME_TASK_LABEL_SET_TASK_H_
+#define GE_GE_RUNTIME_TASK_LABEL_SET_TASK_H_
 
-#include "graph/node.h"
-#include "graph_optimizer/graph_optimize_register_error_codes.h"
+#include <memory>
+#include "ge_runtime/task/task.h"
 
-namespace fe {
-class AICoreParamCalculator {
+namespace ge {
+namespace model_runner {
+class LabelSetTask : public TaskRepeater<LabelSetTaskInfo> {
  public:
-  AICoreParamCalculator();
+  LabelSetTask(const ModelContext &model_context, const std::shared_ptr<LabelSetTaskInfo> &task_info);
 
-  ~AICoreParamCalculator();
+  ~LabelSetTask() override;
 
-  Status CalcOpRunningParam(ge::Node &node);
+  bool Distribute() override;
+
+ private:
+  std::shared_ptr<LabelSetTaskInfo> task_info_;
+  void *stream_;
+  void *label_;
 };
-}  // namespace fe
-#endif  // AICORE_PARAM_CALCULATOR
+}  // namespace model_runner
+}  // namespace ge
+
+#endif  // GE_GE_RUNTIME_TASK_LABEL_SET_TASK_H_

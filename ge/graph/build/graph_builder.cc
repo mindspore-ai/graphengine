@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -370,6 +370,11 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
     GELOGE(INTERNAL_ERROR, "Get memory size fail.");
     return INTERNAL_ERROR;
   }
+  int64_t p2p_memory_size = 0;
+  if (!AttrUtils::GetInt(model_ptr, ATTR_MODEL_P2P_MEMORY_SIZE, p2p_memory_size)) {
+    GELOGE(INTERNAL_ERROR, "Get p2p memory size fail.");
+    return INTERNAL_ERROR;
+  }
   int64_t weight_size = 0;
   if (!AttrUtils::GetInt(model_ptr, ATTR_MODEL_WEIGHT_SIZE, weight_size)) {
     GELOGE(INTERNAL_ERROR, "Get weight memory size fail.");
@@ -380,11 +385,21 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
   auto *get_mem_base = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(var_manager->GetVarMemMaxSize()));
   uint8_t *get_weight_mem_base = get_mem_base;
   if (weight_size > 0) {
-    get_weight_mem_base = get_mem_base + memory_size;
+    get_weight_mem_base = get_mem_base + memory_size + p2p_memory_size;
   }
-
+  std::map<int64_t, uint8_t *> mem_type_to_data_mem_base;
+  mem_type_to_data_mem_base[RT_MEMORY_HBM] = get_mem_base;
+  if (p2p_memory_size == 0) {
+    mem_type_to_data_mem_base[RT_MEMORY_P2P_DDR] = nullptr;
+  } else {
+    mem_type_to_data_mem_base[RT_MEMORY_P2P_DDR] = get_mem_base + memory_size;
+  }
+  std::map<int64_t, uint64_t> mem_type_to_data_mem_size;
+  mem_type_to_data_mem_size[RT_MEMORY_HBM] = memory_size;
+  mem_type_to_data_mem_size[RT_MEMORY_P2P_DDR] = p2p_memory_size;
   RunContextUtil run_context;
-  Status ret = run_context.InitMemInfo(get_mem_base, memory_size, get_weight_mem_base, weight_size);
+  Status ret = run_context.InitMemInfo(get_mem_base, memory_size, mem_type_to_data_mem_base, mem_type_to_data_mem_size,
+                                       get_weight_mem_base, weight_size);
   if (ret != SUCCESS) {
     GELOGE(ret, "task_generator init mem info fail.");
     return ret;

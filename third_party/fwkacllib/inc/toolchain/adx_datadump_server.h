@@ -14,21 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_TYPES_H_
-#define INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_TYPES_H_
+#ifndef ADX_DATADUMP_SERVER_H
+#define ADX_DATADUMP_SERVER_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+/**
+ * @brief initialize server for normal datadump function.
+ * @return
+ *      IDE_DAEMON_OK:    datadump server init success
+ *      IDE_DAEMON_ERROR: datadump server init failed
+ */
+int AdxDataDumpServerInit();
 
-#include <stdint.h>
-#include <string>
-namespace ge {
-enum OPTIMIZER_SCOPE {
-  UNIT = 0,
-  ENGINE,
-};
+/**
+ * @brief uninitialize server for normal datadump function.
+ * @return
+ *      IDE_DAEMON_OK:    datadump server uninit success
+ *      IDE_DAEMON_ERROR: datadump server uninit failed
+ */
+int AdxDataDumpServerUnInit();
 
-struct GraphOptimizerAttribute {
-  std::string engineName;
-  OPTIMIZER_SCOPE scope;
-};
-}  // namespace ge
+#ifdef __cplusplus
+}
+#endif
+#endif
 
-#endif  // INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_TYPES_H_

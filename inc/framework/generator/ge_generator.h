@@ -53,7 +53,7 @@ class GeGenerator {
   Status GenerateOfflineModel(const Graph &graph, const std::string &file_name_prefix,
                               const std::vector<GeTensor> &inputs = std::vector<GeTensor>());
 
-  Status GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ge::ModelBufferData &model);
+  Status GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ge::ModelBufferData& model);
 
   Status GenerateInfershapeGraph(const Graph &graph);
 
@@ -77,15 +77,16 @@ class GeGenerator {
   /// @param [in] engine_type: specific engine.
   /// @param [out] model_buff: model buff of single op.
   /// @return SUCCESS or FAILED
-  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                            OpEngineType engine_type, ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
+                            const vector<GeTensor> &outputs, OpEngineType engine_type,
+                            ModelBufferData &model_buff);
 
  private:
-  Status GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
-                       ge::ModelBufferData &model, bool is_offline = true);
+  Status GenerateModel(const Graph &graph, const string &file_name_prefix,
+                       const vector<GeTensor> &inputs, ge::ModelBufferData& model, bool is_offline = true);
   Status BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                       const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                       bool is_offline = true);
+                       const string &model_file_name, OpEngineType engine_type,
+                       ModelBufferData &model_buff, bool is_offline = true);
 
   class Impl;
 

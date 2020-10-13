@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,11 +51,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager &ProfilingMana
   return profiling_manager;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::Init(const Options &options,
-                                                                                   bool convert_2_phy_device_id) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::Init(const Options &options) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   vector<int32_t>().swap(device_id_);
   job_id_ = options.job_id;
+
+  GELOGI("ProfilingManager::Init  job_id:%s", job_id_.c_str());
+
+
 
   Status ret;
   if (!recv_profiling_config_.empty()) {
@@ -64,18 +67,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   } else {
     ret = InitFromOptions(options);
     if (ret == SUCCESS && is_load_profiling_) {
-      // profiling need phy device id
-      if (!convert_2_phy_device_id) {
-        device_id_.push_back(options.device_id);
-      } else {
-        uint32_t phy_device_id = 0;
-        rtError_t rt_ret = rtGetDevicePhyIdByIndex(static_cast<uint32_t>(options.device_id), &phy_device_id);
-        if (rt_ret != RT_ERROR_NONE) {
-          GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-          return FAILED;
-        }
-        device_id_.push_back(phy_device_id);
-      }
+      device_id_.push_back(options.device_id);
     }
   }
   if (ret != SUCCESS) {
@@ -554,25 +546,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
     return;
   }
   GELOGI("current logic_device_id:%d", logic_device_id);
-
-  uint32_t phy_device_id = 0;
-  rt_ret = rtGetDevicePhyIdByIndex((uint32_t)logic_device_id, &phy_device_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%d", phy_device_id);
-    return;
-  }
-  GELOGI("current phy_device_id:%d", phy_device_id);
   if (!is_acl_api_mode_) {
-    auto ret = std::find(device_id_.begin(), device_id_.end(), phy_device_id);
+    auto ret = std::find(device_id_.begin(), device_id_.end(), logic_device_id);
     if (ret == device_id_.end()) {
       GELOGE(FAILED, "get valid phy_device_id failed, profiling report failed.");
       return;
     }
   }
   GELOGI("start ProfilingTaskDescInfo.");
-  ProfilingTaskDescInfo(task_desc_info, phy_device_id);
+  ProfilingTaskDescInfo(task_desc_info, logic_device_id);
   GELOGI("start ProfilingGraphDescInfo.");
-  ProfilingGraphDescInfo(compute_graph_desc_info, phy_device_id);
+  ProfilingGraphDescInfo(compute_graph_desc_info, logic_device_id);
   GELOGI("Report profiling data for GE end.");
 #endif
 }

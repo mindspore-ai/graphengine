@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,9 @@ namespace ge {
 class EnterPass : public BaseNodePass {
  public:
   Status Run(NodePtr &node) override;
+
+ private:
+  Status OptimizeEnter(NodePtr &node, NodePtr &in_node);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_ENTER_PASS_H_

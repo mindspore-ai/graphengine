@@ -1496,7 +1496,6 @@ Status ModelCacheHelper::ParseMemResourceFromJson(const Json &json, map<rtMemTyp
   }
   mem_resource.clear();
   for (const Json &mem_resource_json : json) {
-    MemResource var_addr_mgr;
     try {
       rtMemType_t mem_type = mem_resource_json[kMemType].get<rtMemType_t>();
       uint64_t var_mem_size = mem_resource_json[kVarMemSize].get<int64_t>();

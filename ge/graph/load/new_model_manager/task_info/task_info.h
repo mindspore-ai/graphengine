@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,23 @@
 #include "cce/customize.h"
 #include "cce/taskdown_common.hpp"
 #include "framework/common/ge_inner_error_codes.h"
+#include "graph/load/new_model_manager/ts_mem_mall.h"
 #include "graph/load/new_model_manager/task_info/task_info_factory.h"
 #include "proto/task.pb.h"
+
 namespace ge {
+struct MemInfo {
+  uint64_t memory_size = 0;
+  uint64_t logic_memory_base = 0;
+  uint8_t *memory_base = nullptr;
+};
+
 struct RuntimeParam {
+  RuntimeParam() {
+    ts_mem_mall = std::unique_ptr<TsMemMall>(new (std::nothrow) TsMemMall);
+  }
+  ~RuntimeParam() = default;
+
   uint64_t mem_size = 0;
   uint64_t logic_mem_base = 0;
   uint8_t *mem_base = nullptr;
@@ -35,12 +48,15 @@ struct RuntimeParam {
   uint64_t var_size = 0;
   uint64_t logic_var_base = 0;
   uint8_t *var_base = nullptr;
+  std::map<uint32_t, MemInfo> memory_infos;
   uint32_t batch_num = 0;
   uint32_t stream_num = 0;
   uint32_t event_num = 0;
   uint32_t label_num = 0;
   uint64_t session_id = 0;
   uint32_t graph_id = 0;
+
+  std::unique_ptr<TsMemMall> ts_mem_mall;
 };
 
 typedef struct FusionOpInfo {

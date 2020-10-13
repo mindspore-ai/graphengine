@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef COMPRESS_WEIGHT_H
-#define COMPRESS_WEIGHT_H
+#ifndef GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
+#define GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
 
-#include "compress.h"
+#include <memory>
+#include "ge_runtime/task/task.h"
 
-const int SHAPE_SIZE_WEIGHT = 4;
+namespace ge {
+namespace model_runner {
+class LabelGotoTask : public TaskRepeater<LabelGotoTaskInfo> {
+ public:
+  LabelGotoTask(const ModelContext &model_context, const std::shared_ptr<LabelGotoTaskInfo> &task_info);
 
-struct CompressOpConfig {
-  int64_t wShape[SHAPE_SIZE_WEIGHT];
-  size_t compressTilingK;
-  size_t compressTilingN;
-  struct CompressConfig compressConfig;
+  ~LabelGotoTask() override;
+
+  bool Distribute() override;
+
+ private:
+  std::shared_ptr<LabelGotoTaskInfo> task_info_;
+  void *stream_;
+  void *label_;
 };
+}  // namespace model_runner
+}  // namespace ge
 
-extern "C" CmpStatus CompressWeightsConv2D(const char *const input, char *const zipBuffer, char *const infoBuffer,
-                                           CompressOpConfig *const param);
-#endif  // COMPRESS_WEIGHT_H
+#endif  // GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_

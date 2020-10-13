@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -384,6 +384,7 @@ REGISTER_OPTYPE_DEFINE(HCOMREDUCESCATTER, "HcomReduceScatter");
 REGISTER_OPTYPE_DEFINE(HCOMSEND, "HcomSend");
 REGISTER_OPTYPE_DEFINE(HCOMRECEIVE, "HcomReceive");
 REGISTER_OPTYPE_DEFINE(HCOMREMOTEREAD, "HcomRemoteRead");
+REGISTER_OPTYPE_DEFINE(HCOMREMOTEREFREAD, "HcomRemoteRefRead");
 REGISTER_OPTYPE_DEFINE(HCOMREMOTEWRITE, "HcomRemoteWrite");
 
 REGISTER_OPTYPE_DEFINE(VARASSIGN, "VarAssign");

@@ -42,8 +42,8 @@
 #include "graph/ge_context.h"
 #include "graph/graph.h"
 #include "graph/load/new_model_manager/cpu_queue_schedule.h"
-#include "graph/load/new_model_manager/tbe_handle_store.h"
 #include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/new_model_manager/tbe_handle_store.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
@@ -107,6 +107,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       mem_base_(nullptr),
       is_inner_mem_base_(false),
       is_inner_weight_base_(false),
+      is_inner_p2p_mem_base_(false),
       data_inputer_(nullptr),
       load_begin_time_(0),
       load_end_time_(0),
@@ -128,7 +129,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       last_execute_mode_(INITIALIZATION),
       session_id_(0),
       device_id_(0),
-      maxDumpOpNum_(0),
+      maxDumpOpNum_(0), data_dumper_(runtime_param_),
       iterator_count_(0),
       is_l1_fusion_enable_(false),
       is_first_execute_(true) {
@@ -181,6 +182,8 @@ DavinciModel::~DavinciModel() {
       FreeWeightsMem();
 
       FreeFeatureMapMem();
+
+      FreeP2PMem();
 
       if (l1_fusion_addr_ != nullptr) {
         GE_CHK_RT(rtFree(l1_fusion_addr_));
@@ -256,7 +259,6 @@ Status DavinciModel::Assign(const GeModelPtr &ge_model) {
 void DavinciModel::Shrink() {
   ge_model_.reset();  // delete object.
   op_list_.clear();
-
 }
 
 Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
@@ -267,6 +269,7 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
   is_model_has_inited_ = true;
 
   std::size_t data_size = TotalMemSize();
+  std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
   const Buffer &weights = ge_model_->GetWeight();
   std::size_t weights_size = weights.GetSize();
   GE_CHECK_LE(weights_size, ALLOC_MEMORY_MAX_SIZE);
@@ -282,6 +285,7 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
   }
 
   mem_base_ = static_cast<uint8_t *>(dev_ptr);
+  p2p_mem_base_ = static_cast<uint8_t *>(dev_ptr);
   weights_mem_base_ = static_cast<uint8_t *>(dev_ptr);
   is_inner_mem_base_ = false;
   is_inner_weight_base_ = false;
@@ -294,11 +298,21 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
     }
     GEEVENT("[IMAS]InitModelMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
             mem_base_, data_size);
-
     weights_mem_base_ = mem_base_;
 
     is_inner_mem_base_ = true;
     is_inner_weight_base_ = true;
+  }
+
+  if (p2p_data_size != 0) {
+    p2p_mem_base_ = MallocP2PMem(p2p_data_size);
+    if (p2p_mem_base_ == nullptr) {
+      GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
+      return GE_EXEC_ALLOC_P2P_MEM_FAILED;
+    }
+    GELOGI("InitModelMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+           p2p_mem_base_, p2p_data_size);
+    is_inner_p2p_mem_base_ = true;
   }
 
   if (weights_size != 0) {
@@ -321,6 +335,7 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
   GE_CHK_STATUS_RET(InitVariableMem(), "Init variable memory failed.");
   runtime_param_.mem_base = mem_base_;
   runtime_param_.weight_base = weights_mem_base_;
+  runtime_param_.memory_infos[RT_MEMORY_P2P_DDR].memory_base = p2p_mem_base_;
   return SUCCESS;
 }
 
@@ -344,6 +359,7 @@ Status DavinciModel::InitVariableMem() {
 void DavinciModel::InitRuntimeParams() {
   int64_t value = 0;
   bool ret;
+  MemInfo p2p_mem_info;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_MEMORY_SIZE, value);
   runtime_param_.mem_size = ret ? (uint64_t)value : 0;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_WEIGHT_SIZE, value);
@@ -367,6 +383,9 @@ void DavinciModel::InitRuntimeParams() {
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_VAR_SIZE, value);
   runtime_param_.var_size = ret ? (uint64_t)value : 0;
   session_id_ = runtime_param_.session_id;
+  ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_P2P_MEMORY_SIZE, value);
+  p2p_mem_info.memory_size = ret ? (uint64_t)value : 0;
+  runtime_param_.memory_infos[RT_MEMORY_P2P_DDR] = std::move(p2p_mem_info);
 
   GELOGI(
       "InitRuntimeParams(), session_id:%lu, stream_num:%u, event_num:%u, label_num:%u, "
@@ -519,6 +538,7 @@ void DavinciModel::OpDebugUnRegister() {
     debug_reg_mutex_.unlock();
     rtError_t rt_ret = RT_ERROR_NONE;
     if (rt_model_handle_ != nullptr) {
+      GELOGD("start call debug_unregister.");
       rt_ret = rtDebugUnRegister(rt_model_handle_);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGW("rtDebugUnRegister failed, ret: 0x%X", rt_ret);
@@ -603,11 +623,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   // create model_handle to load model
   GE_CHK_RT_RET(rtModelCreate(&rt_model_handle_, 0));
   GE_CHK_RT_RET(rtModelGetId(rt_model_handle_, &runtime_model_id_));
-  // malloc 2M for dump l1fusion op
-  GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
-
-  // send l1fusion dump addr to rts
-  GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
 
   // inference will use default graph_id 0;
   runtime_param_.graph_id = compute_graph->GetGraphID();
@@ -656,6 +671,17 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   GE_TIMESTAMP_START(DoTaskSink);
   auto ret = DoTaskSink();
   GE_TIMESTAMP_END(DoTaskSink, "GraphLoader::DoTaskSink");
+
+  auto all_dump_model = GetDumpProperties().GetAllDumpModel();
+  bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
+  bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
+  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() || findByOmName || findByModelName) {
+    // malloc 2M for dump l1fusion op
+    GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
+
+    // send l1fusion dump addr to rts
+    GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
+  }
 
   /// In zero copy model, if a aicpu operator is connected to the first or last layer, before model execution,
   /// the aicpu opertor needs to destroy history record, and update operator memory address.
@@ -1132,7 +1158,7 @@ Status DavinciModel::InitOutputZeroCopyNodes(const NodePtr &node) {
 Status DavinciModel::InitInputBatchLabel(const NodePtr &node) {
   string batch_label;
   if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-    return SUCCESS;   // Not Multi-batch.
+    return SUCCESS;  // Not Multi-batch.
   }
 
   const auto &out_data_anchor = node->GetOutDataAnchor(kDataIndex);
@@ -1145,8 +1171,8 @@ Status DavinciModel::InitInputBatchLabel(const NodePtr &node) {
 
     if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
       zero_copy_op_id_batch_label_[op_desc->GetId()] = batch_label;
-      GELOGD("Init input zero copy nodes success, op name: %s, op id: %ld, batch label: %s",
-             op_desc->GetName().c_str(), op_desc->GetId(), batch_label.c_str());
+      GELOGD("Init input zero copy nodes success, op name: %s, op id: %ld, batch label: %s", op_desc->GetName().c_str(),
+             op_desc->GetId(), batch_label.c_str());
     }
   }
 
@@ -1162,7 +1188,7 @@ Status DavinciModel::InitInputBatchLabel(const NodePtr &node) {
 Status DavinciModel::InitOutputBatchLabel(const NodePtr &node) {
   string batch_label;
   if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-    return SUCCESS;   // Not Multi-batch.
+    return SUCCESS;  // Not Multi-batch.
   }
 
   for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
@@ -1638,7 +1664,7 @@ Status DavinciModel::GetAippType(uint32_t index, InputAippType &type, size_t &ai
   GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
   // Set default value
   type = DATA_WITHOUT_AIPP;
-  aipp_index = 0xFFFFFFFF; // default invalid value
+  aipp_index = 0xFFFFFFFF;  // default invalid value
   OpDescPtr data_op = data_op_list_[index];
   GE_CHECK_NOTNULL(data_op);
   if (!data_op->HasAttr(ATTR_DATA_RELATED_AIPP_MODE)) {
@@ -1816,7 +1842,7 @@ void DavinciModel::CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputD
                                 uint32_t &format_result) {
   /// netoutput input tensor desc
   GE_IF_BOOL_EXEC(op_desc->GetInputDescPtr(index) == nullptr, GELOGE(FAILED, "OpDesc GetInputDescPtr is nullptr");
-                  return);
+                  return );
   Format format = op_desc->GetInputDescPtr(index)->GetFormat();
   GeShape shape = op_desc->GetInputDescPtr(index)->GetShape();
   DataType data_type = op_desc->GetInputDescPtr(index)->GetDataType();
@@ -1989,13 +2015,7 @@ Status DavinciModel::SinkModelProfile() {
     name = name_;
   }
   size_t name_len = name.size();
-  // phy device id
-  uint32_t phy_device_id = 0;
-  rtError_t rt_ret = rtGetDevicePhyIdByIndex(device_id_, &phy_device_id);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-                  return FAILED);
-  reporter_data.deviceId = phy_device_id;
+  reporter_data.deviceId = device_id_;
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
   GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
@@ -2164,12 +2184,7 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
                    return FAILED, "Sink model tag memcpy error.");
   // device id
-  uint32_t phy_device_id = 0;
-  rtError_t rt_ret = rtGetDevicePhyIdByIndex(device_id_, &phy_device_id);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  GELOGE(rt_ret, "runtime get phy_device_id failed, current phy_device_id:%u", phy_device_id);
-                  return FAILED);
-  reporter_data.deviceId = phy_device_id;
+  reporter_data.deviceId = device_id_;
 
   // Model Header
   string name;
@@ -2750,17 +2765,15 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
   GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
 
   if (total_args_size_ == 0) {
-    GELOGW("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, pass rtMemcpy.",
-           args_, total_args_size_);
+    GELOGW("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, pass rtMemcpy.", args_, total_args_size_);
   } else {
     uint32_t total_addr_size = total_io_addrs_.size() * sizeof(uint64_t);
-    GELOGI("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, src size %u",
-           args_, total_args_size_, total_addr_size);
+    GELOGI("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, src size %u", args_, total_args_size_,
+           total_addr_size);
 
-    Status rt_ret = rtMemcpy(args_, total_args_size_, total_io_addrs_.data(),
-                             total_addr_size, RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    GELOGE(rt_ret, "rtMemcpy error, ret: Ox%X", rt_ret); return FAILED;)
+    Status rt_ret =
+        rtMemcpy(args_, total_args_size_, total_io_addrs_.data(), total_addr_size, RT_MEMCPY_HOST_TO_DEVICE);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtMemcpy error, ret: Ox%X", rt_ret); return FAILED;)
   }
 
   GELOGI("DavinciModel::UpdateKnownNodeArgs success");
@@ -2868,7 +2881,6 @@ Status DavinciModel::DistributeTask() {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
-
     // get op_name by task_index
     if (task->GetCtx() != nullptr) {
       auto iter = op_name_map_.find(task_index);
@@ -3632,6 +3644,19 @@ uint8_t *DavinciModel::MallocFeatureMapMem(size_t data_size) {
   return mem_base;
 }
 
+uint8_t *DavinciModel::MallocP2PMem(size_t p2p_data_size) {
+  uint8_t *p2p_mem_base = nullptr;
+  const string purpose("p2p memory, used for some op related to hcom");
+  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+    string p2p_memory_key = std::to_string(0) + "_p";
+    p2p_mem_base =
+        MemManager::Instance(RT_MEMORY_P2P_DDR)->MallocMemory(purpose, p2p_memory_key, p2p_data_size, GetDeviceId());
+  } else {
+    p2p_mem_base = MemManager::Instance(RT_MEMORY_P2P_DDR)->MallocMemory(purpose, p2p_data_size, GetDeviceId());
+  }
+  return p2p_mem_base;
+}
+
 uint8_t *DavinciModel::MallocWeightsMem(size_t weights_size) {
   uint8_t *weights_mem_base = nullptr;
   const string purpose("weights memory in inference network.");
@@ -3658,6 +3683,22 @@ void DavinciModel::FreeFeatureMapMem() {
                     GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(mem_base_, GetDeviceId()),
                                   "failed to free feature_map memory");
                     mem_base_ = nullptr);
+  }
+}
+
+void DavinciModel::FreeP2PMem() {
+  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+    std::string p2p_memory_key = std::to_string(0) + "_p";
+    if (MemManager::Instance(RT_MEMORY_P2P_DDR)->GetMemoryAddr(p2p_memory_key) != nullptr) {
+      GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_P2P_DDR)->FreeMemory(p2p_memory_key, GetDeviceId()),
+                    "failed to free p2p memory");
+    }
+    p2p_mem_base_ = nullptr;
+  } else {
+    GE_IF_BOOL_EXEC(p2p_mem_base_ != nullptr && is_inner_mem_base_,
+                    GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_P2P_DDR)->FreeMemory(p2p_mem_base_, GetDeviceId()),
+                                  "failed to free p2p memory");
+                    p2p_mem_base_ = nullptr);
   }
 }
 
@@ -3708,7 +3749,6 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
   GELOGI("set data dumper args, name: %s, id: %u.", name_.c_str(), model_id_);
   data_dumper_.SetModelName(name_);
   data_dumper_.SetModelId(model_id_);
-  data_dumper_.SetMemory(runtime_param_);
   data_dumper_.SetOmName(om_name_);
   data_dumper_.SetComputeGraph(compute_graph);
   data_dumper_.SetRefInfo(saved_task_addrs_);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,9 +77,8 @@ Status Analyzer::BuildJsonObject(uint64_t session_id, uint64_t graph_id) {
   std::lock_guard<std::recursive_mutex> lg(mutex_);
   auto iter = graph_infos_.find(session_id);
   if (iter == graph_infos_.end()) {
-    auto p = new(std::nothrow) GraphInfo();
-    GE_CHECK_NOTNULL(p);
-    std::shared_ptr<GraphInfo> graph_info(p);
+    std::shared_ptr<GraphInfo> graph_info(new(std::nothrow) GraphInfo());
+    GE_CHECK_NOTNULL(graph_info);
     std::map<uint64_t, std::shared_ptr<GraphInfo>> graph_map;
     graph_map[graph_id] = graph_info;
     graph_info->session_id = session_id;
@@ -88,9 +87,8 @@ Status Analyzer::BuildJsonObject(uint64_t session_id, uint64_t graph_id) {
   } else {
     auto iter1 = (iter->second).find(graph_id);
     if (iter1 == (iter->second).end()) {
-      auto p = new(std::nothrow) GraphInfo();
-      GE_CHECK_NOTNULL(p);
-      std::shared_ptr<GraphInfo> graph_info(p);
+      std::shared_ptr<GraphInfo> graph_info(new(std::nothrow) GraphInfo());
+      GE_CHECK_NOTNULL(graph_info);
       graph_info->session_id = session_id;
       graph_info->graph_id = graph_id;
       (iter->second).insert({graph_id, graph_info});

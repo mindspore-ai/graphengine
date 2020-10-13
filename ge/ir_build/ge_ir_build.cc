@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "external/ge/ge_ir_build.h"
 
 #include <vector>
@@ -98,6 +99,13 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
       ge::CheckImplmodeParamValid(optypelist_for_implmode, op_select_implmode) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "check optypelist_for_implmode and op_select_implmode failed!");
   global_options[ge::ir_option::OP_SELECT_IMPL_MODE] = op_select_implmode;
+
+  // set precision mode default value
+  std::string precision_mode = global_options.find(ge::ir_option::PRECISION_MODE) ==
+                               global_options.end()
+                               ? "force_fp16"
+                               : global_options[ge::ir_option::PRECISION_MODE];
+  global_options[ge::ir_option::PRECISION_MODE] = precision_mode;
 
   return GRAPH_SUCCESS;
 }
@@ -291,7 +299,7 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
 }
 
 void Impl::SetRtSocVersion() {
-  auto &global_options = GetMutableGlobalOptions();
+  const auto &global_options = GetMutableGlobalOptions();
   auto it = global_options.find(ge::SOC_VERSION);
   if (it != global_options.end()) {
     const char *soc_version = it->second.c_str();

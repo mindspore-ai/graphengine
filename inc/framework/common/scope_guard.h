@@ -42,9 +42,8 @@ class ScopeGuard {
       if (on_exit_scope_ != nullptr) {
         try {
           on_exit_scope_();
-        } catch (std::bad_function_call &e) {
-        } catch (...) {
-        }
+        } catch (std::bad_function_call &e) { }
+          catch (...) { }
       }
     }
   }

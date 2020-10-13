@@ -18,8 +18,8 @@
  * \file nn_norm_ops.h
  * \brief
  */
-#ifndef GE_OP_NN_NORM_OPS_H
-#define GE_OP_NN_NORM_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
 
 #include "graph/operator_reg.h"
 namespace ge {
@@ -158,6 +158,34 @@ REG_OP(SigmoidCrossEntropyWithLogits)
     .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogits)
+
+/**
+*@brief Computes the sigmoid cross entropy loss of "predict" and "target" . \n
+
+*@par Inputs:
+* four inputs, including:
+*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
+*@li weight: An multi-dimensional Tensor, specifying the weight value. \n
+*@li pos_weight: An multi-dimensional Tensor, specifying the pos weight value. \n
+
+*@par Attributes:
+*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
+
+*@par Outputs:
+*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
+
+*@par Third-party framework compatibility
+* Compatible with PyTorch operator BCEWithLogitsLoss.
+*/
+REG_OP(SigmoidCrossEntropyWithLogitsV2)
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsV2)
 
 /**
 *@brief Computes the regression box of the RPN. It is a FasterRCNN operator . \n
@@ -335,6 +363,8 @@ REG_OP(LogSoftmaxV2)
 *@par Outputs:
 * y: A Tensor of the same type as "grad" . \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionSoftmaxGrad)
   .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -499,6 +529,9 @@ REG_OP(LayerNorm)
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormGrad)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -540,6 +573,9 @@ REG_OP(LayerNormGrad)
 *@par Outputs:
 *Three outputs, including:
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormXBackprop)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -579,6 +615,9 @@ REG_OP(LayerNormXBackprop)
 *Three outputs, including:
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LayerNormBetaGammaBackprop)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -811,6 +850,9 @@ instruction . \n
 
 *@par Third-party framework compatibility
 *@li Compatible with the PyTorch operator GroupNorm.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(GroupNorm)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -862,6 +904,9 @@ Specifies the variance of "x" . \n
 
 *@par Third-party framework compatibility
 *@li Compatible with the PyTorch operator InstanceNorm.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(InstanceNormV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -914,6 +959,20 @@ REG_OP(INInferV2D)
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(INInferV2D)
 
+/**
+*@brief Performs instance normalization for inference of InHost part.
+
+*@par Inputs:\n
+* One input, including: (NC1HWC0 supported)
+* variance: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance.
+
+*@par Attributes:
+* epsilon: An optional float32, specifying the small value added to
+variance to avoid dividing by zero. Defaults to "0.00001" . \n
+
+*@par Outputs:\n
+* variance_sqrt: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance_sqrt.
+*/
 REG_OP(InHost)
      .INPUT(variance, TensorType({DT_FLOAT}))
      .OUTPUT(variance_sqrt, TensorType({DT_FLOAT}))
@@ -921,4 +980,4 @@ REG_OP(InHost)
      .OP_END_FACTORY_REG(InHost)
 }  // namespace ge
 
-#endif  //GE_OP_NN_NORM_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

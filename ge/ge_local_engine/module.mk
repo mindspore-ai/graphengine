@@ -48,7 +48,7 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := atclib/libge_local_engine
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -DCOMPILE_OMG_PACKAGE
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
@@ -124,3 +124,23 @@ LOCAL_SRC_FILES := $(ops_kernel_builder_src_files)
 LOCAL_C_INCLUDES := $(local_lib_inc_path)
 
 include ${BUILD_HOST_STATIC_LIBRARY}
+
+#compiler for device libge_local_opskernel_builder.a
+include $(CLEAR_VARS)
+LOCAL_MODULE := libge_local_opskernel_builder
+LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -std=c++11
+LOCAL_LDFLAGS :=
+
+LOCAL_STATIC_LIBRARIES :=   libprotobuf \
+                            libregister \
+                            libgraph \
+
+LOCAL_SHARED_LIBRARIES :=   libc_sec \
+                            libslog \
+
+LOCAL_SRC_FILES := $(ops_kernel_builder_src_files)
+
+LOCAL_C_INCLUDES := $(local_lib_inc_path)
+
+include ${BUILD_STATIC_LIBRARY}

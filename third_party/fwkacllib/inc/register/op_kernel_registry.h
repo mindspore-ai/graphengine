@@ -41,7 +41,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpKernelRegistry {
  private:
   OpKernelRegistry();
   class OpKernelRegistryImpl;
-  /*lint -e148*/
   std::unique_ptr<OpKernelRegistryImpl> impl_;
 };
 } // namespace ge

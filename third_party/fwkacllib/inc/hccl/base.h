@@ -61,6 +61,16 @@ struct model_feature {
     float *gradient_time;    /**< The BP compution time of each gradient */
 };
 
+/**
+ * @brief Memory Register Address Struct for Remote Access
+ */
+struct MemRegisterAddr {
+    u64 addr;
+    u64 length;
+};
+
+const u32 HCCL_MAX_MEM_REGISTER_NUM = 8;   // The max number of memory register address.
+
 enum GradSplitForceMode {
     FORCE_NONE,     /**< no force */
     FORCE_SIZE,     /**< force split gradient by size */

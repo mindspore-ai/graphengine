@@ -18,8 +18,8 @@
  * \file elewise_calculation_ops.h
  * \brief
  */
-#ifndef GE_OP_ELEWISE_CALCULATION_OPS_H
-#define GE_OP_ELEWISE_CALCULATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -1143,6 +1143,9 @@ REG_OP(Add)
 
 *@par Third-party framework compatibility:
 * Compatible with the TensorFlow operator LRN.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 
 REG_OP(FusedMulAdd)
@@ -2464,6 +2467,8 @@ REG_OP(PopulationCount)
 * @li y3: A Tensor. Must be one of the following types: float16, float32.
 * @li y4: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambNextMVWithDecay)
     .INPUT(input_mul3, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2510,6 +2515,9 @@ REG_OP(LambNextMVWithDecay)
 *@li y2: A Tensor. Has the same type as "input_mul3".
 *@li y3: A Tensor. Has the same type as "input_mul3".
 *@li y4: A Tensor. Has the same type as "input_mul3".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambNextMV)
     .INPUT(input_mul3, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2548,6 +2556,8 @@ REG_OP(LambNextMV)
 * @li y1: A Tensor of the same type as "input_square".
 * @li y2: A Tensor of the same type as "input_square". \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambNextRight)
     .INPUT(input_square, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2578,6 +2588,8 @@ REG_OP(LambNextRight)
 *@par Outputs:
 *y: A Tensor of the same type as "input_greater1". \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambUpdateWithLr)
     .INPUT(input_greater1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2608,6 +2620,8 @@ REG_OP(LambUpdateWithLr)
 *@par Outputs:
 *y: A Tensor of the same type as input. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(LambUpdateWithLrV2)
     .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2643,6 +2657,8 @@ REG_OP(LambUpdateWithLrV2)
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
 * @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOneWithDecay)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2683,6 +2699,8 @@ REG_OP(AdamApplyOneWithDecay)
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
 * @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOne)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2723,6 +2741,8 @@ REG_OP(AdamApplyOne)
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
 * @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOneWithDecayAssign)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2763,6 +2783,8 @@ REG_OP(AdamApplyOneWithDecayAssign)
 * @li output1: A Tensor. Must be one of the following types: float16, float32.
 * @li output2: A Tensor. Must be one of the following types: float16, float32. \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(AdamApplyOneAssign)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2793,6 +2815,8 @@ REG_OP(AdamApplyOneAssign)
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
 
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ClipByNormNoDivSum)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2817,6 +2841,9 @@ REG_OP(ClipByNormNoDivSum)
 *Two outputs, including: \n
 *@li y1: A Tensor. Has the same type as "x".
 *@li y2: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2839,6 +2866,9 @@ REG_OP(SquareSumV2)
 
 *@par Outputs:
 y: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumV1)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2857,6 +2887,9 @@ REG_OP(SquareSumV1)
 *@par Outputs:
 y1: A Tensor. Has the same type as "x1".The result of "x1".
 y2: A Tensor. Has the same type as "x2".The result of "x2".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(SquareSumAll)
     .INPUT(x1, TensorType({DT_FLOAT}))
@@ -2876,6 +2909,9 @@ REG_OP(SquareSumAll)
 
 *@par Outputs:
 * y: A Tensor. Has the same type as "x1".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(FusedMulAddN)
     .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT16}))
@@ -2942,6 +2978,9 @@ If false, don’t keep these dimensions. Default:False. \n
 *@par Outputs:
 *@li output0: A Tensor result of which input0 dot multily input1.
 *@li output1: A Tensor result of which input0 dot multily input1, then reducesum it.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionMulGrad)
     .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -2965,6 +3004,9 @@ REG_OP(ConfusionMulGrad)
 *@li y1: A Tensor of shape and dtype of first output, which should have \n
 shape (1,) and dtype as input.
 *@li y2: A Tensor of shape and dtype of second output, should be same shape and type as input.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(FusedMulAddNL2loss)
     .INPUT(x1, TensorType::NumberType())
@@ -3186,6 +3228,9 @@ REG_OP(KLDiv)
 *y: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(TensorMove)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_BOOL}))
@@ -3197,23 +3242,21 @@ REG_OP(TensorMove)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32, bool. \n
+* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
 
 *@par Outputs:
-*x: A Tensor. Has the same type as "x". \n
+*output_x: A Tensor. Has the same type as "x". \n
 
 *@par Third-party framework compatibility
 */
 REG_OP(TensorRedirect)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
-                           DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64}))
+                           DT_INT64, DT_INT16, DT_UINT16, DT_UINT64, DT_UINT32}))
     .OUTPUT(output_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8,
-                           DT_INT64, DT_INT16, DT_UINT16, DT_DOUBLE,
-                           DT_COMPLEX64}))
+                           DT_INT64, DT_INT16, DT_UINT16, DT_UINT64, DT_UINT32}))
     .OP_END_FACTORY_REG(TensorRedirect)
 }  // namespace ge
 
 
 
-#endif  // GE_OP_ELEWISE_CALCULATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,7 @@ GraphOptimize::GraphOptimize()
     : optimize_type_(domi::FrameworkType::TENSORFLOW),
       cal_config_(""),
       insert_op_config_(""),
-      parse_out_node_(""),
-      core_type_(""),
-      graph_context_(nullptr) {}
+      core_type_("") {}
 
 void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {

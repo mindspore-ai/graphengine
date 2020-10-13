@@ -434,6 +434,7 @@ REGISTER_OPTYPE_DECLARE(HCOMREDUCESCATTER, "HcomReduceScatter");
 REGISTER_OPTYPE_DECLARE(HCOMSEND, "HcomSend");
 REGISTER_OPTYPE_DECLARE(HCOMRECEIVE, "HcomReceive");
 REGISTER_OPTYPE_DECLARE(HCOMREMOTEREAD, "HcomRemoteRead");
+REGISTER_OPTYPE_DECLARE(HCOMREMOTEREFREAD, "HcomRemoteRefRead");
 REGISTER_OPTYPE_DECLARE(HCOMREMOTEWRITE, "HcomRemoteWrite");
 
 REGISTER_OPTYPE_DECLARE(VARASSIGN, "VarAssign");
@@ -565,10 +566,10 @@ enum ModelCheckType {
 /// @brief dynamic input type
 ///
 enum DynamicInputType {
-  FIXED = 0,  // default mode
-  DYNAMIC_BATCH = 1,
-  DYNAMIC_IMAGE = 2,
-  DYNAMIC_DIMS = 3
+    FIXED = 0,   // default mode
+    DYNAMIC_BATCH = 1,
+    DYNAMIC_IMAGE = 2,
+    DYNAMIC_DIMS = 3
 };
 
 ///

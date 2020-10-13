@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/build/model_builder.h"
 #include <securectype.h>
 #include <iostream>
@@ -92,7 +93,6 @@ ModelBuilder::ModelBuilder(uint64_t session_id, ge::ComputeGraphPtr compute_grap
                            const Graph2SubGraphInfoList &subgraphs, const map<string, int> &stream_max_parallel_num,
                            bool hcom_parallel, int mode)
     : session_id_(session_id),
-      mem_offset_(0),
       weight_offset_(kWeightsStartOffset),
       compute_graph_(std::move(compute_graph)),
       subgraphs_(subgraphs),
@@ -103,6 +103,7 @@ ModelBuilder::ModelBuilder(uint64_t session_id, ge::ComputeGraphPtr compute_grap
       hcom_parallel_(hcom_parallel),
       build_mode_(mode),
       max_mem_offset_(0),
+      p2p_mem_offset_(0),
       zero_copy_mem_size_(0),
       platform_type_(0),
       is_loop_graph_(false),
@@ -385,10 +386,16 @@ void ModelBuilder::InitL1FusionOption() {
 Status ModelBuilder::BuildModelDef(ge::Model &model) {
   ClearOriginalFormat();
 
-  max_mem_offset_ = mem_offset_;
+  max_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_HBM];
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_MEMORY_SIZE, max_mem_offset_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_MEMORY_SIZE failed.");
                    return FAILED);
+  if (mem_type_to_mem_offset_.find(RT_MEMORY_P2P_DDR) != mem_type_to_mem_offset_.end()) {
+    p2p_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_P2P_DDR];
+  }
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_P2P_MEMORY_SIZE, p2p_mem_offset_),
+                   GELOGE(FAILED, "SetInt of ATTR_MODEL_P2P_MEMORY_SIZE failed.");
+                       return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_WEIGHT_SIZE, weight_offset_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_WEIGHT_SIZE failed.");
                    return FAILED);
@@ -410,7 +417,8 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, ATTR_MODEL_OUT_NODES_NAME, GetLocalOmgContext().net_out_nodes),
                    GELOGE(FAILED, "SetListStr of ATTR_MODEL_OUT_NODES_NAME failed.");
                    return FAILED);
-  GELOGI("For model, max_mem_offset_: %zu, zero_copy_mem_size_: %zu", max_mem_offset_, zero_copy_mem_size_);
+  GELOGI("For model, max_mem_offset_: %zu, p2p_mem_size: %zu, zero_copy_mem_size_: %zu", max_mem_offset_,
+         p2p_mem_offset_, zero_copy_mem_size_);
 
   string ge_core_type;
   Status ret = ge::GetContext().GetOption(kCoreType, ge_core_type);
@@ -711,7 +719,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
 
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);
-  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_offset_, zero_copy_mem_size_),
+  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_type_to_mem_offset_, zero_copy_mem_size_),
                     "Assign Memory Failed!");
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 

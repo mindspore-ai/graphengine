@@ -18,8 +18,8 @@
  * \file rpn_ops.h
  * \brief
  */
-#ifndef GE_OP_RPN_OPS_H
-#define GE_OP_RPN_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_RPN_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_RPN_OPS_H_
 
 #include "graph/operator_reg.h"
 namespace ge {
@@ -58,4 +58,4 @@ REG_OP(NMSWithMask)
     .OP_END_FACTORY_REG(NMSWithMask)
 }  // namespace ge
 
-#endif // GE_OP_TRAINING_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_RPN_OPS_H_

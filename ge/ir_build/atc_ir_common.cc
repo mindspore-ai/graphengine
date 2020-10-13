@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "atc_ir_common.h"
 #include "common/util/error_manager/error_manager.h"
 #include "external/ge/ge_api_types.h"
@@ -504,7 +505,7 @@ void PrintOptionMap(std::map<std::string, std::string> &options, std::string tip
   for (auto iter = options.begin(); iter != options.end(); iter++) {
     std::string key = iter->first;
     std::string option_name = iter->second;
-    GELOGI("%s set successfully, key=%s, value=%s", tips.c_str(), key.c_str(), option_name.c_str());
+    GELOGI("%s set successfully, option_key=%s, option_value=%s", tips.c_str(), key.c_str(), option_name.c_str());
   }
 }
 

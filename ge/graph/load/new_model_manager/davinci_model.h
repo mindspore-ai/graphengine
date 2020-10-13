@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,6 +188,8 @@ class DavinciModel {
 
   // get total mem size
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
+
+  const std::map<uint32_t, MemInfo> &P2PMemInfos() const {return runtime_param_.memory_infos;}
 
   // model name
   string Name() const { return name_; }
@@ -410,6 +412,8 @@ class DavinciModel {
 
   void DisableZeroCopy(const void *addr);
 
+  bool GetOpDugReg() const { return is_op_debug_reg_; }
+
   ///
   /// @ingroup ge
   /// @brief Save outside address of Data or NetOutput used info for ZeroCopy.
@@ -500,11 +504,6 @@ class DavinciModel {
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
 
-  void SetMemcpyOffsetAndAddr(map<int64_t, void *> &memcpy_4g_offset_addr) {
-    memcpy_4g_offset_addr_.insert(memcpy_4g_offset_addr.begin(), memcpy_4g_offset_addr.end());
-  }
-  const map<int64_t, void *> &GetMemcpyOffsetAndAddr() const { return memcpy_4g_offset_addr_; }
-
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
     return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
   }
@@ -516,8 +515,10 @@ class DavinciModel {
   uint8_t *var_mem_base_;
   // memory address of model
   uint8_t *mem_base_;
+  uint8_t *p2p_mem_base_;
   bool is_inner_mem_base_;
   bool is_inner_weight_base_;
+  bool is_inner_p2p_mem_base_;
   // input data manager
   DataInputer *data_inputer_;
 
@@ -599,9 +600,13 @@ class DavinciModel {
 
   uint8_t *MallocWeightsMem(size_t weights_size);
 
+  uint8_t* MallocP2PMem(size_t p2p_data_size);
+
   void FreeFeatureMapMem();
 
   void FreeWeightsMem();
+
+  void FreeP2PMem();
 
   void ReleaseTask();
 
@@ -988,8 +993,6 @@ class DavinciModel {
   void *op_debug_addr_ = nullptr;
   void *p2p_debug_addr_ = nullptr;
   bool is_new_model_desc_{false};
-
-  std::map<int64_t, void *> memcpy_4g_offset_addr_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

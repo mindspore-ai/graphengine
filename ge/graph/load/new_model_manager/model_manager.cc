@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -236,7 +236,6 @@ ModelManager::~ModelManager() {
   std::lock_guard<std::mutex> lock(map_mutex_);
   model_map_.clear();
   model_aicpu_kernel_.clear();
-  cust_aicpu_so_.clear();
 
   GE_IF_BOOL_EXEC(device_count > 0, GE_CHK_RT(rtDeviceReset(0)));
 }
@@ -400,6 +399,7 @@ Status ModelManager::Unload(uint32_t model_id) {
   }
   std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
   exception_infos_.clear();
+  cust_aicpu_so_.clear();
   return SUCCESS;
 }
 

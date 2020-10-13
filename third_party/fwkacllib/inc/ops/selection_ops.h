@@ -18,8 +18,8 @@
  * \file selection_ops.h
  * \brief
  */
-#ifndef GE_OP_SELECTION_OPS_H
-#define GE_OP_SELECTION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -186,7 +186,8 @@ REG_OP(GatherNd)
 *     uint8, int16, int8, int64, qint8, quint8, qint32, qint16, quint16,
 *     uint16, complex128, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64.
-* @li axis: A Tensor of type as int32 . \n
+* @li axis: A Tensor of type as int32 or int64,
+*     Must be in the range [-rank(input_tensor), rank(input_tensor)) . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
@@ -920,6 +921,9 @@ REG_OP(ScatterNd)
 *@li "y" has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ScatterNd.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ScatterNd instead.
 */
 REG_OP(ScatterNdD)
     .INPUT(indices, TensorType::IndexNumberType())
@@ -1163,6 +1167,9 @@ REG_OP(Cumprod)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumprod.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Cumprod instead.
 */
 REG_OP(CumprodD)
     .INPUT(x, TensorType::NumberType())
@@ -1217,6 +1224,9 @@ REG_OP(Cumsum)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumsum.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Cumsum instead.
 */
 REG_OP(CumsumD)
     .INPUT(x, TensorType::NumberType())
@@ -1787,6 +1797,9 @@ REG_OP(TileWithAxis)
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ReadSelect)
     .INPUT(x, TensorType::ALL())
@@ -1802,6 +1815,9 @@ REG_OP(ReadSelect)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(WriteSelect)
     .INPUT(x, TensorType::ALL())
@@ -1907,4 +1923,4 @@ REG_OP(CumulativeLogsumexpD)
     .OP_END_FACTORY_REG(CumulativeLogsumexpD)
 } // namespace ge
 
-#endif // GE_OP_SELECTION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ std::map<ge::DataType, std::vector<ge::DataType>> g_reverse_translatable_data_ty
     {ge::DT_INT32, {ge::DT_BOOL, ge::DT_INT64}},
     {ge::DT_FLOAT, {ge::DT_FLOAT16, ge::DT_FLOAT}}};
 
-static const std::map<ge::DataType, ge::proto::DataType> g_dump_data_type_map = {
+std::map<ge::DataType, ge::proto::DataType> g_dump_data_type_map = {
     // key:ge datatype,value:proto datatype
     {ge::DT_UNDEFINED, ge::proto::DT_UNDEFINED},
     {ge::DT_FLOAT, ge::proto::DT_FLOAT},

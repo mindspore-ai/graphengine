@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,43 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
   uint64_t device_base = 0;
   uint64_t device_size = 0;
   GE_CHK_STATUS_RET(MemManager::Instance().RdmaPoolInstance(mem_type).GetBaseAddr(device_base, device_size));
+  auto table_len = var_info.size() + 1;
+  std::unique_ptr<MemRegisterAddr[]> reg_addrs(new (std::nothrow) MemRegisterAddr[table_len]);
+  GE_CHECK_NOTNULL(reg_addrs);
+  for (size_t i = 0; i < var_info.size(); ++i) {
+    reg_addrs[i] = {var_info[i].base_addr, var_info[i].var_size};
+  }
+  reg_addrs[table_len - 1] = {device_base, device_size};
+
+  std::string file_name = "libhccl.so";
+  std::string path = PluginManager::GetPath();
+  path.append(file_name);
+  string canonical_path = RealPath(path.c_str());
+  if (canonical_path.empty()) {
+    GELOGE(FAILED, "Failed to get realpath of %s", path.c_str());
+    return FAILED;
+  }
+  GELOGI("FileName:%s, Path:%s.", file_name.c_str(), canonical_path.c_str());
+  auto handle = dlopen(canonical_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  GE_CHECK_NOTNULL(handle);
+  GE_MAKE_GUARD(not_used_var, [&] {
+    if (dlclose(handle) != 0) {
+      GELOGW("Failed to close handle %s", dlerror());
+    }
+  });
+
+  auto hcom_remote_mem_register =
+      (HcclResult(*)(const MemRegisterAddr *, uint32_t))dlsym(handle, "hcom_remote_access_mem_register");
+  if (hcom_remote_mem_register == nullptr) {
+    GELOGE(FAILED, "Failed to invoke hcom_remote_mem_register function.");
+    return FAILED;
+  }
+
+  HcclResult hccl_ret = hcom_remote_mem_register(reg_addrs.get(), table_len);
+  if (hccl_ret != HCCL_SUCCESS) {
+    GELOGE(HCCL_E_INTERNAL, "Rdma mem register failed, ret: 0x%X", hccl_ret);
+    return HCCL_E_INTERNAL;
+  }
   return SUCCESS;
 }
 

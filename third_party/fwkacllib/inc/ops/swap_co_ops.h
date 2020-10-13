@@ -18,8 +18,8 @@
  * \file swap_co_ops.h
  * \brief
  */
-#ifndef GE_OP_SWAP_CO_OPS_H_
-#define GE_OP_SWAP_CO_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_SWAP_CO_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_SWAP_CO_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -59,4 +59,4 @@ REG_OP(SwapCo)
 
 }  // namespace ge
 
-#endif  // GE_OP_SWAP_CO_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_SWAP_CO_OPS_H_

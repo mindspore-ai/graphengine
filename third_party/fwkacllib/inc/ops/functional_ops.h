@@ -18,8 +18,8 @@
  * \file functional_ops.h
  * \brief
  */
-#ifndef GE_FUNCTIONAL_OPS_H_
-#define GE_FUNCTIONAL_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_FUNCTIONAL_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_FUNCTIONAL_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -330,4 +330,4 @@ REG_OP(StatefulPartitionedCall)
 
 }  // namespace ge
 
-#endif  // GE_FUNCTIONAL_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_FUNCTIONAL_OPS_H_

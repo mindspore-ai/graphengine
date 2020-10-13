@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "ge/ge_api_error_codes.h"
+#include "graph//types.h"
 #include "runtime/mem.h"
 
 namespace ge {
@@ -35,6 +36,12 @@ struct HostVarInfo {
   uint64_t var_size;
 };
 
+struct TensorInfo {
+  std::string var_name;
+  std::vector<int64_t> dims;
+  DataType data_type;
+};
+
 ///
 /// \param size [in] rdma pool memory size to be allocated.
 /// \param mem_type [in] memory type for rdma pool.
@@ -46,6 +53,13 @@ Status InitRdmaPool(size_t size, rtMemType_t mem_type = RT_MEMORY_HBM);
 /// \param mem_type [in] memory type for rdma pool.
 /// \return Status result of function
 Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t mem_type = RT_MEMORY_HBM);
+
+///
+/// \param tensor_info [in] description for tensor stored shared memory.
+/// \param dev_addr [out] malloced shared memory addr.
+/// \param memory_size [out] malloced shared memory size.
+/// \return Status result of function
+Status MallocSharedMemory(const TensorInfo &tensor_info, uint64_t &dev_addr, uint64_t &memory_size);
 
 ///
 /// \param var_name [in] var_name name of host variable.

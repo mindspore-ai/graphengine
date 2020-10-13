@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "subgraph_const_migration_pass.h"
 
 #include "graph/utils/node_utils.h"
@@ -187,10 +188,14 @@ Status SubgraphConstMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
     }
   }
 
+  auto iter = graph_datas.begin();
+  if (iter == graph_datas.end()) {
+    return SUCCESS;
+  }
   for (const auto &data_nodes : graph_datas) {
-    if (data_nodes.second.size() != graph_datas.begin()->second.size()) {
+    if (data_nodes.second.size() != iter->second.size()) {
       GELOGE(FAILED, "Subgraph %s has invalid Data nodes[%zu != %zu]",
-             data_nodes.first->GetName().c_str(), data_nodes.second.size(), graph_datas.begin()->second.size());
+             data_nodes.first->GetName().c_str(), data_nodes.second.size(), iter->second.size());
       return FAILED;
     }
   }

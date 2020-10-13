@@ -18,8 +18,8 @@
  * \file all_ops.h
  * \brief
  */
-#ifndef BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
-#define BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
 
 #include "aipp.h"
 #include "array_ops.h"
@@ -76,4 +76,4 @@
 #include "transformation_ops.h"
 #include "condtake_ops.h"
 #include "warp_perspective_ops.h"
-#endif  // BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_

@@ -15,25 +15,24 @@
  */
 #include "single_op_parser.h"
 
-#include <vector>
 #include <algorithm>
 #include <fstream>
-#include <sstream>
-
 #include <nlohmann/json.hpp>
+#include <sstream>
+#include <vector>
 
-#include "framework/common/debug/ge_log.h"
-#include "common/util/error_manager/error_manager.h"
 #include "common/ge_inner_error_codes.h"
+#include "common/util/error_manager/error_manager.h"
+#include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "graph/utils/tensor_utils.h"
-#include "graph/utils/op_desc_utils.h"
 #include "graph/operator_factory_impl.h"
+#include "graph/utils/op_desc_utils.h"
+#include "graph/utils/tensor_utils.h"
 
 using Json = nlohmann::json;
+using std::map;
 using std::string;
 using std::vector;
-using std::map;
 
 namespace ge {
 namespace {
@@ -67,39 +66,23 @@ map<string, GeAttrValue::ValueType> kAttrTypeDict = {
 };
 
 map<string, DataType> kDataTypeDict = {
-    {"bool", DT_BOOL},
-    {"int8", DT_INT8},
-    {"uint8", DT_UINT8},
-    {"int16", DT_INT16},
-    {"uint16", DT_UINT16},
-    {"int32", DT_INT32},
-    {"uint32", DT_UINT32},
-    {"int64", DT_INT64},
-    {"uint64", DT_UINT64},
-    {"float16", DT_FLOAT16},
-    {"half", DT_FLOAT16},
-    {"fp16", DT_FLOAT16},
-    {"float", DT_FLOAT},
-    {"float32", DT_FLOAT},
-    {"double", DT_DOUBLE},
+    {"bool", DT_BOOL},    {"int8", DT_INT8},     {"uint8", DT_UINT8}, {"int16", DT_INT16},   {"uint16", DT_UINT16},
+    {"int32", DT_INT32},  {"uint32", DT_UINT32}, {"int64", DT_INT64}, {"uint64", DT_UINT64}, {"float16", DT_FLOAT16},
+    {"half", DT_FLOAT16}, {"fp16", DT_FLOAT16},  {"float", DT_FLOAT}, {"float32", DT_FLOAT}, {"double", DT_DOUBLE},
 };
 
 map<string, Format> kFormatDict = {
-    {"nchw", FORMAT_NCHW},
-    {"nhwc", FORMAT_NHWC},
-    {"nd", FORMAT_ND},
-    {"fractal_nz", FORMAT_FRACTAL_NZ},
-    {"fractal_z", FORMAT_FRACTAL_Z},
-    {"nc1hwc0", FORMAT_NC1HWC0},
+    {"nchw", FORMAT_NCHW},           {"nhwc", FORMAT_NHWC},       {"nd", FORMAT_ND}, {"fractal_nz", FORMAT_FRACTAL_NZ},
+    {"fractal_z", FORMAT_FRACTAL_Z}, {"nc1hwc0", FORMAT_NC1HWC0},
 };
-}
+}  // namespace
 
-template<typename T>
+template <typename T>
 void SetAttrValue(const Json &j, SingleOpAttr &attr) {
   attr.value.SetValue<T>(j.at(kKeyValue).get<T>());
 }
 
-template<typename T>
+template <typename T>
 T GetValue(const map<string, T> &dict, string &key, T default_val) {
   transform(key.begin(), key.end(), key.begin(), ::tolower);
   auto it = dict.find(key);
@@ -275,11 +258,10 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
 }
 
 std::unique_ptr<OpDesc> SingleOpParser::CreateOpDesc(const string &op_type) {
-  return std::unique_ptr<OpDesc>(new(std::nothrow) OpDesc(op_type, op_type));
+  return std::unique_ptr<OpDesc>(new (std::nothrow) OpDesc(op_type, op_type));
 }
 
-Status SingleOpParser::ConvertToBuildParam(int index,
-                                           const SingleOpDesc &single_op_desc,
+Status SingleOpParser::ConvertToBuildParam(int index, const SingleOpDesc &single_op_desc,
                                            SingleOpBuildParam &build_param) {
   auto op_desc = CreateOpDesc(single_op_desc.op);
   if (op_desc == nullptr) {
@@ -295,11 +277,9 @@ Status SingleOpParser::ConvertToBuildParam(int index,
     for (auto dim : desc.dims) {
       file_name << "_" << dim;
     }
-    GeTensorDesc ge_tensor_desc(GeShape(desc.dims),
-                                desc.format,
-                                desc.type);
+    GeTensorDesc ge_tensor_desc(GeShape(desc.dims), desc.format, desc.type);
     ge_tensor_desc.SetOriginFormat(desc.format);
-    GE_CHK_STATUS_RET_NOLOG(SetShapeRange(desc, ge_tensor_desc));
+    GE_CHK_STATUS_RET_NOLOG(SetShapeRange(op_desc->GetName(), desc, ge_tensor_desc));
     TensorUtils::SetRealDimCnt(ge_tensor_desc, desc.dims.size());
     TensorUtils::SetInputTensor(ge_tensor_desc, true);
     TensorUtils::SetOutputTensor(ge_tensor_desc, false);
@@ -317,15 +297,17 @@ Status SingleOpParser::ConvertToBuildParam(int index,
       file_name << "_" << dim;
     }
 
-    GeTensorDesc ge_tensor_desc(GeShape(desc.dims),
-                                desc.format,
-                                desc.type);
+    GeTensorDesc ge_tensor_desc(GeShape(desc.dims), desc.format, desc.type);
     ge_tensor_desc.SetOriginFormat(desc.format);
-    GE_CHK_STATUS_RET_NOLOG(SetShapeRange(desc, ge_tensor_desc));
+    GE_CHK_STATUS_RET_NOLOG(SetShapeRange(op_desc->GetName(), desc, ge_tensor_desc));
     TensorUtils::SetRealDimCnt(ge_tensor_desc, desc.dims.size());
     TensorUtils::SetInputTensor(ge_tensor_desc, false);
     TensorUtils::SetOutputTensor(ge_tensor_desc, true);
-    op_desc->AddOutputDesc(ge_tensor_desc);
+    if (desc.name.empty()) {
+      op_desc->AddOutputDesc(ge_tensor_desc);
+    } else {
+      op_desc->AddOutputDesc(desc.name, ge_tensor_desc);
+    }
     build_param.outputs.emplace_back(ge_tensor_desc);
   }
 
@@ -353,7 +335,8 @@ Status SingleOpParser::VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc
     size_t ir_opdesc_inputs_num = opdesc_ir->GetInputsSize();
     if (current_opdesc_inputs_num < ir_opdesc_inputs_num) {
       string reason = "is smaller than the ir needed input size " + std::to_string(ir_opdesc_inputs_num);
-      ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
+      ErrorManager::GetInstance().ATCReportErrMessage(
+          "E19014", {"opname", "value", "reason"},
           {current_op_desc.GetName(), "input size " + std::to_string(current_opdesc_inputs_num), reason});
       GELOGE(PARAM_INVALID, "This op [%s] input size %zu is smaller than the ir needed input size %zu",
              current_op_desc.GetName().c_str(), current_opdesc_inputs_num, ir_opdesc_inputs_num);
@@ -363,7 +346,8 @@ Status SingleOpParser::VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc
     size_t ir_opdesc_outputs_num = opdesc_ir->GetOutputsSize();
     if (current_opdesc_outputs_num < ir_opdesc_outputs_num) {
       string reason = "is smaller than the ir needed output size " + std::to_string(ir_opdesc_outputs_num);
-      ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
+      ErrorManager::GetInstance().ATCReportErrMessage(
+          "E19014", {"opname", "value", "reason"},
           {current_op_desc.GetName(), "output size " + std::to_string(current_opdesc_outputs_num), reason});
       GELOGE(PARAM_INVALID, "This op [%s] output size %zu is smaller than the ir needed output size %zu",
              current_op_desc.GetName().c_str(), current_opdesc_outputs_num, ir_opdesc_outputs_num);
@@ -373,8 +357,26 @@ Status SingleOpParser::VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc
   return SUCCESS;
 }
 
-Status SingleOpParser::SetShapeRange(const SingleOpTensorDesc &tensor_desc, GeTensorDesc &ge_tensor_desc) {
-  if (tensor_desc.dim_ranges.empty()) {
+Status SingleOpParser::SetShapeRange(const std::string &op_name, const SingleOpTensorDesc &tensor_desc,
+                                     GeTensorDesc &ge_tensor_desc) {
+  auto num_shape_ranges = tensor_desc.dim_ranges.size();
+  GELOGD("Number of shape ranges = %zu", num_shape_ranges);
+  auto it = std::find(tensor_desc.dims.begin(), tensor_desc.dims.end(), ge::UNKNOWN_DIM_NUM);
+  if (it != tensor_desc.dims.end()) {
+    if (tensor_desc.dims != ge::UNKNOWN_RANK) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
+                                                      {op_name, "shape", "has unknown rank but dim size is not one"});
+      GELOGE(PARAM_INVALID, "Invalid tensor shape: [%s]", ge_tensor_desc.MutableShape().ToString().c_str());
+      return PARAM_INVALID;
+    }
+    if (!tensor_desc.dim_ranges.empty()) {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+          "E19014", {"opname", "value", "reason"},
+          {op_name, "shape range", "is not needed while the rank the shape is unknown"});
+      GELOGE(PARAM_INVALID, "shape range is not needed while the rank the shape is unknown");
+      return PARAM_INVALID;
+    }
+    GELOGD("Shape is unknown rank, do not set shape range");
     return SUCCESS;
   }
 
@@ -385,13 +387,22 @@ Status SingleOpParser::SetShapeRange(const SingleOpTensorDesc &tensor_desc, GeTe
       shape_range.emplace_back(dim, dim);
       GELOGD("Adding shape range: [%ld, %ld]", dim, dim);
     } else {
-      if (range_index >= tensor_desc.dim_ranges.size()) {
+      GELOGD("To get shape range by index = %zu", range_index);
+      if (range_index >= num_shape_ranges) {
+        string reason = "is smaller than the unknown dim size " + std::to_string(++range_index);
+        ErrorManager::GetInstance().ATCReportErrMessage(
+            "E19014", {"opname", "value", "reason"},
+            {op_name, "shape range size " + std::to_string(num_shape_ranges), reason});
         GELOGE(PARAM_INVALID, "The number of shape_range mismatches that of unknown dims.");
         return PARAM_INVALID;
       }
 
       auto &range = tensor_desc.dim_ranges[range_index];
       if (range.size() != kShapeRangePairSize) {
+        string reason = "has " + std::to_string(range.size()) + " item(s)";
+        ErrorManager::GetInstance().ATCReportErrMessage(
+            "E19014", {"opname", "value", "reason"}, {op_name, "shape range " + std::to_string(range_index), reason});
+
         GELOGE(PARAM_INVALID, "Invalid shape range entry. index = %zu, size = %zu", range_index, range.size());
         return PARAM_INVALID;
       }
@@ -402,7 +413,20 @@ Status SingleOpParser::SetShapeRange(const SingleOpTensorDesc &tensor_desc, GeTe
     }
   }
 
-  ge_tensor_desc.SetShapeRange(shape_range);
+  if (num_shape_ranges != range_index) {
+    string reason = "is greater than the unknown dim size " + std::to_string(range_index);
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19014", {"opname", "value", "reason"},
+        {op_name, "shape range size " + std::to_string(num_shape_ranges), reason});
+    GELOGE(PARAM_INVALID, "The number of shape_range(%zu) mismatches that of unknown dims(%zu).", num_shape_ranges,
+           range_index);
+    return PARAM_INVALID;
+  }
+
+  if (range_index > 0) {
+    ge_tensor_desc.SetShapeRange(shape_range);
+  }
+
   return SUCCESS;
 }
 
@@ -436,13 +460,12 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
     }
   } catch (const nlohmann::json::exception &e) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10032", {"index", "jsonfile", "exception"},
-        {std::to_string(index), file, e.what()});
-    GELOGE(PARAM_INVALID, "Parse the index[%d] of op failed when read json file[%s], exception %s",
-        index, file.c_str(), e.what());
+                                                    {std::to_string(index), file, e.what()});
+    GELOGE(PARAM_INVALID, "Parse the index[%d] of op failed when read json file[%s], exception %s", index, file.c_str(),
+           e.what());
     return PARAM_INVALID;
   }
 
   return SUCCESS;
 }
-} // namespace ge
-
+}  // namespace ge

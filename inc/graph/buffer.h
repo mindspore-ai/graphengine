@@ -57,11 +57,11 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Buffer {
 
   // For compatibility
   inline const std::uint8_t *data() const { return GetData(); }
-  inline std::uint8_t *data() { return GetData(); }  // lint !e659
+  inline std::uint8_t *data() { return GetData(); }
   inline std::size_t size() const { return GetSize(); }
   inline void clear() { return ClearBuffer(); }
-  uint8_t operator[](size_t index) const {                // lint !e1022 !e1042
-    if (buffer_ != nullptr && index < buffer_->size()) {  // lint !e574
+  uint8_t operator[](size_t index) const {
+    if (buffer_ != nullptr && index < buffer_->size()) {
       return (uint8_t)(*buffer_)[index];
     }
     return 0xff;

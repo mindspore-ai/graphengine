@@ -38,7 +38,7 @@ class TypeID {
   bool operator==(const TypeID &__arg) const { return type_ == __arg.type_; }
 
  private:
-  explicit TypeID(string type) : type_(std::move(type)) {}  // lint !e30 !e32
+  explicit TypeID(string type) : type_(std::move(type)) {}
 
   string type_;
 };

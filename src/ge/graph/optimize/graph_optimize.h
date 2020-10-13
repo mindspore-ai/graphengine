@@ -60,7 +60,7 @@ class GraphOptimize {
 
   const std::map<uint32_t, std::map<string, size_t>> &GetSummaryOutputIndexes() const {
     return summary_output_indexes_;
-  }  // lint !e1073
+  }
 
   // handle summary node before preRun graph
   Status HandleSummaryOp(ComputeGraphPtr &compute_graph);

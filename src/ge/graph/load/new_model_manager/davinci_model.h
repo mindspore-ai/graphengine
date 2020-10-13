@@ -410,6 +410,8 @@ class DavinciModel {
 
   void DisableZeroCopy(const void *addr);
 
+  bool GetOpDugReg() const { return is_op_debug_reg_; }
+
   ///
   /// @ingroup ge
   /// @brief Save outside address of Data or NetOutput used info for ZeroCopy.

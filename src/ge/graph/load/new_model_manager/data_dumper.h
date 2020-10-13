@@ -134,6 +134,8 @@ class DataDumper {
 
   DumpProperties dump_properties_;
 
+  // Build task info of op mapping info
+  Status BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
   Status DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
   Status DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Output &output, size_t i,
                        const std::string &node_name_index);

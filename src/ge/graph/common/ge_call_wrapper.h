@@ -18,8 +18,6 @@
 #define GE_GE_CALL_WRAPPER_H_
 #include "framework/common/debug/ge_log.h"
 
-/*lint --emacro((773),GE_TIMESTAMP_START)*/
-/*lint -esym(773,GE_TIMESTAMP_START)*/
 #define GE_TIMESTAMP_START(stage) uint64_t startUsec_##stage = ge::GetCurrentTimestap()
 
 #define GE_TIMESTAMP_END(stage, stage_name)                                          \

@@ -28,7 +28,6 @@
 
 using std::vector;
 
-/*lint -e512 -e737 -e752*/
 namespace ge {
 const char OP_DESC_QUANT_PARAMS[] = "quantize_factor";
 static const int CONST_OP_NORMAL_WEIGHT_SIZE = 1;
@@ -133,11 +132,11 @@ graphStatus OpDescUtils::GetQuantizeFactorParams(const OpDesc &op_desc, Quantize
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
 OpDescUtils::SetQuantizeFactorParams(const OpDescPtr &op_desc, const QuantizeFactorParams &quant) {
   GE_CHK_BOOL_EXEC_INFO(op_desc != nullptr, return GRAPH_FAILED, "op_desc is nullptr");
-  return op_desc->SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));  // lint !e732
+  return op_desc->SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));
 }
 
 graphStatus OpDescUtils::SetQuantizeFactorParams(OpDesc &op_desc, const QuantizeFactorParams &quant) {
-  return op_desc.SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));  // lint !e732
+  return op_desc.SetAttr(OP_DESC_QUANT_PARAMS, GeAttrValue::CreateFrom<QuantizeFactorParams>(quant));
 }
 
 GeTensorPtr OpDescUtils::MutableWeights(OpDesc &op_desc) {
@@ -255,7 +254,7 @@ size_t OpDescUtils::GetNonConstInputsSize(const ge::Node &node) {
         continue;
       }
     }
-    return input_num;  // lint !e712
+    return input_num;
   } else {
     GE_IF_BOOL_EXEC(
       node.GetInDataNodes().size() < GetConstInputs(node).size(),
@@ -360,7 +359,7 @@ bool OpDescUtils::IsNonConstInput(const ge::Node &node, const size_t index) {
   bool ret = false;
   if (index < node.GetAllInDataAnchors().size()) {
     if (NodeUtils::IsAnchorStatusSet(node)) {
-      ret = (ge::AnchorUtils::GetStatus(node.GetInDataAnchor(static_cast<int>(index))) == ANCHOR_DATA);  // lint !e712
+      ret = (ge::AnchorUtils::GetStatus(node.GetInDataAnchor(static_cast<int>(index))) == ANCHOR_DATA);
     } else {
       for (const auto &anchor : node.GetAllInDataAnchors()) {
         if (anchor->GetIdx() != static_cast<int>(index)) {
@@ -822,4 +821,3 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDescUtils::SetSubgr
   return op_desc->SetSubgraphInstanceName(iter->second, subgraph_instance_name);
 }
 }  // namespace ge
-/*lint +e512 +e737 +e752*/

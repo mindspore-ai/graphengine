@@ -41,8 +41,8 @@ namespace ge {
   as the name of a world group.
  */
 REG_OP(HcomAllGather)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
     .REQUIRED_ATTR(rank_size, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(alpha, Float, 1.0)
@@ -99,8 +99,8 @@ REG_OP(HcomAllReduce)
   as the name of a world group.
  */
 REG_OP(HcomBroadcast)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
     .REQUIRED_ATTR(root_rank, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(alpha, Float, 1.0)

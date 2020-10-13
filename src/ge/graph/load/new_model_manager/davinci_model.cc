@@ -186,13 +186,13 @@ DavinciModel::~DavinciModel() {
         GE_CHK_RT(rtFree(l1_fusion_addr_));
       }
 
+      OpDebugUnRegister();
+
       if (rt_model_handle_ != nullptr) {
         GE_CHK_RT(rtModelDestroy(rt_model_handle_));
         rt_model_handle_ = nullptr;
       }
     }
-
-    OpDebugUnRegister();
 
     GELOGI("do ReleaseTask");
     ReleaseTask();
@@ -518,6 +518,7 @@ void DavinciModel::OpDebugUnRegister() {
     debug_reg_mutex_.unlock();
     rtError_t rt_ret = RT_ERROR_NONE;
     if (rt_model_handle_ != nullptr) {
+      GELOGD("start call debug_unregister.");
       rt_ret = rtDebugUnRegister(rt_model_handle_);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGW("rtDebugUnRegister failed, ret: 0x%X", rt_ret);
@@ -2775,19 +2776,15 @@ Status DavinciModel::DistributeTask() {
     auto op_index = std::max(model_task_def->task(task_index).kernel().context().op_index(),
                              model_task_def->task(task_index).kernel_ex().op_index());
     OpDescPtr op = GetOpByIndex(op_index);
-    if (op == nullptr) {
-      GELOGE(PARAM_INVALID, "Op index %u is null, op list size %zu.", op_index, op_list_.size());
-      return PARAM_INVALID;
-    }
+    GE_CHECK_NOTNULL(op);
 
     SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
       bool call_dump = GetDumpProperties().IsLayerNeedDump(name_, om_name_, op->GetName()) && task->CallSaveDumpInfo();
-      if (call_dump) {
+      if (call_dump || is_op_debug_reg_) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
-
     // get op_name by task_index
     if (task->GetCtx() != nullptr) {
       auto iter = op_name_map_.find(task_index);

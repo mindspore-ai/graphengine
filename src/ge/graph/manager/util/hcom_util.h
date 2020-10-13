@@ -35,17 +35,14 @@ using std::string;
 using std::vector;
 
 static std::map<int64_t, HcclDataType> kConstOpHcclDataType = {
-  {ge::DT_FLOAT, HCCL_DATA_TYPE_FP32},
-  {ge::DT_FLOAT16, HCCL_DATA_TYPE_FP16},
-  {ge::DT_INT8, HCCL_DATA_TYPE_INT8},
-  {ge::DT_INT32, HCCL_DATA_TYPE_INT32},
+  {ge::DT_FLOAT, HCCL_DATA_TYPE_FP32},  {ge::DT_FLOAT16, HCCL_DATA_TYPE_FP16}, {ge::DT_INT8, HCCL_DATA_TYPE_INT8},
+  {ge::DT_INT32, HCCL_DATA_TYPE_INT32}, {ge::DT_INT64, HCCL_DATA_TYPE_INT64},  {ge::DT_UINT64, HCCL_DATA_TYPE_UINT64},
 };
 
 static std::map<HcclDataType, int32_t> kConstOpHcclDataTypeSize = {
-  {HCCL_DATA_TYPE_FP32, sizeof(float)},
-  {HCCL_DATA_TYPE_FP16, sizeof(float) / 2},
-  {HCCL_DATA_TYPE_INT8, sizeof(int8_t)},
-  {HCCL_DATA_TYPE_INT32, sizeof(int32_t)},
+  {HCCL_DATA_TYPE_FP32, sizeof(float)},    {HCCL_DATA_TYPE_FP16, sizeof(float) / 2},
+  {HCCL_DATA_TYPE_INT8, sizeof(int8_t)},   {HCCL_DATA_TYPE_INT32, sizeof(int32_t)},
+  {HCCL_DATA_TYPE_INT64, sizeof(int64_t)}, {HCCL_DATA_TYPE_UINT64, sizeof(uint64_t)},
 };
 
 static std::map<HorovodReduceOp, HcclReduceOp> kHorovodRedOpToHcclRedOp = {

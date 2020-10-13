@@ -408,6 +408,25 @@ REG_OP(LinSpace)
     .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(LinSpace)
 
+
+
+/**
+*@brief The dropout operator randomly sets (according to the given dropout probability)
+*the outputs of some units to zero, while others are remain unchanged. . \n
+
+*@par Inputs:
+*One input, including:
+*@li x:The input tensor variable. The data type is float32. \n
+
+*@par Attributes:
+*@li dropout_ratio:Float between 0 and 1. Fraction of the input units to drop.Defaults to "0.5".
+*@li scale_train: Bool,default to true.
+*@li alpha: An optional float32. A scaling factor. Defaults to "1.0".
+*@li beta: An optional float32. An exponent. Defaults to "0.0". \n
+
+*@par Outputs:
+*y: A Variable holding Tensor representing the dropout, has same shape and data type with x. \n
+*/
 REG_OP(Dropout)
     .INPUT(x, TensorType{DT_FLOAT})
     .OUTPUT(y, TensorType{DT_FLOAT})

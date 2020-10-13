@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/*lint -e* */
 #ifndef INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_
 #define INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_
 

@@ -903,6 +903,9 @@ REG_OP(ScatterNd)
 *@li "y" has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ScatterNd.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ScatterNd instead.
 */
 REG_OP(ScatterNdD)
     .INPUT(indices, TensorType::IndexNumberType())
@@ -1146,6 +1149,9 @@ REG_OP(Cumprod)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumprod.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Cumprod instead.
 */
 REG_OP(CumprodD)
     .INPUT(x, TensorType::NumberType())
@@ -1200,6 +1206,9 @@ REG_OP(Cumsum)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumsum.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Cumsum instead.
 */
 REG_OP(CumsumD)
     .INPUT(x, TensorType::NumberType())

@@ -912,6 +912,9 @@ and the actual image height and width.
 *@see Yolo()
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV3DetectionOutputV2 instead.
 */
 REG_OP(YoloV3DetectionOutputV2D)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))

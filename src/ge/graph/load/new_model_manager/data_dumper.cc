@@ -671,12 +671,32 @@ Status DataDumper::LoadDumpInfo() {
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(dump_properties_.GetDumpStep());
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGI("Dump step is %s and dump path  is %s in load dump info", dump_properties_.GetDumpStep().c_str(),
-         dump_path.c_str());
+  GELOGI("Dump step is %s and dump path is %s dump model is %s in load dump info",
+         dump_properties_.GetDumpStep().c_str(), dump_path.c_str(), dump_list_key.c_str());
+  auto ret = BuildTaskInfo(op_mapping_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Build task info failed");
+    return ret;
+  }
 
+  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
+
+  SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
+
+  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
+    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Execute load dump info failed");
+      return ret;
+    }
+  }
+  return SUCCESS;
+}
+
+Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
   for (const auto &op_iter : op_list_) {
     auto op_desc = op_iter.op;
-    GELOGD("Op %s in model %s begin to add task in op_mapping_info", op_desc->GetName().c_str(), dump_list_key.c_str());
+    GELOGD("Op %s in model begin to add task in op_mapping_info", op_desc->GetName().c_str());
     aicpu::dump::Task task;
     task.set_end_graph(false);
     task.set_task_id(op_iter.task_id);
@@ -700,7 +720,7 @@ Status DataDumper::LoadDumpInfo() {
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
     }
-    if (dump_properties_.GetDumpMode() == kDumpAll) {
+    if (dump_properties_.GetDumpMode() == kDumpAll || is_op_debug_) {
       auto ret = DumpOutput(op_iter, task);
       if (ret != SUCCESS) {
         GELOGE(ret, "Dump output failed when in dumping all");
@@ -715,18 +735,6 @@ Status DataDumper::LoadDumpInfo() {
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
-    }
-  }
-
-  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
-
-  SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
-
-  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
-    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Execute load dump info failed");
-      return ret;
     }
   }
   return SUCCESS;

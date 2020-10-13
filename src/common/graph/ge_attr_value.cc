@@ -33,8 +33,7 @@ using std::vector;
 namespace ge {
 NamedAttrs::NamedAttrs() { named_attrs_.InitDefault(); }
 
-NamedAttrs::NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *proto_msg)
-    : named_attrs_(owner, proto_msg) {}  // lint !e1744
+NamedAttrs::NamedAttrs(const ProtoMsgOwner &owner, proto::NamedAttrs *proto_msg) : named_attrs_(owner, proto_msg) {}
 
 void NamedAttrs::SetName(const std::string &name) {
   auto proto_msg = named_attrs_.GetProtoMsg();
@@ -239,7 +238,7 @@ ATTR_VALUE_SET_GET_IMP(GeAttrValue::STR)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::STR>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::INT)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::INT>)
-ATTR_VALUE_SET_GET_IMP(GeAttrValue::FLOAT)  // lint !e524
+ATTR_VALUE_SET_GET_IMP(GeAttrValue::FLOAT)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::FLOAT>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::BOOL)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::BOOL>)
@@ -253,11 +252,9 @@ ATTR_VALUE_SET_GET_IMP(GeAttrValue::BYTES)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::BYTES>)
 ATTR_VALUE_SET_GET_IMP(GeAttrValue::NAMED_ATTRS)
 ATTR_VALUE_SET_GET_IMP(vector<GeAttrValue::NAMED_ATTRS>)
-/*lint -e665*/
 ATTR_VALUE_SET_GET_IMP(vector<vector<int64_t>>)
-/*lint +e665*/
-ATTR_VALUE_SET_GET_IMP(vector<DataType>)        // lint !e665
-ATTR_VALUE_SET_GET_IMP(GeAttrValue::DATA_TYPE)  // lint !e665
+ATTR_VALUE_SET_GET_IMP(vector<DataType>)
+ATTR_VALUE_SET_GET_IMP(GeAttrValue::DATA_TYPE)
 
 #undef ATTR_VALUE_SET_GET_IMP
 
@@ -785,14 +782,14 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
   if (graph_def == nullptr) {
     GELOGE(GRAPH_FAILED, "proto::GraphDef make shared failed");
     graph_def = nullptr;
-    return false;  // lint !e665
+    return false;
   } else {
     ModelSerializeImp imp;
     imp.SetProtobufOwner(graph_def);
     if (!imp.UnserializeGraph(graph, *graph_def)) {
       GELOGE(GRAPH_FAILED, "UnserializeGraph Failed");
       return false;
-    }  // lint !e514
+    }
     value = graph;
   }
   return true;
@@ -812,7 +809,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
     if (graph_def == nullptr) {
       GELOGE(GRAPH_FAILED, "proto::GraphDef make shared failed");
       graph_def = nullptr;
-      return false;  // lint !e665
+      return false;
     } else {
       ComputeGraphPtr graph = nullptr;
       ModelSerializeImp imp;
@@ -820,7 +817,7 @@ bool GeAttrValueImp::GetValue(const proto::AttrDef &proto_attr_val, const ProtoM
       if (!imp.UnserializeGraph(graph, *graph_def)) {
         GELOGE(GRAPH_FAILED, "UnserializeGraph Failed");
         return false;
-      }  // lint !e514
+      }
       value.push_back(graph);
     }
   }
@@ -972,9 +969,7 @@ ATTR_UTILS_SET_IMP(Tensor, GeTensor)
 ATTR_UTILS_SET_GET_IMP(NamedAttrs, GeAttrValue::NAMED_ATTRS)
 ATTR_UTILS_SET_GET_IMP(Bytes, Buffer)
 ATTR_UTILS_SET_GET_IMP(Graph, ComputeGraphPtr)
-/*lint -e665*/
 ATTR_UTILS_SET_GET_IMP(ListListInt, vector<vector<int64_t>>)
-/*lint +e665*/
 
 ATTR_UTILS_SET_GET_IMP(ListInt, vector<int64_t>)
 ATTR_UTILS_SET_IMP(ListInt, vector<int32_t>)
@@ -989,8 +984,8 @@ ATTR_UTILS_SET_IMP(ListTensor, vector<GeTensor>)
 ATTR_UTILS_SET_GET_IMP(ListNamedAttrs, vector<GeAttrValue::NAMED_ATTRS>)
 ATTR_UTILS_SET_GET_IMP(ListBytes, vector<Buffer>)
 ATTR_UTILS_SET_GET_IMP(ListGraph, vector<ComputeGraphPtr>)
-ATTR_UTILS_SET_GET_IMP(ListDataType, vector<ge::DataType>)  // lint !e665
-ATTR_UTILS_SET_GET_IMP(DataType, ge::DataType)              // lint !e665
+ATTR_UTILS_SET_GET_IMP(ListDataType, vector<ge::DataType>)
+ATTR_UTILS_SET_GET_IMP(DataType, ge::DataType)
 
 bool AttrUtils::SetListTensor(AttrHolderAdapter &&obj, const string &name,
                               std::initializer_list<ConstGeTensorPtr> &&value) {
@@ -1159,7 +1154,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool AttrUtils::GetListOpDesc(Con
   }
   for (const auto &item : bytes_vals) {
     ModelSerialize serialize;
-    auto op_desc = serialize.UnserializeOpDesc(item.GetData(), item.GetSize());  // lint !e732
+    auto op_desc = serialize.UnserializeOpDesc(item.GetData(), item.GetSize());
     value.push_back(op_desc);
   }
   return true;
@@ -1211,7 +1206,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDescPtr AttrUtils::CloneOpDesc(
   op_def = ComGraphMakeShared<proto::OpDef>();
   if (op_def == nullptr) {
     GELOGE(GRAPH_FAILED, "proto::OpDef make shared failed");
-    return nullptr;  // lint !e665
+    return nullptr;
   }
   ModelSerializeImp imp;
   (void)imp.SerializeOpDesc(org_op_desc, op_def.get());

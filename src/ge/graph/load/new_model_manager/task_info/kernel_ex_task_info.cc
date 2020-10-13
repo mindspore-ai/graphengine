@@ -171,6 +171,10 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
       dump_flag_ = RT_KERNEL_DUMPFLAG;
       dump_args_ = input_output_addr_;
     }
+    if (davinci_model_->GetOpDugReg()) {
+      GELOGI("Op debug is open in kernel ex task info");
+      dump_args_ = input_output_addr_;
+    }
   }
 
   uint64_t input_output_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr_));

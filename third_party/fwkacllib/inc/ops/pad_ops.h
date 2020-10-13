@@ -233,6 +233,9 @@ REG_OP(PadV3)
 
 *@par Third-party framework compatibility:
 * Compatible with ONNX operator Pad.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use PadV3 instead.
 */
 REG_OP(PadV3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))

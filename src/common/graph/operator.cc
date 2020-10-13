@@ -56,9 +56,6 @@ using std::string;
 using std::to_string;
 using std::vector;
 
-/*lint -save -e529 -e728*/
-/*lint -e446 -e732*/
-/*lint -e665*/
 namespace ge {
 class OpIO {
  public:
@@ -943,7 +940,7 @@ OperatorImplPtr Operator::GetOperatorImplPtr() const { return operator_impl_; }
       GELOGW("set attr name %s failed.", name.c_str());                                     \
     }                                                                                       \
     return *this;                                                                           \
-  }  // lint !e665
+  }
 
 #define OP_ATTR_GET_IMP(ArgType, AttrUtilsFun)                                              \
   graphStatus Operator::GetAttr(const string &name, ArgType attr_value) const {             \
@@ -956,7 +953,7 @@ OperatorImplPtr Operator::GetOperatorImplPtr() const { return operator_impl_; }
       return GRAPH_FAILED;                                                                  \
     }                                                                                       \
     return GRAPH_SUCCESS;                                                                   \
-  }  // lint !e665
+  }
 
 void Operator::BreakConnect() const {
   if (operator_impl_ == nullptr) {
@@ -977,7 +974,7 @@ void Operator::BreakConnect() const {
     if (!AttrUtils::Set##AttrUtilsFun(operator_impl_->GetOpDescImpl(), name, attr_value)) { \
       GELOGW("reg attr name %s failed.", name.c_str());                                     \
     }                                                                                       \
-  }  // lint !e665
+  }
 
 OP_ATTR_SET_IMP(int64_t, Int)
 OP_ATTR_SET_IMP(int32_t, Int)
@@ -998,22 +995,22 @@ OP_ATTR_SET_IMP(const vector<vector<int64_t>> &, ListListInt)
 OP_ATTR_SET_IMP(float, Float)
 OP_ATTR_GET_IMP(float &, Float)
 OP_ATTR_SET_IMP(const vector<float> &, ListFloat)
-OP_ATTR_GET_IMP(vector<float> &, ListFloat)  // lint !e665
+OP_ATTR_GET_IMP(vector<float> &, ListFloat)
 
 OP_ATTR_SET_IMP(bool, Bool)
 OP_ATTR_GET_IMP(bool &, Bool)
 OP_ATTR_SET_IMP(const vector<bool> &, ListBool)
-OP_ATTR_GET_IMP(vector<bool> &, ListBool)  // lint !e665
+OP_ATTR_GET_IMP(vector<bool> &, ListBool)
 
 OP_ATTR_SET_IMP(const string &, Str)
 OP_ATTR_GET_IMP(string &, Str)
 OP_ATTR_SET_IMP(const vector<string> &, ListStr)
-OP_ATTR_GET_IMP(vector<string> &, ListStr)  // lint !e665
+OP_ATTR_GET_IMP(vector<string> &, ListStr)
 
 OP_ATTR_SET_IMP(const GeAttrValue::NAMED_ATTRS &, NamedAttrs)
 OP_ATTR_GET_IMP(GeAttrValue::NAMED_ATTRS &, NamedAttrs)
 OP_ATTR_SET_IMP(const vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
-OP_ATTR_GET_IMP(vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)  // lint !e665
+OP_ATTR_GET_IMP(vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
 
 OP_ATTR_REG_IMP(int64_t, Int)
 OP_ATTR_REG_IMP(const vector<int64_t> &, ListInt)
@@ -1583,5 +1580,3 @@ void GraphUtils::BreakConnect(const std::map<OperatorImplPtr, NodePtr> &all_node
   }
 }
 }  // namespace ge
-/*lint +e446 +e732*/
-/*lint +e665*/

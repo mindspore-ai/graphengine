@@ -26,7 +26,6 @@
 using std::string;
 
 namespace ge {
-/*lint -e148*/
 struct RunContext {
   rtModel_t model;
   rtStream_t stream;
@@ -41,8 +40,6 @@ struct RunContext {
   std::vector<rtLabel_t> graphLabelList;    // all labels of graph, order by ge label id(0,1,...)
 };
 
-/*lint +e148*/
-
 struct Task {
   uint32_t id;
   uint16_t type;
@@ -51,8 +48,7 @@ struct Task {
 };
 
 struct OpInfo {
-  string engine;  // which engin
-  /*lint -e148*/
+  string engine;       // which engin
   string opKernelLib;  // which opsKernelStore
   int computeCost;     // compute cost
   bool flagPartial;    // whether to support is related to shape

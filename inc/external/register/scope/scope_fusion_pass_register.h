@@ -301,7 +301,6 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeFusionPassRegistry {
  private:
   ScopeFusionPassRegistry();
   class ScopeFusionPassRegistryImpl;
-  /*lint -e148*/
   std::unique_ptr<ScopeFusionPassRegistryImpl> impl_;
   friend class TensorFlowModelParser;
 };

@@ -111,6 +111,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
     graph/partition/dynamic_shape_partition.cc \
+    graph/partition/stage_partition.cc \
     graph/passes/base_pass.cc \
     graph/passes/bitcast_pass.cc \
     graph/passes/cast_remove_pass.cc \
@@ -243,6 +244,7 @@ LIBGE_LOCAL_SRC_FILES := \
     model/ge_root_model.cc \
     omm/csa_interact.cc \
     opskernel_manager/ops_kernel_manager.cc \
+    opskernel_manager/ops_kernel_builder_manager.cc \
     session/inner_session.cc \
     session/session_manager.cc \
     single_op/single_op.cc \
@@ -359,6 +361,7 @@ LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
                           libadump_server \
+                          libmsprofiler \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \

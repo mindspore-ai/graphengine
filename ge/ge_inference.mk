@@ -42,6 +42,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     session/session_manager.cc \
     engine_manager/dnnengine_manager.cc \
     opskernel_manager/ops_kernel_manager.cc \
+    opskernel_manager/ops_kernel_builder_manager.cc \
     graph/manager/graph_manager.cc \
     graph/manager/graph_manager_utils.cc \
     graph/manager/graph_context.cc \
@@ -57,6 +58,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     graph/partition/engine_place.cc \
     graph/partition/graph_partition.cc \
     graph/partition/dynamic_shape_partition.cc \
+    graph/partition/stage_partition.cc \
     generator/ge_generator.cc \
     generator/generator_api.cc \
     graph/manager/graph_var_manager.cc \
@@ -357,7 +359,7 @@ LOCAL_MODULE := libge_compiler
 
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -O2
 # from ome_inference.mk
-LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 endif
@@ -420,7 +422,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_compiler
 LOCAL_CFLAGS += -DGOOGLE_PROTOBUF_NO_RTTI -DDEV_VISIBILITY -DNONSUPPORT_SAVE_TO_FILE
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0
-LOCAL_CFLAGS += -DREUSE_MEMORY=1 -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -DREUSE_MEMORY=1 -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE
 LOCAL_CFLAGS += -DOMG_DEVICE_VERSION
 LOCAL_CFLAGS += -O2
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES

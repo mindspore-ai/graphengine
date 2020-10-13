@@ -12,7 +12,7 @@ set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fst
 set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 set(PROTOBUF_STATIC_PKG_DIR ${CMAKE_INSTALL_PREFIX}/protobuf_static)
 ExternalProject_Add(protobuf_static_build
-                    #URL http://tfk.inhuawei.com/api/containers/container1/download/protobuf-3.8.0.tar.gz
+                    URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
                     SOURCE_DIR ${GE_CODE_DIR}/../third_party/protobuf/src/protobuf-3.8.0
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}

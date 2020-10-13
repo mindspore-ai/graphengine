@@ -16,6 +16,7 @@
 
 #include "ge/ge_api.h"
 #include <iostream>
+#include <malloc.h>
 #include "common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/datatype_util.h"
@@ -162,6 +163,9 @@ Status GEFinalize() {
     RtContextUtil::GetInstance().DestroyAllRtContexts();
     g_ge_initialized = false;
   }
+
+  // to avoid memory fragment, use malloc_trim to back free stack to system
+  malloc_trim(0);
 
   GELOGT(TRACE_STOP, "GEFinalize finished");
   return ret;

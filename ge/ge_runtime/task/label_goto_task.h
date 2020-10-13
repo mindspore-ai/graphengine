@@ -14,21 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_TYPES_H_
-#define INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_TYPES_H_
+#ifndef GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
+#define GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
 
-#include <stdint.h>
-#include <string>
+#include <memory>
+#include "ge_runtime/task/task.h"
+
 namespace ge {
-enum OPTIMIZER_SCOPE {
-  UNIT = 0,
-  ENGINE,
-};
+namespace model_runner {
+class LabelGotoTask : public TaskRepeater<LabelGotoTaskInfo> {
+ public:
+  LabelGotoTask(const ModelContext &model_context, const std::shared_ptr<LabelGotoTaskInfo> &task_info);
 
-struct GraphOptimizerAttribute {
-  std::string engineName;
-  OPTIMIZER_SCOPE scope;
+  ~LabelGotoTask() override;
+
+  bool Distribute() override;
+
+ private:
+  std::shared_ptr<LabelGotoTaskInfo> task_info_;
+  void *stream_;
+  void *label_;
 };
+}  // namespace model_runner
 }  // namespace ge
 
-#endif  // INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_TYPES_H_
+#endif  // GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_

@@ -61,9 +61,9 @@ class OpTask {
   const OpDescPtr &GetOpdesc() const {return op_desc_;}
   Status OpenDump(const std::vector<uintptr_t> &io_addr, rtStream_t stream);
   virtual Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                              const std::vector<void *> &inputs,
+                              const std::vector<DataBuffer> &input_buffers,
                               std::vector<GeTensorDesc> &output_desc,
-                              std::vector<void *> &outputs,
+                              std::vector<DataBuffer> &output_buffers,
                               rtStream_t stream) {
     return UNSUPPORTED;
   }
@@ -155,10 +155,10 @@ class AiCpuTask : public AiCpuBaseTask {
   const void *GetIOAddr() const override;
 
   Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                      const std::vector<void *> &inputs,
+                      const std::vector<DataBuffer> &input_buffers,
                       std::vector<GeTensorDesc> &output_desc,
-                      std::vector<void *> &outputs,
-                      rtStream_t stream)  override;
+                      std::vector<DataBuffer> &output_buffers,
+                      rtStream_t stream) override;
   Status SetMemCopyTask(const domi::KernelExDef &kernel_def);
 
  private:
@@ -167,16 +167,14 @@ class AiCpuTask : public AiCpuBaseTask {
   // for copy task.
   Status InitForSummaryAndCopy();
   Status UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc,
-                                           vector<void *> &outputs,
+                                           vector<DataBuffer> &outputs,
                                            rtStream_t stream);
-  Status ReadResultSummaryAndPrepareMemory(std::vector<void *> &out_shape_hbm);
+  Status ReadResultSummaryAndPrepareMemory();
 
-  Status CopyDataToHbm(vector<void *> &outputs, const std::vector<void *> &out_shape_hbm, rtStream_t stream);
-  Status PrepareCopyInputs(vector<void *> &outputs,
-                           const std::vector<void *> &out_shape_hbm);
+  Status CopyDataToHbm(vector<DataBuffer> &outputs, rtStream_t stream);
+  Status PrepareCopyInputs(vector<DataBuffer> &outputs);
 
-  Status UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc,
-                                const std::vector<void *> &out_shape_hbm);
+  Status UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc);
 
   friend class AiCpuTaskBuilder;
   void *workspace_addr_ = nullptr;
@@ -200,6 +198,8 @@ class AiCpuTask : public AiCpuBaseTask {
   void *copy_input_data_size_dev_;
   void *copy_input_src_dev_;
   void *copy_input_dst_dev_;
+
+  vector<void *> out_shape_hbm_;
 };
 
 class AiCpuCCTask : public AiCpuBaseTask {
@@ -220,9 +220,9 @@ class AiCpuCCTask : public AiCpuBaseTask {
   size_t GetArgSize() const;
 
   Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                      const std::vector<void *> &inputs,
+                      const std::vector<DataBuffer> &input_buffers,
                       std::vector<GeTensorDesc> &output_desc,
-                      std::vector<void *> &outputs,
+                      std::vector<DataBuffer> &output_buffers,
                       rtStream_t stream)  override;
 
 private:

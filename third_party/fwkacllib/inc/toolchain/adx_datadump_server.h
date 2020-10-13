@@ -14,20 +14,29 @@
  * limitations under the License.
  */
 
-#ifndef AICORE_PARAM_CALCULATOR
-#define AICORE_PARAM_CALCULATOR
+#ifndef ADX_DATADUMP_SERVER_H
+#define ADX_DATADUMP_SERVER_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+/**
+ * @brief initialize server for normal datadump function.
+ * @return
+ *      IDE_DAEMON_OK:    datadump server init success
+ *      IDE_DAEMON_ERROR: datadump server init failed
+ */
+int AdxDataDumpServerInit();
 
-#include "graph/node.h"
-#include "graph_optimizer/graph_optimize_register_error_codes.h"
+/**
+ * @brief uninitialize server for normal datadump function.
+ * @return
+ *      IDE_DAEMON_OK:    datadump server uninit success
+ *      IDE_DAEMON_ERROR: datadump server uninit failed
+ */
+int AdxDataDumpServerUnInit();
 
-namespace fe {
-class AICoreParamCalculator {
- public:
-  AICoreParamCalculator();
+#ifdef __cplusplus
+}
+#endif
+#endif
 
-  ~AICoreParamCalculator();
-
-  Status CalcOpRunningParam(ge::Node &node);
-};
-}  // namespace fe
-#endif  // AICORE_PARAM_CALCULATOR

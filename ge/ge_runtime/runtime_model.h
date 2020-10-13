@@ -40,13 +40,11 @@ class RuntimeModel {
   const std::vector<uint32_t> &GetTaskIdList() const;
   const std::vector<uint32_t> &GetStreamIdList() const;
   const std::map<std::string, std::shared_ptr<RuntimeInfo>> &GetRuntimeInfoMap() const { return runtime_info_map_; }
-  const rtModel_t GetModelHandle() const { return rt_model_handle_; }
+  rtModel_t GetModelHandle() const { return rt_model_handle_; }
   bool Run();
   bool CopyInputData(const InputData &input_data);
-  bool GetInputOutputDescInfo(bool zero_copy,
-                              std::vector<InputOutputDescInfo> *input_desc,
-                              std::vector<InputOutputDescInfo> *output_desc,
-                              std::vector<uint32_t> *input_format,
+  bool GetInputOutputDescInfo(bool zero_copy, std::vector<InputOutputDescInfo> *input_desc,
+                              std::vector<InputOutputDescInfo> *output_desc, std::vector<uint32_t> *input_format,
                               std::vector<uint32_t> *output_format);
 
  private:
@@ -55,7 +53,7 @@ class RuntimeModel {
   bool LoadTask();
   bool InitStream(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitEvent(uint32_t event_num);
-  bool InitLabel(uint32_t batch_num);
+  bool InitLabel(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitDataInfo(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitOutputInfo(std::shared_ptr<DavinciModel> &davinci_model);
   bool InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model);
@@ -87,6 +85,7 @@ class RuntimeModel {
   std::vector<uint32_t> stream_id_list_{};
   std::map<std::string, std::shared_ptr<RuntimeInfo>> runtime_info_map_;
 };
+
 }  // namespace model_runner
 }  // namespace ge
 

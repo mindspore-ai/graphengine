@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ class GELib {
   // get incre build cache path
   const std::string &GetIncreBuildCachePath() const { return incre_build_cache_path_; }
 
-  void InitProfiling(Options &options, bool convert_2_phy_device_id = false);
+  void InitProfiling(Options &options);
   void ShutDownProfiling();
 
   Status InitSystemWithoutOptions();

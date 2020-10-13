@@ -32,7 +32,7 @@ using std::vector;
 namespace ge {
 struct ModelPartition {
   ModelPartitionType type;
-  uint8_t *data = 0;
+  uint8_t* data = 0;
   uint32_t size = 0;
 };
 
@@ -81,8 +81,8 @@ class OmFileSaveHelper {
 
   const std::vector<ModelPartition> &GetModelPartitions() const;
 
-  Status SaveModel(const SaveParam &save_param, const char *target_file, ge::ModelBufferData &model,
-                   bool is_offline = true);
+  Status SaveModel(const SaveParam &save_param, const char *target_file,
+                   ge::ModelBufferData& model, bool is_offline = true);
 
   Status SaveModelToFile(const char *output_file, ge::ModelBufferData &model, bool is_offline = true);
 

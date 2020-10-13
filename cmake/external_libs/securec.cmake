@@ -11,7 +11,7 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
 endif()
 
 ExternalProject_Add(c_sec_build
-                    #URL http://tfk.inhuawei.com/api/containers/container1/download/protobuf-3.8.0.tar.gz
+                    URL https://gitee.com/openeuler/libboundscheck/repository/archive/v1.1.10.tar.gz
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
                     SOURCE_DIR ${GE_CODE_DIR}/../libc_sec
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}

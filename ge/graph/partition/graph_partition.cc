@@ -183,9 +183,7 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
                     GELOGE(FAILED, "Find graph info failed, graph name is %s", original_graph->GetName().c_str());
                     return FAILED;)
     auto graph_info = graph_2_graph_partition_info_[original_graph];
-    GE_IF_BOOL_EXEC(
-      graph_info.corresponding_node_in_partitions_.find(parent_node) ==
-        graph_info.corresponding_node_in_partitions_.end(),
+    GE_IF_BOOL_EXEC(graph_info.corresponding_node_in_partitions_.count(parent_node) == 0,
       GELOGE(FAILED, "Find corresponding node failed, parent node name is %s", parent_node->GetName().c_str());
       return FAILED;)
     auto corresponding_node = graph_info.corresponding_node_in_partitions_[parent_node];
@@ -201,8 +199,7 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
   if (real_ret != SUCCESS) {
     auto root_graph = ge::GraphUtils::FindRootGraph(original_compute_graph);
     GE_CHECK_NOTNULL(root_graph);
-    (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(),
-                                                          root_graph->GetGraphID());
+    (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(), root_graph->GetGraphID());
   }
   return real_ret;
 }

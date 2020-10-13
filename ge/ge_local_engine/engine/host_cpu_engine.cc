@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "host_cpu_engine.h"
 #include <dlfcn.h>
 #include "graph/common/omg_util.h"
@@ -31,26 +32,6 @@ namespace {
   case (DTYPE): {                                                                                                      \
     GeTensorPtr ge_tensor = nullptr;                                                                                   \
     if (need_create_flag) {                                                                                            \
-      int64_t num_size = out_desc.GetShape().IsScalar() ? 1 : out_desc.GetShape().GetShapeSize();                      \
-      if (out_desc.GetShape().IsUnknownShape()) {                                                                      \
-        std::vector<std::pair<int64_t, int64_t>> range;                                                                \
-        if (out_desc.GetShapeRange(range) != GRAPH_SUCCESS) {                                                          \
-          GELOGE(INTERNAL_ERROR, "Get shape range failed, node:%s", op_desc->GetName().c_str());                       \
-          return INTERNAL_ERROR;                                                                                       \
-        }                                                                                                              \
-        int64_t max_range_size = 1;                                                                                    \
-        for (const auto &item : range) {                                                                               \
-          FMK_INT64_MULCHECK(max_range_size, item.second);                                                             \
-          max_range_size *= item.second;                                                                               \
-        }                                                                                                              \
-        num_size = max_range_size;                                                                                     \
-      }                                                                                                                \
-      if (num_size < 0) {                                                                                              \
-        GELOGE(INTERNAL_ERROR, "node:%s, get size for output %zu failed, num=%lld",                                    \
-               op_desc->GetName().c_str(), i, num_size);                                                               \
-        return INTERNAL_ERROR;                                                                                         \
-      }                                                                                                                \
-      auto data_num = static_cast<uint64_t>(num_size);                                                                 \
       GELOGI("node:%s allocate output %zu start, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));  \
       std::unique_ptr<TYPE[]> buf(new (std::nothrow) TYPE[data_num]());                                                \
       if (buf == nullptr) {                                                                                            \
@@ -89,6 +70,29 @@ namespace ge {
 namespace {
 const char *kEnvKeyOppPath = "ASCEND_OPP_PATH";
 const char *kHostCpuLibRelativePath = "/op_impl/built-in/host_cpu";
+}
+
+Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
+  int64_t num_size = out_desc.GetShape().IsScalar() ? 1 : out_desc.GetShape().GetShapeSize();
+  if (out_desc.GetShape().IsUnknownShape()) {
+    std::vector<std::pair<int64_t, int64_t>> range;
+    if (out_desc.GetShapeRange(range) != GRAPH_SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Get shape range failed.");
+      return INTERNAL_ERROR;
+    }
+    int64_t max_range_size = 1;
+    for (const auto& item : range) {
+      FMK_INT64_MULCHECK(max_range_size, item.second);
+      max_range_size *= item.second;
+    }
+    num_size = max_range_size;
+  }
+  if (num_size < 0) {
+    GELOGE(INTERNAL_ERROR, "Get negative size, num_size=%lld.", num_size);
+    return INTERNAL_ERROR;
+  }
+  data_num = static_cast<uint64_t>(num_size);
+  return SUCCESS;
 }
 
 void HostCpuEngine::CloseSo() {
@@ -173,13 +177,20 @@ Status HostCpuEngine::PrepareOutputs(const ge::ConstOpDescPtr &op_desc,
                                      vector<GeTensorPtr> &outputs,
                                      map<std::string, Tensor> &named_outputs) {
   if (!outputs.empty() && (outputs.size() != op_desc->GetOutputsSize())) {
-    GELOGW("size of ouputs not match, size of outputs = %zu, exactly output_num=%zu.",
+    GELOGW("size of outputs not match, size of outputs = %zu, exactly output_num=%zu.",
            outputs.size(), op_desc->GetOutputsSize());
     outputs.clear();
   }
   bool need_create_flag = (outputs.size() != op_desc->GetOutputsSize());
   for (size_t i = 0; i < op_desc->GetOutputsSize(); ++i) {
     const auto &out_desc = op_desc->GetOutputDesc(i);
+    uint64_t data_num = 0;
+    if (need_create_flag) {
+      if (GetDataNumber(out_desc, data_num) != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "node:%s, get size for output %zu failed", op_desc->GetName().c_str(), i);
+        return INTERNAL_ERROR;
+      }
+    }
     switch (out_desc.GetDataType()) {
       CREATE_OUTPUT_CASE(DT_BOOL, bool)
       CREATE_OUTPUT_CASE(DT_INT8, int8_t)

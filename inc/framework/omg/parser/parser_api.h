@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef COMPRESS_WEIGHT_H
-#define COMPRESS_WEIGHT_H
+#ifndef INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
+#define INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
 
-#include "compress.h"
+#include <iostream>
+#include <map>
+#include <string>
+#include "ge/ge_api_error_codes.h"
 
-const int SHAPE_SIZE_WEIGHT = 4;
-
-struct CompressOpConfig {
-  int64_t wShape[SHAPE_SIZE_WEIGHT];
-  size_t compressTilingK;
-  size_t compressTilingN;
-  struct CompressConfig compressConfig;
-};
-
-extern "C" CmpStatus CompressWeightsConv2D(const char *const input, char *const zipBuffer, char *const infoBuffer,
-                                           CompressOpConfig *const param);
-#endif  // COMPRESS_WEIGHT_H
+namespace ge {
+// Initialize parser
+Status ParserInitialize(const std::map<std::string, std::string>& options);
+// Finalize parser, release all resources
+Status ParserFinalize();
+}  // namespace ge
+#endif // INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_

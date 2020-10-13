@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,16 +89,13 @@ Status AttachStreamLabelPass::UpdateCondBranch(const NodePtr &node) {
   nodes.push(node);
 
   static const std::set<std::string> end_type_set = {STREAMSWITCH, STREAMMERGE, MERGE};
-  bool merge_flag = false;
-  bool exit_flag = false;
-  bool net_output_flag = false;
   while (!nodes.empty()) {
     NodePtr cur_node = nodes.top();
     nodes.pop();
     if (visited.count(cur_node) > 0) {
       continue;
     }
-    if (AttachFlag(cur_node, stream_label, merge_flag, exit_flag, net_output_flag) != SUCCESS) {
+    if (AttachFlag(cur_node, stream_label) != SUCCESS) {
       GELOGE(FAILED, "Attach flag for node %s failed.", cur_node->GetName().c_str());
       return FAILED;
     }
@@ -122,12 +119,6 @@ Status AttachStreamLabelPass::UpdateCondBranch(const NodePtr &node) {
     GE_CHK_STATUS_RET(SetActiveLabelList(node, {stream_label}), "set active_label_list failed.");
   }
 
-  bool attach_flag = (merge_flag || exit_flag) && net_output_flag;
-  if (attach_flag) {
-    GELOGI("No need to keep on attaching label.");
-    return SUCCESS;
-  }
-
   for (const NodePtr &tmp_node : branch_nodes) {
     GELOGD("Attach label %s to node: %s.", stream_label.c_str(), tmp_node->GetName().c_str());
     GE_CHK_STATUS_RET(SetStreamLabel(tmp_node, stream_label), "Set stream label failed.");
@@ -140,13 +131,9 @@ Status AttachStreamLabelPass::UpdateCondBranch(const NodePtr &node) {
 /// @brief attach flag
 /// @param [in] node
 /// @param [out] stream_label
-/// @param [out] merge_flag
-/// @param [out] exit_flag
-/// @param [out] net_output_flag
 /// @return Status
 ///
-Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &stream_label, bool &merge_flag,
-                                         bool &exit_flag, bool &net_output_flag) {
+Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &stream_label) {
   const std::string &type = node->GetType();
   if (type == STREAMSWITCH) {
     if (node->GetInDataNodes().empty()) {
@@ -164,12 +151,8 @@ Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &strea
   } else if (type == STREAMMERGE) {
     stream_label = node->GetName();
     GE_CHK_STATUS_RET(SetStreamLabel(node, stream_label), "Set stream label failed.");
-    merge_flag = true;
   } else if ((type == EXIT) || (type == REFEXIT)) {
     GE_CHK_STATUS_RET(SetStreamLabel(node, stream_label), "Set stream label failed.");
-    exit_flag = true;
-  } else if (type == NETOUTPUT) {
-    net_output_flag = true;
   }
 
   return SUCCESS;

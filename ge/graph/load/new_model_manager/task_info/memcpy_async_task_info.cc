@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,27 +22,25 @@
 namespace ge {
 Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("MemcpyAsyncTaskInfo Init Start");
-  if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null");
-    return PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(davinci_model);
+  davinci_model_ = davinci_model;
 
-  Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
+  Status ret = SetStream(task_def.stream_id(), davinci_model_->GetStreamList());
   if (ret != SUCCESS) {
     return ret;
   }
 
-  memcpy_async = task_def.memcpy_async();
-  count_ = memcpy_async.count();
-  kind_ = memcpy_async.kind();
-  dst_max_ = memcpy_async.dst_max();
-  OpDescPtr op_desc = davinci_model->GetOpByIndex(memcpy_async.op_index());
+  memcpy_async_ = task_def.memcpy_async();
+  count_ = memcpy_async_.count();
+  kind_ = memcpy_async_.kind();
+  dst_max_ = memcpy_async_.dst_max();
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async_.op_index());
   if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
+    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async_.op_index());
     return INTERNAL_ERROR;
   }
 
-  if (davinci_model->IsKnownNode()) {
+  if (davinci_model_->IsKnownNode()) {
     src_ = reinterpret_cast<uint8_t *>(davinci_model_->GetCurrentArgsAddr(args_offset_));
     dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(src_) + sizeof(void *));
     // for zero copy
@@ -50,29 +48,34 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     GELOGI("MemcpyAsyncTaskInfo src_ %p, dst_ %p, args_offset %u.", src_, dst_, args_offset_);
     return SUCCESS;
   }
-  ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.src(), src_);
+
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
+  ret = ModelUtils::GetRtAddress(rts_param, memcpy_async_.src(), src_);
   if (ret != SUCCESS) {
     return ret;
   }
 
   // dst_ needs different address for different chips
-  if (op_desc->HasAttr(ATTR_NAME_MEMORY_TYPE_RANGE)) {
-    ret = AllocTsMemoryForMemcpy(op_desc, davinci_model);
-    if (ret != SUCCESS) {
-      return ret;
+  vector<int64_t> memory_type_list;
+  (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, memory_type_list);
+  if (!memory_type_list.empty() && memory_type_list[0] == RT_MEMORY_TS_4G) {  // TS Feature, Just one.
+    uint64_t mem_offset = memcpy_async_.dst() - rts_param.logic_mem_base;
+    dst_ = static_cast<uint8_t *>(rts_param.ts_mem_mall->Acquire(mem_offset, memcpy_async_.dst_max()));
+    if (dst_ == nullptr) {
+      return FAILED;
     }
   } else {
-    ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.dst(), dst_);
+    ret = ModelUtils::GetRtAddress(rts_param, memcpy_async_.dst(), dst_);
     if (ret != SUCCESS) {
       return ret;
     }
   }
 
   GELOGI("MemcpyAsyncTaskInfo Init Success, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu",
-         memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_);
+         memcpy_async_.src(), memcpy_async_.dst(), src_, dst_, dst_max_, count_);
 
-  davinci_model->DisableZeroCopy(src_);
-  davinci_model->DisableZeroCopy(dst_);
+  davinci_model_->DisableZeroCopy(src_);
+  davinci_model_->DisableZeroCopy(dst_);
   return SUCCESS;
 }
 
@@ -102,12 +105,12 @@ Status MemcpyAsyncTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davinci
 Status MemcpyAsyncTaskInfo::UpdateArgs() {
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs in.");
   GE_CHECK_NOTNULL(davinci_model_);
-  Status ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async.src(), src_);
+  Status ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async_.src(), src_);
   if (ret != SUCCESS) {
     return ret;
   }
 
-  ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async.dst(), dst_);
+  ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async_.dst(), dst_);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -119,34 +122,6 @@ Status MemcpyAsyncTaskInfo::UpdateArgs() {
   davinci_model_->SetTotalIOAddrs(io_addrs);
 
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs success.");
-  return SUCCESS;
-}
-
-Status MemcpyAsyncTaskInfo::AllocTsMemoryForMemcpy(const OpDescPtr &op_desc, DavinciModel *davinci_model) {
-  int64_t size = 0;
-  auto tensor_desc = op_desc->GetOutputDescPtr(0);
-  if ((tensor_desc == nullptr) || (TensorUtils::GetTensorSizeInBytes(*tensor_desc, size) != GRAPH_SUCCESS)) {
-    GELOGE(FAILED, "GetTensorSizeInBytes failed!");
-    return FAILED;
-  }
-
-  rtError_t rt_ret = rtMalloc(&memory_4g_, size, RT_MEMORY_TS_4G);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMalloc failed, ret: 0x%X", rt_ret);
-    return FAILED;
-  }
-
-  // map save the opdesc's offset and special address, for update the streamSwitchN's input address
-  std::map<int64_t, void *> memcpy_4g_offset_addr;
-  vector<int64_t> offsets = op_desc->GetOutputOffset();
-  if (offsets.empty()) {
-    GELOGE(FAILED, "GetOutputOffset failed!");
-    return FAILED;
-  }
-  memcpy_4g_offset_addr.insert(std::pair<int64_t, void *>(offsets[0], memory_4g_));
-  davinci_model->SetMemcpyOffsetAndAddr(memcpy_4g_offset_addr);
-
-  dst_ = reinterpret_cast<uint8_t *>(memory_4g_);
   return SUCCESS;
 }
 

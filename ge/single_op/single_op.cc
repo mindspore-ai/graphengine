@@ -295,7 +295,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   if (op_task_->GetOpTaskType() == OP_TASK_TBE) {
     return ExecuteTbeTask(input_desc, inputs, output_desc, outputs);
   } else if (op_task_->GetOpTaskType() == OP_TASK_AICPU || op_task_->GetOpTaskType() == OP_TASK_AICPUCC) {
-    return op_task_->LaunchKernel(input_desc, inputs, output_desc, outputs, stream_);
+    return op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_);
   } else {
     GELOGE(UNSUPPORTED,
            "Only TBE_Task, AI_CPU_Task and AI_CPUCC_Task are supported, but got %u",

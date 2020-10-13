@@ -7,8 +7,8 @@ set(ONNX_PROTO_FILE ${ONNX_PROTO_DIR}/onnx.proto)
 file(MAKE_DIRECTORY ${ONNX_PROTO_DIR})
 
 ExternalProject_Add(onnx
-                    #URL https://github.com/onnx/onnx/releases/download/v1.6.0/onnx-1.6.0.tar.gz
-                    URL /home/txd/workspace/cloud_code/pkg/onnx-1.6.0.tar.gz
+                    URL https://github.com/onnx/onnx/releases/download/v1.6.0/onnx-1.6.0.tar.gz
+                    #URL /home/txd/workspace/cloud_code/pkg/onnx-1.6.0.tar.gz
                     #URL_HASH SHA256=3b88c3fe521151651a0403c4d131cb2e0311bd28b753ef692020a432a81ce345
                     #SOURCE_DIR ${ONNX_SRC_DIR}
                     CONFIGURE_COMMAND ""

@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -580,7 +580,18 @@ RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *d
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
-#ifdef __cplusplus
+
+/**
+ * @ingroup dvrt_base
+ * @brief get current thread last stream id and task id 
+ * @param [out] stream id and task id
+ * @param [in] null
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for input null ptr
+ */
+RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskid, uint32_t *streamid);
+
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

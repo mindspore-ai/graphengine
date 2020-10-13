@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -472,7 +472,7 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
     return true;
   }
 
-  ret = regexec(&reg, str.c_str(), 0, nullptr, 0);
+  ret = regexec(&reg, str.c_str(), 0, NULL, 0);
   if (ret) {
     regerror(ret, &reg, ebuff, kMaxBuffSize);
     GELOGE(ge::PARAM_INVALID, "regexec failed, reason: %s", ebuff);

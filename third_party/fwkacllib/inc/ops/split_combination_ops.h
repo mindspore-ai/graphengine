@@ -18,8 +18,8 @@
  * \file split_combination_ops.h
  * \brief
  */
-#ifndef GE_OP_SPLIT_COMBINATION_OPS_H
-#define GE_OP_SPLIT_COMBINATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -386,4 +386,4 @@ REG_OP(ConcatOffsetD)
     .OP_END_FACTORY_REG(ConcatOffsetD)
 }  // namespace ge
 
-#endif  // GE_OP_SPLIT_COMBINATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_

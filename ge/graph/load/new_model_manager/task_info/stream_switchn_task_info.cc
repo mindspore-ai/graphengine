@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/load/new_model_manager/task_info/stream_switchn_task_info.h"
 #include <vector>
 #include "framework/common/debug/ge_log.h"
@@ -147,38 +148,37 @@ Status StreamSwitchNTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davin
   int64_t tensor_size = 0;
   GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
   davinci_model->SetTotalFixedAddrsSize(input_tensor_name, tensor_size);
-  GELOGI("Calculate stream switchn task args , tensor_size %ld, args_offset %ld", tensor_size, args_offset_);
+  GELOGI("Calculate stream switchn task args, tensor_size %ld, args_offset %ld", tensor_size, args_offset_);
   return SUCCESS;
 }
 
 Status StreamSwitchNTaskInfo::InputPtrUpdate(const OpDescPtr &op_desc, DavinciModel *davinci_model) {
-  bool is_4g_mem = false;
-  const map<int64_t, void *> memcpy_4g_offset_addr = davinci_model->GetMemcpyOffsetAndAddr();
-  vector<int64_t> input_offset = op_desc->GetInputOffset();
-  if (input_offset.empty()) {
-    GELOGE(FAILED, "Get StreamSwitchN's input offset failed.");
-    return FAILED;
-  }
-
-  auto iter = memcpy_4g_offset_addr.find(input_offset[0]);
-  if (iter != memcpy_4g_offset_addr.end()) {
-    input_ptr_ = iter->second;
-    is_4g_mem = true;
-  }
-
-  if (is_4g_mem == false) {
+  // dst_ needs different address for different chips
+  vector<int64_t> memory_type_list;
+  (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, memory_type_list);
+  if (!memory_type_list.empty() && memory_type_list[0] == RT_MEMORY_TS_4G) {    // TS Feature, Just one.
+    const vector<int64_t> input_offset = op_desc->GetInputOffset();
+    const vector<int64_t> input_legnth = ModelUtils::GetInputSize(op_desc);
+    if (input_offset.empty() || input_legnth.empty()) {
+      GELOGE(FAILED, "input offset size %zu, input legnth size: %zu", input_offset.size(), input_legnth.size());
+      return FAILED;
+    }
+    const RuntimeParam &rts_param = davinci_model->GetRuntimeParam();
+    input_ptr_ = rts_param.ts_mem_mall->Acquire(input_offset[0], input_legnth[0]);
+  } else {
     if (davinci_model->IsKnownNode()) {
       input_ptr_ = davinci_model->GetCurrentFixedAddr(args_offset_);
     } else {
       auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
       if (input_data_addr.empty()) {
+        GELOGE(FAILED, "input data addr is empty");
         return FAILED;
       }
       input_ptr_ = input_data_addr[0];
     }
   }
 
-  GELOGI("StreamSwitchN's input_ptr is %p, is_4g_mem: %d", input_ptr_, is_4g_mem);
+  GELOGI("StreamSwitchN's input_ptr is %p", input_ptr_);
   return SUCCESS;
 }
 REGISTER_TASK_INFO(RT_MODEL_TASK_STREAM_SWITCH_N, StreamSwitchNTaskInfo);

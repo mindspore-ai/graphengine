@@ -18,8 +18,8 @@
  * \file array_ops.h
  * \brief
  */
-#ifndef GE_OP_ARRAY_OPS_H_
-#define GE_OP_ARRAY_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -659,8 +659,7 @@ REG_OP(IdentityN)
     .OP_END_FACTORY_REG(IdentityN)
 
 /**
-*@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape is changed, without
- changing the data. \n
+*@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape is changed, without changing the data. \n
 
 *@par Inputs:
 *@li x: A tensor.
@@ -738,8 +737,7 @@ REG_OP(Reshape)
 *x: A tensor. \n
 
 *@par Attributes:
-*axis: An optional list of int32 or int64. If not specified, squeezes all dimensions of size 1.  
-If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
+*axis: An optional list of int32 or int64. If not specified, squeezes all dimensions of size 1.   If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
 
 *@par Outputs:
 *y: A tensor. \n
@@ -754,8 +752,7 @@ REG_OP(Squeeze)
     .OP_END_FACTORY_REG(Squeeze)
 
 /**
-*@brief Returns an integer representing the rank of input tensor. The rank of a tensor is the number of 
-indices required to uniquely select each element of the tensor, that is, the dimension size of the tensor. \n
+*@brief Returns an integer representing the rank of input tensor. The rank of a tensor is the number of indices required to uniquely select each element of the tensor, that is, the dimension size of the tensor. \n
 
 *@par Inputs:
 *x: A tensor. \n
@@ -889,13 +886,28 @@ REG_OP(ReadVariableOp)
     .ATTR(dtype, Int, DT_INT32)
     .OP_END_FACTORY_REG(ReadVariableOp)
 
+/**
+*@brief Mark outputs of one sub graph which partitioned by engine type.
+
+*@par Inputs:
+*x: A tensor. \n
+
+*@par Outputs:
+*y: A tensor. \n
+
+*@par Attributes:
+*@li peerIndex: The index of the corresponding 'placeholder' node it's connected to.
+*@li parentOpType: Op type of original node.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(End)
     .INPUT(x, TensorType::ALL())
     .OUTPUT(y, TensorType::ALL())
-    .ATTR(peerIndex, Int, 0) // the index of the corresponding 'placeholder' node it's connected to
-    .ATTR(parentOpType, String, "") // op type of original node
+    .ATTR(peerIndex, Int, 0)
+    .ATTR(parentOpType, String, "")
     .OP_END_FACTORY_REG(End)
-
 
 /**
 *@brief Operations for writing summary data, for use in analysis and visualization.
@@ -964,8 +976,7 @@ REG_OP(ShapeN)
 
 *@par Attributes:
 *@li dtype: Optional. The data type of the output tensor. Defaults to "int32".
-*@li init: An optional bool. If true, initializes the returned tensor with the default value of "dtype". 
-Defaults to "false". \n
+*@li init: An optional bool. If true, initializes the returned tensor with the default value of "dtype". Defaults to "false". \n
 
 *@par Outputs:
 *y: A tensor. \n
@@ -1144,4 +1155,4 @@ REG_OP(EditDistance)
 
 }  // namespace ge
 
-#endif  // GE_OP_ARRAY_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

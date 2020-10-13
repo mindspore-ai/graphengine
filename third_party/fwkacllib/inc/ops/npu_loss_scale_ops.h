@@ -18,9 +18,8 @@
  * \file npu_loss_scale_ops.h
  * \brief
  */
-
-#ifndef GE_OP_NN_LOSS_SCALE_OPS_H
-#define GE_OP_NN_LOSS_SCALE_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -30,6 +29,9 @@ namespace ge {
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUAllocFloatStatusOperator)
     .OUTPUT(data, TensorType({DT_FLOAT}))
@@ -43,6 +45,9 @@ REG_OP(NPUAllocFloatStatusOperator)
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUClearFloatStatusOperator)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -57,6 +62,9 @@ REG_OP(NPUClearFloatStatusOperator)
 
 *@par Outputs:
 *data: A Tensor of data value. Must be float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUGetFloatStatusOperator)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -68,6 +76,9 @@ REG_OP(NPUGetFloatStatusOperator)
 
 *@par Outputs:
 *y: A Tensor of type int32, output eight numbers with a value of zero.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUAllocFloatStatus)
     .OUTPUT(data, TensorType({DT_FLOAT}))
@@ -81,6 +92,9 @@ REG_OP(NPUAllocFloatStatus)
 
 *@par Outputs:
 *data: A Tensor of type float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUClearFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -95,6 +109,9 @@ REG_OP(NPUClearFloatStatus)
 
 *@par Outputs:
 *data: A Tensor of type float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(NPUGetFloatStatus)
     .INPUT(addr, TensorType{DT_FLOAT})
@@ -102,4 +119,4 @@ REG_OP(NPUGetFloatStatus)
     .OP_END_FACTORY_REG(NPUGetFloatStatus)
 }  // namespace ge
 
-#endif  // GE_OP_NN_LOSS_SCALE_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_

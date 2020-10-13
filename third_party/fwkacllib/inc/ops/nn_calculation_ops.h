@@ -18,8 +18,8 @@
  * \file nn_calculation_ops.h
  * \brief
  */
-#ifndef GE_OP_NN_CALCULATION_OPS_H
-#define GE_OP_NN_CALCULATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_CALCULATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NN_CALCULATION_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -460,9 +460,9 @@ REG_OP(Conv2DBackpropInputD)
 *@par Attributes:
  * Six attributes:
  * @li strides: A tuple or list of 2 integers. The stride of the sliding window
- * for H/W dimension.
+ * for H/W dimension, defaults to [1,1].
  * @li pads: A tuple or list of 4 integers. The [top, bottom, left, right]
- * padding on the feature map.
+ * padding on the feature map, defaults to [0,0,0,0].
  * @li dilations: A tuple or list of 4 integers. The dilation factor for each
  * dimension of input, defaults to [1,1,1,1].
  * @li groups: Number of blocked connections from input channels to
@@ -482,8 +482,8 @@ REG_OP(Deconvolution)
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
-    .REQUIRED_ATTR(strides, ListInt)
-    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(strides, ListInt, {1, 1})
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NCHW")
@@ -585,14 +585,138 @@ REG_OP(Conv2DBackpropFilterD)
 /**
 *@brief Computes a 2D convolution given 4D "x" and "filter" tensors.
 *@par Inputs:
+*@li x: A 4D tensor of input images. With "NHWC" format, the shape is
+* [batch, in_height, in_width, in_channels].
+*@li filter: A 4D tensor of filters. Has the same type as "x". With "HWCN"
+* format, the shape is [filter_height, filter_width, in_channels,
+* out_channels].
+
+*@li bias: An optional 1D tensor. Shape is [out_channels].
+*@li offset_w: An optional 1D tensor for quantized convolution. Shape is
+* [out_channels]. Not supported.
+*\n
+*\n
+* Note that there is a strict data type mapping between the input and output
+* tensors:
+*@verbatim
+    |Tensor    | x       | filter  | bias    | offset_w | y
+    -----------|---------|---------|---------|----------|--------
+    |Data Type | float16 | float16 | float16 | _        | float16
+    |          |---------|---------|---------|----------|--------
+    |          | float32 | float32 | float32 | _        | float32
+    |          |---------|---------|---------|----------|--------
+    |          | int8    | int8    | int32   | int8     | int32
+    -----------|---------|---------|---------|----------|--------
+    |Format    | NCHW    | NCHW    | ND      | ND       | NCHW
+    |          | NHWC    | HWCN    |         |          | NHWC
+@endverbatim
+* Type float32 is allowed only in mixed precision (float32->float16) scenarios.
+* Mixed precision is enabled by default.
+* \n
+*
+*@par Attributes:
+*@li strides: Required. A list of 4 integers. Specifying the strides of the
+* convolution along the height and width. The dimension order is determined
+* by the data format of "x". By default the N and C dimensions are set to 1.
+*@li pads: Required. A list of 4 integers. Specifying the top, bottom, left
+* and right padding.
+* @li dilations: Optional. A list of 4 integers. Specifying the dilation rate
+* to use for dilated convolution. Has the same dimension order and value as
+* "strides". Dilation > 1 is not supported for quantized convolution. Defaults
+* to [1, 1, 1, 1].
+* @li groups: Optional. An integer of type int32, for the number of blocked
+* connections from input channels to output channels. Input channels and output
+* channels must both be divisible by "groups". "x" in_channels must be equal to
+* "filter" in_channels * groups. Defaults to 1.
+* @li offset_x: Optional. An integer of type int32, for quantized convolution.
+* Defaults to 0.
+* @li data_format: Reserved and optional. A string from: "NHWC" and "NCHW".
+* Specifying the data format of the input and output images. Defaults to
+* "NHWC".
+*\n
+*\n
+* The following value range restrictions must be met:
+*@verbatim
+    |Name             | Field    | Scope
+    ------------------|----------|----------
+    |Input Image Size | H        | [1, 100000]
+    |                 | W        | [1, 4096]
+    ------------------|----------|----------
+    |Filter Size      | H        | [1, 255]
+    |                 | W        | [1, 255]
+    ------------------|----------|----------
+    |Stride           | H        | [1, 63]
+    |                 | W        | [1, 63]
+    ------------------|----------|----------
+    |Padding          | top      | [0, 255]
+    |                 | bottom   | [0, 255]
+    |                 | left     | [0, 255]
+    |                 | right    | [0, 255]
+    ------------------|----------|----------
+    |Dilation         | H        | [1, 255]
+    |                 | W        | [1, 255]
+@endverbatim
+*
+*@par Outputs:
+*@li y: A 4D Tensor of output images. Has the same type and format as "x". With
+* "NHWC" format, the shape is [batch, out_height, out_width, out_channels].
+*\n
+*     out_height = (in_height + top_pad + bottom_pad -
+*                   dilation_h * (filter_height - 1) - 1)
+*                  / stride_h + 1
+*\n
+*     out_width = (in_width + left_pad + right_pad -
+*                   dilation_w * (filter_width - 1) - 1)
+*                   / stride_w + 1
+*
+*@attention Constraints:
+*@li The following restrictions on the output must be met:
+*@verbatim
+    | Output           | Restrictions
+    -------------------|---------------------------
+    | W dimension == 1 | H*W(input) == H*W(filter)
+    | H dimension == 1 |
+    -------------------|---------------------------
+    | W dimension == 1 | Not supported
+    | H dimension != 1 |
+@endverbatim
+* "H * W (input)" indicates the image size after padding and "H * W (filter)"
+* indicates the filter size after dilation.
+*\n
+*
+*@par Quantization supported or not
+*@li Yes
+*
+*@par Third-party framework compatibility
+*@li Compatible with the TensorFlow operator "conv2d".
+*@li Compatible with the Caffe operator 2D "Convolution".
+*/
+REG_OP(Conv2D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(dilations, ListInt, {1, 1, 1, 1})
+    .ATTR(groups, Int, 1)
+    .ATTR(data_format, String, "NHWC")
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(Conv2D)
+
+/**
+*@brief Computes a 2D convolution given 4D "x" and "filter_compress" tensors.
+*@par Inputs:
 * @li x: A 4D tensor of input images.
-* @li filter: A 4D tensor of filters.
+* @li filter_compress: A 4D tensor of compressed filters.
+* @li compress_index: A 1D Tensor dtype of int8.
 * @li bias: An optional 1D tensor.
 * @li offset_w: An optional 1D tensor for quantized convolution. Reserved.
 *
 * The input and output tensor attributes are listed as follows:
 * @verbatim
-    |Tensor    | x       | filter  | bias    | offset_w | y
+    |Tensor    | x       | filter_compress  | bias    | offset_w | y
     -----------|---------|---------|---------|----------|--------
     |Data Type | float16 | float16 | float16 | _        | float16
     |          |---------|---------|---------|----------|--------
@@ -618,59 +742,22 @@ REG_OP(Conv2DBackpropFilterD)
 * @li groups: Number of blocked connections from input channels to output
 * channels. Input channels and output channels must both be divisible by
 * "groups".Type is int32.
-* @li offset_x: An optional integer for quantized convolution. Type is int32. Defaults to "0".
+* @li offset_x: An optional integer for quantized convolution. Type is int32.
+* Defaults to "0".
 * @li data_format: An optional string from: "NHWC", "NCHW". Specifying the
-* data format of the input and output images. Type is string. Defaults to "NHWC". Reserved . \n
+* data format of the input and output images. Type is string.
+* Defaults to "NHWC". Reserved . \n
 
 *@par Outputs:
 * @li y: A 4D Tensor of output images . \n
 
-*@attention
-* @li The parameter scope is listed as follows:
-* @verbatim
-    |Name             | Field        | Scope
-    ------------------|--------------|----------
-    |Input Image Size | H dimension  | [1, 4096]
-    |                 | W dimension  | [1, 4096]
-    ------------------|--------------|----------
-    |Filter Size      | H dimension  | [1, 255]
-    |                 | W dimension  | [1, 255]
-    ------------------|--------------|----------
-    |Stride Size      | H dimension  | [1, 63]
-    |                 | W dimension  | [1, 63]
-    ------------------|--------------|----------
-    |Padding Size     | top side     | [0, 255]
-    |                 | bottom side  | [0, 255]
-    |                 | left side    | [0, 255]
-    |                 | right side   | [0, 255]
-    ------------------|--------------|----------
-    |Dilation Size    | H dimension  | [1, 255]
-                      | W dimension  | [1, 255]
-@endverbatim
-
-* @li There are restrictions for certain scenarios:
-* @verbatim
-     Output           | Restrictions
-    ------------------|----------------------------------------------
-     W dimension == 1 | HxW(input) == HxW(filter)
-     H dimension == 1 |
-    ------------------|----------------------------------------------
-     W dimension == 1 | Not supported
-     H dimension != 1 |
-@endverbatim
-* As shown above, "HxW(input)" indicates the image size after padding and
-* "HxW(filter)" indicates the filter size after dilation . \n
-
-*@par Quantization supported or not
-* Yes
-
-*@par Third-party framework compatibility
-*@li Compatible with the TensorFlow operator "conv2d".
-*@li Compatible with the Caffe operator 2D "Convolution".
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED.
 */
-REG_OP(Conv2D)
+REG_OP(Conv2DCompress)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(filter_compress, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(compress_index, TensorType({DT_INT8}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -680,22 +767,123 @@ REG_OP(Conv2D)
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NHWC")
     .ATTR(offset_x, Int, 0)
-    .OP_END_FACTORY_REG(Conv2D)
+    .OP_END_FACTORY_REG(Conv2DCompress)
 
-REG_OP(Conv2DCompress)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .INPUT(filter_compress, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8}))
-    .INPUT(compress_index, TensorType({DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
-    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32}))
+/**
+*@brief Computes a 2D convolution given 4D "x", "filter" and "offsets"
+* tensors.
+*@par Inputs:
+* @li x: A 4D tensor of input images. With shape of
+* [batch, in_height, in_width, in_channels] when format is "NHWC".
+* @li filter: A 4D tensor of filters. Must have the same type as "x". With
+* shape of [filter_height, filter_width, in_channels, out_channels] when format
+*  is "HWCN".
+* @li offsets: A 4D tensor of offsets. With shape of
+* [batch, deformable_groups * filter_height * filter_width * 3, in_height,
+*  in_width] when format is "NCHW".
+* @li bias: An optional 1D tensor. Shape is [out_channels].
+*
+* The input and output tensor attributes are listed as follows:
+* @verbatim
+    |Tensor    | x       | filter  | offsets | bias     | y
+    -----------|---------|---------|---------|----------|--------
+    |Data Type | float16 | float16 | float16 | float16  | float16
+    -----------|---------|---------|---------|----------|--------
+    |Format    | NCHW    | NCHW    | NCHW    | ND       | NCHW
+    |          | NHWC    | HWCN    |         |          | NHWC
+@endverbatim
+* It should be noted that the data types must correspond to each other, but
+* the format does not need to.
+
+*@par Attributes:
+* @li strides: Required. A list of 4 integers. Specifying the strides of the
+* convolution along the height and width. The dimension order is determined
+* by the data format of "x". By default the N and C dimensions are set to 1.
+* @li pads: Required. A list of 4 integers. Specifying the top, bottom, left
+* and right padding.
+* @li dilations: Optional. A list of 4 integers. Specifying the dilation rate
+* to use for dilated convolution. Has the same dimension order and value as
+* "strides".
+* @li groups: Optional. Number of blocked connections from input channels to
+* output channels. Input channels and output channels must both be divisible
+* by "groups".Type is int32.
+* @li data_format: Optional. An optional string from: "NHWC", "NCHW". Specifying the
+* data format of the input and output images. Type is string. Defaults to
+* "NHWC". Reserved.
+* @li deformable_groups: Optional. Cut the c chanel of input X into deformable_groups,
+* each share a different offsets. Input channels must be divisible by
+* "deformable_groups". Type is int32.
+
+*@par Outputs:
+* @li y: A 4D Tensor of output images. Must have the same type and format as
+* "x". With shape of [batch, out_channels, out_height, out_width] when format
+* is "NHWC".
+* @li output_height = (in_height + top_pad + botton_pad -
+* dilation_h * (filter_height - 1) -1) / stride_h + 1
+* @li output_width = (in_width + left_pad + right_pad -
+* dilation_w * (filter_width - 1) -1) / stride_w + 1
+
+*@attention
+* @li The parameter scope is listed as follows:
+* @verbatim
+    |Name             | Field        | Scope
+    ------------------|--------------|----------------------------------------
+    |Input Image Size | H dimension  | 1 <= in_height * filter_height <= 4096
+    |                 | W dimension  | 1 <= in_width * filter_width <=4096
+    ------------------|--------------|----------------------------------------
+    |Filter Size      | H dimension  | [1, 255]
+    |                 | W dimension  | [1, 255]
+    ------------------|--------------|----------------------------------------
+    |offsets Size     | C dimension  | offsets_c = deformable_groups *
+    |                 |              |  filter_width * filter_height * 3
+    |                 | H dimension  | the same as output H dimension
+    |                 | W dimension  | the same as output W dimension
+    ------------------|--------------|----------------------------------------
+    |Stride Size      | H dimension  | [1, 63]
+    |                 | W dimension  | [1, 63]
+    ------------------|--------------|----------------------------------------
+    |Padding Size     | top side     | [0, 255]
+    |                 | bottom side  | [0, 255]
+    |                 | left side    | [0, 255]
+    |                 | right side   | [0, 255]
+    ------------------|--------------|----------------------------------------
+    |Dilation Size    | H dimension  | [1, 255]
+    |                 | W dimension  | [1, 255]
+@endverbatim
+
+* @li There are restrictions for certain scenarios:
+* @verbatim
+    | Output           | Restrictions
+    -------------------|---------------------------
+    | W dimension == 1 | HxW(input) == HxW(filter)
+    | H dimension == 1 |
+    -------------------|---------------------------
+    | W dimension == 1 | Not supported
+    | H dimension != 1 |
+@endverbatim
+* As shown above, "HxW(input)" indicates the image size after padding and
+* "HxW(filter)" indicates the filter size after dilation.
+
+*@par Quantization supported or not
+* Yes
+
+*@par Third-party framework compatibility
+*@li Compatible with the TensorFlow operator "conv2d".
+*@li Compatible with the Caffe operator 2D "Convolution".
+*/
+REG_OP(DeformableConv2D)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(filter, TensorType({DT_FLOAT16}))
+    .INPUT(offsets, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NHWC")
-    .ATTR(offset_x, Int, 0)
-    .OP_END_FACTORY_REG(Conv2DCompress)
+    .ATTR(deformable_groups, Int, 1)
+    .OP_END_FACTORY_REG(DeformableConv2D)
 
 /**
 *@brief Computes a 3D convolution given 5D "x" and "filter" tensors.
@@ -1206,5 +1394,39 @@ REG_OP(Conv2DTransposeD)
     .ATTR(offset_x, Int, 0)
     .OP_END_FACTORY_REG(Conv2DTransposeD)
 
+/**
+*@brief In the deformable convolution operator, the original input FeatureMap is expanded to a ksize_y * H * ksize_x *W
+*FeatureMap by bilinear interpolation according to the offset offset.
+*@par Inputs:
+ * Four inputs:
+ * @li x: A Tensor of type float16
+ * @li offsets: A Tensor of type float16,float32.Deformation offset parameter.
+*@par Required Attributes:
+ * @li strides: A tuple/list of 2 integers.The stride of the sliding window for
+ * height and width for H/W dimension.
+ * @li pads: A tuple/list of 4 integers.Padding added to each dimension
+ * of the input.
+ * @li ksize: A tuple/list of 2 integers.kernel size.
+*@par Attributes:
+ * Three attributes:
+ * @li dilations: A tuple/list of 4 integers, The dilation factor for each dimension
+ * of input.  Defaults to [0, 0, 0, 0]
+ * @li data_format: An optional string from: "NCHW", "NHWC". Defaults to "NCHW". Specify the data format of the input x.
+ * @li deformable_groups: Specify the c-axis grouping number of input x.
+*@par Outputs:
+ * y: A Tensor. A Tensor of type float16.
+*/
+REG_OP(DeformableOffsets)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .REQUIRED_ATTR(ksize, ListInt)
+    .ATTR(dilations, ListInt, {0, 0, 0, 0})
+    .ATTR(data_format, String, "NCHW")
+    .ATTR(deformable_groups, Int, 1)
+    .OP_END_FACTORY_REG(DeformableOffsets)
+
 }  // namespace ge
-#endif  // GE_OP_NN_CALCULATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_CALCULATION_OPS_H_

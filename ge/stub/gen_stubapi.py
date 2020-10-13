@@ -102,7 +102,7 @@ pattern_func = re.compile(r"""(^[\s]*)          #leading with space,we will find
 ([a-zA-Z~_]            # void int likely
 .*
 [)]                     #we find )
-(?!.*{)                 # we do not want the case int abc() const { return 1;}
+(?!.*{)                 # we do not want the case int abc() const
 .*)
 (;.*)                   #we want to find ; and after for we will replace these later
 \n$

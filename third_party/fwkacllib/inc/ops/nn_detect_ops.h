@@ -18,8 +18,8 @@
  * \file nn_detect_ops.h
  * \brief
  */
-#ifndef GE_OP_NN_DETECT_OPS_H_
-#define GE_OP_NN_DETECT_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -518,11 +518,11 @@ as xx...xyy...yww...whh...hbb...bc0c0..c0c1c1...c1......cncn...cn . \n
 
 *@par Outputs:
 *@li coord_data: A float16 or float32 with shape [N, boxes*coords, ceilx(height*width*2+32, 32)/2],
-where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the coordinates of a detected box.
+* where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the coordinates of a detected box.
 *@li obj_prob: A float16 or float32 with shape [N, ceilx(boxes*height*width *2+32, 32)/2],
-where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the confidence.
+* where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the confidence.
 *@li classes_prob: A float16 or float32 with shape [N, classes, ceilx(boxes*height*width *2+32, 32)/2],
-where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the prediction classes . \n
+* where "ceil" indicates that a detected box is aligned upwards with the second parameter. Specifies the prediction classes . \n
 
 *@attention Constraints:
 *@li This operator applies to YOLO v2 and v3 networks.
@@ -550,9 +550,9 @@ REG_OP(Yolo)
 *@par Inputs:
 * Four inputs, including:
 *@li The outputs of operator Yolo at the preceding layer (that is, one Yolo operator on YOLO v2) are used as the inputs of operator Yolov3DetectionOutput.
-Each Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+* Each Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
 *@li img_info: A float16 or float32, describing the image information including the required image height and width
-and the actual image height and width.
+* and the actual image height and width.
 *
 *@par Attributes:
 *@li biases: A required float. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
@@ -561,7 +561,7 @@ and the actual image height and width.
 *@li classes: A required int32, specifying the number of classes to be predicted. The value range is [1, 20].
 *@li relative: An optional bool. Defaults to and must be "true".
 *@li obj_threshold: A required float, specifying the confidence threshold for box filtering,
-which is the output "obj" of operator Yolo). The value range is [0.0, 1.0] . \n
+* which is the output "obj" of operator Yolo). The value range is [0.0, 1.0] . \n
 
 *@li post_nms_topn: An optional int32. This attribute is reserved.
 *@li score_threshold: A required float, specifying the class score threshold for box filtering,
@@ -608,11 +608,11 @@ REG_OP(YoloV2DetectionOutput)
 *@par Inputs:
 *Six inputs, including:
 *@li The outputs of operator Yolo at the preceding layer (that is, one Yolo operator on YOLO v2) are used as the inputs of operator Yolov2DetectionOutput.
-Each Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+* Each Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
 *@li imginfo: A float16, describing the image information including the required image height and width
-and the actual image height and width.
+* and the actual image height and width.
 *@li windex: A windex tensor with shape [height, weight]. Has the same type as the inputs.
-[[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed.
+* [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed.
 
 *@li hindex: A hindex tensor with shape [height, weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]].
 
@@ -673,10 +673,10 @@ REG_OP(YoloV2DetectionOutputD)
 *@par Inputs:
 *Ten inputs, including:
 *@li Operator Yolov3DetectionOutput takes the outputs of operator Yolo as its inputs. A Yolo operator has three outputs: "coords", "obj", and "class".
-There are three Yolo operators at Yolov3DetectionOutput's preceding layer on Yolo v3. For details, see the description of operator Yolo.
+* There are three Yolo operators at Yolov3DetectionOutput's preceding layer on Yolo v3. For details, see the description of operator Yolo.
 *@li img_info: A float16 or float32, describing the image information including the required image height and width
-and the actual image height and width.
-*
+* and the actual image height and width.
+
 *@par Attributes:
 *@li biases: A required float. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
 *@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
@@ -691,13 +691,13 @@ and the actual image height and width.
 *@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].
 
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
-*
+
 *@par Outputs:
 *@li boxout: A tensor of type float16 or float32 with shape [batch,6*post_nms_topn], describing the information of each output box.
 * In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: A tensor of type int32 with shape [batch,8], specifying the number of output boxes.
 * The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
-*
+
 *@attention Constraints:
 *@li This operator applies only to the YOLO v3 network.
 *@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators . \n
@@ -739,16 +739,15 @@ REG_OP(YoloV3DetectionOutput)
 *@par Inputs:
 *16 Input, including:
 *@li The outputs of operator Yolo at the preceding layer (that is, three Yolo operators on YOLO v3) are used as the inputs of operator Yolov3DetectionOutput.
-A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+* A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
 *@li imginfo: A float16, describing the image information including the required image height and width
-and the actual image height and width.
+* and the actual image height and width.
 *@li windex: A windex tensor with shape [height,weight]. Has the same type as the inputs.
-[[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed for the three Yolo outputs, respectively . \n
+* [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)] is formed for the three Yolo outputs, respectively . \n
 
 *@li hindex: A hindex tensor with shape [height,weight]. Has the same type as the inputs.
-[[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively . \n
-
-*
+* [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively . \n
+s
 *@par Attributes:
 *@li biases: A required float32. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
 *@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
@@ -760,13 +759,13 @@ and the actual image height and width.
 *@li score_threshold: A required float, specifying the class score threshold for box filtering, which is the output "class" of operator Yolo). The value range is [0.0, 1.0].
 *@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
-*
+
 *@par Outputs:
 *@li boxout: A tensor of type float16 or float32 with shape [batch,6*post_nms_topn], describing the information of each output box.
 * In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: A tensor of type int32 with shape [batch,8], specifying the number of output boxes.
 * The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
-*
+
 *@attention Constraints:
 *@li This operator applies only to the YOLO v3 network.
 *@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
@@ -817,8 +816,8 @@ REG_OP(YoloV3DetectionOutputD)
 *@li Operator Yolov3DetectionOutput takes the outputs of operator Yolo as its inputs. A Yolo operator has three outputs: "coords", "obj", and "class". \n
 There are three Yolo operators at Yolov3DetectionOutput's preceding layer on Yolo v3. For details, see the description of operator Yolo.
 *@li img_info: A float16 or float32, describing the image information including the required image height and width \n
-and the actual image height and width.
-*
+* and the actual image height and width.
+
 *@par Attributes:
 *@li biases: A required float. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
 *@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
@@ -833,13 +832,13 @@ and the actual image height and width.
 *@li iou_threshold: A required float, specifying the intersection-over-union (IOU) threshold for box filtering. The value range is [0.0, 1.0].\n
 
 *@li pre_nms_topn: An optional int, specifying the number of boxes for non-maximum suppression (NMS). Defaults to "512".
-*
+
 *@par Outputs:
 *@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn](out_box_dim == 3) or [batch, 6*post_nms_topn](out_box_dim == 2),
 * In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: A tensor of type int32 with shape [batch,8], specifying the number of output boxes.
 * The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
-*
+
 *@attention Constraints:\n
 *@li This operator applies only to the YOLO v3 network.
 *@li The preceding layer of operator Yolov3DetectionOutput must be three Yolo operators.
@@ -868,21 +867,19 @@ REG_OP(YoloV3DetectionOutputV2)
     .OP_END_FACTORY_REG(YoloV3DetectionOutputV2)
 
 /**
-*@brief Performs YOLO V3 detection . \n
+*@brief Performs YOLO V3 detection.
 
 *@par Inputs:
 *16 Input, including:
 *@li The outputs of operator Yolo at the preceding layer (that is, three Yolo operators on YOLO v3) are used as the inputs of operator Yolov3DetectionOutput.
-A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
+* A Yolo operator has three outputs: "coords", "obj", and "class". For details, see the description of operator Yolo.
 *@li imginfo: A float16, describing the image information including the required image height and width
-and the actual image height and width.
+* and the actual image height and width.
 *@li windex: A windex tensor with shape [height,weight]. Has the same type as the inputs.
-[[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)]
-is formed for the three Yolo outputs, respectively .It's a dynamic input. \n
+* [[0,1,2...(weight-1)],[0,1,2...(w-1)]...[0,1,2...(weight-1)]] consisting of h groups of [0, 1, 2...(weight-1)]
+* is formed for the three Yolo outputs, respectively .It's a dynamic input. \n
 
 *@li hindex: A hindex tensor with shape [height,weight]. Has the same type as the inputs. [[0,0...0],[1,1...1],[2,2...2]...[height-1,height-1...,height-1]] is formed for the three Yolo outputs, respectively . \n
-
-*
 *@par Attributes:
 *@li biases: A required float32. "biases = Number of Yolo operators at the preceding layer x 2 x boxes"
 *@li boxes: A required int32, specifying the number of anchor boxes predicted for each Yolo layer.
@@ -897,6 +894,7 @@ is formed for the three Yolo outputs, respectively .It's a dynamic input. \n
 *
 *@par Outputs:
 *@li boxout: A tensor of type float16 or float32 with shape [batch,6,post_nms_topn](out_box_dim == 3) or [batch, 6*post_nms_topn](out_box_dim == 2),
+*            describing the information of each output box.
 * In output shape, 6 means x1, y1, x2, y2, score, label(class). Output by the number of box_out_num.
 *@li boxoutnum: A tensor of type int32 with shape [batch,8], specifying the number of output boxes.
 * The output shape means only the first one of the 8 numbers is valid, the number of valid boxes in each batch, the maximum number of valid boxes in each batch is 1024
@@ -907,6 +905,9 @@ is formed for the three Yolo outputs, respectively .It's a dynamic input. \n
 *@see Yolo()
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV3DetectionOutputV2 instead.
 */
 REG_OP(YoloV3DetectionOutputV2D)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -1023,18 +1024,21 @@ REG_OP(ROIPooling)
 
 /**
 *@brief Computes decode bbox function.
-*
+
 *@par Inputs:
 *Inputs include:
 * @li box_predictions: A Tensor. Must be float16.
 * @li anchors: A Tensor. Must have the same type as box_predictions.
-*
+
 *@par Attributes:
 * @ decode_clip: required, float, threahold of decode process.
-*
+
 *@par Outputs:
 * @ decoded_boxes: A Tensor. Must have the same type as box_predictions.
 *                    N-D with shape [N, 4].
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeBbox)
     .INPUT(box_predictions, TensorType{DT_FLOAT16})
@@ -1052,6 +1056,9 @@ REG_OP(DecodeBbox)
 
 *@par Outputs:
 *boxes_output: A Tensor. Must have the same type as boxes_output. N-D with shape [N, 4].
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ClipBoxes)
     .INPUT(boxes_input, TensorType({DT_FLOAT16}))
@@ -1196,12 +1203,12 @@ REG_OP(RpnProposalsD)
 
 /**
 *@brief Computes Score Filte Pre-Sort function.
-*
+
 *@par Inputs:
 *Inputs include:
 * @li rois: A Tensor. Must be float16. N-D with shape [N, 4].
 * @li cls_bg_prob: A Tensor. Must be float16. N-D with shape [N, 1].
-*
+
 *@par Attributes:
 * @li score_threshold: required, float, threahold of topk process.
 * @li k: required, Int, threahold of topk process.
@@ -1262,14 +1269,17 @@ REG_OP(RpnProposalPostProcessing)
     .OP_END_FACTORY_REG(RpnProposalPostProcessing)
 /**
 *@brief Computes DecodeBoundariesTarget function.
-*
+
 *@par Inputs:
 *Inputs include:
 * @li boundary_predictions: A Tensor. Must be float16.
 * @li anchors: A Tensor. Must be float16.
-*
+
 *@par Outputs:
 * @ boundary_encoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeBoundariesTarget)
     .INPUT(boundary_predictions, TensorType({DT_FLOAT16}))
@@ -1287,6 +1297,9 @@ REG_OP(DecodeBoundariesTarget)
 *
 *@par Outputs:
 * @ keypoints_decoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeCornerpointsTargetBG)
     .INPUT(keypoints_prediction, TensorType({DT_FLOAT16}))
@@ -1304,6 +1317,9 @@ REG_OP(DecodeCornerpointsTargetBG)
 *
 *@par Outputs:
 * @ keypoints_decoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeCornerpointsTargetWrtCenterV1)
     .INPUT(keypoints_prediction, TensorType({DT_FLOAT16}))
@@ -1321,6 +1337,9 @@ REG_OP(DecodeCornerpointsTargetWrtCenterV1)
 *
 *@par Outputs:
 * @ boundary_encoded: A Tensor. Must be float16.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DecodeWheelsTarget)
     .INPUT(boundary_predictions, TensorType({DT_FLOAT16}))
@@ -1453,7 +1472,21 @@ REG_OP(DecodeBboxV2)
     .ATTR(reversed_box, Bool, false)
     .OP_END_FACTORY_REG(DecodeBboxV2)
 
-
+/**
+*@brief Computes sort function.
+*
+*@par Inputs:
+*Inputs include:
+* x: A Tensor. Must be float16 or float32.
+*
+*@par Attributes:
+* @li axis: optional, int.
+* @li descending: optional,bool.
+*
+*@par Outputs:
+* @li y1: A Tensor. Must have the same type as x.
+* @li y2: A Tensor. Indices of y1 in x.Dtype must be int32.
+*/
 REG_OP(Sort)
     .INPUT(x, TensorType({ DT_FLOAT16 }))
     .OUTPUT(y1, TensorType({ DT_FLOAT16 }))
@@ -1462,7 +1495,6 @@ REG_OP(Sort)
     .ATTR(descending, Bool, false)
     .OP_END_FACTORY_REG(Sort)
 
-
 }  // namespace ge
 
-#endif  // GE_OP_NN_DETECT_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

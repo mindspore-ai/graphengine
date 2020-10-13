@@ -14,7 +14,7 @@ endif()
 set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 $<$<STREQUAL:${PRODUCT_SIDE},host>:-D_GLIBCXX_USE_CXX11_ABI=0> -O2")
 set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(protobuf_build
-                    #URL http://tfk.inhuawei.com/api/containers/container1/download/protobuf-3.8.0.tar.gz
+                    URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
                     #SOURCE_DIR ${GE_CODE_DIR}/third_party/protobuf/src/protobuf-3.8.0
                     DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E copy_directory ${GE_CODE_DIR}/../third_party/protobuf/src/protobuf-3.8.0 <SOURCE_DIR>

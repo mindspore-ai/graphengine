@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,8 @@ static std::shared_ptr<GELib> instancePtr_ = nullptr;
 
 // Initial each module of GE, if one failed, release all
 Status GELib::Initialize(const map<string, string> &options) {
+
+
   GELOGI("initial start");
   GEEVENT("[GEPERFTRACE] GE Init Start");
   // Multiple initializations are not allowed
@@ -166,8 +168,10 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
     }
   }
 
-  // In train and infer, profiling is always needed.
   InitOptions(options);
+
+  // In train and infer, profiling is always needed.
+  InitProfiling(this->options_);
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
   GE_IF_BOOL_EXEC(model_manager->EnableExceptionDump(options) != SUCCESS,
@@ -177,21 +181,19 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
   // 2.`(!is_train_mode_) && (options_.device_id != kDefaultDeviceIdForInfer)` means case: online infer
   // these two case with logical device id
   if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
-    InitProfiling(this->options_, true);
     status = InitSystemWithOptions(this->options_);
   } else {
-    InitProfiling(this->options_);
     status = InitSystemWithoutOptions();
   }
   return status;
 }
 
-void GELib::InitProfiling(Options &options, bool convert_2_phy_device_id) {
+void GELib::InitProfiling(Options &options) {
   GELOGI("Init Profiling. session Id: %ld, device id:%d ", options.session_id, options.device_id);
   std::lock_guard<std::mutex> lock(status_mutex_);
   GetContext().Init();
   // Profiling init
-  if (ProfilingManager::Instance().Init(options, convert_2_phy_device_id) != SUCCESS) {
+  if (ProfilingManager::Instance().Init(options) != SUCCESS) {
     GELOGW("Profiling init failed.");
   }
 }

@@ -18,8 +18,8 @@
  * \file math_ops.h
  * \brief
  */
-#ifndef GE_OP_MATH_OPS_H_
-#define GE_OP_MATH_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -512,6 +512,23 @@ REG_OP(IsFinite)
     .OP_END_FACTORY_REG(IsFinite)
 
 /**
+ * *@brief Compute element-wise infiniteness, return a boolean tensor.
+ *
+ * *@par Inputs:
+ * *x:A Tensor.
+ *
+ * *@par Outputs:
+ * *y:A Tensor. Has the same shape as x.
+ *
+ * *@par Third-party framework compatibility.
+ * *Compatible with tensorflow IsInf operator.
+ * */
+REG_OP(IsInf)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_BOOL}))
+    .OP_END_FACTORY_REG(IsInf)
+
+/**
  * *@brief Computes the complex absolute value of a tensor.
  *
  * *@par Inputs:
@@ -677,4 +694,4 @@ REG_OP(IFMR)
   .OP_END_FACTORY_REG(IFMR)
 }  // namespace ge
 
-#endif  // GE_OP_MATH_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -638,6 +638,9 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     dump_args_ = static_cast<char *>(args_) + offset;
   }
 
+  GE_CHK_BOOL_TRUE_EXEC_INFO(davinci_model_->GetOpDugReg(), dump_args_ = static_cast<char *>(args_) + offset,
+                             "Op debug is open in TVM task info");
+
   Status ge_ret = UpdateL2Data(kernel_def);
   // update origin l2 data
   if (ge_ret != SUCCESS) {
@@ -859,8 +862,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   GELOGI("Do InitAicpuTask");
   so_name_ = kernel_def.so_name();
   kernel_name_ = kernel_def.kernel_name();
-  GELOGI("node[%s] test so name %s, kernel name %s",
-         op_desc_->GetName().c_str(), so_name_.c_str(), kernel_name_.c_str());
+  GELOGI("node[%s] test so name %s, kernel name %s", op_desc_->GetName().c_str(), so_name_.c_str(),
+         kernel_name_.c_str());
 
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
   if (op_desc == nullptr) {
@@ -869,8 +872,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   }
 
   if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_),
-                      "launch cust aicpu so failed");
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_), "launch cust aicpu so failed");
   }
 
   // copy args to new host memory
@@ -937,12 +939,15 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     }
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
+  if (davinci_model_->GetOpDugReg()) {
+    GELOGI("Op debug is open in aicpu task info");
+    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
+  }
   if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
     dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }
 
-  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_,
-                                  sizeof(aicpu::AicpuParamHead));
+  davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
 
   return SUCCESS;
 }
@@ -956,8 +961,7 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
     GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(),
-                    ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
     return RT_ERROR_TO_GE_STATUS(rt_ret);

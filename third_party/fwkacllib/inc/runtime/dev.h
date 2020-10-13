@@ -19,7 +19,7 @@
 
 #include "base.h"
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -339,7 +339,24 @@ RTS_API rtError_t rtGetPairDevicesInfo(uint32_t devId, uint32_t otherDevId, int3
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, int64_t *value);
-#ifdef __cplusplus
+
+/**
+ * @ingroup dvrt_dev
+ * @brief set target device for current thread
+ * @param [int] device   the device id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t device);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief reset all opened device
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t device);
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

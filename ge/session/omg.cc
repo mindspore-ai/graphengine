@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -427,6 +427,32 @@ Status CheckOutNode(ge::OpDescPtr op_desc, int32_t index) {
   }
   return domi::SUCCESS;
 }
+Status GetDefaultOutInfo(ge::ComputeGraphPtr &compute_graph,
+                         std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info) {
+  std::vector<std::pair<std::string, int32_t>> default_out_nodes = domi::GetContext().default_out_nodes;
+  if (domi::GetContext().type == domi::CAFFE && !default_out_nodes.empty()) {
+    for (uint32_t i = 0; i < default_out_nodes.size(); ++i) {
+      ge::NodePtr out_node = compute_graph->FindNode(default_out_nodes[i].first);
+      if (out_node == nullptr) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10016", {"parameter", "opname"},
+                                                        {"out_nodes", default_out_nodes[i].first});
+        GELOGE(domi::FAILED, "Can not find src node (%s) in graph.", default_out_nodes[i].first.c_str());
+        return domi::FAILED;
+      }
+      output_nodes_info.push_back(std::make_pair(out_node, default_out_nodes[i].second));
+      GELOGD("Get default output node:%s.", out_node->GetName().c_str());
+    }
+    return domi::SUCCESS;
+  }
+
+  for (ge::NodePtr node : compute_graph->GetDirectNode()) {
+    if (!node->GetInAllNodes().empty() && node->GetOutAllNodes().empty()) {
+      Status ret = GetOutputLeaf(node, output_nodes_info);
+      GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "find leaf fail.");
+    }
+  }
+  return domi::SUCCESS;
+}
 
 Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output) {
   ge::ComputeGraphPtr compute_graph = ge::GraphUtils::GetComputeGraph(graph);
@@ -477,11 +503,9 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
   }
   // default output node (leaf)
   if (user_out_nodes.empty()) {
-    for (ge::NodePtr node : compute_graph->GetDirectNode()) {
-      if (!node->GetInAllNodes().empty() && node->GetOutAllNodes().empty()) {
-        Status ret = GetOutputLeaf(node, output_nodes_info);
-        GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "find leaf fail.");
-      }
+    if (GetDefaultOutInfo(compute_graph, output_nodes_info) != SUCCESS) {
+      GELOGE(domi::FAILED, "Get default output info failed.");
+      return domi::FAILED;
     }
   }
   GetOutputNodesNameAndIndex(output_nodes_info, output_nodes_name);
@@ -525,6 +549,7 @@ Status GetOutputLeaf(NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> 
   if (node->GetType() != NETOUTPUT) {
     for (size_t index = 0; index < size; ++index) {
       output_nodes_info.push_back(std::make_pair(node, index));
+      GELOGD("Get output leaf node:%s.", node->GetName().c_str());
     }
   } else {
     const auto in_anchors = node->GetAllInDataAnchors();
@@ -853,65 +878,66 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
   uint8_t *model_data = nullptr;
   uint32_t model_len = 0;
-
-  // Parse the contents of the file to get the modeldef object
-  ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
-  if (ret == SUCCESS) {
-    OmFileLoadHelper omFileLoadHelper;
-    ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
-    if (status != ge::GRAPH_SUCCESS) {
-      GELOGE(ge::FAILED, "Om file init failed.");
-      if (model.model_data != nullptr) {
-        delete[](char *) model.model_data;
-        model.model_data = nullptr;
+  try {
+    // Parse the contents of the file to get the modeldef object
+    ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
+    if (ret == SUCCESS) {
+      OmFileLoadHelper omFileLoadHelper;
+      ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
+      if (status != ge::GRAPH_SUCCESS) {
+        GELOGE(ge::FAILED, "Om file init failed.");
+        if (model.model_data != nullptr) {
+          delete[](char *) model.model_data;
+          model.model_data = nullptr;
+        }
+        return status;
       }
-      return status;
-    }
 
-    ModelPartition ir_part;
-    status = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
-    if (status != ge::GRAPH_SUCCESS) {
-      GELOGE(ge::FAILED, "Get model part failed.");
-      if (model.model_data != nullptr) {
-        delete[](char *) model.model_data;
-        model.model_data = nullptr;
+      ModelPartition ir_part;
+      status = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
+      if (status != ge::GRAPH_SUCCESS) {
+        GELOGE(ge::FAILED, "Get model part failed.");
+        if (model.model_data != nullptr) {
+          delete[](char *) model.model_data;
+          model.model_data = nullptr;
+        }
+        return status;
       }
-      return status;
-    }
 
-    ge::proto::ModelDef model_def;
+      ge::proto::ModelDef model_def;
 
-    // De serialization
-    bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
-    if (flag) {
-      GetGroupName(model_def);
+      // De serialization
+      bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
+      if (flag) {
+        GetGroupName(model_def);
 
-      json j;
-      Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
+        json j;
+        Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
 
-      ret = ModelSaver::SaveJsonToFile(json_file, j);
+        ret = ModelSaver::SaveJsonToFile(json_file, j);
+      } else {
+        ret = INTERNAL_ERROR;
+        GELOGE(ret, "ReadProtoFromArray failed.");
+      }
     } else {
-      ret = INTERNAL_ERROR;
-      GELOGE(ret, "ReadProtoFromArray failed.");
+      GELOGE(PARAM_INVALID, "ParseModelContent failed because of invalid om file. Please check --om param.");
     }
-  } else {
-    GELOGE(PARAM_INVALID, "ParseModelContent failed because of invalid om file. Please check --om param.");
-  }
 
-  if (model.model_data != nullptr) {
-    delete[](char *) model.model_data;
-    model.model_data = nullptr;
+    if (model.model_data != nullptr) {
+      delete[](char *) model.model_data;
+      model.model_data = nullptr;
+    }
+    return ret;
+  } catch (const std::exception &e) {
+    GELOGE(FAILED, "Convert om model to json failed, exception message : %s.", e.what());
+    return FAILED;
   }
-
-  return ret;
 }
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const char *json_file) {
   ge::ModelData model;
-
   // Mode 2 does not need to verify the priority, and a default value of 0 is passed
   int32_t priority = 0;
-
   // Load model from file
   Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
   auto free_model_data = [](void **ptr) -> void {
@@ -925,35 +951,36 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
     GELOGE(ret, "LoadFromFile failed.");
     return ret;
   }
-  bool flag = false;
-  ge::proto::ModelDef model_def;
+
   try {
+    bool flag = false;
+    ge::proto::ModelDef model_def;
     flag = google::protobuf::TextFormat::ParseFromString(reinterpret_cast<char *>(model.model_data), &model_def);
+
+    if (!flag) {
+      free_model_data(&model.model_data);
+      GELOGE(FAILED, "ParseFromString fail.");
+      return FAILED;
+    }
+    GetGroupName(model_def);
+    json j;
+    Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
+    ret = ModelSaver::SaveJsonToFile(json_file, j);
+    if (ret != SUCCESS) {
+      free_model_data(&model.model_data);
+      GELOGE(ret, "Save json to file fail.");
+      return ret;
+    }
+    free_model_data(&model.model_data);
+    return SUCCESS;
   } catch (google::protobuf::FatalException &e) {
     free_model_data(&model.model_data);
     GELOGE(FAILED, "ParseFromString fail. exception message : %s", e.what());
     return FAILED;
-  }
-
-  if (!flag) {
-    free_model_data(&model.model_data);
-    GELOGE(FAILED, "ParseFromString fail.");
+  } catch (const std::exception &e) {
+    GELOGE(FAILED, "Convert pbtxt to json failed, exception message : %s.", e.what());
     return FAILED;
   }
-
-  GetGroupName(model_def);
-  json j;
-  Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
-  ret = ModelSaver::SaveJsonToFile(json_file, j);
-  if (ret != SUCCESS) {
-    free_model_data(&model.model_data);
-    GELOGE(ret, "Save json to file fail.");
-    return ret;
-  }
-
-  free_model_data(&model.model_data);
-
-  return SUCCESS;
 }
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType framework, const char *model_file,
@@ -1010,6 +1037,7 @@ void UpdateOmgCtxWithParserCtx() {
   domi::GetContext().input_nodes_format_map = GetParserContext().input_nodes_format_map;
   domi::GetContext().out_top_names = GetParserContext().out_top_names;
   domi::GetContext().user_out_nodes_top_vec = GetParserContext().user_out_nodes_top_vec;
+  domi::GetContext().default_out_nodes = GetParserContext().default_out_nodes;
 }
 
 void UpdateParserCtxWithOmgCtx() {

@@ -18,8 +18,8 @@
  * \file aipp.h
  * \brief
  */
-#ifndef GE_OP_AIPP_H
-#define GE_OP_AIPP_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_AIPP_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_AIPP_H_
 
 #include "graph/operator_reg.h"
 
@@ -40,6 +40,8 @@ image normalization (by subtracting the mean value or multiplying a factor), ima
 *features: The AIPP-processed output tensor of type float16 or uint8.
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
+*@par Restrictions:
+*Warning: This operator can be integrated only by configuring INSERT_OP_FILE of aclgrphBuildModel. Please do not use it directly.
 */
 REG_OP(Aipp)
     .INPUT(images, TensorType{DT_UINT8})
@@ -71,4 +73,4 @@ REG_OP(AippData)
     .OP_END_FACTORY_REG(AippData)
 } // namespace ge
 
-#endif // GE_OP_AIPP_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_AIPP_H_

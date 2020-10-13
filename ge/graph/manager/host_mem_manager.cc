@@ -23,7 +23,7 @@
 #include "runtime/mem.h"
 
 namespace {
-const uint32_t kMallocHostMemFlag = 1;
+const uint32_t kMallocHostMemFlag = 0;
 }  // namespace
 namespace ge {
 Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
@@ -101,6 +101,7 @@ Status HostMemManager::MallocSharedMemory(SharedMemInfo &mem_info) {
 }
 
 Status HostMemManager::QueryVarMemInfo(const string &op_name, uint64_t &base_addr, uint64_t &data_size) {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_memory_base_map_.find(op_name) == var_memory_base_map_.end()) {
     GELOGE(INTERNAL_ERROR, "Find host base base_addr failed,node name:%s!", op_name.c_str());
     return INTERNAL_ERROR;

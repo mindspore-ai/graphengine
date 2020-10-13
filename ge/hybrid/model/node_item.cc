@@ -116,10 +116,8 @@ Status NodeItem::Init() {
   (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
   shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
 
-  bool test_is_dynamic = false;
-  NodeUtils::GetNodeUnknownShapeStatus(*node, test_is_dynamic);
   (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
-  GELOGI("node name = %s, is_dynamic = %d, test_is_dynamic = %d", this->node_name.c_str(), is_dynamic, test_is_dynamic);
+  GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
   if (!is_dynamic) {
     GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic),
                       "[%s] Failed to get shape status.",

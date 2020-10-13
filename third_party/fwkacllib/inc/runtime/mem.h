@@ -17,14 +17,12 @@
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
 
-/*lint -e7*/
 #include <stddef.h>
-/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
 #endif
 
@@ -159,7 +157,12 @@ typedef struct rtAiCoreMemorySize {
  * @ingroup dvrt_mem
  * @brief memory type
  */
-typedef enum tagRtMemoryType { RT_MEMORY_TYPE_HOST = 1, RT_MEMORY_TYPE_DEVICE = 2 } rtMemoryType_t;
+typedef enum tagRtMemoryType { 
+    RT_MEMORY_TYPE_HOST = 1, 
+    RT_MEMORY_TYPE_DEVICE = 2 , 
+    RT_MEMORY_TYPE_SVM = 3,
+    RT_MEMORY_TYPE_DVPP = 4
+} rtMemoryType_t;
 
 /**
  * @ingroup dvrt_mem
@@ -167,10 +170,32 @@ typedef enum tagRtMemoryType { RT_MEMORY_TYPE_HOST = 1, RT_MEMORY_TYPE_DEVICE = 
  */
 typedef struct tagRtPointerAttributes {
   rtMemoryType_t memoryType;  // host memory or device memory
+  rtMemoryType_t locationType;
   uint32_t deviceID;          // device ID
-  uint32_t isManaged;
   uint32_t pageSize;
 } rtPointerAttributes_t;
+
+
+typedef struct rtMallocHostSharedMemoryIn {
+    const char* name;
+    const uint64_t size;
+    uint32_t flag;
+} rtMallocHostSharedMemoryIn;
+
+typedef struct rtMallocHostSharedMemoryOut {
+    int fd;
+    void* ptr;
+    void* devPtr;
+} rtMallocHostSharedMemoryOut;
+
+typedef struct rtFreeHostSharedMemoryIn {
+    const char* name;
+    const uint64_t size;
+    int fd;
+    void* ptr;
+    void* devPtr;
+} rtFreeHostSharedMemoryIn;
+
 
 /**
  * @ingroup dvrt_mem
@@ -229,6 +254,28 @@ RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtFreeHost(void *hostPtr);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief alloc host shared memory
+ * @param [in] in   alloc host shared memory inputPara pointer
+ * @param [in] out   alloc host shared memory outputInfo pointer
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+
+RTS_API rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
+    rtMallocHostSharedMemoryOut *out);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief free host memory
+ * @param [in] in   free host shared memory inputPara pointer
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+
+RTS_API rtError_t rtFreeHostSharedMemory(rtFreeHostSharedMemoryIn *in);
 
 /**
  * @ingroup dvrt_mem
@@ -486,7 +533,7 @@ RTS_API rtError_t rtSetIpcMemPid(const char *name, int32_t pid[], int num);
  */
 RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stream);
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
 

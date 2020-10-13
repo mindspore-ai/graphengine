@@ -18,8 +18,8 @@
  * \file transformation_ops.h
  * \brief
  */
-#ifndef GE_OP_TRANSFORMATION_OPS_H
-#define GE_OP_TRANSFORMATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -625,6 +625,9 @@ REG_OP(ConfusionTransposeD)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(ConfusionTranspose)
     .INPUT(x, TensorType::BasicType())
@@ -660,11 +663,6 @@ REG_OP(FlattenV2)
     .ATTR(axis, Int, 1)
     .ATTR(end_axis, Int, -1)
     .OP_END_FACTORY_REG(FlattenV2)
-
-REG_OP(DeConvTrans)
-    .INPUT(x, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_INT8}))
-    .OP_END_FACTORY_REG(DeConvTrans)
 
 /**
 *@brief Compress large weight to small one. Usually inserted before Conv2d.
@@ -713,4 +711,4 @@ REG_OP(CompressFcOp)
 .OP_END_FACTORY_REG(CompressFcOp)
 }  // namespace ge
 
-#endif  // GE_OP_TRANSFORMATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_

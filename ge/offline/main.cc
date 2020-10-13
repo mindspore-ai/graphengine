@@ -107,7 +107,7 @@ DEFINE_string(out_nodes, "",
               "Optional; output nodes designated by users."
               "Format: \"node_name1:0;node_name1:1;node_name2:0\"");
 
-DEFINE_string(precision_mode, "",
+DEFINE_string(precision_mode, "force_fp16",
               "Optional; precision mode."
               "Support force_fp16, allow_mix_precision, allow_fp32_to_fp16, must_keep_origin_dtype.");
 
@@ -279,7 +279,7 @@ class GFlagUtils {
         "  --compress_weight_conf    Config file to compress weight\n"
         "  --buffer_optimize         Set buffer optimize. \"l2_optimize\" (default). Set \"off_optimize\" to close\n"
         "\n[Operator Tuning]\n"
-        "  --precision_mode        precision mode, support force_fp16, allow_mix_precision, "
+        "  --precision_mode        precision mode, support force_fp16(default), allow_mix_precision, "
         "allow_fp32_to_fp16, must_keep_origin_dtype.\n"
         "  --auto_tune_mode        Set tune mode. E.g.: \"GA,RL\", support configure multiple, spit by ,\n"
         "  --op_select_implmode    Set op select implmode. Support high_precision, high_performance."

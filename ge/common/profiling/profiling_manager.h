@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   ProfilingManager();
   virtual ~ProfilingManager();
   static ProfilingManager &Instance();
-  ge::Status Init(const Options &options, bool convert_2_phy_device_id = false);
+  ge::Status Init(const Options &options);
   ge::Status InitFromOptions(const Options &options);
   ge::Status InitFromAclCfg(const std::string &config);
   ge::Status StartProfiling(int32_t iter, int32_t device_id);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
   }
 
-  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, ext_info_addr_=%p",
-         op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ext_info.size(), ext_info_addr_);
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, ext_info_addr_=%p", op_desc_->GetName().c_str(),
+         op_desc_->GetType().c_str(), ext_info.size(), ext_info_addr_);
 
   // 2.1 get loop cond variable for tensor array write
   uint64_t step_id_addr = 0;
@@ -169,6 +169,10 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
                                                             op_desc->GetName())) {
       dump_flag_ = RT_KERNEL_DUMPFLAG;
+      dump_args_ = input_output_addr_;
+    }
+    if (davinci_model_->GetOpDugReg()) {
+      GELOGI("Op debug is open in kernel ex task info");
       dump_args_ = input_output_addr_;
     }
   }

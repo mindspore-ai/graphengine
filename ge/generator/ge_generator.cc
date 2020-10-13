@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ static void GetOpsProtoPath(string &opsproto_path) {
 
 class GeGenerator::Impl {
  public:
-  Impl(OmgContext &omg_context) : omg_context_(omg_context), graph_manager_(omg_context) {}
+  Impl(OmgContext &omg_context) : omg_context_(omg_context) {}
   ~Impl() = default;
 
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GeRootModelPtr &ge_models);
@@ -683,7 +683,7 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   static std::atomic<GraphId> atomic_graph_id(0);
   auto graph_id = atomic_graph_id.fetch_add(1);
   const std::map<std::string, std::string> options;
-  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options, omg_context_);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph fail, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();
@@ -716,7 +716,7 @@ Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph) {
   static std::atomic<GraphId> atomic_graph_id(0);
   auto graph_id = atomic_graph_id.fetch_add(1);
   const std::map<std::string, std::string> options;
-  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options, omg_context_);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph failed, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();

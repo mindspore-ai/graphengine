@@ -330,6 +330,9 @@ void RuntimeModel::RtStreamDestory() noexcept {
 
 void RuntimeModel::RtLabelDestory() noexcept {
   for (size_t i = 0; i < label_list_.size(); i++) {
+    if (label_list_[i] == nullptr) {
+      continue;
+    }
     if (rtLabelDestroy(label_list_[i]) != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Destroy label failed! Index: %zu.", i);
       return;

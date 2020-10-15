@@ -96,6 +96,8 @@ target_include_directories(ge_common PRIVATE
     ${GE_DEPEND_DIR}/inc/cce
     #### blue zone ####
     #${GE_DEPEND_DIR}/include
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(ge_common PRIVATE
@@ -147,6 +149,8 @@ target_include_directories(ge_common_static PRIVATE
     ${GE_DEPEND_DIR}/inc/cce
     #### blue zone ####
     #${GE_DEPEND_DIR}/include
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(ge_common_static PRIVATE

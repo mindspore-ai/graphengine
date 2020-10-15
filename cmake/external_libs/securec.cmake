@@ -13,7 +13,8 @@ endif()
 ExternalProject_Add(c_sec_build
                     URL https://gitee.com/openeuler/libboundscheck/repository/archive/v1.1.10.tar.gz
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
-                    SOURCE_DIR ${GE_CODE_DIR}/../libc_sec
+                    #SOURCE_DIR ${GE_CODE_DIR}/../libc_sec
+                    PATCH_COMMAND patch -p1 < ${GE_CODE_DIR}/third_party/patch/securec/0001-add-securec-cmake-script.patch
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}

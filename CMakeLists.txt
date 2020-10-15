@@ -22,7 +22,7 @@ if (ENABLE_OPEN_SRC)
 
     # for CPU/GPU mode, find c_sec and slog from local prebuild
     if(NOT ENABLE_D AND NOT GE_ONLY)
-        set(GE_PREBUILD_PATH ${GE_SOURCE_DIR}/third_party/prebuild/${CMAKE_HOST_SYSTEM_PROCESSOR})
+        set(GE_PREBUILD_PATH ${GE_CODE_DIR}/third_party/prebuild/${CMAKE_HOST_SYSTEM_PROCESSOR})
         find_module(slog libslog.so ${GE_PREBUILD_PATH})
     # if D_LINK_PATH is set in environment variables, search libraries in given path
     elseif(DEFINED ENV{D_LINK_PATH})

@@ -4,7 +4,7 @@ add_subdirectory(graph/build/memory)
 add_subdirectory(ge_local_engine)
 add_subdirectory(host_cpu_engine)
 add_subdirectory(executor)
-#add_subdirectory(offline)
+add_subdirectory(offline)
 
 set(PROTO_LIST
     "${METADEF_DIR}/proto/fusion_model.proto"

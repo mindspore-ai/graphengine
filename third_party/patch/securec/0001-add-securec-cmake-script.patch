@@ -1,4 +1,4 @@
-From f568b2731ac5356673e43361d718bb12704e05a9 Mon Sep 17 00:00:00 2001
+From 455c9812d70646fe725896d597d6c953bf5a09ac Mon Sep 17 00:00:00 2001
 From: taoxiangdong <taoxiangdong1@huawei.com>
 Date: Wed, 14 Oct 2020 22:14:01 +0800
 Subject: [PATCH] add securec cmake script
@@ -10,15 +10,15 @@ Subject: [PATCH] add securec cmake script
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 new file mode 100755
-index 0000000..7d59953
+index 0000000..9b91fb2
 --- /dev/null
 +++ b/CMakeLists.txt
 @@ -0,0 +1,86 @@
 +cmake_minimum_required(VERSION 3.14)
-+project (Securec)
++project(Securec)
 +file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 +	"src/vsprintf_s.c"
-+	"src/wmemmove_s"
++	"src/wmemmove_s.c"
 +	"src/strncat_s.c"
 +	"src/vsnprintf_s.c"
 +	"src/fwscanf_s.c"
@@ -59,7 +59,7 @@ index 0000000..7d59953
 +	)
 +
 +include_directories(./include)
-+include_directories(../src)
++include_directories(./src)
 +add_library(shared_c_sec SHARED ${SRC_LIST})
 +
 +target_compile_options(shared_c_sec PRIVATE
@@ -71,7 +71,7 @@ index 0000000..7d59953
 +target_compile_definitions(shared_c_sec PRIVATE
 +	NDEBUG
 +	SECUREC_SUPPORT_STRTOLD=1
-+)
++	)
 +
 +add_library(static_c_sec STATIC ${SRC_LIST})
 +
@@ -82,10 +82,10 @@ index 0000000..7d59953
 +        -O1
 +)
 +
-+target_compile_options(static_c_sec PRIVATE
++target_compile_definitions(static_c_sec PRIVATE
 +	NDEBUG
 +	SECUREC_SUPPORT_STRTOLD=1
-+)
++	)
 +
 +set_target_properties(static_c_sec
 +	PROPERTIES

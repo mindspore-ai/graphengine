@@ -360,6 +360,8 @@ target_include_directories(ge_runner PRIVATE
     #### blue zone
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(ge_runner
@@ -678,6 +680,8 @@ target_include_directories(ge_compiler PRIVATE
     #### blue zone
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(ge_compiler

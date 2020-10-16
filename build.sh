@@ -117,7 +117,7 @@ build_graphengine()
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_ST=ON"
   fi
 
-  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True
+  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True"
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ../..
   make ${VERBOSE} -j${THREAD_NUM}

@@ -786,6 +786,7 @@ target_include_directories(fwk_stub_ge_runner PRIVATE
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
     ${GE_CODE_DIR}/inc/framework/common
+    ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     #### yellow zone ####

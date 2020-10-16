@@ -704,6 +704,42 @@ target_link_libraries(ge_compiler
     -ldl
 )
 
+############ libascendcl.so ############
+add_library(opensrc_ascendc SHARED ${DUMMY_OBJ})
+
+target_link_libraries(opensrc_ascendcl PRIVATE
+                     -Wl, --whole-archive
+                     ge_executor
+                     ascendcl_static
+                     ge_common_static
+                     graph_static
+                     protobuf_static
+                     register_static
+                     error_manager_static
+                     adump_server
+                     msprofiler
+                     -Wl, --no-whole-archive
+                     -Wl, --no-as-needed
+                     c_sec
+                     runtime
+                     mmpa
+                     slog
+                     msprof
+                     ascend_hal_stub
+                     -Wl, --as-needed
+                     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME}, Android>>:-lrt>
+                     -ldl
+                     $<$<STREQUAL:${TARGET_SYSTEM_NAME}, Android>:-llog>
+                     json
+)
+
+set_target_properties(opensrc_ascendc PROPERTIES
+    OUTPUT_NAME ascendcl
+)
+
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
+add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
+set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
 ##################################################################
 add_custom_command(

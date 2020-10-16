@@ -787,6 +787,7 @@ target_include_directories(atc_stub_ge_compiler PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${GE_CODE_DIR}/inc/framework/common
     ${GE_CODE_DIR}/inc/external
+    ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     #### yellow zone ####

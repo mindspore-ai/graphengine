@@ -707,7 +707,11 @@ target_link_libraries(ge_compiler
 )
 
 ############ libascendcl.so ############
-add_library(opensrc_ascendc SHARED ${DUMMY_OBJ})
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
+add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
+set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
+
+add_library(opensrc_ascendcl SHARED ${DUMMY_OBJ})
 
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl, --whole-archive
@@ -735,13 +739,9 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      json
 )
 
-set_target_properties(opensrc_ascendc PROPERTIES
+set_target_properties(opensrc_ascendcl PROPERTIES
     OUTPUT_NAME ascendcl
 )
-
-file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
-add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
-set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
 ##################################################################
 add_custom_command(

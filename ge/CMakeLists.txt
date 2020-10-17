@@ -347,6 +347,7 @@ target_include_directories(ge_runner PRIVATE
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
     ${GE_CODE_DIR}/inc/framework/common
+    ${METADEF_DIR}
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external

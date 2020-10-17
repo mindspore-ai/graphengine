@@ -29,13 +29,19 @@ target_compile_definitions(atc PRIVATE
 
 target_include_directories(atc PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
+    ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/graphengine
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/common/inc/external
     ${GE_CODE_DIR}/common/inc/external/graph
+    ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/ge
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/common

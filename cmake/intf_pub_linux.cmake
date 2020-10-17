@@ -11,7 +11,7 @@ target_compile_options(intf_pub INTERFACE
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++11>    
 )
 target_compile_definitions(intf_pub INTERFACE
-    $<$<STREQUAL:${PRODUCT_SIDE},host>:_GLIBCXX_USE_CXX11_ABI=0> 
+    _GLIBCXX_USE_CXX11_ABI=0
     $<$<CONFIG:Release>:CFG_BUILD_NDEBUG>
     $<$<CONFIG:Debug>:CFG_BUILD_DEBUG>   
     WIN64=1

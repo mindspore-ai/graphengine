@@ -12,7 +12,7 @@ set(PROTO_LIST
 )
 
 set(PROTO_CLIENT_LIST
-    "${GE_CODE_DIR}/ge/proto/ge_api.proto"
+    "${METADEF_DIR}/proto/ge_api.proto"
 )
 
 set(PROTO_HEADER_LIST
@@ -667,6 +667,7 @@ target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
     ${GE_CODE_DIR}/inc/framework/common
+    ${METADEF_DIR}
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external

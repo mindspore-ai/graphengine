@@ -441,6 +441,7 @@ set(INFER_SRC_LIST
     "graph/partition/engine_place.cc"
     "graph/partition/graph_partition.cc"
     "graph/partition/dynamic_shape_partition.cc"
+    "graph/partition/stage_partition.cc"
     "generator/ge_generator.cc"
     "generator/generator_api.cc"
     "graph/manager/graph_var_manager.cc"
@@ -712,7 +713,15 @@ add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
 set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
 add_library(opensrc_ascendcl SHARED ${DUMMY_OBJ})
-
+target_compile_options(opensrc_ascendcl PRIVATE
+    -O2
+    -fvisibility=hidden
+)
+target_link_options(opensrc_ascendcl PRIVATE
+    -rdynamic
+    -Wl,-Bsymbolic
+    -Wl,--exclude-libs,ALL
+)
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl, --whole-archive
                      ge_executor
@@ -733,9 +742,7 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      msprof
                      ascend_hal_stub
                      -Wl, --as-needed
-                     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME}, Android>>:-lrt>
                      -ldl
-                     $<$<STREQUAL:${TARGET_SYSTEM_NAME}, Android>:-llog>
                      json
 )
 

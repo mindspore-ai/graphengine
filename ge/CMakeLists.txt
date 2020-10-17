@@ -347,6 +347,7 @@ target_include_directories(ge_runner PRIVATE
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
     ${GE_CODE_DIR}/inc/framework/common
+    ${METADEF_DIR}
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external
@@ -440,6 +441,7 @@ set(INFER_SRC_LIST
     "graph/partition/engine_place.cc"
     "graph/partition/graph_partition.cc"
     "graph/partition/dynamic_shape_partition.cc"
+    "graph/partition/stage_partition.cc"
     "generator/ge_generator.cc"
     "generator/generator_api.cc"
     "graph/manager/graph_var_manager.cc"
@@ -706,8 +708,20 @@ target_link_libraries(ge_compiler
 )
 
 ############ libascendcl.so ############
-add_library(opensrc_ascendc SHARED ${DUMMY_OBJ})
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
+add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
+set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
+add_library(opensrc_ascendcl SHARED ${DUMMY_OBJ})
+target_compile_options(opensrc_ascendcl PRIVATE
+    -O2
+    -fvisibility=hidden
+)
+target_link_options(opensrc_ascendcl PRIVATE
+    -rdynamic
+    -Wl,-Bsymbolic
+    -Wl,--exclude-libs,ALL
+)
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl, --whole-archive
                      ge_executor
@@ -728,19 +742,13 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      msprof
                      ascend_hal_stub
                      -Wl, --as-needed
-                     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME}, Android>>:-lrt>
                      -ldl
-                     $<$<STREQUAL:${TARGET_SYSTEM_NAME}, Android>:-llog>
                      json
 )
 
-set_target_properties(opensrc_ascendc PROPERTIES
+set_target_properties(opensrc_ascendcl PROPERTIES
     OUTPUT_NAME ascendcl
 )
-
-file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
-add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
-set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
 ##################################################################
 add_custom_command(

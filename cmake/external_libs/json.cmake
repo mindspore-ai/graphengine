@@ -20,4 +20,5 @@ add_library(json INTERFACE)
 target_include_directories(json INTERFACE ${JSON_SRC_DIR})
 add_dependencies(json json_build)
 
-set(HAVE_JSON TRUE CACHE BOOL "json build add")
+#set(HAVE_JSON TRUE CACHE BOOL "json build add")
+set(HAVE_JSON TRUE)

@@ -35,4 +35,5 @@ target_link_libraries(gflags INTERFACE gflags_static)
 
 add_dependencies(gflags gflags_build)
 
-set(HAVE_GFLAGS TRUE CACHE BOOL "gflags build add")
+#set(HAVE_GFLAGS TRUE CACHE BOOL "gflags build add")
+set(HAVE_GFLAGS TRUE)

@@ -55,4 +55,5 @@ install(FILES ${PROTOBUF_SHARED_PKG_DIR}/lib/libprotobuf.so ${PROTOBUF_SHARED_PK
 
 add_dependencies(protobuf protobuf_build)
 
-set(HAVE_PROTOBUF TRUE CACHE BOOL "protobuf build add")
+#set(HAVE_PROTOBUF TRUE CACHE BOOL "protobuf build add")
+set(HAVE_PROTOBUF TRUE)

@@ -13,6 +13,7 @@ if (ENABLE_OPEN_SRC)
     set(HI_PYTHON python3.7)
 
     include(cmake/external_libs/protobuf_shared.cmake)
+    include(cmake/external_libs/protobuf_static.cmake)
     include(cmake/external_libs/protoc.cmake)
     include(cmake/external_libs/gflags.cmake)
     include(cmake/external_libs/securec.cmake)

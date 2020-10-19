@@ -719,6 +719,8 @@ target_compile_options(opensrc_ascendcl PRIVATE
 )
 target_link_options(opensrc_ascendcl PRIVATE
     -rdynamic
+    -Wl,--allow-multiple-definition
+    -Wl,-z,muldefs
     -Wl,-Bsymbolic
     -Wl,--exclude-libs,ALL
 )

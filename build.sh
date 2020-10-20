@@ -120,12 +120,22 @@ build_graphengine()
   CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ..
+  if [0 -ne $?]
+  then
+    echo "execute command: cmake ${CMAKE_ARGS} .. failed."
+    return 1
+  fi
   make ${VERBOSE} -j${THREAD_NUM} && make install
+  if [ $? -ne 0 ]
+  then
+    echo "execute command: make ${VERBOSE} -j${THREAD_NUM} && make install failed."
+    return 1
+  fi
   echo "GraphEngine build success!"
 }
 g++ -v
 mk_dir ${OUTPUT_PATH}
-build_graphengine
+build_graphengine || { echo "GraphEngine build failed."; return; }
 echo "---------------- GraphEngine build finished ----------------"
 #cp -rf "${BUILD_PATH}/graphengine/"*.so "${OUTPUT_PATH}"
 #rm -rf "${OUTPUT_PATH}/"libproto*

@@ -120,7 +120,7 @@ build_graphengine()
   CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ..
-  if [0 -ne $?]
+  if [ $? -ne 0 ]
   then
     echo "execute command: cmake ${CMAKE_ARGS} .. failed."
     return 1

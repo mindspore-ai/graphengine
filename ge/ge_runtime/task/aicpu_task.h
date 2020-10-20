@@ -41,7 +41,6 @@ class AicpuTask : public TaskRepeater<AicpuTaskInfo> {
   std::shared_ptr<AicpuTaskInfo> task_info_;
   void *stream_;
   void *args_;
-  void *ext_info_;
   void *input_output_addr_;
 };
 }  // namespace model_runner

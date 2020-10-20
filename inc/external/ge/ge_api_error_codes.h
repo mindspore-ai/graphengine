@@ -70,7 +70,7 @@ using Status = uint32_t;
 
 // General error code
 GE_ERRORNO(0, 0, 0, 0, 0, SUCCESS, 0, "success");
-GE_ERRORNO(0b11, 0b11, 0b111, 0xFF, 0b11111, FAILED, 0xFFF, "failed");
+GE_ERRORNO(0b11, 0b11, 0b111, 0xFF, 0b11111, FAILED, 0xFFF, "failed"); /*lint !e401*/
 }  // namespace ge
 
 #endif  // INC_EXTERNAL_GE_GE_API_ERROR_CODES_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@
 #include "runtime/rt.h"
 
 namespace ge {
+/*lint -e148*/
 class RunContextUtil {
  public:
   RunContextUtil() = default;
@@ -42,6 +43,8 @@ class RunContextUtil {
                               const uint64_t session_id);
 
   RunContext &GetRunContext();
+
+  void PrintMemInfo();
 
   RunContext run_context_;
 

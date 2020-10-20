@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,21 @@
 #include "runtime/base.h"
 #include "framework/common/debug/ge_log.h"
 
-#define TS_MEM_ALIGNMENT          64
-#define TS_MEM_ALIGN_MASK         (TS_MEM_ALIGNMENT - 1)
-#define TS_MEM_ALIGN_SIZE(size)   (((size) + TS_MEM_ALIGN_MASK) & ~TS_MEM_ALIGN_MASK)
+namespace {
+constexpr uint32_t kMaxTsMemBlock = 2 * 1024 * 1024;   // Max block 2M
+constexpr uint32_t kTsMemAligment = 64;   // Malloc for 64 bits align
+constexpr uint32_t kTsMemAlignMask = kTsMemAligment - 1;
+}
 
 namespace ge {
-constexpr uint32_t kMaxTsMemBlock = 2 * 1024 * 1024;   // Max block 2M.
-
 class TsMemMall {
  public:
-  TsMemMall() = default;
+  TsMemMall() {
+    mem_type_ = RT_MEMORY_TS_4G;
+  }
+  TsMemMall(rtMemType_t type) {
+    mem_type_ = type;
+  }
   ~TsMemMall() {
     for (auto it : mem_store_size_) {
       rtError_t ret = rtFree(it.second);
@@ -51,7 +56,7 @@ class TsMemMall {
       return nullptr;
     }
 
-    uint64_t bytes = TS_MEM_ALIGN_SIZE(size);
+    uint64_t bytes = (size + kTsMemAlignMask) & ~kTsMemAlignMask;
     if (bytes > kMaxTsMemBlock) {
       GELOGW("Acquire TS memory may not physical continuity, size: %lu", bytes);
     }
@@ -64,7 +69,7 @@ class TsMemMall {
     }
 
     void *addr = nullptr;
-    rtError_t rt_ret = rtMalloc(&addr, bytes, RT_MEMORY_TS_4G);
+    rtError_t rt_ret = rtMalloc(&addr, bytes, mem_type_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
       return nullptr;
@@ -97,6 +102,7 @@ class TsMemMall {
   std::mutex mem_mutex_;
   std::unordered_map<int64_t, void *> mem_store_size_;
   std::unordered_map<void *, int64_t> mem_store_addr_;
+  rtMemType_t mem_type_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_TS_MEM_MALL_H_

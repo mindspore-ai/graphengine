@@ -20,6 +20,7 @@
 #include "init/gelib.h"
 #include "hybrid/model/hybrid_model.h"
 #include "graph/debug/ge_attr_define.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -69,18 +70,6 @@ Status NodeExecutorManager::EnsureInitialized() {
   engine_mapping_.emplace(kEngineNameHccl, NodeExecutorManager::ExecutorType::HCCL);
   engine_mapping_.emplace(kEngineNameRts, NodeExecutorManager::ExecutorType::RTS);
   engine_mapping_.emplace(kEngineNameHostCpu, NodeExecutorManager::ExecutorType::HOST_CPU);
-
-  std::shared_ptr<GELib> instance_ptr = GELib::GetInstance();
-  if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
-    GELOGW("GELib not initialized");
-    return FAILED;
-  }
-
-  OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
-  for (auto &it : ops_kernel_manager.GetAllOpsKernelInfoStores()) {
-    GELOGD("add kernel store: %s", it.first.c_str());
-    kernel_stores_.emplace(it.first, it.second.get());
-  }
 
   initialized_ = true;
   GELOGI("Initializing NodeExecutors successfully");
@@ -153,15 +142,6 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
     TensorUtils::SetSize(*(output_tensor.get()), 0);
   }
 
-  auto it = kernel_stores_.find(op_desc->GetOpKernelLibName());
-  if (it == kernel_stores_.end()) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to get OpKernelStore. libName = %s, node = %s",
-           op_desc->GetOpKernelLibName().c_str(),
-           op_desc->GetName().c_str());
-    return INTERNAL_ERROR;
-  }
-
   // calc hccl output size independent, hccl ops kernel manager should GetSize for
   // input which is the output size of input-op, but sometimes return error
   // when multi-thread
@@ -184,7 +164,8 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
     }
     return SUCCESS;
   }
-  return it->second->CalcOpRunningParam(node);
+
+  return OpsKernelBuilderManager::Instance().CalcOpRunningParam(node);
 }
 
 Status NodeExecutorManager::InitializeExecutors() {

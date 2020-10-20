@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,22 +59,6 @@ class GeLocalOpsKernelInfoStore : public OpsKernelInfoStore {
   void GetAllOpsKernelInfo(std::map<std::string, ge::OpInfo> &infos) const override;
 
   /**
-   * Calc the running size of Operator,
-   * then GE will alloc the mem size from runtime
-   * @param ge_node Node information
-   * @return status whether this operation success
-   */
-  Status CalcOpRunningParam(ge::Node &ge_node) override;
-
-  /**
-   * call the runtime's interface to generate the task
-   * @param node Node information
-   * @param context run context info
-   * @return status whether this operation success
-   */
-  Status GenerateTask(const ge::Node &ge_node, ge::RunContext &context, std::vector<domi::TaskDef> &tasks) override;
-
-  /**
    * Create session
    * @param session_options Session Options
    * @return status whether this operation success
@@ -101,13 +85,6 @@ class GeLocalOpsKernelInfoStore : public OpsKernelInfoStore {
   GeLocalOpsKernelInfoStore &operator=(GeLocalOpsKernelInfoStore &&ops_kernel_store) = delete;
 
  private:
-  /**
-   * Calc memSize for constant which type is DT_STRING.
-   * @param op_desc OpDesc information
-   * @param mem_size output size
-   * @return whether this operation success
-   */
-  Status CalcConstantStrMemSize(const OpDescPtr &op_desc, int64_t &mem_size);
 
   // store op name and OpInfo key-value pair
   std::map<std::string, ge::OpInfo> op_info_map_;

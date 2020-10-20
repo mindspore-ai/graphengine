@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
+#include "model/ge_model.h"
+#include "graph/ge_context.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using domi::BuildMode;
 
@@ -121,23 +124,18 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
       }
     }
 
-    OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
-    if (kernel_info != nullptr) {
-      auto ret = SetInputSize(node_ptr);
-      if (ret != SUCCESS) {
-        GELOGE(ret, "Set node inputDesc size failed, node name is %s", node_ptr->GetName().c_str());
-        return ret;
-      }
-      ret = kernel_info->CalcOpRunningParam(*node_ptr);
-      if (ret != SUCCESS) {
-        GELOGE(ret, "Calculate op running param failed, node name is %s", node_ptr->GetName().c_str());
-        return ret;
-      }
-      GE_CHK_STATUS_RET(AddOutputMemTypeForNode(node_ptr));
-    } else {
-      GELOGE(GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node_ptr->GetName().c_str());
-      return INTERNAL_ERROR;
+    auto ret = SetInputSize(node_ptr);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Set node inputDesc size failed, node name is %s", node_ptr->GetName().c_str());
+      return ret;
     }
+
+    ret = OpsKernelBuilderManager::Instance().CalcOpRunningParam(*node_ptr);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Calculate op running param failed, node name is %s", node_ptr->GetName().c_str());
+      return ret;
+    }
+    GE_CHK_STATUS_RET(AddOutputMemTypeForNode(node_ptr));
   }
 
   auto parent_node = graph->GetParentNode();

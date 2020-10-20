@@ -16,14 +16,15 @@
 #ifndef ACL_TOOLS_COMPILE_PARSER_H
 #define ACL_TOOLS_COMPILE_PARSER_H
 
-#include <nlohmann/json.hpp>
-#include <string>
 #include <vector>
+#include <string>
+
+#include <nlohmann/json.hpp>
 
 #include "ge/ge_api_error_codes.h"
+#include "graph/types.h"
 #include "graph/ge_attr_value.h"
 #include "graph/op_desc.h"
-#include "graph/types.h"
 
 namespace ge {
 struct SingleOpTensorDesc {
@@ -70,7 +71,8 @@ class SingleOpParser {
   static std::unique_ptr<OpDesc> CreateOpDesc(const std::string &op_type);
   static Status ConvertToBuildParam(int index, const SingleOpDesc &single_op_desc, SingleOpBuildParam &build_param);
   static Status VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc);
-  static Status SetShapeRange(const std::string &op_name, const SingleOpTensorDesc &tensor_desc,
+  static Status SetShapeRange(const std::string &op_name,
+                              const SingleOpTensorDesc &tensor_desc,
                               GeTensorDesc &ge_tensor_desc);
 };
 }  // namespace ge

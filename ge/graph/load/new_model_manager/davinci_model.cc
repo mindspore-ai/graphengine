@@ -310,7 +310,7 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
       GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
       return GE_EXEC_ALLOC_P2P_MEM_FAILED;
     }
-    GELOGI("InitModelMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+    GELOGI("InitModelMem graph_%u MallocMemory type[P] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
            p2p_mem_base_, p2p_data_size);
     is_inner_p2p_mem_base_ = true;
   }

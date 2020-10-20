@@ -37,7 +37,6 @@ class StreamSwitchTask : public TaskRepeater<StreamSwitchTaskInfo> {
   void *stream_;
   std::vector<rtStream_t> stream_list_;
 };
-
 }  // namespace model_runner
 }  // namespace ge
 #endif  // GE_GE_RUNTIME_TASK_STREAM_SWITCH_TASK_H_

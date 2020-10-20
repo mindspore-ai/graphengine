@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@
 #include "single_op/single_op_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using std::string;
 using std::vector;
@@ -242,11 +243,15 @@ Status GeExecutor::Initialize() {
   }
 
   std::vector<rtMemType_t> mem_type(1, RT_MEMORY_HBM);
+  mem_type.push_back(RT_MEMORY_P2P_DDR);
   auto ret = MemManager::Instance().Initialize(mem_type);
   if (ret != SUCCESS) {
     GELOGE(ret, "Memory Manager init failed.");
     return ret;
   }
+
+  GE_CHK_STATUS_RET(OpsKernelBuilderManager::Instance().Initialize({}, false),
+                    "Failed to initialize OpsKernelBuilders");
 
   // Start profiling
   Options profiling_options;
@@ -265,6 +270,8 @@ Status GeExecutor::Finalize() {
     GELOGW("GeExecutor has not been initialized.");
     return ge::SUCCESS;
   }
+
+  (void) OpsKernelBuilderManager::Instance().Finalize();
 
   // Stop profiling
   if (ProfilingManager::Instance().ProfilingOn()) {

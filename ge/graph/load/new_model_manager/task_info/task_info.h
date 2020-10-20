@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ struct MemInfo {
 
 struct RuntimeParam {
   RuntimeParam() {
-    ts_mem_mall = std::unique_ptr<TsMemMall>(new (std::nothrow) TsMemMall);
+    ts_mem_mall = std::unique_ptr<TsMemMall>(new (std::nothrow) TsMemMall());
+    aicpu_mem_mall = std::unique_ptr<TsMemMall>(new (std::nothrow) TsMemMall(RT_MEMORY_HBM));
   }
   ~RuntimeParam() = default;
 
@@ -57,6 +58,7 @@ struct RuntimeParam {
   uint32_t graph_id = 0;
 
   std::unique_ptr<TsMemMall> ts_mem_mall;
+  std::unique_ptr<TsMemMall> aicpu_mem_mall;
 };
 
 typedef struct FusionOpInfo {

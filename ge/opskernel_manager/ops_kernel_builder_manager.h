@@ -30,7 +30,7 @@ class OpsKernelBuilderManager {
   static OpsKernelBuilderManager& Instance();
 
   // opsKernelManager initialize, load all opsKernelInfoStore and graph_optimizer
-  Status Initialize(const std::map<std::string, std::string> &options);
+  Status Initialize(const std::map<std::string, std::string> &options, bool is_train = true);
 
   // opsKernelManager finalize, unload all opsKernelInfoStore and graph_optimizer
   Status Finalize();
@@ -50,7 +50,7 @@ class OpsKernelBuilderManager {
   OpsKernelBuilderManager() = default;
   static Status GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths);
 
-  PluginManager plugin_manager_;
+  std::unique_ptr<PluginManager> plugin_manager_;
   std::map<std::string, OpsKernelBuilderPtr> ops_kernel_builders_{};
 };
 }  // namespace ge

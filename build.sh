@@ -100,8 +100,8 @@ echo "---------------- GraphEngine build start ----------------"
 build_graphengine()
 {
   echo "create build directory and build GraphEngine";
-  mk_dir "${BUILD_PATH}/graphengine"
-  cd "${BUILD_PATH}/graphengine"
+  mk_dir "${BUILD_PATH}"
+  cd "${BUILD_PATH}"
   CMAKE_ARGS="-DBUILD_PATH=$BUILD_PATH -DGE_ONLY=$GE_ONLY"
 
   if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
@@ -117,18 +117,18 @@ build_graphengine()
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_ST=ON"
   fi
 
-  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True"
+  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
   echo "${CMAKE_ARGS}"
-  cmake ${CMAKE_ARGS} ../..
-  make ${VERBOSE} -j${THREAD_NUM}
+  cmake ${CMAKE_ARGS} ..
+  make ${VERBOSE} -j${THREAD_NUM} && make install
   echo "GraphEngine build success!"
 }
 g++ -v
+mk_dir ${OUTPUT_PATH}
 build_graphengine
 echo "---------------- GraphEngine build finished ----------------"
-mk_dir ${OUTPUT_PATH}
-cp -rf "${BUILD_PATH}/graphengine/"*.so "${OUTPUT_PATH}"
-rm -rf "${OUTPUT_PATH}/"libproto*
+#cp -rf "${BUILD_PATH}/graphengine/"*.so "${OUTPUT_PATH}"
+#rm -rf "${OUTPUT_PATH}/"libproto*
 rm -f ${OUTPUT_PATH}/libgmock*.so
 rm -f ${OUTPUT_PATH}/libgtest*.so
 rm -f ${OUTPUT_PATH}/lib*_stub.so
@@ -176,43 +176,14 @@ echo "---------------- GraphEngine output generated ----------------"
 generate_package()
 {
   cd "${BASEPATH}"
-  FWK_PATH="fwkacllib/lib64"
-  ATC_PATH="atc/lib64"
-  NNENGINE_PATH="plugin/nnengine/ge_config"
-  OPSKERNEL_PATH="plugin/opskernel"
 
-  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so")
-  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so")
-
-  rm -rf ${OUTPUT_PATH:?}/${FWK_PATH}/
-  rm -rf ${OUTPUT_PATH:?}/${ATC_PATH}/
-  mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}"
-  mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH}"
-  mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}"
-  mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH}"
+  GRAPHENGINE_LIB_PATH="lib"
 
   find output/ -name graphengine_lib.tar -exec rm {} \;
-  cp ge/engine_manager/engine_conf.json ${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}
-  cp ge/engine_manager/engine_conf.json ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}
-
-  find output/ -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}/../ \;
-  find output/ -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}/../ \;
-
-  find output/ -maxdepth 1 -name libge_local_engine.so -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH} \;
-  find output/ -maxdepth 1 -name libge_local_engine.so -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH} \;
 
   cd "${OUTPUT_PATH}"
-  for lib in "${ATC_LIB[@]}";
-  do
-    cp "$lib" "${OUTPUT_PATH}/${ATC_PATH}"
-  done
-
-  for lib in "${FWK_LIB[@]}";
-  do
-    cp "$lib" "${OUTPUT_PATH}/${FWK_PATH}"
-  done
-
-  tar -cf graphengine_lib.tar fwkacllib/ atc/
+  
+  tar -cf graphengine_lib.tar "${GRAPHENGINE_LIB_PATH}"
 }
 
 if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then

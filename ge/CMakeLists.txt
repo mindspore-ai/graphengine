@@ -725,7 +725,7 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,--exclude-libs,ALL
 )
 target_link_libraries(opensrc_ascendcl PRIVATE
-                     -Wl, --whole-archive
+                     -Wl,--whole-archive
                      ge_executor
                      ascendcl_static
                      ge_common_static
@@ -735,15 +735,15 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      error_manager_static
                      adump_server
                      msprofiler
-                     -Wl, --no-whole-archive
-                     -Wl, --no-as-needed
+                     -Wl,--no-whole-archive
+                     -Wl,--no-as-needed
                      c_sec
                      runtime
                      mmpa
                      slog
                      msprof
                      ascend_hal_stub
-                     -Wl, --as-needed
+                     -Wl,--as-needed
                      -ldl
                      json
 )

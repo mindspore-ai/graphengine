@@ -99,4 +99,5 @@ function(protobuf_generate_py comp py_var)
 
 endfunction()
 
-set(HAVE_PROTOC TRUE CACHE BOOL "protoc build add")
+#set(HAVE_PROTOC TRUE CACHE BOOL "protoc build add")
+set(HAVE_PROTOC TRUE)

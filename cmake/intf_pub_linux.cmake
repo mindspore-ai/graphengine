@@ -29,4 +29,5 @@ target_link_libraries(intf_pub INTERFACE
     -lpthread
 )
 
-set(HAVE_PUB TRUE CACHE BOOL "pub add")
+#set(HAVE_PUB TRUE CACHE BOOL "pub add")
+set(HAVE_PUB TRUE)

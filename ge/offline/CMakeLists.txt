@@ -38,6 +38,7 @@ target_include_directories(atc PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
+    ${PARSER_DIR}
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/ge
     ${GE_CODE_DIR}/third_party/fwkacllib/inc

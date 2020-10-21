@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project (GraphEngine[CXX])
 
 set(GE_CODE_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
 if (NOT BUILD_PATH)
     set(BUILD_PATH "${CMAKE_SOURCE_DIR}/build")
@@ -94,7 +95,7 @@ if (ENABLE_OPEN_SRC)
                 find_module(ascend_hal_stub libascend_hal.so ${ASCEND_DRIVER_DIR})
             endif()
         else()
-             message(FATAL_ERROR "Mode param is invalid, build terminated")
+             message(FATAL_ERROR "Mode param is invalid, should be train or inference, build terminated")
         endif()
     endif()
 

@@ -134,7 +134,16 @@ build_graphengine()
     echo "execute command: cmake ${CMAKE_ARGS} .. failed."
     return 1
   fi
-  make ${VERBOSE} -j${THREAD_NUM} && make install
+  COMMON_TARGET="ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register "
+  TARGET=${COMMON_TARGET}
+  if [ "x${PLATFORM}" = "xtrain" ]
+  then
+    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ${TARGET}"
+  elif [ "x${PLATFORM}" = "xinference" ]
+    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
+  fi
+  
+  make ${VERBOSE} -j${THREAD_NUM} ${TARGET} && make install
   if [ $? -ne 0 ]
   then
     echo "execute command: make ${VERBOSE} -j${THREAD_NUM} && make install failed."

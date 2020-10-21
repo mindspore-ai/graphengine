@@ -144,7 +144,7 @@ build_graphengine()
     TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
   fi
   
-  make ${VERBOSE} -j${THREAD_NUM} ${TARGET} && make install
+  make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install
   if [ $? -ne 0 ]
   then
     echo "execute command: make ${VERBOSE} -j${THREAD_NUM} && make install failed."

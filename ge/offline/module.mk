@@ -23,6 +23,7 @@ LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/framework/domi \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)inc/common/util \
+    $(TOPDIR)parser    \
     third_party/json/include \
     third_party/gflags/include \
     third_party/protobuf/include \

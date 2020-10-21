@@ -347,6 +347,7 @@ DEVICE_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi \
+    $(TOPDIR)graphengine/ge \
     $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \
     third_party/protobuf/include \

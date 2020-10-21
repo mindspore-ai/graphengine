@@ -318,6 +318,7 @@ RUNNER_LOCAL_C_INCLUDES := \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi/analyzer \
+    $(TOPDIR)graphengine/ge/analyzer \
     $(TOPDIR)toolchain/ide/ide-daemon/external \
     proto/fwk_adapter.proto \
     proto/ge_ir.proto \

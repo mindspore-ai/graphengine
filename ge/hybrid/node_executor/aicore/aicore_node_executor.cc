@@ -159,9 +159,13 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
   auto op_desc = context.GetNodeItem().op_desc;
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("[%s] ExecuteAsync Start.", op_desc->GetName().c_str());
-  for (auto &task : tasks_) {
+  for (auto it = tasks_.begin(); it != tasks_.end(); ++it) {
+    // AtomicAddrClean has 2 tasks
+    if (tasks_.size() == 2 && it == tasks_.begin() && !(*(tasks_.rbegin()))->GetClearAtomic()) {
+      continue;
+    }
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
-    GE_CHK_STATUS_RET_NOLOG(task->LaunchKernel(context.GetStream()));
+    GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }
@@ -181,8 +185,12 @@ Status AiCoreNodeTask::UpdateArgs(TaskContext &context) {
   auto op_desc = context.GetNodeItem().op_desc;
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("[%s] AiCoreNodeTask UpdateArgs Start.", op_desc->GetName().c_str());
-  for (auto &task : tasks_) {
-    GE_CHK_STATUS_RET_NOLOG(task->UpdateArgs(context));
+  for (auto it = tasks_.rbegin(); it != tasks_.rend(); ++it) {
+    GE_CHK_STATUS_RET_NOLOG((*it)->UpdateArgs(context));
+    // AtomicAddrClean has 2 tasks
+    if (tasks_.size() == 2 && it == tasks_.rbegin() && !(*it)->GetClearAtomic()) {
+      break;
+    }
   }
   GELOGI("[%s] AiCoreNodeTask UpdateArgs End.", op_desc->GetName().c_str());
   return SUCCESS;
@@ -190,8 +198,12 @@ Status AiCoreNodeTask::UpdateArgs(TaskContext &context) {
 
 Status AiCoreNodeTask::UpdateTilingData(TaskContext &context) {
   GELOGD("[%s] PrepareWithShape started", context.GetNodeName());
-  for (auto &task : tasks_) {
-    GE_CHK_STATUS_RET_NOLOG(task->PrepareWithShape(context));
+  for (auto it = tasks_.rbegin(); it != tasks_.rend(); ++it) {
+    GE_CHK_STATUS_RET_NOLOG((*it)->PrepareWithShape(context));
+    // AtomicAddrClean has 2 tasks
+    if (tasks_.size() == 2 && it == tasks_.rbegin() && !(*it)->GetClearAtomic()) {
+      break;
+    }
   }
   GELOGD("[%s] Done PrepareWithShape successfully.", context.GetNodeName());
   return SUCCESS;

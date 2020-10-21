@@ -140,6 +140,7 @@ build_graphengine()
   then
     TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
+  then
     TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
   fi
   

@@ -17,7 +17,7 @@ set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(protoc_build
                     URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
-                    SOURCE_DIR ${GE_CODE_DIR}/../third_party/protobuf/src/protobuf-3.8.0
+                    #SOURCE_DIR ${GE_CODE_DIR}/../third_party/protobuf/src/protobuf-3.8.0
                     CONFIGURE_COMMAND ${CMAKE_COMMAND} -Dprotobuf_WITH_ZLIB=OFF -Dprotobuf_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_CXX_FLAGS=${protobuf_CXXFLAGS} -DCMAKE_CXX_LDFLAGS=${protobuf_LDFLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/protoc <SOURCE_DIR>/cmake
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install

@@ -145,6 +145,7 @@ void Analyzer::DestroyGraphJsonObject(uint64_t session_id, uint64_t graph_id) {
     if (iter1 == (iter->second).end()) {
       GELOGW("Can not find the graph json object by session_id[%lu] and graph_id[%lu]. Do nothing.", session_id,
              graph_id);
+      return;
     }
     (iter->second).erase(iter1);
   }

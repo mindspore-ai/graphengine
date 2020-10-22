@@ -8,7 +8,7 @@ set(JSON_SRC_DIR ${GE_CODE_DIR}/../third_party/json/include)
 ExternalProject_Add(json_build
                     URL https://github.com/nlohmann/json/releases/download/v3.6.1/include.zip
                     #URL /home/txd/workspace/cloud_code/pkg/include.zip
-                    SOURCE_DIR  ${JSON_SRC_DIR}
+                    #SOURCE_DIR  ${JSON_SRC_DIR}
                     CONFIGURE_COMMAND ""
                     BUILD_COMMAND ""
                     INSTALL_COMMAND ""

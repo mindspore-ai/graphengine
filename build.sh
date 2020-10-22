@@ -208,9 +208,11 @@ generate_package()
 
   GRAPHENGINE_LIB_PATH="lib"
 
-  find output/ -name graphengine_lib.tar -exec rm {} \;
-
   cd "${OUTPUT_PATH}"
+
+  find ./ -name graphengine_lib.tar -exec rm {} \;
+
+  find ./bin -name atc -exec cp {} "${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH}" \;
   
   tar -cf graphengine_lib.tar "${GRAPHENGINE_LIB_PATH}"
 }

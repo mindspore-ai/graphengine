@@ -121,6 +121,7 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   GELOGD("[%s] Start to update tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());
   OpRunInfo tiling_info;
   tiling_info.block_dim = -1; // codex: Using uninitialized value
+  tiling_info.clear_atomic = true;
 
   auto execution_context = context.GetExecutionContext();
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CalcTilingInfo] Start");
@@ -130,6 +131,7 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   // update op args by tiling info
   block_dim_ = static_cast<uint32_t>(tiling_info.block_dim);
   op_desc->SetWorkspaceBytes(tiling_info.workspaces);
+  clear_atomic_ = tiling_info.clear_atomic;
 
   tiling_data_ = tiling_info.tiling_data.str();
   if (tiling_data_.empty()) {

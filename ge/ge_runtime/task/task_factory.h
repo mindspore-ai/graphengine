@@ -81,7 +81,6 @@ class TaskFactory {
       std::shared_ptr<task_info_clazz> concrete_task_info = std::static_pointer_cast<task_info_clazz>(task_info);      \
       return std::make_shared<task_clazz>(model_context, concrete_task_info);                                          \
     });
-
 }  // namespace model_runner
 }  // namespace ge
 #endif  // GE_GE_RUNTIME_TASK_TASK_FACTORY_H_

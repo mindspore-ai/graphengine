@@ -138,6 +138,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/mark_same_addr_pass.cc"
     "graph/passes/mark_graph_unknown_status_pass.cc"
     "graph/partition/dynamic_shape_partition.cc"
+    "graph/partition/stage_partition.cc"
     "graph/passes/base_pass.cc"
     "graph/passes/bitcast_pass.cc"
     "graph/passes/cast_remove_pass.cc"
@@ -270,6 +271,7 @@ set(TRAIN_SRC_LIST
     "model/ge_root_model.cc"
     "omm/csa_interact.cc"
     "opskernel_manager/ops_kernel_manager.cc"
+    "opskernel_manager/ops_kernel_builder_manager.cc"
     "session/inner_session.cc"
     "session/session_manager.cc"
     "single_op/single_op.cc"
@@ -356,6 +358,7 @@ target_include_directories(ge_runner PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     #### blue zone
@@ -369,6 +372,7 @@ target_link_libraries(ge_runner
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     adump_server
+    msprofiler
     -Wl,--no-as-needed
     graph
     ge_common
@@ -426,6 +430,7 @@ set(INFER_SRC_LIST
     "session/session_manager.cc"
     "engine_manager/dnnengine_manager.cc"
     "opskernel_manager/ops_kernel_manager.cc"
+    "opskernel_manager/ops_kernel_builder_manager.cc"
     "graph/manager/graph_manager.cc"
     "graph/manager/graph_manager_utils.cc"
     "graph/manager/graph_context.cc"
@@ -678,6 +683,7 @@ target_include_directories(ge_compiler PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     #### blue zone

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,7 @@ class GELib {
   Status InnerInitialize(const map<string, string> &options);
   Status SystemInitialize(const map<string, string> &options);
   Status SetRTSocVersion(const map<string, string> &options, map<string, string> &new_options);
+  void SetDefaultPrecisionMode(map<string, string> &new_options);
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
   void SetDumpModelOptions(const map<string, string> &options);

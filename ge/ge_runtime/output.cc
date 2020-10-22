@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ bool Output::CopyRslt(OutputData *rslt, uint32_t data_begin, uint32_t &data_inde
     DataBuffer data_buf = rslt->blobs[data_begin + data_count];
     bool ret = SetDataBuf(data_buf, data_begin, data_count, i, support_mem_share);
     if (!ret) {
-      GELOGE(FAILED, "Copy data to host error. index: %lu, addr: %p", i, v_input_data_addr_[i]);
+      GELOGE(FAILED, "Copy data to host failed. index: %lu, addr: %p", i, v_input_data_addr_[i]);
       return ret;
     }
     data_index = data_begin + data_count;
@@ -89,6 +89,5 @@ bool Output::SetDataBuf(DataBuffer &data_buf, uint32_t data_begin, uint32_t &dat
                         bool support_mem_share) {
   return true;
 }
-
 }  // namespace model_runner
 }  // namespace ge

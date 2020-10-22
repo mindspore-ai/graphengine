@@ -24,7 +24,7 @@ const std::vector<std::string> kBasicBuilderLibs = {
     "libge_local_opskernel_builder.so",
     "libhost_cpu_opskernel_builder.so",
     "librts_kernel_builder.so",
-    "libaicpu_builder.so",
+    "libaicpu_ascend_builder.so",
     "libaicpu_tf_builder.so"
 };
 
@@ -43,10 +43,14 @@ OpsKernelBuilderManager &OpsKernelBuilderManager::Instance() {
   return instance;
 }
 
-Status OpsKernelBuilderManager::Initialize(const map<std::string, std::string> &options) {
-  std::string lib_paths;
-  GE_CHK_STATUS_RET_NOLOG(GetLibPaths(options, lib_paths));
-  GE_CHK_STATUS_RET(plugin_manager_.LoadSo(lib_paths), "Failed to load libs");
+Status OpsKernelBuilderManager::Initialize(const map<std::string, std::string> &options, bool is_train) {
+  if (is_train) {
+    std::string lib_paths;
+    GE_CHK_STATUS_RET_NOLOG(GetLibPaths(options, lib_paths));
+    plugin_manager_.reset(new (std::nothrow)PluginManager());
+    GE_CHECK_NOTNULL(plugin_manager_);
+    GE_CHK_STATUS_RET(plugin_manager_->LoadSo(lib_paths), "Failed to load libs");
+  }
 
   auto &kernel_builders = OpsKernelBuilderRegistry::GetInstance().GetAll();
   GELOGI("Number of OpBuild = %zu", kernel_builders.size());
@@ -66,7 +70,6 @@ Status OpsKernelBuilderManager::Initialize(const map<std::string, std::string> &
 }
 
 Status OpsKernelBuilderManager::Finalize() {
-  OpsKernelBuilderRegistry::GetInstance().UnregisterAll();
   for (const auto &it : ops_kernel_builders_) {
     const std::string &kernel_lib_name = it.first;
     GELOGI("Finalize ops kernel util for %s", kernel_lib_name.c_str());
@@ -78,6 +81,7 @@ Status OpsKernelBuilderManager::Finalize() {
   }
 
   ops_kernel_builders_.clear();
+  plugin_manager_.reset();
   return SUCCESS;
 }
 

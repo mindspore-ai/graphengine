@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "graph/build/run_context.h"
 
 #include "common/util.h"
@@ -179,13 +178,7 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
   GELOGI("CreateRunContext: data_mem_base_ = %p, weight_mem_base_ = %p, memory_size = %lu, weight_size = %lu",
          data_mem_base_, weight_mem_base_, data_mem_size_, weight_mem_size_);
 
-  for (auto iter : mem_type_to_data_mem_base_) {
-    GELOGI("CreateRunContext: memory type = %ld, data memory base = %p", iter.first, iter.second);
-  }
-
-  for (auto iter : mem_type_to_data_mem_size_) {
-    GELOGI("CreateRunContext: memory type = %ld, data memory size = %lu", iter.first, iter.second);
-  }
+  PrintMemInfo();
 
   run_context_ = {rt_model_,
                   nullptr,
@@ -201,6 +194,16 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
                   event_list_,
                   label_list_};
   return SUCCESS;
+}
+
+void RunContextUtil::PrintMemInfo() {
+  for (auto iter : mem_type_to_data_mem_base_) {
+    GELOGI("CreateRunContext: memory type = %ld, data memory base = %p", iter.first, iter.second);
+  }
+
+  for (auto iter : mem_type_to_data_mem_size_) {
+    GELOGI("CreateRunContext: memory type = %ld, data memory size = %lu", iter.first, iter.second);
+  }
 }
 
 RunContext &RunContextUtil::GetRunContext() { return run_context_; }

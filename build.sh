@@ -23,7 +23,7 @@ export BUILD_PATH="${BASEPATH}/build/"
 usage()
 {
   echo "Usage:"
-  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c]"
+  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-p]"
   echo ""
   echo "Options:"
   echo "    -h Print usage"
@@ -32,6 +32,7 @@ usage()
   echo "    -j[n] Set the number of threads used for building GraphEngine, default is 8"
   echo "    -t Build and execute ut"
   echo "    -c Build ut with coverage tag"
+  echo "    -p Build inference or train"
   echo "    -v Display build command"
   echo "to be continued ..."
 }
@@ -46,8 +47,10 @@ checkopts()
   ENABLE_GE_ST="off"
   ENABLE_GE_COV="off"
   GE_ONLY="on"
+  PLATFORM="inference"
+  PRODUCT="normal"
   # Process the options
-  while getopts 'ustchj:v' opt
+  while getopts 'ustchj:p:g:v' opt
   do
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
@@ -76,6 +79,12 @@ checkopts()
         ;;
       v)
         VERBOSE="VERBOSE=1"
+        ;;
+      p)
+        PLATFORM=$OPTARG
+        ;;
+      g)
+        PRODUCT=$OPTARG
         ;;
       *)
         echo "Undefined option: ${opt}"
@@ -117,15 +126,35 @@ build_graphengine()
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_ST=ON"
   fi
 
-  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
+  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ..
-  make ${VERBOSE} -j${THREAD_NUM} && make install
+  if [ $? -ne 0 ]
+  then
+    echo "execute command: cmake ${CMAKE_ARGS} .. failed."
+    return 1
+  fi
+  COMMON_TARGET="ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register "
+  TARGET=${COMMON_TARGET}
+  if [ "x${PLATFORM}" = "xtrain" ]
+  then
+    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ${TARGET}"
+  elif [ "x${PLATFORM}" = "xinference" ]
+  then
+    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
+  fi
+  
+  make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install
+  if [ $? -ne 0 ]
+  then
+    echo "execute command: make ${VERBOSE} -j${THREAD_NUM} && make install failed."
+    return 1
+  fi
   echo "GraphEngine build success!"
 }
 g++ -v
 mk_dir ${OUTPUT_PATH}
-build_graphengine
+build_graphengine || { echo "GraphEngine build failed."; return; }
 echo "---------------- GraphEngine build finished ----------------"
 #cp -rf "${BUILD_PATH}/graphengine/"*.so "${OUTPUT_PATH}"
 #rm -rf "${OUTPUT_PATH}/"libproto*

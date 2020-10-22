@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 #include "init/gelib.h"
 #include "graph/ge_local_context.h"
 #include "ge/ge_api_types.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using domi::LogTimeStampDef;
 using domi::ModelTaskDef;
@@ -305,9 +306,11 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
       GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
       continue;
     }
-    OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
+    auto kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
     if (kernel_info_store == nullptr) {
-      GELOGE(INTERNAL_ERROR, "No ops kernel store found. node:%s(%s), op_kernel_lib_name=%s.", name.c_str(),
+      GELOGE(INTERNAL_ERROR,
+             "No ops kernel store or ops kernel builder found. node:%s(%s), op_kernel_lib_name=%s.",
+             name.c_str(),
              type.c_str(), op_kernel_lib_name.c_str());
       return INTERNAL_ERROR;
     }
@@ -327,7 +330,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task.", op_kernel_lib_name.c_str(),
            name.c_str(), type.c_str(), op_id, stream_id);
     GE_TIMESTAMP_RESTART(GenerateTask);
-    auto ret = kernel_info_store->GenerateTask(*node, run_context, task_def_list);
+    auto ret = OpsKernelBuilderManager::Instance().GenerateTask(*node, run_context, task_def_list);
     GE_TIMESTAMP_ADD(GenerateTask);
     if (ret != SUCCESS) {
       GELOGE(ret, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task failed.",
@@ -404,7 +407,8 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       size_t task_list_size_before = task_def_list.size();
       OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
       if (kernel_info_store == nullptr) {
-        GELOGE(INTERNAL_ERROR, "Fusion: No ops kernel store found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
+        GELOGE(INTERNAL_ERROR,
+               "Fusion: No ops kernel store or ops kernel builder found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
                fusion_node_name.c_str(), fusion_node_type.c_str(), op_kernel_lib_name.c_str());
         return INTERNAL_ERROR;
       }
@@ -428,7 +432,7 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       run_context.stream = run_context.graphStreamList[stream_id];
       GELOGI("Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld] task.",
              op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
-      ret = kernel_info_store->GenerateTask(*fusion_node, run_context, task_def_list);
+      ret = OpsKernelBuilderManager::Instance().GenerateTask(*fusion_node, run_context, task_def_list);
       if (ret != SUCCESS) {
         GELOGE(ret,
                "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "

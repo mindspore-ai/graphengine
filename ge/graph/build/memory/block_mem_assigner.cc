@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -618,11 +618,11 @@ void BlockMemAssigner::InitReuseFlag() {
     int64_t mem_type = RT_MEMORY_HBM;
     GetSymbolMemType(pair.second, mem_type);
     GELOGD("The memory type of symbol[%s] is [%ld]].", symbol.c_str(), mem_type);
-    if (mem_type != RT_MEMORY_HBM) {
+    if (mem_type == RT_MEMORY_P2P_DDR) {
       UpdateOpTensorMemType(pair.second, mem_type);
     }
     // Only the memory with special requirements is processed. The HBM uses the default processing mode.
-    if (mem_type != RT_MEMORY_HBM) {
+    if (mem_type == RT_MEMORY_P2P_DDR) {
       symbol_to_mem_type_[symbol] = mem_type;
     }
 
@@ -790,12 +790,12 @@ void BlockMemAssigner::UpdateOpTensorMemType(std::list<NodeIndexIO> node_index_i
     }
 
     if (node_index_io.io_type_ == kIn) {
-      auto input_desc = op_desc->GetInputDesc(node_index_io.index_);
+      auto input_desc = op_desc->MutableInputDesc(node_index_io.index_);
       (void) AttrUtils::SetInt(input_desc, ATTR_NAME_TENSOR_MEM_TYPE, memory_type);
     }
 
     if (node_index_io.io_type_ == kOut) {
-      auto output_desc = op_desc->GetOutputDesc(node_index_io.index_);
+      auto output_desc = op_desc->MutableOutputDesc(node_index_io.index_);
       (void) AttrUtils::SetInt(output_desc, ATTR_NAME_TENSOR_MEM_TYPE, memory_type);
     }
   }
@@ -1598,7 +1598,7 @@ void BlockMemAssigner::ResizeMemoryBlocks() {
       memory_block->SetHeadOffset(mem_offset_);
       mem_offset_ += memory_block->Size();
       memory_block->SetTailOffset(mem_offset_ - 1);
-    } else {
+    } else if (memory_block->memory_type_ == RT_MEMORY_P2P_DDR) {
       if (memory_block->first_continuous_block_) {
         p2p_mem_offset_ += MEM_ALIGN_SIZE;
       }

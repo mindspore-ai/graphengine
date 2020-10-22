@@ -75,6 +75,7 @@ local_ge_executor_c_include :=             \
     $(TOPDIR)inc/framework                 \
     $(TOPDIR)inc                           \
     $(LOCAL_PATH)/../                      \
+    $(TOPDIR)graphengine/ge                \
     $(TOPDIR)libc_sec/include              \
     third_party/protobuf/include           \
     third_party/json/include               \

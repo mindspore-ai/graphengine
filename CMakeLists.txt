@@ -94,7 +94,7 @@ if (ENABLE_OPEN_SRC)
                 find_module(ascend_hal_stub libascend_hal.so ${ASCEND_DRIVER_DIR})
                 find_module(msprof libmsprof.so ${ASCEND_DRIVER_DIR})
             else()
-                find_module(msprof libmsprof.so ${ASCEND_ATC_DIR}) // 驱动包
+                find_module(msprof libmsprof.so ${ASCEND_ATC_DIR})
             endif()
         elseif(PLATFORM STREQUAL "all")
             find_module(slog libslog.so ${ASCEND_DRIVER_DIR})

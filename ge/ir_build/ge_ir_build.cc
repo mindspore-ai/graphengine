@@ -171,7 +171,7 @@ class Impl {
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                  bool is_dynamic_input);
   void SetRtSocVersion();
-
+  void UpdateThreadContext();
  public:
   ge::GeGenerator generator_;
   std::map<std::string, std::string> options_;
@@ -225,8 +225,6 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
     return ret;
   }
 
-  GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
-  GetThreadLocalContext().SetGraphOption(options_);
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
                            ? "" : options_[BUILD_MODE];
   options_[BUILD_MODE] = build_mode;
@@ -286,7 +284,7 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   ge::PrintOptionMap(options_, "ge option");
 
   SetRtSocVersion();
-
+  UpdateThreadContext();
   // 3. init generator with options_
   ret = generator_.Initialize(options_, omg_context_);
   if (ret != GRAPH_SUCCESS) {
@@ -308,6 +306,11 @@ void Impl::SetRtSocVersion() {
     }
     GELOGI("Set soc version %s success.", soc_version);
   }
+}
+
+void Impl::UpdateThreadContext() {
+  GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
+  GetThreadLocalContext().SetGraphOption(options_);
 }
 
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
@@ -333,13 +336,15 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
         data_shape = tensor.GetShape();
         GELOGI("Data op get shape from InputDesc in ge ir graph.");
       }
-
+      // If user point input format, do work for all data ops; else do according to tensor_desc
+      auto data_format = omg_context_.format != domi::DOMI_TENSOR_ND ?
+        ge::TypeUtils::DomiFormatToFormat(omg_context_.format) : tensor.GetFormat();
       ge::DataType data_type = tensor.GetDataType();
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
       GELOGI("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
-      ge::GeTensorDesc desc(data_shape, ge::Format(omg_context_.format), data_type);
+      ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);
       inputTensor.SetTensorDesc(desc);
       inputs.push_back(inputTensor);
     }

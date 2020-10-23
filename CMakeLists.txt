@@ -97,8 +97,7 @@ if (ENABLE_OPEN_SRC)
             endif()
         elseif(PLATFORM STREQUAL "all")
             #mdc没有 dc在driver目录
-            find_module(msprof libmsprof.so ${ASCEND_DRIVER_DIR})
-            #mdc没有 dc在fwkack目录
+            find_module(msprof libmsprof.so ${ASCEND_DRIVER_COMMON_DIR})
             find_module(hccl libhccl.so ${ASCEND_RUNTIME_DIR})
             find_module(adump_server libadump_server.a ${ASCEND_ACL_DIR})
             find_module(runtime libruntime.so ${ASCEND_ACL_DIR})

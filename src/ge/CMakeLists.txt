@@ -212,13 +212,14 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 
 
 ######### libge_runner.so #############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} ${PROTO_HEADER_HDRS})
-target_compile_definitions(ge_runner PRIVATE
+if (NOT ENABLE_ACL)
+    add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} ${PROTO_HEADER_HDRS})
+    target_compile_definitions(ge_runner PRIVATE
         PROTOBUF_INLINE_NOT_IN_HEADERS=0
         DAVINCI_SUPPORT_PROFILING
         REUSE_MEMORY=1
         DAVINCI_CLOUD)
-target_link_libraries(ge_runner
+    target_link_libraries(ge_runner
         graph
         ge_common
         ge_memory
@@ -236,6 +237,7 @@ target_link_libraries(ge_runner
         ${msprofiler}
         rt
         dl)
+endif ()
 
 ######### libge_compiler.so #############
 # need to remove dependencies on pb files later

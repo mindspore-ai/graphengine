@@ -96,8 +96,10 @@ if (ENABLE_OPEN_SRC)
                 find_module(msprof libmsprof.so ${ASCEND_DRIVER_SHARE_DIR})
             endif()
         elseif(PLATFORM STREQUAL "all")
-            find_module(msprof libmsprof.so ${ASCEND_DRIVER_DIR})#mdc没有 dc在driver目录
-            find_module(hccl libhccl.so ${ASCEND_RUNTIME_DIR})#mdc没有 dc在fwkack目录
+            #mdc没有 dc在driver目录
+            find_module(msprof libmsprof.so ${ASCEND_DRIVER_DIR})
+            #mdc没有 dc在fwkack目录
+            find_module(hccl libhccl.so ${ASCEND_RUNTIME_DIR})
             find_module(adump_server libadump_server.a ${ASCEND_ACL_DIR})
             find_module(runtime libruntime.so ${ASCEND_ACL_DIR})
             find_module(runtime_compile libruntime_compile.so ${ASCEND_ATC_DIR})
@@ -105,7 +107,8 @@ if (ENABLE_OPEN_SRC)
             find_module(error_manager liberror_manager.so ${ASCEND_ATC_DIR})
             find_module(error_manager_static liberror_manager.a ${ASCEND_ACL_DIR})
             find_module(msprofiler libmsprofiler.a ${ASCEND_ACL_DIR})
-            find_module(ascend_hal_stub libascend_hal.so ${ASCEND_DRIVER_DIR}/driver)#mdc没有 dc在driver/lib64/driver
+            #mdc没有 dc在driver/lib64/driver
+            find_module(ascend_hal_stub libascend_hal.so ${ASCEND_DRIVER_DIR}/driver)
             find_module(ascendcl_static libascendcl.a ${ASCEND_ACL_DIR})
         else()
              message(FATAL_ERROR "PLATFORM param is invalid, should be train or inference, build terminated")

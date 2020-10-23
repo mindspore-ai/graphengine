@@ -61,6 +61,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/load/new_model_manager/model_utils.cc \
     graph/load/new_model_manager/aipp_utils.cc \
     graph/load/new_model_manager/task_info/end_graph_task_info.cc \
+    graph/load/new_model_manager/task_info/model_exit_task_info.cc \
     graph/load/new_model_manager/task_info/event_record_task_info.cc \
     graph/load/new_model_manager/task_info/event_wait_task_info.cc \
     graph/load/new_model_manager/task_info/fusion_start_task_info.cc \

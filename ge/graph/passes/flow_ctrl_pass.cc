@@ -84,6 +84,22 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   return graph_change ? SUCCESS : NOT_CHANGED;
 }
 
+bool FlowCtrlPass::CheckMultiDataSet(ComputeGraphPtr &compute_graph) {
+  int data_set_num = 0;
+  for (auto &node : compute_graph->GetDirectNode()) {
+    if (node == nullptr) {
+      continue;
+    }
+    string type;
+    bool is_found = AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type);
+    if (is_found && type == "IteratorV2") {
+      data_set_num++;
+    }
+  }
+  GELOGI("The ComputeGraph contain %d dataSet.", data_set_num);
+  return (data_set_num > 1) ? true : false;
+}
+
 NodePtr FlowCtrlPass::InsertOp(ComputeGraphPtr &compute_graph, const string &node_type, const string &node_name,
                                const std::vector<GeTensorDesc> &input_list,
                                const std::vector<GeTensorDesc> &output_list) {
@@ -310,12 +326,12 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
    *           loopCond
    *                |
    *                v
-   *   switch --> Assign
+   *   switch --> Assign --> ModelExit
    *                ^
    *                |
    *            loopReset
    */
-  // Insert Assign node
+  // Insert Assign node and ctrl edge
   NodePtr assign_node =
       InsertAssignOp(compute_graph, ASSIGN, NODE_NAME_FLOWCTRL_LOOP_ASSIGN, loop_cond_node, loop_reset_node);
   if (assign_node == nullptr || switch_node == nullptr) {
@@ -325,11 +341,29 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
 
   GE_CHK_STATUS_RET(SetStreamLabel(assign_node, switch_node->GetName()), "set stream label failed");
 
-  // 3. Insert ctrl edges
   graphStatus add_ret = GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), assign_node->GetInControlAnchor());
   if (add_ret != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Add switch_node to assign_node ctrl edge failed, add_ret=%u.", add_ret);
     return FAILED;
+  }
+
+  // 2. Insert model exit node and add ctrl edge
+  if (CheckMultiDataSet(compute_graph)) {
+    GELOGI("Multi dataSae exist, model_exit node is need.");
+    string model_exit_name = switch_node->GetName() + "_ModelExit";
+    NodePtr model_exit_node = InsertOp(compute_graph, MODELEXIT, model_exit_name, {}, {});
+    if (model_exit_node == nullptr) {
+      GELOGE(FAILED, "Insert model_exit node:%s for IterCtrlTrueStream failed.", model_exit_name.c_str());
+      return FAILED;
+    }
+    // Must set same stream label with assign_node
+    GE_CHK_STATUS_RET(SetStreamLabel(model_exit_node, switch_node->GetName()), "set stream label failed");
+
+    add_ret = GraphUtils::AddEdge(assign_node->GetOutControlAnchor(), model_exit_node->GetInControlAnchor());
+    if (add_ret != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "Add assign_node to model_exit_node ctrl edge failed, add_ret=%u.", add_ret);
+      return FAILED;
+    }
   }
 
   GELOGI("CreateIterCtrlFalseBranch success.");

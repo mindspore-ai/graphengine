@@ -390,7 +390,7 @@ class BlockMemAssigner : public MemAssigner {
   bool IsZeroCopyBlock(const NodePtr &node, bool continuous);
 
   bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
-                                   uint32_t &peer_input_index, bool &no_need_assign_memory);
+                                   uint32_t &peer_input_index, bool &no_need_assign_memory, bool &reset_zero_copy_flag);
 
   ///
   /// @ingroup GE

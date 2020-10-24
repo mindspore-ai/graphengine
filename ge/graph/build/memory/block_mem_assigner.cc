@@ -1279,7 +1279,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     MemoryBlock *mem_block = ApplyOutMemory(node, i, ranges, is_op_reuse_mem_, out_node_set_continuous_input);
     if (mem_block != nullptr) {
       GE_IF_BOOL_EXEC(reset_zero_copy_flag,
-        memory_block->is_zero_copy_ = false;
+        mem_block->is_zero_copy_ = false;
         GELOGI("Node[%s] output[%u] need assign memory before reassign.", op_desc->GetName().c_str(), i););
       node_out_blocks_[node->GetName()].emplace_back(mem_block);
       if (out_node_set_continuous_input) {

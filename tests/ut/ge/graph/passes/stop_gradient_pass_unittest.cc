@@ -176,7 +176,6 @@ TEST_F(UtestGraphPassesStopGradientPass, get_origenal_type_fail) {
   string type2 = "FrameworkOp";
   node->GetOpDesc()->SetType(type2);
   ge::Status ret = pass_->Run(node);
-  //    EXPECT_EQ(ge::SUCCESS, ret);
 }
 TEST_F(UtestGraphPassesStopGradientPass, size_check_fail) {
   vector<int64_t> dims_vec_0 = {8, 2};

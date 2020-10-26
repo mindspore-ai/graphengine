@@ -182,8 +182,6 @@ TEST_F(UtestModelManagerDavinciModel, contruct_modeldef_createfail) {
   ge::AttrUtils::SetListInt(op_desc, ge::POOLING_ATTR_WINDOW, vector<int>({1, 1}));
   ge::AttrUtils::SetListInt(op_desc, ge::POOLING_ATTR_STRIDE, vector<int>({1, 1}));
 
-  // EXPECT_EQ(ge::SUCCESS, model.Init());
-
   model.GetEventList();
 }
 
@@ -200,7 +198,6 @@ TEST_F(UtestModelManagerDavinciModel, copy_input_data_to_model_fail) {
   input_data.blobs.push_back(data_buffer);
 
   model.op_list_.clear();
-  //    EXPECT_EQ(ge::PARAM_INVALID, model.CopyInputDataToModel(input_data.blobs, 0));
 
   delete[](char *) data_buffer.data;
 }
@@ -210,7 +207,6 @@ TEST_F(UtestModelManagerDavinciModel, streamnum_success) {
   DavinciModel *model = new DavinciModel(0, g_label_call_back);
 
   OmeTestOpUtils::InitModel(*model);
-  // EXPECT_EQ(ge::SUCCESS, model->Init());
 
   EXPECT_EQ(0, model->StreamNum());
   EXPECT_EQ(ge::INTERNAL_ERROR, model->ModelRunStart());
@@ -226,8 +222,6 @@ TEST_F(UtestModelManagerDavinciModel, eventnum_success) {
 
   OmeTestOpUtils::InitModel(*model);
 
-  // EXPECT_EQ(ge::SUCCESS, model->Init());
-
   EXPECT_EQ(0, model->EventNum());
   EXPECT_EQ(ge::INTERNAL_ERROR, model->ModelRunStart());
 
@@ -241,8 +235,6 @@ TEST_F(UtestModelManagerDavinciModel, handlelist_success) {
 
   OmeTestOpUtils::InitModel(*model);
 
-  // EXPECT_EQ(ge::SUCCESS, model->Init());
-
   EXPECT_EQ(ge::INTERNAL_ERROR, model->ModelRunStart());
 
   EXPECT_EQ(ge::SUCCESS, model->ModelRunStop());
@@ -255,8 +247,6 @@ TEST_F(UtestModelManagerDavinciModel, eventlist_success) {
   DavinciModel *model = new DavinciModel(0, g_label_call_back);
 
   OmeTestOpUtils::InitModel(*model);
-
-  // EXPECT_EQ(ge::SUCCESS, model->Init());
 
   EXPECT_EQ(true, model->GetEventList().empty());
   EXPECT_EQ(ge::INTERNAL_ERROR, model->ModelRunStart());
@@ -282,7 +272,6 @@ TEST_F(UtestModelManagerDavinciModel, failed_reset_device) {
 TEST_F(UtestModelManagerDavinciModel, init_not_support_priority) {
   int32_t priority = 8;
   DavinciModel model(priority, g_label_call_back);
-  // EXPECT_EQ(ge::PARAM_INVALID, model.Init());
 }
 
 // test GetInputOutputDescInfo
@@ -346,7 +335,6 @@ TEST_F(UtestModelManagerDavinciModel, CopyTensorFromSrcVarNode_success) {
   NodePtr dst_node = graph->AddNode(op_desc_ptr);
   DavinciModel model(0, g_label_call_back);
   Status ret = model.CopyTensorFromSrcVarNode(src_node, dst_node);
-  // EXPECT_EQ(SUCCESS, ret);
 }
 
 TEST_F(UtestModelManagerDavinciModel, CopyVarData_graph_is_nullptr) {
@@ -370,7 +358,6 @@ TEST_F(UtestModelManagerDavinciModel, copy_var_data_success) {
 
   DavinciModel model(0, g_label_call_back);
   Status ret = model.CopyVarData(graph);
-  // EXPECT_EQ(SUCCESS, ret);
 }
 
 TEST_F(UtestModelManagerDavinciModel, get_input_output_desc_info_without_data_op_list) {
@@ -540,7 +527,6 @@ TEST_F(UtestModelManagerDavinciModel, get_flow_ctrl_op_list_success) {
   std::map<uint32_t, uint32_t> flowctrl_op_index_internal_map;
   flowctrl_op_index_internal_map.insert(pair<uint32_t, uint32_t>(1, 1));
   model.flowctrl_op_index_internal_map_ = flowctrl_op_index_internal_map;
-  // EXPECT_EQ(flowctrl_op_index_internal_map_, model.GetFlowctrlOpList());
 }
 
 // test SetFlowctrlOpList
@@ -1204,10 +1190,8 @@ TEST_F(UtestModelManagerDavinciModel, profiling_model_success) {
   input_data.index = 0;
   input_data.model_id = 1;
   input_data.blobs.push_back(data_buffer);
-  // model.SinkModelProfile(&model);
 
   rtFreeHost(data.model_data);
-  // delete stream;
   delete[](char *) data_buffer.data;
   delete model_def;
 }

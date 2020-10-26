@@ -15,6 +15,8 @@
  */
 
 #include "single_op/task/aicpu_kernel_task_builder.h"
+#include "cce/taskdown_common.hpp"
+#include "graph/load/new_model_manager/model_manager.h"
 
 namespace ge {
 AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def)
@@ -54,6 +56,14 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
   task.SetSoName(so_name);
   task.SetkernelName(kernel_name);
   task.op_desc_ = op_desc_;
+
+  const auto &context = kernel_def_.context();
+  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
+  if (kernel_type == cce::ccKernelType::CUST_AI_CPU) {
+    task.is_custom_ = true;
+    task.dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc_, so_name), "launch cust aicpu so failed");
+  }
 
   task.num_inputs_ = op_desc_->GetInputsSize();
   task.num_outputs_ = op_desc_->GetOutputsSize();

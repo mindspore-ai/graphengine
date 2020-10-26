@@ -190,6 +190,7 @@ Status SingleOpModel::LoadAllNodes() {
     }
 
     ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(op_desc);
+    ge_model->GetCustAICPUKernelStore().LoadCustAICPUKernelBinToOpDesc(op_desc);
   }
 
   return SUCCESS;
@@ -247,7 +248,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
         ParseArgTable(tbe_task, single_op);
         single_op.tasks_.emplace_back(tbe_task);
-      } else if (kernel_type == cce::ccKernelType::AI_CPU) {
+      } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
         GELOGD("Building AICPU_CC task");
         OpTask *task = nullptr;
         auto ret = BuildCpuKernelTask(task_def.kernel(), &task);
@@ -256,7 +257,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         }
         single_op.tasks_.emplace_back(task);
       } else {
-        GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernel are supported, but got %u", context.kernel_type());
+        GELOGE(UNSUPPORTED, "Only TBE kernel, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
         return UNSUPPORTED;
       }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
@@ -391,13 +392,13 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
     TbeOpTask *tbe_task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &tbe_task));
     single_op.op_task_.reset(tbe_task);
-  } else if (kernel_type == cce::ccKernelType::AI_CPU) {
+  } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
     GELOGD("Building AICPU_CC task");
     OpTask *task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task));
     single_op.op_task_.reset(task);
   } else {
-    GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernel are supported, but got %u", context.kernel_type());
+    GELOGE(UNSUPPORTED, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
     return UNSUPPORTED;
   }
   return SUCCESS;

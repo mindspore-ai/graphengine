@@ -1130,7 +1130,7 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, const string &so_n
 
 Status ModelManager::ClearAICPUSo(void *ctx) {
   auto ctx_id = reinterpret_cast<uintptr_t>(ctx);
-  GELOGI("ClearAICPUSo in. resource_id = 0x%lx", static_cast<uint64_t>(ctx_id));
+  GELOGI("ClearAICPUSo in. resource id = 0x%lx", static_cast<uint64_t>(ctx_id));
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   auto it = cust_aicpu_so_.find(ctx_id);
   if (it == cust_aicpu_so_.end()) {

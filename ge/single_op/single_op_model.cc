@@ -257,7 +257,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         }
         single_op.tasks_.emplace_back(task);
       } else {
-        GELOGE(UNSUPPORTED, "Only TBE kernel, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
+        GELOGE(UNSUPPORTED, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
         return UNSUPPORTED;
       }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {

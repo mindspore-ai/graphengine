@@ -1107,7 +1107,7 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, const string &so_n
     return RT_FAILED;
   }
   // use current context as resource key instead
-  resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
+  uintptr_t resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
   auto it = cust_aicpu_so_.find(resource_id);
   if (it == cust_aicpu_so_.end()) {
     GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
@@ -1129,8 +1129,8 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, const string &so_n
 }
 
 Status ModelManager::ClearAICPUSo(void *ctx) {
-  auto ctx_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
-  GELOGI("ClearAICPUSo in. resource_id = 0x%lx.", static_cast<uint64_t>(ctx_id));
+  auto ctx_id = reinterpret_cast<uintptr_t>(ctx);
+  GELOGI("ClearAICPUSo in. resource_id = 0x%lx", static_cast<uint64_t>(ctx_id));
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   auto it = cust_aicpu_so_.find(ctx_id);
   if (it == cust_aicpu_so_.end()) {
@@ -1140,7 +1140,7 @@ Status ModelManager::ClearAICPUSo(void *ctx) {
   return SUCCESS;
 }
 
-Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, string so_name) {
+Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
     GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());

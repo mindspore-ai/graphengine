@@ -326,7 +326,7 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
    *           loopCond
    *                |
    *                v
-   *   switch --> Assign --> ModelExit
+   *   switch --> Assign --> active --> ModelExit
    *                ^
    *                |
    *            loopReset
@@ -347,21 +347,39 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
     return FAILED;
   }
 
-  // 2. Insert model exit node and add ctrl edge
   if (CheckMultiDataSet(compute_graph)) {
     GELOGI("Multi dataSae exist, model_exit node is need.");
+    // 2. Insert active node and add ctrl edge
+    string active_name = switch_node->GetName() + "_StreamExitActive";
+    NodePtr active_node = InsertOp(compute_graph, STREAMACTIVE, active_name, {}, {});
+    if (active_node == nullptr) {
+      GELOGE(FAILED, "Insert stream active node:%s for IterCtrlTrueStream failed.", active_name.c_str());
+      return FAILED;
+    }
+    GE_CHK_STATUS_RET(SetStreamLabel(active_node, switch_node->GetName()), "set stream label failed");
+    GE_IF_BOOL_EXEC(!AttrUtils::SetBool(active_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, true),
+                      DOMI_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed"); return FAILED);
+    
     string model_exit_name = switch_node->GetName() + "_ModelExit";
+    GE_CHK_STATUS_RET(SetActiveLabelList(active_node, { model_exit_name }), "set active label list failed");
+
+    add_ret = GraphUtils::AddEdge(assign_node->GetOutControlAnchor(), active_node->GetInControlAnchor());
+    if (add_ret != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "Add assign_node to active_node ctrl edge failed, add_ret=%u.", add_ret);
+      return FAILED;
+    }
+
+    // 3. Insert model exit node and add ctrl edge
     NodePtr model_exit_node = InsertOp(compute_graph, MODELEXIT, model_exit_name, {}, {});
     if (model_exit_node == nullptr) {
       GELOGE(FAILED, "Insert model_exit node:%s for IterCtrlTrueStream failed.", model_exit_name.c_str());
       return FAILED;
     }
-    // Must set same stream label with assign_node
-    GE_CHK_STATUS_RET(SetStreamLabel(model_exit_node, switch_node->GetName()), "set stream label failed");
+    GE_CHK_STATUS_RET(SetStreamLabel(model_exit_node, model_exit_name), "set stream label failed");
 
-    add_ret = GraphUtils::AddEdge(assign_node->GetOutControlAnchor(), model_exit_node->GetInControlAnchor());
+    add_ret = GraphUtils::AddEdge(active_node->GetOutControlAnchor(), model_exit_node->GetInControlAnchor());
     if (add_ret != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Add assign_node to model_exit_node ctrl edge failed, add_ret=%u.", add_ret);
+      GELOGE(FAILED, "Add active_node to model_exit_node ctrl edge failed, add_ret=%u.", add_ret);
       return FAILED;
     }
   }

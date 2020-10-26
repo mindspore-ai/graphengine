@@ -56,6 +56,7 @@ struct RuntimeParam {
   uint32_t label_num = 0;
   uint64_t session_id = 0;
   uint32_t graph_id = 0;
+  bool is_single_op = false;
 
   std::unique_ptr<TsMemMall> ts_mem_mall;
   std::unique_ptr<TsMemMall> aicpu_mem_mall;

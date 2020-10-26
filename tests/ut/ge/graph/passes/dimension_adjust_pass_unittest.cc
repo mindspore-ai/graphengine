@@ -122,7 +122,6 @@ TEST_F(UtestGraphPassesDimensionAdjustPass, node_get_original_type_failed) {
 
   std::shared_ptr<DimensionAdjustPass> pass = make_shared<DimensionAdjustPass>();
   ge::Status ret = pass->Run(op_node);
-  //  EXPECT_EQ(ge::SUCCESS, ret);
 }
 
 TEST_F(UtestGraphPassesDimensionAdjustPass, node_not_register_op) {

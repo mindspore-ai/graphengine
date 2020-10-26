@@ -256,7 +256,6 @@ TEST_F(UtestGraphPassesSwitchPass, inactive_output_not_exists) {
   output_true_node_->GetOutDataAnchor(0)->UnlinkAll();
   GraphUtils::RemoveNodeWithoutRelink(graph_, output_true_node_);
   switch_node_->GetOutDataAnchor(1)->UnlinkAll();
-  // switch_node_->outDataAnchors_.pop_back();
 
   ///             input
   ///              |
@@ -394,7 +393,6 @@ TEST_F(UtestGraphPassesSwitchPass, dead_output_connected_to_merge) {
   ///              Merge
   bool pred_value = true;
   BuildDefaultGraph(false, &pred_value);
-  // graph_->RemoveNode(output_false_node_);
   output_false_node_->GetOutDataAnchor(0)->UnlinkAll();
   GraphUtils::RemoveNodeWithoutRelink(graph_, output_false_node_);
   switch_node_->GetOutDataAnchor(0)->UnlinkAll();

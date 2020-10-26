@@ -32,7 +32,7 @@ Status MergeToStreamMergePass::Run(ComputeGraphPtr graph) {
     OpDescPtr merge_op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(merge_op_desc);
     if (merge_op_desc->HasAttr(ATTR_INSERT_BY_MBATCH)) {
-      GE_CHK_STATUS_RET(AddActiveNodes(graph, node, true), "Merge add active node failed.");
+      GE_CHK_STATUS_RET(AddActiveNodes(graph, node), "Merge add active node failed.");
       GE_CHK_STATUS_RET(SetStreamLabel(node, node->GetName()), "Set stream label failed");
     } else {
       GE_CHK_STATUS_RET(ReplaceMergeNode(graph, node), "Add StreamMerge node failed.");
@@ -99,18 +99,16 @@ Status MergeToStreamMergePass::ReplaceMergeNode(const ComputeGraphPtr &graph, co
     }
   }
 
-  return AddActiveNodes(graph, stream_merge, false);
+  return AddActiveNodes(graph, stream_merge);
 }
 
 ///
 /// @brief Add StreamActive Op before StreamMerge/Merge
 /// @param [in] graph
 /// @param [in] node
-/// @param [in] multi_batch_flag
 /// @return Status
 ///
-Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, const NodePtr &node,
-                                                   bool multi_batch_flag) {
+Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, const NodePtr &node) {
   GE_CHK_BOOL_EXEC(node != nullptr, return FAILED, "Param of pre node is null.");
   for (const InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();

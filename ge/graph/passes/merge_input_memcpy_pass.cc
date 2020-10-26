@@ -42,7 +42,7 @@ Status MergeInputMemcpyPass::Run(ComputeGraphPtr graph) {
 /// @return Status
 ///
 Status MergeInputMemcpyPass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, const NodePtr &node,
-                                                   bool multi_batch_flag) {
+                                                 bool multi_batch_flag) {
   for (const InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
@@ -74,7 +74,7 @@ Status MergeInputMemcpyPass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, c
 /// @return ge::NodePtr
 ///
 NodePtr MergeInputMemcpyPass::CreateMemcpyAsyncNode(const ComputeGraphPtr &graph, const std::string &name,
-                                                      const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag) {
+                                                    const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag) {
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "OpDesc of pre node is invalid.");
 

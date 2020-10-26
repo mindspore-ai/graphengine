@@ -37,10 +37,9 @@ class MergeToStreamMergePass : public GraphPass {
   /// @brief Add StreamActive Op as StreamMerge in_node
   /// @param [in] graph
   /// @param [in] node
-  /// @param [in] multi_batch_flag
   /// @return Status
   ///
-  Status AddActiveNodes(const ComputeGraphPtr &graph, const NodePtr &node, bool multi_batch_flag);
+  Status AddActiveNodes(const ComputeGraphPtr &graph, const NodePtr &node);
 
   ///
   /// @brief Create Active Op

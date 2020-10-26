@@ -69,6 +69,7 @@
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 #include "graph/passes/mark_graph_unknown_status_pass.h"
 #include "graph/passes/merge_pass.h"
+#include "graph/passes/merge_input_memcpy_pass.h"
 #include "graph/passes/merge_to_stream_merge_pass.h"
 #include "graph/passes/multi_batch_pass.h"
 #include "graph/passes/next_iteration_pass.h"
@@ -1959,6 +1960,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
     GELOGI("get ge.exec.variable_acc failed. set default value.");
   }
   PassManager after_merge_passes;
+  GE_CHK_STATUS_RET(
+      after_merge_passes.AddPass("OptimizeStage1_1::MergeInputMemcpyPass", new (std::nothrow) MergeInputMemcpyPass));
   GE_CHK_STATUS_RET(
       after_merge_passes.AddPass("OptimizeStage1_1::SwitchDataEdgesBypass", new (std::nothrow) SwitchDataEdgesBypass));
   GE_CHK_STATUS_RET(

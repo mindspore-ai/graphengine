@@ -210,6 +210,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/switch_data_edges_bypass.cc \
     graph/passes/switch_logic_remove_pass.cc \
     graph/passes/merge_to_stream_merge_pass.cc \
+    graph/passes/merge_input_memcpy_pass.cc \
     graph/passes/switch_to_stream_switch_pass.cc \
     graph/passes/attach_stream_label_pass.cc \
     graph/passes/switch_dead_branch_elimination.cc \

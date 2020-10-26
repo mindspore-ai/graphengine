@@ -176,6 +176,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/cast_translate_pass.cc \
     graph/passes/prune_pass.cc \
     graph/passes/merge_to_stream_merge_pass.cc \
+    graph/passes/merge_input_memcpy_pass.cc \
     graph/passes/switch_to_stream_switch_pass.cc \
     graph/passes/attach_stream_label_pass.cc \
     graph/passes/multi_batch_pass.cc \

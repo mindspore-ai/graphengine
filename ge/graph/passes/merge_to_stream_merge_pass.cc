@@ -32,7 +32,7 @@ Status MergeToStreamMergePass::Run(ComputeGraphPtr graph) {
     OpDescPtr merge_op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(merge_op_desc);
     if (merge_op_desc->HasAttr(ATTR_INSERT_BY_MBATCH)) {
-      GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, node, true), "Merge add memcpy node failed.");
+      GE_CHK_STATUS_RET(AddActiveNodes(graph, node), "Merge add active node failed.");
       GE_CHK_STATUS_RET(SetStreamLabel(node, node->GetName()), "Set stream label failed");
     } else {
       GE_CHK_STATUS_RET(ReplaceMergeNode(graph, node), "Add StreamMerge node failed.");
@@ -99,38 +99,21 @@ Status MergeToStreamMergePass::ReplaceMergeNode(const ComputeGraphPtr &graph, co
     }
   }
 
-  return AddMemcpyAsyncNodes(graph, stream_merge, false);
+  return AddActiveNodes(graph, stream_merge);
 }
 
 ///
-/// @brief Add MemcpyAsync Op as StreamMerge in_node
+/// @brief Add StreamActive Op before StreamMerge/Merge
 /// @param [in] graph
 /// @param [in] node
-/// @param [in] multi_batch_flag
 /// @return Status
 ///
-Status MergeToStreamMergePass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, const NodePtr &node,
-                                                   bool multi_batch_flag) {
+Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, const NodePtr &node) {
   GE_CHK_BOOL_EXEC(node != nullptr, return FAILED, "Param of pre node is null.");
   for (const InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
-    NodePtr in_node = peer_out_anchor->GetOwnerNode();
-    const std::string &type = in_node->GetType();
-    // For WhileLoop no need memcpy & active for merge.
-    GE_IF_BOOL_EXEC((type == ENTER) || (type == REFENTER) || (type == NEXTITERATION) || (type == REFNEXTITERATION),
-                    continue);
-
-    const std::string &memcpy_name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx());
-    NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, memcpy_name, peer_out_anchor, multi_batch_flag);
-    GE_CHK_BOOL_EXEC(memcpy_node != nullptr, return FAILED, "Create MemcpyAsync node failed.");
-    GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor), "MemcpyAsync node remove edge failed.");
-    GE_CHK_STATUS(GraphUtils::AddEdge(peer_out_anchor, memcpy_node->GetInDataAnchor(0)),
-                  "MemcpyAsync node add edge failed.");
-    GE_CHK_STATUS(GraphUtils::AddEdge(memcpy_node->GetOutDataAnchor(0), in_data_anchor),
-                  "MemcpyAsync node add edge failed.");
-
-    NodePtr active_node = CreateActiveNode(graph, memcpy_node);
+    NodePtr active_node = CreateActiveNode(graph, peer_out_anchor->GetOwnerNode());
     GE_CHK_BOOL_EXEC(active_node != nullptr, return FAILED, "Create StreamActive node failed.");
     GE_CHK_STATUS(GraphUtils::AddEdge(active_node->GetOutControlAnchor(), node->GetInControlAnchor()),
                   "StreamActive add ctrl edge failed.");
@@ -141,37 +124,6 @@ Status MergeToStreamMergePass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph,
   }
 
   return SUCCESS;
-}
-
-///
-/// @brief Add MemcpyAsync Node
-/// @param [in] graph
-/// @param [in] name
-/// @param [in] out_data_anchor
-/// @param [in] multi_batch_flag
-/// @return ge::NodePtr
-///
-NodePtr MergeToStreamMergePass::CreateMemcpyAsyncNode(const ComputeGraphPtr &graph, const std::string &name,
-                                                      const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag) {
-  GE_CHK_BOOL_EXEC(out_data_anchor != nullptr, return nullptr, "Param of input node is null.");
-  OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
-  GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "OpDesc of pre node is invalid.");
-
-  const std::string &memcpy_type = multi_batch_flag ? MEMCPYADDRASYNC : MEMCPYASYNC;
-  const std::string &node_name = name + "_" + memcpy_type;
-  GELOGI("Create MemcpyAsync op:%s.", node_name.c_str());
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name, memcpy_type);
-  if (op_desc == nullptr) {
-    GELOGE(FAILED, "Create op_desc failed, MemcpyAsync:%s.", node_name.c_str());
-    return nullptr;
-  }
-
-  GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) == GRAPH_SUCCESS,
-                   return nullptr, "Create MemcpyAsync op: add input desc failed.");
-  GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) == GRAPH_SUCCESS,
-                   return nullptr, "Create MemcpyAsync op: add output desc failed.");
-
-  return graph->AddNode(op_desc);
 }
 
 ///
@@ -193,7 +145,7 @@ NodePtr MergeToStreamMergePass::CreateActiveNode(const ComputeGraphPtr &graph, c
   GE_CHK_BOOL_EXEC(active_node != nullptr, return nullptr, "Create StreamActive node failed.");
   GE_IF_BOOL_EXEC(GraphUtils::AddEdge(node->GetOutControlAnchor(), active_node->GetInControlAnchor()) != SUCCESS,
                   GELOGE(INTERNAL_ERROR, "add edge failed");
-                   return nullptr);
+                  return nullptr);
   GE_IF_BOOL_EXEC(SetSwitchBranchNodeLabel(active_node, node_name) != SUCCESS,
                   GELOGE(INTERNAL_ERROR, "set switch branch node label failed");
                   return nullptr);

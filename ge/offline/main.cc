@@ -194,6 +194,11 @@ DEFINE_int32(op_debug_level, 0, "Optional; configure debug level of compiler. 0(
              "1: open TBE compiler, export ccec file and TBE instruction mapping file; 2: open ccec compiler");
 DEFINE_string(enable_scope_fusion_passes, "", "Optional; validate the non-general scope fusion pass,"
               "multiple names can be set and separated by ','.");
+DEFINE_string(debug_dir, "", "Optional; the path to save the intermediate files of operator compilation");
+
+DEFINE_string(op_compiler_cache_dir, "", "Optional; the path to cache operator compilation files");
+
+DEFINE_string(op_compiler_cache_mode, "", "Optional; choose the operator compiler cache mode");
 
 class GFlagUtils {
  public:
@@ -999,6 +1004,9 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::AUTO_TUNE_MODE, FLAGS_auto_tune_mode);
   options.emplace(ge::GRAPH_MEMORY_MAX_SIZE, kGraphMemoryManagerMallocMaxSize);
   options.emplace(ge::OP_DEBUG_LEVEL, to_string(FLAGS_op_debug_level));
+  options.emplace(ge::DEBUG_DIR, FLAGS_debug_dir);
+  options.emplace(ge::OP_COMPILER_CACHE_DIR, FLAGS_op_compiler_cache_dir);
+  options.emplace(ge::OP_COMPILER_CACHE_MODE, FLAGS_op_compiler_cache_mode);
 }
 
 domi::Status GenerateSingleOp(const std::string& json_file_path) {
@@ -1130,6 +1138,12 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::GRAPH_MEMORY_MAX_SIZE), kGraphMemoryManagerMallocMaxSize));
 
   options.insert(std::pair<string, string>(string(ge::ENABLE_SINGLE_STREAM), FLAGS_enable_single_stream));
+
+  options.insert(std::pair<string, string>(string(ge::DEBUG_DIR), FLAGS_debug_dir));
+
+  options.insert(std::pair<string, string>(string(ge::OP_COMPILER_CACHE_DIR), FLAGS_op_compiler_cache_dir));
+
+  options.insert(std::pair<string, string>(string(ge::OP_COMPILER_CACHE_MODE), FLAGS_op_compiler_cache_mode));
 
   SetDynamicInputSizeOptions();
 

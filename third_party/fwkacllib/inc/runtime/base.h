@@ -1,18 +1,18 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef __CCE_RUNTIME_BASE_H__
 #define __CCE_RUNTIME_BASE_H__
@@ -100,6 +100,9 @@ typedef enum tagRtError {
     RT_ERROR_MODEL_ID,
     RT_ERROR_MODEL_EXE_FAILED,
     RT_ERROR_END_OF_SEQUENCE,               // end of sequence
+    RT_ERROR_MODEL_EXIT,
+    RT_ERROR_MODEL_EXIT_STREAM_UNBIND,
+    RT_ERROR_MODEL_EXIT_ID,
 
     RT_ERROR_EVENT_BASE                     = 0x07050000,
     RT_ERROR_EVENT_NULL,

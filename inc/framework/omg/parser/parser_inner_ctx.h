@@ -49,6 +49,8 @@ struct ParserContext {
   std::vector<std::string> user_out_nodes_top_vec;
   // net out nodes (where user_out_nodes or leaf nodes)
   std::vector<std::string> net_out_nodes;
+  // net data nodes top names(only caffe has top)
+  std::vector<std::string> data_top_names;
   // net out nodes top names(only caffe has top)
   std::vector<std::string> out_top_names;
   // Whether to use dynamic batch size or dynamic image size
@@ -57,9 +59,12 @@ struct ParserContext {
   domi::domiTensorFormat_t format = domi::DOMI_TENSOR_ND;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
   RunMode run_mode = ONLY_PRE_CHECK;
-  std::string custom_proto_path; // save caffe custom proto path, used by caffe parse
-  std::string caffe_proto_path; // save caffe proto path, used by caffe parse
-  std::string enable_scope_fusion_passes;  // name of the pass that needs to take effect
+  // save caffe custom proto path, used by caffe parse
+  std::string custom_proto_path;
+  // save caffe proto path, used by caffe parse
+  std::string caffe_proto_path;
+  // name of the pass that needs to take effect
+  std::string enable_scope_fusion_passes;
 };
 
 ParserContext &GetParserContext();

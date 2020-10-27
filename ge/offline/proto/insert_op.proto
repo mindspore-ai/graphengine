@@ -45,6 +45,9 @@ message AippOpParams {
 	// 标识对模型的第几个输入做AIPP处理，例如模型有两个输入，需要对第2个输入做AIPP，则配置related_input_rank为1。
 	uint32 related_input_rank = 2;
 
+        // related_input_name is optional and the top name of data node which inserts aipp
+        string related_input_name = 6;
+
 	// input_edge_idx参数为可选，类型为整型，配置范围为>=0。
 	// 配置该参数的作用，在于对Data算子不同的输出做不同的AIPP处理，如果该参数没有配置，默认对related_input_rank指定的模型输入的所有输出边做AIPP。
 	// 配置值 <= Data算子输出边的个数。

@@ -693,15 +693,10 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
   }
 
-  // BUILD_MODE_TUNING with BUILD_STEP_AFTER_MERGE no need PreRunOptimizeSubGraph.
-  bool run_optimize_subgraph =
-      !((options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_MERGE));
-  if (run_optimize_subgraph) {
-    Status ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Run PreRunOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
-      return ret;
-    }
+  ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Run PreRunOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
+    return ret;
   }
 
   /// 1. BUILD_MODE_TUNING with BUILD_STEP_BEFORE_UB_MATCH no need PreRunAfterOptimizeSubGraph;

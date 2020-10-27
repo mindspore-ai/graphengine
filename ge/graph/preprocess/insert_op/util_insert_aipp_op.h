@@ -51,6 +51,10 @@ class InsertNewOpUtil {
 
   Status GetAippParams(const std::unique_ptr<domi::AippOpParams> &aippParams, const ge::NodePtr &aipp_node);
 
+  Status CheckInputNamePositionNotRepeat();
+
+  Status CheckInputRankPositionNoRepeat();
+
   Status CheckGraph(const ge::ComputeGraphPtr &graph);
 
   InsertNewOpUtil() = default;

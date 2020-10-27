@@ -15,20 +15,40 @@
  */
 #include "graph/passes/mark_agnostic_pass.h"
 
-#include "utils/node_utils.h"
+#include "graph/utils/node_utils.h"
 
 namespace ge {
 Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     auto node_type = NodeUtils::GetNodeType(*node);
     if (node_type == SWITCH || node_type == REFSWITCH || node_type == SWITCHN) {
-      GELOGD("Mark format agnostic for switch ndoe %s", node->GetName().c_str());
+      GELOGD("Mark format agnostic and continuous for switch node %s", node->GetName().c_str());
+      const OpDescPtr op_desc = node->GetOpDesc();
+      const GeTensorDescPtr op_tensor = op_desc->MutableInputDesc(0);
+      if (op_tensor == nullptr) {
+        GELOGD("Op: %s, Index:0,has no input", node->GetName().c_str());
+        continue;
+      }
+      AttrUtils::SetInt(op_tensor, "_format_continuous", 1);
+      AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
+      AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_input", std::vector<int64_t>({1}));
+      continue;
+    }
+    if (node_type == IDENTITY) {
+      GELOGD("Mark format agnostic for identity node %s", node->GetName().c_str());
       AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
       AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_input", std::vector<int64_t>({1}));
       continue;
     }
     if (node_type == MERGE || node_type == REFMERGE) {
-      GELOGD("Mark format agnostic for merge node %s", node->GetName().c_str());
+      GELOGD("Mark format agnostic and continuous for merge node %s", node->GetName().c_str());
+      const OpDescPtr op_desc = node->GetOpDesc();
+      const GeTensorDescPtr op_tensor = op_desc->MutableOutputDesc(0);
+      if (op_tensor == nullptr) {
+        GELOGD("Op: %s, Index:0,has no output", node->GetName().c_str());
+        continue;
+      }
+      AttrUtils::SetInt(op_tensor, "_format_continuous", 1);
       AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
       AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_output", std::vector<int64_t>({1}));
       continue;
@@ -36,4 +56,4 @@ Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
   }
   return SUCCESS;
 }
-}
+}  // namespace ge

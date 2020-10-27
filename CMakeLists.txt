@@ -88,13 +88,21 @@ else()
     find_library(mmpa libmmpa.so ${ASCEND_DRIVER_DIR})
     find_library(msprof libmsprof.so ${ASCEND_DRIVER_DIR})
     find_library(msprofiler libmsprofiler.a ${ASCEND_RUNTIME_DIR})
-
     find_library(hccl libhccl.so ${ASCEND_RUNTIME_DIR})
     find_library(runtime libruntime.so ${ASCEND_RUNTIME_DIR})
     find_library(register libregister.so ${ASCEND_RUNTIME_DIR})
     find_library(resource libresource.so ${ASCEND_RUNTIME_DIR})
     find_library(error_manager liberror_manager.so ${ASCEND_RUNTIME_DIR})
     find_library(adump_server libadump_server.a ${ASCEND_RUNTIME_DIR})
+    # for Atlas env
+    set(ASCEND_TOOKIT_RUNTIME_DIR ${ASCEND_PATH}/ascend-toolkit/latest/fwkacllib/lib64)
+    find_library(msprofiler libmsprofiler.a ${ASCEND_TOOKIT_RUNTIME_DIR})
+    find_library(hccl libhccl.so ${ASCEND_TOOKIT_RUNTIME_DIR})
+    find_library(runtime libruntime.so ${ASCEND_TOOKIT_RUNTIME_DIR})
+    find_library(register libregister.so ${ASCEND_TOOKIT_RUNTIME_DIR})
+    find_library(resource libresource.so ${ASCEND_TOOKIT_RUNTIME_DIR})
+    find_library(error_manager liberror_manager.so ${ASCEND_TOOKIT_RUNTIME_DIR})
+    find_library(adump_server libadump_server.a ${ASCEND_TOOKIT_RUNTIME_DIR})
 endif()
 
 # add compile flags

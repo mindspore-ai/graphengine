@@ -91,7 +91,6 @@ target_include_directories(ge_executor PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -100,7 +99,9 @@ target_include_directories(ge_executor PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/cce    
+    ${GE_CODE_DIR}/../inc/cce   
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc 
 )
 
 target_link_libraries(ge_executor PRIVATE

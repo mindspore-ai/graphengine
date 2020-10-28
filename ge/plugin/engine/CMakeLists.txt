@@ -21,13 +21,14 @@ target_include_directories(engine PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${GE_CODE_DIR}/inc/framework/common
     ${GE_CODE_DIR}/inc/external
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
 )
 
 target_link_libraries(engine PRIVATE

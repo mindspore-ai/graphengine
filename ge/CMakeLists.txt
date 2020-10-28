@@ -686,7 +686,7 @@ target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
-    #### blue zone
+    #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc

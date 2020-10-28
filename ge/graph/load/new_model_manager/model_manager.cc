@@ -44,11 +44,17 @@ const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
 const std::string kCmdTypeProfStop = "prof_stop";
 const char *const kLoadOpFromBuf = "loadOpFromBuf";
+const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
+const char *const kDeleteCustOp = "deleteCustOp";
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
   uint32_t kernelSoBufLen;
   uint64_t kernelSoName;
   uint32_t kernelSoNameLen;
+} __attribute__((packed));
+struct BatchLoadOpFromBufArgs {
+  uint32_t soNum;
+  uint64_t args;
 } __attribute__((packed));
 }  // namespace
 
@@ -1096,97 +1102,149 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
-  GELOGI("LoadCustAicpuSo in, op name %s, so_name %s.", op_desc->GetName().c_str(), so_name.c_str());
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name) {
+  GELOGI("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  // get current context
-  rtContext_t rt_cur_ctx = nullptr;
-  auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
-  if (rt_err != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
-    return RT_FAILED;
-  }
-  // use current context as resource key instead
-  uintptr_t resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
-  auto it = cust_aicpu_so_.find(resource_id);
-  if (it == cust_aicpu_so_.end()) {
-    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
-                      op_desc->GetName().c_str(), so_name.c_str());
-    std::set<string> so_name_set;
-    so_name_set.insert(so_name);
-    cust_aicpu_so_[resource_id] = so_name_set;
-    GELOGI("LoadCustAicpuSo new aicpu so resource_id %lu.", resource_id);
-    return SUCCESS;
-  }
-  auto it_so_name = it->second.find(so_name);
-  if (it_so_name == it->second.end()) {
-    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
-                      op_desc->GetName().c_str(), so_name.c_str());
-    it->second.insert(so_name);
-    GELOGI("LoadCustAicpuSo add aicpu so resource_id %lu.", resource_id);
-  }
-  return SUCCESS;
-}
-
-Status ModelManager::ClearAICPUSo(void *ctx) {
-  auto ctx_id = reinterpret_cast<uintptr_t>(ctx);
-  GELOGI("ClearAICPUSo in. resource id = 0x%lx", static_cast<uint64_t>(ctx_id));
-  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  auto it = cust_aicpu_so_.find(ctx_id);
-  if (it == cust_aicpu_so_.end()) {
-    return SUCCESS;
-  }
-  (void)cust_aicpu_so_.erase(it);
-  return SUCCESS;
-}
-
-Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
     GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
-  const void *aicpu_data = aicpu_kernel->GetBinData();
-  uint32_t aicpu_data_length = aicpu_kernel->GetBinDataSize();
 
-  void *d_aicpu_data = nullptr;
-  void *d_so_name = nullptr;
-  void *args = nullptr;
+  // get current context
+  rtContext_t rt_cur_ctx = nullptr;
+  auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
+  if (rt_error != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_error));
+    return RT_FAILED;
+  }
+
+  // use current context as resource key
+  uintptr_t resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
+  auto it = cust_aicpu_so_.find(resource_id);
+  if (it == cust_aicpu_so_.end()) {
+    std::map<string, CustAICPUKernelPtr> new_so_name;
+    new_so_name.insert({so_name, aicpu_kernel});
+    cust_aicpu_so_[resource_id] = new_so_name;
+    GELOGI("LoadCustAicpuSo new aicpu so resource id %lu", resource_id);
+    return SUCCESS;
+  }
+  auto it_so_name = it->second.find(so_name);
+  if (it_so_name == it->second.end()) {
+    it->second.insert({so_name, aicpu_kernel});
+    GELOGI("LoadCustAicpuSo add aicpu so resource id %lu", resource_id);
+  }
+  return SUCCESS;
+}
+
+Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
+  GELOGI("LaunchCustAucpuSo in, kernel name %s", kernel_name.c_str());
+  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
+  if (cust_aicpu_so_.size() == 0) return SUCCESS;
+  // get current context
+  rtContext_t rt_cur_ctx = nullptr;
+  auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
+  if (rt_error != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_error));
+    return RT_FAILED;
+  }
+  uintptr_t resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
+  auto it = cust_aicpu_so_.find(resource_id);
+  if (it == cust_aicpu_so_.end()) {
+    GELOGI("Cust aicpu so map is empty, context id %lu", resource_id);
+    return SUCCESS;
+  }
+
+  vector<void *> allocated_mem;
   rtError_t status;
   rtStream_t stream = nullptr;
-  GE_CHK_RT(rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM));
-  GE_CHK_RT(rtMemcpy(d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length, RT_MEMCPY_HOST_TO_DEVICE));
-  GE_CHK_RT(rtMalloc(&d_so_name, so_name.size(), RT_MEMORY_HBM));
-  GE_CHK_RT(rtMemcpy(d_so_name, so_name.size(), reinterpret_cast<const void *>(so_name.c_str()),
-                    so_name.size(), RT_MEMCPY_HOST_TO_DEVICE));
+  vector<CustAicpuSoBuf> v_cust_so;
+  void *args = nullptr;
 
-  CustAicpuSoBuf cust_aicpu_so_buf;
-  cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
-  cust_aicpu_so_buf.kernelSoBufLen = aicpu_data_length;
-  cust_aicpu_so_buf.kernelSoName = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
-  cust_aicpu_so_buf.kernelSoNameLen = so_name.size();
+  for (const auto &it_so : it->second) {
+    const void *aicpu_data = it_so.second->GetBinData();
+    uint32_t aicpu_data_length = it_so.second->GetBinDataSize();
+    string so_name = it_so.first;
+    void *d_aicpu_data = nullptr;
+    void *d_so_name = nullptr;
 
-  uint32_t args_size = sizeof(CustAicpuSoBuf);
-  GE_CHK_RT(rtMalloc(&args, args_size, RT_MEMORY_HBM));
-  GE_CHK_RT(rtMemcpy(args, args_size, static_cast<void *>(&cust_aicpu_so_buf), args_size, RT_MEMCPY_HOST_TO_DEVICE));
+    status = rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM);
+    if (status != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      return RT_ERROR_TO_GE_STATUS(status);
+    }
+    allocated_mem.push_back(d_aicpu_data);
+    status = rtMalloc(&d_so_name, so_name.size(), RT_MEMORY_HBM);
+    if (status != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      return RT_ERROR_TO_GE_STATUS(status);
+    }
+    allocated_mem.push_back(d_so_name);
+    GE_CHK_RT(rtMemcpy(d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length, RT_MEMCPY_HOST_TO_DEVICE));
+    GE_CHK_RT(rtMemcpy(d_so_name, so_name.size(), reinterpret_cast<const void *>(so_name.c_str()),
+                       so_name.size(), RT_MEMCPY_HOST_TO_DEVICE));
+
+    CustAicpuSoBuf cust_aicpu_so_buf;
+    cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
+    cust_aicpu_so_buf.kernelSoBufLen = aicpu_data_length;
+    cust_aicpu_so_buf.kernelSoName = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
+    cust_aicpu_so_buf.kernelSoNameLen = so_name.size();
+    v_cust_so.push_back(cust_aicpu_so_buf);
+  }
+  if (kernel_name == kDeleteCustOp) {
+    (void)cust_aicpu_so_.erase(it);
+  }
+
+  uint32_t args_size = sizeof(CustAicpuSoBuf) * v_cust_so.size();
+  status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(args);
+  GE_CHK_RT(rtMemcpy(args, args_size, v_cust_so.data(), args_size, RT_MEMCPY_HOST_TO_DEVICE));
+
+  BatchLoadOpFromBufArgs batch_cust_so;
+  batch_cust_so.soNum = v_cust_so.size();
+  batch_cust_so.args = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(args));
+
+  void *batch_args = nullptr;
+  uint32_t batch_args_size = sizeof(BatchLoadOpFromBufArgs);
+  status = rtMalloc(&batch_args, batch_args_size, RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(batch_args);
+  GE_CHK_RT(rtMemcpy(batch_args, batch_args_size, static_cast<void *>(&batch_cust_so),
+                     batch_args_size, RT_MEMCPY_HOST_TO_DEVICE));
+
   GE_CHK_RT(rtStreamCreate(&stream, 0));
-  GE_CHK_RT(rtCpuKernelLaunch(nullptr, kLoadOpFromBuf, 1, args, args_size, nullptr, stream));
+  GE_CHK_RT(rtCpuKernelLaunch(nullptr, kernel_name.c_str(), 1, batch_args, batch_args_size, nullptr, stream));
 
-  GELOGI("LaunchCustAicpuSo so buf len %u, so name len %u.", aicpu_data_length, so_name.size());
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
-    GE_CHK_RT(rtStreamDestroy(stream));
-    GE_CHK_RT(rtFree(args));
-    GE_CHK_RT(rtFree(d_aicpu_data));
-    GE_CHK_RT(rtFree(d_so_name));
     return RT_ERROR_TO_GE_STATUS(status);
   }
-  GE_CHK_RT(rtStreamDestroy(stream));
-  GE_CHK_RT(rtFree(args));
-  GE_CHK_RT(rtFree(d_aicpu_data));
-  GE_CHK_RT(rtFree(d_so_name));
-  GELOGI("Cpu kernel launch loadOpFromBuf task success.");
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+    GE_CHK_RT(rtStreamDestroy(stream));
+  };
+  GE_MAKE_GUARD(release, callback);
+  GELOGI("Cpu kernel launch task success.");
+  return SUCCESS;
+}
+
+Status ModelManager::ClearAicpuSo() {
+  GE_CHK_STATUS_RET(LaunchKernelCustAicpuSo(kDeleteCustOp), "delete cust op so failed.");
+  return SUCCESS;
+}
+
+Status ModelManager::LaunchCustAicpuSo() {
+  GE_CHK_STATUS_RET(LaunchKernelCustAicpuSo(kBatchLoadBuf), "launch cust op so failed.");
   return SUCCESS;
 }
 

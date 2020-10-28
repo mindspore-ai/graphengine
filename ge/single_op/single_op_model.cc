@@ -31,6 +31,7 @@
 #include "task/aicpu_task_builder.h"
 #include "task/aicpu_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
+#include "graph/load/new_model_manager/model_manager.h"
 
 static std::atomic<std::uint64_t> aicpu_sessionid(0);
 
@@ -277,6 +278,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
     }
   }
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "launch cust aicpu so failed.");
   return SUCCESS;
 }
 
@@ -448,6 +450,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
     }
   }
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "launch cust aicpu so failed.");
 
   return SUCCESS;
 }

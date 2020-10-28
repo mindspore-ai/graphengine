@@ -131,6 +131,14 @@ graphStatus TransOpWithoutReshapeFusionPass::GetSubGraphNodesInfo() {
         sub_graph_has_reshape_node[i] = true;
         break;
       }
+      if (in_node->GetType() == TRANSOPSE || in_node->GetType() == TRANSOPSED) {
+        auto input_format = in_node->GetOpDesc()->GetInputDescPtr(0)->GetFormat();
+        auto output_format = in_node->GetOpDesc()->GetOutputDescPtr(0)->GetFormat();
+        if (input_format == output_format) {
+          sub_graph_has_reshape_node[i] = true;
+          break;
+        }
+      }
 
       auto out_anchor = iter->first;
       GE_CHECK_NOTNULL(out_anchor);

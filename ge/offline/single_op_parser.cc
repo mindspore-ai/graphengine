@@ -226,7 +226,7 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   }
 
   int index = 0;
-  for (auto &tensor_desc : op_desc.output_desc) {
+  for (auto &tensor_desc : op_desc.input_desc) {
     if ((tensor_desc.type == DT_UNDEFINED && tensor_desc.format != FORMAT_RESERVED) ||
         (tensor_desc.type != DT_UNDEFINED && tensor_desc.format == FORMAT_RESERVED)){
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"output", std::to_string(index)});

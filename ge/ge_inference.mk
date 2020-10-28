@@ -247,6 +247,7 @@ OME_HOST_SRC_FILES := \
     graph/load/new_model_manager/task_info/stream_switch_task_info.cc    \
     graph/load/new_model_manager/task_info/stream_switchn_task_info.cc   \
     graph/load/new_model_manager/task_info/end_graph_task_info.cc        \
+    graph/load/new_model_manager/task_info/model_exit_task_info.cc       \
     graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc   \
     graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc  \
     single_op/task/op_task.cc                                            \

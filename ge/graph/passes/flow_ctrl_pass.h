@@ -134,6 +134,14 @@ class FlowCtrlPass : public GraphPass {
   ///         Other: failed
   ///
   Status AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, NodePtr &loop_after_node);
+
+  ///
+  /// add special iterator ctrl nodes(small cycle).
+  /// @param compute_graph graph
+  /// @return true: two or more dataSet exist
+  ///         false: only one dataSet exist
+  ///
+  bool CheckMultiDataSet(ComputeGraphPtr &compute_graph);
 };
 }  // namespace ge
 

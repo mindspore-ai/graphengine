@@ -101,7 +101,8 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
       return SUCCESS;
     }
 
-    if (build_mode_ == BUILD_MODE_TUNING && build_step_ == BUILD_STEP_AFTER_UB_MATCH) {
+    if (build_mode_ == BUILD_MODE_TUNING &&
+      (build_step_ == BUILD_STEP_AFTER_UB_MATCH || build_step_ == BUILD_STEP_AFTER_MERGE)) {
       for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
         Status ret = (*iter)->OptimizeFusedGraphAfterGraphSlice(*(compute_graph));
         if (ret != SUCCESS) {

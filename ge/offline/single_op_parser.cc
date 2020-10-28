@@ -229,7 +229,8 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.input_desc) {
     if ((tensor_desc.type == DT_UNDEFINED && tensor_desc.format != FORMAT_RESERVED) ||
         (tensor_desc.type != DT_UNDEFINED && tensor_desc.format == FORMAT_RESERVED)){
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"output", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
+          {"intput", "datatype or format", std::to_string(index)});
       GELOGE(PARAM_INVALID, "Input's dataType or format is invalid when the index is %d", index);
       return false;
     }
@@ -239,13 +240,15 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   index = 0;
   for (auto &tensor_desc : op_desc.output_desc) {
     if (tensor_desc.type == DT_UNDEFINED) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "index"}, {"output", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
+          {"output", "datatype", std::to_string(index)});
       GELOGE(PARAM_INVALID, "Output's dataType is invalid when the index is %d", index);
       return false;
     }
 
     if (tensor_desc.format == FORMAT_RESERVED) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10028", {"input", "index"}, {"output", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
+          {"output", "format", std::to_string(index)});
       GELOGE(PARAM_INVALID, "Output's format is invalid when the index is %d", index);
       return false;
     }

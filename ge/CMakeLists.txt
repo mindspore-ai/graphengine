@@ -879,7 +879,7 @@ add_custom_command(
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)
 
-install(TARGETS ge_runner ge_compiler OPTIONAL
+install(TARGETS ge_runner ge_compiler opensrc_ascendcl OPTIONAL
     LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
 )
 

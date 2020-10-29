@@ -55,9 +55,26 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
 
 Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size == 0 || data == nullptr, return PARAM_INVALID);
-
+  mmSsize_t write_count;
+  uint32_t size_2g = ((uint32_t)0x1 << 31);
+  uint32_t size_1g = ((uint32_t)0x1 << 30);
   // Write data
-  int32_t write_count = mmWrite(fd, const_cast<void *>(data), size);
+  if (size > size_2g) {
+    auto seek = reinterpret_cast<uint8_t *>(const_cast<void *>(data));
+    while (size > size_1g) {
+      write_count = mmWrite(fd, reinterpret_cast<void *>(seek), size_1g);
+      if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
+        GELOGE(FAILED, "Write data failed. mmpa_errorno = %d, %s", write_count, strerror(errno));
+        return FAILED;
+      }
+      size -= size_1g;
+      seek += size_1g;
+    }
+    write_count = mmWrite(fd, reinterpret_cast<void *>(seek), size);
+  } else {
+    write_count = mmWrite(fd, const_cast<void *>(data), size);
+  }
+
   // -1: Failed to write to file; - 2: Illegal parameter
   if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
     GELOGE(FAILED, "Write data failed. mmpa_errorno = %d, %s", write_count, strerror(errno));
@@ -117,6 +134,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
       WriteData(static_cast<const void *>(&model_partition_table), table_size, fd) != SUCCESS, ret = FAILED; break);
     // Write partition data
     for (const auto &partitionData : partition_datas) {
+      GELOGI("GC:size[%zu]", partitionData.size);
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         WriteData(static_cast<const void *>(partitionData.data), partitionData.size, fd) != SUCCESS, ret = FAILED;
         break);

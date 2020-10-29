@@ -67,6 +67,8 @@ class InnerSession {
 
   Status RemoveDumpProperties();
 
+  void SetRtSocVersion();
+
  private:
   bool init_flag_;
   uint64_t session_id_;

@@ -17,10 +17,12 @@
 #include "hybrid/model/hybrid_model_builder.h"
 #include "common/math/math_util.h"
 #include "graph/ge_context.h"
+#include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/utils/node_utils.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
@@ -180,6 +182,8 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
 Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies) {
   std::set<NodePtr> dependent_input_nodes;
   auto &ge_node = node_item.node;
+  bool is_hccl_op =
+    NodeExecutorManager::GetInstance().ResolveExecutorType(*ge_node) == NodeExecutorManager::ExecutorType::HCCL;
 
   // The input tensors become valid after computation is done for parent nodes of type DEPEND_COMPUTE.
   // Wait for these parent nodes before execution.
@@ -194,7 +198,12 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     auto src_node_item = MutableNodeItem(src_node);
     GE_CHECK_NOTNULL(src_node_item);
 
-    if (src_node_item->shape_inference_type == DEPEND_COMPUTE) {
+    if (is_hccl_op) {
+      GELOGD("[%s] Add input data dependent node [%s] due to engine type is HCCL", node_item.NodeName().c_str(),
+             src_node_item->NodeName().c_str());
+      src_node_item->has_observer = true;
+      node_item.dependents_for_execution.emplace_back(src_node);
+    } else if (src_node_item->shape_inference_type == DEPEND_COMPUTE) {
       GELOGD("[%s] Add input data dependent node [%s] due to inference type = DEPEND_COMPUTE",
              node_item.NodeName().c_str(), src_node_item->NodeName().c_str());
 
@@ -369,7 +378,10 @@ Status HybridModelBuilder::MergeInputNodes(ComputeGraph &graph) {
 Status HybridModelBuilder::MergeNetOutputNode(ComputeGraph &graph) {
   const auto &parent_node = graph.GetParentNode();
   const NodePtr &net_output_node = graph.FindFirstNodeMatchType(NETOUTPUT);
-  GE_CHECK_NOTNULL(net_output_node);
+  if (net_output_node == nullptr) {
+    GELOGD("Graph has no netoutput no need to merge.");
+    return SUCCESS;
+  }
   const auto &net_output_desc = net_output_node->GetOpDesc();
   GE_CHECK_NOTNULL(net_output_desc);
 
@@ -441,17 +453,15 @@ Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGrap
       continue;
     }
 
-    bool is_unknown_shape = false;
-    GE_CHK_GRAPH_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
-                            "Failed to invoke GetNodeUnknownShapeStatus.");
+    auto subgraph = NodeUtils::GetSubgraph(*node, kSubgraphIndex);
+    GE_CHECK_NOTNULL(subgraph);
+    bool is_unknown_shape = subgraph->GetGraphUnknownFlag();
     if (!is_unknown_shape) {
       merged_graph->AddNode(node);
       GELOGD("[%s] Known shape partitioned call added to merged graph.", op_desc->GetName().c_str());
       continue;
     }
 
-    auto subgraph = NodeUtils::GetSubgraph(*node, kSubgraphIndex);
-    GE_CHECK_NOTNULL(subgraph);
     GE_CHK_GRAPH_STATUS_RET(UnfoldSubgraph(root_graph, *merged_graph, *subgraph), "[%s] Failed to merge subgraph.",
                             subgraph->GetName().c_str());
   }
@@ -484,20 +494,10 @@ Status HybridModelBuilder::UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph
     if (sub_op_type == DATA_TYPE || sub_op_type == NETOUTPUT) {
       continue;
     }
-
-    if (sub_op_type == CONSTANT || sub_op_type == VARIABLE) {
-      GELOGE(INTERNAL_ERROR, "Unexpected node in unknown subgraph. type = %s, node = %s::%s", sub_op_type.c_str(),
-             sub_graph.GetName().c_str(), sub_node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
-
     if (sub_op_type == PARTITIONEDCALL) {
-      bool is_unknown_shape = false;
-      GE_CHK_GRAPH_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*sub_node, is_unknown_shape),
-                              "[%s] Failed to invoke GetNodeUnknownShapeStatus.", sub_node->GetName().c_str());
-      if (is_unknown_shape) {
-        auto sub_sub_graph = NodeUtils::GetSubgraph(*sub_node, kSubgraphIndex);
-        GE_CHECK_NOTNULL(sub_sub_graph);
+      auto sub_sub_graph = NodeUtils::GetSubgraph(*sub_node, kSubgraphIndex);
+      GE_CHECK_NOTNULL(sub_sub_graph);
+      if (sub_sub_graph->GetGraphUnknownFlag()) {
         GE_CHK_STATUS_RET(UnfoldSubgraph(root_graph, parent_graph, *sub_sub_graph), "[%s] Failed to merge subgraph",
                           sub_sub_graph->GetName().c_str());
         continue;
@@ -668,6 +668,19 @@ Status HybridModelBuilder::AssignUninitializedConstantOps() {
     }
   }
 
+  for (auto &it : hybrid_model_.device_variable_nodes_) {
+    const string &var_name = it.first;
+    const NodePtr &var_node = it.second;
+    auto tensor_desc = var_node->GetOpDesc()->MutableOutputDesc(0);
+    if (!var_manager_->IsVarExist(var_name, *tensor_desc)) {
+      // allocate constant
+      GELOGD("[%s] Constant not allocated during graph building. now allocate it.", var_name.c_str());
+      GE_CHK_STATUS_RET(var_manager_->AssignVarMem(var_name, *tensor_desc, RT_MEMORY_HBM));
+      GE_CHK_STATUS_RET(VarMemAssignUtil::AssignData2Fp32Var(var_node, runtime_param_.session_id))
+      GE_CHK_STATUS_RET(var_manager_->SetAllocatedGraphId(var_name, runtime_param_.graph_id));
+    }
+  }
+
   return SUCCESS;
 }
 
@@ -675,28 +688,32 @@ Status HybridModelBuilder::InitConstantOps() {
   for (auto &it : hybrid_model_.constant_op_nodes_) {
     const string &var_name = it.first;
     const NodePtr &var_node = it.second;
-    std::unique_ptr<TensorValue> var_tensor;
-
-    GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
-    GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());
-    var_tensor->SetName("ConstOp_" + var_name);
-
     auto op_desc = var_node->GetOpDesc();
     auto v_weights = ModelUtils::GetWeights(op_desc);
-    auto v_output_size = var_tensor->GetSize();
-    auto v_output_addr = var_tensor->MutableData();
-
     auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
-    if (ge_tensor->GetData().size() > 0) {
-      GE_CHK_STATUS_RET_NOLOG(HandleDtString(*ge_tensor, v_output_addr));
 
-      GELOGI("[IMAS]InitConstant memcpy graph_%u type[V] name[%s] output[%d] memaddr[%p] mem_size[%zu] datasize[%zu]",
-             runtime_param_.graph_id, op_desc->GetName().c_str(), 0, v_output_addr, v_output_size,
-             ge_tensor->GetData().size());
-      GE_CHK_RT_RET(rtMemcpy(v_output_addr, v_output_size, ge_tensor->GetData().data(), ge_tensor->GetData().size(),
-                             RT_MEMCPY_HOST_TO_DEVICE));
+    std::unique_ptr<TensorValue> var_tensor;
+    if (GetContext().GetHostExecFlag()) {
+      auto buffer = ge_tensor->MutableData();
+      GELOGD("Init tensor with host constant. size = %zu", buffer.GetSize());
+      var_tensor.reset(new (std::nothrow) TensorValue(buffer.GetData(), buffer.GetSize()));
     } else {
-      GELOGI("[%s] Const op has no weight data.", op_desc->GetName().c_str());
+      GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
+      GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());
+      var_tensor->SetName("ConstOp_" + var_name);
+      auto v_output_size = var_tensor->GetSize();
+      auto v_output_addr = var_tensor->MutableData();
+      if (ge_tensor->GetData().size() > 0) {
+        GE_CHK_STATUS_RET_NOLOG(HandleDtString(*ge_tensor, v_output_addr));
+
+        GELOGI("[IMAS]InitConstant memcpy graph_%u type[V] name[%s] output[%d] memaddr[%p] mem_size[%zu] datasize[%zu]",
+               runtime_param_.graph_id, op_desc->GetName().c_str(), 0, v_output_addr, v_output_size,
+               ge_tensor->GetData().size());
+        GE_CHK_RT_RET(rtMemcpy(v_output_addr, v_output_size, ge_tensor->GetData().data(), ge_tensor->GetData().size(),
+                               RT_MEMCPY_HOST_TO_DEVICE));
+      } else {
+        GELOGI("[%s] Const op has no weight data.", op_desc->GetName().c_str());
+      }
     }
 
     hybrid_model_.variable_tensors_.emplace(var_name, std::move(var_tensor));
@@ -706,7 +723,7 @@ Status HybridModelBuilder::InitConstantOps() {
 }
 
 Status HybridModelBuilder::InitVariableTensors() {
-  for (auto &it : hybrid_model_.variable_nodes_) {
+  for (auto &it : hybrid_model_.device_variable_nodes_) {
     string var_name = it.first;
     NodePtr &var_node = it.second;
     std::unique_ptr<TensorValue> tensor;
@@ -715,6 +732,27 @@ Status HybridModelBuilder::InitVariableTensors() {
            tensor->GetData());
     tensor->SetName("Var_" + var_name);
     hybrid_model_.variable_tensors_.emplace(var_name, std::move(tensor));
+  }
+
+  for (const auto &it : hybrid_model_.host_variable_nodes_) {
+    auto op_desc = it.second->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    GeTensorDesc output_tensor = op_desc->GetOutputDesc(0);
+    int64_t tensor_size = 0;
+    if (TensorUtils::CalcTensorMemSize(output_tensor.GetShape(), output_tensor.GetFormat(), output_tensor.GetDataType(),
+                                       tensor_size) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Calculate variable size failed, node name:%s", it.first.c_str());
+      return INTERNAL_ERROR;
+    }
+    SharedMemInfo mem_info(it.first, tensor_size);
+    if (HostMemManager::Instance().MallocSharedMemory(mem_info) != SUCCESS) {
+      GELOGE(GE_GRAPH_MALLOC_FAILED, "Host variable [%s] malloc failed.", it.first.c_str());
+      return GE_GRAPH_MALLOC_FAILED;
+    }
+    GELOGD("Host variable [%s] malloc success.", it.first.c_str());
+
+    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_address, tensor_size));
+    hybrid_model_.variable_tensors_.emplace(it.first, std::move(tensor));
   }
 
   return SUCCESS;
@@ -837,7 +875,13 @@ Status HybridModelBuilder::IndexSpecialNodes() {
     auto op_type = node->GetType();
     GELOGD("node name = %s, node type = %s", node->GetName().c_str(), node->GetType().c_str());
     if (op_type == VARIABLE) {
-      hybrid_model_.variable_nodes_.emplace(node->GetName(), node);
+      string placement;
+      (void)AttrUtils::GetStr(node->GetOpDesc(), ATTR_VARIABLE_PLACEMENT, placement);
+      if (placement == "host") {
+        hybrid_model_.host_variable_nodes_.emplace(node->GetName(), node);
+      } else {
+        hybrid_model_.device_variable_nodes_.emplace(node->GetName(), node);
+      }
     } else if (op_type == CONSTANTOP) {
       hybrid_model_.constant_op_nodes_.emplace(node->GetName(), node);
     } else if (op_type == DATA && node->GetOwnerComputeGraph() != root_graph) {
@@ -857,7 +901,6 @@ Status HybridModelBuilder::IndexSpecialNodes() {
       }
     }
   }
-
   return SUCCESS;
 }
 
@@ -1078,7 +1121,7 @@ Status HybridModelBuilder::TransAllVarData() {
   }
 
   std::vector<NodePtr> variable_node_list;
-  for (auto &it : hybrid_model_.variable_nodes_) {
+  for (auto &it : hybrid_model_.device_variable_nodes_) {
     variable_node_list.emplace_back(it.second);
     GELOGD("[%s] added for trans var data", it.first.c_str());
   }

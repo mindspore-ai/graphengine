@@ -15,6 +15,7 @@
  */
 
 #include "hybrid/executor/subgraph_executor.h"
+#include "graph/ge_context.h"
 #include "hybrid/executor/worker/task_compile_engine.h"
 #include "hybrid/executor/worker/execution_engine.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -200,6 +201,7 @@ Status SubgraphExecutor::PrepareNodes() {
     // only do shape inference and compilation for nodes with dynamic shapes.
     if (node_item.is_dynamic) {
       auto prepare_future = pre_run_pool_.commit([this, p_node_state]() -> Status {
+        GetContext().SetSessionId(context_->session_id);
         GE_CHK_STATUS_RET_NOLOG(InferShape(shape_inference_engine_.get(), *p_node_state));
         return PrepareForExecution(context_, *p_node_state);
       });
@@ -285,6 +287,7 @@ Status SubgraphExecutor::LaunchTasks() {
 Status SubgraphExecutor::ScheduleTasks() {
   GELOGD("[%s] Start to schedule prepare workers.", graph_item_->GetName().c_str());
   auto prepare_future = std::async([&]() -> Status {
+    GetContext().SetSessionId(context_->session_id);
     auto ret = PrepareNodes();
     ready_queue_.Push(nullptr);
     return ret;

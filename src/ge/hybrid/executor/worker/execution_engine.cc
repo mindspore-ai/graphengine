@@ -18,10 +18,14 @@
 #include "graph/runtime_inference_context.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/tensor_adapter.h"
+#include "graph/debug/ge_attr_define.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "common/dump/dump_manager.h"
 #include "common/dump/dump_op.h"
 #include "common/types.h"
+#include "common/ge_types.h"
+#include "common/profiling/profiling_manager.h"
+#include "runtime/base.h"
 
 namespace ge {
 namespace hybrid {
@@ -63,6 +67,10 @@ class NodeDoneCallback {
  private:
   Status PrepareConstInputs(const NodeItem &node_item);
   Status DumpDynamicNode();
+  Status ProfilingReport();
+  Status GetGraphDescInfo(const NodePtr node, const HybridModel *model,
+                          std::vector<ComputeGraphDescInfo> &compute_graph_info);
+  Status GetTaskDescInfo(const NodePtr node, const HybridModel *model, std::vector<TaskDescInfo> &task_desc_info);
   GraphExecutionContext *graph_context_;
   std::shared_ptr<TaskContext> context_;
   DumpOp dump_op_;
@@ -99,8 +107,7 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
            output_tensor->GetSize());
     GE_CHK_RT_RET(
       rtMemcpy(host_buffer.data(), tensor_size, output_tensor->GetData(), tensor_size, RT_MEMCPY_DEVICE_TO_HOST));
-    tensor.SetData(host_buffer);
-
+    tensor.SetData(std::move(host_buffer));
     string session_id = std::to_string(context_->GetSessionId());
     RuntimeInferenceContext *runtime_infer_ctx = nullptr;
     GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(session_id, &runtime_infer_ctx),
@@ -115,6 +122,119 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
                           output_idx);
   }
 
+  return SUCCESS;
+}
+
+Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *model,
+                                         std::vector<TaskDescInfo> &task_desc_info) {
+  GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(model);
+
+  GELOGD("GetTaskDescInfo of node [%s] start.", node->GetName().c_str());
+  auto op_desc = node->GetOpDesc();
+  std::string op_name = op_desc->GetName();
+  std::string dynamic_model_name = model->GetModelName();
+
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  if (rtGetTaskIdAndStreamID(&task_id, &stream_id) != RT_ERROR_NONE) {
+    GELOGE(PARAM_INVALID, "Get task_id and stream_id failed.");
+    return PARAM_INVALID;
+  }
+
+  TaskDescInfo tmp_task_desc_info;
+  tmp_task_desc_info.model_name = dynamic_model_name;
+  tmp_task_desc_info.op_name = op_name;
+  tmp_task_desc_info.block_dim = 0;
+  auto task_defs = model->GetTaskDefs(node);
+  if (task_defs != nullptr && (*task_defs).size() > 0) {
+    const auto &task_def = (*task_defs)[0];
+    tmp_task_desc_info.block_dim = task_def.kernel().block_dim();
+  }
+  tmp_task_desc_info.task_id = task_id;
+  tmp_task_desc_info.stream_id = stream_id;
+  GELOGD("GetTaskDescInfo of node [%s] end, task_id[%u], stream_id[%u]", node->GetName().c_str(), task_id, stream_id);
+  task_desc_info.emplace_back(tmp_task_desc_info);
+  return SUCCESS;
+}
+
+Status NodeDoneCallback::GetGraphDescInfo(const NodePtr node, const HybridModel *model,
+                                          std::vector<ComputeGraphDescInfo> &compute_graph_info) {
+  GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(model);
+
+  GELOGD("GetComputeGraphInfo of node [%s] start.", node->GetName().c_str());
+
+  std::string dynamic_model_name = model->GetModelName();
+  auto op_desc = node->GetOpDesc();
+  if (op_desc == nullptr) {
+    GELOGE(PARAM_INVALID, "op_desc is nullptr.");
+    return PARAM_INVALID;
+  }
+
+  auto op_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
+  if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, op_mode) &&
+      op_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
+    ComputeGraphDescInfo tmp_compute_graph_info;
+    tmp_compute_graph_info.model_name = dynamic_model_name;
+    tmp_compute_graph_info.op_name = op_desc->GetName();
+    tmp_compute_graph_info.op_type = op_desc->GetType();
+
+    for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+      GeTensorDescPtr input_desc = op_desc->MutableInputDesc(i);
+      if (input_desc == nullptr) {
+        continue;
+      }
+      tmp_compute_graph_info.input_format.emplace_back(input_desc->GetFormat());
+      tmp_compute_graph_info.input_shape.emplace_back(input_desc->GetShape().GetDims());
+      tmp_compute_graph_info.input_data_type.emplace_back(input_desc->GetDataType());
+    }
+
+    for (size_t j = 0; j < op_desc->GetOutputsSize(); ++j) {
+      GeTensorDesc output_desc = op_desc->GetOutputDesc(j);
+      tmp_compute_graph_info.output_format.emplace_back(output_desc.GetFormat());
+      tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
+      tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
+    }
+    compute_graph_info.emplace_back(tmp_compute_graph_info);
+    GELOGD("GetComputeGraphInfo of node [%s] end.", node->GetName().c_str());
+  }
+  return SUCCESS;
+}
+
+Status NodeDoneCallback::ProfilingReport() {
+  auto node = context_->GetNodeItem().node;
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "Get node is nullptr");
+    return PARAM_INVALID;
+  }
+
+  const auto &op_type = node->GetType();
+  if (op_type == PARTITIONEDCALL) {
+    return SUCCESS;
+  }
+
+  GE_CHECK_NOTNULL(graph_context_);
+  const HybridModel *model = graph_context_->model;
+  GE_CHECK_NOTNULL(model);
+
+  GELOGD("ProfilingReport of node [%s] model [%s] start.", node->GetName().c_str(), model->GetModelName().c_str());
+  std::vector<TaskDescInfo> task_desc_info;
+  TaskDescInfo tmp_task_desc_info;
+  auto profiling_ret = GetTaskDescInfo(node, model, task_desc_info);
+  if (profiling_ret != RT_ERROR_NONE) {
+    GELOGE(profiling_ret, "Get task info of node[%s] failed.", node->GetName().c_str());
+    return profiling_ret;
+  }
+
+  std::vector<ComputeGraphDescInfo> compute_graph_info;
+  profiling_ret = GetGraphDescInfo(node, model, compute_graph_info);
+  if (profiling_ret != RT_ERROR_NONE) {
+    GELOGE(profiling_ret, "Get graph info of node[%s] failed.", node->GetName().c_str());
+    return profiling_ret;
+  }
+
+  ProfilingManager::Instance().ReportProfilingData(task_desc_info, compute_graph_info);
   return SUCCESS;
 }
 
@@ -189,6 +309,10 @@ Status NodeDoneCallback::OnNodeDone() {
   if (!dump_path.empty()) {
     GELOGI("Start to dump dynamic shape,dump_path is %s", dump_path.c_str());
     GE_CHK_STATUS_RET(DumpDynamicNode(), "Failed to dump dynamic node");
+  }
+
+  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+    GE_CHK_STATUS_RET(ProfilingReport(), "Report node[%s] to profiling failed.", node_item.NodeName().c_str());
   }
 
   // release inputs
@@ -296,6 +420,11 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
     GE_CHECK_NOTNULL(tensor_desc);
     if (tensor_desc->GetDataType() == DT_STRING) {
       GELOGD("[%s] Skipping DT_STRING input, index = %d", task_context.GetNodeName(), i);
+      continue;
+    }
+
+    if (input_tensor->GetData() == nullptr) {
+      GELOGD("[%s] Skipping null input, index = %d", task_context.GetNodeName(), i);
       continue;
     }
 

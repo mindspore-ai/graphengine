@@ -17,6 +17,7 @@
 #include "framework/common/op/attr_value_util.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
+#include "register/register_types.h"
 
 namespace ge {
 #define DEFINE_SET_ATTR_VALUE_ONE(ARG_TYPE, FIELD)                        \

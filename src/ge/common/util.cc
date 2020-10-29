@@ -54,8 +54,7 @@ const int kProtoReadBytesLimit = INT_MAX;     // Max size of 2 GB minus 1 byte.
 const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 
 /// The maximum length of the file.
-/// Based on the security coding specification and the current actual (protobuf) model size, it is determined as 2G-1
-const int kMaxFileSizeLimit = INT_MAX;
+const uint32_t kMaxFileSizeLimit = UINT32_MAX;  // 4G for now
 const int kMaxBuffSize = 256;
 const char *const kPathValidReason = "The path can only contain 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
 constexpr uint32_t kMaxConfigFileByte = 10 * 1024 * 1024;
@@ -186,7 +185,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
   std::streamsize size = file.tellg();
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((size <= 0), file.close(); return false, "file length <= 0, not valid.");
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size > kMaxFileSizeLimit, file.close();
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size > static_cast<int64_t>(kMaxFileSizeLimit), file.close();
                                  return false, "file size %ld is out of limit: %d.", size, kMaxFileSizeLimit);
 
   file.seekg(0, std::ios::beg);  // [no need to check value]
@@ -304,7 +303,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const cha
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestap() {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() {
   struct timeval tv {};
   int ret = gettimeofday(&tv, nullptr);
   GE_LOGE_IF(ret != 0, "Func gettimeofday may failed: ret=%d", ret);

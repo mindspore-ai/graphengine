@@ -20,7 +20,7 @@
 #include "graph/build/memory/graph_mem_assigner.h"
 
 namespace ge {
-Status MemoryAssigner::AssignMemory(bool is_loop_graph, size_t &mem_offset, size_t &zero_copy_mem_size) {
+Status MemoryAssigner::AssignMemory(bool is_loop_graph, map<int64_t, size_t> &mem_offset, size_t &zero_copy_mem_size) {
   GraphMemoryAssigner graph_mem_assigner(compute_graph_);
 
   if (graph_mem_assigner.AssignMemory() != ge::SUCCESS) {

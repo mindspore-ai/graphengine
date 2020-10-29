@@ -18,7 +18,7 @@
 #define GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_
 
 #include "external/ge/ge_api_error_codes.h"
-#include "common/opskernel/ops_kernel_info_store.h"
+#include "common/opskernel/ops_kernel_builder.h"
 #include "graph/node.h"
 #include "task_context.h"
 
@@ -186,7 +186,6 @@ class NodeExecutorManager {
  private:
   std::map<ExecutorType, std::unique_ptr<NodeExecutor>> executors_;
   std::map<ExecutorType, std::function<NodeExecutor *()>> builders_;
-  std::map<std::string, OpsKernelInfoStore *> kernel_stores_;
   std::map<std::string, NodeExecutorManager::ExecutorType> engine_mapping_;
   std::mutex mu_;
   bool initialized_ = false;

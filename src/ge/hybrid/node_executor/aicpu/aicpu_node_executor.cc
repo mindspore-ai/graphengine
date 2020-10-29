@@ -20,7 +20,7 @@
 #include "graph/load/new_model_manager/model_manager.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"
-#include "init/gelib.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -448,14 +448,10 @@ Status AicpuTfNodeTask::PrepareCopyInputs(const TaskContext &context,
 }
 
 Status AicpuTfNodeTask::GenMemCopyTask(uint64_t copy_num, STR_FWK_OP_KERNEL &task, std::string &task_info) {
-  auto instance_ptr = ge::GELib::GetInstance();
-  GE_CHK_BOOL_RET_STATUS(instance_ptr != nullptr && instance_ptr->InitFlag(), GE_CLI_GE_NOT_INITIALIZED,
-                         "GE is not initialized");
-
-  static constexpr const char *const kKernelLibName = "aicpu_kernel";
-  OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
-  GE_CHK_BOOL_RET_STATUS(kernel_info != nullptr, FAILED, "Get op kernel info store[%s] failed", kKernelLibName);
-  auto ret = kernel_info->GenMemCopyTask(copy_num, task, task_info);
+  static constexpr const char *const kKernelLibName = "aicpu_tf_kernel";
+  auto kernel_builder = OpsKernelBuilderManager::Instance().GetOpsKernelBuilder(kKernelLibName);
+  GE_CHK_BOOL_RET_STATUS(kernel_builder != nullptr, FAILED, "Get op kernel info store[%s] failed", kKernelLibName);
+  auto ret = kernel_builder->GenMemCopyTask(copy_num, task, task_info);
   GE_CHK_STATUS_RET(ret, "Call aicpu GenMemCopyTask failed, copy_num=%lu, ret=%u", copy_num, ret);
   return SUCCESS;
 }

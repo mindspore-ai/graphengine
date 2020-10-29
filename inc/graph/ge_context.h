@@ -33,7 +33,7 @@ class GEContext {
   void SetCtxDeviceId(uint32_t device_id);
 
  private:
-  uint64_t session_id_ = 0;
+  thread_local static uint64_t session_id_;
   uint32_t device_id_ = 0;
   uint64_t trace_id_ = 0;
 };  // class GEContext

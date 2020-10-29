@@ -43,10 +43,10 @@ class OpsKernelInfoStore {
   virtual ~OpsKernelInfoStore() {}
 
   // initialize opsKernelInfoStore
-  virtual Status Initialize(const map<string, string> &options) = 0; /*lint -e148*/
+  virtual Status Initialize(const map<string, string> &options) = 0;
 
   // close opsKernelInfoStore
-  virtual Status Finalize() = 0; /*lint -e148*/
+  virtual Status Finalize() = 0;
 
   virtual Status CreateSession(const std::map<std::string, std::string> &session_options) { return SUCCESS; }
 
@@ -65,24 +65,11 @@ class OpsKernelInfoStore {
   // opsFlag opsFlag[0] indicates constant folding is supported or not
   virtual void opsFlagCheck(const ge::Node &node, std::string &opsFlag){};
 
-  // memory allocation requirement
-  virtual Status CalcOpRunningParam(Node &node) = 0; /*lint -e148*/
-
-  // generate task for op。
-  virtual Status GenerateTask(const Node &node, RunContext &context,
-                              std::vector<domi::TaskDef> &tasks) = 0; /*lint -e148*/
-
   // only call fe engine interface to compile single op
   virtual Status CompileOp(vector<ge::NodePtr> &node_vec) { return SUCCESS; }
   virtual Status CompileOpRun(vector<ge::NodePtr> &node_vec) { return SUCCESS; }
   // load task for op
   virtual Status LoadTask(GETaskInfo &task) { return SUCCESS; }
-
-  // only call aicpu interface to generate task struct
-  virtual Status GenSingleOpRunTask(const NodePtr &node, STR_FWK_OP_KERNEL &task, string &task_info) { return SUCCESS; }
-
-  // only call aicpu interface to generate task struct
-  virtual Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, string &task_info) { return SUCCESS; }
 };
 }  // namespace ge
 #endif  // INC_COMMON_OPSKERNEL_OPS_KERNEL_INFO_STORE_H_

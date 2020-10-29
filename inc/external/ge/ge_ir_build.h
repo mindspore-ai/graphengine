@@ -89,5 +89,26 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
  */
 graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version);
 
+/**
+ * @ingroup AscendCL
+ * @brief infer shape and data type
+ *
+ * @param graph[IN] the graph ready to build
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+graphStatus aclgrphInferShapeAndType(ge::Graph &graph);
+
+/**
+ * @ingroup AscendCL
+ * @brief dump graph
+ *
+ * @param graph[IN] the graph ready to build
+ * @param file[IN] file path
+ * @param file[IN] file path string len
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
 };  // namespace ge
 #endif

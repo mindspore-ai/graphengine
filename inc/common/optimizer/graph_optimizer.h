@@ -27,7 +27,6 @@
 using std::map;
 using std::string;
 
-/*lint -e148*/
 namespace ge {
 class GraphOptimizer {
  public:
@@ -67,5 +66,4 @@ class GraphOptimizer {
   virtual Status OptimizeFusedGraphAfterGraphSlice(ComputeGraph &graph) { return SUCCESS; }
 };
 }  // namespace ge
-/*lint +e148*/
 #endif  // INC_COMMON_OPTIMIZER_GRAPH_OPTIMIZER_H_

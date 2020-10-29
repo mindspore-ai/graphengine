@@ -60,7 +60,7 @@ class GraphOptimize {
 
   const std::map<uint32_t, std::map<string, size_t>> &GetSummaryOutputIndexes() const {
     return summary_output_indexes_;
-  }  // lint !e1073
+  }
 
   // handle summary node before preRun graph
   Status HandleSummaryOp(ComputeGraphPtr &compute_graph);
@@ -79,12 +79,8 @@ class GraphOptimize {
   domi::FrameworkType optimize_type_;
   std::string cal_config_;
   std::string insert_op_config_;
-  std::string parse_out_node_;
   std::string core_type_;
-  std::vector<std::string> out_nodes_name_;
-  std::vector<int32_t> out_nodes_index_;
   bool train_graph_flag_ = false;
-  GraphContextPtr graph_context_;
   bool local_fmk_op_flag_ = false;
   // record the summary names for filter sumarry result.
   std::map<uint32_t, std::map<string, size_t>> summary_output_indexes_ = {};

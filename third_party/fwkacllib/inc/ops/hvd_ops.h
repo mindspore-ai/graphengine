@@ -18,8 +18,8 @@
  * \file hvd_ops.h
  * \brief Horovod collective communication library ops.
  */
-#ifndef GE_OP_HVD_OPS_H_
-#define GE_OP_HVD_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_HVD_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_HVD_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -78,4 +78,4 @@ REG_OP(HorovodBroadcast)
     .OP_END_FACTORY_REG(HorovodBroadcast)
 
 } // namespace ge
-#endif // GE_OP_HVD_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_HVD_OPS_H_

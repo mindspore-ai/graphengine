@@ -34,7 +34,6 @@ using std::vector;
 
 namespace ge {
 class AttrValueImpl;
-/*lint -e148*/
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrValue {
  public:
   using INT = int64_t;
@@ -70,6 +69,5 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrValue {
   VALUE_SET_GET_DEC(AttrValue::FLOAT)
 #undef VALUE_SET_GET_DEC
 };
-/*lint +e148*/
 }  // namespace ge
 #endif  // INC_EXTERNAL_GRAPH_ATTR_VALUE_H_

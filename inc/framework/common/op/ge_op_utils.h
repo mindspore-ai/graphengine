@@ -22,7 +22,8 @@
 #include <vector>
 
 #include "common/op/attr_value_util.h"
-#include "common/types.h"
+#include "register/register_types.h"
+#include "register/register_error_codes.h"
 #include "common/util.h"
 #include "graph/attr_value.h"
 #include "graph/ge_tensor.h"

@@ -65,7 +65,7 @@ class DumpProperties {
 
   const std::string &GetDumpStatus() const;
 
-  void SetDumpOpSwitch(const std::string &dump_op_switch);
+  void SetDumpOpSwitch(const std::string dump_op_switch);
 
   const std::string &GetDumpOpSwitch() const;
 

@@ -18,8 +18,8 @@
  * \file nn_norm_ops.h
  * \brief
  */
-#ifndef GE_OP_NN_NORM_OPS_H
-#define GE_OP_NN_NORM_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
 
 #include "graph/operator_reg.h"
 namespace ge {
@@ -158,6 +158,34 @@ REG_OP(SigmoidCrossEntropyWithLogits)
     .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogits)
+
+/**
+*@brief Computes the sigmoid cross entropy loss of "predict" and "target" . \n
+
+*@par Inputs:
+* four inputs, including:
+*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
+*@li weight: An multi-dimensional Tensor, specifying the weight value. \n
+*@li pos_weight: An multi-dimensional Tensor, specifying the pos weight value. \n
+
+*@par Attributes:
+*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
+
+*@par Outputs:
+*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
+
+*@par Third-party framework compatibility
+* Compatible with PyTorch operator BCEWithLogitsLoss.
+*/
+REG_OP(SigmoidCrossEntropyWithLogitsV2)
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsV2)
 
 /**
 *@brief Computes the regression box of the RPN. It is a FasterRCNN operator . \n
@@ -896,7 +924,29 @@ REG_OP(InstanceNormV2)
     .ATTR(epsilon, Float, 0.00001)
     .OP_END_FACTORY_REG(InstanceNormV2)
 
+/**
+*@brief Performs instance normalization for inference.
 
+*@par Inputs:\n
+* Five inputs, including: (NC1HWC0 supported)
+*@li x: A Tensor of type float16 or float32.
+*@li gamma: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
+*@li beta: A [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
+*@li mean: A [N, C1, 1, 1, C0] ensor of type float32, for the mean.
+*@li variance: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance.
+*@li variance_sqrt: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance_sqrt.
+
+*@par Outputs:\n
+*y: A Tensor of type float16 or float32 for the normalized "x".
+*batch_mean: A Tensor of type float32 for the result mean.
+*batch_ variance: A Tensor of type float32 for the result variance.
+
+*@attention Constraints:
+*For Ascend 310, the result accuracy fails to reach 1<89> due to the square root instruction.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use INInferV2 instead.
+*/
 REG_OP(INInferV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(gamma, TensorType({DT_FLOAT}))
@@ -930,4 +980,4 @@ REG_OP(InHost)
      .OP_END_FACTORY_REG(InHost)
 }  // namespace ge
 
-#endif  //GE_OP_NN_NORM_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

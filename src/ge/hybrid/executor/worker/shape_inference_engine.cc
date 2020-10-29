@@ -29,6 +29,10 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   GE_CHK_STATUS_RET_NOLOG(node_state.GetShapeInferenceState().AwaitShapesReady(*execution_context_));
 
   auto &node_item = *node_state.GetNodeItem();
+
+  // Wait for "const input nodes" if node's shape inference function requires any.
+  // Even if output shape is static, there are cases that the const-input will be used in OpTiling and Execution
+  GE_CHK_STATUS_RET_NOLOG(AwaitDependentNodes(node_state));
   if (node_item.is_output_shape_static) {
     return SUCCESS;
   }
@@ -50,9 +54,6 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
       output_desc->SetShape(GeShape({UNKNOWN_DIM_NUM}));
     }
   }
-
-  // Wait for "const input nodes" if node's shape inference function requires any.
-  GE_CHK_STATUS_RET_NOLOG(AwaitDependentNodes(node_state));
 
   // Do shape inference
   GELOGD("[%s] Start to invoke InferShapeAndType", node_item.NodeName().c_str());

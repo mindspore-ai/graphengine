@@ -391,7 +391,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::AppendInpu
       GELOGE(GRAPH_FAILED, "Add input desc failed");
       return GRAPH_FAILED;
     }
+  }
 
+  for (size_t i = node->in_data_anchors_.size(); i < num; ++i) {
     auto anchor = ComGraphMakeShared<InDataAnchor>(node, i);
     if (anchor == nullptr) {
       GELOGE(OUT_OF_MEMORY, "Current in data anchor is null, make shared_ptr failed.");
@@ -444,7 +446,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::AppendOutp
       GELOGE(GRAPH_FAILED, "Add output desc failed");
       return GRAPH_FAILED;
     }
+  }
 
+  for (size_t i = node->out_data_anchors_.size(); i < num; ++i) {
     auto anchor = ComGraphMakeShared<OutDataAnchor>(node, i);
     if (anchor == nullptr) {
       GELOGE(OUT_OF_MEMORY, "Current out data anchor is null, make shared_ptr failed.");
@@ -643,6 +647,20 @@ std::string NodeUtils::GetNodeType(const Node &node) {
 }
 
 std::string NodeUtils::GetNodeType(const NodePtr &node) { return node == nullptr ? "" : GetNodeType(*node); }
+
+std::vector<ComputeGraphPtr> NodeUtils::GetAllSubgraphs(const Node &node) {
+  auto op_desc = node.GetOpDesc();
+  if (op_desc == nullptr) {
+    GELOGE(GRAPH_FAILED, "Failed to get op desc from node %s ", node.GetName().c_str());
+    return {};
+  }
+  auto root_graph = GraphUtils::FindRootGraph(node.GetOwnerComputeGraph());
+  if (root_graph == nullptr) {
+    GELOGE(GRAPH_FAILED, "Failed to find root graph from node %s ", node.GetName().c_str());
+    return {};
+  }
+  return root_graph->GetAllSubgraphs();
+}
 
 ComputeGraphPtr NodeUtils::GetSubgraph(const Node &node, uint32_t index) {
   auto op_desc = node.GetOpDesc();
@@ -1002,4 +1020,23 @@ vector<pair<InDataAnchorPtr, NodePtr>> NodeUtils::GetOutDataNodesWithAnchorByInd
 }
 
 ConstNodePtr NodeUtils::GetNodeFromOperator(const Operator &oprt) { return oprt.GetNode(); }
+
+std::string NodeUtils::GetInConstNodeTypeCrossSubgraph(const NodePtr &node) {
+  NodePtr input_node = node;
+  while (input_node != nullptr) {
+    if (input_node->GetType() != DATA) {
+      return input_node->GetType();
+    }
+
+    auto owner_graph = input_node->GetOwnerComputeGraph();
+    auto parent_node = owner_graph->GetParentNode();
+    if ((parent_node == nullptr) || (kWhileOpTypes.count(parent_node->GetType()) > 0)) {
+      return node->GetType();  // not in subgraph or while subgraph.
+    }
+
+    input_node = GetParentInput(input_node);
+  }
+
+  return "";
+}
 }  // namespace ge

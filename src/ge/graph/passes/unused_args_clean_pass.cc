@@ -161,6 +161,10 @@ Status UnusedArgsCleanPass::UpdateInputTensor(const map<ComputeGraphPtr, map<uin
   const auto &out_anchor = old_anchor->GetPeerOutAnchor();
   const auto &out_node = out_anchor->GetOwnerNode();
 
+  const auto &func_desc = func_node->GetOpDesc();
+  const auto &old_desc = func_desc->GetInputDesc(parent_index);
+  (void)func_desc->UpdateInputDesc(update_index, old_desc);
+
   GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_anchor, new_anchor), "Add edge failed");
   GELOGI("Add edge success, func node: %s, node: %s, parent index: %u, update index: %u", func_node->GetName().c_str(),
          out_node->GetName().c_str(), parent_index, update_index);

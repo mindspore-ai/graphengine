@@ -149,6 +149,13 @@ RTS_API rtError_t rtGetGroupInfo(int32_t groupId, rtGroupInfo_t* groupInfo, uint
  */
 RTS_API rtError_t rtGetGroupCount(uint32_t *count);
 
+/**
+ * @ingroup rt_context
+ * @brief set context INF mode
+ * @param [in] mode
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtSetCtxINFMode(bool mode);
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif

@@ -53,6 +53,15 @@ class MultiBatchPass : public GraphPass {
   Status AttachLabelOnly(uint32_t batch_num);
   Status GetUserDesignateShape();
 
+  ///
+  /// @ingroup ge
+  /// @brief Set batch label for Case mode.
+  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
+  /// @param [in] const NodePtr &case_node: Case Node.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status SetCaseLabel(const ComputeGraphPtr &graph, const NodePtr &case_node);
+
   std::vector<NodePtr> switch_n_nodes_;
   std::vector<NodePtr> bypass_nodes_;
   std::vector<std::vector<NodePtr>> batch_head_nodes_;

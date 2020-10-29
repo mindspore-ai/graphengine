@@ -36,66 +36,66 @@ class PlatformInfoManager {
   uint32_t InitializePlatformInfo();
   uint32_t Finalize();
 
-  uint32_t GetPlatformInfo(const string SoCVersion, PlatformInfo &platformInfo, OptionalInfo &optiCompilationInfo);
+  uint32_t GetPlatformInfo(const string SoCVersion, PlatformInfo &platform_info, OptionalInfo &opti_compilation_info);
 
-  uint32_t GetPlatformInfoWithOutSocVersion(PlatformInfo &platformInfo, OptionalInfo &optiCompilationInfo);
+  uint32_t GetPlatformInfoWithOutSocVersion(PlatformInfo &platform_info, OptionalInfo &opti_compilation_info);
 
-  void SetOptionalCompilationInfo(OptionalInfo &optiCompilationInfo);
+  void SetOptionalCompilationInfo(OptionalInfo &opti_compilation_info);
 
  private:
   PlatformInfoManager();
   ~PlatformInfoManager();
 
-  uint32_t LoadIniFile(string iniFileRealPath);
+  uint32_t LoadIniFile(string ini_file_real_path);
 
   void Trim(string &str);
 
-  uint32_t LoadConfigFile(string realPath);
+  uint32_t LoadConfigFile(string real_path);
 
   string RealPath(const std::string &path);
 
   string GetSoFilePath();
 
-  void ParseVersion(map<string, string> &versionMap, string &socVersion, PlatformInfo &platformInfoTemp);
+  void ParseVersion(map<string, string> &version_map, string &soc_version, PlatformInfo &platform_info_temp);
 
-  void ParseSocInfo(map<string, string> &socInfoMap, PlatformInfo &platformInfoTemp);
+  void ParseSocInfo(map<string, string> &soc_info_map, PlatformInfo &platform_info_temp);
 
-  void ParseCubeOfAICoreSpec(map<string, string> &aiCoreSpecMap, PlatformInfo &platformInfoTemp);
+  void ParseCubeOfAICoreSpec(map<string, string> &ai_core_spec_map, PlatformInfo &platform_info_temp);
 
-  void ParseBufferOfAICoreSpec(map<string, string> &aiCoreSpecMap, PlatformInfo &platformInfoTemp);
+  void ParseBufferOfAICoreSpec(map<string, string> &ai_core_spec_map, PlatformInfo &platform_info_temp);
 
-  void ParseUBOfAICoreSpec(map<string, string> &aiCoreSpecMap, PlatformInfo &platformInfoTemp);
+  void ParseUBOfAICoreSpec(map<string, string> &ai_core_spec_map, PlatformInfo &platform_info_temp);
 
-  void ParseUnzipOfAICoreSpec(map<string, string> &aiCoreSpecMap, PlatformInfo &platformInfoTemp);
+  void ParseUnzipOfAICoreSpec(map<string, string> &ai_core_spec_map, PlatformInfo &platform_info_temp);
 
-  void ParseAICoreSpec(map<string, string> &aiCoreSpecMap, PlatformInfo &platformInfoTemp);
+  void ParseAICoreSpec(map<string, string> &ai_core_spec_map, PlatformInfo &platform_info_temp);
 
-  void ParseBufferOfAICoreMemoryRates(map<string, string> &aiCoreMemoryRatesMap, PlatformInfo &platformInfoTemp);
+  void ParseBufferOfAICoreMemoryRates(map<string, string> &ai_core_memory_rates_map, PlatformInfo &platform_info_temp);
 
-  void ParseAICoreMemoryRates(map<string, string> &aiCoreMemoryRatesMap, PlatformInfo &platformInfoTemp);
+  void ParseAICoreMemoryRates(map<string, string> &ai_core_memory_rates_map, PlatformInfo &platform_info_temp);
 
-  void ParseUBOfAICoreMemoryRates(map<string, string> &aiCoreMemoryRatesMap, PlatformInfo &platformInfoTemp);
+  void ParseUBOfAICoreMemoryRates(map<string, string> &ai_core_memory_rates_map, PlatformInfo &platform_info_temp);
 
-  void ParseAICoreintrinsicDtypeMap(map<string, string> &aiCoreintrinsicDtypeMap, PlatformInfo &platformInfoTemp);
+  void ParseAICoreintrinsicDtypeMap(map<string, string> &ai_coreintrinsic_dtype_map, PlatformInfo &platform_info_temp);
 
-  void ParseVectorCoreSpec(map<string, string> &vectorCoreSpecMap, PlatformInfo &platformInfoTemp);
+  void ParseVectorCoreSpec(map<string, string> &vector_core_spec_map, PlatformInfo &platform_info_temp);
 
-  void ParseVectorCoreMemoryRates(map<string, string> &vectorCoreMemoryRatesMap, PlatformInfo &platformInfoTemp);
+  void ParseVectorCoreMemoryRates(map<string, string> &vector_core_memory_rates_map, PlatformInfo &platform_info_temp);
 
-  void ParseCPUCache(map<string, string> &CPUCacheMap, PlatformInfo &platformInfoTemp);
+  void ParseCPUCache(map<string, string> &CPUCacheMap, PlatformInfo &platform_info_temp);
 
-  void ParseVectorCoreintrinsicDtypeMap(map<string, string> &vectorCoreintrinsicDtypeMap,
-                                        PlatformInfo &platformInfoTemp);
+  void ParseVectorCoreintrinsicDtypeMap(map<string, string> &vector_coreintrinsic_dtype_map,
+                                        PlatformInfo &platform_info_temp);
 
-  uint32_t ParsePlatformInfoFromStrToStruct(map<string, map<string, string>> &contentInfoMap, string &socVersion,
-                                            PlatformInfo &platformInfoTemp);
+  uint32_t ParsePlatformInfoFromStrToStruct(map<string, map<string, string>> &content_info_map, string &soc_version,
+                                            PlatformInfo &platform_info_temp);
 
-  uint32_t AssemblePlatformInfoVector(map<string, map<string, string>> &contentInfoMap);
+  uint32_t AssemblePlatformInfoVector(map<string, map<string, string>> &content_info_map);
 
  private:
-  bool initFlag_;
-  map<string, PlatformInfo> platformInfoMap_;
-  OptionalInfo optiCompilationInfo_;
+  bool init_flag_;
+  map<string, PlatformInfo> platform_info_map_;
+  OptionalInfo opti_compilation_info_;
 };
 }  // namespace fe
 #endif

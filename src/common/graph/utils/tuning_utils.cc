@@ -17,8 +17,10 @@
 #include "graph/tuning_utils.h"
 #include "../debug/ge_util.h"
 #include "../debug/ge_op_types.h"
+#include "framework/common/scope_guard.h"
 
 namespace ge {
+namespace {
 const std::string peer_node_name_attr = "_peerNodeName";
 const std::string parent_node_name_attr = "_parentNodeName";
 const std::string alias_name_attr = "_aliasName";
@@ -28,6 +30,7 @@ const std::string tuning_subgraph_prefix = "/aicore_subgraph_";
 const std::string non_tuning_subgraph_prefix = "/subgraph_";
 const std::set<std::string> kPartitionOpTypes = {PLACEHOLDER, END};
 const std::set<std::string> kExeTypes = {DATA, NETOUTPUT};
+}  // namespace
 NodeNametoNodeNameMap TuningUtils::data_2_netoutput_;
 NodetoNodeNameMap TuningUtils::data_node_2_netoutput_;
 NodetoNodeMap TuningUtils::data_node_2_netoutput_node_;
@@ -116,6 +119,10 @@ graphStatus TuningUtils::ConvertGraphToFile(std::vector<ComputeGraphPtr> tuning_
 // +---------------+
 graphStatus TuningUtils::MakeExeGraph(ComputeGraphPtr &exe_graph, const HelpInfo &help_info) {
   GE_CHECK_NOTNULL(exe_graph);
+
+  // clear graph id
+  GELOGI("TUU:clear [%s] session_graph_id %s", exe_graph->GetName().c_str(),
+         (AttrUtils::SetStr(*exe_graph, ATTR_NAME_SESSION_GRAPH_ID, "") ? "success" : "not success"));
   // if not make exe, just dump and return
   if (!help_info.exe_flag) {
     DumpGraphToPath(exe_graph, help_info.index, help_info.is_tuning_graph, help_info.path);
@@ -346,7 +353,9 @@ graphStatus TuningUtils::LinkEnd2NetOutput(NodePtr &end_node, NodePtr &out_node)
   AnchorPtr end_in_anchor = (end_node->GetInDataAnchor(0)->GetFirstPeerAnchor() == nullptr)
                               ? Anchor::DynamicAnchorCast<Anchor>(end_node->GetInControlAnchor())
                               : Anchor::DynamicAnchorCast<Anchor>(end_node->GetInDataAnchor(0));
+  GE_CHECK_NOTNULL(end_in_anchor);
   auto src_anchor = end_in_anchor->GetFirstPeerAnchor();  // src_anchor should be only 1
+  GE_CHECK_NOTNULL(src_anchor);
   if (GraphUtils::RemoveEdge(src_anchor, end_in_anchor) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "TUU:remove end input edge from from %s(%d) to %s(%d) failed. node_name:%s, graph_name:%s",
            GetNodeNameByAnchor(src_anchor.get()).c_str(), src_anchor->GetIdx(),
@@ -447,6 +456,14 @@ graphStatus TuningUtils::HandleEnd(NodePtr &node) {
 
 // part 2
 graphStatus TuningUtils::ConvertFileToGraph(const map<int64_t, string> &options, ge::Graph &graph) {
+  std::function<void()> callback = [&]() {
+    data_2_netoutput_.clear();
+    data_node_2_netoutput_.clear();
+    data_node_2_netoutput_node_.clear();
+    netoutput_nodes_.clear();
+    merged_graph_nodes_.clear();
+  };
+  GE_MAKE_GUARD(release, callback);
   // 1. get all subgraph object
   std::vector<ComputeGraphPtr> graphs;
   // options format like {index:"subgraph_path"}
@@ -666,7 +683,9 @@ graphStatus TuningUtils::GetInAndOutAnchorPair(NodePtr &data_node, NodePtr &out_
       GE_CHECK_NOTNULL(src_anchor);
       auto src_node = src_anchor->GetOwnerNode();
       GE_CHECK_NOTNULL(src_node);
-      if (src_node->GetName() == netoutput_input_name && src_anchor->GetIdx() == parent_node_anchor_index) {
+      std::string src_node_name = src_node->GetName();
+      if (src_node_name.find(netoutput_input_name) != src_node_name.npos &&
+          src_anchor->GetIdx() == parent_node_anchor_index) {
         dest_in_anchor = in_anchor;
         src_out_anchor = src_anchor;
         GELOGD("TUU:get out node:%s 's in anchor(%d) src_node:%s 's out anchor(%d) related with data node:%s",

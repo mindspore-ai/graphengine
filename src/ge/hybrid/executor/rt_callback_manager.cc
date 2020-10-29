@@ -27,10 +27,17 @@ Status CallbackManager::RegisterCallback(rtCallback_t callback, void *user_data)
   GELOGD("To register callback");
   rtEvent_t event = nullptr;
   GE_CHK_RT_RET(rtEventCreate(&event));
-  GE_CHK_RT_RET(rtEventRecord(event, stream_));
+  auto rt_ret = rtEventRecord(event, stream_);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Failed to invoke rtEventRecord, error code = %d", rt_ret);
+    (void)rtEventDestroy(event);
+    return RT_FAILED;
+  }
+
   auto cb = std::pair<rtCallback_t, void *>(callback, user_data);
   auto entry = std::pair<rtEvent_t, std::pair<rtCallback_t, void *>>(event, std::move(cb));
   if (!callback_queue_.Push(entry)) {
+    (void)rtEventDestroy(event);
     return INTERNAL_ERROR;
   }
 

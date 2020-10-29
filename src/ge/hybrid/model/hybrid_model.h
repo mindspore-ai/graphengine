@@ -79,7 +79,8 @@ class HybridModel {
   GeRootModelPtr ge_root_model_;
   std::map<uint32_t, NodeItem *> input_nodes_;
   std::map<std::string, NodePtr> constant_op_nodes_;
-  std::map<std::string, NodePtr> variable_nodes_;
+  std::map<std::string, NodePtr> device_variable_nodes_;
+  std::map<std::string, NodePtr> host_variable_nodes_;
   std::map<std::string, std::unique_ptr<TensorValue>> variable_tensors_;
   std::map<NodePtr, std::vector<domi::TaskDef>> task_defs_;
   std::map<NodePtr, GeModelPtr> known_shape_sub_models_;

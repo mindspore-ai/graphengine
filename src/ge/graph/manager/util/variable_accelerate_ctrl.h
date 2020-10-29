@@ -20,6 +20,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <mutex>
 
 #include "graph/compute_graph.h"
 #include "graph/node.h"
@@ -59,6 +60,8 @@ class VarAccelerateCtrl {
   ///
   std::map<std::string, int> var_names_to_change_times_;
   static const int kMaxVarChangeTimes_ = 1;
+
+  mutable std::mutex mutex_;
 };
 }  // namespace ge
 

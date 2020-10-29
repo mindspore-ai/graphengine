@@ -50,8 +50,8 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     return SUCCESS;
   }
 
-  bool is_known_graph = graph->GetGraphUnknownFlag();
-  if (is_known_graph) {
+  bool is_unknown_graph = graph->GetGraphUnknownFlag();
+  if (is_unknown_graph) {
     GELOGD("Graph[%s] is unknown graph. It will call fe interface to compile op.", graph->GetName().c_str());
     GE_CHK_STATUS_RET(CompileUnknownGraphOp(atomic_node_vec));
     return SUCCESS;

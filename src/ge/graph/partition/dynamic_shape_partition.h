@@ -145,6 +145,7 @@ class DynamicShapePartitioner {
   // Debug functions
   void DumpGraph(const std::string &suffix);
   std::string DebugString() const;
+  bool JudgeUnknowShapeWithAttr(const OpDescPtr &opdesc);
   // Util functions
   Status CollectSpreadUnknownShapeNodes(NodePtr node);
   Status IsUnknownShapeGraph(ge::ComputeGraphPtr graph, bool &is_unknow);

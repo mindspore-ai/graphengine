@@ -29,16 +29,16 @@ class TensorSizeCalculator {
  public:
   /**
    * Calculate the tensor size of input and output of each opdesc
-   * @param opDesc opdesc object
-   * @param opImplType op impl type
+   * @param op_desc opdesc object
+   * @param op_impl_type op impl type
    * @return status SUCCESS or FAILED
    */
-  static Status CalculateOpTensorSize(ge::OpDesc &opDesc);
+  static Status CalculateOpTensorSize(ge::OpDesc &op_desc);
 
  private:
-  static Status CalcInputOpTensorSize(ge::OpDesc &opDesc, int32_t &outputRealCalcFlag);
+  static Status CalcInputOpTensorSize(ge::OpDesc &op_desc, int32_t &output_real_calc_flag);
 
-  static Status CalcOutputOpTensorSize(ge::OpDesc &opDesc, int32_t &outputRealCalcFlag);
+  static Status CalcOutputOpTensorSize(ge::OpDesc &op_desc, int32_t &output_real_calc_flag);
 };
 }  // namespace fe
 

@@ -19,7 +19,6 @@
 #include <iostream>
 #include <memory>
 #include "common/auth/file_saver.h"
-#include "common/convert/pb2json.h"
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/ge/ge_util.h"
@@ -45,6 +44,7 @@
 #include "omg/parser/parser_factory.h"
 #include "omg/parser/weights_parser.h"
 #include "parser/common/pre_checker.h"
+#include "parser/common/convert/pb2json.h"
 #include "proto/ge_ir.pb.h"
 #include "register/op_registry.h"
 
@@ -257,6 +257,11 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
   if (real_path.empty()) {  // plugin path does not exist
     return;
   }
+  struct stat stat_buf;
+  if ((stat(real_path.c_str(), &stat_buf) != 0) || (!S_ISDIR(stat_buf.st_mode))) {
+    GELOGI("The path %s is not a directory.", real_path.c_str());
+    return;
+  }
 
   struct dirent *dent(nullptr);
   DIR *dir = opendir(real_path.c_str());
@@ -272,21 +277,11 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
     string full_name = real_path + "/" + name;
     const string so_suff = ".so";
     const string caffe_parser_so_suff = "lib_caffe_parser.so";
-    const string aicpu_so_suff = "_aicpu.so";
-    const string aicpu_host_so_suff = "_online.so";
     if (name.size() >= so_suff.size() && name.compare(name.size() - so_suff.size(), so_suff.size(), so_suff) == 0) {
       if (full_name.size() >= caffe_parser_so_suff.size() &&
           full_name.compare(full_name.size() - caffe_parser_so_suff.size(), caffe_parser_so_suff.size(),
                             caffe_parser_so_suff) == 0) {
         caffe_parser_path = full_name;
-      } else if ((full_name.size() >= aicpu_so_suff.size() &&
-                  full_name.compare(full_name.size() - aicpu_so_suff.size(), aicpu_so_suff.size(), aicpu_so_suff) ==
-                    0) ||
-                 (full_name.size() >= aicpu_host_so_suff.size() &&
-                  full_name.compare(full_name.size() - aicpu_host_so_suff.size(), aicpu_host_so_suff.size(),
-                                    aicpu_host_so_suff) == 0)) {
-        // aicpu so, Put the file path into the omgcontext and save into the model in the builder stage;
-        domi::GetContext().aicpu_op_run_paths.push_back(full_name);
       } else {  // save parser so path into file_list vector
         file_list.push_back(full_name);
       }
@@ -297,29 +292,6 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
   }
   closedir(dir);
   return;
-}
-
-Status CheckCustomAiCpuOpLib() {
-  std::vector<std::string> vec_op_type;
-  domi::OpRegistry::Instance()->GetOpTypeByImplyType(vec_op_type, domi::ImplyType::CUSTOM);
-  for (uint32_t i = 0; i < vec_op_type.size(); i++) {
-    bool aicpu_so_exist = false;
-    std::string ai_cpu_so_name = "lib" + vec_op_type[i] + "_aicpu.so";
-    for (uint32_t j = 0; j < domi::GetContext().aicpu_op_run_paths.size(); j++) {
-      string bin_file_path = domi::GetContext().aicpu_op_run_paths[j];
-      if (bin_file_path.size() >= ai_cpu_so_name.size() &&
-          bin_file_path.compare(bin_file_path.size() - ai_cpu_so_name.size(), ai_cpu_so_name.size(), ai_cpu_so_name) ==
-            0) {
-        aicpu_so_exist = true;
-        break;
-      }
-    }
-    if (!aicpu_so_exist) {
-      GELOGE(domi::FAILED, "cant find aicpu run so(%s), please check the plugin path!", ai_cpu_so_name.c_str());
-      return domi::FAILED;
-    }
-  }
-  return domi::SUCCESS;
 }
 
 Status SetOutFormatAndDataTypeAttr(ge::OpDescPtr op_desc, const ge::Format format, const ge::DataType data_type) {
@@ -455,6 +427,32 @@ Status CheckOutNode(ge::OpDescPtr op_desc, int32_t index) {
   }
   return domi::SUCCESS;
 }
+Status GetDefaultOutInfo(ge::ComputeGraphPtr &compute_graph,
+                         std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info) {
+  std::vector<std::pair<std::string, int32_t>> default_out_nodes = domi::GetContext().default_out_nodes;
+  if (domi::GetContext().type == domi::CAFFE && !default_out_nodes.empty()) {
+    for (uint32_t i = 0; i < default_out_nodes.size(); ++i) {
+      ge::NodePtr out_node = compute_graph->FindNode(default_out_nodes[i].first);
+      if (out_node == nullptr) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10016", {"parameter", "opname"},
+                                                        {"out_nodes", default_out_nodes[i].first});
+        GELOGE(domi::FAILED, "Can not find src node (%s) in graph.", default_out_nodes[i].first.c_str());
+        return domi::FAILED;
+      }
+      output_nodes_info.push_back(std::make_pair(out_node, default_out_nodes[i].second));
+      GELOGD("Get default output node:%s.", out_node->GetName().c_str());
+    }
+    return domi::SUCCESS;
+  }
+
+  for (ge::NodePtr node : compute_graph->GetDirectNode()) {
+    if (!node->GetInAllNodes().empty() && node->GetOutAllNodes().empty()) {
+      Status ret = GetOutputLeaf(node, output_nodes_info);
+      GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "find leaf fail.");
+    }
+  }
+  return domi::SUCCESS;
+}
 
 Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output) {
   ge::ComputeGraphPtr compute_graph = ge::GraphUtils::GetComputeGraph(graph);
@@ -505,11 +503,9 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
   }
   // default output node (leaf)
   if (user_out_nodes.empty()) {
-    for (ge::NodePtr node : compute_graph->GetDirectNode()) {
-      if (!node->GetInAllNodes().empty() && node->GetOutAllNodes().empty()) {
-        Status ret = GetOutputLeaf(node, output_nodes_info);
-        GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "find leaf fail.");
-      }
+    if (GetDefaultOutInfo(compute_graph, output_nodes_info) != SUCCESS) {
+      GELOGE(domi::FAILED, "Get default output info failed.");
+      return domi::FAILED;
     }
   }
   GetOutputNodesNameAndIndex(output_nodes_info, output_nodes_name);
@@ -553,6 +549,7 @@ Status GetOutputLeaf(NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> 
   if (node->GetType() != NETOUTPUT) {
     for (size_t index = 0; index < size; ++index) {
       output_nodes_info.push_back(std::make_pair(node, index));
+      GELOGD("Get output leaf node:%s.", node->GetName().c_str());
     }
   } else {
     const auto in_anchors = node->GetAllInDataAnchors();
@@ -882,65 +879,66 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
 
   uint8_t *model_data = nullptr;
   uint32_t model_len = 0;
-
-  // Parse the contents of the file to get the modeldef object
-  ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
-  if (ret == SUCCESS) {
-    OmFileLoadHelper omFileLoadHelper;
-    ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
-    if (status != ge::GRAPH_SUCCESS) {
-      GELOGE(ge::FAILED, "Om file init failed.");
-      if (model.model_data != nullptr) {
-        delete[](char *) model.model_data;
-        model.model_data = nullptr;
+  try {
+    // Parse the contents of the file to get the modeldef object
+    ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
+    if (ret == SUCCESS) {
+      OmFileLoadHelper omFileLoadHelper;
+      ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
+      if (status != ge::GRAPH_SUCCESS) {
+        GELOGE(ge::FAILED, "Om file init failed.");
+        if (model.model_data != nullptr) {
+          delete[](char *) model.model_data;
+          model.model_data = nullptr;
+        }
+        return status;
       }
-      return status;
-    }
 
-    ModelPartition ir_part;
-    status = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
-    if (status != ge::GRAPH_SUCCESS) {
-      GELOGE(ge::FAILED, "Get model part failed.");
-      if (model.model_data != nullptr) {
-        delete[](char *) model.model_data;
-        model.model_data = nullptr;
+      ModelPartition ir_part;
+      status = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
+      if (status != ge::GRAPH_SUCCESS) {
+        GELOGE(ge::FAILED, "Get model part failed.");
+        if (model.model_data != nullptr) {
+          delete[](char *) model.model_data;
+          model.model_data = nullptr;
+        }
+        return status;
       }
-      return status;
-    }
 
-    ge::proto::ModelDef model_def;
+      ge::proto::ModelDef model_def;
 
-    // De serialization
-    bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
-    if (flag) {
-      GetGroupName(model_def);
+      // De serialization
+      bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
+      if (flag) {
+        GetGroupName(model_def);
 
-      json j;
-      Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
+        json j;
+        Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
 
-      ret = ModelSaver::SaveJsonToFile(json_file, j);
+        ret = ModelSaver::SaveJsonToFile(json_file, j);
+      } else {
+        ret = INTERNAL_ERROR;
+        GELOGE(ret, "ReadProtoFromArray failed.");
+      }
     } else {
-      ret = INTERNAL_ERROR;
-      GELOGE(ret, "ReadProtoFromArray failed.");
+      GELOGE(PARAM_INVALID, "ParseModelContent failed because of invalid om file. Please check --om param.");
     }
-  } else {
-    GELOGE(PARAM_INVALID, "ParseModelContent failed because of invalid om file. Please check --om param.");
-  }
 
-  if (model.model_data != nullptr) {
-    delete[](char *) model.model_data;
-    model.model_data = nullptr;
+    if (model.model_data != nullptr) {
+      delete[](char *) model.model_data;
+      model.model_data = nullptr;
+    }
+    return ret;
+  } catch (const std::exception &e) {
+    GELOGE(FAILED, "Convert om model to json failed, exception message : %s.", e.what());
+    return FAILED;
   }
-
-  return ret;
 }
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const char *json_file) {
   ge::ModelData model;
-
   // Mode 2 does not need to verify the priority, and a default value of 0 is passed
   int32_t priority = 0;
-
   // Load model from file
   Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
   auto free_model_data = [](void **ptr) -> void {
@@ -954,35 +952,36 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
     GELOGE(ret, "LoadFromFile failed.");
     return ret;
   }
-  bool flag = false;
-  ge::proto::ModelDef model_def;
+
   try {
+    bool flag = false;
+    ge::proto::ModelDef model_def;
     flag = google::protobuf::TextFormat::ParseFromString(reinterpret_cast<char *>(model.model_data), &model_def);
+
+    if (!flag) {
+      free_model_data(&model.model_data);
+      GELOGE(FAILED, "ParseFromString fail.");
+      return FAILED;
+    }
+    GetGroupName(model_def);
+    json j;
+    Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
+    ret = ModelSaver::SaveJsonToFile(json_file, j);
+    if (ret != SUCCESS) {
+      free_model_data(&model.model_data);
+      GELOGE(ret, "Save json to file fail.");
+      return ret;
+    }
+    free_model_data(&model.model_data);
+    return SUCCESS;
   } catch (google::protobuf::FatalException &e) {
     free_model_data(&model.model_data);
     GELOGE(FAILED, "ParseFromString fail. exception message : %s", e.what());
     return FAILED;
-  }
-
-  if (!flag) {
-    free_model_data(&model.model_data);
-    GELOGE(FAILED, "ParseFromString fail.");
+  } catch (const std::exception &e) {
+    GELOGE(FAILED, "Convert pbtxt to json failed, exception message : %s.", e.what());
     return FAILED;
   }
-
-  GetGroupName(model_def);
-  json j;
-  Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
-  ret = ModelSaver::SaveJsonToFile(json_file, j);
-  if (ret != SUCCESS) {
-    free_model_data(&model.model_data);
-    GELOGE(ret, "Save json to file fail.");
-    return ret;
-  }
-
-  free_model_data(&model.model_data);
-
-  return SUCCESS;
 }
 
 FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType framework, const char *model_file,
@@ -1028,13 +1027,33 @@ FMK_FUNC_HOST_VISIBILITY Status DumpInfershapeJson(const ge::Graph &graph, const
 void UpdateOmgCtxWithParserCtx() {
   domi::GetContext().format = GetParserContext().format;
   domi::GetContext().input_dims = GetParserContext().input_dims;
-  return;
+  domi::GetContext().user_input_dims = GetParserContext().user_input_dims;
+  domi::GetContext().is_dynamic_input = GetParserContext().is_dynamic_input;
+  domi::GetContext().type = GetParserContext().type;
+  domi::GetContext().user_out_nodes = GetParserContext().user_out_nodes;
+  domi::GetContext().train_flag = GetParserContext().train_flag;
+  domi::GetContext().run_mode = GetParserContext().run_mode;
+  domi::GetContext().op_conf_map = GetParserContext().op_conf_map;
+  domi::GetContext().out_nodes_map = GetParserContext().out_nodes_map;
+  domi::GetContext().input_nodes_format_map = GetParserContext().input_nodes_format_map;
+  domi::GetContext().out_top_names = GetParserContext().out_top_names;
+  domi::GetContext().user_out_nodes_top_vec = GetParserContext().user_out_nodes_top_vec;
+  domi::GetContext().default_out_nodes = GetParserContext().default_out_nodes;
 }
 
 void UpdateParserCtxWithOmgCtx() {
   GetParserContext().format = domi::GetContext().format;
   GetParserContext().input_dims = domi::GetContext().input_dims;
+  GetParserContext().user_input_dims = domi::GetContext().user_input_dims;
+  GetParserContext().is_dynamic_input = domi::GetContext().is_dynamic_input;
+  GetParserContext().type = domi::GetContext().type;
+  GetParserContext().user_out_nodes = domi::GetContext().user_out_nodes;
+  GetParserContext().train_flag = domi::GetContext().train_flag;
   GetParserContext().run_mode = domi::GetContext().run_mode;
-  return;
+  GetParserContext().op_conf_map = domi::GetContext().op_conf_map;
+  GetParserContext().out_nodes_map = domi::GetContext().out_nodes_map;
+  GetParserContext().input_nodes_format_map = domi::GetContext().input_nodes_format_map;
+  GetParserContext().out_top_names = domi::GetContext().out_top_names;
+  GetParserContext().user_out_nodes_top_vec = domi::GetContext().user_out_nodes_top_vec;
 }
 }  // namespace ge

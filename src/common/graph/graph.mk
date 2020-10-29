@@ -14,6 +14,8 @@ COMMON_LOCAL_SRC_FILES := \
     ./attr_value.cc \
     ./buffer.cc \
     ./compute_graph.cc \
+    ./ascend_string.cc \
+    ./gnode.cc \
     ./graph.cc \
     ./inference_context.cc \
     ./shape_refiner.cc \
@@ -98,11 +100,13 @@ LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := \
+    ../../out/graph/lib64/stub/attr_value.cc \
     ../../out/graph/lib64/stub/graph.cc \
     ../../out/graph/lib64/stub/operator.cc \
     ../../out/graph/lib64/stub/tensor.cc \
     ../../out/graph/lib64/stub/operator_factory.cc \
-
+    ../../out/graph/lib64/stub/ascend_string.cc \
+    ../../out/graph/lib64/stub/gnode.cc \
 
 LOCAL_SHARED_LIBRARIES :=
 
@@ -128,7 +132,8 @@ LOCAL_SRC_FILES  := \
     ../../out/graph/lib64/stub/operator_factory.cc \
     ../../out/graph/lib64/stub/tensor.cc \
     ../../out/graph/lib64/stub/inference_context.cc \
-
+    ../../out/graph/lib64/stub/ascend_string.cc \
+    ../../out/graph/lib64/stub/gnode.cc \
 
 LOCAL_SHARED_LIBRARIES :=
 
@@ -173,11 +178,13 @@ LOCAL_CFLAGS += -O2
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := \
+    ../../out/graph/lib64/stub/attr_value.cc \
     ../../out/graph/lib64/stub/graph.cc \
     ../../out/graph/lib64/stub/operator.cc \
     ../../out/graph/lib64/stub/tensor.cc \
     ../../out/graph/lib64/stub/operator_factory.cc \
-
+    ../../out/graph/lib64/stub/ascend_string.cc \
+    ../../out/graph/lib64/stub/gnode.cc \
 
 LOCAL_SHARED_LIBRARIES :=
 
@@ -206,6 +213,8 @@ LOCAL_SRC_FILES  := \
     ../../out/graph/lib64/stub/operator_factory.cc \
     ../../out/graph/lib64/stub/tensor.cc \
     ../../out/graph/lib64/stub/inference_context.cc \
+    ../../out/graph/lib64/stub/ascend_string.cc \
+    ../../out/graph/lib64/stub/gnode.cc \
 
 
 LOCAL_SHARED_LIBRARIES :=

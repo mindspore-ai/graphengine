@@ -49,6 +49,7 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_MEMCPY_ADDR_ASYNC,
     RT_MODEL_TASK_STREAM_LABEL_SWITCH_BY_INDEX,
     RT_MODEL_TASK_STREAM_LABEL_GOTO,
+    RT_MODEL_TASK_MODEL_EXIT,
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {
@@ -224,6 +225,13 @@ typedef struct tagrtModelEndGraphTaskInfo {
     uint32_t reserved[8];
 } rtModelEndGraphTaskInfo_t;
 
+typedef struct tagrtModelExitInfo {
+    uint32_t modelId;
+    uint32_t streamId;
+    uint32_t reserved[8];
+} rtModelExitTaskInfo_t;
+
+
 typedef struct tagrtStreamLabelSwitchByIndexTask_t {
     uint64_t indexPtr;
     uint64_t labelInfoPtr;
@@ -256,6 +264,7 @@ typedef struct tagTaskInfo {
         rtRdmaSendTaskInfo_t rdmaSendTask;
         rtRdmaDbSendTaskInfo_t rdmaDbSendTask;
         rtModelEndGraphTaskInfo_t modelEndGraphTask;
+        rtModelExitTaskInfo_t modelExitTask;
         rtStreamSwitchNTaskInfo_t streamSwitchNTask;
         rtStreamLabelSwitchByIndexTask_t streamLabelSwitchIndexTask;
         rtStreamLabelGotoTask_t streamLabelGotoTask;
@@ -388,6 +397,16 @@ RTS_API rtError_t rtModelExecutorSet(rtModel_t model, uint8_t flags);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtModelAbort(rtModel_t model);
+
+/**
+ * @ingroup rt_model
+ * @brief end graph task to model default stream
+ * @param [in] model   model to execute
+ * @param [in] end graph stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtModelExit(rtModel_t model, rtStream_t stream);
 
 /**
  * @ingroup rt_model

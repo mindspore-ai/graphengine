@@ -270,6 +270,15 @@ extern HcclResult hcom_set_split_strategy_by_index(const char *group, u32 segmen
  */
 extern HcclResult hcom_set_split_strategy_by_size(const char *group, u32 segmentNum, const float *sizeList);
 
+/**
+ * @brief Register memories and init resources for remote access.
+ *
+ * @param addrList memory addresses for remote access.
+ * @param count number of remote memory addresses.
+ * @return HcclResult
+ */
+extern HcclResult hcom_remote_access_mem_register(const MemRegisterAddr* addrList, u32 count);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

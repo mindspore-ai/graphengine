@@ -162,6 +162,7 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
       }
 
       data_nodes[parent_index] = data;
+      GELOGD("%s, Parent index: %u, Data: %s", subgraph->GetName().c_str(), parent_index, data->GetName().c_str());
     }
   }
 
@@ -302,7 +303,7 @@ Status SubexpressionMigrationPass::GraphNodeMigration(const ComputeGraphPtr &gra
         continue;
       }
 
-      GELOGI("Move to parent: %s", base_node->GetName().c_str());
+      GELOGI("Move to parent: %s, parent index: %u", base_node->GetName().c_str(), base_idx);
       if (AppendParallelNode(graph_nodes, func_node, outputs) != SUCCESS) {
         return FAILED;
       }
@@ -335,12 +336,12 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
     }
 
     // Add Data to subgraph.
+    map<ComputeGraphPtr, uint32_t> append_num;
     for (auto &groups : graph_nodes) {
       const auto &subgraph = groups.first;
       auto &data_nodes = groups.second;
 
-      uint32_t data_index = data_nodes.size();
-      item.second = data_index + kCaseInputBase;  // Update to valid parent index.
+      item.second = func_node->GetAllInDataAnchorsSize() + append_num[subgraph];  // Update to valid parent index.
       std::string data_name = subgraph->GetName() + "_data_" + std::to_string(item.second);
 
       OpDescBuilder op_builder(data_name, DATA);
@@ -350,6 +351,7 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
         return OUT_OF_MEMORY;
       }
 
+      uint32_t data_index = item.second - kCaseInputBase;
       if (!AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
         GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
         return FAILED;
@@ -360,11 +362,13 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
         return FAILED;
       }
 
+      append_num[subgraph]++;
       data_nodes[item.second] = subgraph->AddNode(op_desc);
+      GELOGI("Add Node: %s, parent index: %u", op_desc->GetName().c_str(), item.second);
     }
 
     // Add InputTensor to functional Node.
-    NodeUtils::AppendInputAnchor(func_node, item.second + 1);
+    GE_CHK_GRAPH_STATUS_RET(NodeUtils::AppendInputAnchor(func_node, item.second + 1), "Append input failed");
     migration_append_ = true;
   }
 

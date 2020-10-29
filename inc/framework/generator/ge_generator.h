@@ -86,6 +86,7 @@ class GeGenerator {
   Status BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                        const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                        bool is_offline = true);
+  Status CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
 
   class Impl;
 

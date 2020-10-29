@@ -354,19 +354,34 @@ Status DynamicShapePartitioner::MergeClusters() {
   return SUCCESS;
 }
 
+bool DynamicShapePartitioner::JudgeUnknowShapeWithAttr(const OpDescPtr &opdesc) {
+  bool is_forced_unknown = false;
+  if (AttrUtils::GetBool(opdesc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_forced_unknown) && is_forced_unknown) {
+    GELOGD("Collect node %s as unknown as it was marked unknown forcibly.", opdesc->GetName().c_str());
+    return true;
+  }
+
+  bool forced_unknown = false;
+  if (AttrUtils::GetBool(opdesc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, forced_unknown) && forced_unknown) {
+    GELOGD("Collect node %s as unknown as it was marked force unknown node forcibly.", opdesc->GetName().c_str());
+    return true;
+  }
+  return false;
+}
+
 Status DynamicShapePartitioner::CollectSpreadUnknownShapeNodes(NodePtr node) {
   if (unknown_shape_nodes_.count(node) > 0) {
     return SUCCESS;
   }
   auto opdesc = node->GetOpDesc();
+  REQUIRE_NOT_NULL(opdesc, "Opdesc is nullptr.");
   // One can set 'ATTR_NAME_IS_UNKNOWN_SHAPE=true' on node so as to forcing the node flow into the unknown subgraph,
   // ignore the actual shape.
-  bool is_forced_unknown = false;
-  if (AttrUtils::GetBool(opdesc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_forced_unknown) && is_forced_unknown) {
-    GELOGD("Collect node %s as unknown as it was marked unknown forcibly.", node->GetName().c_str());
+  if (JudgeUnknowShapeWithAttr(opdesc)) {
     unknown_shape_nodes_.insert(node);
     return SUCCESS;
   }
+
   size_t anchor_index = 0;
   bool is_unknown = false;
   for (auto &out_tensor : opdesc->GetAllOutputsDesc()) {

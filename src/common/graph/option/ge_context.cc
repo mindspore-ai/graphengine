@@ -31,6 +31,8 @@ GEContext &GetContext() {
   return ge_context;
 }
 
+thread_local uint64_t GEContext::session_id_;
+
 graphStatus GEContext::GetOption(const std::string &key, std::string &option) {
   return GetThreadLocalContext().GetOption(key, option);
 }

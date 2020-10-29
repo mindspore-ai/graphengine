@@ -21,6 +21,7 @@
 #include "analyzer/analyzer.h"
 #include "framework/common/util.h"
 #include "graph/shape_refiner.h"
+#include "graph/utils/graph_utils.h"
 
 namespace ge {
 Status InferShapePass::Run(NodePtr &node) {
@@ -29,9 +30,12 @@ Status InferShapePass::Run(NodePtr &node) {
     // select INFERSHAPE failed info
     auto graph = node->GetOwnerComputeGraph();
     GE_CHECK_NOTNULL(graph);
-    analyzer::DataInfo analyze_info{graph->GetSessionID(), graph->GetGraphID(), analyzer::INFER_SHAPE, node,
+    auto root_graph = ge::GraphUtils::FindRootGraph(graph);
+    GE_CHECK_NOTNULL(root_graph);
+    analyzer::DataInfo analyze_info{root_graph->GetSessionID(), root_graph->GetGraphID(), analyzer::INFER_SHAPE, node,
                                     "InferShapeFailed!"};
     (void)Analyzer::GetInstance()->DoAnalyze(analyze_info);
+    (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(), root_graph->GetGraphID());
 
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;

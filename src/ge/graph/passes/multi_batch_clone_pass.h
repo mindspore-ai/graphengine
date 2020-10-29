@@ -107,10 +107,10 @@ class MultiBatchClonePass : public GraphPass {
   /// @ingroup ge
   /// @brief Set shape to Data node in branch.
   /// @param [in] const NodePtr &data: data in branch.
-  /// @param [in] const std::vector<int64_t> &shapes: dims of shape.
+  /// @param [in] size_t index: The batch index.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status UpdataShapeToData(const NodePtr &data, const std::vector<int64_t> &shapes);
+  Status UpdateShapeToData(const NodePtr &data, size_t index);
 
   ///
   /// @ingroup ge
@@ -165,6 +165,7 @@ class MultiBatchClonePass : public GraphPass {
 
   std::map<uint32_t, std::string> direct_output_;
   std::map<ComputeGraphPtr, NodePtr> all_branch_output_;
+  std::map<string, vector<vector<int64_t>>> data_to_dynamic_info_;
 
   NodePtr case_node_;
 };

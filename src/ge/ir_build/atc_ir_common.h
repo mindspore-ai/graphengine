@@ -27,6 +27,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/omg/omg_inner_types.h"
+#include "graph/preprocess/multi_batch_options.h"
 
 namespace ge {
 static std::set<std::string> caffe_support_input_format = {"NCHW", "ND"};

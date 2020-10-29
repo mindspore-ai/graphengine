@@ -55,9 +55,6 @@ const int kDataOutIndex = 0;
 const int kDataInIndex = 0;
 const int kMergeDataOutIndex = 0;
 const int kStaticOutput = -1;
-const int kDynmaicDims = -1;
-const int kDynamicBatchDynamicDimsNum = 1;
-const int kDynamicImgSizeDynamciDimsNum = 2;
 
 inline bool IsDataLikeType(const std::string &node_type) { return (node_type == DATA) || (node_type == AIPP); }
 
@@ -213,14 +210,14 @@ Status MultiBatchGraphCopyer::CopyGraph() {
     return ret;
   }
 
-  ret = CheckDataShape(origin_data_nodes_);
-  if (ret != SUCCESS) {
-    return ret;
-  }
-
   if (LabelStatus() != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to label status for all nodes.");
     return INTERNAL_ERROR;
+  }
+
+  ret = CheckAndParseDynamicData();
+  if (ret != SUCCESS) {
+    return ret;
   }
 
   ret = CreateNewNodes();
@@ -316,6 +313,61 @@ Status MultiBatchGraphCopyer::LabelStatus() {
   return SUCCESS;
 }
 
+Status MultiBatchGraphCopyer::CheckAndParseDynamicData() {
+  size_t unknown_shape_count = 0;
+  auto data_name_and_shape = GetLocalOmgContext().user_input_dims;
+  GELOGD("raw data_name_and_shape size: %zu", data_name_and_shape.size());
+  for (const auto &node : origin_all_nodes_) {
+    auto data_desc = NodeUtils::GetOutputDesc(*node, kDataOutIndex);
+    auto data_shape = data_desc.GetShape();
+    auto data_format = data_desc.GetFormat() == Format::FORMAT_NCHW
+                         ? "NCHW"
+                         : data_desc.GetFormat() == Format::FORMAT_NHWC ? "NHWC" : "Others";
+
+    auto data_name = node->GetName();
+    auto branch_status = GetNodeStatus(node);
+    if (branch_status != kNodeStartNode) {
+      continue;
+    }
+    if (IsAllDimsPositive(data_shape.GetDims())) {
+      continue;
+    }
+    ++unknown_shape_count;
+    auto iter = find(data_name_order_.begin(), data_name_order_.end(), data_name);
+    if (iter == data_name_order_.end()) {
+      if (dynamic_type_ == DynamicType::kDynamicBatch) {
+        auto ret = CheckDynamicBatchShape(data_shape.GetDims(), data_name);
+        if (!ret) {
+          return PARAM_INVALID;
+        }
+      } else if (dynamic_type_ == DynamicType::kDynamicImageSize) {
+        auto ret = CheckDynamicImageSizeShape(data_shape.GetDims(), data_name, data_format);
+        if (!ret) {
+          return PARAM_INVALID;
+        }
+      } else if (dynamic_type_ == DynamicType::kDynamicDims) {
+        ErrorManager::GetInstance().ATCReportErrMessage(
+          "E10001", {"parameter", "reason"}, {"--input_shape", "all dynamic data must be set in --input_shape"});
+        GELOGE(INTERNAL_ERROR, "data: %s shape:%s must be set int --input_shape", node->GetName().c_str(),
+               data_shape.ToString().c_str());
+        return INTERNAL_ERROR;
+      }
+      data_name_and_shape.emplace_back(data_name, data_shape.GetDims());
+    }
+  }
+  auto ret = ParserDataToDynmaicInfo(shapes_, data_name_and_shape, data_to_dynamic_info_);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+  if (unknown_shape_count == 0) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10040");
+    GELOGE(PARAM_INVALID,
+           "Need unknow shape data when user set --dynamic_batch_size, --dynamic_image_size or --dynamic_dims");
+    return PARAM_INVALID;
+  }
+  return SUCCESS;
+}
+
 Status MultiBatchGraphCopyer::CreateNewNodes() {
   shape_data_ = InsertShapeDataNode();
   if (shape_data_ == nullptr) {
@@ -331,10 +383,6 @@ Status MultiBatchGraphCopyer::CreateNewNodes() {
     switch (branch_status) {
       case kNodeStartNode:
         GELOGD("Name: %s, type: %s, status: kNodeStartNode.", node->GetName().c_str(), node->GetType().c_str());
-        ret = UpdateDataToDynamicInfo(node);
-        if (ret != SUCCESS) {
-          break;
-        }
         ret = InsertSwitchNForData(node);
         if (ret == SUCCESS) {
           ret = UpdateMaxShapeToData(node);
@@ -652,7 +700,6 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
   auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
   auto data_name = data->GetName();
   (void)AttrUtils::SetListInt(data->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
-
   if (IsAllDimsPositive(data_shape.GetDims())) {
     GELOGI("The shape of data %s are positive(%s), skip the multi batch process", data->GetName().c_str(),
            data_shape.ToString().c_str());
@@ -729,57 +776,6 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
     return OUT_OF_MEMORY;
   }
   data_nodes_to_switchn_[data.get()] = switchn;
-  return SUCCESS;
-}
-Status MultiBatchGraphCopyer::UpdateDataToDynamicInfo(const NodePtr &data) {
-  auto data_desc = NodeUtils::GetOutputDesc(*data, kDataOutIndex);
-  auto data_shape = data_desc.GetShape();
-  auto data_format = data_desc.GetFormat();
-  auto data_name = data->GetName();
-  if (IsAllDimsPositive(data_shape.GetDims())) {
-    return SUCCESS;
-  }
-  if (data_to_dynamic_info_.find(data_name) == data_to_dynamic_info_.end()) {
-    auto data_shape_dims = data_shape.GetDims();
-    auto dynamic_dims_num = std::count_if(data_shape_dims.begin(), data_shape_dims.end(),
-                                          [&data_shape_dims](int64_t dim) { return dim < 0; });
-    if (dynamic_type_ == DynamicType::kDynamicBatch) {
-      if (dynamic_dims_num != kDynamicBatchDynamicDimsNum || data_shape.GetDim(0) != kDynmaicDims) {
-        GELOGE(INTERNAL_ERROR, "data: %s shape:%s do not satisfy dynamic batch rule", data->GetName().c_str(),
-               data_shape.ToString().c_str());
-        return INTERNAL_ERROR;
-      }
-    } else if (dynamic_type_ == DynamicType::kDynamicImageSize) {
-      int64_t height = 0;
-      int64_t width = 0;
-      if (data_format == FORMAT_NCHW) {
-        height = data_shape.GetDim(NCHW_DIM_H);
-        width = data_shape.GetDim(NCHW_DIM_W);
-      } else if (data_format == FORMAT_NHWC) {
-        height = data_shape.GetDim(NHWC_DIM_H);
-        width = data_shape.GetDim(NHWC_DIM_W);
-      }
-      if (dynamic_dims_num != kDynamicImgSizeDynamciDimsNum || height != kDynmaicDims || width != kDynmaicDims) {
-        GELOGE(INTERNAL_ERROR, "data: %s shape:%s do not satisfy dynamic image size rule", data->GetName().c_str(),
-               data_shape.ToString().c_str());
-        return INTERNAL_ERROR;
-      }
-    } else if (dynamic_type_ == DynamicType::kDynamicDims) {
-      GELOGE(INTERNAL_ERROR, "data: %s shape:%s must be set int --input_shape", data->GetName().c_str(),
-             data_shape.ToString().c_str());
-      return INTERNAL_ERROR;
-    }
-    // all data has dynamic dims are not in atc parameter --input_shape
-    if (data_to_dynamic_info_.empty()) {
-      vector<pair<string, vector<int64_t>>> tmp_data_name_and_shape{std::make_pair(data_name, data_shape_dims)};
-      auto ret = ParserDataToDynmaicInfo(shapes_, tmp_data_name_and_shape, data_to_dynamic_info_);
-      if (ret != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "parse data : %s dynamic gear info failed", data_name.c_str());
-        return INTERNAL_ERROR;
-      }
-    }
-    data_to_dynamic_info_[data_name] = data_to_dynamic_info_.begin()->second;
-  }
   return SUCCESS;
 }
 Status MultiBatchGraphCopyer::InsertMergeForEdgeNode(const NodePtr &node) {
@@ -1032,12 +1028,6 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
     GELOGD("There is no multi-batch options, no need to process multi-batch copy");
     return SUCCESS;
   }
-  map<string, vector<vector<int64_t>>> data_to_dynamic_info;
-  // parser data dynamic info from atc parameter --input_shape
-  if (ParserDataToDynmaicInfo(shapes, GetLocalOmgContext().user_input_dims, data_to_dynamic_info) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Parse each data's own dynamic info failed");
-    return PARAM_INVALID;
-  }
   DynamicType dynamic_type = DynamicType::kDynamicUnknown;
   if (!GetLocalOmgContext().dynamic_batch_size.empty()) {
     dynamic_type = DynamicType::kDynamicBatch;
@@ -1057,7 +1047,6 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
   }
   copyer.SetDynamicType(dynamic_type);
   copyer.SetUserDesignateShape(user_designate_shape);
-  copyer.SetDataToDynamicInfo(data_to_dynamic_info);
   return copyer.CopyGraph();
 }
 

@@ -83,6 +83,14 @@ static uint64_t GetNowTime() {
 
   return ret;
 }
+
+static void ReplaceStringElem(std::string &str) {
+  for_each(str.begin(), str.end(), [](char &ch) {
+    if ((ch == ' ') || (ch == '.') || (ch == '/') || (ch == '\\')) {
+      ch = '_';
+    }
+  });
+}
 }  // namespace
 
 static int32_t GetIrDataType(ge::DataType data_type) {
@@ -196,14 +204,17 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
   op_desc_info.op_type = op->GetType();
   op_desc_info.task_id = task_id;
   op_desc_info.stream_id = stream_id;
-  for (size_t i = 0; i < op->GetInputsSize(); ++i) {
-    GeTensorDesc input_desc = op->GetInputDesc(i);
-    op_desc_info.input_format.emplace_back(input_desc.GetFormat());
-    op_desc_info.input_shape.emplace_back(input_desc.GetShape().GetDims());
-    op_desc_info.input_data_type.emplace_back(input_desc.GetDataType());
+  for (size_t i = 0; i < op->GetAllInputsSize(); ++i) {
+    GeTensorDescPtr input_tensor_desc = op->MutableInputDesc(i);
+    if (input_tensor_desc == nullptr) {
+      continue;
+    }
+    op_desc_info.input_format.emplace_back(input_tensor_desc->GetFormat());
+    op_desc_info.input_shape.emplace_back(input_tensor_desc->GetShape().GetDims());
+    op_desc_info.input_data_type.emplace_back(input_tensor_desc->GetDataType());
     int64_t input_size = 0;
-    auto tensor_descs = op->GetAllInputsDesc();
-    if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(i), input_size) != SUCCESS) {
+
+    if (TensorUtils::GetTensorSizeInBytes(*input_tensor_desc, input_size) != SUCCESS) {
       GELOGW("Get input size failed");
       return;
     }
@@ -211,13 +222,15 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
     op_desc_info.input_size.emplace_back(input_size);
   }
   for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
-    GeTensorDesc output_desc = op->GetOutputDesc(j);
-    op_desc_info.output_format.emplace_back(output_desc.GetFormat());
-    op_desc_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
-    op_desc_info.output_data_type.emplace_back(output_desc.GetDataType());
+    GeTensorDescPtr output_tensor_desc = op->MutableOutputDesc(j);
+    if (output_tensor_desc == nullptr) {
+      continue;
+    }
+    op_desc_info.output_format.emplace_back(output_tensor_desc->GetFormat());
+    op_desc_info.output_shape.emplace_back(output_tensor_desc->GetShape().GetDims());
+    op_desc_info.output_data_type.emplace_back(output_tensor_desc->GetDataType());
     int64_t output_size = 0;
-    auto tensor_descs = op->GetAllOutputsDesc();
-    if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(j), output_size) != SUCCESS) {
+    if (TensorUtils::GetTensorSizeInBytes(*output_tensor_desc, output_size) != SUCCESS) {
       GELOGW("Get input size failed");
       return;
     }
@@ -671,12 +684,32 @@ Status DataDumper::LoadDumpInfo() {
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(dump_properties_.GetDumpStep());
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGI("Dump step is %s and dump path  is %s in load dump info", dump_properties_.GetDumpStep().c_str(),
-         dump_path.c_str());
+  GELOGI("Dump step is %s and dump path is %s dump model is %s in load dump info",
+         dump_properties_.GetDumpStep().c_str(), dump_path.c_str(), dump_list_key.c_str());
+  auto ret = BuildTaskInfo(op_mapping_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Build task info failed");
+    return ret;
+  }
 
+  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
+
+  SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
+
+  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
+    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Execute load dump info failed");
+      return ret;
+    }
+  }
+  return SUCCESS;
+}
+
+Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
   for (const auto &op_iter : op_list_) {
     auto op_desc = op_iter.op;
-    GELOGD("Op %s in model %s begin to add task in op_mapping_info", op_desc->GetName().c_str(), dump_list_key.c_str());
+    GELOGD("Op %s in model begin to add task in op_mapping_info", op_desc->GetName().c_str());
     aicpu::dump::Task task;
     task.set_end_graph(false);
     task.set_task_id(op_iter.task_id);
@@ -695,12 +728,16 @@ Status DataDumper::LoadDumpInfo() {
     }
     if (dump_properties_.GetDumpMode() == kDumpInput) {
       if (op_iter.is_task) {
-        GE_CHK_STATUS_RET(DumpInput(op_iter, task), "Dump input failed");
+        Status ret = DumpInput(op_iter, task);
+        if (ret != SUCCESS) {
+          GELOGE(ret, "Dump input failed");
+          return ret;
+        }
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
     }
-    if (dump_properties_.GetDumpMode() == kDumpAll) {
+    if (dump_properties_.GetDumpMode() == kDumpAll || is_op_debug_) {
       auto ret = DumpOutput(op_iter, task);
       if (ret != SUCCESS) {
         GELOGE(ret, "Dump output failed when in dumping all");
@@ -715,18 +752,6 @@ Status DataDumper::LoadDumpInfo() {
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
-    }
-  }
-
-  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
-
-  SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
-
-  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
-    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Execute load dump info failed");
-      return ret;
     }
   }
   return SUCCESS;
@@ -902,8 +927,14 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
         dump_data.mutable_output()->Add(std::move(output));
       }
       uint64_t now_time = GetNowTime();
-      string dump_file_path = "./" + op_desc_info.op_type + "." + op_desc_info.op_name + "." +
-                              to_string(op_desc_info.task_id) + "." + to_string(now_time);
+      std::string op_name = op_desc_info.op_name;
+      std::string op_type = op_desc_info.op_type;
+      ReplaceStringElem(op_name);
+      ReplaceStringElem(op_type);
+      string dump_file_path =
+        "./" + op_type + "." + op_name + "." + to_string(op_desc_info.task_id) + "." + to_string(now_time);
+      GELOGI("The exception dump file path is %s", dump_file_path.c_str());
+
       uint64_t proto_size = dump_data.ByteSizeLong();
       unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
       bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);

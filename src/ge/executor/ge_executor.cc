@@ -38,6 +38,7 @@
 #include "single_op/single_op_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using std::string;
 using std::vector;
@@ -241,11 +242,15 @@ Status GeExecutor::Initialize() {
   }
 
   std::vector<rtMemType_t> mem_type(1, RT_MEMORY_HBM);
+  mem_type.push_back(RT_MEMORY_P2P_DDR);
   auto ret = MemManager::Instance().Initialize(mem_type);
   if (ret != SUCCESS) {
     GELOGE(ret, "Memory Manager init failed.");
     return ret;
   }
+
+  GE_CHK_STATUS_RET(OpsKernelBuilderManager::Instance().Initialize({}, false),
+                    "Failed to initialize OpsKernelBuilders");
 
   // Start profiling
   Options profiling_options;
@@ -265,6 +270,8 @@ Status GeExecutor::Finalize() {
     return ge::SUCCESS;
   }
 
+  (void)OpsKernelBuilderManager::Instance().Finalize();
+
   // Stop profiling
   if (ProfilingManager::Instance().ProfilingOn()) {
     ProfilingManager::Instance().StopProfiling();
@@ -282,10 +289,13 @@ Status GeExecutor::SetDynamicBatchSize(uint32_t model_id, void *dynamic_input_ad
     return PARAM_INVALID;
   }
 
-  uint64_t size = sizeof(uint64_t);
+  uint64_t size = sizeof(uint32_t);
   if (length < size) {
     GELOGE(PARAM_INVALID, "Dynamic input size [%lu] is less than [%lu]!", length, size);
     return PARAM_INVALID;
+  }
+  if (length >= sizeof(uint64_t)) {
+    size = sizeof(uint64_t);
   }
 
   // Verify whether the input dynamic batch matches the model gear
@@ -324,12 +334,15 @@ Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_ad
     return PARAM_INVALID;
   }
 
-  uint64_t dynamic_input_size = kDynamicImageSizeInputSize * sizeof(uint64_t);
+  uint64_t dynamic_input_size = kDynamicImageSizeInputSize * sizeof(uint32_t);
   if (length < dynamic_input_size) {
     GELOGE(PARAM_INVALID, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
     return PARAM_INVALID;
   }
-
+  uint64_t size = sizeof(uint32_t);
+  if (length >= kDynamicImageSizeInputSize * sizeof(uint64_t)) {
+    size = sizeof(uint64_t);
+  }
   // Verify whether the input dynamic resolution matches the model gear
   std::vector<std::vector<int64_t>> batch_info;
   std::vector<uint64_t> batch_num{image_height, image_width};
@@ -350,18 +363,18 @@ Status GeExecutor::SetDynamicImageSize(uint32_t model_id, void *dynamic_input_ad
     GELOGE(ret, "Set dynamic size failed");
     return ret;
   }
+
   // Memcpy dynamic resolution height from host to device
-  rtError_t rt_ret =
-    rtMemcpy(dynamic_input_addr, sizeof(uint64_t), &image_height, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
+  rtError_t rt_ret = rtMemcpy(dynamic_input_addr, size, &image_height, size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "memcpy dynamic resolution input data failed! ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
-  uint64_t remain_size = length - sizeof(uint64_t);
+  uint64_t remain_size = length - size;
   // Memcpy dynamic resolution width from host to device
-  if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + sizeof(uint64_t)),
-               remain_size, &image_width, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
+  if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + size), remain_size,
+               &image_width, size, RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
     GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
     return FAILED;
   }
@@ -401,16 +414,19 @@ Status GeExecutor::SetDynamicDims(uint32_t model_id, void *dynamic_input_addr, u
   }
 
   size_t dynamic_dim_num = cur_dynamic_dims.size();
-  uint64_t dynamic_input_size = static_cast<uint64_t>(dynamic_dim_num * sizeof(uint64_t));
+  uint64_t dynamic_input_size = static_cast<uint64_t>(dynamic_dim_num * sizeof(uint32_t));
   if (length < dynamic_input_size) {
     GELOGE(FAILED, "Dynamic input size [%lu] is less than [%lu]!", length, dynamic_input_size);
     return FAILED;
   }
+  uint64_t size = sizeof(uint32_t);
+  if (length >= dynamic_dim_num * sizeof(uint64_t)) {
+    size = sizeof(uint64_t);
+  }
   for (uint32_t i = 0; i < dynamic_dim_num; ++i) {
     // Memcpy dynamic dim[i] from host to device
-    if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + sizeof(uint64_t) * i),
-                 length - sizeof(uint64_t) * i, &cur_dynamic_dims[i], sizeof(uint64_t),
-                 RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
+    if (rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(dynamic_input_addr) + size * i),
+                 length - size * i, &cur_dynamic_dims[i], size, RT_MEMCPY_HOST_TO_DEVICE) != RT_ERROR_NONE) {
       GELOGE(FAILED, "memcpy dynamic resolution input data failed!");
       return FAILED;
     }
@@ -1113,7 +1129,7 @@ Status GeExecutor::SetDump(const DumpConfig &dump_config) {
     GELOGE(ret, "Set dump conf failed");
     return ret;
   }
-  GELOGI("Set dump config succ.");
+  GELOGI("Set dump config successfully");
   return SUCCESS;
 }
 }  // namespace ge

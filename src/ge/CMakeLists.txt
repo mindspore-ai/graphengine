@@ -39,7 +39,7 @@ ge_protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST}
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${GE_SOURCE_DIR})
-include_directories(${GE_SOURCE_DIR}/src)
+include_directories(${GE_SOURCE_DIR}/src/ge)
 include_directories(${GE_SOURCE_DIR}/src/ge/analyzer)
 include_directories(${GE_SOURCE_DIR}/inc)
 include_directories(${GE_SOURCE_DIR}/inc/common/util)
@@ -109,6 +109,8 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/manager/graph_mem_allocator.cc"
         "graph/manager/graph_caching_allocator.cc"
         "graph/manager/graph_var_manager.cc"
+        "graph/manager/host_mem_manager.cc"
+        "graph/manager/memory_api.cc"
         "graph/manager/model_manager/event_manager.cc"
         "graph/manager/rdma_pool_allocator.cc"
         "graph/manager/trans_var_data_utils.cc"
@@ -127,6 +129,7 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/partition/dynamic_shape_partition.cc"
         "graph/partition/engine_place.cc"
         "graph/partition/graph_partition.cc"
+        "graph/partition/stage_partition.cc"
         "graph/passes/*.cc"
         "graph/preprocess/graph_preprocess.cc"
         "graph/preprocess/insert_op/ge_aipp_op.cc"
@@ -200,6 +203,7 @@ file(GLOB TRAIN_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "model/ge_root_model.cc"
         "omm/csa_interact.cc"
         "opskernel_manager/ops_kernel_manager.cc"
+        "opskernel_manager/ops_kernel_builder_manager.cc"
         "session/inner_session.cc"
         "session/session_manager.cc"
         "single_op/*.cc"
@@ -283,6 +287,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/manager/graph_manager.cc"
         "graph/manager/graph_manager_utils.cc"
         "graph/manager/graph_mem_allocator.cc"
+        "graph/manager/host_mem_manager.cc"
         "graph/manager/trans_var_data_utils.cc"
         "graph/manager/graph_var_manager.cc"
         "graph/manager/model_manager/event_manager.cc"
@@ -296,6 +301,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "graph/partition/dynamic_shape_partition.cc"
         "graph/partition/engine_place.cc"
         "graph/partition/graph_partition.cc"
+        "graph/partition/stage_partition.cc"
         "graph/passes/*.cc"
         "graph/preprocess/graph_preprocess.cc"
         "graph/preprocess/insert_op/ge_aipp_op.cc"
@@ -349,6 +355,7 @@ file(GLOB INFER_SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "model/ge_root_model.cc"
         "omm/csa_interact.cc"
         "opskernel_manager/ops_kernel_manager.cc"
+        "opskernel_manager/ops_kernel_builder_manager.cc"
         "session/inner_session.cc"
         "session/session_manager.cc"
         "single_op/*.cc"

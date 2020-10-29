@@ -15,11 +15,14 @@
  */
 
 #include "graph/partition/graph_partition.h"
+
 #include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "analyzer/analyzer.h"
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 #include "framework/common/types.h"
@@ -149,18 +152,22 @@ Status ge::GraphPartitioner::RemoveNodeAndEdgeBetweenEndPld(ge::ComputeGraphPtr 
 
 Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr &output_merged_compute_graph,
                                                             const ge::ComputeGraphPtr &original_compute_graph) {
+  Status real_ret = SUCCESS;
   auto ret = MergeSubGraph(output_merged_compute_graph, original_compute_graph);
   if (ret != SUCCESS) {
+    // even though failed, ensure all op do finish check support
+    real_ret = FAILED;
     GELOGE(ret, "Graph merging Failed");
-    return ret;
   }
+  GE_CHECK_NOTNULL(original_compute_graph);
   // partition sub graph
   for (const auto &sub_graph : original_compute_graph->GetAllSubgraphs()) {
     ComputeGraphPtr merged_sub_graph = nullptr;
     ret = MergeSubGraph(merged_sub_graph, sub_graph);
     if (ret != SUCCESS) {
+      real_ret = FAILED;
       GELOGE(ret, "Sub graph merging Failed");
-      return ret;
+      continue;
     }
     // add sub graph
     output_merged_compute_graph->SetName(original_compute_graph->GetName());
@@ -177,8 +184,7 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
                     return FAILED;)
     auto graph_info = graph_2_graph_partition_info_[original_graph];
     GE_IF_BOOL_EXEC(
-      graph_info.corresponding_node_in_partitions_.find(parent_node) ==
-        graph_info.corresponding_node_in_partitions_.end(),
+      graph_info.corresponding_node_in_partitions_.count(parent_node) == 0,
       GELOGE(FAILED, "Find corresponding node failed, parent node name is %s", parent_node->GetName().c_str());
       return FAILED;)
     auto corresponding_node = graph_info.corresponding_node_in_partitions_[parent_node];
@@ -191,9 +197,13 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
     ret = output_merged_compute_graph->AddSubgraph(sub_graph->GetName(), merged_sub_graph);
     GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, return ret;)
   }
-  graph_2_graph_partition_info_.clear();
-  graph_2_subgraph_list_.clear();
-  return SUCCESS;
+  ClearAllPartitionData();
+  if (real_ret != SUCCESS) {
+    auto root_graph = ge::GraphUtils::FindRootGraph(original_compute_graph);
+    GE_CHECK_NOTNULL(root_graph);
+    (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(), root_graph->GetGraphID());
+  }
+  return real_ret;
 }
 
 Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_compute_graph,
@@ -834,22 +844,28 @@ bool ge::GraphPartitioner::HasSecondPath(size_t src, size_t dst, size_t upper_bo
 }
 
 Status ge::GraphPartitioner::Partition(ge::ComputeGraphPtr compute_graph, Mode mode) {
-  graph_2_graph_partition_info_.clear();
-  graph_2_subgraph_list_.clear();
+  ClearAllPartitionData();
+  auto real_ret = SUCCESS;
   auto ret = PartitionSubGraph(compute_graph, mode);
   if (ret != SUCCESS) {
     GELOGE(ret, "Sub graph partition Failed");
-    return ret;
+    real_ret = ret;
   }
+  GE_CHECK_NOTNULL(compute_graph);
   // partition sub graph
   for (const auto &sub_graph : compute_graph->GetAllSubgraphs()) {
     ret = PartitionSubGraph(sub_graph, mode);
     if (ret != SUCCESS) {
       GELOGE(ret, "Sub graph partition Failed");
-      return ret;
+      real_ret = ret;
     }
   }
-  return SUCCESS;
+  if (real_ret != SUCCESS) {
+    auto root_graph = ge::GraphUtils::FindRootGraph(compute_graph);
+    GE_CHECK_NOTNULL(root_graph);
+    (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(), root_graph->GetGraphID());
+  }
+  return real_ret;
 }
 
 Status ge::GraphPartitioner::PartitionSubGraph(ge::ComputeGraphPtr compute_graph, Mode mode) {
@@ -1037,4 +1053,12 @@ void ge::GraphPartitioner::AddEndPldInformationToSubGraphInfo(ge::SubGraphInfoPt
 }
 
 const Graph2SubGraphInfoList &ge::GraphPartitioner::GetSubGraphMap() { return graph_2_subgraph_list_; }
+
+void ge::GraphPartitioner::ClearAllPartitionData() {
+  graph_2_graph_partition_info_.clear();
+  graph_2_subgraph_list_.clear();
+  graph_2_input_subgraph_.clear();
+  GELOGD("Clear all partition data success.");
+  return;
+}
 }  // namespace ge

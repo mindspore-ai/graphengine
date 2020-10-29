@@ -28,33 +28,34 @@
 
 namespace fe {
 
-using kScopeNodeMap_t = std::map<int64_t, std::vector<ge::NodePtr>>;
-using kScopeNodePair_t = std::pair<int64_t, std::vector<ge::NodePtr>>;
+using k_scope_node_map_t = std::map<int64_t, std::vector<ge::NodePtr>>;
+using k_scope_node_pair_t = std::pair<int64_t, std::vector<ge::NodePtr>>;
 
 class GraphCommImpl;
 using GraphCommImplPtr = std::unique_ptr<GraphCommImpl>;
 
 class GraphComm {
  public:
-  GraphComm(const string &engineName);
+  GraphComm(const string &engine_name);
   virtual ~GraphComm();
   GraphComm(const GraphComm &in) = delete;
   GraphComm &operator=(const GraphComm &in) = delete;
 
-  Status GetscopeNodeMap(ge::ComputeGraph &graph, kScopeNodeMap_t &fusionMap);
+  Status GetscopeNodeMap(ge::ComputeGraph &graph, k_scope_node_map_t &fusion_map);
 
-  Status CopyFusionOpNodes(vector<FusionDataFlow> &fusInputEdgeList, vector<FusionDataFlow> &fusOutputEdgeList,
-                           vector<ge::NodePtr> &fusNodelist, ge::OpDescPtr fusionOpDesc,
-                           ge::ComputeGraphPtr fusionGraph);
+  Status CopyFusionOpNodes(vector<FusionDataFlow> &fus_input_edge_list, vector<FusionDataFlow> &fus_output_edge_list,
+                           vector<ge::NodePtr> &fus_nodelist, ge::OpDescPtr fusion_op_desc,
+                           ge::ComputeGraphPtr fusion_graph);
 
-  Status CopyFusionOpEdges(ge::OpDescPtr fusionOpDesc, ge::ComputeGraph &origGraph, ge::ComputeGraphPtr fusionGraph);
+  Status CopyFusionOpEdges(ge::OpDescPtr fusion_op_desc, ge::ComputeGraph &orig_graph,
+                           ge::ComputeGraphPtr fusion_graph);
 
-  Status GetNodeDataFlowMap(const ge::NodePtr &fusNode,
-                            std::map<ge::NodePtr, std::map<ge::AnchorPtr, ge::AnchorPtr>> &fusionOpAnchorsMap,
-                            ge::kFusionDataFlowVec_t &fusDataflowList, const int &mapType);
+  Status GetNodeDataFlowMap(const ge::NodePtr &fus_node,
+                            std::map<ge::NodePtr, std::map<ge::AnchorPtr, ge::AnchorPtr>> &fusion_op_anchors_map,
+                            ge::kFusionDataFlowVec_t &fus_dataflow_list, const int &map_type);
 
-  Status GetFusionNodeEdgeList(std::vector<ge::NodePtr> &fusNodelist, std::vector<FusionDataFlow> &fusInputEdgeList,
-                               std::vector<FusionDataFlow> &fusOutputEdgeList);
+  Status GetFusionNodeEdgeList(std::vector<ge::NodePtr> &fus_nodelist, std::vector<FusionDataFlow> &fus_input_edge_list,
+                               std::vector<FusionDataFlow> &fus_output_edge_list);
   void ClearFusionSrc();
 
   void ClearFusionDst();
@@ -72,25 +73,26 @@ class GraphComm {
   bool GetFusionSrc(const uint32_t &src_op_id, const ge::AnchorPtr &src_anchor, int32_t &fusion_src_index,
                     int32_t &fusion_dst_index);
 
-  Status GetFusionNodeCtrlEdgeList(vector<ge::NodePtr> &fusNodelist, vector<FusionDataFlow> &fusInputCtrlEdgeList,
-                                   vector<FusionDataFlow> &fusOutputCtrlEdgeList);
+  Status GetFusionNodeCtrlEdgeList(vector<ge::NodePtr> &fus_nodelist, vector<FusionDataFlow> &fus_input_ctrl_edge_list,
+                                   vector<FusionDataFlow> &fus_output_ctrl_edge_list);
 
-  Status MergeFusionNodeEdgeList(ge::NodePtr &fusNode, vector<ge::NodePtr> &fusNodelist,
-                                 vector<FusionDataFlow> &fusInputEdgeList, vector<FusionDataFlow> &fusOutputEdgeList);
+  Status MergeFusionNodeEdgeList(ge::NodePtr &fus_node, vector<ge::NodePtr> &fus_nodelist,
+                                 vector<FusionDataFlow> &fus_input_edge_list,
+                                 vector<FusionDataFlow> &fus_output_edge_list);
 
-  Status MergeFusionNodeCtrlEdgeList(ge::NodePtr &fusNode, vector<ge::NodePtr> &fusNodelist,
-                                     vector<FusionDataFlow> &fusInputEdgeList,
-                                     vector<FusionDataFlow> &fusOutputEdgeList);
+  Status MergeFusionNodeCtrlEdgeList(ge::NodePtr &fus_node, vector<ge::NodePtr> &fus_nodelist,
+                                     vector<FusionDataFlow> &fus_input_edge_list,
+                                     vector<FusionDataFlow> &fus_output_edge_list);
 
   string GetEngineName();
 
  private:
-  Status MergeFusionNodeInputEdgeList(ge::NodePtr fusNode, std::vector<ge::NodePtr> &fusNodelist,
-                                      std::vector<FusionDataFlow> &fusInputEdgeList);
-  Status MergeFusionNodeOutputEdgeList(ge::NodePtr fusNode, std::vector<ge::NodePtr> &fusNodelist,
-                                       std::vector<FusionDataFlow> &fusOutputEdgeList);
+  Status MergeFusionNodeInputEdgeList(ge::NodePtr fus_node, std::vector<ge::NodePtr> &fus_nodelist,
+                                      std::vector<FusionDataFlow> &fus_input_edge_list);
+  Status MergeFusionNodeOutputEdgeList(ge::NodePtr fus_node, std::vector<ge::NodePtr> &fus_nodelist,
+                                       std::vector<FusionDataFlow> &fus_output_edge_list);
 
-  string engineName_;
+  string engine_name_;
 
   std::vector<FusionOpSrc> exist_fusion_src_list_;
   std::vector<FusionOpDst> exist_fusion_dst_list_;
@@ -101,7 +103,7 @@ class GraphComm {
   // std::vector<std::multimap<std::string, ge::AnchorPtr>>
   ge::kFusionDataFlowVec_t fusion_output_dataflow_list_;
 
-  GraphCommImplPtr graphCommImplPtr_;
+  GraphCommImplPtr graph_comm_impl_ptr_;
 };
 }  // namespace fe
 #endif

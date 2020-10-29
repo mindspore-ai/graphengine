@@ -111,14 +111,11 @@ Status AiCpuTaskBuilder::InitWorkspaceAndIO(void **io_addr, void **kernel_worksp
 
 Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag,
                                    uint64_t session_id) {
-  void *io_addr = nullptr;
-  void *kernel_workspace = nullptr;
-  GE_CHK_STATUS_RET_NOLOG(InitWorkspaceAndIO(&io_addr, &kernel_workspace, param, dynamic_flag));
+  GE_CHK_STATUS_RET_NOLOG(InitWorkspaceAndIO(&task.io_addr_, &task.workspace_addr_, param, dynamic_flag));
 
   STR_FWK_OP_KERNEL fwk_op_kernel = {0};
-  auto ret = SetFmkOpKernel(io_addr, kernel_workspace, fwk_op_kernel);
+  auto ret = SetFmkOpKernel(task.io_addr_, task.workspace_addr_, fwk_op_kernel);
   if (ret != SUCCESS) {
-    (void)rtFree(io_addr);
     return ret;
   }
 
@@ -149,15 +146,12 @@ Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam
                   return FAILED;)
   ret = SetKernelArgs(&task.args_, fwk_op_kernel);
   if (ret != SUCCESS) {
-    (void)rtFree(io_addr);
     return ret;
   }
 
   task.arg_size_ = sizeof(STR_FWK_OP_KERNEL);
   task.op_type_ = op_desc_->GetName();
-  task.io_addr_ = io_addr;
   task.task_info_ = kernel_def_.task_info();
-  task.workspace_addr_ = kernel_workspace;
   task.dynamic_flag_ = dynamic_flag;
 
   auto debug_info = BuildTaskUtils::GetTaskInfo(op_desc_);

@@ -68,21 +68,18 @@ bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>>
   int32_t size = 0;
   for (auto iter = shape_map.begin(); iter != shape_map.end(); ++iter) {
     vector<int64_t> shape = iter->second;
-    if (shape.size() < 1) {
+    if (shape.empty()) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10012");
       GELOGE(ge::PARAM_INVALID, "--input_shape's shape size can not be less than 1 when set --dynamic_batch_size.");
       return false;
     }
-    if (shape[0] == kDynamicInputDim) {
-      for (size_t i = 1; i < shape.size(); ++i) {
-        if (shape[i] < 1) {
-          ErrorManager::GetInstance().ATCReportErrMessage("E10018", {"index", "shape"},
-                                                          {std::to_string(i), std::to_string(shape[i])});
-          GELOGE(ge::PARAM_INVALID, "Only batch N can be -1 when set --dynamic_batch_size, current shape[%zu] is %ld",
-                 i, shape[i]);
-          return false;
-        }
-      }
+
+    if (std::count(shape.begin(), shape.end(), kDynamicInputDim) == 0) {
+      continue;
+    }
+
+    bool ret = multibatch::CheckDynamicBatchShape(shape, iter->first);
+    if (ret) {
       size++;
     }
   }
@@ -111,7 +108,7 @@ bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>>
 bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
                                           const std::string input_format, std::string &dynamic_image_size) {
   int32_t size = 0;
-  for (unordered_map<string, vector<int64_t>>::iterator iter = shape_map.begin(); iter != shape_map.end(); ++iter) {
+  for (auto iter = shape_map.begin(); iter != shape_map.end(); ++iter) {
     vector<int64_t> shape = iter->second;
     // only support four dim
     if (shape.size() != DIM_DEFAULT_SIZE) {
@@ -124,28 +121,14 @@ bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>>
       continue;
     }
 
-    int64_t height = 0;
-    int64_t width = 0;
-    if (input_format == "NCHW") {
-      height = shape[NCHW_DIM_H];
-      width = shape[NCHW_DIM_W];
-    }
-
-    if (input_format == "NHWC") {
-      height = shape[NHWC_DIM_H];
-      width = shape[NHWC_DIM_W];
-    }
-
-    if (height == kDynamicInputDim && width == kDynamicInputDim &&
-        std::count(shape.begin(), shape.end(), kDynamicInputDim) == kDynamicImageSizeNum) {
-      size++;
-    } else if (std::count(shape.begin(), shape.end(), kDynamicInputDim) == 0) {
+    if (std::count(shape.begin(), shape.end(), kDynamicInputDim) == 0) {
       continue;
+    }
+    auto ret = multibatch::CheckDynamicImageSizeShape(shape, iter->first, input_format);
+    if (ret) {
+      size++;
     } else {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10019");
-      GELOGE(ge::PARAM_INVALID,
-             "--input_shape's shape is invalid, only height and width can be -1 when set --dynamic_image_size.");
-      return false;
+      return ret;
     }
   }
   if (size == 0) {

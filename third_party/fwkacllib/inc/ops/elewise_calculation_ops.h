@@ -18,8 +18,8 @@
  * \file elewise_calculation_ops.h
  * \brief
  */
-#ifndef GE_OP_ELEWISE_CALCULATION_OPS_H
-#define GE_OP_ELEWISE_CALCULATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -28,10 +28,9 @@ namespace ge {
 
 *@par Inputs:
 *Dynamic inputs, including:
-* @li x: A list of Tensor objects, each with same shape and type. The supported 
-types are:
+* @li x: A list of Tensor objects, each with same shape and type. The supported types are:
 *   float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*   qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
+*   qint8, quint8, qint32, uint16, complex128, uint32, uint64. It's a dynamic input. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same shape and type as the elements of "x". \n
@@ -122,8 +121,7 @@ REG_OP(MinimumGrad)
 
 *@par Inputs:
 *One input:
-*x:A Tensor. Must be one of the following types: bool, float16, float, int8, 
-int32, uint32, uint8,
+*x:A Tensor. Must be one of the following types: bool, float16, float, int8, int32, uint32, uint8,
    int64, uint64, int16, uint16, double, complex64, complex128, qint8, quint8, qint16, quint16, qint32. \n
 
 *@par Attributes:
@@ -387,8 +385,7 @@ REG_OP(Sign)
 
 *@par Inputs:
 *Two inputs, including: \n
-*@li x1: A Tensor. Must be one of the following types: float16, float32,
- float64, int32, int64, complex64,complex128
+*@li x1: A Tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64,complex128
 *@li x2: A Tensor. Has the same type as "x1". \n
 
 *@par Outputs:
@@ -487,16 +484,12 @@ REG_OP(Equal)
 
 *@par Inputs:
 *One input:\n
-*x: A Tensor. Must be one of the following types: float16, float32, double, 
-complex64, complex128. \n
+*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128. \n
 
 *@par Attributes:
-*@li base: An optional attribute of type float32, specifying the base gamma. 
-Defaults to "-1.0".
-*@li scale: An optional attribute of type float32, specifying the scale alpha. 
-Defaults to "1.0".
-*@li shift: An optional attribute of type float32, specifying the shift beta. 
-Defaults to "0.0". \n
+*@li base: An optional attribute of type float32, specifying the base gamma. Defaults to "-1.0".
+*@li scale: An optional attribute of type float32, specifying the scale alpha. Defaults to "1.0".
+*@li shift: An optional attribute of type float32, specifying the shift beta. Defaults to "0.0". \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
@@ -517,8 +510,7 @@ REG_OP(Exp)
 
 *@par Inputs:
 *One input:
-*x: A Tensor. Must be one of the following types: float16, float32, double, 
-complex64, complex128. \n
+*x: A Tensor. Must be one of the following types: float16, float32, double, complex64, complex128. \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x". \n
@@ -535,9 +527,7 @@ REG_OP(Expm1)
 *@brief: Computes the reciprocal of "x". \n
 
 *@par Inputs:\n
-*x: A Tensor. Must be one of the following types: float16, float32,
-int32, int64, double,
-complex64, complex128. \n
+*x: A Tensor. Must be one of the following types: float16, float32, int32, int64, double, complex64, complex128. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -759,8 +749,7 @@ REG_OP(Xlogy)
 
 *@par Inputs:
 *One input: \n
-*x: A Tensor. Must be one of the following types: float16, float32, float64,
-int32, int64, complex64, complex128
+*x: A Tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -801,8 +790,7 @@ REG_OP(Rsqrt)
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64, 
-int32, int64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -823,8 +811,7 @@ REG_OP(Asin)
 
 *
 *@par Inputs:
-*@li y: A tensor of type float16, float32, float64, 
-int32, int64, complex64, complex128.
+*@li y: A tensor of type float16, float32, float64, int32, int64, complex64, complex128.
 *@li dy: A tensor of the same type as "y".
 *
 *@attention Constraints:
@@ -851,8 +838,7 @@ REG_OP(AsinGrad)
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64,
-int32, int64, complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64, int32, int64, complex64, complex128.
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -897,8 +883,7 @@ REG_OP(AcosGrad)
 
 *
 *@par Inputs:
-* x: A tensor. Must be one of the following types: float16, float32, float64,
- complex64, complex128.
+* x: A tensor. Must be one of the following types: float16, float32, float64, complex64, complex128.
 *
 *@attention Constraints:
 * x Given an input tensor, the function computes inverse hyperbolic cosine of every element.\n
@@ -1175,8 +1160,7 @@ REG_OP(FusedMulAdd)
 
 *
 *@par Inputs:
-*@li x1: A tensor. Must be one of the following types: float16, float32, float64,
-uint8, int8, int16, int32, int64, complex64, complex128.
+*@li x1: A tensor. Must be one of the following types: float16, float32, float64, uint8, int8, int16, int32, int64, complex64, complex128.
 *@li x2: A tensor of the same type as "x1".
 *
 *@attention Constraints:
@@ -1205,8 +1189,7 @@ REG_OP(AddV2)
 *@brief Updates "ref" by adding "value" to it. \n
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8,
-int16, int32, int64, uint8, uint16, uint32, uint64.
+*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
 *@li value: A Tensor of the same type as "ref". \n
 
 *@par Attributes:
@@ -1235,14 +1218,12 @@ REG_OP(AssignAdd)
 *@brief Updates "ref" by assigning "value" to it. \n
 
 *@par Inputs:
-*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, 
-int32, int64, uint8, uint16, uint32, uint64.
+*@li ref: A Tensor. Must be one of the following types: float16, float32, int8, int16, int32, int64, uint8, uint16, uint32, uint64.
 *@li value: A Tensor of the same type as "ref". \n
 
 *@par Attributes:
 *@li validate_shape: An optional bool. Defaults to "true".
-                     If "true", the operation will validate that the shape of "value"
-                     matches the shape of the Tensor being assigned to.
+                     If "true", the operation will validate that the shape of "value" matches the shape of the Tensor being assigned to.
 *                    If "false", "ref" will take on the shape of "value".
 *                    This attribute is reserved.
 *@li use_locking: An optional bool. Defaults to True.
@@ -1271,8 +1252,7 @@ REG_OP(Assign)
 
 *
 *@par Inputs:
-*@li var: A tensor. Must be one of the following types: float32, float64,
-int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128, uint32, uint64
+*@li var: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128, uint32, uint64
 *@li value: A tensor of the same type as "var".
 *
 *@par Attributes:
@@ -1664,9 +1644,7 @@ REG_OP(Atan2)
 
 *
 *@par Inputs:
-*@li x1: A tensor. Must be one of the following types: float32, float64, int32,
- uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128,
-float16, uint32, uint64
+*@li x1: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64
 *@li x2: A tensor of the same type as "x1".
 *
 *@par Attributes:
@@ -1688,18 +1666,16 @@ REG_OP(ApproximateEqual)
 
 /**
 *@brief Returns the element-wise sum of a list of tensors.\n
-* AccumulateNV2 performs the same operation as AddN, but does not wait for all 
-of its inputs to be ready before beginning to sum.\n This can save memory if 
-inputs are ready at different times, \n since minimum temporary storage is 
-proportional to the output size rather than the inputs size.\n Returns a Tensor 
-of same shape and type as the elements of inputs. \n
+* AccumulateNV2 performs the same operation as AddN, but does not wait for all of its inputs
+to be ready before beginning to sum.\n This can save memory if inputs are ready at different times,
+since minimum temporary storage is proportional to the output size rather than the inputs size.
+ Returns a Tensor of same shape and type as the elements of inputs. \n
 
 *
 *@par Inputs:
 *Dynamic inputs, including:
-* x: A tensor. Must be one of the following types: float32, float64, int32, 
-uint8, int16, int8, complex64, int64, \n qint8, quint8, qint32, uint16, 
-complex128, float16, uint32, uint64.
+* x: A tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64,
+qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64. It's a dynamic input. \n
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "x".
@@ -1755,8 +1731,7 @@ REG_OP(FakeQuantWithMinMaxArgs)
 
 *@par Inputs:
 *Two inputs, including: \n
-*@li gradients: A Tensor of type float32. Backpropagated gradients 
-above the FakeQuantWithMinMaxArgs operation.
+*@li gradients: A Tensor of type float32. Backpropagated gradients above the FakeQuantWithMinMaxArgs operation.
 *@li x: A Tensor of type float32. Has the same type and format as "gradients".\n
 * This is the input Tensor of the FakeQuantWithMinMaxArgs operator.\n
 
@@ -2235,13 +2210,9 @@ REG_OP(BiasAdd)
 
 *@par Inputs:
 *Two inputs, including:
-*@li x: A Tensor. Must be one of the following types: float32, float64, int32, 
-uint8, int16, int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, 
-complex128, float16, uint32, uint64.
+*@li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, complex64, int64, qint8, quint8, qint32, bfloat16, uint16, complex128, float16, uint32, uint64.
 *format is ND.
-*@li dimension: A Tensor. Must be one of the following types: int32, int64. 
-Must be in the range [-rank(input x), rank(input x)]. Describes which dimension 
-of the input Tensor to reduce across.
+*@li dimension: A Tensor. Must be one of the following types: int32, int64. Must be in the range [-rank(input x), rank(input x)]. Describes which dimension of the input Tensor to reduce across.
 * The format is ND.
 *@par Attributes:
 *dtype: The output type, either "int32" or "int64". Defaults to "int64". \n
@@ -2315,7 +2286,6 @@ REG_OP(ArgMaxV2)
     .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(ArgMaxV2)
 
-
 /**
 *@brief Returns the index with the largest value across axes of a tensor. \n
 
@@ -2328,16 +2298,15 @@ REG_OP(ArgMaxV2)
 *@li dtype: The output type, either "int32" or "int64". Defaults to "int64". \n
 
 *@par Outputs:
-*y: A multi-dimensional Tensor of type int32, specifying the index with the 
-largest value. The dimension is one less than that of "x". \n
+*y: A multi-dimensional Tensor of type int32, specifying the index with the largest value. The dimension is one less than that of "x". \n
 
 *@attention Constraints:
 *@li x: If there are multiple maximum values, the index of the first maximum value is used.
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the 
-dimension length of "x". \n
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow operator ArgMax.
+*
 * @par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
@@ -2960,13 +2929,9 @@ REG_OP(FusedMulAddN)
 *@li bias: An ND tensor of type float16 or float32. \n
 
 *@par Attributes:
-*@li axis: An optional int32 used to compute the shape of bias input from the 
-online bottoms. Defaults to "1".
-*@li num_axes: An optional int32 used to compute the shape of bias input from a 
-Caffe model trained offline. Defaults to "1".
-*@li bias_from_blob: An optional bool. If "true", bias is input from a Caffe 
-model trained offline. If "false", bias is input from online bottoms. Defaults 
-to "true". \n
+*@li axis: An optional int32 used to compute the shape of bias input from the online bottoms. Defaults to "1".
+*@li num_axes: An optional int32 used to compute the shape of bias input from a Caffe model trained offline. Defaults to "1".
+*@li bias_from_blob: An optional bool. If "true", bias is input from a Caffe model trained offline. If "false", bias is input from online bottoms. Defaults to "true". \n
 
 *@par Outputs:
 *y: An ND tensor of type float16 or float32. \n
@@ -2974,25 +2939,13 @@ to "true". \n
 *@attention Constraints:\n
 * Assume that the shape length of "x" is "n" and that of "bias" is "m".
 *@li "axis" is within the range [-n, n-1]. num_axes >= -1.
-*@li If "bias_from_blob = true", "num_axes = -1", and "axis >= 0", the ith axis 
-of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < 
-n-axis).\n
-* If "axis < 0", the ith axis of "bias" and the (i+n+"axis")th axis of "x" must 
-have the same size (0 <= i < -axis).
-*@li If "bias_from_blob = true" and "num_axes = 0", "bias" is a scalar with 
-shape length 1 and dimension size 1.
-*@li If "bias_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + 
-num_axes" must be less than or equal to "n" and the ith axis of "bias" and the 
-(i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).\n
-* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and 
-the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same 
-size (0 <= i < num_axes).
-*@li If "bias_from_blob = false", "bias" is not a scalar, and "axis >= 0","axis 
-+ m" must be less than or equal to "n" and the ith axis of "bias" and the (i
-+"axis")th axis of "x" must have the same size (0 <= i < m).\n
-* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith 
-axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= 
-i < m).
+*@li If "bias_from_blob = true", "num_axes = -1", and "axis >= 0", the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < n-axis).\n
+* If "axis < 0", the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < -axis).
+*@li If "bias_from_blob = true" and "num_axes = 0", "bias" is a scalar with shape length 1 and dimension size 1.
+*@li If "bias_from_blob = true", "num_axes > 0, and "axis >= 0", "axis + num_axes" must be less than or equal to "n" and the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < num_axes).\n
+* If "axis < 0", "n + axis + num_axes" must be less than or equal to "n" and the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < num_axes).
+*@li If "bias_from_blob = false", "bias" is not a scalar, and "axis >= 0","axis + m" must be less than or equal to "n" and the ith axis of "bias" and the (i+"axis")th axis of "x" must have the same size (0 <= i < m).\n
+* If "axis < 0", "n + axis + m" must be less than or equal to "n" and the ith axis of "bias" and the (i+n+"axis")th axis of "x" must have the same size (0 <= i < m).
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Bias.
 */
@@ -3070,12 +3023,10 @@ REG_OP(FusedMulAddNL2loss)
 *@li x: A Tensor with any format. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
-*@li threshold: A required float32. Defaults to "0.0". "x" is compared with 
-"threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
+*@li threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
 
 *@par Outputs:
-*@li y: A Tensor with any format. Has the same type as the input. Must be one 
-of the following types: float16, float32.
+*@li y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Threshold.
 */
@@ -3093,16 +3044,11 @@ of the following types: float16, float32.
 *@li x: A tensor. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
-*@li axis: An optional int. Specify the axis to be cut at the input tensor. If 
-this parameter is not provided, find the topk for each batch. Defaults to 10000
-*@li out_max_val: An optional bool. Whether to output the maximum value. If it 
-is True, the maximum value and index are output, otherwise only the index is 
-output.
+*@li axis: An optional int. Specify the axis to be cut at the input tensor. If this parameter is not provided, find the topk for each batch. Defaults to 10000
+*@li out_max_val: An optional bool. Whether to output the maximum value. If it is True, the maximum value and index are output, otherwise only the index is output.
 * Defaults to False
-*@li topk: An optional int. It means the number of top tok in each axis (the 
-value is greater than or equal to 1), and the value range must be in [1,x.shape
-(axis)].
-* Defaults to 1 \n
+*@li topk: An optional int. It means the number of top tok in each axis (the value is greater than or equal to 1), and the value range must be in [1,x.shape(axis)].
+* Defaults to 1
 
 *@par Outputs:
 *@li indices: A tensor of type float16, float32, int32. The index of the maximum value of the output.
@@ -3222,8 +3168,7 @@ REG_OP(Axpy)
     .OP_END_FACTORY_REG(Axpy)
 
 /**
-*@brief Creates a criterion that measures the loss given input tensors x1 x2 
-and a Tensor label y with values 1 or -1. \n
+*@brief Creates a criterion that measures the loss given input tensors x1 x2 and a Tensor label y with values 1 or -1. \n
 
 *@par Inputs:
 *@li x1: A ND Tensor with one of the following types: int8, uint8, int32, float16, float32.
@@ -3314,4 +3259,4 @@ REG_OP(TensorRedirect)
 
 
 
-#endif  // GE_OP_ELEWISE_CALCULATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_

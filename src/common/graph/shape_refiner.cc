@@ -365,6 +365,37 @@ string Serial(const vector<int64_t> &dims) {
   return serial_string;
 }
 
+void SerialShapeRange(const GeTensorDescPtr &desc, std::string &desc_str) {
+  desc_str += "[";
+  std::vector<std::pair<int64_t, int64_t>> shape_range;
+  (void)desc->GetShapeRange(shape_range);
+  for (const auto &pair : shape_range) {
+    desc_str += "{";
+    desc_str += std::to_string(pair.first) + "," + std::to_string(pair.second);
+    desc_str += "},";
+  }
+  desc_str += "] ";
+}
+
+void SerialShapeAndDtype(const GeTensorDescPtr &desc, bool is_origin_info, std::string &desc_str) {
+  desc_str += "[";
+  if (!is_origin_info) {
+    for (int64_t dim : desc->GetShape().GetDims()) {
+      desc_str += std::to_string(dim) + " ";
+    }
+    desc_str += "]";
+    desc_str += ":" + TypeUtils::DataTypeToSerialString(desc->GetDataType()) + ":" +
+                TypeUtils::FormatToSerialString(desc->GetFormat()) + " ";
+  } else {
+    for (int64_t dim : desc->GetOriginShape().GetDims()) {
+      desc_str += std::to_string(dim) + " ";
+    }
+    desc_str += "]";
+    desc_str += ":" + TypeUtils::DataTypeToSerialString(desc->GetOriginDataType()) + ":" +
+                TypeUtils::FormatToSerialString(desc->GetOriginFormat()) + " ";
+  }
+}
+
 graphStatus UpdateOpInputDesc(const ConstNodePtr &node_ptr) {
   GE_IF_BOOL_EXEC(node_ptr == nullptr, GELOGE(GRAPH_FAILED, "node is null."); return GRAPH_FAILED);
   GE_IF_BOOL_EXEC(node_ptr->GetOpDesc() == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return GRAPH_FAILED);
@@ -386,9 +417,9 @@ graphStatus UpdateOpInputDesc(const ConstNodePtr &node_ptr) {
     if (in_desc == nullptr) {
       continue;
     }
-    auto in_shape = in_desc->GetShape().GetDims();
+    auto in_shape = in_desc->MutableShape().GetDims();
     auto in_dtype = in_desc->GetDataType();
-    auto peer_out_shape = peer_out_desc->GetShape().GetDims();
+    auto peer_out_shape = peer_out_desc->MutableShape().GetDims();
     auto peer_out_dtype = peer_out_desc->GetDataType();
     if (peer_out_dtype != in_dtype) {
       GELOGW(
@@ -407,13 +438,15 @@ graphStatus UpdateOpInputDesc(const ConstNodePtr &node_ptr) {
     }
     // refresh current node input desc
     in_desc->SetOriginShape(peer_out_desc->GetOriginShape());
-    in_desc->SetShape(peer_out_desc->GetShape());
+    in_desc->SetShape(peer_out_desc->MutableShape());
     in_desc->SetDataType(peer_out_desc->GetDataType());
     in_desc->SetOriginDataType(peer_out_desc->GetOriginDataType());
-    std::vector<std::pair<int64_t, int64_t>> shape_range;
-    (void)peer_out_desc->GetShapeRange(shape_range);
-    in_desc->SetShapeRange(shape_range);
-    ge::TensorUtils::SetRealDimCnt(*in_desc, static_cast<uint32_t>(peer_out_desc->GetShape().GetDims().size()));
+    if (peer_out_desc->MutableShape().GetDims() != UNKNOWN_RANK) {
+      std::vector<std::pair<int64_t, int64_t>> shape_range;
+      (void)peer_out_desc->GetShapeRange(shape_range);
+      in_desc->SetShapeRange(shape_range);
+    }
+    ge::TensorUtils::SetRealDimCnt(*in_desc, static_cast<uint32_t>(peer_out_desc->MutableShape().GetDims().size()));
   }
   return GRAPH_SUCCESS;
 }
@@ -432,25 +465,19 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
   if (op_desc->GetInputsSize() != 0) {
     std::string input_desc_str = "input shape: ";
     for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
-      input_desc_str += "[";
-      for (int64_t dim : input_desc->GetShape().GetDims()) {
-        input_desc_str += std::to_string(dim) + " ";
-      }
-      input_desc_str += "]";
-      input_desc_str += ":" + TypeUtils::DataTypeToSerialString(input_desc->GetDataType()) + ":" +
-                        TypeUtils::FormatToSerialString(input_desc->GetFormat()) + " ";
+      SerialShapeAndDtype(input_desc, false, input_desc_str);
     }
     str += input_desc_str;
 
     input_desc_str = "input origin shape: ";
     for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
-      input_desc_str += "[";
-      for (int64_t dim : input_desc->GetOriginShape().GetDims()) {
-        input_desc_str += std::to_string(dim) + " ";
-      }
-      input_desc_str += "]";
-      input_desc_str += ":" + TypeUtils::DataTypeToSerialString(input_desc->GetOriginDataType()) + ":" +
-                        TypeUtils::FormatToSerialString(input_desc->GetOriginFormat()) + " ";
+      SerialShapeAndDtype(input_desc, true, input_desc_str);
+    }
+    str += input_desc_str;
+
+    input_desc_str = "input shape range: ";
+    for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
+      SerialShapeRange(input_desc, input_desc_str);
     }
     str += input_desc_str;
   }
@@ -461,13 +488,7 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
       if (output_desc == nullptr) {
         continue;
       }
-      output_desc_str += "[";
-      for (int64_t dim : output_desc->GetShape().GetDims()) {
-        output_desc_str += std::to_string(dim) + " ";
-      }
-      output_desc_str += "]";
-      output_desc_str += ":" + TypeUtils::DataTypeToSerialString(output_desc->GetDataType()) + ":" +
-                         TypeUtils::FormatToSerialString(output_desc->GetFormat()) + " ";
+      SerialShapeAndDtype(output_desc, false, output_desc_str);
     }
     str += output_desc_str;
 
@@ -476,13 +497,13 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
       if (output_desc == nullptr) {
         continue;
       }
-      output_desc_str += "[";
-      for (int64_t dim : output_desc->GetOriginShape().GetDims()) {
-        output_desc_str += std::to_string(dim) + " ";
-      }
-      output_desc_str += "]";
-      output_desc_str += ":" + TypeUtils::DataTypeToSerialString(output_desc->GetOriginDataType()) + ":" +
-                         TypeUtils::FormatToSerialString(output_desc->GetOriginFormat()) + " ";
+      SerialShapeAndDtype(output_desc, true, output_desc_str);
+    }
+    str += output_desc_str;
+
+    output_desc_str = "output shape range: ";
+    for (const auto &output_desc : op_desc->GetAllOutputsDescPtr()) {
+      SerialShapeRange(output_desc, output_desc_str);
     }
     str += output_desc_str;
   }

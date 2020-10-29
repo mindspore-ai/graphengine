@@ -70,6 +70,21 @@ class AICpuDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
+class AICpuTFDNNEngine : public DNNEngine {
+ public:
+  AICpuTFDNNEngine() = default;
+  explicit AICpuTFDNNEngine(const std::string &engine_name);
+  explicit AICpuTFDNNEngine(const DNNEngineAttribute &attrs);
+  ~AICpuTFDNNEngine() = default;
+
+  Status Initialize(const std::map<std::string, std::string> &options);
+  Status Finalize();
+  void GetAttributes(DNNEngineAttribute &attr) const;
+
+ private:
+  DNNEngineAttribute engine_attribute_;
+};
+
 class GeLocalDNNEngine : public DNNEngine {
  public:
   GeLocalDNNEngine() = default;

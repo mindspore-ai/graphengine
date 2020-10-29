@@ -57,4 +57,18 @@ void GEThreadLocalContext::SetGraphOption(map<std::string, string> options_map) 
   graph_options_.clear();
   graph_options_ = std::move(options_map);
 }
+
+map<string, string> GEThreadLocalContext::GetAllGraphOptions() const { return graph_options_; }
+
+map<string, string> GEThreadLocalContext::GetAllSessionOptions() const { return session_options_; }
+
+map<string, string> GEThreadLocalContext::GetAllGlobalOptions() const { return global_options_; }
+
+map<string, string> GEThreadLocalContext::GetAllOptions() const {
+  map<string, string> options_all;
+  options_all.insert(graph_options_.begin(), graph_options_.end());
+  options_all.insert(session_options_.begin(), session_options_.end());
+  options_all.insert(global_options_.begin(), global_options_.end());
+  return options_all;
+}
 }  // namespace ge

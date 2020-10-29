@@ -17,6 +17,7 @@
 #include "hybrid/node_executor/hccl/hccl_node_executor.h"
 #include "common/ge/ge_util.h"
 #include "common/ge/plugin_manager.h"
+#include "common/math/math_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
@@ -162,12 +163,13 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
     return PARAM_INVALID;
   }
 
-  size_t remote_size = 0;
-  for (auto idx = 0; idx < dims.front(); ++idx) {
-    remote_size += data[idx * kVarTableRowCnt + kVarTableIdxLen];
-  }
-
   if (context.GetNodeItem().NodeType() == HCOMREMOTEREAD) {
+    size_t remote_size = 0;
+    for (auto idx = 0; idx < dims.front(); ++idx) {
+      FMK_INT64_MULCHECK(idx, kVarTableRowCnt);
+      auto line_idx = idx * kVarTableRowCnt;
+      remote_size += data[line_idx + kVarTableIdxLen];
+    }
     auto allocator = NpuMemoryAllocator::GetAllocator();
     GE_CHECK_NOTNULL(allocator);
     AllocationAttr attr;
@@ -187,11 +189,13 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
   }
   GE_CHECK_NOTNULL(tv);
   auto local_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(tv->MutableData()));
+  addr_infos.resize(dims.front());
   for (auto idx = 0; idx < dims.front(); ++idx) {
-    addr_infos.push_back({static_cast<uint32_t>(data[idx * kVarTableRowCnt]),
-                          data[idx * kVarTableRowCnt + kVarTableIdxAddr], local_addr,
-                          data[idx * kVarTableRowCnt + kVarTableIdxLen]});
-    local_addr += data[idx * kVarTableRowCnt + kVarTableIdxLen];
+    FMK_INT64_MULCHECK(idx, kVarTableRowCnt);
+    auto line_idx = idx * kVarTableRowCnt;
+    addr_infos[idx] = {static_cast<uint32_t>(data[line_idx]), data[line_idx + kVarTableIdxAddr], local_addr,
+                       data[line_idx + kVarTableIdxLen]};
+    local_addr += data[line_idx + kVarTableIdxLen];
   }
 
   return SUCCESS;

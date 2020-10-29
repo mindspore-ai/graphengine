@@ -19,18 +19,18 @@
 
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <map>
 #include <string>
-#include <vector>
-#include <list>
 #include <unordered_map>
+#include <vector>
 
 #include "graph/anchor.h"
-#include "graph/node.h"
 #include "graph/compute_graph.h"
-#include "graph/utils/anchor_utils.h"
 #include "graph/graph.h"
 #include "graph/model.h"
+#include "graph/node.h"
+#include "graph/utils/anchor_utils.h"
 
 #define GE_DUMP(compute_graph, name)                                                                   \
   do {                                                                                                 \
@@ -206,6 +206,8 @@ class GraphUtils {
   static void DumpGEGraph(const ge::ComputeGraphPtr &graph, const std::string &suffix, bool is_always_dump = false,
                           const std::string &user_graph_name = "");
 
+  static void DumpGEGrph(const ge::ComputeGraphPtr &graph, const std::string &path, const std::string &suffix);
+
   static bool LoadGEGraph(const char *file, ge::ComputeGraph &compute_graph);
 
   static bool LoadGEGraph(const char *file, ge::ComputeGraphPtr &compute_graph);
@@ -213,6 +215,8 @@ class GraphUtils {
   static void BreakConnect(const std::map<OperatorImplPtr, NodePtr> &all_nodes_infos);
 
   static void DumpGEGraphToOnnx(const ge::ComputeGraph &compute_graph, const std::string &suffix);
+
+  static void DumpGrphToOnnx(const ge::ComputeGraph &compute_graph, const std::string &path, const std::string &suffix);
 
   static bool LoadGEGraphFromOnnx(const char *file, ge::ComputeGraph &compute_graph);
 
@@ -559,7 +563,8 @@ class ComputeGraphBuilder {
 
 class CompleteGraphBuilder : public ComputeGraphBuilder {
  public:
-  explicit CompleteGraphBuilder(std::string name) : name_(std::move(name)), parent_node_(nullptr) {}
+  explicit CompleteGraphBuilder(std::string name, bool retval_flag = true)
+      : name_(std::move(name)), parent_node_(nullptr), retval_flag_(retval_flag) {}
   CompleteGraphBuilder(const CompleteGraphBuilder &) = delete;
   CompleteGraphBuilder &operator=(const CompleteGraphBuilder &) = delete;
   CompleteGraphBuilder(const CompleteGraphBuilder &&) = delete;
@@ -687,8 +692,37 @@ class CompleteGraphBuilder : public ComputeGraphBuilder {
   ///
   void BuildGraphTargets(graphStatus &error_code, std::string &error_msg);
 
+  ///
+  /// @brief Add NetOutput node
+  /// @param [out] error_code
+  /// @param [out] error_msg
+  /// @return void
+  ///
+  void AddNetOutputNode(graphStatus &error_code, std::string &error_msg);
+
+  ///
+  /// @brief Build NetOutput nodes with data & ctrl edges
+  /// @param [in] net_output_desc
+  /// @param [in] peer_out_anchors
+  /// @param [out] error_code
+  /// @param [out] error_msg
+  /// @return void
+  ///
+  void BuildNetOutputNodeWithLink(const OpDescPtr &net_output_desc,
+                                  const std::vector<OutDataAnchorPtr> &peer_out_anchors, graphStatus &error_code,
+                                  std::string &error_msg);
+
+  ///
+  /// @brief process after build
+  /// @param [out] error_code
+  /// @param [out] error_msg
+  /// @return void
+  ///
+  void PostProcess(graphStatus &error_code, std::string &error_msg);
+
   std::string name_;
   NodePtr parent_node_;
+  bool retval_flag_;
   std::map<uint32_t, std::pair<std::vector<std::string>, std::vector<uint32_t>>> graph_inputs_;
   std::vector<std::pair<std::string, uint32_t>> graph_outputs_;
   std::vector<std::string> graph_targets_;

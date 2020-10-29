@@ -42,6 +42,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     session/session_manager.cc \
     engine_manager/dnnengine_manager.cc \
     opskernel_manager/ops_kernel_manager.cc \
+    opskernel_manager/ops_kernel_builder_manager.cc \
     graph/manager/graph_manager.cc \
     graph/manager/graph_manager_utils.cc \
     graph/manager/graph_context.cc \
@@ -57,9 +58,11 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     graph/partition/engine_place.cc \
     graph/partition/graph_partition.cc \
     graph/partition/dynamic_shape_partition.cc \
+    graph/partition/stage_partition.cc \
     generator/ge_generator.cc \
     generator/generator_api.cc \
     graph/manager/graph_var_manager.cc \
+    graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
@@ -178,6 +181,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/multi_batch_pass.cc \
     graph/passes/multi_batch_clone_pass.cc \
     graph/passes/subexpression_migration_pass.cc \
+    graph/passes/subgraph_const_migration_pass.cc \
     graph/passes/unused_args_clean_pass.cc \
     graph/passes/next_iteration_pass.cc \
     graph/passes/control_trigger_pass.cc \
@@ -343,6 +347,7 @@ DEVICE_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi \
+    $(TOPDIR)graphengine/ge \
     $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \
     third_party/protobuf/include \

@@ -57,22 +57,6 @@ class HostCpuOpsKernelInfoStore : public OpsKernelInfoStore {
    */
   void GetAllOpsKernelInfo(std::map<std::string, ge::OpInfo> &infos) const override;
 
-  /**
-   * Calc the running size of Operator,
-   * then GE will alloc the mem size from runtime
-   * @param ge_node Node information
-   * @return status whether this operation success
-   */
-  Status CalcOpRunningParam(ge::Node &ge_node) override;
-
-  /**
-   * call the runtime's interface to generate the task
-   * @param node Node information
-   * @param context run context info
-   * @return status whether this operation success
-   */
-  Status GenerateTask(const ge::Node &ge_node, ge::RunContext &context, std::vector<domi::TaskDef> &tasks) override;
-
   HostCpuOpsKernelInfoStore(const HostCpuOpsKernelInfoStore &ops_kernel_store) = delete;
   HostCpuOpsKernelInfoStore(const HostCpuOpsKernelInfoStore &&ops_kernel_store) = delete;
   HostCpuOpsKernelInfoStore &operator=(const HostCpuOpsKernelInfoStore &ops_kernel_store) = delete;

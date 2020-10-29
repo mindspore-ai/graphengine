@@ -21,7 +21,6 @@
 #include <unordered_map>
 #include <string>
 
-#include "common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "proto/om.pb.h"
 

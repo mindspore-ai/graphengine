@@ -18,8 +18,8 @@
  * \file split_combination_ops.h
  * \brief
  */
-#ifndef GE_OP_SPLIT_COMBINATION_OPS_H
-#define GE_OP_SPLIT_COMBINATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -75,6 +75,9 @@ REG_OP(Split)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Split.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Split instead.
 */
 REG_OP(SplitD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
@@ -141,6 +144,9 @@ Under the caffe framework, the conversion of slice_point through the cut point t
 Under the caffe framework,size_splits or axis transformat to split_dim.Only one can effect.
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator SplitV.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use SplitV instead.
 */
 REG_OP(SplitVD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
@@ -158,7 +164,8 @@ REG_OP(SplitVD)
 * Two inputs, including:
 * @li values: A list of Tensors. Must be one of the following types: int8, int16, int32,
 *     int64, uint8, uint16, uint32, uint64, float16, float32.
-*     Tensors to be concatenated. All must have size 1 in the first dimension and same shape. 
+*     Tensors to be concatenated. All must have size 1 in the first dimension and same shape.
+*     It's a dynamic input.
 * @li shape: A Tensor of the same type as "x".
 * The final shape of the result. Should be equal to the shapes of any input
 * but with the number of input values in the first dimension . \n
@@ -307,7 +314,7 @@ REG_OP(Concat)
 
 *@par Inputs:
 * x: A list of N Tensors. Must be one of the following types: int8, int16, int32,
-*     int64, uint8, uint16, uint32, uint64, float16, float32, bool . \n
+*     int64, uint8, uint16, uint32, uint64, float16, float32, bool . It's a dynamic input. \n
 
 *@par Attributes:
 *@li axis: A optional int, defaultvalue is 0.
@@ -333,7 +340,7 @@ REG_OP(Pack)
 *@par Inputs:
 *Two inputs, including:
 * @li concat_dim: A Tensor of type int32.
-* @li x: A list of 1D Tensor objects of type int32 . \n
+* @li x: A list of 1D Tensor objects of type int32 . It's a dynamic input. \n
 
 *@par Attributes:
 *N: A required int . \n
@@ -357,7 +364,7 @@ REG_OP(ConcatOffset)
 *@par Inputs:
 *Two inputs, including:
 * @li concat_dim: A Tensor of type int32.
-* @li x: A list of 1D Tensor objects of type int32 . \n
+* @li x: A list of 1D Tensor objects of type int32 . It's a dynamic input. \n
 
 *@par Attributes:
 *@li Concat_dim: A required int. Must be within the rank of input "x".
@@ -379,4 +386,4 @@ REG_OP(ConcatOffsetD)
     .OP_END_FACTORY_REG(ConcatOffsetD)
 }  // namespace ge
 
-#endif  // GE_OP_SPLIT_COMBINATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_SPLIT_COMBINATION_OPS_H_

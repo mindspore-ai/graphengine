@@ -23,6 +23,7 @@
 namespace ge {
 void GeModel::Init() {
   (void)AttrUtils::SetInt(this, ATTR_MODEL_MEMORY_SIZE, 0);
+  (void)AttrUtils::SetInt(this, ATTR_MODEL_P2P_MEMORY_SIZE, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_STREAM_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_EVENT_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_LABEL_NUM, 0);

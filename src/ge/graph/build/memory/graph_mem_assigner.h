@@ -37,7 +37,7 @@ struct MemoryOffset {
   size_t mem_offset_;
 };
 
-using MemoryOffsetList = vector<MemoryOffset>;
+using MemoryOffsetMap = std::map<int64_t, MemoryOffset>;
 
 class VariableMemoryAssigner {
  public:
@@ -97,9 +97,9 @@ class GraphMemoryAssigner {
   ///
   ge::Status AssignVarAttr2Nodes();
 
-  ge::Status ReAssignMemory(bool is_loop_graph, size_t &mem_offset);
+  ge::Status ReAssignMemory(bool is_loop_graph, map<int64_t, size_t> &mem_type_to_offset);
 
-  ge::Status AssignZeroCopyMemory(size_t &mem_offset, size_t &zero_mem_copy_size);
+  ge::Status AssignZeroCopyMemory(map<int64_t, size_t> &mem_offset, size_t &zero_mem_copy_size);
 
   ge::Status SetInputOffset();
 
@@ -139,7 +139,7 @@ class GraphMemoryAssigner {
                                               std::vector<NodePtr> &connecting_output_atomic_nodes);
 
   ge::Status AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
-                                         int64_t &continuous_mem_size);
+                                         int64_t &continuous_mem_size, int64_t memory_type);
 
   ge::Status AssignContinuousOutputMemory(const ge::NodePtr &node);
 
@@ -174,7 +174,7 @@ class GraphMemoryAssigner {
 
   ge::Status IsIndependentAtomicClean(const ge::NodePtr &node, bool &is_independent_atomic_clean_node);
 
-  void AlignMemOffset(const int64_t &mem_align_size);
+  void AlignMemOffset(const int64_t &mem_align_size, int64_t memory_type);
 
   ge::Status UpdateOpInputOffset(const NodePtr &node, vector<int64_t> &input_list) const;
 
@@ -182,7 +182,14 @@ class GraphMemoryAssigner {
 
   NodePtr GetKnownInputNode(const NodePtr &node) const;
 
-  MemoryOffsetList memory_offset_;
+  ge::Status GetNodeMemoryType(const NodePtr &node, int64_t &memory_type, string input_or_output);
+  ge::Status GetNodeListMemoryType(const vector<NodePtr> &nodes, int32_t mem_reuse_model, int64_t &memory_type);
+
+  bool CheckContinuousMemType(vector<int64_t> mem_type_list);
+
+  void PrintMemoryOffset();
+
+  MemoryOffsetMap memory_offset_;
   ge::ComputeGraphPtr compute_graph_;
   HybridMemAssignerPtr mem_assigner_;
 };

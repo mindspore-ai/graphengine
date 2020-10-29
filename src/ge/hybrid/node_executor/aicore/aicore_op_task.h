@@ -46,6 +46,8 @@ class AiCoreOpTask {
 
   const std::string &GetName() const;
 
+  bool GetClearAtomic() const { return clear_atomic_; }
+
  protected:
   Status UpdateTilingInfo(TaskContext &context);
   virtual std::string GetKeyForOpParamSize() const;
@@ -66,6 +68,7 @@ class AiCoreOpTask {
   std::unique_ptr<uint8_t[]> args_ = nullptr;
   uint32_t args_size_ = 0;
   uint32_t block_dim_ = 1;
+  bool clear_atomic_ = true;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {

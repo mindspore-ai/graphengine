@@ -16,8 +16,8 @@
 
 #include "hybrid_model.h"
 #include <vector>
-#include "graph/load/new_model_manager/model_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/load/new_model_manager/model_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -50,13 +50,16 @@ TensorValue *HybridModel::GetVariable(const string &name) const {
 }
 
 NodePtr HybridModel::GetVariableNode(const string &name) const {
-  auto it = variable_nodes_.find(name);
-  if (it == variable_nodes_.end()) {
-    GELOGI("Failed to get variable node by name = [%s]", name.c_str());
-    return nullptr;
+  auto it = device_variable_nodes_.find(name);
+  if (it != device_variable_nodes_.end()) {
+    return it->second;
   }
-
-  return it->second;
+  auto host_find = host_variable_nodes_.find(name);
+  if (host_find != host_variable_nodes_.end()) {
+    return host_find->second;
+  }
+  GELOGI("Failed to get variable node by name = [%s]", name.c_str());
+  return nullptr;
 }
 
 const std::vector<domi::TaskDef> *HybridModel::GetTaskDefs(const NodePtr &node) const {

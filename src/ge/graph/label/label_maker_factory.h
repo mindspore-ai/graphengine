@@ -56,13 +56,12 @@ class LabelMakerFactory {
       LabelMakerFactory::Instance().RegisterCreator(node_type, func);
     }
 
-    ~Registerar() {}
+    ~Registerar() = default;
   };
 
  private:
-  LabelMakerFactory() {}
-
-  ~LabelMakerFactory() {}
+  LabelMakerFactory() = default;
+  ~LabelMakerFactory() = default;
 
   // register creator, this function will call in the constructor
   void RegisterCreator(const std::string &node_type, const LabelCreatorFun func) {

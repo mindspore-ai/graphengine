@@ -41,6 +41,7 @@ using namespace ge;
 using namespace std;
 namespace ge {
 namespace {
+const size_t kDimSize4d = 4;
 const std::unordered_set<string> kChangeDimNodes = {PERMUTE, EXPANDDIMS, SQUEEZE};
 const string kIsGraphInferred = "_is_graph_inferred";
 thread_local RefRelations reflection_builder;
@@ -410,28 +411,26 @@ graphStatus FormatRefiner::DataNodeFormatProcess(const ComputeGraphPtr &graph, s
     GE_CHECK_NOTNULL(data_node);
     auto op_desc = data_node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    GE_CHECK_NOTNULL(op_desc->GetOutputDescPtr(0));
-    auto curr_format = op_desc->GetOutputDescPtr(0)->GetOriginFormat();
+
+    auto input_desc = op_desc->MutableInputDesc(0);
+    auto output_desc = op_desc->MutableOutputDesc(0);
+    GE_CHECK_NOTNULL(input_desc);
+    GE_CHECK_NOTNULL(output_desc);
+
+    auto curr_format = output_desc->GetOriginFormat();
     if (curr_format != FORMAT_ND) {
       // Data format has been infered , continue
       continue;
     }
+    // keep data format be ND because lacking of defination when input shape num is smaller than 4
+    if (input_desc->MutableShape().GetDimNum() < kDimSize4d) {
+      continue;
+    }
     // Set format for un-infered data node
-    auto input_descs = op_desc->GetAllInputsDescPtr();
-    auto output_descs = op_desc->GetAllOutputsDescPtr();
-
-    for (const auto &input_desc : input_descs) {
-      if (input_desc != nullptr) {
-        input_desc->SetOriginFormat(data_format);
-        input_desc->SetFormat(data_format);
-      }
-    }
-    for (const auto &output_desc : output_descs) {
-      if (output_desc != nullptr) {
-        output_desc->SetOriginFormat(data_format);
-        output_desc->SetFormat(data_format);
-      }
-    }
+    input_desc->SetOriginFormat(data_format);
+    input_desc->SetFormat(data_format);
+    output_desc->SetOriginFormat(data_format);
+    output_desc->SetFormat(data_format);
     uninfered_data_nodes.push_back(data_node);
   }
   // Reinfer format from uninfered data nodes

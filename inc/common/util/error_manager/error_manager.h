@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <mutex>
 
 class ErrorManager {
  public:
@@ -86,6 +87,7 @@ class ErrorManager {
   int ReadJsonFile(const std::string &file_path, void *handle);
 
   bool is_init_ = false;
+  std::mutex mutex_;
   std::map<std::string, ErrorInfo> error_map_;
   std::vector<std::string> error_messages_;
   std::vector<std::string> warning_messages_;

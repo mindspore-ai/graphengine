@@ -23,7 +23,7 @@
 
 namespace ge {
 HybridMemAssigner::HybridMemAssigner(ge::ComputeGraphPtr compute_graph)
-    : mem_offset_(0), compute_graph_(std::move(compute_graph)), priority_assigner_(nullptr) {}
+    : mem_offset_(0), p2p_mem_offset_(0), compute_graph_(std::move(compute_graph)), priority_assigner_(nullptr) {}
 
 Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_assigner, size_t &mem_size) {
   vector<int64_t> ranges;
@@ -73,6 +73,7 @@ Status HybridMemAssigner::Assign() {
 
   priority_assigner->SetOpMemOffset(false);
   mem_offset_ = priority_assigner->GetMemOffset();
+  p2p_mem_offset_ = priority_assigner->GetP2PMemOffset();
   priority_assigner_ = std::move(priority_assigner);
 
   return SUCCESS;

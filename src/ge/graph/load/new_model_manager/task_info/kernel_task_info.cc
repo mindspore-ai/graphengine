@@ -638,6 +638,9 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     dump_args_ = static_cast<char *>(args_) + offset;
   }
 
+  GE_CHK_BOOL_TRUE_EXEC_INFO(davinci_model_->GetOpDugReg(), dump_args_ = static_cast<char *>(args_) + offset,
+                             "Op debug is open in TVM task info");
+
   Status ge_ret = UpdateL2Data(kernel_def);
   // update origin l2 data
   if (ge_ret != SUCCESS) {
@@ -934,6 +937,10 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     } else {
       dump_flag_ = RT_KERNEL_DUMPFLAG;
     }
+    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
+  }
+  if (davinci_model_->GetOpDugReg()) {
+    GELOGI("Op debug is open in aicpu task info");
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
   if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {

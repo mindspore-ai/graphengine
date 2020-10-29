@@ -345,7 +345,7 @@ std::string ToString(const google::protobuf::RepeatedField<T> &rpd_field) {
 /// @return Timestamp, in microseconds (US)
 ///
 ///
-uint64_t GetCurrentTimestap();
+uint64_t GetCurrentTimestamp();
 
 ///
 /// @ingroup domi_common

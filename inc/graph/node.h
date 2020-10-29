@@ -193,7 +193,7 @@ class Node : public std::enable_shared_from_this<Node> {
   vector<OutDataAnchorPtr> out_data_anchors_;
   InControlAnchorPtr in_control_anchor_;
   OutControlAnchorPtr out_control_anchor_;
-  map<string, GeAttrValue> attrs_;  // lint !e1073
+  map<string, GeAttrValue> attrs_;
   bool has_init_{false};
   bool host_node_{false};
   bool anchor_status_updated_{false};

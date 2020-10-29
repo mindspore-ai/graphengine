@@ -36,6 +36,14 @@ static const std::string L1_OPTIMIZED = "l1_optimized";
 
 static const std::string L2_OPTIMIZED = "l2_optimized";
 
-static const std::string OP_SLICE_INFO = "_op_slice_info";
+static const std::string ATTR_NAME_UNKNOWN_SHAPE = "_unknown_shape";
+
+static const std::string ATTR_NAME_IS_UNKNOWN_GRAPH = "_fe_is_unknown_graph";
+
+static const std::string ATTR_NAME_IS_UNKNOWN_SHAPE_OP = "_fe_is_unknown_shape_op";
+
+static const std::string ATTR_NAME_TVM_CACHE_READ_MODE = "tvm_cache_read_mode";
+
+static const std::string ATTR_NAME_TBE_KERNEL_SIZE = "_tbeKernelSize";
 }  // namespace fe
 #endif

@@ -62,7 +62,6 @@ class TBEPluginManager {
   static void GetPluginSoFileList(const string &path, vector<string> &file_list, string &caffe_parser_path);
   static void GetCustomOpPath(std::string &customop_path);
   void LoadCustomOpLib();
-  static Status CheckCustomAiCpuOpLib();
 
   SoHandlesVec handles_vec_;
   static std::map<string, string> options_;

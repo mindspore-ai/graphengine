@@ -18,8 +18,8 @@
  * \file no_op.h
  * \brief
  */
-#ifndef GE_NO_OP_H_
-#define GE_NO_OP_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NO_OP_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NO_OP_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -38,4 +38,4 @@ REG_OP(NoOp)
 
 }  // namespace ge
 
-#endif  // GE_NO_OP_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NO_OP_H_

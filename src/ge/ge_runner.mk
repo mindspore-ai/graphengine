@@ -89,7 +89,9 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
     graph/manager/graph_var_manager.cc \
+    graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
+    graph/manager/memory_api.cc \
     graph/manager/model_manager/event_manager.cc        \
     graph/manager/trans_var_data_utils.cc \
     graph/manager/util/debug.cc                       \
@@ -109,6 +111,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
     graph/partition/dynamic_shape_partition.cc \
+    graph/partition/stage_partition.cc \
     graph/passes/base_pass.cc \
     graph/passes/bitcast_pass.cc \
     graph/passes/cast_remove_pass.cc \
@@ -179,6 +182,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/multi_batch_pass.cc \
     graph/passes/multi_batch_clone_pass.cc \
     graph/passes/subexpression_migration_pass.cc \
+    graph/passes/subgraph_const_migration_pass.cc \
     graph/passes/unused_args_clean_pass.cc \
     graph/passes/net_output_pass.cc \
     graph/passes/next_iteration_pass.cc \
@@ -240,6 +244,7 @@ LIBGE_LOCAL_SRC_FILES := \
     model/ge_root_model.cc \
     omm/csa_interact.cc \
     opskernel_manager/ops_kernel_manager.cc \
+    opskernel_manager/ops_kernel_builder_manager.cc \
     session/inner_session.cc \
     session/session_manager.cc \
     single_op/single_op.cc \
@@ -313,6 +318,7 @@ RUNNER_LOCAL_C_INCLUDES := \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
     $(TOPDIR)framework/domi/analyzer \
+    $(TOPDIR)graphengine/ge/analyzer \
     $(TOPDIR)toolchain/ide/ide-daemon/external \
     proto/fwk_adapter.proto \
     proto/ge_ir.proto \
@@ -369,7 +375,6 @@ LOCAL_SHARED_LIBRARIES := \
     libmsprof \
     liberror_manager \
 
-
 LOCAL_LDFLAGS := -lrt -ldl
 
 LOCAL_SHARED_LIBRARIES += \
@@ -395,7 +400,6 @@ LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
 LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc \
                    ../../out/ge/lib64/stub/ge_prof.cc \
-
 
 LOCAL_SHARED_LIBRARIES :=
 

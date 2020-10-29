@@ -568,7 +568,7 @@ Status SplitIdentity(const NodePtr &node) {
 Status InsertIdentityAsNeeded(const NodePtr &node) {
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  if (node->GetOutDataNodesSize() == 0 || node->GetInDataNodes().empty()) {
+  if (node->GetOutDataNodesSize() == 0) {
     return SUCCESS;
   }
   for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {

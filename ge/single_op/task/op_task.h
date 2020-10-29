@@ -234,6 +234,8 @@ private:
   uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   void *io_addr_ = nullptr;
+  bool is_custom_ = false;
+  uint32_t dump_flag_ = RT_KERNEL_DEFAULT;
 };
 }  // namespace ge
 

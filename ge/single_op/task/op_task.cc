@@ -280,8 +280,6 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
     for (size_t j = 0; j < num_outputs_; ++j) {
       GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]),
                         "Output[%zu] UpdateOutputShapeAndType failed.", j);
-      // debug code
-      GELOGD("No input and output, no need update ext info.");
     }
   }
 
@@ -669,9 +667,10 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
          kernel_name_.data());
   // sm_desc is nullptr, because l2 buffer does not support
   auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
-  auto ret =
-      rtCpuKernelLaunch(static_cast<const void *>(so_name_.data()), static_cast<const void *>(kernel_name_.data()),
-                        block_dim_, args_.get(), static_cast<uint32_t>(arg_size_), sm_desc, stream);
+  auto ret = rtCpuKernelLaunchWithFlag(static_cast<const void *>(so_name_.data()),
+                                       static_cast<const void *>(kernel_name_.data()),
+                                       block_dim_, args_.get(), static_cast<uint32_t>(arg_size_),
+                                       sm_desc, stream, dump_flag_);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
     return RT_FAILED;

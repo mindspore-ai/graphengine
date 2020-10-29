@@ -62,6 +62,8 @@ enum InputAippType{
   DYNAMIC_AIPP_NODE
 };
 
+enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
+
 const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 

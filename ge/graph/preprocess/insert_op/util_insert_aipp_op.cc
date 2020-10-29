@@ -652,7 +652,7 @@ Status InsertNewOpUtil::GetAllAipps(const NodePtr &data_node, const NodePtr &nod
 
 Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
   GELOGI("Start to record aipp info to Data.");
-  std::map<NodePtr, std::set<NodePtr>> data_next_node_map;
+  std::map<NodePtr, std::set<NodePtr> data_next_node_map;
   for (auto &node : graph->GetDirectNode()) {
     if (node->GetType() == DATA) {
       GE_RETURN_IF_ERROR(GetDataRelatedNode(node, data_next_node_map));

@@ -39,12 +39,21 @@ const std::string kDeviceIdList = "devIdList";
 const std::string kAicoreMetrics = "aicoreMetrics";
 
 const std::map<ge::ProfilingAicoreMetrics, std::string> kProfAicoreMetricsToString = {
+<<<<<<< HEAD:ge/client/ge_prof.cc
     {ge::kAicoreArithmaticThroughput, "AICORE_ARITHMATIC_THROUGHPUT"},
     {ge::kAicorePipeline, "AICORE_PIPELINE"},
     {ge::kAicoreSynchronization, "AICORE_SYNCHRONIZATION"},
     {ge::kAicoreMemory, "AICORE_MEMORY"},
     {ge::kAicoreInternalMemory, "AICORE_INTERNAL_MEMORY"},
     {ge::kAicoreStall, "AICORE_STALL"}};
+=======
+  {ge::kAicoreArithmaticThroughput, "AICORE_ARITHMATIC_THROUGHPUT"},
+  {ge::kAicorePipeline, "AICORE_PIPELINE"},
+  {ge::kAicoreSynchronization, "AICORE_SYNCHRONIZATION"},
+  {ge::kAicoreMemory, "AICORE_MEMORY"},
+  {ge::kAicoreInternalMemory, "AICORE_INTERNAL_MEMORY"},
+  {ge::kAicoreStall, "AICORE_STALL"}};
+>>>>>>> cd365aa247c64e30487d1e71e4f724a889848f80:src/ge/client/ge_prof.cc
 }  // namespace
 
 static bool g_graph_prof_init_ = false;
@@ -351,7 +360,11 @@ Status aclgrphProfStop(aclgrphProfConfig *profiler_config) {
   command.module_index = profiler_config->config.dataTypeConfig;
   GELOGI("Profiling will stop, device nums:%s , deviceID:[%s], data type config: 0x%llx", prof_params[0].c_str(),
          prof_params[kDeviceListIndex].c_str(), command.module_index);
+<<<<<<< HEAD:ge/client/ge_prof.cc
   Status ret = graph_loader.CommandHandle(command);
+=======
+  ret = graph_loader.CommandHandle(command);
+>>>>>>> cd365aa247c64e30487d1e71e4f724a889848f80:src/ge/client/ge_prof.cc
   if (ret != SUCCESS) {
     GELOGE(ret, "Handle profiling command failed");
     return FAILED;

@@ -33,6 +33,11 @@ class GEThreadLocalContext {
   void SetSessionOption(map<std::string, string> options_map);
   void SetGlobalOption(map<std::string, string> options_map);
 
+  map<string, string> GetAllGraphOptions() const;
+  map<string, string> GetAllSessionOptions() const;
+  map<string, string> GetAllGlobalOptions() const;
+  map<string, string> GetAllOptions() const;
+
  private:
   map<string, string> graph_options_;
   map<string, string> session_options_;

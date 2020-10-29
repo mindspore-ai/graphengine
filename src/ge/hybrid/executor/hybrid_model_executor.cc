@@ -102,7 +102,7 @@ Status HybridModelExecutor::InitExecutionContext() {
   const char *profiling_level = std::getenv(kEnvProfilingLevel);
   if (profiling_level != nullptr) {
     context_.profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
-    GELOGD("Got profiling level = %d", context_.profiling_level);
+    GELOGD("Got profiling level = %ld", context_.profiling_level);
     if (context_.profiling_level > 0) {
       context_.profiler.reset(new (std::nothrow) HybridProfiler());
       GE_CHECK_NOTNULL(context_.profiler);

@@ -132,7 +132,6 @@ Status InsertNewOpUtil::CheckPositionNotRepeat() {
                       return PARAM_INVALID;);
     }
   }
-
   return SUCCESS;
 }
 

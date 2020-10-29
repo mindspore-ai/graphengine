@@ -18,6 +18,7 @@
 
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/ge/ge_util.h"
+#include "graph/common/local_context.h"
 #include "graph/preprocess/multi_batch_options.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
@@ -33,6 +34,7 @@ const std::string kMultiBatchCaseNode = "ascend_mbatch_shape_case";
 const std::string kMultiBatchDataNode = "ascend_mbatch_shape_data";
 const std::string kMultiBatchConstNode = "ascend_mbatch_shape_const";
 const std::string kMultiBatchMapIndexNode = "ascend_mbatch_shape_mapindex";
+const std::string kMultiBatchNodePostfix = "_ascend_mbatch_batch_";
 }  // namespace
 
 Status MultiBatchClonePass::Run(ComputeGraphPtr graph) {
@@ -51,6 +53,13 @@ Status MultiBatchClonePass::Run(ComputeGraphPtr graph) {
   if (CollectIoNodes(graph) != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Collect input output nodes failed");
     return INTERNAL_ERROR;
+  }
+
+  // parser data dynamic info from atc parameter --input_shape
+  if (multibatch::ParserDataToDynmaicInfo(batch_shapes_, GetLocalOmgContext().user_input_dims, data_to_dynamic_info_) !=
+      SUCCESS) {
+    GELOGE(PARAM_INVALID, "Parse each data's own dynamic info failed");
+    return PARAM_INVALID;
   }
 
   (void)AttrUtils::GetStr(graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id_);
@@ -165,6 +174,14 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
     }
   }
 
+  std::vector<std::string> data_name_order;
+  for (auto &item : GetLocalOmgContext().user_input_dims) {
+    data_name_order.push_back(item.first);
+  }
+  if (!AttrUtils::SetListStr(op_desc, ATTR_USER_DESIGNEATE_SHAPE_ORDER, data_name_order)) {
+    GELOGE(FAILED, "Failed to add user designate shape order attr on case node %s", op_desc->GetName().c_str());
+    return FAILED;
+  }
   GE_CHK_STATUS_RET(multibatch::StampDynamicType(op_desc), "Set dynamic type failed");
 
   GE_CHK_STATUS_RET(CreateIndexNode(graph), "Create index node failed");
@@ -391,6 +408,7 @@ Status MultiBatchClonePass::CreateConstNode(const ComputeGraphPtr &graph) {
     // Const no InputDesc, Data need InputDesc.
     (void)op_desc->AddInputDesc(op_desc->GetOutputDesc(kDataOutIndex));
     (void)AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index);
+    (void)NodeUtils::AppendInputAnchor(all_const_nodes_[i], 1);
   }
 
   all_const_nodes_.swap(all_const_nodes);
@@ -454,6 +472,7 @@ Status MultiBatchClonePass::CreateOutputNode(const ComputeGraphPtr &graph) {
 ///
 Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &data) {
   auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
+  auto data_name = data->GetName();
   const auto &dims = data_shape.GetDims();
   if (std::all_of(dims.begin(), dims.end(), [](int64_t val) { return val >= 0; })) {
     return SUCCESS;
@@ -464,9 +483,10 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &data) {
   int64_t max_size = 0;
   for (size_t i = 0; i < batch_shapes_.size(); ++i) {
     int64_t size = 1;
-    for (auto dim : batch_shapes_[i]) {
+    for (auto dim : data_to_dynamic_info_.at(data_name).at(i)) {
       if (INT64_MAX / dim < size) {
-        GELOGE(PARAM_INVALID, "The shape %s size overflow", formats::ShapeToString(batch_shapes_[i]).c_str());
+        GELOGE(PARAM_INVALID, "The shape %s size overflow",
+               formats::ShapeToString(data_to_dynamic_info_.at(data_name).at(i)).c_str());
         return PARAM_INVALID;
       }
       size *= dim;
@@ -477,17 +497,17 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &data) {
     }
   }
 
-  return SetShapeToData(batch_shapes_[max_shape_index], data, data_shape);
+  return SetShapeToData(data_to_dynamic_info_.at(data_name).at(max_shape_index), data, data_shape);
 }
 
 ///
 /// @ingroup ge
 /// @brief Set shape to Data node in branch.
 /// @param [in] const NodePtr &data: data in branch.
-/// @param [in] const std::vector<int64_t> &shapes: dims of shape.
+/// @param [in] size_t index: The batch index.
 /// @return 0: SUCCESS / others: FAILED
 ///
-Status MultiBatchClonePass::UpdataShapeToData(const NodePtr &data, const vector<int64_t> &shapes) {
+Status MultiBatchClonePass::UpdateShapeToData(const NodePtr &data, size_t index) {
   auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
   const auto &dims = data_shape.GetDims();
   if (std::all_of(dims.begin(), dims.end(), [](int64_t val) { return val >= 0; })) {
@@ -495,7 +515,16 @@ Status MultiBatchClonePass::UpdataShapeToData(const NodePtr &data, const vector<
   }
 
   (void)AttrUtils::SetListInt(data->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
-  return SetShapeToData(shapes, data, data_shape);
+  auto data_name = data->GetName();
+  size_t pos = data_name.find(kMultiBatchNodePostfix);
+  if (pos == string::npos) {
+    GELOGE(FAILED, "Cannot find key string [%s] of multi-batch in name of virtual input node, node name: %s.",
+           kMultiBatchNodePostfix.c_str(), data_name.c_str());
+    return FAILED;
+  }
+
+  auto parent_name = data_name.substr(0, pos);
+  return SetShapeToData(data_to_dynamic_info_.at(parent_name).at(index), data, data_shape);
 }
 
 ///
@@ -534,42 +563,38 @@ Status MultiBatchClonePass::SetShapeToData(const vector<int64_t> &shapes, const 
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status MultiBatchClonePass::CreateSubgraphs(const ComputeGraphPtr &graph, const ComputeGraphPtr &branch) {
-  const std::string name = graph->GetName() + "_branche_";
   const auto &op_desc = case_node_->GetOpDesc();
   for (size_t i = 0; i < batch_shapes_.size(); ++i) {
     std::vector<NodePtr> input_nodes;
     std::vector<NodePtr> output_nodes;
-    const std::string prefix = "branche_" + std::to_string(i) + "_";
-    ComputeGraphPtr subgraph = (i == 0) ? branch : GraphUtils::CloneGraph(branch, prefix, input_nodes, output_nodes);
+    const std::string postfix = kMultiBatchNodePostfix + std::to_string(i);
+    ComputeGraphPtr subgraph = (i == 0) ? branch : GraphUtils::CloneGraph(branch, postfix, input_nodes, output_nodes);
     if (subgraph == nullptr) {
       GELOGE(FAILED, "Create multi-batch case node failed");
       return FAILED;
     }
 
-    subgraph->SetName(name + std::to_string(i));
+    subgraph->SetName("Batch_" + std::to_string(i));
     subgraph->SetParentNode(case_node_);
     subgraph->SetParentGraph(graph);
-    (void)AttrUtils::SetStr(subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id_);
+    graph->AddSubgraph(subgraph->GetName(), subgraph);
     all_branch_output_[subgraph] = subgraph->FindFirstNodeMatchType(NETOUTPUT);
 
-    graph->AddSubgraph(subgraph->GetName(), subgraph);
-
-    const std::string key_name = "branches" + std::to_string(i);
+    const string key_name = "branches" + std::to_string(i);
     op_desc->AddSubgraphName(key_name);
     op_desc->SetSubgraphInstanceName(i, subgraph->GetName());
 
     for (const auto &data : input_nodes) {
-      GE_CHK_STATUS_RET(UpdataShapeToData(data, batch_shapes_[i]), "Update %s failed", subgraph->GetName().c_str());
+      GE_CHK_STATUS_RET(UpdateShapeToData(data, i), "Update %s failed", subgraph->GetName().c_str());
     }
   }
 
   // Origninal graph take as first subgraph, update node name.
   for (const auto &n : branch->GetDirectNode()) {
     const auto &op_desc = n->GetOpDesc();
-    op_desc->SetName("branche_0_" + n->GetName());
-
+    op_desc->SetName(n->GetName() + kMultiBatchNodePostfix + "0");
     if (n->GetType() == DATA) {
-      GE_CHK_STATUS_RET(UpdataShapeToData(n, batch_shapes_[0]), "Update %s failed", branch->GetName().c_str());
+      GE_CHK_STATUS_RET(UpdateShapeToData(n, 0), "Update %s failed", branch->GetName().c_str());
     }
   }
 

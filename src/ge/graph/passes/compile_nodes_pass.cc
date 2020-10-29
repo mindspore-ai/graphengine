@@ -30,7 +30,7 @@ using domi::ImplyType;
 
 namespace {
 const char *const kAICPUEngineName = "DNN_VM_AICPU";
-const char *const kAICPUKernelLibName = "aicpu_kernel";
+const char *const kAICPUKernelLibName = "aicpu_tf_kernel";
 }  // namespace
 
 namespace ge {

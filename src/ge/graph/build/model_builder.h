@@ -85,7 +85,7 @@ class ModelBuilder {
 
   uint64_t session_id_;
 
-  size_t mem_offset_;
+  map<int64_t, size_t> mem_type_to_mem_offset_;
 
   size_t weight_offset_;
 
@@ -106,6 +106,7 @@ class ModelBuilder {
 
   int build_mode_;
   size_t max_mem_offset_;
+  size_t p2p_mem_offset_;
   size_t zero_copy_mem_size_;
 
   TBEKernelStore tbe_kernel_store_;

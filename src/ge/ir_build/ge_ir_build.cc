@@ -35,6 +35,7 @@
 #include "init/gelib.h"
 #include "ir_build/atc_ir_common.h"
 #include "model/ge_model.h"
+#include "graph/shape_refiner.h"
 
 using std::string;
 using namespace std;
@@ -167,6 +168,7 @@ class Impl {
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                  bool is_dynamic_input);
   void SetRtSocVersion();
+  void UpdateThreadContext();
 
  public:
   ge::GeGenerator generator_;
@@ -220,8 +222,6 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
     return ret;
   }
 
-  GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
-  GetThreadLocalContext().SetGraphOption(options_);
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
                              ? ""
                              : options_[BUILD_MODE];
@@ -266,6 +266,9 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
                    return ge::GRAPH_PARAM_INVALID, "check insert op conf failed!");
 
+  GE_CHK_BOOL_EXEC(insert_op_conf.empty() || dynamic_dims.empty(), return ge::GRAPH_PARAM_INVALID,
+                   "dynamic dims function does not support aipp");
+
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
   options_.insert(std::pair<string, string>(string(IR_OPTION_TARGET), "mini"));
@@ -276,7 +279,7 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   ge::PrintOptionMap(options_, "ge option");
 
   SetRtSocVersion();
-
+  UpdateThreadContext();
   // 3. init generator with options_
   ret = generator_.Initialize(options_, omg_context_);
   if (ret != GRAPH_SUCCESS) {
@@ -288,7 +291,7 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
 }
 
 void Impl::SetRtSocVersion() {
-  auto &global_options = GetMutableGlobalOptions();
+  const auto &global_options = GetMutableGlobalOptions();
   auto it = global_options.find(ge::SOC_VERSION);
   if (it != global_options.end()) {
     const char *soc_version = it->second.c_str();
@@ -298,6 +301,11 @@ void Impl::SetRtSocVersion() {
     }
     GELOGI("Set soc version %s success.", soc_version);
   }
+}
+
+void Impl::UpdateThreadContext() {
+  GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
+  GetThreadLocalContext().SetGraphOption(options_);
 }
 
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
@@ -323,13 +331,16 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
         data_shape = tensor.GetShape();
         GELOGI("Data op get shape from InputDesc in ge ir graph.");
       }
-
+      // If user point input format, do work for all data ops; else do according to tensor_desc
+      auto data_format = omg_context_.format != domi::DOMI_TENSOR_ND
+                           ? ge::TypeUtils::DomiFormatToFormat(omg_context_.format)
+                           : tensor.GetFormat();
       ge::DataType data_type = tensor.GetDataType();
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
       GELOGI("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
-      ge::GeTensorDesc desc(data_shape, ge::Format(omg_context_.format), data_type);
+      ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);
       inputTensor.SetTensorDesc(desc);
       inputs.push_back(inputTensor);
     }
@@ -422,4 +433,77 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
   *patch_version = IR_PATCH_VERSION;
   return GRAPH_SUCCESS;
 }
+
+graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+
+  for (auto &node : compute_graph->GetAllNodes()) {
+    graphStatus ret = ShapeRefiner::InferShapeAndType(node);
+    if (ret == GRAPH_PARAM_INVALID) {
+      GELOGW("Can not find infershape func.");
+      continue;
+    } else if (ret != GRAPH_SUCCESS) {
+      GELOGE(ret, "Acl infershape failed.");
+      return ret;
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
+graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len) {
+  GE_CHECK_NOTNULL(file);
+
+  if (len > PATH_MAX || len != strlen(file) || strlen(file) == 0) {
+    GELOGE(GRAPH_PARAM_INVALID, "File path invalid.");
+    return GRAPH_PARAM_INVALID;
+  }
+
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+
+  string full_path(file, len);
+  for (size_t i = 0; i < len; i++) {
+    if (full_path[i] == '\\') {
+      full_path.replace(i, 1, "/");
+    }
+  }
+
+  string suffix;
+  string file_path;
+  int pos = full_path.rfind("/");
+  if (pos != -1) {
+    suffix = full_path.substr(pos + 1, -1);
+    file_path = full_path.substr(0, pos);
+  } else {
+    suffix = full_path;
+    file_path = "./";
+  }
+
+  if (suffix.empty()) {
+    suffix = compute_graph->GetName();
+    if (suffix.empty()) {
+      suffix = "graph";
+    }
+  }
+
+  char path[PATH_MAX] = {0};
+  if (realpath(file_path.c_str(), path) == nullptr) {
+    GELOGE(GRAPH_PARAM_INVALID, "Dump file path:%s  is invalid.", file);
+    return GRAPH_PARAM_INVALID;
+  }
+
+  GraphUtils::DumpGEGrph(compute_graph, string(path), suffix);
+  GraphUtils::DumpGrphToOnnx(*compute_graph, string(path), suffix);
+  uint64_t i = 0;
+  for (const auto &sub_graph_func : compute_graph->GetAllSubgraphs()) {
+    auto sub_graph_func_name = suffix + std::string("_sub_graph_") + std::to_string(i++);
+    GraphUtils::DumpGEGrph(sub_graph_func, string(path), sub_graph_func_name);
+    GraphUtils::DumpGrphToOnnx(*sub_graph_func, string(path), sub_graph_func_name);
+  }
+
+  return GRAPH_SUCCESS;
+}
+
 }  // namespace ge

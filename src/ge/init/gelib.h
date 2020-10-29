@@ -81,6 +81,7 @@ class GELib {
   Status InnerInitialize(const map<string, string> &options);
   Status SystemInitialize(const map<string, string> &options);
   Status SetRTSocVersion(const map<string, string> &options, map<string, string> &new_options);
+  void SetDefaultPrecisionMode(map<string, string> &new_options);
   void RollbackInit();
   void InitOptions(const map<string, string> &options);
   void SetDumpModelOptions(const map<string, string> &options);

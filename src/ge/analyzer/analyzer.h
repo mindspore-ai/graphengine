@@ -156,6 +156,14 @@ class Analyzer {
    */
   ge::Status DoAnalyze(analyzer::DataInfo &data_info);
 
+  /**
+   * @ingroup ge
+   * @brief: Buff analyzed data and output to json file
+   * @param [in]: session id , graph id
+   * @return: 0: SUCCESS other: FAILED
+   */
+  ge::Status SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_id);
+
   Analyzer(const Analyzer &) = delete;
   Analyzer &operator=(const Analyzer &) = delete;
   Analyzer(Analyzer &&) = delete;
@@ -166,7 +174,6 @@ class Analyzer {
   void OpInfoToJson(nlohmann::json &j, const analyzer::OpInfo &op_info);
   void GraphInfoToJson(nlohmann::json &j, const analyzer::GraphInfo &graph_info);
 
-  ge::Status SaveAnalyzerDataToFile();
   ge::Status SaveOpInfo(ge::OpDescPtr desc, analyzer::DataInfo &data_info,
                         std::shared_ptr<analyzer::GraphInfo> graph_info);
 

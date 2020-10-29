@@ -30,12 +30,7 @@ const char *const kAicoreEngine = "AIcoreEngine";
 
 namespace ge {
 GraphOptimize::GraphOptimize()
-    : optimize_type_(domi::FrameworkType::TENSORFLOW),
-      cal_config_(""),
-      insert_op_config_(""),
-      parse_out_node_(""),
-      core_type_(""),
-      graph_context_(nullptr) {}
+    : optimize_type_(domi::FrameworkType::TENSORFLOW), cal_config_(""), insert_op_config_(""), core_type_("") {}
 
 void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
@@ -107,7 +102,7 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
       for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
         Status ret = (*iter)->OptimizeFusedGraphAfterGraphSlice(*(compute_graph));
         if (ret != SUCCESS) {
-          GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphStage2]: graph optimize failed, ret:%d", ret);
+          GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphAfterGraphSlice]: graph optimize failed, ret:%d", ret);
           return ret;
         }
       }

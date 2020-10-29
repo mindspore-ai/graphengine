@@ -18,6 +18,7 @@
 #include "graph/load/new_model_manager/model_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/ge_context.h"
 #include "omm/csa_interact.h"
 
 namespace ge {
@@ -51,7 +52,10 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
 
   run_flag_ = true;
   listener_ = listener;
-  future_ = std::async([&]() -> Status { return RunInternal(); });
+  future_ = std::async([&]() -> Status {
+    GetContext().SetSessionId(executor_->GetContext()->session_id);
+    return RunInternal();
+  });
 
   GE_CHK_BOOL_RET_STATUS(future_.valid(), INTERNAL_ERROR, "Failed to start.");
   GELOGD("HybridModelExecutor::Start successfully");

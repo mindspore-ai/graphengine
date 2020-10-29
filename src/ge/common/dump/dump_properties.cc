@@ -201,7 +201,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperti
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpOpSwitch(
-  const std::string &dump_op_switch) {
+  const std::string dump_op_switch) {
   dump_op_switch_ = dump_op_switch;
 }
 

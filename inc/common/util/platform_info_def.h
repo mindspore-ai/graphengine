@@ -30,111 +30,113 @@ enum MemoryType { DDR = 0, HBM };
 
 enum L2Type { Cache = 0, Buff };
 
-typedef struct tagStrInfo {
-  string aicVersion;
-  string ccecAICVersion;
-  string ccecAIVVersion;
-  string isSupportAIcpuCompiler;
+typedef struct tag_str_info {
+  string aic_version;
+  string ccec_aic_version;
+  string ccec_aiv_version;
+  string is_support_ai_cpu_compiler;
 } StrInfo;
 
-typedef struct tagSoCInfo {
-  uint32_t aiCoreCnt;
-  uint32_t vectorCoreCnt;
-  uint32_t aiCpuCnt;
-  MemoryType memoryType;
-  uint64_t memorySize;
-  L2Type l2Type;
-  uint64_t l2Size;
+typedef struct tag_so_c_info {
+  uint32_t ai_core_cnt;
+  uint32_t vector_core_cnt;
+  uint32_t ai_cpu_cnt;
+  MemoryType memory_type;
+  uint64_t memory_size;
+  L2Type l2_type;
+  uint64_t l2_size;
   uint32_t l2PageNum;
 } SoCInfo;
 
-typedef struct tagAiCoreSpec {
-  double cubeFreq;
-  uint64_t cubeMSize;
-  uint64_t cubeNSize;
-  uint64_t cubeKSize;
-  uint64_t vecCalcSize;
-  uint64_t l0ASize;
-  uint64_t l0BSize;
-  uint64_t l0CSize;
-  uint64_t l1Size;
-  uint64_t smaskBuffer;
-  uint64_t ubSize;
-  uint64_t ubblockSize;
-  uint64_t ubbankSize;
-  uint64_t ubbankNum;
-  uint64_t ubburstInOneBlock;
-  uint64_t ubbankGroupNum;
-  uint32_t unzipEngines;
-  uint32_t unzipMaxRatios;
-  uint32_t unzipChannels;
-  uint8_t unzipIsTight;
+typedef struct tag_ai_core_spec {
+  double cube_freq;
+  uint64_t cube_m_size;
+  uint64_t cube_n_size;
+  uint64_t cube_k_size;
+  uint64_t vec_calc_size;
+  uint64_t l0_a_size;
+  uint64_t l0_b_size;
+  uint64_t l0_c_size;
+  uint64_t l1_size;
+  uint64_t smask_buffer;
+  uint64_t ub_size;
+  uint64_t ubblock_size;
+  uint64_t ubbank_size;
+  uint64_t ubbank_num;
+  uint64_t ubburst_in_one_block;
+  uint64_t ubbank_group_num;
+  uint32_t unzip_engines;
+  uint32_t unzip_max_ratios;
+  uint32_t unzip_channels;
+  uint8_t unzip_is_tight;
+  uint8_t cube_vector_split;
 } AiCoreSpec;
 
-typedef struct tagAiCoreMemoryRates {
-  double ddrRate;
-  double ddrReadRate;
-  double ddrWriteRate;
-  double l2Rate;
-  double l2ReadRate;
-  double l2WriteRate;
-  double l1ToL0ARate;
-  double l1ToL0BRate;
-  double l1ToUBRate;
-  double l0CToUBRate;
-  double ubToL2Rate;
-  double ubToDdrRate;
-  double ubToL1Rate;
+typedef struct tag_ai_core_memory_rates {
+  double ddr_rate;
+  double ddr_read_rate;
+  double ddr_write_rate;
+  double l2_rate;
+  double l2_read_rate;
+  double l2_write_rate;
+  double l1_to_l0_a_rate;
+  double l1_to_l0_b_rate;
+  double l1_to_ub_rate;
+  double l0_c_to_ub_rate;
+  double ub_to_l2_rate;
+  double ub_to_ddr_rate;
+  double ub_to_l1_rate;
 } AiCoreMemoryRates;
 
-typedef struct tagVectorCoreSpec {
-  double vecFreq;
-  uint64_t vecCalcSize;
-  uint64_t smaskBuffer;
-  uint64_t ubSize;
-  uint64_t ubblockSize;
-  uint64_t ubbankSize;
-  uint64_t ubbankNum;
-  uint64_t ubburstInOneBlock;
-  uint64_t ubbankGroupNum;
-  uint64_t vectorRegSize;
-  uint64_t predicateRegSize;
-  uint64_t addressRegSize;
+typedef struct tag_vector_core_spec {
+  double vec_freq;
+  uint64_t vec_calc_size;
+  uint64_t smask_buffer;
+  uint64_t ub_size;
+  uint64_t ubblock_size;
+  uint64_t ubbank_size;
+  uint64_t ubbank_num;
+  uint64_t ubburst_in_one_block;
+  uint64_t ubbank_group_num;
+  uint64_t vector_reg_size;
+  uint64_t predicate_reg_size;
+  uint64_t address_reg_size;
+  uint64_t alignment_reg_size;
 } VectorCoreSpec;
 
-typedef struct tagVectorCoreMemoryRates {
-  double ddrRate;
-  double ddrReadRate;
-  double ddrWriteRate;
-  double l2Rate;
-  double l2ReadRate;
-  double l2WriteRate;
-  double ubToL2Rate;
-  double ubToDdrRate;
+typedef struct tag_vector_core_memory_rates {
+  double ddr_rate;
+  double ddr_read_rate;
+  double ddr_write_rate;
+  double l2_rate;
+  double l2_read_rate;
+  double l2_write_rate;
+  double ub_to_l2_rate;
+  double ub_to_ddr_rate;
 } VectorCoreMemoryRates;
 
-typedef struct tagCPUCache {
+typedef struct tag_cpu_cache {
   uint32_t AICPUSyncBySW;
   uint32_t TSCPUSyncBySW;
 } CPUCache;
 
-typedef struct tagPlatformInfo {
-  StrInfo strInfo;
-  SoCInfo socInfo;
-  AiCoreSpec aiCoreSpec;
-  AiCoreMemoryRates aiCoreMemoryRates;
-  map<string, vector<string>> aiCoreIntrinsicDtypeMap;
-  VectorCoreSpec vectorCoreSpec;
-  VectorCoreMemoryRates vectorCoreMemoryRates;
+typedef struct tag_platform_info {
+  StrInfo str_info;
+  SoCInfo soc_info;
+  AiCoreSpec ai_core_spec;
+  AiCoreMemoryRates ai_core_memory_rates;
+  map<string, vector<string>> ai_core_intrinsic_dtype_map;
+  VectorCoreSpec vector_core_spec;
+  VectorCoreMemoryRates vector_core_memory_rates;
   CPUCache cpucache;
-  map<string, vector<string>> vectorCoreIntrinsicDtypeMap;
+  map<string, vector<string>> vector_core_intrinsic_dtype_map;
 } PlatformInfo;
 
-typedef struct tagOptionalInfo {
-  string socVersion;
-  string coreType;
-  uint32_t aiCoreNum;
-  string l1FusionFlag;
+typedef struct tag_optional_info {
+  string soc_version;
+  string core_type;
+  uint32_t ai_core_num;
+  string l1_fusion_flag;
 } OptionalInfo;
 }  // namespace fe
 #endif

@@ -140,8 +140,8 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
       block->size = aligned_size;
       block_bin_.insert(new_block);
     }
-    return block->ptr;
     GELOGD("Find block size = %zu", block->size);
+    return block->ptr;
   }
   GELOGW("Memory block not founded.");
   return nullptr;

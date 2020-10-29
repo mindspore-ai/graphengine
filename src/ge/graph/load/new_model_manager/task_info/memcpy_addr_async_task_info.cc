@@ -26,10 +26,7 @@ const uint32_t kAlignBytes = 64;
 namespace ge {
 Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("MemcpyAddrAsyncTaskInfo Init Start");
-  if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null");
-    return PARAM_INVALID;
-  }
+  GE_CHECK_NOTNULL(davinci_model);
 
   Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
   if (ret != SUCCESS) {
@@ -43,12 +40,13 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
     return INTERNAL_ERROR;
   }
 
-  ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.src(), src_);
+  const RuntimeParam &rts_param = davinci_model->GetRuntimeParam();
+  ret = ModelUtils::GetRtAddress(rts_param, memcpy_async.src(), src_);
   if (ret != SUCCESS) {
     return ret;
   }
 
-  ret = ModelUtils::GetRtAddress(davinci_model->GetRuntimeParam(), memcpy_async.dst(), dst_);
+  ret = ModelUtils::GetRtAddress(rts_param, memcpy_async.dst(), dst_);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -59,10 +57,7 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
 
   // malloc args memory
   size_t args_size = sizeof(void *) * io_addrs.size();
-  rtMemType_t memory_type = RT_MEMORY_HBM;
-  if (op_desc->HasAttr(ATTR_NAME_MEMORY_TYPE_RANGE)) {
-    memory_type = RT_MEMORY_TS_4G;
-  }
+  rtMemType_t memory_type = op_desc->HasAttr(ATTR_NAME_MEMORY_TYPE_RANGE) ? RT_MEMORY_TS_4G : RT_MEMORY_HBM;
   GELOGI("memory_type: %u", memory_type);
   rtError_t rt_ret = rtMalloc(&args_, args_size + kAlignBytes, memory_type);
   if (rt_ret != RT_ERROR_NONE) {

@@ -102,7 +102,7 @@ class MultiBatchGraphCopyer {
   Status LinkNodeToMerge(const NodePtr &node, int out_index, const NodePtr &merge);
   Status CopyInDataEdges(const NodePtr &origin_node, int batch_num, const NodePtr &copyed_node);
   Status CopyInControlEdges(const NodePtr &node, int batch_num, const NodePtr &copyed_node);
-  Status UpdateDataToDynamicInfo(const NodePtr &node);
+  Status CheckAndParseDynamicData();
   bool IsInBatchBranch(const NodePtr &node);
   NodeStatus GetNodeStatus(const NodePtr &node) { return origin_nodes_status_[node.get()]; };
   Status CheckCopyResult(const std::vector<NodePtr> &start_nodes);

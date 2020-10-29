@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef AICORE_PARAM_CALCULATOR
-#define AICORE_PARAM_CALCULATOR
+#ifndef INC_EXTERNAL_GRAPH_ASCEND_STRING_H_
+#define INC_EXTERNAL_GRAPH_ASCEND_STRING_H_
 
-#include "graph/node.h"
-#include "graph_optimizer/graph_optimize_register_error_codes.h"
+#include <string>
+#include <memory>
 
-namespace fe {
-class AICoreParamCalculator {
+namespace ge {
+class AscendString {
  public:
-  AICoreParamCalculator();
+  AscendString() = default;
 
-  ~AICoreParamCalculator();
+  ~AscendString() = default;
 
-  Status CalcOpRunningParam(ge::Node &node);
+  explicit AscendString(const char* name);
+
+  const char* GetString() const;
+
+ private:
+  std::shared_ptr<std::string> name_;
 };
-}  // namespace fe
-#endif  // AICORE_PARAM_CALCULATOR
+}  // namespace ge
+#endif  // INC_EXTERNAL_GRAPH_ASCEND_STRING_H_

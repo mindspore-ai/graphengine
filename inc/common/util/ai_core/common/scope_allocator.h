@@ -32,12 +32,12 @@ class ScopeAllocator {
   int64_t GetCurrentScopeId();
   int64_t AllocateScopeId(void);
   bool HasScopeAttr(ge::ConstOpDescPtr opdef);
-  bool GetScopeAttr(ge::ConstOpDescPtr opdef, int64_t& scopeId);
-  bool SetScopeAttr(ge::OpDescPtr opdef, int64_t scopeId);
-  bool ResetScopeId(int64_t scopeId);
+  bool GetScopeAttr(ge::ConstOpDescPtr opdef, int64_t& scope_id);
+  bool SetScopeAttr(ge::OpDescPtr opdef, int64_t scope_id);
+  bool ResetScopeId(int64_t scope_id);
 
  private:
-  int64_t scopeId;
+  int64_t scope_id;
 };
 }  // namespace fe
 #endif

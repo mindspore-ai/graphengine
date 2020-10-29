@@ -18,9 +18,8 @@
  * \file npu_loss_scale_ops.h
  * \brief
  */
-
-#ifndef GE_OP_NN_LOSS_SCALE_OPS_H
-#define GE_OP_NN_LOSS_SCALE_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -120,4 +119,4 @@ REG_OP(NPUGetFloatStatus)
     .OP_END_FACTORY_REG(NPUGetFloatStatus)
 }  // namespace ge
 
-#endif  // GE_OP_NN_LOSS_SCALE_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_

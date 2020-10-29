@@ -353,20 +353,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   }
   uint64_t module = GetProfilingModule();
   int32_t device_num = static_cast<int32_t>(device_id_.size());
-  uint32_t *device_id_ptr = new (std::nothrow) uint32_t[device_num];
+  auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
   if (device_id_ptr == nullptr) {
-    GELOGE(FAILED, "Stop profiling device id ptr is null.");
+    GELOGE(FAILED, "Stop profiling: device id ptr is null.");
     return;
   }
   for (int32_t i = 0; i < device_num; i++) {
     device_id_ptr[i] = static_cast<uint32_t>(device_id_[i]);
   }
-  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr);
+  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGW("Call rtProfilerStop failed, ret:%d", rt_ret);
   }
-  delete[] device_id_ptr;
-  device_id_ptr = nullptr;
 
   for (size_t i = 0; i < prof_handle_vec_.size(); ++i) {
     int result = ProfMgrStop(prof_handle_vec_[i]);
@@ -732,23 +730,21 @@ ProfilingManager::ProfStartProfiling(uint64_t module, const std::map<std::string
     GELOGE(FAILED, "Prof start parse param failed.");
     return FAILED;
   }
-  auto *device_id = new (std::nothrow) uint32_t[device_num];
-  if (device_id == nullptr) {
-    GELOGE(FAILED, "Prof start parse param failed.");
+
+  auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
+  if (device_id_ptr == nullptr) {
+    GELOGE(FAILED, "Prof start: device id ptr is null.");
     return FAILED;
   }
   for (int32_t i = 0; i < device_num; i++) {
-    device_id[i] = static_cast<uint32_t>(device_list[i]);
+    device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
   GELOGI("Runtime config param: 0x%llx, device num: %d.", module, device_num);
-  rtError_t rt_ret = rtProfilerStart(module, device_num, device_id);
+  rtError_t rt_ret = rtProfilerStart(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
-    delete[] device_id;
     GELOGE(FAILED, "Runtime profiler config proc failed.");
     return FAILED;
   }
-  delete[] device_id;
-  device_id = nullptr;
   if ((module & PROF_MODEL_EXECUTE_MASK) == PROF_MODEL_EXECUTE_MASK) {
     for (int32_t i = 0; i < device_num; i++) {
       if (std::find(device_id_.begin(), device_id_.end(), device_list[i]) == device_id_.end()) {
@@ -776,23 +772,20 @@ ProfilingManager::ProfStopProfiling(uint64_t module, const std::map<std::string,
     GELOGE(FAILED, "Prof stop parse param failed.");
     return FAILED;
   }
-  auto *device_id = new (std::nothrow) uint32_t[device_num];
-  if (device_id == nullptr) {
-    GELOGE(FAILED, "Prof stop parse param failed.");
+  auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
+  if (device_id_ptr == nullptr) {
+    GELOGE(FAILED, "Prof stop: device id ptr is null.");
     return FAILED;
   }
   for (int32_t i = 0; i < device_num; i++) {
-    device_id[i] = static_cast<uint32_t>(device_list[i]);
+    device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
   GELOGI("Prof stop: runtime config param: 0x%llx, device num: %d", module, device_num);
-  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id);
+  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
-    delete[] device_id;
     GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
     return FAILED;
   }
-  delete[] device_id;
-  device_id = nullptr;
   uint64_t execute_model_mask = module & PROF_MODEL_EXECUTE_MASK;
   if (execute_model_mask == PROF_MODEL_EXECUTE_MASK) {
     for (int32_t i = 0; i < device_num; i++) {

@@ -39,9 +39,11 @@
 #include "graph/ge_global_options.h"
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/host_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "omm/csa_interact.h"
 #include "runtime/kernel.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using Json = nlohmann::json;
 
@@ -74,6 +76,7 @@ Status GELib::Initialize(const map<string, string> &options) {
     GELOGE(ret, "GeLib initial failed.");
     return ret;
   }
+  instancePtr_->SetDefaultPrecisionMode(new_options);
   GetMutableGlobalOptions().insert(new_options.begin(), new_options.end());
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GE_TIMESTAMP_START(Init);
@@ -122,6 +125,16 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     GELOGE(initOpsStatus);
     RollbackInit();
     return initOpsStatus;
+  }
+
+  GELOGI("opsBuilderManager initial.");
+  GE_TIMESTAMP_START(OpsKernelBuilderManagerInitialize);
+  Status initOpsBuilderStatus = OpsKernelBuilderManager::Instance().Initialize(options);
+  GE_TIMESTAMP_END(OpsKernelBuilderManagerInitialize, "InnerInitialize::OpsKernelBuilderManager");
+  if (initOpsBuilderStatus != SUCCESS) {
+    GELOGE(initOpsBuilderStatus);
+    RollbackInit();
+    return initOpsBuilderStatus;
   }
 
   GELOGI("sessionManager initial.");
@@ -193,6 +206,26 @@ void GELib::InitProfiling(Options &options) {
   if (ProfilingManager::Instance().Init(options) != SUCCESS) {
     GELOGW("Profiling init failed.");
   }
+}
+
+void GELib::SetDefaultPrecisionMode(map<string, string> &new_options) {
+  auto iter = new_options.find(PRECISION_MODE);
+  if (iter != new_options.end()) {
+    GELOGI("Find precision_mode in options, value is %s", iter->second.c_str());
+    return;
+  }
+  iter = new_options.find(OPTION_GRAPH_RUN_MODE);
+  if (iter != new_options.end()) {
+    if (GraphRunMode(std::strtol(iter->second.c_str(), nullptr, kDecimal)) >= TRAIN) {
+      // only train mode need to be set allow_fp32_to_fp16.
+      GELOGI("This is train mode, precision_mode need to be set allow_fp32_to_fp16");
+      new_options.insert(std::make_pair(PRECISION_MODE, "allow_fp32_to_fp16"));
+      return;
+    }
+  }
+  GELOGI("This is not train mode, precision_mode need to be set force_fp16");
+  new_options.insert(std::make_pair(PRECISION_MODE, "force_fp16"));
+  return;
 }
 
 Status GELib::SetRTSocVersion(const map<string, string> &options, map<string, string> &new_options) {
@@ -281,12 +314,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
 
   std::vector<rtMemType_t> mem_type;
   mem_type.push_back(RT_MEMORY_HBM);
+  mem_type.push_back(RT_MEMORY_P2P_DDR);
   Status initMmStatus = MemManager::Instance().Initialize(mem_type);
   if (initMmStatus != SUCCESS) {
     GELOGE(initMmStatus, "[Initialize] MemoryAllocatorManager initialize failed.");
     return initMmStatus;
   }
 
+  GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
   // Update CSA file
   CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
@@ -334,11 +369,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithout
 
   std::vector<rtMemType_t> mem_type;
   mem_type.push_back(RT_MEMORY_HBM);
+  mem_type.push_back(RT_MEMORY_P2P_DDR);
   Status initMmStatus = MemManager::Instance().Initialize(mem_type);
   if (initMmStatus != SUCCESS) {
     GELOGE(initMmStatus, "[Initialize] MemoryAllocatorManager initialize failed.");
     return initMmStatus;
   }
+  GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
 
   static bool is_inited = false;
   if (is_inited) {
@@ -379,6 +416,12 @@ Status GELib::Finalize() {
     final_state = mid_state;
   }
 
+  GELOGI("opsBuilderManager finalization.");
+  mid_state = OpsKernelBuilderManager::Instance().Finalize();
+  if (mid_state != SUCCESS) {
+    GELOGW("opsBuilderManager finalize failed");
+    final_state = mid_state;
+  }
   GELOGI("opsManager finalization.");
   mid_state = opsManager_.Finalize();
   if (mid_state != SUCCESS) {
@@ -391,6 +434,9 @@ Status GELib::Finalize() {
 
   GELOGI("MemManager finalization.");
   MemManager::Instance().Finalize();
+
+  GELOGI("HostMemManager finalization.");
+  HostMemManager::Instance().Finalize();
 
   GELOGI("HostCpuEngine finalization.");
   HostCpuEngine::GetInstance().Finalize();
@@ -453,6 +499,7 @@ void GELib::RollbackInit() {
     (void)sessionManager_.Finalize();
   }
   MemManager::Instance().Finalize();
+  HostMemManager::Instance().Finalize();
   VarManagerPool::Instance().Destory();
 }
 }  // namespace ge

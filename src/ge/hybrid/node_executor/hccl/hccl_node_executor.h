@@ -16,6 +16,7 @@
 
 #ifndef HYBRID_HCCL_NODE_EXECUTOR_H_
 #define HYBRID_HCCL_NODE_EXECUTOR_H_
+#include "common/opskernel/ge_task_info.h"
 #include "graph/op_desc.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/node_executor/node_executor.h"

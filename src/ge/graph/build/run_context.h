@@ -33,13 +33,17 @@ class RunContextUtil {
   virtual ~RunContextUtil();
 
   // Init mem info.
-  ge::Status InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size, uint8_t *weight_mem_base,
+  ge::Status InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size,
+                         std::map<int64_t, uint8_t *> mem_type_to_data_mem_base,
+                         std::map<int64_t, uint64_t> mem_type_to_data_mem_size, uint8_t *weight_mem_base,
                          uint64_t weight_mem_size);
 
   ge::Status CreateRunContext(Model &model_def, const ComputeGraphPtr &graph, Buffer &buffer,
                               const uint64_t session_id);
 
   RunContext &GetRunContext();
+
+  void PrintMemInfo();
 
   RunContext run_context_;
 
@@ -61,6 +65,8 @@ class RunContextUtil {
   uint64_t data_mem_size_ = 0;
   uint8_t *weight_mem_base_ = nullptr;
   uint64_t weight_mem_size_ = 0;
+  std::map<int64_t, uint8_t *> mem_type_to_data_mem_base_;
+  std::map<int64_t, uint64_t> mem_type_to_data_mem_size_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_RUN_CONTEXT_H_

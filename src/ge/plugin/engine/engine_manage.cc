@@ -89,10 +89,10 @@ void RegisterVectorEngine() {
 }
 
 void RegisterAiCpuEngine() {
-  const std::string vm_aicpu = "DNN_VM_AICPU";
+  const std::string vm_aicpu = "DNN_VM_AICPU_ASCEND";
   std::vector<std::string> mem_type_aicpu;
   mem_type_aicpu.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
-  DNNEngineAttribute attr_aicpu = {vm_aicpu, mem_type_aicpu, COST_2, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
+  DNNEngineAttribute attr_aicpu = {vm_aicpu, mem_type_aicpu, COST_3, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr vm_engine_ptr = MakeShared<AICpuDNNEngine>(attr_aicpu);
   if (vm_engine_ptr == nullptr) {
     GELOGE(ge::FAILED, "make vm_engine_ptr failed");
@@ -100,6 +100,21 @@ void RegisterAiCpuEngine() {
   }
   if (EngineManager::RegisterEngine(vm_aicpu, vm_engine_ptr) != SUCCESS) {
     GELOGW("register vmAicpuEngine failed");
+  }
+}
+
+void RegisterAiCpuTFEngine() {
+  const std::string vm_aicpu_tf = "DNN_VM_AICPU";
+  std::vector<std::string> mem_type_aicpu_tf;
+  mem_type_aicpu_tf.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
+  DNNEngineAttribute attr_aicpu_tf = {vm_aicpu_tf, mem_type_aicpu_tf, COST_2, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
+  DNNEnginePtr vm_engine_ptr = MakeShared<AICpuTFDNNEngine>(attr_aicpu_tf);
+  if (vm_engine_ptr == nullptr) {
+    GELOGE(ge::FAILED, "make vm_engine_ptr failed");
+    return;
+  }
+  if (EngineManager::RegisterEngine(vm_aicpu_tf, vm_engine_ptr) != SUCCESS) {
+    GELOGW("register vmAicpuTFEngine failed");
   }
 }
 
@@ -168,6 +183,7 @@ void RegisterHcclEngine() {
 void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines) {
   RegisterAiCoreEngine();
   RegisterVectorEngine();
+  RegisterAiCpuTFEngine();
   RegisterAiCpuEngine();
   RegisterGeLocalEngine();
   RegisterHostCpuEngine();

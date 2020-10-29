@@ -18,8 +18,8 @@
  * \file warp_perspective_ops.h
  * \brief
  */
-#ifndef GE_OP_WARP_PERSPECTIVE_OPS_H_
-#define GE_OP_WARP_PERSPECTIVE_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_WARP_PERSPECTIVE_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_WARP_PERSPECTIVE_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -56,4 +56,4 @@ REG_OP(WarpPerspective)
     .OP_END_FACTORY_REG(WarpPerspective)
 }  // namespace ge
 
-#endif  // GE_OP_WARP_PERSPECTIVE_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_WARP_PERSPECTIVE_OPS_H_

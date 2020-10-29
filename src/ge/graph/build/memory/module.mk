@@ -17,6 +17,7 @@ local_lib_inc_path :=   ${LOCAL_PATH} \
                         ${TOPDIR}third_party/protobuf/include \
                         ${TOPDIR}inc/framework \
                         $(TOPDIR)framework/domi \
+                        $(TOPDIR)graphengine/ge \
 
 #compiler for host
 include $(CLEAR_VARS)

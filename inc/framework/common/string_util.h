@@ -36,8 +36,8 @@ class StringUtils {
 #endif
     return s;
   }
-  // lint -esym(551,*)
-  static std::string &Rtrim(std::string &s) { /*lint !e618*/
+
+  static std::string &Rtrim(std::string &s) {
 #if __cplusplus >= 201103L
     (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return !std::isspace(c); }));
 #else
@@ -45,7 +45,7 @@ class StringUtils {
 #endif
     return s;
   }
-  // lint -esym(551,*)
+
   ///
   ///  @ingroup domi_common
   ///  @brief delete spaces at the beginning and end of a string
@@ -61,10 +61,8 @@ class StringUtils {
   ///  @param [in] delim  separator
   ///  @return string array after segmentation
   ///
-  /*lint -e1077*/
   static std::vector<std::string> Split(const std::string &str, char delim) {
     std::vector<std::string> elems;
-    /*lint +e1077*/
 
     if (str.empty()) {
       elems.emplace_back("");

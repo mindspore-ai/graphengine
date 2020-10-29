@@ -23,6 +23,7 @@
 #include "host_kernels/kernel_utils.h"
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace {

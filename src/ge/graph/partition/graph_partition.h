@@ -131,7 +131,7 @@ class GraphPartitioner {
   Status UpdatePldOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &end_op_desc);
 
   // Clear partition data
-  void ClearAllPartitionData(Mode mode);
+  void ClearAllPartitionData();
   void SetMergedGraphId(ComputeGraphPtr &output_merged_compute_graph);
 
   struct GraphPartitionInfo {

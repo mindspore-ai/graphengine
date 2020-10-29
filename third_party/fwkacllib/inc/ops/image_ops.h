@@ -18,8 +18,8 @@
  * \file image_ops.h
  * \brief
  */
-#ifndef GE_OP_MAGE_OPS_H_
-#define GE_OP_MAGE_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -160,10 +160,8 @@ REG_OP(CropAndResize)
 *@li box_index: A Tensor of type int32. A 1-D tensor of shape [num_boxes] with int32 values in [0, batch) . \n
 
 *@par Attributes:
-*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches 
-are resized to this size.
-*@li extrapolation_value: An optional float. Defaults to 0. Value used for 
-extrapolation, when applicable.
+*@li crop_size: list int. [crop_height, crop_width]. All cropped image patches are resized to this size.
+*@li extrapolation_value: An optional float. Defaults to 0. Value used for extrapolation, when applicable.
 *@li method: An optional string from: '"bilinear"'. Defaults to "bilinear" . \n
 
 *@par Outputs:
@@ -174,6 +172,7 @@ extrapolation, when applicable.
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow CropAndResize operator.
+
 * @par Restrictions:
 * Warning: THIS FUNCTION IS DEPRECATED. Please use CropAndResize instead.
 */
@@ -1345,4 +1344,4 @@ REG_OP(SpatialTransformerD)
 
 }  // namespace ge
 
-#endif  // GE_OP_MAGE_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

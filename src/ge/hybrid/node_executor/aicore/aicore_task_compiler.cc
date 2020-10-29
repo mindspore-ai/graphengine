@@ -17,6 +17,7 @@
 #include "aicore_task_compiler.h"
 #include "framework/common/debug/log.h"
 #include "graph/debug/ge_attr_define.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -30,23 +31,23 @@ std::mutex AiCoreTaskCompiler::mu_;
 AiCoreTaskCompiler::AiCoreTaskCompiler(OpsKernelInfoStorePtr aic_kernel_store)
     : aic_kernel_store_(std::move(aic_kernel_store)) {}
 
-Status AiCoreTaskCompiler::DoCompileOp(OpsKernelInfoStore &ops_store, const NodePtr &node) {
+Status AiCoreTaskCompiler::DoCompileOp(const NodePtr &node) const {
   GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(aic_kernel_store_);
   vector<NodePtr> node_vec;
   node_vec.emplace_back(node);
-  GE_CHK_STATUS_RET(ops_store.CompileOpRun(node_vec), "Failed to execute CompileOp, node = %s",
+  GE_CHK_STATUS_RET(aic_kernel_store_->CompileOpRun(node_vec), "Failed to execute CompileOp, node = %s",
                     node->GetName().c_str());
-  GE_CHK_STATUS_RET(ops_store.CalcOpRunningParam(*node), "Failed to execute CalcOpRunningParam, node = %s",
-                    node->GetName().c_str());
+  GE_CHK_STATUS_RET(OpsKernelBuilderManager::Instance().CalcOpRunningParam(*node),
+                    "Failed to execute CalcOpRunningParam, node = %s", node->GetName().c_str());
   return SUCCESS;
 }
 
-Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) const {
+Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) {
   GE_CHECK_NOTNULL(node);
   GELOGI("AiCoreTaskCompiler(%s) CompileOp Start.", node->GetName().c_str());
-  GE_CHECK_NOTNULL(aic_kernel_store_);
 
-  GE_CHK_STATUS_RET_NOLOG(DoCompileOp(*aic_kernel_store_, node));
+  GE_CHK_STATUS_RET_NOLOG(DoCompileOp(node));
   GELOGD("successfully compiled op: %s", node->GetName().c_str());
 
   auto op_desc = node->GetOpDesc();
@@ -56,14 +57,13 @@ Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::Task
   op_desc->SetOutputOffset(output_offsets);
   std::vector<int64_t> workspaces(op_desc->GetWorkspaceBytes().size(), kMemBase);
   op_desc->SetWorkspace(std::move(workspaces));
-  GE_CHK_STATUS_RET_NOLOG(DoGenerateTask(*aic_kernel_store_, *node, tasks));
+  GE_CHK_STATUS_RET_NOLOG(DoGenerateTask(*node, tasks));
   GELOGD("successfully generated task: %s", node->GetName().c_str());
   GELOGI("AiCoreTaskCompiler(%s) CompileOp End.", node->GetName().c_str());
   return SUCCESS;
 }
 
-Status AiCoreTaskCompiler::DoGenerateTask(OpsKernelInfoStore &store, const Node &node,
-                                          std::vector<domi::TaskDef> &tasks) {
+Status AiCoreTaskCompiler::DoGenerateTask(const Node &node, std::vector<domi::TaskDef> &tasks) {
   rtModel_t rt_model_ = nullptr;
   GE_CHK_RT_RET(rtModelCreate(&rt_model_, 0));
   rtStream_t stream = nullptr;
@@ -83,7 +83,7 @@ Status AiCoreTaskCompiler::DoGenerateTask(OpsKernelInfoStore &store, const Node 
   Status ret;
   {
     std::lock_guard<std::mutex> lk(mu_);
-    ret = store.GenerateTask(node, context, tasks);
+    ret = OpsKernelBuilderManager::Instance().GenerateTask(node, context, tasks);
   }
 
   GE_CHK_STATUS(ret, "Failed to execute GenerateTask, node = %s", node.GetName().c_str());

@@ -23,11 +23,14 @@
 #include <vector>
 
 #include "./operator.h"
+#include "./gnode.h"
 
 namespace ge {
+class Graph;
 class GraphImpl;
 
 using GraphImplPtr = std::shared_ptr<GraphImpl>;
+using GraphPtr = std::shared_ptr<Graph>;
 
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
   friend class GraphUtils;
@@ -53,15 +56,15 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus AddOp(const ge::Operator &op);
 
-  graphStatus FindOpByName(const string &name, ge::Operator &op) const;
+  graphStatus FindOpByName(const std::string &name, ge::Operator &op) const;
 
-  graphStatus FindOpByType(const string &type, std::vector<ge::Operator> &ops) const;
+  graphStatus FindOpByType(const std::string &type, std::vector<ge::Operator> &ops) const;
 
-  graphStatus GetAllOpName(std::vector<string> &op_name) const;
+  graphStatus GetAllOpName(std::vector<std::string> &op_name) const;
 
-  graphStatus SaveToFile(const string &file_name) const;
+  graphStatus SaveToFile(const std::string &file_name) const;
 
-  graphStatus LoadFromFile(const string &file_name);
+  graphStatus LoadFromFile(const std::string &file_name);
 
   const std::string &GetName() const;
 
@@ -72,6 +75,22 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
   /// @param need_iteration need_iteration:whether to set iteration or not
   ///
   void SetNeedIteration(bool need_iteration);
+
+  std::vector<GNode> GetAllNodes() const;
+
+  std::vector<GNode> GetDirectNode() const;
+
+  graphStatus RemoveNode(GNode &node);
+
+  graphStatus RemoveEdge(GNode &src_node, const int32_t src_port_index, GNode &dst_node, const int32_t dst_port_index);
+
+  GNode AddNodeByOp(const Operator &op);
+
+  graphStatus AddDataEdge(GNode &src_node, const int32_t src_port_index, GNode &dst_node, const int32_t dst_port_index);
+
+  graphStatus AddControlEdge(GNode &src_node, GNode &dst_node);
+
+  static GraphPtr ConstructFromInputs(const std::vector<Operator> &inputs, const ge::AscendString &name);
 
  private:
   GraphImplPtr impl_{nullptr};

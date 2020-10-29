@@ -70,6 +70,7 @@ struct OpRunInfo {
     uint32_t block_dim;
     std::vector<int64_t> workspaces;
     ByteBuffer tiling_data;
+    bool clear_atomic;
 };
 
 

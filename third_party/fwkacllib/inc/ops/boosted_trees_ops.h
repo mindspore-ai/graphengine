@@ -18,8 +18,8 @@
  * \file boosted_trees_ops.h
  * \brief
  */
-#ifndef GE_OP_BOOSTED_TREES_OPS_H_
-#define GE_OP_BOOSTED_TREES_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_BOOSTED_TREES_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_BOOSTED_TREES_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -61,4 +61,4 @@ REG_OP(BoostedTreesBucketize)
 
 }  // namespace ge
 
-#endif  // GE_OP_BOOSTED_TREES_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_BOOSTED_TREES_OPS_H_

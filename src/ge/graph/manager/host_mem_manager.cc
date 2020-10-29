@@ -18,20 +18,46 @@
 
 #include <sstream>
 
+#include "graph/ge_context.h"
 #include "graph/utils/tensor_utils.h"
+#include "runtime/mem.h"
 
+namespace {
+const uint32_t kMallocHostMemFlag = 0;
+}  // namespace
 namespace ge {
-Status HostMemoryAllocator::Allocate(std::size_t memory_size, uint8_t *memory_addr) {
-  GELOGI("HostMemoryAllocator::MallocMemory size= %zu.", memory_size);
+Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
+  auto device_id = GetContext().DeviceId();
+  GELOGD("SharedMemAllocator::Malloc host mem size= %zu for devid:[%u].", mem_info.mem_size, device_id);
+
+  auto dev_id = static_cast<int32_t>(device_id);
+  GE_CHK_RT_RET(rtSetDevice(dev_id));
+  // DeviceReset before memory finished!
+  GE_MAKE_GUARD(not_used_var, [&] { GE_CHK_RT(rtDeviceReset(dev_id)); });
+
+  rtMallocHostSharedMemoryIn input_para = {mem_info.shm_name.c_str(), mem_info.mem_size, kMallocHostMemFlag};
+  rtMallocHostSharedMemoryOut output_para;
+  rtError_t rt_ret = rtMallocHostSharedMemory(&input_para, &output_para);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api(rtMallocHostSharedMemory) failed, devid:[%u].", device_id);
+    return GE_GRAPH_MEMORY_ALLOC_FAILED;
+  }
+  mem_info.fd = output_para.fd;
+  mem_info.host_address = reinterpret_cast<uint8_t *>(output_para.ptr);
+  mem_info.device_address = reinterpret_cast<uint8_t *>(output_para.devPtr);
   return SUCCESS;
 }
 
-Status HostMemoryAllocator::DeAllocate(uint8_t *memory_addr) {
-  if (rtFreeHost(memory_addr) != RT_ERROR_NONE) {
-    GELOGE(GE_GRAPH_FREE_FAILED, "MemoryAllocator::Free memory failed.");
-    return GE_GRAPH_FREE_FAILED;
+Status SharedMemAllocator::DeAllocate(SharedMemInfo &mem_info) {
+  GELOGD("SharedMemAllocator::DeAllocate");
+  rtFreeHostSharedMemoryIn free_para = {mem_info.shm_name.c_str(), mem_info.mem_size, mem_info.fd,
+                                        mem_info.host_address, mem_info.device_address};
+
+  rtError_t rt_ret = rtFreeHostSharedMemory(&free_para);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api(rtFreeHostSharedMemory) failed, ret: 0x%X.", rt_ret);
+    return RT_FAILED;
   }
-  memory_addr = nullptr;
   return ge::SUCCESS;
 }
 
@@ -42,9 +68,9 @@ HostMemManager &HostMemManager::Instance() {
 
 Status HostMemManager::Initialize() {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  allocator_ = std::unique_ptr<HostMemoryAllocator>(new (std::nothrow) HostMemoryAllocator());
+  allocator_ = std::unique_ptr<SharedMemAllocator>(new (std::nothrow) SharedMemAllocator());
   if (allocator_ == nullptr) {
-    GELOGE(GE_GRAPH_MALLOC_FAILED, "Host mem allocator init failed!");
+    GELOGE(GE_GRAPH_MALLOC_FAILED, "Shared memory allocator init failed!");
     return GE_GRAPH_MALLOC_FAILED;
   }
   return SUCCESS;
@@ -52,35 +78,43 @@ Status HostMemManager::Initialize() {
 
 void HostMemManager::Finalize() noexcept {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-
-  for (const auto &it : var_memory_base_map_) {
-    if (allocator_->DeAllocate(it.second.address) != SUCCESS) {
-      GELOGW("Host %s mem deAllocator failed!", it.first.c_str());
+  for (auto &it : var_memory_base_map_) {
+    if (allocator_->DeAllocate(it.second) != SUCCESS) {
+      GELOGW("Host %s mem release failed!", it.first.c_str());
     }
   }
   var_memory_base_map_.clear();
 }
 
-Status HostMemManager::MallocMemoryForHostVar(const string &op_name, uint64_t tensor_size, uint8_t *&var_addr) {
+Status HostMemManager::MallocSharedMemory(SharedMemInfo &mem_info) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (var_memory_base_map_.find(op_name) != var_memory_base_map_.end()) {
-    GELOGI("Host mem for variable %s has been malloced", op_name.c_str());
-    return SUCCESS;
+  auto iter = var_memory_base_map_.find(mem_info.op_name);
+  if (iter != var_memory_base_map_.end()) {
+    GELOGE(FAILED, "Host shared memory for op %s has been malloced", mem_info.op_name.c_str());
+    return FAILED;
   }
+  mem_info.shm_name = OpNameToShmName(mem_info.op_name);
   GE_CHECK_NOTNULL(allocator_);
-  GE_CHK_STATUS(allocator_->Allocate(tensor_size, var_addr));
-  HostMemInfo info(var_addr, tensor_size);
-  var_memory_base_map_[op_name] = info;
+  GE_CHK_STATUS_RET(allocator_->Allocate(mem_info));
+  var_memory_base_map_[mem_info.op_name] = mem_info;
   return SUCCESS;
 }
 
 Status HostMemManager::QueryVarMemInfo(const string &op_name, uint64_t &base_addr, uint64_t &data_size) {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_memory_base_map_.find(op_name) == var_memory_base_map_.end()) {
     GELOGE(INTERNAL_ERROR, "Find host base base_addr failed,node name:%s!", op_name.c_str());
     return INTERNAL_ERROR;
   }
-  base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].address));
-  data_size = var_memory_base_map_[op_name].data_size;
+  base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].device_address));
+  data_size = var_memory_base_map_[op_name].mem_size;
   return SUCCESS;
+}
+
+string HostMemManager::OpNameToShmName(const string &op_name) {
+  string sh_name("Ascend_");
+  std::hash<std::string> hash_str;
+  sh_name.append(std::to_string(hash_str(op_name)));
+  return sh_name;
 }
 }  // namespace ge

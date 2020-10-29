@@ -222,7 +222,7 @@ static void GetOpsProtoPath(string &opsproto_path) {
 
 class GeGenerator::Impl {
  public:
-  Impl(OmgContext &omg_context) : omg_context_(omg_context), graph_manager_(omg_context) {}
+  Impl(OmgContext &omg_context) : omg_context_(omg_context) {}
   ~Impl() = default;
 
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GeRootModelPtr &ge_models);
@@ -524,9 +524,19 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   return SUCCESS;
 }
 
-Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                                  const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                                  bool is_offline) {
+namespace {
+bool IsNeedConnectInputOpForSingleOp(GeTensorDesc &tensor_desc) {
+  bool is_need = true;
+  // format and dtype is all reserved, stand for Optional input. When singleop scene
+  if (tensor_desc.GetFormat() == FORMAT_RESERVED && tensor_desc.GetDataType() == DT_UNDEFINED) {
+    is_need = false;
+  }
+  return is_need;
+}
+}  // namespace
+
+Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
+                                     const vector<GeTensor> &outputs) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
   if (!inputs.empty() && (inputs.size() != op_desc->GetAllInputsSize())) {
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetAllInputsSize());
@@ -536,7 +546,16 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Outputs size: %zu", outputs.size(), op_desc->GetOutputsSize());
     return PARAM_INVALID;
   }
+  return SUCCESS;
+}
 
+Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
+                                  const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
+                                  bool is_offline) {
+  if (CheckForSingleOp(op_desc, inputs, outputs) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "input param is invalid when build single op!");
+    return PARAM_INVALID;
+  }
   OmgContext &omg_context = (impl_ == nullptr) ? domi::GetContext() : impl_->omg_context_;
   omg_context.is_dynamic_input = ContainsDynamicInpus(*op_desc);
 
@@ -571,12 +590,18 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   if (inputs.empty()) {
     for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
       GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
+      if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
+        continue;
+      }
       GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
       arg_index++;
     }
   } else {
     for (const auto &in_desc : inputs) {
       GeTensorDesc input_desc = in_desc.GetTensorDesc();
+      if (!IsNeedConnectInputOpForSingleOp(input_desc)) {
+        continue;
+      }
       GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
       arg_index++;
     }
@@ -679,7 +704,7 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   static std::atomic<GraphId> atomic_graph_id(0);
   auto graph_id = atomic_graph_id.fetch_add(1);
   const std::map<std::string, std::string> options;
-  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options, omg_context_);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph fail, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();
@@ -712,7 +737,7 @@ Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph) {
   static std::atomic<GraphId> atomic_graph_id(0);
   auto graph_id = atomic_graph_id.fetch_add(1);
   const std::map<std::string, std::string> options;
-  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options, omg_context_);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph failed, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();

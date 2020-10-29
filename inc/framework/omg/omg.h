@@ -21,7 +21,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "framework/common/types.h"
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/parser/parser_inner_ctx.h"
 #include "proto/ge_ir.pb.h"
@@ -91,8 +90,6 @@ Status ConvertFwkModelToJson(domi::FrameworkType framework, const char *model_fi
 void GetGroupName(ge::proto::ModelDef &model);
 
 void FindParserSo(const string &path, vector<string> &fileList, string &caffe_parser_path);
-
-Status CheckCustomAiCpuOpLib();
 
 Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
 

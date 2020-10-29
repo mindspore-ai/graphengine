@@ -26,6 +26,7 @@
 #include "host_kernels/kernel_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
+#include "framework/common/types.h"
 
 namespace {
 const int kFillInputSize = 2;

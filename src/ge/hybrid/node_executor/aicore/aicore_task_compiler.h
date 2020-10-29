@@ -27,11 +27,11 @@ class AiCoreTaskCompiler {
   explicit AiCoreTaskCompiler(OpsKernelInfoStorePtr aic_kernel_store);
   ~AiCoreTaskCompiler() = default;
 
-  Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) const;
+  Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks);
 
  private:
-  static Status DoCompileOp(OpsKernelInfoStore &store, const NodePtr &node);
-  static Status DoGenerateTask(OpsKernelInfoStore &store, const Node &node, std::vector<domi::TaskDef> &tasks);
+  Status DoCompileOp(const NodePtr &node) const;
+  Status DoGenerateTask(const Node &node, std::vector<domi::TaskDef> &tasks);
   OpsKernelInfoStorePtr aic_kernel_store_;
   static std::mutex mu_;
 };

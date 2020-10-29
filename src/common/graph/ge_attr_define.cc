@@ -18,6 +18,8 @@
 
 namespace ge {
 // Public attribute
+const std::string ATTR_NAME_FORCE_UNKNOWN_SHAPE = "_force_unknown_shape";
+
 const std::string ATTR_NAME_IS_UNKNOWN_SHAPE = "_is_unknown_shape";
 
 const std::string ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED = "_dynamic_shape_partitioned";
@@ -718,6 +720,8 @@ const std::string ATTR_MODEL_MEMORY_SIZE = "memory_size";
 
 const std::string ATTR_MODEL_ZERO_COPY_MEMORY_SIZE = "zero_copy_memory_size";
 
+const std::string ATTR_MODEL_P2P_MEMORY_SIZE = "p2p_memory_size";
+
 const std::string ATTR_MODEL_OUT_NODES_NAME = "attr_model_out_nodes_name";
 
 const std::string ATTR_MODEL_WEIGHT_SIZE = "weight_size";
@@ -957,8 +961,6 @@ const std::string ATTR_NAME_FUSION_GROUP_KEY = "_fusion_group_key";
 const std::string ATTR_NAME_L1_FUSION_GROUP_KEY = "_l1_fusion_group_key";
 const std::string ATTR_NAME_FUSION_VIRTUAL_OP = "_fusion_virtual_op";
 const std::string ATTR_NAME_FUSION_GROUP_TYPE = "_fusion_group_type";
-const std::string ATTR_NAME_INPUT_MEM_TYPE_LIST = "_input_memory_type";
-const std::string ATTR_NAME_OUTPUT_MEM_TYPE_LIST = "_output_memory_type";
 const std::string ATTR_NAME_L1_FUSION_EXTEND_PTR = "_l1_fusion_extend_content";
 const std::string ATTR_NAME_GET_TENSOR_ACTUAL_SIZE = "_tensor_actual_size";
 const std::string ATTR_NAME_OUTPUT_OFFSET_FOR_L1_FUSION = "_output_offset_for_l1_fuison";
@@ -979,6 +981,12 @@ const std::string ATTR_NAME_OPTIMIZE_GROUP = "_optimize_group";
 const std::string ATTR_NAME_OP_COMPILE_STRATEGY = "_op_compile_strategy";
 const std::string ATTR_NAME_TBE_KERNEL_NAME = "_tbe_kernel_name";
 const std::string ATTR_NAME_TBE_KERNEL_BUFFER = "_tbe_kernel_buffer";
+
+// used for memory allocate
+const std::string ATTR_NAME_INPUT_MEM_TYPE_LIST = "_input_memory_type";
+const std::string ATTR_NAME_OUTPUT_MEM_TYPE_LIST = "_output_memory_type";
+const std::string ATTR_NAME_WORKSPACE_TYPE_LIST = "_workspace_type";
+const std::string ATTR_NAME_TENSOR_MEM_TYPE = "_tensor_memory_type";
 
 // Op debug attrs
 const std::string ATTR_OP_DEBUG_FLAG = "_op_debug_flag";
@@ -1079,6 +1087,9 @@ const std::string ATTR_NAME_END_REAR_NODE_ENGINE_NAME = "end_rear_node_engine_na
 const std::string ATTR_VARIABLE_PLACEMENT = "_variable_placement";
 const std::string ATTR_INPUT_MEMORY_TYPE = "_input_memory_type";
 const std::string ATTR_OUTPUT_MEMORY_TYPE = "_output_memory_type";
+
+// stage
+const std::string ATTR_STAGE_LEVEL = "_stage_level";
 
 // input_output_offset
 const std::string ATTR_ZERO_COPY_BASIC_OFFSET = "_zero_copy_basic_offset";

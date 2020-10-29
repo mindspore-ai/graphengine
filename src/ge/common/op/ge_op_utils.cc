@@ -27,6 +27,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/op/attr_value_util.h"
 #include "framework/common/util.h"
+#include "framework/common/types.h"
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"

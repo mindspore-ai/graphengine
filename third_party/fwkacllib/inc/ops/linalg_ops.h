@@ -18,8 +18,8 @@
  * \file linalg_ops.h
  * \brief
  */
-#ifndef GE_OP_LINALG_OPS_H_
-#define GE_OP_LINALG_OPS_H_
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_LINALG_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_LINALG_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -432,4 +432,4 @@ REG_OP(TridiagonalSolve)
 
 }  // namespace ge
 
-#endif  // GE_OP_LINALG_OPS_H_
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_LINALG_OPS_H_

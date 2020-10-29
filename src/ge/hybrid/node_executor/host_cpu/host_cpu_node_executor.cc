@@ -110,7 +110,9 @@ Status HostCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
   auto mem_type = static_cast<uint32_t>(HOST_DDR);
-  (void)AttrUtils::SetInt(op_desc, ATTR_OUTPUT_MEMORY_TYPE, mem_type);
+  for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
+    (void)AttrUtils::SetInt(op_desc->MutableOutputDesc(i), ATTR_OUTPUT_MEMORY_TYPE, mem_type);
+  }
   const std::string &name = node->GetName();
   const std::string &type = node->GetType();
   if (HostCpuEngine::GetInstance().CheckSupported(type)) {

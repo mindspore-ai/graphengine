@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/*lint -e* */
 #ifndef INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_
 #define INC_FRAMEWORK_COMMON_GE_INNER_ERROR_CODES_H_
 
@@ -304,6 +303,7 @@ GE_ERRORNO_EXECUTOR(GE_EXEC_ALLOC_WEIGHT_MEM_FAILED, 16, "Failed to allocate wei
 GE_ERRORNO_EXECUTOR(GE_EXEC_ALLOC_VAR_MEM_FAILED, 17, "Failed to allocate variable memory.");
 GE_ERRORNO_EXECUTOR(GE_AIPP_NOT_EXIST, 18, "GE AIPP is not exist.");
 GE_ERRORNO_EXECUTOR(GE_DYNAMIC_AIPP_NOT_SUPPORT_QUERY, 19, "GE Dynamic AIPP is not support to query temporarily.");
+GE_ERRORNO_EXECUTOR(GE_EXEC_ALLOC_P2P_MEM_FAILED, 20, "Failed to allocate P2P memory");
 
 // Generator module error code definition
 GE_ERRORNO_GENERATOR(GE_GENERATOR_GRAPH_MANAGER_INIT_FAILED, 1, "Graph manager initialize failed.");

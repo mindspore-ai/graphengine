@@ -36,10 +36,10 @@
 namespace ge {
 class DataDumper {
  public:
-  DataDumper()
+  explicit DataDumper(const RuntimeParam &rsh)
       : model_name_(),
         model_id_(0),
-        runtime_param_(),
+        runtime_param_(rsh),
         dev_mem_load_(nullptr),
         dev_mem_unload_(nullptr),
         op_list_(),
@@ -57,8 +57,6 @@ class DataDumper {
   void SetModelName(const std::string &model_name) { model_name_ = model_name; }
 
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
-
-  void SetMemory(const RuntimeParam &runtime_param) { runtime_param_ = runtime_param; }
 
   void SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
 
@@ -105,7 +103,7 @@ class DataDumper {
   std::string om_name_;
 
   uint32_t model_id_;
-  RuntimeParam runtime_param_;
+  const RuntimeParam &runtime_param_;
   void *dev_mem_load_;
   void *dev_mem_unload_;
 
@@ -134,6 +132,8 @@ class DataDumper {
 
   DumpProperties dump_properties_;
 
+  // Build task info of op mapping info
+  Status BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
   Status DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
   Status DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Output &output, size_t i,
                        const std::string &node_name_index);

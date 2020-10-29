@@ -17,9 +17,7 @@
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
 
-/*lint -e7*/
 #include <stddef.h>
-/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"
@@ -177,6 +175,28 @@ typedef struct tagRtPointerAttributes {
   uint32_t pageSize;
 } rtPointerAttributes_t;
 
+
+typedef struct rtMallocHostSharedMemoryIn {
+    const char* name;
+    const uint64_t size;
+    uint32_t flag;
+} rtMallocHostSharedMemoryIn;
+
+typedef struct rtMallocHostSharedMemoryOut {
+    int fd;
+    void* ptr;
+    void* devPtr;
+} rtMallocHostSharedMemoryOut;
+
+typedef struct rtFreeHostSharedMemoryIn {
+    const char* name;
+    const uint64_t size;
+    int fd;
+    void* ptr;
+    void* devPtr;
+} rtFreeHostSharedMemoryIn;
+
+
 /**
  * @ingroup dvrt_mem
  * @brief alloc device memory
@@ -234,6 +254,28 @@ RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtFreeHost(void *hostPtr);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief alloc host shared memory
+ * @param [in] in   alloc host shared memory inputPara pointer
+ * @param [in] out   alloc host shared memory outputInfo pointer
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+
+RTS_API rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
+    rtMallocHostSharedMemoryOut *out);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief free host memory
+ * @param [in] in   free host shared memory inputPara pointer
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+
+RTS_API rtError_t rtFreeHostSharedMemory(rtFreeHostSharedMemoryIn *in);
 
 /**
  * @ingroup dvrt_mem

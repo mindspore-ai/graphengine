@@ -26,12 +26,18 @@
 #include "graph/utils/node_utils.h"
 #include "graph/ge_context.h"
 #include "graph/common/local_context.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace multibatch {
 constexpr int kDecimal = 10;
 constexpr uint8_t kMaxShapesCount = 100;
 constexpr uint8_t kMinShapesCount = 2;
+const int kDynmaicDims = -1;
+const int kDynamicBatchDynamicDimsNum = 1;
+const int kDynamicImgSizeDynamciDimsNum = 2;
+const size_t kMaxNDDimNum = 4;
+const size_t kMinNDDimNum = 1;
 
 void ParseDynamicSize(string dynamic_size, vector<vector<int64_t>> &shapes) {
   std::vector<std::string> shape_strs = ge::StringUtils::Split(dynamic_size, ';');
@@ -251,6 +257,63 @@ Status StampDynamicType(const OpDescPtr &op_desc) {
     return INTERNAL_ERROR;
   }
   return SUCCESS;
+}
+
+///
+/// @ingroup ge
+/// @brief Check dynamic batch Shape.
+/// @param [in] const vector<int64_t> &shape: data_shape to be checked.
+/// @param [in] const string &data_name: cur data name.
+/// @return 0: true/false
+///
+bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name) {
+  if (shape[0] == kDynmaicDims) {
+    for (size_t i = 1; i < shape.size(); ++i) {
+      if (shape[i] < 1) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10018", {"index", "shape"},
+                                                        {std::to_string(i), std::to_string(shape[i])});
+        GELOGE(ge::PARAM_INVALID,
+               "Only batch N can be -1 when set --dynamic_batch_size, current data: %s shape[%zu] is %ld",
+               data_name.c_str(), i, shape[i]);
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+///
+/// @ingroup ge
+/// @brief Check Dynamic image size shape.
+/// @param [in] unordered_map<string, vector<int64_t>> &shape_map: map of data_name and data_shape.
+/// @param [in]  const std::string &input_format: format of input.
+/// @return 0: true/false
+///
+bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
+                                const std::string &input_format) {
+  int64_t height = 0;
+  int64_t width = 0;
+  if (input_format == "NCHW") {
+    height = shape[NCHW_DIM_H];
+    width = shape[NCHW_DIM_W];
+  }
+
+  if (input_format == "NHWC") {
+    height = shape[NHWC_DIM_H];
+    width = shape[NHWC_DIM_W];
+  }
+
+  if (height == kDynmaicDims && width == kDynmaicDims &&
+      std::count(shape.begin(), shape.end(), kDynmaicDims) == kDynamicImgSizeDynamciDimsNum) {
+    return true;
+  } else {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10019");
+    GELOGE(ge::PARAM_INVALID,
+           "--input_shape's shape is invalid, only height and width can be -1 when set --dynamic_image_size.");
+    return false;
+  }
 }
 }  // namespace multibatch
 }  // namespace ge

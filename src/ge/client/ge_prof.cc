@@ -324,10 +324,17 @@ Status aclgrphProfStop(aclgrphProfConfig *profiler_config) {
     return GE_PROF_NOT_INIT;
   }
 
-  Status ret = ProfStopProfiling(&profiler_config->config);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Stop profiling failed, prof result = %d", ret);
-    return ret;
+  for (uint32_t i = 0; i < profiler_config->config.devNums; i++) {
+    uint64_t data_type_config;
+    Status status = ProfGetDataTypeConfig(profiler_config->config.devIdList[i], data_type_config);
+    if (status != SUCCESS) {
+      GELOGE(status, "Prof get data type config failed, prof result = %d", status);
+      return status;
+    }
+    if (data_type_config != profiler_config->config.dataTypeConfig) {
+      GELOGE(FAILED, "data type config verify failed");
+      return FAILED;
+    }
   }
 
   std::vector<string> prof_params;
@@ -344,10 +351,16 @@ Status aclgrphProfStop(aclgrphProfConfig *profiler_config) {
   command.module_index = profiler_config->config.dataTypeConfig;
   GELOGI("Profiling will stop, device nums:%s , deviceID:[%s], data type config: 0x%llx", prof_params[0].c_str(),
          prof_params[kDeviceListIndex].c_str(), command.module_index);
-  ret = graph_loader.CommandHandle(command);
+  Status ret = graph_loader.CommandHandle(command);
   if (ret != SUCCESS) {
     GELOGE(ret, "Handle profiling command failed");
     return FAILED;
+  }
+
+  ret = ProfStopProfiling(&profiler_config->config);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Stop profiling failed, prof result = %d", ret);
+    return ret;
   }
 
   GELOGI("Successfully execute GraphProfStopProfiling.");

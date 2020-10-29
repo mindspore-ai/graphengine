@@ -18,8 +18,8 @@
  * \file transformation_ops.h
  * \brief
  */
-#ifndef GE_OP_TRANSFORMATION_OPS_H
-#define GE_OP_TRANSFORMATION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -235,8 +235,12 @@ REG_OP(BatchToSpaceND)
 *@par Outputs:
 *y: A Tensor with format NC1HWC0. Has the same type as input "x".
 
+
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpaceND.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpaceND instead.
 */
 REG_OP(BatchToSpaceNDD)
     .INPUT(x, TensorType::BasicType())
@@ -283,6 +287,9 @@ REG_OP(SpaceToBatchND)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator SpaceToBatchND.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatchND instead.
 */
 REG_OP(SpaceToBatchNDD)
     .INPUT(x, TensorType::BasicType())
@@ -404,6 +411,9 @@ REG_OP(BatchToSpace)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchToSpace.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpace instead.
 */
 REG_OP(BatchToSpaceD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_UINT8,
@@ -457,6 +467,9 @@ REG_OP(SpaceToBatch)
 *y: A Tensor. Has the same type as input "x".
 *@par Third-party framework compatibility
 *@ Compatible with the TensorFlow operator SpaceToBatch.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use SpaceToBatch instead.
 */
 REG_OP(SpaceToBatchD)
     .INPUT(x, TensorType::BasicType())
@@ -516,7 +529,9 @@ REG_OP(Unpack)
 * with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *
 * (rates - 1), followed by subsampling them spatially by a factor of rates.
 * This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
-* @li padding: A required string. The type of padding algorithm to use . \n
+* @li padding: A required string. The type of padding algorithm to use,
+  support "SAME" or "VALID". \n
+* @li data_format: A required string. The format of input, only supported NHWC. \n
 
 * @par Outputs:
 * y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *
@@ -537,6 +552,7 @@ REG_OP(ExtractImagePatches)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(rates, ListInt)
     .REQUIRED_ATTR(padding, String)
+    .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(ExtractImagePatches)
 
 /**
@@ -551,7 +567,9 @@ REG_OP(ExtractImagePatches)
 * dimension of "x".
 * @li strides: A required list or tuple. How far the centers of two consecutive
 * patches are in "x". Must be: [1, stride_planes, stride_rows, stride_cols, 1].
-* @li padding: A required string. The type of padding algorithm to use . \n
+* @li padding: A required string. The type of padding algorithm to use ,
+* support "SAME" or "VALID" . \n
+* @li data_format: An optional string. The format of input, only supported NDHWC. \n
 
 * @par Outputs:
 * Output: A 5D Tensor with shape [batch, out_planes, out_rows, out_cols, ksize_planes *
@@ -570,6 +588,7 @@ REG_OP(ExtractVolumePatches)
     .REQUIRED_ATTR(ksizes, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
+    .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**
@@ -585,6 +604,9 @@ REG_OP(ExtractVolumePatches)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use ConfusionTranspose instead.
 */
 REG_OP(ConfusionTransposeD)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_UINT8,
@@ -695,4 +717,4 @@ REG_OP(CompressFcOp)
 .OP_END_FACTORY_REG(CompressFcOp)
 }  // namespace ge
 
-#endif  // GE_OP_TRANSFORMATION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_

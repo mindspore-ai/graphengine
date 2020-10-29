@@ -18,8 +18,8 @@
  * \file pad_ops.h
  * \brief
  */
-#ifndef GE_OP_PAD_OPS_H
-#define GE_OP_PAD_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_
 
 #include "graph/operator_reg.h"
 namespace ge {
@@ -65,6 +65,9 @@ REG_OP(Fill)
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "value".
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Fill instead.
 */
 REG_OP(FillD)
     .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT16,
@@ -122,6 +125,9 @@ REG_OP(BroadcastTo)
 *
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator BroadcastTo.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use BroadcastTo instead.
 */
 REG_OP(BroadcastToD)
     .INPUT(x, TensorType::BasicType())
@@ -169,12 +175,69 @@ REG_OP(Pad)
 
 *@par Third-party framework compatibility:
 * Compatible with TensorFlow operator Pad.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
 */
 REG_OP(PadD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
     .REQUIRED_ATTR(paddings, ListListInt)
     .OP_END_FACTORY_REG(PadD)
+
+/**
+*@brief Pads a tensor . \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, uint32, uint64.
+* @li constant_values: A Tensor. Must have the same type as input.
+* @li paddings: A Tensor of type int32 or int64 . \n
+
+*@par Outputs:
+*y: A Tensor of the same type as "x" . \n
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Pad.
+*/
+REG_OP(PadV2)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(paddings, TensorType::IndexNumberType())
+    .INPUT(constant_values, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(PadV2)
+
+/**
+*@brief Pads a tensor . \n
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32 . \n
+*constant_values: A Tensor. Must have the same type as input.
+
+*@par Attributes:
+*paddings: An optional "vector<vector<int>>". Defaults to "{}".
+*     For each dimension D of input, paddings[D, 0] indicates how many
+*     values to add before the contents of tensor in that dimension,
+*     and paddings[D, 1] indicates how many values to add after the
+*     contents of tensor in that dimension . \n
+
+*@par Outputs:
+*y: A Tensor of the same type as "x" . \n
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Pad.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
+*/
+REG_OP(PadV2D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(constant_values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(paddings, ListListInt)
+    .OP_END_FACTORY_REG(PadV2D)
 
 /**
 *@brief Pads a tensor.
@@ -233,6 +296,9 @@ REG_OP(PadV3)
 
 *@par Third-party framework compatibility:
 * Compatible with ONNX operator Pad.
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use PadV3 instead.
 */
 REG_OP(PadV3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
@@ -260,6 +326,9 @@ REG_OP(PadV3D)
 *@see Diag()
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Diag.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Diag instead.
 */
 REG_OP(DiagD)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -328,7 +397,7 @@ REG_OP(AscendPadding)
 */
 REG_OP(EmbeddingRankId)
     .INPUT(addr_table, TensorType({DT_UINT64}))
-    .INPUT(index, TensorType({DT_UINT32}))
+    .INPUT(index, TensorType({DT_INT64,DT_INT32,DT_UINT64}))
     .OUTPUT(rank_id, TensorType({DT_UINT64}))
     .ATTR(row_memory, Int, 320)
     .ATTR(mode, String, "mod")
@@ -336,4 +405,4 @@ REG_OP(EmbeddingRankId)
 
 
 } // namespace ge
-#endif //GE_OP_PAD_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_

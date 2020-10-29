@@ -227,7 +227,7 @@ Status TaskContext::AllocateOutputs(AllocationAttr *attr) {
     const auto &output_desc = node_item_->op_desc->MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_desc);
     uint32_t mem_type = 0;
-    (void)AttrUtils::GetInt(node_item_->op_desc, ATTR_OUTPUT_MEMORY_TYPE, mem_type);
+    (void)AttrUtils::GetInt(output_desc, ATTR_OUTPUT_MEMORY_TYPE, mem_type);
     if (attr == nullptr) {
       auto tmp_attr = AllocationAttr(0, nullptr, static_cast<MemStorageType>(mem_type));
       GE_CHK_STATUS_RET_NOLOG(AllocateOutput(i, *output_desc, nullptr, &tmp_attr));

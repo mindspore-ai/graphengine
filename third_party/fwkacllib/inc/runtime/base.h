@@ -100,6 +100,9 @@ typedef enum tagRtError {
     RT_ERROR_MODEL_ID,
     RT_ERROR_MODEL_EXE_FAILED,
     RT_ERROR_END_OF_SEQUENCE,               // end of sequence
+    RT_ERROR_MODEL_EXIT,
+    RT_ERROR_MODEL_EXIT_STREAM_UNBIND,
+    RT_ERROR_MODEL_EXIT_ID,
 
     RT_ERROR_EVENT_BASE                     = 0x07050000,
     RT_ERROR_EVENT_NULL,
@@ -387,6 +390,8 @@ typedef void (*rtErrorCallback)(rtExceptionType);
 
 typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
 
+typedef void (*rtProfilingCallback)(uint32_t devId, bool isOpenDevice);
+
 /**
  * @ingroup dvrt_base
  * @brief stream handle.
@@ -468,6 +473,14 @@ RTS_API rtError_t rtSetExceptCallback(rtErrorCallback callback);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
+
+/**
+ * @ingroup dvrt_base
+ * @brief register callback for deviceid
+ * @param [out] NA
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtSetPoriflingCallback(rtProfilingCallback callback);
 
 /**
  * @ingroup dvrt_base
@@ -580,6 +593,16 @@ RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *d
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
+
+/**
+ * @ingroup dvrt_base
+ * @brief get current thread last stream id and task id 
+ * @param [out] stream id and task id
+ * @param [in] null
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for input null ptr
+ */
+RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskid, uint32_t *streamid);
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }

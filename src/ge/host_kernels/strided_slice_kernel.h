@@ -28,13 +28,13 @@ class StridedSliceKernel : public Kernel {
 
  private:
   Status CheckAndGetAttr(const OpDescPtr &attr);
-  Status CheckInputParam(const std::vector<ConstGeTensorPtr> &input) const;
+  static Status CheckInputParam(const std::vector<ConstGeTensorPtr> &input);
   Status InitParamWithAttrs(const std::vector<ConstGeTensorPtr> &input, std::vector<int64_t> &input_dims,
                             std::vector<int64_t> &begin_vec, std::vector<int64_t> &output_dims,
                             std::vector<int64_t> &stride_vec);
   Status MaskCal(const size_t i, int64_t &begin_i, int64_t &end_i, int64_t &dim_i) const;
-  Status StrideCal(const int64_t x_dims_i, int64_t &begin_i, int64_t &end_i, int64_t &stride_i,
-                   int64_t &dim_final) const;
+  static Status StrideCal(const int64_t x_dims_i, int64_t &begin_i, int64_t &end_i, int64_t &stride_i,
+                          int64_t &dim_final);
   void ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_tensor, const size_t x_dims_num, vector<int64_t> &x_dims);
 
   void GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, vector<int64_t> &v_dims);

@@ -18,8 +18,8 @@
  * \file ragged_conversion_ops.h
  * \brief
  */
-#ifndef GE_OP_RAGGED_CONVERSION_OPS_H
-#define GE_OP_RAGGED_CONVERSION_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_RAGGED_CONVERSION_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_RAGGED_CONVERSION_OPS_H_
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -30,7 +30,7 @@ namespace ge {
 *@par Inputs:
 *Two inputs, including:
 *@li rt_nested_splits: A list of at least 1 Tensor objects with the same type
-in: int32, int64. The row_splits for the RaggedTensor.
+in: int32, int64. The row_splits for the RaggedTensor. It's a dynamic input.
 *@li rt_dense_values: A Tensor. The flat_values for the RaggedTensor
 Must be one of the following types: bool, int8, int16, uint16, int32,
 int64, double, float, float16 . \n
@@ -66,7 +66,7 @@ REG_OP(RaggedTensorToSparse)
 *@li values:A 1D tensor representing the values of the ragged tensor.
 *@li default_value:A `Tensor`. Must have the same type as `values`.
 *@li row_partition_tensors:A list of at least 1 `Tensor` objects with the same
-type in: `int64`, `int32` .\n
+type in: `int64`, `int32` . It's a dynamic input.\n
 
 *@par Attributes:
 *@li num_row_partition_tensors:Numbers of row partition tensors.
@@ -95,4 +95,4 @@ REG_OP(RaggedTensorToTensor)
 
 
 } // namespace ge
-#endif // GE_OP_RAGGED_CONVERSION_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_RAGGED_CONVERSION_OPS_H_

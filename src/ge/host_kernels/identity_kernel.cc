@@ -16,6 +16,7 @@
 
 #include "identity_kernel.h"
 #include "inc/kernel_factory.h"
+#include "framework/common/types.h"
 
 namespace {
 constexpr uint32_t kInputDescIndex = 0;

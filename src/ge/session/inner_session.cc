@@ -15,9 +15,12 @@
  */
 
 #include "session/inner_session.h"
+
 #include <map>
 #include <memory>
 #include <vector>
+
+#include "analyzer/analyzer.h"
 #include "adx_datadump_server.h"
 #include "common/dump/dump_properties.h"
 #include "common/util.h"
@@ -25,6 +28,7 @@
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/ge_local_context.h"
+#include "graph/common/local_context.h"
 #include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_adapter.h"
@@ -53,7 +57,7 @@ Status CheckReuseMemoryOption(const std::map<string, string> &options) {
 static std::mutex mutex_;  // BuildGraph and RunGraph use
 bool InnerSession::is_dump_server_inited_ = false;
 InnerSession::InnerSession(uint64_t session_id, const std::map<string, string> &options)
-    : init_flag_(false), session_id_(session_id), options_(options), graph_manager_(domi::GetContext()) {}
+    : init_flag_(false), session_id_(session_id), options_(options) {}
 
 Status InnerSession::Initialize() {
   if (init_flag_) {
@@ -125,6 +129,8 @@ Status InnerSession::Finalize() {
   // release var memory
   GELOGI("VarManager free var memory.");
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
+  // release analyzer saved info(Session Level)
+  Analyzer::GetInstance()->DestroySessionJsonObject(session_id_);
 
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
   GE_CHK_STATUS_RET(RemoveDumpProperties(), "Remove dump properties failed");
@@ -150,7 +156,7 @@ Status InnerSession::AddGraph(uint32_t graph_id, const Graph &graph,
     return GE_SESS_INIT_FAILED;
   }
   UpdateThreadContext(options);
-  Status ret = graph_manager_.AddGraph(graph_id, graph, options);
+  Status ret = graph_manager_.AddGraph(graph_id, graph, options, domi::GetContext());
   if (ret != SUCCESS) {
     GELOGE(ret, "[InnerSession:%lu] add graph %u failed.", session_id_, graph_id);
     return ret;
@@ -273,6 +279,7 @@ void InnerSession::UpdateThreadContext(const std::map<std::string, std::string> 
   GetThreadLocalContext().SetSessionOption(options_);
   GetThreadLocalContext().SetGraphOption(options);
   GetContext().SetSessionId(session_id_);
+  SetRtSocVersion();
 }
 
 void InnerSession::UpdateThreadContext(uint32_t graph_id) {
@@ -325,5 +332,18 @@ Status InnerSession::RemoveDumpProperties() {
     is_dump_server_inited_ = false;
   }
   return SUCCESS;
+}
+
+void InnerSession::SetRtSocVersion() {
+  const auto &global_options = GetMutableGlobalOptions();
+  auto it = global_options.find(ge::SOC_VERSION);
+  if (it != global_options.end()) {
+    const char *soc_version = it->second.c_str();
+    rtError_t rt_ret = rtSetSocVersion(soc_version);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGW("Set soc version %s failed. ret:0x%X", soc_version, rt_ret);
+    }
+    GELOGI("Set soc version %s success.", soc_version);
+  }
 }
 }  // namespace ge

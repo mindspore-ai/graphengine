@@ -216,9 +216,9 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
     if (kernel_info_store != kernel_map.end()) {
       std::string unsupported_reason;
       // It will be replaced by engine' checksupport
-      uint64_t start_time = GetCurrentTimestap();
+      uint64_t start_time = GetCurrentTimestamp();
       if (kernel_info_store->second->CheckSupported(op_desc, unsupported_reason)) {
-        checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
+        checksupport_cost_[kernel_name] += GetCurrentTimestamp() - start_time;
         op_desc->SetOpEngineName(it.engine);
         op_desc->SetOpKernelLibName(kernel_name);
         // set attrs for taking information when load txt to graph object
@@ -228,7 +228,7 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
                it.engine.c_str(), op_desc->GetName().c_str());
         return it.engine;
       } else {
-        checksupport_cost_[kernel_name] += GetCurrentTimestap() - start_time;
+        checksupport_cost_[kernel_name] += GetCurrentTimestamp() - start_time;
         bool is_custom_op = false;
         if ((ge::AttrUtils::GetBool(op_desc, kCustomOpFlag, is_custom_op)) && is_custom_op) {
           ErrorManager::GetInstance().ATCReportErrMessage("E13001", {"kernelname", "optype", "opname"},

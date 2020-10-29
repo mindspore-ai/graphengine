@@ -110,8 +110,13 @@ Status NodeItem::Init() {
   (void)AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
   shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
 
-  GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic), "[%s] Failed to get shape status.",
-                    node->GetName().c_str());
+  (void)AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
+  GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
+  if (!is_dynamic) {
+    GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic), "[%s] Failed to get shape status.",
+                      node->GetName().c_str());
+  }
+
   GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   if (is_dynamic) {
     for (int i = 0; i < num_inputs; ++i) {

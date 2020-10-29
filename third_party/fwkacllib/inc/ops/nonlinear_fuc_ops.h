@@ -18,8 +18,8 @@
  * \file nonlinear_fuc_ops.h
  * \brief
  */
-#ifndef GE_OP_NONLINEAR_FUC_OPS_H
-#define GE_OP_NONLINEAR_FUC_OPS_H
+#ifndef OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_
+#define OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -642,4 +642,4 @@ REG_OP(Mish)
 
 } // namespace ge
 
-#endif // GE_OP_NONLINEAR_FUC_OPS_H
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_

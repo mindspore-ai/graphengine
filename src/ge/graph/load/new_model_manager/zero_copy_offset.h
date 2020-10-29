@@ -45,7 +45,7 @@ class ZeroCopyOffset {
   Status InitInputDataInfo(const vector<int64_t> &output_size_list, const vector<void *> &virtual_addr_list,
                            const OpDescPtr &op_desc, bool &fusion_flag);
   void SetInputOutsideAddrs(const vector<int64_t> &output_offset_list, void *addr, const size_t &index,
-                            bool fusion_flag, std::vector<void *> &real_virtual_addrs);
+                            bool fusion_flag, std::set<const void *> &real_virtual_addrs);
 
   void IsL2Fusion(const vector<int64_t> &fusion_basic_addrs, const int64_t &tensor_addr, bool &fusion_flag);
   Status InitOutputDataInfo(const vector<int64_t> &input_size_list, const vector<void *> &virtual_addr_list,

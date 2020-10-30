@@ -507,8 +507,10 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
         old_stream_to_new.emplace(old_stream, new_stream);
       }
 
-      GELOGI("Stream of node %s has been updated from %ld to %ld.", node->GetName().c_str(), old_stream, new_stream);
-      node->GetOpDesc()->SetStreamId(new_stream);
+      if ((node->GetType() != HCOMALLREDUCE && node->GetType() != HVDCALLBACKALLREDUCE)) {
+        GELOGI("Stream of node %s has been updated from %ld to %ld.", node->GetName().c_str(), old_stream, new_stream);
+        node->GetOpDesc()->SetStreamId(new_stream);
+      }
     }
   }
 

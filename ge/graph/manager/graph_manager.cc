@@ -131,6 +131,22 @@ bool IsTailingOptimization() {
   GELOGW("OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION not set, use BFSTopologicalSorting by default.");
   return false;
 }
+
+ge::Status CheckFpCeilingMode() {
+  static const std::unordered_set<std::string> kValidFpCeilingMode = {"0", "1", "2"};
+  string mode;
+  auto ret = ge::GetContext().GetOption("ge.fpCeilingMode", mode);
+  if (ret == ge::GRAPH_SUCCESS) {
+    if (kValidFpCeilingMode.count(mode) == 0) {
+      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "The fp_ceiling_mode %s is invalid, options are 0, 1, and 2.", mode.c_str());
+      return ge::GE_GRAPH_OPTIONS_INVALID;
+    }
+    GELOGI("The parameter fp_ceiling_mode is set to %s.", mode.c_str());
+    return ge::SUCCESS;
+  }
+  GELOGW("The parameter fp_ceiling_mode is not set.");
+  return ge::SUCCESS;
+}
 }  // namespace
 
 namespace ge {
@@ -163,6 +179,12 @@ Status GraphManager::Initialize(const std::map<string, string> &options) {
   Status ret = ParseOptions(options);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Initialize] parse options failed.");
+    return ret;
+  }
+
+  ret = CheckFpCeilingMode();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Initialize] Check fp-ceiling-mode options failed.");
     return ret;
   }
 

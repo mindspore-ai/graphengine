@@ -676,7 +676,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   auto all_dump_model = GetDumpProperties().GetAllDumpModel();
   bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
   bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
-  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() || findByOmName || findByModelName) {
+  bool dump_l1fusion_op = (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) ||
+                          findByOmName || findByModelName;
+  if (dump_l1fusion_op) {
     // malloc 2M for dump l1fusion op
     GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
 
@@ -689,6 +691,13 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   /// The model with specified aicpu operators is only marked here, and destruction is in ModelManager::ExecuteModel().
   need_destroy_aicpu_kernel_ = IsAicpuKernelConnectSpecifiedLayer();
   (void)ge::AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name_);
+
+  string fp_ceiling_mode;
+  if (ge::AttrUtils::GetStr(ge_model_, ATTR_FP_CEILING_MODE, fp_ceiling_mode)) {
+    GELOGI("Get attr ATTR_FP_CEILING_MODE from model, value is %s.", fp_ceiling_mode.c_str());
+    // mode 0: Do not perform saturation processing. By default, IEEE754 is used.
+    GE_CHK_RT_RET(rtSetCtxINFMode((fp_ceiling_mode != "0")));
+  }
 
   // collect profiling for ge
   if (ProfilingManager::Instance().ProfilingModelLoadOn()) {

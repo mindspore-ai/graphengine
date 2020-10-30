@@ -113,7 +113,12 @@ Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, cons
   for (const InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
-    NodePtr active_node = CreateActiveNode(graph, peer_out_anchor->GetOwnerNode());
+    NodePtr in_node = peer_out_anchor->GetOwnerNode();
+    const std::string &type = in_node->GetType();
+    // For WhileLoop no need memcpy for merge.
+    GE_IF_BOOL_EXEC((type == ENTER) || (type == REFENTER) || (type == NEXTITERATION) || (type == REFNEXTITERATION),
+                    continue);
+    NodePtr active_node = CreateActiveNode(graph, in_node);
     GE_CHK_BOOL_EXEC(active_node != nullptr, return FAILED, "Create StreamActive node failed.");
     GE_CHK_STATUS(GraphUtils::AddEdge(active_node->GetOutControlAnchor(), node->GetInControlAnchor()),
                   "StreamActive add ctrl edge failed.");

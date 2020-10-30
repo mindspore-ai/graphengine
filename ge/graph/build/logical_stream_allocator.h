@@ -166,6 +166,8 @@ class AllReduceParallelPass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(AllReduceParallelPass);
   Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+ private:
+  bool IsHcomNode(const std::string& node_type);
 };
 
 // Assign logical streams which is not limited by the number of tasks.

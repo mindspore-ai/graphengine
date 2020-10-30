@@ -69,12 +69,10 @@ TEST_F(UtestGeModelUnittest, save_model_to_file_success) {
   ge::Graph ge_graph = ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   string file_name = "model_data.pb";
   setenv("DUMP_MODEL", "1", true);
-  // EXPECT_EQ(ge_graph.SaveToFile(file_name), GRAPH_FAILED);
   setenv("DUMP_MODEL", "0", true);
 }
 
 TEST_F(UtestGeModelUnittest, load_model_from_file_success) {
   ge::Graph ge_graph;
   string file_name = "model_data.pb";
-  // EXPECT_EQ(ge_graph.LoadFromFile(file_name), GRAPH_SUCCESS);
 }

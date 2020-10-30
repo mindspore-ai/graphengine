@@ -76,7 +76,6 @@ class OmeTestOpUtils {
       return nullptr;
     }
 
-    // return std::make_shared<ge::Node>(op_desc, nullptr);
     auto g = std::make_shared<ge::ComputeGraph>("g");
     return g->AddNode(std::move(op_desc));
   }
@@ -403,8 +402,6 @@ class OmeTestOpDescBuilder {
       if (SUCCESS != res) {
         GELOGE(ge::FAILED, "Finish: GraphUtils::AddEdge failed");
       }
-      // ge::NodePtr src_node = node->GetOwnerComputeGraph()->AddNodeFront(src_op_desc);
-      // node->AddLinkFrom(src_node);
     }
 
     {
@@ -434,8 +431,6 @@ class OmeTestOpDescBuilder {
   vector<ge::GeTensorPtr> weights_;
   int64_t eventId_ = -1;
   int64_t scopeid_ = -1;
-
-  // std::shared_ptr<ge::ComputeGraph> graph_;
 };
 
 #endif  // OME_REBUILD_OME_OP_TEST_UTILS_H

@@ -153,20 +153,6 @@ TEST_F(UtestModelManagerModelManager, case_load_model_encypt_not_match) {
   delete[](uint8_t *) data.model_data;
 }
 
-#if 0
-TEST_F(UtestModelManagerModelManager, case_load_model_signature_failed)
-{
-    ModelManager mm;
-    ge::ModelData data;
-    GenUnencryptModelData(data);
-
-    uint32_t model_id = 1;
-    MOCKER(&WBDecryptor::CheckSignature).stubs().will(returnValue(false));
-    EXPECT_EQ(ge::PARAM_INVALID, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN));
-    delete[](uint8_t*)data.model_data;
-}
-#endif
-
 TEST_F(UtestModelManagerModelManager, case_load_model_encypt_type_unsupported) {
   ModelManager mm;
   ge::ModelData data;
@@ -177,87 +163,6 @@ TEST_F(UtestModelManagerModelManager, case_load_model_encypt_type_unsupported) {
   EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN, nullptr));
   delete[](uint8_t *) data.model_data;
 }
-
-#if 0
-TEST_F(UtestModelManagerModelManager, case_load_model_header_len_failed)
-{
-    ModelManager mm;
-    ge::ModelData data;
-    GenEncryptModelData(data);
-    ModelFileHeader *header = (ModelFileHeader*)data.model_data;
-    data.model_len -= header->length;
-    header->length = 0;
-    uint32_t model_id = 1;
-    EXPECT_EQ(ge::PARAM_INVALID, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN));
-    delete[](uint8_t*)data.model_data;
-}
-#endif
-
-#if 0
-TEST_F(UtestModelManagerModelManager, case_load_success)
-{
-    const char* model_file = "bin/llt/framework/domi/ut/omg/data/leakyrelu.dav";
-    const char* json_file = "test.json";
-    const char* key = "bin/llt/framework/domi/ut/omg/data/leakyrelu.dav.PASSCODE";
-
-    ge::ModelData model;
-    Status ret = ModelParserBase::LoadFromFile(model_file, key, 0, &model);
-    EXPECT_EQ(ge::SUCCESS, ret);
-
-    ModelManager mm;
-    uint32_t model_id = 1;
-    ret = mm.LoadModelOffline(model_id, model, UTEST_CALL_BACK_FUN);
-    EXPECT_EQ(ge::SUCCESS, ret);
-
-    if (model.model_data)
-        delete[](uint8_t*)model.model_data;
-}
-#endif
-
-#if 0
-TEST_F(UtestModelManagerModelManager, case_load_encrypt_model_signature_failed)
-{
-    ModelManager mm;
-    ge::ModelData data;
-    GenEncryptModelData(data);
-    uint32_t model_id = 1;
-    data.key;
-    EXPECT_EQ(ge::PARAM_INVALID, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN));
-    delete[](uint8_t*)data.model_data;
-}
-
-TEST_F(UtestModelManagerModelManager, case_load_encrypt_model_invalid_key_len)
-{
-    ModelManager mm;
-    ge::ModelData data;
-    GenEncryptModelData(data);
-    data.key = "0123456789abcdef0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0";
-    uint32_t model_id = 1;
-    EXPECT_EQ(ge::PARAM_INVALID, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN));
-    delete[](uint8_t*)data.model_data;
-}
-
-TEST_F(UtestModelManagerModelManager, case_load_encrypt_model_invalid_key_char)
-{
-    ModelManager mm;
-    ge::ModelData data;
-    GenEncryptModelData(data);
-    data.key = "0123456789abcdef0123456789ABCDEF0123456789ABCDEF0123456789ABCDEG";
-    uint32_t model_id = 1;
-    EXPECT_EQ(ge::PARAM_INVALID, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN));
-    delete[](uint8_t*)data.model_data;
-}
-
-TEST_F(UtestModelManagerModelManager, case_load_encrypt_model_load_failed)
-{
-    ModelManager mm;
-    ge::ModelData data;
-    GenEncryptModelData(data);
-    uint32_t model_id = 1;
-    EXPECT_EQ(ge::INTERNAL_ERROR, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN));
-    delete[](uint8_t*)data.model_data;
-}
-#endif
 
 shared_ptr<ge::ModelListener> LabelCallBack(new DModelListener());
 

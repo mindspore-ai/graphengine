@@ -718,18 +718,21 @@ target_link_libraries(ge_compiler
 )
 
 ############ libascendcl.so ############
-#file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
 #add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
 #set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object)
 
-execute_process(
-    COMMAND ar x ${STATIC_ACL_LIB}/libascendcl.a
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object    
-)
-
-file(GLOB OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object/*.o)
+if(EXISTS ${STATIC_ACL_LIB}/libascendcl.a)
+    execute_process(
+        COMMAND ar x ${STATIC_ACL_LIB}/libascendcl.a
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object    
+    )
+    file(GLOB OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object/*.o)
+else()
+    set(OBJECT_LIST ${CMAKE_BINARY_DIR}/dummy.c)
+endif()
 
 add_library(opensrc_ascendcl SHARED
     ${OBJECT_LIST}

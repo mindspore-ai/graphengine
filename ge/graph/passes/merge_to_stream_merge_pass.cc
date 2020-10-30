@@ -115,7 +115,7 @@ Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, cons
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     NodePtr in_node = peer_out_anchor->GetOwnerNode();
     const std::string &type = in_node->GetType();
-    // For WhileLoop no need memcpy for merge.
+    // For WhileLoop, no need to add active nodes here, since which have been added in NextIterationPass.
     GE_IF_BOOL_EXEC((type == ENTER) || (type == REFENTER) || (type == NEXTITERATION) || (type == REFNEXTITERATION),
                     continue);
     NodePtr active_node = CreateActiveNode(graph, in_node);

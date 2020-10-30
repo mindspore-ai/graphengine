@@ -108,11 +108,8 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
 
     auto weight_buffer = model_helper_.GetGeModel()->GetWeight();
     GELOGI("To copy weight to device. weight size = %zu", weight_buffer.GetSize());
-    GE_CHK_RT_RET(rtMemcpy(model_params_.weight_base,
-                           model_params_.weight_size,
-                           weight_buffer.GetData(),
-                           weight_buffer.GetSize(),
-                           RT_MEMCPY_HOST_TO_DEVICE));
+    GE_CHK_RT_RET(rtMemcpy(model_params_.weight_base, model_params_.weight_size, weight_buffer.GetData(),
+                           weight_buffer.GetSize(), RT_MEMCPY_HOST_TO_DEVICE));
   }
 
   return SUCCESS;
@@ -190,7 +187,6 @@ Status SingleOpModel::LoadAllNodes() {
     }
 
     ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(op_desc);
-    ge_model->GetCustAICPUKernelStore().LoadCustAICPUKernelBinToOpDesc(op_desc);
   }
 
   return SUCCESS;
@@ -248,7 +244,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
         ParseArgTable(tbe_task, single_op);
         single_op.tasks_.emplace_back(tbe_task);
-      } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
+      } else if (kernel_type == cce::ccKernelType::AI_CPU) {
         GELOGD("Building AICPU_CC task");
         OpTask *task = nullptr;
         auto ret = BuildCpuKernelTask(task_def.kernel(), &task);
@@ -257,7 +253,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         }
         single_op.tasks_.emplace_back(task);
       } else {
-        GELOGE(UNSUPPORTED, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
+        GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernel are supported, but got %u", context.kernel_type());
         return UNSUPPORTED;
       }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
@@ -327,8 +323,8 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTa
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t session_id) {
+Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, bool dynamic_flag,
+                                        bool &depend_compute_flag, uint64_t session_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
@@ -392,13 +388,13 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
     TbeOpTask *tbe_task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &tbe_task));
     single_op.op_task_.reset(tbe_task);
-  } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
+  } else if (kernel_type == cce::ccKernelType::AI_CPU) {
     GELOGD("Building AICPU_CC task");
     OpTask *task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task));
     single_op.op_task_.reset(task);
   } else {
-    GELOGE(UNSUPPORTED, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
+    GELOGE(UNSUPPORTED, "Only TBE kernel and AI_CPU kernel are supported, but got %u", context.kernel_type());
     return UNSUPPORTED;
   }
   return SUCCESS;
@@ -430,8 +426,8 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
       bool depend_compute_flag = false;
       uint64_t dynamic_singleop_sessionid = aicpu_sessionid++;
       GELOGI("Build dynamic singleOp, sessionId = %lu", dynamic_singleop_sessionid);
-      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true,
-                                                depend_compute_flag, dynamic_singleop_sessionid));
+      GE_CHK_STATUS_RET_NOLOG(
+        BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true, depend_compute_flag, dynamic_singleop_sessionid));
       if (depend_compute_flag) {
         if (i >= tasks.size() - 1) {
           GELOGE(FAILED, "The copy task of the fourth operator was not found.");

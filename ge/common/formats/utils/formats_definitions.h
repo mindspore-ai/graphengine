@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,38 +23,13 @@ static const int kCubeSize = 16;
 static const int kNiSize = 16;
 static const int64_t kShapeItemNumMAX = 1024UL * 1024UL * 1024UL * 1024UL;
 
-enum NchwDimIndex {
-  kNchwN,
-  kNchwC,
-  kNchwH,
-  kNchwW,
-  kNchwDimsNum
-};
+enum NchwDimIndex { kNchwN, kNchwC, kNchwH, kNchwW, kNchwDimsNum };
 
-enum NhwcDimIndex {
-  kNhwcN,
-  kNhwcH,
-  kNhwcW,
-  kNhwcC,
-  kNhwcDimsNum
-};
+enum NhwcDimIndex { kNhwcN, kNhwcH, kNhwcW, kNhwcC, kNhwcDimsNum };
 
-enum HwcnDimIndex {
-  kHwcnH,
-  kHwcnW,
-  kHwcnC,
-  kHwcnN,
-  kHwcnDimsNum
-};
+enum HwcnDimIndex { kHwcnH, kHwcnW, kHwcnC, kHwcnN, kHwcnDimsNum };
 
-enum Nc1hwc0DimIndex {
-  kNc1hwc0N,
-  kNc1hwc0C1,
-  kNc1hwc0H,
-  kNc1hwc0W,
-  kNc1hwc0C0,
-  kNc1hwc0DimsNum
-};
+enum Nc1hwc0DimIndex { kNc1hwc0N, kNc1hwc0C1, kNc1hwc0H, kNc1hwc0W, kNc1hwc0C0, kNc1hwc0DimsNum };
 
 enum C1hwncoc0DimIndex {
   kC1hwncoc0C1,
@@ -66,31 +41,11 @@ enum C1hwncoc0DimIndex {
   kC1hwncoc0DimsNum
 };
 
-enum FracZDimIndex {
-  kFracZHWC1,
-  kFracZN0,
-  kFracZNi,
-  kFracZC0,
-  kFracZDimsNum
-};
+enum FracZDimIndex { kFracZHWC1, kFracZN0, kFracZNi, kFracZC0, kFracZDimsNum };
 
-enum DhwcnDimIndex {
-  kDhwcnD,
-  kDhwcnH,
-  kDhwcnW,
-  kDhwcnC,
-  kDhwcnN,
-  kDhwcnDimsNum
-};
+enum DhwcnDimIndex { kDhwcnD, kDhwcnH, kDhwcnW, kDhwcnC, kDhwcnN, kDhwcnDimsNum };
 
-enum DhwncDimIndex {
-  kDhwncD,
-  kDhwncH,
-  kDhwncW,
-  kDhwncN,
-  kDhwncC,
-  kDhwncDimsNum
-};
+enum DhwncDimIndex { kDhwncD, kDhwncH, kDhwncW, kDhwncN, kDhwncC, kDhwncDimsNum };
 }  // namespace formats
 }  // namespace ge
 #endif  // GE_COMMON_FORMATS_UTILS_FORMATS_DEFINITIONS_H_

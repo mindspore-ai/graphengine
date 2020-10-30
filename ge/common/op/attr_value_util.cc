@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #include "framework/common/op/attr_value_util.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
-#include "register/register_types.h"
 
 namespace ge {
 #define DEFINE_SET_ATTR_VALUE_ONE(ARG_TYPE, FIELD)                        \
@@ -84,30 +83,27 @@ DEFINE_SET_ATTR_VALUE_LIST(const std::string &, s);
     ADD_TO_ATTR_MAP(map_key, value, attr)                                                                              \
   }                                                                                                                    \
   FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void AddOpAttr(KEY_TYPE map_key, VALUE_TYPE value,                  \
-                                                                  AttrDefMap *attr_map) {                              \
-    ADD_TO_ATTR_MAP(map_key, value, attr_map)                                                                          \
-  }                                                                                                                    \
-  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void AddModelAttr(KEY_TYPE map_key, VALUE_TYPE value,               \
-                                                                     ModelDef *model_def) {                            \
+                                                                  AttrDefMap *attr_map){                               \
+    ADD_TO_ATTR_MAP(map_key, value, attr_map)} FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void                   \
+  AddModelAttr(KEY_TYPE map_key, VALUE_TYPE value, ModelDef *model_def) {                                              \
     GE_CHECK_NOTNULL_JUST_RETURN(model_def);                                                                           \
     auto attr = model_def->mutable_attr();                                                                             \
     ADD_TO_ATTR_MAP(map_key, value, attr)                                                                              \
   }
 
-#define DEFINE_ADD_ATTR_VALUE_LIST(KEY_TYPE, VALUE_TYPE)                                                   \
-  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void AddOpAttrList(KEY_TYPE map_key, VALUE_TYPE value,  \
-                                                                      OpDef *op_def) {                     \
-    GE_CHECK_NOTNULL_JUST_RETURN(op_def);                                                                  \
-    auto attr = op_def->mutable_attr();                                                                    \
-    ADD_TO_ATTR_MAP_LIST(map_key, value, attr)                                                             \
-  }                                                                                                        \
-  FMK_FUNC_DEV_VISIBILITY void AddOpAttrList(KEY_TYPE map_key, VALUE_TYPE value, AttrDefMap *attr_map) {   \
-    ADD_TO_ATTR_MAP_LIST(map_key, value, attr_map)                                                         \
-  }                                                                                                        \
-  FMK_FUNC_DEV_VISIBILITY void AddModelAttrList(KEY_TYPE map_key, VALUE_TYPE value, ModelDef *model_def) { \
-    GE_CHECK_NOTNULL_JUST_RETURN(model_def);                                                               \
-    auto attr = model_def->mutable_attr();                                                                 \
-    ADD_TO_ATTR_MAP_LIST(map_key, value, attr)                                                             \
+#define DEFINE_ADD_ATTR_VALUE_LIST(KEY_TYPE, VALUE_TYPE)                                                  \
+  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void AddOpAttrList(KEY_TYPE map_key, VALUE_TYPE value, \
+                                                                      OpDef *op_def) {                    \
+    GE_CHECK_NOTNULL_JUST_RETURN(op_def);                                                                 \
+    auto attr = op_def->mutable_attr();                                                                   \
+    ADD_TO_ATTR_MAP_LIST(map_key, value, attr)                                                            \
+  }                                                                                                       \
+  FMK_FUNC_DEV_VISIBILITY void AddOpAttrList(KEY_TYPE map_key, VALUE_TYPE value, AttrDefMap *attr_map){   \
+    ADD_TO_ATTR_MAP_LIST(map_key, value, attr_map)} FMK_FUNC_DEV_VISIBILITY void                          \
+  AddModelAttrList(KEY_TYPE map_key, VALUE_TYPE value, ModelDef *model_def) {                             \
+    GE_CHECK_NOTNULL_JUST_RETURN(model_def);                                                              \
+    auto attr = model_def->mutable_attr();                                                                \
+    ADD_TO_ATTR_MAP_LIST(map_key, value, attr)                                                            \
   }
 
 DEFINE_ADD_ATTR_VALUE(const std::string &, const std::string &);
@@ -157,16 +153,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void AddOpAttr(const std::strin
     return false;                                                                                                     \
   }
 
-#define DEFINE_GET_ATTR_CONST_POINT_REF(ARG_TYPE_KEY, ARG_TYPE_VALUE, FIELD)        \
-  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool GetAttrDefValue(            \
-      ARG_TYPE_KEY map_key, const ARG_TYPE_VALUE *&value, const AttrDefMap &attr) { \
-    auto it = attr.find(map_key);                                                   \
-    if (it == attr.end()) {                                                         \
-      return false;                                                                 \
-    }                                                                               \
-                                                                                    \
-    value = &(it->second.FIELD());                                                  \
-    return true;                                                                    \
+#define DEFINE_GET_ATTR_CONST_POINT_REF(ARG_TYPE_KEY, ARG_TYPE_VALUE, FIELD)      \
+  FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool GetAttrDefValue(          \
+    ARG_TYPE_KEY map_key, const ARG_TYPE_VALUE *&value, const AttrDefMap &attr) { \
+    auto it = attr.find(map_key);                                                 \
+    if (it == attr.end()) {                                                       \
+      return false;                                                               \
+    }                                                                             \
+                                                                                  \
+    value = &(it->second.FIELD());                                                \
+    return true;                                                                  \
   }
 
 #define DEFINE_GET_BYTES_ATTR_VALUE(ARG_TYPE_KEY, ARG_TYPE_VALUE)                      \

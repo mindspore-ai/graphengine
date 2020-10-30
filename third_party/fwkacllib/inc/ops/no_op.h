@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file no_op.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_NO_OP_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_NO_OP_H_
+#ifndef GE_NO_OP_H_
+#define GE_NO_OP_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -38,4 +38,4 @@ REG_OP(NoOp)
 
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_NO_OP_H_
+#endif  // GE_NO_OP_H_

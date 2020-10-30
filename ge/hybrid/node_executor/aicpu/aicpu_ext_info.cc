@@ -24,7 +24,7 @@ namespace hybrid {
 namespace {
 // if dim count is not reach kMaxShapeDims(8), use INT64_MIN to mark dim end.
 constexpr int64_t kDimEndFlag = INT64_MIN;
-}
+}  // namespace
 
 Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
   GELOGI("Node[%s] parse ext info start.", node_name_.c_str());
@@ -34,10 +34,10 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
   }
 
   ext_info_len_ = ext_info.size();
-  ext_info_.reset(new(std::nothrow)uint8_t[ext_info_len_]);
+  ext_info_.reset(new (std::nothrow) uint8_t[ext_info_len_]);
   GE_CHECK_NOTNULL(ext_info_);
 
-  (void) memcpy_s(ext_info_.get(), ext_info_len_, ext_info.c_str(), ext_info.size());
+  (void)memcpy_s(ext_info_.get(), ext_info_len_, ext_info.c_str(), ext_info.size());
 
   input_shape_and_type_.clear();
   output_shape_and_type_.clear();
@@ -58,8 +58,8 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
         GE_CHK_STATUS_RET(ParseExtOutputShape(aicpu_ext_info), "Parse ext output shape failed.");
         break;
       default:
-        GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.",
-               node_name_.c_str(), aicpu_ext_info->infoType, aicpu_ext_info->infoLen);
+        GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoType,
+               aicpu_ext_info->infoLen);
         break;
     }
     offset += sizeof(AicpuExtInfo);
@@ -75,14 +75,14 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
 
 Status AicpuExtInfoHandler::ParseExtShapeType(AicpuExtInfo *aicpu_ext_info) {
   GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(int32_t), PARAM_INVALID,
-                         "Node[%s] parse ext shape type failed as infoLen must be %zu but %u.",
-                         node_name_.c_str(), sizeof(int32_t), aicpu_ext_info->infoLen);
+                         "Node[%s] parse ext shape type failed as infoLen must be %zu but %u.", node_name_.c_str(),
+                         sizeof(int32_t), aicpu_ext_info->infoLen);
 
   auto type = reinterpret_cast<const int32_t *>(aicpu_ext_info->infoMsg);
 
   GE_CHK_BOOL_RET_STATUS(*type == unknown_type_, PARAM_INVALID,
-                         "Node[%s] parse ext shape type failed as need %d but %d.",
-                         node_name_.c_str(), unknown_type_, *type);
+                         "Node[%s] parse ext shape type failed as need %d but %d.", node_name_.c_str(), unknown_type_,
+                         *type);
   GELOGI("Node[%s] parse ext shape type success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
   return SUCCESS;
 }
@@ -105,8 +105,8 @@ Status AicpuExtInfoHandler::ParseExtInputShape(AicpuExtInfo *aicpu_ext_info) {
 
 Status AicpuExtInfoHandler::ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info) {
   if (unknown_type_ == DEPEND_COMPUTE) {
-    GELOGD("Node[%s] is depend compute type no need ext output shape, ignore it, infoLen=%u.",
-           node_name_.c_str(), aicpu_ext_info->infoLen);
+    GELOGD("Node[%s] is depend compute type no need ext output shape, ignore it, infoLen=%u.", node_name_.c_str(),
+           aicpu_ext_info->infoLen);
     return SUCCESS;
   }
   auto need_len = output_num_ * sizeof(AicpuShapeAndType);
@@ -128,8 +128,7 @@ Status AicpuExtInfoHandler::UpdateInputShapeAndType(uint32_t input_index, const 
   const auto &shape = input_desc.GetShape();
 
   GE_CHK_STATUS_RET(UpdateShapeAndType(shape, input_desc.GetDataType(), input_shape_and_type_[input_index]),
-                    "Node[%s] input[%u] update input shape and type failed.",
-                    node_name_.c_str(), input_index);
+                    "Node[%s] input[%u] update input shape and type failed.", node_name_.c_str(), input_index);
   return SUCCESS;
 }
 
@@ -145,12 +144,12 @@ Status AicpuExtInfoHandler::UpdateOutputShapeAndType(uint32_t output_index, cons
     std::vector<std::pair<int64_t, int64_t>> range;
     auto range_ret = output_desc.GetShapeRange(range);
     GE_CHK_BOOL_RET_STATUS(range_ret == GRAPH_SUCCESS, INTERNAL_ERROR,
-                           "Node[%s] is shape range type but get GetShapeRange failed, ret=%u.",
-                           node_name_.c_str(), range_ret);
+                           "Node[%s] is shape range type but get GetShapeRange failed, ret=%u.", node_name_.c_str(),
+                           range_ret);
     for (size_t k = 0; k < range.size(); ++k) {
       if (shape.GetDim(k) < 0 && k < range.size()) {
-        GELOGD("Node[%s] output[%u] update dim[%zu] from %ld to range max %ld.",
-               node_name_.c_str(), output_index, k, shape.GetDim(k), range[k].second);
+        GELOGD("Node[%s] output[%u] update dim[%zu] from %ld to range max %ld.", node_name_.c_str(), output_index, k,
+               shape.GetDim(k), range[k].second);
         shape.SetDim(k, range[k].second);
       }
     }
@@ -171,8 +170,8 @@ Status AicpuExtInfoHandler::UpdateShapeAndType(const GeShape &shape, DataType da
                                                AicpuShapeAndType *shape_and_type) {
   auto dim_num = shape.GetDimNum();
   if (dim_num > aicpu::FWKAdapter::kMaxShapeDims) {
-    GELOGE(PARAM_INVALID, "Update shape and type failed, as dim_num %zu is over max shape dims %u.",
-           dim_num, aicpu::FWKAdapter::kMaxShapeDims);
+    GELOGE(PARAM_INVALID, "Update shape and type failed, as dim_num %zu is over max shape dims %u.", dim_num,
+           aicpu::FWKAdapter::kMaxShapeDims);
     return PARAM_INVALID;
   }
   size_t index = 0;
@@ -187,8 +186,7 @@ Status AicpuExtInfoHandler::UpdateShapeAndType(const GeShape &shape, DataType da
   return SUCCESS;
 }
 
-void AicpuExtInfoHandler::GetShapeAndType(const AicpuShapeAndType *shape_and_type,
-                                          GeShape &shape,
+void AicpuExtInfoHandler::GetShapeAndType(const AicpuShapeAndType *shape_and_type, GeShape &shape,
                                           DataType &data_type) {
   std::vector<int64_t> dims;
   for (uint32_t index = 0; index < aicpu::FWKAdapter::kMaxShapeDims; ++index) {

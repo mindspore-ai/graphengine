@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,11 +122,10 @@ bool UnusedOpRemovePass::IsExceptions(const NodePtr &node) {
   GE_CHK_BOOL_EXEC(op_def != nullptr, return false, "opdesc is nullptr");
   // permute optimised in permute_pass.cpp
   if (op_def->GetType() == PERMUTE) {
-    GE_IF_BOOL_EXEC(
-        (node->GetInDataNodes().size() != 0 &&
-         (node->GetInDataNodes().at(0) != nullptr && node->GetInDataNodes().at(0)->GetOpDesc() != nullptr &&
-          node->GetInDataNodes().at(0)->GetOpDesc()->GetType() == ATTENTIONDECODER)),
-        return false);
+    GE_IF_BOOL_EXEC((node->GetInDataNodes().size() != 0 &&
+                     (node->GetInDataNodes().at(0) != nullptr && node->GetInDataNodes().at(0)->GetOpDesc() != nullptr &&
+                      node->GetInDataNodes().at(0)->GetOpDesc()->GetType() == ATTENTIONDECODER)),
+                    return false);
     return true;
   }
   return false;

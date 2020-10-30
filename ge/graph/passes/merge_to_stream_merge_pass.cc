@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ Status MergeToStreamMergePass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph,
     GE_CHK_BOOL_EXEC(active_node != nullptr, return FAILED, "Create StreamActive node failed.");
     GE_CHK_STATUS(GraphUtils::AddEdge(active_node->GetOutControlAnchor(), node->GetInControlAnchor()),
                   "StreamActive add ctrl edge failed.");
-    if (SetActiveLabelList(active_node, { node->GetName() }) != SUCCESS) {
+    if (SetActiveLabelList(active_node, {node->GetName()}) != SUCCESS) {
       GELOGE(FAILED, "SetActiveLabelList for node %s failed.", active_node->GetName().c_str());
       return FAILED;
     }
@@ -193,7 +193,7 @@ NodePtr MergeToStreamMergePass::CreateActiveNode(const ComputeGraphPtr &graph, c
   GE_CHK_BOOL_EXEC(active_node != nullptr, return nullptr, "Create StreamActive node failed.");
   GE_IF_BOOL_EXEC(GraphUtils::AddEdge(node->GetOutControlAnchor(), active_node->GetInControlAnchor()) != SUCCESS,
                   GELOGE(INTERNAL_ERROR, "add edge failed");
-                   return nullptr);
+                  return nullptr);
   GE_IF_BOOL_EXEC(SetSwitchBranchNodeLabel(active_node, node_name) != SUCCESS,
                   GELOGE(INTERNAL_ERROR, "set switch branch node label failed");
                   return nullptr);

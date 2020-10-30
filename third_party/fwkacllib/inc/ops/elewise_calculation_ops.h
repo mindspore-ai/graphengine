@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file elewise_calculation_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
+#ifndef GE_OP_ELEWISE_CALCULATION_OPS_H
+#define GE_OP_ELEWISE_CALCULATION_OPS_H
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -3314,4 +3314,4 @@ REG_OP(TensorRedirect)
 
 
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_
+#endif  // GE_OP_ELEWISE_CALCULATION_OPS_H

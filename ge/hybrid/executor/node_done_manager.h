@@ -40,6 +40,7 @@ class NodeDoneManager {
     void Release();
     void Cancel();
     bool Await();
+
    private:
     std::mutex cond_mu_;
     std::condition_variable cv_;
@@ -55,4 +56,4 @@ class NodeDoneManager {
 }  // namespace hybrid
 }  // namespace ge
 
-#endif // GE_HYBRID_EXECUTOR_NODE_DONE_COND_MANAGER_H_
+#endif  // GE_HYBRID_EXECUTOR_NODE_DONE_COND_MANAGER_H_

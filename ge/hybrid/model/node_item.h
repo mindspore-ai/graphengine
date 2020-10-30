@@ -43,13 +43,9 @@ struct NodeItem {
 
   Status Init();
 
-  const std::string &NodeName() const {
-    return node_name;
-  }
+  const std::string &NodeName() const { return node_name; }
 
-  const std::string &NodeType() const {
-    return node_type;
-  }
+  const std::string &NodeType() const { return node_type; }
 
   bool IsControlOp() const;
 
@@ -91,4 +87,4 @@ struct NodeItem {
 }  // namespace hybrid
 }  // namespace ge
 
-#endif // GE_HYBRID_MODEL_NODE_ITEM_H_
+#endif  // GE_HYBRID_MODEL_NODE_ITEM_H_

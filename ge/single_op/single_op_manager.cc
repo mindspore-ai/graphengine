@@ -96,9 +96,7 @@ StreamResource *SingleOpManager::TryGetResource(uintptr_t resource_id) {
   return it->second;
 }
 
-Status SingleOpManager::GetDynamicOpFromModel(const string &model_name,
-                                              const ModelData &model_data,
-                                              void *stream,
+Status SingleOpManager::GetDynamicOpFromModel(const string &model_name, const ModelData &model_data, void *stream,
                                               DynamicSingleOp **single_op) {
   if (!tiling_func_registered_) {
     RegisterTilingFunc();

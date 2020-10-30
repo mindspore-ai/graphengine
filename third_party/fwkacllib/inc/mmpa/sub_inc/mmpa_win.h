@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,9 +43,8 @@ typedef HANDLE mmThread;
 typedef HANDLE mmProcess;
 typedef HANDLE mmPollHandle;
 typedef HANDLE mmPipeHandle;
-typedef HANDLE mmFileHandle;
 typedef HANDLE mmCompletionHandle;
-typedef HANDLE mmFd_t;
+
 typedef CRITICAL_SECTION mmMutexFC;
 typedef CONDITION_VARIABLE mmCond;
 
@@ -60,22 +59,15 @@ typedef SYSTEMTIME mmSystemTime_t;
 
 typedef HANDLE mmSem_t;
 typedef SOCKET mmSockHandle;
-typedef SRWLOCK mmRWLock_t;
 typedef struct sockaddr mmSockAddr;
 typedef int mmSocklen_t;
 typedef int mmSemTimeout_t;
 typedef long mmAtomicType;
 typedef DWORD mmExitCode;
-typedef DWORD  mmErrorMsg;
 typedef int mmKey_t;
 typedef HANDLE mmMsgid;
-typedef long int mmOfft_t;
-typedef int mmPid_t;
 
 typedef INT32 mmSsize_t;
-typedef int mmSize; // size
-typedef size_t mmSize_t;
-typedef VOID mmshmId_ds;
 
 typedef enum {
   DT_DIR = FILE_ATTRIBUTE_DIRECTORY,
@@ -190,16 +182,6 @@ typedef struct {
 } mmDiskSize;
 
 typedef struct {
-  const char *dli_fname;
-  void *dli_fbase;
-  const char *dli_sname;
-  void *dli_saddr;
-  size_t dli_size; /* ELF only */
-  int dli_bind; /* ELF only */
-  int dli_type;
-} mmDlInfo;
-
-typedef struct {
   char addr[MMPA_MACINFO_DEFAULT_SIZE];  // ex:aa-bb-cc-dd-ee-ff\0
 } mmMacInfo;
 
@@ -241,25 +223,14 @@ typedef VOID (*mmPf)(VOID);
 #define M_RDONLY _O_RDONLY
 #define M_WRONLY _O_WRONLY
 #define M_RDWR _O_RDWR
-#define M_IRWXU _O_RDWR
 #define M_CREAT _O_CREAT
 #define M_BINARY _O_BINARY
-#define M_TRUNC _O_TRUNC
 
 #define M_IREAD _S_IREAD
 #define M_IRUSR _S_IREAD
 #define M_IWRITE _S_IWRITE
 #define M_IWUSR _S_IWRITE
 #define M_IXUSR 0
-
-#define M_IN_CREATE FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
-#define M_IN_CLOSE_WRITE FILE_NOTIFY_CHANGE_LAST_WRITE
-#define M_IN_IGNORED FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
-
-#define M_OUT_CREATE 0x00000100
-#define M_OUT_CLOSE_WRITE 0x00000008
-#define M_OUT_IGNORED 0x00008000
-#define M_OUT_ISDIR 0x40000000
 
 #define M_MSG_CREAT 1
 #define M_MSG_EXCL 2
@@ -280,16 +251,6 @@ typedef VOID (*mmPf)(VOID);
 #define M_UMASK_GRPEXEC 0
 #define M_UMASK_OTHEXEC 0
 
-#define DT_UNKNOWN 0
-#define DT_FIFO 1
-#define DT_CHR 2
-#define DT_DIR 4
-#define DT_BLK 6
-#define DT_REG 8
-#define DT_LNK 10
-#define DT_SOCK 12
-#define DT_WHT 14
-
 #define mmConstructor(x) __declspec(allocate(".CRT$XCU")) mmPf con = x
 #define mmDestructor(x) __declspec(allocate(".CRT$XPU")) mmPf de = x
 
@@ -308,20 +269,13 @@ typedef VOID (*mmPf)(VOID);
 
 #define MMPA_EMSG ""
 #define MMPA_MAX_PATH MAX_PATH
-#define M_NAME_MAX  _MAX_FNAME
 
 #define M_F_OK 0
 #define M_W_OK 2
 #define M_R_OK 4
 
-#define MMPA_STDIN stdin
-#define MMPA_STDOUT stdout
-#define MMPA_STDERR stderr
-
 #define MMPA_RTLD_NOW 0
 #define MMPA_RTLD_GLOBAL 0
-#define MMPA_RTLD_LAZY 0
-#define MMPA_RTLD_NODELETE 0
 
 #define MMPA_DL_EXT_NAME ".dll"
 
@@ -331,7 +285,6 @@ _declspec(dllexport) INT32 mmCreateTask(mmThread *threadHandle, mmUserBlock_t *f
 _declspec(dllexport) INT32 mmJoinTask(mmThread *threadHandle);
 _declspec(dllexport) INT32 mmMutexInit(mmMutex_t *mutex);
 _declspec(dllexport) INT32 mmMutexLock(mmMutex_t *mutex);
-_declspec(dllexport) INT32 mmMutexTryLock(mmMutex_t *mutex);
 _declspec(dllexport) INT32 mmMutexUnLock(mmMutex_t *mutex);
 _declspec(dllexport) INT32 mmMutexDestroy(mmMutex_t *mutex);
 _declspec(dllexport) INT32 mmCondInit(mmCond *cond);
@@ -339,14 +292,6 @@ _declspec(dllexport) INT32 mmCondLockInit(mmMutexFC *mutex);
 _declspec(dllexport) INT32 mmCondLock(mmMutexFC *mutex);
 _declspec(dllexport) INT32 mmCondUnLock(mmMutexFC *mutex);
 _declspec(dllexport) INT32 mmCondLockDestroy(mmMutexFC *mutex);
-_declspec(dllexport) INT32 mmRWLockInit(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmRWLockRDLock(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmRWLockTryRDLock(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmRWLockWRLock(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmRWLockTryWRLock(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmRDLockUnLock(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmWRLockUnLock(mmRWLock_t *rwLock);
-_declspec(dllexport) INT32 mmRWLockDestroy(mmRWLock_t *rwLock);
 _declspec(dllexport) INT32 mmCondWait(mmCond *cond, mmMutexFC *mutex);
 _declspec(dllexport) INT32 mmCondTimedWait(mmCond *cond, mmMutexFC *mutex, UINT32 milliSecond);
 
@@ -357,16 +302,13 @@ _declspec(dllexport) INT32 mmGetPid(VOID);
 _declspec(dllexport) INT32 mmGetTid(VOID);
 _declspec(dllexport) INT32 mmGetPidHandle(mmProcess *processHandle);
 _declspec(dllexport) INT32 mmGetLocalTime(mmSystemTime_t *sysTime);
-_declspec(dllexport) INT32 mmGetSystemTime(mmSystemTime_t *sysTime);
 _declspec(dllexport) INT32 mmSemInit(mmSem_t *sem, UINT32 value);
 _declspec(dllexport) INT32 mmSemWait(mmSem_t *sem);
 _declspec(dllexport) INT32 mmSemPost(mmSem_t *sem);
 _declspec(dllexport) INT32 mmSemDestroy(mmSem_t *sem);
 _declspec(dllexport) INT32 mmOpen(const CHAR *pathName, INT32 flags);
 _declspec(dllexport) INT32 mmOpen2(const CHAR *pathName, INT32 flags, MODE mode);
-_declspec(dllexport) FILE *mmPopen(CHAR *command, CHAR *type);
 _declspec(dllexport) INT32 mmClose(INT32 fd);
-_declspec(dllexport) INT32 mmPclose(FILE *stream);
 _declspec(dllexport) mmSsize_t mmWrite(INT32 fd, VOID *buf, UINT32 bufLen);
 _declspec(dllexport) mmSsize_t mmRead(INT32 fd, VOID *buf, UINT32 bufLen);
 _declspec(dllexport) mmSockHandle mmSocket(INT32 sockFamily, INT32 type, INT32 protocol);
@@ -377,22 +319,9 @@ _declspec(dllexport) INT32 mmConnect(mmSockHandle sockFd, mmSockAddr *addr, mmSo
 _declspec(dllexport) INT32 mmCloseSocket(mmSockHandle sockFd);
 _declspec(dllexport) mmSsize_t mmSocketRecv(mmSockHandle sockFd, VOID *recvBuf, INT32 recvLen, INT32 recvFlag);
 _declspec(dllexport) mmSsize_t mmSocketSend(mmSockHandle sockFd, VOID *sendBuf, INT32 sendLen, INT32 sendFlag);
-_declspec(dllexport) INT32 mmSocketSendTo(mmSockHandle sockFd,
-                                          VOID *sendMsg,
-                                          INT32 sendLen,
-                                          UINT32 sendFlag,
-                                          const mmSockAddr* addr,
-                                          INT32 tolen);
-_declspec(dllexport) mmSsize_t mmSocketRecvFrom(mmSockHandle sockFd,
-                                                VOID *recvBuf,
-                                                mmSize recvLen,
-                                                UINT32 recvFlag,
-                                                mmSockAddr* addr,
-                                                mmSocklen_t *FromLen);
 _declspec(dllexport) INT32 mmSAStartup(VOID);
 _declspec(dllexport) INT32 mmSACleanup(VOID);
 _declspec(dllexport) VOID *mmDlopen(const CHAR *fileName, INT mode);
-_declspec(dllexport) INT32 mmDladdr(VOID *addr, mmDlInfo *info);
 _declspec(dllexport) VOID *mmDlsym(VOID *handle, CHAR *fileName);
 _declspec(dllexport) INT32 mmDlclose(VOID *handle);
 _declspec(dllexport) CHAR *mmDlerror(VOID);
@@ -401,7 +330,6 @@ _declspec(dllexport) INT32
 _declspec(dllexport) INT32 mmDeleteTimer(mmTimer timerHandle);
 _declspec(dllexport) INT32 mmStatGet(const CHAR *path, mmStat_t *buffer);
 _declspec(dllexport) INT32 mmStat64Get(const CHAR *path, mmStat64_t *buffer);
-_declspec(dllexport) INT32 mmFStatGet(INT32 fd, mmStat_t *buffer);
 _declspec(dllexport) INT32 mmMkdir(const CHAR *pathName, mmMode_t mode);
 _declspec(dllexport) INT32 mmSleep(UINT32 milliSecond);
 _declspec(dllexport) INT32 mmCreateTaskWithAttr(mmThread *threadHandle, mmUserBlock_t *funcBlock);
@@ -443,7 +371,6 @@ _declspec(dllexport) INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, m
                                   pmmPollData polledData, mmPollBack pollBack);
 
 _declspec(dllexport) INT32 mmGetErrorCode();
-_declspec(dllexport) CHAR *mmGetErrorFormatMessage(mmErrorMsg errnum, CHAR *buf, mmSize size);
 _declspec(dllexport) INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone);
 _declspec(dllexport) mmTimespec mmGetTickCount();
 _declspec(dllexport) INT32 mmGetRealPath(CHAR *path, CHAR *realPath);
@@ -480,7 +407,7 @@ _declspec(dllexport) INT32 mmTlsDelete(mmThreadKey key);
 _declspec(dllexport) INT32 mmGetOsType();
 
 _declspec(dllexport) INT32 mmFsync(mmProcess fd);
-_declspec(dllexport) INT32 mmFsync2(INT32 fd);
+
 _declspec(dllexport) INT32 mmChdir(const CHAR *path);
 _declspec(dllexport) INT32 mmUmask(INT32 pmode);
 _declspec(dllexport) INT32 mmWaitPid(mmProcess pid, INT32 *status, INT32 options);
@@ -528,10 +455,7 @@ _declspec(dllexport) INT32
 
 _declspec(dllexport) INT32
     mmCreateTaskWithThreadAttr(mmThread *threadHandle, const mmUserBlock_t *funcBlock, const mmThreadAttr *threadAttr);
-_declspec(dllexport) mmFileHandle mmShmOpen(const CHAR *name, INT32 oflag, mmMode_t mode);
-_declspec(dllexport) INT32 mmShmUnlink(const CHAR *name);
-_declspec(dllexport) VOID *mmMmap(mmFd_t fd, mmSize_t size, mmOfft_t offset, mmFd_t *extra, INT32 prot, INT32 flags);
-_declspec(dllexport) INT32 mmMunMap(VOID *data, mmSize_t size, mmFd_t *extra);
+
 #ifdef __cplusplus
 #if __cplusplus
 }

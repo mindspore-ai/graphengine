@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,10 +50,6 @@ class InsertNewOpUtil {
   Status CheckPositionNotRepeat();
 
   Status GetAippParams(const std::unique_ptr<domi::AippOpParams> &aippParams, const ge::NodePtr &aipp_node);
-
-  Status CheckInputNamePositionNotRepeat();
-
-  Status CheckInputRankPositionNoRepeat();
 
   Status CheckGraph(const ge::ComputeGraphPtr &graph);
 

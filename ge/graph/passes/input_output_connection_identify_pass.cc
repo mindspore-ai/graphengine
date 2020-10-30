@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,8 +165,8 @@ Status InputOutputConnectionIdentifyPass::ProcessOutputNode(const NodePtr &node,
 }
 
 Status InputOutputConnectionIdentifyPass::SetNodeAttrOfConnectingInputOutput(
-    const map<NodePtr, vector<uint32_t>> &connect_input_node_idx,
-    const map<NodePtr, vector<uint32_t>> &connect_output_node_idx) {
+  const map<NodePtr, vector<uint32_t>> &connect_input_node_idx,
+  const map<NodePtr, vector<uint32_t>> &connect_output_node_idx) {
   for (const auto &iter : connect_input_node_idx) {
     GE_CHECK_NOTNULL(iter.first);
     if (iter.first->GetOpDesc() != nullptr) {

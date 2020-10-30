@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,18 +66,16 @@ bool TransOpNearbyAllreduceFusionPass::IsSymmetricTransOps(const NodePtr &node1,
   GE_CHECK_NOTNULL_EXEC(node2_output_desc, return false);
 
   // two symmetric trans ops should have symmetric input/output datatype
-  GELOGD("format: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d",
-         node1_input_desc->GetFormat(), node1_output_desc->GetFormat(), node2_input_desc->GetFormat(),
-         node2_output_desc->GetFormat());
+  GELOGD("format: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d", node1_input_desc->GetFormat(),
+         node1_output_desc->GetFormat(), node2_input_desc->GetFormat(), node2_output_desc->GetFormat());
   if (node1_input_desc->GetFormat() != node2_output_desc->GetFormat() ||
       node1_output_desc->GetFormat() != node2_input_desc->GetFormat()) {
     return false;
   }
 
   // two symmetric trans ops should have symmetric input/output format
-  GELOGD("datatype: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d",
-         node1_input_desc->GetDataType(), node1_output_desc->GetDataType(), node2_input_desc->GetDataType(),
-         node2_output_desc->GetDataType());
+  GELOGD("datatype: nod1_input=%d, nod1_output=%d, nod2_input=%d, nod2_output=%d", node1_input_desc->GetDataType(),
+         node1_output_desc->GetDataType(), node2_input_desc->GetDataType(), node2_output_desc->GetDataType());
   if (node1_input_desc->GetDataType() != node2_output_desc->GetDataType() ||
       node1_output_desc->GetDataType() != node2_input_desc->GetDataType()) {
     return false;
@@ -136,8 +134,8 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
 
     GELOGI("in_node=%s, out_node=%s", in_node->GetName().c_str(), out_node->GetName().c_str());
     if (!IsSymmetricTransOps(in_node, out_node)) {
-      GELOGD("ignore asymmetric transop %s and %s for node %s",
-             in_node->GetName().c_str(), out_node->GetName().c_str(), node->GetName().c_str());
+      GELOGD("ignore asymmetric transop %s and %s for node %s", in_node->GetName().c_str(), out_node->GetName().c_str(),
+             node->GetName().c_str());
       continue;
     }
 
@@ -167,8 +165,8 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
     if (node->GetOpDesc()->UpdateOutputDesc(static_cast<uint32_t>(i), output_desc) != GRAPH_SUCCESS) {
       GELOGE(FAILED, "UpdateOutputDesc");
     }
-    GELOGI("successfully remove paired transop (%s and %s) for node %s",
-           in_node->GetName().c_str(), out_node->GetName().c_str(), node->GetName().c_str());
+    GELOGI("successfully remove paired transop (%s and %s) for node %s", in_node->GetName().c_str(),
+           out_node->GetName().c_str(), node->GetName().c_str());
   }
   GELOGI("successfully remove %zu pair of transops in total for node %s", removed_node_count, node->GetName().c_str());
   return SUCCESS;

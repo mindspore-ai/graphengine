@@ -1,11 +1,12 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,8 +87,8 @@ OutputRWType GetSingleNodeOutputRWTypeByIndex(const Node &node, uint32_t index) 
   }
   // check if it is ref switch
   std::string type;
-  if ((node.GetType() == FRAMEWORK_OP_TYPE) && AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)
-      && (type == REFSWITCH)) {
+  if ((node.GetType() == FRAMEWORK_OP_TYPE) && AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type) &&
+      (type == REFSWITCH)) {
     return OutputRWType::kWriteable;
   }
 
@@ -217,8 +218,8 @@ InputRWType GetSingleNodeInputRWTypeByIndex(const Node &node, uint32_t index) {
   if (op_desc == nullptr) {
     return InputRWType::kInvalidRWType;
   }
-  if (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HCOMALLGATHER
-      || op_desc->GetType() == HCOMREDUCESCATTER) {
+  if (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HCOMALLGATHER ||
+      op_desc->GetType() == HCOMREDUCESCATTER) {
     return InputRWType::kScopeWriteable;
   }
   // check if it is ref input
@@ -230,8 +231,8 @@ InputRWType GetSingleNodeInputRWTypeByIndex(const Node &node, uint32_t index) {
   }
   // check if it is ref switch
   std::string type;
-  if ((node.GetType() == FRAMEWORK_OP_TYPE) && (AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type))
-      && (type == REFSWITCH) && (index == 0)) {
+  if ((node.GetType() == FRAMEWORK_OP_TYPE) && (AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type)) &&
+      (type == REFSWITCH) && (index == 0)) {
     return InputRWType::kWriteable;
   }
 
@@ -490,8 +491,8 @@ Status SplitIdentityAlongAnchor(const OutDataAnchorPtr &out_data_anchor, const I
   if (input_rw_type == InputRWType::kScopeWriteable || input_rw_type == InputRWType::kWriteable) {
     auto new_identity = CreateIdentityAfterSrcNode(*pre_node, pre_out_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(new_identity);
-    if (GraphUtils::AddEdge(pre_out_data_anchor, new_identity->GetInDataAnchor(kIdentityAnchorIndex)) != SUCCESS
-        || GraphUtils::AddEdge(new_identity->GetOutDataAnchor(kIdentityAnchorIndex), peer_in_data_anchor) != SUCCESS) {
+    if (GraphUtils::AddEdge(pre_out_data_anchor, new_identity->GetInDataAnchor(kIdentityAnchorIndex)) != SUCCESS ||
+        GraphUtils::AddEdge(new_identity->GetOutDataAnchor(kIdentityAnchorIndex), peer_in_data_anchor) != SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Failed to insert Identity between node %s and %s",
              pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
              peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
@@ -509,8 +510,8 @@ Status SplitIdentityAlongAnchor(const OutDataAnchorPtr &out_data_anchor, const I
            peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
   } else {
     // copy control edge to pre and peer node
-    if (GraphUtils::CopyInCtrlEdges(old_identity, peer_in_data_node) != SUCCESS
-        || GraphUtils::CopyOutCtrlEdges(old_identity, pre_node) != SUCCESS) {
+    if (GraphUtils::CopyInCtrlEdges(old_identity, peer_in_data_node) != SUCCESS ||
+        GraphUtils::CopyOutCtrlEdges(old_identity, pre_node) != SUCCESS) {
       GELOGW("Fail to copy control edge from node %s.", old_identity->GetName().c_str());
       return FAILED;
     }
@@ -567,7 +568,7 @@ Status SplitIdentity(const NodePtr &node) {
 Status InsertIdentityAsNeeded(const NodePtr &node) {
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  if (node->GetOutDataNodesSize() == 0) {
+  if (node->GetOutDataNodesSize() == 0 || node->GetInDataNodes().empty()) {
     return SUCCESS;
   }
   for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {

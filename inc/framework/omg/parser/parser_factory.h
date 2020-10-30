@@ -21,8 +21,8 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include "framework/common/types.h"
 #include "framework/omg/omg_inner_types.h"
-#include "framework/omg/parser/parser_types.h"
 
 using Status = domi::Status;
 

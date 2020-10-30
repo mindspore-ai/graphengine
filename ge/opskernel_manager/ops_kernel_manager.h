@@ -34,8 +34,8 @@
 #include "ge/ge_api_types.h"
 #include "runtime/base.h"
 
-using std::string;
 using std::map;
+using std::string;
 using std::vector;
 
 namespace ge {
@@ -89,7 +89,7 @@ class OpsKernelManager {
 
   Status CheckPluginPtr() const;
 
-  void GetExternalEnginePath(std::string &path, const std::map<string, string>& options);
+  void GetExternalEnginePath(std::string &path, const std::map<string, string> &options);
 
   void InitOpsKernelInfo();
 
@@ -99,7 +99,7 @@ class OpsKernelManager {
 
   Status ParsePluginOptions(const map<string, string> &options, const string &plugin_name, bool &enable_flag);
 
-  Status LoadGEGraphOptimizer(map<string, GraphOptimizerPtr>& graphOptimizer);
+  Status LoadGEGraphOptimizer(map<string, GraphOptimizerPtr> &graphOptimizer);
 
   Status InitGraphOptimizerPriority();
 

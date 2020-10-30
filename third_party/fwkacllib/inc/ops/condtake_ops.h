@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file condtake_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_CONDTAKE_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_CONDTAKE_OPS_H_
+#ifndef GE_OP_CONDTAKE_OPS_H_
+#define GE_OP_CONDTAKE_OPS_H_
 
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
@@ -56,4 +56,4 @@ REG_OP(CondTake)
     .OP_END_FACTORY_REG(CondTake)
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_CONDTAKE_OPS_H_
+#endif  // GE_OP_ARRAY_OPS_H_

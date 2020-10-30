@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@
 #include <string>
 #include <vector>
 #include "common/ge_inner_error_codes.h"
+#include "common/opskernel/ops_kernel_info_types.h"
 #include "graph/node.h"
 
 namespace ge {
-struct RunContext;
 namespace ge_local {
 /**
  * The base class for all op.

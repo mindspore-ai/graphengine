@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,14 @@ class HybridModel;
 
 class KnownNodeTask : public NodeTask {
  public:
-  KnownNodeTask(std::shared_ptr<DavinciModel> davinci_model)
-      : davinci_model_(davinci_model)
-    {}
+  KnownNodeTask(std::shared_ptr<DavinciModel> davinci_model) : davinci_model_(davinci_model) {}
 
   ~KnownNodeTask() {}
 
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
   Status Init(TaskContext &context) override;
+
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
   bool load_flag_ = false;
@@ -47,10 +46,11 @@ class KnownNodeExecutor : public NodeExecutor {
   Status PrepareTask(NodeTask &task, TaskContext &context) const;
   Status ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const;
   ~KnownNodeExecutor() {}
+
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
 };
 }  // namespace hybrid
 }  // namespace ge
 
-#endif //HYBRID_KNOWN_NODE_EXECUTOR_H_
+#endif  // HYBRID_KNOWN_NODE_EXECUTOR_H_

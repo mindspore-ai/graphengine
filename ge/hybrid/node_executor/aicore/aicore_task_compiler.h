@@ -27,13 +27,14 @@ class AiCoreTaskCompiler {
   explicit AiCoreTaskCompiler(OpsKernelInfoStorePtr aic_kernel_store);
   ~AiCoreTaskCompiler() = default;
 
-  Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks);
+  Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) const;
+
  private:
-  Status DoCompileOp(const NodePtr &node) const;
-  Status DoGenerateTask(const Node &node, std::vector<domi::TaskDef> &tasks);
+  static Status DoCompileOp(OpsKernelInfoStore &store, const NodePtr &node);
+  static Status DoGenerateTask(OpsKernelInfoStore &store, const Node &node, std::vector<domi::TaskDef> &tasks);
   OpsKernelInfoStorePtr aic_kernel_store_;
   static std::mutex mu_;
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif //GE_HYBRID_KERNEL_AICORE_TASK_COMPILER_H_
+#endif  // GE_HYBRID_KERNEL_AICORE_TASK_COMPILER_H_

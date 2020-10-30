@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file nn_norm_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
+#ifndef GE_OP_NN_NORM_OPS_H
+#define GE_OP_NN_NORM_OPS_H
 
 #include "graph/operator_reg.h"
 namespace ge {
@@ -158,34 +158,6 @@ REG_OP(SigmoidCrossEntropyWithLogits)
     .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogits)
-
-/**
-*@brief Computes the sigmoid cross entropy loss of "predict" and "target" . \n
-
-*@par Inputs:
-* four inputs, including:
-*@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
-*@li weight: An multi-dimensional Tensor, specifying the weight value. \n
-*@li pos_weight: An multi-dimensional Tensor, specifying the pos weight value. \n
-
-*@par Attributes:
-*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
-
-*@par Outputs:
-*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
-
-*@par Third-party framework compatibility
-* Compatible with PyTorch operator BCEWithLogitsLoss.
-*/
-REG_OP(SigmoidCrossEntropyWithLogitsV2)
-    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .ATTR(reduction, String, "mean")
-    .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsV2)
 
 /**
 *@brief Computes the regression box of the RPN. It is a FasterRCNN operator . \n
@@ -958,4 +930,4 @@ REG_OP(InHost)
      .OP_END_FACTORY_REG(InHost)
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_
+#endif  //GE_OP_NN_NORM_OPS_H

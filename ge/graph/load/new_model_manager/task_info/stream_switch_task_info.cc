@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
 
   size_t input_size = op_desc->GetInputsSize();
   if (input_data_addr.size() != STREAM_SWITCH_INPUT_NUM || input_size != STREAM_SWITCH_INPUT_NUM) {
-    GELOGE(INTERNAL_ERROR, "Input num should be %u. inputAddr size:%zu, inputDesc size:%zu.",
-           STREAM_SWITCH_INPUT_NUM, input_data_addr.size(), input_size);
+    GELOGE(INTERNAL_ERROR, "Input num should be %u. inputAddr size:%zu, inputDesc size:%zu.", STREAM_SWITCH_INPUT_NUM,
+           input_data_addr.size(), input_size);
     return INTERNAL_ERROR;
   }
 
@@ -93,8 +93,8 @@ Status StreamSwitchTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
     data_type_ = static_cast<rtSwitchDataType_t>(data_type);
   }
 
-  GELOGI("InitStreamSwitchTaskInfo Init Success, cond:%d, trueStream:%p, trueStreamID:%u, datatype:%d.",
-         cond_, true_stream_, true_stream_id_, data_type_);
+  GELOGI("InitStreamSwitchTaskInfo Init Success, cond:%d, trueStream:%p, trueStreamID:%u, datatype:%d.", cond_,
+         true_stream_, true_stream_id_, data_type_);
 
   return SUCCESS;
 }

@@ -30,20 +30,12 @@ using AicpuExtInfo = aicpu::FWKAdapter::ExtInfo;
 class AicpuExtInfoHandler {
  public:
   AicpuExtInfoHandler(std::string node_name, uint32_t input_num, uint32_t output_num, UnknowShapeOpType unknown_type)
-      : node_name_(std::move(node_name)),
-        input_num_(input_num),
-        output_num_(output_num),
-        unknown_type_(unknown_type) {
-  }
+      : node_name_(std::move(node_name)), input_num_(input_num), output_num_(output_num), unknown_type_(unknown_type) {}
 
   ~AicpuExtInfoHandler() = default;
 
-  uint8_t *GetExtInfo() const {
-    return ext_info_.get();
-  }
-  size_t GetExtInfoLen() const {
-    return ext_info_len_;
-  }
+  uint8_t *GetExtInfo() const { return ext_info_.get(); }
+  size_t GetExtInfoLen() const { return ext_info_len_; }
 
   Status Parse(const std::string &ext_info);
 
@@ -54,18 +46,13 @@ class AicpuExtInfoHandler {
   Status GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type);
 
  private:
-
   Status ParseExtShapeType(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtInputShape(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info);
 
-  static Status UpdateShapeAndType(const GeShape &shape,
-                                   DataType data_type,
-                                   AicpuShapeAndType *shape_and_type);
+  static Status UpdateShapeAndType(const GeShape &shape, DataType data_type, AicpuShapeAndType *shape_and_type);
 
-  static void GetShapeAndType(const AicpuShapeAndType *shape_and_type,
-                              GeShape &shape,
-                              DataType &data_type);
+  static void GetShapeAndType(const AicpuShapeAndType *shape_and_type, GeShape &shape, DataType &data_type);
 
  private:
   const std::string node_name_;
@@ -80,4 +67,4 @@ class AicpuExtInfoHandler {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // GE_HYBRID_AICPU_EXT_INFO_H_
+#endif  // GE_HYBRID_AICPU_EXT_INFO_H_

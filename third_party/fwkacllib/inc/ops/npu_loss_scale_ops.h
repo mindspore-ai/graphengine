@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@
  * \file npu_loss_scale_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
+
+#ifndef GE_OP_NN_LOSS_SCALE_OPS_H
+#define GE_OP_NN_LOSS_SCALE_OPS_H
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -119,4 +120,4 @@ REG_OP(NPUGetFloatStatus)
     .OP_END_FACTORY_REG(NPUGetFloatStatus)
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_NPU_LOSS_SCALE_OPS_H_
+#endif  // GE_OP_NN_LOSS_SCALE_OPS_H

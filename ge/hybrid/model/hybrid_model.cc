@@ -16,8 +16,8 @@
 
 #include "hybrid_model.h"
 #include <vector>
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -27,12 +27,9 @@
 
 namespace ge {
 namespace hybrid {
-HybridModel::HybridModel(GeRootModelPtr ge_model) : ge_root_model_(std::move(ge_model)) {
-}
+HybridModel::HybridModel(GeRootModelPtr ge_model) : ge_root_model_(std::move(ge_model)) {}
 
-HybridModel::~HybridModel() {
-  GELOGD("[%s] HybridModel destroyed.", model_name_.c_str());
-}
+HybridModel::~HybridModel() { GELOGD("[%s] HybridModel destroyed.", model_name_.c_str()); }
 
 Status HybridModel::Init() {
   GELOGD("Start to init hybrid model.");
@@ -41,7 +38,7 @@ Status HybridModel::Init() {
   return SUCCESS;
 }
 
-TensorValue* HybridModel::GetVariable(const string &name) const {
+TensorValue *HybridModel::GetVariable(const string &name) const {
   auto it = variable_tensors_.find(name);
   if (it == variable_tensors_.end()) {
     GELOGI("Failed to get variable tensor. var name = [%s]", name.c_str());
@@ -53,16 +50,13 @@ TensorValue* HybridModel::GetVariable(const string &name) const {
 }
 
 NodePtr HybridModel::GetVariableNode(const string &name) const {
-  auto it = device_variable_nodes_.find(name);
-  if (it != device_variable_nodes_.end()) {
-    return it->second;
+  auto it = variable_nodes_.find(name);
+  if (it == variable_nodes_.end()) {
+    GELOGI("Failed to get variable node by name = [%s]", name.c_str());
+    return nullptr;
   }
-  auto host_find = host_variable_nodes_.find(name);
-  if (host_find != host_variable_nodes_.end()) {
-    return host_find->second;
-  }
-  GELOGI("Failed to get variable node by name = [%s]", name.c_str());
-  return nullptr;
+
+  return it->second;
 }
 
 const std::vector<domi::TaskDef> *HybridModel::GetTaskDefs(const NodePtr &node) const {
@@ -102,9 +96,7 @@ GeModelPtr HybridModel::GetGeModel(const NodePtr &node) const {
   return it->second;
 }
 
-const GraphItem* HybridModel::GetRootGraphItem() const {
-  return root_graph_item_.get();
-}
+const GraphItem *HybridModel::GetRootGraphItem() const { return root_graph_item_.get(); }
 
 const GraphItem *HybridModel::GetSubgraphItem(const std::string &graph_name) const {
   GELOGD("To find subgraph item by name = %s", graph_name.c_str());
@@ -127,8 +119,6 @@ const GraphItem *HybridModel::GetSubgraphItem(const ComputeGraphPtr &subgraph) c
   return GetSubgraphItem(subgraph_name);
 }
 
-const string &HybridModel::GetModelName() const {
-    return model_name_;
-}
+const string &HybridModel::GetModelName() const { return model_name_; }
 }  // namespace hybrid
 }  // namespace ge

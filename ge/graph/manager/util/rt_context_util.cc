@@ -20,7 +20,7 @@
 
 namespace ge {
 namespace {
-  const int64_t kDefaultGraphId = -1;
+const int64_t kDefaultGraphId = -1;
 }
 
 void RtContextUtil::AddRtContext(uint64_t session_id, rtContext_t context) {

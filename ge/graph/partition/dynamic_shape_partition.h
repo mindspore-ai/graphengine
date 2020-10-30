@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,7 +145,6 @@ class DynamicShapePartitioner {
   // Debug functions
   void DumpGraph(const std::string &suffix);
   std::string DebugString() const;
-  bool JudgeUnknowShapeWithAttr(const OpDescPtr &opdesc);
   // Util functions
   Status CollectSpreadUnknownShapeNodes(NodePtr node);
   Status IsUnknownShapeGraph(ge::ComputeGraphPtr graph, bool &is_unknow);

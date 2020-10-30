@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/passes/transop_without_reshape_fusion_pass.h"
 #include <algorithm>
 #include <memory>
@@ -129,14 +130,6 @@ graphStatus TransOpWithoutReshapeFusionPass::GetSubGraphNodesInfo() {
       if (in_node->GetType() == RESHAPE) {
         sub_graph_has_reshape_node[i] = true;
         break;
-      }
-      if (in_node->GetType() == TRANSPOSE || in_node->GetType() == TRANSPOSED) {
-        auto input_format = in_node->GetOpDesc()->GetInputDescPtr(0)->GetFormat();
-        auto output_format = in_node->GetOpDesc()->GetOutputDescPtr(0)->GetFormat();
-        if (input_format == output_format) {
-          sub_graph_has_reshape_node[i] = true;
-          break;
-        }
       }
 
       auto out_anchor = iter->first;

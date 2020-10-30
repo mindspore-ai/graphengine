@@ -18,7 +18,7 @@
 #define INC_FRAMEWORK_OMG_PARSER_MODEL_PARSER_H_
 
 #include <google/protobuf/message.h>
-#include "framework/omg/parser/parser_types.h"
+#include "framework/common/types.h"
 #include "framework/omg/omg_inner_types.h"
 #include "graph/attr_value.h"
 #include "graph/compute_graph.h"

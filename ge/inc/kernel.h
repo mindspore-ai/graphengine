@@ -24,9 +24,9 @@
 #include "graph/graph.h"
 #include "graph/op_desc.h"
 
-using std::vector;
-using std::unique_ptr;
 using std::shared_ptr;
+using std::unique_ptr;
+using std::vector;
 
 namespace ge {
 ///

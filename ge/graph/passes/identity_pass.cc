@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,14 +47,14 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
     auto in_node_opdesc = in_node->GetOpDesc();
     GE_CHECK_NOTNULL(in_node_opdesc);
     // near entrance of subgraph || near subgraph
-    if ((in_node->GetType() == DATA && NodeUtils::IsSubgraphInput(in_node))
-        || !in_node_opdesc->GetSubgraphInstanceNames().empty()) {
+    if ((in_node->GetType() == DATA && NodeUtils::IsSubgraphInput(in_node)) ||
+        !in_node_opdesc->GetSubgraphInstanceNames().empty()) {
       usable = true;
       return SUCCESS;
     }
 
-    GE_CHK_STATUS_RET(GetOriginalType(in_node, node_type),
-                      "Failed to get node type from node %s", node->GetName().c_str());
+    GE_CHK_STATUS_RET(GetOriginalType(in_node, node_type), "Failed to get node type from node %s",
+                      node->GetName().c_str());
     bool need_skip = (node_type != SWITCH) && (node_type != REFSWITCH) && (node_type != SWITCHN);
     if (need_skip) {
       GELOGD("skip identity %s connected to switch", node->GetName().c_str());
@@ -70,13 +70,12 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
     auto out_node_opdesc = out_node->GetOpDesc();
     GE_CHECK_NOTNULL(out_node_opdesc);
     // near output of subgraph || near subgraph
-    if (NodeUtils::IsSubgraphOutput(out_node)
-        || !out_node_opdesc->GetSubgraphInstanceNames().empty()) {
+    if (NodeUtils::IsSubgraphOutput(out_node) || !out_node_opdesc->GetSubgraphInstanceNames().empty()) {
       usable = true;
       return SUCCESS;
     }
-    GE_CHK_STATUS_RET(GetOriginalType(out_node, node_type),
-                      "Failed to get node type from node %s", node->GetName().c_str());
+    GE_CHK_STATUS_RET(GetOriginalType(out_node, node_type), "Failed to get node type from node %s",
+                      node->GetName().c_str());
     if ((node_type != MERGE) && (node_type != REFMERGE)) {
       GELOGD("skip identity %s connected to merge", node->GetName().c_str());
       break;

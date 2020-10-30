@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "host_kernels/pack_kernel.h"
 
 #include <memory>
@@ -27,7 +28,6 @@
 #include "host_kernels/kernel_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
-#include "framework/common/types.h"
 
 namespace {
 const int64_t kShapeItemNumMAX = 2000000000;
@@ -79,8 +79,7 @@ Status PackKernel::ValidateKernelParams(const ge::OpDescPtr &op_desc_ptr,
     return NOT_CHANGED;
   }
   if (input.size() != static_cast<size_t>(n_)) {
-    GELOGW("The number of input for Pack should be %d, in fact it is %ld ", static_cast<int>(n_),
-           input.size());
+    GELOGW("The number of input for Pack should be %d, in fact it is %ld ", static_cast<int>(n_), input.size());
     return PARAM_INVALID;
   }
   data_type_ = op_desc_ptr->GetInputDesc(0).GetDataType();
@@ -167,8 +166,7 @@ void PackKernel::ExpandDims(const int64_t axis, const std::vector<ge::ConstGeTen
   final_shape = GeShape(final_dims);
 }
 
-Status PackKernel::CopyOutputData(const GeShape &final_shape,
-                                  const std::vector<ge::ConstGeTensorPtr> &input,
+Status PackKernel::CopyOutputData(const GeShape &final_shape, const std::vector<ge::ConstGeTensorPtr> &input,
                                   ge::GeTensorPtr &output_ptr) {
   output_ptr->MutableTensorDesc().SetShape(final_shape);
   output_ptr->MutableTensorDesc().SetDataType(DataType(data_type_));
@@ -206,8 +204,8 @@ Status PackKernel::CopyOutputData(const GeShape &final_shape,
     for (int64_t j = 0; j < n_; j++) {
       // input range already check before. Range is [0,n_).
       const uint8_t *in_data = input[j]->GetData().data();
-      auto ret = memcpy_s(buf.get() + dst_offset, output_size * data_size - dst_offset, in_data + src_offset,
-                          data_size * unit);
+      auto ret =
+        memcpy_s(buf.get() + dst_offset, output_size * data_size - dst_offset, in_data + src_offset, data_size * unit);
       if (ret != EOK) {
         GELOGW("Memory copy failed.");
         return NOT_CHANGED;

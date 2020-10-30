@@ -14,24 +14,31 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MODEL_EXIT_TASK_INFO_H_
-#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MODEL_EXIT_TASK_INFO_H_
+#ifndef GE_GE_RUNTIME_TASK_LABEL_SWITCH_TASK_H_
+#define GE_GE_RUNTIME_TASK_LABEL_SWITCH_TASK_H_
 
-#include "graph/load/new_model_manager/task_info/task_info.h"
+#include <memory>
+#include "ge_runtime/task/task.h"
 
 namespace ge {
-class ModelExitTaskInfo : public TaskInfo {
+namespace model_runner {
+class LabelSwitchTask : public TaskRepeater<LabelSwitchTaskInfo> {
  public:
-  ModelExitTaskInfo() {}
+  LabelSwitchTask(const ModelContext &model_context, const std::shared_ptr<LabelSwitchTaskInfo> &task_info);
 
-  ~ModelExitTaskInfo() override { model_ = nullptr; }
+  ~LabelSwitchTask() override;
 
-  Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
-
-  Status Distribute() override;
+  bool Distribute() override;
 
  private:
-  rtModel_t model_{nullptr};
+  bool CheckParamValid();
+
+  std::shared_ptr<LabelSwitchTaskInfo> task_info_;
+  void *stream_;
+  std::vector<void *> all_label_resource_;
+  void *label_info_;
 };
+}  // namespace model_runner
 }  // namespace ge
-#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MODEL_EXIT_TASK_INFO_H_
+
+#endif  // GE_GE_RUNTIME_TASK_LABEL_SWITCH_TASK_H_

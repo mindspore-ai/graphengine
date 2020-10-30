@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,8 +134,7 @@ Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> 
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
-  GELOGI("Prepare to isolate and delete node, name:%s, type:%s.", node->GetName().c_str(),
-         node->GetType().c_str());
+  GELOGI("Prepare to isolate and delete node, name:%s, type:%s.", node->GetName().c_str(), node->GetType().c_str());
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   if (graph == nullptr) {
     GELOGE(FAILED, "[%s] The owner graph must not be null.", node->GetName().c_str());
@@ -170,9 +169,9 @@ Status GEPass::Run(const NamesToPass &names_to_passes) {
 
   if (depth_ > kMaxRecursiveDepth) {
     GELOGE(PARAM_INVALID,
-        "The pass for root graph %s will be terminated because too many nesting"
-        " levels(%d) of subgraphs, last subgraph is %s",
-        root_graph_->GetName().c_str(), depth_, graph_->GetName().c_str());
+           "The pass for root graph %s will be terminated because too many nesting"
+           " levels(%d) of subgraphs, last subgraph is %s",
+           root_graph_->GetName().c_str(), depth_, graph_->GetName().c_str());
     return PARAM_INVALID;
   }
 
@@ -212,8 +211,8 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
 
       auto ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_deleted, nodes_seen);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
-               node->GetName().c_str(), node->GetType().c_str(), ret);
+        GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u", node->GetName().c_str(),
+               node->GetType().c_str(), ret);
         return ret;
       }
 
@@ -229,8 +228,8 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         SetFlagOption(kOptimizeAfterSubGraph, names_to_passes);
         ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_deleted, nodes_seen);
         if (ret != SUCCESS) {
-          GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
-                 node->GetName().c_str(), node->GetType().c_str(), ret);
+          GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u", node->GetName().c_str(),
+                 node->GetType().c_str(), ret);
           return ret;
         }
 
@@ -263,8 +262,8 @@ Status GEPass::RunPassesOnSubGraph(const NodePtr &node, const NamesToPass &names
   for (const auto &name : sub_graph_names) {
     auto graph = root_graph_->GetSubgraph(name);
     if (graph == nullptr) {
-      GELOGW("Can not find the sub graph %s from node %s, the pass-process will skip it",
-          name.c_str(), node->GetName().c_str());
+      GELOGW("Can not find the sub graph %s from node %s, the pass-process will skip it", name.c_str(),
+             node->GetName().c_str());
       continue;
     }
     has_sub_graph = true;

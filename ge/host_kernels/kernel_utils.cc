@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,7 @@ bool KernelUtils::CheckFormatSupported(const NodePtr &node_ptr) {
   return true;
 }
 
-bool KernelUtils::CheckSizeForTransOp(const ge::ConstGeTensorPtr &const_weight_ptr,
-                                      const ge::OpDescPtr &op_desc_ptr) {
+bool KernelUtils::CheckSizeForTransOp(const ge::ConstGeTensorPtr &const_weight_ptr, const ge::OpDescPtr &op_desc_ptr) {
   if (const_weight_ptr == nullptr || op_desc_ptr == nullptr) {
     GELOGE(FAILED, "parameter invalid");
     return false;

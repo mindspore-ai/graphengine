@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,13 +93,15 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
   std::vector<std::string> path_vec;
   SplitPath(path, path_vec);
   for (const auto &single_path : path_vec) {
-    GE_IF_BOOL_EXEC(single_path.length() >= PATH_MAX, GELOGE(GE_PLGMGR_PATH_INVALID,
-                    "The shared library file path is too long!");
+    GE_IF_BOOL_EXEC(single_path.length() >= PATH_MAX,
+                    GELOGE(GE_PLGMGR_PATH_INVALID, "The shared library file path is too long!");
                     continue);
     // load break when number of loaded so reach maximum
     if (num_of_loaded_so >= kMaxNumOfSo) {
-      GELOGW("The number of dynamic libraries loaded exceeds the kMaxNumOfSo,"
-             " and only the first %d shared libraries will be loaded.", kMaxNumOfSo);
+      GELOGW(
+        "The number of dynamic libraries loaded exceeds the kMaxNumOfSo,"
+        " and only the first %d shared libraries will be loaded.",
+        kMaxNumOfSo);
       break;
     }
 
@@ -180,9 +182,9 @@ Status PluginManager::ValidateSo(const string &file_path, int64_t size_of_loaded
   // load continue if the total size of so reaches maximum when it is loaded
   if (size_of_loaded_so + file_size > kMaxSizeOfLoadedSo) {
     GELOGW(
-        "%s is skipped because the size of loaded share library reaches maximum if it is loaded! "
-        "(size: %ldB, size of loaded share library: %ldB, maximum: %dB)",
-        file_path.c_str(), file_size, size_of_loaded_so, kMaxSizeOfLoadedSo);
+      "%s is skipped because the size of loaded share library reaches maximum if it is loaded! "
+      "(size: %ldB, size of loaded share library: %ldB, maximum: %dB)",
+      file_path.c_str(), file_size, size_of_loaded_so, kMaxSizeOfLoadedSo);
     return FAILED;
   }
 
@@ -229,8 +231,10 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
 
     // load break when number of loaded so reach maximum
     if (num_of_loaded_so >= kMaxNumOfSo) {
-      GELOGW("The number of dynamic libraries loaded exceeds the kMaxNumOfSo,"
-             " and only the first %d shared libraries will be loaded.", kMaxNumOfSo);
+      GELOGW(
+        "The number of dynamic libraries loaded exceeds the kMaxNumOfSo,"
+        " and only the first %d shared libraries will be loaded.",
+        kMaxNumOfSo);
       break;
     }
 

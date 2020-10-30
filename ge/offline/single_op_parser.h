@@ -71,9 +71,7 @@ class SingleOpParser {
   static std::unique_ptr<OpDesc> CreateOpDesc(const std::string &op_type);
   static Status ConvertToBuildParam(int index, const SingleOpDesc &single_op_desc, SingleOpBuildParam &build_param);
   static Status VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc);
-  static Status SetShapeRange(const std::string &op_name,
-                              const SingleOpTensorDesc &tensor_desc,
-                              GeTensorDesc &ge_tensor_desc);
+  static Status SetShapeRange(const std::string &op_name, const SingleOpTensorDesc &tensor_desc, GeTensorDesc &ge_tensor_desc);
 };
 }  // namespace ge
 

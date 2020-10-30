@@ -36,12 +36,8 @@ Status IdentityNodeTask::DoCopyTensor(TaskContext &context, int index) {
     auto output = context.MutableOutput(index);
     GE_CHECK_NOTNULL(input);
     GE_CHECK_NOTNULL(output);
-    GE_CHK_RT_RET(rtMemcpyAsync(output->MutableData(),
-                                output->GetSize(),
-                                input->GetData(),
-                                copy_size,
-                                RT_MEMCPY_DEVICE_TO_DEVICE,
-                                context.GetStream()));
+    GE_CHK_RT_RET(rtMemcpyAsync(output->MutableData(), output->GetSize(), input->GetData(), copy_size,
+                                RT_MEMCPY_DEVICE_TO_DEVICE, context.GetStream()));
   } else {
     GELOGW("[%s] index = %d, copy size = 0", context.GetNodeName(), index);
   }
@@ -61,9 +57,7 @@ Status IdentityNodeTask::ExecuteAsync(TaskContext &context, std::function<void()
   return SUCCESS;
 }
 
-Status IdentityNodeTask::UpdateArgs(TaskContext &context) {
-  return SUCCESS;
-}
+Status IdentityNodeTask::UpdateArgs(TaskContext &context) { return SUCCESS; }
 
 Status IdentityNNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Start to execute.", context.GetNodeName());

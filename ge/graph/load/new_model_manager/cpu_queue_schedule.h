@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_CPU_QUEUE_SCHEDULE_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_CPU_QUEUE_SCHEDULE_H_
 
@@ -27,24 +28,24 @@
 namespace ge {
 // For AICPU task "modelDequeue" / "modelEnqueue"
 struct MbufQueueInfo {
-  uint32_t queue_id;        // Op queue id
-  uintptr_t in_mbuf;        // addr for input mbuf
+  uint32_t queue_id;  // Op queue id
+  uintptr_t in_mbuf;  // addr for input mbuf
 };
 
 // For AICPU task "modelPrepareInput"
 struct PrepareInputInfo {
-  uintptr_t in_mbuf;        // input mbuf from dequeue
-  uint32_t mbuf_offset;     // offset of mbuf(current is 0)
-  uint32_t data_size;       // input Tensor size
-  uintptr_t data_addr;      // input Tensor addr
+  uintptr_t in_mbuf;     // input mbuf from dequeue
+  uint32_t mbuf_offset;  // offset of mbuf(current is 0)
+  uint32_t data_size;    // input Tensor size
+  uintptr_t data_addr;   // input Tensor addr
 };
 
 // For AICPU task "modelPrepareOutput"
 struct PrepareOutputInfo {
-  uint32_t data_size;       // output Tensor size
-  uintptr_t data_addr;      // output Tensor addr
-  uintptr_t in_mbuf;        // input mbuf, for fill output mbuf header
-  uintptr_t out_mbuf;       // output mbuf addr
+  uint32_t data_size;   // output Tensor size
+  uintptr_t data_addr;  // output Tensor addr
+  uintptr_t in_mbuf;    // input mbuf, for fill output mbuf header
+  uintptr_t out_mbuf;   // output mbuf addr
 };
 
 // For AICPU task "modelZeroCopy"
@@ -96,7 +97,8 @@ class CpuTaskZeroCopy : public CpuTaskInfo {
   Status Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, ZeroCopyOffset> &outside_addrs);
 
   Status Distribute() override;
-private:
+
+ private:
   void *src_addr_ = nullptr;
   void *dst_addr_ = nullptr;
 };

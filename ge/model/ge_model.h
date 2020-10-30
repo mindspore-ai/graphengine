@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,9 +64,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
 
   ProtoAttrMapHelper MutableAttrMap() override;
 
-  using AttrHolder::SetAttr;
-  using AttrHolder::GetAllAttrs;
   using AttrHolder::GetAllAttrNames;
+  using AttrHolder::GetAllAttrs;
+  using AttrHolder::SetAttr;
 
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
   uint32_t GetModelId() const { return model_id_; }

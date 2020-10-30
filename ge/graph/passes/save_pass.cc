@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,8 @@ Status SavePass::Run(ge::ComputeGraphPtr graph) {
             out_index.emplace_back(out_anchor->GetIdx());
             ge::OpDescPtr op_desc = peer_node->GetOpDesc();
             GE_IF_BOOL_EXEC(!ge::AttrUtils::SetStr(op_desc, kVarAttrVarIsSave, kVarIsSave),
-                              GELOGE(INTERNAL_ERROR, "get kVarAttrVarIsSave failed"); return INTERNAL_ERROR);
+                            GELOGE(INTERNAL_ERROR, "get kVarAttrVarIsSave failed");
+                            return INTERNAL_ERROR);
           }
         }
       }

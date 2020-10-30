@@ -39,7 +39,7 @@ void FreeHbm(void *var) {
     (void)rtFree(var);
   }
 }
-}
+}  // namespace
 
 Status OpTask::OpenDump(const std::vector<uintptr_t> &io_addr, rtStream_t stream) {
   if (DumpManager::GetInstance().GetDumpProperties().IsSingleOpNeedDump()) {
@@ -240,14 +240,12 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info) {
   }
 
   int32_t unknown_shape_type_val = 0;
-  (void) AttrUtils::GetInt(op_desc_, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+  (void)AttrUtils::GetInt(op_desc_, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
   GELOGD("Get unknown_type is %d.", unknown_shape_type_val);
   unknown_type_ = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
 
-  aicpu_ext_handle_.reset(new(std::nothrow) ::ge::hybrid::AicpuExtInfoHandler(op_desc_->GetName(),
-                                                                              num_inputs_,
-                                                                              num_outputs_,
-                                                                              unknown_type_));
+  aicpu_ext_handle_.reset(
+    new (std::nothrow)::ge::hybrid::AicpuExtInfoHandler(op_desc_->GetName(), num_inputs_, num_outputs_, unknown_type_));
   GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, FAILED, "Malloc aicpu_ext_handle mem failed!");
 
   Status ret = aicpu_ext_handle_->Parse(kernel_ext_info);
@@ -257,12 +255,12 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info) {
   }
 
   GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, kernel_ext_info.size(), RT_MEMORY_HBM));
-  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, kernel_ext_info.size(),
-                         kernel_ext_info.data(), kernel_ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, kernel_ext_info.size(), kernel_ext_info.data(), kernel_ext_info.size(),
+                         RT_MEMCPY_HOST_TO_DEVICE));
   return SUCCESS;
 }
 
-Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, 
+Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
                                     std::vector<GeTensorDesc> &output_desc) {
   GELOGI("Update ext info begin, unknown_type=%d.", unknown_type_);
   if (num_inputs_ == 0 && num_outputs_ == 0) {
@@ -280,13 +278,14 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
     for (size_t j = 0; j < num_outputs_; ++j) {
       GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]),
                         "Output[%zu] UpdateOutputShapeAndType failed.", j);
+      // debug code
+      GELOGD("No input and output, no need update ext info.");
     }
   }
 
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_,
-                         aicpu_ext_handle_->GetExtInfoLen(), // check size
-                         aicpu_ext_handle_->GetExtInfo(),
-                         aicpu_ext_handle_->GetExtInfoLen(),
+                         aicpu_ext_handle_->GetExtInfoLen(),  // check size
+                         aicpu_ext_handle_->GetExtInfo(), aicpu_ext_handle_->GetExtInfoLen(),
                          RT_MEMCPY_HOST_TO_DEVICE));
 
   GELOGI("Update ext info end.");
@@ -300,18 +299,15 @@ Status AiCpuBaseTask::UpdateOutputShape(vector<GeTensorDesc> &output_desc) {
   }
   GELOGD("Start to update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape.");
 
-  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_->GetExtInfo(),
-                         aicpu_ext_handle_->GetExtInfoLen(),
-                         ext_info_addr_dev_,
-                         aicpu_ext_handle_->GetExtInfoLen(),
-                         RT_MEMCPY_DEVICE_TO_HOST));
+  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_->GetExtInfo(), aicpu_ext_handle_->GetExtInfoLen(), ext_info_addr_dev_,
+                         aicpu_ext_handle_->GetExtInfoLen(), RT_MEMCPY_DEVICE_TO_HOST));
 
   for (size_t i = 0; i < num_outputs_; ++i) {
     GeShape shape;
     DataType data_type;
     aicpu_ext_handle_->GetOutputShapeAndType(i, shape, data_type);
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]),
-                      "AiCpuCCTask Update [%zu]th output shape failed.", i);
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]), "AiCpuCCTask Update [%zu]th output shape failed.",
+                      i);
   }
   GELOGD("Update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape finished.");
   return SUCCESS;
@@ -332,16 +328,15 @@ Status AiCpuBaseTask::UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensor
 
   std::vector<int64_t> origin_dims_new;
 
-  auto trans_ret = formats::TransShape(format, shape_new.GetDims(),
-                                       output_desc.GetDataType(), origin_format, origin_dims_new);
-  GE_CHK_STATUS_RET(trans_ret,
-                    "AiCpuTask originFormat[%d] is not same as format[%d], but TransShape failed, shape=%s.",
+  auto trans_ret =
+    formats::TransShape(format, shape_new.GetDims(), output_desc.GetDataType(), origin_format, origin_dims_new);
+  GE_CHK_STATUS_RET(trans_ret, "AiCpuTask originFormat[%d] is not same as format[%d], but TransShape failed, shape=%s.",
                     origin_format, format, shape_new.ToString().c_str());
 
   auto origin_shape_new = GeShape(origin_dims_new);
   output_desc.SetOriginShape(origin_shape_new);
-  GELOGD("AiCpuTask originFormat[%d] is not same as format[%d], need update from %s ro %s.",
-         origin_format, format, origin_shape_old.ToString().c_str(), origin_shape_new.ToString().c_str());
+  GELOGD("AiCpuTask originFormat[%d] is not same as format[%d], need update from %s ro %s.", origin_format, format,
+         origin_shape_old.ToString().c_str(), origin_shape_new.ToString().c_str());
   return SUCCESS;
 }
 
@@ -397,9 +392,8 @@ Status AiCpuTask::PrepareCopyInputs(vector<DataBuffer> &outputs) {
 
   for (size_t i = 0; i < num_outputs_; ++i) {
     const auto &summary = output_summary_host_[i];
-    GELOGI("Node out[%zu] summary, shape data=0x%lx, shape data size=%lu, raw data=0x%lx, raw data size=%lu.",
-           i, summary.shape_data_ptr, summary.shape_data_size,
-           summary.raw_data_ptr, summary.raw_data_size);
+    GELOGI("Node out[%zu] summary, shape data=0x%lx, shape data size=%lu, raw data=0x%lx, raw data size=%lu.", i,
+           summary.shape_data_ptr, summary.shape_data_size, summary.raw_data_ptr, summary.raw_data_size);
     auto output = outputs[i];
     copy_input_release_flag.emplace_back(kReleaseFlag);
     if (summary.raw_data_size > 0) {
@@ -419,14 +413,14 @@ Status AiCpuTask::PrepareCopyInputs(vector<DataBuffer> &outputs) {
 
   const size_t copy_input_buf_len = num_outputs_ * kCopyNum * sizeof(uint64_t);
 
-  GE_CHK_RT_RET(rtMemcpy(copy_input_release_flag_dev_, copy_input_buf_len,
-                         copy_input_release_flag.data(), copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
-  GE_CHK_RT_RET(rtMemcpy(copy_input_data_size_dev_, copy_input_buf_len,
-                         copy_input_data_size.data(), copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
-  GE_CHK_RT_RET(rtMemcpy(copy_input_src_dev_, copy_input_buf_len,
-                         copy_input_src.data(), copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
-  GE_CHK_RT_RET(rtMemcpy(copy_input_dst_dev_, copy_input_buf_len,
-                         copy_input_dst.data(), copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(copy_input_release_flag_dev_, copy_input_buf_len, copy_input_release_flag.data(),
+                         copy_input_buf_len, RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(copy_input_data_size_dev_, copy_input_buf_len, copy_input_data_size.data(), copy_input_buf_len,
+                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(copy_input_src_dev_, copy_input_buf_len, copy_input_src.data(), copy_input_buf_len,
+                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(copy_input_dst_dev_, copy_input_buf_len, copy_input_dst.data(), copy_input_buf_len,
+                         RT_MEMCPY_HOST_TO_DEVICE));
   return SUCCESS;
 }
 
@@ -434,9 +428,8 @@ Status AiCpuTask::ReadResultSummaryAndPrepareMemory() {
   for (size_t i = 0; i < num_outputs_; ++i) {
     auto &result_summary = output_summary_host_[i];
 
-    GE_CHK_RT_RET(rtMemcpy(&result_summary, sizeof(aicpu::FWKAdapter::ResultSummary),
-                           output_summary_[i], sizeof(aicpu::FWKAdapter::ResultSummary),
-                           RT_MEMCPY_DEVICE_TO_HOST));
+    GE_CHK_RT_RET(rtMemcpy(&result_summary, sizeof(aicpu::FWKAdapter::ResultSummary), output_summary_[i],
+                           sizeof(aicpu::FWKAdapter::ResultSummary), RT_MEMCPY_DEVICE_TO_HOST));
     auto shape_data_size = result_summary.shape_data_size;
     void *shape_buffer = nullptr;
     if (shape_data_size > 0) {
@@ -447,12 +440,10 @@ Status AiCpuTask::ReadResultSummaryAndPrepareMemory() {
   return SUCCESS;
 }
 
-Status AiCpuTask::CopyDataToHbm(vector<DataBuffer> &outputs,
-                                rtStream_t stream) {
+Status AiCpuTask::CopyDataToHbm(vector<DataBuffer> &outputs, rtStream_t stream) {
   GE_CHK_STATUS_RET_NOLOG(PrepareCopyInputs(outputs));
 
-  GE_CHK_RT_RET(rtKernelLaunchEx(copy_task_args_buf_, sizeof(STR_FWK_OP_KERNEL),
-                                 RT_KERNEL_DEFAULT, stream));
+  GE_CHK_RT_RET(rtKernelLaunchEx(copy_task_args_buf_, sizeof(STR_FWK_OP_KERNEL), RT_KERNEL_DEFAULT, stream));
   GE_CHK_RT_RET(rtStreamSynchronize(stream));
   return SUCCESS;
 }
@@ -465,10 +456,10 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
       const auto &shape_hbm = out_shape_hbm_[i];
 
       uint32_t dim_num = result_summary.shape_data_size / sizeof(int64_t);
-      std::unique_ptr<int64_t[]> shape_addr(new(std::nothrow) int64_t[dim_num]());
+      std::unique_ptr<int64_t[]> shape_addr(new (std::nothrow) int64_t[dim_num]());
       GE_CHECK_NOTNULL(shape_addr);
-      GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size,
-                             shape_hbm, result_summary.shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
+      GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size, shape_hbm,
+                             result_summary.shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
 
       for (uint32_t dim_idx = 0; dim_idx < dim_num; ++dim_idx) {
         shape_dims.emplace_back(shape_addr[dim_idx]);
@@ -482,8 +473,7 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
   return SUCCESS;
 }
 
-Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc,
-                                                    vector<DataBuffer> &outputs,
+Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc, vector<DataBuffer> &outputs,
                                                     rtStream_t stream) {
   if (num_outputs_ == 0) {
     GELOGI("Output num is 0, there is no need to update the output and size.");
@@ -496,14 +486,11 @@ Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output
     FreeHbm(out_shape);
   }
   out_shape_hbm_.clear();
-  GE_CHK_STATUS_RET(ReadResultSummaryAndPrepareMemory(),
-                    "Read ResultSummary and update output shape failed.");
+  GE_CHK_STATUS_RET(ReadResultSummaryAndPrepareMemory(), "Read ResultSummary and update output shape failed.");
 
-  GE_CHK_STATUS_RET(CopyDataToHbm(outputs, stream),
-                    "Copy data to output failed.");
+  GE_CHK_STATUS_RET(CopyDataToHbm(outputs, stream), "Copy data to output failed.");
 
-  GE_CHK_STATUS_RET(UpdateShapeByHbmBuffer(output_desc),
-                    "Update shape by hbm buffer failed.");
+  GE_CHK_STATUS_RET(UpdateShapeByHbmBuffer(output_desc), "Update shape by hbm buffer failed.");
 
   for (auto out_shape : out_shape_hbm_) {
     FreeHbm(out_shape);
@@ -538,11 +525,8 @@ Status AiCpuTask::SetIO(const vector<void *> &inputs, vector<void *> &outputs) {
 
   if (!io_addrs.empty()) {
     auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(io_addr_));
-    GE_CHK_RT_RET(rtMemcpy(dst_io_addr,
-                           sizeof(uint64_t) * io_addrs.size(),
-                           &io_addrs[0],
-                           sizeof(uint64_t) * io_addrs.size(),
-                           RT_MEMCPY_HOST_TO_DEVICE));
+    GE_CHK_RT_RET(rtMemcpy(dst_io_addr, sizeof(uint64_t) * io_addrs.size(), &io_addrs[0],
+                           sizeof(uint64_t) * io_addrs.size(), RT_MEMCPY_HOST_TO_DEVICE));
     GE_CHECK_NOTNULL(dst_io_addr);
   };
   return SUCCESS;
@@ -580,24 +564,23 @@ Status AiCpuTask::InitForSummaryAndCopy() {
 
   GE_CHK_RT_RET(rtMalloc(&copy_ioaddr_dev_, copy_io_addr_size, RT_MEMORY_HBM));
 
-  GE_CHK_RT_RET(rtMemcpy(copy_ioaddr_dev_, copy_io_addr_size,
-                         copy_io_addr.data(), copy_io_addr_size, RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(
+    rtMemcpy(copy_ioaddr_dev_, copy_io_addr_size, copy_io_addr.data(), copy_io_addr_size, RT_MEMCPY_HOST_TO_DEVICE));
   return SUCCESS;
 }
 
 Status AiCpuTask::SetMemCopyTask(const domi::KernelExDef &kernel_def) {
   if (kernel_def.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
-    GELOGE(PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
-           sizeof(STR_FWK_OP_KERNEL), kernel_def.args_size());
+    GELOGE(PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d", sizeof(STR_FWK_OP_KERNEL),
+           kernel_def.args_size());
     return PARAM_INVALID;
   }
   GE_CHK_RT_RET(rtMalloc(&copy_workspace_buf_, kernel_def.task_info_size(), RT_MEMORY_HBM));
-  GE_CHK_RT_RET(rtMemcpy(copy_workspace_buf_, kernel_def.task_info_size(),
-                         kernel_def.task_info().data(), kernel_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(copy_workspace_buf_, kernel_def.task_info_size(), kernel_def.task_info().data(),
+                         kernel_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE));
 
   STR_FWK_OP_KERNEL aicpu_task = {0};
-  auto sec_ret = memcpy_s(&aicpu_task, sizeof(STR_FWK_OP_KERNEL),
-                          kernel_def.args().data(), kernel_def.args().size());
+  auto sec_ret = memcpy_s(&aicpu_task, sizeof(STR_FWK_OP_KERNEL), kernel_def.args().data(), kernel_def.args().size());
   if (sec_ret != EOK) {
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
     return FAILED;
@@ -608,16 +591,14 @@ Status AiCpuTask::SetMemCopyTask(const domi::KernelExDef &kernel_def) {
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoLen = 0;
 
-  GE_CHK_RT_RET(rtMemcpy(copy_task_args_buf_, sizeof(STR_FWK_OP_KERNEL),
-                         &aicpu_task, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpy(copy_task_args_buf_, sizeof(STR_FWK_OP_KERNEL), &aicpu_task, sizeof(STR_FWK_OP_KERNEL),
+                         RT_MEMCPY_HOST_TO_DEVICE));
   return SUCCESS;
 }
 
 Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                               const std::vector<DataBuffer> &input_buffers,
-                               std::vector<GeTensorDesc> &output_desc,
-                               std::vector<DataBuffer> &output_buffers,
-                               rtStream_t stream) {
+                               const std::vector<DataBuffer> &input_buffers, std::vector<GeTensorDesc> &output_desc,
+                               std::vector<DataBuffer> &output_buffers, rtStream_t stream) {
   GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc));
   std::vector<void *> inputs;
   std::vector<void *> outputs;
@@ -659,18 +640,16 @@ const void *AiCpuCCTask::GetArgs() const { return args_.get(); }
 
 size_t AiCpuCCTask::GetArgSize() const { return arg_size_; }
 
-AiCpuCCTask::~AiCpuCCTask() {
-}
+AiCpuCCTask::~AiCpuCCTask() {}
 
 Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   GELOGI("To invoke rtCpuKernelLaunch. block_dim = %u, so_name is %s, kernel_name is %s", block_dim_, so_name_.data(),
          kernel_name_.data());
   // sm_desc is nullptr, because l2 buffer does not support
   auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
-  auto ret = rtCpuKernelLaunchWithFlag(static_cast<const void *>(so_name_.data()),
-                                       static_cast<const void *>(kernel_name_.data()),
-                                       block_dim_, args_.get(), static_cast<uint32_t>(arg_size_),
-                                       sm_desc, stream, dump_flag_);
+  auto ret =
+    rtCpuKernelLaunch(static_cast<const void *>(so_name_.data()), static_cast<const void *>(kernel_name_.data()),
+                      block_dim_, args_.get(), static_cast<uint32_t>(arg_size_), sm_desc, stream);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
     return RT_FAILED;
@@ -681,13 +660,10 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
 }
 
 Status AiCpuCCTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                                 const std::vector<DataBuffer> &input_buffers,
-                                 std::vector<GeTensorDesc> &output_desc,
-                                 std::vector<DataBuffer> &output_buffers,
-                                 rtStream_t stream) {
+                                 const std::vector<DataBuffer> &input_buffers, std::vector<GeTensorDesc> &output_desc,
+                                 std::vector<DataBuffer> &output_buffers, rtStream_t stream) {
   GE_CHK_BOOL_RET_STATUS(unknown_type_ != DEPEND_COMPUTE, FAILED,
-                         "AiCpuCCTask unknown type[%d] is depend compute, it's not supported now.",
-                         unknown_type_);
+                         "AiCpuCCTask unknown type[%d] is depend compute, it's not supported now.", unknown_type_);
 
   GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc));
 

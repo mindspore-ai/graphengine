@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GE_SYMMETRY_ELIMINATION_PASS_H
 #define GE_SYMMETRY_ELIMINATION_PASS_H
 
@@ -47,8 +48,7 @@ class TransOpSymmetryEliminationPass : public BaseNodePass {
   /// @param node_desc: node to be checked
   /// @return  0 , is not dynamic shape; UNKNOWN_DIM_NUM , all dims are unknown; n , n > 0 , has n dims unknown
   ///
-  static int GetUnknownDimsNum(const GeTensorDesc& node_desc);
-
+  static int GetUnknownDimsNum(const GeTensorDesc &node_desc);
 
   ///
   /// judge after two transposed op transform the raw data will be the same

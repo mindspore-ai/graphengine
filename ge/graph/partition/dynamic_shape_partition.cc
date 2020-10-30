@@ -282,7 +282,7 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
   ss << (*iter)->Id() << ").";
   return ss.str();
 }
-}
+}  // namespace
 
 void DynamicShapePartitioner::MergeClustersUnknownShape() {
   // Merge unknown shape clusters
@@ -354,34 +354,19 @@ Status DynamicShapePartitioner::MergeClusters() {
   return SUCCESS;
 }
 
-bool DynamicShapePartitioner::JudgeUnknowShapeWithAttr(const OpDescPtr &opdesc) {
-  bool is_forced_unknown = false;
-  if (AttrUtils::GetBool(opdesc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_forced_unknown) && is_forced_unknown) {
-    GELOGD("Collect node %s as unknown as it was marked unknown forcibly.", opdesc->GetName().c_str());
-    return true;
-  }
-
-  bool forced_unknown = false;
-  if (AttrUtils::GetBool(opdesc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, forced_unknown) && forced_unknown) {
-    GELOGD("Collect node %s as unknown as it was marked force unknown node forcibly.", opdesc->GetName().c_str());
-    return true;
-  }
-  return false;
-}
-
 Status DynamicShapePartitioner::CollectSpreadUnknownShapeNodes(NodePtr node) {
   if (unknown_shape_nodes_.count(node) > 0) {
     return SUCCESS;
   }
   auto opdesc = node->GetOpDesc();
-  REQUIRE_NOT_NULL(opdesc, "Opdesc is nullptr.");
   // One can set 'ATTR_NAME_IS_UNKNOWN_SHAPE=true' on node so as to forcing the node flow into the unknown subgraph,
   // ignore the actual shape.
-  if (JudgeUnknowShapeWithAttr(opdesc)) {
+  bool is_forced_unknown = false;
+  if (AttrUtils::GetBool(opdesc, ATTR_NAME_IS_UNKNOWN_SHAPE, is_forced_unknown) && is_forced_unknown) {
+    GELOGD("Collect node %s as unknown as it was marked unknown forcibly.", node->GetName().c_str());
     unknown_shape_nodes_.insert(node);
     return SUCCESS;
   }
-
   size_t anchor_index = 0;
   bool is_unknown = false;
   for (auto &out_tensor : opdesc->GetAllOutputsDesc()) {
@@ -690,10 +675,10 @@ Status Cluster::BuildFrame() {
         auto src_cluster = partitioner_->node_2_cluster_[peer_out_control_anchor->GetOwnerNode()];
         if (src_cluster->id_ != id_) {
           REQUIRE_GRAPH_SUCCESS(
-              GraphUtils::RemoveEdge(peer_out_control_anchor, in_control_anchor),
-              "Failed remove edge from node %s index %d to node %s index %d.",
-              peer_out_control_anchor->GetOwnerNode()->GetName().c_str(), AnchorUtils::GetIdx(peer_out_control_anchor),
-              in_control_anchor->GetOwnerNode()->GetName().c_str(), AnchorUtils::GetIdx(in_control_anchor));
+            GraphUtils::RemoveEdge(peer_out_control_anchor, in_control_anchor),
+            "Failed remove edge from node %s index %d to node %s index %d.",
+            peer_out_control_anchor->GetOwnerNode()->GetName().c_str(), AnchorUtils::GetIdx(peer_out_control_anchor),
+            in_control_anchor->GetOwnerNode()->GetName().c_str(), AnchorUtils::GetIdx(in_control_anchor));
           control_inputs_.insert(src_cluster);
           src_cluster->control_outputs_.insert(peer_out_control_anchor);
         }
@@ -756,9 +741,9 @@ Status Cluster::BuildPartitionFrame() {
         auto src_cluster = partitioner_->node_2_cluster_[peer_out_control_anchor->GetOwnerNode()];
         if (src_cluster->id_ != id_) {
           REQUIRE_GRAPH_SUCCESS(
-              GraphUtils::RemoveEdge(peer_out_control_anchor, in_control_anchor),
-              "Failed remove edge from %s:%d to %s:%d.", peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
-              peer_out_control_anchor->GetIdx(), node->GetName().c_str(), in_control_anchor->GetIdx());
+            GraphUtils::RemoveEdge(peer_out_control_anchor, in_control_anchor),
+            "Failed remove edge from %s:%d to %s:%d.", peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+            peer_out_control_anchor->GetIdx(), node->GetName().c_str(), in_control_anchor->GetIdx());
           control_inputs_.insert(src_cluster);
           src_cluster->control_outputs_.insert(peer_out_control_anchor);
         }
@@ -821,7 +806,7 @@ Status Cluster::BuildPartitionSubgraph() {
   int64_t parent_node_index = 0;
   for (auto anchor : inputs_) {
     auto data_op =
-        MakeShared<OpDesc>(subgraph_->GetName() + std::string("Data_") + std::to_string(parent_node_index), ge::DATA);
+      MakeShared<OpDesc>(subgraph_->GetName() + std::string("Data_") + std::to_string(parent_node_index), ge::DATA);
     REQUIRE_NOT_NULL(data_op, "Failed new memory for data op.");
     auto input_desc = anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(anchor->GetIdx());
     REQUIRE_GRAPH_SUCCESS(data_op->AddInputDesc(input_desc), "Failed add input desc.");

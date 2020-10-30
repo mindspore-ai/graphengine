@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,7 @@ Status SwitchToStreamSwitchPass::CheckCycleDependence(const ComputeGraphPtr &gra
       NodePtr cond_node = peer_out_anchor->GetOwnerNode();
       auto iter = cond_switch_map.find(cond_node);
       if (iter == cond_switch_map.end()) {
-        cond_switch_map[cond_node] = { node };
+        cond_switch_map[cond_node] = {node};
       } else {
         iter->second.emplace_back(node);
       }
@@ -104,7 +104,7 @@ Status SwitchToStreamSwitchPass::CheckCycleDependence(const ComputeGraphPtr &gra
 /// @return void
 ///
 void SwitchToStreamSwitchPass::MarkCycleDependence(
-    const std::unordered_map<NodePtr, std::vector<NodePtr>> &cond_switch_map) {
+  const std::unordered_map<NodePtr, std::vector<NodePtr>> &cond_switch_map) {
   std::stack<NodePtr> out_nodes;
   NodePtr tmp_node = nullptr;
   std::unordered_set<NodePtr> visited;
@@ -130,8 +130,8 @@ void SwitchToStreamSwitchPass::MarkCycleDependence(
           out_nodes.push(out_node);
           continue;
         }
-        GE_IF_BOOL_EXEC(SetCyclicDependenceFlag(out_node) != SUCCESS,
-                        GELOGW("set cyclic dependence attr failed."); return );
+        GE_IF_BOOL_EXEC(SetCyclicDependenceFlag(out_node) != SUCCESS, GELOGW("set cyclic dependence attr failed.");
+                        return );
         auto map_iter = switch_cyclic_map_.find(out_node);
         if (map_iter == switch_cyclic_map_.end()) {
           switch_cyclic_map_[out_node] = {tmp_node->GetName()};
@@ -442,7 +442,7 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
       GE_CHK_BOOL_EXEC(active_node != nullptr, return FAILED, "Create StreamActive node failed.");
       GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutControlAnchor(), active_node->GetInControlAnchor()),
                     "StreamActive add ctl edge failed.");
-      if (SetActiveLabelList(active_node, { cast_node->GetName() }) != SUCCESS) {
+      if (SetActiveLabelList(active_node, {cast_node->GetName()}) != SUCCESS) {
         GELOGE(FAILED, "Set active_label_list attr for node %s failed.", active_node->GetName().c_str());
         return FAILED;
       }
@@ -541,8 +541,7 @@ NodePtr SwitchToStreamSwitchPass::CreateCastOp(const ComputeGraphPtr &graph, con
 
   GeTensorDesc tensor_desc = cond_desc->GetOutputDesc(peer_cond_anchor->GetIdx());
   tensor_desc.SetDataType(DT_BOOL);
-  GE_CHK_BOOL_EXEC(cast_desc->AddInputDesc(tensor_desc) == SUCCESS, return nullptr,
-                   "Cast_node add input desc failed.");
+  GE_CHK_BOOL_EXEC(cast_desc->AddInputDesc(tensor_desc) == SUCCESS, return nullptr, "Cast_node add input desc failed.");
   tensor_desc.SetDataType(DT_INT32);
   GE_CHK_BOOL_EXEC(cast_desc->AddOutputDesc(tensor_desc) == SUCCESS, return nullptr,
                    "Cast_node add output desc failed.");
@@ -578,7 +577,7 @@ Status SwitchToStreamSwitchPass::AddConstNode(const ComputeGraphPtr &graph, cons
   auto resize_value = (int32_t)value;
   GeTensorDesc data_desc = op_desc->GetInputDesc(1);
   GeTensorPtr const_value =
-          MakeShared<GeTensor>(data_desc, reinterpret_cast<uint8_t *>(&resize_value), sizeof(int32_t));
+    MakeShared<GeTensor>(data_desc, reinterpret_cast<uint8_t *>(&resize_value), sizeof(int32_t));
   if (const_value == nullptr) {
     GELOGE(FAILED, "Create tensor failed.");
     return FAILED;
@@ -737,8 +736,7 @@ void SwitchToStreamSwitchPass::MoveCtrlEdges(const NodePtr &old_node, const Node
       }
     } else {
       GE_IF_BOOL_EXEC(!out_ctrl_anchor->IsLinkedWith(new_node->GetInControlAnchor()), {
-        GE_CHK_STATUS(GraphUtils::AddEdge(out_ctrl_anchor, new_node->GetInControlAnchor()),
-                      "Add in ctrl edge failed.");
+        GE_CHK_STATUS(GraphUtils::AddEdge(out_ctrl_anchor, new_node->GetInControlAnchor()), "Add in ctrl edge failed.");
       });
     }
     GE_CHK_STATUS(GraphUtils::RemoveEdge(out_ctrl_anchor, old_node->GetInControlAnchor()),

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ class KernelTaskInfo : public TaskInfo {
 
   uint32_t GetSktTaskID() override { return skt_id_; }
 
-  bool CallSaveDumpInfo() override  { return call_save_dump_; };
+  bool CallSaveDumpInfo() override { return call_save_dump_; };
 
   cce::ccOpContext ctx_;
   FusionOpInfo fusion_op_info_;
@@ -114,9 +114,9 @@ class KernelTaskInfo : public TaskInfo {
   Status SetContext(const domi::KernelDef &kernel_def);
 
   Status UpdateCceArgs(std::string &sm_desc, std::string &flowtable, const domi::KernelDef &kernel_def);
-  Status CceUpdateKernelArgs(const domi::KernelContext &context, uint64_t &data_base_addr,
-                             uint64_t &weight_base_addr, uint64_t &var_base_addr, std::string &sm_desc,
-                             std::string &flowtable, const domi::KernelDef &kernel_def);
+  Status CceUpdateKernelArgs(const domi::KernelContext &context, uint64_t &data_base_addr, uint64_t &weight_base_addr,
+                             uint64_t &var_base_addr, std::string &sm_desc, std::string &flowtable,
+                             const domi::KernelDef &kernel_def);
 
   Status SetFlowtable(std::string &flowtable, const domi::KernelDef &kernel_def);
 

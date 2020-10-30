@@ -1,18 +1,18 @@
 /**
-* Copyright 2019-2020 Huawei Technologies Co., Ltd
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #ifndef INC_FRAMEWORK_COMMON_GE_TYPES_H_
 #define INC_FRAMEWORK_COMMON_GE_TYPES_H_
@@ -28,38 +28,24 @@
 #include "external/ge/ge_api_types.h"
 
 namespace ge {
-enum RuntimeType {
-HOST = 0,
-DEVICE = 1
-};
+enum RuntimeType { HOST = 0, DEVICE = 1 };
 
-enum PerfLevel {
-GEN_TASK_WITH_FUSION = -1,
-GEN_TASK_WITHOUT_L2FUSION = 3,
-GEN_TASK_WITHOUT_FUSION = 4
-};
+enum PerfLevel { GEN_TASK_WITH_FUSION = -1, GEN_TASK_WITHOUT_L2FUSION = 3, GEN_TASK_WITHOUT_FUSION = 4 };
 
 enum FrameworkType {
-CAFFE = 0,
-MINDSPORE = 1,
-TENSORFLOW = 3,
-ANDROID_NN,
-FRAMEWORK_RESERVED,
+  CAFFE = 0,
+  MINDSPORE = 1,
+  TENSORFLOW = 3,
+  ANDROID_NN,
+  FRAMEWORK_RESERVED,
 };
 
 enum OpEngineType {
-ENGINE_SYS = 0,  // default engine
-ENGINE_AICORE = 1,
-ENGINE_VECTOR = 2,
-ENGINE_AICUBE = 3,   // not support
-ENGINE_AIVECTOR = 4  // not support
-};
-
-enum InputAippType{
-  DATA_WITHOUT_AIPP = 0,
-  DATA_WITH_STATIC_AIPP,
-  DATA_WITH_DYNAMIC_AIPP,
-  DYNAMIC_AIPP_NODE
+  ENGINE_SYS = 0,  // default engine
+  ENGINE_AICORE = 1,
+  ENGINE_VECTOR = 2,
+  ENGINE_AICUBE = 3,   // not support
+  ENGINE_AIVECTOR = 4  // not support
 };
 
 enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
@@ -109,7 +95,7 @@ struct OutputData {
 struct Command {
   std::string cmd_type;                 // Command type
   std::vector<std::string> cmd_params;  // Command params
-  uint64_t module_index; // prof module
+  uint64_t module_index;                // prof module
 };
 
 // The definition of I/O shape description

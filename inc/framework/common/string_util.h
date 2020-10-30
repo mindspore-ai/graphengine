@@ -37,7 +37,7 @@ class StringUtils {
     return s;
   }
   // lint -esym(551,*)
-  static std::string &Rtrim(std::string &s) {  /*lint !e618*/
+  static std::string &Rtrim(std::string &s) { /*lint !e618*/
 #if __cplusplus >= 201103L
     (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return !std::isspace(c); }));
 #else

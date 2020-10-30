@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file hcom_ops.h
  * \brief huawei collective communication library ops.
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_
+#ifndef GE_OP_HCOM_OPS_H_
+#define GE_OP_HCOM_OPS_H_
 
 #include "graph/operator_reg.h"
 
@@ -41,8 +41,8 @@ namespace ge {
   as the name of a world group.
  */
 REG_OP(HcomAllGather)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(rank_size, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(alpha, Float, 1.0)
@@ -99,8 +99,8 @@ REG_OP(HcomAllReduce)
   as the name of a world group.
  */
 REG_OP(HcomBroadcast)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
-    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(root_rank, Int)
     .REQUIRED_ATTR(group, String)
     .ATTR(alpha, Float, 1.0)
@@ -157,7 +157,7 @@ REG_OP(HcomReduceScatter)
  * @see HcomReceive
 */
 REG_OP(HcomSend)
-    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(dest_rank, Int)
@@ -190,7 +190,7 @@ REG_OP(HcomSend)
  * @see HcomSend
 */
 REG_OP(HcomReceive)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(src_rank, Int)
@@ -200,30 +200,5 @@ REG_OP(HcomReceive)
     .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomReceive)
 
-/**
- * @brief Performs Remote Read of input tensors
- * @par Inputs:
- * remote: A tensor. describing the remote memory address to read: u64 remoteId, u64 addrRemote, u64 length
- * @par Outputs:
- * local: A Tensor. whose value is length / size_of(Type)
- */
-REG_OP(HcomRemoteRead)
-    .INPUT(remote, TensorType({DT_INT64, DT_UINT64}))
-    .OUTPUT(local, TensorType::ALL())
-    .REQUIRED_ATTR(dtype, Type)
-    .OP_END_FACTORY_REG(HcomRemoteRead)
-
-/**
- * @brief Performs Remote Write of input tensors
- * @par Inputs:
- * remote: A tensor. describing the remote memory address to write: u64 remoteId, u64 addrRemote, u64 length
- * @par Inputs:
- * local: A Tensor. whose value is length / size_of(Type)
- */
-REG_OP(HcomRemoteWrite)
-    .INPUT(remote, TensorType({DT_INT64, DT_UINT64}))
-    .INPUT(local, TensorType::ALL())
-    .OP_END_FACTORY_REG(HcomRemoteWrite)
-
 } // namespace ge
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_
+#endif // GE_OP_HCOM_OPS_H_

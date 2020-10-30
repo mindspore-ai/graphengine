@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,77 +17,25 @@
 #include "graph/build/graph_builder.h"
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
+#include "common/opskernel/ops_kernel_info_types.h"
 #include "graph/build/logical_stream_allocator.h"
 #include "graph/build/run_context.h"
 #include "graph/build/stream_graph_optimizer.h"
-#include "graph/common/ge_call_wrapper.h"
-#include "graph/ge_context.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/passes/mark_same_addr_pass.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/common/ge_call_wrapper.h"
 #include "init/gelib.h"
 #include "model/ge_model.h"
 #include "graph/ge_context.h"
-#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using domi::BuildMode;
 
 namespace {
 const int32_t kInvalidPerfLevel = -1;
-enum NodeType { kSubgraphData, kSubgraphNode, kOthers };
 }  // namespace
 namespace ge {
-NodeType TransferNodeType(const NodePtr &node) {
-  const std::string type = node->GetType();
-  if (type == ge::DATA) {
-    if (node->GetOwnerComputeGraph()->GetParentNode() == nullptr) {
-      GELOGD("access src data node:%s", node->GetName().c_str());
-      return kOthers;
-    }
-    GELOGD("access subgraph input node:%s", node->GetName().c_str());
-    return kSubgraphData;
-  } else if (type == PARTITIONEDCALL) {
-    GELOGD("access subgraph node:%s", node->GetName().c_str());
-    return kSubgraphNode;
-  }
-  GELOGD("access other node:%s", node->GetName().c_str());
-  return kOthers;
-}
-
-Status HandleSubgraphNode(NodePtr &src_node, OutDataAnchorPtr &src_out_anchor) {
-  auto subgraph = NodeUtils::GetSubgraph(*src_node, 0);
-  GE_CHECK_NOTNULL(subgraph);
-  const NodePtr &net_output_node = subgraph->FindFirstNodeMatchType(NETOUTPUT);
-  GE_CHECK_NOTNULL(net_output_node);
-  const InDataAnchorPtr &in_data_anchor = net_output_node->GetInDataAnchor(src_out_anchor->GetIdx());
-  GE_CHECK_NOTNULL(in_data_anchor);
-  const OutDataAnchorPtr &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-  GE_CHECK_NOTNULL(peer_out_anchor);
-
-  src_node = peer_out_anchor->GetOwnerNode();
-  src_out_anchor = peer_out_anchor;
-  return SUCCESS;
-}
-
-Status HandleSubgraphDataNode(NodePtr &src_node, OutDataAnchorPtr &src_out_anchor) {
-  uint32_t index = 0;
-  if (!AttrUtils::GetInt(src_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, index)) {
-    GELOGE(FAILED, "Get attr ATTR_NAME_PARENT_NODE_INDEX failed, node:%s.", src_node->GetName().c_str());
-    return FAILED;
-  }
-  const NodePtr &parent_node = src_node->GetOwnerComputeGraph()->GetParentNode();
-  GE_CHECK_NOTNULL(parent_node);
-  const InDataAnchorPtr &in_data_anchor = parent_node->GetInDataAnchor(index);
-  GE_CHECK_NOTNULL(in_data_anchor);
-  const OutDataAnchorPtr &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-  GE_CHECK_NOTNULL(peer_out_anchor);
-
-  src_node = peer_out_anchor->GetOwnerNode();
-  src_out_anchor = peer_out_anchor;
-  return SUCCESS;
-}
-
 GraphBuilder::GraphBuilder() : build_mode_(BuildMode::GEN_TASK_WITH_FUSION), hcom_parallel_(false) {}
 
 void GraphBuilder::SetOptions(const ge::GraphManagerOptions &options) {
@@ -124,18 +72,23 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
       }
     }
 
-    auto ret = SetInputSize(node_ptr);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Set node inputDesc size failed, node name is %s", node_ptr->GetName().c_str());
-      return ret;
+    OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
+    if (kernel_info != nullptr) {
+      auto ret = SetInputSize(node_ptr);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "Set node inputDesc size failed, node name is %s", node_ptr->GetName().c_str());
+        return ret;
+      }
+      ret = kernel_info->CalcOpRunningParam(*node_ptr);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "Calculate op running param failed, node name is %s", node_ptr->GetName().c_str());
+        return ret;
+      }
+      GE_CHK_STATUS_RET(AddOutputMemTypeForNode(node_ptr));
+    } else {
+      GELOGE(GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node_ptr->GetName().c_str());
+      return INTERNAL_ERROR;
     }
-
-    ret = OpsKernelBuilderManager::Instance().CalcOpRunningParam(*node_ptr);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Calculate op running param failed, node name is %s", node_ptr->GetName().c_str());
-      return ret;
-    }
-    GE_CHK_STATUS_RET(AddOutputMemTypeForNode(node_ptr));
   }
 
   auto parent_node = graph->GetParentNode();
@@ -204,8 +157,8 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
   (void)AttrUtils::GetBool(comp_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
   if (is_dynamic_shape) {
     GE_CHK_STATUS_RET(
-        BuildForDynamicShapeGraph(comp_graph, subgraph_ptr_list, ge_root_model_ptr, ge_model_ptr, session_id),
-        "Build for dynamic shape graph failed.");
+      BuildForDynamicShapeGraph(comp_graph, subgraph_ptr_list, ge_root_model_ptr, ge_model_ptr, session_id),
+      "Build for dynamic shape graph failed.");
     return SUCCESS;
   }
 
@@ -368,11 +321,6 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
     GELOGE(INTERNAL_ERROR, "Get memory size fail.");
     return INTERNAL_ERROR;
   }
-  int64_t p2p_memory_size = 0;
-  if (!AttrUtils::GetInt(model_ptr, ATTR_MODEL_P2P_MEMORY_SIZE, p2p_memory_size)) {
-    GELOGE(INTERNAL_ERROR, "Get p2p memory size fail.");
-    return INTERNAL_ERROR;
-  }
   int64_t weight_size = 0;
   if (!AttrUtils::GetInt(model_ptr, ATTR_MODEL_WEIGHT_SIZE, weight_size)) {
     GELOGE(INTERNAL_ERROR, "Get weight memory size fail.");
@@ -383,21 +331,11 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
   auto *get_mem_base = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(var_manager->GetVarMemMaxSize()));
   uint8_t *get_weight_mem_base = get_mem_base;
   if (weight_size > 0) {
-    get_weight_mem_base = get_mem_base + memory_size + p2p_memory_size;
+    get_weight_mem_base = get_mem_base + memory_size;
   }
-  std::map<int64_t, uint8_t *> mem_type_to_data_mem_base;
-  mem_type_to_data_mem_base[RT_MEMORY_HBM] = get_mem_base;
-  if (p2p_memory_size == 0) {
-    mem_type_to_data_mem_base[RT_MEMORY_P2P_DDR] = nullptr;
-  } else {
-    mem_type_to_data_mem_base[RT_MEMORY_P2P_DDR] = get_mem_base + memory_size;
-  }
-  std::map<int64_t, uint64_t> mem_type_to_data_mem_size;
-  mem_type_to_data_mem_size[RT_MEMORY_HBM] = memory_size;
-  mem_type_to_data_mem_size[RT_MEMORY_P2P_DDR] = p2p_memory_size;
+
   RunContextUtil run_context;
-  Status ret = run_context.InitMemInfo(get_mem_base, memory_size, mem_type_to_data_mem_base, mem_type_to_data_mem_size,
-                                       get_weight_mem_base, weight_size);
+  Status ret = run_context.InitMemInfo(get_mem_base, memory_size, get_weight_mem_base, weight_size);
   if (ret != SUCCESS) {
     GELOGE(ret, "task_generator init mem info fail.");
     return ret;
@@ -562,50 +500,22 @@ Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge:
 }
 
 Status GraphBuilder::AddOutputMemTypeForNode(const NodePtr &node) {
-  auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-  uint32_t mem_type;
-  if (!AttrUtils::GetInt(op_desc, ATTR_INPUT_MEMORY_TYPE, mem_type)) {
-    return SUCCESS;
-  }
-  GELOGD("[%s] has attr input_memory_type %ld", op_desc->GetName().c_str(), mem_type);
-  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
-    const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
-    bool valid_flag = false;
-    auto src_node = peer_out_anchor->GetOwnerNode();
-    auto src_out_anchor = peer_out_anchor;
-    while (true) {
-      const auto &src_desc = src_node->GetOpDesc();
-      GE_IF_BOOL_EXEC(src_desc == nullptr, continue);
-      GELOGD("[%s:%u] set attr output_memory_type %ld", src_desc->GetName().c_str(), src_out_anchor->GetIdx(),
-             mem_type);
-      if (!AttrUtils::SetInt(src_desc->MutableOutputDesc(src_out_anchor->GetIdx()), ATTR_OUTPUT_MEMORY_TYPE,
-                             mem_type)) {
-        GELOGE(INTERNAL_ERROR, "Set out_memory_type attr for [%s:%d] failed.", src_desc->GetName().c_str(),
-               src_out_anchor->GetIdx());
+  int64_t mem_type;
+  if (AttrUtils::GetInt(node->GetOpDesc(), ATTR_INPUT_MEMORY_TYPE, mem_type)) {
+    GELOGD("[%s] has attr input_memory_type %ld", node->GetName().c_str(), mem_type);
+    for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+      const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+      const auto &src_node = peer_out_anchor->GetOwnerNode();
+      const auto &src_op = src_node->GetOpDesc();
+      GE_IF_BOOL_EXEC(src_op == nullptr, continue);
+      if (!AttrUtils::SetInt(src_op, ATTR_OUTPUT_MEMORY_TYPE, mem_type)) {
+        GELOGE(INTERNAL_ERROR, "Set out_memory_type attr failed.");
         return INTERNAL_ERROR;
       }
-      switch (TransferNodeType(src_node)) {
-        case kSubgraphNode:
-          GE_CHK_STATUS_RET(HandleSubgraphNode(src_node, src_out_anchor), "Handle subgraph node %s failed",
-                            src_node->GetName().c_str());
-          break;
-        case kSubgraphData:
-          GE_CHK_STATUS_RET(HandleSubgraphDataNode(src_node, src_out_anchor), "Handle Data node %s in subgraph failed",
-                            src_node->GetName().c_str());
-          break;
-        case kOthers:
-        default:
-          valid_flag = true;
-          break;
-      }
-      if (valid_flag) {
-        break;
-      }
+      return SUCCESS;
     }
   }
-
   return SUCCESS;
 }
 }  // namespace ge

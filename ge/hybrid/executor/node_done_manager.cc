@@ -25,8 +25,7 @@ constexpr int kDefaultWaitTimeoutInSec = 60 * 10;
 }
 bool NodeDoneManager::Cond::Await() {
   std::unique_lock<std::mutex> lk(cond_mu_);
-  if (!cv_.wait_for(lk,
-                    std::chrono::seconds(kDefaultWaitTimeoutInSec),
+  if (!cv_.wait_for(lk, std::chrono::seconds(kDefaultWaitTimeoutInSec),
                     [&]() { return is_released_ || is_cancelled_; })) {
     GELOGE(INTERNAL_ERROR, "Wait timed out.");
     return false;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,7 @@ char const *GetOutputNameFromIndex(int index) {
   return "UNKNOWN";
 }
 
-inline bool IsSwitch(const std::string &type) {
-  return type == SWITCH || type == REFSWITCH;
-}
+inline bool IsSwitch(const std::string &type) { return type == SWITCH || type == REFSWITCH; }
 
 Status GetPredNode(const NodePtr &switch_node, PredNodeAndOut &pred_node_index) {
   GE_CHECK_NOTNULL(switch_node);
@@ -50,16 +48,13 @@ Status GetPredNode(const NodePtr &switch_node, PredNodeAndOut &pred_node_index) 
   }
   auto pred_node_anchor = pred_in_anchor->GetPeerOutAnchor();
   if (pred_node_anchor == nullptr) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to get pred node for switch %s, node peer out anchor",
+    GELOGE(INTERNAL_ERROR, "Failed to get pred node for switch %s, node peer out anchor",
            switch_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
   auto pred_node = pred_node_anchor->GetOwnerNode();
   if (pred_node == nullptr) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to get pred node for switch %s, null node",
-           switch_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "Failed to get pred node for switch %s, null node", switch_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
   pred_node_index.first = pred_node;
@@ -111,8 +106,8 @@ Status SwitchLogicRemovePass::Run(NodePtr &node) {
         continue;
       }
       GELOGI("The switch nodes cascaded %s and %s have the save pred node %s, the %s can be remove",
-             node->GetName().c_str(), dst_node->GetName().c_str(),
-             pred_node_and_out.first->GetName().c_str(), dst_node->GetName().c_str());
+             node->GetName().c_str(), dst_node->GetName().c_str(), pred_node_and_out.first->GetName().c_str(),
+             dst_node->GetName().c_str());
       ret = RemoveSwitchNodeLogically(i, dst_node);
       if (ret != SUCCESS) {
         return ret;
@@ -137,8 +132,8 @@ Status SwitchLogicRemovePass::RemoveSwitchNodeLogically(int parent_index, NodePt
       continue;
     }
 
-    GELOGI("Remove inactivate branch %s(%d) from switch %s",
-           GetOutputNameFromIndex(i), i, switch_node->GetName().c_str());
+    GELOGI("Remove inactivate branch %s(%d) from switch %s", GetOutputNameFromIndex(i), i,
+           switch_node->GetName().c_str());
     std::vector<NodePtr> deleted_nodes;
     std::vector<NodePtr> end_nodes;
     auto ret = PassUtils::RemoveInactiveBranchToMerge(out_anchor, deleted_nodes, end_nodes);
@@ -148,20 +143,18 @@ Status SwitchLogicRemovePass::RemoveSwitchNodeLogically(int parent_index, NodePt
 
     for (auto &node : deleted_nodes) {
       GE_CHECK_NOTNULL(node);
-      GELOGD("Remove node %s from inactivate branch from switch %s",
-             node->GetName().c_str(), switch_node->GetName().c_str());
+      GELOGD("Remove node %s from inactivate branch from switch %s", node->GetName().c_str(),
+             switch_node->GetName().c_str());
       AddNodeDeleted(node);
     }
     for (auto &node : end_nodes) {
       GE_CHECK_NOTNULL(node);
-      GELOGD("Add end node %s to re-pass list, for inactivate branch from switch %s",
-             node->GetName().c_str(), switch_node->GetName().c_str());
+      GELOGD("Add end node %s to re-pass list, for inactivate branch from switch %s", node->GetName().c_str(),
+             switch_node->GetName().c_str());
       AddRePassNode(node);
     }
   }
-  GELOGI("Remove switch node cascaded %s, replace out index %d",
-         switch_node->GetName().c_str(), parent_index);
+  GELOGI("Remove switch node cascaded %s, replace out index %d", switch_node->GetName().c_str(), parent_index);
   return IsolateAndDeleteNode(switch_node, isolate_map);
 }
 }  // namespace ge
-

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "control_op_executor.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
@@ -23,27 +24,21 @@ namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::CONTROL_OP, ControlOpNodeExecutor);
 namespace {
-template<typename T>
+template <typename T>
 Status CopyScalarValueToHost(const TensorValue &tensor, T &value) {
   GE_CHECK_GE(tensor.GetSize(), sizeof(value));
-  GE_CHK_RT_RET(rtMemcpy(&value,
-                         sizeof(value),
-                         tensor.GetData(),
-                         sizeof(value),
-                         RT_MEMCPY_DEVICE_TO_HOST));
+  GE_CHK_RT_RET(rtMemcpy(&value, sizeof(value), tensor.GetData(), sizeof(value), RT_MEMCPY_DEVICE_TO_HOST));
   return SUCCESS;
 }
-}
+}  // namespace
 
-Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph,
-                                          TaskContext &task_context,
+Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph, TaskContext &task_context,
                                           const std::function<void()> &done_callback) {
   GELOGD("[%s] Start to execute subgraph.", subgraph->GetName().c_str());
   auto execution_context = const_cast<GraphExecutionContext *>(task_context.GetExecutionContext());
   auto executor = MakeShared<SubgraphExecutor>(subgraph, execution_context);
   GE_CHECK_NOTNULL(executor);
-  GE_CHK_STATUS_RET(executor->ExecuteAsync(task_context),
-                    "[%s] Failed to execute partitioned call.",
+  GE_CHK_STATUS_RET(executor->ExecuteAsync(task_context), "[%s] Failed to execute partitioned call.",
                     subgraph->GetName().c_str());
 
   auto callback = [executor, done_callback]() mutable {
@@ -61,12 +56,12 @@ Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph,
 
 Status ControlOpNodeTask::ToBool(const TensorValue &tensor, DataType data_type, bool &value) {
   switch (data_type) {
-#define CASE(DT, T)                                         \
-  case (DT): {                                              \
-    T val{};                                                \
-    GE_CHK_STATUS_RET(CopyScalarValueToHost(tensor, val));  \
-    value = val != 0;                                       \
-    break;                                                  \
+#define CASE(DT, T)                                        \
+  case (DT): {                                             \
+    T val{};                                               \
+    GE_CHK_STATUS_RET(CopyScalarValueToHost(tensor, val)); \
+    value = val != 0;                                      \
+    break;                                                 \
   }
     // DT_STRING was handled in CondPass
     CASE(DT_FLOAT, float)
@@ -125,24 +120,19 @@ Status IfOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::functi
   if (shape.IsScalar()) {
     auto cond_tensor = task_context.GetInput(kIfCondIndex);
     GE_CHECK_NOTNULL(cond_tensor);
-    GE_CHK_STATUS_RET(ToBool(*cond_tensor, data_type, cond_val),
-                      "[%s] Failed to get cond value.",
+    GE_CHK_STATUS_RET(ToBool(*cond_tensor, data_type, cond_val), "[%s] Failed to get cond value.",
                       task_context.GetNodeName());
   } else {
     // true if num elements is non-zero
     cond_val = shape.GetShapeSize() != 0;
-    GELOGD("[%s] Cond tensor shape = [%s], cond value = %d",
-           task_context.GetNodeName(),
-           shape.ToString().c_str(),
+    GELOGD("[%s] Cond tensor shape = [%s], cond value = %d", task_context.GetNodeName(), shape.ToString().c_str(),
            cond_val);
   }
 
   auto subgraph = cond_val ? then_ : else_;
   GELOGD("[%s] Taking subgraph [%s] by cond = [%d]", task_context.GetNodeName(), subgraph->GetName().c_str(), cond_val);
   GE_CHK_STATUS_RET(ExecuteSubgraph(subgraph, task_context, done_callback),
-                    "[%s] Failed to execute subgraph. cond = %d",
-                    task_context.GetNodeName(),
-                    cond_val);
+                    "[%s] Failed to execute subgraph. cond = %d", task_context.GetNodeName(), cond_val);
 
   GELOGD("[%s] Done executing with cond = %d successfully.", task_context.GetNodeName(), cond_val);
   return SUCCESS;
@@ -171,8 +161,7 @@ Status CaseOpNodeTask::Init(const NodePtr &node, const HybridModel &model) {
 const GraphItem *CaseOpNodeTask::SelectBranch(int32_t branch_index) const {
   // subgraphs_ is non-empty. checked int Init
   if (branch_index < 0 || static_cast<size_t>(branch_index) >= subgraphs_.size()) {
-    GELOGI("Branch index out of range. index = %d, num_subgraphs = %zu, will taking last branch.",
-           branch_index,
+    GELOGI("Branch index out of range. index = %d, num_subgraphs = %zu, will taking last branch.", branch_index,
            subgraphs_.size());
     branch_index = subgraphs_.size() - 1;
   }
@@ -186,9 +175,7 @@ Status CaseOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::func
   int32_t branch_index = 0;
   GE_CHK_STATUS_RET(CopyScalarValueToHost(*branch_tensor, branch_index));
   const GraphItem *subgraph = SelectBranch(branch_index);
-  GELOGI("[%s] Taking subgraph [%s] by branch = [%d]",
-         task_context.GetNodeName(),
-         subgraph->GetName().c_str(),
+  GELOGI("[%s] Taking subgraph [%s] by branch = [%d]", task_context.GetNodeName(), subgraph->GetName().c_str(),
          branch_index);
 
   std::vector<TensorValue> inputs;
@@ -199,8 +186,7 @@ Status CaseOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::func
     inputs.emplace_back(*input_tensor);
   }
 
-  GE_CHK_STATUS_RET(ExecuteSubgraph(subgraph, task_context, done_callback),
-                    "[%s] Failed to execute else-subgraph.",
+  GE_CHK_STATUS_RET(ExecuteSubgraph(subgraph, task_context, done_callback), "[%s] Failed to execute else-subgraph.",
                     task_context.GetNodeName());
 
   GELOGD("[%s] Done executing subgraph[%d] successfully.", task_context.GetNodeName(), branch_index);
@@ -227,17 +213,13 @@ Status WhileOpNodeTask::Init(const NodePtr &node, const HybridModel &model) {
 
 Status WhileOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const {
   if (task_context.NumInputs() != task_context.NumOutputs()) {
-    GELOGE(INTERNAL_ERROR,
-           "[%s] Invalid while args. num_inputs = %d, num_outputs = %d",
-           task_context.GetNodeName(),
-           task_context.NumInputs(),
-           task_context.NumOutputs());
+    GELOGE(INTERNAL_ERROR, "[%s] Invalid while args. num_inputs = %d, num_outputs = %d", task_context.GetNodeName(),
+           task_context.NumInputs(), task_context.NumOutputs());
     return INTERNAL_ERROR;
   }
 
   bool is_continue = false;
-  GE_CHK_STATUS_RET(ExecuteOneLoop(task_context, is_continue),
-                    "[%s] Failed to execute iteration 0.",
+  GE_CHK_STATUS_RET(ExecuteOneLoop(task_context, is_continue), "[%s] Failed to execute iteration 0.",
                     task_context.GetNodeName());
   if (!is_continue) {
     for (int i = 0; i < task_context.NumInputs(); ++i) {
@@ -268,10 +250,8 @@ Status WhileOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::fun
   int iteration = 1;
   while (true) {
     GELOGD("[%s] Start to execute, iteration = %d", task_context.GetNodeName(), iteration);
-    GE_CHK_STATUS_RET(ExecuteOneLoop(task_context, is_continue),
-                      "[%s] Failed to execute iteration %d.",
-                      task_context.GetNodeName(),
-                      iteration);
+    GE_CHK_STATUS_RET(ExecuteOneLoop(task_context, is_continue), "[%s] Failed to execute iteration %d.",
+                      task_context.GetNodeName(), iteration);
 
     if (!is_continue) {
       GELOGD("[%s] Quit from loop. current iteration = %d", task_context.GetNodeName(), iteration);
@@ -314,21 +294,16 @@ Status WhileOpNodeTask::ExecuteCond(TaskContext &task_context, bool &is_continue
   GELOGD("[%s] Start to execute cond-subgraph.", task_context.GetNodeName());
   GE_CHK_STATUS_RET(executor->ExecuteAsync(inputs, input_desc), "Failed to execute partitioned call.");
   GELOGD("[%s] Done executing cond-subgraph successfully.", cond_->GetName().c_str());
-  GE_CHK_STATUS_RET_NOLOG(task_context.RegisterCallback([executor]() mutable {
-    executor.reset();
-  }));
+  GE_CHK_STATUS_RET_NOLOG(task_context.RegisterCallback([executor]() mutable { executor.reset(); }));
 
   // get cond output
   GE_CHK_STATUS_RET(executor->Synchronize(), "[%s] Failed to sync cond-subgraph result.", cond_->GetName().c_str());
   std::vector<TensorValue> cond_outputs;
   std::vector<ConstGeTensorDescPtr> cond_output_desc_list;
-  GE_CHK_STATUS_RET(executor->GetOutputs(cond_outputs, cond_output_desc_list),
-                    "[%s] Failed to get cond-output.",
+  GE_CHK_STATUS_RET(executor->GetOutputs(cond_outputs, cond_output_desc_list), "[%s] Failed to get cond-output.",
                     cond_->GetName().c_str());
   if (cond_outputs.size() != kCondOutputSize || cond_output_desc_list.size() != kCondOutputSize) {
-    GELOGE(INTERNAL_ERROR,
-           "[%s] Number of cond outputs is invalid. number = %zu",
-           task_context.GetNodeName(),
+    GELOGE(INTERNAL_ERROR, "[%s] Number of cond outputs is invalid. number = %zu", task_context.GetNodeName(),
            cond_outputs.size());
     return INTERNAL_ERROR;
   }
@@ -337,15 +312,12 @@ Status WhileOpNodeTask::ExecuteCond(TaskContext &task_context, bool &is_continue
   const auto &shape = cond_tensor_desc->GetShape();
   if (shape.IsScalar()) {
     auto data_type = cond_tensor_desc->GetDataType();
-    GE_CHK_STATUS_RET(ToBool(cond_outputs[0], data_type, is_continue),
-                      "[%s] Failed to get cond value.",
+    GE_CHK_STATUS_RET(ToBool(cond_outputs[0], data_type, is_continue), "[%s] Failed to get cond value.",
                       task_context.GetNodeName());
   } else {
     // true if num elements is non-zero
     is_continue = shape.GetShapeSize() > 0;
-    GELOGD("[%s] Cond tensor shape = [%s], is_continue = %d",
-           task_context.GetNodeName(),
-           shape.ToString().c_str(),
+    GELOGD("[%s] Cond tensor shape = [%s], is_continue = %d", task_context.GetNodeName(), shape.ToString().c_str(),
            is_continue);
   }
 
@@ -364,9 +336,7 @@ Status WhileOpNodeTask::MoveOutputs2Inputs(TaskContext &task_context) {
 
     auto output_tensor_desc = task_context.MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_tensor_desc);
-    GELOGD("[%s] To update input shape[%d] by output shape. from [%s] to [%s]",
-           task_context.GetNodeName(),
-           i,
+    GELOGD("[%s] To update input shape[%d] by output shape. from [%s] to [%s]", task_context.GetNodeName(), i,
            task_context.MutableInputDesc(i)->GetShape().ToString().c_str(),
            output_tensor_desc->GetShape().ToString().c_str());
     *task_context.MutableInputDesc(i) = *output_tensor_desc;
@@ -376,28 +346,25 @@ Status WhileOpNodeTask::MoveOutputs2Inputs(TaskContext &task_context) {
 }
 
 Status WhileOpNodeTask::ExecuteOneLoop(TaskContext &task_context, bool &is_continue) const {
-  GE_CHK_STATUS_RET(ExecuteCond(task_context, is_continue),
-                    "[%s] Failed to execute cond-subgraph",
+  GE_CHK_STATUS_RET(ExecuteCond(task_context, is_continue), "[%s] Failed to execute cond-subgraph",
                     task_context.GetNodeName());
   if (!is_continue) {
     return SUCCESS;
   }
 
   GELOGD("[%s] Start to execute body-subgraph.", task_context.GetNodeName());
-  GE_CHK_STATUS_RET(ExecuteSubgraph(body_, task_context, nullptr),
-                    "[%s] Failed to execute cond-subgraph", task_context.GetNodeName());
+  GE_CHK_STATUS_RET(ExecuteSubgraph(body_, task_context, nullptr), "[%s] Failed to execute cond-subgraph",
+                    task_context.GetNodeName());
   GELOGD("[%s] Done executing body-subgraph successfully.", task_context.GetNodeName());
 
   // set outputs to inputs for next iteration
-  GE_CHK_STATUS_RET(MoveOutputs2Inputs(task_context),
-                    "[%s] Failed to move outputs to inputs",
+  GE_CHK_STATUS_RET(MoveOutputs2Inputs(task_context), "[%s] Failed to move outputs to inputs",
                     task_context.GetNodeName());
 
   return SUCCESS;
 }
 
-Status ControlOpNodeExecutor::LoadTask(const HybridModel &model,
-                                       const NodePtr &node,
+Status ControlOpNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,
                                        shared_ptr<NodeTask> &task) const {
   auto node_item = model.GetNodeItem(node);
   GE_CHECK_NOTNULL(node_item);
@@ -405,11 +372,11 @@ Status ControlOpNodeExecutor::LoadTask(const HybridModel &model,
   unique_ptr<ControlOpNodeTask> node_task;
   auto node_type = node->GetType();
   if (node_type == IF) {
-    node_task.reset(new(std::nothrow) IfOpNodeTask());
+    node_task.reset(new (std::nothrow) IfOpNodeTask());
   } else if (node_type == CASE) {
-    node_task.reset(new(std::nothrow) CaseOpNodeTask());
+    node_task.reset(new (std::nothrow) CaseOpNodeTask());
   } else if (node_type == WHILE) {
-    node_task.reset(new(std::nothrow) WhileOpNodeTask());
+    node_task.reset(new (std::nothrow) WhileOpNodeTask());
   } else {
     GELOGE(PARAM_INVALID, "[%s] Unsupported type: %s", node->GetName().c_str(), node_type.c_str());
     return PARAM_INVALID;
@@ -422,8 +389,6 @@ Status ControlOpNodeExecutor::LoadTask(const HybridModel &model,
   return SUCCESS;
 }
 
-Status ControlOpNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
-  return SUCCESS;
-}
+Status ControlOpNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const { return SUCCESS; }
 }  // namespace hybrid
 }  // namespace ge

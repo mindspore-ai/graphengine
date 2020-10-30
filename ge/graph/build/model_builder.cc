@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/build/model_builder.h"
 #include <securectype.h>
 #include <iostream>
@@ -92,6 +93,7 @@ ModelBuilder::ModelBuilder(uint64_t session_id, ge::ComputeGraphPtr compute_grap
                            const Graph2SubGraphInfoList &subgraphs, const map<string, int> &stream_max_parallel_num,
                            bool hcom_parallel, int mode)
     : session_id_(session_id),
+      mem_offset_(0),
       weight_offset_(kWeightsStartOffset),
       compute_graph_(std::move(compute_graph)),
       subgraphs_(subgraphs),
@@ -102,7 +104,6 @@ ModelBuilder::ModelBuilder(uint64_t session_id, ge::ComputeGraphPtr compute_grap
       hcom_parallel_(hcom_parallel),
       build_mode_(mode),
       max_mem_offset_(0),
-      p2p_mem_offset_(0),
       zero_copy_mem_size_(0),
       platform_type_(0),
       is_loop_graph_(false),
@@ -144,7 +145,7 @@ Status ModelBuilder::CalcOutputSize(const ge::NodePtr &n) {
 
 bool ModelBuilder::SetInputConst(const OpDescPtr &op_desc, const NodePtr &src_node, size_t index,
                                  vector<bool> &is_input_const) {
-  GELOGI("SetIsInputConst const: %s, source node: %s", op_desc->GetName().c_str(), src_node->GetName().c_str());
+  GELOGI("SetIsInputConst const: %s", op_desc->GetName().c_str());
   for (size_t i = is_input_const.size(); i <= index; ++i) {
     is_input_const.push_back(false);
   }
@@ -152,7 +153,7 @@ bool ModelBuilder::SetInputConst(const OpDescPtr &op_desc, const NodePtr &src_no
 
   vector<GeTensorPtr> weights = OpDescUtils::MutableWeights(src_node);
   if (weights.empty()) {
-    GELOGW("SetInputIsConst weights is empty, node: %s", src_node->GetName().c_str());
+    GELOGW("SetInputIsConst weights is empty");
     return false;
   }
   GeTensorPtr weight = weights[0];
@@ -191,7 +192,6 @@ void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     const auto &src_node = peer_out_anchor->GetOwnerNode();
     if (!NodeUtils::GetConstOpType(src_node, const_type)) {
-      GELOGI("Node %s:%zu, sorce node: %s Not Const", n->GetName().c_str(), index, src_node->GetName().c_str());
       continue;
     }
 
@@ -385,16 +385,10 @@ void ModelBuilder::InitL1FusionOption() {
 Status ModelBuilder::BuildModelDef(ge::Model &model) {
   ClearOriginalFormat();
 
-  max_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_HBM];
+  max_mem_offset_ = mem_offset_;
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_MEMORY_SIZE, max_mem_offset_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_MEMORY_SIZE failed.");
                    return FAILED);
-  if (mem_type_to_mem_offset_.find(RT_MEMORY_P2P_DDR) != mem_type_to_mem_offset_.end()) {
-    p2p_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_P2P_DDR];
-  }
-  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_P2P_MEMORY_SIZE, p2p_mem_offset_),
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_P2P_MEMORY_SIZE failed.");
-                       return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_WEIGHT_SIZE, weight_offset_),
                    GELOGE(FAILED, "SetInt of ATTR_MODEL_WEIGHT_SIZE failed.");
                    return FAILED);
@@ -416,8 +410,7 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, ATTR_MODEL_OUT_NODES_NAME, GetLocalOmgContext().net_out_nodes),
                    GELOGE(FAILED, "SetListStr of ATTR_MODEL_OUT_NODES_NAME failed.");
                    return FAILED);
-  GELOGI("For model, max_mem_offset_: %zu, p2p_mem_size: %zu, zero_copy_mem_size_: %zu", max_mem_offset_,
-         p2p_mem_offset_, zero_copy_mem_size_);
+  GELOGI("For model, max_mem_offset_: %zu, zero_copy_mem_size_: %zu", max_mem_offset_, zero_copy_mem_size_);
 
   string ge_core_type;
   Status ret = ge::GetContext().GetOption(kCoreType, ge_core_type);
@@ -539,8 +532,8 @@ Status ModelBuilder::MergeWeights() {
     if (weight_data.data() != nullptr) {
       GE_IF_BOOL_EXEC(base_addr == nullptr, GELOGE(FAILED, "Base addr is nullptr."); return FAILED);
       if (weight_offset_ - offset < weight_data.size()) {
-        GELOGE(FAILED, "left weight size not enough. left_size:%lu, weight_size:%lu",
-               weight_offset_ - offset, weight_data.size());
+        GELOGE(FAILED, "left weight size not enough. left_size:%lu, weight_size:%lu", weight_offset_ - offset,
+               weight_data.size());
         return FAILED;
       }
       uintptr_t dst_ptr = reinterpret_cast<uintptr_t>(base_addr) + offset;
@@ -550,7 +543,8 @@ Status ModelBuilder::MergeWeights() {
         auto err = memcpy_s(reinterpret_cast<void *>(dst_ptr), SECUREC_MEM_MAX_LEN, reinterpret_cast<void *>(src_ptr),
                             SECUREC_MEM_MAX_LEN);
         if (err != EOK) {
-          GELOGE(FAILED, "mem copy failed. errret:%u, "
+          GELOGE(FAILED,
+                 "mem copy failed. errret:%u, "
                  "dst_ptr:%lx, dst_size:%lu, src_ptr:%lx, src_size:%lu",
                  err, dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
           return FAILED;
@@ -561,7 +555,8 @@ Status ModelBuilder::MergeWeights() {
       }
       auto err = memcpy_s(reinterpret_cast<void *>(dst_ptr), left_size, reinterpret_cast<void *>(src_ptr), left_size);
       if (err != EOK) {
-        GELOGE(FAILED, "mem copy failed. errret:%u, "
+        GELOGE(FAILED,
+               "mem copy failed. errret:%u, "
                "dst_ptr:%lx, dst_size:%lu, src_ptr:%lx, src_size:%lu",
                err, dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
         return FAILED;
@@ -587,8 +582,8 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     if (tbe_kernel == nullptr) {
       std::string kernel_name;
       GeAttrValue::BYTES kernel_buffer;
-      (void) AttrUtils::GetStr(node_op_desc, ATTR_NAME_TBE_KERNEL_NAME, kernel_name);
-      (void) AttrUtils::GetBytes(node_op_desc, ATTR_NAME_TBE_KERNEL_BUFFER, kernel_buffer);
+      (void)AttrUtils::GetStr(node_op_desc, ATTR_NAME_TBE_KERNEL_NAME, kernel_name);
+      (void)AttrUtils::GetBytes(node_op_desc, ATTR_NAME_TBE_KERNEL_BUFFER, kernel_buffer);
       if (!kernel_name.empty() && (kernel_buffer.GetSize() > 0)) {
         GE_CHECK_NOTNULL(kernel_buffer.GetData());
         std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
@@ -609,7 +604,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
     CustAICPUKernelPtr cust_aicpu_kernel =
-        node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
+      node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
     GE_IF_BOOL_EXEC(cust_aicpu_kernel == nullptr, continue);
     if (aicpu_name_set.count(cust_aicpu_kernel->GetName()) > 0) {
       GELOGE(FAILED, "aicpu_kernel name %s can't be the same", cust_aicpu_kernel->GetName().c_str());
@@ -718,7 +713,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
 
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);
-  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_type_to_mem_offset_, zero_copy_mem_size_),
+  GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_offset_, zero_copy_mem_size_),
                     "Assign Memory Failed!");
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 

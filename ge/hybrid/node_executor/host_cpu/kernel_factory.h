@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,10 +76,8 @@ class KernelRegistrar {
   KernelRegistrar &operator=(KernelRegistrar &&) = delete;
 };
 
-#define REGISTER_KERNEL_CREATOR(type, clazz)                                          \
-  std::shared_ptr<Kernel> Creator_##type##Kernel(const NodePtr &node) {               \
-    return MakeShared<clazz>(node);                                                   \
-  }                                                                                   \
+#define REGISTER_KERNEL_CREATOR(type, clazz)                                                              \
+  std::shared_ptr<Kernel> Creator_##type##Kernel(const NodePtr &node) { return MakeShared<clazz>(node); } \
   KernelRegistrar g_##type##Kernel_creator(#type, Creator_##type##Kernel)
 }  // namespace host_cpu
 }  // namespace hybrid

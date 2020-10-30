@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,15 +65,13 @@ Status EnginePlacer::Run() {
     std::string kernel_name;
     // Check if this node has assigned engine
     bool has_engine_attr =
-        AttrUtils::GetStr(op_desc, ATTR_NAME_ENGINE_NAME_FOR_LX, engine_name) && !engine_name.empty();
+      AttrUtils::GetStr(op_desc, ATTR_NAME_ENGINE_NAME_FOR_LX, engine_name) && !engine_name.empty();
     bool has_kernel_attr =
-        AttrUtils::GetStr(op_desc, ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX, kernel_name) && !kernel_name.empty();
+      AttrUtils::GetStr(op_desc, ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX, kernel_name) && !kernel_name.empty();
     bool use_exist_engine_name = !op_desc->GetOpKernelLibName().empty() || (has_kernel_attr && has_engine_attr);
     if (use_exist_engine_name) {
       if (op_desc->GetOpEngineName().empty()) {
-        GELOGI("Op %s set engine_name %s engine_name %s from attrs",
-               op_desc->GetName().c_str(),
-               engine_name.c_str(),
+        GELOGI("Op %s set engine_name %s engine_name %s from attrs", op_desc->GetName().c_str(), engine_name.c_str(),
                kernel_name.c_str());
         op_desc->SetOpEngineName(engine_name);
         op_desc->SetOpKernelLibName(kernel_name);
@@ -85,8 +83,8 @@ Status EnginePlacer::Run() {
       // If can't get op's engine name, keep check support finish and return failed
       if (engine_name.empty()) {
         is_check_support_success = false;
-        ErrorManager::GetInstance().ATCReportErrMessage(
-            "E13003", {"opname", "optype"}, {op_desc->GetName(), op_desc->GetType()});
+        ErrorManager::GetInstance().ATCReportErrMessage("E13003", {"opname", "optype"},
+                                                        {op_desc->GetName(), op_desc->GetType()});
         GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Can not find engine of op type %s",
                node_ptr->GetOpDesc()->GetType().c_str());
         continue;
@@ -121,4 +119,3 @@ Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::st
   return SUCCESS;
 }
 }  // namespace ge
-

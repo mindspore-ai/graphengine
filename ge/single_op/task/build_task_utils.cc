@@ -29,7 +29,7 @@ const uint64_t kSessionId = UINT64_MAX;
 uint8_t *kVarBase = nullptr;
 const uint64_t kLogicVarBase = 0;
 const uint64_t kVarSize = 0;
-}
+}  // namespace
 
 std::vector<std::vector<void *>> BuildTaskUtils::GetAddresses(const OpDescPtr &op_desc,
                                                               const SingleOpModelParam &param) {
@@ -45,7 +45,6 @@ std::vector<std::vector<void *>> BuildTaskUtils::GetAddresses(const OpDescPtr &o
   runtime_para.logic_var_base = kLogicVarBase;
   runtime_para.var_base = kVarBase;
   runtime_para.session_id = kSessionId;
-  runtime_para.is_single_op = true;
 
   ret.emplace_back(ModelUtils::GetInputDataAddrs(runtime_para, op_desc));
   ret.emplace_back(ModelUtils::GetOutputDataAddrs(runtime_para, op_desc));
@@ -61,8 +60,7 @@ std::vector<void *> BuildTaskUtils::JoinAddresses(const std::vector<std::vector<
   return ret;
 }
 
-std::vector<void *> BuildTaskUtils::GetKernelArgs(const OpDescPtr &op_desc,
-                                                  const SingleOpModelParam &param) {
+std::vector<void *> BuildTaskUtils::GetKernelArgs(const OpDescPtr &op_desc, const SingleOpModelParam &param) {
   auto addresses = GetAddresses(op_desc, param);
   return JoinAddresses(addresses);
 }

@@ -22,7 +22,6 @@
 
 #include "common/op/attr_value_util.h"
 #include "common/op/ge_op_utils.h"
-#include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
 #include "graph/utils/attr_utils.h"
@@ -79,8 +78,8 @@ class GraphPass : public Pass<ge::ComputeGraph> {
       return true;
     } else if (node->GetOpDesc()->GetType() == FRAMEWORKOP) {
       string type;
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type),
-                       return false, "Get original_type for op %s fail!", node->GetName().c_str());
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type), return false,
+                       "Get original_type for op %s fail!", node->GetName().c_str());
       GE_IF_BOOL_EXEC(type == CONSTANT, GELOGI("Is const op"); return true);
       return false;
     } else {

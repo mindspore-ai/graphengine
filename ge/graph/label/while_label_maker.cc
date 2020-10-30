@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "while_label_maker.h"
 
 #include "common/util.h"
@@ -116,8 +117,8 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   // link Data input.
   const auto &all_in_data = cond_out_node->GetAllInDataAnchors();
   if (all_in_data.size() != kCondOutputNum) {
-    GELOGE(FAILED, "Node: %s Cond sbugraph output size:%zu should equal size:%u.",
-           switch_node->GetName().c_str(), all_in_data.size(), kCondOutputNum);
+    GELOGE(FAILED, "Node: %s Cond sbugraph output size:%zu should equal size:%u.", switch_node->GetName().c_str(),
+           all_in_data.size(), kCondOutputNum);
     return FAILED;
   }
 

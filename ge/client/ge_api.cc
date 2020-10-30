@@ -384,7 +384,7 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
   }
   GELOGT(TRACE_RUNNING, "Run Graph Asynchronously");
   GELOGW(
-      "The callback function will not be checked. Please ensure that the implementation of the function is trusted.");
+    "The callback function will not be checked. Please ensure that the implementation of the function is trusted.");
 
   Status ret = ge::GELib::GetInstance()->SessionManagerObj().RunGraphAsync(sessionId_, graph_id, inputs, callback);
   if (ret != SUCCESS) {

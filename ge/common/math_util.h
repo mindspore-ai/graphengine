@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@
 
 namespace ge {
 /**
-* @ingroup domi_calibration
-* @brief  Initializes an input array to a specified value
-* @param [in]  n        array initialization length
-* @param [in]  alpha    initialization value
-* @param [out]  output  array to be initialized
-* @return      Status
-*/
+ * @ingroup domi_calibration
+ * @brief  Initializes an input array to a specified value
+ * @param [in]  n        array initialization length
+ * @param [in]  alpha    initialization value
+ * @param [out]  output  array to be initialized
+ * @return      Status
+ */
 template <typename Dtype>
 Status NnSet(const int32_t n, const Dtype alpha, Dtype *output) {
   GE_CHECK_NOTNULL(output);

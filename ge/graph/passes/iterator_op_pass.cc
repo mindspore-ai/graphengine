@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,8 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
 
       int64_t loop_per_iter = 0;
       ge::GeTensorDesc ge_tensor_desc;
-      Status status = VarManager::Instance(graph->GetSessionID())->GetCurVarDesc(NODE_NAME_FLOWCTRL_LOOP_PER_ITER,
-                                                                                 ge_tensor_desc);
+      Status status =
+        VarManager::Instance(graph->GetSessionID())->GetCurVarDesc(NODE_NAME_FLOWCTRL_LOOP_PER_ITER, ge_tensor_desc);
       GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Fail to Get var_desc of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
                       continue);
       Status ret;
@@ -78,8 +78,8 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
       // EOS will not be considered if ret is not SUCCESS.
       GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGW("Set rt context RT_CTX_NORMAL_MODE failed."); continue);
 
-      status = GetVariableValue(graph->GetSessionID(), ge_tensor_desc, NODE_NAME_FLOWCTRL_LOOP_PER_ITER,
-                                &loop_per_iter);
+      status =
+        GetVariableValue(graph->GetSessionID(), ge_tensor_desc, NODE_NAME_FLOWCTRL_LOOP_PER_ITER, &loop_per_iter);
       ret = SetRtContext(graph->GetSessionID(), graph->GetGraphID(), rtContext_t(), RT_CTX_GEN_MODE);
 
       // The following process will be affected if ret is not SUCCESS.
@@ -144,8 +144,7 @@ ge::NodePtr IteratorOpPass::InsertEndOfSequenceNode(const ge::NodePtr &pre_node,
   auto out_anchor = pre_node->GetOutDataAnchor(0);
   ge::graphStatus status;
   status = GraphUtils::AddEdge(out_anchor, end_of_seq_node->GetInDataAnchor(0));
-  GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
-                   "Graph add EndOfSequence op input edge fail, dst node: %s.",
+  GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr, "Graph add EndOfSequence op input edge fail, dst node: %s.",
                    end_of_seq_node->GetName().c_str());
   // EOS(control) --> subsequent of memcpy
   OutControlAnchorPtr out_ctrl_anchor = end_of_seq_node->GetOutControlAnchor();
@@ -158,10 +157,8 @@ ge::NodePtr IteratorOpPass::InsertEndOfSequenceNode(const ge::NodePtr &pre_node,
     }
     status = GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor);
     GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
-                     "Graph add EndOfSequence op out ctrl edge fail, dst node: %s.",
-                     out_node->GetName().c_str());
-    GELOGI("Graph add EndOfSequence op out ctrl edge, dst node: %s.",
-           out_node->GetName().c_str());
+                     "Graph add EndOfSequence op out ctrl edge fail, dst node: %s.", out_node->GetName().c_str());
+    GELOGI("Graph add EndOfSequence op out ctrl edge, dst node: %s.", out_node->GetName().c_str());
   }
 
   return end_of_seq_node;
@@ -232,18 +229,19 @@ ge::NodePtr IteratorOpPass::InsertMemcpyAsyncNode(const ge::NodePtr &pre_node, c
   }
   // Control out
   OutControlAnchorPtr out_ctrl_anchor = pre_node->GetOutControlAnchor();
-  GE_IF_BOOL_EXEC(out_ctrl_anchor != nullptr,
-      for (auto &peer_in_ctrl_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    ge::graphStatus status = GraphUtils::RemoveEdge(out_ctrl_anchor, peer_in_ctrl_anchor);
-    GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr, "Remove edge failed, dst node: %s.",
-                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
-    status = GraphUtils::AddEdge(memcpy_async_node->GetOutControlAnchor(), peer_in_ctrl_anchor);
-    GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
-                     "Graph add memcpyAsync op out ctrl edge fail, dst node: %s.",
-                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
-    GELOGI("Graph add memcpyAsync op out ctrl edge, dst node: %s.",
-           peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
-  });
+  GE_IF_BOOL_EXEC(
+    out_ctrl_anchor != nullptr, for (auto &peer_in_ctrl_anchor
+                                     : out_ctrl_anchor->GetPeerInControlAnchors()) {
+      ge::graphStatus status = GraphUtils::RemoveEdge(out_ctrl_anchor, peer_in_ctrl_anchor);
+      GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr, "Remove edge failed, dst node: %s.",
+                       peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+      status = GraphUtils::AddEdge(memcpy_async_node->GetOutControlAnchor(), peer_in_ctrl_anchor);
+      GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS, return nullptr,
+                       "Graph add memcpyAsync op out ctrl edge fail, dst node: %s.",
+                       peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+      GELOGI("Graph add memcpyAsync op out ctrl edge, dst node: %s.",
+             peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+    });
   GELOGI("Insert memcpyAsync op success.");
 
   return memcpy_async_node;
@@ -282,8 +280,8 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
 }
 
 Status IteratorOpPass::SetRtContext(uint64_t session_id, uint32_t graph_id, rtContext_t rt_context, rtCtxMode_t mode) {
-  GELOGI("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id,
-         graph_id, static_cast<int>(mode), ge::GetContext().DeviceId());
+  GELOGI("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id, graph_id,
+         static_cast<int>(mode), ge::GetContext().DeviceId());
 
   GE_CHK_RT_RET(rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId()));
   GE_CHK_RT_RET(rtCtxSetCurrent(rt_context));

@@ -1,18 +1,18 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #ifndef __CCE_RUNTIME_BASE_H__
 #define __CCE_RUNTIME_BASE_H__
@@ -100,9 +100,6 @@ typedef enum tagRtError {
     RT_ERROR_MODEL_ID,
     RT_ERROR_MODEL_EXE_FAILED,
     RT_ERROR_END_OF_SEQUENCE,               // end of sequence
-    RT_ERROR_MODEL_EXIT,
-    RT_ERROR_MODEL_EXIT_STREAM_UNBIND,
-    RT_ERROR_MODEL_EXIT_ID,
 
     RT_ERROR_EVENT_BASE                     = 0x07050000,
     RT_ERROR_EVENT_NULL,
@@ -583,16 +580,6 @@ RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *d
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
-
-/**
- * @ingroup dvrt_base
- * @brief get current thread last stream id and task id 
- * @param [out] stream id and task id
- * @param [in] null
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for input null ptr
- */
-RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskid, uint32_t *streamid);
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }

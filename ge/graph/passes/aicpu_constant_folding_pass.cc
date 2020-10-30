@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,9 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
-#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace {
-const char *const kKernelLibName = "aicpu_tf_kernel";
+const char *const kKernelLibName = "aicpu_kernel";
 const char *const kNotSupported = "0";
 const uint64_t kReleaseFlag = 1;
 const uint64_t kOpsFlag = 1;
@@ -315,8 +314,8 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
-  auto kernel_builder = OpsKernelBuilderManager::Instance().GetOpsKernelBuilder(kKernelLibName);
-  if (kernel_builder == nullptr) {
+  OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
+  if (kernel_info == nullptr) {
     GELOGE(FAILED, "Get op kernel info store failed");
     return FAILED;
   }
@@ -326,7 +325,7 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoLen = 0;
   std::string task_info;
-  Status ret = kernel_builder->GenSingleOpRunTask(node, aicpu_task, task_info);
+  Status ret = kernel_info->GenSingleOpRunTask(node, aicpu_task, task_info);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -370,8 +369,8 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
-  auto kernel_builder = OpsKernelBuilderManager::Instance().GetOpsKernelBuilder(kKernelLibName);
-  if (kernel_builder == nullptr) {
+  OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
+  if (kernel_info == nullptr) {
     GELOGE(FAILED, "Get op kernel info store failed");
     return FAILED;
   }
@@ -381,7 +380,7 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoAddr = 0;
   aicpu_task.fwkKernelBase.fwk_kernel.extInfoLen = 0;
   std::string task_info;
-  Status ret = kernel_builder->GenMemCopyTask(data_infos.size(), aicpu_task, task_info);
+  Status ret = kernel_info->GenMemCopyTask(data_infos.size(), aicpu_task, task_info);
   if (ret != SUCCESS) {
     return ret;
   }

@@ -252,4 +252,4 @@ Status DumpOp::LaunchDumpOp() {
   }
   return SUCCESS;
 }
-}  // namesapce ge
+}  // namespace ge

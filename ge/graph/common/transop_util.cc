@@ -28,9 +28,8 @@ std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOA
 
 namespace ge {
 TransOpUtil::TransOpUtil() {
-  transop_index_map_ = {{TRANSDATA, 0}, {TRANSPOSE, 0}, {TRANSPOSED, 0},
-                        {RESHAPE, 0},   {REFORMAT, 0},  {CAST, 0},
-                        {SQUEEZE, 0}, {EXPANDDIMS, 0}};
+  transop_index_map_ = {{TRANSDATA, 0}, {TRANSPOSE, 0}, {TRANSPOSED, 0}, {RESHAPE, 0},
+                        {REFORMAT, 0},  {CAST, 0},      {SQUEEZE, 0},    {EXPANDDIMS, 0}};
 }
 
 TransOpUtil::~TransOpUtil() {}
@@ -75,8 +74,7 @@ bool TransOpUtil::CheckPrecisionLoss(const ge::NodePtr &src_node) {
   auto iter = precision_loss_transfer_map.find(src_dtype);
   if (iter != precision_loss_transfer_map.end() && iter->second == dst_dtype) {
     GELOGW("Node %s transfer data type from %s to %s ,it will cause precision loss. ignore pass.",
-           src_node->GetName().c_str(),
-           TypeUtils::DataTypeToSerialString(src_dtype).c_str(),
+           src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_dtype).c_str(),
            TypeUtils::DataTypeToSerialString(dst_dtype).c_str());
     return false;
   }

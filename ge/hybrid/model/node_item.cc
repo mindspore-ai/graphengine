@@ -26,16 +26,13 @@
 namespace ge {
 namespace hybrid {
 namespace {
-const char * const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
-const char * const kNodeTypeRetVal = "_RetVal";
+const char *const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
+const char *const kNodeTypeRetVal = "_RetVal";
 
 Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-    GELOGE(FAILED,
-           "[%s] Failed to get attr [%s]",
-           op_desc.GetName().c_str(),
-           ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    GELOGE(FAILED, "[%s] Failed to get attr [%s]", op_desc.GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
     return FAILED;
   }
 
@@ -54,10 +51,7 @@ Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgr
 Status ParseOutputMapping(OpDescPtr op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-    GELOGE(FAILED,
-           "[%s] Failed to get attr [%s]",
-           op_desc->GetName().c_str(),
-           ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    GELOGE(FAILED, "[%s] Failed to get attr [%s]", op_desc->GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
     return FAILED;
   }
 
@@ -71,11 +65,11 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
   }
 
   GELOGI("[%s] Start to parse fused subgraph.", node_item.node_name.c_str());
-  auto fused_subgraph = std::unique_ptr<FusedSubgraph>(new (std::nothrow)FusedSubgraph());
+  auto fused_subgraph = std::unique_ptr<FusedSubgraph>(new (std::nothrow) FusedSubgraph());
   GE_CHECK_NOTNULL(fused_subgraph);
 
   ComputeGraphPtr fused_graph;
-  (void) AttrUtils::GetGraph(*node_item.op_desc, kAttrNameOriginalFusionGraph, fused_graph);
+  (void)AttrUtils::GetGraph(*node_item.op_desc, kAttrNameOriginalFusionGraph, fused_graph);
   GE_CHECK_NOTNULL(fused_graph);
 
   fused_graph->SetGraphUnknownFlag(true);
@@ -102,7 +96,7 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
   return SUCCESS;
 }
 }  // namespace
-NodeItem::NodeItem(NodePtr node): node(std::move(node)) {
+NodeItem::NodeItem(NodePtr node) : node(std::move(node)) {
   this->op_desc = this->node->GetOpDesc().get();
   this->node_id = this->op_desc->GetId();
   this->num_inputs = this->op_desc->GetInputsSize();
@@ -113,17 +107,11 @@ NodeItem::NodeItem(NodePtr node): node(std::move(node)) {
 
 Status NodeItem::Init() {
   int32_t unknown_shape_type_val = 0;
-  (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+  (void)AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
   shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
 
-  (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
-  GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
-  if (!is_dynamic) {
-    GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic),
-                      "[%s] Failed to get shape status.",
-                      node->GetName().c_str());
-  }
-
+  GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic), "[%s] Failed to get shape status.",
+                    node->GetName().c_str());
   GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   if (is_dynamic) {
     for (int i = 0; i < num_inputs; ++i) {
@@ -134,8 +122,8 @@ Status NodeItem::Init() {
       } else {
         num_static_input_shapes++;
         is_input_shape_static.push_back(true);
-        GELOGD("[%s] The shape of input[%d] is static. shape = [%s]",
-               NodeName().c_str(), i, input_desc->MutableShape().ToString().c_str());
+        GELOGD("[%s] The shape of input[%d] is static. shape = [%s]", NodeName().c_str(), i,
+               input_desc->MutableShape().ToString().c_str());
       }
     }
 
@@ -179,7 +167,7 @@ std::string NodeItem::DebugString() const {
   for (auto &items : outputs) {
     ss << ", output[" << index++ << "]: ";
     for (auto &item : items) {
-      ss << "(" << item.second->NodeName() << ":" <<item.first << "), ";
+      ss << "(" << item.second->NodeName() << ":" << item.first << "), ";
     }
   }
 

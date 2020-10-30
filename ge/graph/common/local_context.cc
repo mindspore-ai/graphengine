@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,7 @@ namespace {
 thread_local OmgContext *omg_context = nullptr;
 }
 
-void SetLocalOmgContext(OmgContext &context) {
-  omg_context = &context;
-}
+void SetLocalOmgContext(OmgContext &context) { omg_context = &context; }
 
 OmgContext &GetLocalOmgContext() {
   if (omg_context != nullptr) {
@@ -37,4 +35,4 @@ OmgContext &GetLocalOmgContext() {
     return domi::GetContext();
   }
 }
-}
+}  // namespace ge

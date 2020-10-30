@@ -18,7 +18,7 @@
 #define GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_
 
 #include "external/ge/ge_api_error_codes.h"
-#include "common/opskernel/ops_kernel_builder.h"
+#include "common/opskernel/ops_kernel_info_store.h"
 #include "graph/node.h"
 #include "task_context.h"
 
@@ -38,26 +38,20 @@ class NodeTask {
    * @param context             instance of TaskContext
    * @return SUCCESS on success, error code otherwise
    */
-  virtual Status UpdateTilingData(TaskContext &context) {
-    return SUCCESS;
-  }
+  virtual Status UpdateTilingData(TaskContext &context) { return SUCCESS; }
 
   /**
    * Init
    * @param context             instance of TaskContext
    * @return SUCCESS on success, error code otherwise
    */
-  virtual Status Init(TaskContext &context) {
-    return SUCCESS;
-  }
+  virtual Status Init(TaskContext &context) { return SUCCESS; }
 
   /**
    * Whether this task supports dynamic shape
    * @return true if this task supports dynamic shape, false otherwise
    */
-  virtual bool IsSupportDynamicShape() {
-    return true;
-  }
+  virtual bool IsSupportDynamicShape() { return true; }
 
   /**
    * Update args for execution
@@ -85,17 +79,13 @@ class NodeExecutor {
    * Initialize node executor
    * @return SUCCESS on success, error code otherwise
    */
-  virtual Status Initialize() {
-    return SUCCESS;
-  }
+  virtual Status Initialize() { return SUCCESS; }
 
   /**
    * Finalize node executor
    * @return SUCCESS on success, error code otherwise
    */
-  virtual Status Finalize() {
-    return SUCCESS;
-  }
+  virtual Status Finalize() { return SUCCESS; }
 
   /**
    * Load task in load stage
@@ -104,9 +94,7 @@ class NodeExecutor {
    * @param task        generated node task
    * @return SUCCESS on success, error code otherwise
    */
-  virtual Status LoadTask(const HybridModel &model,
-                          const NodePtr &node,
-                          std::shared_ptr<NodeTask> &task) const;
+  virtual Status LoadTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const;
 
   /**
    * Compile task in run stage
@@ -115,9 +103,7 @@ class NodeExecutor {
    * @param task        generated node task
    * @return SUCCESS on success, error code otherwise
    */
-  virtual Status CompileTask(const HybridModel &model,
-                             const NodePtr &node,
-                             std::shared_ptr<NodeTask> &task) const;
+  virtual Status CompileTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const;
 
   /**
    * Preparation actions before execution
@@ -200,6 +186,7 @@ class NodeExecutorManager {
  private:
   std::map<ExecutorType, std::unique_ptr<NodeExecutor>> executors_;
   std::map<ExecutorType, std::function<NodeExecutor *()>> builders_;
+  std::map<std::string, OpsKernelInfoStore *> kernel_stores_;
   std::map<std::string, NodeExecutorManager::ExecutorType> engine_mapping_;
   std::mutex mu_;
   bool initialized_ = false;
@@ -209,24 +196,21 @@ class NodeExecutorManager {
 
 class NodeExecutorRegistrar {
  public:
-  NodeExecutorRegistrar(NodeExecutorManager::ExecutorType executor_type,
-                        NodeExecutor *(*builder)());
+  NodeExecutorRegistrar(NodeExecutorManager::ExecutorType executor_type, NodeExecutor *(*builder)());
   ~NodeExecutorRegistrar() = default;
 };
 }  // namespace hybrid
 }  // namespace ge
 
 #define REGISTER_NODE_EXECUTOR_BUILDER(engine_type, executor) \
-    REGISTER_NODE_EXECUTOR_BUILDER_UNIQ_HELPER(__COUNTER__, engine_type, executor)
+  REGISTER_NODE_EXECUTOR_BUILDER_UNIQ_HELPER(__COUNTER__, engine_type, executor)
 
 #define REGISTER_NODE_EXECUTOR_BUILDER_UNIQ_HELPER(ctr, engine_type, executor) \
-    REGISTER_NODE_EXECUTOR_BUILDER_UNIQ(ctr, engine_type, executor)
+  REGISTER_NODE_EXECUTOR_BUILDER_UNIQ(ctr, engine_type, executor)
 
-#define REGISTER_NODE_EXECUTOR_BUILDER_UNIQ(ctr, engine_type, executor)                         \
-  static ::ge::hybrid::NodeExecutorRegistrar register_##ctr                                     \
-      __attribute__((unused)) =                                                                 \
-          ::ge::hybrid::NodeExecutorRegistrar(engine_type, []()->::ge::hybrid::NodeExecutor* {  \
-            return new (std::nothrow) executor();                                               \
-          })
+#define REGISTER_NODE_EXECUTOR_BUILDER_UNIQ(ctr, engine_type, executor)               \
+  static ::ge::hybrid::NodeExecutorRegistrar register_##ctr __attribute__((unused)) = \
+    ::ge::hybrid::NodeExecutorRegistrar(                                              \
+      engine_type, []() -> ::ge::hybrid::NodeExecutor * { return new (std::nothrow) executor(); })
 
-#endif // GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_
+#endif  // GE_HYBRID_NODE_EXECUTOR_NODE_EXECUTOR_H_

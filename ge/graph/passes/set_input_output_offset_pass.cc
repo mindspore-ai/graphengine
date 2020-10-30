@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,9 +80,9 @@ Status SetInputOutputOffsetPass::SetInputOffsetForFusion(const std::vector<int64
                        GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
                        return FAILED);
       GE_CHK_BOOL_EXEC(
-          ge::AttrUtils::SetListInt(data_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
-          GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
-          return FAILED);
+        ge::AttrUtils::SetListInt(data_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+        GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
+        return FAILED);
     }
   }
   return SUCCESS;
@@ -118,9 +118,9 @@ Status SetInputOutputOffsetPass::SetInputOffsetForHcom(const ge::NodePtr &node, 
                          GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
                          return FAILED);
         GE_CHK_BOOL_EXEC(
-            ge::AttrUtils::SetListInt(in_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
-            GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
-            return FAILED);
+          ge::AttrUtils::SetListInt(in_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+          GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
+          return FAILED);
       }
     }
   }

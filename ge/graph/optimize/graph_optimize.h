@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,8 +79,12 @@ class GraphOptimize {
   domi::FrameworkType optimize_type_;
   std::string cal_config_;
   std::string insert_op_config_;
+  std::string parse_out_node_;
   std::string core_type_;
+  std::vector<std::string> out_nodes_name_;
+  std::vector<int32_t> out_nodes_index_;
   bool train_graph_flag_ = false;
+  GraphContextPtr graph_context_;
   bool local_fmk_op_flag_ = false;
   // record the summary names for filter sumarry result.
   std::map<uint32_t, std::map<string, size_t>> summary_output_indexes_ = {};

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,8 +119,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
             int64_t dst_idx = c0_idx + w_head_addr;
             int64_t dst_offset = dst_idx * size;
             auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                      ? total_size - dst_offset
-                                      : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                    ? total_size - dst_offset
+                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
             int64_t c_idx = c0_idx + c1_idx * c0;
             int64_t src_idx = n_idx * hwc + h_idx * wc + w_idx * c + c_idx;
             auto src_offset = src_idx * size;

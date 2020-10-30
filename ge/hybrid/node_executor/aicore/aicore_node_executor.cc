@@ -24,8 +24,7 @@ namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICORE, AiCoreNodeExecutor);
 
-AiCoreNodeTask::AiCoreNodeTask(std::vector<std::unique_ptr<AiCoreOpTask>> &&tasks) : tasks_(std::move(tasks)) {
-}
+AiCoreNodeTask::AiCoreNodeTask(std::vector<std::unique_ptr<AiCoreOpTask>> &&tasks) : tasks_(std::move(tasks)) {}
 
 Status AiCoreNodeExecutor::Initialize() {
   auto ge_lib = GELib::GetInstance();
@@ -39,7 +38,7 @@ Status AiCoreNodeExecutor::Initialize() {
   auto aic_ops_store = kernel_manager.GetOpsKernelInfoStore("AIcoreEngine");
   GE_CHECK_NOTNULL(aic_ops_store);
 
-  compiler_.reset(new(std::nothrow)AiCoreTaskCompiler(aic_ops_store));
+  compiler_.reset(new (std::nothrow) AiCoreTaskCompiler(aic_ops_store));
   GE_CHECK_NOTNULL(compiler_);
   return SUCCESS;
 }
@@ -85,7 +84,7 @@ Status AiCoreNodeExecutor::GenNodeKey(const NodePtr &node, std::string &node_key
     auto num_dims = shape.GetDimNum();
     if (num_dims == 0) {
       continue;
-    } // scalar
+    }  // scalar
     for (std::size_t i = 0; i < num_dims - 1; i++) {
       node_key.append(std::to_string(shape.GetDim(i)));
       node_key.push_back('_');
@@ -113,8 +112,8 @@ std::shared_ptr<NodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &nod
   return (iter != reg_node_tasks_.end()) ? iter->second : nullptr;
 }
 
-Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
-                                       const NodePtr &node, shared_ptr<NodeTask> &task) const {
+Status AiCoreNodeExecutor::CompileTask(const HybridModel &model, const NodePtr &node,
+                                       shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
@@ -159,13 +158,9 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
   auto op_desc = context.GetNodeItem().op_desc;
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("[%s] ExecuteAsync Start.", op_desc->GetName().c_str());
-  for (auto it = tasks_.begin(); it != tasks_.end(); ++it) {
-    // AtomicAddrClean has 2 tasks
-    if (tasks_.size() == 2 && it == tasks_.begin() && !(*(tasks_.rbegin()))->GetClearAtomic()) {
-      continue;
-    }
+  for (auto &task : tasks_) {
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
-    GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
+    GE_CHK_STATUS_RET_NOLOG(task->LaunchKernel(context.GetStream()));
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }
@@ -185,12 +180,8 @@ Status AiCoreNodeTask::UpdateArgs(TaskContext &context) {
   auto op_desc = context.GetNodeItem().op_desc;
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("[%s] AiCoreNodeTask UpdateArgs Start.", op_desc->GetName().c_str());
-  for (auto it = tasks_.rbegin(); it != tasks_.rend(); ++it) {
-    GE_CHK_STATUS_RET_NOLOG((*it)->UpdateArgs(context));
-    // AtomicAddrClean has 2 tasks
-    if (tasks_.size() == 2 && it == tasks_.rbegin() && !(*it)->GetClearAtomic()) {
-      break;
-    }
+  for (auto &task : tasks_) {
+    GE_CHK_STATUS_RET_NOLOG(task->UpdateArgs(context));
   }
   GELOGI("[%s] AiCoreNodeTask UpdateArgs End.", op_desc->GetName().c_str());
   return SUCCESS;
@@ -198,12 +189,8 @@ Status AiCoreNodeTask::UpdateArgs(TaskContext &context) {
 
 Status AiCoreNodeTask::UpdateTilingData(TaskContext &context) {
   GELOGD("[%s] PrepareWithShape started", context.GetNodeName());
-  for (auto it = tasks_.rbegin(); it != tasks_.rend(); ++it) {
-    GE_CHK_STATUS_RET_NOLOG((*it)->PrepareWithShape(context));
-    // AtomicAddrClean has 2 tasks
-    if (tasks_.size() == 2 && it == tasks_.rbegin() && !(*it)->GetClearAtomic()) {
-      break;
-    }
+  for (auto &task : tasks_) {
+    GE_CHK_STATUS_RET_NOLOG(task->PrepareWithShape(context));
   }
   GELOGD("[%s] Done PrepareWithShape successfully.", context.GetNodeName());
   return SUCCESS;

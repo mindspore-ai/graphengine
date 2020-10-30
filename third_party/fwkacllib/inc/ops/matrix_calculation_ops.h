@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file matrix_calculation_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_
+#ifndef GE_OP_MATRIX_CALCULATION_OPS_H
+#define GE_OP_MATRIX_CALCULATION_OPS_H
 
 #include "graph/operator_reg.h"
 
@@ -94,10 +94,6 @@ REG_OP(MatMulV2)
 
 /**
 *@brief Performs Matrix-to-matrix Multiply, producing c=alpha[0]*a*b+beta[0]*c . \n
-
-*@attention Constraints:
-* For better performance, The k-axis must be aligned to 16 (input type
-* is float16) or 32 (input type is int8). \n
 
 *@par Inputs:
 *Five inputs, including:
@@ -402,8 +398,8 @@ REG_OP(TensorScatterUpdate)
 *Must be one of the following types: float16, float32, int32, int8, uint8
 
 *@par Attributes:
-* use_locking: An optional bool. Defaults to "False". If "True", the operation
-* will be protected by a lock . \n
+*use_locking: An optional bool. Defaults to "False". If "True", the operation
+ * will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -434,7 +430,7 @@ REG_OP(ScatterAdd)
 
 *@par Attributes:
 *@li use_locking: An optional bool. Defaults to "False". If "True",
-* the operation will be protected by a lock . \n
+ * the operation will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -463,7 +459,7 @@ REG_OP(ScatterDiv)
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True",
-* the operation will be protected by a lock . \n
+ * the operation will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -492,7 +488,7 @@ REG_OP(ScatterNdAdd)
 *Must be one of the following types: int32
 *@li updates: An ND Tensor. \n
 
-* Must be one of the following types: float16, float32, int32, int8, uint8
+*Must be one of the following types: float16, float32, int32, int8, uint8
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x" . \n
@@ -521,10 +517,10 @@ REG_OP(TensorScatterAdd)
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True",
-* the operation will be protected by a lock . \n
+ * the operation will be protected by a lock . \n
 
 *@par Outputs:
-* var: A Tensor. Has the same type and format as input "var" . \n
+*var: A Tensor. Has the same type and format as input "var" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ScatterNdSub.
@@ -553,7 +549,7 @@ REG_OP(ScatterNdSub)
 *Must be one of the following types: float16, float32, int32, int8, uint8
 
 *@par Outputs:
-* y: A Tensor. Has the same type and format as input "x" . \n
+*y: A Tensor. Has the same type and format as input "x" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator TensorScatterSub.
@@ -578,10 +574,10 @@ REG_OP(TensorScatterSub)
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True",
-* the operation will be protected by a lock . \n
+ * the operation will be protected by a lock . \n
 
 *@par Outputs:
-* var: A Tensor. Has the same type and format as input "var" . \n
+*var: A Tensor. Has the same type and format as input "var" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ScatterSub.
@@ -651,7 +647,7 @@ REG_OP(DiagPart)
 *@li num_output: Reserved.
 *@li transpose: A bool, specifying weight whether to transpose, either "true" or "false". Defaults to "false".
 *@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
-* The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
+ * The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
 *@li offset_x: Reserved . \n
 
 *@par Outputs:
@@ -768,7 +764,7 @@ REG_OP(ConfusionMatrix)
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True", the operation
-* will be protected by a lock . \n
+ * will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -801,7 +797,7 @@ REG_OP(ScatterMul)
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True", the operation
-* will be protected by a lock . \n
+ * will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -834,7 +830,7 @@ REG_OP(ScatterMin)
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".
-* If "True", the operation will be protected by a lock . \n
+ * If "True", the operation will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -867,7 +863,7 @@ REG_OP(ScatterMax)
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True",
-* the operation will be protected by a lock . \n
+ * the operation will be protected by a lock . \n
 
 *@par Outputs:
 *var: A Tensor. Has the same type and format as input "var" . \n
@@ -981,4 +977,4 @@ REG_OP(MatrixDiagV2)
 
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_
+#endif  // GE_OP_MATRIX_CALCULATION_OPS_H

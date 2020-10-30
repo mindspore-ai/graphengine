@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class PassUtils {
   static Status RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes);
 
   static Status RemoveInactiveBranchToMerge(const OutDataAnchorPtr &inactive_output_anchor,
-      std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes);
+                                            std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes);
 
   ///
   /// check is need iter flow ctrl.

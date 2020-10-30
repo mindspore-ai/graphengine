@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     return SUCCESS;
   }
 
-  bool is_unknown_graph = graph->GetGraphUnknownFlag();
-  if (is_unknown_graph) {
+  bool is_known_graph = graph->GetGraphUnknownFlag();
+  if (is_known_graph) {
     GELOGD("Graph[%s] is unknown graph. It will call fe interface to compile op.", graph->GetName().c_str());
     GE_CHK_STATUS_RET(CompileUnknownGraphOp(atomic_node_vec));
     return SUCCESS;
@@ -196,7 +196,7 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
     GELOGW("Get graph session_graph_id attr failed.");
   }
   if (!session_graph_id.empty()) {
-    (void) AttrUtils::SetStr(op_desc, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
+    (void)AttrUtils::SetStr(op_desc, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
   }
   string node_name = op_desc->GetName();
   // Only flush subgraph name
@@ -214,20 +214,18 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
 
 Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr &atomic_clean_node) {
   GE_IF_BOOL_EXEC(atomic_node == nullptr || atomic_clean_node == nullptr,
-                    DOMI_LOGE("param [atomic_node][atomic_clean_node] must not be null."); return PARAM_INVALID);
+                  DOMI_LOGE("param [atomic_node][atomic_clean_node] must not be null.");
+                  return PARAM_INVALID);
   InControlAnchorPtr in_ctrl_anchor = atomic_node->GetInControlAnchor();
   OutControlAnchorPtr out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
   if (in_ctrl_anchor == nullptr || out_ctrl_anchor == nullptr) {
-    GELOGE(INTERNAL_ERROR,
-           "Get control anchor faild, dst node: %s.",
-           atomic_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "Get control anchor faild, dst node: %s.", atomic_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   graphStatus status = GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor);
   if (status != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR,
-           "Graph add cleanAddrNode op out ctrl edge fail, dst node: %s.",
+    GELOGE(INTERNAL_ERROR, "Graph add cleanAddrNode op out ctrl edge fail, dst node: %s.",
            atomic_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
@@ -309,7 +307,7 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
 
-  for (auto &atomic_node: atomic_node_vec) {
+  for (auto &atomic_node : atomic_node_vec) {
     auto op_desc = atomic_node->GetOpDesc();
     if (op_desc == nullptr) {
       GELOGW("op desc is nullptr.");

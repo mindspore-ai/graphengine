@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file selection_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_
+#ifndef GE_OP_SELECTION_OPS_H
+#define GE_OP_SELECTION_OPS_H
 #include "graph/operator_reg.h"
 
 namespace ge {
@@ -807,7 +807,7 @@ REG_OP(SliceD)
 
 * @attention Constraints:
 * @li k =< 5120
-* @li Size of the last dimension =< 1458176
+* @li Size of the last dimension =< 65500
 * @li sorted = true
 * @li It's unstable sorted indices on the platform of Ascend310
 
@@ -903,9 +903,6 @@ REG_OP(ScatterNd)
 *@li "y" has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ScatterNd.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use ScatterNd instead.
 */
 REG_OP(ScatterNdD)
     .INPUT(indices, TensorType::IndexNumberType())
@@ -1149,9 +1146,6 @@ REG_OP(Cumprod)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumprod.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Cumprod instead.
 */
 REG_OP(CumprodD)
     .INPUT(x, TensorType::NumberType())
@@ -1206,9 +1200,6 @@ REG_OP(Cumsum)
 *y: A Tensor. Has the same type as "x".
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator Cumsum.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Cumsum instead.
 */
 REG_OP(CumsumD)
     .INPUT(x, TensorType::NumberType())
@@ -1875,4 +1866,4 @@ REG_OP(CumulativeLogsumexpD)
     .OP_END_FACTORY_REG(CumulativeLogsumexpD)
 } // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_
+#endif // GE_OP_SELECTION_OPS_H

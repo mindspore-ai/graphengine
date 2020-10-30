@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     return FAILED;
   }
   errno_t sec_ret =
-      memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args().data(), kernel_ex_def.args_size());
+    memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL), kernel_ex_def.args().data(), kernel_ex_def.args_size());
   if (sec_ret != EOK) {
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
     return FAILED;
@@ -110,7 +110,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   if (davinci_model_->IsKnownNode()) {
     void *input_output_addr = davinci_model_->GetCurrentArgsAddr(args_offset_);
     fwk_op_kernel.fwkKernelBase.fwk_kernel.inputOutputAddr =
-        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr));
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr));
     void *workspace_base_addr = nullptr;
     rtError_t rt_ret = rtMalloc(&workspace_base_addr, kernel_ex_def.task_info_size(), RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: Ox%X", rt_ret);
@@ -118,7 +118,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     rt_ret = rtMemcpy(workspace_base_addr, kernel_ex_def.task_info_size(), kernel_ex_def.task_info().data(),
                       kernel_ex_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
     fwk_op_kernel.fwkKernelBase.fwk_kernel.workspaceBaseAddr =
-        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(workspace_base_addr));
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(workspace_base_addr));
     fwk_op_kernel.fwkKernelBase.fwk_kernel.stepIDAddr = step_id_addr;
     fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = ext_info.size();
     fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_);
@@ -169,10 +169,6 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
                                                             op_desc->GetName())) {
       dump_flag_ = RT_KERNEL_DUMPFLAG;
-      dump_args_ = input_output_addr_;
-    }
-    if (davinci_model_->GetOpDugReg()) {
-      GELOGI("Op debug is open in kernel ex task info");
       dump_args_ = input_output_addr_;
     }
   }

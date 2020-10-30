@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "generator/generator_api.h"
 #include "common/ge/ge_util.h"
 #include "common/util.h"
@@ -115,7 +116,7 @@ Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int 
   CHECK_PARAM_NOT_NULL(om_file);
   const std::string om_file_name(om_file);
 
-  std::string op_name = std::string(op_type) + "_" + std::to_string(ge::GetCurrentTimestamp());
+  std::string op_name = std::string(op_type) + "_" + std::to_string(ge::GetCurrentTimestap());
   ge::OpDescPtr op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type);
   if (op_desc == nullptr) {
     return ge::FAILED;

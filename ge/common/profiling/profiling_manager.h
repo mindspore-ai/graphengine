@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ using std::vector;
 using Json = nlohmann::json;
 
 namespace {
-  const std::string GE_PROFILING_MODULE = "Framework";
+const std::string GE_PROFILING_MODULE = "Framework";
 }  // namespace
 namespace ge {
 // register Plugin
@@ -83,7 +83,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   bool ProfilingTrainingTraceOn() const { return is_training_trace_; }
   bool ProfilingModelLoadOn() const { return is_load_profiling_; }
   bool ProfilingModelExecuteOn() const;
-  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; } // only used  by command pattern
+  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; }  // only used  by command pattern
   int32_t GetOpTraceIterNum() const { return op_trace_iter_num_; }
   void ReportProfilingData(const std::vector<TaskDescInfo> &task_desc_info,
                            const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
@@ -93,14 +93,14 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void ProfilingGraphDescInfo(const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
                               const int32_t &device_id);
   void SetProfilingConfig(const string &profiling_cfg);
-  vector<int32_t> GetProfilingDeviceId() const { return  device_id_; }
+  vector<int32_t> GetProfilingDeviceId() const { return device_id_; }
   void PluginUnInit(const std::string &module) const;
+
  private:
   ge::Status ParseFeaturesFromAclCfg(const Json &feature);
   ge::Status ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
                             vector<int32_t> &device_list);
-  ge::Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para,
-                               vector<int32_t> &device_list);
+  ge::Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para, vector<int32_t> &device_list);
   uint64_t GetProfilingModule();
   void UpdateDeviceIdModuleMap(string prof_type, uint64_t module, const vector<int32_t> &device_list);
   bool is_load_profiling_ = false;
@@ -121,7 +121,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   string system_trace_conf_;
   string task_trace_conf_;
   const ProfilingEngineImpl engine_;
-  map<int32_t, uint64_t> device_id_module_map_; // key: device_id, value: profiling on module
+  map<int32_t, uint64_t> device_id_module_map_;  // key: device_id, value: profiling on module
   std::mutex mutex_;
 };
 }  // namespace ge

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "host_kernels/kernel_utils.h"
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
-#include "framework/common/types.h"
 
 namespace ge {
 Status ShapeNKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_output) {
@@ -49,7 +48,7 @@ Status ShapeNKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_ou
     }
     vector<int64_t> dims = input_desc->GetShape().GetDims();
     Status ret =
-        PassUtils::ConstructTensorDescWithData(op_desc->GetOutputDesc(static_cast<uint32_t>(i)), dims, v_output);
+      PassUtils::ConstructTensorDescWithData(op_desc->GetOutputDesc(static_cast<uint32_t>(i)), dims, v_output);
     if (ret != SUCCESS) {
       GELOGE(PARAM_INVALID, "ShapeN kernel construct tensor desc failed, i:%zu", i);
       return ret;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,11 +132,11 @@ void ConstantFuseSamePass::GetFuseConstNodes(ComputeGraphPtr &graph,
     fuse_nodes[map_key].emplace_back(node);
     GELOGD("ConstantFuseSamePass, format %s, datatype %s, data_size %d, shape_size %zu. node name %s",
            TypeUtils::FormatToSerialString(map_key.format).c_str(),
-           TypeUtils::DataTypeToSerialString(map_key.data_type).c_str(),
-           map_key.data_size, map_key.shape.size(), node->GetName().c_str());
+           TypeUtils::DataTypeToSerialString(map_key.data_type).c_str(), map_key.data_size, map_key.shape.size(),
+           node->GetName().c_str());
   }
-  GELOGI("ConstantFuseSamePass, total_const_nums %d, insert_const_nums %d, fuse_nodes size is %zu.",
-         total_const_nums, insert_const_nums, fuse_nodes.size());
+  GELOGI("ConstantFuseSamePass, total_const_nums %d, insert_const_nums %d, fuse_nodes size is %zu.", total_const_nums,
+         insert_const_nums, fuse_nodes.size());
 }
 
 Status ConstantFuseSamePass::MoveOutDataEdges(NodePtr &src_node, NodePtr &dst_node) {

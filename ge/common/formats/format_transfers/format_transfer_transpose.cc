@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,22 +28,22 @@ namespace ge {
 namespace formats {
 namespace {
 std::map<Format, std::map<Format, std::vector<int64_t>>> perm_args{
-    {FORMAT_NCHW,
-     {{FORMAT_NHWC, std::vector<int64_t>({0, 2, 3, 1})},
-      {FORMAT_HWCN, std::vector<int64_t>({2, 3, 1, 0})},
-      {FORMAT_CHWN, std::vector<int64_t>({1, 2, 3, 0})}}},
-    {FORMAT_NHWC,
-     {{FORMAT_NCHW, std::vector<int64_t>({0, 3, 1, 2})},
-      {FORMAT_CHWN, std::vector<int64_t>({3, 1, 2, 0})},
-      {FORMAT_HWCN, std::vector<int64_t>({1, 2, 3, 0})}}},
-    {FORMAT_HWCN,
-     {{FORMAT_NCHW, std::vector<int64_t>({3, 2, 0, 1})},
-      {FORMAT_NHWC, std::vector<int64_t>({3, 0, 1, 2})},
-      {FORMAT_CHWN, std::vector<int64_t>({2, 0, 1, 3})}}},
-    {FORMAT_CHWN,
-     {{FORMAT_NCHW, std::vector<int64_t>({3, 0, 1, 2})},
-      {FORMAT_NHWC, std::vector<int64_t>({3, 1, 2, 0})},
-      {FORMAT_HWCN, std::vector<int64_t>({1, 2, 0, 3})}}},
+  {FORMAT_NCHW,
+   {{FORMAT_NHWC, std::vector<int64_t>({0, 2, 3, 1})},
+    {FORMAT_HWCN, std::vector<int64_t>({2, 3, 1, 0})},
+    {FORMAT_CHWN, std::vector<int64_t>({1, 2, 3, 0})}}},
+  {FORMAT_NHWC,
+   {{FORMAT_NCHW, std::vector<int64_t>({0, 3, 1, 2})},
+    {FORMAT_CHWN, std::vector<int64_t>({3, 1, 2, 0})},
+    {FORMAT_HWCN, std::vector<int64_t>({1, 2, 3, 0})}}},
+  {FORMAT_HWCN,
+   {{FORMAT_NCHW, std::vector<int64_t>({3, 2, 0, 1})},
+    {FORMAT_NHWC, std::vector<int64_t>({3, 0, 1, 2})},
+    {FORMAT_CHWN, std::vector<int64_t>({2, 0, 1, 3})}}},
+  {FORMAT_CHWN,
+   {{FORMAT_NCHW, std::vector<int64_t>({3, 0, 1, 2})},
+    {FORMAT_NHWC, std::vector<int64_t>({3, 1, 2, 0})},
+    {FORMAT_HWCN, std::vector<int64_t>({1, 2, 0, 3})}}},
 };
 
 bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<int64_t> &perm_arg) {
@@ -163,8 +163,8 @@ Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, Data
     auto src_offset = GenOffset(src_heads, dst_indexes) * data_size;
     auto dst_offset_bytes = dst_index * data_size;
     auto protected_size = dst_size - dst_offset_bytes < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                              ? dst_size - dst_offset_bytes
-                              : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                            ? dst_size - dst_offset_bytes
+                            : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
     auto ret = memcpy_s(dst.get() + dst_offset_bytes, static_cast<size_t>(protected_size), src + src_offset,
                         static_cast<size_t>(data_size));
     if (ret != EOK) {

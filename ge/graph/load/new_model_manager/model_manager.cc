@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ std::mutex ModelManager::exeception_infos_mutex_;
 
 std::shared_ptr<ModelManager> ModelManager::GetInstance() {
   static const std::shared_ptr<ModelManager> instance_ptr =
-      shared_ptr<ModelManager>(new (std::nothrow) ModelManager(), ModelManager::FinalizeForPtr);
+    shared_ptr<ModelManager>(new (std::nothrow) ModelManager(), ModelManager::FinalizeForPtr);
   return instance_ptr;
 }
 
@@ -107,7 +107,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   }
 
   rt_ret =
-      rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
+    rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "memory copy to device failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
@@ -557,10 +557,10 @@ Status ModelManager::Stop(uint32_t model_id) {
 ///
 Status ModelManager::HandleCommand(const Command &command) {
   static const std::map<std::string, std::function<uint32_t(const Command &)>> cmds = {
-      {kCmdTypeProfile, HandleProfileCommand}, {kCmdTypeDump, HandleDumpCommand},
-      {kCmdTypeProfiling, HandleAclProfilingCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
-      {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
-      {kCmdTypeProfStop, HandleProfStopCommand}};
+    {kCmdTypeProfile, HandleProfileCommand},           {kCmdTypeDump, HandleDumpCommand},
+    {kCmdTypeProfiling, HandleAclProfilingCommand},    {kCmdTypeProfInit, HandleProfInitCommand},
+    {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
+    {kCmdTypeProfStop, HandleProfStopCommand}};
 
   auto iter = cmds.find(command.cmd_type);
   if (iter == cmds.end()) {
@@ -1096,51 +1096,19 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
-  GELOGI("LoadCustAicpuSo in, op name %s, so_name %s.", op_desc->GetName().c_str(), so_name.c_str());
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, string so_name) {
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  // get current context
-  rtContext_t rt_cur_ctx = nullptr;
-  auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
-  if (rt_err != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
-    return RT_FAILED;
-  }
-  // use current context as resource key instead
-  uintptr_t resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
-  auto it = cust_aicpu_so_.find(resource_id);
+  auto it = cust_aicpu_so_.find(so_name);
   if (it == cust_aicpu_so_.end()) {
     GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
                       op_desc->GetName().c_str(), so_name.c_str());
-    std::set<string> so_name_set;
-    so_name_set.insert(so_name);
-    cust_aicpu_so_[resource_id] = so_name_set;
-    GELOGI("LoadCustAicpuSo new aicpu so resource_id %lu.", resource_id);
-    return SUCCESS;
-  }
-  auto it_so_name = it->second.find(so_name);
-  if (it_so_name == it->second.end()) {
-    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
-                      op_desc->GetName().c_str(), so_name.c_str());
-    it->second.insert(so_name);
-    GELOGI("LoadCustAicpuSo add aicpu so resource_id %lu.", resource_id);
+    (void)cust_aicpu_so_.insert(so_name);
+    GELOGI("LaunchCustAicpuSo op name %s, so_name %s.", op_desc->GetName().c_str(), so_name.c_str());
   }
   return SUCCESS;
 }
 
-Status ModelManager::ClearAICPUSo(void *ctx) {
-  auto ctx_id = reinterpret_cast<uintptr_t>(ctx);
-  GELOGI("ClearAICPUSo in. resource id = 0x%lx", static_cast<uint64_t>(ctx_id));
-  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  auto it = cust_aicpu_so_.find(ctx_id);
-  if (it == cust_aicpu_so_.end()) {
-    return SUCCESS;
-  }
-  (void)cust_aicpu_so_.erase(it);
-  return SUCCESS;
-}
-
-Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
+Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, string so_name) {
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
     GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
@@ -1157,8 +1125,8 @@ Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, const string &so
   GE_CHK_RT(rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM));
   GE_CHK_RT(rtMemcpy(d_aicpu_data, aicpu_data_length, aicpu_data, aicpu_data_length, RT_MEMCPY_HOST_TO_DEVICE));
   GE_CHK_RT(rtMalloc(&d_so_name, so_name.size(), RT_MEMORY_HBM));
-  GE_CHK_RT(rtMemcpy(d_so_name, so_name.size(), reinterpret_cast<const void *>(so_name.c_str()),
-                    so_name.size(), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(d_so_name, so_name.size(), reinterpret_cast<const void *>(so_name.c_str()), so_name.size(),
+                     RT_MEMCPY_HOST_TO_DEVICE));
 
   CustAicpuSoBuf cust_aicpu_so_buf;
   cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
@@ -1172,7 +1140,6 @@ Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, const string &so
   GE_CHK_RT(rtStreamCreate(&stream, 0));
   GE_CHK_RT(rtCpuKernelLaunch(nullptr, kLoadOpFromBuf, 1, args, args_size, nullptr, stream));
 
-  GELOGI("LaunchCustAicpuSo so buf len %u, so name len %u.", aicpu_data_length, so_name.size());
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);

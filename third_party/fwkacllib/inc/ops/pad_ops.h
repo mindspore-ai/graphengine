@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file pad_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_
+#ifndef GE_OP_PAD_OPS_H
+#define GE_OP_PAD_OPS_H
 
 #include "graph/operator_reg.h"
 namespace ge {
@@ -233,9 +233,6 @@ REG_OP(PadV3)
 
 *@par Third-party framework compatibility:
 * Compatible with ONNX operator Pad.
-
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use PadV3 instead.
 */
 REG_OP(PadV3D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
@@ -331,7 +328,7 @@ REG_OP(AscendPadding)
 */
 REG_OP(EmbeddingRankId)
     .INPUT(addr_table, TensorType({DT_UINT64}))
-    .INPUT(index, TensorType({DT_INT64,DT_INT32,DT_UINT64}))
+    .INPUT(index, TensorType({DT_UINT32}))
     .OUTPUT(rank_id, TensorType({DT_UINT64}))
     .ATTR(row_memory, Int, 320)
     .ATTR(mode, String, "mod")
@@ -339,4 +336,4 @@ REG_OP(EmbeddingRankId)
 
 
 } // namespace ge
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_
+#endif //GE_OP_PAD_OPS_H

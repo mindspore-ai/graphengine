@@ -30,26 +30,18 @@ typedef pthread_t mmThread;
 typedef pthread_mutex_t mmMutex_t;
 typedef pthread_cond_t mmCond;
 typedef pthread_mutex_t mmMutexFC;
-typedef pthread_rwlock_t mmRWLock_t;
 typedef signed int mmProcess;
 typedef int mmPollHandle;
 typedef int mmPipeHandle;
-typedef int mmFileHandle;
 typedef int mmComPletionKey;
 typedef int mmCompletionHandle;
-typedef int mmErrorMsg;
-typedef int mmFd_t;
 
 typedef VOID *mmExitCode;
 typedef key_t mmKey_t;
 typedef int mmMsgid;
 typedef struct dirent mmDirent;
-typedef struct shmid_ds mmshmId_ds;
 typedef int (*mmFilter)(const mmDirent *entry);
 typedef int (*mmSort)(const mmDirent **a, const mmDirent **b);
-typedef size_t mmSize_t;
-typedef off_t mmOfft_t;
-typedef pid_t mmPid_t;
 
 typedef VOID *(*userProcFunc)(VOID *pulArg);
 
@@ -57,16 +49,6 @@ typedef struct {
   userProcFunc procFunc;  // Callback function pointer
   VOID *pulArg;           // Callback function parameters
 } mmUserBlock_t;
-
-typedef struct {
-  const char *dli_fname;
-  void *dli_fbase;
-  const char *dli_sname;
-  void *dli_saddr;
-  size_t dli_size; /* ELF only */
-  int dli_bind; /* ELF only */
-  int dli_type;
-} mmDlInfo;
 
 typedef struct {
   int wSecond;             // Seconds. [0-60] (1 leap second)
@@ -91,7 +73,6 @@ typedef pthread_key_t mmThreadKey;
 typedef int mmOverLap;
 
 typedef ssize_t mmSsize_t;
-typedef size_t mmSize; // size
 
 typedef struct {
   UINT32 createFlag;
@@ -220,17 +201,6 @@ typedef struct {
 #define M_RDWR O_RDWR
 #define M_CREAT O_CREAT
 #define M_BINARY O_RDONLY
-#define M_TRUNC O_TRUNC
-#define M_IRWXU S_IRWXU
-
-#define M_IN_CREATE IN_CREATE
-#define M_IN_CLOSE_WRITE IN_CLOSE_WRITE
-#define M_IN_IGNORED IN_IGNORED
-
-#define M_OUT_CREATE IN_CREATE
-#define M_OUT_CLOSE_WRITE IN_CLOSE_WRITE
-#define M_OUT_IGNORED IN_IGNORED
-#define M_OUT_ISDIR IN_ISDIR
 
 #define M_IREAD S_IREAD
 #define M_IRUSR S_IRUSR
@@ -266,20 +236,13 @@ typedef struct {
 #define MMPA_OPTIONAL_ARGUMENT 2
 
 #define MMPA_MAX_PATH PATH_MAX
-#define M_NAME_MAX MAX_FNAME
 
 #define M_F_OK F_OK
 #define M_R_OK R_OK
 #define M_W_OK W_OK
 
-#define MMPA_STDIN STDIN_FILENO
-#define MMPA_STDOUT STDOUT_FILENO
-#define MMPA_STDERR STDERR_FILENO
-
 #define MMPA_RTLD_NOW RTLD_NOW
 #define MMPA_RTLD_GLOBAL RTLD_GLOBAL
-#define MMPA_RTLD_LAZY RTLD_LAZY
-#define MMPA_RTLD_NODELETE RTLD_NODELETE
 
 #define MMPA_DL_EXT_NAME ".so"
 
@@ -287,7 +250,6 @@ extern INT32 mmCreateTask(mmThread *threadHandle, mmUserBlock_t *funcBlock);
 extern INT32 mmJoinTask(mmThread *threadHandle);
 extern INT32 mmMutexInit(mmMutex_t *mutex);
 extern INT32 mmMutexLock(mmMutex_t *mutex);
-extern INT32 mmMutexTryLock(mmMutex_t *mutex);
 extern INT32 mmMutexUnLock(mmMutex_t *mutex);
 extern INT32 mmMutexDestroy(mmMutex_t *mutex);
 extern INT32 mmCondInit(mmCond *cond);
@@ -295,14 +257,6 @@ extern INT32 mmCondLockInit(mmMutexFC *mutex);
 extern INT32 mmCondLock(mmMutexFC *mutex);
 extern INT32 mmCondUnLock(mmMutexFC *mutex);
 extern INT32 mmCondLockDestroy(mmMutexFC *mutex);
-extern INT32 mmRWLockInit(mmRWLock_t *rwLock);
-extern INT32 mmRWLockRDLock(mmRWLock_t *rwLock);
-extern INT32 mmRWLockTryRDLock(mmRWLock_t *rwLock);
-extern INT32 mmRWLockWRLock(mmRWLock_t *rwLock);
-extern INT32 mmRWLockTryWRLock(mmRWLock_t *rwLock);
-extern INT32 mmRDLockUnLock(mmRWLock_t *rwLock);
-extern INT32 mmWRLockUnLock(mmRWLock_t *rwLock);
-extern INT32 mmRWLockDestroy(mmRWLock_t *rwLock);
 extern INT32 mmCondWait(mmCond *cond, mmMutexFC *mutex);
 extern INT32 mmCondTimedWait(mmCond *cond, mmMutexFC *mutex, UINT32 milliSecond);
 extern INT32 mmCondNotify(mmCond *cond);
@@ -312,7 +266,6 @@ extern INT32 mmGetPid();
 extern INT32 mmGetTid();
 extern INT32 mmGetPidHandle(mmProcess *processHandle);
 extern INT32 mmGetLocalTime(mmSystemTime_t *sysTime);
-extern INT32 mmGetSystemTime(mmSystemTime_t *sysTime);
 
 extern INT32 mmSemInit(mmSem_t *sem, UINT32 value);
 extern INT32 mmSemWait(mmSem_t *sem);
@@ -320,9 +273,7 @@ extern INT32 mmSemPost(mmSem_t *sem);
 extern INT32 mmSemDestroy(mmSem_t *sem);
 extern INT32 mmOpen(const CHAR *pathName, INT32 flags);
 extern INT32 mmOpen2(const CHAR *pathName, INT32 flags, MODE mode);
-extern FILE *mmPopen(CHAR *command, CHAR *type);
 extern INT32 mmClose(INT32 fd);
-extern INT32 mmPclose(FILE *stream);
 extern mmSsize_t mmWrite(INT32 fd, VOID *buf, UINT32 bufLen);
 extern mmSsize_t mmRead(INT32 fd, VOID *buf, UINT32 bufLen);
 extern mmSockHandle mmSocket(INT32 sockFamily, INT32 type, INT32 protocol);
@@ -333,22 +284,9 @@ extern INT32 mmConnect(mmSockHandle sockFd, mmSockAddr *addr, mmSocklen_t addrLe
 extern INT32 mmCloseSocket(mmSockHandle sockFd);
 extern mmSsize_t mmSocketSend(mmSockHandle sockFd, VOID *sendBuf, INT32 sendLen, INT32 sendFlag);
 extern mmSsize_t mmSocketRecv(mmSockHandle sockFd, VOID *recvBuf, INT32 recvLen, INT32 recvFlag);
-extern INT32 mmSocketSendTo(mmSockHandle sockFd,
-                            VOID *sendMsg,
-                            INT32 sendLen,
-                            UINT32 sendFlag,
-                            const mmSockAddr* addr,
-                            INT32 tolen);
-extern mmSsize_t mmSocketRecvFrom(mmSockHandle sockFd,
-                                  VOID *recvBuf,
-                                  mmSize recvLen,
-                                  UINT32 recvFlag,
-                                  mmSockAddr* addr,
-                                  mmSocklen_t *FromLen);
 extern INT32 mmSAStartup();
 extern INT32 mmSACleanup();
 extern VOID *mmDlopen(const CHAR *fileName, INT32 mode);
-extern INT32 mmDladdr(VOID *addr, mmDlInfo *info);
 extern VOID *mmDlsym(VOID *handle, CHAR *funcName);
 extern INT32 mmDlclose(VOID *handle);
 extern CHAR *mmDlerror();
@@ -356,7 +294,6 @@ extern INT32 mmCreateAndSetTimer(mmTimer *timerHandle, mmUserBlock_t *timerBlock
 extern INT32 mmDeleteTimer(mmTimer timerHandle);
 extern INT32 mmStatGet(const CHAR *path, mmStat_t *buffer);
 extern INT32 mmStat64Get(const CHAR *path, mmStat64_t *buffer);
-extern INT32 mmFStatGet(INT32 fd, mmStat_t *buffer);
 extern INT32 mmMkdir(const CHAR *pathName, mmMode_t mode);
 extern INT32 mmSleep(UINT32 milliSecond);
 
@@ -400,7 +337,6 @@ extern VOID mmCloseCompletionPort(mmCompletionHandle handle);
 extern INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, mmCompletionHandle handleIOCP, pmmPollData polledData,
                     mmPollBack pollBack);
 extern INT32 mmGetErrorCode();
-extern CHAR *mmGetErrorFormatMessage(mmErrorMsg errnum, CHAR *buf, mmSize size);
 extern INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone);
 extern mmTimespec mmGetTickCount();
 extern INT32 mmGetRealPath(CHAR *path, CHAR *realPath);
@@ -446,7 +382,6 @@ extern INT32 mmTlsDelete(mmThreadKey key);
 extern INT32 mmGetOsType();
 
 extern INT32 mmFsync(mmProcess fd);
-extern INT32 mmFsync2(INT32 fd);
 extern INT32 mmChdir(const CHAR *path);
 extern INT32 mmUmask(INT32 pmode);
 extern INT32 mmThreadKill(mmThread id);
@@ -504,10 +439,6 @@ extern INT32 mmCreateProcess(const CHAR *fileName, const mmArgvEnv *env, const c
 
 extern INT32 mmCreateTaskWithThreadAttr(mmThread *threadHandle, const mmUserBlock_t *funcBlock,
                                         const mmThreadAttr *threadAttr);
-extern mmFileHandle mmShmOpen(const CHAR *name, INT32 oflag, mmMode_t mode);
-extern INT32 mmShmUnlink(const CHAR *name);
-extern VOID *mmMmap(mmFd_t fd, mmSize_t size, mmOfft_t offset, mmFd_t *extra, INT32 prot, INT32 flags);
-extern INT32 mmMunMap(VOID *data, mmSize_t size, mmFd_t *extra);
 #define MMPA_DLL_API
 
 #ifdef __cplusplus

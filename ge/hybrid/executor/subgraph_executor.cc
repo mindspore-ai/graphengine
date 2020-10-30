@@ -15,7 +15,6 @@
  */
 
 #include "hybrid/executor/subgraph_executor.h"
-#include "graph/ge_context.h"
 #include "hybrid/executor/worker/task_compile_engine.h"
 #include "hybrid/executor/worker/execution_engine.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -25,31 +24,27 @@ namespace hybrid {
 namespace {
 constexpr int kDefaultThreadNum = 4;
 constexpr int kDataInputIndex = 0;
-}
+}  // namespace
 
 SubgraphExecutor::SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape)
     : graph_item_(graph_item),
       context_(context),
       force_infer_shape_(force_infer_shape),
-      pre_run_pool_(kDefaultThreadNum) {
-}
+      pre_run_pool_(kDefaultThreadNum) {}
 
-SubgraphExecutor::~SubgraphExecutor() {
-  GELOGD("[%s] SubgraphExecutor destroyed.", graph_item_->GetName().c_str());
-}
+SubgraphExecutor::~SubgraphExecutor() { GELOGD("[%s] SubgraphExecutor destroyed.", graph_item_->GetName().c_str()); }
 
 Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                               const std::vector<ConstGeTensorDescPtr> &input_desc) {
-  subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_));
+  subgraph_context_.reset(new (std::nothrow) SubgraphContext(graph_item_));
   GE_CHECK_NOTNULL(subgraph_context_);
   GE_CHK_STATUS_RET(subgraph_context_->Init(), "[%s] Failed to init subgraph context.", graph_item_->GetName().c_str());
 
-  shape_inference_engine_.reset(new(std::nothrow) ShapeInferenceEngine(context_, subgraph_context_.get()));
+  shape_inference_engine_.reset(new (std::nothrow) ShapeInferenceEngine(context_, subgraph_context_.get()));
   GE_CHECK_NOTNULL(shape_inference_engine_);
 
   if (graph_item_->IsDynamic()) {
-    GE_CHK_STATUS_RET(InitInputsForUnknownShape(inputs, input_desc),
-                      "[%s] Failed to set inputs.",
+    GE_CHK_STATUS_RET(InitInputsForUnknownShape(inputs, input_desc), "[%s] Failed to set inputs.",
                       graph_item_->GetName().c_str());
   } else {
     GE_CHK_STATUS_RET(InitInputsForKnownShape(inputs),
@@ -78,16 +73,11 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
     }
 
     auto &input_tensor = inputs[i];
-    GELOGD("[%s] Set input tensor[%zu] to inputs with index = %d, tensor = %s",
-           graph_item_->GetName().c_str(),
-           i,
-           input_node->input_start,
-           input_tensor.DebugString().c_str());
+    GELOGD("[%s] Set input tensor[%zu] to inputs with index = %d, tensor = %s", graph_item_->GetName().c_str(), i,
+           input_node->input_start, input_tensor.DebugString().c_str());
 
     GE_CHK_STATUS_RET(subgraph_context_->SetInput(*input_node, kDataInputIndex, input_tensor),
-                      "[%s] Failed to set input tensor[%zu]",
-                      graph_item_->GetName().c_str(),
-                      i);
+                      "[%s] Failed to set input tensor[%zu]", graph_item_->GetName().c_str(), i);
 
     if (force_infer_shape_ || input_node->is_dynamic) {
       GELOGD("[%s] Start to update input[%zu] for subgraph data node.", graph_item_->GetName().c_str(), i);
@@ -110,20 +100,15 @@ Status SubgraphExecutor::InitInputsForKnownShape(const std::vector<TensorValue> 
     if (static_cast<size_t>(parent_input_index) >= inputs.size()) {
       GELOGE(INTERNAL_ERROR,
              "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs",
-             graph_item_->GetName().c_str(),
-             inputs.size(),
-             parent_input_index + 1);
+             graph_item_->GetName().c_str(), inputs.size(), parent_input_index + 1);
 
       return INTERNAL_ERROR;
     }
 
     auto &input_tensor = inputs[parent_input_index];
     subgraph_context_->SetInput(static_cast<int>(i), input_tensor);
-    GELOGD("[%s] Set input tensor[%zu] with inputs with index = %d, tensor = %s",
-           graph_item_->GetName().c_str(),
-           i,
-           parent_input_index,
-           input_tensor.DebugString().c_str());
+    GELOGD("[%s] Set input tensor[%zu] with inputs with index = %d, tensor = %s", graph_item_->GetName().c_str(), i,
+           parent_input_index, input_tensor.DebugString().c_str());
   }
 
   return SUCCESS;
@@ -146,9 +131,7 @@ Status SubgraphExecutor::ExecuteAsync(const std::vector<TensorValue> &inputs,
 Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue> &inputs) {
   GELOGD("[%s] subgraph is not dynamic.", graph_item_->GetName().c_str());
   if (graph_item_->GetAllNodes().size() != 1) {
-    GELOGE(INTERNAL_ERROR,
-           "[%s] Invalid known shape subgraph. node size = %zu",
-           graph_item_->GetName().c_str(),
+    GELOGE(INTERNAL_ERROR, "[%s] Invalid known shape subgraph. node size = %zu", graph_item_->GetName().c_str(),
            graph_item_->GetAllNodes().size());
     return INTERNAL_ERROR;
   }
@@ -163,8 +146,7 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
   GE_CHECK_NOTNULL(known_shape_task_context_);
 
   GE_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_),
-                    "[%s] Failed to execute node [%s] for known subgraph.",
-                    graph_item_->GetName().c_str(),
+                    "[%s] Failed to execute node [%s] for known subgraph.", graph_item_->GetName().c_str(),
                     known_shape_task_context_->GetNodeName());
 
   GELOGD("[%s] Done execute non-dynamic subgraph successfully.", graph_item_->GetName().c_str());
@@ -181,19 +163,16 @@ Status SubgraphExecutor::ExecuteAsync(TaskContext &task_context) {
     input_desc.emplace_back(task_context.GetInputDesc(i));
   }
 
-  GE_CHK_STATUS_RET(ExecuteAsync(inputs, input_desc),
-                    "[%s] Failed to execute subgraph.",
+  GE_CHK_STATUS_RET(ExecuteAsync(inputs, input_desc), "[%s] Failed to execute subgraph.",
                     graph_item_->GetName().c_str());
 
-  GE_CHK_STATUS_RET(SetOutputsToParentNode(task_context),
-                    "[%s] Failed to set output shapes to parent node.",
+  GE_CHK_STATUS_RET(SetOutputsToParentNode(task_context), "[%s] Failed to set output shapes to parent node.",
                     graph_item_->GetName().c_str());
   return SUCCESS;
 }
 
 Status SubgraphExecutor::PrepareNodes() {
-  GELOGD("[%s] Start to prepare nodes. force infer shape = %s.",
-         graph_item_->GetName().c_str(),
+  GELOGD("[%s] Start to prepare nodes. force infer shape = %s.", graph_item_->GetName().c_str(),
          force_infer_shape_ ? "true" : "false");
   auto &all_nodes = graph_item_->GetAllNodes();
   for (auto all_node : all_nodes) {
@@ -221,7 +200,6 @@ Status SubgraphExecutor::PrepareNodes() {
     // only do shape inference and compilation for nodes with dynamic shapes.
     if (node_item.is_dynamic) {
       auto prepare_future = pre_run_pool_.commit([this, p_node_state]() -> Status {
-        GetContext().SetSessionId(context_->session_id);
         GE_CHK_STATUS_RET_NOLOG(InferShape(shape_inference_engine_.get(), *p_node_state));
         return PrepareForExecution(context_, *p_node_state);
       });
@@ -231,8 +209,8 @@ Status SubgraphExecutor::PrepareNodes() {
       GELOGD("[%s] Skipping shape inference and compilation for node with static shape.", node_item.NodeName().c_str());
       if (node_item.kernel_task == nullptr) {
         GELOGW("[%s] Node of static shape got no task.", node_item.NodeName().c_str());
-        GE_CHK_STATUS_RET(TaskCompileEngine::Compile(*p_node_state, context_),
-                          "[%s] Failed to create task.", p_node_state->GetName().c_str());
+        GE_CHK_STATUS_RET(TaskCompileEngine::Compile(*p_node_state, context_), "[%s] Failed to create task.",
+                          p_node_state->GetName().c_str());
       } else {
         node_state->SetKernelTask(node_item.kernel_task);
       }
@@ -252,18 +230,18 @@ Status SubgraphExecutor::PrepareNodes() {
 
 Status SubgraphExecutor::InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) {
   const auto &node_item = *node_state.GetNodeItem();
-  GE_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state),
-                    "[%s] Failed to InferShape.", node_state.GetName().c_str());
-  GE_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_item),
-                    "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
+  GE_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state), "[%s] Failed to InferShape.",
+                    node_state.GetName().c_str());
+  GE_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_item), "[%s] Failed to PropagateOutputShapes.",
+                    node_state.GetName().c_str());
   return SUCCESS;
 }
 
 Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state) {
   auto &node_item = *node_state.GetNodeItem();
   if (node_item.kernel_task == nullptr) {
-    GE_CHK_STATUS_RET(TaskCompileEngine::Compile(node_state, ctx),
-                      "Failed to create task for node[%s]", node_state.GetName().c_str());
+    GE_CHK_STATUS_RET(TaskCompileEngine::Compile(node_state, ctx), "Failed to create task for node[%s]",
+                      node_state.GetName().c_str());
   } else {
     node_state.SetKernelTask(node_item.kernel_task);
   }
@@ -298,8 +276,7 @@ Status SubgraphExecutor::LaunchTasks() {
     task_context->SetForceInferShape(force_infer_shape_);
     auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
     GE_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, shared_task_context, *context_),
-                      "[%s] Execute node failed.",
-                      node_state->GetName().c_str());
+                      "[%s] Execute node failed.", node_state->GetName().c_str());
 
     GELOGD("[%s] Done executing node successfully.", node_state->GetName().c_str());
   }
@@ -308,7 +285,6 @@ Status SubgraphExecutor::LaunchTasks() {
 Status SubgraphExecutor::ScheduleTasks() {
   GELOGD("[%s] Start to schedule prepare workers.", graph_item_->GetName().c_str());
   auto prepare_future = std::async([&]() -> Status {
-    GetContext().SetSessionId(context_->session_id);
     auto ret = PrepareNodes();
     ready_queue_.Push(nullptr);
     return ret;
@@ -325,29 +301,22 @@ Status SubgraphExecutor::ScheduleTasks() {
     return ret;
   }
 
-  GE_CHK_STATUS_RET(prepare_future.get(),
-                    "[%s] Error occurred in task preparation.",
-                    graph_item_->GetName().c_str());
+  GE_CHK_STATUS_RET(prepare_future.get(), "[%s] Error occurred in task preparation.", graph_item_->GetName().c_str());
 
   GELOGD("[%s] Done launching all tasks successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
 }
 
-Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs) {
-  return subgraph_context_->GetOutputs(outputs);
-}
+Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs) { return subgraph_context_->GetOutputs(outputs); }
 
 Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs, std::vector<ConstGeTensorDescPtr> &output_desc) {
   GE_CHK_STATUS_RET(GetOutputs(outputs), "[%s] Failed to get output tensors.", graph_item_->GetName().c_str());
 
   // copy output data from op to designated position
-  GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc),
-                    "[%s] Failed to get output tensor desc.",
+  GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc), "[%s] Failed to get output tensor desc.",
                     graph_item_->GetName().c_str());
   if (outputs.size() != output_desc.size()) {
-    GELOGE(INTERNAL_ERROR,
-           "Number of output tensors(%zu) mismatch number of output tensor desc(%zu).",
-           outputs.size(),
+    GELOGE(INTERNAL_ERROR, "Number of output tensors(%zu) mismatch number of output tensor desc(%zu).", outputs.size(),
            output_desc.size());
     return INTERNAL_ERROR;
   }
@@ -365,18 +334,14 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
   // get output tensors and tensor desc list
   std::vector<TensorValue> outputs;
   std::vector<ConstGeTensorDescPtr> output_desc_list;
-  GE_CHK_STATUS_RET(subgraph_context_->GetOutputs(outputs),
-                    "[%s] Failed to get output tensors.",
+  GE_CHK_STATUS_RET(subgraph_context_->GetOutputs(outputs), "[%s] Failed to get output tensors.",
                     graph_item_->GetName().c_str());
-  GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc_list),
-                    "[%s] Failed to get output tensor desc.",
+  GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc_list), "[%s] Failed to get output tensor desc.",
                     graph_item_->GetName().c_str());
 
   if (outputs.size() != output_desc_list.size()) {
     GELOGE(INTERNAL_ERROR, "[%s] num output tensors = %zu, num output tensor desc = %zu",
-           graph_item_->GetName().c_str(),
-           outputs.size(),
-           output_desc_list.size());
+           graph_item_->GetName().c_str(), outputs.size(), output_desc_list.size());
     return INTERNAL_ERROR;
   }
 
@@ -385,14 +350,9 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
     int parent_output_index = graph_item_->GetParentOutputIndex(i);
     GE_CHECK_GE(parent_output_index, 0);
     // update tensor
-    GELOGD("[%s] Updating output[%zu] to parent output[%d]",
-           graph_item_->GetName().c_str(),
-           i,
-           parent_output_index);
+    GELOGD("[%s] Updating output[%zu] to parent output[%d]", graph_item_->GetName().c_str(), i, parent_output_index);
 
-    GELOGD("[%s] Updating output tensor, index = %d, tensor = %s",
-           graph_item_->GetName().c_str(),
-           parent_output_index,
+    GELOGD("[%s] Updating output tensor, index = %d, tensor = %s", graph_item_->GetName().c_str(), parent_output_index,
            outputs[i].DebugString().c_str());
     GE_CHK_STATUS_RET(task_context.SetOutput(parent_output_index, outputs[i]));
 
@@ -402,17 +362,12 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
     const auto &output_desc = output_desc_list[i];
     auto parent_output_desc = task_context.MutableOutputDesc(parent_output_index);
     GE_CHECK_NOTNULL(parent_output_desc);
-    GELOGD("[%s] Updating output shape[%d] from [%s] to [%s]",
-           graph_item_->GetName().c_str(),
-           parent_output_index,
-           parent_output_desc->MutableShape().ToString().c_str(),
-           output_desc->GetShape().ToString().c_str());
+    GELOGD("[%s] Updating output shape[%d] from [%s] to [%s]", graph_item_->GetName().c_str(), parent_output_index,
+           parent_output_desc->MutableShape().ToString().c_str(), output_desc->GetShape().ToString().c_str());
     parent_output_desc->SetShape(output_desc->GetShape());
 
-    GELOGD("[%s] Updating output original shape[%d] from [%s] to [%s]",
-           graph_item_->GetName().c_str(),
-           parent_output_index,
-           parent_output_desc->GetOriginShape().ToString().c_str(),
+    GELOGD("[%s] Updating output original shape[%d] from [%s] to [%s]", graph_item_->GetName().c_str(),
+           parent_output_index, parent_output_desc->GetOriginShape().ToString().c_str(),
            output_desc->GetOriginShape().ToString().c_str());
     parent_output_desc->SetOriginShape(output_desc->GetOriginShape());
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class VariableKernel : public Kernel {
    *  @brief compute for node_task.
    *  @return result
    */
-  Status Compute(TaskContext& context) override;
+  Status Compute(TaskContext &context) override;
 };
 }  // namespace host_cpu
 }  // namespace hybrid

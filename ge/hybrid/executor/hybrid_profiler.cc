@@ -28,11 +28,9 @@ const int kMaxEvents = 10000;
 const int kEventDescMax = 256;
 const int kMaxEventTypes = 8;
 const int kIndent = 8;
-}
+}  // namespace
 
-HybridProfiler::HybridProfiler(): counter_(0) {
-  Reset();
-}
+HybridProfiler::HybridProfiler() : counter_(0) { Reset(); }
 
 void HybridProfiler::RecordEvent(EventType event_type, const char *fmt, ...) {
   va_list args;
@@ -76,8 +74,8 @@ void HybridProfiler::Dump(std::ostream &output_stream) {
   auto end_dump = std::chrono::system_clock::now();
   auto elapsed_dump = std::chrono::duration_cast<std::chrono::microseconds>(end_dump - start).count();
   auto cost_dump = std::chrono::duration_cast<std::chrono::microseconds>(end_dump - start_dump).count();
-  output_stream << std::setw(kIndent) << elapsed_dump << "\t\t" << cost_dump
-                << "\t\t" << "[Dump profiling]" << std::endl;
+  output_stream << std::setw(kIndent) << elapsed_dump << "\t\t" << cost_dump << "\t\t"
+                << "[Dump profiling]" << std::endl;
   events_.clear();
 }
 

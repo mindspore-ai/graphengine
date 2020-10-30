@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,8 +132,7 @@ class SessionManager {
   /// @param [out] var_values: variable values
   /// @return Status result of function
   ///
-  Status GetVariables(SessionId session_id, const std::vector<std::string> &var_names,
-                      std::vector<Tensor> &var_values);
+  Status GetVariables(SessionId session_id, const std::vector<std::string> &var_names, std::vector<Tensor> &var_values);
 
   ///
   /// @ingroup ge_graph
@@ -144,8 +143,8 @@ class SessionManager {
   /// @return Status result of function
   ///
   Status RegisterCallBackFunc(
-      SessionId session_id, const std::string &key,
-      const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+    SessionId session_id, const std::string &key,
+    const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
   bool IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id);
 

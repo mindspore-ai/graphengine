@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
 void ReplaceTransShapePass::CopyControlEdges(NodePtr &old_node, NodePtr &new_node, bool input_check_flag) {
   GE_CHECK_NOTNULL_JUST_RETURN(old_node);
   GE_CHECK_NOTNULL_JUST_RETURN(new_node);
-  GE_IF_BOOL_EXEC(old_node == new_node, return);
+  GE_IF_BOOL_EXEC(old_node == new_node, return );
   for (NodePtr &node : old_node->GetInControlNodes()) {
     auto out_control_anchor = node->GetOutControlAnchor();
     GE_IF_BOOL_EXEC(!out_control_anchor->IsLinkedWith(new_node->GetInControlAnchor()), {
@@ -133,8 +133,8 @@ void ReplaceTransShapePass::RemoveControlEdges(NodePtr &node) {
 }
 
 void ReplaceTransShapePass::ReplaceControlEdges(NodePtr &old_node, NodePtr &new_node) {
-  GE_IF_BOOL_EXEC(old_node == new_node, return);
+  GE_IF_BOOL_EXEC(old_node == new_node, return );
   CopyControlEdges(old_node, new_node);
   RemoveControlEdges(old_node);
 }
-}
+}  // namespace ge

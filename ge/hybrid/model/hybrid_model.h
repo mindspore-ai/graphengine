@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,39 +41,27 @@ class HybridModel {
 
   const NodeItem *GetNodeItem(const NodePtr &node) const;
 
-  uint64_t GetSessionId() const {
-    return root_runtime_param_.session_id;
-  }
+  uint64_t GetSessionId() const { return root_runtime_param_.session_id; }
 
   GeModelPtr GetGeModel(const NodePtr &node) const;
 
   NodeItem *MutableNodeItem(const NodePtr &node);
 
-  size_t TotalVarMemSize() const {
-    return root_runtime_param_.var_size;
-  }
+  size_t TotalVarMemSize() const { return root_runtime_param_.var_size; }
 
-  const uint8_t* GetVarMemBase() const {
-    return var_mem_base_;
-  }
+  const uint8_t *GetVarMemBase() const { return var_mem_base_; }
 
-  void SetDeviceId(uint32_t device_id)  {
-    device_id_ = device_id;
-  }
+  void SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
 
-  void SetModelId(uint32_t model_id) {
-    model_id_ = model_id;
-  }
+  void SetModelId(uint32_t model_id) { model_id_ = model_id; }
 
-  uint32_t GetModelId() const {
-    return model_id_;
-  }
+  uint32_t GetModelId() const { return model_id_; }
 
-  TensorValue* GetVariable(const string &name) const;
+  TensorValue *GetVariable(const string &name) const;
 
   NodePtr GetVariableNode(const string &name) const;
 
-  const std::vector<domi::TaskDef>* GetTaskDefs(const NodePtr &node) const;
+  const std::vector<domi::TaskDef> *GetTaskDefs(const NodePtr &node) const;
 
   const GraphItem *GetRootGraphItem() const;
 
@@ -91,8 +79,7 @@ class HybridModel {
   GeRootModelPtr ge_root_model_;
   std::map<uint32_t, NodeItem *> input_nodes_;
   std::map<std::string, NodePtr> constant_op_nodes_;
-  std::map<std::string, NodePtr> device_variable_nodes_; //lint !e148
-  std::map<std::string, NodePtr> host_variable_nodes_; //lint !e148
+  std::map<std::string, NodePtr> variable_nodes_;
   std::map<std::string, std::unique_ptr<TensorValue>> variable_tensors_;
   std::map<NodePtr, std::vector<domi::TaskDef>> task_defs_;
   std::map<NodePtr, GeModelPtr> known_shape_sub_models_;
@@ -109,4 +96,4 @@ class HybridModel {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // GE_HYBRID_HYBRID_GRAPH_H_
+#endif  // GE_HYBRID_HYBRID_GRAPH_H_

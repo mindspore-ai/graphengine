@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,14 +134,6 @@ class FlowCtrlPass : public GraphPass {
   ///         Other: failed
   ///
   Status AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, NodePtr &loop_after_node);
-
-  ///
-  /// add special iterator ctrl nodes(small cycle).
-  /// @param compute_graph graph
-  /// @return true: two or more dataSet exist
-  ///         false: only one dataSet exist
-  ///
-  bool CheckMultiDataSet(ComputeGraphPtr &compute_graph);
 };
 }  // namespace ge
 

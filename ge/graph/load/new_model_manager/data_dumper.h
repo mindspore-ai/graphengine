@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,10 +36,10 @@
 namespace ge {
 class DataDumper {
  public:
-  explicit DataDumper(const RuntimeParam &rsh)
+  DataDumper()
       : model_name_(),
         model_id_(0),
-        runtime_param_(rsh),
+        runtime_param_(),
         dev_mem_load_(nullptr),
         dev_mem_unload_(nullptr),
         op_list_(),
@@ -57,6 +57,8 @@ class DataDumper {
   void SetModelName(const std::string &model_name) { model_name_ = model_name; }
 
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
+
+  void SetMemory(const RuntimeParam &runtime_param) { runtime_param_ = runtime_param; }
 
   void SetDeviceId(uint32_t device_id) { device_id_ = device_id; }
 
@@ -103,7 +105,7 @@ class DataDumper {
   std::string om_name_;
 
   uint32_t model_id_;
-  const RuntimeParam &runtime_param_;
+  RuntimeParam runtime_param_;
   void *dev_mem_load_;
   void *dev_mem_unload_;
 
@@ -125,7 +127,6 @@ class DataDumper {
   std::map<OpDescPtr, void *> ref_info_;
   void *l1_fusion_addr_ = nullptr;
 
-
   uint32_t op_debug_task_id_ = 0;
   uint32_t op_debug_stream_id_ = 0;
   void *op_debug_addr_ = nullptr;
@@ -133,28 +134,22 @@ class DataDumper {
 
   DumpProperties dump_properties_;
 
-  // Build task info of op mapping info
-  Status BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
   Status DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
   Status DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Output &output, size_t i,
                        const std::string &node_name_index);
   Status DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
   Status DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
   Status DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Input &input, size_t i,
-                       const std::string &node_name_index);
+                      const std::string &node_name_index);
   Status ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
   void SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id, aicpu::dump::OpMappingInfo &op_mapping_info);
   void SetOpDebugIdToAicpu(uint32_t task_id, uint32_t stream_id, void *op_debug_addr,
                            aicpu::dump::OpMappingInfo &op_mapping_info);
   Status ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
-  Status GenerateInput(aicpu::dump::Input &input,
-                       const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
-                       const uintptr_t &addr,
-                       size_t index);
-  Status GenerateOutput(aicpu::dump::Output &output,
-                        const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
-                        const uintptr_t &addr,
-                        size_t index);
+  Status GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
+                       const uintptr_t &addr, size_t index);
+  Status GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
+                        const uintptr_t &addr, size_t index);
   void GenerateOpBuffer(const int64_t &size, aicpu::dump::Task &task);
 };
 struct DataDumper::InnerDumpInfo {

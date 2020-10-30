@@ -42,13 +42,6 @@
           "attach": true
         },
         {
-          "id": "DNN_VM_AICPU_ASCEND",
-          "name": "AICPU_ASCEND",
-          "independent": false,
-          "skip_assign_stream": false,
-          "attach": true
-        },
-        {
           "id": "DNN_HCCL",
           "name": "HCCL",
           "independent": true,

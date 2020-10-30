@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ class Kernel {
  public:
   Kernel(const NodePtr &node) : node_(node) {}
   virtual ~Kernel() = default;
-  virtual Status Compute(TaskContext& context) = 0;
+  virtual Status Compute(TaskContext &context) = 0;
 
  protected:
   const NodePtr &node_;

@@ -27,4 +27,4 @@ class TaskCompileEngine {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // GE_HYBRID_EXECUTOR_COMPILE_TASK_COMPILE_ENGINE_H_
+#endif  // GE_HYBRID_EXECUTOR_COMPILE_TASK_COMPILE_ENGINE_H_

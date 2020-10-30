@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,8 +89,8 @@ Status TransDataSrc2Fp16(const CastArgs &args, uint8_t *dst, const size_t data_s
 }
 
 Status CastKernel(const CastArgs &args, uint8_t *dst, const size_t data_size, const DataTypeTransMode trans_mode) {
-  static std::map<DataTypeTransMode, std::function<Status(const CastArgs &, uint8_t *, const size_t)>>
-      transfer_handle = {
+  static std::map<DataTypeTransMode, std::function<Status(const CastArgs &, uint8_t *, const size_t)>> transfer_handle =
+    {
       {kTransferWithDatatypeFloatToFloat16, TransDataSrc2Fp16<float>},
       {kTransferWithDatatypeFloatToInt32, TransDataSrc2Dst<float, int32_t>},
       {kTransferWithDatatypeFloat16ToFloat, TransDataSrc2Dst<fp16_t, float>},
@@ -107,7 +107,7 @@ Status CastKernel(const CastArgs &args, uint8_t *dst, const size_t data_size, co
       {kTransferWithDatatypeInt32ToInt64, TransDataSrc2Dst<int32_t, int64_t>},
       {kTransferWithDatatypeInt32ToDouble, TransDataSrc2Dst<int32_t, double>},
       {kTransferWithDatatypeDoubleToInt32, TransDataSrc2Dst<double, int32_t>},
-  };
+    };
   auto it = transfer_handle.find(trans_mode);
   if (it == transfer_handle.end()) {
     return UNSUPPORTED;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ const char *const kAttrDtype = "dtype";
 namespace ge {
 namespace hybrid {
 namespace host_cpu {
-Status RandomUniformKernel::Compute(TaskContext& context) {
+Status RandomUniformKernel::Compute(TaskContext &context) {
   GELOGI("[%s] compute begin.", node_->GetName().c_str());
 
   int64_t seed = 0;
@@ -72,7 +72,7 @@ Status RandomUniformKernel::Compute(TaskContext& context) {
 
 template <typename T>
 Status RandomUniformKernel::Generate(const ge::OpDescPtr &op_desc_ptr, int64_t seed, int64_t seed2,
-                                     TaskContext& context) {
+                                     TaskContext &context) {
   GE_CHECK_NOTNULL(op_desc_ptr);
   // RandomUniformOp has and only has one output
   int64_t data_num = op_desc_ptr->GetOutputDesc(0).GetShape().GetShapeSize();
@@ -80,10 +80,8 @@ Status RandomUniformKernel::Generate(const ge::OpDescPtr &op_desc_ptr, int64_t s
   attr.SetMemType(HOST_DDR);
   auto tensor_size = data_num * sizeof(T);
   TensorValue tensor;
-  GE_CHK_STATUS_RET(context.AllocateTensor(tensor_size, tensor, &attr),
-                    "[%s] Failed to allocate output of size %zu",
-                    context.GetNodeName(),
-                    tensor_size);
+  GE_CHK_STATUS_RET(context.AllocateTensor(tensor_size, tensor, &attr), "[%s] Failed to allocate output of size %zu",
+                    context.GetNodeName(), tensor_size);
 
   auto *buf = reinterpret_cast<T *>(tensor.MutableData());
   int64_t final_seed;
@@ -108,7 +106,7 @@ Status RandomUniformKernel::Generate(const ge::OpDescPtr &op_desc_ptr, int64_t s
 }
 
 Status RandomUniformKernel::GenerateFP16(const ge::OpDescPtr &op_desc_ptr, int64_t seed, int64_t seed2,
-                                         TaskContext& context) {
+                                         TaskContext &context) {
   GE_CHECK_NOTNULL(op_desc_ptr);
   // RandomUniformOp has and only has one output
   int64_t data_num = op_desc_ptr->GetOutputDesc(0).GetShape().GetShapeSize();
@@ -116,10 +114,8 @@ Status RandomUniformKernel::GenerateFP16(const ge::OpDescPtr &op_desc_ptr, int64
   attr.SetMemType(HOST_DDR);
   auto tensor_size = data_num * sizeof(fp16_t);
   TensorValue tensor;
-  GE_CHK_STATUS_RET(context.AllocateTensor(tensor_size, tensor, &attr),
-                    "[%s] Failed to allocate output of size %zu",
-                    context.GetNodeName(),
-                    tensor_size);
+  GE_CHK_STATUS_RET(context.AllocateTensor(tensor_size, tensor, &attr), "[%s] Failed to allocate output of size %zu",
+                    context.GetNodeName(), tensor_size);
 
   auto *buf = reinterpret_cast<fp16_t *>(tensor.MutableData());
   int64_t final_seed;

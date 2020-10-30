@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ class ConstantFoldingPass : public FoldingPass {
   Status Run(ge::NodePtr &node) override;
   const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> &GetGeConstantFoldingPerfStatistic() const;
   const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> &GetOpConstantFoldingPerfStatistic() const;
+
  private:
   std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> statistic_of_op_constant_folding_;
   std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>> statistic_of_ge_constant_folding_;

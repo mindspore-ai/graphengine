@@ -33,8 +33,8 @@
 #include "runtime/mem.h"
 
 namespace ge {
-constexpr size_t kRoundBlockSize = 512;         // all block sizes are rounded to at least 512 bytes
-constexpr double kSplitThreshold = 0.75;         // split when malloc size <= small block size * kSpliThreshold
+constexpr size_t kRoundBlockSize = 512;   // all block sizes are rounded to at least 512 bytes
+constexpr double kSplitThreshold = 0.75;  // split when malloc size <= small block size * kSpliThreshold
 constexpr size_t kKByteSize = 1024;
 constexpr size_t kMByteSize = 1024 * 1024;
 constexpr size_t kGByteSize = 1024 * 1024 * 1024;
@@ -88,7 +88,6 @@ class CachingAllocator {
   Status Free(uint8_t *memory_addr, uint32_t device_id = 0);
 
  private:
-
   ///
   /// @ingroup ge_graph
   /// @brief extend cache by size
@@ -131,7 +130,7 @@ class CachingAllocator {
   /// @param [in] block ptr
   /// @return void
   ///
-  void FreeBlock(Block* block);
+  void FreeBlock(Block *block);
 
   ///
   /// @ingroup ge_graph

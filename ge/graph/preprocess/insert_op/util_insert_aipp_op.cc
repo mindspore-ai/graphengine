@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "util_insert_aipp_op.h"
 
 using domi::AippOpParams;
 
@@ -116,92 +115,22 @@ void InsertNewOpUtil::ClearNewOps() {
   }
 }
 
-Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
-  for (int i = 0; i < insert_op_conf_->aipp_op_size(); i++) {
-    const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(i);
-    GE_CHECK_NOTNULL(item);
-
-    for (int j = i + 1; j < insert_op_conf_->aipp_op_size(); j++) {
-      const domi::AippOpParams *another_item = insert_op_conf_->mutable_aipp_op(j);
-      GE_CHECK_NOTNULL(another_item);
-      if (another_item->related_input_name().empty()) {
-        string error_msg = "Can not both set related_input_name and related_input_rank!"
-                           " Please ensure param is the same with the first aipp config(related_input_name).";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not both set related_input_rank and related_input_name!"
-               " Please ensure param is the same with the first aipp config(related_input_name).");
-        return PARAM_INVALID;
-      }
-      if (item->related_input_name() == another_item->related_input_name()) {
-        string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_name"
-                           " param is different in different aipp config.";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
-               "is different in different aipp config.");
-        return PARAM_INVALID;
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
-Status InsertNewOpUtil::CheckInputRankPositionNoRepeat() {
-  for (int i = 0; i < insert_op_conf_->aipp_op_size(); i++) {
-    const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(i);
-    GE_CHECK_NOTNULL(item);
-
-    for (int j = i + 1; j < insert_op_conf_->aipp_op_size(); j++) {
-      const domi::AippOpParams *another_item = insert_op_conf_->mutable_aipp_op(j);
-      GE_CHECK_NOTNULL(another_item);
-      if (!another_item->related_input_name().empty()) {
-        string error_msg = "Can not both set related_input_rank and related_input_name!"
-                           " Please ensure param is the same with the first aipp config(related_input_rank).";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not both set related_input_rank and related_input_name!"
-               " Please ensure param is the same with the first aipp config(related_input_rank).");
-        return PARAM_INVALID;
-      }
-      if (item->related_input_rank() == another_item->related_input_rank()) {
-        string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_rank"
-                          " param is different in different aipp config.";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
-               "is different in different aipp config.");
-        return PARAM_INVALID;
-      }
-    }
-  }
-
-  return SUCCESS;
-
-}
-
 Status InsertNewOpUtil::CheckPositionNotRepeat() {
-  GE_CHECK_NOTNULL(insert_op_conf_);
+  for (int i = 0; i < insert_op_conf_->aipp_op_size(); i++) {
+    const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(i);
 
-  if (insert_op_conf_->aipp_op_size() <= 1) {
-    GELOGI("Aipp op size[%d] less than 2, no need to check position repeat.", insert_op_conf_->aipp_op_size());
-    return SUCCESS;
-  }
-
-  const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(0);
-  GE_CHECK_NOTNULL(item);
-
-  string related_input_name = item->related_input_name();
-  Status ret = FAILED;
-  if (related_input_name.empty()) {
-    ret = CheckInputRankPositionNoRepeat();
-  } else {
-    ret = CheckInputNamePositionNotRepeat();
-  }
-  if (ret != SUCCESS) {
-    GELOGE(FAILED, "Check position not repeat failed.");
-    return FAILED;
+    for (int j = i + 1; j < insert_op_conf_->aipp_op_size(); j++) {
+      const domi::AippOpParams *another_item = insert_op_conf_->mutable_aipp_op(j);
+      GE_IF_BOOL_EXEC(item->related_input_rank() == another_item->related_input_rank(),
+                      string errormsg =
+                        "Can not insert aipp to the same postion! Please ensure related_input_rank"
+                        " param is different in different aipp config.";
+                      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
+                      GELOGE(PARAM_INVALID,
+                             "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
+                             "is different in different aipp config.");
+                      return PARAM_INVALID;);
+    }
   }
 
   return SUCCESS;
@@ -235,24 +164,23 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
     GE_CHECK_NOTNULL(aippParams);
 
     GE_IF_BOOL_EXEC(
-        aippNodes.size() > 1, for (decltype(aippNodes)::size_type i = 1; i < aippNodes.size(); i++) {
-          std::unique_ptr<domi::AippOpParams> currAippParam(new (std::nothrow) domi::AippOpParams());
-          GE_CHECK_NOTNULL(currAippParam);
-          GE_CHK_STATUS(GetAippParams(currAippParam, aippNodes[i]));
+      aippNodes.size() > 1, for (decltype(aippNodes)::size_type i = 1; i < aippNodes.size(); i++) {
+        std::unique_ptr<domi::AippOpParams> currAippParam(new (std::nothrow) domi::AippOpParams());
+        GE_CHECK_NOTNULL(currAippParam);
+        GE_CHK_STATUS(GetAippParams(currAippParam, aippNodes[i]));
 
-          if (aippMode == domi::AippOpParams::static_) {
-            GE_CHK_BOOL_RET_STATUS(aippParams->input_format() == currAippParam->input_format(), PARAM_INVALID,
-                                   "The input_format of all aipp_ops after one Data should be the same");
-            GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_w() == currAippParam->src_image_size_w(), PARAM_INVALID,
-                                   "The src_image_size_w of all aipp_ops after one Data should be the same");
-            GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_h() == currAippParam->src_image_size_h(), PARAM_INVALID,
-                                   "The src_image_size_h of all aipp_ops after one Data should be the same");
-          } else {
-            GE_CHK_BOOL_RET_STATUS(aippParams->max_src_image_size() == currAippParam->max_src_image_size(),
-                                   PARAM_INVALID,
-                                   "The max_src_image_size of all aipp_ops after one Data should be the same");
-          }
-        });
+        if (aippMode == domi::AippOpParams::static_) {
+          GE_CHK_BOOL_RET_STATUS(aippParams->input_format() == currAippParam->input_format(), PARAM_INVALID,
+                                 "The input_format of all aipp_ops after one Data should be the same");
+          GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_w() == currAippParam->src_image_size_w(), PARAM_INVALID,
+                                 "The src_image_size_w of all aipp_ops after one Data should be the same");
+          GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_h() == currAippParam->src_image_size_h(), PARAM_INVALID,
+                                 "The src_image_size_h of all aipp_ops after one Data should be the same");
+        } else {
+          GE_CHK_BOOL_RET_STATUS(aippParams->max_src_image_size() == currAippParam->max_src_image_size(), PARAM_INVALID,
+                                 "The max_src_image_size of all aipp_ops after one Data should be the same");
+        }
+      });
   }
 
   return SUCCESS;
@@ -652,7 +580,7 @@ Status InsertNewOpUtil::GetAllAipps(const NodePtr &data_node, const NodePtr &nod
 
 Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
   GELOGI("Start to record aipp info to Data.");
-  std::map<NodePtr, std::set<NodePtr> data_next_node_map;
+  std::map<NodePtr, std::set<NodePtr>> data_next_node_map;
   for (auto &node : graph->GetDirectNode()) {
     if (node->GetType() == DATA) {
       GE_RETURN_IF_ERROR(GetDataRelatedNode(node, data_next_node_map));

@@ -21,9 +21,7 @@ namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::DYNAMIC_SUBGRAPH, PartitionedCallNodeExecutor);
 
-PartitionedCallNodeTask::PartitionedCallNodeTask(const GraphItem *graph_item)
-    : graph_item_(graph_item) {
-}
+PartitionedCallNodeTask::PartitionedCallNodeTask(const GraphItem *graph_item) : graph_item_(graph_item) {}
 
 PartitionedCallNodeTask::~PartitionedCallNodeTask() {
   GELOGD("[%s] PartitionedCallNodeTask destroyed.", graph_item_->GetName().c_str());
@@ -31,21 +29,18 @@ PartitionedCallNodeTask::~PartitionedCallNodeTask() {
 
 Status PartitionedCallNodeTask::Init(TaskContext &context) {
   auto execution_context = const_cast<GraphExecutionContext *>(context.GetExecutionContext());
-  subgraph_executor_.reset(new(std::nothrow)SubgraphExecutor(graph_item_, execution_context));
+  subgraph_executor_.reset(new (std::nothrow) SubgraphExecutor(graph_item_, execution_context));
   GE_CHECK_NOTNULL(subgraph_executor_);
   return SUCCESS;
 }
 
 Status PartitionedCallNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
-  GE_CHK_STATUS_RET(subgraph_executor_->ExecuteAsync(context),
-                    "[%s] Failed to set inputs", graph_item_->GetName().c_str());
+  GE_CHK_STATUS_RET(subgraph_executor_->ExecuteAsync(context), "[%s] Failed to set inputs",
+                    graph_item_->GetName().c_str());
 
-  auto callback = [=]() {
-    Callback(done_callback);
-  };
+  auto callback = [=]() { Callback(done_callback); };
 
-  GE_CHK_STATUS_RET(context.RegisterCallback(callback),
-                    "[%s] Failed to register callback",
+  GE_CHK_STATUS_RET(context.RegisterCallback(callback), "[%s] Failed to register callback",
                     graph_item_->GetName().c_str());
   GELOGD("[%s] Done executing subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
@@ -63,19 +58,16 @@ Status PartitionedCallNodeTask::Callback(const std::function<void()> &done_callb
   return SUCCESS;
 }
 
-Status PartitionedCallNodeTask::UpdateArgs(TaskContext &context) {
-  return SUCCESS;
-}
+Status PartitionedCallNodeTask::UpdateArgs(TaskContext &context) { return SUCCESS; }
 
-Status PartitionedCallNodeExecutor::LoadTask(const ge::hybrid::HybridModel &model,
-                                             const ge::NodePtr &node,
+Status PartitionedCallNodeExecutor::LoadTask(const ge::hybrid::HybridModel &model, const ge::NodePtr &node,
                                              std::shared_ptr<NodeTask> &task) const {
   GELOGD("Load dynamic partitioned call: [%s]", node->GetName().c_str());
   auto subgraph = NodeUtils::GetSubgraph(*node, 0);
   GE_CHECK_NOTNULL(subgraph);
   auto partitioned_call = model.GetSubgraphItem(subgraph);
   GE_CHECK_NOTNULL(partitioned_call);
-  task.reset(new(std::nothrow) PartitionedCallNodeTask(partitioned_call));
+  task.reset(new (std::nothrow) PartitionedCallNodeTask(partitioned_call));
   GE_CHECK_NOTNULL(task);
   GELOGD("Done loading dynamic partitioned call: [%s]", node->GetName().c_str());
   return SUCCESS;

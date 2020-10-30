@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "variable_ref_useless_control_out_delete_pass.h"
 
 namespace ge {
@@ -28,8 +29,8 @@ Status VariableRefUselessControlOutDeletePass::Run(ge::ComputeGraphPtr graph) {
     }
     auto src_nodes = node->GetInDataNodes();
     if (src_nodes.empty()) {
-      GELOGW("The variable ref name %s(ref %s) does not has a input node",
-             node->GetName().c_str(), src_var_name.c_str());
+      GELOGW("The variable ref name %s(ref %s) does not has a input node", node->GetName().c_str(),
+             src_var_name.c_str());
       continue;
     }
     auto &src_node = src_nodes.at(0);
@@ -39,14 +40,12 @@ Status VariableRefUselessControlOutDeletePass::Run(ge::ComputeGraphPtr graph) {
     auto out_control_anchor = node->GetOutControlAnchor();
     for (const auto &dst_node_anchor : out_control_anchor->GetPeerInControlAnchors()) {
       if (controlled_nodes.count(dst_node_anchor->GetOwnerNode()) > 0) {
-        GELOGI("Unlink the duplicated control edge from variable ref %s to %s, prev node %s",
-               node->GetName().c_str(),
-               dst_node_anchor->GetOwnerNode()->GetName().c_str(),
-               src_node->GetName().c_str());
+        GELOGI("Unlink the duplicated control edge from variable ref %s to %s, prev node %s", node->GetName().c_str(),
+               dst_node_anchor->GetOwnerNode()->GetName().c_str(), src_node->GetName().c_str());
         out_control_anchor->Unlink(dst_node_anchor);
       }
     }
   }
   return SUCCESS;
 }
-}
+}  // namespace ge

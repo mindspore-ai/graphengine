@@ -238,10 +238,10 @@ enum GraphRunMode { PREDICTION = 0, TRAIN };
 
 // Input/Output tensor info
 struct InputTensorInfo {
-  uint32_t data_type;               // data type
-  std::vector<int64_t> dims;        // shape description
-  void *data;                       // tensor data
-  int64_t length;                   // tensor length
+  uint32_t data_type;         // data type
+  std::vector<int64_t> dims;  // shape description
+  void *data;                 // tensor data
+  int64_t length;             // tensor length
 };
 
 struct OutputTensorInfo {
@@ -250,11 +250,8 @@ struct OutputTensorInfo {
   std::unique_ptr<uint8_t[]> data;  // tensor data
   int64_t length;                   // tensor length
   OutputTensorInfo() : data_type(0), dims({}), data(nullptr), length(0) {}
-  OutputTensorInfo(OutputTensorInfo &&out) :
-    data_type(out.data_type),
-    dims(out.dims),
-    data(std::move(out.data)),
-    length(out.length) {}
+  OutputTensorInfo(OutputTensorInfo &&out)
+      : data_type(out.data_type), dims(out.dims), data(std::move(out.data)), length(out.length) {}
 
   OutputTensorInfo &operator=(OutputTensorInfo &&out) {
     if (this != &out) {
@@ -273,67 +270,55 @@ using Status = uint32_t;
 using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensorInfo> &)>;
 // for ir build
 namespace ir_option {
-  static const char *const INPUT_FORMAT = "input_format";
-  static const char *const INPUT_SHAPE = "input_shape";
-  static const char *const OP_NAME_MAP = "op_name_map";
-  static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
-  static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
-  static const char *const DYNAMIC_DIMS = kDynamicDims;
-  static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
-  static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
-  static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
-  static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
-  static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
-  static const char *const SOC_VERSION = ge::SOC_VERSION.c_str();
-  static const char *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
-  static const char *const AICORE_NUM = ge::AICORE_NUM.c_str();
-  static const char *const FUSION_SWITCH_FILE = ge::FUSION_SWITCH_FILE.c_str();
-  static const char *const ENABLE_SMALL_CHANNEL = ge::ENABLE_SMALL_CHANNEL.c_str();
-  static const char *const OP_SELECT_IMPL_MODE = ge::OP_SELECT_IMPL_MODE.c_str();
-  static const char *const OUTPUT_TYPE = ge::OUTPUT_DATATYPE.c_str();
-  static const char *const BUFFER_OPTIMIZE = ge::BUFFER_OPTIMIZE.c_str();
-  static const char *const ENABLE_COMPRESS_WEIGHT = ge::ENABLE_COMPRESS_WEIGHT.c_str();
-  static const char *const COMPRESS_WEIGHT_CONF = "compress_weight_conf";
-  static const char *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
-  static const char *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
-  static const char *const LOG_LEVEL = "log";
-  static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c_str();
+static const char *const INPUT_FORMAT = "input_format";
+static const char *const INPUT_SHAPE = "input_shape";
+static const char *const OP_NAME_MAP = "op_name_map";
+static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
+static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
+static const char *const DYNAMIC_DIMS = kDynamicDims;
+static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
+static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
+static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
+static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
+static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
+static const char *const SOC_VERSION = ge::SOC_VERSION.c_str();
+static const char *const ENABLE_SINGLE_STREAM = ge::ENABLE_SINGLE_STREAM;
+static const char *const AICORE_NUM = ge::AICORE_NUM.c_str();
+static const char *const FUSION_SWITCH_FILE = ge::FUSION_SWITCH_FILE.c_str();
+static const char *const ENABLE_SMALL_CHANNEL = ge::ENABLE_SMALL_CHANNEL.c_str();
+static const char *const OP_SELECT_IMPL_MODE = ge::OP_SELECT_IMPL_MODE.c_str();
+static const char *const OUTPUT_TYPE = ge::OUTPUT_DATATYPE.c_str();
+static const char *const BUFFER_OPTIMIZE = ge::BUFFER_OPTIMIZE.c_str();
+static const char *const ENABLE_COMPRESS_WEIGHT = ge::ENABLE_COMPRESS_WEIGHT.c_str();
+static const char *const COMPRESS_WEIGHT_CONF = "compress_weight_conf";
+static const char *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
+static const char *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
+static const char *const LOG_LEVEL = "log";
+static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c_str();
 
-  // for interface: aclgrphBuildModel
-  const std::set<std::string> ir_builder_suppported_options = {
-    INPUT_FORMAT,
-    INPUT_SHAPE,
-    OP_NAME_MAP,
-    DYNAMIC_BATCH_SIZE,
-    DYNAMIC_IMAGE_SIZE,
-    DYNAMIC_DIMS,
-    INSERT_OP_FILE,
-    PRECISION_MODE,
-    EXEC_DISABLE_REUSED_MEMORY,
-    AUTO_TUNE_MODE,
-    OUTPUT_TYPE,
-    OUT_NODES,
-    INPUT_FP16_NODES,
-    LOG_LEVEL
-  };
-  // for interface: aclgrphBuildInitialize
-  const std::set<std::string> global_options = {
-    CORE_TYPE,
-    SOC_VERSION,
-    BUFFER_OPTIMIZE,
-    ENABLE_COMPRESS_WEIGHT,
-    COMPRESS_WEIGHT_CONF,
-    PRECISION_MODE,
-    EXEC_DISABLE_REUSED_MEMORY,
-    AUTO_TUNE_MODE,
-    ENABLE_SINGLE_STREAM,
-    AICORE_NUM,
-    FUSION_SWITCH_FILE,
-    ENABLE_SMALL_CHANNEL,
-    OP_SELECT_IMPL_MODE,
-    OPTYPELIST_FOR_IMPLMODE
-  };
-}
+// for interface: aclgrphBuildModel
+const std::set<std::string> ir_builder_suppported_options = {
+  INPUT_FORMAT,       INPUT_SHAPE,        OP_NAME_MAP,
+  DYNAMIC_BATCH_SIZE, DYNAMIC_IMAGE_SIZE, DYNAMIC_DIMS,
+  INSERT_OP_FILE,     PRECISION_MODE,     EXEC_DISABLE_REUSED_MEMORY,
+  AUTO_TUNE_MODE,     OUTPUT_TYPE,        OUT_NODES,
+  INPUT_FP16_NODES,   LOG_LEVEL};
+// for interface: aclgrphBuildInitialize
+const std::set<std::string> global_options = {CORE_TYPE,
+                                              SOC_VERSION,
+                                              BUFFER_OPTIMIZE,
+                                              ENABLE_COMPRESS_WEIGHT,
+                                              COMPRESS_WEIGHT_CONF,
+                                              PRECISION_MODE,
+                                              EXEC_DISABLE_REUSED_MEMORY,
+                                              AUTO_TUNE_MODE,
+                                              ENABLE_SINGLE_STREAM,
+                                              AICORE_NUM,
+                                              FUSION_SWITCH_FILE,
+                                              ENABLE_SMALL_CHANNEL,
+                                              OP_SELECT_IMPL_MODE,
+                                              OPTYPELIST_FOR_IMPLMODE};
+}  // namespace ir_option
 }  // namespace ge
 
 #endif  // INC_EXTERNAL_GE_GE_API_TYPES_H_

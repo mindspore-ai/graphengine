@@ -58,4 +58,4 @@ class HybridDavinciModel {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // HYBRID_HYBRID_DAVINCI_MODEL_H_
+#endif  // HYBRID_HYBRID_DAVINCI_MODEL_H_

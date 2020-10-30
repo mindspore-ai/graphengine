@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,8 +57,7 @@ class InnerSession {
   Status GetVariable(const std::string &name, Tensor &val);
 
   Status RegisterCallBackFunc(
-      const std::string &key,
-      const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+    const std::string &key, const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
   const GraphManager &getGraphManagerObj() const;
 
@@ -67,8 +66,6 @@ class InnerSession {
   Status AddDumpProperties(const DumpProperties &dump_properties);
 
   Status RemoveDumpProperties();
-
-  void SetRtSocVersion();
 
  private:
   bool init_flag_;

@@ -105,9 +105,9 @@ Status MemoryAllocator::FreeMemory(const string &memory_key, uint32_t device_id)
   if (it == memory_base_map_.end()) {
     if (mem_malloced_) {
       GELOGW(
-          "MemoryAllocator::FreeMemory failed,"
-          " memory_key[%s] was not exist, device_id = %u.",
-          memory_key.c_str(), device_id);
+        "MemoryAllocator::FreeMemory failed,"
+        " memory_key[%s] was not exist, device_id = %u.",
+        memory_key.c_str(), device_id);
     }
     return ge::INTERNAL_ERROR;
   }
@@ -139,9 +139,9 @@ uint8_t *MemoryAllocator::GetMemoryAddr(const string &memory_key, uint32_t devic
   auto it = memory_base_map_.find(memory_key);
   if (it == memory_base_map_.end()) {
     GELOGW(
-        "MemoryAllocator::GetMemoryAddr failed,"
-        " memory_key[%s] was not exist, device_id = %u.",
-        memory_key.c_str(), device_id);
+      "MemoryAllocator::GetMemoryAddr failed,"
+      " memory_key[%s] was not exist, device_id = %u.",
+      memory_key.c_str(), device_id);
     return nullptr;
   }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,9 @@ GraphOptimize::GraphOptimize()
     : optimize_type_(domi::FrameworkType::TENSORFLOW),
       cal_config_(""),
       insert_op_config_(""),
-      core_type_("") {}
+      parse_out_node_(""),
+      core_type_(""),
+      graph_context_(nullptr) {}
 
 void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
@@ -101,12 +103,11 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
       return SUCCESS;
     }
 
-    if (build_mode_ == BUILD_MODE_TUNING &&
-      (build_step_ == BUILD_STEP_AFTER_UB_MATCH || build_step_ == BUILD_STEP_AFTER_MERGE)) {
+    if (build_mode_ == BUILD_MODE_TUNING && build_step_ == BUILD_STEP_AFTER_UB_MATCH) {
       for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
         Status ret = (*iter)->OptimizeFusedGraphAfterGraphSlice(*(compute_graph));
         if (ret != SUCCESS) {
-          GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphAfterGraphSlice]: graph optimize failed, ret:%d", ret);
+          GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphStage2]: graph optimize failed, ret:%d", ret);
           return ret;
         }
       }
@@ -246,8 +247,8 @@ Status GraphOptimize::OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_gr
          graph_optimizer.size());
   Status ret = SUCCESS;
   string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
-  GELOGI("[OptimizeGraphBeforeBuildForRts]: engine type will exclude: %s, core_type_: %s",
-         exclude_core_Type.c_str(), core_type_.c_str());
+  GELOGI("[OptimizeGraphBeforeBuildForRts]: engine type will exclude: %s, core_type_: %s", exclude_core_Type.c_str(),
+         core_type_.c_str());
   if (graph_optimizer.size() != 0) {
     for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
       if (iter->first == exclude_core_Type || iter->second == nullptr) {
@@ -319,20 +320,20 @@ Status GraphOptimize::IdentifyReference(ComputeGraphPtr &compute_graph) {
         auto input_desc = op_desc->GetInputDesc(name_index.second);
         input_desc.SetRefPortByIndex({name_index.second});
         op_desc->UpdateInputDesc(name_index.second, input_desc);
-        GELOGI("SetRefPort: set op[%s] input desc[%u-%s] ref.",
-               op_desc->GetName().c_str(), name_index.second, name_index.first.c_str());
+        GELOGI("SetRefPort: set op[%s] input desc[%u-%s] ref.", op_desc->GetName().c_str(), name_index.second,
+               name_index.first.c_str());
         auto output_desc = op_desc->GetOutputDesc(static_cast<uint32_t>(out_index));
         output_desc.SetRefPortByIndex({name_index.second});
         op_desc->UpdateOutputDesc(static_cast<uint32_t>(out_index), output_desc);
-        GELOGI("SetRefPort: set op[%s] output desc[%u-%s] ref.",
-               op_desc->GetName().c_str(), out_index, name_index.first.c_str());
+        GELOGI("SetRefPort: set op[%s] output desc[%u-%s] ref.", op_desc->GetName().c_str(), out_index,
+               name_index.first.c_str());
         is_ref = true;
       }
     }
     if (is_ref) {
       AttrUtils::SetBool(op_desc, ATTR_NAME_REFERENCE, is_ref);
-      GELOGI("param [node] %s is reference node, set attribute %s to be true.",
-             node->GetName().c_str(), ATTR_NAME_REFERENCE.c_str());
+      GELOGI("param [node] %s is reference node, set attribute %s to be true.", node->GetName().c_str(),
+             ATTR_NAME_REFERENCE.c_str());
     }
   }
   return SUCCESS;

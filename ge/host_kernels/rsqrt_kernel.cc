@@ -1,5 +1,5 @@
-﻿/**
- * Copyright 2020 Huawei Technologies Co., Ltd
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "host_kernels/rsqrt_kernel.h"
 
 #include <cfloat>
@@ -27,7 +28,6 @@
 #include "host_kernels/kernel_utils.h"
 #include "inc/kernel_factory.h"
 #include "common/math/math_util.h"
-#include "framework/common/types.h"
 
 namespace ge {
 namespace {
@@ -51,13 +51,13 @@ Status ZeroCheck(T x, const DataType &data_type) {
   }
   return SUCCESS;
 }
-#define SET_RSQRT_CASE(DTYPE, TYPE)                                 \
-  case (DTYPE):                                                     \
-    ret = RsqrtKernel::RsqrtCompute<TYPE>(input_ptr, output_ptr);   \
+#define SET_RSQRT_CASE(DTYPE, TYPE)                               \
+  case (DTYPE):                                                   \
+    ret = RsqrtKernel::RsqrtCompute<TYPE>(input_ptr, output_ptr); \
     break;
 }  // namespace
 
-template<typename T>
+template <typename T>
 Status RsqrtKernel::RsqrtCompute(ConstGeTensorPtr &input_tensor_ptr, GeTensorPtr &output_tensor_ptr) {
   GE_CHECK_NOTNULL(input_tensor_ptr);
   GE_CHECK_NOTNULL(output_tensor_ptr);
@@ -65,12 +65,12 @@ Status RsqrtKernel::RsqrtCompute(ConstGeTensorPtr &input_tensor_ptr, GeTensorPtr
   size_t data_count = data_size / sizeof(T);
   auto data_type = input_tensor_ptr->GetTensorDesc().GetDataType();
   if (data_count > 0) {
-    unique_ptr<T[]> buf(new(std::nothrow) T[data_count]());
+    unique_ptr<T[]> buf(new (std::nothrow) T[data_count]());
     if (buf == nullptr) {
       GELOGW("New buf failed");
       return NOT_CHANGED;
     }
-    auto ptr = const_cast<T * >(reinterpret_cast<const T *>(input_tensor_ptr->GetData().data()));
+    auto ptr = const_cast<T *>(reinterpret_cast<const T *>(input_tensor_ptr->GetData().data()));
     for (size_t i = 0; i < data_count; i++) {
       if (ZeroCheck(*(ptr + i), data_type) != SUCCESS) {
         GELOGW("Rsqrt: The input data can not less than or equal to zero, rsqrt folding failed.");
@@ -78,18 +78,18 @@ Status RsqrtKernel::RsqrtCompute(ConstGeTensorPtr &input_tensor_ptr, GeTensorPtr
       }
       switch (data_type) {
         case DT_FLOAT16: {
-          double val = static_cast<double>(*(reinterpret_cast<const fp16_t*>(input_tensor_ptr->GetData().data()) + i));
+          double val = static_cast<double>(*(reinterpret_cast<const fp16_t *>(input_tensor_ptr->GetData().data()) + i));
           double drSqrt = 1.0 / std::sqrt(val);
           buf[i] = drSqrt;
           break;
         }
-        case DT_FLOAT:{
-          float denominator = std::sqrt(*(reinterpret_cast<const float*>(input_tensor_ptr->GetData().data()) + i));
-          buf[i] = static_cast<float >(1 / denominator);
+        case DT_FLOAT: {
+          float denominator = std::sqrt(*(reinterpret_cast<const float *>(input_tensor_ptr->GetData().data()) + i));
+          buf[i] = static_cast<float>(1 / denominator);
           break;
         }
         case DT_DOUBLE: {
-          double denominator = std::sqrt(*(reinterpret_cast<const double*>(input_tensor_ptr->GetData().data()) + i));
+          double denominator = std::sqrt(*(reinterpret_cast<const double *>(input_tensor_ptr->GetData().data()) + i));
           buf[i] = static_cast<double>(1 / denominator);
           break;
         }
@@ -99,7 +99,8 @@ Status RsqrtKernel::RsqrtCompute(ConstGeTensorPtr &input_tensor_ptr, GeTensorPtr
       }
     }
     GE_IF_BOOL_EXEC(output_tensor_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()), data_size) != GRAPH_SUCCESS,
-                    GELOGW("Set data failed");  return NOT_CHANGED);
+                    GELOGW("Set data failed");
+                    return NOT_CHANGED);
     output_tensor_ptr->MutableTensorDesc().SetDataType(data_type);
     output_tensor_ptr->MutableTensorDesc().SetShape(input_tensor_ptr->GetTensorDesc().GetShape());
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ class GreaterKernel : public Kernel {
   Status GreaterCheck(const std::vector<ConstGeTensorPtr> &input);
 
   const std::set<DataType> greater_supported_type = {
-      DT_FLOAT, DT_FLOAT16, DT_INT8,   DT_INT16,  DT_UINT16, DT_UINT8,
-      DT_INT32, DT_INT64,   DT_UINT32, DT_UINT64, DT_BOOL,   DT_DOUBLE,
+    DT_FLOAT, DT_FLOAT16, DT_INT8,   DT_INT16,  DT_UINT16, DT_UINT8,
+    DT_INT32, DT_INT64,   DT_UINT32, DT_UINT64, DT_BOOL,   DT_DOUBLE,
   };
 };
 }  // namespace ge

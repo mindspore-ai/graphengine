@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ Status EmptyKernel::EmptyCheck(const OpDescPtr &op_desc_ptr, const std::vector<C
   }
   // check input size
   bool size_check =
-      ((op_desc_ptr->GetAllInputsDesc().size() != kEmptyInputsSize) || (input.size() != kEmptyInputsSize) ||
-       (op_desc_ptr->GetAllOutputsDesc().size() != kEmptyOutputsSize));
+    ((op_desc_ptr->GetAllInputsDesc().size() != kEmptyInputsSize) || (input.size() != kEmptyInputsSize) ||
+     (op_desc_ptr->GetAllOutputsDesc().size() != kEmptyOutputsSize));
   if (size_check) {
     GELOGW("Input/Output size error. InDesc size:%zu, OutDesc size:%zu, in size:%zu ",
            op_desc_ptr->GetAllInputsDesc().size(), op_desc_ptr->GetAllOutputsDesc().size(), input.size());
@@ -58,8 +58,7 @@ Status EmptyKernel::EmptyCheck(const OpDescPtr &op_desc_ptr, const std::vector<C
   ConstGeTensorPtr shape = input.at(kEmptyFirstInput);
   // Check if the dimension is 1-D
   if (shape->GetTensorDesc().GetShape().GetDimNum() > kShapeMaxDims) {
-    GELOGW("Check if the dimension is 1-D failed, dims:%zu",
-           shape->GetTensorDesc().GetShape().GetDimNum());
+    GELOGW("Check if the dimension is 1-D failed, dims:%zu", shape->GetTensorDesc().GetShape().GetDimNum());
     return PARAM_INVALID;
   }
   return SUCCESS;

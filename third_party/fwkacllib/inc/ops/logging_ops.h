@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file logging_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_LOGGING_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_LOGGING_OPS_H_
+#ifndef GE_OP_LOGGING_OPS_H
+#define GE_OP_LOGGING_OPS_H
 
 #include "graph/operator.h"
 #include "graph/operator_reg.h"
@@ -113,4 +113,4 @@ REG_OP(PrintV2)
   .OP_END_FACTORY_REG(PrintV2)
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_LOGGING_OPS_H_
+#endif  // GE_OP_LOGGING_OPS_H

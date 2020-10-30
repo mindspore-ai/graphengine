@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,19 @@
 namespace ge {
 class MemcpyAsyncTaskInfo : public TaskInfo {
  public:
-  MemcpyAsyncTaskInfo() : dst_(nullptr), dst_max_(0), src_(nullptr), count_(0), kind_(RT_MEMCPY_RESERVED) {}
+  MemcpyAsyncTaskInfo() : dst_(nullptr), dst_max_(0), src_(nullptr), count_(0), kind_(0), memory_4g_(nullptr) {}
 
   ~MemcpyAsyncTaskInfo() override {
     src_ = nullptr;
     dst_ = nullptr;
+
+    if (memory_4g_ != nullptr) {
+      rtError_t ret = rtFree(memory_4g_);
+      if (ret != RT_ERROR_NONE) {
+        GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", ret);
+      }
+      memory_4g_ = nullptr;
+    }
   }
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
@@ -39,6 +47,7 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
   Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
  private:
+  Status AllocTsMemoryForMemcpy(const OpDescPtr &op_desc, DavinciModel *davinci_model);
   uint8_t *dst_;
   uint64_t dst_max_;
   uint8_t *src_;
@@ -46,7 +55,8 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
   uint32_t kind_;
   DavinciModel *davinci_model_ = nullptr;
   uint32_t args_offset_ = 0;
-  domi::MemcpyAsyncDef memcpy_async_;
+  domi::MemcpyAsyncDef memcpy_async;
+  void *memory_4g_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MEMCPY_ASYNC_TASK_INFO_H_

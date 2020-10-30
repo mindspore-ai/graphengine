@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,7 +130,7 @@ Status SsdPriorboxKernel::GetPriorListParam(const OpDescPtr &op_desc, vector<flo
   for (size_t i = 0; i < aspect_ratio_list.size(); i++) {
     float ar = aspect_ratio_list.at(i);
     bool already_exist =
-        std::any_of(aspect_ratios.begin(), aspect_ratios.end(), [&ar](float x) { return fabs(ar - x) < kMinistBias; });
+      std::any_of(aspect_ratios.begin(), aspect_ratios.end(), [&ar](float x) { return fabs(ar - x) < kMinistBias; });
     if (!already_exist) {
       aspect_ratios.push_back(ar);
       if (flip) {
@@ -199,7 +199,7 @@ Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint aspect_ratios_size, uint mi
     return PARAM_INVALID;
   }
   num_priors = static_cast<int>(tmp_value);
-  
+
   if (ge::CheckIntMulOverflow(layer_width, layer_height) != SUCCESS) {
     GELOGW("Failed to get list param.");
     return PARAM_INVALID;

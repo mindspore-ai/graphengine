@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -612,295 +612,268 @@ inline Status CheckInt32DivOverflow(int32_t a, int32_t b) {
   return SUCCESS;
 }
 
-#define FMK_INT_ADDCHECK(a, b)                                                                    \
-  if (ge::CheckIntAddOverflow((a), (b)) != SUCCESS) {                                             \
-    GELOGW("Int %d and %d addition can result in overflow!", static_cast<int>(a), \
-           static_cast<int>(b));                                                                  \
-    return INTERNAL_ERROR;                                                                        \
-  }
-
-#define FMK_INT8_ADDCHECK(a, b)                                                                       \
-  if (ge::CheckInt8AddOverflow((a), (b)) != SUCCESS) {                                                \
-    GELOGW("Int8 %d and %d addition can result in overflow!", static_cast<int8_t>(a),                 \
-           static_cast<int8_t>(b));                                                                   \
-    return INTERNAL_ERROR;                                                                            \
-  }
-
-#define FMK_INT16_ADDCHECK(a, b)                                                                        \
-  if (ge::CheckInt16AddOverflow((a), (b)) != SUCCESS) {                                                 \
-    GELOGW("Int16 %d and %d addition can result in overflow!", static_cast<int16_t>(a), \
-           static_cast<int16_t>(b));                                                                    \
+#define FMK_INT_ADDCHECK(a, b)                                                                          \
+  if (ge::CheckIntAddOverflow((a), (b)) != SUCCESS) {                                                   \
+    GELOGW("Int %d and %d addition can result in overflow!", static_cast<int>(a), static_cast<int>(b)); \
     return INTERNAL_ERROR;                                                                              \
   }
 
-#define FMK_INT32_ADDCHECK(a, b)                                                                        \
-  if (ge::CheckInt32AddOverflow((a), (b)) != SUCCESS) {                                                 \
-    GELOGW("Int32 %d and %d addition can result in overflow!", static_cast<int32_t>(a), \
-           static_cast<int32_t>(b));                                                                    \
-    return INTERNAL_ERROR;                                                                              \
-  }
-
-#define FMK_INT64_ADDCHECK(a, b)                                                                          \
-  if (ge::CheckInt64AddOverflow((a), (b)) != SUCCESS) {                                                   \
-    GELOGW("Int64 %ld and %ld addition can result in overflow!", static_cast<int64_t>(a), \
-           static_cast<int64_t>(b));                                                                      \
-    return INTERNAL_ERROR;                                                                                \
-  }
-
-#define FMK_UINT8_ADDCHECK(a, b)                                                                        \
-  if (ge::CheckUint8AddOverflow((a), (b)) != SUCCESS) {                                                 \
-    GELOGW("Uint8 %u and %u addition can result in overflow!", static_cast<uint8_t>(a), \
-           static_cast<uint8_t>(b));                                                                    \
-    return INTERNAL_ERROR;                                                                              \
-  }
-
-#define FMK_UINT16_ADDCHECK(a, b)                                                                         \
-  if (ge::CheckUint16AddOverflow((a), (b)) != SUCCESS) {                                                  \
-    GELOGW("UINT16 %u and %u addition can result in overflow!", static_cast<uint16_t>(a), \
-           static_cast<uint16_t>(b));                                                                     \
-    return INTERNAL_ERROR;                                                                                \
-  }
-
-#define FMK_UINT32_ADDCHECK(a, b)                                                                         \
-  if (ge::CheckUint32AddOverflow((a), (b)) != SUCCESS) {                                                  \
-    GELOGW("Uint32 %u and %u addition can result in overflow!", static_cast<uint32_t>(a), \
-           static_cast<uint32_t>(b));                                                                     \
-    return INTERNAL_ERROR;                                                                                \
-  }
-
-#define FMK_UINT64_ADDCHECK(a, b)                                                                           \
-  if (ge::CheckUint64AddOverflow((a), (b)) != SUCCESS) {                                                    \
-    GELOGW("Uint64 %lu and %lu addition can result in overflow!", static_cast<uint64_t>(a), \
-           static_cast<uint64_t>(b));                                                                       \
-    return INTERNAL_ERROR;                                                                                  \
-  }
-
-#define FMK_FP16_ADDCHECK(a, b)                                                                      \
-  if (ge::CheckFp16AddOverflow((a), (b)) != SUCCESS) {                                               \
-    GELOGW("Fp16 %f and %f addition can result in overflow!", static_cast<float>(a), \
-           static_cast<float>(b));                                                                   \
-    return INTERNAL_ERROR;                                                                           \
-  }
-
-#define FMK_FLOAT_ADDCHECK(a, b)                                                                      \
-  if (ge::CheckFloatAddOverflow((a), (b)) != SUCCESS) {                                               \
-    GELOGW("Float %f and %f addition can result in overflow!", static_cast<float>(a), \
-           static_cast<float>(b));                                                                    \
-    return INTERNAL_ERROR;                                                                            \
-  }
-
-#define FMK_DOUBLE_ADDCHECK(a, b)                                                                         \
-  if (ge::CheckDoubleAddOverflow((a), (b)) != SUCCESS) {                                                  \
-    GELOGW("Double %lf and %lf addition can result in overflow!", static_cast<double>(a), \
-           static_cast<double>(b));                                                                       \
-    return INTERNAL_ERROR;                                                                                \
-  }
-
-#define FMK_INT_SUBCHECK(a, b)                                                                       \
-  if (ge::CheckIntSubOverflow((a), (b)) != SUCCESS) {                                                \
-    GELOGW("Int %d and %d subtraction can result in overflow!", static_cast<int>(a), \
-           static_cast<int>(b));                                                                     \
-    return INTERNAL_ERROR;                                                                           \
-  }
-
-#define FMK_INT8_SUBCHECK(a, b)                                                                          \
-  if (ge::CheckInt8SubOverflow((a), (b)) != SUCCESS) {                                                   \
-    GELOGW("Int8 %d and %d subtraction can result in overflow!", static_cast<int8_t>(a), \
-           static_cast<int8_t>(b));                                                                      \
-    return INTERNAL_ERROR;                                                                               \
-  }
-
-#define FMK_INT16_SUBCHECK(a, b)                                                                           \
-  if (ge::CheckInt16SubOverflow((a), (b)) != SUCCESS) {                                                    \
-    GELOGW("Int16 %d and %d subtraction can result in overflow!", static_cast<int16_t>(a), \
-           static_cast<int16_t>(b));                                                                       \
-    return INTERNAL_ERROR;                                                                                 \
-  }
-
-#define FMK_INT32_SUBCHECK(a, b)                                                                           \
-  if (ge::CheckInt32SubOverflow((a), (b)) != SUCCESS) {                                                    \
-    GELOGW("Int32 %d and %d subtraction can result in overflow!", static_cast<int32_t>(a), \
-           static_cast<int32_t>(b));                                                                       \
-    return INTERNAL_ERROR;                                                                                 \
-  }
-
-#define FMK_INT64_SUBCHECK(a, b)                                                                             \
-  if (ge::CheckInt64SubOverflow((a), (b)) != SUCCESS) {                                                      \
-    GELOGW("Int64 %ld and %ld subtraction can result in overflow!", static_cast<int64_t>(a), \
-           static_cast<int64_t>(b));                                                                         \
-    return INTERNAL_ERROR;                                                                                   \
-  }
-
-#define FMK_UINT8_SUBCHECK(a, b)                                                                           \
-  if (ge::CheckUint8SubOverflow((a), (b)) != SUCCESS) {                                                    \
-    GELOGW("Uint8 %u and %u subtraction can result in overflow!", static_cast<uint8_t>(a), \
-           static_cast<uint8_t>(b));                                                                       \
-    return INTERNAL_ERROR;                                                                                 \
-  }
-
-#define FMK_UINT16_SUBCHECK(a, b)                                                                            \
-  if (ge::CheckUint16SubOverflow((a), (b)) != SUCCESS) {                                                     \
-    GELOGW("Uint16 %u and %u subtraction can result in overflow!", static_cast<uint16_t>(a), \
-           static_cast<uint16_t>(b));                                                                        \
-    return INTERNAL_ERROR;                                                                                   \
-  }
-
-#define FMK_UINT32_SUBCHECK(a, b)                                                                            \
-  if (ge::CheckUint32SubOverflow((a), (b)) != SUCCESS) {                                                     \
-    GELOGW("Uint32 %u and %u subtraction can result in overflow!", static_cast<uint32_t>(a), \
-           static_cast<uint32_t>(b));                                                                        \
-    return INTERNAL_ERROR;                                                                                   \
-  }
-
-#define FMK_UINT64_SUBCHECK(a, b)                                                                              \
-  if (ge::CheckUint64SubOverflow((a), (b)) != SUCCESS) {                                                       \
-    GELOGW("Uint64 %lu and %lu subtraction can result in overflow!", static_cast<uint64_t>(a), \
-           static_cast<uint64_t>(b));                                                                          \
+#define FMK_INT8_ADDCHECK(a, b)                                                                                \
+  if (ge::CheckInt8AddOverflow((a), (b)) != SUCCESS) {                                                         \
+    GELOGW("Int8 %d and %d addition can result in overflow!", static_cast<int8_t>(a), static_cast<int8_t>(b)); \
     return INTERNAL_ERROR;                                                                                     \
   }
 
-#define FMK_FP16_SUBCHECK(a, b)                                                                         \
-  if (ge::CheckFp16SubOverflow((a), (b)) != SUCCESS) {                                                  \
-    GELOGW("Fp16 %f and %f subtraction can result in overflow!", static_cast<float>(a), \
-           static_cast<float>(b));                                                                      \
-    return INTERNAL_ERROR;                                                                              \
-  }
-
-#define FMK_FLOAT_SUBCHECK(a, b)                                                                         \
-  if (ge::CheckFloatSubOverflow((a), (b)) != SUCCESS) {                                                  \
-    GELOGW("Float %f and %f subtraction can result in overflow!", static_cast<float>(a), \
-           static_cast<float>(b));                                                                       \
-    return INTERNAL_ERROR;                                                                               \
-  }
-
-#define FMK_DOUBLE_SUBCHECK(a, b)                                                                            \
-  if (ge::CheckDoubleSubOverflow((a), (b)) != SUCCESS) {                                                     \
-    GELOGW("Double %lf and %lf subtraction can result in overflow!", static_cast<double>(a), \
-           static_cast<double>(b));                                                                          \
-    return INTERNAL_ERROR;                                                                                   \
-  }
-
-#define FMK_INT_MULCHECK(a, b)                                                                          \
-  if (ge::CheckIntMulOverflow((a), (b)) != SUCCESS) {                                                   \
-    GELOGW("Int %d and %d multiplication can result in overflow!", static_cast<int>(a), \
-           static_cast<int>(b));                                                                        \
-    return INTERNAL_ERROR;                                                                              \
-  }
-
-#define FMK_INT8_MULCHECK(a, b)                                                                             \
-  if (ge::CheckInt8MulOverflow((a), (b)) != SUCCESS) {                                                      \
-    GELOGW("Int8 %d and %d multiplication can result in overflow!", static_cast<int8_t>(a), \
-           static_cast<int8_t>(b));                                                                         \
-    return INTERNAL_ERROR;                                                                                  \
-  }
-
-#define FMK_INT16_MULCHECK(a, b)                                                                              \
-  if (ge::CheckInt16MulOverflow((a), (b)) != SUCCESS) {                                                       \
-    GELOGW("Int16 %d and %d multiplication can result in overflow!", static_cast<int16_t>(a), \
-           static_cast<int16_t>(b));                                                                          \
-    return INTERNAL_ERROR;                                                                                    \
-  }
-
-#define FMK_INT32_MULCHECK(a, b)                                                                              \
-  if (ge::CheckInt32MulOverflow((a), (b)) != SUCCESS) {                                                       \
-    GELOGW("Int32 %d and %d multiplication can result in overflow!", static_cast<int32_t>(a), \
-           static_cast<int32_t>(b));                                                                          \
-    return INTERNAL_ERROR;                                                                                    \
-  }
-
-#define FMK_INT64_MULCHECK(a, b)                                                                                \
-  if (ge::Int64MulCheckOverflow((a), (b)) != SUCCESS) {                                                         \
-    GELOGW("Int64 %ld and %ld multiplication can result in overflow!", static_cast<int64_t>(a), \
-           static_cast<int64_t>(b));                                                                            \
-    return INTERNAL_ERROR;                                                                                      \
-  }
-
-#define FMK_UINT8_MULCHECK(a, b)                                                                              \
-  if (ge::CheckUint8MulOverflow((a), (b)) != SUCCESS) {                                                       \
-    GELOGW("Uint8 %u and %u multiplication can result in overflow!", static_cast<uint8_t>(a), \
-           static_cast<uint8_t>(b));                                                                          \
-    return INTERNAL_ERROR;                                                                                    \
-  }
-
-#define FMK_UINT16_MULCHECK(a, b)                                                                               \
-  if (ge::CheckUint16MulOverflow((a), (b)) != SUCCESS) {                                                        \
-    GELOGW("Uint16 %u and %u multiplication can result in overflow!", static_cast<uint16_t>(a), \
-           static_cast<uint16_t>(b));                                                                           \
-    return INTERNAL_ERROR;                                                                                      \
-  }
-
-#define FMK_UINT32_MULCHECK(a, b)                                                                               \
-  if (ge::CheckUint32MulOverflow((a), (b)) != SUCCESS) {                                                        \
-    GELOGW("Uint32 %u and %u multiplication can result in overflow!", static_cast<uint32_t>(a), \
-           static_cast<uint32_t>(b));                                                                           \
-    return INTERNAL_ERROR;                                                                                      \
-  }
-
-#define FMK_UINT64_MULCHECK(a, b)                                                                                 \
-  if (ge::CheckUint64MulOverflow((a), (b)) != SUCCESS) {                                                          \
-    GELOGW("Uint64 %lu and %lu multiplication can result in overflow!", static_cast<uint64_t>(a),               \
-           static_cast<uint64_t>(b));                                                                             \
+#define FMK_INT16_ADDCHECK(a, b)                                                                                  \
+  if (ge::CheckInt16AddOverflow((a), (b)) != SUCCESS) {                                                           \
+    GELOGW("Int16 %d and %d addition can result in overflow!", static_cast<int16_t>(a), static_cast<int16_t>(b)); \
     return INTERNAL_ERROR;                                                                                        \
   }
 
-#define FMK_FP16_MULCHECK(a, b)                                                                            \
-  if (ge::CheckFp16MulOverflow((a), (b)) != SUCCESS) {                                                     \
-    GELOGW("Fp16 %f and %f multiplication can result in overflow!", static_cast<float>(a), \
-           static_cast<float>(b));                                                                         \
+#define FMK_INT32_ADDCHECK(a, b)                                                                                  \
+  if (ge::CheckInt32AddOverflow((a), (b)) != SUCCESS) {                                                           \
+    GELOGW("Int32 %d and %d addition can result in overflow!", static_cast<int32_t>(a), static_cast<int32_t>(b)); \
+    return INTERNAL_ERROR;                                                                                        \
+  }
+
+#define FMK_INT64_ADDCHECK(a, b)                                                                                    \
+  if (ge::CheckInt64AddOverflow((a), (b)) != SUCCESS) {                                                             \
+    GELOGW("Int64 %ld and %ld addition can result in overflow!", static_cast<int64_t>(a), static_cast<int64_t>(b)); \
+    return INTERNAL_ERROR;                                                                                          \
+  }
+
+#define FMK_UINT8_ADDCHECK(a, b)                                                                                  \
+  if (ge::CheckUint8AddOverflow((a), (b)) != SUCCESS) {                                                           \
+    GELOGW("Uint8 %u and %u addition can result in overflow!", static_cast<uint8_t>(a), static_cast<uint8_t>(b)); \
+    return INTERNAL_ERROR;                                                                                        \
+  }
+
+#define FMK_UINT16_ADDCHECK(a, b)                                                                                    \
+  if (ge::CheckUint16AddOverflow((a), (b)) != SUCCESS) {                                                             \
+    GELOGW("UINT16 %u and %u addition can result in overflow!", static_cast<uint16_t>(a), static_cast<uint16_t>(b)); \
+    return INTERNAL_ERROR;                                                                                           \
+  }
+
+#define FMK_UINT32_ADDCHECK(a, b)                                                                                    \
+  if (ge::CheckUint32AddOverflow((a), (b)) != SUCCESS) {                                                             \
+    GELOGW("Uint32 %u and %u addition can result in overflow!", static_cast<uint32_t>(a), static_cast<uint32_t>(b)); \
+    return INTERNAL_ERROR;                                                                                           \
+  }
+
+#define FMK_UINT64_ADDCHECK(a, b)                                                                                      \
+  if (ge::CheckUint64AddOverflow((a), (b)) != SUCCESS) {                                                               \
+    GELOGW("Uint64 %lu and %lu addition can result in overflow!", static_cast<uint64_t>(a), static_cast<uint64_t>(b)); \
+    return INTERNAL_ERROR;                                                                                             \
+  }
+
+#define FMK_FP16_ADDCHECK(a, b)                                                                              \
+  if (ge::CheckFp16AddOverflow((a), (b)) != SUCCESS) {                                                       \
+    GELOGW("Fp16 %f and %f addition can result in overflow!", static_cast<float>(a), static_cast<float>(b)); \
+    return INTERNAL_ERROR;                                                                                   \
+  }
+
+#define FMK_FLOAT_ADDCHECK(a, b)                                                                              \
+  if (ge::CheckFloatAddOverflow((a), (b)) != SUCCESS) {                                                       \
+    GELOGW("Float %f and %f addition can result in overflow!", static_cast<float>(a), static_cast<float>(b)); \
+    return INTERNAL_ERROR;                                                                                    \
+  }
+
+#define FMK_DOUBLE_ADDCHECK(a, b)                                                                                  \
+  if (ge::CheckDoubleAddOverflow((a), (b)) != SUCCESS) {                                                           \
+    GELOGW("Double %lf and %lf addition can result in overflow!", static_cast<double>(a), static_cast<double>(b)); \
+    return INTERNAL_ERROR;                                                                                         \
+  }
+
+#define FMK_INT_SUBCHECK(a, b)                                                                             \
+  if (ge::CheckIntSubOverflow((a), (b)) != SUCCESS) {                                                      \
+    GELOGW("Int %d and %d subtraction can result in overflow!", static_cast<int>(a), static_cast<int>(b)); \
     return INTERNAL_ERROR;                                                                                 \
   }
 
-#define FMK_FLOAT_MULCHECK(a, b)                                                                            \
-  if (ge::CheckFloatMulOverflow((a), (b)) != SUCCESS) {                                                     \
-    GELOGW("Float %f and %f multiplication can result in overflow!", static_cast<float>(a), \
-           static_cast<float>(b));                                                                          \
-    return INTERNAL_ERROR;                                                                                  \
+#define FMK_INT8_SUBCHECK(a, b)                                                                                   \
+  if (ge::CheckInt8SubOverflow((a), (b)) != SUCCESS) {                                                            \
+    GELOGW("Int8 %d and %d subtraction can result in overflow!", static_cast<int8_t>(a), static_cast<int8_t>(b)); \
+    return INTERNAL_ERROR;                                                                                        \
   }
 
-#define FMK_DOUBLE_MULCHECK(a, b)                                                                               \
-  if (ge::CheckDoubleMulOverflow((a), (b)) != SUCCESS) {                                                        \
-    GELOGW("Double %lf and %lf multiplication can result in overflow!", static_cast<double>(a),               \
-           static_cast<double>(b));                                                                             \
+#define FMK_INT16_SUBCHECK(a, b)                                                                                     \
+  if (ge::CheckInt16SubOverflow((a), (b)) != SUCCESS) {                                                              \
+    GELOGW("Int16 %d and %d subtraction can result in overflow!", static_cast<int16_t>(a), static_cast<int16_t>(b)); \
+    return INTERNAL_ERROR;                                                                                           \
+  }
+
+#define FMK_INT32_SUBCHECK(a, b)                                                                                     \
+  if (ge::CheckInt32SubOverflow((a), (b)) != SUCCESS) {                                                              \
+    GELOGW("Int32 %d and %d subtraction can result in overflow!", static_cast<int32_t>(a), static_cast<int32_t>(b)); \
+    return INTERNAL_ERROR;                                                                                           \
+  }
+
+#define FMK_INT64_SUBCHECK(a, b)                                                                                       \
+  if (ge::CheckInt64SubOverflow((a), (b)) != SUCCESS) {                                                                \
+    GELOGW("Int64 %ld and %ld subtraction can result in overflow!", static_cast<int64_t>(a), static_cast<int64_t>(b)); \
+    return INTERNAL_ERROR;                                                                                             \
+  }
+
+#define FMK_UINT8_SUBCHECK(a, b)                                                                                     \
+  if (ge::CheckUint8SubOverflow((a), (b)) != SUCCESS) {                                                              \
+    GELOGW("Uint8 %u and %u subtraction can result in overflow!", static_cast<uint8_t>(a), static_cast<uint8_t>(b)); \
+    return INTERNAL_ERROR;                                                                                           \
+  }
+
+#define FMK_UINT16_SUBCHECK(a, b)                                                            \
+  if (ge::CheckUint16SubOverflow((a), (b)) != SUCCESS) {                                     \
+    GELOGW("Uint16 %u and %u subtraction can result in overflow!", static_cast<uint16_t>(a), \
+           static_cast<uint16_t>(b));                                                        \
+    return INTERNAL_ERROR;                                                                   \
+  }
+
+#define FMK_UINT32_SUBCHECK(a, b)                                                            \
+  if (ge::CheckUint32SubOverflow((a), (b)) != SUCCESS) {                                     \
+    GELOGW("Uint32 %u and %u subtraction can result in overflow!", static_cast<uint32_t>(a), \
+           static_cast<uint32_t>(b));                                                        \
+    return INTERNAL_ERROR;                                                                   \
+  }
+
+#define FMK_UINT64_SUBCHECK(a, b)                                                              \
+  if (ge::CheckUint64SubOverflow((a), (b)) != SUCCESS) {                                       \
+    GELOGW("Uint64 %lu and %lu subtraction can result in overflow!", static_cast<uint64_t>(a), \
+           static_cast<uint64_t>(b));                                                          \
+    return INTERNAL_ERROR;                                                                     \
+  }
+
+#define FMK_FP16_SUBCHECK(a, b)                                                                                 \
+  if (ge::CheckFp16SubOverflow((a), (b)) != SUCCESS) {                                                          \
+    GELOGW("Fp16 %f and %f subtraction can result in overflow!", static_cast<float>(a), static_cast<float>(b)); \
     return INTERNAL_ERROR;                                                                                      \
   }
 
-#define FMK_INT_DIVCHECK(a, b)                                                                    \
-  if (CheckIntDivOverflow((a), (b)) != SUCCESS) {                                                 \
-    GELOGW("Int %d and %d division can result in overflow!", static_cast<int>(a), \
-           static_cast<int>(b));                                                                  \
+#define FMK_FLOAT_SUBCHECK(a, b)                                                                                 \
+  if (ge::CheckFloatSubOverflow((a), (b)) != SUCCESS) {                                                          \
+    GELOGW("Float %f and %f subtraction can result in overflow!", static_cast<float>(a), static_cast<float>(b)); \
+    return INTERNAL_ERROR;                                                                                       \
+  }
+
+#define FMK_DOUBLE_SUBCHECK(a, b)                                                                                     \
+  if (ge::CheckDoubleSubOverflow((a), (b)) != SUCCESS) {                                                              \
+    GELOGW("Double %lf and %lf subtraction can result in overflow!", static_cast<double>(a), static_cast<double>(b)); \
+    return INTERNAL_ERROR;                                                                                            \
+  }
+
+#define FMK_INT_MULCHECK(a, b)                                                                                \
+  if (ge::CheckIntMulOverflow((a), (b)) != SUCCESS) {                                                         \
+    GELOGW("Int %d and %d multiplication can result in overflow!", static_cast<int>(a), static_cast<int>(b)); \
+    return INTERNAL_ERROR;                                                                                    \
+  }
+
+#define FMK_INT8_MULCHECK(a, b)                                                                                      \
+  if (ge::CheckInt8MulOverflow((a), (b)) != SUCCESS) {                                                               \
+    GELOGW("Int8 %d and %d multiplication can result in overflow!", static_cast<int8_t>(a), static_cast<int8_t>(b)); \
+    return INTERNAL_ERROR;                                                                                           \
+  }
+
+#define FMK_INT16_MULCHECK(a, b)                                                              \
+  if (ge::CheckInt16MulOverflow((a), (b)) != SUCCESS) {                                       \
+    GELOGW("Int16 %d and %d multiplication can result in overflow!", static_cast<int16_t>(a), \
+           static_cast<int16_t>(b));                                                          \
+    return INTERNAL_ERROR;                                                                    \
+  }
+
+#define FMK_INT32_MULCHECK(a, b)                                                              \
+  if (ge::CheckInt32MulOverflow((a), (b)) != SUCCESS) {                                       \
+    GELOGW("Int32 %d and %d multiplication can result in overflow!", static_cast<int32_t>(a), \
+           static_cast<int32_t>(b));                                                          \
+    return INTERNAL_ERROR;                                                                    \
+  }
+
+#define FMK_INT64_MULCHECK(a, b)                                                                \
+  if (ge::Int64MulCheckOverflow((a), (b)) != SUCCESS) {                                         \
+    GELOGW("Int64 %ld and %ld multiplication can result in overflow!", static_cast<int64_t>(a), \
+           static_cast<int64_t>(b));                                                            \
+    return INTERNAL_ERROR;                                                                      \
+  }
+
+#define FMK_UINT8_MULCHECK(a, b)                                                              \
+  if (ge::CheckUint8MulOverflow((a), (b)) != SUCCESS) {                                       \
+    GELOGW("Uint8 %u and %u multiplication can result in overflow!", static_cast<uint8_t>(a), \
+           static_cast<uint8_t>(b));                                                          \
+    return INTERNAL_ERROR;                                                                    \
+  }
+
+#define FMK_UINT16_MULCHECK(a, b)                                                               \
+  if (ge::CheckUint16MulOverflow((a), (b)) != SUCCESS) {                                        \
+    GELOGW("Uint16 %u and %u multiplication can result in overflow!", static_cast<uint16_t>(a), \
+           static_cast<uint16_t>(b));                                                           \
+    return INTERNAL_ERROR;                                                                      \
+  }
+
+#define FMK_UINT32_MULCHECK(a, b)                                                               \
+  if (ge::CheckUint32MulOverflow((a), (b)) != SUCCESS) {                                        \
+    GELOGW("Uint32 %u and %u multiplication can result in overflow!", static_cast<uint32_t>(a), \
+           static_cast<uint32_t>(b));                                                           \
+    return INTERNAL_ERROR;                                                                      \
+  }
+
+#define FMK_UINT64_MULCHECK(a, b)                                                                 \
+  if (ge::CheckUint64MulOverflow((a), (b)) != SUCCESS) {                                          \
+    GELOGW("Uint64 %lu and %lu multiplication can result in overflow!", static_cast<uint64_t>(a), \
+           static_cast<uint64_t>(b));                                                             \
     return INTERNAL_ERROR;                                                                        \
   }
 
-#define FMK_INT32_DIVCHECK(a, b)                                                                        \
-  if (CheckInt32DivOverflow((a), (b)) != SUCCESS) {                                                     \
-    GELOGW("Int32 %d and %d division can result in overflow!", static_cast<int32_t>(a), \
-           static_cast<int32_t>(b));                                                                    \
+#define FMK_FP16_MULCHECK(a, b)                                                                                    \
+  if (ge::CheckFp16MulOverflow((a), (b)) != SUCCESS) {                                                             \
+    GELOGW("Fp16 %f and %f multiplication can result in overflow!", static_cast<float>(a), static_cast<float>(b)); \
+    return INTERNAL_ERROR;                                                                                         \
+  }
+
+#define FMK_FLOAT_MULCHECK(a, b)                                                                                    \
+  if (ge::CheckFloatMulOverflow((a), (b)) != SUCCESS) {                                                             \
+    GELOGW("Float %f and %f multiplication can result in overflow!", static_cast<float>(a), static_cast<float>(b)); \
+    return INTERNAL_ERROR;                                                                                          \
+  }
+
+#define FMK_DOUBLE_MULCHECK(a, b)                                                               \
+  if (ge::CheckDoubleMulOverflow((a), (b)) != SUCCESS) {                                        \
+    GELOGW("Double %lf and %lf multiplication can result in overflow!", static_cast<double>(a), \
+           static_cast<double>(b));                                                             \
+    return INTERNAL_ERROR;                                                                      \
+  }
+
+#define FMK_INT_DIVCHECK(a, b)                                                                          \
+  if (CheckIntDivOverflow((a), (b)) != SUCCESS) {                                                       \
+    GELOGW("Int %d and %d division can result in overflow!", static_cast<int>(a), static_cast<int>(b)); \
     return INTERNAL_ERROR;                                                                              \
   }
 
-#define FMK_INT64_UINT32_MULCHECK(a, b)                                                                                \
-  if (ge::CheckInt64Uint32MulOverflow((a), (b)) != SUCCESS) {                                                          \
+#define FMK_INT32_DIVCHECK(a, b)                                                                                  \
+  if (CheckInt32DivOverflow((a), (b)) != SUCCESS) {                                                               \
+    GELOGW("Int32 %d and %d division can result in overflow!", static_cast<int32_t>(a), static_cast<int32_t>(b)); \
+    return INTERNAL_ERROR;                                                                                        \
+  }
+
+#define FMK_INT64_UINT32_MULCHECK(a, b)                                                                \
+  if (ge::CheckInt64Uint32MulOverflow((a), (b)) != SUCCESS) {                                          \
     GELOGW("Int64 %ld and UINT32 %u multiplication can result in overflow!", static_cast<uint32_t>(a), \
-           static_cast<uint32_t>(b));                                                                                  \
-    return INTERNAL_ERROR;                                                                                             \
+           static_cast<uint32_t>(b));                                                                  \
+    return INTERNAL_ERROR;                                                                             \
   }
 
-#define FMK_FP16_ZEROCHECK(a)                                                                                          \
-  if (fabs(a) < DBL_EPSILON || a < 0) {                                                                                \
-    GELOGW("Fp16 %f can not less than or equal to zero! ", a);                                                      \
-    return INTERNAL_ERROR;                                                                                             \
+#define FMK_FP16_ZEROCHECK(a)                                  \
+  if (fabs(a) < DBL_EPSILON || a < 0) {                        \
+    GELOGW("Fp16 %f can not less than or equal to zero! ", a); \
+    return INTERNAL_ERROR;                                     \
   }
 
-#define FMK_FLOAT_ZEROCHECK(a)                                                                                         \
-  if (fabs(a) < FLT_EPSILON || a < 0) {                                                                                \
-    GELOGW("Float %f can not less than or equal to zero! ", a);                                                      \
-    return INTERNAL_ERROR;                                                                                             \
+#define FMK_FLOAT_ZEROCHECK(a)                                  \
+  if (fabs(a) < FLT_EPSILON || a < 0) {                         \
+    GELOGW("Float %f can not less than or equal to zero! ", a); \
+    return INTERNAL_ERROR;                                      \
   }
 
-#define FMK_DOUBLE_ZEROCHECK(a)                                                                                        \
-  if (fabs(a) < DBL_EPSILON || a < 0) {                                                                                \
-    GELOGW("Double %lf can not less than or equal to zero! ", a);                                                    \
-    return INTERNAL_ERROR;                                                                                             \
+#define FMK_DOUBLE_ZEROCHECK(a)                                   \
+  if (fabs(a) < DBL_EPSILON || a < 0) {                           \
+    GELOGW("Double %lf can not less than or equal to zero! ", a); \
+    return INTERNAL_ERROR;                                        \
   }
 }  // namespace ge
 #endif  // GE_COMMON_MATH_MATH_UTIL_H_

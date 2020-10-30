@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,7 @@ Status ReshapeRemovePass::Run(NodePtr &node) {
   bool is_shape_unknown = false;
   if (NodeUtils::GetNodeUnknownShapeStatus(*node, is_shape_unknown) == GRAPH_SUCCESS) {
     if (is_shape_unknown) {
-      GELOGI("op:%s is unknown shape, can not be deleted.",
-             node->GetName().c_str());
+      GELOGI("op:%s is unknown shape, can not be deleted.", node->GetName().c_str());
       return SUCCESS;
     }
   }

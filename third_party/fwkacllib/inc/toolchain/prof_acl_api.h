@@ -152,13 +152,4 @@ MSVP_PROF_API int32_t ProfStopProfiling(const ProfConfig *profStopCfg);
  */
 MSVP_PROF_API int32_t ProfFinalize();
 
-/**
- * @name  ProfGetDataTypeConfig
- * @brief get dataTypeConfig started with of one device
- * @param deviceId          [IN] deviceId to get dataTypeConfig
- * @param dataTypeConfig    [OUT] result get
- * @return ProfErrorCode
- */
-MSVP_PROF_API int32_t ProfGetDataTypeConfig(uint32_t deviceId, uint64_t &dataTypeConfig);
-
 #endif  // MSPROF_ENGINE_PROF_ACL_API_H_

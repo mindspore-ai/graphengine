@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,8 +93,8 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, T *b
   GeTensorDesc output_tensor_desc(out_desc);
   output_tensor_desc.SetShape(out_shape);
 
-  GeTensorPtr output_tensor_ptr = MakeShared<GeTensor>(
-      output_tensor_desc, reinterpret_cast<uint8_t *>(buf), sizeof(T) * len);
+  GeTensorPtr output_tensor_ptr =
+    MakeShared<GeTensor>(output_tensor_desc, reinterpret_cast<uint8_t *>(buf), sizeof(T) * len);
   if (output_tensor_ptr == nullptr) {
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;

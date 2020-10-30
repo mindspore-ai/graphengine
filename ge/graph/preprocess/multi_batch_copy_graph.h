@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GE_GRAPH_PREPROCESS_MULTI_BATCH_COPY_GRAPH_H_
 #define GE_GRAPH_PREPROCESS_MULTI_BATCH_COPY_GRAPH_H_
 #include <map>
@@ -58,9 +59,7 @@ class MultiBatchGraphCopyer {
   void SetDataToDynamicInfo(const map<string, vector<vector<int64_t>>> &designate_shape) {
     data_to_dynamic_info_ = designate_shape;
   }
-  void SetDynamicType(const DynamicType dynamic_type) {
-    dynamic_type_ = dynamic_type;
-  }
+  void SetDynamicType(const DynamicType dynamic_type) { dynamic_type_ = dynamic_type; }
   Status CopyGraph();
 
  private:
@@ -103,7 +102,7 @@ class MultiBatchGraphCopyer {
   Status LinkNodeToMerge(const NodePtr &node, int out_index, const NodePtr &merge);
   Status CopyInDataEdges(const NodePtr &origin_node, int batch_num, const NodePtr &copyed_node);
   Status CopyInControlEdges(const NodePtr &node, int batch_num, const NodePtr &copyed_node);
-  Status CheckAndParseDynamicData();
+  Status UpdateDataToDynamicInfo(const NodePtr &node);
   bool IsInBatchBranch(const NodePtr &node);
   NodeStatus GetNodeStatus(const NodePtr &node) { return origin_nodes_status_[node.get()]; };
   Status CheckCopyResult(const std::vector<NodePtr> &start_nodes);

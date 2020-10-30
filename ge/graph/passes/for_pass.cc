@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,17 +28,17 @@
 #include "graph/utils/op_desc_utils.h"
 
 namespace {
-  const uint32_t kWhileIInputIndex = 0;
-  const uint32_t kWhileAbsDeltaInputIndex = 1;
-  const uint32_t kWhileRangeInputIndex = 2;
-  const uint32_t kWhileStartInputIndex = 3;
-  const uint32_t kWhileDeltaInputIndex = 4;
-  const uint32_t kWhileDataInputIndex = 5;
-  const uint32_t kSubgraphLoopVarInputIndex = 0;
-  const uint32_t kSubgraphInputIndex = 1;
-  const uint32_t kWhileOutputIndex = 5;
-  const std::string kAbs = "Abs";
-}
+const uint32_t kWhileIInputIndex = 0;
+const uint32_t kWhileAbsDeltaInputIndex = 1;
+const uint32_t kWhileRangeInputIndex = 2;
+const uint32_t kWhileStartInputIndex = 3;
+const uint32_t kWhileDeltaInputIndex = 4;
+const uint32_t kWhileDataInputIndex = 5;
+const uint32_t kSubgraphLoopVarInputIndex = 0;
+const uint32_t kSubgraphInputIndex = 1;
+const uint32_t kWhileOutputIndex = 5;
+const std::string kAbs = "Abs";
+}  // namespace
 
 namespace ge {
 Status ForPass::Run(NodePtr &node) {
@@ -54,12 +54,12 @@ Status ForPass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(root_graph);
 
   ForInfo for_info;
-  GE_CHK_STATUS_RET(BuildForInfo(root_graph, node, for_info),
-                    "Build ForInfo failed, node:%s.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(BuildForInfo(root_graph, node, for_info), "Build ForInfo failed, node:%s.",
+                    node->GetName().c_str());
 
   WhileInfo while_info;
-  GE_CHK_STATUS_RET(TranWhileInfo(graph, for_info, while_info),
-                    "Transfer WhileInfo from ForInfo failed, node:%s.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(TranWhileInfo(graph, for_info, while_info), "Transfer WhileInfo from ForInfo failed, node:%s.",
+                    node->GetName().c_str());
 
   ComputeGraphPtr cond_graph = BuildCondGraph(while_info);
   if ((cond_graph == nullptr) || (root_graph->AddSubgraph(cond_graph) != GRAPH_SUCCESS)) {
@@ -73,8 +73,8 @@ Status ForPass::Run(NodePtr &node) {
     return FAILED;
   }
 
-  GE_CHK_STATUS_RET(UpdateForBodyInputMapping(while_info),
-                    "Update InputMapping for for-body-graph failed, node:%s.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(UpdateForBodyInputMapping(while_info), "Update InputMapping for for-body-graph failed, node:%s.",
+                    node->GetName().c_str());
 
   // for node has and only has one subgraph
   GE_CHECK_NOTNULL(node->GetOpDesc());
@@ -190,10 +190,10 @@ Status ForPass::FindInputsAndOutputs(const NodePtr &node, std::vector<OutDataAnc
       GELOGE(FAILED, "FindInputWithIndex %s:%u failed: in_data_anchor is NULL.", node->GetName().c_str(), index);
       return FAILED;
     }
-    GE_IF_BOOL_EXEC(in_data_anchor->GetPeerOutAnchor() == nullptr,
-                    GELOGW("Get null input by index %d from node %s ",
-                           in_data_anchor->GetIdx(), node->GetName().c_str());
-                    continue);
+    GE_IF_BOOL_EXEC(
+      in_data_anchor->GetPeerOutAnchor() == nullptr,
+      GELOGW("Get null input by index %d from node %s ", in_data_anchor->GetIdx(), node->GetName().c_str());
+      continue);
     data_inputs.emplace_back(in_data_anchor->GetPeerOutAnchor());
   }
 
@@ -270,8 +270,8 @@ Status ForPass::TranWhileInfo(const ComputeGraphPtr &graph, const ForInfo &for_i
     return FAILED;
   }
 
-  GELOGI("Transfer for_info to while_info succ, for_node:%s, while_node:%s.",
-         for_name.c_str(), while_info.while_node->GetName().c_str());
+  GELOGI("Transfer for_info to while_info succ, for_node:%s, while_node:%s.", for_name.c_str(),
+         while_info.while_node->GetName().c_str());
   return SUCCESS;
 }
 
@@ -316,8 +316,8 @@ OpDescPtr ForPass::CreateConstDesc(const std::string &name, int32_t value) {
 /// @param [out] abs_delta_input
 /// @return Status
 ///
-Status ForPass::CreateLoopInput(const ComputeGraphPtr &graph, const ForInfo &for_info,
-                                OutDataAnchorPtr &range_input, OutDataAnchorPtr &abs_delta_input) {
+Status ForPass::CreateLoopInput(const ComputeGraphPtr &graph, const ForInfo &for_info, OutDataAnchorPtr &range_input,
+                                OutDataAnchorPtr &abs_delta_input) {
   std::string for_name = for_info.for_node->GetName();
   GELOGD("Begin to create loop_count input, node:%s", for_name.c_str());
 
@@ -332,16 +332,16 @@ Status ForPass::CreateLoopInput(const ComputeGraphPtr &graph, const ForInfo &for
   // i * |delta| < |limit-start|
   PartialGraphBuilder graph_builder;
   graph_builder.SetOwnerGraph(graph)
-               .AddExistNode(for_info.start->GetOwnerNode())
-               .AddExistNode(for_info.limit->GetOwnerNode())
-               .AddExistNode(for_info.delta->GetOwnerNode())
-               .AddNode(CreateOpDesc(sub_name_0, SUB, false))
-               .AddNode(CreateOpDesc(abs_name_0, kAbs, true))
-               .AddNode(CreateOpDesc(abs_name_1, kAbs, true))
-               .AddDataLink(delta->GetOwnerNode()->GetName(), delta->GetIdx(), abs_name_0, 0)
-               .AddDataLink(limit->GetOwnerNode()->GetName(), limit->GetIdx(), sub_name_0, 0)
-               .AddDataLink(start->GetOwnerNode()->GetName(), start->GetIdx(), sub_name_0, 1)
-               .AddDataLink(sub_name_0, 0, abs_name_1, 0);
+    .AddExistNode(for_info.start->GetOwnerNode())
+    .AddExistNode(for_info.limit->GetOwnerNode())
+    .AddExistNode(for_info.delta->GetOwnerNode())
+    .AddNode(CreateOpDesc(sub_name_0, SUB, false))
+    .AddNode(CreateOpDesc(abs_name_0, kAbs, true))
+    .AddNode(CreateOpDesc(abs_name_1, kAbs, true))
+    .AddDataLink(delta->GetOwnerNode()->GetName(), delta->GetIdx(), abs_name_0, 0)
+    .AddDataLink(limit->GetOwnerNode()->GetName(), limit->GetIdx(), sub_name_0, 0)
+    .AddDataLink(start->GetOwnerNode()->GetName(), start->GetIdx(), sub_name_0, 1)
+    .AddDataLink(sub_name_0, 0, abs_name_1, 0);
 
   graphStatus error_code = GRAPH_SUCCESS;
   std::string error_msg;
@@ -380,12 +380,9 @@ Status ForPass::CreateLoopInput(const ComputeGraphPtr &graph, const ForInfo &for
 OpDescPtr ForPass::CreateOpDesc(const std::string &name, const std::string &type, bool io_equal_flag) {
   OpDescBuilder op_desc_builder(name, type);
   if (io_equal_flag) {
-    op_desc_builder.AddInput("x")
-                   .AddOutput("y");
+    op_desc_builder.AddInput("x").AddOutput("y");
   } else {
-    op_desc_builder.AddInput("x1")
-                   .AddInput("x2")
-                   .AddOutput("y");
+    op_desc_builder.AddInput("x1").AddInput("x2").AddOutput("y");
   }
 
   return op_desc_builder.Build();
@@ -480,8 +477,7 @@ Status ForPass::BuildWhileLink(const WhileInfo &while_info) {
     if (peer_out_anchor == nullptr) {
       continue;
     }
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(peer_out_anchor, in_data_anchor),
-                            "Add data-edge %s:%d->%s:%d failed.",
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(peer_out_anchor, in_data_anchor), "Add data-edge %s:%d->%s:%d failed.",
                             peer_out_anchor->GetOwnerNode()->GetName().c_str(), peer_out_anchor->GetIdx(),
                             while_node->GetName().c_str(), i);
   }
@@ -492,17 +488,16 @@ Status ForPass::BuildWhileLink(const WhileInfo &while_info) {
     GE_CHECK_NOTNULL(out_data_anchor);
     for (auto &peer_in_anchor : while_info.data_outputs[i]) {
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_data_anchor, peer_in_anchor),
-                              "Add data-edge %s:%d->%s:%d failed.",
-                              while_node->GetName().c_str(), i + kWhileOutputIndex,
-                              peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
+                              "Add data-edge %s:%d->%s:%d failed.", while_node->GetName().c_str(),
+                              i + kWhileOutputIndex, peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                              peer_in_anchor->GetIdx());
     }
   }
 
   InControlAnchorPtr in_ctrl_anchor = while_node->GetInControlAnchor();
   GE_CHECK_NOTNULL(in_ctrl_anchor);
   for (auto &peer_out_anchor : while_info.ctrl_inputs) {
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(peer_out_anchor, in_ctrl_anchor),
-                            "Add ctrl-edge %s->%s failed.",
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(peer_out_anchor, in_ctrl_anchor), "Add ctrl-edge %s->%s failed.",
                             peer_out_anchor->GetOwnerNode()->GetName().c_str(),
                             in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
   }
@@ -510,8 +505,7 @@ Status ForPass::BuildWhileLink(const WhileInfo &while_info) {
   OutControlAnchorPtr out_ctrl_anchor = while_node->GetOutControlAnchor();
   GE_CHECK_NOTNULL(out_ctrl_anchor);
   for (auto &peer_in_anchor : while_info.ctrl_outputs) {
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_ctrl_anchor, peer_in_anchor),
-                            "Add ctrl-edge %s->%s failed.",
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_ctrl_anchor, peer_in_anchor), "Add ctrl-edge %s->%s failed.",
                             out_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
                             peer_in_anchor->GetOwnerNode()->GetName().c_str());
   }
@@ -538,11 +532,11 @@ ComputeGraphPtr ForPass::BuildCondGraph(WhileInfo &while_info) {
   graph_builder.AddNode(CreateOpDesc(less_name, LESS, false));
 
   // Set Input
-  graph_builder.SetInput(kWhileIInputIndex, { mul_name }, { 0 })
-               .SetInput(kWhileAbsDeltaInputIndex, { mul_name }, { 1 })
-               .SetInput(kWhileRangeInputIndex, { less_name }, { 1 })
-               .SetUselessInput(kWhileStartInputIndex)
-               .SetUselessInput(kWhileDeltaInputIndex);
+  graph_builder.SetInput(kWhileIInputIndex, {mul_name}, {0})
+    .SetInput(kWhileAbsDeltaInputIndex, {mul_name}, {1})
+    .SetInput(kWhileRangeInputIndex, {less_name}, {1})
+    .SetUselessInput(kWhileStartInputIndex)
+    .SetUselessInput(kWhileDeltaInputIndex);
   size_t input_num = while_info.data_inputs.size();
   for (size_t i = kWhileDataInputIndex; i < input_num; i++) {
     graph_builder.SetUselessInput(i);
@@ -594,9 +588,9 @@ ComputeGraphPtr ForPass::BuildBodyGraph(WhileInfo &while_info) {
   std::string mul_name = "Mul";
   std::string add_name_1 = "Add_1";
   graph_builder.AddNode(CreateConstDesc(const_name, 1))
-               .AddNode(CreateOpDesc(add_name_0, ADD, false))
-               .AddNode(CreateOpDesc(mul_name, MUL, false))
-               .AddNode(CreateOpDesc(add_name_1, ADD, false));
+    .AddNode(CreateOpDesc(add_name_0, ADD, false))
+    .AddNode(CreateOpDesc(mul_name, MUL, false))
+    .AddNode(CreateOpDesc(add_name_1, ADD, false));
 
   // Add Subgraph node
   auto input_num = static_cast<uint32_t>(while_info.data_inputs.size());
@@ -606,13 +600,13 @@ ComputeGraphPtr ForPass::BuildBodyGraph(WhileInfo &while_info) {
   graph_builder.AddNode(CreateSubgraphOpDesc(sub_graph_node_name, sub_graph_input_num, sub_graph_output_num));
 
   // Set Input
-  graph_builder.SetInput(kWhileIInputIndex, { add_name_0, mul_name }, { 0, 0 })
-               .SetUselessInput(kWhileAbsDeltaInputIndex)
-               .SetUselessInput(kWhileRangeInputIndex)
-               .SetInput(kWhileStartInputIndex, { add_name_1 }, { 0 })
-               .SetInput(kWhileDeltaInputIndex, { mul_name }, { 1 });
+  graph_builder.SetInput(kWhileIInputIndex, {add_name_0, mul_name}, {0, 0})
+    .SetUselessInput(kWhileAbsDeltaInputIndex)
+    .SetUselessInput(kWhileRangeInputIndex)
+    .SetInput(kWhileStartInputIndex, {add_name_1}, {0})
+    .SetInput(kWhileDeltaInputIndex, {mul_name}, {1});
   for (uint32_t i = 0; i < input_num - kWhileDataInputIndex; i++) {
-    graph_builder.SetInput(i + kWhileDataInputIndex, { sub_graph_node_name }, { i + kSubgraphInputIndex });
+    graph_builder.SetInput(i + kWhileDataInputIndex, {sub_graph_node_name}, {i + kSubgraphInputIndex});
   }
 
   // Add Outputs
@@ -626,8 +620,8 @@ ComputeGraphPtr ForPass::BuildBodyGraph(WhileInfo &while_info) {
 
   // Add Edges
   graph_builder.AddDataLink(const_name, 0, add_name_0, 1)
-               .AddDataLink(mul_name, 0, add_name_1, 1)
-               .AddDataLink(add_name_1, 0, sub_graph_node_name, kSubgraphLoopVarInputIndex);
+    .AddDataLink(mul_name, 0, add_name_1, 1)
+    .AddDataLink(add_name_1, 0, sub_graph_node_name, kSubgraphLoopVarInputIndex);
 
   // Add Input-Mapping
   std::map<uint32_t, uint32_t> input_mapping;
@@ -674,8 +668,7 @@ ComputeGraphPtr ForPass::BuildBodyGraph(WhileInfo &while_info) {
 ///
 OpDescPtr ForPass::CreateSubgraphOpDesc(const std::string &name, uint32_t input_num, uint32_t output_num) {
   OpDescBuilder op_desc_builder(name, PARTITIONEDCALL);
-  op_desc_builder.AddDynamicInput("args", input_num)
-                 .AddDynamicOutput("output", output_num);
+  op_desc_builder.AddDynamicInput("args", input_num).AddDynamicOutput("output", output_num);
 
   OpDescPtr op_desc = op_desc_builder.Build();
   if (op_desc == nullptr) {
@@ -717,4 +710,3 @@ Status ForPass::UpdateForBodyInputMapping(const WhileInfo &while_info) {
   return SUCCESS;
 }
 }  // namespace ge
-

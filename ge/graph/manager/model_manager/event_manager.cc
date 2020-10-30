@@ -67,7 +67,7 @@ Status EventManager::EventElapsedTime(size_t start_event_idx, size_t stop_event_
   GE_CHK_BOOL_RET_STATUS_NOLOG(this->inited_, INTERNAL_ERROR);
 
   GE_CHK_BOOL_RET_STATUS_NOLOG(start_event_idx < this->event_list_.size() &&
-                               stop_event_idx < this->event_list_.size() && start_event_idx <= stop_event_idx,
+                                 stop_event_idx < this->event_list_.size() && start_event_idx <= stop_event_idx,
                                PARAM_INVALID);
 
   GE_CHK_RT_RET(rtEventElapsedTime(&time, this->event_list_[start_event_idx], this->event_list_[stop_event_idx]));

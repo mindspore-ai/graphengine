@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 /* Pass Explaination:
@@ -43,12 +42,6 @@ Status CtrlEdgeTransferPass::Run(ge::ComputeGraphPtr graph) {
   GELOGD("CtrlEdgeTransferPass start running");
   GE_CHECK_NOTNULL(graph);
 
-  bool is_dynamic_shape = false;
-  (void)AttrUtils::GetBool(graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
-  if (!is_dynamic_shape) {
-    return SUCCESS;
-  }
-
   for (ge::NodePtr &n : graph->GetDirectNode()) {
     auto op_desc = n->GetOpDesc();
     if (op_desc == nullptr) {
@@ -65,14 +58,15 @@ Status CtrlEdgeTransferPass::Run(ge::ComputeGraphPtr graph) {
 
       for (auto &in_control_node : n->GetInControlNodes()) {
         GE_CHECK_NOTNULL(in_control_node);
-        GE_CHK_STATUS_RET(ge::GraphUtils::RemoveEdge(in_control_node->GetOutControlAnchor(),
-                                                     n->GetInControlAnchor()), "remove edge failed");
+        GE_CHK_STATUS_RET(ge::GraphUtils::RemoveEdge(in_control_node->GetOutControlAnchor(), n->GetInControlAnchor()),
+                          "remove edge failed");
         for (auto &out_node : n->GetOutNodes()) {
           if (out_node == nullptr) {
             continue;
           }
-          GE_CHK_STATUS_RET(ge::GraphUtils::AddEdge(in_control_node->GetOutControlAnchor(),
-                                                    out_node->GetInControlAnchor()), "add edge failed.");
+          GE_CHK_STATUS_RET(
+            ge::GraphUtils::AddEdge(in_control_node->GetOutControlAnchor(), out_node->GetInControlAnchor()),
+            "add edge failed.");
         }
       }
     }

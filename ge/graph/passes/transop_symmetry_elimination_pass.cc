@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,9 @@ namespace ge {
 Status TransOpSymmetryEliminationPass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
-  if (white_list_op.find(node->GetType()) == white_list_op.end()) { return SUCCESS; }
+  if (white_list_op.find(node->GetType()) == white_list_op.end()) {
+    return SUCCESS;
+  }
   GELOGD("Symmetry Elimination Pass in.");
   for (const auto &out_anchor : node->GetAllOutDataAnchors()) {
     GE_CHECK_NOTNULL(out_anchor);
@@ -40,7 +42,9 @@ Status TransOpSymmetryEliminationPass::Run(NodePtr &node) {
       GE_CHECK_NOTNULL(peer_in_anchor);
       GE_CHECK_NOTNULL(peer_in_anchor->GetOwnerNode());
       GE_CHECK_NOTNULL(peer_in_anchor->GetOwnerNode()->GetOpDesc());
-      if (!CheckCanBeEliminated(node, peer_in_anchor)) { continue; }
+      if (!CheckCanBeEliminated(node, peer_in_anchor)) {
+        continue;
+      }
       auto dst_node = peer_in_anchor->GetOwnerNode();
       Status ret = EliminateTransOp(node, out_anchor, dst_node, peer_in_anchor);
       if (ret != SUCCESS) {
@@ -72,9 +76,10 @@ bool TransOpSymmetryEliminationPass::CheckCanBeEliminated(const ge::NodePtr &src
     GE_CHECK_NOTNULL(src_node->GetOpDesc());
     auto unknown_dims_num = GetUnknownDimsNum(src_node->GetOpDesc()->GetInputDesc(0));
     if (unknown_dims_num != 0 && (unknown_dims_num == UNKNOWN_DIM_NUM || unknown_dims_num > 1)) {
-      GELOGD("Pre node %s is reshape op which input is dynamic shape and has more than one unknown dimension. "
-             "Ignore pass.",
-             src_node->GetName().c_str());
+      GELOGD(
+        "Pre node %s is reshape op which input is dynamic shape and has more than one unknown dimension. "
+        "Ignore pass.",
+        src_node->GetName().c_str());
       return false;
     }
   } else if (src_node->GetType() == ge::TRANSPOSED) {
@@ -109,26 +114,26 @@ bool TransOpSymmetryEliminationPass::DescAreSymmetry(const NodePtr &src_node, co
   bool is_symmetry = true;
   if (src_node->GetType() == CAST && dst_node->GetType() == CAST) {
     bool is_format_symmetry =
-        (src_input_format == dst_output_format) || (dst_output_format == FORMAT_ND) || (src_input_format == FORMAT_ND);
+      (src_input_format == dst_output_format) || (dst_output_format == FORMAT_ND) || (src_input_format == FORMAT_ND);
     is_symmetry = (src_input_dtype == dst_output_dtype) && is_format_symmetry;
   } else {
-    is_symmetry = (src_input_dtype == dst_output_dtype) && (src_input_shape == dst_output_shape)
-        && (src_input_format == dst_output_format);
+    is_symmetry = (src_input_dtype == dst_output_dtype) && (src_input_shape == dst_output_shape) &&
+                  (src_input_format == dst_output_format);
   }
   if (!is_symmetry) {
-    GELOGD("Not satisfied symmetry. ignore pass.\n"
-           "Src node %s input type: %s format: %s shape: %s, "
-           "dst node %s output type: %s format: %s shape: %s. ",
-           src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_input_dtype).c_str(),
-           TypeUtils::FormatToSerialString(src_input_format).c_str(), formats::ShapeToString(src_input_shape).c_str(),
-           dst_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(dst_output_dtype).c_str(),
-           TypeUtils::FormatToSerialString(dst_output_format).c_str(),
-           formats::ShapeToString(dst_output_shape).c_str());
+    GELOGD(
+      "Not satisfied symmetry. ignore pass.\n"
+      "Src node %s input type: %s format: %s shape: %s, "
+      "dst node %s output type: %s format: %s shape: %s. ",
+      src_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(src_input_dtype).c_str(),
+      TypeUtils::FormatToSerialString(src_input_format).c_str(), formats::ShapeToString(src_input_shape).c_str(),
+      dst_node->GetName().c_str(), TypeUtils::DataTypeToSerialString(dst_output_dtype).c_str(),
+      TypeUtils::FormatToSerialString(dst_output_format).c_str(), formats::ShapeToString(dst_output_shape).c_str());
   }
   return is_symmetry;
 }
 
-int TransOpSymmetryEliminationPass::GetUnknownDimsNum(const GeTensorDesc& node_desc){
+int TransOpSymmetryEliminationPass::GetUnknownDimsNum(const GeTensorDesc &node_desc) {
   //
   //  unknown_dims_num != 0 , is dynamic shape
   //  unknown_dims_num = UNKNOWN_DIM_NUM , all dims are unknown
@@ -137,8 +142,12 @@ int TransOpSymmetryEliminationPass::GetUnknownDimsNum(const GeTensorDesc& node_d
   int unknown_dims_num = 0;
   auto ge_shape = node_desc.GetShape();
   for (const auto dim : ge_shape.GetDims()) {
-    if (dim == UNKNOWN_DIM_NUM) { return UNKNOWN_DIM_NUM; }
-    if (dim == UNKNOWN_DIM) { ++unknown_dims_num; }
+    if (dim == UNKNOWN_DIM_NUM) {
+      return UNKNOWN_DIM_NUM;
+    }
+    if (dim == UNKNOWN_DIM) {
+      ++unknown_dims_num;
+    }
   }
   return unknown_dims_num;
 }
@@ -158,10 +167,16 @@ bool TransOpSymmetryEliminationPass::JudgeTransposeDBack2Raw(const NodePtr &src_
   vector<int64_t> dst_node_perm;
   (void)AttrUtils::GetListInt(dst_node->GetOpDesc(), ge::PERMUTE_ATTR_PERM, dst_node_perm);
 
-  if (src_node_perm.size() != dst_node_perm.size()) { return false; }
+  if (src_node_perm.size() != dst_node_perm.size()) {
+    return false;
+  }
   for (size_t src_index = 0; src_index < src_node_perm.size(); ++src_index) {
-    if (dst_node_perm[src_index] >= static_cast<int64_t>(src_node_perm.size())) { return false; }
-    if (static_cast<int64_t>(src_index) != src_node_perm[dst_node_perm[src_index]]) { return false; }
+    if (dst_node_perm[src_index] >= static_cast<int64_t>(src_node_perm.size())) {
+      return false;
+    }
+    if (static_cast<int64_t>(src_index) != src_node_perm[dst_node_perm[src_index]]) {
+      return false;
+    }
   }
   return true;
 }
@@ -195,7 +210,9 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
   }
   // 4.Add control edge from T1 other input to T2, like reshape second input
   for (const auto &in_node : src_node->GetInDataNodes()) {
-    if (in_node->GetName() == pre_normal_node->GetName()) { continue; }
+    if (in_node->GetName() == pre_normal_node->GetName()) {
+      continue;
+    }
     ret = GraphUtils::AddEdge(in_node->GetOutControlAnchor(), dst_node->GetInControlAnchor());
     if (ret != GRAPH_SUCCESS) {
       GELOGE(FAILED, "Add control edge from %s to %s failed.", in_node->GetName().c_str(), dst_node->GetName().c_str());

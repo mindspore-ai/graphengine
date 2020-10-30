@@ -44,32 +44,28 @@ class OpTask {
   OpTask() = default;
   virtual ~OpTask() = default;
   virtual Status LaunchKernel(rtStream_t stream) = 0;
-  virtual Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc,
-                               const vector<GeTensorDesc> &output_desc) {
+  virtual Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
     return UNSUPPORTED;
   }
-  virtual Status LaunchKernel(const std::vector<void *> &inputs,
-                              const std::vector<void *> &outputs,
-                              const std::vector<void *> &workspaces,
-                              rtStream_t stream) {
+  virtual Status LaunchKernel(const std::vector<void *> &inputs, const std::vector<void *> &outputs,
+                              const std::vector<void *> &workspaces, rtStream_t stream) {
     return UNSUPPORTED;
   }
   virtual OpTaskType GetOpTaskType() = 0;
   virtual const void *GetIOAddr() const = 0;
   const vector<int64_t> &GetWorkspaceSizes() const;
   void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
-  const OpDescPtr &GetOpdesc() const {return op_desc_;}
+  const OpDescPtr &GetOpdesc() const { return op_desc_; }
   Status OpenDump(const std::vector<uintptr_t> &io_addr, rtStream_t stream);
-  virtual Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                              const std::vector<DataBuffer> &input_buffers,
-                              std::vector<GeTensorDesc> &output_desc,
-                              std::vector<DataBuffer> &output_buffers,
+  virtual Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &input_buffers,
+                              std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &output_buffers,
                               rtStream_t stream) {
     return UNSUPPORTED;
   }
 
  private:
   std::vector<int64_t> workspace_sizes_;
+
  protected:
   DumpProperties dump_properties_;
   DumpOp dump_op_;
@@ -80,22 +76,15 @@ class TbeOpTask : public OpTask {
  public:
   ~TbeOpTask() override;
   Status LaunchKernel(rtStream_t stream) override;
-  OpTaskType GetOpTaskType() override {
-    return OP_TASK_TBE;
-  }
-  const void *GetIOAddr() const override {
-    return nullptr;
-  }
+  OpTaskType GetOpTaskType() override { return OP_TASK_TBE; }
+  const void *GetIOAddr() const override { return nullptr; }
   void SetSmDesc(void *sm_desc);
   void SetStubFunc(const std::string &name, const void *stub_func);
   void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim, const OpDescPtr &op_desc);
 
-  Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc,
-                       const vector<GeTensorDesc> &output_desc) override;
+  Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) override;
 
-  Status LaunchKernel(const vector<void *> &inputs,
-                      const vector<void *> &outputs,
-                      const vector<void *> &workspaces,
+  Status LaunchKernel(const vector<void *> &inputs, const vector<void *> &outputs, const vector<void *> &workspaces,
                       rtStream_t stream) override;
 
   const void *GetArgs() const;
@@ -105,8 +94,7 @@ class TbeOpTask : public OpTask {
 
  private:
   static Status UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc &dst_tensor);
-  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
-                           const vector<GeTensorDesc> &output_desc);
+  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc);
 
   const void *stub_func_ = nullptr;
   std::unique_ptr<uint8_t[]> args_;
@@ -130,8 +118,7 @@ class AiCpuBaseTask : public OpTask {
  protected:
   Status SetExtInfoAndType(const std::string &kernel_ext_info);
 
-  Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
-                       std::vector<GeTensorDesc> &output_desc);
+  Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, std::vector<GeTensorDesc> &output_desc);
   Status UpdateOutputShape(vector<GeTensorDesc> &output_desc);
   Status UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensorDesc &output_desc);
 
@@ -149,15 +136,11 @@ class AiCpuTask : public AiCpuBaseTask {
   ~AiCpuTask() override;
 
   Status LaunchKernel(rtStream_t stream) override;
-  OpTaskType GetOpTaskType() override {
-    return OP_TASK_AICPU;
-  }
+  OpTaskType GetOpTaskType() override { return OP_TASK_AICPU; }
   const void *GetIOAddr() const override;
 
-  Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                      const std::vector<DataBuffer> &input_buffers,
-                      std::vector<GeTensorDesc> &output_desc,
-                      std::vector<DataBuffer> &output_buffers,
+  Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &input_buffers,
+                      std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &output_buffers,
                       rtStream_t stream) override;
   Status SetMemCopyTask(const domi::KernelExDef &kernel_def);
 
@@ -166,8 +149,7 @@ class AiCpuTask : public AiCpuBaseTask {
 
   // for copy task.
   Status InitForSummaryAndCopy();
-  Status UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc,
-                                           vector<DataBuffer> &outputs,
+  Status UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc, vector<DataBuffer> &outputs,
                                            rtStream_t stream);
   Status ReadResultSummaryAndPrepareMemory();
 
@@ -219,13 +201,11 @@ class AiCpuCCTask : public AiCpuBaseTask {
   void SetIoAddr(void *io_addr);
   size_t GetArgSize() const;
 
-  Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
-                      const std::vector<DataBuffer> &input_buffers,
-                      std::vector<GeTensorDesc> &output_desc,
-                      std::vector<DataBuffer> &output_buffers,
-                      rtStream_t stream)  override;
+  Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &input_buffers,
+                      std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &output_buffers,
+                      rtStream_t stream) override;
 
-private:
+ private:
   friend class AiCpuCCTaskBuilder;
   std::string so_name_;
   std::string kernel_name_;
@@ -234,8 +214,6 @@ private:
   uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   void *io_addr_ = nullptr;
-  bool is_custom_ = false;
-  uint32_t dump_flag_ = RT_KERNEL_DEFAULT;
 };
 }  // namespace ge
 

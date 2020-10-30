@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/passes/cond_remove_pass.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
@@ -28,7 +29,7 @@ const uint32_t kFalseIndex = 0;
 /// Extra 1 byte store '\0'
 const int32_t kStrHeadLen = 9;
 const int32_t kInvalidRetVal = -1;
-}
+}  // namespace
 
 namespace ge {
 Status CondRemovePass::Run(NodePtr &node) {
@@ -228,17 +229,16 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
   const auto &output_desc_size = node->GetOpDesc()->GetOutputsSize();
   // Create subgraph opdesc & node
   auto partitioncall_opdesc =
-      CreateSubgraphOpDesc(save_branch->GetName(), input_desc_size - kConditionIndexNum, output_desc_size);
+    CreateSubgraphOpDesc(save_branch->GetName(), input_desc_size - kConditionIndexNum, output_desc_size);
   auto partitioncall_node = node->GetOwnerComputeGraph()->AddNode(partitioncall_opdesc);
   // Link node's peerout anchors to new node's inanchors
   for (const auto &input_anchor : node->GetAllInAnchors()) {
     for (const auto &peerout_anchor : input_anchor->GetPeerAnchors()) {
       if (GraphUtils::AddEdge(peerout_anchor, partitioncall_node->GetInAnchor(
-                                                  input_anchor->GetIdx() - kConditionIndexNum)) != ge::GRAPH_SUCCESS) {
+                                                input_anchor->GetIdx() - kConditionIndexNum)) != ge::GRAPH_SUCCESS) {
         GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
                peerout_anchor->GetOwnerNode()->GetName().c_str(), peerout_anchor->GetIdx(),
-               partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_desc_size,
-               output_desc_size);
+               partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_desc_size, output_desc_size);
         return FAILED;
       }
     }
@@ -332,4 +332,4 @@ Status CondRemovePass::GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, 
 
   return SUCCESS;
 }
-}
+}  // namespace ge

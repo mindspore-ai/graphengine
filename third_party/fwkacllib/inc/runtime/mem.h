@@ -1,18 +1,18 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
@@ -177,28 +177,6 @@ typedef struct tagRtPointerAttributes {
   uint32_t pageSize;
 } rtPointerAttributes_t;
 
-
-typedef struct rtMallocHostSharedMemoryIn {
-    const char* name;
-    const uint64_t size;
-    uint32_t flag;
-} rtMallocHostSharedMemoryIn;
-
-typedef struct rtMallocHostSharedMemoryOut {
-    int fd;
-    void* ptr;
-    void* devPtr;
-} rtMallocHostSharedMemoryOut;
-
-typedef struct rtFreeHostSharedMemoryIn {
-    const char* name;
-    const uint64_t size;
-    int fd;
-    void* ptr;
-    void* devPtr;
-} rtFreeHostSharedMemoryIn;
-
-
 /**
  * @ingroup dvrt_mem
  * @brief alloc device memory
@@ -256,28 +234,6 @@ RTS_API rtError_t rtMallocHost(void **hostPtr, uint64_t size);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtFreeHost(void *hostPtr);
-
-/**
- * @ingroup dvrt_mem
- * @brief alloc host shared memory
- * @param [in] in   alloc host shared memory inputPara pointer
- * @param [in] out   alloc host shared memory outputInfo pointer
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-
-RTS_API rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
-    rtMallocHostSharedMemoryOut *out);
-
-/**
- * @ingroup dvrt_mem
- * @brief free host memory
- * @param [in] in   free host shared memory inputPara pointer
- * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input
- */
-
-RTS_API rtError_t rtFreeHostSharedMemory(rtFreeHostSharedMemoryIn *in);
 
 /**
  * @ingroup dvrt_mem

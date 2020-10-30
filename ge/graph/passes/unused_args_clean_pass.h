@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GE_COMMON_CASE_ARGS_CLEAN_H_
 #define GE_COMMON_CASE_ARGS_CLEAN_H_
 
@@ -24,8 +25,8 @@
 #include <vector>
 #include <string>
 
-using std::set;
 using std::map;
+using std::set;
 
 namespace ge {
 class UnusedArgsCleanPass : public GraphPass {
@@ -41,8 +42,8 @@ class UnusedArgsCleanPass : public GraphPass {
   /// @param [in] parent_index: parent index for check.
   /// @return true: unused / false: used
   ///
-  bool UnusedInputTensor(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                         const NodePtr &func_node, uint32_t parent_index);
+  bool UnusedInputTensor(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &func_node,
+                         uint32_t parent_index);
 
   ///
   /// @ingroup ge
@@ -63,8 +64,8 @@ class UnusedArgsCleanPass : public GraphPass {
   /// @param [in] parent_index: parent index for remove.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status RemoveInputTensor(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                           const NodePtr &func_node, uint32_t parent_index);
+  Status RemoveInputTensor(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &func_node,
+                           uint32_t parent_index);
 
   ///
   /// @ingroup ge
@@ -75,8 +76,8 @@ class UnusedArgsCleanPass : public GraphPass {
   /// @param [in] unused_num: unused args num.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status UpdateInputTensor(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                           const NodePtr &func_node, uint32_t parent_index, uint32_t unused_num);
+  Status UpdateInputTensor(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &func_node,
+                           uint32_t parent_index, uint32_t unused_num);
 };
 }  // namespace ge
 #endif  // GE_COMMON_CASE_ARGS_CLEAN_H_

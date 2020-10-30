@@ -36,8 +36,7 @@ size_t GetAlignedSize(size_t size) {
 }
 }  // namespace
 
-SingleOp::SingleOp(std::mutex *stream_mutex, rtStream_t stream) : stream_mutex_(stream_mutex), stream_(stream) {
-}
+SingleOp::SingleOp(std::mutex *stream_mutex, rtStream_t stream) : stream_mutex_(stream_mutex), stream_(stream) {}
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOp::~SingleOp() {
   for (auto task : tasks_) {
@@ -59,11 +58,13 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_inputs; ++i) {
     // preventing from read out of bound
     size_t aligned_size = GetAlignedSize(inputs[i].length);
-    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%lu, input_sizes_:%lu",
-           i, aligned_size, inputs[i].length, input_sizes_[i]);
+    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%lu, input_sizes_:%lu", i, aligned_size, inputs[i].length,
+           input_sizes_[i]);
     if (aligned_size < input_sizes_[i]) {
-      GELOGE(PARAM_INVALID, "Input size mismatch. index = %zu, model expect %zu,"
-                            " but given %zu(after align)", i, input_sizes_[i], aligned_size);
+      GELOGE(PARAM_INVALID,
+             "Input size mismatch. index = %zu, model expect %zu,"
+             " but given %zu(after align)",
+             i, input_sizes_[i], aligned_size);
       return PARAM_INVALID;
     }
   }
@@ -77,11 +78,13 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_outputs; ++i) {
     // preventing from write out of bound
     size_t aligned_size = GetAlignedSize(outputs[i].length);
-    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%lu, output_sizes_:%lu",
-           i, aligned_size, outputs[i].length, output_sizes_[i]);
+    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%lu, output_sizes_:%lu", i, aligned_size, outputs[i].length,
+           output_sizes_[i]);
     if (aligned_size < output_sizes_[i]) {
-      GELOGE(PARAM_INVALID, "Output size mismatch. index = %zu, model expect %zu,"
-                            "but given %zu(after align)", i, output_sizes_[i], aligned_size);
+      GELOGE(PARAM_INVALID,
+             "Output size mismatch. index = %zu, model expect %zu,"
+             "but given %zu(after align)",
+             i, output_sizes_[i], aligned_size);
       return PARAM_INVALID;
     }
   }
@@ -126,12 +129,8 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       GELOGD("Update aicpu_TF task args");
       auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task->GetIOAddr()));
       GE_CHECK_NOTNULL(dst_io_addr);
-      auto rt_ret = rtMemcpyAsync(dst_io_addr,
-                                  sizeof(uint64_t) * args_.size(),
-                                  &args_[0],
-                                  sizeof(uint64_t) * args_.size(),
-                                  RT_MEMCPY_HOST_TO_DEVICE_EX,
-                                  stream_);
+      auto rt_ret = rtMemcpyAsync(dst_io_addr, sizeof(uint64_t) * args_.size(), &args_[0],
+                                  sizeof(uint64_t) * args_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, stream_);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "rtMemcpyAsync addresses failed, ret = %d", rt_ret);
         return RT_FAILED;
@@ -180,40 +179,29 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
   return ret;
 }
 
-void SingleOp::SetStream(rtStream_t stream) {
-  stream_ = stream;
-}
+void SingleOp::SetStream(rtStream_t stream) { stream_ = stream; }
 
-void SingleOp::SetSessionID(uint64_t session_id) {
-  aicpu_session_id_ = session_id;
-}
+void SingleOp::SetSessionID(uint64_t session_id) { aicpu_session_id_ = session_id; }
 
 DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex, rtStream_t stream)
-    : resource_id_(resource_id), stream_mutex_(stream_mutex), stream_(stream) {
-}
+    : resource_id_(resource_id), stream_mutex_(stream_mutex), stream_(stream) {}
 
 DynamicSingleOp::~DynamicSingleOp() {
   GELOGI("DynamicSingleOp destory sessionId = %lu", aicpu_session_id_);
   ModelManager::GetInstance()->DestroyAicpuSession(aicpu_session_id_);
 }
 
-Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
-                                       const std::vector<DataBuffer> &inputs,
-                                       std::vector<GeTensorDesc> &output_desc,
-                                       std::vector<DataBuffer> &outputs) const {
+Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                                       std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const {
   if (inputs.size() != input_desc.size()) {
-    GELOGE(PARAM_INVALID,
-           "Input number mismatches input desc number. Input num = %zu, input desc num = %zu",
-           inputs.size(),
-           input_desc.size());
+    GELOGE(PARAM_INVALID, "Input number mismatches input desc number. Input num = %zu, input desc num = %zu",
+           inputs.size(), input_desc.size());
     return PARAM_INVALID;
   }
 
   if (outputs.size() != output_desc.size()) {
-    GELOGE(PARAM_INVALID,
-           "Output number mismatches output desc number. Output num = %zu, output desc num = %zu",
-           outputs.size(),
-           output_desc.size());
+    GELOGE(PARAM_INVALID, "Output number mismatches output desc number. Output num = %zu, output desc num = %zu",
+           outputs.size(), output_desc.size());
     return PARAM_INVALID;
   }
 
@@ -263,10 +251,8 @@ Status DynamicSingleOp::AllocateWorkspaces(const std::vector<int64_t> &workspace
   return SUCCESS;
 }
 
-Status DynamicSingleOp::ExecuteTbeTask(const vector<GeTensorDesc> &input_desc,
-                                       const vector<void *> &inputs,
-                                       vector<GeTensorDesc> &output_desc,
-                                       vector<void *> &outputs) {
+Status DynamicSingleOp::ExecuteTbeTask(const vector<GeTensorDesc> &input_desc, const vector<void *> &inputs,
+                                       vector<GeTensorDesc> &output_desc, vector<void *> &outputs) {
   GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
 
   std::vector<void *> workspace_buffers;
@@ -275,10 +261,8 @@ Status DynamicSingleOp::ExecuteTbeTask(const vector<GeTensorDesc> &input_desc,
   return op_task_->LaunchKernel(inputs, outputs, workspace_buffers, stream_);
 }
 
-Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
-                                     const vector<DataBuffer> &input_buffers,
-                                     vector<GeTensorDesc> &output_desc,
-                                     vector<DataBuffer> &output_buffers) {
+Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc, const vector<DataBuffer> &input_buffers,
+                                     vector<GeTensorDesc> &output_desc, vector<DataBuffer> &output_buffers) {
   GE_CHECK_NOTNULL(op_task_);
   GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
   std::lock_guard<std::mutex> lk(*stream_mutex_);
@@ -297,14 +281,11 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   } else if (op_task_->GetOpTaskType() == OP_TASK_AICPU || op_task_->GetOpTaskType() == OP_TASK_AICPUCC) {
     return op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_);
   } else {
-    GELOGE(UNSUPPORTED,
-           "Only TBE_Task, AI_CPU_Task and AI_CPUCC_Task are supported, but got %u",
+    GELOGE(UNSUPPORTED, "Only TBE_Task, AI_CPU_Task and AI_CPUCC_Task are supported, but got %u",
            op_task_->GetOpTaskType());
     return UNSUPPORTED;
   }
 }
 
-void DynamicSingleOp::SetSessionID(uint64_t session_id) {
-  aicpu_session_id_ = session_id;
-}
+void DynamicSingleOp::SetSessionID(uint64_t session_id) { aicpu_session_id_ = session_id; }
 }  // namespace ge

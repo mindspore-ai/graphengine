@@ -23,7 +23,6 @@
 namespace ge {
 void GeModel::Init() {
   (void)AttrUtils::SetInt(this, ATTR_MODEL_MEMORY_SIZE, 0);
-  (void)AttrUtils::SetInt(this, ATTR_MODEL_P2P_MEMORY_SIZE, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_STREAM_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_EVENT_NUM, 0);
   (void)AttrUtils::SetInt(this, ATTR_MODEL_LABEL_NUM, 0);
@@ -60,9 +59,7 @@ void GeModel::SetGraph(const Graph &graph) { this->graph_ = graph; }
 
 void GeModel::SetModelTaskDef(const std::shared_ptr<domi::ModelTaskDef> &task) { this->task_ = task; }
 
-void GeModel::SetTBEKernelStore(const TBEKernelStore &tbe_kernal_store) {
-  this->tbe_kernal_store_ = tbe_kernal_store;
-}
+void GeModel::SetTBEKernelStore(const TBEKernelStore &tbe_kernal_store) { this->tbe_kernal_store_ = tbe_kernal_store; }
 
 void GeModel::SetCustAICPUKernelStore(const CustAICPUKernelStore &cust_aicpu_kernal_store) {
   this->cust_aicpu_kernal_store_ = cust_aicpu_kernal_store;

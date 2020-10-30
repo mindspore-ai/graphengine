@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 #include "framework/common/fmk_error_codes.h"
+#include "framework/common/types.h"
 #include "register/register_fmk_types.h"
 
 using domi::DOMI_TENSOR_ND;
@@ -91,8 +92,6 @@ struct OmgContext {
   std::map<std::string, std::vector<int32_t>> out_nodes_map;
   // user-designate out nodes (this is used for determing the orders)
   std::vector<std::pair<std::string, int32_t>> user_out_nodes;
-  // default out nodes (this is used for determing the orders)
-  std::vector<std::pair<std::string, int32_t>> default_out_nodes;
   // save the output node of the network, value = topName,
   // topName indicates the output name of the operator.
   std::vector<std::string> user_out_nodes_top_vec;
@@ -100,8 +99,8 @@ struct OmgContext {
   std::vector<std::string> net_out_nodes;
   // net out nodes top names(only caffe has top)
   std::vector<std::string> out_top_names;
-  // net data nodes top names(only caffe has top)
-  std::vector<std::string> data_top_names;
+  // path for the aicpu custom operator so_file
+  std::vector<std::string> aicpu_op_run_paths;
   // preferential format used by the entire network
   domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;

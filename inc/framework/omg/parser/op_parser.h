@@ -18,7 +18,7 @@
 #define INC_FRAMEWORK_OMG_PARSER_OP_PARSER_H_
 
 #include <google/protobuf/text_format.h>
-#include "framework/omg/parser/parser_types.h"
+#include "common/types.h"
 #include "omg/omg_inner_types.h"
 #include "proto/om.pb.h"
 #include "graph/ge_tensor.h"

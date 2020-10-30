@@ -39,9 +39,7 @@ class HybridModelExecutor {
 
   Status Init();
 
-  const GraphExecutionContext* GetContext() const {
-    return &context_;
-  }
+  const GraphExecutionContext *GetContext() const { return &context_; }
 
   Status Execute(ExecuteArgs &args);
 
@@ -58,4 +56,4 @@ class HybridModelExecutor {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // GE_HYBRID_EXECUTOR_HYBRID_MODEL_EXECUTOR_H_
+#endif  // GE_HYBRID_EXECUTOR_HYBRID_MODEL_EXECUTOR_H_

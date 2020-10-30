@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,8 +63,8 @@ Status StreamActiveTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
 
   active_stream_ = davinci_model->GetStreamList()[active_stream_index_list[internal_index]];
   active_stream_id_ = stream_active_def.active_stream_id();
-  GELOGI("InitStreamActiveTaskInfo Init Success, index:%u, activeStream:%p, activeStreamID:%u.",
-         internal_index, active_stream_, active_stream_id_);
+  GELOGI("InitStreamActiveTaskInfo Init Success, index:%u, activeStream:%p, activeStreamID:%u.", internal_index,
+         active_stream_, active_stream_id_);
 
   return SUCCESS;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@
 #include <vector>
 #include <string>
 
-using std::set;
 using std::map;
+using std::set;
 
 namespace ge {
 class SubexpressionMigrationPass : public GraphPass {
@@ -64,8 +64,8 @@ class SubexpressionMigrationPass : public GraphPass {
   /// @param [in] anchor_idx: Anchor index of node.
   /// @return true: Same / false: not same
   ///
-  bool IsParallelNodeSame(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                          const NodePtr &base_node, uint32_t node_idx, uint32_t anchor_idx);
+  bool IsParallelNodeSame(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &base_node,
+                          uint32_t node_idx, uint32_t anchor_idx);
 
   ///
   /// @ingroup ge
@@ -78,8 +78,8 @@ class SubexpressionMigrationPass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status GraphNodeMigration(const ComputeGraphPtr &graph, const NodePtr &func_node,
-                            map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                            const NodePtr &data_base, uint32_t data_idx);
+                            map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &data_base,
+                            uint32_t data_idx);
 
   ///
   /// @ingroup ge
@@ -104,8 +104,8 @@ class SubexpressionMigrationPass : public GraphPass {
   /// @param [in] outputs: Parent index of Node output.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status AppendParallelNode(map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                            const NodePtr &func_node, map<uint32_t, uint32_t> &outputs);
+  Status AppendParallelNode(map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes, const NodePtr &func_node,
+                            map<uint32_t, uint32_t> &outputs);
 
   ///
   /// @ingroup ge

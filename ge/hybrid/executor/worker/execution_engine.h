@@ -24,18 +24,15 @@ namespace ge {
 namespace hybrid {
 class ExecutionEngine {
  public:
-  static Status ExecuteAsync(NodeState &node_state,
-                             const std::shared_ptr<TaskContext> &task_context,
+  static Status ExecuteAsync(NodeState &node_state, const std::shared_ptr<TaskContext> &task_context,
                              GraphExecutionContext &execution_context);
 
  private:
   static Status ValidateInputTensors(const NodeState &node_state, const TaskContext &task_context);
   static Status PropagateOutputs(const NodeItem &node_item, TaskContext &task_context, GraphExecutionContext &context);
-  static Status DoExecuteAsync(NodeState &node_state,
-                               TaskContext &task_context,
-                               GraphExecutionContext &context,
+  static Status DoExecuteAsync(NodeState &node_state, TaskContext &task_context, GraphExecutionContext &context,
                                const std::function<void()> &callback);
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // GE_HYBRID_EXECUTOR_EXECUTOR_EXECUTION_ENGINE_H_
+#endif  // GE_HYBRID_EXECUTOR_EXECUTOR_EXECUTION_ENGINE_H_

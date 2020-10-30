@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ class HybridMemAssigner : public MemAssigner {
   Status Assign() override;
 
   size_t GetMemOffset() const { return mem_offset_; }
-  size_t GetP2PMemOffset() const { return p2p_mem_offset_; }
 
   BlockMemAssignerPtr GetPriorityAssinger() const { return priority_assigner_; }
 
@@ -51,7 +50,6 @@ class HybridMemAssigner : public MemAssigner {
   Status AssignMemory(std::unique_ptr<BlockMemAssigner> &block_assigner, size_t &mem_size);
 
   size_t mem_offset_;
-  size_t p2p_mem_offset_;
 
   ge::ComputeGraphPtr compute_graph_;
 

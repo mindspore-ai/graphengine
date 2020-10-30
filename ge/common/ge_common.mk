@@ -71,10 +71,7 @@ GE_COMMON_LOCAL_C_INCLUDES := \
     $(TOPDIR)third_party/openssl/include/x86/include \
     $(TOPDIR)framework/domi \
     $(TOPDIR)framework/domi/common \
-    $(TOPDIR)framework/domi/common/op \
-    $(TOPDIR)graphengine/ge   \
-    $(TOPDIR)graphengine/ge/common   \
-    $(TOPDIR)graphengine/ge/common/op   \
+    $(TOPDIR)framework/domi/common/op
 
 #compile host libge_common
 include $(CLEAR_VARS)

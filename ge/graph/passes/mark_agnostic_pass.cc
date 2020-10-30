@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,42 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/passes/mark_agnostic_pass.h"
 
-#include "graph/utils/node_utils.h"
+#include "utils/node_utils.h"
 
 namespace ge {
 Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     auto node_type = NodeUtils::GetNodeType(*node);
     if (node_type == SWITCH || node_type == REFSWITCH || node_type == SWITCHN) {
-      GELOGD("Mark format agnostic and continuous for switch node %s", node->GetName().c_str());
-      const OpDescPtr op_desc = node->GetOpDesc();
-      const GeTensorDescPtr op_tensor = op_desc->MutableInputDesc(0);
-      if (op_tensor == nullptr) {
-        GELOGD("Op: %s, Index:0,has no input", node->GetName().c_str());
-        continue;
-      }
-      AttrUtils::SetInt(op_tensor, "_format_continuous", 1);
-      AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
-      AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_input", std::vector<int64_t>({1}));
-      continue;
-    }
-    if (node_type == IDENTITY) {
-      GELOGD("Mark format agnostic for identity node %s", node->GetName().c_str());
+      GELOGD("Mark format agnostic for switch ndoe %s", node->GetName().c_str());
       AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
       AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_input", std::vector<int64_t>({1}));
       continue;
     }
     if (node_type == MERGE || node_type == REFMERGE) {
-      GELOGD("Mark format agnostic and continuous for merge node %s", node->GetName().c_str());
-      const OpDescPtr op_desc = node->GetOpDesc();
-      const GeTensorDescPtr op_tensor = op_desc->MutableOutputDesc(0);
-      if (op_tensor == nullptr) {
-        GELOGD("Op: %s, Index:0,has no output", node->GetName().c_str());
-        continue;
-      }
-      AttrUtils::SetInt(op_tensor, "_format_continuous", 1);
+      GELOGD("Mark format agnostic for merge node %s", node->GetName().c_str());
       AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
       AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_output", std::vector<int64_t>({1}));
       continue;

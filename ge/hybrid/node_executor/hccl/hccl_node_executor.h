@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 #ifndef HYBRID_HCCL_NODE_EXECUTOR_H_
 #define HYBRID_HCCL_NODE_EXECUTOR_H_
-#include "common/opskernel/ge_task_info.h"
 #include "graph/op_desc.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/node_executor/node_executor.h"

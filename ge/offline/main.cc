@@ -1074,6 +1074,8 @@ domi::Status GenerateOmModel() {
 
   SaveCustomCaffeProtoPath();
 
+  ret = ge::CheckCustomAiCpuOpLib();
+
   GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "check custom aicpu run so failed!");
 #endif
 

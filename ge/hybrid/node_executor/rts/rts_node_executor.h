@@ -42,4 +42,4 @@ class RtsNodeExecutor : public NodeExecutor {
 }  // namespace hybrid
 }  // namespace ge
 
-#endif // GE_HYBRID_NODE_EXECUTOR_RTS_RTS_NODE_EXECUTOR_H_
+#endif  // GE_HYBRID_NODE_EXECUTOR_RTS_RTS_NODE_EXECUTOR_H_

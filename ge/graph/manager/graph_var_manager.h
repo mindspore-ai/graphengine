@@ -219,7 +219,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
 
   ge::Status SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
 
-  ge::Status GetBroadCastInfo(uint32_t graph_id,  const string &var_name, VarBroadCastInfo &broad_cast_info);
+  ge::Status GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info);
 
   ge::Status SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name, ge::ConstOpDescPtr var_op_desc,
                                    uint8_t *base_ptr);

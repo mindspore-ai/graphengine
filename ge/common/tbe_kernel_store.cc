@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ namespace ge {
 
 TBEKernelStore::TBEKernelStore() {}
 
-void TBEKernelStore::AddTBEKernel(const TBEKernelPtr &kernel) {
-  AddKernel(kernel);
-}
+void TBEKernelStore::AddTBEKernel(const TBEKernelPtr &kernel) { AddKernel(kernel); }
 
 void TBEKernelStore::LoadTBEKernelBinToOpDesc(const std::shared_ptr<ge::OpDesc> &op_desc) const {
   if (op_desc != nullptr) {

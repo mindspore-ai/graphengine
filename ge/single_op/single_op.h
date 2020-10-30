@@ -62,26 +62,19 @@ class DynamicSingleOp {
  public:
   DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex_, rtStream_t stream);
   ~DynamicSingleOp();
-  Status ExecuteAsync(const vector<GeTensorDesc> &input_desc,
-                      const std::vector<DataBuffer> &inputs,
-                      std::vector<GeTensorDesc> &output_desc,
-                      std::vector<DataBuffer> &outputs);
+  Status ExecuteAsync(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                      std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs);
   void SetSessionID(uint64_t session_id);
 
  private:
   friend class SingleOpModel;
-  Status ValidateParams(const vector<GeTensorDesc> &input_desc,
-                        const std::vector<DataBuffer> &inputs,
-                        std::vector<GeTensorDesc> &output_desc,
-                        std::vector<DataBuffer> &outputs) const;
+  Status ValidateParams(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
+                        std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs) const;
 
-  Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes,
-                            std::vector<void *> &workspaces);
+  Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes, std::vector<void *> &workspaces);
 
-  Status ExecuteTbeTask(const vector<GeTensorDesc> &input_desc,
-                        const vector<void *> &inputs,
-                        vector<GeTensorDesc> &output_desc,
-                        vector<void *> &outputs);
+  Status ExecuteTbeTask(const vector<GeTensorDesc> &input_desc, const vector<void *> &inputs,
+                        vector<GeTensorDesc> &output_desc, vector<void *> &outputs);
 
   std::unique_ptr<OpTask> op_task_;
   uintptr_t resource_id_ = 0;

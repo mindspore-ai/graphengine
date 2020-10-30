@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file all_ops.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
+#ifndef BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
+#define BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
 
 #include "aipp.h"
 #include "array_ops.h"
@@ -76,4 +76,4 @@
 #include "transformation_ops.h"
 #include "condtake_ops.h"
 #include "warp_perspective_ops.h"
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_ALL_OPS_H_
+#endif  // BUILT_IN_OP_PROTO_INC_ALL_OPS_H_

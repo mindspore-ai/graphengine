@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,15 @@
 
 #include "graph/passes/mark_graph_unknown_status_pass.h"
 #include "graph/utils/node_utils.h"
-#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 Status MarkGraphUnknownStatusPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   bool is_unknown_shape = false;
-  bool forced_unknown = false;
   for (const auto &node : graph->GetDirectNode()) {
     GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
                       "Get node[%s] shape status failed!", node->GetName().c_str());
     if (is_unknown_shape) {
-      break;
-    }
-    if (AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, forced_unknown) && forced_unknown) {
-      GELOGD("node %s was marked as unknown shape.", node->GetName().c_str());
-      is_unknown_shape = true;
       break;
     }
   }

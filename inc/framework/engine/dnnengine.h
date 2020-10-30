@@ -30,7 +30,6 @@ enum PriorityEnum {
   COST_0 = 0,
   COST_1,
   COST_2,
-  COST_3,
   COST_9 = 9,
   COST_10 = 10,
 };

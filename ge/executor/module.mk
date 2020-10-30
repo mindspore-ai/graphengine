@@ -48,10 +48,8 @@ local_ge_executor_src_files :=  \
     ../graph/load/new_model_manager/task_info/stream_switch_task_info.cc    \
     ../graph/load/new_model_manager/task_info/stream_switchn_task_info.cc   \
     ../graph/load/new_model_manager/task_info/end_graph_task_info.cc        \
-    ../graph/load/new_model_manager/task_info/model_exit_task_info.cc       \
     ../graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc   \
     ../graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc  \
-    ../opskernel_manager/ops_kernel_builder_manager.cc \
     ../single_op/single_op_manager.cc \
     ../single_op/single_op_model.cc \
     ../single_op/single_op.cc \
@@ -76,7 +74,6 @@ local_ge_executor_c_include :=             \
     $(TOPDIR)inc/framework                 \
     $(TOPDIR)inc                           \
     $(LOCAL_PATH)/../                      \
-    $(TOPDIR)graphengine/ge                \
     $(TOPDIR)libc_sec/include              \
     third_party/protobuf/include           \
     third_party/json/include               \
@@ -108,12 +105,7 @@ LOCAL_SRC_FILES := $(local_ge_executor_src_files)
 LOCAL_C_INCLUDES := $(local_ge_executor_c_include)
 
 LOCAL_SHARED_LIBRARIES := $(local_ge_executor_shared_library)
-
-LOCAL_SHARED_LIBRARIES += libascend_hal
-
-LOCAL_STATIC_LIBRARIES := \
-    libmsprofiler \
-
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 ifeq ($(device_os),android)
 LOCAL_LDFLAGS += -ldl
 LOCAL_LDLIBS += -L$(PWD)/prebuilts/clang/linux-x86/aarch64/android-ndk-r21/sysroot/usr/lib/aarch64-linux-android/29 -llog
@@ -150,10 +142,9 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libregister                            \
     libmsprof                              \
     liberror_manager                       \
-    stub/libascend_hal                     \
+    stub/libascend_hal
 
-LOCAL_STATIC_LIBRARIES := \
-    libmsprofiler \
+LOCAL_STATIC_LIBRARIES := libmsprofiler
 
 LOCAL_LDFLAGS += $(local_ge_executor_ldflags)
 

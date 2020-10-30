@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,11 +124,12 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
         return PARAM_INVALID;
     }
   }
-  string errormsg = "its shape size must be in range[3,4] which dynamic aipp is linked, "
-                    "maybe this input is not suitable for dynamic aipp";
-  ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                  {data_node->GetName() + " shape size",
-                                                  to_string(shape.size()), errormsg});
+  string errormsg =
+    "its shape size must be in range[3,4] which dynamic aipp is linked, "
+    "maybe this input is not suitable for dynamic aipp";
+  ErrorManager::GetInstance().ATCReportErrMessage(
+    "E10001", {"parameter", "value", "reason"},
+    {data_node->GetName() + " shape size", to_string(shape.size()), errormsg});
   GELOGE(PARAM_INVALID, "The shape size of this node [%s] which linked dynamic aipp must be in range[3, 4], but is %zu",
          data_node->GetName().c_str(), shape.size());
   return PARAM_INVALID;
@@ -183,11 +184,6 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
   GE_CHECK_NOTNULL(graph);
   NodePtr target_input = nullptr;
   std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> target_edges;
-
-  if (this->ConvertRelatedInputNameToRank() != SUCCESS) {
-    GELOGE(FAILED, "AippOp: convert related input name to rank failed.");
-    return FAILED;
-  }
   GE_CHK_STATUS_RET(this->GetTargetPosition(graph, target_input, target_edges), "Get data nodes position failed");
 
   std::map<OutDataAnchorPtr, NodePtr> out_anchors_to_aipp;
@@ -228,8 +224,8 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
 
   return SUCCESS;
 }
-NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor,
-                           const std::string &aippConfigPath, const uint32_t &index) {
+NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor, const std::string &aippConfigPath,
+                           const uint32_t &index) {
   const auto &node = out_anchor->GetOwnerNode();
   std::string current_name = node->GetName() + "_" + std::to_string(out_anchor->GetIdx()) + "_huawei_aipp";
   auto aipp_opdesc_ptr = MakeShared<OpDesc>(current_name, AIPP);
@@ -271,18 +267,18 @@ NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor,
 Status AippOp::AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aipp_cfg_path, const uint32_t &index) {
   GeAttrValue::NAMED_ATTRS aipp_attr;
   ConvertParamToAttr(aipp_attr);
-  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr),
-                         INTERNAL_ERROR, "Set name attrs for aipp node failed");
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr), INTERNAL_ERROR,
+                         "Set name attrs for aipp node failed");
 
-  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetStr(op_desc, kAippConfigPath, aipp_cfg_path),
-                         INTERNAL_ERROR, "Set config file path attr for aipp node failed");
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetStr(op_desc, kAippConfigPath, aipp_cfg_path), INTERNAL_ERROR,
+                         "Set config file path attr for aipp node failed");
 
   std::vector<std::string> empty_names;
   GE_CHK_BOOL_RET_STATUS(AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, empty_names),
                          INTERNAL_ERROR, "Set ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES attr for aipp node failed");
 
-  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetInt(op_desc, kCurrentAippIndex, index),
-                         INTERNAL_ERROR, "Set kCurrentAippIndex attr for aipp node failed");
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::SetInt(op_desc, kCurrentAippIndex, index), INTERNAL_ERROR,
+                         "Set kCurrentAippIndex attr for aipp node failed");
   // add input/output desc
   GeTensorDesc tensor;
   GE_CHK_GRAPH_STATUS_RET(op_desc->AddInputDesc("images", tensor), "Failed to add input images for aipp node");
@@ -393,9 +389,10 @@ Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_n
       return INTERNAL_ERROR;
     }
     target = switchn;
-    GELOGI("Multi-batch/image size and static aipp for data %s, "
-           "the aipp node will be insert after %s instead of origin data node",
-           data_node->GetName().c_str(), switchn->GetName().c_str());
+    GELOGI(
+      "Multi-batch/image size and static aipp for data %s, "
+      "the aipp node will be insert after %s instead of origin data node",
+      data_node->GetName().c_str(), switchn->GetName().c_str());
 
     return SUCCESS;
   }
@@ -415,38 +412,6 @@ Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_n
 
   return SUCCESS;
 }
-Status AippOp::ConvertRelatedInputNameToRank() {
-  GE_CHECK_NOTNULL(aipp_params_);
-
-  string related_input_name = aipp_params_->related_input_name();
-  if(related_input_name.empty()) {
-    return SUCCESS;
-  }
-
-  std::vector<std::string> data_top_names = domi::GetContext().data_top_names;
-  GELOGI("Convert name to rank start: data size[%zu]", data_top_names.size());
-  uint32_t index = 0;
-  bool convert_flag = false;
-  for (const auto &data_top_name : data_top_names) {
-    if (related_input_name == data_top_name) {
-      aipp_params_->set_related_input_rank(index);
-      convert_flag = true;
-      GELOGI("AippOp: rank: %u, top name: %s.", index, data_top_name.c_str());
-      break;
-    }
-    index++;
-  }
-  if (!convert_flag) {
-    string error_msg = "Top name " + related_input_name + "convert rank failed, Please"
-                       " ensure top name in aipp config is the top name of data node.";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-    GELOGE(PARAM_INVALID, "Top name[%s] converts rank failed.", related_input_name.c_str());
-    return PARAM_INVALID;
-  }
-
-  return SUCCESS;
-}
-
 
 Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
                                  std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &target_edges) {
@@ -590,8 +555,8 @@ Status AippOp::ValidateParams() {
   const domi::AippOpParams::AippMode aipp_mode = aipp_params_->aipp_mode();
   if (aipp_mode == domi::AippOpParams::dynamic) {
     AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
-        aipp_params_->max_src_image_size() > 0, PARAM_INVALID,
-        "For dynamic AIPP params, max_src_image_size must be set which number should be greater than 0");
+      aipp_params_->max_src_image_size() > 0, PARAM_INVALID,
+      "For dynamic AIPP params, max_src_image_size must be set which number should be greater than 0");
   } else {
     AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_format() != domi::AippOpParams::UNDEFINED, PARAM_INVALID,
                                            "Input format of AIPP conf is undefined");
@@ -832,18 +797,15 @@ Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp
   GeTensorDesc input_tensor(input_shape, FORMAT_ND, DT_UINT8);
   TensorUtils::SetReuseInput(input_tensor, false);
   TensorUtils::SetSize(input_tensor, max_dynamic_aipp_size);
-  GE_CHECK_NOTNULL(aipp_node);
+
   const ComputeGraphPtr &graph = aipp_node->GetOwnerComputeGraph();
   string node_name;
-  // First aippdata name should be definite.
-  if (graph->FindFirstNodeMatchType(AIPPDATA) == nullptr) {
-    GELOGI("Current graph has no aippdata node, so the name of it must be definite.");
+  if (index == 0) {
     node_name = kDynamicAippData;
   } else {
-    node_name = string(kDynamicAippData) + "_" + aipp_node->GetName();
+    node_name = string(kDynamicAippData) + "_" + to_string(index);
   }
-  GELOGI("Current add aippdata node name is %s", node_name.c_str());
-
+  ++index;
   // new add aipp_data ops for dynamic aipp param input
   OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(node_name, AIPPDATA);
   GE_CHECK_NOTNULL(op_desc_ptr_data);

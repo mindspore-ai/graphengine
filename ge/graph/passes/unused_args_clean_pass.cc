@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "unused_args_clean_pass.h"
 
 #include "graph/utils/node_utils.h"
@@ -69,7 +70,7 @@ bool UnusedArgsCleanPass::UnusedInputTensor(const map<ComputeGraphPtr, map<uint3
   for (const auto &item : graph_nodes) {
     const auto &nodes = item.second;
     const auto it = nodes.find(parent_index);
-    if (it == nodes.end()) {    // not used.
+    if (it == nodes.end()) {  // not used.
       continue;
     }
 
@@ -144,7 +145,7 @@ Status UnusedArgsCleanPass::UpdateInputTensor(const map<ComputeGraphPtr, map<uin
   for (const auto &item : graph_nodes) {
     const auto &nodes = item.second;
     const auto it = nodes.find(parent_index);
-    if (it == nodes.end()) {    // not used.
+    if (it == nodes.end()) {  // not used.
       continue;
     }
     const auto data = it->second;
@@ -160,13 +161,9 @@ Status UnusedArgsCleanPass::UpdateInputTensor(const map<ComputeGraphPtr, map<uin
   const auto &out_anchor = old_anchor->GetPeerOutAnchor();
   const auto &out_node = out_anchor->GetOwnerNode();
 
-  const auto &func_desc = func_node->GetOpDesc();
-  const auto &old_desc = func_desc->GetInputDesc(parent_index);
-  (void)func_desc->UpdateInputDesc(update_index, old_desc);
-
   GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_anchor, new_anchor), "Add edge failed");
-  GELOGI("Add edge success, func node: %s, node: %s, parent index: %u, update index: %u",
-         func_node->GetName().c_str(), out_node->GetName().c_str(), parent_index, update_index);
+  GELOGI("Add edge success, func node: %s, node: %s, parent index: %u, update index: %u", func_node->GetName().c_str(),
+         out_node->GetName().c_str(), parent_index, update_index);
 
   GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, old_anchor), "Remove edge failed");
   GELOGI("Remove edge success, func node: %s, node: %s", func_node->GetName().c_str(), out_node->GetName().c_str());
@@ -188,7 +185,7 @@ Status UnusedArgsCleanPass::RemoveInputTensor(const map<ComputeGraphPtr, map<uin
     const auto &graph = item.first;
     const auto &nodes = item.second;
     const auto it = nodes.find(parent_index);
-    if (it == nodes.end()) {    // not used.
+    if (it == nodes.end()) {  // not used.
       continue;
     }
 

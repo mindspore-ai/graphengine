@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "graph/build/run_context.h"
 
 #include "common/util.h"
@@ -22,9 +23,7 @@
 namespace ge {
 RunContextUtil::~RunContextUtil() { DestroyRtModelResources(); }
 
-Status RunContextUtil::InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size,
-                                   std::map<int64_t, uint8_t *> mem_type_to_data_mem_base,
-                                   std::map<int64_t, uint64_t> mem_type_to_data_mem_size, uint8_t *weight_mem_base,
+Status RunContextUtil::InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_size, uint8_t *weight_mem_base,
                                    uint64_t weight_mem_size) {
   if ((data_mem_size > 0) && (data_mem_base == nullptr)) {
     GELOGE(PARAM_INVALID, "InitMemInfo param data_mem_base is null but data_mem_size = %lu.", data_mem_size);
@@ -34,20 +33,10 @@ Status RunContextUtil::InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_siz
     GELOGE(PARAM_INVALID, "InitMemInfo param weight_mem_base is null but weight_mem_size = %lu.", weight_mem_size);
     return PARAM_INVALID;
   }
-  if (mem_type_to_data_mem_base.empty() || mem_type_to_data_mem_size.empty() ||
-      mem_type_to_data_mem_base.size() != mem_type_to_data_mem_size.size()) {
-    GELOGE(PARAM_INVALID,
-           "InitMemInfo param mem_type_to_data_mem_base size[%zu] is not equal to the size of "
-           "mem_type_to_data_mem_size[%zu].",
-           mem_type_to_data_mem_base.size(), mem_type_to_data_mem_size.size());
-    return PARAM_INVALID;
-  }
   data_mem_base_ = data_mem_base;
   data_mem_size_ = data_mem_size;
   weight_mem_base_ = weight_mem_base;
   weight_mem_size_ = weight_mem_size;
-  mem_type_to_data_mem_base_ = mem_type_to_data_mem_base;
-  mem_type_to_data_mem_size_ = mem_type_to_data_mem_size;
   return SUCCESS;
 }
 
@@ -178,32 +167,9 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
   GELOGI("CreateRunContext: data_mem_base_ = %p, weight_mem_base_ = %p, memory_size = %lu, weight_size = %lu",
          data_mem_base_, weight_mem_base_, data_mem_size_, weight_mem_size_);
 
-  PrintMemInfo();
-
-  run_context_ = {rt_model_,
-                  nullptr,
-                  session_id,
-                  data_mem_size_,
-                  data_mem_base_,
-                  mem_type_to_data_mem_size_,
-                  mem_type_to_data_mem_base_,
-                  weight_mem_size_,
-                  weight_mem_base_,
-                  buffer,
-                  stream_list_,
-                  event_list_,
-                  label_list_};
+  run_context_ = {rt_model_,        nullptr, session_id,   data_mem_size_, data_mem_base_, weight_mem_size_,
+                  weight_mem_base_, buffer,  stream_list_, event_list_,    label_list_};
   return SUCCESS;
-}
-
-void RunContextUtil::PrintMemInfo() {
-  for (auto iter : mem_type_to_data_mem_base_) {
-    GELOGI("CreateRunContext: memory type = %ld, data memory base = %p", iter.first, iter.second);
-  }
-
-  for (auto iter : mem_type_to_data_mem_size_) {
-    GELOGI("CreateRunContext: memory type = %ld, data memory size = %lu", iter.first, iter.second);
-  }
 }
 
 RunContext &RunContextUtil::GetRunContext() { return run_context_; }

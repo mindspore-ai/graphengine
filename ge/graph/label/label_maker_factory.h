@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,13 @@ class LabelMakerFactory {
       LabelMakerFactory::Instance().RegisterCreator(node_type, func);
     }
 
-    ~Registerar() = default;
+    ~Registerar() {}
   };
 
  private:
-  LabelMakerFactory() = default;
-  ~LabelMakerFactory() = default;
+  LabelMakerFactory() {}
+
+  ~LabelMakerFactory() {}
 
   // register creator, this function will call in the constructor
   void RegisterCreator(const std::string &node_type, const LabelCreatorFun func) {

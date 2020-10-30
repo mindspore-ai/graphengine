@@ -22,19 +22,13 @@
 namespace ge {
 namespace hybrid {
 ShapeInferenceEngine::ShapeInferenceEngine(GraphExecutionContext *execution_context, SubgraphContext *subgraph_context)
-    : execution_context_(execution_context),
-      subgraph_context_(subgraph_context) {
-}
+    : execution_context_(execution_context), subgraph_context_(subgraph_context) {}
 
 Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   // Wait for all input shape become valid
   GE_CHK_STATUS_RET_NOLOG(node_state.GetShapeInferenceState().AwaitShapesReady(*execution_context_));
 
   auto &node_item = *node_state.GetNodeItem();
-
-  // Wait for "const input nodes" if node's shape inference function requires any.
-  // Even if output shape is static, there are cases that the const-input will be used in OpTiling and Execution
-  GE_CHK_STATUS_RET_NOLOG(AwaitDependentNodes(node_state));
   if (node_item.is_output_shape_static) {
     return SUCCESS;
   }
@@ -57,6 +51,9 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
     }
   }
 
+  // Wait for "const input nodes" if node's shape inference function requires any.
+  GE_CHK_STATUS_RET_NOLOG(AwaitDependentNodes(node_state));
+
   // Do shape inference
   GELOGD("[%s] Start to invoke InferShapeAndType", node_item.NodeName().c_str());
   {
@@ -69,17 +66,13 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   if (node_item.shape_inference_type != DEPEND_SHAPE_RANGE) {
     bool is_unknown_shape = false;
     GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node_item.node, is_unknown_shape),
-                      "Failed to get shape status. node = %s",
-                      node_item.NodeName().c_str());
+                      "Failed to get shape status. node = %s", node_item.NodeName().c_str());
 
-    GE_CHK_BOOL_RET_STATUS(!is_unknown_shape,
-                           INTERNAL_ERROR,
-                           "[%s] Shape is still unknown after shape inference.",
+    GE_CHK_BOOL_RET_STATUS(!is_unknown_shape, INTERNAL_ERROR, "[%s] Shape is still unknown after shape inference.",
                            node_item.NodeName().c_str());
   }
 
-  GELOGD("[%s] [HybridTrace] After shape inference. Node = %s",
-         node_item.NodeName().c_str(),
+  GELOGD("[%s] [HybridTrace] After shape inference. Node = %s", node_item.NodeName().c_str(),
          node_item.DebugString().c_str());
 
   GELOGD("[%s] InferShapeAndType finished successfully.", node_item.NodeName().c_str());
@@ -89,21 +82,15 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
 Status ShapeInferenceEngine::AwaitDependentNodes(NodeState &node_state) {
   auto &node_item = *node_state.GetNodeItem();
   for (auto &src_node : node_item.dependents_for_shape_inference) {
-    GELOGI("[%s] Start to wait for data dependent node: %s",
-           node_item.NodeName().c_str(),
-           src_node->GetName().c_str());
-    RECORD_SHAPE_INFERENCE_EVENT(execution_context_,
-                                 node_item.NodeName().c_str(),
-                                 "[AwaitNodeDone] [%s] Start",
+    GELOGI("[%s] Start to wait for data dependent node: %s", node_item.NodeName().c_str(), src_node->GetName().c_str());
+    RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[AwaitNodeDone] [%s] Start",
                                  src_node->GetName().c_str());
     if (!subgraph_context_->Await(src_node)) {
       GELOGE(INTERNAL_ERROR, "[%s] Await node failed.", src_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
 
-    RECORD_SHAPE_INFERENCE_EVENT(execution_context_,
-                                 node_item.NodeName().c_str(),
-                                 "[AwaitNodeDone] [%s] End",
+    RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[AwaitNodeDone] [%s] End",
                                  src_node->GetName().c_str());
     GELOGI("[%s] Done waiting node.", src_node->GetName().c_str());
   }
@@ -118,9 +105,8 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
 
   // output shape will not be valid until compute is done.
   bool shape_is_future =
-      node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE;
-  GELOGD("[%s] Start to propagate output shapes. shape_type = %d",
-         node_item.NodeName().c_str(),
+    node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE;
+  GELOGD("[%s] Start to propagate output shapes. shape_type = %d", node_item.NodeName().c_str(),
          node_item.shape_inference_type);
   RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[PropagateOutputShapes] Start");
   // propagate each output
@@ -136,10 +122,8 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
       auto dst_node_state = subgraph_context_->GetOrCreateNodeState(dst_node_item);
       GE_CHECK_NOTNULL(dst_node_state);
 
-      GELOGI("[%s] Update dst node [%s], input index = %d",
-             node_item.NodeName().c_str(),
-             dst_node_item->NodeName().c_str(),
-             dst_input_index_and_node.first);
+      GELOGI("[%s] Update dst node [%s], input index = %d", node_item.NodeName().c_str(),
+             dst_node_item->NodeName().c_str(), dst_input_index_and_node.first);
 
       // in case type 3 and 4, shape will be valid after computing is done
       if (shape_is_future) {
@@ -174,8 +158,7 @@ Status ShapeInferenceEngine::InferShapeForSubgraph(const NodeItem &node_item, co
     GELOGD("[%s] Start to invoke InferShapeAndType", node->GetName().c_str());
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndType(node));
     GELOGD("[%s] Done invoking InferShapeAndType", node->GetName().c_str());
-    GE_CHK_STATUS_RET(UpdatePeerNodeShape(*node),
-                      "[%s] Failed to update shapes of peer node.",
+    GE_CHK_STATUS_RET(UpdatePeerNodeShape(*node), "[%s] Failed to update shapes of peer node.",
                       node->GetName().c_str());
   }
 
@@ -213,15 +196,13 @@ Status ShapeInferenceEngine::UpdatePeerNodeShape(const Node &node) {
       }
 
       GELOGI("Peer input op desc name is %s, need to flush: shape size is %zu, datatype is %d, original datatype is %d",
-             peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),
-             output_tensor->GetShape().GetDimNum(), output_tensor->GetDataType(),
-             output_tensor->GetOriginDataType());
+             peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), output_tensor->GetShape().GetDimNum(),
+             output_tensor->GetDataType(), output_tensor->GetOriginDataType());
       peer_input_desc->SetOriginShape(output_tensor->GetOriginShape());
       peer_input_desc->SetShape(output_tensor->GetShape());
       GELOGI("Peer input op desc name is %s, shape size is %zu, datatype is %d, original datatype is %d",
-             peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),
-             peer_input_desc->GetShape().GetDimNum(), peer_input_desc->GetDataType(),
-             peer_input_desc->GetOriginDataType());
+             peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), peer_input_desc->GetShape().GetDimNum(),
+             peer_input_desc->GetDataType(), peer_input_desc->GetOriginDataType());
     }
   }
   return SUCCESS;

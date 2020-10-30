@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,15 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #include "host_kernels/strided_slice_kernel.h"
+
 #include "common/fp16_t.h"
+#include "common/ge_inner_error_codes.h"
 #include "common/math/math_util.h"
-#include "framework/common/types.h"
+#include "common/op/ge_op_utils.h"
+#include "external/graph/types.h"
+#include "framework/common/debug/ge_log.h"
 #include "graph/utils/type_utils.h"
 #include "host_kernels/kernel_utils.h"
 #include "inc/kernel_factory.h"
+#include <memory>
 
 namespace ge {
 namespace {
@@ -31,16 +36,16 @@ const size_t kStridedSliceBeginIndex = 1;
 const size_t kStridedSliceEndIndex = 2;
 const size_t kStridedSliceStrideIndex = 3;
 const int32_t kDefaultStrideSize = 1;
-const uint32_t kMaskBitLeftUnit = 1;
 const std::set<DataType> kIndexNumberType = {DT_INT32, DT_INT64};
 
-bool IsEllipsisMaskValid(const GeTensorDescPtr &input_desc, const uint32_t ellipsis_mask) {
+bool IsEllipsisMaskValid(const GeTensorDescPtr &input_desc, const int ellipsis_mask) {
   if (ellipsis_mask != 0) {
     auto ellipsis_num = 0;
     auto input_shape = input_desc->GetShape();
-    for (size_t i = 0; i < input_shape.GetDimNum(); ++i) {
-      auto i_temp = static_cast<uint32_t>(i);
-      bool ellipsis_mask_flag = (ellipsis_mask) & (kMaskBitLeftUnit << i_temp);
+    bool ellipsis_mask_flag = false;
+    for (size_t i = 0; i < input_shape.GetDimNum(); i++) {
+      uint32_t i_temp = static_cast<uint32_t>(i);
+      ellipsis_mask_flag = (static_cast<uint32_t>(ellipsis_mask) & (1 << i_temp));
       if (ellipsis_mask_flag) {
         ++ellipsis_num;
       }
@@ -51,35 +56,6 @@ bool IsEllipsisMaskValid(const GeTensorDescPtr &input_desc, const uint32_t ellip
     }
   }
   return true;
-}
-
-void GetOriginStrideVec(const std::vector<ge::ConstGeTensorPtr> &input, vector<int64_t> &orig_begin_vec,
-                        vector<int64_t> &orig_end_vec, vector<int64_t> &orig_stride_vec) {
-  ConstGeTensorPtr begin_tensor = input[kStridedSliceBeginIndex];
-  ConstGeTensorPtr end_tensor = input[kStridedSliceEndIndex];
-  ConstGeTensorPtr stride_tensor = input[kStridedSliceStrideIndex];
-
-  auto data_type = begin_tensor->GetTensorDesc().GetDataType();
-  size_t vec_size = begin_tensor->GetData().size() / GetSizeByDataType(data_type);
-  if (data_type == DT_INT32) {
-    const int32_t *begin = reinterpret_cast<const int32_t *>(begin_tensor->GetData().data());
-    const int32_t *end = reinterpret_cast<const int32_t *>(end_tensor->GetData().data());
-    const int32_t *stride = reinterpret_cast<const int32_t *>(stride_tensor->GetData().data());
-    for (size_t i = 0; i < vec_size; ++i) {
-      orig_begin_vec.emplace_back(begin[i]);
-      orig_end_vec.emplace_back(end[i]);
-      orig_stride_vec.emplace_back(stride[i]);
-    }
-  } else {
-    const int64_t *begin = reinterpret_cast<const int64_t *>(begin_tensor->GetData().data());
-    const int64_t *end = reinterpret_cast<const int64_t *>(end_tensor->GetData().data());
-    const int64_t *stride = reinterpret_cast<const int64_t *>(stride_tensor->GetData().data());
-    for (size_t i = 0; i < vec_size; ++i) {
-      orig_begin_vec.emplace_back(begin[i]);
-      orig_end_vec.emplace_back(end[i]);
-      orig_stride_vec.emplace_back(stride[i]);
-    }
-  }
 }
 }  // namespace
 Status StridedSliceKernel::Compute(const ge::OpDescPtr attr, const std::vector<ge::ConstGeTensorPtr> &input,
@@ -157,7 +133,7 @@ Status StridedSliceKernel::CheckAndGetAttr(const OpDescPtr &attr) {
   }
   return SUCCESS;
 }
-Status StridedSliceKernel::CheckInputParam(const std::vector<ConstGeTensorPtr> &input) {
+Status StridedSliceKernel::CheckInputParam(const std::vector<ConstGeTensorPtr> &input) const {
   if (input.size() != kStridedSliceInputSize) {
     GELOGE(PARAM_INVALID, "The number of input for strided slice must be %zu.", kStridedSliceInputSize);
     return PARAM_INVALID;
@@ -194,9 +170,9 @@ Status StridedSliceKernel::CheckInputParam(const std::vector<ConstGeTensorPtr> &
     return PARAM_INVALID;
   }
   size_t weight0_size = weight0->GetData().size() / x_data_size;
-  size_t begin_data_size = begin_tensor->GetData().size();
-  size_t end_data_size = end_tensor->GetData().size();
-  size_t stride_data_size = stride_tensor->GetData().size();
+  size_t begin_data_size = begin_tensor->GetData().size() / sizeof(int32_t);
+  size_t end_data_size = end_tensor->GetData().size() / sizeof(int32_t);
+  size_t stride_data_size = stride_tensor->GetData().size() / sizeof(int32_t);
   if ((weight0_size == 0) || (begin_data_size == 0) || (end_data_size == 0) || (stride_data_size == 0)) {
     GELOGW("Data size of inputs is 0.");
     return PARAM_INVALID;
@@ -206,6 +182,7 @@ Status StridedSliceKernel::CheckInputParam(const std::vector<ConstGeTensorPtr> &
     GELOGW("The sizes of begin, end and stride is not supported.");
     return PARAM_INVALID;
   }
+
   return SUCCESS;
 }
 
@@ -214,6 +191,8 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
                                               std::vector<int64_t> &output_dims, std::vector<int64_t> &stride_vec) {
   ConstGeTensorPtr weight0 = input[kStridedSliceInputIndex];
   ConstGeTensorPtr begin_tensor = input[kStridedSliceBeginIndex];
+  ConstGeTensorPtr end_tensor = input[kStridedSliceEndIndex];
+  ConstGeTensorPtr stride_tensor = input[kStridedSliceStrideIndex];
 
   const GeShape x_shape = weight0->GetTensorDesc().GetShape();
   auto x_dims = x_shape.GetDims();
@@ -221,13 +200,15 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
   // handle new_axis_mask
   ExpandDimsWithNewAxis(begin_tensor, x_dims_num, x_dims);
 
-  vector<int64_t> orig_begin_vec, orig_end_vec, orig_stride_vec;
-  GetOriginStrideVec(input, orig_begin_vec, orig_end_vec, orig_stride_vec);
-  auto begin_dim_num = orig_begin_vec.size();
+  const int32_t *begin = reinterpret_cast<const int32_t *>(begin_tensor->GetData().data());
+  const int32_t *end = reinterpret_cast<const int32_t *>(end_tensor->GetData().data());
+  const int32_t *stride = reinterpret_cast<const int32_t *>(stride_tensor->GetData().data());
+  auto begin_dim_num = begin_tensor->GetData().size() / sizeof(int32_t);
   auto min_dim = x_dims_num > begin_dim_num ? begin_dim_num : x_dims_num;
   for (size_t i = 0; i < x_dims.size(); ++i) {
-    auto i_temp = static_cast<uint32_t>(i);
-    bool new_axis_mask_flag = (attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK) & (kMaskBitLeftUnit << i_temp));
+    auto i_temp = static_cast<uint64_t>(i);
+    bool new_axis_mask_flag =
+      (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK)) & (1 << i_temp));
     if (new_axis_mask_flag) {
       output_dims.push_back(1);
       input_dims.push_back(1);
@@ -240,9 +221,9 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
     int64_t end_i = 0;
     int64_t stride_i = 1;
     if (i < min_dim) {
-      begin_i = orig_begin_vec[i];
-      end_i = orig_end_vec[i];
-      stride_i = orig_stride_vec[i];
+      begin_i = begin[i];
+      end_i = end[i];
+      stride_i = stride[i];
     } else {
       begin_i = 0;
       end_i = x_dims.at(i);
@@ -258,7 +239,7 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
     int64_t dim_final;
     GELOGD("Before stride calculate. Begin is : %d\t,end is : %d\t stride is : %d\t x_dim_i is : %d.", begin_i, end_i,
            stride_i, x_dims.at(i));
-    (void) StrideCal(x_dims.at(i), begin_i, end_i, stride_i, dim_final);
+    (void)StrideCal(x_dims.at(i), begin_i, end_i, stride_i, dim_final);
     output_dims.push_back(dim_final);
     input_dims.push_back(x_dims.at(i));
     begin_vec.push_back(begin_i);
@@ -266,27 +247,28 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
   }
   return SUCCESS;
 }
-
 void StridedSliceKernel::ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_tensor, const size_t x_dims_num,
                                                vector<int64_t> &x_dims) {
   auto begin_data_type_size = GetSizeByDataType(begin_tensor->GetTensorDesc().GetDataType());
   size_t begin_vec_size = begin_tensor->GetData().size() / begin_data_type_size;
   auto final_dim_num = x_dims_num < begin_vec_size ? begin_vec_size : x_dims_num;
   for (size_t i = 0; i < final_dim_num; i++) {
-    auto i_temp = static_cast<uint32_t>(i);
-    bool new_axis_mask_flag = (attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK) & (kMaskBitLeftUnit << i_temp));
+    auto i_temp = static_cast<uint64_t>(i);
+    bool new_axis_mask_flag =
+      (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_NEW_AXIS_MASK)) & (1 << i_temp));
     if (new_axis_mask_flag) {
       x_dims.insert(x_dims.begin() + i, 1);
     }
   }
 }
-
 Status StridedSliceKernel::MaskCal(const size_t i, int64_t &begin_i, int64_t &end_i, int64_t &dim_i) const {
-  auto i_temp = static_cast<uint32_t>(i);
-  bool begin_mask_flag = (attr_value_map_.at(STRIDE_SLICE_ATTR_BEGIN_MASK) & (kMaskBitLeftUnit << i_temp));
-  bool end_mask_flag = (attr_value_map_.at(STRIDE_SLICE_ATTR_END_MASK) & (kMaskBitLeftUnit << i_temp));
-  bool ellipsis_mask_flag = (attr_value_map_.at(STRIDE_SLICE_ATTR_ELLIPSIS_MASK) & (kMaskBitLeftUnit << i_temp));
-  bool shrink_mask_flag = (attr_value_map_.at(STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK) & (kMaskBitLeftUnit << i_temp));
+  uint64_t i_temp = static_cast<uint64_t>(i);
+  bool begin_mask_flag = (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_BEGIN_MASK)) & (1 << i_temp));
+  bool end_mask_flag = (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_END_MASK)) & (1 << i_temp));
+  bool ellipsis_mask_flag =
+    (static_cast<uint64_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_ELLIPSIS_MASK)) & (1 << i_temp));
+  bool shrink_mask_flag =
+    (static_cast<uint32_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK)) & (1 << i_temp));
   if (shrink_mask_flag) {
     begin_i = (begin_i < 0 ? (dim_i + begin_i) : begin_i);
     FMK_INT32_ADDCHECK(begin_i, kNumOne)
@@ -309,9 +291,8 @@ Status StridedSliceKernel::MaskCal(const size_t i, int64_t &begin_i, int64_t &en
   }
   return SUCCESS;
 }
-
 Status StridedSliceKernel::StrideCal(const int64_t x_dims_i, int64_t &begin_i, int64_t &end_i, int64_t &stride_i,
-                                     int64_t &dim_final) {
+                                     int64_t &dim_final) const {
   if (stride_i == 0) {
     stride_i = kDefaultStrideSize;
   } else if (stride_i < 0) {
@@ -331,17 +312,15 @@ Status StridedSliceKernel::StrideCal(const int64_t x_dims_i, int64_t &begin_i, i
   }
   return SUCCESS;
 }
-
 void StridedSliceKernel::GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims,
                                        vector<int64_t> &v_dims) {
   for (uint32_t k = 0; k < dims_size; k++) {
-    bool shrink_mask_i = (attr_value_map_.at(STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK) & (kMaskBitLeftUnit << k));
+    bool shrink_mask_i = (static_cast<uint32_t>(attr_value_map_.at(STRIDE_SLICE_ATTR_SHRINK_AXIS_MASK)) & (1 << k));
     if (shrink_mask_i) {
       continue;
     }
     v_dims.push_back(output_dims[k]);
   }
 }
-
 REGISTER_KERNEL(STRIDEDSLICE, StridedSliceKernel);
 }  // namespace ge

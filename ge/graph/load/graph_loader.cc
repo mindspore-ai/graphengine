@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
     }
     return ret;
   }
-    return SUCCESS;
+  return SUCCESS;
 }
 
 Status GraphLoader::LoadModelFromFile(const std::string &path, const std::string &key_path, int32_t priority,
@@ -224,14 +224,13 @@ Status GraphLoader::CommandHandle(const Command &command) {
   return SUCCESS;
 }
 
-Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr,
-                                      size_t memsize, void *weight_ptr, size_t weightsize) {
+Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr, size_t memsize,
+                                      void *weight_ptr, size_t weightsize) {
   GELOGI("Load model begin, model_id:%u.", model_id);
   // For ACL, Open Device from App.
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->LoadModelOffline(
-      model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
+  Status ret = model_manager->LoadModelOffline(model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
   if (ret != SUCCESS) {
     GELOGE(ret, "Load model failed, model_id:%u.", model_id);
     return ret;
@@ -310,8 +309,8 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
     return RT_FAILED;
   }
   // Add small page memory size
-  free = static_cast<int64_t>(free_mem + VarManager::Instance(GetContext().SessionId())->GetUseMaxMemorySize() -
-                              total_mem);
+  free =
+    static_cast<int64_t>(free_mem + VarManager::Instance(GetContext().SessionId())->GetUseMaxMemorySize() - total_mem);
   GELOGI("GetMemoryInfo free[%zu], total[%zu], return free[%ld]", free_mem, total_mem, free);
   return SUCCESS;
 }

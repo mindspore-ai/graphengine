@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GE_GRAPH_PASSES_TRANSOP_WITHOUT_RESHAPE_FUSION_PASS_H_
 #define GE_GRAPH_PASSES_TRANSOP_WITHOUT_RESHAPE_FUSION_PASS_H_
 
@@ -37,19 +38,13 @@ class TransOpWithoutReshapeFusionPass : public GraphPass {
   void RemoveNousedNodes(const ComputeGraphPtr &graph);
   void GetBeginOutDescAndEndInDesc(const int index, GeTensorDesc &out_desc, GeTensorDesc &in_desc);
 
-  void GetFormatTransferDesc(const GeTensorDesc &out_desc,
-                             const GeTensorDesc &in_desc,
-                             GeTensorDesc &format_transfer_input,
-                             GeTensorDesc &format_transfer_output);
+  void GetFormatTransferDesc(const GeTensorDesc &out_desc, const GeTensorDesc &in_desc,
+                             GeTensorDesc &format_transfer_input, GeTensorDesc &format_transfer_output);
 
-  void GetCastOpDesc(const GeTensorDesc &out_desc,
-                     const GeTensorDesc &in_desc,
-                     GeTensorDesc &cast_input,
+  void GetCastOpDesc(const GeTensorDesc &out_desc, const GeTensorDesc &in_desc, GeTensorDesc &cast_input,
                      GeTensorDesc &cast_output);
 
-  graphStatus FormatFusion(const int index,
-                           OpDescPtr &format_transfer_op,
-                           int32_t &fusion_op_count,
+  graphStatus FormatFusion(const int index, OpDescPtr &format_transfer_op, int32_t &fusion_op_count,
                            bool &fusion_continue);
 
   graphStatus DataTypeFusion(const int index, OpDescPtr &cast_op, int32_t &fusion_op_count);
@@ -57,33 +52,27 @@ class TransOpWithoutReshapeFusionPass : public GraphPass {
   void GetOutDataPeerInControlAnchors(const size_t index,
                                       vector<vector<InControlAnchorPtr>> &out_data_peer_in_control_anchors);
 
-  void GetInControlPeerOutControlAnchors(
-      const size_t index,
-      vector<vector<OutControlAnchorPtr>> &in_control_peer_out_control_anchors);
+  void GetInControlPeerOutControlAnchors(const size_t index,
+                                         vector<vector<OutControlAnchorPtr>> &in_control_peer_out_control_anchors);
 
-  void GetOutControlPeerAnchors(
-      const size_t index,
-      vector<vector<InControlAnchorPtr>> &out_control_peer_in_control_anchors,
-      vector<vector<InDataAnchorPtr>> &out_control_peer_in_data_anchors);
+  void GetOutControlPeerAnchors(const size_t index,
+                                vector<vector<InControlAnchorPtr>> &out_control_peer_in_control_anchors,
+                                vector<vector<InDataAnchorPtr>> &out_control_peer_in_data_anchors);
 
   graphStatus TransOpFuse(const ComputeGraphPtr &graph);
 
   bool OpAccuracyAbilityCheck(const OpDescPtr &op_desc);
 
   graphStatus GetSubGraphsBetweenNormalNode(
-      const OutDataAnchorPtr &out_anchor,
-      vector<vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>
-  >& sub_graphs_out,
-  vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list
-  );
+    const OutDataAnchorPtr &out_anchor, vector<vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>>> &sub_graphs_out,
+    vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list);
 
   graphStatus GetSubGraphNodesInfo();
 
   void GetControlAnchors();
 
   graphStatus InsertNewTransOp(const ComputeGraphPtr &graph, const OpDescPtr &cast_op,
-                               const OpDescPtr &format_transfer_op, const int index,
-                               const bool insert_cast_first);
+                               const OpDescPtr &format_transfer_op, const int index, const bool insert_cast_first);
 
   void EraseInvalidAnchorsPair();
 
@@ -108,11 +97,8 @@ class TransOpWithoutReshapeFusionPass : public GraphPass {
   graphStatus RelinkControlEdge(const int index, const OutDataAnchorPtr &out_anchor,
                                 const vector<NodePtr> &new_trans_nodes);
 
-  graphStatus GetTransNode(const ComputeGraphPtr &graph,
-                           const OpDescPtr &cast_op,
-                           const OpDescPtr &format_transfer_op,
-                           const bool insert_cast_first,
-                           std::vector<NodePtr> &new_trans_nodes);
+  graphStatus GetTransNode(const ComputeGraphPtr &graph, const OpDescPtr &cast_op, const OpDescPtr &format_transfer_op,
+                           const bool insert_cast_first, std::vector<NodePtr> &new_trans_nodes);
 
   void UpdateOutputName(const OutDataAnchorPtr &out_anchor, const InDataAnchorPtr &old_peer_in_anchor,
                         const NodePtr &in_owner_node);
@@ -135,8 +121,7 @@ class TransOpWithoutReshapeFusionPass : public GraphPass {
 
   static bool FusionFormatSupport(Format format);
 
-  vector<vector<pair<OutDataAnchorPtr, InDataAnchorPtr>>>
-  sub_graph_anchors_;
+  vector<vector<pair<OutDataAnchorPtr, InDataAnchorPtr>>> sub_graph_anchors_;
   vector<vector<NodePtr>> sub_graph_nodes_;
   vector<int> transop_num_count_;
   vector<bool> sub_graph_has_reshape_node_;
@@ -150,4 +135,3 @@ class TransOpWithoutReshapeFusionPass : public GraphPass {
 }  // namespace ge
 
 #endif  // GE_GRAPH_PASSES_TRANSOP_WITHOUT_RESHAPE_FUSION_PASS_H_
-

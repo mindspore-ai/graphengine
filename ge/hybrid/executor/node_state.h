@@ -66,39 +66,23 @@ struct NodeState {
   NodeState(const NodeItem &node_item, SubgraphContext *subgraph_context);
   ~NodeState() = default;
 
-  OpDesc *GetOpDesc() const {
-    return op_desc_.get();
-  }
+  OpDesc *GetOpDesc() const { return op_desc_.get(); }
 
-  inline const NodeItem *GetNodeItem() const {
-    return node_item_;
-  }
+  inline const NodeItem *GetNodeItem() const { return node_item_; }
 
-  inline const string &GetName() const {
-    return node_item_->NodeName();
-  }
+  inline const string &GetName() const { return node_item_->NodeName(); }
 
-  inline const string &GetType() const {
-    return node_item_->NodeType();
-  }
+  inline const string &GetType() const { return node_item_->NodeType(); }
 
-  ShapeInferenceState &GetShapeInferenceState() {
-    return shape_inference_state_;
-  }
+  ShapeInferenceState &GetShapeInferenceState() { return shape_inference_state_; }
 
-  const shared_ptr<NodeTask> &GetKernelTask() const {
-    return kernel_task_;
-  }
+  const shared_ptr<NodeTask> &GetKernelTask() const { return kernel_task_; }
 
-  void SetKernelTask(const shared_ptr<NodeTask> &kernel_task) {
-    kernel_task_ = kernel_task;
-  }
+  void SetKernelTask(const shared_ptr<NodeTask> &kernel_task) { kernel_task_ = kernel_task; }
 
   Status WaitForPrepareDone();
 
-  void SetPrepareFuture(std::future<Status> &&prepare_future) {
-    this->prepare_future_ = std::move(prepare_future);
-  }
+  void SetPrepareFuture(std::future<Status> &&prepare_future) { this->prepare_future_ = std::move(prepare_future); }
 
   Status AwaitInputTensors(GraphExecutionContext &context) const;
 
@@ -116,4 +100,4 @@ using NodeStatePtr = std::shared_ptr<NodeState>;
 }  // namespace hybrid
 }  // namespace ge
 
-#endif // GE_HYBRID_EXECUTOR_NODE_STATE_H_
+#endif  // GE_HYBRID_EXECUTOR_NODE_STATE_H_

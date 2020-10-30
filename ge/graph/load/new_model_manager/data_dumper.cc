@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,44 +83,36 @@ static uint64_t GetNowTime() {
 
   return ret;
 }
-
-static void ReplaceStringElem(std::string &str) {
-  for_each(str.begin(), str.end(), [](char &ch) {
-    if ((ch == ' ') || (ch == '.') || (ch == '/') || (ch == '\\')) {
-      ch = '_';
-    }
-  });
-}
 }  // namespace
 
 static int32_t GetIrDataType(ge::DataType data_type) {
   static const std::map<ge::DataType, ge::proto::DataType> data_type_map = {
-      {ge::DT_UNDEFINED, ge::proto::DT_UNDEFINED},
-      {ge::DT_FLOAT, ge::proto::DT_FLOAT},
-      {ge::DT_FLOAT16, ge::proto::DT_FLOAT16},
-      {ge::DT_INT8, ge::proto::DT_INT8},
-      {ge::DT_UINT8, ge::proto::DT_UINT8},
-      {ge::DT_INT16, ge::proto::DT_INT16},
-      {ge::DT_UINT16, ge::proto::DT_UINT16},
-      {ge::DT_INT32, ge::proto::DT_INT32},
-      {ge::DT_INT64, ge::proto::DT_INT64},
-      {ge::DT_UINT32, ge::proto::DT_UINT32},
-      {ge::DT_UINT64, ge::proto::DT_UINT64},
-      {ge::DT_BOOL, ge::proto::DT_BOOL},
-      {ge::DT_DOUBLE, ge::proto::DT_DOUBLE},
-      {ge::DT_DUAL, ge::proto::DT_DUAL},
-      {ge::DT_DUAL_SUB_INT8, ge::proto::DT_DUAL_SUB_INT8},
-      {ge::DT_DUAL_SUB_UINT8, ge::proto::DT_DUAL_SUB_UINT8},
-      {ge::DT_COMPLEX64, ge::proto::DT_COMPLEX64},
-      {ge::DT_COMPLEX128, ge::proto::DT_COMPLEX128},
-      {ge::DT_QINT8, ge::proto::DT_QINT8},
-      {ge::DT_QINT16, ge::proto::DT_QINT16},
-      {ge::DT_QINT32, ge::proto::DT_QINT32},
-      {ge::DT_QUINT8, ge::proto::DT_QUINT8},
-      {ge::DT_QUINT16, ge::proto::DT_QUINT16},
-      {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
-      {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
-      {ge::DT_STRING, ge::proto::DT_STRING},
+    {ge::DT_UNDEFINED, ge::proto::DT_UNDEFINED},
+    {ge::DT_FLOAT, ge::proto::DT_FLOAT},
+    {ge::DT_FLOAT16, ge::proto::DT_FLOAT16},
+    {ge::DT_INT8, ge::proto::DT_INT8},
+    {ge::DT_UINT8, ge::proto::DT_UINT8},
+    {ge::DT_INT16, ge::proto::DT_INT16},
+    {ge::DT_UINT16, ge::proto::DT_UINT16},
+    {ge::DT_INT32, ge::proto::DT_INT32},
+    {ge::DT_INT64, ge::proto::DT_INT64},
+    {ge::DT_UINT32, ge::proto::DT_UINT32},
+    {ge::DT_UINT64, ge::proto::DT_UINT64},
+    {ge::DT_BOOL, ge::proto::DT_BOOL},
+    {ge::DT_DOUBLE, ge::proto::DT_DOUBLE},
+    {ge::DT_DUAL, ge::proto::DT_DUAL},
+    {ge::DT_DUAL_SUB_INT8, ge::proto::DT_DUAL_SUB_INT8},
+    {ge::DT_DUAL_SUB_UINT8, ge::proto::DT_DUAL_SUB_UINT8},
+    {ge::DT_COMPLEX64, ge::proto::DT_COMPLEX64},
+    {ge::DT_COMPLEX128, ge::proto::DT_COMPLEX128},
+    {ge::DT_QINT8, ge::proto::DT_QINT8},
+    {ge::DT_QINT16, ge::proto::DT_QINT16},
+    {ge::DT_QINT32, ge::proto::DT_QINT32},
+    {ge::DT_QUINT8, ge::proto::DT_QUINT8},
+    {ge::DT_QUINT16, ge::proto::DT_QUINT16},
+    {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
+    {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
+    {ge::DT_STRING, ge::proto::DT_STRING},
   };
 
   auto iter = data_type_map.find(data_type);
@@ -177,7 +169,7 @@ void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
         }
 
         input_map_.insert(
-            {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
+          {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
       }
     }
     GELOGI("Save data message successfully");
@@ -204,17 +196,14 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
   op_desc_info.op_type = op->GetType();
   op_desc_info.task_id = task_id;
   op_desc_info.stream_id = stream_id;
-  for (size_t i = 0; i < op->GetAllInputsSize(); ++i) {
-    GeTensorDescPtr input_tensor_desc = op->MutableInputDesc(i);
-    if (input_tensor_desc == nullptr) {
-      continue;
-    }
-    op_desc_info.input_format.emplace_back(input_tensor_desc->GetFormat());
-    op_desc_info.input_shape.emplace_back(input_tensor_desc->GetShape().GetDims());
-    op_desc_info.input_data_type.emplace_back(input_tensor_desc->GetDataType());
+  for (size_t i = 0; i < op->GetInputsSize(); ++i) {
+    GeTensorDesc input_desc = op->GetInputDesc(i);
+    op_desc_info.input_format.emplace_back(input_desc.GetFormat());
+    op_desc_info.input_shape.emplace_back(input_desc.GetShape().GetDims());
+    op_desc_info.input_data_type.emplace_back(input_desc.GetDataType());
     int64_t input_size = 0;
-
-    if (TensorUtils::GetTensorSizeInBytes(*input_tensor_desc, input_size) != SUCCESS) {
+    auto tensor_descs = op->GetAllInputsDesc();
+    if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(i), input_size) != SUCCESS) {
       GELOGW("Get input size failed");
       return;
     }
@@ -222,15 +211,13 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
     op_desc_info.input_size.emplace_back(input_size);
   }
   for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
-    GeTensorDescPtr output_tensor_desc = op->MutableOutputDesc(j);
-    if (output_tensor_desc == nullptr) {
-      continue;
-    }
-    op_desc_info.output_format.emplace_back(output_tensor_desc->GetFormat());
-    op_desc_info.output_shape.emplace_back(output_tensor_desc->GetShape().GetDims());
-    op_desc_info.output_data_type.emplace_back(output_tensor_desc->GetDataType());
+    GeTensorDesc output_desc = op->GetOutputDesc(j);
+    op_desc_info.output_format.emplace_back(output_desc.GetFormat());
+    op_desc_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
+    op_desc_info.output_data_type.emplace_back(output_desc.GetDataType());
     int64_t output_size = 0;
-    if (TensorUtils::GetTensorSizeInBytes(*output_tensor_desc, output_size) != SUCCESS) {
+    auto tensor_descs = op->GetAllOutputsDesc();
+    if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(j), output_size) != SUCCESS) {
       GELOGW("Get input size failed");
       return;
     }
@@ -684,32 +671,12 @@ Status DataDumper::LoadDumpInfo() {
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(dump_properties_.GetDumpStep());
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGI("Dump step is %s and dump path is %s dump model is %s in load dump info",
-         dump_properties_.GetDumpStep().c_str(), dump_path.c_str(), dump_list_key.c_str());
-  auto ret = BuildTaskInfo(op_mapping_info);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Build task info failed");
-    return ret;
-  }
+  GELOGI("Dump step is %s and dump path  is %s in load dump info", dump_properties_.GetDumpStep().c_str(),
+         dump_path.c_str());
 
-  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
-
-  SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
-
-  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
-    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Execute load dump info failed");
-      return ret;
-    }
-  }
-  return SUCCESS;
-}
-
-Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
   for (const auto &op_iter : op_list_) {
     auto op_desc = op_iter.op;
-    GELOGD("Op %s in model begin to add task in op_mapping_info", op_desc->GetName().c_str());
+    GELOGD("Op %s in model %s begin to add task in op_mapping_info", op_desc->GetName().c_str(), dump_list_key.c_str());
     aicpu::dump::Task task;
     task.set_end_graph(false);
     task.set_task_id(op_iter.task_id);
@@ -733,7 +700,7 @@ Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
     }
-    if (dump_properties_.GetDumpMode() == kDumpAll || is_op_debug_) {
+    if (dump_properties_.GetDumpMode() == kDumpAll) {
       auto ret = DumpOutput(op_iter, task);
       if (ret != SUCCESS) {
         GELOGE(ret, "Dump output failed when in dumping all");
@@ -748,6 +715,18 @@ Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
       }
       op_mapping_info.mutable_task()->Add(std::move(task));
       continue;
+    }
+  }
+
+  SetEndGraphIdToAicpu(end_graph_task_id_, end_graph_stream_id_, op_mapping_info);
+
+  SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
+
+  if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
+    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Execute load dump info failed");
+      return ret;
     }
   }
   return SUCCESS;
@@ -768,7 +747,7 @@ void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
     is_end_graph_ = true;
     if (op_mapping_info.model_name_param_case() == aicpu::dump::OpMappingInfo::kModelName) {
       GELOGI("Add end_graph_info to aicpu, model_name is %s, task_id is %u, stream_id is %u",
-          op_mapping_info.model_name().c_str(), end_graph_task_id_, end_graph_stream_id_);
+             op_mapping_info.model_name().c_str(), end_graph_task_id_, end_graph_stream_id_);
       return;
     }
     GELOGI("Add end_graph_info to aicpu, task_id is %u, stream_id is %u", end_graph_task_id_, end_graph_stream_id_);
@@ -923,14 +902,8 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
         dump_data.mutable_output()->Add(std::move(output));
       }
       uint64_t now_time = GetNowTime();
-      std::string op_name = op_desc_info.op_name;
-      std::string op_type = op_desc_info.op_type;
-      ReplaceStringElem(op_name);
-      ReplaceStringElem(op_type);
-      string dump_file_path =
-          "./" + op_type + "." + op_name + "." + to_string(op_desc_info.task_id) + "." + to_string(now_time);
-      GELOGI("The exception dump file path is %s", dump_file_path.c_str());
-
+      string dump_file_path = "./" + op_desc_info.op_type + "." + op_desc_info.op_name + "." +
+                              to_string(op_desc_info.task_id) + "." + to_string(now_time);
       uint64_t proto_size = dump_data.ByteSizeLong();
       unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
       bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);

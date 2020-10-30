@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,11 @@
 namespace ge {
 #define AIPP_CONVERT_TO_AIPP_INFO(KEY) aipp_info.KEY = aipp_params->KEY()
 
-#define AIPP_CONVERT_TO_AIPP_INFO_WITH_INDEX(KEY, INDEX)                             \
-  do {                                                                               \
-    if (aipp_params->KEY##_size() > 0) {                                             \
-      aipp_info.KEY = aipp_params->KEY(INDEX);                                       \
-    }                                                                                \
+#define AIPP_CONVERT_TO_AIPP_INFO_WITH_INDEX(KEY, INDEX) \
+  do {                                                   \
+    if (aipp_params->KEY##_size() > 0) {                 \
+      aipp_info.KEY = aipp_params->KEY(INDEX);           \
+    }                                                    \
   } while (0)
 
 Status AippUtils::ConvertAippParams2AippInfo(domi::AippOpParams *aipp_params, AippConfigInfo &aipp_info) {

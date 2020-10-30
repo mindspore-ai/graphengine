@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,9 +41,9 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
     for (auto const &id_to_trans_nodes : ids_to_trans_nodes) {
       if (id_to_trans_nodes.second.size() > 1) {
         GELOGI(
-            "Begin to breath fusion output trans-op-nodes for %s, "
-            "trans id %s, trans-op count %zu",
-            node->GetName().c_str(), id_to_trans_nodes.first.c_str(), id_to_trans_nodes.second.size());
+          "Begin to breath fusion output trans-op-nodes for %s, "
+          "trans id %s, trans-op count %zu",
+          node->GetName().c_str(), id_to_trans_nodes.first.c_str(), id_to_trans_nodes.second.size());
         graphStatus status = Fusion(id_to_trans_nodes.second, graph);
         if (status != GRAPH_SUCCESS) {
           return FAILED;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,23 +32,23 @@
 
 namespace ge {
 using SoHandlesVec = std::vector<void *>;
-using std::vector;
-using std::string;
-using std::map;
 using std::function;
+using std::map;
+using std::string;
+using std::vector;
 
 class TBEPluginManager {
  public:
   Status Finalize();
 
   // Get TBEPluginManager singleton instance
-  static TBEPluginManager& Instance();
+  static TBEPluginManager &Instance();
 
   static string GetPath();
 
   static void InitPreparation(const std::map<string, string> &options);
 
-  void LoadPluginSo(const std::map< string, string> &options);
+  void LoadPluginSo(const std::map<string, string> &options);
 
  private:
   TBEPluginManager() = default;
@@ -62,6 +62,7 @@ class TBEPluginManager {
   static void GetPluginSoFileList(const string &path, vector<string> &file_list, string &caffe_parser_path);
   static void GetCustomOpPath(std::string &customop_path);
   void LoadCustomOpLib();
+  static Status CheckCustomAiCpuOpLib();
 
   SoHandlesVec handles_vec_;
   static std::map<string, string> options_;

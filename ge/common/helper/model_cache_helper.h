@@ -42,7 +42,7 @@ class ModelCacheHelper {
   ModelCacheHelper(uint64_t session_id, uint32_t graph_id, ComputeGraphPtr &compute_graph);
   ~ModelCacheHelper();
 
-  Status SaveCacheInfoToCache () const;
+  Status SaveCacheInfoToCache() const;
   Status SaveVarManagerToCache(bool before_build) const;
   Status SaveOmModelToCache(const GeModelPtr &ge_model) const;
   bool IsModelCacheHit() const;
@@ -97,7 +97,7 @@ class ModelCacheHelper {
                                            std::vector<std::pair<std::string, VarAddrMgr>> &var_addr_mgr_vector,
                                            std::unordered_set<uint64_t> &var_offset_set);
   static Status ParseCurVarTensorDescMapFromJson(
-      const Json &json, std::unordered_map<std::string, ge::GeTensorDesc> &cur_var_tensor_desc_map);
+    const Json &json, std::unordered_map<std::string, ge::GeTensorDesc> &cur_var_tensor_desc_map);
   static Status ParseTransRoadsFromJson(const Json &json,
                                         std::unordered_map<std::string, std::vector<TransNodeInfo>> &trans_roads);
   static Status ParseChangedGraphIdFromJson(const Json &json,

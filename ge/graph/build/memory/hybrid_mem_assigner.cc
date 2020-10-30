@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 
 namespace ge {
 HybridMemAssigner::HybridMemAssigner(ge::ComputeGraphPtr compute_graph)
-    : mem_offset_(0), p2p_mem_offset_(0), compute_graph_(std::move(compute_graph)), priority_assigner_(nullptr) {}
+    : mem_offset_(0), compute_graph_(std::move(compute_graph)), priority_assigner_(nullptr) {}
 
 Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_assigner, size_t &mem_size) {
   vector<int64_t> ranges;
@@ -46,12 +46,12 @@ Status HybridMemAssigner::Assign() {
     return FAILED;
   }
 
-  std::unique_ptr<BlockMemAssigner> binary_assigner(new (std::nothrow) BinaryBlockMemAssigner(
-      compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
+  std::unique_ptr<BlockMemAssigner> binary_assigner(
+    new (std::nothrow) BinaryBlockMemAssigner(compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
   GE_CHECK_NOTNULL(binary_assigner);
 
-  std::unique_ptr<BlockMemAssigner> max_assigner(new (std::nothrow) MaxBlockMemAssigner(
-      compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
+  std::unique_ptr<BlockMemAssigner> max_assigner(
+    new (std::nothrow) MaxBlockMemAssigner(compute_graph_, anchor_to_symbol_, symbol_to_anchors_));
   GE_CHECK_NOTNULL(max_assigner);
 
   size_t bin_mem_size = 0;
@@ -73,7 +73,6 @@ Status HybridMemAssigner::Assign() {
 
   priority_assigner->SetOpMemOffset(false);
   mem_offset_ = priority_assigner->GetMemOffset();
-  p2p_mem_offset_ = priority_assigner->GetP2PMemOffset();
   priority_assigner_ = std::move(priority_assigner);
 
   return SUCCESS;

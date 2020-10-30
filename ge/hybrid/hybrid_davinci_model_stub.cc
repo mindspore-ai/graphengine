@@ -21,36 +21,23 @@ namespace hybrid {
 HybridDavinciModel::~HybridDavinciModel() {}
 
 std::unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &ge_root_model) {
-  return std::unique_ptr<HybridDavinciModel>(new (std::nothrow)HybridDavinciModel());
+  return std::unique_ptr<HybridDavinciModel>(new (std::nothrow) HybridDavinciModel());
 }
 
-Status HybridDavinciModel::Init() {
-  return UNSUPPORTED;
-}
+Status HybridDavinciModel::Init() { return UNSUPPORTED; }
 
-Status HybridDavinciModel::Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
-  return UNSUPPORTED;
-}
+Status HybridDavinciModel::Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) { return UNSUPPORTED; }
 
-Status HybridDavinciModel::ModelRunStart() {
-  return UNSUPPORTED;
-}
+Status HybridDavinciModel::ModelRunStart() { return UNSUPPORTED; }
 
-Status HybridDavinciModel::ModelRunStop() {
-  return UNSUPPORTED;
-}
+Status HybridDavinciModel::ModelRunStop() { return UNSUPPORTED; }
 
-Status HybridDavinciModel::EnqueueData(const shared_ptr<InputDataWrapper> &data) {
-  return UNSUPPORTED;
-}
+Status HybridDavinciModel::EnqueueData(const shared_ptr<InputDataWrapper> &data) { return UNSUPPORTED; }
 
-void HybridDavinciModel::SetListener(const shared_ptr<ModelListener> &listener) {
-}
+void HybridDavinciModel::SetListener(const shared_ptr<ModelListener> &listener) {}
 
-void HybridDavinciModel::SetModelId(uint32_t model_id) {
-}
+void HybridDavinciModel::SetModelId(uint32_t model_id) {}
 
-void HybridDavinciModel::SetDeviceId(uint32_t device_id) {
-}
+void HybridDavinciModel::SetDeviceId(uint32_t device_id) {}
 }  // namespace hybrid
 }  // namespace ge

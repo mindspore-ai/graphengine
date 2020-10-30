@@ -1,3 +1,19 @@
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 syntax = "proto3";
 
 package domi;
@@ -44,9 +60,6 @@ message AippOpParams {
 	// related_input_rank参数为必填，类型为整型，配置范围>=0, <=输入Data算子的个数，默认值为0。
 	// 标识对模型的第几个输入做AIPP处理，例如模型有两个输入，需要对第2个输入做AIPP，则配置related_input_rank为1。
 	uint32 related_input_rank = 2;
-
-        // related_input_name is optional and the top name of data node which inserts aipp
-        string related_input_name = 6;
 
 	// input_edge_idx参数为可选，类型为整型，配置范围为>=0。
 	// 配置该参数的作用，在于对Data算子不同的输出做不同的AIPP处理，如果该参数没有配置，默认对related_input_rank指定的模型输入的所有输出边做AIPP。

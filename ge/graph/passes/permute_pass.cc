@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
       /// Input format 5D means NHWC in 4D way. So if input origin foramt is NCHW and
       /// permute paramter list is [0,3,1,2], this permute can be optimised.
       GE_IF_BOOL_EXEC(
-          GetLocalOmgContext().format != DOMI_TENSOR_ND,
+        GetLocalOmgContext().format != DOMI_TENSOR_ND,
         // Get input origin foramt
         for (NodePtr &n
              : graph->GetDirectNode()) {

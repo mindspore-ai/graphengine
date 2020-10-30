@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,7 @@ Status ExpanddimsKernel::Compute(const NodePtr &node_ptr) {
   GELOGI("Expanddims dimension kernel success.");
   return SUCCESS;
 }
-Status ExpanddimsKernel::Compute(const ge::OpDescPtr op_desc_ptr,
-                                 const std::vector<ge::ConstGeTensorPtr> &input,
+Status ExpanddimsKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge::ConstGeTensorPtr> &input,
                                  std::vector<ge::GeTensorPtr> &v_output) {
   GELOGI("Expanddims folding kernel in.");
   if (op_desc_ptr == nullptr) {

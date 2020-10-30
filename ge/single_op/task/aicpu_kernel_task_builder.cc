@@ -15,8 +15,6 @@
  */
 
 #include "single_op/task/aicpu_kernel_task_builder.h"
-#include "cce/taskdown_common.hpp"
-#include "graph/load/new_model_manager/model_manager.h"
 
 namespace ge {
 AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def)
@@ -29,7 +27,7 @@ Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
     return RT_FAILED;
   }
   std::unique_ptr<uint8_t[]> aicpu_args;
-  aicpu_args.reset(new(std::nothrow) uint8_t[aicpu_arg_size]());
+  aicpu_args.reset(new (std::nothrow) uint8_t[aicpu_arg_size]());
   if (aicpu_args == nullptr) {
     GELOGE(RT_FAILED, "malloc failed, size = %zu", aicpu_arg_size);
     return RT_FAILED;
@@ -57,14 +55,6 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
   task.SetkernelName(kernel_name);
   task.op_desc_ = op_desc_;
 
-  const auto &context = kernel_def_.context();
-  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-  if (kernel_type == cce::ccKernelType::CUST_AI_CPU) {
-    task.is_custom_ = true;
-    task.dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc_, so_name), "launch cust aicpu so failed");
-  }
-
   task.num_inputs_ = op_desc_->GetInputsSize();
   task.num_outputs_ = op_desc_->GetOutputsSize();
 
@@ -72,8 +62,8 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
   auto &kernel_ext_info = kernel_def_.kernel_ext_info();
   auto kernel_ext_info_size = kernel_def_.kernel_ext_info_size();
   GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
-                         "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
-                         kernel_ext_info.size(), kernel_ext_info_size);
+                         "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.", kernel_ext_info.size(),
+                         kernel_ext_info_size);
 
   ret = task.SetExtInfoAndType(kernel_ext_info);
   if (ret != SUCCESS) {

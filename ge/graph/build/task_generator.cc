@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@
 #include "init/gelib.h"
 #include "graph/ge_local_context.h"
 #include "ge/ge_api_types.h"
-#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using domi::LogTimeStampDef;
 using domi::ModelTaskDef;
@@ -127,13 +126,13 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
 Status TaskGenerator::AddModelTaskToModel(const ModelTaskDef &model_task_def, uint64_t session_id, ge::Model &model,
                                           RunContext &run_context) {
   GE_CHK_BOOL_EXEC(
-      AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_BASE_ADDR, reinterpret_cast<uintptr_t>(run_context.dataMemBase)),
-      GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_BASE_ADDR failed.");
-      return FAILED);
+    AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_BASE_ADDR, reinterpret_cast<uintptr_t>(run_context.dataMemBase)),
+    GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_BASE_ADDR failed.");
+    return FAILED);
   GE_CHK_BOOL_EXEC(
-      AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, reinterpret_cast<uintptr_t>(run_context.weightMemBase)),
-      GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_WEIGHT_ADDR failed.");
-      return FAILED);
+    AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, reinterpret_cast<uintptr_t>(run_context.weightMemBase)),
+    GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_WEIGHT_ADDR failed.");
+    return FAILED);
   GE_CHK_BOOL_EXEC(AttrUtils::SetInt(model, ATTR_MODEL_TASK_GEN_VAR_ADDR, reinterpret_cast<uintptr_t>(var_mem_base_)),
                    GELOGE(FAILED, "SetInt ATTR_MODEL_TASK_GEN_VAR_ADDR failed.");
                    return FAILED);
@@ -293,8 +292,8 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     // For fusion ddb pass, task def must be continuous.
     // Part2: Call
     auto fusion_task_info =
-        FusionTaskInfo{run_context,        graph,         node,        op_desc,         node_index,      ge_lib,
-                       ops_kernel_manager, task_def_list, op_name_map, profiling_point, all_reduce_nodes};
+      FusionTaskInfo{run_context,        graph,         node,        op_desc,         node_index,      ge_lib,
+                     ops_kernel_manager, task_def_list, op_name_map, profiling_point, all_reduce_nodes};
     GE_CHK_STATUS_RET(GenerateTaskForFusionNode(fusion_task_info, fusion_nodes, fusion_nodes_seen),
                       "Call GenerateTaskForFusionNode node:%s(%s) failed", name.c_str(), type.c_str());
     // continue directly
@@ -306,11 +305,9 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
       GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
       continue;
     }
-    auto kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
+    OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
     if (kernel_info_store == nullptr) {
-      GELOGE(INTERNAL_ERROR,
-             "No ops kernel store or ops kernel builder found. node:%s(%s), op_kernel_lib_name=%s.",
-             name.c_str(),
+      GELOGE(INTERNAL_ERROR, "No ops kernel store found. node:%s(%s), op_kernel_lib_name=%s.", name.c_str(),
              type.c_str(), op_kernel_lib_name.c_str());
       return INTERNAL_ERROR;
     }
@@ -330,7 +327,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task.", op_kernel_lib_name.c_str(),
            name.c_str(), type.c_str(), op_id, stream_id);
     GE_TIMESTAMP_RESTART(GenerateTask);
-    auto ret = OpsKernelBuilderManager::Instance().GenerateTask(*node, run_context, task_def_list);
+    auto ret = kernel_info_store->GenerateTask(*node, run_context, task_def_list);
     GE_TIMESTAMP_ADD(GenerateTask);
     if (ret != SUCCESS) {
       GELOGE(ret, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task failed.",
@@ -407,8 +404,7 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       size_t task_list_size_before = task_def_list.size();
       OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
       if (kernel_info_store == nullptr) {
-        GELOGE(INTERNAL_ERROR,
-               "Fusion: No ops kernel store or ops kernel builder found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
+        GELOGE(INTERNAL_ERROR, "Fusion: No ops kernel store found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
                fusion_node_name.c_str(), fusion_node_type.c_str(), op_kernel_lib_name.c_str());
         return INTERNAL_ERROR;
       }
@@ -432,7 +428,7 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       run_context.stream = run_context.graphStreamList[stream_id];
       GELOGI("Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld] task.",
              op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
-      ret = OpsKernelBuilderManager::Instance().GenerateTask(*fusion_node, run_context, task_def_list);
+      ret = kernel_info_store->GenerateTask(*fusion_node, run_context, task_def_list);
       if (ret != SUCCESS) {
         GELOGE(ret,
                "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
@@ -464,10 +460,10 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       }
 
       GELOGI(
-          "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
-          " task finished, generate %u task(s).",
-          op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
-          task_list_size_after - task_list_size_before);
+        "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
+        " task finished, generate %u task(s).",
+        op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
+        task_list_size_after - task_list_size_before);
 
       // record nodes which have call generate task successfully
       fusion_nodes_seen.insert(fusion_node.get());
@@ -562,7 +558,7 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
 Status TaskGenerator::MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_single_stream) const {
   vector<vector<OpDescPtr>> continuous_op_lists(1);
   const set<string> separator_types(
-      {LABELSET, LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX, STREAMSWITCH, STREAMSWITCHN});
+    {LABELSET, LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX, STREAMSWITCH, STREAMSWITCHN});
   for (auto &op_desc : ops) {
     bool attr_notask = false;
     if (ge::AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_notask) && attr_notask) {
@@ -685,8 +681,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
       }
       if (op_desc->GetName() == NODE_NAME_FLOWCTRL_LOOP_ASSIGN) {
         profiling_point.end_index.insert(current_idx);
-        GELOGI("Iter end name %s, idx %u, from FlowCtrl_LoopCond_ASSIGN",
-               op_desc->GetName().c_str(), current_idx);
+        GELOGI("Iter end name %s, idx %u, from FlowCtrl_LoopCond_ASSIGN", op_desc->GetName().c_str(), current_idx);
       }
     } else {
       if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
@@ -782,8 +777,7 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
       }
       if (op_desc->GetName() == NODE_NAME_FLOWCTRL_LOOP_ASSIGN) {
         profiling_point.end_index.insert(current_idx);
-        GELOGI("Iter end name %s, idx %u, from FlowCtrl_LoopCond_ASSIGN",
-               op_desc->GetName().c_str(), current_idx);
+        GELOGI("Iter end name %s, idx %u, from FlowCtrl_LoopCond_ASSIGN", op_desc->GetName().c_str(), current_idx);
       }
     } else {
       if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
@@ -809,11 +803,10 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
 Status TaskGenerator::GetFpBpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                                    vector<uint32_t> &all_reduce_nodes, std::string &fp_point_str,
                                    std::string &bp_point_str) const {
-
   if (ge::GetContext().GetOption(OPTION_EXEC_PROFILING_FPPONIT_OPTIONS, fp_point_str) == SUCCESS &&
       ge::GetContext().GetOption(OPTION_EXEC_PROFILING_BPPONIT_OPTIONS, bp_point_str) == SUCCESS &&
       !fp_point_str.empty() && !bp_point_str.empty()) {
-      return SUCCESS;
+    return SUCCESS;
   }
 
   Status ret = SUCCESS;
@@ -892,7 +885,6 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
   }
   return SUCCESS;
 }
-
 
 Status TaskGenerator::InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
                                                 vector<uint32_t> &all_reduce_nodes, uint32_t node_index,

@@ -167,7 +167,7 @@ class GraphNode {
   GeModelPtr GetGeModel() const { return ge_model_; }
   void SetGeRootModel(const GeRootModelPtr &ge_root_model) { ge_root_model_ = ge_root_model; }
   GeRootModelPtr GetGeRootModel() const { return ge_root_model_; }
-  const std::map<std::string, std::string>& GetOptions() const { return options_; }
+  const std::map<std::string, std::string> &GetOptions() const { return options_; }
   void SetOptions(const std::map<std::string, std::string> &options) { options_ = options; }
   void Lock();
   void Unlock();

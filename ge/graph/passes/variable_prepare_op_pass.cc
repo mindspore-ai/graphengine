@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
 
 namespace ge {
 std::map<std::string, std::map<int, std::vector<int>>> VariablePrepareOpPass::ref_node_without_prototype_map_ = {
-    {REFSWITCH, {{0, {0, 1}}}}};
+  {REFSWITCH, {{0, {0, 1}}}}};
 
 Status VariablePrepareOpPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
@@ -261,13 +261,13 @@ Status VariablePrepareOpPass::InsertVariableRef(ge::NodePtr &node, int in_index,
 
   // Add edge from ref identity node to variable ref node.
   CHECK_FALSE_EXEC(
-      ge::GraphUtils::AddEdge(ref_identity_node->GetOutDataAnchor(0), variable_ref_node->GetInDataAnchor(0)) == SUCCESS,
-      GELOGE(FAILED, "Add data edge between ref_identity and variable_ref failed");
-      return FAILED);
+    ge::GraphUtils::AddEdge(ref_identity_node->GetOutDataAnchor(0), variable_ref_node->GetInDataAnchor(0)) == SUCCESS,
+    GELOGE(FAILED, "Add data edge between ref_identity and variable_ref failed");
+    return FAILED);
   CHECK_FALSE_EXEC(
-      ge::GraphUtils::AddEdge(node->GetOutControlAnchor(), variable_ref_node->GetInControlAnchor()) == SUCCESS,
-      GELOGE(FAILED, "Add control edge between ref_identity and variable_ref failed");
-      return FAILED);
+    ge::GraphUtils::AddEdge(node->GetOutControlAnchor(), variable_ref_node->GetInControlAnchor()) == SUCCESS,
+    GELOGE(FAILED, "Add control edge between ref_identity and variable_ref failed");
+    return FAILED);
   return SUCCESS;
 }
 
@@ -280,9 +280,9 @@ Status VariablePrepareOpPass::AddControlEdge(const ge::NodePtr &node, const ge::
       NodePtr peer_node = peer_in_anchor->GetOwnerNode();
       GE_CHECK_NOTNULL(peer_node);
       CHECK_FALSE_EXEC(
-          ge::GraphUtils::AddEdge(variable_ref_node->GetOutControlAnchor(), peer_node->GetInControlAnchor()) == SUCCESS,
-          GELOGE(FAILED, "Add control edge between variable_ref and ref node's peer node failed");
-          return FAILED);
+        ge::GraphUtils::AddEdge(variable_ref_node->GetOutControlAnchor(), peer_node->GetInControlAnchor()) == SUCCESS,
+        GELOGE(FAILED, "Add control edge between variable_ref and ref node's peer node failed");
+        return FAILED);
     }
   }
   return SUCCESS;

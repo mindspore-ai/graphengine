@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,4 +36,3 @@ class OpTilingManager {
 }  // namespace ge
 
 #endif  // GE_COMMON_GE_OP_TILING_MANAGER_H_
-

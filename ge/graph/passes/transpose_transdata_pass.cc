@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,15 +44,6 @@ Status TransposeTransDataPass::Run(NodePtr &node) {
   }
 
   if (op_desc->GetType() != TRANSPOSED) {
-    return SUCCESS;
-  }
-  auto input_format = op_desc->GetInputDescPtr(0)->GetFormat();
-  auto output_format = op_desc->GetOutputDescPtr(0)->GetFormat();
-  if (input_format ==  output_format) {
-    GELOGW("Node %s input format is %s, output format is %s, should not happend. Ignore pass.",
-           op_desc->GetName().c_str(),
-           TypeUtils::FormatToSerialString(input_format).c_str(),
-           TypeUtils::FormatToSerialString(output_format).c_str());
     return SUCCESS;
   }
   if (CheckOneInAndOneOutDataAnchor(node) != SUCCESS) {

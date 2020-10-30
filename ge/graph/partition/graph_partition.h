@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ class GraphPartitioner {
   Status UpdatePldOpDesc(const NodePtr &dst_node, int input_index, OpDescPtr &end_op_desc);
 
   // Clear partition data
-  void ClearAllPartitionData();
+  void ClearAllPartitionData(Mode mode);
   void SetMergedGraphId(ComputeGraphPtr &output_merged_compute_graph);
 
   struct GraphPartitionInfo {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,8 @@ const int kProtoReadBytesLimit = INT_MAX;     // Max size of 2 GB minus 1 byte.
 const int kWarningThreshold = 536870912 * 2;  // 536870912 represent 512M
 
 /// The maximum length of the file.
-const uint32_t kMaxFileSizeLimit = UINT32_MAX; // 4G for now
+/// Based on the security coding specification and the current actual (protobuf) model size, it is determined as 2G-1
+const int kMaxFileSizeLimit = INT_MAX;
 const int kMaxBuffSize = 256;
 const char *const kPathValidReason = "The path can only contain 'a-z' 'A-Z' '0-9' '-' '.' '_' and chinese character";
 constexpr uint32_t kMaxConfigFileByte = 10 * 1024 * 1024;
@@ -117,20 +118,19 @@ long GetFileLength(const std::string &input_file) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), return -1, "input_file path '%s' not valid", input_file.c_str());
   unsigned long long file_length = 0;
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      mmGetFileSize(input_file.c_str(), &file_length) != EN_OK,
-      ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {input_file, strerror(errno)});
-      return -1, "Open file[%s] failed. %s", input_file.c_str(), strerror(errno));
+    mmGetFileSize(input_file.c_str(), &file_length) != EN_OK,
+    ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {input_file, strerror(errno)});
+    return -1, "Open file[%s] failed. %s", input_file.c_str(), strerror(errno));
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_length == 0),
                                  ErrorManager::GetInstance().ATCReportErrMessage("E19015", {"filepath"}, {input_file});
                                  return -1, "File[%s] size is 0, not valid.", input_file.c_str());
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(file_length > kMaxFileSizeLimit,
-                                 ErrorManager::GetInstance().ATCReportErrMessage(
-                                     "E19016", {"filepath", "filesize", "maxlen"},
-                                     {input_file, std::to_string(file_length), std::to_string(kMaxFileSizeLimit)});
-                                 return -1, "File[%s] size %lld is out of limit: %d.", input_file.c_str(), file_length,
-                                        kMaxFileSizeLimit);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+    file_length > kMaxFileSizeLimit, ErrorManager::GetInstance().ATCReportErrMessage(
+                                       "E19016", {"filepath", "filesize", "maxlen"},
+                                       {input_file, std::to_string(file_length), std::to_string(kMaxFileSizeLimit)});
+    return -1, "File[%s] size %lld is out of limit: %d.", input_file.c_str(), file_length, kMaxFileSizeLimit);
   return static_cast<long>(file_length);
 }
 
@@ -186,7 +186,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
   std::streamsize size = file.tellg();
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((size <= 0), file.close(); return false, "file length <= 0, not valid.");
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size > static_cast<int64_t >(kMaxFileSizeLimit), file.close();
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size > kMaxFileSizeLimit, file.close();
                                  return false, "file size %ld is out of limit: %d.", size, kMaxFileSizeLimit);
 
   file.seekg(0, std::ios::beg);  // [no need to check value]
@@ -263,7 +263,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
 
   std::string real_path = RealPath(file);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), ErrorManager::GetInstance().ATCReportErrMessage(
-                                                        "E19000", {"path", "errmsg"}, {file, strerror(errno)});
+                                                      "E19000", {"path", "errmsg"}, {file, strerror(errno)});
                                  return false, "Path[%s]'s realpath is empty, errmsg[%s]", file, strerror(errno));
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(GetFileLength(real_path) == -1, return false, "file size not valid.");
@@ -299,12 +299,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const cha
   google::protobuf::io::IstreamInputStream input(&fs);
   bool ret = google::protobuf::TextFormat::Parse(&input, message);
   GE_IF_BOOL_EXEC(
-      !ret, GELOGE(ret, "Call [google::protobuf::TextFormat::Parse] func ret fail, please check your text file."));
+    !ret, GELOGE(ret, "Call [google::protobuf::TextFormat::Parse] func ret fail, please check your text file."));
 
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestap() {
   struct timeval tv {};
   int ret = gettimeofday(&tv, nullptr);
   GE_LOGE_IF(ret != 0, "Func gettimeofday may failed: ret=%d", ret);
@@ -348,9 +348,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInt64MulOverflow(int6
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char *path) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path == nullptr, return "", "path pointer is NULL.");
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      strlen(path) >= PATH_MAX,
-      ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"}, {path, std::to_string(PATH_MAX)});
-      return "", "Path[%s] len is too long, it must be less than %d", path, PATH_MAX);
+    strlen(path) >= PATH_MAX,
+    ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"}, {path, std::to_string(PATH_MAX)});
+    return "", "Path[%s] len is too long, it must be less than %d", path, PATH_MAX);
 
   // Nullptr is returned when the path does not exist or there is no permission
   // Return absolute path when path is accessible
@@ -386,10 +386,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   std::string mode = "^[\u4e00-\u9fa5A-Za-z0-9./_-]+$";
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      !ValidateStr(real_path, mode),
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {atc_param, real_path, kPathValidReason});
-      return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), real_path.c_str(), kPathValidReason);
+    !ValidateStr(real_path, mode),
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {atc_param, real_path, kPathValidReason});
+    return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), real_path.c_str(), kPathValidReason);
 
   // The absolute path points to a file that is not readable
   if (access(real_path.c_str(), R_OK) != 0) {
@@ -411,9 +411,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
   }
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      strlen(file_path.c_str()) >= PATH_MAX, ErrorManager::GetInstance().ATCReportErrMessage(
-                                                 "E19002", {"filepath", "size"}, {file_path, std::to_string(PATH_MAX)});
-      return "", "Path[%s] len is too long, it must be less than %d", file_path.c_str(), PATH_MAX);
+    strlen(file_path.c_str()) >= PATH_MAX, ErrorManager::GetInstance().ATCReportErrMessage(
+                                             "E19002", {"filepath", "size"}, {file_path, std::to_string(PATH_MAX)});
+    return "", "Path[%s] len is too long, it must be less than %d", file_path.c_str(), PATH_MAX);
 
   // A regular matching expression to verify the validity of the input file path
   // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
@@ -421,10 +421,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
   std::string mode = "^[\u4e00-\u9fa5A-Za-z0-9./_-]+$";
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-      !ValidateStr(file_path, mode),
-      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                      {atc_param, file_path, kPathValidReason});
-      return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), file_path.c_str(), kPathValidReason);
+    !ValidateStr(file_path, mode),
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {atc_param, file_path, kPathValidReason});
+    return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), file_path.c_str(), kPathValidReason);
 
   std::string real_path = RealPath(file_path.c_str());
   // Can get absolute path (file exists)

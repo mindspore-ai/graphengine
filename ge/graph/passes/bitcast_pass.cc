@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,14 +56,12 @@ Status BitcastPass::Run(NodePtr &node) {
 }
 
 Status BitcastPass::CheckDstDataType(const OpDescPtr op_desc, ge::DataType &dst_data_type) {
-
   if (!ge::AttrUtils::GetDataType(op_desc, kAttrNameType, dst_data_type)) {
     GELOGE(PARAM_INVALID, "Node failed to get attribute type.");
     return PARAM_INVALID;
   }
   if (dst_data_type >= ge::DT_UNDEFINED) {
-    GELOGE(PARAM_INVALID, "dst_data_type[%s] is not valid.", 
-           TypeUtils::DataTypeToSerialString(dst_data_type).c_str());
+    GELOGE(PARAM_INVALID, "dst_data_type[%s] is not valid.", TypeUtils::DataTypeToSerialString(dst_data_type).c_str());
     return PARAM_INVALID;
   }
 
@@ -91,8 +89,7 @@ Status BitcastPass::CheckOutputShape(const OpDescPtr op_desc, const ge::DataType
   // get origin data_type and shape
   ge::DataType ori_data_type = input_tensor_desc->GetDataType();
   if (ori_data_type >= ge::DT_UNDEFINED) {
-    GELOGE(PARAM_INVALID, "ori_data_type[%s] is not valid.", 
-           TypeUtils::DataTypeToSerialString(ori_data_type).c_str());
+    GELOGE(PARAM_INVALID, "ori_data_type[%s] is not valid.", TypeUtils::DataTypeToSerialString(ori_data_type).c_str());
     return PARAM_INVALID;
   }
 
@@ -148,4 +145,4 @@ Status BitcastPass::CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::Data
   return SUCCESS;
 }
 
-} // namespace ge
+}  // namespace ge

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,11 @@
 #include "graph/passes/pass_utils.h"
 
 namespace ge {
-NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
-                                       const string &node_type,
-                                       const string &node_name,
+NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph, const string &node_type, const string &node_name,
                                        const std::vector<GeTensorDesc> &input_list,
                                        const std::vector<GeTensorDesc> &output_list) {
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name, node_type);
-  GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(FAILED,"Make OpDesc failed"); return nullptr);
+  GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(FAILED, "Make OpDesc failed"); return nullptr);
 
   for (auto &input_desc : input_list) {
     graphStatus graph_status = op_desc->AddInputDesc(input_desc);
@@ -52,11 +50,11 @@ NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
     }
   }
 
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED,"compute_graph is nullptr"); return nullptr);
+  GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED, "compute_graph is nullptr"); return nullptr);
   NodePtr node = compute_graph->AddNode(op_desc);
   GE_IF_BOOL_EXEC(node == nullptr,
-    GELOGE(FAILED, "add node failed, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
-    return nullptr);
+                  GELOGE(FAILED, "add node failed, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
+                  return nullptr);
 
   GELOGI("Insert op success, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
   return node;
@@ -83,8 +81,7 @@ Status GlobalStepInsertPass::Run(ComputeGraphPtr compute_graph) {
   GeTensorDesc tensor_desc(GeShape({1}), FORMAT_ND, DT_UINT64);
   std::vector<GeTensorDesc> input_desc_list = {};
   std::vector<GeTensorDesc> output_desc_list = {tensor_desc};
-  NodePtr global_step = InsertOp(compute_graph, VARIABLE, NODE_NAME_GLOBAL_STEP,
-                                 input_desc_list, output_desc_list);
+  NodePtr global_step = InsertOp(compute_graph, VARIABLE, NODE_NAME_GLOBAL_STEP, input_desc_list, output_desc_list);
   if (global_step == nullptr) {
     GELOGE(FAILED, "Add global_step node failed, global_step is null.");
     return FAILED;

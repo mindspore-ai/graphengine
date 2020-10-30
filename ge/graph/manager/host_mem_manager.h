@@ -24,7 +24,6 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include "framework/common/ge_inner_error_codes.h"
@@ -36,23 +35,19 @@
 #include "runtime/mem.h"
 
 namespace ge {
-struct SharedMemInfo {
-  string op_name;
-  string shm_name;
-  uint64_t mem_size = 0;
-  int fd = 0;
-  uint8_t *device_address = nullptr;
-  uint8_t *host_address = nullptr;
-  SharedMemInfo() = default;
-  SharedMemInfo(string name, uint64_t size) : op_name(std::move(name)), mem_size(size) {}
-};
-class SharedMemAllocator {
+class HostMemoryAllocator {
  public:
-  SharedMemAllocator() = default;
-  ~SharedMemAllocator() = default;
+  ~HostMemoryAllocator() = default;
 
-  Status Allocate(SharedMemInfo &mem_info);
-  Status DeAllocate(SharedMemInfo &mem_info);
+  Status Allocate(std::size_t size, uint8_t *memory_addr);
+  Status DeAllocate(uint8_t *memory_addr);
+};
+
+struct HostMemInfo {
+  uint8_t *address;
+  uint64_t data_size;
+  HostMemInfo() : address(nullptr), data_size(0) {}
+  HostMemInfo(uint8_t *addr, uint64_t size) : address(addr), data_size(size) {}
 };
 
 class HostMemManager {
@@ -65,13 +60,12 @@ class HostMemManager {
   static HostMemManager &Instance();
   Status Initialize();
   void Finalize() noexcept;
-  Status MallocSharedMemory(SharedMemInfo &mem_nfo);
+  Status MallocMemoryForHostVar(const string &op_name, uint64_t tensor_size, uint8_t *&var_addr);
   Status QueryVarMemInfo(const string &op_name, uint64_t &base_addr, uint64_t &data_size);
 
  private:
-  static string OpNameToShmName(const string &op_name);
-  std::unordered_map<std::string, SharedMemInfo> var_memory_base_map_;
-  std::unique_ptr<SharedMemAllocator> allocator_;
+  std::unordered_map<std::string, HostMemInfo> var_memory_base_map_;
+  std::unique_ptr<HostMemoryAllocator> allocator_;
   mutable std::recursive_mutex mutex_;
 };
 }  // namespace ge

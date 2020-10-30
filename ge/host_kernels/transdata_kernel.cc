@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@
 #include "host_kernels/kernel_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
-
 
 namespace ge {
 namespace {
@@ -83,15 +82,15 @@ Status TransdataKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<C
   const auto &data_format = op_desc->GetFormat();
   const auto &data_type = op_desc->GetDataType();
   GELOGD(
-      "current node %s, format %s, input shape %s, data type %s,  weight format %s, shape %s, data type %s. "
-      "output format %s, shape %s, data type %s",
-      op_desc_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(),
-      formats::ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
-      TypeUtils::FormatToSerialString(const_weight_ptr->GetTensorDesc().GetFormat()).c_str(),
-      formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str(),
-      TypeUtils::DataTypeToSerialString(const_weight_ptr->GetTensorDesc().GetDataType()).c_str(),
-      TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
-      TypeUtils::DataTypeToSerialString(data_type).c_str());
+    "current node %s, format %s, input shape %s, data type %s,  weight format %s, shape %s, data type %s. "
+    "output format %s, shape %s, data type %s",
+    op_desc_ptr->GetName().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(),
+    formats::ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
+    TypeUtils::FormatToSerialString(const_weight_ptr->GetTensorDesc().GetFormat()).c_str(),
+    formats::ShapeToString(const_weight_ptr->GetTensorDesc().GetShape()).c_str(),
+    TypeUtils::DataTypeToSerialString(const_weight_ptr->GetTensorDesc().GetDataType()).c_str(),
+    TypeUtils::FormatToSerialString(data_format).c_str(), formats::ShapeToString(data_shape).c_str(),
+    TypeUtils::DataTypeToSerialString(data_type).c_str());
 
   const uint8_t *src_data = const_weight_ptr->GetData().data();
   const formats::TransArgs trans_args{src_data, src_format, data_format, src_shape, data_shape, src_data_type};

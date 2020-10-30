@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ class TaskGenerator {
                      vector<uint32_t> &all_reduce_nodes) const;
 
   Status GetFpBpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point, vector<uint32_t> &all_reduce_nodes,
-                      std::string& fp_point_str, std::string& bp_point_str) const;
+                      std::string &fp_point_str, std::string &bp_point_str) const;
 
   Status FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                                 std::vector<uint32_t> &all_reduce_nodes) const;

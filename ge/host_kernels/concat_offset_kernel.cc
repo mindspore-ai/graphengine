@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     v_output.push_back(output_ptr);
     // caculate offset
     const int32_t *input_shape =
-        reinterpret_cast<const int32_t *>(input[i + kConcatOffsetInputIndexOne]->GetData().data());
+      reinterpret_cast<const int32_t *>(input[i + kConcatOffsetInputIndexOne]->GetData().data());
     int64_t input_dim = input_shape[concat_dim];  // this index is valid, checked before
     if (input_dim > (INT64_MAX - offset)) {
       GELOGE(PARAM_INVALID, " %d and %ld addition can result in overflow!.", offset, input_dim);

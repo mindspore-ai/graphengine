@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,21 +39,12 @@ const std::string kDeviceIdList = "devIdList";
 const std::string kAicoreMetrics = "aicoreMetrics";
 
 const std::map<ge::ProfilingAicoreMetrics, std::string> kProfAicoreMetricsToString = {
-<<<<<<< HEAD:ge/client/ge_prof.cc
-    {ge::kAicoreArithmaticThroughput, "AICORE_ARITHMATIC_THROUGHPUT"},
-    {ge::kAicorePipeline, "AICORE_PIPELINE"},
-    {ge::kAicoreSynchronization, "AICORE_SYNCHRONIZATION"},
-    {ge::kAicoreMemory, "AICORE_MEMORY"},
-    {ge::kAicoreInternalMemory, "AICORE_INTERNAL_MEMORY"},
-    {ge::kAicoreStall, "AICORE_STALL"}};
-=======
   {ge::kAicoreArithmaticThroughput, "AICORE_ARITHMATIC_THROUGHPUT"},
   {ge::kAicorePipeline, "AICORE_PIPELINE"},
   {ge::kAicoreSynchronization, "AICORE_SYNCHRONIZATION"},
   {ge::kAicoreMemory, "AICORE_MEMORY"},
   {ge::kAicoreInternalMemory, "AICORE_INTERNAL_MEMORY"},
   {ge::kAicoreStall, "AICORE_STALL"}};
->>>>>>> cd365aa247c64e30487d1e71e4f724a889848f80:src/ge/client/ge_prof.cc
 }  // namespace
 
 static bool g_graph_prof_init_ = false;
@@ -174,7 +165,7 @@ bool TransProfConfigToParam(const aclgrphProfConfig *profiler_config, vector<str
   prof_config_params.push_back(devID);
   prof_config_params.push_back(kAicoreMetrics);
   auto iter =
-      kProfAicoreMetricsToString.find(static_cast<ProfilingAicoreMetrics>(profiler_config->config.aicoreMetrics));
+    kProfAicoreMetricsToString.find(static_cast<ProfilingAicoreMetrics>(profiler_config->config.aicoreMetrics));
   if (iter == kProfAicoreMetricsToString.end()) {
     GELOGW("The prof aicore metrics is invalid.");
     return false;
@@ -333,17 +324,10 @@ Status aclgrphProfStop(aclgrphProfConfig *profiler_config) {
     return GE_PROF_NOT_INIT;
   }
 
-  for (uint32_t i = 0; i < profiler_config->config.devNums; i++) {
-    uint64_t data_type_config;
-    Status status = ProfGetDataTypeConfig(profiler_config->config.devIdList[i], data_type_config);
-    if (status != SUCCESS) {
-      GELOGE(status, "Prof get data type config failed, prof result = %d", status);
-      return status;
-    }
-    if (data_type_config != profiler_config->config.dataTypeConfig) {
-      GELOGE(FAILED, "data type config verify failed");
-      return FAILED;
-    }
+  Status ret = ProfStopProfiling(&profiler_config->config);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Stop profiling failed, prof result = %d", ret);
+    return ret;
   }
 
   std::vector<string> prof_params;
@@ -360,20 +344,10 @@ Status aclgrphProfStop(aclgrphProfConfig *profiler_config) {
   command.module_index = profiler_config->config.dataTypeConfig;
   GELOGI("Profiling will stop, device nums:%s , deviceID:[%s], data type config: 0x%llx", prof_params[0].c_str(),
          prof_params[kDeviceListIndex].c_str(), command.module_index);
-<<<<<<< HEAD:ge/client/ge_prof.cc
-  Status ret = graph_loader.CommandHandle(command);
-=======
   ret = graph_loader.CommandHandle(command);
->>>>>>> cd365aa247c64e30487d1e71e4f724a889848f80:src/ge/client/ge_prof.cc
   if (ret != SUCCESS) {
     GELOGE(ret, "Handle profiling command failed");
     return FAILED;
-  }
-
-  ret = ProfStopProfiling(&profiler_config->config);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Stop profiling failed, prof result = %d", ret);
-    return ret;
   }
 
   GELOGI("Successfully execute GraphProfStopProfiling.");

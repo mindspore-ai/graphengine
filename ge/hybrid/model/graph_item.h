@@ -30,21 +30,13 @@ class GraphItem {
   const vector<const NodeItem *> &GetInputNodes() const;
   Status GetOutputDescList(std::vector<ConstGeTensorDescPtr> &output_desc_list) const;
 
-  int TotalInputs() const {
-    return total_inputs_;
-  }
+  int TotalInputs() const { return total_inputs_; }
 
-  int TotalOutputs() const {
-    return total_outputs_;
-  }
+  int TotalOutputs() const { return total_outputs_; }
 
-  const std::string& GetName() const {
-    return name_;
-  }
+  const std::string &GetName() const { return name_; }
 
-  void SetName(const string &name) {
-    name_ = name;
-  }
+  void SetName(const string &name) { name_ = name; }
 
   const NodeItem *GetOutputNode() const;
 
@@ -69,4 +61,4 @@ class GraphItem {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif // GE_HYBRID_MODEL_SUBGRAPH_ITEM_H_
+#endif  // GE_HYBRID_MODEL_SUBGRAPH_ITEM_H_

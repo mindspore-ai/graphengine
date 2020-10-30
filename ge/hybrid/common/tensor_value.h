@@ -29,23 +29,18 @@ class AllocationAttr;
 
 class TensorBuffer {
  public:
-  static std::unique_ptr<TensorBuffer> Create(NpuMemoryAllocator *allocator,
-                                              size_t size,
+  static std::unique_ptr<TensorBuffer> Create(NpuMemoryAllocator *allocator, size_t size,
                                               AllocationAttr *attr = nullptr);
 
   static std::unique_ptr<TensorBuffer> Create(void *buffer, size_t size);
 
   TensorBuffer(const TensorBuffer &) = delete;
-  TensorBuffer &operator = (const TensorBuffer &) = delete;
+  TensorBuffer &operator=(const TensorBuffer &) = delete;
   ~TensorBuffer();
 
-  void *GetData() {
-    return buffer_;
-  }
+  void *GetData() { return buffer_; }
 
-  size_t GetSize() const {
-    return size_;
-  }
+  size_t GetSize() const { return size_; }
 
  private:
   TensorBuffer(NpuMemoryAllocator *allocator, void *buffer, size_t size, MemStorageType mem_type = HBM);
@@ -68,17 +63,13 @@ class TensorValue {
 
   void Destroy();
 
-  bool IsEmpty() {
-    return ref_buffer_ == nullptr && buffer_ == nullptr;
-  }
+  bool IsEmpty() { return ref_buffer_ == nullptr && buffer_ == nullptr; }
 
   const void *GetData() const;
 
   std::string DebugString() const;
 
-  void SetName(const std::string &name) {
-    name_ = name;
-  }
+  void SetName(const std::string &name) { name_ = name; }
 
   void *MutableData();
 

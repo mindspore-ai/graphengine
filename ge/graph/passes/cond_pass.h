@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #ifndef GE_GRAPH_PASSES_COND_PASS_H
 #define GE_GRAPH_PASSES_COND_PASS_H
 
@@ -33,7 +34,7 @@ class CondPass : public BaseNodePass {
   /// @return Status
   ///
   static Status GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &cond_out_anchor,
-                     InDataAnchorPtr &cond_in_anchor);
+                            InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Get cond info for if node
@@ -44,7 +45,7 @@ class CondPass : public BaseNodePass {
   /// @return Status
   ///
   static Status GetCondInfoForIf(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &cond_out_anchor,
-                          InDataAnchorPtr &cond_in_anchor);
+                                 InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Get cond info for while node
@@ -55,7 +56,7 @@ class CondPass : public BaseNodePass {
   /// @return Status
   ///
   static Status GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &cond_out_anchor,
-                             InDataAnchorPtr &cond_in_anchor);
+                                    InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Process Cond Op with non-scalar cond_input
@@ -96,8 +97,8 @@ class CondPass : public BaseNodePass {
   /// @param [in] type
   /// @return Status
   ///
-  Status InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                    const InDataAnchorPtr &in_anchor, const std::string &type);
+  Status InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor, const InDataAnchorPtr &in_anchor,
+                    const std::string &type);
 
   ///
   /// @brief Add cast node
@@ -108,8 +109,8 @@ class CondPass : public BaseNodePass {
   /// @param [in] dst
   /// @return NodePtr
   ///
-  NodePtr AddCastNode(const ComputeGraphPtr &graph, const std::string &name, const GeTensorDesc &tensor,
-                      DataType src, DataType dst);
+  NodePtr AddCastNode(const ComputeGraphPtr &graph, const std::string &name, const GeTensorDesc &tensor, DataType src,
+                      DataType dst);
 };
 }  // namespace ge
-#endif //GE_GRAPH_PASSES_COND_PASS_H
+#endif  // GE_GRAPH_PASSES_COND_PASS_H

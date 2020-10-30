@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 namespace ge {
 Status DataPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
-  if (compute_graph->GetParentNode() == nullptr) {      // for subgraph post process.
+  if (compute_graph->GetParentNode() == nullptr) {  // for subgraph post process.
     return SUCCESS;
   }
 
@@ -34,10 +34,10 @@ Status DataPass::Run(ComputeGraphPtr compute_graph) {
     if (node->GetType() == DATA) {
       uint32_t parent_index = 0;
       if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-        break;        // parent_index not set, Graph from IR.
+        break;  // parent_index not set, Graph from IR.
       }
 
-      return SUCCESS; // Graph from Parser.
+      return SUCCESS;  // Graph from Parser.
     }
   }
 
@@ -65,16 +65,16 @@ Status DataPass::Run(ComputeGraphPtr compute_graph) {
 
   auto post_func = domi::OpRegistry::Instance()->GetParseSubgraphPostFunc(parent_node->GetType());
   if (post_func == nullptr) {
-    GELOGW("The subgraph post func for node %s type %s is null.",
-           parent_node->GetName().c_str(), parent_node->GetType().c_str());
+    GELOGW("The subgraph post func for node %s type %s is null.", parent_node->GetName().c_str(),
+           parent_node->GetType().c_str());
     return SUCCESS;
   }
 
   auto graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   auto ret = post_func(subgraph_name, graph);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Failed to post-process subgraph %s on node %s type %s",
-           graph.GetName().c_str(), parent_node->GetName().c_str(), parent_node->GetType().c_str());
+    GELOGE(FAILED, "Failed to post-process subgraph %s on node %s type %s", graph.GetName().c_str(),
+           parent_node->GetName().c_str(), parent_node->GetType().c_str());
     return FAILED;
   }
 

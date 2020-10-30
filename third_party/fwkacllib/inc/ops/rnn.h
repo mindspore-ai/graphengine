@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
  * \file rnn.h
  * \brief
  */
-#ifndef OPS_BUILT_IN_OP_PROTO_INC_RNN_H_
-#define OPS_BUILT_IN_OP_PROTO_INC_RNN_H_
+#ifndef GE_OP_RNN_H
+#define GE_OP_RNN_H
 
 #include "graph/operator_reg.h"
 
@@ -113,8 +113,8 @@ REG_OP(DynamicLSTM)
 *@li f:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li o:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li seq_length:A 1D Tensor. Must be one of the following types: int32.
-*@li mask:A 1D Tensor. Must be one of the following types: int8.
+*@li seq_length:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li mask:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li wci:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li wcf:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li wco:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
@@ -594,4 +594,4 @@ REG_OP(DynamicGRUV2)
     .OP_END_FACTORY_REG(DynamicGRUV2)
 }  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_RNN_H_
+#endif  // GE_OP_RNN_H

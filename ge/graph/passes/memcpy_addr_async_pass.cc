@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,13 +99,13 @@ Status MemcpyAddrAsyncPass::AddMemcpyAddrAsyncNode(const ComputeGraphPtr &graph,
           GELOGI("Insert memcpy_addr_async for known graph.");
           auto sub_graph = user_data_for_known_->GetOwnerComputeGraph();
           NodePtr memcpy_addr_async_node =
-              CreateMemcpyAddrAsyncNode(sub_graph, peer_out_anchor_for_known_, out_of_user_data_for_known_);
+            CreateMemcpyAddrAsyncNode(sub_graph, peer_out_anchor_for_known_, out_of_user_data_for_known_);
           GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr,
                           GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode for known failed.");
                           return INTERNAL_ERROR);
 
           Status ret =
-              InsertMemcpyAddrAsyncNode(peer_out_anchor_for_known_, in_anchor_for_known_, memcpy_addr_async_node);
+            InsertMemcpyAddrAsyncNode(peer_out_anchor_for_known_, in_anchor_for_known_, memcpy_addr_async_node);
           GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode for known failed."); return ret);
         }
       }
@@ -136,7 +136,7 @@ void MemcpyAddrAsyncPass::FindUserDataForNonDynamic(const ge::NodePtr &parent_no
   OutDataAnchorPtr out_anchor = in_data_anchor->GetPeerOutAnchor();
   GE_IF_BOOL_EXEC(out_anchor == nullptr,
                   GELOGE(INTERNAL_ERROR, "Cannot find out_anchor of %s.", parent_node->GetName().c_str());
-                  return);
+                  return );
   NodePtr in_node = out_anchor->GetOwnerNode();
   GELOGI("in_node of parent_node is %s.", in_node->GetName().c_str());
   if (in_node->GetType() == DATA) {
@@ -261,9 +261,7 @@ Status MemcpyAddrAsyncPass::InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeG
     auto in_node = NodeUtils::GetInDataNodeByIndex(*node, in_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(in_node);
     auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-    if ((in_node->GetType() != CONSTANT) &&
-       (in_node->GetType() != CONSTANTOP) &&
-       (in_node->GetType() != DATA)) {
+    if ((in_node->GetType() != CONSTANT) && (in_node->GetType() != CONSTANTOP) && (in_node->GetType() != DATA)) {
       continue;
     }
     auto desc = in_node->GetOpDesc();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ Status ReplaceWithEmptyConstPass::ReplaceWithEmptyConst(NodePtr &node_to_replace
     }
 
     // Repalce data anchors
-    for (const auto &anchor_idx: shape_2_out_idx.second) {
+    for (const auto &anchor_idx : shape_2_out_idx.second) {
       if (GraphUtils::ReplaceNodeDataAnchors(const_node, node_to_replace, {}, {anchor_idx}) != GRAPH_SUCCESS) {
         GELOGE(FAILED, "[%s] ReplaceNodeAnchors failed.", node_to_replace->GetName().c_str());
         return FAILED;

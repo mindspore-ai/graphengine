@@ -44,9 +44,7 @@ class AiCoreOpTask {
 
   Status LaunchKernel(rtStream_t stream);
 
-  const std::string& GetName() const;
-
-  bool GetClearAtomic() const {return clear_atomic_;}
+  const std::string &GetName() const;
 
  protected:
   Status UpdateTilingInfo(TaskContext &context);
@@ -68,7 +66,6 @@ class AiCoreOpTask {
   std::unique_ptr<uint8_t[]> args_ = nullptr;
   uint32_t args_size_ = 0;
   uint32_t block_dim_ = 1;
-  bool clear_atomic_ = true;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {
@@ -87,4 +84,4 @@ class AtomicAddrCleanOpTask : public AiCoreOpTask {
 };
 }  // namespace hybrid
 }  // namespace ge
-#endif //GE_HYBRID_KERNEL_AICORE_OP_TASK_H_
+#endif  // GE_HYBRID_KERNEL_AICORE_OP_TASK_H_

@@ -26,7 +26,7 @@
 
 namespace ge {
 namespace {
-constexpr int kMaxRePassTimes = 1000;
+constexpr int kMaxRePassTimes = 10000;
 constexpr size_t kMaxOneInNodes = 1000;
 // Each iteration, we take about 0.3k memory on the stack, we should change the recursion to loop later
 constexpr int kMaxRecursiveDepth = 20;

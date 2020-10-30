@@ -1058,6 +1058,14 @@ ge::Status GeExecutor::ExecuteAsync(DynamicSingleOp *executor, const vector<GeTe
 }
 
 Status GeExecutor::ReleaseSingleOpResource(void *stream) {
+  // get current context
+  rtContext_t rt_cur_ctx = nullptr;
+  auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
+  if (rt_err != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
+    return RT_FAILED;
+  }
+  ModelManager::GetInstance()->ClearAICPUSo(rt_cur_ctx);
   return SingleOpManager::GetInstance().ReleaseResource(stream);
 }
 

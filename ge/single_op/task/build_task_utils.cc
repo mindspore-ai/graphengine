@@ -45,6 +45,7 @@ std::vector<std::vector<void *>> BuildTaskUtils::GetAddresses(const OpDescPtr &o
   runtime_para.logic_var_base = kLogicVarBase;
   runtime_para.var_base = kVarBase;
   runtime_para.session_id = kSessionId;
+  runtime_para.is_single_op = true;
 
   ret.emplace_back(ModelUtils::GetInputDataAddrs(runtime_para, op_desc));
   ret.emplace_back(ModelUtils::GetOutputDataAddrs(runtime_para, op_desc));

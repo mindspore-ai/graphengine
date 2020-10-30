@@ -82,6 +82,7 @@ class AippOp : public InsertOpBase {
   Status AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size);
   Status AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aipp_cfg_path, const uint32_t &index);
   Status AddAttrToAippData(const OpDescPtr &aipp_data_op_desc);
+  Status ConvertRelatedInputNameToRank();
 
   domi::AippOpParams *aipp_params_ = nullptr;
   ge::NodePtr aipp_node_ = nullptr;

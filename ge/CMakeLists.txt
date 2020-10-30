@@ -88,6 +88,7 @@ set(TRAIN_SRC_LIST
     "graph/load/new_model_manager/model_utils.cc"
     "graph/load/new_model_manager/aipp_utils.cc"
     "graph/load/new_model_manager/task_info/end_graph_task_info.cc"
+    "graph/load/new_model_manager/task_info/model_exit_task_info.cc"
     "graph/load/new_model_manager/task_info/event_record_task_info.cc"
     "graph/load/new_model_manager/task_info/event_wait_task_info.cc"
     "graph/load/new_model_manager/task_info/fusion_start_task_info.cc"
@@ -137,6 +138,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/atomic_addr_clean_pass.cc"
     "graph/passes/mark_same_addr_pass.cc"
     "graph/passes/mark_graph_unknown_status_pass.cc"
+    "graph/passes/mark_agnostic_pass.cc"
     "graph/partition/dynamic_shape_partition.cc"
     "graph/partition/stage_partition.cc"
     "graph/passes/base_pass.cc"
@@ -489,6 +491,7 @@ set(INFER_SRC_LIST
     "graph/passes/atomic_addr_clean_pass.cc"
     "graph/passes/mark_same_addr_pass.cc"
     "graph/passes/mark_graph_unknown_status_pass.cc"
+    "graph/passes/mark_agnostic_pass.cc"
     "graph/common/omg_util.cc"
     "graph/common/bcast.cc"
     "graph/common/local_context.cc"
@@ -623,6 +626,7 @@ set(INFER_SRC_LIST
     "graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
     "graph/load/new_model_manager/task_info/stream_switchn_task_info.cc"
     "graph/load/new_model_manager/task_info/end_graph_task_info.cc"
+    "graph/load/new_model_manager/task_info/model_exit_task_info.cc"
     "graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
     "single_op/task/op_task.cc"
@@ -688,7 +692,7 @@ target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
-    #### blue zone
+    #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
@@ -717,10 +721,24 @@ target_link_libraries(ge_compiler
 
 ############ libascendcl.so ############
 file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/dummy.c CONTENT "")
-add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
-set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
+#add_library(dummy_obj OBJECT ${CMAKE_BINARY_DIR}/dummy.c)
+#set(DUMMY_OBJ $<TARGET_OBJECTS:dummy_obj>)
 
-add_library(opensrc_ascendcl SHARED ${DUMMY_OBJ})
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object)
+
+if(EXISTS ${STATIC_ACL_LIB}/libascendcl.a)
+    execute_process(
+        COMMAND ar x ${STATIC_ACL_LIB}/libascendcl.a
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object    
+    )
+    file(GLOB OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object/*.o)
+else()
+    set(OBJECT_LIST ${CMAKE_BINARY_DIR}/dummy.c)
+endif()
+
+add_library(opensrc_ascendcl SHARED
+    ${OBJECT_LIST}
+)
 target_compile_options(opensrc_ascendcl PRIVATE
     -O2
     -fvisibility=hidden
@@ -735,7 +753,6 @@ target_link_options(opensrc_ascendcl PRIVATE
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive
                      ge_executor
-                     ascendcl_static
                      ge_common_static
                      graph_static
                      protobuf_static
@@ -879,7 +896,7 @@ add_custom_command(
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)
 
-install(TARGETS ge_runner ge_compiler OPTIONAL
+install(TARGETS ge_runner ge_compiler opensrc_ascendcl OPTIONAL
     LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
 )
 

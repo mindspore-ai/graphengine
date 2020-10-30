@@ -95,6 +95,9 @@ checkopts()
 }
 checkopts "$@"
 
+git submodule update --init metadef
+git submodule update --init parser
+
 mk_dir() {
     local create_dir="$1"  # the target to make
 
@@ -134,7 +137,7 @@ build_graphengine()
     echo "execute command: cmake ${CMAKE_ARGS} .. failed."
     return 1
   fi
-  COMMON_TARGET="ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register "
+  COMMON_TARGET="ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register engine_conf.json optimizer_priority.pbtxt "
   TARGET=${COMMON_TARGET}
   if [ "x${PLATFORM}" = "xtrain" ]
   then
@@ -211,14 +214,80 @@ generate_package()
   cd "${BASEPATH}"
 
   GRAPHENGINE_LIB_PATH="lib"
+  ACL_PATH="acllib/lib64"
+  FWK_PATH="fwkacllib/lib64"
+  ATC_PATH="atc/lib64"
+  ATC_BIN_PATH="atc/bin"
+  NNENGINE_PATH="plugin/nnengine/ge_config"
+  OPSKERNEL_PATH="plugin/opskernel"
 
+  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so")
+  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so")
+  PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "libhost_cpu_engine.so" "libhost_cpu_opskernel_builder.so" "optimizer_priority.pbtxt")
+  PARSER_LIB=("lib_caffe_parser.so" "libfmk_onnx_parser.so" "libfmk_parser.so" "libparser_common.so")
+
+  rm -rf ${OUTPUT_PATH:?}/${FWK_PATH}/
+  rm -rf ${OUTPUT_PATH:?}/${ACL_PATH}/
+  rm -rf ${OUTPUT_PATH:?}/${ATC_PATH}/
+  rm -rf ${OUTPUT_PATH:?}/${ATC_BIN_PATH}/
+
+  mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}"
+  mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ACL_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ATC_BIN_PATH}"
+ 
   cd "${OUTPUT_PATH}"
 
   find ./ -name graphengine_lib.tar -exec rm {} \;
 
-  find ./bin -name atc -exec cp {} "${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH}" \;
+  cp ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH}/engine_conf.json ${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}
+  cp ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH}/engine_conf.json ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}
+
+  find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}/../ \;
+  find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}/../ \;
+
+  MAX_DEPTH=1
+  if [ "x${PLATFORM}" = "xall" ] || [ "x${PLATFORM}" = "xinference" ]
+  then
+    MAX_DEPTH=2
+  fi
+  for lib in "${PLUGIN_OPSKERNEL[@]}";
+  do
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth ${MAX_DEPTH} -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH} \;
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth ${MAX_DEPTH} -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH} \;
+  done
+
+  for lib in "${PARSER_LIB[@]}";
+  do
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH} \;
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH} \;
+  done
+
+  for lib in "${FWK_LIB[@]}";
+  do
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH} \;
+  done
+
+  for lib in "${ATC_LIB[@]}";
+  do
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH} \;
+  done
+
+  find ./bin -name atc -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
+  find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "libascendcl.so" -exec cp -f {} ${OUTPUT_PATH}/${ACL_PATH} \;
   
-  tar -cf graphengine_lib.tar "${GRAPHENGINE_LIB_PATH}"
+  if [ "x${PLATFORM}" = "xtrain" ]
+  then
+    tar -cf graphengine_lib.tar fwkacllib
+  elif [ "x${PLATFORM}" = "xinference" ]
+  then
+    tar -cf graphengine_lib.tar acllib atc
+  elif [ "x${PLATFORM}" = "xall" ]
+  then
+    tar -cf graphengine_lib.tar fwkacllib acllib atc
+  fi
 }
 
 if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then

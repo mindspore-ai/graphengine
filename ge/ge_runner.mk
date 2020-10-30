@@ -61,6 +61,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/load/new_model_manager/model_utils.cc \
     graph/load/new_model_manager/aipp_utils.cc \
     graph/load/new_model_manager/task_info/end_graph_task_info.cc \
+    graph/load/new_model_manager/task_info/model_exit_task_info.cc \
     graph/load/new_model_manager/task_info/event_record_task_info.cc \
     graph/load/new_model_manager/task_info/event_wait_task_info.cc \
     graph/load/new_model_manager/task_info/fusion_start_task_info.cc \
@@ -110,6 +111,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
+    graph/passes/mark_agnostic_pass.cc \
     graph/partition/dynamic_shape_partition.cc \
     graph/partition/stage_partition.cc \
     graph/passes/base_pass.cc \

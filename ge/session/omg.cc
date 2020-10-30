@@ -1038,6 +1038,7 @@ void UpdateOmgCtxWithParserCtx() {
   domi::GetContext().out_top_names = GetParserContext().out_top_names;
   domi::GetContext().user_out_nodes_top_vec = GetParserContext().user_out_nodes_top_vec;
   domi::GetContext().default_out_nodes = GetParserContext().default_out_nodes;
+  domi::GetContext().data_top_names = GetParserContext().data_top_names;
 }
 
 void UpdateParserCtxWithOmgCtx() {
@@ -1054,5 +1055,6 @@ void UpdateParserCtxWithOmgCtx() {
   GetParserContext().input_nodes_format_map = domi::GetContext().input_nodes_format_map;
   GetParserContext().out_top_names = domi::GetContext().out_top_names;
   GetParserContext().user_out_nodes_top_vec = domi::GetContext().user_out_nodes_top_vec;
+  GetParserContext().data_top_names = domi::GetContext().data_top_names;
 }
 }  // namespace ge

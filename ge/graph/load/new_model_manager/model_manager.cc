@@ -236,6 +236,7 @@ ModelManager::~ModelManager() {
   std::lock_guard<std::mutex> lock(map_mutex_);
   model_map_.clear();
   model_aicpu_kernel_.clear();
+  cust_aicpu_so_.clear();
 
   GE_IF_BOOL_EXEC(device_count > 0, GE_CHK_RT(rtDeviceReset(0)));
 }
@@ -399,7 +400,6 @@ Status ModelManager::Unload(uint32_t model_id) {
   }
   std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
   exception_infos_.clear();
-  cust_aicpu_so_.clear();
   return SUCCESS;
 }
 
@@ -1096,19 +1096,51 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, string so_name) {
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
+  GELOGI("LoadCustAicpuSo in, op name %s, so_name %s.", op_desc->GetName().c_str(), so_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  auto it = cust_aicpu_so_.find(so_name);
+  // get current context
+  rtContext_t rt_cur_ctx = nullptr;
+  auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
+  if (rt_err != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
+    return RT_FAILED;
+  }
+  // use current context as resource key instead
+  uintptr_t resource_id = reinterpret_cast<uintptr_t>(rt_cur_ctx);
+  auto it = cust_aicpu_so_.find(resource_id);
   if (it == cust_aicpu_so_.end()) {
     GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
                       op_desc->GetName().c_str(), so_name.c_str());
-    (void)cust_aicpu_so_.insert(so_name);
-    GELOGI("LaunchCustAicpuSo op name %s, so_name %s.", op_desc->GetName().c_str(), so_name.c_str());
+    std::set<string> so_name_set;
+    so_name_set.insert(so_name);
+    cust_aicpu_so_[resource_id] = so_name_set;
+    GELOGI("LoadCustAicpuSo new aicpu so resource_id %lu.", resource_id);
+    return SUCCESS;
+  }
+  auto it_so_name = it->second.find(so_name);
+  if (it_so_name == it->second.end()) {
+    GE_CHK_STATUS_RET(LaunchCustAicpuSo(op_desc, so_name), "LaunchCustAicpuSo failed. op name %s, so_name %s",
+                      op_desc->GetName().c_str(), so_name.c_str());
+    it->second.insert(so_name);
+    GELOGI("LoadCustAicpuSo add aicpu so resource_id %lu.", resource_id);
   }
   return SUCCESS;
 }
 
-Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, string so_name) {
+Status ModelManager::ClearAICPUSo(void *ctx) {
+  auto ctx_id = reinterpret_cast<uintptr_t>(ctx);
+  GELOGI("ClearAICPUSo in. resource id = 0x%lx", static_cast<uint64_t>(ctx_id));
+  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
+  auto it = cust_aicpu_so_.find(ctx_id);
+  if (it == cust_aicpu_so_.end()) {
+    return SUCCESS;
+  }
+  (void)cust_aicpu_so_.erase(it);
+  return SUCCESS;
+}
+
+Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, const string &so_name) {
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
     GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
@@ -1140,6 +1172,7 @@ Status ModelManager::LaunchCustAicpuSo(const OpDescPtr op_desc, string so_name) 
   GE_CHK_RT(rtStreamCreate(&stream, 0));
   GE_CHK_RT(rtCpuKernelLaunch(nullptr, kLoadOpFromBuf, 1, args, args_size, nullptr, stream));
 
+  GELOGI("LaunchCustAicpuSo so buf len %u, so name len %u.", aicpu_data_length, so_name.size());
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);

@@ -694,6 +694,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
   }
 
+
   // BUILD_MODE_TUNING with BUILD_STEP_AFTER_MERGE no need PreRunOptimizeSubGraph.
   bool run_optimize_subgraph =
       !((options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_MERGE));

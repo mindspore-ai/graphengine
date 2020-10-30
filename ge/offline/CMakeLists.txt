@@ -45,11 +45,12 @@ target_include_directories(atc PRIVATE
     ${PARSER_DIR}
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/ge
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/common
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(atc PRIVATE

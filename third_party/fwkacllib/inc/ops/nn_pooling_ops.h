@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1190,6 +1190,108 @@ REG_OP(MaxPoolGradWithArgmaxV2)
     .ATTR(dilation, ListInt, {1,1,1,1})
     .ATTR(ceil_mode, Bool, false)
     .OP_END_FACTORY_REG(MaxPoolGradWithArgmaxV2)
-}  // namespace ge
 
-#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_POOLING_OPS_H_
+/**
+* @brief Performs max pooling on the input . \n
+
+* @par Inputs:
+* One input:
+* x: An NC1HWC0 Tensor. Supported type:float16, float32, double, int8, int16,
+* int32, int64, uint8, uint16, qint8
+
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
+* specifying the size of the window for each dimension of the input tensor.
+* No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values,
+* specifying the stride of the sliding window for each dimension of
+* the input tensor. No default value.
+* @li padding_mode: A required string. Defaults to "CALCULATED".
+* @li pads:A required list of int8, int16, int32, or int64 values,
+* a data to caculate when padding_mode is "SAME" and "CALCULATED".
+* @li data_format: An optional string. Defaults to "NHWC" .
+* @li global_pooling bool, Whether to use the global pooling.
+* If global_pooling = true, kernel size and paddings will be ignored.
+* Default False
+* @li ceil_mode:global_pooling (bool) – (bool) Whether to use the global pooling.
+* If global_pooling = true, kernel size and paddings will be ignored.
+* Default False \n
+
+* @par Outputs:
+* y: A Tensor. Has the same type and format as input "x" . \n
+
+* @attention Constraints:
+* @li "ksize" is a list that has length 4: ksize[0] = 1 or ksize[3] = 1,
+* ksize[1] * ksize[2] <= 255.
+* @li "stride is a list that has length 4: strides[0] = 1 or strides[3] = 1,
+* strides[1] <= 63, strides[0] >= 1, strides[2] <= 63, strides[2] >= 1.
+* @li "padding" is  "SAME" "VALID" or "CACULATE" .
+
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator MaxPool.
+*/
+REG_OP(MaxPoolV3)
+    .INPUT(x,TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .REQUIRED_ATTR(ksize, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .ATTR(padding_mode, String, "CALCULATED")
+    .ATTR(pads, ListInt, {0,0,0,0})
+    .ATTR(data_format, String, "NCHW")
+    .ATTR(global_pooling,Bool,false)
+    .ATTR(ceil_mode, Bool, false)
+    .OP_END_FACTORY_REG(MaxPoolV3)
+
+/**
+* @brief Computes gradients of the maxpooling function . \n
+
+* @par Inputs:
+* @li orig_input: A mutable NC1HWC0 tensor of type RealNumberType.
+* @li orig_output: A mutable NC1HWC0 tensor of type RealNumberTypex.
+* @li grad: A mutable NC1HWC0 tensor of type RealNumberType . \n
+
+* @par Attributes:
+* @li ksize: A required list of int8, int16, int32, or int64 values,
+* specifying the size of the window for each dimension of the input tensor.
+* No default value.
+* @li strides: A required list of int8, int16, int32, or int64 values,
+* specifying the stride of the sliding window for each dimension of
+* the input tensor. No default value.
+* @li padding_mode: A required string. Defaults to "CALCULATED".
+* @li pads:A required list of int8, int16, int32, or int64 values,
+* a data to caculate when padding_mode is "SAME" and "CALCULATED".
+* @li data_format: An optional string. Defaults to "NHWC" .
+* @li global_pooling bool, Whether to use the global pooling.
+* If global_pooling = true, kernel size and paddings will be ignored.
+* Default False
+* @li ceil_mode:global_pooling (bool) – (bool) Whether to use the global pooling.
+* If global_pooling = true, kernel size and paddings will be ignored.
+* Default False \n
+
+* @par Outputs:
+* y: A mutable tensor. Has the same shape and type as "x1" . \n
+
+* @attention Constraints:
+* @li Computing gradients of global pooling is not supported, which means
+* "ksize < x1".
+* @li "ksize" is in the range [1, 255]. "strides" is in the range [1, 63]
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator MaxPoolGrad.
+*/
+REG_OP(MaxPoolV3Grad)
+    .INPUT(orig_input, TensorType::RealNumberType())
+    .INPUT(orig_output, TensorType::RealNumberType())
+    .INPUT(grad, TensorType::RealNumberType())
+    .OUTPUT(out_grad, TensorType::RealNumberType())
+    .REQUIRED_ATTR(ksize, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .ATTR(padding_mode, String, "CALCULATED")
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
+    .ATTR(data_format, String, "NCHW")
+    .ATTR(global_pooling, Bool, false)
+    .ATTR(ceil_mode, Bool, false)
+    .OP_END_FACTORY_REG(MaxPoolV3Grad)
+}  // namespace ge
+#endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_POOLING_OPS_H

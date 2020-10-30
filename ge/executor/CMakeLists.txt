@@ -58,6 +58,7 @@ set(SRC_LIST
     "../graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
     "../graph/load/new_model_manager/task_info/stream_switchn_task_info.cc"
     "../graph/load/new_model_manager/task_info/end_graph_task_info.cc"
+    "../graph/load/new_model_manager/task_info/model_exit_task_info.cc"
     "../graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "../graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
     "../opskernel_manager/ops_kernel_builder_manager.cc"
@@ -91,7 +92,6 @@ target_include_directories(ge_executor PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -100,7 +100,9 @@ target_include_directories(ge_executor PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/cce    
+    ${GE_CODE_DIR}/../inc/cce   
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc 
 )
 
 target_link_libraries(ge_executor PRIVATE

@@ -34,7 +34,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "util_insert_aipp_op.h"
 
 using domi::AippOpParams;
 

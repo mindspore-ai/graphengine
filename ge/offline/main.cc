@@ -67,19 +67,19 @@ static bool is_dynamic_input = false;
 const char *const kGraphMemoryManagerMallocMaxSize = "8*1024*1024*1024";
 const char *const kModeSupport = "only support 0(model to framework model), "
                                  "1(framework model to json), 3(only pre-check), 5(pbtxt to json)";
-const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow)";
+const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
 
 // limit available mem size 2G
 const long kMinAvailableMem = 2 * 1024 * 1024;
 
 DEFINE_string(model, "", "The model file.");
 DEFINE_string(output, "", "The output file path&name.");
-DEFINE_int32(framework, -1, "Framework type(0:Caffe; 1:MindSpore; 3:Tensorflow).");
+DEFINE_int32(framework, -1, "Framework type(0:Caffe; 1:MindSpore; 3:Tensorflow; 5:Onnx).");
 DEFINE_string(weight, "", "Optional; weight file. Required when framework is Caffe.");
 
 DEFINE_string(input_shape, "",
               "Optional; shape of input data. Required when framework is caffe "
-              "or TensorFLow or MindSpore."
+              "or TensorFLow or MindSpore or Onnx. "
               "Format: \"input_name1:n1,c1,h1,w1;input_name2:n2,c2,h2,w2\"");
 DEFINE_bool(h, false, "show this help message");
 DEFINE_string(cal_conf, "", "Optional; the calibration config file.");
@@ -225,31 +225,29 @@ class GFlagUtils {
         "  --model             Model file\n"
         "  --weight            Weight file. Required when framework is Caffe\n"
         "  --om                The model file to be converted to json\n"
-        "  --framework         Framework type. 0:Caffe; 1:MindSpore; 3:Tensorflow\n"
+        "  --framework         Framework type. 0:Caffe; 1:MindSpore; 3:Tensorflow; 5:Onnx\n"
         "  --input_format      Format of input data. E.g.: \"NCHW\"\n"
-        "  --input_shape       Shape of input data. Separate multiple nodes with semicolons (;)."
+        "  --input_shape       Shape of input data. Separate multiple nodes with semicolons (;). "
         "Use double quotation marks (\") to enclose each argument.\n"
         "                      E.g.: \"input_name1:n1,c1,h1,w1;input_name2:n2,c2,h2,w2\"\n"
-        "  --dynamic_batch_size Set dynamic batch size. E.g: \"batchsize1,batchsize2,batchsize3\"\n"
-        "  --dynamic_image_size Set dynamic image size. Separate multiple nodes with semicolons (;)."
+        "  --dynamic_batch_size Set dynamic batch size. E.g.: \"batchsize1,batchsize2,batchsize3\"\n"
+        "  --dynamic_image_size Set dynamic image size. Separate multiple nodes with semicolons (;). "
         "Use double quotation marks (\") to enclose each argument.\n"
-        "                      E.g: \"imagesize1_height,imagesize1_width;imagesize2_height,imagesize2_width\"\n"
-        "  --dynamic_dims      Set dynamic dims. Separate multiple nodes with semicolons (;)."
-        "Use double quotation marks (\") to enclose each argument. E.g: \"dims1_n1,dims1_n2;dims2_n1,dims2_n2\"\n"
+        "                       E.g.: \"imagesize1_height,imagesize1_width;imagesize2_height,imagesize2_width\"\n"
+        "  --dynamic_dims      Set dynamic dims. Separate multiple nodes with semicolons (;). "
+        "Use double quotation marks (\") to enclose each argument.\n"
+        "                      E.g.: \"dims1_n1,dims1_n2;dims2_n1,dims2_n2\"\n"
         "  --singleop          Single op definition file. atc will generate offline "
         "model(s) for single op if --singleop is set.\n"
         "\n[Output]\n"
-        "  --output            Output file path&name(needn't suffix, will add "
-        ".om automatically). \n"
+        "  --output            Output file path&name(needn't suffix, will add .om automatically). \n"
         "                      If --singleop is set, this arg specifies the directory to "
         "which the single op offline model will be generated\n"
-        "  --output_type       Set net output type. Support FP32, FP16, UINT8."
+        "  --output_type       Set net output type. Support FP32, FP16, UINT8. "
         "E.g.: FP16, indicates that all out nodes are set to FP16.\n"
         "                      \"node1:0:FP16;node2:1:FP32\", indicates setting the datatype of multiple out nodes.\n"
-        "  --check_report      The pre-checking report file. Default value is: "
-        "\"check_result.json\"\n"
-        "  --json              The output json file path&name which is "
-        "converted from a model\n"
+        "  --check_report      The pre-checking report file. Default value is: \"check_result.json\"\n"
+        "  --json              The output json file path&name which is converted from a model\n"
         "\n[Target]\n"
         "  --soc_version       The soc version.\n"
         "  --core_type         Set core type AiCore or VectorCore. VectorCore: use vector core. "
@@ -260,23 +258,22 @@ class GFlagUtils {
         "  --out_nodes         Output nodes designated by users. Separate multiple nodes with semicolons (;)."
         "Use double quotation marks (\") to enclose each argument.\n"
         "                      E.g.: \"node_name1:0;node_name1:1;node_name2:0\"\n"
-        "  --input_fp16_nodes  Input node datatype is fp16. Separate multiple nodes with semicolons "
-        "(;)."
-        "Use double quotation marks (\") to enclose each argument."
+        "  --input_fp16_nodes  Input node datatype is fp16. Separate multiple nodes with semicolons (;)."
+        "Use double quotation marks (\") to enclose each argument. "
         "E.g.: \"node_name1;node_name2\"\n"
         "  --insert_op_conf    Config file to insert new op\n"
         "  --op_name_map       Custom op name mapping file\n"
         "                      Note: A semicolon(;) cannot be included in each "
         "path, otherwise the resolved path will not match the expected one.\n"
         "  --is_input_adjust_hw_layout    Intput node datatype is fp16 and format is "
-        "NC1HWC0, used with input_fp16_nodes  E.g.: \"true,true,false,true\"\n"
+        "NC1HWC0, used with input_fp16_nodes. E.g.: \"true,true,false,true\"\n"
         "  --is_output_adjust_hw_layout   Net output node datatype is fp16 and format is "
         "NC1HWC0, used with out_nodes. E.g.: \"true,true,false,true\"\n"
         "\n[Model Tuning]\n"
-        "  --disable_reuse_memory    The switch of reuse memory. Default value is : 0."
+        "  --disable_reuse_memory    The switch of reuse memory. Default value is : 0. "
         "0 means reuse memory, 1 means do not reuse memory.\n"
         "  --fusion_switch_file      Set fusion switch file path\n"
-        "  --enable_scope_fusion_passes    validate the non-general scope fusion passes,"
+        "  --enable_scope_fusion_passes    validate the non-general scope fusion passes, "
         "multiple names can be set and separated by ','. E.g.: ScopePass1,ScopePass2,...\n"
         "  --enable_single_stream    Enable single stream. true: enable; false(default): disable\n"
         "  --enable_small_channel    Set enable small channel. 0(default): disable; 1: enable\n"
@@ -287,20 +284,21 @@ class GFlagUtils {
         "  --precision_mode        precision mode, support force_fp16(default), allow_mix_precision, "
         "allow_fp32_to_fp16, must_keep_origin_dtype.\n"
         "  --auto_tune_mode        Set tune mode. E.g.: \"GA,RL\", support configure multiple, spit by ,\n"
-        "  --op_select_implmode    Set op select implmode. Support high_precision, high_performance."
+        "  --op_select_implmode    Set op select implmode. Support high_precision, high_performance. "
         "default: high_performance\n"
         "  --optypelist_for_implmode    Appoint which op to select implmode, cooperated with op_select_implmode.\n"
         "                               Separate multiple nodes with commas (,). Use double quotation marks (\") "
-        "                               to enclose each argument. E.g.: \"node_name1,node_name2\"\n"
+        "to enclose each argument. E.g.: \"node_name1,node_name2\"\n"
         "  --op_debug_level        Debug enable for TBE operator building.\n"
         "                          0 (default): Disable debug; 1: Enable TBE pipe_all, "
         "and generate the operator CCE file and Python-CCE mapping file (.json);\n"
         "                          2: Enable TBE pipe_all, generate the operator CCE file and Python-CCE mapping file "
         "(.json), and enable the CCE compiler -O0-g.\n"
+        "                          3: Disable debug, and keep generating kernel file (.o and .json)\n"
         "\n[Debug]\n"
         "  --save_original_model   Control whether to output original model. E.g.: true: output original model\n"
         "  --log                   Generate log with level. Support debug, info, warning, error, null\n"
-        "  --dump_mode             The switch of dump json with shape, to be used with mode 1."
+        "  --dump_mode             The switch of dump json with shape, to be used with mode 1. "
         "0(default): disable; 1: enable.");
 
     gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
@@ -511,9 +509,9 @@ class GFlagUtils {
       // No framework information was passed in or the entered framework is illegal
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E10007", {"parameter", "support"},
-          {"framework", "0(Caffe) or 1(MindSpore) or 3(TensorFlow)"});
+          {"framework", "0(Caffe) or 1(MindSpore) or 3(TensorFlow) or 5(Onnx)"});
       DOMI_LOGE("Input parameter[--framework] is mandatory and it's value must be: "
-                "0(Caffe) or 1(MindSpore) or 3(TensorFlow).");
+                "0(Caffe) or 1(MindSpore) or 3(TensorFlow) or 5(Onnx).");
       return domi::PARAM_INVALID;
     }
 

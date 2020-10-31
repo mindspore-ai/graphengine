@@ -746,6 +746,7 @@ int TestBuildGraphTest(Func fun, Graph &graph, vector<ge::Tensor> &inputs, vecto
   shapeTensor.SetTensorDesc(shape_desc);
   vector<float> dataValuec;
   for (int i = 0; i < sizeshape; i++) {
+    // dataValuec.push_back((float)(i%255));
     dataValuec.push_back(1);
   }
 
@@ -763,6 +764,7 @@ int TestBuildGraphTest(Func fun, Graph &graph, vector<ge::Tensor> &inputs, vecto
   }
 
   shapeTensor1.SetData((uint8_t *)dataValuec1.data(), 4 * sizeshape1);
+  // inputs.push_back(shapeTensor1);
 
   return 0;
 }

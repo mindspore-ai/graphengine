@@ -528,6 +528,7 @@ uint32_t Fusion(ComputeGraphPtr model_graph, ComputeGraphPtr fusion_graph, kScop
   int stream_num = 1;
   int flag = 0;
 
+  // make_graph_nd(graph);
   NodePtr node_a = fusion_graph->AddNode(op_def_a);
   NodePtr node_b = fusion_graph->AddNode(op_def_b);
 

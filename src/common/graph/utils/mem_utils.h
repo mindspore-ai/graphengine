@@ -27,6 +27,6 @@ static inline std::shared_ptr<_Tp> MakeShared(_Args &&... __args) {
   std::shared_ptr<_Tp> ret(new (std::nothrow) _Tp_nc(std::forward<_Args>(__args)...));
   return ret;
 }
-} // namespace ge
+}  // namespace ge
 
 #endif  // COMMON_GRAPH_UTILS_MEM_UTILS_H_

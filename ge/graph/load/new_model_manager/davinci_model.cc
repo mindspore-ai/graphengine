@@ -463,6 +463,8 @@ Status DavinciModel::DoTaskSink() {
 
   GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
 
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+
   GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
 
   GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");

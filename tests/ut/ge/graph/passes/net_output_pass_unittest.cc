@@ -845,6 +845,7 @@ TEST_F(UtestGraphPassesNetOutputPass, out_node_remove_check_fail) {
   ge::NodePtr mul2 = compute_graph->FindNode("Mul2");
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{mul1, 0}, {mul2, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
+  // compute_graph->RemoveNode(mul1);
   mul1->GetInDataAnchor(0)->UnlinkAll();
   mul1->GetInDataAnchor(1)->UnlinkAll();
   GraphUtils::RemoveNodeWithoutRelink(compute_graph, mul1);

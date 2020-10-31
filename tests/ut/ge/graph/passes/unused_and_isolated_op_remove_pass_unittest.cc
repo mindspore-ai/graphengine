@@ -106,6 +106,7 @@ TEST_F(UtestGraphPassesUnusedAndIsolatedOpRemovePass, transpose_and_conv) {
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
   NodePtr found_node0 = graph->FindNode("transpose1");
+  // EXPECT_EQ(nullptr, found_node0);
   NodePtr found_node = graph->FindNode("conv1");
   EXPECT_EQ(conv_node, found_node);
 }

@@ -178,5 +178,6 @@ TEST_F(UtestReshapeRemovePass, reshape_remove_without_const) {
   EXPECT_EQ(var1->GetOutDataNodes().at(0)->GetName(), "transdata1");
   EXPECT_NE(const1, nullptr);
   EXPECT_EQ(const1->GetOutNodes().size(), 1);
+  // EXPECT_EQ(const1->GetOutDataNodes().at(0)->GetName(), "transdata2");
 }
 }  // namespace ge

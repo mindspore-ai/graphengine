@@ -78,4 +78,5 @@ TEST_F(UtestSnapshotPass, succ) {
   string type2 = "FrameworkOp";
   snapshot->GetOpDesc()->SetType(type2);
   status = pass.Run(snapshot);
+  //  EXPECT_EQ(ge::SUCCESS, status);
 }

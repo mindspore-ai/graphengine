@@ -75,4 +75,5 @@ TEST_F(UtestPlaceholderWithDefaultPass, succ) {
   string type2 = "FrameworkOp";
   node->GetOpDesc()->SetType(type2);
   pass.Run(node);
+  //  EXPECT_EQ(ge::SUCCESS, status);
 }

@@ -93,6 +93,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test2) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test3) {
@@ -122,6 +123,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test3) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test4) {
@@ -152,6 +154,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test4) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test5) {
@@ -183,6 +186,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test5) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test6) {
@@ -215,6 +219,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test6) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test7) {
@@ -248,6 +253,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test7) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test8) {
@@ -282,6 +288,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test8) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test9) {
@@ -315,6 +322,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test9) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test10) {
@@ -349,6 +357,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test10) {
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
 
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test11) {
@@ -383,6 +392,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test11) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test12) {
@@ -417,6 +427,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test12) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test13) {
@@ -451,6 +462,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test13) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test14) {
@@ -485,6 +497,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test14) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test15) {
@@ -519,6 +532,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test15) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test16) {
@@ -553,6 +567,7 @@ TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test16) {
 
   shared_ptr<Kernel> kernel = KernelFactory::Instance().Create(STRIDEDSLICE);
   ge::Status status = kernel->Compute(op_desc_ptr, input, outputs);
+  // EXPECT_EQ(PARAM_INVALID, status);
 }
 
 TEST_F(UtestGraphPassesFoldingKernelStridedSliceKernel, Test17) {

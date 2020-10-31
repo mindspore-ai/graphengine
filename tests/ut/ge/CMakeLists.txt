@@ -190,7 +190,6 @@ file(GLOB_RECURSE DISTINCT_GRAPH_LOAD_SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/stream_active_task_info.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/stream_switch_task_info.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/end_graph_task_info.cc"
-    "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/model_exit_task_info.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "${GE_SOURCE_DIR}/src/ge/graph/load/output/output.cc"

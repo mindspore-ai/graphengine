@@ -75,4 +75,5 @@ TEST_F(UtestPreventGradientPass, succ) {
   string type2 = "FrameworkOp";
   node->GetOpDesc()->SetType(type2);
   status = pass.Run(node);
+  // EXPECT_EQ(ge::SUCCESS, status);
 }

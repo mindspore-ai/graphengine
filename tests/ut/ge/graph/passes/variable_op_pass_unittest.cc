@@ -343,6 +343,8 @@ bool BuildComputeGraph0(ge::ComputeGraphPtr &graph) {
 
   if (ge::GraphUtils::AddEdge(node_apply_monetum->GetOutDataAnchor(0), node_5d_to_4d_1->GetInDataAnchor(0)) !=
       ge::SUCCESS) {
+    /// GELOGE(FAILED, "ge::GraphUtils::AddEdge(node_apply_monetum->GetOutDataAnchor(0),
+    /// node_5d_to_4d_1->GetInDataAnchor(0) ) Failed.");
   };
   ge::GraphUtils::AddEdge(node_5d_to_4d_1->GetOutDataAnchor(0), node_ref->GetInDataAnchor(0));
 
@@ -393,6 +395,8 @@ bool BuildComputeGraph1(ge::ComputeGraphPtr &graph) {
 
   if (ge::GraphUtils::AddEdge(node_apply_monetum->GetOutDataAnchor(0), node_5d_to_4d_1->GetInDataAnchor(0)) !=
       ge::SUCCESS) {
+    /// GELOGE(FAILED, "ge::GraphUtils::AddEdge(node_apply_monetum->GetOutDataAnchor(0),
+    /// node_5d_to_4d_1->GetInDataAnchor(0) ) Failed.");
   };
   ge::GraphUtils::AddEdge(node_5d_to_4d_1->GetOutDataAnchor(0), node_ref->GetInDataAnchor(0));
 

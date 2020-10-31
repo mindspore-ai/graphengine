@@ -167,6 +167,7 @@ TEST_F(UtestGraphPassesGuaranteeConstPass, get_origenal_type_fail) {
   string type2 = "FrameworkOp";
   node->GetOpDesc()->SetType(type2);
   ge::Status ret = guarantee_const_op_remove_pass_->Run(node);
+  //  EXPECT_EQ(ge::SUCCESS, ret);
 }
 
 TEST_F(UtestGraphPassesGuaranteeConstPass, int32_success_6) {

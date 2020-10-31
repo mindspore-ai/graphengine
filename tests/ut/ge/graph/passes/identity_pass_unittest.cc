@@ -135,6 +135,7 @@ TEST_F(UtestIdentityPass, succ) {
   string type2 = "FrameworkOp";
   node->GetOpDesc()->SetType(type2);
   status = pass.Run(node);
+  //    EXPECT_EQ(ge::SUCCESS, status);
 
   NodePtr node_err = AddNode(graph, "Identity", IDENTITY, 1, 2);
   status = pass.Run(node_err);

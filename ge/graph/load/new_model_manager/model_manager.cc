@@ -43,7 +43,6 @@ const std::string kCmdTypeProfInit = "prof_init";
 const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
 const std::string kCmdTypeProfStop = "prof_stop";
-const char *const kLoadOpFromBuf = "loadOpFromBuf";
 const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
 const char *const kDeleteCustOp = "deleteCustOp";
 struct CustAicpuSoBuf {

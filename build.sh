@@ -23,7 +23,7 @@ export BUILD_PATH="${BASEPATH}/build/"
 usage()
 {
   echo "Usage:"
-  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-p]"
+  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off]"
   echo ""
   echo "Options:"
   echo "    -h Print usage"
@@ -34,7 +34,19 @@ usage()
   echo "    -c Build ut with coverage tag"
   echo "    -p Build inference or train"
   echo "    -v Display build command"
+  echo "    -S Enable enable download cmake compile dependency from gitee , default off"
   echo "to be continued ..."
+}
+
+# check value of input is 'on' or 'off'
+# usage: check_on_off arg_value arg_name
+check_on_off()
+{
+  if [[ "X$1" != "Xon" && "X$1" != "Xoff" ]]; then
+    echo "Invalid value $1 for option -$2"
+    usage
+    exit 1
+  fi
 }
 
 # parse and set options
@@ -49,8 +61,9 @@ checkopts()
   GE_ONLY="on"
   PLATFORM="inference"
   PRODUCT="normal"
+  ENABLE_GITEE="off"
   # Process the options
-  while getopts 'ustchj:p:g:v' opt
+  while getopts 'ustchj:p:g:vS:' opt
   do
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
@@ -85,6 +98,11 @@ checkopts()
         ;;
       g)
         PRODUCT=$OPTARG
+        ;;
+      S)
+        check_on_off $OPTARG S
+        ENABLE_GITEE="$OPTARG"
+        echo "enable download from gitee"
         ;;
       *)
         echo "Undefined option: ${opt}"
@@ -129,6 +147,9 @@ build_graphengine()
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_ST=ON"
   fi
 
+  if [[ "X$ENABLE_GITEE" = "Xon" ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GITEE=ON"
+  fi
   CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ..

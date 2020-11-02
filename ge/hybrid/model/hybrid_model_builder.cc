@@ -15,6 +15,7 @@
  */
 
 #include "hybrid/model/hybrid_model_builder.h"
+#include <algorithm>
 #include "common/math/math_util.h"
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
@@ -70,7 +71,7 @@ Status CollectDependenciesForFusedGraph(NodeItem &node_item, std::set<OpDesc *> 
 
     for (auto &input_name : depends) {
       auto input_index = op_desc->GetInputIndexByName(input_name);
-      const auto &in_anchor = ge_node->GetInDataAnchor(input_index);
+      const auto &in_anchor = node->GetInDataAnchor(input_index);
       GE_CHECK_NOTNULL(in_anchor);
       const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
       GE_CHECK_NOTNULL(peer_out_anchor);
@@ -307,7 +308,7 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     node_item.dependents_for_shape_inference.emplace_back(dep_node);
   }
 
-  GE_CHK_STATUS_RET(ParseDependentForFusedSubgraph(noe_item));
+  GE_CHK_STATUS_RET(ParseDependentForFusedSubgraph(node_item));
   return SUCCESS;
 }
 
@@ -320,10 +321,10 @@ Status HybridModelBuilder::ParseDependentForFusedSubgraph(NodeItem &node_item) {
   GE_CHK_STATUS_RET_NOLOG(CollectDependenciesForFusedGraph(node_item, data_ops));
   for (auto &op_desc : data_ops) {
     uint32_t parent_index = 0;
-    if (!AttrUtils::GetInt(data_op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+    if (!AttrUtils::GetInt(*op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
       GELOGE(INTERNAL_ERROR,
             "[%s] Failed to get attr [%s]",
-            data_op_desc->GetName().c_str(),
+            op_desc->GetName().c_str(),
             ATTR_NAME_PARENT_NODE_INDEX.c_str());
       return INTERNAL_ERROR;
     }
@@ -337,7 +338,7 @@ Status HybridModelBuilder::ParseDependentForFusedSubgraph(NodeItem &node_item) {
     NodeItem *src_node_item = nullptr;
     GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(src_node, &src_node_item));
     op_desc->SetId(src_node_item->op_desc->GetId());
-    GELOGD("[%S::%S] Node id was set to that of outer src node's, src_node = %s",
+    GELOGD("[%s::%s] Node id was set to that of outer src node's, src_node = %s",
            node_item.NodeName().c_str(),
            op_desc->GetName().c_str(),
            src_node_item->NodeName().c_str());

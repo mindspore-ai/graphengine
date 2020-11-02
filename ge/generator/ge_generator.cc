@@ -604,9 +604,6 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   } else {
     for (const auto &in_desc : inputs) {
       GeTensorDesc input_desc = in_desc.GetTensorDesc();
-      if (!IsNeedConnectInputOpForSingleOp(input_desc)) {
-        continue;
-      }
       GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
       arg_index++;
     }

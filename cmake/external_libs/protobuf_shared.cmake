@@ -10,10 +10,19 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
     set(CMAKE_INSTALL_PREFIX ${GE_CODE_DIR}/output CACHE STRING "path for install()" FORCE)
     message(STATUS "No install prefix selected, default to ${CMAKE_INSTALL_PREFIX}.")
 endif()
+
+if (ENABLE_GITEE)
+    set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
+    set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
+else()
+    set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz")
+    set(MD5 "3d9e32700639618a4d2d342c99d4507a")
+endif ()
+
 set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 -D_GLIBCXX_USE_CXX11_ABI=0 -O2")
 set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(protobuf_build
-                    URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
+                    URL ${REQ_URL}
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
                     #SOURCE_DIR ${GE_CODE_DIR}/../third_party/protobuf/src/protobuf-3.8.0
                     #DOWNLOAD_COMMAND ${CMAKE_COMMAND} -E copy_directory ${GE_CODE_DIR}/../third_party/protobuf/src/protobuf-3.8.0 <SOURCE_DIR>

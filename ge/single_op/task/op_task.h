@@ -131,7 +131,8 @@ class AiCpuBaseTask : public OpTask {
   Status SetExtInfoAndType(const std::string &kernel_ext_info);
 
   Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
-                       std::vector<GeTensorDesc> &output_desc);
+                       std::vector<GeTensorDesc> &output_desc,
+                       rtStream_t stream);
   Status UpdateOutputShape(vector<GeTensorDesc> &output_desc);
   Status UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensorDesc &output_desc);
 

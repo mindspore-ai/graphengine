@@ -79,6 +79,16 @@ Status MergePass::Run(NodePtr &node) {
           return FAILED;
         }
       }
+      auto in_node = in_data_nodes.at(0);
+      bool memcpy_optimize_flag = (in_node != nullptr) &&
+                                  ((in_node->GetType() == MEMCPYASYNC) || (in_node->GetType() == MEMCPYADDRASYNC)) &&
+                                  (in_node->GetInDataNodes().size() == 1);
+      if (memcpy_optimize_flag) {
+        if (IsolateAndDeleteNode(in_node, {0}) != SUCCESS) {
+          GELOGE(FAILED, "Isolate and delete node %s failed.", in_node->GetName().c_str());
+          return FAILED;
+        }
+      }
       return IsolateAndDeleteNode(node, merge_io_map);
     }
     default: {

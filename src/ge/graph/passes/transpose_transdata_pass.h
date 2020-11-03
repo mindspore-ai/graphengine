@@ -23,6 +23,7 @@ namespace ge {
 class TransposeTransDataPass : public BaseNodePass {
  public:
   Status Run(NodePtr &node) override;
+
  private:
   Status CheckOneInAndOneOutDataAnchor(NodePtr &node) const;
   Status RemoveTranspose(NodePtr &node);
@@ -32,4 +33,3 @@ class TransposeTransDataPass : public BaseNodePass {
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_TRANSPOSE_TRANSDATA_PASS_H_
-

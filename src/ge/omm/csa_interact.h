@@ -56,10 +56,7 @@ enum ErrorModule {
 };
 
 struct CsaErrorCode {
-  CsaErrorCode()
-      : module_ret_errcode(0),
-        error_module(ERROR_MODULE_FMK),
-        job_sub_state(JOBSUBSTATE_OTHER) {}
+  CsaErrorCode() : module_ret_errcode(0), error_module(ERROR_MODULE_FMK), job_sub_state(JOBSUBSTATE_OTHER) {}
   ~CsaErrorCode() {}
   uint32_t module_ret_errcode;
   ErrorModule error_module;
@@ -89,10 +86,8 @@ class CsaInteract {
   /// @param [in] error_module  error module identified by FMK
   /// @return Status
   ///
-  Status WriteJobState(JobState job_state,
-                       JobSubState job_sub_state = JOBSUBSTATE_OTHER,
-                       uint32_t module_ret_errcode = SUCCESS,
-                       ErrorModule error_module = ERROR_MODULE_FMK);
+  Status WriteJobState(JobState job_state, JobSubState job_sub_state = JOBSUBSTATE_OTHER,
+                       uint32_t module_ret_errcode = SUCCESS, ErrorModule error_module = ERROR_MODULE_FMK);
 
   ///
   /// @brief Update error code in the job state file
@@ -101,8 +96,7 @@ class CsaInteract {
   /// @param [in] job_sub_state  detailed job state
   /// @return void
   ///
-  void WriteErrorCode(uint32_t module_ret_errcode, ErrorModule error_module,
-                      JobSubState job_sub_state);
+  void WriteErrorCode(uint32_t module_ret_errcode, ErrorModule error_module, JobSubState job_sub_state);
 
   ///
   /// @brief Record errors that occurred durning the training
@@ -111,9 +105,7 @@ class CsaInteract {
   /// @param [in] job_sub_state  detailed job state
   /// @return void
   ///
-  void StoreInternalErrorCode(uint32_t module_ret_errcode,
-                              ErrorModule error_module,
-                              JobSubState job_sub_state);
+  void StoreInternalErrorCode(uint32_t module_ret_errcode, ErrorModule error_module, JobSubState job_sub_state);
 
   ///
   /// @brief Update training error code in the job state file
@@ -130,11 +122,7 @@ class CsaInteract {
 
  private:
   CsaInteract()
-      : dev_index_(0),
-        job_id_(0),
-        is_init_(false),
-        curr_state_(JOBSTATE_UNKOWN),
-        is_have_internal_error_(false) {}
+      : dev_index_(0), job_id_(0), is_init_(false), curr_state_(JOBSTATE_UNKOWN), is_have_internal_error_(false) {}
 
   ~CsaInteract() {}
 
@@ -180,4 +168,3 @@ class CsaInteract {
 }  // namespace ge
 
 #endif  // GE_OMM_CSA_INTERACT_H_
-

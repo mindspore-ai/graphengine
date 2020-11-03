@@ -22,8 +22,8 @@
 #include "framework/common/types.h"
 
 /**
-* Provide read and write operations for offline model files
-*/
+ * Provide read and write operations for offline model files
+ */
 namespace ge {
 using Json = nlohmann::json;
 

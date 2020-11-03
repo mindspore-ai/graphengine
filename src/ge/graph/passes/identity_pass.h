@@ -25,6 +25,7 @@ class IdentityPass : public BaseNodePass {
   explicit IdentityPass(bool force) : force_(force) {}
   ~IdentityPass() override = default;
   Status Run(NodePtr &node) override;
+
  private:
   bool force_ = false;
 };

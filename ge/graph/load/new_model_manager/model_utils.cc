@@ -57,9 +57,9 @@ vector<int64_t> ModelUtils::GetInputSize(ConstOpDescPtr op_desc) {
 
     int64_t tensor_size = 0;
     GE_IF_BOOL_EXEC(
-        TensorUtils::GetSize(*tensor_desc, tensor_size) != GRAPH_SUCCESS,
-        GELOGI("Get size from TensorDesc failed, op : %s, input index : %zu", op_desc->GetName().c_str(), i);
-        continue);
+      TensorUtils::GetSize(*tensor_desc, tensor_size) != GRAPH_SUCCESS,
+      GELOGI("Get size from TensorDesc failed, op : %s, input index : %zu", op_desc->GetName().c_str(), i);
+      continue);
 
     GELOGI("[IMAS]GetInputSize op: %s, index: %zu, size:%ld", op_desc->GetName().c_str(), i, tensor_size);
     v_input_size.push_back(tensor_size);
@@ -92,9 +92,9 @@ vector<int64_t> ModelUtils::GetOutputSize(ConstOpDescPtr op_desc) {
 
     int64_t tensor_size = 0;
     GE_IF_BOOL_EXEC(
-        TensorUtils::GetSize(*tensor_desc, tensor_size) != GRAPH_SUCCESS,
-        GELOGI("Get size from TensorDesc failed, op : %s, output index : %zu", op_desc->GetName().c_str(), i);
-        continue);
+      TensorUtils::GetSize(*tensor_desc, tensor_size) != GRAPH_SUCCESS,
+      GELOGI("Get size from TensorDesc failed, op : %s, output index : %zu", op_desc->GetName().c_str(), i);
+      continue);
 
     GELOGI("[IMAS]GetOutputSize op: %s, index: %zu, size:%ld", op_desc->GetName().c_str(), i, tensor_size);
     v_output_size.push_back(tensor_size);
@@ -337,16 +337,6 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       continue;
     }
 
-    int64_t mem_type;
-    bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
-    if (tensor_has_mem_type && v_memory_type[i] != RT_MEMORY_L1) {
-      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_input_offset[i];
-      v_input_data_addr.push_back(p2p_mem_addr);
-      GELOGI("[IMAS]GetInputDataAddrs graph_%u type[P] name[%s] input[%zu] memaddr[%p]", model_param.graph_id,
-             op_desc->GetName().c_str(), i, p2p_mem_addr);
-      continue;
-    }
-
     GE_IF_BOOL_EXEC(non_const_index >= v_input_offset.size(),
                     GELOGW("offsets=%zu, inputs=%zu, index=%zu.", v_input_offset.size(), inputs_size, non_const_index);
                     break);
@@ -360,7 +350,9 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
                     GELOGI("[IMAS]GetInputDataAddrs graph_%u type[V] name[%s] input[%lu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
                     continue);
-
+    
+    int64_t mem_type;
+    bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
     // feature maps
     void *mem_addr = nullptr;
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {  // fusion
@@ -372,6 +364,12 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset);
       mem_addr = model_param.ts_mem_mall->Acquire(input_offset, static_cast<uint64_t>(tensor_size));
       v_input_data_addr.push_back(mem_addr);
+    } else if (tensor_has_mem_type && mem_type == RT_MEMORY_P2P_DDR) {
+      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_input_offset[i];
+      v_input_data_addr.push_back(p2p_mem_addr);
+      GELOGI("[IMAS]GetInputDataAddrs graph_%u type[P] name[%s] input[%zu] memaddr[%p]", model_param.graph_id,
+             op_desc->GetName().c_str(), i, p2p_mem_addr);
+      continue;
     } else {
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset);
       mem_addr = model_param.mem_base + input_offset;
@@ -420,15 +418,9 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       GELOGW("Op: %s, Index: %zu, Tensor Desc is null", op_desc->GetName().c_str(), i);
       continue;
     }
+
     int64_t mem_type;
     bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
-    if (tensor_has_mem_type && v_memory_type[i] != RT_MEMORY_L1) {
-      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_output_offset[i];
-      v_output_data_addr.push_back(p2p_mem_addr);
-      GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[P] name[%s] output[%zu] memaddr[%p]", model_param.graph_id,
-             op_desc->GetName().c_str(), i, p2p_mem_addr);
-      continue;
-    }
     // feature maps
     void *mem_addr = nullptr;
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {  // fusion
@@ -442,6 +434,12 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i]);
       mem_addr = model_param.ts_mem_mall->Acquire(v_output_offset[i], static_cast<uint64_t>(tensor_size));
       v_output_data_addr.push_back(mem_addr);
+    } else if (tensor_has_mem_type && mem_type == RT_MEMORY_P2P_DDR) {
+      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_output_offset[i];
+      v_output_data_addr.push_back(p2p_mem_addr);
+      GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[P] name[%s] output[%zu] memaddr[%p]", model_param.graph_id,
+             op_desc->GetName().c_str(), i, p2p_mem_addr);
+      continue;
     } else {
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i]);
       mem_addr = static_cast<uint8_t *>(model_param.mem_base + v_output_offset[i]);
@@ -476,29 +474,29 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
   vector<int64_t> workspace_memory_type;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_desc, TVM_ATTR_NAME_WORKSPACE_TYPE, v_memory_type);
   bool has_mem_type_workspace =
-      ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_WORKSPACE_TYPE_LIST, workspace_memory_type);
+    ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_WORKSPACE_TYPE_LIST, workspace_memory_type);
   for (size_t i = 0; i < v_workspace_bytes.size(); ++i) {
     // Temporary solution, the aicpu workspace of multiple images cannot be shared.
-    if (has_workspace_reuse && i < workspace_reuse_flag.size()
-        && !workspace_reuse_flag[i] && !model_param.is_single_op) {
+    if (has_workspace_reuse && i < workspace_reuse_flag.size() && !workspace_reuse_flag[i] &&
+        !model_param.is_single_op) {
       void *mem_addr = model_param.aicpu_mem_mall->Acquire(v_workspace_offset[i], v_workspace_bytes[i]);
       v_workspace_data_addr.push_back(mem_addr);
       GELOGI(
-          "[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] aicpu workspace[%zu]  offset[%ld] bytes[%ld] "
-          "memaddr[%p]",
-          model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i], v_workspace_bytes[i], mem_addr);
+        "[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] aicpu workspace[%zu]  offset[%ld] bytes[%ld] "
+        "memaddr[%p]",
+        model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i], v_workspace_bytes[i], mem_addr);
       continue;
     } else if (has_mem_type_workspace && workspace_memory_type[i] == RT_MEMORY_P2P_DDR) {
       int64_t p2p_workspace_offset = v_workspace_offset[i];
       int64_t p2p_workspace_bytes = v_workspace_bytes[i];
       uint8_t *p2p_mem_addr = p2p_workspace_bytes == 0
-                                  ? nullptr
-                                  : model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + p2p_workspace_offset;
+                                ? nullptr
+                                : model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + p2p_workspace_offset;
       v_workspace_data_addr.push_back(p2p_mem_addr);
       GELOGI(
-          "[IMAS]GetWorkspaceDataAddrs graph_%u type[P] name[%s] p2p workspace[%zu]  offset[%ld] bytes[%ld] "
-          "memaddr[%p]",
-          model_param.graph_id, op_desc->GetName().c_str(), i, p2p_workspace_offset, p2p_workspace_bytes, p2p_mem_addr);
+        "[IMAS]GetWorkspaceDataAddrs graph_%u type[P] name[%s] p2p workspace[%zu]  offset[%ld] bytes[%ld] "
+        "memaddr[%p]",
+        model_param.graph_id, op_desc->GetName().c_str(), i, p2p_workspace_offset, p2p_workspace_bytes, p2p_mem_addr);
       continue;
     }
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {

@@ -30,7 +30,8 @@ const std::vector<std::string> kBasicBuilderLibs = {
 
 const std::vector<std::string> kHcclBuilderLibs = {
     "libhcom_opskernel_builder.so",
-    "libhvd_opskernel_builder.so"
+    "libhvd_opskernel_builder.so",
+    "libhcom_gradtune_opskernel_builder.so"
 };
 }  // namespace
 OpsKernelBuilderManager::~OpsKernelBuilderManager() {

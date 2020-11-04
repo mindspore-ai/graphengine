@@ -71,11 +71,7 @@ Status CollectDependenciesForFusedGraph(NodeItem &node_item, std::set<OpDesc *> 
 
     for (auto &input_name : depends) {
       auto input_index = op_desc->GetInputIndexByName(input_name);
-      const auto &in_anchor = node->GetInDataAnchor(input_index);
-      GE_CHECK_NOTNULL(in_anchor);
-      const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
-      GE_CHECK_NOTNULL(peer_out_anchor);
-      const auto &src_node = peer_out_anchor->GetOwnerNode();
+      auto src_node = NodeUtils::GetInDataNodeByIndex(*node, input_index);
       GE_CHECK_NOTNULL(src_node);
       auto src_op_desc = src_node->GetOpDesc();
       GE_CHECK_NOTNULL(src_op_desc);

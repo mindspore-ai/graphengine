@@ -149,7 +149,8 @@ Status SubgraphPass::SubgraphOutputNode(const ComputeGraphPtr &graph, const Node
     std::string op_type;
     bool insert_flag = NodeUtils::GetConstOpType(in_node, op_type) ||
                        IsAtomicRequired(in_node, peer_out_anchor->GetIdx()) || IsOutputContinuesRequired(in_node) ||
-                       ((in_node->GetType() == DATA) && (kWhileOpTypes.count(graph->GetParentNode()->GetType()) == 0));
+                       ((in_node->GetType() == DATA) && (kWhileOpTypes.count(graph->GetParentNode()->GetType()) == 0)) ||
+                         (NodeUtils::IsDynamicShape(node) && (kWhileOpTypes.count(in_node->GetType()) != 0));
     if (insert_flag) {
       GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
       std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
@@ -210,6 +211,19 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
   if (GraphUtils::IsUnknownShapeGraph(while_body)) {
     GELOGI("Unknown shape while_body graph %s no need to insert memcpy.", while_body->GetName().c_str());
     return SUCCESS;
+  }
+
+  // insert identity between data and labelswitch in while cond subgraph
+  if (NodeUtils::IsDynamicShape(node)) {
+    ComputeGraphPtr while_cond = NodeUtils::GetSubgraph(*node, 0);
+    GE_CHECK_NOTNULL(while_cond);
+    std::vector<NodePtr> cond_data_nodes;
+    for (const auto &n : while_cond->GetDirectNode()) {
+      if (n->GetType() == DATA) {
+        cond_data_nodes.emplace_back(n);
+      }
+    }
+    GE_CHK_STATUS_RET(InsertInputMemcpy(while_cond, cond_data_nodes), "InsertInputMemcpy failed.");
   }
 
   std::vector<NodePtr> data_nodes;

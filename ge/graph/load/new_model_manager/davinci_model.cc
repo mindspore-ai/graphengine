@@ -649,7 +649,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   for (const ge::NodePtr &node : compute_graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
-    GetFixedAddrAttr(op_desc);
     GE_IF_BOOL_EXEC(op_desc->GetType() != VARIABLE, continue);
     GE_IF_BOOL_EXEC(IsBroadCastOpData(node),
                     (void)ge::AttrUtils::SetStr(op_desc, VAR_ATTR_VAR_IS_BROADCAST, "var_is_restore"););
@@ -838,7 +837,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
       }
       continue;
     }
-
+    // for dynamic shape with control flow
+    SetLabelForDynamic(node);
     if (IsNoTaskAndDumpNeeded(op_desc)) {
       GELOGD("node[%s] without task, and save op_desc and addr for dump", op_desc->GetName().c_str());
       const RuntimeParam &rts_param = GetRuntimeParam();
@@ -910,6 +910,21 @@ Status DavinciModel::InitInputOutputForDynamic(const ComputeGraphPtr &compute_gr
     }
   }
   return SUCCESS;
+}
+
+void DavinciModel::SetLabelForDynamic(const NodePtr &node) {
+  if (known_node_ && node->GetOpDesc()->GetType() == LABELSWITCHBYINDEX) {
+    for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+      auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
+      if (peer_out_data_anchor != nullptr) {
+        string tensor_name = node->GetName();
+        auto peer_node = peer_out_data_anchor->GetOwnerNode();
+        (void)AttrUtils::SetStr(peer_node->GetOpDesc(), ATTR_DYNAMIC_SHAPE_FIXED_ADDR, tensor_name);
+        (void)AttrUtils::SetInt(peer_node->GetOpDesc(), ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX, 0);
+        tensor_name_to_peer_output_index_[tensor_name] = 0;
+      }
+    }
+  }
 }
 
 /// @ingroup ge
@@ -3948,15 +3963,4 @@ int64_t DavinciModel::GetFixedAddrsSize(string tensor_name) {
   }
 }
 
-void DavinciModel::GetFixedAddrAttr(const OpDescPtr &op_desc) {
-  if (op_desc->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR) && op_desc->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX)) {
-    string tensor_name;
-    (void)AttrUtils::GetStr(op_desc, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, tensor_name);
-    int64_t index = -1;
-    (void)AttrUtils::GetInt(op_desc, ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX, index);
-    if (index >= 0) {
-      tensor_name_to_peer_output_index_[tensor_name] = index;
-    }
-  }
-}
 }  // namespace ge

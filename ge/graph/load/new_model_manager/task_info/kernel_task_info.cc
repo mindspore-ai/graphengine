@@ -559,10 +559,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   GE_CHECK_NOTNULL(davinci_model_);
   // get tvm op desc
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(ctx_.opIndex);
-  if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "InitTVMTaskInfo error, index:%u out of range!", ctx_.opIndex);
-    return INTERNAL_ERROR;
-  }
+  GE_CHECK_NOTNULL(op_desc);
   if (davinci_model_->IsKnownNode()) {
     return SUCCESS;
   }
@@ -650,6 +647,9 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
   virtual_io_addrs.insert(virtual_io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
   virtual_io_addrs.insert(virtual_io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+  if (op_desc->GetType() == ATOMICADDRCLEAN) {
+    virtual_io_addrs.insert(virtual_io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+  }
   davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_info.data(), args_, args_size_, offset);
 
   GELOGD("Do InitTVMTask end");

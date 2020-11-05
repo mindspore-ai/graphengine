@@ -32,6 +32,7 @@
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/graph.h"
+#include "graph/manager/graph_var_manager.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
@@ -253,7 +254,7 @@ class GFlagUtils {
         "  --out_nodes         Output nodes designated by users. Separate multiple nodes with semicolons (;)."
         "Use double quotation marks (\") to enclose each argument.\n"
         "                      E.g.: \"node_name1:0;node_name1:1;node_name2:0\"\n"
-        "  --input_fp16_nodes  Input node datatype is fp16. Separate multiple nodes with semicolons (;)."
+        "  --input_fp16_nodes  Input node datatype is fp16. Separate multiple nodes with semicolons (;). "
         "Use double quotation marks (\") to enclose each argument. "
         "E.g.: \"node_name1;node_name2\"\n"
         "  --insert_op_conf    Config file to insert new op\n"
@@ -894,6 +895,13 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     return domi::FAILED;
   }
 
+  geRet = ge::VarManager::Instance(0)->SetMemoryMallocSize(options);
+  if (geRet != ge::SUCCESS) {
+    GELOGE(ge::FAILED, "SetMemoryMallocSize failed.");
+    (void)ge::GELib::GetInstance()->Finalize();
+    return domi::FAILED;
+  }
+
   ge::Graph graph;
   std::vector<ge::GeTensor> inputs;
   if (FLAGS_framework == domi::MINDSPORE) {
@@ -1023,6 +1031,13 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
   ret = generator.Initialize(options, domi::GetContext());
   if (ret != SUCCESS) {
     DOMI_LOGE("GeGenerator initialize failed!");
+    (void)ge::GELib::GetInstance()->Finalize();
+    return domi::FAILED;
+  }
+
+  ret = ge::VarManager::Instance(0)->SetMemoryMallocSize(options);
+  if (ret != ge::SUCCESS) {
+    GELOGE(ge::FAILED, "SetMemoryMallocSize failed.");
     (void)ge::GELib::GetInstance()->Finalize();
     return domi::FAILED;
   }

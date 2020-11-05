@@ -28,7 +28,6 @@ target_include_directories(host_cpu_engine PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -36,6 +35,8 @@ target_include_directories(host_cpu_engine PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
 )
 
 target_link_libraries(host_cpu_engine PRIVATE
@@ -67,7 +68,6 @@ target_include_directories(atc_host_cpu_engine PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -75,6 +75,8 @@ target_include_directories(atc_host_cpu_engine PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
 )
 
 target_link_libraries(atc_host_cpu_engine PRIVATE
@@ -107,7 +109,6 @@ target_include_directories(host_cpu_opskernel_builder PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -115,6 +116,8 @@ target_include_directories(host_cpu_opskernel_builder PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
 )
 
 target_link_libraries(host_cpu_opskernel_builder PRIVATE
@@ -141,7 +144,6 @@ target_include_directories(atc_host_cpu_opskernel_builder PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -149,6 +151,8 @@ target_include_directories(atc_host_cpu_opskernel_builder PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
 )
 
 target_link_libraries(atc_host_cpu_opskernel_builder PRIVATE
@@ -180,7 +184,6 @@ target_include_directories(host_cpu_opskernel_builder_static PRIVATE
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
@@ -188,6 +191,8 @@ target_include_directories(host_cpu_opskernel_builder_static PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
 )
 
 target_link_libraries(host_cpu_opskernel_builder_static PRIVATE

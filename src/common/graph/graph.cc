@@ -24,6 +24,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/node_adapter.h"
+#include "graph/utils/node_utils.h"
 
 using std::map;
 using std::pair;
@@ -246,6 +247,53 @@ class GraphImpl {
 
   ComputeGraphPtr GetComputeGraph() const { return compute_graph_; }
 
+  graphStatus RemoveEdge(NodePtr &src_node_ptr, const int32_t src_port_index, NodePtr &dst_node_ptr,
+                         const int32_t dst_port_index) {
+    GE_CHECK_NOTNULL(src_node_ptr);
+    GE_CHECK_NOTNULL(dst_node_ptr);
+
+    graphStatus res = GRAPH_FAILED;
+    if ((src_port_index == -1) && (dst_port_index == -1)) {
+      if (src_node_ptr->GetOutControlAnchor() == nullptr) {
+        GELOGE(GRAPH_FAILED, "RemoveEdge: src node[%s] out control anchor is null.", src_node_ptr->GetName().c_str());
+        return GRAPH_FAILED;
+      }
+      res = GraphUtils::RemoveEdge(src_node_ptr->GetOutControlAnchor(), dst_node_ptr->GetInControlAnchor());
+      if (res != GRAPH_SUCCESS) {
+        GELOGE(GRAPH_FAILED, "RemoveEdge: remove control edge between [%s] and [%s]failed.",
+               src_node_ptr->GetName().c_str(), dst_node_ptr->GetName().c_str());
+        return GRAPH_FAILED;
+      }
+      return GRAPH_SUCCESS;
+    }
+
+    if (src_node_ptr->GetOutDataAnchor(src_port_index) == nullptr) {
+      GELOGE(GRAPH_FAILED, "RemoveEdge: src node[%s] out data anchor[%d] is null.", src_node_ptr->GetName().c_str(),
+             src_port_index);
+      return GRAPH_FAILED;
+    }
+
+    if (src_port_index != -1 && dst_port_index == -1) {
+      res = GraphUtils::RemoveEdge(src_node_ptr->GetOutDataAnchor(src_port_index), dst_node_ptr->GetInControlAnchor());
+      if (res != GRAPH_SUCCESS) {
+        GELOGE(GRAPH_FAILED, "RemoveEdge: remove data-control edge between [%s] and [%s]failed.",
+               src_node_ptr->GetName().c_str(), dst_node_ptr->GetName().c_str());
+        return GRAPH_FAILED;
+      }
+      return GRAPH_SUCCESS;
+    }
+
+    res = GraphUtils::RemoveEdge(src_node_ptr->GetOutDataAnchor(src_port_index),
+                                 dst_node_ptr->GetInDataAnchor(dst_port_index));
+    if (res != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "RemoveEdge: remove data edge between [%s] and [%s] failed.",
+             src_node_ptr->GetName().c_str(), dst_node_ptr->GetName().c_str());
+      return GRAPH_FAILED;
+    }
+
+    return GRAPH_SUCCESS;
+  }
+
  private:
   std::string name_;
   std::string output_name_;
@@ -392,16 +440,24 @@ graphStatus Graph::RemoveNode(GNode &node) {
     return GRAPH_FAILED;
   }
 
+  if (node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "RemoveNode: node[%s] is invalid.", node_ptr->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+
   ComputeGraphPtr compute_graph_ptr = impl_->GetComputeGraph();
   if (compute_graph_ptr == nullptr) {
     GELOGE(GRAPH_FAILED, "RemoveNde: compute graph ptr is nullptr.");
     return GRAPH_FAILED;
   }
 
-  if (compute_graph_ptr->RemoveNode(node_ptr) != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "RemoveNde: remove node failed.");
+  ge::NodeUtils::UnlinkAll(*node_ptr);
+  if (GraphUtils::RemoveNodeWithoutRelink(compute_graph_ptr, node_ptr) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "RemoveNode: remove node[%s] failed.", node_ptr->GetName().c_str());
     return GRAPH_FAILED;
   }
+
+  node_ptr->SetAnyOwnerComputeGraph(nullptr);
 
   return GRAPH_SUCCESS;
 }
@@ -430,31 +486,21 @@ graphStatus Graph::RemoveEdge(GNode &src_node, const int32_t src_port_index, GNo
     return GRAPH_FAILED;
   }
 
-  graphStatus res = GRAPH_FAILED;
-  if ((src_port_index == -1) && (dst_port_index == -1)) {
-    res = GraphUtils::RemoveEdge(src_node_ptr->GetOutControlAnchor(), dst_node_ptr->GetInControlAnchor());
-    if (res != GRAPH_SUCCESS) {
-      GELOGE(GRAPH_FAILED, "RemoveEdge: remove control edge failed.");
-      return GRAPH_FAILED;
-    }
-    return GRAPH_SUCCESS;
-  }
-
-  if (src_port_index != -1 && dst_port_index == -1) {
-    res = GraphUtils::RemoveEdge(src_node_ptr->GetOutDataAnchor(src_port_index), dst_node_ptr->GetInControlAnchor());
-    if (res != GRAPH_SUCCESS) {
-      GELOGE(GRAPH_FAILED, "RemoveEdge: remove data-control edge failed.");
-      return GRAPH_FAILED;
-    }
-    return GRAPH_SUCCESS;
-  }
-
-  res = GraphUtils::RemoveEdge(src_node_ptr->GetOutDataAnchor(src_port_index),
-                               dst_node_ptr->GetInDataAnchor(dst_port_index));
-  if (res != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "RemoveEdge: remove data edge failed.");
+  if (src_node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "RemoveEdge: src node[%s] is invalid.", src_node_ptr->GetName().c_str());
     return GRAPH_FAILED;
   }
+
+  if (dst_node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "RemoveEdge: dst node[%s] is invalid.", dst_node_ptr->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+
+  if (impl_->RemoveEdge(src_node_ptr, src_port_index, dst_node_ptr, dst_port_index) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "RemoveEdge: remove edge failed.");
+    return GRAPH_FAILED;
+  }
+
   return GRAPH_SUCCESS;
 }
 
@@ -501,6 +547,16 @@ graphStatus Graph::AddDataEdge(GNode &src_node, const int32_t src_port_index, GN
     return GRAPH_FAILED;
   }
 
+  if (src_node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "AddDataEdge: src node[%s] is invalid.", src_node_ptr->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+
+  if (dst_node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "AddDataEdge: dst node[%s] is invalid.", dst_node_ptr->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+
   graphStatus res =
     GraphUtils::AddEdge(src_node_ptr->GetOutDataAnchor(src_port_index), dst_node_ptr->GetInDataAnchor(dst_port_index));
   if (res != GRAPH_SUCCESS) {
@@ -526,6 +582,16 @@ graphStatus Graph::AddControlEdge(GNode &src_node, GNode &dst_node) {
   NodePtr dst_node_ptr = NodeAdapter::GNode2Node(dst_node);
   if (dst_node_ptr == nullptr) {
     GELOGE(GRAPH_FAILED, "AddControlEdge: dst gnode to node failed.");
+    return GRAPH_FAILED;
+  }
+
+  if (src_node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "AddControlEdge: src node[%s] is invalid.", src_node_ptr->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+
+  if (dst_node_ptr->GetOwnerComputeGraph() == nullptr) {
+    GELOGE(GRAPH_FAILED, "AddControlEdge: dst node[%s] is invalid.", dst_node_ptr->GetName().c_str());
     return GRAPH_FAILED;
   }
 
@@ -558,10 +624,9 @@ GraphPtr Graph::ConstructFromInputs(const std::vector<Operator> &inputs, const g
   }
 
   compute_graph->SetInputSize(static_cast<uint32_t>(inputs.size()));
-  Graph graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
-  GraphPtr graph_ptr = std::make_shared<Graph>(graph);
+  GraphPtr graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(compute_graph);
   if (graph_ptr == nullptr) {
-    GELOGE(GRAPH_FAILED, "ConstructFromInputs: graph make shared failed.");
+    GELOGE(GRAPH_FAILED, "ConstructFromInputs: create graph from compute graph failed.");
     return nullptr;
   }
 
@@ -600,6 +665,20 @@ GraphUtils::CreateGraphFromComputeGraph(const ge::ComputeGraphPtr compute_graph)
 
   GE_CHK_BOOL_EXEC_NOLOG(graph.impl_ != nullptr, return graph);
   graph.impl_->compute_graph_ = compute_graph;
+
+  return graph;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GraphPtr
+GraphUtils::CreateGraphPtrFromComputeGraph(const ge::ComputeGraphPtr compute_graph) {
+  GE_CHK_BOOL_EXEC_NOLOG(compute_graph != nullptr, return nullptr);
+
+  auto name = compute_graph->GetName();
+  auto graph = ComGraphMakeShared<Graph>(name);
+  GE_CHK_BOOL_EXEC_NOLOG(graph != nullptr, return nullptr);
+  GE_CHK_BOOL_EXEC_NOLOG(graph->impl_ != nullptr, return nullptr);
+
+  graph->impl_->compute_graph_ = compute_graph;
 
   return graph;
 }

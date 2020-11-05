@@ -1194,8 +1194,8 @@ REG_OP(MaxPoolGradWithArgmaxV2)
 
 * @par Inputs:
 * One input:
-* x: An NC1HWC0 Tensor. Supported type:float16, float32, double, int8, int16,
-* int32, int64, uint8, uint16, qint8
+* x: An NC1HWC0 Tensor. Supported type:float16, float32, double, int32, int64,
+* uint8, int16, int8, uint16, qint8
 
 * @par Attributes:
 * @li ksize: A required list of int8, int16, int32, or int64 values,
@@ -1206,14 +1206,14 @@ REG_OP(MaxPoolGradWithArgmaxV2)
 * the input tensor. No default value.
 * @li padding_mode: A required string. Defaults to "CALCULATED".
 * @li pads:A required list of int8, int16, int32, or int64 values,
-* a data to caculate when padding_mode is "SAME" and "CALCULATED".
+* a data to caculate when padding_mode is "CALCULATED".
 * @li data_format: An optional string. Defaults to "NHWC" .
 * @li global_pooling bool, Whether to use the global pooling.
 * If global_pooling = true, kernel size and paddings will be ignored.
 * Default False
-* @li ceil_mode:global_pooling (bool) – (bool) Whether to use the global pooling.
-* If global_pooling = true, kernel size and paddings will be ignored.
-* Default False \n
+* @li ceil_mode: Whether to use the ceil function to calculate output
+* height and width. False is the default. If it is set to False,
+* the floor function will be used. Default False \n
 
 * @par Outputs:
 * y: A Tensor. Has the same type and format as input "x" . \n
@@ -1230,8 +1230,8 @@ REG_OP(MaxPoolGradWithArgmaxV2)
 * Compatible with the TensorFlow operator MaxPool.
 */
 REG_OP(MaxPoolV3)
-    .INPUT(x,TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(x,TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16, DT_QINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16, DT_QINT8}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .ATTR(padding_mode, String, "CALCULATED")
@@ -1258,14 +1258,14 @@ REG_OP(MaxPoolV3)
 * the input tensor. No default value.
 * @li padding_mode: A required string. Defaults to "CALCULATED".
 * @li pads:A required list of int8, int16, int32, or int64 values,
-* a data to caculate when padding_mode is "SAME" and "CALCULATED".
+* a data to caculate when padding_mode is "CALCULATED".
 * @li data_format: An optional string. Defaults to "NHWC" .
 * @li global_pooling bool, Whether to use the global pooling.
 * If global_pooling = true, kernel size and paddings will be ignored.
 * Default False
-* @li ceil_mode:global_pooling (bool) – (bool) Whether to use the global pooling.
-* If global_pooling = true, kernel size and paddings will be ignored.
-* Default False \n
+* @li ceil_mode: Whether to use the ceil function to calculate output
+* height and width. False is the default. If it is set to False,
+* the floor function will be used. Default False \n
 
 * @par Outputs:
 * y: A mutable tensor. Has the same shape and type as "x1" . \n

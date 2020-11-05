@@ -100,6 +100,8 @@ struct OmgContext {
   std::vector<std::string> net_out_nodes;
   // net out nodes top names(only caffe has top)
   std::vector<std::string> out_top_names;
+  // net data nodes top names(only caffe has top)
+  std::vector<std::string> data_top_names;
   // preferential format used by the entire network
   domiTensorFormat_t net_format = DOMI_TENSOR_RESERVED;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;

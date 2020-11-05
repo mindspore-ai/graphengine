@@ -2240,6 +2240,64 @@ REG_OP(OutfeedEnqueueOp)
   .ATTR(channel_name, String, "")
   .OP_END_FACTORY_REG(OutfeedEnqueueOp)
 
+/**
+*@brief LruCache, create cache resource.
+*@par Inputs:
+*No input.
+*@par Attributes:
+*cache_size: cache size An optional "int64". Defaults to "100000".
+*load_factor: rate which show if cache is full An optional "float", Defaults to "1".
+*@par Outputs:
+*cache: cache resource.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(LruCache)
+  .OUTPUT(cache, TensorType({DT_RESOURCE}))
+  .ATTR(container, String, "")
+  .ATTR(shared_name, String, "LruCache")
+  .ATTR(cache_size, Int, 100000)
+  .ATTR(load_factor, Float, 1)
+  .OP_END_FACTORY_REG(LruCache)
+
+/**
+*@brief CacheAdd, get id new come in cache and id get out of cache.
+*@par Inputs:
+*cache: resource data
+*ids: Tensor stored id need to insert cache
+*@par Outputs:
+*swap_in_id: id come in cache.
+*swap_in_idx: id in cache which come in cache
+*swap_out_id: id get out of cache
+*swap_out_idx: id in cache which get out of cache
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(CacheAdd)
+  .INPUT(cache, TensorType({DT_RESOURCE}))
+  .INPUT(ids, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
+  .OUTPUT(swap_in_id, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
+  .OUTPUT(swap_in_idx, TensorType({DT_INT64}))
+  .OUTPUT(swap_out_id, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
+  .OUTPUT(swap_out_idx, TensorType({DT_INT64}))
+  .OP_END_FACTORY_REG(CacheAdd)
+
+/**
+*@brief CacheRemoteToLocalIndex, get id in cache from id.
+*@par Inputs:
+*cache: resource data
+*ids: Tensor stored id need to insert cache
+*@par Outputs:
+*local_idx: id in cache.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(CacheRemoteIndexToLocal)
+  .INPUT(cache, TensorType({DT_RESOURCE}))
+  .INPUT(ids, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
+  .OUTPUT(local_idx, TensorType({DT_INT64}))
+  .OP_END_FACTORY_REG(CacheRemoteIndexToLocal)
+
 }   // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

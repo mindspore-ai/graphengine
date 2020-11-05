@@ -870,9 +870,11 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   string ge_disable_reuse_mem_env = "0";
   (void)ge::GetContext().GetOption(OPTION_EXEC_DISABLE_REUSED_MEMORY, ge_disable_reuse_mem_env);
   if (ge_disable_reuse_mem_env != "1") {
-    bool reuse_mem_flag = !((workspace_reuse_flag.size() > out_index) && !workspace_reuse_flag[out_index]);
+    bool reuse_mem_flag = (mem_type == kOutput)
+                            ? IsPreReuse(n, out_index)
+                            : !((workspace_reuse_flag.size() > out_index) && !workspace_reuse_flag[out_index]);
     is_reuse_memory = !node_op_desc->HasAttr(kL2FusionDynamicConvergeOp) && !node_op_desc->HasAttr(kOpNoReuseMem) &&
-                      reuse_mem_flag && is_op_reuse_mem && (IsPreReuse(n, out_index));
+                      reuse_mem_flag && is_op_reuse_mem;
     auto stream_id = node_op_desc->GetStreamId();
     if (is_reuse_memory && !continuous && !reusable_blocks_[memory_type].empty()) {
       for (auto it = reusable_blocks_[memory_type][stream_id].begin();

@@ -2803,6 +2803,80 @@ REG_OP(AdamApplyOneAssign)
     .OP_END_FACTORY_REG(AdamApplyOneAssign)
 
 /**
+*@brief A fusion operator for bert lamb. \n
+
+*@par Inputs:
+*Ten inputs, including:
+* @li input0: A Tensor. Must be one of the following types: float16, float32.
+* @li input1: A Tensor. Must be one of the following types: float16, float32.
+* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input3: A Tensor. Must be one of the following types: float16, float32.
+* @li input4: A Tensor. Must be one of the following types: float16, float32.
+* @li mul0_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul1_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
+* @li steps: A Tensor. Must be one of the following types: float16, float32.
+* @li do_use_weight: A Tensor. Must be one of the following types: float16, float32.
+* @li weight_decay_rate: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li output0: A Tensor. Must be one of the following types: float16, float32. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(LambApplyOptimizerAssign)
+    .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul0_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul1_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul2_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(mul3_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(add2_y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(steps, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(do_use_weight, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(weight_decay_rate, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(output0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(LambApplyOptimizerAssign)
+
+/**
+*@brief A fusion operator for bert lamb. \n
+
+*@par Inputs:
+*Ten inputs, including:
+* @li input0: A Tensor. Must be one of the following types: float16, float32.
+* @li input1: A Tensor. Must be one of the following types: float16, float32.
+* @li input2: A Tensor. Must be one of the following types: float16, float32.
+* @li input3: A Tensor. Must be one of the following types: float16, float32.
+* @li input4: A Tensor. Must be one of the following types: float16, float32.
+* @li mul0_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul1_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul2_x: A Tensor. Must be one of the following types: float16, float32.
+* @li mul3_x: A Tensor. Must be one of the following types: float16, float32.
+* @li steps: A Tensor. Must be one of the following types: float16, float32.
+* @li do_use_weight: A Tensor. Must be one of the following types: float16, float32.
+* @li weight_decay_rate: A Tensor. Must be one of the following types: float16, float32.
+* @li add2_y: A Tensor. Must be one of the following types: float16, float32. \n
+
+*@par Outputs:
+*No outputs
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(LambApplyWeightAssign)
+    .INPUT(input0, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(input4, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(LambApplyWeightAssign)
+
+/**
 *@brief Confuse select, maximum, greater and sqrt. \n
 
 *@par Inputs:

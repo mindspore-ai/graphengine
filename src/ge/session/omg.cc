@@ -995,8 +995,10 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType 
 
   ErrorManager::GetInstance().ATCReportErrMessage(
     "E10001", {"parameter", "value", "reason"},
-    {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow)"});
-  GELOGE(PARAM_INVALID, "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow).");
+    {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow) 5(Onnx)"});
+  GELOGE(PARAM_INVALID,
+         "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow) "
+         "or 5(Onnx).");
   return PARAM_INVALID;
 }
 
@@ -1039,6 +1041,7 @@ void UpdateOmgCtxWithParserCtx() {
   domi::GetContext().out_top_names = GetParserContext().out_top_names;
   domi::GetContext().user_out_nodes_top_vec = GetParserContext().user_out_nodes_top_vec;
   domi::GetContext().default_out_nodes = GetParserContext().default_out_nodes;
+  domi::GetContext().data_top_names = GetParserContext().data_top_names;
 }
 
 void UpdateParserCtxWithOmgCtx() {
@@ -1055,5 +1058,6 @@ void UpdateParserCtxWithOmgCtx() {
   GetParserContext().input_nodes_format_map = domi::GetContext().input_nodes_format_map;
   GetParserContext().out_top_names = domi::GetContext().out_top_names;
   GetParserContext().user_out_nodes_top_vec = domi::GetContext().user_out_nodes_top_vec;
+  GetParserContext().data_top_names = domi::GetContext().data_top_names;
 }
 }  // namespace ge

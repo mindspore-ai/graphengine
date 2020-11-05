@@ -184,6 +184,11 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
   GE_CHECK_NOTNULL(graph);
   NodePtr target_input = nullptr;
   std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> target_edges;
+
+  if (this->ConvertRelatedInputNameToRank() != SUCCESS) {
+    GELOGE(FAILED, "AippOp: convert related input name to rank failed.");
+    return FAILED;
+  }
   GE_CHK_STATUS_RET(this->GetTargetPosition(graph, target_input, target_edges), "Get data nodes position failed");
 
   std::map<OutDataAnchorPtr, NodePtr> out_anchors_to_aipp;
@@ -408,6 +413,38 @@ Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_n
       target = case_node;
       return SUCCESS;
     }
+  }
+
+  return SUCCESS;
+}
+Status AippOp::ConvertRelatedInputNameToRank() {
+  GE_CHECK_NOTNULL(aipp_params_);
+
+  string related_input_name = aipp_params_->related_input_name();
+  if (related_input_name.empty()) {
+    return SUCCESS;
+  }
+
+  std::vector<std::string> data_top_names = domi::GetContext().data_top_names;
+  GELOGI("Convert name to rank start: data size[%zu]", data_top_names.size());
+  uint32_t index = 0;
+  bool convert_flag = false;
+  for (const auto &data_top_name : data_top_names) {
+    if (related_input_name == data_top_name) {
+      aipp_params_->set_related_input_rank(index);
+      convert_flag = true;
+      GELOGI("AippOp: rank: %u, top name: %s.", index, data_top_name.c_str());
+      break;
+    }
+    index++;
+  }
+  if (!convert_flag) {
+    string error_msg = "Top name " + related_input_name +
+                       "convert rank failed, Please"
+                       " ensure top name in aipp config is the top name of data node.";
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
+    GELOGE(PARAM_INVALID, "Top name[%s] converts rank failed.", related_input_name.c_str());
+    return PARAM_INVALID;
   }
 
   return SUCCESS;

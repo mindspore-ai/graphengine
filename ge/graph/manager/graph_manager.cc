@@ -100,6 +100,8 @@
 #include "graph/passes/subgraph_const_migration_pass.h"
 #include "graph/passes/unused_args_clean_pass.h"
 #include "graph/passes/global_step_insert_pass.h"
+#include "graph/passes/memcpy_addr_async_pass.h"
+#include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "graph/utils/type_utils.h"
 #include "graph/graph_util.h"
@@ -634,6 +636,13 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
                        GetCompilerStages(graph_node->GetGraphId()).optimizer.OptimizeGraphBeforeBuildForRts,
                        compute_graph);
+
+  Status ret = compute_graph->TopologicalSorting();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Graph topological sort failed, ret:%d.", ret);
+    return ret;
+  }
+
   GM_RUN_AND_DUMP_PERF("Build", Build, graph_node, compute_graph, ge_root_model, session_id);
   GELOGI("PreRun:PreRunAfterOptimizeSubGraph success.");
   return SUCCESS;
@@ -2186,6 +2195,18 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
     return ret;
   }
 
+  // Assign functional op labels.
+  GE_TIMESTAMP_START(AssignFunctionalLabels);
+  LabelAllocator label_allocator(compute_graph);
+  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(), "Assign label failed.");
+  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
+
+  // Add memcpy addr asynchronous node.
+  GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
+  MemcpyAddrAsyncPass memcpy_addr;
+  GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph), "Add memcpy_addr_async node failed.");
+  GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
+
   // After while sub graph handle, mark all node rw type
   auto result = GetCompilerStages(compute_graph->GetGraphID()).optimizer.HandleMemoryRWConflict(compute_graph);
   if (result != SUCCESS) {
@@ -2196,11 +2217,6 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
 
   ChangeConstTypeWhenTraining(compute_graph);
 
-  ret = compute_graph->TopologicalSorting();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Graph topological sort failed, ret:%d.", ret);
-    return ret;
-  }
   GELOGI("End optimize after merge sub graph.");
   return SUCCESS;
 }

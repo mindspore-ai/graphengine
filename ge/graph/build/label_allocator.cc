@@ -26,10 +26,15 @@
 namespace ge {
 LabelAllocator::LabelAllocator(const ComputeGraphPtr &graph) : compute_graph_(graph) {}
 
-Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
+Status LabelAllocator::AssignFunctionalLabels() {
   if (compute_graph_ == nullptr) {
     GELOGE(INTERNAL_ERROR, "ComputeGraph not set, Assign labels failed.");
     return INTERNAL_ERROR;
+  }
+
+  if (compute_graph_->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip label allocator.", compute_graph_->GetName().c_str());
+    return SUCCESS;
   }
 
   // Add label task for sub graph.
@@ -42,7 +47,7 @@ Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
   }
 
   // Add label for functional op.
-  label_index = 0;
+  uint32_t label_index = 0;
   for (auto node : functional_nodes) {
     LabelMakerPtr maker = LabelMakerFactory::Instance().Create(node->GetType(), compute_graph_, node);
     if (maker == nullptr) {
@@ -56,6 +61,7 @@ Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
     }
   }
 
+  (void)AttrUtils::SetInt(*compute_graph_, ATTR_MODEL_LABEL_NUM, label_index);
   GELOGI("AssignFunctionalLabels success.");
   return SUCCESS;
 }

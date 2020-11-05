@@ -22,7 +22,7 @@ set(PROTOBUF_STATIC_PKG_DIR ${CMAKE_INSTALL_PREFIX}/protobuf_static)
 ExternalProject_Add(protobuf_static_build
                     URL ${REQ_URL}
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
-                    #SOURCE_DIR ${GE_CODE_DIR}/../../third_party/protobuf/src/protobuf-3.8.0
+                    #SOURCE_DIR ${METADEF_DIR}/../../third_party/protobuf/src/protobuf-3.8.0
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -41,7 +41,7 @@ include(GNUInstallDirs)
 add_library(ascend_protobuf_static_lib STATIC IMPORTED)
 
 set_target_properties(ascend_protobuf_static_lib PROPERTIES
-                      IMPORTED_LOCATION ${PROTOBUF_STATIC_PKG_DIR}/${CMAKE_INSTALL_LIBDIR}/libascend_protobuf.a
+                      IMPORTED_LOCATION ${PROTOBUF_STATIC_PKG_DIR}/lib64/libascend_protobuf.a
 )
 
 add_library(ascend_protobuf_static INTERFACE)

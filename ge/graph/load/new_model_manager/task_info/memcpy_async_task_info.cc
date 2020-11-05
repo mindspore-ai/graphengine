@@ -95,7 +95,8 @@ Status MemcpyAsyncTaskInfo::Distribute() {
 }
 
 Status MemcpyAsyncTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
-  OpDescPtr op_desc = davinci_model_->GetOpByIndex(task_def.memcpy_async().op_index());
+  GE_CHECK_NOTNULL(davinci_model);
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(task_def.memcpy_async().op_index());
   // the num of src and dst size is 2
   uint32_t args_size = sizeof(void *) * 2;
   args_offset_ = davinci_model->GetTotalArgsSize();

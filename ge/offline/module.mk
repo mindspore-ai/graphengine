@@ -6,7 +6,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := atc
 
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dgoogle=ascend_private
 
 LOCAL_SRC_FILES := \
     main.cc \
@@ -35,7 +35,7 @@ LOCAL_C_INCLUDES := \
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libge_common \
-    libprotobuf \
+    libascend_protobuf \
     libslog \
     libgraph \
     libregister \

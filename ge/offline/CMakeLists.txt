@@ -25,6 +25,7 @@ target_compile_options(atc PRIVATE
 target_compile_definitions(atc PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     COMPILE_OMG_PACKAGE
+    google=ascend_private
 )
 
 target_include_directories(atc PRIVATE
@@ -55,7 +56,7 @@ target_include_directories(atc PRIVATE
 
 target_link_libraries(atc PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    protobuf
+    ascend_protobuf
     ge_common
     register
     c_sec

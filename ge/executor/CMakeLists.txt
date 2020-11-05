@@ -85,6 +85,7 @@ target_compile_options(ge_executor PRIVATE
 target_compile_definitions(ge_executor PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     DAVINCI_SUPPORT_PROFILING
+    google=ascend_private
 )
 
 target_include_directories(ge_executor PRIVATE
@@ -108,7 +109,7 @@ target_include_directories(ge_executor PRIVATE
 target_link_libraries(ge_executor PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     json
-    protobuf
+    ascend_protobuf
     c_sec
     -lrt
     -ldl

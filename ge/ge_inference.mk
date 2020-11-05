@@ -363,7 +363,7 @@ LOCAL_MODULE := libge_compiler
 
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -O2
 # from ome_inference.mk
-LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE
+LOCAL_CFLAGS += -DFMK_HOST_INFER -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 endif
@@ -383,7 +383,7 @@ LOCAL_STATIC_LIBRARIES := libge_memory \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
-    libprotobuf \
+    libascend_protobuf \
     libslog \
     libmmpa \
     libgraph \
@@ -428,7 +428,7 @@ LOCAL_CFLAGS += -DGOOGLE_PROTOBUF_NO_RTTI -DDEV_VISIBILITY -DNONSUPPORT_SAVE_TO_
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0
 LOCAL_CFLAGS += -DREUSE_MEMORY=1 -DFMK_SUPPORT_DUMP -DCOMPILE_OMG_PACKAGE
 LOCAL_CFLAGS += -DOMG_DEVICE_VERSION
-LOCAL_CFLAGS += -O2
+LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 
 
@@ -447,7 +447,7 @@ LOCAL_STATIC_LIBRARIES := libge_memory \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
-    libprotobuf \
+    libascend_protobuf \
     libslog \
     libmmpa \
     libgraph \

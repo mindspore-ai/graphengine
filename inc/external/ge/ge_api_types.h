@@ -285,6 +285,11 @@ namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";
 static const char *const INPUT_SHAPE = "input_shape";
 static const char *const OP_NAME_MAP = "op_name_map";
+static const char *const IS_DYNAMIC_INPUT = "is_dynamic_input";
+static const char *const IS_INPUT_ADJUST_HW_LAYOUT = "is_input_adjust_hw_layout";
+static const char *const IS_OUTPUT_ADJUST_HW_LAYOUT = "is_output_adjust_hw_layout";
+static const char *const ENABLE_SCOPE_FUSION_PASSES = "enable_scope_fusion_passes";
+static const char *const OUTPUT = "output";
 static const char *const DYNAMIC_BATCH_SIZE = kDynamicBatchSize;
 static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
 static const char *const DYNAMIC_DIMS = kDynamicDims;
@@ -317,6 +322,22 @@ const std::set<std::string> ir_builder_suppported_options = {
   INSERT_OP_FILE,     PRECISION_MODE,     EXEC_DISABLE_REUSED_MEMORY,
   AUTO_TUNE_MODE,     OUTPUT_TYPE,        OUT_NODES,
   INPUT_FP16_NODES,   LOG_LEVEL};
+
+// for interface: aclgrphParse
+const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
+                                                            INPUT_SHAPE,
+                                                            OP_NAME_MAP,
+                                                            IS_DYNAMIC_INPUT,
+                                                            INPUT_FP16_NODES,
+                                                            IS_INPUT_ADJUST_HW_LAYOUT,
+                                                            IS_OUTPUT_ADJUST_HW_LAYOUT,
+                                                            OUTPUT,
+                                                            OUTPUT_TYPE,
+                                                            OUT_NODES,
+                                                            COMPRESS_WEIGHT_CONF,
+                                                            ENABLE_SCOPE_FUSION_PASSES,
+                                                            LOG_LEVEL};
+
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,
                                               SOC_VERSION,

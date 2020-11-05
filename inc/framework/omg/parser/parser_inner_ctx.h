@@ -31,6 +31,7 @@ namespace ge {
 struct ParserContext {
   // format of the input specified by the command line
   std::unordered_map<std::string, domiTensorFormat_t> input_nodes_format_map;
+  std::vector<domiTensorFormat_t> output_formats;
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
   std::unordered_map<std::string, std::vector<int64_t>> input_dims;

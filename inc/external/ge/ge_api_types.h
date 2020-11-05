@@ -222,6 +222,18 @@ const char *const OPTION_GE_MAX_DUMP_OP_NUM = "ge.maxDumpOpNum";
 // Its value should be "0" or "1", default value is "1"
 const char *const ENABLE_PRINT_OP_PASS = "ge.enablePrintOpPass";
 
+// Configure operator compilation path
+// Its value should be file path, default value is "./"
+const char *const DEBUG_DIR = "ge.debugDir";
+
+// Configure operator compiler cache path
+// Its value should be file path, default value is "./"
+const char *const OP_COMPILER_CACHE_DIR = "ge.op_compiler_cache_dir";
+
+// Configure operator compiler cache mode
+// Its value should be "disable", "enable" or "force", default value is "disable"
+const char *const OP_COMPILER_CACHE_MODE = "ge.op_compiler_cache_mode";
+
 // Configure whether to use single stream.
 // Its value should be "true" or "false", default value is "false"
 const char *const ENABLE_SINGLE_STREAM = "ge.enableSingleStream";
@@ -295,7 +307,9 @@ static const char *const OUT_NODES = ge::OUTPUT_NODE_NAME.c_str();
 static const char *const INPUT_FP16_NODES = ge::INPUT_FP16_NODES.c_str();
 static const char *const LOG_LEVEL = "log";
 static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c_str();
-
+static const char *const DEBUG_DIR = ge::DEBUG_DIR;
+static const char *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
+static const char *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
 // for interface: aclgrphBuildModel
 const std::set<std::string> ir_builder_suppported_options = {
   INPUT_FORMAT,       INPUT_SHAPE,        OP_NAME_MAP,
@@ -317,7 +331,10 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               FUSION_SWITCH_FILE,
                                               ENABLE_SMALL_CHANNEL,
                                               OP_SELECT_IMPL_MODE,
-                                              OPTYPELIST_FOR_IMPLMODE};
+                                              OPTYPELIST_FOR_IMPLMODE,
+                                              DEBUG_DIR,
+                                              OP_COMPILER_CACHE_DIR,
+                                              OP_COMPILER_CACHE_MODE};
 }  // namespace ir_option
 }  // namespace ge
 

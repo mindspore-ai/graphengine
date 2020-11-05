@@ -157,6 +157,7 @@ const std::string ATTR_NAME_WEIGHTS_DATA = "weights_data";
 const std::string ATTR_NAME_BROACAST_REAL_DIM_CNT = "broacast_real_dim_cnt";
 const std::string ATTR_NAME_DIM_ALIGN = "dim_align";
 const std::string ATTR_NAME_STREAM_LABEL = "_stream_label";
+const std::string ATTR_NAME_RTS_LABEL_NODE = "_rts_label_node";
 const std::string ATTR_NAME_CONTINUOUS_STREAM_LABEL = "_continuous_stream_label";
 const std::string ATTR_NAME_STREAM_CYCLE_EVENT_FLAG = "need_stream_cycle_event";
 const std::string ATTR_NAME_RTSWITCH_RECV_EVENT_ID = "rtswitch_event_id";

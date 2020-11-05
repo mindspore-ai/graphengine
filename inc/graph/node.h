@@ -95,6 +95,7 @@ class Node : public std::enable_shared_from_this<Node> {
 
   ComputeGraphPtr GetOwnerComputeGraph() const;
   graphStatus SetOwnerComputeGraph(const ComputeGraphPtr &graph);
+  graphStatus SetAnyOwnerComputeGraph(const ComputeGraphPtr &graph);
 
   Vistor<InDataAnchorPtr> GetAllInDataAnchors() const;
   Vistor<OutDataAnchorPtr> GetAllOutDataAnchors() const;

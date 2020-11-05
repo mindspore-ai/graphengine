@@ -438,6 +438,12 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
 
+  auto ret = compute_graph->InferOriginFormat();
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(ret, "Acl InferOriginFormat failed.");
+    return ret;
+  }
+
   for (auto &node : compute_graph->GetAllNodes()) {
     graphStatus ret = ShapeRefiner::InferShapeAndType(node);
     if (ret == GRAPH_PARAM_INVALID) {

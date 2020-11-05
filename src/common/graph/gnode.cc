@@ -25,6 +25,7 @@
 #include "graph/utils/tensor_adapter.h"
 #include <graph/utils/graph_utils.h>
 #include "graph/debug/ge_attr_define.h"
+#include "graph/debug/ge_op_types.h"
 #include "utils/node_utils.h"
 #include "utils/op_desc_utils.h"
 
@@ -264,20 +265,34 @@ graphStatus GNode::GetInputConstData(const int32_t index, Tensor &data) const {
   }
 
   NodePtr input_data_node = NodeUtils::GetInDataNodeByIndex(*node_ptr, index);
-  bool is_const = NodeUtils::IsConst(*input_data_node);
-  if (!is_const) {
-    GELOGE(GRAPH_NODE_WITHOUT_CONST_INPUT, "Node[%s] has no const input.", node_ptr->GetName().c_str());
-    return GRAPH_NODE_WITHOUT_CONST_INPUT;
+  GE_CHECK_NOTNULL(input_data_node);
+  string op_type = input_data_node->GetType();
+  if (op_type == CONSTANT || op_type == CONSTANTOP) {
+    Operator const_op = OpDescUtils::CreateOperatorFromNode(input_data_node);
+    if (const_op.GetAttr(ATTR_NAME_WEIGHTS, data) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Input data node[%s] of node[%s] get data failed.", input_data_node->GetName().c_str(),
+             node_ptr->GetName().c_str());
+      return GRAPH_FAILED;
+    }
+    return SUCCESS;
+  } else if (op_type == DATA) {
+    auto parent_node = NodeUtils::GetParentInput(input_data_node);
+    while ((parent_node != nullptr) && (parent_node->GetType() == DATA)) {
+      parent_node = NodeUtils::GetParentInput(parent_node);
+    }
+    if ((parent_node != nullptr) && ((parent_node->GetType() == CONSTANT) || (parent_node->GetType() == CONSTANTOP))) {
+      Operator const_op = OpDescUtils::CreateOperatorFromNode(parent_node);
+      if (const_op.GetAttr(ATTR_NAME_WEIGHTS, data) != GRAPH_SUCCESS) {
+        GELOGE(GRAPH_FAILED, "Input data node[%s] of node[%s] get data failed.", parent_node->GetName().c_str(),
+               node_ptr->GetName().c_str());
+        return GRAPH_FAILED;
+      }
+      return GRAPH_SUCCESS;
+    }
   }
 
-  Operator const_op = OpDescUtils::CreateOperatorFromNode(input_data_node);
-  if (const_op.GetAttr(ATTR_NAME_WEIGHTS, data) != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "Input data node[%s] of node[%s] get data failed.", input_data_node->GetName().c_str(),
-           node_ptr->GetName().c_str());
-    return GRAPH_FAILED;
-  }
-
-  return GRAPH_SUCCESS;
+  GELOGE(GRAPH_NODE_WITHOUT_CONST_INPUT, "Node[%s] has no const input.", node_ptr->GetName().c_str());
+  return GRAPH_NODE_WITHOUT_CONST_INPUT;
 }
 
 graphStatus GNode::GetInputIndexByName(const ge::AscendString &name, int32_t &index) {
@@ -793,7 +808,7 @@ bool GNode::HasAttr(const ge::AscendString &name) {
   return true;
 }
 
-graphStatus GNode::GetSubgraph(uint32_t index, GraphPtr graph) const {
+graphStatus GNode::GetSubgraph(uint32_t index, GraphPtr &graph) const {
   if (impl_ == nullptr) {
     GELOGE(GRAPH_FAILED, "GetSubgraph: node impl is nullptr.");
     return GRAPH_FAILED;
@@ -807,20 +822,20 @@ graphStatus GNode::GetSubgraph(uint32_t index, GraphPtr graph) const {
 
   ComputeGraphPtr compute_graph_ptr = NodeUtils::GetSubgraph(*node_ptr, index);
   if (compute_graph_ptr == nullptr) {
-    GELOGE(GRAPH_FAILED, "GetSubgraph: get subgraph[%u] failed form node[%s].", index, node_ptr->GetName().c_str());
+    GELOGE(GRAPH_FAILED, "GetSubgraph: get subgraph[%u] failed from node[%s].", index, node_ptr->GetName().c_str());
     return GRAPH_FAILED;
   }
-  Graph create_graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph_ptr);
-  graph = std::make_shared<Graph>(create_graph);
+
+  graph = GraphUtils::CreateGraphPtrFromComputeGraph(compute_graph_ptr);
   if (graph == nullptr) {
-    GELOGE(GRAPH_FAILED, "GetSubgraph: graph make shared failed form node[%s].", node_ptr->GetName().c_str());
+    GELOGE(GRAPH_FAILED, "GetSubgraph: get subgraph[%u] failed from node[%s].", index, node_ptr->GetName().c_str());
     return GRAPH_FAILED;
   }
 
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::GetALLSubgraphs(std::vector<GraphPtr> graph_list) const {
+graphStatus GNode::GetALLSubgraphs(std::vector<GraphPtr> &graph_list) const {
   if (impl_ == nullptr) {
     GELOGE(GRAPH_FAILED, "GetALLSubgraphs: node impl is nullptr.");
     return GRAPH_FAILED;
@@ -834,22 +849,25 @@ graphStatus GNode::GetALLSubgraphs(std::vector<GraphPtr> graph_list) const {
 
   std::vector<ComputeGraphPtr> sub_graphs = NodeUtils::GetAllSubgraphs(*node_ptr);
   if (sub_graphs.empty()) {
-    GELOGE(GRAPH_FAILED, "GetALLSubgraphs: get all subgraphs failed form node[%s].", node_ptr->GetName().c_str());
+    GELOGE(GRAPH_FAILED, "GetALLSubgraphs: get all subgraphs failed from node[%s].", node_ptr->GetName().c_str());
     return GRAPH_FAILED;
   }
 
   for (auto &sub_graph : sub_graphs) {
     if (sub_graph == nullptr) {
-      GELOGE(GRAPH_FAILED, "Get subgraph failed form node[%s].", node_ptr->GetName().c_str());
+      GELOGE(GRAPH_FAILED, "Get subgraph failed from node[%s].", node_ptr->GetName().c_str());
       return GRAPH_FAILED;
     }
-    Graph create_graph = GraphUtils::CreateGraphFromComputeGraph(sub_graph);
-    GraphPtr graph = std::make_shared<Graph>(create_graph);
+    GraphPtr graph = GraphUtils::CreateGraphPtrFromComputeGraph(sub_graph);
     if (graph == nullptr) {
-      GELOGE(GRAPH_FAILED, "Subgraph make shared failed form node[%s].", node_ptr->GetName().c_str());
+      GELOGE(GRAPH_FAILED, "Subgraph create compute graph failed from node[%s].", node_ptr->GetName().c_str());
       return GRAPH_FAILED;
     }
     graph_list.emplace_back(graph);
+  }
+
+  if (graph_list.empty()) {
+    GELOGW("Node[%s] has no subgraph.", node_ptr->GetName().c_str());
   }
 
   return GRAPH_SUCCESS;

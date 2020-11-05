@@ -118,7 +118,8 @@ class AiCpuBaseTask : public OpTask {
  protected:
   Status SetExtInfoAndType(const std::string &kernel_ext_info);
 
-  Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, std::vector<GeTensorDesc> &output_desc);
+  Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, std::vector<GeTensorDesc> &output_desc,
+                       rtStream_t stream);
   Status UpdateOutputShape(vector<GeTensorDesc> &output_desc);
   Status UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensorDesc &output_desc);
 
@@ -214,6 +215,8 @@ class AiCpuCCTask : public AiCpuBaseTask {
   uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   void *io_addr_ = nullptr;
+  bool is_custom_ = false;
+  uint32_t dump_flag_ = RT_KERNEL_DEFAULT;
 };
 }  // namespace ge
 

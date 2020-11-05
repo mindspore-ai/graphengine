@@ -260,8 +260,8 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info) {
   return SUCCESS;
 }
 
-Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
-                                    std::vector<GeTensorDesc> &output_desc) {
+Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, std::vector<GeTensorDesc> &output_desc,
+                                    rtStream_t stream) {
   GELOGI("Update ext info begin, unknown_type=%d.", unknown_type_);
   if (num_inputs_ == 0 && num_outputs_ == 0) {
     GELOGI("No input and output, no need update ext info.");
@@ -278,15 +278,13 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
     for (size_t j = 0; j < num_outputs_; ++j) {
       GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]),
                         "Output[%zu] UpdateOutputShapeAndType failed.", j);
-      // debug code
-      GELOGD("No input and output, no need update ext info.");
     }
   }
 
-  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_,
-                         aicpu_ext_handle_->GetExtInfoLen(),  // check size
-                         aicpu_ext_handle_->GetExtInfo(), aicpu_ext_handle_->GetExtInfoLen(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpyAsync(ext_info_addr_dev_,
+                              aicpu_ext_handle_->GetExtInfoLen(),  // check size
+                              aicpu_ext_handle_->GetExtInfo(), aicpu_ext_handle_->GetExtInfoLen(),
+                              RT_MEMCPY_HOST_TO_DEVICE_EX, stream));
 
   GELOGI("Update ext info end.");
   return SUCCESS;
@@ -599,7 +597,7 @@ Status AiCpuTask::SetMemCopyTask(const domi::KernelExDef &kernel_def) {
 Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
                                const std::vector<DataBuffer> &input_buffers, std::vector<GeTensorDesc> &output_desc,
                                std::vector<DataBuffer> &output_buffers, rtStream_t stream) {
-  GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc));
+  GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc, stream));
   std::vector<void *> inputs;
   std::vector<void *> outputs;
   for (auto &buffer : input_buffers) {
@@ -610,11 +608,12 @@ Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
   }
   GE_CHK_STATUS_RET_NOLOG(SetIO(inputs, outputs));
   GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
-  GE_CHK_RT_RET(rtStreamSynchronize(stream));
 
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
+    GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateOutputShape(output_desc));
   } else if (unknown_type_ == DEPEND_COMPUTE) {
+    GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateShapeAndDataByResultSummary(output_desc, output_buffers, stream));
   }
 
@@ -647,9 +646,9 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
          kernel_name_.data());
   // sm_desc is nullptr, because l2 buffer does not support
   auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
-  auto ret =
-    rtCpuKernelLaunch(static_cast<const void *>(so_name_.data()), static_cast<const void *>(kernel_name_.data()),
-                      block_dim_, args_.get(), static_cast<uint32_t>(arg_size_), sm_desc, stream);
+  auto ret = rtCpuKernelLaunchWithFlag(static_cast<const void *>(so_name_.data()),
+                                       static_cast<const void *>(kernel_name_.data()), block_dim_, args_.get(),
+                                       static_cast<uint32_t>(arg_size_), sm_desc, stream, dump_flag_);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
     return RT_FAILED;
@@ -665,7 +664,7 @@ Status AiCpuCCTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
   GE_CHK_BOOL_RET_STATUS(unknown_type_ != DEPEND_COMPUTE, FAILED,
                          "AiCpuCCTask unknown type[%d] is depend compute, it's not supported now.", unknown_type_);
 
-  GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc));
+  GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc, stream));
 
   size_t arg_index = 0;
   auto *task_io_addr = reinterpret_cast<uintptr_t *>(io_addr_);
@@ -678,9 +677,9 @@ Status AiCpuCCTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
   }
 
   GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
-  GE_CHK_RT_RET(rtStreamSynchronize(stream));
 
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
+    GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateOutputShape(output_desc));
   }
 

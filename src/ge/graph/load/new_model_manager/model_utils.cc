@@ -479,13 +479,15 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
     ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_WORKSPACE_TYPE_LIST, workspace_memory_type);
   for (size_t i = 0; i < v_workspace_bytes.size(); ++i) {
     // Temporary solution, the aicpu workspace of multiple images cannot be shared.
-    if (has_workspace_reuse && i < workspace_reuse_flag.size() && !workspace_reuse_flag[i]) {
+    if (has_workspace_reuse && i < workspace_reuse_flag.size() && !workspace_reuse_flag[i] &&
+        !model_param.is_single_op) {
       void *mem_addr = model_param.aicpu_mem_mall->Acquire(v_workspace_offset[i], v_workspace_bytes[i]);
       v_workspace_data_addr.push_back(mem_addr);
       GELOGI(
         "[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] aicpu workspace[%zu]  offset[%ld] bytes[%ld] "
         "memaddr[%p]",
         model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i], v_workspace_bytes[i], mem_addr);
+      continue;
     } else if (has_mem_type_workspace && workspace_memory_type[i] == RT_MEMORY_P2P_DDR) {
       int64_t p2p_workspace_offset = v_workspace_offset[i];
       int64_t p2p_workspace_bytes = v_workspace_bytes[i];

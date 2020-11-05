@@ -115,23 +115,97 @@ void InsertNewOpUtil::ClearNewOps() {
   }
 }
 
-Status InsertNewOpUtil::CheckPositionNotRepeat() {
+Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
   for (int i = 0; i < insert_op_conf_->aipp_op_size(); i++) {
     const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(i);
+    GE_CHECK_NOTNULL(item);
 
     for (int j = i + 1; j < insert_op_conf_->aipp_op_size(); j++) {
       const domi::AippOpParams *another_item = insert_op_conf_->mutable_aipp_op(j);
-      GE_IF_BOOL_EXEC(item->related_input_rank() == another_item->related_input_rank(),
-                      string errormsg =
-                        "Can not insert aipp to the same postion! Please ensure related_input_rank"
-                        " param is different in different aipp config.";
-                      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
-                      GELOGE(PARAM_INVALID,
-                             "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
-                             "is different in different aipp config.");
-                      return PARAM_INVALID;);
+      GE_CHECK_NOTNULL(another_item);
+      if (another_item->related_input_name().empty()) {
+        string error_msg =
+          "Can not both set related_input_name and related_input_rank!"
+          " Please ensure param is the same with the first aipp config(related_input_name).";
+        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
+        GELOGE(PARAM_INVALID,
+               "Can not both set related_input_rank and related_input_name!"
+               " Please ensure param is the same with the first aipp config(related_input_name).");
+        return PARAM_INVALID;
+      }
+      if (item->related_input_name() == another_item->related_input_name()) {
+        string error_msg =
+          "Can not insert aipp to the same postion! Please ensure related_input_name"
+          " param is different in different aipp config.";
+        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
+        GELOGE(PARAM_INVALID,
+               "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
+               "is different in different aipp config.");
+        return PARAM_INVALID;
+      }
     }
   }
+
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::CheckInputRankPositionNoRepeat() {
+  for (int i = 0; i < insert_op_conf_->aipp_op_size(); i++) {
+    const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(i);
+    GE_CHECK_NOTNULL(item);
+
+    for (int j = i + 1; j < insert_op_conf_->aipp_op_size(); j++) {
+      const domi::AippOpParams *another_item = insert_op_conf_->mutable_aipp_op(j);
+      GE_CHECK_NOTNULL(another_item);
+      if (!another_item->related_input_name().empty()) {
+        string error_msg =
+          "Can not both set related_input_rank and related_input_name!"
+          " Please ensure param is the same with the first aipp config(related_input_rank).";
+        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
+        GELOGE(PARAM_INVALID,
+               "Can not both set related_input_rank and related_input_name!"
+               " Please ensure param is the same with the first aipp config(related_input_rank).");
+        return PARAM_INVALID;
+      }
+      if (item->related_input_rank() == another_item->related_input_rank()) {
+        string error_msg =
+          "Can not insert aipp to the same postion! Please ensure related_input_rank"
+          " param is different in different aipp config.";
+        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
+        GELOGE(PARAM_INVALID,
+               "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
+               "is different in different aipp config.");
+        return PARAM_INVALID;
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status InsertNewOpUtil::CheckPositionNotRepeat() {
+  GE_CHECK_NOTNULL(insert_op_conf_);
+
+  if (insert_op_conf_->aipp_op_size() <= 1) {
+    GELOGI("Aipp op size[%d] less than 2, no need to check position repeat.", insert_op_conf_->aipp_op_size());
+    return SUCCESS;
+  }
+
+  const domi::AippOpParams *item = insert_op_conf_->mutable_aipp_op(0);
+  GE_CHECK_NOTNULL(item);
+
+  string related_input_name = item->related_input_name();
+  Status ret = FAILED;
+  if (related_input_name.empty()) {
+    ret = CheckInputRankPositionNoRepeat();
+  } else {
+    ret = CheckInputNamePositionNotRepeat();
+  }
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Check position not repeat failed.");
+    return FAILED;
+  }
+
   return SUCCESS;
 }
 

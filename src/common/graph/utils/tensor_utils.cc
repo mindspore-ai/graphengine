@@ -292,6 +292,8 @@ static graphStatus CalcTensorElementCnt(const std::vector<int64_t> &dims, Format
       graph_status = CalcElementCntByDims(dims, element_cnt);
       break;
     default:
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19012", {"function", "reason"}, {"CalcTensorElementCnt", "format[" + format_str + "] is not support"});
       GELOGE(GRAPH_FAILED, "unsupported format, format=%d(%s).", format, format_str.c_str());
       graph_status = GRAPH_FAILED;
       break;

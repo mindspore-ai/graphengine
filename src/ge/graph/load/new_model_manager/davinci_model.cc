@@ -464,6 +464,8 @@ Status DavinciModel::DoTaskSink() {
 
   GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
 
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+
   GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
 
   GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
@@ -2051,6 +2053,7 @@ Status DavinciModel::SinkModelProfile() {
   std::set<uint32_t> task_id_set;
   for (int32_t i = 0; i < task_num; i++) {
     auto task = task_list_[i];
+    GE_CHECK_NOTNULL(task);
     auto fusion_op_info = task->GetFusionOpInfo();
     // when type is RT_MODEL_TASK_KERNEL, ctx is not null
     if (fusion_op_info != nullptr) {
@@ -2077,6 +2080,7 @@ Status DavinciModel::SinkModelProfile() {
   using Range = std::pair<CIT, CIT>;
   for (int32_t i = 0; i < task_num; i++) {
     auto task = task_list_[i];
+    GE_CHECK_NOTNULL(task);
     auto fusion_op_info = task->GetFusionOpInfo();
     if (fusion_op_info != nullptr && fusion_op_info->original_op_names.size() > 0) {
       uint32_t task_id = task->GetTaskID();

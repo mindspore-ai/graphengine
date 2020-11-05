@@ -116,9 +116,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GNode {
 
   bool HasAttr(const ge::AscendString &name);
 
-  graphStatus GetSubgraph(uint32_t index, GraphPtr graph) const;
+  graphStatus GetSubgraph(uint32_t index, GraphPtr &graph) const;
 
-  graphStatus GetALLSubgraphs(std::vector<GraphPtr> graph_list) const;
+  graphStatus GetALLSubgraphs(std::vector<GraphPtr> &graph_list) const;
 
  private:
   std::shared_ptr<NodeImpl> impl_;

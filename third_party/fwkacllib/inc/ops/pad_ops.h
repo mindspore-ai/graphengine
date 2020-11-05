@@ -403,6 +403,5 @@ REG_OP(EmbeddingRankId)
     .ATTR(mode, String, "mod")
     .OP_END_FACTORY_REG(EmbeddingRankId)
 
-
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_

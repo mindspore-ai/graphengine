@@ -34,24 +34,12 @@ class MergeToStreamMergePass : public GraphPass {
   Status ReplaceMergeNode(const ComputeGraphPtr &graph, const NodePtr &merge_node);
 
   ///
-  /// @brief Add MemcpyAsync Op as StreamMerge in_node
+  /// @brief Add StreamActive Op as StreamMerge in_node
   /// @param [in] graph
   /// @param [in] node
-  /// @param [in] multi_batch_flag
   /// @return Status
   ///
-  Status AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, const NodePtr &node, bool multi_batch_flag);
-
-  ///
-  /// @brief Add MemcpyAsync Node
-  /// @param [in] graph
-  /// @param [in] name
-  /// @param [in] out_data_anchor
-  /// @param [in] multi_batch_flag
-  /// @return ge::NodePtr
-  ///
-  NodePtr CreateMemcpyAsyncNode(const ComputeGraphPtr &graph, const std::string &name,
-                                const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag);
+  Status AddActiveNodes(const ComputeGraphPtr &graph, const NodePtr &node);
 
   ///
   /// @brief Create Active Op

@@ -1056,6 +1056,7 @@ ge::Status GeExecutor::ExecuteAsync(DynamicSingleOp *executor, const vector<GeTe
 }
 
 Status GeExecutor::ReleaseSingleOpResource(void *stream) {
+  ModelManager::GetInstance()->ClearAicpuSo();
   return SingleOpManager::GetInstance().ReleaseResource(stream);
 }
 

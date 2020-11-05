@@ -393,6 +393,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus Node::SetOwnerCompute
   return GRAPH_SUCCESS;
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus Node::SetAnyOwnerComputeGraph(const ComputeGraphPtr &graph) {
+  owner_graph_ = graph;
+  return GRAPH_SUCCESS;
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Node::Vistor<InDataAnchorPtr> Node::GetAllInDataAnchors() const {
   return Vistor<InDataAnchorPtr>(shared_from_this(), in_data_anchors_);
 }

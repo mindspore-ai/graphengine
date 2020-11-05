@@ -37,6 +37,8 @@ class InnerSession {
 
   Status AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
 
+  Status AddGraphWithCopy(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
+
   Status RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
 
   Status RemoveGraph(uint32_t graph_id);

@@ -62,7 +62,7 @@ class SessionManager {
 
   ///
   /// @ingroup ge_session
-  /// @brief add a graph to the session with specific session id
+  /// @brief add a graph to the session with specific session id and graphOptions
   /// @param [in] session_id session id
   /// @param [in] graph_id graph id
   /// @param [in] graph the graph to add
@@ -70,6 +70,18 @@ class SessionManager {
   /// @return Status result of function
   ///
   Status AddGraph(SessionId session_id, uint32_t graph_id, const Graph &graph,
+                  const std::map<std::string, std::string> &options);
+
+  ///
+  /// @ingroup ge_session
+  /// @brief add a copy graph to the session with specific session id and graphOptions
+  /// @param [in] session_id session id
+  /// @param [in] graph_id graph id
+  /// @param [in] graph the graph to add
+  /// @param [in] options graph level options
+  /// @return Status result of function
+  ///
+  Status AddGraphWithCopy(SessionId session_id, uint32_t graph_id, const Graph &graph,
                   const std::map<std::string, std::string> &options);
 
   ///

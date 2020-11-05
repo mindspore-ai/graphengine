@@ -75,6 +75,16 @@ class GraphManager {
 
   ///
   /// @ingroup ge_graph
+  /// @brief add a copy graph
+  /// @param [in] graph_id graph id
+  /// @param [out] Graph output graph
+  /// @return Status result of function
+  ///
+  Status AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
+                          const std::map<std::string, std::string> &options, const OmgContext &omg_context);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief remove specific graph
   /// @param [in] graph_id graph id
   /// @return Status result of function

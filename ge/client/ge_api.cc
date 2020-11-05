@@ -260,6 +260,33 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<s
   return ret;
 }
 
+Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph) {
+  std::map<AscendString, AscendString> options;
+  return AddGraphWithCopy(graph_id, graph, options);
+}
+
+Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
+                                 const std::map<AscendString, AscendString> &options) {
+  GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
+    return FAILED;
+  }
+  std::map<std::string, std::string> str_options;
+  for (auto it = options.begin(); it != options.end(); ++it) {
+    str_options.insert({it->first.GetString(), it->second.GetString()});
+  }
+  GELOGD("Adding graph to session");
+  Status ret = instance_ptr->SessionManagerObj().AddGraphWithCopy(sessionId_, graph_id, graph, str_options);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "AddGraph failed in Session.");
+    return FAILED;
+  }
+  GELOGD("AddGraph finished in Session.");
+  return ret;
+}
+
 Status Session::RemoveGraph(uint32_t graph_id) {
   GELOGT(TRACE_INIT, "Session RemoveGraph start");
 

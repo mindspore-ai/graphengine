@@ -31,6 +31,7 @@ ExternalProject_Add(protobuf_static_build
                     -DCMAKE_AR=${CMAKE_AR}
                     -DCMAKE_RANLIB=${CMAKE_RANLIB}
                     -Dprotobuf_WITH_ZLIB=OFF
+                    -DLIB_PREFIX=ascend_
                     -Dprotobuf_BUILD_TESTS=OFF -DCMAKE_CXX_FLAGS=${protobuf_CXXFLAGS} -DCMAKE_CXX_LDFLAGS=${protobuf_LDFLAGS} -DCMAKE_INSTALL_PREFIX=${PROTOBUF_STATIC_PKG_DIR} <SOURCE_DIR>/cmake
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install

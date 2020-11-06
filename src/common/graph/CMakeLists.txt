@@ -16,7 +16,6 @@
 # libgraph.so
 # compiling proto files generates some warnings, use no-unused-variable to suppress them
 set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0 ${CMAKE_CXX_FLAGS}")
 # add all proto files, generate corresponding .h and .cc files
 file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/om.proto"

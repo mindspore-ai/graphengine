@@ -102,6 +102,26 @@ bash build.sh
 
 欢迎参与贡献，更多信息详见[Contributor Wiki](https://gitee.com/mindspore/mindspore/blob/master/CONTRIBUTING.md)。
 
+## 路标
+
+以下将展示graphengine近期的计划，我们会根据用户的反馈诉求，持续调整计划的优先级。
+
+总体而言，我们会努力在以下几个方面不断改进。
+
+1、完备性：Cast/ConcatV2算子支持输入数据类型为int64的常量折叠；
+
+2、完备性：onnx parser支持一对多映射；
+
+3、架构优化：ATC解耦并迁移至parser；
+
+4、易用性：提供tensorflow训练的checkpoint文件转pb文件的一键式转化工具；
+
+5、易用性：提供一键式本地编译环境构建工具；
+
+6、可维测：ATC转换生成的om模型包含框架信息、cann版本信息和芯片信息等；
+
+热忱希望各位在用户社区加入讨论，并贡献您的建议。
+
 ## Release Notes
 
 Release Notes请参考[RELEASE](RELEASE.md).

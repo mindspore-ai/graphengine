@@ -65,7 +65,7 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
     void *try_reuse_addr = nullptr;
     int padding = kDefaultPadding;
     if (attr != nullptr) {
-      try_reuse_addr  = attr->try_reuse_addr_;
+      try_reuse_addr = attr->try_reuse_addr_;
       if (attr->padding_ > 0) {
         padding = attr->padding_;
       }

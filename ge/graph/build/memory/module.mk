@@ -25,7 +25,7 @@ LOCAL_MODULE := libge_memory
 
 LOCAL_CFLAGS += -std=c++11
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -O2
+LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 endif
@@ -33,7 +33,7 @@ endif
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \
@@ -56,11 +56,11 @@ LOCAL_MODULE := libge_memory
 LOCAL_CFLAGS += -std=c++11
 LOCAL_CFLAGS += -Werror
 LOCAL_CFLAGS += -DGOOGLE_PROTOBUF_NO_RTTI -DDEV_VISIBILITY
-LOCAL_CFLAGS += -O2
+LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \
@@ -79,11 +79,11 @@ include ${BUILD_STATIC_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := libge_memory
 
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \

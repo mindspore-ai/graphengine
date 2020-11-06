@@ -339,6 +339,7 @@ target_compile_definitions(ge_runner PRIVATE
     REUSE_MEMORY=1
     FMK_SUPPORT_DUMP
     DAVINCI_CLOUD
+    google=ascend_private
 )
 
 target_compile_options(ge_runner PRIVATE
@@ -379,7 +380,7 @@ target_link_libraries(ge_runner
     -Wl,--no-as-needed
     graph
     ge_common
-    protobuf
+    ascend_protobuf
     register
     c_sec
     slog
@@ -667,6 +668,7 @@ target_compile_definitions(ge_compiler PRIVATE
     FMK_SUPPORT_DUMP
     FMK_HOST_INFER
     COMPILE_OMG_PACKAGE
+    google=ascend_private
 )
 
 target_compile_options(ge_compiler PRIVATE
@@ -705,7 +707,7 @@ target_link_libraries(ge_compiler
     -Wl,--no-as-needed
     graph
     ge_common
-    protobuf
+    ascend_protobuf
     register
     c_sec
     error_manager
@@ -739,6 +741,11 @@ endif()
 add_library(opensrc_ascendcl SHARED
     ${OBJECT_LIST}
 )
+
+target_compile_definitions(opensrc_ascendcl PRIVATE
+    google=ascend_private
+)
+
 target_compile_options(opensrc_ascendcl PRIVATE
     -O2
     -fvisibility=hidden
@@ -755,7 +762,7 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      ge_executor
                      ge_common_static
                      graph_static
-                     protobuf_static
+                     ascend_protobuf_static
                      register_static
                      error_manager_static
                      adump_server

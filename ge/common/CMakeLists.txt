@@ -70,6 +70,7 @@ target_compile_definitions(ge_common PRIVATE
     HOST_VISIBILITY
     FMK_SUPPORT_DUMP
     OS_CENTOS
+    google=ascend_private
 )
 
 target_compile_options(ge_common PRIVATE
@@ -104,7 +105,7 @@ target_link_libraries(ge_common PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
     graph
-    protobuf
+    ascend_protobuf
     register
     c_sec
     error_manager
@@ -123,6 +124,7 @@ target_compile_definitions(ge_common_static PRIVATE
     HOST_VISIBILITY
     FMK_SUPPORT_DUMP
     OS_CENTOS
+    google=ascend_private
 )
 
 target_compile_options(ge_common_static PRIVATE
@@ -155,7 +157,7 @@ target_include_directories(ge_common_static PRIVATE
 
 target_link_libraries(ge_common_static PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    protobuf
+    ascend_protobuf
     json
     c_sec
     -lrt

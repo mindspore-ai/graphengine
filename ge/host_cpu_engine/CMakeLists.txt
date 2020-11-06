@@ -22,6 +22,10 @@ target_compile_options(host_cpu_engine PRIVATE
     -Werror
 )
 
+target_compile_definitions(host_cpu_engine PRIVATE
+    google=ascend_private
+)
+
 target_include_directories(host_cpu_engine PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${GE_CODE_DIR}/ge
@@ -42,7 +46,7 @@ target_include_directories(host_cpu_engine PRIVATE
 target_link_libraries(host_cpu_engine PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    protobuf
+    ascend_protobuf
     c_sec
     graph
     register
@@ -60,6 +64,7 @@ target_compile_options(atc_host_cpu_engine PRIVATE
 
 target_compile_definitions(atc_host_cpu_engine PRIVATE
     COMPILE_OMG_PACKAGE
+    google=ascend_private
 )
 
 target_include_directories(atc_host_cpu_engine PRIVATE
@@ -82,7 +87,7 @@ target_include_directories(atc_host_cpu_engine PRIVATE
 target_link_libraries(atc_host_cpu_engine PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    protobuf
+    ascend_protobuf
     c_sec
     graph
     register
@@ -101,6 +106,10 @@ add_library(host_cpu_opskernel_builder SHARED ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(host_cpu_opskernel_builder PRIVATE
     -Werror
+)
+
+target_compile_definitions(host_cpu_opskernel_builder PRIVATE
+    google=ascend_private
 )
 
 target_include_directories(host_cpu_opskernel_builder PRIVATE
@@ -123,7 +132,7 @@ target_include_directories(host_cpu_opskernel_builder PRIVATE
 target_link_libraries(host_cpu_opskernel_builder PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    protobuf
+    ascend_protobuf
     c_sec
     slog
     graph
@@ -136,6 +145,10 @@ add_library(atc_host_cpu_opskernel_builder SHARED ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(atc_host_cpu_opskernel_builder PRIVATE
     -Werror
+)
+
+target_compile_definitions(atc_host_cpu_opskernel_builder PRIVATE
+    google=ascend_private
 )
 
 target_include_directories(atc_host_cpu_opskernel_builder PRIVATE
@@ -158,7 +171,7 @@ target_include_directories(atc_host_cpu_opskernel_builder PRIVATE
 target_link_libraries(atc_host_cpu_opskernel_builder PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    protobuf
+    ascend_protobuf
     c_sec
     slog
     graph
@@ -176,6 +189,10 @@ add_library(host_cpu_opskernel_builder_static SHARED ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(host_cpu_opskernel_builder_static PRIVATE
     -Werror
+)
+
+target_compile_definitions(host_cpu_opskernel_builder_static PRIVATE
+    google=ascend_private
 )
 
 target_include_directories(host_cpu_opskernel_builder_static PRIVATE
@@ -197,7 +214,7 @@ target_include_directories(host_cpu_opskernel_builder_static PRIVATE
 
 target_link_libraries(host_cpu_opskernel_builder_static PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    protobuf
+    ascend_protobuf
     c_sec
 )
 

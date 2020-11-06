@@ -16,9 +16,13 @@ target_compile_options(ge_memory PRIVATE
     -O2
 )
 
+target_compile_definitions(ge_memory PRIVATE
+    google=ascend_private
+)
+
 target_link_libraries(ge_memory PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    protobuf
+    ascend_protobuf
     c_sec
 )
 

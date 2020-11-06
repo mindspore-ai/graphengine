@@ -3,7 +3,6 @@ if (HAVE_GFLAGS)
 endif()
 
 include(ExternalProject)
-#set(CMAKE_INSTALL_PREFIX ${GE_CODE_DIR}/output)
 
 if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
     (${CMAKE_INSTALL_PREFIX} STREQUAL "C:/Program Files (x86)/ascend"))
@@ -19,11 +18,12 @@ else()
     set(MD5 "")
 endif ()
 
+set (gflags_CXXFLAGS "-D_GLIBCXX_USE_CXX11_ABI=0 -Dgoogle=ascend_private")
 ExternalProject_Add(gflags_build
                     URL ${REQ_URL}
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
-                    #SOURCE_DIR ${GE_CODE_DIR}/../third_party/gflags/src/gflags-2.2.2 
-                    CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_CXX_FLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/gflags <SOURCE_DIR>
+                    #SOURCE_DIR ${GE_CODE_DIR}/../../third_party/gflags/src/gflags-2.2.2 
+                    CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_CXX_FLAGS=${gflags_CXXFLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/gflags <SOURCE_DIR>
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install
                     EXCLUDE_FROM_ALL TRUE 

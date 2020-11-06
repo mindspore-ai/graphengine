@@ -28,6 +28,10 @@ target_compile_options(ge_local_engine PRIVATE
     -Werror
 )
 
+target_compile_definitions(ge_local_engine PRIVATE
+    google=ascend_private
+)
+
 target_include_directories(ge_local_engine PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${GE_CODE_DIR}/ge
@@ -50,7 +54,7 @@ target_link_libraries(ge_local_engine PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
     graph
-    protobuf
+    ascend_protobuf
     register
     c_sec
     slog
@@ -67,6 +71,7 @@ target_compile_options(atc_ge_local_engine PRIVATE
 
 target_compile_definitions(atc_ge_local_engine PRIVATE
     COMPILE_OMG_PACKAGE
+    google=ascend_private
 )
 
 target_include_directories(atc_ge_local_engine PRIVATE
@@ -91,7 +96,7 @@ target_link_libraries(atc_ge_local_engine PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
     graph
-    protobuf
+    ascend_protobuf
     register
     c_sec
     slog
@@ -109,6 +114,10 @@ add_library(ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDR
 
 target_compile_options(ge_local_opskernel_builder PRIVATE
     -Werror
+)
+
+target_compile_definitions(ge_local_opskernel_builder PRIVATE
+    google=ascend_private
 )
 
 target_include_directories(ge_local_opskernel_builder PRIVATE
@@ -132,7 +141,7 @@ target_include_directories(ge_local_opskernel_builder PRIVATE
 target_link_libraries(ge_local_opskernel_builder PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    protobuf
+    ascend_protobuf
     c_sec
     slog
     register
@@ -145,6 +154,10 @@ add_library(atc_ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO
 
 target_compile_options(atc_ge_local_opskernel_builder PRIVATE
     -Werror
+)
+
+target_compile_definitions(atc_ge_local_opskernel_builder PRIVATE
+    google=ascend_private
 )
 
 target_include_directories(atc_ge_local_opskernel_builder PRIVATE
@@ -168,7 +181,7 @@ target_include_directories(atc_ge_local_opskernel_builder PRIVATE
 target_link_libraries(atc_ge_local_opskernel_builder PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    protobuf
+    ascend_protobuf
     c_sec
     slog
     register
@@ -186,6 +199,10 @@ add_library(ge_local_opskernel_builder_static SHARED ${OPS_KERNEL_SRC_LIST} ${PR
 
 target_compile_options(ge_local_opskernel_builder_static PRIVATE
     -Werror
+)
+
+target_compile_definitions(ge_local_opskernel_builder_static PRIVATE
+    google=ascend_private
 )
 
 target_include_directories(ge_local_opskernel_builder_static PRIVATE
@@ -208,7 +225,7 @@ target_include_directories(ge_local_opskernel_builder_static PRIVATE
 
 target_link_libraries(ge_local_opskernel_builder_static PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    protobuf
+    ascend_protobuf
     c_sec
 )
 

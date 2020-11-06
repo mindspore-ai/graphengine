@@ -1,12 +1,12 @@
 [View English](./README.md)
 
-图引擎模块(GE)是MindSpore的一个子模块，其代码由C++实现，位于前端模块ME和底层硬件之间，起到承接作用。图引擎模块以ME下发的图作为输入，然后进行一系列的深度图优化操作，最后输出一张可以在底层硬件上高效运行的图。GE针对昇腾AI处理器的硬件结构特点，做了特定的优化工作，以此来充分发挥出昇腾AI处理器的强大算力。在进行模型训练/推理时，GE会被自动调用而用户并不感知。GE主要由GE API和GE Core两部分组成，详细的架构图如下所示。
+图引擎模块(GE)由C++实现，位于前端模块MindSpore/Tensorflow和底层硬件之间，起到承接作用。图引擎模块以ME/TF下发的图作为输入，然后进行一系列的深度图优化操作，最后输出一张可以在底层硬件上高效运行的图。GE针对昇腾AI处理器的硬件结构特点，做了特定的优化工作，以此来充分发挥出昇腾AI处理器的强大算力。在进行模型训练/推理时，GE会被自动调用而用户并不感知。GE主要由GE API和GE Core两部分组成，详细的架构图如下所示。
 
 ![GE_schema](docs/GE_Architecture_CN.png)
 
 - GE API
 
-    GE API是连接前端模块ME和GE Core的接口，负责GE Core中初始化、Session管理模块的接口，支持运行环境初始化，Session创建、销毁，图添加执行。
+    GE API是连接前端模块ME/TF和GE Core的接口，负责GE Core中初始化、Session管理模块的接口，支持运行环境初始化，Session创建、销毁，图添加执行。
 
 - GE Core
 
@@ -50,7 +50,7 @@
 
 ## 安装GE
 
-GE内嵌在MindSpore安装包中，MindSpore安装完毕后，GE以三个动态库的方式被调用。
+GE内嵌在MindSpore/Ascend安装包中，MindSpore/Ascend安装完毕后，GE以动态库的方式被调用。
 
 ## 源码安装
 
@@ -62,7 +62,7 @@ GE也支持由源码编译，进行源码编译前，首先确保你有昇腾910
 - Libtool >= 2.4.6
 - Automake >= 1.15.1
 
-编译完成后会生成几个动态库，他们会链接到MindSpore中执行，无法单独运行。
+编译完成后会生成几个动态库，他们会链接到MindSpore/Ascend中执行，无法单独运行。
 
 1. 下载GE源码。
 
@@ -101,6 +101,26 @@ bash build.sh
 ## 贡献
 
 欢迎参与贡献，更多信息详见[Contributor Wiki](https://gitee.com/mindspore/mindspore/blob/master/CONTRIBUTING.md)。
+
+## 路标
+
+以下将展示graphengine近期的计划，我们会根据用户的反馈诉求，持续调整计划的优先级。
+
+总体而言，我们会努力在以下几个方面不断改进。
+
+    1、完备性：Cast/ConcatV2算子支持输入数据类型为int64的常量折叠；
+
+    2、完备性：onnx parser支持一对多映射；
+
+    3、架构优化：ATC解耦并迁移至parser；
+
+    4、易用性：提供tensorflow训练的checkpoint文件转pb文件的一键式转化工具；
+
+    5、易用性：提供一键式本地编译环境构建工具；
+
+    6、可维测：ATC转换生成的om模型包含框架信息、cann版本信息和芯片信息等；
+
+热忱希望各位在用户社区加入讨论，并贡献您的建议。
 
 ## Release Notes
 

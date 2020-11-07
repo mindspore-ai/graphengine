@@ -43,6 +43,7 @@ target_compile_definitions(ge_runtime PUBLIC
         Werror)
 target_link_libraries(ge_runtime
         graph
+	protobuf
         ${slog}
         ${runtime}
         ${c_sec}

@@ -25,7 +25,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ops_kernel_store/op/*.cc"
         )
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
@@ -45,7 +45,8 @@ add_library(ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
 target_compile_definitions(ge_local_engine PRIVATE Werror COMPILE_OMG_PACKAGE)
 target_link_libraries(ge_local_engine
         graph
-        ${PROTOBUF_LIBRARY}
+	#${PROTOBUF_LIBRARY}
+	protobuf
         ${register}
         ${c_sec}
         ${slog}

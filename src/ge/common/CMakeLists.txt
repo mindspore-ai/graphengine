@@ -67,7 +67,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "util.cc"
         )
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
@@ -92,7 +92,8 @@ target_compile_definitions(ge_common PUBLIC
         OS_CENTOS)
 target_link_libraries(ge_common
         graph
-        ${PROTOBUF_LIBRARY}
+	#${PROTOBUF_LIBRARY}
+	protobuf
         ${register}
         ${c_sec}
         ${slog}

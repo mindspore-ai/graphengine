@@ -87,7 +87,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../single_op/task/tbe_task_builder.cc"
         )
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
@@ -113,6 +113,7 @@ target_link_libraries(ge_executor
         ge_common
         graph
         ${PROTOBUF_LIBRARY}
+	protobuf
         ${register}
         ${c_sec}
         ${runtime}

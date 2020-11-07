@@ -19,21 +19,22 @@ set(CMAKE_CXX_FLAGS "-Wno-unused-variable ${CMAKE_CXX_FLAGS}")
 # add all proto files, generate corresponding .h and .cc files
 file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../../proto/om.proto"
-        "../../proto/ge_ir.proto"
-        "../../proto/insert_op.proto"
-        "../../proto/task.proto"
-        "../../proto/fwk_adaper.proto"
-        "../../proto/op_mapping_info.proto"
-        "../../proto/dump_task.proto"
-        )
+	"../../proto/ge_ir.proto"
+	"../../proto/insert_op.proto"
+	"../../proto/task.proto"
+	"../../proto/fwk_adaper.proto"
+	"../../proto/op_mapping_info.proto"
+	"../../proto/dump_task.proto"
+	"../../proto/onnx.proto"
+)
 
 file(GLOB_RECURSE ONNX_PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "${onnx_INC}/onnx/onnx.proto"
-        )
+)
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-ge_protobuf_generate(ge PROTO_ONNX_SRCS PROTO_ONNX_HDRS ${ONNX_PROTO_LIST})
 
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+#protobuf_generate(ge PROTO_ONNX_SRCS PROTO_ONNX_HDRS ${ONNX_PROTO_LIST})
 # need to remove dependencies on pb files later
 file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "*.cc"
@@ -61,15 +62,17 @@ include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
+include_directories(${CMAKE_BINARY_DIR}/proto/ge/proto)
 include_directories(${GE_SOURCE_DIR}/build)
 
 ######### libgraph.so #############
-add_library(graph SHARED ${SRC_LIST} ${PROTO_SRCS} ${PROTO_ONNX_SRCS})
+add_library(graph SHARED ${SRC_LIST} ${PROTO_SRCS})
 target_compile_definitions(graph PRIVATE
         DAVINCI_CLOUD
         Werror)
 target_link_libraries(graph PRIVATE
-        ${PROTOBUF_LIBRARY}
+	#${PROTOBUF_LIBRARY}
+	protobuf
         ${c_sec}
         ${slog}
         ${error_manager}

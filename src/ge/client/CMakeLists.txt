@@ -32,8 +32,8 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "ge_prof.cc"
         )
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-ge_protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
 
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
@@ -61,7 +61,8 @@ target_link_libraries(ge_client
         graph
         ge_compiler
         ge_common
-        ${PROTOBUF_LIBRARY}
+	#${PROTOBUF_LIBRARY}
+	protobuf
         ${register}
         ${c_sec}
         ${slog}

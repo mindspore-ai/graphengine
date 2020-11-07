@@ -33,9 +33,9 @@ file(GLOB PROTO_HEADER_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "../proto/op_mapping_info.proto"
         "../proto/dump_task.proto"
         )
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-ge_protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
-ge_protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
+protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${GE_SOURCE_DIR})
@@ -218,7 +218,8 @@ target_link_libraries(ge_runner
         graph
         ge_common
         ge_memory
-        ${PROTOBUF_LIBRARY}
+	#${PROTOBUF_LIBRARY}
+	protobuf
         ${register}
         ${c_sec}
         ${slog}
@@ -367,7 +368,8 @@ target_link_libraries(ge_compiler
         graph
         ge_common
         ge_memory
-        ${PROTOBUF_LIBRARY}
+	#${PROTOBUF_LIBRARY}
+	protobuf
         ${register}
         ${c_sec}
         ${slog}

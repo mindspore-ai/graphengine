@@ -69,6 +69,7 @@ include_directories(${GE_SOURCE_DIR}/build)
 add_library(graph SHARED ${SRC_LIST} ${PROTO_SRCS})
 target_compile_definitions(graph PRIVATE
         DAVINCI_CLOUD
+        FMK_SUPPORT_DUMP
         Werror)
 target_link_libraries(graph PRIVATE
 	#${PROTOBUF_LIBRARY}

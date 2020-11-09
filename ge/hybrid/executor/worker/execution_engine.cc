@@ -122,10 +122,10 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
            output_tensor->GetSize());
     if (tensor_size > 0) {
       GE_CHK_RT_RET(rtMemcpy(host_buffer.data(),
-                            tensor_size,
-                            output_tensor->GetData(),
-                            tensor_size,
-                            RT_MEMCPY_DEVICE_TO_HOST));
+                             tensor_size,
+                             output_tensor->GetData(),
+                             tensor_size,
+                             RT_MEMCPY_DEVICE_TO_HOST));
     }
     tensor.SetData(std::move(host_buffer));
     string session_id = std::to_string(context_->GetSessionId());

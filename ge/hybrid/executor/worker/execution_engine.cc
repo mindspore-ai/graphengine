@@ -120,11 +120,13 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
            node_item.NodeName().c_str(),
            output_idx,
            output_tensor->GetSize());
-    GE_CHK_RT_RET(rtMemcpy(host_buffer.data(),
-                           tensor_size,
-                           output_tensor->GetData(),
-                           tensor_size,
-                           RT_MEMCPY_DEVICE_TO_HOST));
+    if (tensor_size > 0) {
+      GE_CHK_RT_RET(rtMemcpy(host_buffer.data(),
+                            tensor_size,
+                            output_tensor->GetData(),
+                            tensor_size,
+                            RT_MEMCPY_DEVICE_TO_HOST));
+    }
     tensor.SetData(std::move(host_buffer));
     string session_id = std::to_string(context_->GetSessionId());
     RuntimeInferenceContext *runtime_infer_ctx = nullptr;

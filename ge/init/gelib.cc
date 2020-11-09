@@ -110,7 +110,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initSystemStatus = SystemInitialize(options);
   GE_TIMESTAMP_END(SystemInitialize, "InnerInitialize::SystemInitialize");
   if (initSystemStatus != SUCCESS) {
-    GELOGE(initSystemStatus);
+    GELOGE(initSystemStatus, "GE system initial failed.");
     RollbackInit();
     return initSystemStatus;
   }
@@ -120,7 +120,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initEmStatus = engineManager_.Initialize(options);
   GE_TIMESTAMP_END(EngineInitialize, "InnerInitialize::EngineInitialize");
   if (initEmStatus != SUCCESS) {
-    GELOGE(initEmStatus);
+    GELOGE(initEmStatus, "GE engine manager initial failed.");
     RollbackInit();
     return initEmStatus;
   }
@@ -130,7 +130,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initOpsStatus = opsManager_.Initialize(options);
   GE_TIMESTAMP_END(OpsManagerInitialize, "InnerInitialize::OpsManagerInitialize");
   if (initOpsStatus != SUCCESS) {
-    GELOGE(initOpsStatus);
+    GELOGE(initOpsStatus, "GE ops manager initial failed.");
     RollbackInit();
     return initOpsStatus;
   }
@@ -140,7 +140,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initOpsBuilderStatus = OpsKernelBuilderManager::Instance().Initialize(options);
   GE_TIMESTAMP_END(OpsKernelBuilderManagerInitialize, "InnerInitialize::OpsKernelBuilderManager");
   if (initOpsBuilderStatus != SUCCESS) {
-    GELOGE(initOpsBuilderStatus);
+    GELOGE(initOpsBuilderStatus, "GE ops builder manager initial failed.");
     RollbackInit();
     return initOpsBuilderStatus;
   }
@@ -150,7 +150,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initSmStatus = sessionManager_.Initialize(options);
   GE_TIMESTAMP_END(SessionManagerInitialize, "InnerInitialize::SessionManagerInitialize");
   if (initSmStatus != SUCCESS) {
-    GELOGE(initSmStatus);
+    GELOGE(initSmStatus, "GE session manager initial failed.");
     RollbackInit();
     return initSmStatus;
   }

@@ -85,7 +85,7 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     initialize_ = options;
     Status rst0 = plugin_manager_.InvokeAll<map<string, string> &, Status>(kInitialize, initialize_);
     if (rst0 == FAILED) {
-      GELOGE(GE_OPS_GET_NO_VALID_SO);
+      GELOGE(GE_OPS_GET_NO_VALID_SO, "There is invalid so about OpsKernelInfoStore.");
       return GE_OPS_GET_NO_VALID_SO;
     }
     Status rst1 =

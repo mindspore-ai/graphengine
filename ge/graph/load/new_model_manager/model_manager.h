@@ -18,7 +18,6 @@
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_MANAGER_H_
 
 #include <model/ge_root_model.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <algorithm>
 #include <map>

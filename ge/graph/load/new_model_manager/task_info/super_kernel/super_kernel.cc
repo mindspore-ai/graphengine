@@ -23,7 +23,7 @@ Status SuperKernel::Launch(rtStream_t stream, uint32_t dump_flag) {
   const void *func_stub_ = this->GetFuncStub();
 
   const void *args[] = {this->GetNavTablePtr(),
-                        reinterpret_cast<const void *>(reinterpret_cast<uintptr_t>(this->GetNavTableSize()))};
+                        reinterpret_cast<const void *>(static_cast<uintptr_t>(this->GetNavTableSize()))};
 
   rtError_t rt_ret = rtMalloc((void **)&(device_args_addr_), sizeof(args), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc failied. error: 0x%X", rt_ret); return

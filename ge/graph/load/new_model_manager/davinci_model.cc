@@ -17,11 +17,7 @@
 #include "graph/load/new_model_manager/davinci_model.h"
 
 #include <cce/dnn.h>
-#include <dlfcn.h>
 #include <graph/utils/node_utils.h>
-#include <pthread.h>
-#include <sched.h>
-#include <sys/prctl.h>
 #include <algorithm>
 #include <map>
 #include <utility>
@@ -1459,7 +1455,7 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
     return INTERNAL_ERROR;
   }
   if (label_index >= LabelNum()) {
-    GELOGE(INTERNAL_ERROR, "InitLabelSet: label index: %u >= label size: %zu.", label_index, LabelNum());
+    GELOGE(INTERNAL_ERROR, "InitLabelSet: label index: %u >= label size: %u.", label_index, LabelNum());
     return INTERNAL_ERROR;
   }
   if (label_id_indication_.count(label_index) > 0) {
@@ -2187,7 +2183,7 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
     void *mem_addr = data.second.GetBasicAddr();
     void *data_buf_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data_buf.data));
     uint64_t data_buf_length = data_buf.length;
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%lu type[F] input[%lu] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
+    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] input[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
            runtime_param_.graph_id, data.first, mem_addr, data_buf_addr, data_size, data_buf_length);
     GE_CHK_RT_RET(rtMemcpy(mem_addr, data_size, data_buf_addr, data_buf_length, kind));
   }
@@ -2552,10 +2548,10 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
     if (is_dynamic_) {
       GELOGI("No need to check output data size.");
     } else if (buffer.length < mem_size) {
-      GELOGE(FAILED, "Tensor data size=%lu, buffer size=%u", mem_size, buffer.length);
+      GELOGE(FAILED, "Tensor data size=%lu, buffer size=%lu", mem_size, buffer.length);
       return FAILED;
     } else if (buffer.length > mem_size) {
-      GELOGW("Tensor data size=%lu, buffer size=%u", mem_size, buffer.length);
+      GELOGW("Tensor data size=%lu, buffer size=%lu", mem_size, buffer.length);
     }
     int64_t data_size = output.second.GetDataSize();
 
@@ -2566,7 +2562,7 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
     uint64_t buffer_length = buffer.length;
     void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data));
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%ld] datasize[%u]",
+    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%lu] datasize[%lu]",
            runtime_param_.graph_id, output.first, output.second.GetBasicAddr(), data_size, buffer_length);
     GE_CHK_RT_RET(rtMemcpy(buffer_addr, buffer_length, output.second.GetBasicAddr(), data_size, kind));
     idx++;
@@ -2982,7 +2978,7 @@ void DavinciModel::UnbindTaskSinkStream() {
 Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs) {
   GELOGI("DavinciModel::CreateKnownZeroCopyMap in.");
   if (inputs.size() > data_op_list_.size()) {
-    GELOGE(FAILED, "input data addr %u should less than input op number %u.", inputs.size(), data_op_list_.size());
+    GELOGE(FAILED, "input data addr %zu should less than input op number %zu.", inputs.size(), data_op_list_.size());
     return FAILED;
   }
   // remove zero copy addr in last iteration
@@ -2991,16 +2987,16 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
   for (size_t i = 0; i < inputs.size(); ++i) {
     const vector<void *> addr_list = ModelUtils::GetOutputDataAddrs(runtime_param_, data_op_list_[i]);
     knonw_input_data_info_[addr_list[kDataIndex]] = inputs[i];
-    GELOGI("DavinciModel::CreateKnownZeroCopyMap input %d,v addr %p,p addr %p .", i, addr_list[kDataIndex], inputs[i]);
+    GELOGI("DavinciModel::CreateKnownZeroCopyMap input %zu,v addr %p,p addr %p .", i, addr_list[kDataIndex], inputs[i]);
   }
   if (output_op_list_.size() < kOutputNum) {
-    GELOGW("output op num in graph is %u.", output_op_list_.size());
+    GELOGW("output op num in graph is %zu.", output_op_list_.size());
     return SUCCESS;
   }
   const vector<void *> addr_list = ModelUtils::GetInputDataAddrs(runtime_param_, output_op_list_[kDataIndex]);
   for (size_t i = 0; i < addr_list.size() && i < outputs.size(); ++i) {
     knonw_output_data_info_[addr_list[i]] = outputs[i];
-    GELOGI("DavinciModel::CreateKnownZeroCopyMap output %d,v addr %p,p addr %p .", i, addr_list[i], outputs[i]);
+    GELOGI("DavinciModel::CreateKnownZeroCopyMap output %zu,v addr %p,p addr %p .", i, addr_list[i], outputs[i]);
   }
   GELOGI("DavinciModel::CreateKnownZeroCopyMap success.");
   return SUCCESS;
@@ -3010,13 +3006,13 @@ Status DavinciModel::UpdateKnownZeroCopyAddr() {
   for (size_t i = 0; i < total_io_addrs_.size(); ++i) {
     auto it_in = knonw_input_data_info_.find(total_io_addrs_[i]);
     if (it_in != knonw_input_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %d,v addr %p,p addr %p .", i, total_io_addrs_[i],
+      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
              knonw_input_data_info_.at(total_io_addrs_[i]));
       total_io_addrs_[i] = knonw_input_data_info_.at(total_io_addrs_[i]);
     }
     auto it_out = knonw_output_data_info_.find(total_io_addrs_[i]);
     if (it_out != knonw_output_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %d,v addr %p,p addr %p .", i, total_io_addrs_[i],
+      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
              knonw_output_data_info_.at(total_io_addrs_[i]));
       total_io_addrs_[i] = knonw_output_data_info_.at(total_io_addrs_[i]);
     }
@@ -3037,7 +3033,7 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
       if (task != nullptr) {
         Status ret = task->UpdateArgs();
         if (ret != SUCCESS) {
-          GELOGE(FAILED, "task %d created by davinci model is nullptr.", task_index);
+          GELOGE(FAILED, "task %zu created by davinci model is nullptr.", task_index);
           return FAILED;
         }
       }
@@ -3066,7 +3062,7 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
 }
 
 Status DavinciModel::InitTaskInfo(domi::ModelTaskDef &model_task_def) {
-  GELOGI("InitTaskInfo in, task size %zu", model_task_def.task().size());
+  GELOGI("InitTaskInfo in, task size %d", model_task_def.task().size());
   task_list_.resize(model_task_def.task_size());
   for (int i = 0; i < model_task_def.task_size(); ++i) {
     // dynamic shape will create task_list_ before
@@ -3142,8 +3138,9 @@ Status DavinciModel::DistributeTask() {
 
   task_desc_info_.clear();
   bool flag = GetL1FusionEnableOption();
-  char *skt_enable_env = std::getenv("SKT_ENABLE");
-  int64_t env_flag = (skt_enable_env != nullptr) ? std::strtol(skt_enable_env, nullptr, kDecimal) : 0;
+  char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
+  int64_t env_flag = (res == EN_OK) ? std::strtol(skt_enable_env, nullptr, kDecimal) : 0;
   if (env_flag != 0) {
     flag = true;
   }
@@ -3331,7 +3328,7 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
 
   if (input_size > op_size) {
     GELOGW(
-        "Input size [%u] is bigger than om size need [%u], "
+        "Input size [%ld] is bigger than om size need [%ld], "
         "MAY cause inference result ERROR, please check model input",
         input_size, op_size);
   }
@@ -3413,7 +3410,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
 
   for (const auto &data : data_info) {
     if (data.first >= blobs.size()) {  // check data index.
-      GELOGE(FAILED, "Verify %s data num failed: can not find No.%zu data, because user only feeds %zu",
+      GELOGE(FAILED, "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
              input_or_output.c_str(), data.first, blobs.size());
       return FAILED;
     }
@@ -3522,7 +3519,7 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
 
   GeTensor *tensor = const_cast<GeTensor *>(v_weights[0].get());
   GE_IF_BOOL_EXEC(static_cast<size_t>(v_output_size[0]) < tensor->GetData().size(),
-                  GELOGE(PARAM_INVALID, "output size:%u less than weight data size:%zu", v_output_size[0],
+                  GELOGE(PARAM_INVALID, "output size:%ld less than weight data size:%zu", v_output_size[0],
                          tensor->GetData().size());
                   return PARAM_INVALID;);
 
@@ -3546,12 +3543,12 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
     uint64_t offset = static_cast<uint64_t>(elem_num * kBytes);
 
     uint64_t hbm_raw_data_base_addr =
-        reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_output_addr[0])) + offset;
+        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_output_addr[0])) + offset;
     for (int64_t i = elem_num - 1; i >= 0; --i) {
       buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
     }
   }
-  GELOGI("[IMAS]InitConstant memcpy graph_%u type[V] name[%s] output[%d] memaddr[%p] mem_size[%u] datasize[%zu]",
+  GELOGI("[IMAS]InitConstant memcpy graph_%u type[V] name[%s] output[%d] memaddr[%p] mem_size[%lu] datasize[%zu]",
          runtime_param_.graph_id, op_desc->GetName().c_str(), 0, v_output_addr[0], v_output_size[0],
          tensor->GetData().size());
   GE_CHK_RT_RET(rtMemcpy(v_output_addr[0], v_output_size[0], tensor->GetData().data(), tensor->GetData().size(),
@@ -3906,7 +3903,9 @@ Status DavinciModel::InitEntryTask() {
 uint8_t *DavinciModel::MallocFeatureMapMem(size_t data_size) {
   uint8_t *mem_base = nullptr;
   const string purpose("feature map,used for op input and output.");
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
+  if (res == EN_OK) {
     data_size = static_cast<size_t>(VarManager::Instance(session_id_)->GetGraphMemoryMaxSize());
     string memory_key = std::to_string(0) + "_f";
     mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, memory_key, data_size, GetDeviceId());
@@ -3936,7 +3935,9 @@ uint8_t *DavinciModel::MallocP2PMem(size_t p2p_data_size) {
 uint8_t *DavinciModel::MallocWeightsMem(size_t weights_size) {
   uint8_t *weights_mem_base = nullptr;
   const string purpose("weights memory in inference network.");
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
+  if (res == EN_OK) {
     string weight_memory_key = std::to_string(0) + "_w";
     weights_mem_base =
         MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, weight_memory_key, weights_size, GetDeviceId());
@@ -3947,7 +3948,9 @@ uint8_t *DavinciModel::MallocWeightsMem(size_t weights_size) {
 }
 
 void DavinciModel::FreeFeatureMapMem() {
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr && is_inner_mem_base_) {
+  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
+  if (res == EN_OK && is_inner_mem_base_) {
     string weight_memory_key = std::to_string(0) + "_f";
     if (MemManager::Instance(RT_MEMORY_HBM)->GetMemoryAddr(weight_memory_key) != nullptr) {
       GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(weight_memory_key, GetDeviceId()),
@@ -3979,7 +3982,9 @@ void DavinciModel::FreeP2PMem() {
 }
 
 void DavinciModel::FreeWeightsMem() {
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
+  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
+  if (res == EN_OK) {
     string memory_key = std::to_string(0) + "_w";
     if (MemManager::Instance(RT_MEMORY_HBM)->GetMemoryAddr(memory_key) != nullptr) {
       GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(memory_key, GetDeviceId()),
@@ -4160,7 +4165,7 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, std::vector<Input
 
   vector<std::string> inputs;
   if (AttrUtils::GetListStr(data_op, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
-    GELOGI("GetAllAippInputOutputDims: Data: %s has %u related aippInfo.", data_op->GetName().c_str(), inputs.size());
+    GELOGI("GetAllAippInputOutputDims: Data: %s has %zu related aippInfo.", data_op->GetName().c_str(), inputs.size());
     for (auto it : inputs) {
       InputOutputDims input_info;
       ParseAIPPInfo(it, input_info);
@@ -4171,7 +4176,7 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, std::vector<Input
       int64_t data_input_size;
       (void)TensorUtils::GetSize(*(data_op->GetInputDescPtr(kDataIndex)), data_input_size);
       GELOGD(
-          "GetAllAippInputOutputDims related Data[%d]: tensor_name is %s, dim_num is %u, tensor_size: %zu, format: "
+          "GetAllAippInputOutputDims related Data[%d]: tensor_name is %s, dim_num is %zu, tensor_size: %zu, format: "
           "%s, data_type: %s, shape: %s .",
           index, data_op->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
           TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),

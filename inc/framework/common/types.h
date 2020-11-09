@@ -18,7 +18,6 @@
 #define INC_FRAMEWORK_COMMON_TYPES_H_
 
 #include <limits.h>
-#include <linux/limits.h>
 #include <stdint.h>
 #include <algorithm>
 #include <map>
@@ -529,7 +528,7 @@ REGISTER_OPTYPE_DECLARE(HVDWAIT, "HorovodWait");
 // aicpu op for online_infer dynamic_dims
 REGISTER_OPTYPE_DECLARE(GETDYNAMICDIMS, "GetDynamicDims");
 
-enum InputMode { INPUT = 0, CONST };
+enum InputMode { INPUT = 0, CONST_INPUT};
 
 // Definition of the processing status enum of the process module
 enum ModelProcessState {

@@ -393,7 +393,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
       GELOGE(INTERNAL_ERROR, "ReadProtoFromArray failed.");
       return INTERNAL_ERROR;
     }
-    GELOGI("TASK_INFO op_size:%zu, stream_num:%u", task->op().size(), task->stream_num());
+    GELOGI("TASK_INFO op_size:%d, stream_num:%u", task->op().size(), task->stream_num());
   }
   model_->SetModelTaskDef(task);
   return SUCCESS;

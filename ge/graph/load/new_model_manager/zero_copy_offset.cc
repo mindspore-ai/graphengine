@@ -69,7 +69,7 @@ Status ZeroCopyOffset::InitInputDataInfo(const vector<int64_t> &output_size_list
         uint64_t out_offset =
             reinterpret_cast<uint64_t>(virtual_addr_list[kDataIndex]) + zero_copy_relative_offset_.at(index);
         int64_t real_data_size = ModelUtils::GetOutputSize(op_desc).at(kDataIndex);
-        data_info_.emplace_back(real_data_size, reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(out_offset)));
+        data_info_.emplace_back(real_data_size, reinterpret_cast<void *>(static_cast<uintptr_t>(out_offset)));
         relative_offset_.emplace_back(zero_copy_relative_offset_.at(index));
         GELOGI("[ZCPY] virtual_addr: %p has been l2-fusion to %lu, need copy data_size is %ld.", basic_addr_,
                out_offset, real_data_size);
@@ -119,7 +119,7 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
         in_count++;
         uint64_t in_offset = reinterpret_cast<uint64_t>(virtual_addr_list[idx]) + zero_copy_relative_offset_.at(index);
         int64_t real_data_size = ModelUtils::GetInputSize(op_desc).at(idx);
-        data_info_.emplace_back(real_data_size, reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(in_offset)));
+        data_info_.emplace_back(real_data_size, reinterpret_cast<void *>(static_cast<uintptr_t>(in_offset)));
         relative_offset_.emplace_back(zero_copy_relative_offset_.at(index));
         GELOGI("[ZCPY] virtual_addr: %p has been l2-fusion from %lu, need copy data_size is %ld.", basic_addr_,
                in_offset, real_data_size);

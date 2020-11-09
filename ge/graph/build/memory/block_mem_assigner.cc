@@ -1102,7 +1102,7 @@ bool IsAtomicOutputMemory(const ge::NodePtr &node, uint32_t output_index, bool i
       if (static_cast<uint32_t>(index) == output_index) {
         if (node->GetOwnerComputeGraph() != nullptr) {
           string graph_name = node->GetOwnerComputeGraph()->GetName();
-          GELOGD("[IMAS]Atomic no assign %s name[%s] output[%d] streamid[%ld].", graph_name.c_str(),
+          GELOGD("[IMAS]Atomic no assign %s name[%s] output[%ld] streamid[%ld].", graph_name.c_str(),
                  op_desc->GetName().c_str(), index, op_desc->GetStreamId());
         }
         return true;
@@ -1219,7 +1219,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   int64_t stream_id = op_desc->GetStreamId();
   vector<int64_t> memorys_type;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, memorys_type);
-  GELOGI("Assign memory node[%s], output size[%d], output memory type size[%d]", op_desc->GetName().c_str(),
+  GELOGI("Assign memory node[%s], output size[%zu], output memory type size[%zu]", op_desc->GetName().c_str(),
          op_desc->GetOutputsSize(), memorys_type.size());
   if (has_mem_type_attr && (memorys_type.size() != op_desc->GetOutputsSize())) {
     GELOGE(INTERNAL_ERROR, "fusion: node[%s], output memory size err[outputsize:%zu, memorysize:%zu]",
@@ -1257,7 +1257,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     // fusion: other type's size not means malloc HBM memory
     bool l1_flag = has_mem_type_attr && memorys_type[i] == RT_MEMORY_L1;
     if (l1_flag) {
-      GELOGI("fusion: node[%s], output[%s], output memory type [%d]",
+      GELOGI("fusion: node[%s], output[%s], output memory type [%ld]",
              op_desc->GetName().c_str(), op_desc->GetOutputNameByIndex(i).c_str(), memorys_type[i]);
       size = 0;
     }
@@ -1350,7 +1350,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
       bool workspace_skip_flag = false;
       if (has_tvm_workspace_mem_type_attr && tvm_workspace_memory_type[i] == RT_MEMORY_L1) {
         GELOGI(
-            "fusion: node[%s]workspace index[%d] is not hbm type, add to zero_memory_list, workspace memory type [%ld]",
+            "fusion: node[%s]workspace index[%zu] is not hbm type, add to zero_memory_list, workspace memory type [%ld]",
             node_op_desc->GetName().c_str(), i, tvm_workspace_memory_type[i]);
         workspace_skip_flag = true;
       }

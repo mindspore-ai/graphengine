@@ -456,7 +456,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
               output_list.at(peer_out_data_anchor->GetIdx()) - continuous_mem_start + tensor_desc_size + MEM_ALIGN_SIZE;
         }
         GELOGI(
-            "[IMAS]Check Continuous input : Set %s name[%s] output[%d] offset to [%zu] stream_id[%ld] size[%zu] "
+            "[IMAS]Check Continuous input : Set %s name[%s] output[%d] offset to [%ld] stream_id[%ld] size[%u] "
             "real_size[%u].",
             node->GetOwnerComputeGraph()->GetName().c_str(), peer_op_desc->GetName().c_str(),
             peer_out_data_anchor->GetIdx(), output_list.at(peer_out_data_anchor->GetIdx()), peer_op_desc->GetStreamId(),

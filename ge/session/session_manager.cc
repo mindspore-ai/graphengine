@@ -61,7 +61,7 @@ Status SessionManager::SetRtContext(SessionId session_id, rtContext_t rt_context
 
 Status SessionManager::CreateSession(const std::map<std::string, std::string> &options, SessionId &session_id) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionId next_session_id = 0;
@@ -92,7 +92,7 @@ Status SessionManager::CreateSession(const std::map<std::string, std::string> &o
 
 Status SessionManager::DestroySession(SessionId session_id) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   std::lock_guard<std::mutex> lock(mutex_);
@@ -119,7 +119,7 @@ Status SessionManager::DestroySession(SessionId session_id) {
 
 Status SessionManager::GetVariable(SessionId session_id, const std::string &name, Tensor &val) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -143,7 +143,7 @@ Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const G
 Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const Graph &graph,
                                 const std::map<std::string, std::string> &options) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -203,7 +203,7 @@ Status SessionManager::AddGraphWithCopy(SessionId session_id, uint32_t graph_id,
 Status SessionManager::RunGraph(SessionId session_id, uint32_t graph_id, const std::vector<Tensor> &inputs,
                                 std::vector<Tensor> &outputs) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -221,7 +221,7 @@ Status SessionManager::RunGraph(SessionId session_id, uint32_t graph_id, const s
 
 Status SessionManager::RemoveGraph(SessionId session_id, uint32_t graph_id) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -239,7 +239,7 @@ Status SessionManager::RemoveGraph(SessionId session_id, uint32_t graph_id) {
 
 bool SessionManager::HasSession(SessionId session_id) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return false;
   }
   return session_manager_map_.find(session_id) != session_manager_map_.end();
@@ -247,7 +247,7 @@ bool SessionManager::HasSession(SessionId session_id) {
 
 Status SessionManager::GetNextSessionId(SessionId &next_session_id) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   static SessionId session_id = 0;
@@ -260,7 +260,7 @@ Status SessionManager::RegisterCallBackFunc(
     SessionId session_id, const std::string &key,
     const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -278,7 +278,7 @@ Status SessionManager::RegisterCallBackFunc(
 
 Status SessionManager::BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -297,7 +297,7 @@ Status SessionManager::BuildGraph(SessionId session_id, uint32_t graph_id, const
 Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id,
                                      const std::vector<InputTensorInfo> &inputs, RunAsyncCallback callback) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -317,7 +317,7 @@ Status SessionManager::GetVariables(SessionId session_id, const std::vector<std:
                                     std::vector<Tensor> &var_values) {
   // step 0: init session manager
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;
@@ -383,7 +383,7 @@ Status SessionManager::GetVariables(SessionId session_id, const std::vector<std:
 
 bool SessionManager::IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return true;
   }
   SessionPtr innerSession = nullptr;

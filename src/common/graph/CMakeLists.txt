@@ -22,7 +22,7 @@ file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
 	"../../proto/ge_ir.proto"
 	"../../proto/insert_op.proto"
 	"../../proto/task.proto"
-	"../../proto/fwk_adaper.proto"
+	"../../proto/fwk_adapter.proto"
 	"../../proto/op_mapping_info.proto"
 	"../../proto/dump_task.proto"
 	"../../proto/onnx.proto"

@@ -201,6 +201,10 @@ DEFINE_string(op_compiler_cache_dir, "", "Optional; the path to cache operator c
 
 DEFINE_string(op_compiler_cache_mode, "", "Optional; choose the operator compiler cache mode");
 
+DEFINE_string(mdl_bank_path, "", "Optional; model bank path");
+
+DEFINE_string(op_bank_path, "", "Optional; op bank path");
+
 class GFlagUtils {
  public:
   /**
@@ -1013,6 +1017,8 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::DEBUG_DIR, FLAGS_debug_dir);
   options.emplace(ge::OP_COMPILER_CACHE_DIR, FLAGS_op_compiler_cache_dir);
   options.emplace(ge::OP_COMPILER_CACHE_MODE, FLAGS_op_compiler_cache_mode);
+  options.emplace(ge::MDL_BANK_PATH_FLAG, FLAGS_mdl_bank_path);
+  options.emplace(ge::OP_BANK_PATH_FLAG, FLAGS_op_bank_path);
 }
 
 domi::Status GenerateSingleOp(const std::string& json_file_path) {
@@ -1166,6 +1172,10 @@ domi::Status GenerateOmModel() {
   }
 
   options.insert(std::pair<string, string>(string(ge::OP_DEBUG_LEVEL), to_string(FLAGS_op_debug_level)));
+
+  options.insert(std::pair<string, string>(string(ge::MDL_BANK_PATH_FLAG), FLAGS_mdl_bank_path));
+
+  options.insert(std::pair<string, string>(string(ge::OP_BANK_PATH_FLAG), FLAGS_op_bank_path));
   // set enable scope fusion passes
   SetEnableScopeFusionPasses(FLAGS_enable_scope_fusion_passes);
   // print atc option map

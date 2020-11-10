@@ -44,6 +44,8 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
   uint8_t *src_;
   uint64_t count_;
   uint32_t kind_;
+  OpDescPtr op_desc_;
+  int64_t fixed_addr_offset_;
   DavinciModel *davinci_model_ = nullptr;
   uint32_t args_offset_ = 0;
   domi::MemcpyAsyncDef memcpy_async_;

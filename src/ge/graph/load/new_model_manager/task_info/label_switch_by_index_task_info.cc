@@ -144,7 +144,7 @@ Status LabelSwitchByIndexTaskInfo::CalculateArgs(const domi::TaskDef &task_def, 
     GELOGE(FAILED, "Label switch op only have one data input. Now input size is %zu", op_desc->GetInputsSize());
     return FAILED;
   }
-  string input_tensor_name = op_desc->GetInputNameByIndex(0);
+  string input_tensor_name = op_desc->GetName();
   fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(input_tensor_name);
   auto tensor_desc = op_desc->GetInputDesc(0);
   int64_t tensor_size = 0;

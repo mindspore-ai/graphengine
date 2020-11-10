@@ -116,13 +116,13 @@ RTS_API rtError_t rtEventGetTimeStamp(uint64_t *time, rtEvent_t event);
 /**
  * @ingroup dvrt_event
  * @brief name an event
- * @param [in] event_  event to be named
+ * @param [in] event  event to be named
  * @param [in] name  identification name
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input of event, name
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtNameEvent(rtEvent_t event_, const char *name);
+RTS_API rtError_t rtNameEvent(rtEvent_t event, const char *name);
 
 /**
  * @ingroup dvrt_event
@@ -132,7 +132,7 @@ RTS_API rtError_t rtNameEvent(rtEvent_t event_, const char *name);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNotifyCreate(int32_t device_id, rtNotify_t *notify_);
+RTS_API rtError_t rtNotifyCreate(int32_t deviceId, rtNotify_t *notify);
 
 /**
  * @ingroup dvrt_event
@@ -142,7 +142,7 @@ RTS_API rtError_t rtNotifyCreate(int32_t device_id, rtNotify_t *notify_);
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtNotifyDestroy(rtNotify_t notify_);
+RTS_API rtError_t rtNotifyDestroy(rtNotify_t notify);
 
 /**
  * @ingroup dvrt_event
@@ -153,7 +153,7 @@ RTS_API rtError_t rtNotifyDestroy(rtNotify_t notify_);
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
  */
-RTS_API rtError_t rtNotifyRecord(rtNotify_t notify_, rtStream_t stream_);
+RTS_API rtError_t rtNotifyRecord(rtNotify_t notify, rtStream_t stream);
 
 /**
  * @ingroup dvrt_event
@@ -164,7 +164,7 @@ RTS_API rtError_t rtNotifyRecord(rtNotify_t notify_, rtStream_t stream_);
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
  */
-RTS_API rtError_t rtNotifyWait(rtNotify_t notify_, rtStream_t stream_);
+RTS_API rtError_t rtNotifyWait(rtNotify_t notify, rtStream_t stream);
 
 /**
  * @ingroup dvrt_event
@@ -174,7 +174,7 @@ RTS_API rtError_t rtNotifyWait(rtNotify_t notify_, rtStream_t stream_);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNameNotify(rtNotify_t notify_, const char *name);
+RTS_API rtError_t rtNameNotify(rtNotify_t notify, const char *name);
 
 /**
  * @ingroup dvrt_event
@@ -184,7 +184,7 @@ RTS_API rtError_t rtNameNotify(rtNotify_t notify_, const char *name);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetNotifyID(rtNotify_t notify_, uint32_t *notify_id);
+RTS_API rtError_t rtGetNotifyID(rtNotify_t notify, uint32_t *notify_id);
 
 /**
  * @ingroup dvrt_event
@@ -199,7 +199,7 @@ RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char *name, uint32_t len
 /**
  * @ingroup dvrt_event
  * @brief Open IPC notify
- * @param [in] notify notify to be opened
+ * @param [out] notify the opened notify
  * @param [in] name   identification name
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input

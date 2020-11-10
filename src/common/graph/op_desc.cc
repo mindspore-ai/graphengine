@@ -20,6 +20,7 @@
 #include "external/graph/operator.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/util/error_manager/error_manager.h"
+#include "graph/common_error_codes.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_tensor.h"
 #include "graph/operator_factory_impl.h"
@@ -1406,4 +1407,17 @@ OpDesc::GetSubgraphNameByInstanceName(const std::string &instance_name, std::str
   return GRAPH_PARAM_INVALID;
 }
 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus OpDesc::InferDataSlice() {
+  if (infer_data_slice_func_ == nullptr) {
+    infer_data_slice_func_ = OperatorFactoryImpl::GetInferDataSliceFunc(GetType());
+    if (infer_data_slice_func_ == nullptr) {
+      GELOGW("%s does not have infer data slice func.", GetName().c_str());
+      return NO_DEPENDENCE_FUNC;
+    }
+  }
+  Operator op_proxy = ge::OpDescUtils::CreateOperatorFromOpDesc(shared_from_this());
+  graphStatus ret = (graphStatus)infer_data_slice_func_(op_proxy);
+  op_proxy.BreakConnect();
+  return ret;
+}
 }  // namespace ge

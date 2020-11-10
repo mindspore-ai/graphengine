@@ -778,7 +778,7 @@ REG_OP(Conv2DCompress)
 * With the format "HWCN" , the data is stored in the order of: [filter_height,
 * filter_width, in_channels / groups, out_channels].
 *@li offsets: A 4D tensor of x-y coordinates offset and mask. With the format
-* "NHWC", the data is stored in the order of: [batch, out_height, out_width,
+* "NHWC", the data is stored in the order of: [batch, in_height, in_width,
 * deformable_groups * filter_height * filter_width * 3].
 *@li bias: An optional 1D tensor of additive biases to the filter outputs.
 * The data is stored in the order of: [out_channels].
@@ -789,27 +789,30 @@ REG_OP(Conv2DCompress)
     | Tensor    | x       | filter  | offsets | bias     | y
     ------------|---------|---------|---------|----------|--------
     | Data Type | float16 | float16 | float16 | float16  | float16
+    |           |---------|---------|---------|----------|--------
+    |           | float32 | float32 | float32 | float32  | float32
     ------------|---------|---------|---------|----------|--------
     | Format    | NCHW    | NCHW    | NCHW    | ND       | NCHW
     |           | NHWC    | HWCN    | NHWC    |          | NHWC
 @endverbatim
+* For float32 type, the actual convolution calculation part on the chip is
+* based on float16.
 *\n
 *
 *@par Attributes:
 *@li strides: Required. A list of 4 integers. The stride of the sliding window
 * for each dimension of input. The dimension order is interpreted according to
-* the value of data_format. The N and C dimensions must be set to 1.
+* the data format of "x". The N and C dimensions must be set to 1.
 *@li pads: Required. A list of 4 integers. The number of pixels to add to each
 * (top, bottom, left, right) side of the input.
 *@li dilations: Optional. A list of 4 integers. The dilation factor for each
-* dimension of input. The dimension order is interpreted according to the value
-* of data_format The N and C dimensions must be set to 1. Defaults to
+* dimension of input. The dimension order is interpreted according to the data
+* format of "x". The N and C dimensions must be set to 1. Defaults to
 * [1, 1, 1, 1].
 *@li groups: Optional. An integer of type int32. The number of blocked
 * connections from input channels to output channels. In_channels and
 * out_channels must both be divisible by "groups". Defaults to 1.
-*@li data_format: Optional. An optional string from: "NHWC", "NCHW". Specify
-* the data format of the input and output data. Defaults to "NHWC".
+*@li data_format: Reserved.
 *@li deformable_groups: Optional. An integer of type int32. The number of
 * deformable group partitions. In_channels must be divisible by
 * "deformable_groups". Defaults to 1.
@@ -819,8 +822,8 @@ REG_OP(Conv2DCompress)
 *@verbatim
     | Name              | Field  | Scope
     --------------------|--------|----------------------------
-    | Input Image Size  | H      | [1, 100000 / H(filter)]
-    |                   | W      | [1, 4096 / W(filter)]
+    | Input Image Size  | H      | [1, 100000]
+    |                   | W      | [1, 4096]
     --------------------|--------|----------------------------
     | Filter Size       | H      | [1, 255]
     |                   | W      | [1, 255]
@@ -877,11 +880,11 @@ REG_OP(Conv2DCompress)
 *@li Compatible with the Mmcv operator "deform_conv".
 */
 REG_OP(DeformableConv2D)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(filter, TensorType({DT_FLOAT16}))
-    .INPUT(offsets, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -1400,14 +1403,13 @@ REG_OP(Conv2DTransposeD)
     .OP_END_FACTORY_REG(Conv2DTransposeD)
 
 /**
-*@brief In the deformable convolution operator, the original input FeatureMap is expanded to a ksize_y * H * ksize_x *W
-*FeatureMap by bilinear interpolation according to the offset offset.
+*@brief Computes the deformed convolution output with the expected input
 *@par Inputs:
  * Four inputs:
- * @li x: A Tensor of type float16
+ * @li x: A Tensor of type float16,float32
  * @li offsets: A Tensor of type float16,float32.Deformation offset parameter.
 *@par Required Attributes:
- * @li strides: A tuple/list of 2 integers.The stride of the sliding window for
+ * @li strides: A tuple/list of 4 integers.The stride of the sliding window for
  * height and width for H/W dimension.
  * @li pads: A tuple/list of 4 integers.Padding added to each dimension
  * of the input.
@@ -1415,20 +1417,20 @@ REG_OP(Conv2DTransposeD)
 *@par Attributes:
  * Three attributes:
  * @li dilations: A tuple/list of 4 integers, The dilation factor for each dimension
- * of input.  Defaults to [0, 0, 0, 0]
+ * of input.  Defaults to [1, 1, 1, 1]
  * @li data_format: An optional string from: "NCHW", "NHWC". Defaults to "NCHW". Specify the data format of the input x.
  * @li deformable_groups: Specify the c-axis grouping number of input x.
 *@par Outputs:
- * y: A Tensor. A Tensor of type float16.
+ * y: A Tensor. A Tensor of type float16, float32.
 */
 REG_OP(DeformableOffsets)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .REQUIRED_ATTR(ksize, ListInt)
-    .ATTR(dilations, ListInt, {0, 0, 0, 0})
+    .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(data_format, String, "NCHW")
     .ATTR(deformable_groups, Int, 1)
     .OP_END_FACTORY_REG(DeformableOffsets)

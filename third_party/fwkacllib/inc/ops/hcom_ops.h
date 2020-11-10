@@ -89,6 +89,10 @@ REG_OP(HcomAllReduce)
  * @par Attributes:
  * @li root_rank: A required integer identifying the root rank in the op
   input of this rank will be broadcast to other ranks.
+ * @li fusion: A required integer identifying if the op need to fusion,the 
+  default value is none fusion
+  * @li fusion: A required integer identifying the fusion id if para fusion
+  is set.
  * @li group: A required string identifying the group name of ranks
   participating in the op.
  * @par Outputs:
@@ -103,6 +107,8 @@ REG_OP(HcomBroadcast)
     .DYNAMIC_OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
     .REQUIRED_ATTR(root_rank, Int)
     .REQUIRED_ATTR(group, String)
+    .ATTR(fusion, Int, 0)
+    .ATTR(fusion_id, Int, -1)
     .ATTR(alpha, Float, 1.0)
     .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomBroadcast)
@@ -213,6 +219,14 @@ REG_OP(HcomRemoteRead)
     .REQUIRED_ATTR(dtype, Type)
     .OP_END_FACTORY_REG(HcomRemoteRead)
 
+REG_OP(HcomRemoteRefRead)
+    .INPUT(remote, TensorType({DT_UINT64}))
+    .INPUT(cache_var, TensorType({DT_UINT64}))
+    .INPUT(local_offset, TensorType({DT_UINT64}))
+    .OUTPUT(cache_var, TensorType({DT_UINT64})) 
+    .REQUIRED_ATTR(dtype, Type)
+    .OP_END_FACTORY_REG(HcomRemoteRefRead)
+
 /**
  * @brief Performs Remote Write of input tensors
  * @par Inputs:
@@ -224,6 +238,12 @@ REG_OP(HcomRemoteWrite)
     .INPUT(remote, TensorType({DT_INT64, DT_UINT64}))
     .INPUT(local, TensorType::ALL())
     .OP_END_FACTORY_REG(HcomRemoteWrite)
+
+REG_OP(HcomRemoteScatterWrite)
+    .INPUT(remote, TensorType({DT_INT64, DT_UINT64}))
+    .INPUT(local, TensorType::ALL())
+    .OPTIONAL_INPUT(local_offset, TensorType({DT_UINT64}))
+    .OP_END_FACTORY_REG(HcomRemoteScatterWrite)
 
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_

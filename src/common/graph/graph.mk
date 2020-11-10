@@ -66,13 +66,14 @@ COMMON_LOCAL_C_INCLUDES := \
     third_party/protobuf/include \
     libc_sec/include \
     ops/built-in/op_proto/inc \
+    cann/ops/built-in/op_proto/inc \
 
 
 #compiler for host
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2 -Dgoogle=ascend_private
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
@@ -80,7 +81,7 @@ LOCAL_SRC_FILES  := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
-    libprotobuf   \
+    libascend_protobuf   \
     libslog       \
     liberror_manager \
 
@@ -148,14 +149,14 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS += -O2
+LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
-    libprotobuf   \
+    libascend_protobuf   \
     libslog       \
     liberror_manager \
 
@@ -234,14 +235,14 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS +=
+LOCAL_CFLAGS += -Dgoogle=ascend_private
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
-    libprotobuf   \
+    libascend_protobuf   \
     libslog       \
     liberror_manager \
 
@@ -257,14 +258,14 @@ include $(BUILD_LLT_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2 -Dgoogle=ascend_private
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := \
-    libprotobuf   \
+    libascend_protobuf   \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \
@@ -282,13 +283,13 @@ include $(BUILD_HOST_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS += -O2
+LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := \
-    libprotobuf   \
+    libascend_protobuf   \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec      \

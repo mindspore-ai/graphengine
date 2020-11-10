@@ -709,14 +709,10 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
     GELOGE(RT_FAILED, "rtGetRtCapability failed.");
     return RT_FAILED;
   } else {
-    if (value == RT_CAPABILITY_SUPPORT) {
-      GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
-      MemcpyAddrAsyncPass memcpy_addr;
-      GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph_), "Add memcpy_addr_async node failed.");
-      GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
-    } else {
-      GELOGW("rtGetRtCapability not support memcpy_addr_async.");
-    }
+    GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
+    MemcpyAddrAsyncPass memcpy_addr;
+    GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph_), "Add memcpy_addr_async node failed.");
+    GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
   }
 
   GE_TIMESTAMP_START(AssignMemory);

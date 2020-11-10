@@ -82,7 +82,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_common
 
 LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2 -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 else
@@ -105,7 +105,7 @@ LOCAL_C_INCLUDES := $(GE_COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES := $(GE_COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
-    libprotobuf \
+    libascend_protobuf \
     libc_sec \
     libslog \
     libmmpa \
@@ -123,7 +123,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_common
 
 LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2  -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 else
@@ -146,7 +146,7 @@ LOCAL_C_INCLUDES := $(GE_COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES := $(GE_COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
-    libprotobuf \
+    libascend_protobuf \
     libc_sec \
     libslog \
     libmmpa \
@@ -169,7 +169,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_common
 
 LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2  -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 endif
@@ -192,7 +192,7 @@ LOCAL_SRC_FILES := $(GE_COMMON_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := \
     libgraph     \
-    libprotobuf  \
+    libascend_protobuf  \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
@@ -211,7 +211,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_common
 
 LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2  -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 endif
@@ -233,7 +233,7 @@ LOCAL_SRC_FILES := $(GE_COMMON_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := \
     libgraph     \
-    libprotobuf  \
+    libascend_protobuf  \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \

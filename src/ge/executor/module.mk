@@ -82,7 +82,7 @@ local_ge_executor_c_include :=             \
     third_party/json/include               \
 
 local_ge_executor_shared_library :=        \
-    libprotobuf                            \
+    libascend_protobuf                            \
     libc_sec                               \
     libge_common                           \
     libruntime                             \
@@ -101,7 +101,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2 -DDAVINCI_SUPPORT_PROFILING
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 
 LOCAL_SRC_FILES := $(local_ge_executor_src_files)
 LOCAL_C_INCLUDES := $(local_ge_executor_c_include)
@@ -127,7 +127,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 else
@@ -139,7 +139,7 @@ LOCAL_SRC_FILES := $(local_ge_executor_src_files)
 LOCAL_C_INCLUDES := $(local_ge_executor_c_include)
 
 LOCAL_SHARED_LIBRARIES :=                  \
-    libprotobuf                            \
+    libascend_protobuf                            \
     libc_sec                               \
     libge_common                           \
     libruntime                             \
@@ -163,7 +163,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 else
@@ -178,7 +178,7 @@ LOCAL_STATIC_LIBRARIES := \
     libge_common \
     libgraph     \
     libregister  \
-    libprotobuf  \
+    libascend_protobuf  \
 
 LOCAL_SHARED_LIBRARIES :=                  \
     libc_sec                               \
@@ -196,7 +196,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 else
@@ -210,7 +210,7 @@ LOCAL_STATIC_LIBRARIES := \
     libge_common \
     libgraph     \
     libregister  \
-    libprotobuf  \
+    libascend_protobuf  \
 
 LOCAL_SHARED_LIBRARIES :=                  \
     libc_sec                               \

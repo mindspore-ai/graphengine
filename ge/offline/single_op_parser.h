@@ -33,6 +33,7 @@ struct SingleOpTensorDesc {
   std::vector<std::vector<int64_t>> dim_ranges;
   ge::Format format = ge::FORMAT_RESERVED;
   ge::DataType type = ge::DT_UNDEFINED;
+  std::string dynamic_input_name;
 };
 
 struct SingleOpAttr {
@@ -70,6 +71,7 @@ class SingleOpParser {
   static bool Validate(const SingleOpDesc &op_desc);
   static std::unique_ptr<OpDesc> CreateOpDesc(const std::string &op_type);
   static Status ConvertToBuildParam(int index, const SingleOpDesc &single_op_desc, SingleOpBuildParam &build_param);
+  static Status UpdateDynamicTensorName(std::vector<SingleOpTensorDesc> &desc);
   static Status VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc);
   static Status SetShapeRange(const std::string &op_name,
                               const SingleOpTensorDesc &tensor_desc,

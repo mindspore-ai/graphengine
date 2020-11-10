@@ -144,12 +144,12 @@ RTS_API rtError_t rtNameStream(rtStream_t stream_, const char *name);
  * @param [in] ptr  Determine the address where the value of the true and false branches is located
  * @param [in] condition switch condition
  * @param [in] value  switch value
- * @param [in] true_stream  Stream that needs to be activated when the value is non-zero
+ * @param [in] trueStream  Stream that needs to be activated when the value is non-zero
  * @param [in] stream input stream to init task
  * @return RT_ERROR_NONE for complete
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t value, rtStream_t true_stream,
+RTS_API rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t value, rtStream_t trueStream,
                                  rtStream_t stream);
 
 /**

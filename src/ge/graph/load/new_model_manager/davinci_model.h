@@ -836,7 +836,7 @@ class DavinciModel {
                              std::vector<ge::OutputTensorInfo> &outputs);
 
   void ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_info);
-  void GetFixedAddrAttr(const OpDescPtr &op_desc);
+  void SetLabelForDynamic(const NodePtr &node);
 
   bool is_model_has_inited_;
   uint32_t model_id_;

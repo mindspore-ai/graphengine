@@ -297,7 +297,7 @@ RTS_API rtError_t rtQueryFunctionRegistered(const char *stubName);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelConfigDump(uint32_t kind, uint32_t dumpSizePerBlock, uint32_t blockDim, void **dumpBaseAddr,
-                                     rtStream_t stream_);
+                                     rtStream_t stream);
 
 /**
  * @ingroup rt_kernel
@@ -309,7 +309,7 @@ RTS_API rtError_t rtKernelConfigDump(uint32_t kind, uint32_t dumpSizePerBlock, u
  * @param [in] smDesc   shared memory description
  * @param [in] stream   associated stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *args, uint32_t argsSize,
                                  rtSmDesc_t *smDesc, rtStream_t stream);
@@ -325,7 +325,7 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @param [in] stream   associated stream
  * @param [in] flag   dump flag
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim, void *args, uint32_t argsSize,
                                          rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
@@ -387,7 +387,7 @@ typedef void *rtModel_t;
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
- RTS_API rtError_t rtDumpAddrSet(rtModel_t model, void *addr , uint32_t dumpSize, uint32_t flag);
+ RTS_API rtError_t rtDumpAddrSet(rtModel_t model, void *addr, uint32_t dumpSize, uint32_t flag);
 
 /**
  * @ingroup rt_kernel
@@ -456,7 +456,7 @@ RTS_API rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_
  * @brief start fusion kernels.
  * @param [in] stream   stream for fusion kernels
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelFusionStart(rtStream_t stream);
 
@@ -465,7 +465,7 @@ RTS_API rtError_t rtKernelFusionStart(rtStream_t stream);
  * @brief end fusion kernels.
  * @param [in] stream   stream for fusion kernels
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input  
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelFusionEnd(rtStream_t stream);
 
@@ -474,7 +474,7 @@ RTS_API rtError_t rtKernelFusionEnd(rtStream_t stream);
  * @brief set kernelinfo callback
  * @param [in] callback
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input  
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtSetKernelReportCallback(rtKernelReportCallback callBack);
 
@@ -484,7 +484,7 @@ RTS_API rtError_t rtSetKernelReportCallback(rtKernelReportCallback callBack);
  * @param [in] threadId   thread id for stream
  * @param [in] stream   stream for subscribe
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stream);
 
@@ -495,7 +495,7 @@ RTS_API rtError_t rtSubscribeReport(uint64_t threadId, rtStream_t stream);
  * @param [in] fnData   user data
  * @param [in] stream   subscribed stream
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtStream_t stream, bool isBlock);
 
@@ -504,7 +504,7 @@ RTS_API rtError_t rtCallbackLaunch(rtCallback_t callBackFunc, void *fnData, rtSt
  * @brief process callback report.
  * @param [in] timeout   if timeout=-1, while(1); else timeout
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtProcessReport(int32_t timeout);
 
@@ -514,7 +514,7 @@ RTS_API rtError_t rtProcessReport(int32_t timeout);
  * @param [in] threadId   thread id for stream
  * @param [in] stream   stream for subscribe
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stream);
 
@@ -522,7 +522,7 @@ RTS_API rtError_t rtUnSubscribeReport(uint64_t threadId, rtStream_t stream);
  * @ingroup profiling_base
  * @brief start online prof.
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtStartOnlineProf(rtStream_t stream, uint32_t sampleNum);
 
@@ -530,7 +530,7 @@ RTS_API rtError_t rtStartOnlineProf(rtStream_t stream, uint32_t sampleNum);
  * @ingroup profiling_base
  * @brief stop online prof.
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtStopOnlineProf(rtStream_t stream);
 
@@ -538,9 +538,26 @@ RTS_API rtError_t rtStopOnlineProf(rtStream_t stream);
  * @ingroup profiling_base
  * @brief get online prof.
  * @return RT_ERROR_NONE for ok
- * @return RT_ERROR_INVALID_VALUE for error input 
+ * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetOnlineProfData(rtStream_t stream, rtProfDataInfo_t *pProfData, uint32_t profDataNum);
+
+/**
+ * @ingroup profiling_base
+ * @brief start mdc profiler.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStartMDCProfiler(void **addr, uint32_t length);
+
+/**
+ * @ingroup profiling_base
+ * @brief stop mdc profiler.
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtStopMDCProfiler(void *addr);
+
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif

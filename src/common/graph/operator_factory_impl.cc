@@ -23,6 +23,7 @@ shared_ptr<std::map<string, OpCreator>> OperatorFactoryImpl::operator_creators_;
 shared_ptr<std::map<string, InferShapeFunc>> OperatorFactoryImpl::operator_infershape_funcs_;
 shared_ptr<std::map<string, InferFormatFunc>> OperatorFactoryImpl::operator_inferformat_funcs_;
 shared_ptr<std::map<string, VerifyFunc>> OperatorFactoryImpl::operator_verify_funcs_;
+shared_ptr<std::map<string, InferDataSliceFunc>> OperatorFactoryImpl::operator_infer_data_slice_funcs_;
 
 Operator OperatorFactoryImpl::CreateOperator(const std::string &operator_name, const std::string &operator_type) {
   if (operator_creators_ == nullptr) {
@@ -94,6 +95,17 @@ VerifyFunc OperatorFactoryImpl::GetVerifyFunc(const std::string &operator_type) 
   return it->second;
 }
 
+InferDataSliceFunc OperatorFactoryImpl::GetInferDataSliceFunc(const std::string &operator_type) {
+  if (operator_infer_data_slice_funcs_ == nullptr) {
+    return nullptr;
+  }
+  auto it = operator_infer_data_slice_funcs_->find(operator_type);
+  if (it == operator_infer_data_slice_funcs_->end()) {
+    return nullptr;
+  }
+  return it->second;
+}
+
 graphStatus OperatorFactoryImpl::RegisterOperatorCreator(const string &operator_type, OpCreator const &op_creator) {
   if (operator_creators_ == nullptr) {
     operator_creators_.reset(new (std::nothrow) std::map<string, OpCreator>());
@@ -144,6 +156,20 @@ graphStatus OperatorFactoryImpl::RegisterVerifyFunc(const std::string &operator_
     return GRAPH_FAILED;
   }
   (void)operator_verify_funcs_->emplace(operator_type, verify_func);
+  return GRAPH_SUCCESS;
+}
+
+graphStatus OperatorFactoryImpl::RegisterInferDataSliceFunc(const std::string &operator_type,
+                                                            InferDataSliceFunc const infer_data_slice_func) {
+  if (operator_infer_data_slice_funcs_ == nullptr) {
+    GELOGI("operator_infer_data_slice_funcs_ init");
+    operator_infer_data_slice_funcs_.reset(new (std::nothrow) std::map<string, InferDataSliceFunc>());
+  }
+  auto it = operator_infer_data_slice_funcs_->find(operator_type);
+  if (it != operator_infer_data_slice_funcs_->end()) {
+    return GRAPH_FAILED;
+  }
+  (void)operator_infer_data_slice_funcs_->emplace(operator_type, infer_data_slice_func);
   return GRAPH_SUCCESS;
 }
 }  // namespace ge

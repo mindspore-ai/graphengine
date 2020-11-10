@@ -35,6 +35,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   kind_ = memcpy_async_.kind();
   dst_max_ = memcpy_async_.dst_max();
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async_.op_index());
+  op_desc_ = op_desc;
   if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async_.op_index());
     return INTERNAL_ERROR;
@@ -45,7 +46,8 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(src_) + sizeof(void *));
     // for zero copy
     kind_ = RT_MEMCPY_ADDR_DEVICE_TO_DEVICE;
-    GELOGI("MemcpyAsyncTaskInfo src_ %p, dst_ %p, args_offset %u.", src_, dst_, args_offset_);
+    GELOGI("MemcpyAsyncTaskInfo op name %s, src_ %p, dst_ %p, args_offset %u.", op_desc->GetName().c_str(), src_, dst_,
+           args_offset_);
     return SUCCESS;
   }
 
@@ -93,12 +95,23 @@ Status MemcpyAsyncTaskInfo::Distribute() {
 }
 
 Status MemcpyAsyncTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
+  GE_CHECK_NOTNULL(davinci_model);
+  OpDescPtr op_desc = davinci_model->GetOpByIndex(task_def.memcpy_async().op_index());
   // the num of src and dst size is 2
   uint32_t args_size = sizeof(void *) * 2;
   args_offset_ = davinci_model->GetTotalArgsSize();
   davinci_model->SetTotalArgsSize(args_size);
   davinci_model_ = davinci_model;
   GELOGI("MemcpyAsyncTaskInfo kernel args_size %u, args_offset %u", args_size, args_offset_);
+  string peer_input_name;
+  if (AttrUtils::GetStr(op_desc, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name) && !peer_input_name.empty()) {
+    uint32_t output_index = davinci_model->GetFixedAddrOutputIndex(peer_input_name);
+    fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(peer_input_name);
+    auto tensor_desc = op_desc->GetOutputDesc(output_index);
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
+    davinci_model->SetTotalFixedAddrsSize(peer_input_name, tensor_size);
+  }
   return SUCCESS;
 }
 
@@ -117,8 +130,12 @@ Status MemcpyAsyncTaskInfo::UpdateArgs() {
 
   vector<void *> io_addrs;
   io_addrs.emplace_back(reinterpret_cast<void *>(src_));
-  io_addrs.emplace_back(reinterpret_cast<void *>(dst_));
-
+  if (op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
+    void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
+    io_addrs.emplace_back(fixed_addr);
+  } else {
+    io_addrs.emplace_back(reinterpret_cast<void *>(dst_));
+  }
   davinci_model_->SetTotalIOAddrs(io_addrs);
 
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs success.");

@@ -52,7 +52,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_client
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1
+LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 endif
@@ -63,7 +63,7 @@ LOCAL_SRC_FILES := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
-    libprotobuf \
+    libascend_protobuf \
     libslog \
     libmmpa \
     libgraph \
@@ -88,7 +88,7 @@ LOCAL_MODULE := libge_client
 LOCAL_CFLAGS += -Werror
 LOCAL_CFLAGS += -DGOOGLE_PROTOBUF_NO_RTTI -DDEV_VISIBILITY
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0
-LOCAL_CFLAGS += -DOMG_DEVICE_VERSION  -DREUSE_MEMORY=1
+LOCAL_CFLAGS += -DOMG_DEVICE_VERSION  -DREUSE_MEMORY=1  -Dgoogle=ascend_private
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 
 LOCAL_C_INCLUDES := $(DEVICE_LOCAL_C_INCLUDES)
@@ -97,7 +97,7 @@ LOCAL_SRC_FILES := $(COMMON_LOCAL_SRC_FILES)
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
-    libprotobuf \
+    libascend_protobuf \
     libslog \
     libmmpa \
     libgraph \

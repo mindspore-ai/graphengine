@@ -21,11 +21,11 @@ local_lib_inc_path :=   proto/task.proto \
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_engine
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \
@@ -41,11 +41,11 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := atclib/libhost_cpu_engine
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11 -DCOMPILE_OMG_PACKAGE
+LOCAL_CFLAGS += -std=c++11 -DCOMPILE_OMG_PACKAGE -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \
@@ -61,11 +61,11 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_opskernel_builder
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \
@@ -81,10 +81,10 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_opskernel_builder
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
-LOCAL_STATIC_LIBRARIES :=   libprotobuf \
+LOCAL_STATIC_LIBRARIES :=   libascend_protobuf \
                             libgraph \
                             libregister \
 
@@ -101,10 +101,10 @@ include ${BUILD_HOST_STATIC_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_opskernel_builder
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
-LOCAL_STATIC_LIBRARIES :=   libprotobuf \
+LOCAL_STATIC_LIBRARIES :=   libascend_protobuf \
                             libgraph \
                             libregister \
 
@@ -121,11 +121,11 @@ include ${BUILD_STATIC_LIBRARY}
 include $(CLEAR_VARS)
 LOCAL_MODULE := atclib/libhost_cpu_opskernel_builder
 LOCAL_CFLAGS += -Werror
-LOCAL_CFLAGS += -std=c++11
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
 LOCAL_STATIC_LIBRARIES :=
-LOCAL_SHARED_LIBRARIES :=   libprotobuf \
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
                             libc_sec \
                             libslog \
                             libgraph \

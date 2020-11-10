@@ -140,7 +140,8 @@ support "NHWC/NCHW" to "NC1HWC0" and "NC1HWC0" to "NHWC/NCHW"
 
 *@par Attributes:
 *@li src_format: A string source data format, can be "NHWC", "NCHW", "FRACTAL_Zn" etc.
-*@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc . \n
+*@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc.
+*@li group: A required int32, default value is 1. \n
 
 *@par Outputs:
 *dst: A Tensor dtype of all types.
@@ -150,6 +151,7 @@ REG_OP(TransData)
     .OUTPUT(dst, TensorType::BasicType())
     .REQUIRED_ATTR(src_format, String)
     .REQUIRED_ATTR(dst_format, String)
+    .ATTR(group, Int, 1)
     .OP_END_FACTORY_REG(TransData)
 
 /**

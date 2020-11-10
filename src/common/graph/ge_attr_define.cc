@@ -982,6 +982,7 @@ const std::string ATTR_NAME_OPTIMIZE_GROUP = "_optimize_group";
 const std::string ATTR_NAME_OP_COMPILE_STRATEGY = "_op_compile_strategy";
 const std::string ATTR_NAME_TBE_KERNEL_NAME = "_tbe_kernel_name";
 const std::string ATTR_NAME_TBE_KERNEL_BUFFER = "_tbe_kernel_buffer";
+const std::string ATTR_NAME_DATA_SLICE = "_data_slice";
 
 // used for memory allocate
 const std::string ATTR_NAME_INPUT_MEM_TYPE_LIST = "_input_memory_type";
@@ -1095,4 +1096,7 @@ const std::string ATTR_STAGE_LEVEL = "_stage_level";
 // input_output_offset
 const std::string ATTR_ZERO_COPY_BASIC_OFFSET = "_zero_copy_basic_offset";
 const std::string ATTR_ZERO_COPY_RELATIVE_OFFSET = "_zero_copy_relative_offset";
+
+// The processing mode of INF and NAN during floating-point number calculation.
+const std::string ATTR_FP_CEILING_MODE = "_fp_ceiling_mode";
 }  // namespace ge

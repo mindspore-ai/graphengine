@@ -352,7 +352,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libge_runner
 
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DREUSE_MEMORY=1 -O2
-LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -DDAVINCI_SUPPORT_PROFILING -DDAVINCI_CLOUD
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -DDAVINCI_SUPPORT_PROFILING -DDAVINCI_CLOUD -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
 endif
@@ -369,7 +369,7 @@ LOCAL_STATIC_LIBRARIES := libge_memory \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
-    libprotobuf \
+    libascend_protobuf \
     libslog \
     libmmpa \
     libgraph \

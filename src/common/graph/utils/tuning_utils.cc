@@ -119,7 +119,11 @@ graphStatus TuningUtils::ConvertGraphToFile(std::vector<ComputeGraphPtr> tuning_
 // +---------------+
 graphStatus TuningUtils::MakeExeGraph(ComputeGraphPtr &exe_graph, const HelpInfo &help_info) {
   GE_CHECK_NOTNULL(exe_graph);
-
+  graphStatus ret = exe_graph->TopologicalSortingGraph(true);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Graph[%s] topological sort failed, ret:%d.", exe_graph->GetName().c_str(), ret);
+    return ret;
+  }
   // clear graph id
   GELOGI("TUU:clear [%s] session_graph_id %s", exe_graph->GetName().c_str(),
          (AttrUtils::SetStr(*exe_graph, ATTR_NAME_SESSION_GRAPH_ID, "") ? "success" : "not success"));
@@ -148,7 +152,7 @@ graphStatus TuningUtils::MakeExeGraph(ComputeGraphPtr &exe_graph, const HelpInfo
       }
     }
   }
-  graphStatus ret = exe_graph->TopologicalSorting();
+  ret = exe_graph->TopologicalSortingGraph(true);
   if (ret != SUCCESS) {
     GELOGE(ret, "Graph[%s] topological sort failed, ret:%d.", exe_graph->GetName().c_str(), ret);
     return ret;

@@ -24,7 +24,8 @@ const std::vector<std::string> kBasicBuilderLibs = {"libge_local_opskernel_build
                                                     "libhost_cpu_opskernel_builder.so", "librts_kernel_builder.so",
                                                     "libaicpu_ascend_builder.so", "libaicpu_tf_builder.so"};
 
-const std::vector<std::string> kHcclBuilderLibs = {"libhcom_opskernel_builder.so", "libhvd_opskernel_builder.so"};
+const std::vector<std::string> kHcclBuilderLibs = {"libhcom_opskernel_builder.so", "libhvd_opskernel_builder.so",
+                                                   "libhcom_gradtune_opskernel_builder.so"};
 }  // namespace
 OpsKernelBuilderManager::~OpsKernelBuilderManager() {
   // it's OK to call Finalize multiply times

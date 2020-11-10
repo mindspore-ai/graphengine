@@ -278,6 +278,8 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   graphStatus GetSubgraphNameByInstanceName(const std::string &instance_name, std::string &subgraph_name) const;
 
+  graphStatus InferDataSlice();
+
  protected:
   ProtoAttrMapHelper MutableAttrMap() override;
   ConstProtoAttrMapHelper GetAttrMap() const override;
@@ -317,6 +319,7 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
   std::function<graphStatus(Operator &)> infer_func_ = nullptr;
   std::function<graphStatus(Operator &)> infer_format_func_ = nullptr;
   std::function<graphStatus(Operator &)> verifier_func_ = nullptr;
+  std::function<graphStatus(Operator &)> infer_data_slice_func_ = nullptr;
   string op_kernel_lib_name_;
   string engine_name_;
   friend class OpDescUtils;

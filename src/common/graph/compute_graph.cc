@@ -728,11 +728,18 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::InsertE
 
 graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
                                                 std::map<NodePtr, uint32_t> &map_in_edge_num,
-                                                std::vector<NodePtr> &stack) {
+                                                std::vector<NodePtr> &stack, bool reverse) {
   GELOGI("Runing_Dfs_Sort: %s", name_.c_str());
   // Record the number of non data nodes but no input nodes
   GE_CHK_BOOL_EXEC(SortNodes(stack, map_in_edge_num) == GRAPH_SUCCESS, return GRAPH_FAILED, "sort nodes failed");
-
+  std::vector<NodePtr> out_nodes;
+  auto stack_push = [&reverse, &stack](std::vector<NodePtr> &out_nodes) {
+    if (reverse) {
+      std::reverse(out_nodes.begin(), out_nodes.end());
+    }
+    stack.insert(stack.end(), out_nodes.begin(), out_nodes.end());
+    out_nodes.clear();
+  };
   // Only data nodes here
   while (!stack.empty()) {
     NodePtr node = stack.back();
@@ -746,16 +753,18 @@ graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
         GE_CHECK_NOTNULL(peer_in_anchor);
         auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
         if (iter != map_in_edge_num.end() && --iter->second == 0) {
-          stack.push_back(peer_in_anchor->GetOwnerNode());
+          out_nodes.push_back(peer_in_anchor->GetOwnerNode());
         }
       }
+      stack_push(out_nodes);
       for (const auto &peer_in_anchor : anchor->GetPeerInControlAnchors()) {
         GE_CHECK_NOTNULL(peer_in_anchor);
         auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
         if (iter != map_in_edge_num.end() && --iter->second == 0) {
-          stack.push_back(peer_in_anchor->GetOwnerNode());
+          out_nodes.push_back(peer_in_anchor->GetOwnerNode());
         }
       }
+      stack_push(out_nodes);
     }
     GE_IF_BOOL_EXEC(
       node->GetOutControlAnchor() != nullptr, for (AnchorPtr peer_in_anchor
@@ -763,9 +772,9 @@ graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
         GE_CHECK_NOTNULL(peer_in_anchor);
         auto iter = map_in_edge_num.find(peer_in_anchor->GetOwnerNode());
         if (iter != map_in_edge_num.end() && --iter->second == 0) {
-          stack.push_back(peer_in_anchor->GetOwnerNode());
+          out_nodes.push_back(peer_in_anchor->GetOwnerNode());
         }
-      })
+      } stack_push(out_nodes);)
   }
 
   return GRAPH_SUCCESS;
@@ -867,7 +876,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::Topolog
   return SUCCESS;
 }
 
-graphStatus ComputeGraph::TopologicalSortingGraph() {
+graphStatus ComputeGraph::TopologicalSortingGraph(bool dfs_reverse) {
   std::vector<NodePtr> node_vec;
   std::map<NodePtr, uint32_t> map_in_edge_num;
   bool use_BFS = IsUseBFS();
@@ -878,7 +887,7 @@ graphStatus ComputeGraph::TopologicalSortingGraph() {
     }
   } else {
     std::vector<NodePtr> stack;
-    if (DFSTopologicalSorting(node_vec, map_in_edge_num, stack) != GRAPH_SUCCESS) {
+    if (DFSTopologicalSorting(node_vec, map_in_edge_num, stack, dfs_reverse) != GRAPH_SUCCESS) {
       return GRAPH_FAILED;
     }
   }

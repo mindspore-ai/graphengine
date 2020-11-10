@@ -337,16 +337,6 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       continue;
     }
 
-    int64_t mem_type;
-    bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
-    if (tensor_has_mem_type && v_memory_type[i] != RT_MEMORY_L1) {
-      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_input_offset[i];
-      v_input_data_addr.push_back(p2p_mem_addr);
-      GELOGI("[IMAS]GetInputDataAddrs graph_%u type[P] name[%s] input[%zu] memaddr[%p]", model_param.graph_id,
-             op_desc->GetName().c_str(), i, p2p_mem_addr);
-      continue;
-    }
-
     GE_IF_BOOL_EXEC(non_const_index >= v_input_offset.size(),
                     GELOGW("offsets=%zu, inputs=%zu, index=%zu.", v_input_offset.size(), inputs_size, non_const_index);
                     break);
@@ -361,6 +351,8 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
                     continue);
 
+    int64_t mem_type;
+    bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
     // feature maps
     void *mem_addr = nullptr;
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {  // fusion
@@ -372,6 +364,12 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset);
       mem_addr = model_param.ts_mem_mall->Acquire(input_offset, static_cast<uint64_t>(tensor_size));
       v_input_data_addr.push_back(mem_addr);
+    } else if (tensor_has_mem_type && mem_type == RT_MEMORY_P2P_DDR) {
+      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_input_offset[i];
+      v_input_data_addr.push_back(p2p_mem_addr);
+      GELOGI("[IMAS]GetInputDataAddrs graph_%u type[P] name[%s] input[%zu] memaddr[%p]", model_param.graph_id,
+             op_desc->GetName().c_str(), i, p2p_mem_addr);
+      continue;
     } else {
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset);
       mem_addr = model_param.mem_base + input_offset;
@@ -420,15 +418,9 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       GELOGW("Op: %s, Index: %zu, Tensor Desc is null", op_desc->GetName().c_str(), i);
       continue;
     }
+
     int64_t mem_type;
     bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
-    if (tensor_has_mem_type && v_memory_type[i] != RT_MEMORY_L1) {
-      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_output_offset[i];
-      v_output_data_addr.push_back(p2p_mem_addr);
-      GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[P] name[%s] output[%zu] memaddr[%p]", model_param.graph_id,
-             op_desc->GetName().c_str(), i, p2p_mem_addr);
-      continue;
-    }
     // feature maps
     void *mem_addr = nullptr;
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {  // fusion
@@ -442,6 +434,12 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i]);
       mem_addr = model_param.ts_mem_mall->Acquire(v_output_offset[i], static_cast<uint64_t>(tensor_size));
       v_output_data_addr.push_back(mem_addr);
+    } else if (tensor_has_mem_type && mem_type == RT_MEMORY_P2P_DDR) {
+      uint8_t *p2p_mem_addr = model_param.memory_infos.at(RT_MEMORY_P2P_DDR).memory_base + v_output_offset[i];
+      v_output_data_addr.push_back(p2p_mem_addr);
+      GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[P] name[%s] output[%zu] memaddr[%p]", model_param.graph_id,
+             op_desc->GetName().c_str(), i, p2p_mem_addr);
+      continue;
     } else {
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i]);
       mem_addr = static_cast<uint8_t *>(model_param.mem_base + v_output_offset[i]);

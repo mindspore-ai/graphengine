@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include "graph/operator_factory.h"
+#include "register/infer_data_slice_registry.h"
 
 namespace ge {
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OperatorFactoryImpl {
@@ -38,6 +39,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OperatorFactoryImpl {
 
   static VerifyFunc GetVerifyFunc(const std::string &operator_type);
 
+  static InferDataSliceFunc GetInferDataSliceFunc(const std::string &operator_type);
+
   static graphStatus RegisterOperatorCreator(const std::string &operator_type, OpCreator const &op_creator);
 
   static graphStatus RegisterInferShapeFunc(const std::string &operator_type, InferShapeFunc const infer_shape_func);
@@ -46,10 +49,14 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OperatorFactoryImpl {
 
   static graphStatus RegisterVerifyFunc(const std::string &operator_type, VerifyFunc const verify_func);
 
+  static graphStatus RegisterInferDataSliceFunc(const std::string &operator_type,
+                                                InferDataSliceFunc const infer_data_slice_func);
+
   static shared_ptr<std::map<string, OpCreator>> operator_creators_;
   static shared_ptr<std::map<string, InferShapeFunc>> operator_infershape_funcs_;
   static shared_ptr<std::map<string, InferFormatFunc>> operator_inferformat_funcs_;
   static shared_ptr<std::map<string, VerifyFunc>> operator_verify_funcs_;
+  static shared_ptr<std::map<string, InferDataSliceFunc>> operator_infer_data_slice_funcs_;
 };
 }  // namespace ge
 

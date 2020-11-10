@@ -59,6 +59,7 @@ class HybridModelBuilder {
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
   Status LoadTasks();
   Status IdentifyVariableOutputs(NodeItem &node_item);
+  Status IdentifySameInputs(NodeItem &node_item);
   Status BuildNodeItem(const NodePtr &node, NodeItem &node_item);
   Status GetOrCreateNodeItem(const NodePtr &node, NodeItem **node_item);
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);

@@ -40,8 +40,6 @@ using domi::AippOpParams;
 namespace ge {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
-const int64_t kFormatAgnosticSwitch = 1;
-const int64_t kFormatDependInputIndex = 1;
 }  // namespace
 static void ConvertShape2Nhwc(Format &format, vector<int64_t> &shape_vec) {
   if ((format == FORMAT_NHWC) || (shape_vec.size() != static_cast<size_t>(NORMAL_TENSOR_SIZE))) {
@@ -269,23 +267,6 @@ Status InsertNewOpUtil::GetAippParams(const std::unique_ptr<domi::AippOpParams> 
   return SUCCESS;
 }
 
-Status InsertNewOpUtil::AddFormatAgnosticAttrToSwitchn(const NodePtr &aipp_node) {
-  GE_CHECK_NOTNULL(aipp_node);
-  auto next_nodes = aipp_node->GetOutDataNodes();
-  for (const auto next_node : next_nodes) {
-    GE_CHECK_NOTNULL(next_node);
-    auto op_desc = next_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    if (op_desc->GetType() == SWITCHN) {
-      GELOGI("Find switchn node [%s] after aipp [%s]", op_desc->GetName().c_str(), aipp_node->GetName().c_str());
-      (void)AttrUtils::SetInt(op_desc, "_format_agnostic", kFormatAgnosticSwitch);
-      (void)AttrUtils::SetListInt(op_desc, "_format_agnostic_except_input",
-                                  std::vector<int64_t>({kFormatDependInputIndex}));
-    }
-  }
-  return SUCCESS;
-}
-
 Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
   std::map<std::string, NodePtr> switchn_names_to_data;
   std::set<NodePtr> updated_switchn;
@@ -300,9 +281,6 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
     }
     if (node->GetType() == AIPP) {
       GE_RETURN_IF_ERROR(UpdatePrevNodeByAipp(node, updated_switchn));
-      // In dynamic batch/HW and dynamic aipp scend, switchn should be set format agnostic, otherwise transdata maybe
-      // inserted between aipp and switchn which introduce performance and memory increase problem.
-      GE_RETURN_IF_ERROR(AddFormatAgnosticAttrToSwitchn(node));
     }
     if (node->GetType() == CASE && node->GetOpDesc()->HasAttr(ATTR_NAME_BATCH_NUM)) {
       multbatch_case = node;

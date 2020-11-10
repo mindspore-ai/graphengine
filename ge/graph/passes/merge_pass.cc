@@ -79,6 +79,13 @@ Status MergePass::Run(NodePtr &node) {
           return FAILED;
         }
       }
+      auto in_node = in_data_nodes.at(0);
+      if (IsMergeInputNeedOptimized(in_node)) {
+        if (IsolateAndDeleteNode(in_node, {0}) != SUCCESS) {
+          GELOGE(FAILED, "Isolate and delete node %s failed.", in_node->GetName().c_str());
+          return FAILED;
+        }
+      }
       return IsolateAndDeleteNode(node, merge_io_map);
     }
     default: {
@@ -171,5 +178,28 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
   // 4. set Constant output desc
   GE_CHK_STATUS_RET(op_desc->AddOutputDesc(original_out_tensor_desc), "add out put desc failed");
   return SUCCESS;
+}
+
+bool MergePass::IsMergeInputNeedOptimized(NodePtr &node) const {
+  if (node == nullptr) {
+    return false;
+  }
+  // node is not inserted by MergeInputMemcpyPass
+  if ((node->GetType() != MEMCPYASYNC) && (node->GetType() != MEMCPYADDRASYNC)) {
+    return false;
+  }
+  if (node->GetInDataNodes().size() != 1) {
+    return false;
+  }
+
+  auto in_node = node->GetInDataNodes().at(0);
+  if (in_node == nullptr) {
+    return false;
+  }
+  // in_node may be global_step var
+  if ((in_node->GetType() == VARIABLE) || (in_node->GetType() == VARIABLEV2)) {
+    return false;
+  }
+  return true;
 }
 }  // namespace ge

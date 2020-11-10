@@ -86,6 +86,7 @@ class DataDumper {
   void SetDumpProperties(const DumpProperties &dump_properties) { dump_properties_ = dump_properties; }
   const DumpProperties &GetDumpProperties() const { return dump_properties_; }
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
+  const std::vector<OpDescInfo> &GetAllOpDescInfo() const { return op_desc_info_; }
 
   // Dump exception info
   Status DumpExceptionInput(const OpDescInfo &op_desc_info, const string &dump_file);

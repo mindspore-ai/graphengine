@@ -439,6 +439,10 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
 }
 
 graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
+  Impl builder;
+  std::map<std::string, std::string> options = {};
+  builder.Init(options);
+
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
 

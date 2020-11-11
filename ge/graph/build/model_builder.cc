@@ -23,7 +23,6 @@
 #include "graph/anchor.h"
 #include "graph/attr_value.h"
 #include "graph/buffer.h"
-#include "graph/build/label_allocator.h"
 #include "graph/build/stream_allocator.h"
 #include "graph/common/omg_util.h"
 #include "graph/common/ge_call_wrapper.h"
@@ -42,7 +41,6 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "graph/passes/memcpy_addr_async_pass.h"
 #include "init/gelib.h"
 #include "memory/memory_assigner.h"
 #include "omg/version.h"
@@ -692,25 +690,8 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
   // Assign functional op labels.
-  GE_TIMESTAMP_START(AssignFunctionalLabels);
-  LabelAllocator label_allocator(compute_graph_);
-  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(label_num_), "Assign label failed.");
-  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
-
-  // Add memcpy_addr_async node.
-  rtFeatureType_t feature_type = FEATURE_TYPE_MEMCPY;
-  int32_t feature_info = MEMCPY_INFO_SUPPORT_ZEROCOPY;
-  int64_t value = 0;
-  rtError_t rt_ret = rtGetRtCapability(feature_type, feature_info, &value);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtGetRtCapability failed.");
-    return RT_FAILED;
-  } else {
-    GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
-    MemcpyAddrAsyncPass memcpy_addr;
-    GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph_), "Add memcpy_addr_async node failed.");
-    GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
-  }
+  label_num_ = 0;
+  (void)AttrUtils::GetInt(*compute_graph_, ATTR_MODEL_LABEL_NUM, label_num_);
 
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);

@@ -30,7 +30,7 @@ const char * const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
 const char * const kNodeTypeRetVal = "_RetVal";
 std::set<std::string> kControlOpTypes {
     IF, STATELESSIF, CASE, WHILE, STATELESSWHILE
-}
+};
 
 Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;

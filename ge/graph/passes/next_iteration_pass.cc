@@ -173,14 +173,17 @@ Status NextIterationPass::FindWhileGroups() {
 
           NodePtr next_node = nullptr;
           if (FindTargetNode(out_node, NEXTITERATION, true, batch_label, next_node) != SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "Get NextIteration node failed.");
+            GELOGE(INTERNAL_ERROR,
+                   "Get NextIteration node failed: inputs of Merge should be Enter/NextIteration, current_Merge=%s",
+                   out_node->GetName().c_str());
             return INTERNAL_ERROR;
           }
           batch_iter.second->merge_next_pairs.emplace_back(std::make_pair(out_node, next_node));
 
           NodePtr switch_node = nullptr;
           if (FindTargetNode(out_node, SWITCH, false, batch_label, switch_node) != SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "Get Switch node failed.");
+            GELOGE(INTERNAL_ERROR, "Get Switch node failed: output of Merge should be Switch, current_Merge=%s",
+                   out_node->GetName().c_str());
             return INTERNAL_ERROR;
           }
           if (switch_node == nullptr) {
@@ -189,7 +192,9 @@ Status NextIterationPass::FindWhileGroups() {
 
           NodePtr loop_cond = nullptr;
           if (FindTargetNode(switch_node, LOOPCOND, true, batch_label, loop_cond) != SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "Get LoopCond node failed.");
+            GELOGE(INTERNAL_ERROR,
+                   "Get LoopCond node failed: pred input of Switch should be LoopCond, current_Switch=%s",
+                   switch_node->GetName().c_str());
             return INTERNAL_ERROR;
           }
           if (batch_iter.second->loop_cond == nullptr) {

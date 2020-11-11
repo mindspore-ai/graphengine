@@ -28,6 +28,9 @@ namespace hybrid {
 namespace {
 const char * const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
 const char * const kNodeTypeRetVal = "_RetVal";
+std::set<std::string> kControlOpTypes {
+    IF, STATELESSIF, CASE, WHILE, STATELESSWHILE
+}
 
 Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
@@ -102,6 +105,11 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
   return SUCCESS;
 }
 }  // namespace
+
+bool IsControlOp(const std::string &op_type) {
+  return kControlOpTypes.count(op_type) > 0;
+}
+
 NodeItem::NodeItem(NodePtr node): node(std::move(node)) {
   this->op_desc = this->node->GetOpDesc().get();
   this->node_id = this->op_desc->GetId();
@@ -153,8 +161,7 @@ Status NodeItem::Init() {
 }
 
 bool NodeItem::IsControlOp() const {
-  auto op_type = op_desc->GetType();
-  return op_type == IF || op_type == CASE || op_type == WHILE || op_type == FOR;
+  return ge::hybrid::IsControlOp(op_desc->GetType());
 }
 
 std::string NodeItem::DebugString() const {

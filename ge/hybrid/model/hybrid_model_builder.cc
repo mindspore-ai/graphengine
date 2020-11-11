@@ -257,7 +257,7 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
   }
 
   // cond or branch need to be prepared before the execution of IF or CASE
-  if (node_item.node_type == IF || node_item.node_type == CASE) {
+  if (node_item.node_type == IF || node_item.node_type == STATELESSIF || node_item.node_type == CASE) {
     const auto &in_anchor = ge_node->GetInDataAnchor(0);
     GE_CHECK_NOTNULL(in_anchor);
     const auto &peer_anchor = in_anchor->GetPeerOutAnchor();
@@ -917,7 +917,7 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
   auto parent_node = sub_graph.GetParentNode();
   GE_CHECK_NOTNULL(parent_node);
   auto op_type = parent_node->GetType();
-  if (op_type == IF || op_type == CASE || op_type == WHILE) {
+  if (IsControlOp(op_type)) {
     GELOGD("Set ge_model for control op subgraph: [%s], task_size = %d",
            sub_graph.GetName().c_str(),
            ge_model->GetModelTaskDefPtr()->task_size());

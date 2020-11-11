@@ -36,6 +36,8 @@ struct FusedSubgraph {
   ComputeGraphPtr graph;
 };
 
+bool IsControlOp(const std::string &op_type);
+
 // for caching static information across execution
 struct NodeItem {
   explicit NodeItem(NodePtr node);

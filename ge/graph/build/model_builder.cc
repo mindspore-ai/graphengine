@@ -690,8 +690,8 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
   // Assign functional op labels.
-  label_num_ = 0;
-  (void)AttrUtils::GetInt(*compute_graph_, ATTR_MODEL_LABEL_NUM, label_num_);
+  auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
+  (void)AttrUtils::GetInt(*root_graph, ATTR_MODEL_LABEL_NUM, label_num_);
 
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);

@@ -99,8 +99,9 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
     stride_vec.push_back(1);
   }
   // construct tensorDesc
-  ge::GeShape output_shape(output_dims);
-  GeTensorDesc output_tensor_desc(output_shape, FORMAT_NCHW, data_type);
+  atuo attr_output_tensor_desc = attr->GetOutputDesc(0);
+  GeTensorDesc output_tensor_desc(attr_output_tensor_desc);
+  output_tensor_desc.SetShape(output_dims);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
     GELOGW("make_shared ge::GeTensor failed, node name %s.", attr->GetName().c_str());

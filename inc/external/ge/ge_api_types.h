@@ -316,12 +316,23 @@ static const char *const DEBUG_DIR = ge::DEBUG_DIR;
 static const char *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
 static const char *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
 // for interface: aclgrphBuildModel
-const std::set<std::string> ir_builder_suppported_options = {
-  INPUT_FORMAT,       INPUT_SHAPE,        OP_NAME_MAP,
-  DYNAMIC_BATCH_SIZE, DYNAMIC_IMAGE_SIZE, DYNAMIC_DIMS,
-  INSERT_OP_FILE,     PRECISION_MODE,     EXEC_DISABLE_REUSED_MEMORY,
-  AUTO_TUNE_MODE,     OUTPUT_TYPE,        OUT_NODES,
-  INPUT_FP16_NODES,   LOG_LEVEL};
+const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
+                                                             INPUT_SHAPE,
+                                                             OP_NAME_MAP,
+                                                             DYNAMIC_BATCH_SIZE,
+                                                             DYNAMIC_IMAGE_SIZE,
+                                                             DYNAMIC_DIMS,
+                                                             INSERT_OP_FILE,
+                                                             PRECISION_MODE,
+                                                             EXEC_DISABLE_REUSED_MEMORY,
+                                                             AUTO_TUNE_MODE,
+                                                             OUTPUT_TYPE,
+                                                             OUT_NODES,
+                                                             INPUT_FP16_NODES,
+                                                             LOG_LEVEL,
+                                                             DEBUG_DIR,
+                                                             OP_COMPILER_CACHE_DIR,
+                                                             OP_COMPILER_CACHE_MODE};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,

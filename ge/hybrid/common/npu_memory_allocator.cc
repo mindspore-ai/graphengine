@@ -69,11 +69,10 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
       if (attr->padding_ > 0) {
         padding = attr->padding_;
       }
-
-      // padding up to multiple of padding, and add extra padding
-      allocate_size = (size + 2 * padding - 1) / padding * padding;
-      GELOGD("Padding size %ld by %d. final size = %zu.", size, padding, allocate_size);
     }
+    // padding up to multiple of padding, and add extra padding
+    allocate_size = (size + 2 * padding - 1) / padding * padding;
+    GELOGD("Padding size %ld by %d. final size = %zu.", size, padding, allocate_size);
     buffer = MemManager::Instance()
                  .CachingInstance(RT_MEMORY_HBM)
                  .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);

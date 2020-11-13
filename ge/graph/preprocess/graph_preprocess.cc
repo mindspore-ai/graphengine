@@ -128,9 +128,6 @@ static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
     {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
-const char *const kConstError1 = "Const is invalid scalar tensor.";
-const char *const kConstError2 = "Const is invalid vector scalar.";
-const char *const kConstError3 = "Const input data size is not equal with tensor desc shape";
 
 // the size of user defined output datatype or format string after split by ":".
 const size_t kUserDefinedElementCount = 2;
@@ -1063,9 +1060,8 @@ Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &i
   bool is_acceptable = (acceptable_types.find(input_type) != acceptable_types.end());
   if (!is_acceptable) {
     ErrorManager::GetInstance().ATCReportErrMessage(
-        "E19014", {"opname", "value", "reason"},
-        {op_desc->GetName(), "format[" + TypeUtils::FormatToSerialString(old_format) + "]",
-        "only support FORMAT_NC1HWC0,FORMAT_NCHW,FORMAT_NHWC"});
+        "E15005", {"opname", "optype", "opname1", "optype1"},
+        {op_desc->GetName(), node->GetType(), input_op_desc->GetName(), input_op_desc->GetType()});
     GELOGE(PARAM_INVALID, "The ref input of ref node %s[%s] must be ref node or variable, but %s[%s]isn't.",
            node->GetName().c_str(), node->GetType().c_str(), input_op_desc->GetName().c_str(),
            input_op_desc->GetType().c_str());
@@ -1558,18 +1554,19 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
     if (ge_tensor_desc.GetShape().GetDims().size() == 0) {
       // shape = [], means it's a sclar tensor.
       GE_CHK_BOOL_EXEC(data_size / length == 1,
-          ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {kConstError1});
-          return PARAM_INVALID, kConstError1);
+          ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {"Const is invalid scalar tensor."});
+          return PARAM_INVALID, "Const is invalid scalar tensor.");
     } else {
       // shape = [x, y, 0,...], means it's a vector tensor that value is [].
       GE_CHK_BOOL_EXEC(data_size == 0,
-          ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {kConstError2});
+          ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {"Const is invalid vector scalar."});
           return PARAM_INVALID, kConstError2);
     }
   } else {
     GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0,
-         ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {kConstError3});
-        return PARAM_INVALID, kConstError3);
+         ErrorManager::GetInstance().ATCReportErrMessage(
+             "E10043", {"reason"}, {"Const input data size is not equal with tensor desc shape"});
+         return PARAM_INVALID, "Const input data size is not equal with tensor desc shape");
   }
   return SUCCESS;
 }

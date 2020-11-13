@@ -416,6 +416,14 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
                    return FAILED);
   GELOGI("For model, max_mem_offset_: %zu, p2p_mem_size: %zu, zero_copy_mem_size_: %zu", max_mem_offset_,
          p2p_mem_offset_, zero_copy_mem_size_);
+  string fp_ceiling_mode;
+  if (ge::GetContext().GetOption("ge.fpCeilingMode", fp_ceiling_mode) == SUCCESS) {
+    if (!ge::AttrUtils::SetStr(&model, ATTR_FP_CEILING_MODE, fp_ceiling_mode)) {
+      GELOGE(FAILED, "Failed to set attr ATTR_FP_CEILING_MODE");
+      return FAILED;
+    }
+    GELOGI("Set attr ATTR_FP_CEILING_MODE to model, value is %s.", fp_ceiling_mode.c_str());
+  }
 
   string ge_core_type;
   Status ret = ge::GetContext().GetOption(kCoreType, ge_core_type);

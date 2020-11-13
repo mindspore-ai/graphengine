@@ -18,6 +18,7 @@
 #include "framework/common/debug/log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
+#include "init/gelib.h"
 
 namespace ge {
 namespace hybrid {
@@ -25,11 +26,22 @@ namespace {
 uintptr_t kWeightBase = 0x10000000;
 uintptr_t kMemBase = 0x20000000;
 uint64_t kFakeSize = 0x10000000UL;
+REGISTER_TASK_COMPILER(AiCoreTaskCompiler);
 }
 std::mutex AiCoreTaskCompiler::mu_;
 
-AiCoreTaskCompiler::AiCoreTaskCompiler(OpsKernelInfoStorePtr aic_kernel_store)
-    : aic_kernel_store_(std::move(aic_kernel_store)) {}
+Status AiCoreTaskCompiler::Initialize() {
+  auto ge_lib = GELib::GetInstance();
+  GE_CHECK_NOTNULL(ge_lib);
+  if (!ge_lib->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Ge_lib is uninitialized, failed.");
+    return GE_CLI_GE_NOT_INITIALIZED;
+  }
+  auto &kernel_manager = ge_lib->OpsKernelManagerObj();
+  aic_kernel_store_ = kernel_manager.GetOpsKernelInfoStore("AIcoreEngine");
+  GE_CHECK_NOTNULL(aic_kernel_store_);
+  return SUCCESS;
+}
 
 Status AiCoreTaskCompiler::DoCompileOp(const NodePtr &node) const {
   GE_CHECK_NOTNULL(node);

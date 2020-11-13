@@ -1560,7 +1560,7 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
       // shape = [x, y, 0,...], means it's a vector tensor that value is [].
       GE_CHK_BOOL_EXEC(data_size == 0,
           ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {"Const is invalid vector scalar."});
-          return PARAM_INVALID, kConstError2);
+          return PARAM_INVALID, "Const is invalid vector scalar.");
     }
   } else {
     GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0,

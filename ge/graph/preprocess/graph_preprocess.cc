@@ -593,7 +593,7 @@ Status CheckIfDynamicBatchScene(NodePtr &data_node, bool &is_dynamic_batch, Node
     if (switchn_node == nullptr) {
       ErrorManager::GetInstance().ATCReportErrMessage(
         "E15002", {"opname", "value", "reason"},
-        {data_node->GetName(), related_node_name, "but the value is empty"});
+        {data_node->GetName(), related_node_name, "but can not find it on the graph"});
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node %s, but can not find it on the graph",
              data_node->GetName().c_str(), related_node_name.c_str());
       return INTERNAL_ERROR;

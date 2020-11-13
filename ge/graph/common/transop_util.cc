@@ -85,8 +85,8 @@ bool TransOpUtil::CheckPrecisionLoss(const ge::NodePtr &src_node) {
 
 std::string TransOpUtil::TransopMapToString() {
   std::string buffer;
-  for (auto it = transop_index_map_.begin(); it != transop_index_map_.end(); ++it) {
-    buffer += it->first + " ";
+  for (auto &key : Instance().transop_index_map_) {
+    buffer += key.first + " ";
   }
   return buffer;
 }

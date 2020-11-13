@@ -790,16 +790,22 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
 
   int64_t batch_count = -1;
   if (GetDataDimN(data_node, ori_data_format, batch_count) != ge::SUCCESS) {
+    string errormsg = "Get data_node dims and transfer to nchw_dims failed!";
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
     GELOGE(PARAM_INVALID, "Get data_node dims and transfer to nchw_dims failed!");
     return PARAM_INVALID;
   }
   if (batch_count <= 0) {
+    string errormsg = "Batch count[" + std::to_sting(batch_count) + "] is invalid, it must positive.";
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
     GELOGE(PARAM_INVALID, "Batch count %ld is invalid", batch_count);
     return PARAM_INVALID;
   }
 
   int64_t max_dynamic_aipp_size = CalcMaxSize(batch_count);
   if (max_dynamic_aipp_size < 0) {
+    string errormsg = "The dynamic aipp size is not positive";
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
     GELOGE(PARAM_INVALID, "The dynamic aipp size is not positive.");
     return PARAM_INVALID;
   }

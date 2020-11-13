@@ -128,6 +128,9 @@ static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
     {"UINT32", ge::DT_UINT32}, {"UINT64", ge::DT_UINT64}, {"DOUBLE", ge::DT_DOUBLE}};
 
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
+const char *const kConstError1 = "Const is invalid scalar tensor.";
+const char *const kConstError2 = "Const is invalid vector scalar.";
+const char *const kConstError3 = "Const input data size is not equal with tensor desc shape";
 
 // the size of user defined output datatype or format string after split by ":".
 const size_t kUserDefinedElementCount = 2;
@@ -219,6 +222,9 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
 
   auto index = TransOpUtil::GetTransOpDataIndex(node_type);
   if (index < 0) {
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19025", {"situation", "reason"},
+        {"The trans node type[" + node_type + "]", "it must be " + TransOpUtil::TransopMapToString()});
     GELOGE(INTERNAL_ERROR, "The trans node type %s does not exists", node_type.c_str());
     return nullptr;
   }
@@ -387,6 +393,8 @@ Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
     auto trans_name = var->GetName() + "_trans_" + std::to_string(index++);
     auto ret = RecoverOneTransNodeForVar(trans_name, *iter, last_node, last_node);
     if (ret != SUCCESS) {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E15001", {"variable", "index", "type"}, {var->GetName(), std::to_string(index), iter->node_type});
       GELOGE(INTERNAL_ERROR, "Failed to recover trans node for variable %s, index %d, type %s", var->GetName().c_str(),
              index, iter->node_type.c_str());
       return INTERNAL_ERROR;
@@ -419,6 +427,8 @@ Status RecoverTransRoadForVarRef(const std::set<NodePtr> &nodes, const VarTransR
       auto trans_name = var->GetName() + "_trans_" + std::to_string(index++);
       auto ret = RecoverOneTransNodeForVarRef(trans_name, *iter, last_node, last_node);
       if (ret != SUCCESS) {
+        ErrorManager::GetInstance().ATCReportErrMessage(
+            "E15001", {"variable", "index", "type"}, {var->GetName(), std::to_string(index), iter->node_type});
         GELOGE(INTERNAL_ERROR, "Failed to recover trans node for variable %s, index %d, type %s",
                var->GetName().c_str(), index, iter->node_type.c_str());
         return INTERNAL_ERROR;
@@ -571,6 +581,8 @@ Status CheckIfDynamicBatchScene(NodePtr &data_node, bool &is_dynamic_batch, Node
   std::string related_node_name;
   if (AttrUtils::GetStr(data_node->GetOpDesc(), kMbatchSwitchnName, related_node_name)) {
     if (related_node_name.empty()) {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E15002", {"opname", "value", "reason"}, {data_node->GetName(), "flag", "but the value is empty"});
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node flag, but the value is empty",
              data_node->GetName().c_str());
       return INTERNAL_ERROR;
@@ -582,6 +594,9 @@ Status CheckIfDynamicBatchScene(NodePtr &data_node, bool &is_dynamic_batch, Node
       }
     }
     if (switchn_node == nullptr) {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E15002", {"opname", "value", "reason"},
+        {data_node->GetName(), related_node_name, "but the value is empty"});
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node %s, but can not find it on the graph",
              data_node->GetName().c_str(), related_node_name.c_str());
       return INTERNAL_ERROR;
@@ -682,6 +697,10 @@ Status ProcessInputNC1HWC0DynShape(NodePtr &node_ptr, bool &is_dynamic_batch, No
   ge::GeShape old_shape = input->GetShape();
   bool support = ((old_format == FORMAT_NC1HWC0) || (old_format == FORMAT_NCHW) || (old_format == FORMAT_NHWC));
   if (!support) {
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19014", {"opname", "value", "reason"},
+        {op_desc->GetName(), "format[" + TypeUtils::FormatToSerialString(old_format) + "]",
+        "only support FORMAT_NC1HWC0,FORMAT_NCHW,FORMAT_NHWC"});
     GELOGE(INTERNAL_ERROR, "The format [%s] is unsupported", TypeUtils::FormatToSerialString(old_format).c_str());
     return FAILED;
   }
@@ -762,6 +781,9 @@ Status GetStorageFormatAndShape(OpDescPtr &op_desc, const GeTensorDescPtr &tenso
              op_desc->GetName().c_str(), TypeUtils::FormatToSerialString(storage_format).c_str(),
              formats::JoinToString(storage_shape).c_str());
     } else {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+          "15003", {"opname", "format"},
+          {op_desc->GetName(), TypeUtils::FormatToSerialString(storage_format)});
       GELOGE(PARAM_INVALID, "Update node by storage format failed, storage_shape not set. "
              "node: [%s], storage_format [%s]",
              op_desc->GetName().c_str(), TypeUtils::FormatToSerialString(storage_format).c_str());
@@ -900,9 +922,14 @@ Status ProcessNetoutputNodeDynShape(NodePtr &node) {
     // check if is_output_adjust_hw_layout is set
     if (NeedUpdateFormatByOutputTypeParm(op_desc, index)) {
       if ((old_format != FORMAT_NCHW) && (old_format != FORMAT_NHWC) && (old_format != FORMAT_NC1HWC0)) {
+        ErrorManager::GetInstance().ATCReportErrMessage(
+            "E19014", {"opname", "value", "reason"},
+            {op_desc->GetName(), "format[" + TypeUtils::FormatToSerialString(old_format) + "]",
+            "only support FORMAT_NC1HWC0,FORMAT_NCHW,FORMAT_NHWC"});
         GELOGE(INTERNAL_ERROR, "Format is not one of NCHW, NHWC, NC1HWC0.");
         return FAILED;
       }
+
       GeTensorDesc old_desc(old_shape, old_format, old_dtype);
       if (ProcessNetoutputNodeFp16Nc1hwc0DynShape(old_desc, net_output_input_desc, src_node) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Process netoutput fp16 nc1hwc0.");
@@ -1035,6 +1062,10 @@ Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &i
   }
   bool is_acceptable = (acceptable_types.find(input_type) != acceptable_types.end());
   if (!is_acceptable) {
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E19014", {"opname", "value", "reason"},
+        {op_desc->GetName(), "format[" + TypeUtils::FormatToSerialString(old_format) + "]",
+        "only support FORMAT_NC1HWC0,FORMAT_NCHW,FORMAT_NHWC"});
     GELOGE(PARAM_INVALID, "The ref input of ref node %s[%s] must be ref node or variable, but %s[%s]isn't.",
            node->GetName().c_str(), node->GetType().c_str(), input_op_desc->GetName().c_str(),
            input_op_desc->GetType().c_str());
@@ -1127,6 +1158,9 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       }
 
       if ((index < 0) || (static_cast<size_t>(index) >= user_input.size())) {
+        std::string situation = "data op index[" + std::to_string(index) + "]";
+        std::string reason = "it must less than user_input size[" + std::to_string(user_input.size()) + "]";
+        ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
         GELOGE(PARAM_INVALID, "user_input size = %zu, graph data op index = %ld.", user_input.size(), index);
         return FAILED;
       }
@@ -1139,6 +1173,9 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       if (need_check_internal_format) {
         bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
         if (is_internal) {
+          ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"},
+          {"Input format[" +  TypeUtils::FormatToSerialString(format).c_str() + "] or origin_format[" +
+          TypeUtils::FormatToSerialString(origin_format).c_str() + "]", "it is not support"});
           GELOGE(PARAM_INVALID, "Input format %s or origin_format %s is not support.",
                  TypeUtils::FormatToSerialString(format).c_str(),
                  TypeUtils::FormatToSerialString(origin_format).c_str());
@@ -1150,6 +1187,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       uint32_t length = 1;
       bool type_ret = TypeUtils::GetDataTypeLength(data_type, length);
       if (!type_ret) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"},
+        {"Input datatype[" + TypeUtils::DataTypeToSerialString(data_type) + "]", "it is not support"});
         GELOGE(PARAM_INVALID, "Input datatype %s is not support.",
                TypeUtils::DataTypeToSerialString(data_type).c_str());
         return FAILED;
@@ -1164,6 +1203,10 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
                       return FAILED);
       bool size_check = (size != 0 && shape_size != size);
       if (size_check) {
+        std::string situation = "input data size[" + std::to_string(size) +
+            "] and shape_size[" + std::to_string(size) + "]";
+        std::string reason = "because size != 0 and shape_size != size";
+        ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
         GELOGE(PARAM_INVALID, "input data size =%ld, shape_size =%ld.", size, shape_size);
         return FAILED;
       }
@@ -1503,6 +1546,8 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   uint32_t length = 1;
   bool type_ret = TypeUtils::GetDataTypeLength(data_type, length);
   if (!type_ret) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"},
+        {"Input datatype[" + TypeUtils::DataTypeToSerialString(data_type) + "]", "it is not support"});
     GELOGE(PARAM_INVALID, "Input datatype %s is not support.", TypeUtils::DataTypeToSerialString(data_type).c_str());
     return FAILED;
   }
@@ -1512,14 +1557,19 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   if (shape_size == 0) {
     if (ge_tensor_desc.GetShape().GetDims().size() == 0) {
       // shape = [], means it's a sclar tensor.
-      GE_CHK_BOOL_EXEC(data_size / length == 1, return PARAM_INVALID, "Const is invalid scalar tensor.");
+      GE_CHK_BOOL_EXEC(data_size / length == 1,
+          ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {kConstError1});
+          return PARAM_INVALID, kConstError1);
     } else {
       // shape = [x, y, 0,...], means it's a vector tensor that value is [].
-      GE_CHK_BOOL_EXEC(data_size == 0, return PARAM_INVALID, "Const is invalid vector scalar.");
+      GE_CHK_BOOL_EXEC(data_size == 0,
+          ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {kConstError2});
+          return PARAM_INVALID, kConstError2);
     }
   } else {
-    GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0, return PARAM_INVALID,
-                     "Const input data size is not equal with tensor desc shape");
+    GE_CHK_BOOL_EXEC(data_size == static_cast<size_t>(shape_size * length) && data_size != 0,
+         ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {kConstError3});
+        return PARAM_INVALID, kConstError3);
   }
   return SUCCESS;
 }
@@ -1543,6 +1593,9 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
         return GE_GRAPH_INIT_FAILED;
       }
       if ((index < 0) || (static_cast<size_t>(index) >= user_input.size())) {
+        std::string situation = "data op index[" + std::to_string(index) + "]";
+        std::string reason = "it must less than user_input size[" + std::to_string(user_input.size()) + "]";
+        ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
         GELOGE(GE_GRAPH_INIT_FAILED, "user_input size:%zu, data op index:%ld.", user_input.size(), index);
         return GE_GRAPH_INIT_FAILED;
       }
@@ -1550,6 +1603,9 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
 
       for (size_t i = 0; i < desc.GetShape().GetDimNum(); ++i) {
         if (desc.GetShape().GetDim(i) < 0) {
+          std::string situation = "data dim[" + std::to_string(i) + "][" + std::to_string(desc.GetShape().GetDim(i)) + "]" ;
+          std::string reason = "it need >= 0";
+          ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
           GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need >= 0, real:%ld.", i,
                  desc.GetShape().GetDim(i));
           return GE_GRAPH_INIT_FAILED;

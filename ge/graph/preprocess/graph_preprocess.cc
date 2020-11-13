@@ -1170,8 +1170,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
         bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
         if (is_internal) {
           ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"},
-          {"Input format[" +  TypeUtils::FormatToSerialString(format).c_str() + "] or origin_format[" +
-          TypeUtils::FormatToSerialString(origin_format).c_str() + "]", "it is not support"});
+          {"Input format[" +  TypeUtils::FormatToSerialString(format) + "] or origin_format[" +
+          TypeUtils::FormatToSerialString(origin_format) + "]", "it is not support"});
           GELOGE(PARAM_INVALID, "Input format %s or origin_format %s is not support.",
                  TypeUtils::FormatToSerialString(format).c_str(),
                  TypeUtils::FormatToSerialString(origin_format).c_str());

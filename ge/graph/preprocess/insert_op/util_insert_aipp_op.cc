@@ -304,7 +304,7 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
   for (auto &switchn : updated_switchn) {
     auto data_iter = switchn_names_to_data.find(switchn->GetName());
     if (data_iter == switchn_names_to_data.end()) {
-      string errormesg = "Failed to find relative data node by switchn[" + switchn->GetName() + "]";
+      string errormsg = "Failed to find relative data node by switchn[" + switchn->GetName() + "]";
       ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
       GELOGE(INTERNAL_ERROR, "Failed to find relative data node by switchn %s", switchn->GetName().c_str());
       return INTERNAL_ERROR;
@@ -493,7 +493,7 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
     }
   }
   if (max_index >= switchn->GetOpDesc()->GetOutputsSize()) {
-    string errormesg = "No max size found from switchn node[" + switchn->GetName()+ "]";
+    string errormsg = "No max size found from switchn node[" + switchn->GetName()+ "]";
     ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
     GELOGE(INTERNAL_ERROR, "No max size found from switchn node %s", switchn->GetName().c_str());
     return INTERNAL_ERROR;

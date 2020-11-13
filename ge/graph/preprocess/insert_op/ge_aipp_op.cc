@@ -796,7 +796,7 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
     return PARAM_INVALID;
   }
   if (batch_count <= 0) {
-    string errormsg = "Batch count[" + std::to_sting(batch_count) + "] is invalid, it must positive.";
+    string errormsg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
     ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
     GELOGE(PARAM_INVALID, "Batch count %ld is invalid", batch_count);
     return PARAM_INVALID;

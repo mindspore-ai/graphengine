@@ -307,7 +307,7 @@ NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
     return node;
   }
   string errormsg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
-  GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
+  GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
   return nullptr;
 }
 Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr &target,
@@ -428,7 +428,7 @@ Status AippOp::ConvertRelatedInputNameToRank() {
   if (!convert_flag) {
     string error_msg = "Top name " + related_input_name + "convert rank failed, Please"
                        " ensure top name in aipp config is the top name of data node.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
 
@@ -779,7 +779,7 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   int64_t batch_count = -1;
   if (GetDataDimN(data_node, ori_data_format, batch_count) != ge::SUCCESS) {
     string errormsg = "Get data_node dims and transfer to nchw_dims failed!";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, errormsg);
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
   if (batch_count <= 0) {
@@ -791,7 +791,7 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   int64_t max_dynamic_aipp_size = CalcMaxSize(batch_count);
   if (max_dynamic_aipp_size < 0) {
     string errormsg = "The dynamic aipp size is not positive";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, errormsg);
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
 

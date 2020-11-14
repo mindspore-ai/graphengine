@@ -253,4 +253,21 @@
     exec_expr1;                                \
   }
 
+#define GE_ERRORLOG_AND_ERRORMSG(expr, _status, errormsg)                              \
+  {                                                                                    \
+    GELOGE(_status, errormsg);                                                         \
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+  }
+
+
+#define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                 \
+  do {                                                                                   \
+    bool b = (expr);                                                                     \
+    if (!b) {                                                                            \
+      GELOGE(_status, errormsg);                                                         \
+      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+      return _status;                                                                    \
+    }                                                                                    \
+  } while (0)
+
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_LOG_H_

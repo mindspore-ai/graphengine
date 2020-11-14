@@ -37,16 +37,6 @@
 
 using domi::AippOpParams;
 
-#define AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(expr, _status, errormsg)                  \
-  do {                                                                                   \
-    bool b = (expr);                                                                     \
-    if (!b) {                                                                            \
-      GELOGE(_status, errormsg);                                                         \
-      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
-      return _status;                                                                    \
-    }                                                                                    \
-  } while (0)
-
 namespace ge {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
@@ -234,7 +224,7 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
         }
       }
     }
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), 
+    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), 
         PARAM_INVALID,
         "Can not config part of outputs of Data node to support AIPP, config all "
         "of the outputs of Data to support AIPP, or config none of them");
@@ -249,17 +239,17 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
           GE_CHK_STATUS(GetAippParams(currAippParam, aippNodes[i]));
 
           if (aippMode == domi::AippOpParams::static_) {
-            AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
+            GE_CHK_LOG_AND_ERRORMSG(
                 aippParams->input_format() == currAippParam->input_format(),
                 PARAM_INVALID, "The input_format of all aipp_ops after one Data should be the same");
-            AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
+            GE_CHK_LOG_AND_ERRORMSG(
                 aippParams->src_image_size_w() == currAippParam->src_image_size_w(),
                 PARAM_INVALID, "The src_image_size_w of all aipp_ops after one Data should be the same");
-            AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
+            GE_CHK_LOG_AND_ERRORMSG(
                     aippParams->src_image_size_h() == currAippParam->src_image_size_h(),
                 PARAM_INVALID, "The src_image_size_h of all aipp_ops after one Data should be the same");
           } else {
-            AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
+            GE_CHK_LOG_AND_ERRORMSG(
                 aippParams->max_src_image_size() == currAippParam->max_src_image_size(),
                 PARAM_INVALID, "The max_src_image_size of all aipp_ops after one Data should be the same");
           }

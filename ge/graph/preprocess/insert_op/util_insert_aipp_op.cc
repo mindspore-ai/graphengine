@@ -282,7 +282,7 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
   for (auto &switchn : updated_switchn) {
     auto data_iter = switchn_names_to_data.find(switchn->GetName());
     if (data_iter == switchn_names_to_data.end()) {
-      string errormsg = "Failed to find relative data node by switchn[" + switchn->GetName() + "]";
+      string error_msg = "Failed to find relative data node by switchn[" + switchn->GetName() + "]";
       GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error_msg.c_str());
       return INTERNAL_ERROR;
     }
@@ -470,7 +470,7 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
     }
   }
   if (max_index >= switchn->GetOpDesc()->GetOutputsSize()) {
-    string errormsg = "No max size found from switchn node[" + switchn->GetName()+ "]";
+    string error_msg = "No max size found from switchn node[" + switchn->GetName()+ "]";
     GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error_msg.c_str());
     return INTERNAL_ERROR;
   }

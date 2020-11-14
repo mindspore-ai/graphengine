@@ -306,7 +306,7 @@ NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
     }
     return node;
   }
-  string errormsg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
+  string error_msg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
   GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
   return nullptr;
 }
@@ -352,7 +352,7 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   }
 
   if (!edge_indexes.empty() && (*edge_indexes.rbegin() >= data_node->GetOutDataNodes().size())) {
-    string errormsg = "The aipp parameter input_edge_idx[" + std::to_string(*edge_indexes.rbegin()) +
+    string error_msg = "The aipp parameter input_edge_idx[" + std::to_string(*edge_indexes.rbegin()) +
         "] should be smaller than the target input[" +
         std::to_string(data_node->GetOutDataNodes().size()) +"]'s outnodes.";
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
@@ -778,19 +778,19 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
 
   int64_t batch_count = -1;
   if (GetDataDimN(data_node, ori_data_format, batch_count) != ge::SUCCESS) {
-    string errormsg = "Get data_node dims and transfer to nchw_dims failed!";
+    string error_msg = "Get data_node dims and transfer to nchw_dims failed!";
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
   if (batch_count <= 0) {
-    string errormsg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, errormsg);
+    string error_msg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
     return PARAM_INVALID;
   }
 
   int64_t max_dynamic_aipp_size = CalcMaxSize(batch_count);
   if (max_dynamic_aipp_size < 0) {
-    string errormsg = "The dynamic aipp size is not positive";
+    string error_msg = "The dynamic aipp size is not positive";
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }

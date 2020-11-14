@@ -253,7 +253,7 @@
     exec_expr1;                                \
   }
 
-#define GE_ERRORLOG_AND_ERRORMSG(expr, _status, errormsg)                              \
+#define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)                                    \
   {                                                                                    \
     GELOGE(_status, errormsg);                                                         \
     ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \

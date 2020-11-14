@@ -1025,6 +1025,13 @@ Status MultiBatchGraphCopyer::InsertIdentityAfterSwitchN() {
 }
 
 Status ProcessMultiBatch(ComputeGraphPtr &graph) {
+  const char *multi_batch_with_case = std::getenv("MULTI_BATCH_WITH_CASE");
+  if (multi_batch_with_case != nullptr) {
+    PassManager pass_manager;
+    GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
+    return pass_manager.Run(graph);
+  }
+
   std::vector<std::vector<int64_t>> shapes;
   if (!InitDynamicParams(shapes)) {
     GELOGD("There is no multi-batch options, no need to process multi-batch copy");

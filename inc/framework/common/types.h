@@ -70,6 +70,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFIL
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_STOP_VALUE;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::map<std::string, std::string> PROFILE_COMPONENT_MAP;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_CONFIG;
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string PROFILE_MODEL_ID;
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASKS;
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY extern const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR;
@@ -567,10 +568,10 @@ enum ModelCheckType {
 /// @brief dynamic input type
 ///
 enum DynamicInputType {
-    FIXED = 0,   // default mode
-    DYNAMIC_BATCH = 1,
-    DYNAMIC_IMAGE = 2,
-    DYNAMIC_DIMS = 3
+  FIXED = 0,  // default mode
+  DYNAMIC_BATCH = 1,
+  DYNAMIC_IMAGE = 2,
+  DYNAMIC_DIMS = 3
 };
 
 ///

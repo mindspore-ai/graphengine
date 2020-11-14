@@ -1062,6 +1062,19 @@ Status GeExecutor::ReleaseSingleOpResource(void *stream) {
   return SingleOpManager::GetInstance().ReleaseResource(stream);
 }
 
+Status GeExecutor::GetDeviceIdByModelId(uint32_t model_id, uint32_t &device_id) {
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  auto davinci_model = model_manager->GetModel(model_id);
+  if (davinci_model == nullptr) {
+    GELOGE(FAILED, "Model id: %d is invaild or model is not loaded.", model_id);
+    return FAILED;
+  }
+
+  device_id = davinci_model->GetDeviceId();
+  return SUCCESS;
+}
+
 Status GeExecutor::GetBatchInfoSize(uint32_t model_id, size_t &shape_count) {
   std::vector<std::vector<int64_t>> batch_info;
   int32_t dynamic_type = static_cast<int32_t>(FIXED);

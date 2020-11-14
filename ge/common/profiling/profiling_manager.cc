@@ -21,6 +21,7 @@
 #include "framework/common/string_util.h"
 #include "graph/ge_context.h"
 #include "runtime/base.h"
+#include "graph/load/new_model_manager/davinci_model.h"
 
 namespace {
 const char *const kJobID = "jobID";
@@ -39,10 +40,12 @@ const std::string kConfigNumsdev = "devNums";
 const std::string kConfigDevIdList = "devIdList";
 const std::string kProfStart = "prof_start";
 const std::string kProfStop = "prof_stop";
+const std::string kProfModelSubscribe = "prof_model_subscribe";
+const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
 }  // namespace
 
 namespace ge {
-ProfilingManager::ProfilingManager() {}
+ProfilingManager::ProfilingManager() : subscribe_count_(0) {}
 
 ProfilingManager::~ProfilingManager() {}
 
@@ -54,6 +57,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager &ProfilingMana
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::Init(const Options &options) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   vector<int32_t>().swap(device_id_);
+  subscribe_count_ = 0;
   job_id_ = options.job_id;
 
   GELOGI("ProfilingManager::Init  job_id:%s", job_id_.c_str());
@@ -382,7 +386,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingTaskDescInfo(
-    const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id) {
+    uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
   if (reporter == nullptr) {
@@ -401,7 +405,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
                      .append(op_name).append(" ")
                      .append(std::to_string(block_dim).append(" ")
                      .append(std::to_string(task_id)).append(" ")
-                     .append(std::to_string(stream_id)).append("\n"));
+                     .append(std::to_string(stream_id)).append(" ")
+                     .append(std::to_string(model_id)).append("\n"));
 
     Msprof::Engine::ReporterData reporter_data{};
     reporter_data.deviceId = device_id;
@@ -425,7 +430,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingGraphDescInfo(
-    const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info, const int32_t &device_id) {
+    uint32_t model_id, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info, const int32_t &device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
   GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return;);
@@ -483,6 +488,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
       data.append("\"");
     }
 
+    data.append(" model_id:").append(std::to_string(model_id));
+
     data.append("\n");
 
     Msprof::Engine::ReporterData reporter_data{};
@@ -537,7 +544,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUn
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportProfilingData(
-    const std::vector<TaskDescInfo> &task_desc_info, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info) {
+    uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
+    const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
+    bool check_device) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   int32_t logic_device_id = 0;
   rtError_t rt_ret = rtGetDevice(&logic_device_id);
@@ -546,7 +555,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
     return;
   }
   GELOGI("current logic_device_id:%d", logic_device_id);
-  if (!is_acl_api_mode_) {
+  if (check_device) {
     auto ret = std::find(device_id_.begin(), device_id_.end(), logic_device_id);
     if (ret == device_id_.end()) {
       GELOGE(FAILED, "get valid phy_device_id failed, profiling report failed.");
@@ -554,9 +563,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
     }
   }
   GELOGI("start ProfilingTaskDescInfo.");
-  ProfilingTaskDescInfo(task_desc_info, logic_device_id);
+  ProfilingTaskDescInfo(model_id, task_desc_info, logic_device_id);
   GELOGI("start ProfilingGraphDescInfo.");
-  ProfilingGraphDescInfo(compute_graph_desc_info, logic_device_id);
+  ProfilingGraphDescInfo(model_id, compute_graph_desc_info, logic_device_id);
   GELOGI("Report profiling data for GE end.");
 #endif
 }
@@ -579,6 +588,105 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t ProfilingManager::GetP
                     PROF_AIVECTORCORE_METRICS_MASK |
                     PROF_MODEL_LOAD_MASK;
   return module;
+}
+
+void ProfilingManager::UpdateSubscribeDeviceModuleMap(std::string prof_type,
+                                                      uint32_t device_id,
+                                                      uint64_t module) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  if (prof_type == kProfModelSubscribe) {
+    if (subs_dev_module_.find(device_id) != subs_dev_module_.end()) {
+      subs_dev_module_[device_id].subscribe_count++;
+    } else {
+      DeviceSubsInfo dev_info;
+      dev_info.module = module;
+      dev_info.subscribe_count = 1;
+      subs_dev_module_[device_id] = dev_info;
+    }
+  } else if (prof_type == kProfModelUnsubscribe) {
+    if (subs_dev_module_.find(device_id) != subs_dev_module_.end()) {
+      if (subs_dev_module_[device_id].subscribe_count > 0) {
+        subs_dev_module_[device_id].subscribe_count--;
+      }
+    }
+  } else {
+    GELOGI("No need to update device_id module map.");
+  }
+#endif
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfModelSubscribe(
+    uint64_t module, void *model) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  std::lock_guard<std::mutex> lock(mutex_);
+  uint64_t model_load_mask = module & PROF_MODEL_LOAD_MASK;
+  if ((subscribe_count_ == 0) && (model_load_mask == PROF_MODEL_LOAD_MASK)) {
+    // register framework to profiling
+    int32_t result = Msprof::Engine::Init(GE_PROFILING_MODULE, &engine_);
+    if (result != SUCCESS) {
+      GELOGE(FAILED, "Register profiling engine failed.");
+      return FAILED;
+    }
+    GELOGI("Prof subscribe: model load profiling on.");
+  }
+  subscribe_count_++;
+
+  auto davinci_model = static_cast<DavinciModel *>(model);
+  int32_t device_num = 1;
+  uint32_t device[1];
+  device[0] = davinci_model->GetDeviceId();
+  rtError_t rt_ret = rtProfilerStart(module, device_num, device);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(FAILED, "Runtime profiler start failed.");
+    return FAILED;
+  }
+  UpdateSubscribeDeviceModuleMap(kProfModelSubscribe, device[0], module);
+
+  // Report profiling data
+  Status p_ret = davinci_model->ReportProfilingData(false);
+  if (p_ret != SUCCESS) {
+    GELOGE(p_ret, "Report profiling data failed.");
+    return p_ret;
+  }
+#endif
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfModelUnsubscribe(
+    void *model) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (subscribe_count_ == 0) {
+    GELOGW("The profiler has not been subscribed, you do not need to cannel the subscription.");
+    return SUCCESS;
+  }
+
+  auto davinci_model = static_cast<DavinciModel *>(model);
+  int32_t dev_num = 1;
+  uint32_t device[1];
+  device[0] = davinci_model->GetDeviceId();
+  auto iter = subs_dev_module_.find(device[0]);
+  if (iter != subs_dev_module_.end()) {
+    if (subs_dev_module_[device[0]].subscribe_count == 1) {
+      rtError_t rt_ret = rtProfilerStop(subs_dev_module_[device[0]].module, dev_num, device);
+      if (rt_ret != RT_ERROR_NONE) {
+        GELOGE(FAILED, "Runtime profiler stop failed.");
+        return FAILED;
+      }
+    }
+    UpdateSubscribeDeviceModuleMap(kProfModelUnsubscribe, device[0], subs_dev_module_[device[0]].module);
+  }
+
+  subscribe_count_--;
+  if (subscribe_count_ == 0) {
+    int32_t ret = Msprof::Engine::UnInit(GE_PROFILING_MODULE);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Profiling plugin uninit failed, ret:%d", ret);
+      return ret;
+    }
+  }
+#endif
+  return SUCCESS;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfInit(uint64_t module) {
@@ -748,6 +856,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
   GELOGI("Runtime config param: 0x%llx, device num: %d.", module, device_num);
+
   rtError_t rt_ret = rtProfilerStart(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "Runtime profiler config proc failed.");

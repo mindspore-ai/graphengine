@@ -124,10 +124,7 @@ Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
       if (another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_name and related_input_rank!"
                            " Please ensure param is the same with the first aipp config(related_input_name).";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not both set related_input_rank and related_input_name!"
-               " Please ensure param is the same with the first aipp config(related_input_name).");
+        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg)
         return PARAM_INVALID;
       }
       if (item->related_input_name() == another_item->related_input_name()) {

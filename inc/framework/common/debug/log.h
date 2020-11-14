@@ -255,7 +255,7 @@
 
 #define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)                                    \
   {                                                                                    \
-    GELOGE(_status, "%s", errormsg);                                                         \
+    GELOGE(_status, "%s", errormsg);                                                   \
     ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
   }
 
@@ -264,7 +264,7 @@
   do {                                                                                   \
     bool b = (expr);                                                                     \
     if (!b) {                                                                            \
-      GELOGE(_status, "%s", errormsg);                                                         \
+      GELOGE(_status, "%s", errormsg);                                                   \
       ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
       return _status;                                                                    \
     }                                                                                    \

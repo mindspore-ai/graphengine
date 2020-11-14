@@ -306,9 +306,8 @@ NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
     }
     return node;
   }
-  GELOGE(PARAM_INVALID, "Can not find the data node by index %d", rank);
   string errormsg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
-  ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
+  GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
   return nullptr;
 }
 Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr &target,
@@ -353,10 +352,10 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   }
 
   if (!edge_indexes.empty() && (*edge_indexes.rbegin() >= data_node->GetOutDataNodes().size())) {
-    GELOGE(PARAM_INVALID, "input_edge_idx %u should smaller than out edge size of target input %zu",
-           *edge_indexes.rbegin(), data_node->GetOutDataNodes().size());
-    string errormsg = "The aipp parameter input_edge_idx should be smaller than the target input's outnodes.";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
+    string errormsg = "The aipp parameter input_edge_idx[" + std::to_string(*edge_indexes.rbegin()) +
+        "] should be smaller than the target input[" +
+        std::to_string(data_node->GetOutDataNodes().size()) +"]'s outnodes.";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
     return PARAM_INVALID;
   }
   target = data_node;
@@ -429,8 +428,7 @@ Status AippOp::ConvertRelatedInputNameToRank() {
   if (!convert_flag) {
     string error_msg = "Top name " + related_input_name + "convert rank failed, Please"
                        " ensure top name in aipp config is the top name of data node.";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-    GELOGE(PARAM_INVALID, "Top name[%s] converts rank failed.", related_input_name.c_str());
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
     return PARAM_INVALID;
   }
 
@@ -781,22 +779,19 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   int64_t batch_count = -1;
   if (GetDataDimN(data_node, ori_data_format, batch_count) != ge::SUCCESS) {
     string errormsg = "Get data_node dims and transfer to nchw_dims failed!";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
-    GELOGE(PARAM_INVALID, "Get data_node dims and transfer to nchw_dims failed!");
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, errormsg);
     return PARAM_INVALID;
   }
   if (batch_count <= 0) {
     string errormsg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
-    GELOGE(PARAM_INVALID, "Batch count %ld is invalid", batch_count);
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, errormsg);
     return PARAM_INVALID;
   }
 
   int64_t max_dynamic_aipp_size = CalcMaxSize(batch_count);
   if (max_dynamic_aipp_size < 0) {
     string errormsg = "The dynamic aipp size is not positive";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
-    GELOGE(PARAM_INVALID, "The dynamic aipp size is not positive.");
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, errormsg);
     return PARAM_INVALID;
   }
 

@@ -103,7 +103,7 @@ class ZeroCopyTask {
   bool is_updated_;
   string batch_label_;
   // <address from Op, {offset in args}>
-  map<uintptr_t, vector<size_t>> task_addr_offset_;
+  map<uintptr_t, set<size_t>> task_addr_offset_;
 };
 } // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_ZERO_COPY_TASK_H_

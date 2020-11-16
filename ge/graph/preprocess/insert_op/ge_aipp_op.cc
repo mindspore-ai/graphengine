@@ -784,7 +784,7 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   }
   if (batch_count <= 0) {
     string error_msg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg_c_str());
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
 

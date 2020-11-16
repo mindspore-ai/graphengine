@@ -124,6 +124,8 @@ Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
         auto tmp_index = cur_data_index;
         for (size_t i = 0; i < static_cast<size_t>(dynamic_dims_num); ++i) {
           if (tmp_index >= dynamic_gear_info.size()) {
+            ErrorManager::GetInstance().ATCReportErrMessage(
+                "E10045", {"name", "shape"}, {data_name, formats::JoinToString(data_shape)});
             GELOGE(PARAM_INVALID, "Data: %s shape: %s make dynamic dims overflow", data_name.c_str(),
                    formats::JoinToString(data_shape).c_str());
             return FAILED;
@@ -131,6 +133,8 @@ Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
           one_gear.push_back(dynamic_gear_info[tmp_index++]);
         }
       } else {
+        ErrorManager::GetInstance().ATCReportErrMessage(
+            "E10046", {"name", "shape"}, {data_name, formats::JoinToString(data_shape)});
         GELOGE(PARAM_INVALID, "Dynamic dims num of data: %s shape: %s can not be more than one gear dynamic info size",
                data_name.c_str(), formats::JoinToString(data_shape).c_str());
         return FAILED;

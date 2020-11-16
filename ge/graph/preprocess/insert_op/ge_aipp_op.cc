@@ -355,7 +355,7 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
     string error_msg = "The aipp parameter input_edge_idx[" + std::to_string(*edge_indexes.rbegin()) +
         "] should be smaller than the target input[" +
         std::to_string(data_node->GetOutDataNodes().size()) +"]'s outnodes.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
   target = data_node;
@@ -784,7 +784,7 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   }
   if (batch_count <= 0) {
     string error_msg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg);
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg_c_str());
     return PARAM_INVALID;
   }
 

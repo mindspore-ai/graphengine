@@ -32,11 +32,6 @@ Status LabelAllocator::AssignFunctionalLabels() {
     return INTERNAL_ERROR;
   }
 
-  if (compute_graph_->GetGraphUnknownFlag()) {
-    GELOGD("Graph[%s] is unknown graph, skip label allocator.", compute_graph_->GetName().c_str());
-    return SUCCESS;
-  }
-
   // Add label task for sub graph.
   GELOGI("AssignFunctionalLabels start: %s.", compute_graph_->GetName().c_str());
   std::set<NodePtr> functional_nodes;
@@ -62,7 +57,7 @@ Status LabelAllocator::AssignFunctionalLabels() {
   }
 
   (void)AttrUtils::SetInt(*compute_graph_, ATTR_MODEL_LABEL_NUM, label_index);
-  GELOGI("AssignFunctionalLabels success.");
+  GELOGI("AssignFunctionalLabels success, Num: %u.", label_index);
   return SUCCESS;
 }
 
@@ -72,13 +67,29 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
     return false;
   }
 
-  NodePtr parent = graph->GetParentNode();
-  if (parent == nullptr) {
-    GELOGE(INTERNAL_ERROR, "ComputeGraph owner not set: %s.", graph->GetName().c_str());
+  if (graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip label allocator.", graph->GetName().c_str());
+    return true;
+  }
+
+  NodePtr func_node = graph->GetParentNode();
+  if (func_node == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Parent functional node not set: %s.", graph->GetName().c_str());
     return false;
   }
 
-  (void)functional_nodes.insert(parent);  // unique functional node.
+  ComputeGraphPtr owner_graph = func_node->GetOwnerComputeGraph();
+  if (owner_graph == nullptr) {
+    GELOGE(INTERNAL_ERROR, "ComputeGraph owner not set: %s.", func_node->GetName().c_str());
+    return false;
+  }
+
+  if (owner_graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip label allocator.", owner_graph->GetName().c_str());
+    return true;
+  }
+
+  (void)functional_nodes.insert(func_node);  // unique functional node.
   return true;
 }
 }  // namespace ge

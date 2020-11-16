@@ -54,6 +54,7 @@ const std::map<std::string, std::string> PROFILE_COMPONENT_MAP{
     {"runtime", RTS_PROFILE},
 };
 const std::string PROFILE_CONFIG = "config";
+const std::string PROFILE_MODEL_ID = "modelId";
 
 REGISTER_OPTYPE_DEFINE(DATA, "Data");
 REGISTER_OPTYPE_DEFINE(AIPPDATA, "AippData");

@@ -32,7 +32,6 @@
 #include "graph/anchor.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/graph.h"
-#include "graph/manager/graph_var_manager.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
@@ -64,8 +63,6 @@ using std::vector;
 
 static bool is_dynamic_input = false;
 
-// 310 limited 8G size
-const char *const kGraphMemoryManagerMallocMaxSize = "8*1024*1024*1024";
 const char *const kModeSupport = "only support 0(model to framework model), "
                                  "1(framework model to json), 3(only pre-check), 5(pbtxt to json)";
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
@@ -908,13 +905,6 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     return domi::FAILED;
   }
 
-  geRet = ge::VarManager::Instance(0)->SetMemoryMallocSize(options);
-  if (geRet != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "SetMemoryMallocSize failed.");
-    (void)ge::GELib::GetInstance()->Finalize();
-    return domi::FAILED;
-  }
-
   ge::Graph graph;
   std::vector<ge::GeTensor> inputs;
   if (FLAGS_framework == domi::MINDSPORE) {
@@ -1016,7 +1006,6 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::OP_SELECT_IMPL_MODE, FLAGS_op_select_implmode);
   options.emplace(ge::OPTYPELIST_FOR_IMPLMODE, FLAGS_optypelist_for_implmode);
   options.emplace(ge::AUTO_TUNE_MODE, FLAGS_auto_tune_mode);
-  options.emplace(ge::GRAPH_MEMORY_MAX_SIZE, kGraphMemoryManagerMallocMaxSize);
   options.emplace(ge::OP_DEBUG_LEVEL, to_string(FLAGS_op_debug_level));
   options.emplace(ge::DEBUG_DIR, FLAGS_debug_dir);
   options.emplace(ge::OP_COMPILER_CACHE_DIR, FLAGS_op_compiler_cache_dir);
@@ -1049,13 +1038,6 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
   ret = generator.Initialize(options, domi::GetContext());
   if (ret != SUCCESS) {
     DOMI_LOGE("GeGenerator initialize failed!");
-    (void)ge::GELib::GetInstance()->Finalize();
-    return domi::FAILED;
-  }
-
-  ret = ge::VarManager::Instance(0)->SetMemoryMallocSize(options);
-  if (ret != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "SetMemoryMallocSize failed.");
     (void)ge::GELib::GetInstance()->Finalize();
     return domi::FAILED;
   }
@@ -1157,8 +1139,6 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::ENABLE_COMPRESS_WEIGHT),
                                            (FLAGS_enable_compress_weight == "true") ?
                                            ge::kEnableCompressWeightTrue : ge::kEnableCompressWeightFalse));
-
-  options.insert(std::pair<string, string>(string(ge::GRAPH_MEMORY_MAX_SIZE), kGraphMemoryManagerMallocMaxSize));
 
   options.insert(std::pair<string, string>(string(ge::ENABLE_SINGLE_STREAM), FLAGS_enable_single_stream));
 

@@ -25,6 +25,10 @@
 namespace ge {
 Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
+  if (graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip.", graph->GetName().c_str());
+    return SUCCESS;
+  }
 
   int64_t value = 0;
   rtError_t rt_ret = rtGetRtCapability(FEATURE_TYPE_MEMCPY, MEMCPY_INFO_SUPPORT_ZEROCOPY, &value);
@@ -201,9 +205,10 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
                                                        const OutDataAnchorPtr &out_data_anchor,
                                                        const NodePtr &out_of_user_data) {
   GELOGD("Start CreateMemcpyAddrAsyncNode.");
+  static uint32_t new_node_index = 0;
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "Op_desc of pre node is invalid.");
-  std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYADDRASYNC;
+  std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYADDRASYNC + "_" + std::to_string(new_node_index++);
 
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name, MEMCPYADDRASYNC);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);

@@ -124,19 +124,13 @@ Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
       if (another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_name and related_input_rank!"
                            " Please ensure param is the same with the first aipp config(related_input_name).";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not both set related_input_rank and related_input_name!"
-               " Please ensure param is the same with the first aipp config(related_input_name).");
+        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
         return PARAM_INVALID;
       }
       if (item->related_input_name() == another_item->related_input_name()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_name"
                            " param is different in different aipp config.";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
-               "is different in different aipp config.");
+        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
         return PARAM_INVALID;
       }
     }
@@ -156,19 +150,13 @@ Status InsertNewOpUtil::CheckInputRankPositionNoRepeat() {
       if (!another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_rank and related_input_name!"
                            " Please ensure param is the same with the first aipp config(related_input_rank).";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not both set related_input_rank and related_input_name!"
-               " Please ensure param is the same with the first aipp config(related_input_rank).");
+        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
         return PARAM_INVALID;
       }
       if (item->related_input_rank() == another_item->related_input_rank()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_rank"
                           " param is different in different aipp config.";
-        ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-        GELOGE(PARAM_INVALID,
-               "Can not insert aipp op to the same postion! Please ensure related_input_rank param "
-               "is different in different aipp config.");
+        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
         return PARAM_INVALID;
       }
     }
@@ -224,9 +212,10 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
         }
       }
     }
-    GE_CHK_BOOL_RET_STATUS((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), PARAM_INVALID,
-                           "Can not config part of outputs of Data node to support AIPP, config all "
-                           "of the outputs of Data to support AIPP, or config none of them");
+    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), 
+        PARAM_INVALID,
+        "Can not config part of outputs of Data node to support AIPP, config all "
+        "of the outputs of Data to support AIPP, or config none of them");
 
     std::unique_ptr<domi::AippOpParams> aippParams(new (std::nothrow) domi::AippOpParams());
     GE_CHECK_NOTNULL(aippParams);
@@ -238,16 +227,19 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
           GE_CHK_STATUS(GetAippParams(currAippParam, aippNodes[i]));
 
           if (aippMode == domi::AippOpParams::static_) {
-            GE_CHK_BOOL_RET_STATUS(aippParams->input_format() == currAippParam->input_format(), PARAM_INVALID,
-                                   "The input_format of all aipp_ops after one Data should be the same");
-            GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_w() == currAippParam->src_image_size_w(), PARAM_INVALID,
-                                   "The src_image_size_w of all aipp_ops after one Data should be the same");
-            GE_CHK_BOOL_RET_STATUS(aippParams->src_image_size_h() == currAippParam->src_image_size_h(), PARAM_INVALID,
-                                   "The src_image_size_h of all aipp_ops after one Data should be the same");
+            GE_CHK_LOG_AND_ERRORMSG(
+                aippParams->input_format() == currAippParam->input_format(),
+                PARAM_INVALID, "The input_format of all aipp_ops after one Data should be the same");
+            GE_CHK_LOG_AND_ERRORMSG(
+                aippParams->src_image_size_w() == currAippParam->src_image_size_w(),
+                PARAM_INVALID, "The src_image_size_w of all aipp_ops after one Data should be the same");
+            GE_CHK_LOG_AND_ERRORMSG(
+                    aippParams->src_image_size_h() == currAippParam->src_image_size_h(),
+                PARAM_INVALID, "The src_image_size_h of all aipp_ops after one Data should be the same");
           } else {
-            GE_CHK_BOOL_RET_STATUS(aippParams->max_src_image_size() == currAippParam->max_src_image_size(),
-                                   PARAM_INVALID,
-                                   "The max_src_image_size of all aipp_ops after one Data should be the same");
+            GE_CHK_LOG_AND_ERRORMSG(
+                aippParams->max_src_image_size() == currAippParam->max_src_image_size(),
+                PARAM_INVALID, "The max_src_image_size of all aipp_ops after one Data should be the same");
           }
         });
   }
@@ -290,7 +282,8 @@ Status InsertNewOpUtil::UpdateDataNodeByAipp(const ComputeGraphPtr &graph) {
   for (auto &switchn : updated_switchn) {
     auto data_iter = switchn_names_to_data.find(switchn->GetName());
     if (data_iter == switchn_names_to_data.end()) {
-      GELOGE(INTERNAL_ERROR, "Failed to find relative data node by switchn %s", switchn->GetName().c_str());
+      string error_msg = "Failed to find relative data node by switchn[" + switchn->GetName() + "]";
+      GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error_msg.c_str());
       return INTERNAL_ERROR;
     }
     GE_RETURN_IF_ERROR(UpdateDataBySwitchN(switchn, data_iter->second));
@@ -477,7 +470,8 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
     }
   }
   if (max_index >= switchn->GetOpDesc()->GetOutputsSize()) {
-    GELOGE(INTERNAL_ERROR, "No max size found from switchn node %s", switchn->GetName().c_str());
+    string error_msg = "No max size found from switchn node[" + switchn->GetName()+ "]";
+    GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error_msg.c_str());
     return INTERNAL_ERROR;
   }
   auto output_desc = switchn->GetOpDesc()->MutableOutputDesc(max_index);

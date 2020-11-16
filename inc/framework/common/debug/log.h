@@ -28,7 +28,7 @@
 #if !defined(__ANDROID__) && !defined(ANDROID)
 #define DOMI_LOGE(...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, __VA_ARGS__)
 #else
-#include<android/log.h>
+#include <android/log.h>
 #if defined(BUILD_VERSION_PERF)
 #define DOMI_LOGE(fmt, ...)
 #else
@@ -83,12 +83,12 @@
   } while (0);
 
 // If expr is not GRAPH_SUCCESS, print the log and return FAILED
-#define GE_CHK_GRAPH_STATUS_RET(expr, ...)   \
-  do {                                       \
-    if ((expr) != ge::GRAPH_SUCCESS) {       \
-      DOMI_LOGE(__VA_ARGS__);                \
-      return FAILED;                         \
-    }                                        \
+#define GE_CHK_GRAPH_STATUS_RET(expr, ...) \
+  do {                                     \
+    if ((expr) != ge::GRAPH_SUCCESS) {     \
+      DOMI_LOGE(__VA_ARGS__);              \
+      return FAILED;                       \
+    }                                      \
   } while (0);
 
 // If expr is not SUCCESS, print the log and execute a custom statement
@@ -99,13 +99,13 @@
   } while (0);
 
 // If expr is not true, print the log and return the specified status
-#define GE_CHK_BOOL_RET_STATUS(expr, _status, ...)                \
-  do {                                                            \
-    bool b = (expr);                                              \
-    if (!b) {                                                     \
-      GELOGE(_status, __VA_ARGS__);                               \
-      return _status;                                             \
-    }                                                             \
+#define GE_CHK_BOOL_RET_STATUS(expr, _status, ...) \
+  do {                                             \
+    bool b = (expr);                               \
+    if (!b) {                                      \
+      GELOGE(_status, __VA_ARGS__);                \
+      return _status;                              \
+    }                                              \
   } while (0);
 
 // If expr is not true, print the log and return the specified status
@@ -252,5 +252,21 @@
     DOMI_LOGE("Make shared failed");           \
     exec_expr1;                                \
   }
+
+#define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)                                    \
+  {                                                                                    \
+    GELOGE(_status, "%s", errormsg);                                                   \
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+  }
+
+#define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                 \
+  do {                                                                                   \
+    bool b = (expr);                                                                     \
+    if (!b) {                                                                            \
+      GELOGE(_status, "%s", errormsg);                                                   \
+      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+      return _status;                                                                    \
+    }                                                                                    \
+  } while (0)
 
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_LOG_H_

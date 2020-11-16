@@ -88,6 +88,7 @@ const uint32_t kDataMemAlignSizeCompare = 64;
 const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
+const int32_t kInvalidStream = -1;
 
 inline bool IsDataOp(const std::string &node_type) {
   return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
@@ -258,7 +259,6 @@ Status DavinciModel::Assign(const GeModelPtr &ge_model) {
 ///
 void DavinciModel::Shrink() {
   ge_model_.reset();  // delete object.
-  op_list_.clear();
 }
 
 Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
@@ -611,7 +611,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
     GE_DISMISS_GUARD(stream);
     stream_list_.push_back(stream);
-    GELOGD("Stream index:%u, stream:%p.", i, stream);
+    int32_t rt_stream_id = kInvalidStream;
+    (void)rtGetStreamId(stream, &rt_stream_id);
+    GELOGI("Logical stream index:%u, stream:%p, rtstream: %d.", i, stream, rt_stream_id);
   }
 
   for (uint32_t i = 0; i < EventNum(); i++) {
@@ -653,18 +655,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
     GE_IF_BOOL_EXEC(IsBroadCastOpData(node),
                     (void)ge::AttrUtils::SetStr(op_desc, VAR_ATTR_VAR_IS_BROADCAST, "var_is_restore"););
   }
-  // for profiling
-  op_name_map_ = compute_graph->GetGraphOpName();
-
-  vector<string> op_name;
-  GE_IF_BOOL_EXEC(ge::AttrUtils::GetListStr(ge_model_, ATTR_MODEL_TASK_INDEX_OP_NAME, op_name),
-                  GELOGI("get str of task_index_op_name"));
-  if (op_name_map_.empty()) {
-    for (size_t idx = 0; idx < op_name.size(); idx++) {
-      op_name_map_[idx] = op_name[idx];
-    }
-    GELOGI("Infer profiling: op_name_size(%zu)", op_name.size());
-  }
 
   GE_CHK_STATUS_RET(InitNodes(compute_graph), "Init nodes failed");
 
@@ -676,7 +666,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   auto all_dump_model = GetDumpProperties().GetAllDumpModel();
   bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
   bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
-  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() || findByOmName || findByModelName) {
+  bool dump_l1fusion_op = (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) ||
+                          findByOmName || findByModelName;
+  if (dump_l1fusion_op) {
     // malloc 2M for dump l1fusion op
     GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
 
@@ -690,21 +682,40 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   need_destroy_aicpu_kernel_ = IsAicpuKernelConnectSpecifiedLayer();
   (void)ge::AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name_);
 
+  string fp_ceiling_mode;
+  if (ge::AttrUtils::GetStr(ge_model_, ATTR_FP_CEILING_MODE, fp_ceiling_mode)) {
+    GELOGI("Get attr ATTR_FP_CEILING_MODE from model, value is %s.", fp_ceiling_mode.c_str());
+    // mode 0: Do not perform saturation processing. By default, IEEE754 is used.
+    GE_CHK_RT_RET(rtSetCtxINFMode((fp_ceiling_mode != "0")));
+  }
+
   // collect profiling for ge
-  if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
-    std::vector<ComputeGraphDescInfo> compute_graph_desc_info;
-    Status ret1 = GetComputeGraphInfo(compute_graph, compute_graph_desc_info);
-    if (ret1 != SUCCESS) {
-      GELOGE(ret1, "GetComputeGraphInfo failed.");
-      return ret1;
+  auto &profiling_manager = ProfilingManager::Instance();
+  if (profiling_manager.ProfilingModelLoadOn()) {
+    Status p_ret = ReportProfilingData(!profiling_manager.IsAclApiMode());
+    if (p_ret != SUCCESS) {
+      GELOGE(p_ret, "Report profiling data failed.");
+      return p_ret;
     }
-    ProfilingManager::Instance().ReportProfilingData(GetTaskDescInfo(), compute_graph_desc_info);
-    GE_CHK_STATUS(SinkModelProfile(), "Sink model profile failed.");
   }
 
   Shrink();
   GELOGI("Davinci model init success.");
   return ret;
+}
+
+Status DavinciModel::ReportProfilingData(bool check_device) {
+  std::vector<ComputeGraphDescInfo> compute_graph_desc_info;
+  Status ret = GetComputeGraphInfo(compute_graph_desc_info);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GetComputeGraphInfo failed.");
+    return ret;
+  }
+  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info, check_device);
+  GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
+  op_list_.clear();
+
+  return SUCCESS;
 }
 
 ///
@@ -2900,34 +2911,25 @@ Status DavinciModel::DistributeTask() {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
-    // get op_name by task_index
-    if (task->GetCtx() != nullptr) {
-      auto iter = op_name_map_.find(task_index);
-      if (iter == op_name_map_.end()) {
-        continue;
-      }
-
-      // else task index is found in op_name_map_
-      TaskDescInfo task_desc_info;
-      string op_name = op_name_map_[task_index];
-      if (!om_name_.empty()) {
-        task_desc_info.model_name = om_name_;
-      } else {
-        task_desc_info.model_name = name_;
-      }
-      task_desc_info.op_name = op_name;
-      task_desc_info.block_dim = model_task_def->task(task_index).kernel().block_dim();
-      task_desc_info.task_id = task->GetTaskID();
-      task_desc_info.stream_id = task->GetStreamId();
-      task_desc_info_.emplace_back(task_desc_info);
-      if (flag) {
-        if (task->GetSktTaskID() != 0xFFFFFFFF) {
-          TaskDescInfo task_desc_info;
-          string op_name = "super_kernel_" + to_string(task_index);
-          task_desc_info.op_name = op_name;
-          task_desc_info.task_id = task->GetSktTaskID();
-          task_desc_info_.emplace_back(task_desc_info);
-        }
+    // Load task info for profiling
+    TaskDescInfo task_desc_info;
+    if (!om_name_.empty()) {
+      task_desc_info.model_name = om_name_;
+    } else {
+      task_desc_info.model_name = name_;
+    }
+    task_desc_info.op_name = op->GetName();
+    task_desc_info.block_dim = model_task_def->task(task_index).kernel().block_dim();
+    task_desc_info.task_id = task->GetTaskID();
+    task_desc_info.stream_id = task->GetStreamId();
+    task_desc_info_.emplace_back(task_desc_info);
+    if (flag) {
+      if (task->GetSktTaskID() != 0xFFFFFFFF) {
+        TaskDescInfo task_desc_info;
+        string op_name = "super_kernel_" + to_string(task_index);
+        task_desc_info.op_name = op_name;
+        task_desc_info.task_id = task->GetSktTaskID();
+        task_desc_info_.emplace_back(task_desc_info);
       }
     }
   }
@@ -3817,50 +3819,31 @@ void DavinciModel::SaveHcclFollowStream(int64_t main_stream_id, rtStream_t strea
   main_follow_stream_mapping_[main_stream_id].emplace_back(stream);
 }
 
-Status DavinciModel::GetComputeGraphInfo(const ComputeGraphPtr &graph, vector<ComputeGraphDescInfo> &graph_desc_info) {
+Status DavinciModel::GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_desc_info) {
   GELOGI("GetComputeGraphInfo start.");
-  for (auto &node : graph->GetAllNodes()) {
+  auto &all_op_desc = data_dumper_.GetAllOpDescInfo();
+  for (auto &op_desc : all_op_desc) {
     ComputeGraphDescInfo compute_graph_info;
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(PARAM_INVALID, "op_desc is nullptr.");
-      return PARAM_INVALID;
+    if (!om_name_.empty()) {
+      compute_graph_info.model_name = om_name_;
+    } else {
+      compute_graph_info.model_name = name_;
     }
+    compute_graph_info.op_name = op_desc.op_name;
+    compute_graph_info.op_type = op_desc.op_type;
+    compute_graph_info.input_format = op_desc.input_format;
+    compute_graph_info.input_shape = op_desc.input_shape;
+    compute_graph_info.input_data_type = op_desc.input_data_type;
+    compute_graph_info.output_format = op_desc.output_format;
+    compute_graph_info.output_shape = op_desc.output_shape;
+    compute_graph_info.output_data_type = op_desc.output_data_type;
 
-    auto op_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
-    if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, op_mode) &&
-        op_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
-      if (!om_name_.empty()) {
-        compute_graph_info.model_name = om_name_;
-      } else {
-        compute_graph_info.model_name = name_;
-      }
-      compute_graph_info.op_name = op_desc->GetName();
-      compute_graph_info.op_type = op_desc->GetType();
-
-      for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
-        GeTensorDescPtr input_desc = op_desc->MutableInputDesc(i);
-        if (input_desc == nullptr) {
-          continue;
-        }
-        compute_graph_info.input_format.emplace_back(input_desc->GetFormat());
-        compute_graph_info.input_shape.emplace_back(input_desc->GetShape().GetDims());
-        compute_graph_info.input_data_type.emplace_back(input_desc->GetDataType());
-      }
-
-      for (size_t j = 0; j < op_desc->GetOutputsSize(); ++j) {
-        GeTensorDesc output_desc = op_desc->GetOutputDesc(j);
-        compute_graph_info.output_format.emplace_back(output_desc.GetFormat());
-        compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
-        compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
-      }
-
-      graph_desc_info.emplace_back(compute_graph_info);
-    }
+    graph_desc_info.emplace_back(compute_graph_info);
   }
   GELOGI("GetComputeGraphInfo end.");
   return SUCCESS;
 }
+
 void DavinciModel::SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size) {
   if (tensor_name_to_fixed_addr_size_.find(tensor_name) == tensor_name_to_fixed_addr_size_.end()) {
     tensor_name_to_fixed_addr_size_[tensor_name] = total_fixed_addr_size_;

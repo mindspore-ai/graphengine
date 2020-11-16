@@ -43,6 +43,8 @@ const std::string kCmdTypeProfInit = "prof_init";
 const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
 const std::string kCmdTypeProfStop = "prof_stop";
+const std::string kCmdTypeProfModelSubscribe = "prof_model_subscribe";
+const std::string kCmdTypeProfModelUnsubscribe = "prof_model_cancel_subscribe";
 const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
 const char *const kDeleteCustOp = "deleteCustOp";
 struct CustAicpuSoBuf {
@@ -334,11 +336,9 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
 
-    if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
-      davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
-                                                       timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
-      davinci_model->SetProfileTime(MODEL_LOAD_END);
-    }
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+                                                     timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
+    davinci_model->SetProfileTime(MODEL_LOAD_END);
   } while (0);
 
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
@@ -565,7 +565,9 @@ Status ModelManager::HandleCommand(const Command &command) {
       {kCmdTypeProfile, HandleProfileCommand}, {kCmdTypeDump, HandleDumpCommand},
       {kCmdTypeProfiling, HandleAclProfilingCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
       {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
-      {kCmdTypeProfStop, HandleProfStopCommand}};
+      {kCmdTypeProfStop, HandleProfStopCommand},
+      {kCmdTypeProfModelSubscribe, HandleProfModelSubscribeCommand},
+      {kCmdTypeProfModelUnsubscribe, HandleProfModelUnsubscribeCommand}};
 
   auto iter = cmds.find(command.cmd_type);
   if (iter == cmds.end()) {
@@ -586,6 +588,77 @@ Status ModelManager::HandleAclProfilingCommand(const Command &command) {
   std::string value = command.cmd_params[1];
   if (map_key == PROFILE_CONFIG) {
     ProfilingManager::Instance().SetProfilingConfig(value);
+  }
+
+  return SUCCESS;
+}
+
+Status ModelManager::GetModelByCmd(const Command &command,
+                                   std::shared_ptr<DavinciModel> &davinci_model) {
+  if (command.cmd_params.size() < kCmdParSize) {
+    GELOGE(PARAM_INVALID, "When the cmd_type is '%s', the size of cmd_params must larger than 2.",
+        command.cmd_type.c_str());
+    return PARAM_INVALID;
+  }
+
+  std::string map_key = command.cmd_params[0];
+  std::string value = command.cmd_params[1];
+   if (map_key == PROFILE_MODEL_ID) {
+    int32_t model_id = 0;
+    try {
+      model_id = std::stoi(value);
+    } catch (std::invalid_argument &) {
+      GELOGE(PARAM_INVALID, "Model id: %s is invalid.", value.c_str());
+      return PARAM_INVALID;
+    } catch (std::out_of_range &) {
+      GELOGE(PARAM_INVALID, "Model id: %s is out of range.", value.c_str());
+      return PARAM_INVALID;
+    } catch (...) {
+      GELOGE(FAILED, "Model id: %s cannot change to int.", value.c_str());
+      return FAILED;
+    }
+
+    auto model_manager = ModelManager::GetInstance();
+    GE_CHECK_NOTNULL(model_manager);
+    davinci_model = model_manager->GetModel(static_cast<uint32_t>(model_id));
+    if (davinci_model == nullptr) {
+      GELOGE(FAILED, "Model id: %d is invaild or model is not loaded.", model_id);
+      return FAILED;
+    }
+  } else {
+    GELOGE(FAILED, "The model_id parameter is not found in the command.");
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+Status ModelManager::HandleProfModelSubscribeCommand(const Command &command) {
+  std::shared_ptr<DavinciModel> davinci_model = nullptr;
+  Status ret = GetModelByCmd(command, davinci_model);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+
+  if (ProfilingManager::Instance().ProfModelSubscribe(command.module_index,
+                                                      static_cast<void *>(davinci_model.get())) != SUCCESS) {
+    GELOGE(FAILED, "Handle prof model subscribe failed.");
+    return FAILED;
+  }
+
+  return SUCCESS;
+}
+
+Status ModelManager::HandleProfModelUnsubscribeCommand(const Command &command) {
+  std::shared_ptr<DavinciModel> davinci_model = nullptr;
+  Status ret = GetModelByCmd(command, davinci_model);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+
+  if (ProfilingManager::Instance().ProfModelUnsubscribe(static_cast<void *>(davinci_model.get())) != SUCCESS) {
+    GELOGE(FAILED, "Handle prof model unsubscribe failed.");
+    return FAILED;
   }
 
   return SUCCESS;
@@ -973,11 +1046,9 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 
     GELOGI("Parse model %u success.", model_id);
 
-    if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
-      davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
-                                                       timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
-      davinci_model->SetProfileTime(MODEL_LOAD_END);
-    }
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+                                                     timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
+    davinci_model->SetProfileTime(MODEL_LOAD_END);
 
     GE_IF_BOOL_EXEC(ret == SUCCESS, device_count++);
     return SUCCESS;

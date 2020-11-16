@@ -485,6 +485,10 @@ Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const
       GELOGE(domi::FAILED, "Check out node (%s) fail.", user_out_nodes[i].first.c_str());
       return domi::FAILED;
     }
+
+    // add user_define_output_nodes attr.
+    (void)ge::AttrUtils::SetStr(op_desc, ATTR_ATC_USER_DEFINE_OUTPUT_NODES, "true");
+
     if (i < output_formats.size()) {
       if (output_formats[i] == domi::DOMI_TENSOR_NC1HWC0) {
         GELOGI("The output node [%s] should be set NC1HWC0", user_out_nodes[i].first.c_str());

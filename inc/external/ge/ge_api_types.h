@@ -339,6 +339,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              OUT_NODES,
                                                              INPUT_FP16_NODES,
                                                              LOG_LEVEL,
+                                                             OP_DEBUG_LEVEL,
                                                              DEBUG_DIR,
                                                              OP_COMPILER_CACHE_DIR,
                                                              OP_COMPILER_CACHE_MODE};

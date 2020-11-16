@@ -300,6 +300,8 @@ LIBGE_LOCAL_SRC_FILES := \
     hybrid/hybrid_davinci_model.cc                                       \
     executor/ge_executor.cc \
     analyzer/analyzer.cc \
+    ir_build/ge_ir_build.cc \
+    ir_build/atc_ir_common.cc \
 
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
@@ -314,6 +316,7 @@ RUNNER_LOCAL_C_INCLUDES := \
     $(TOPDIR)inc/common \
     $(TOPDIR)inc/external \
     $(TOPDIR)inc/external/graph \
+    $(TOPDIR)inc/external/ge \
     $(TOPDIR)inc/framework \
     $(TOPDIR)inc/framework/common \
     $(TOPDIR)inc/graph \
@@ -403,6 +406,7 @@ LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
 LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc \
                    ../../out/ge/lib64/stub/ge_prof.cc \
+                   ../../out/ge/lib64/stub/ge_ir_build.cc \
 
 LOCAL_SHARED_LIBRARIES :=
 

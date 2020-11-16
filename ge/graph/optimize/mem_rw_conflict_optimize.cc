@@ -680,6 +680,11 @@ Status GraphOptimize::HandleMemoryRWConflict(ComputeGraphPtr &compute_graph) {
   }
   // 2.loop all node, including node in subgraph and handle memory rw conflict
   for (auto &node : compute_graph->GetAllNodes()) {
+    // ignore while subgraph node
+    const auto parent_node = node->GetOwnerComputeGraph()->GetParentNode();
+    if ((parent_node != nullptr) && (kWhileOpTypes.count(parent_node->GetType()) > 0)) {
+      continue;
+    }
     // ignore data / netoutput of subgraph
     if (node->GetType() == DATA && AttrUtils::HasAttr(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX)) {
       continue;

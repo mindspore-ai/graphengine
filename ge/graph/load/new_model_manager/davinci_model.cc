@@ -88,6 +88,7 @@ const uint32_t kDataMemAlignSizeCompare = 64;
 const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
+const int32_t kInvalidStream = -1;
 
 inline bool IsDataOp(const std::string &node_type) {
   return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
@@ -610,7 +611,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
     GE_DISMISS_GUARD(stream);
     stream_list_.push_back(stream);
-    GELOGD("Stream index:%u, stream:%p.", i, stream);
+    int32_t rt_stream_id = kInvalidStream;
+    (void)rtGetStreamId(stream, &rt_stream_id);
+    GELOGI("Logical stream index:%u, stream:%p, rtstream: %d.", i, stream, rt_stream_id);
   }
 
   for (uint32_t i = 0; i < EventNum(); i++) {

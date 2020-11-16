@@ -245,6 +245,12 @@ const std::string INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
 // 0: close debug; 1: open TBE compiler; 2: open ccec compiler
 const std::string OP_DEBUG_LEVEL = "ge.opDebugLevel";
 
+// Configure model bank path
+const std::string MDL_BANK_PATH_FLAG = "ge.mdl_bank_path";
+
+// Configure op bank path
+const std::string OP_BANK_PATH_FLAG = "ge.op_bank_path";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -315,13 +321,27 @@ static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c
 static const char *const DEBUG_DIR = ge::DEBUG_DIR;
 static const char *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
 static const char *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
+static const char *const MDL_BANK_PATH_FLAG = ge::MDL_BANK_PATH_FLAG.c_str();
+static const char *const OP_BANK_PATH_FLAG = ge::OP_BANK_PATH_FLAG.c_str();
+
 // for interface: aclgrphBuildModel
-const std::set<std::string> ir_builder_suppported_options = {
-  INPUT_FORMAT,       INPUT_SHAPE,        OP_NAME_MAP,
-  DYNAMIC_BATCH_SIZE, DYNAMIC_IMAGE_SIZE, DYNAMIC_DIMS,
-  INSERT_OP_FILE,     PRECISION_MODE,     EXEC_DISABLE_REUSED_MEMORY,
-  AUTO_TUNE_MODE,     OUTPUT_TYPE,        OUT_NODES,
-  INPUT_FP16_NODES,   LOG_LEVEL};
+const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
+                                                             INPUT_SHAPE,
+                                                             OP_NAME_MAP,
+                                                             DYNAMIC_BATCH_SIZE,
+                                                             DYNAMIC_IMAGE_SIZE,
+                                                             DYNAMIC_DIMS,
+                                                             INSERT_OP_FILE,
+                                                             PRECISION_MODE,
+                                                             EXEC_DISABLE_REUSED_MEMORY,
+                                                             AUTO_TUNE_MODE,
+                                                             OUTPUT_TYPE,
+                                                             OUT_NODES,
+                                                             INPUT_FP16_NODES,
+                                                             LOG_LEVEL,
+                                                             DEBUG_DIR,
+                                                             OP_COMPILER_CACHE_DIR,
+                                                             OP_COMPILER_CACHE_MODE};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
@@ -336,7 +356,9 @@ const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
                                                             OUT_NODES,
                                                             COMPRESS_WEIGHT_CONF,
                                                             ENABLE_SCOPE_FUSION_PASSES,
-                                                            LOG_LEVEL};
+                                                            LOG_LEVEL,
+                                                            MDL_BANK_PATH_FLAG,
+                                                            OP_BANK_PATH_FLAG};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,

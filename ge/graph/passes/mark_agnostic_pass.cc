@@ -21,7 +21,7 @@ namespace ge {
 Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     auto node_type = NodeUtils::GetNodeType(*node);
-    if (node_type == SWITCH || node_type == REFSWITCH || node_type == SWITCHN) {
+    if (node_type == SWITCH || node_type == SWITCHN) {
       GELOGD("Mark format agnostic and continuous for switch node %s", node->GetName().c_str());
       const OpDescPtr op_desc = node->GetOpDesc();
       const GeTensorDescPtr op_tensor = op_desc->MutableInputDesc(0);
@@ -37,10 +37,15 @@ Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
     if (node_type == IDENTITY) {
       GELOGD("Mark format agnostic for identity node %s", node->GetName().c_str());
       AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
+      continue;
+    }
+    if (node_type == REFMERGE || node_type == REFSWITCH) {
+      GELOGD("Mark format agnostic for regmerge and refswitch node %s", node->GetName().c_str());
+      AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
       AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_input", std::vector<int64_t>({1}));
       continue;
     }
-    if (node_type == MERGE || node_type == REFMERGE) {
+    if (node_type == MERGE) {
       GELOGD("Mark format agnostic and continuous for merge node %s", node->GetName().c_str());
       const OpDescPtr op_desc = node->GetOpDesc();
       const GeTensorDescPtr op_tensor = op_desc->MutableOutputDesc(0);

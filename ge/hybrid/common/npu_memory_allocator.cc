@@ -45,16 +45,9 @@ NpuMemoryAllocator *NpuMemoryAllocator::GetAllocator() {
 NpuMemoryAllocator::NpuMemoryAllocator(uint32_t device_id) : device_id_(device_id) {}
 
 void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
-  void *try_reuse_addr = nullptr;
   size_t allocate_size = size;
   MemStorageType mem_type = HBM;
   if (attr != nullptr) {
-    try_reuse_addr = attr->try_reuse_addr_;
-    if (attr->padding_ != 0) {
-      // padding up to multiple of attr->padding, and add extra attr->padding_
-      allocate_size = (size + 2 * attr->padding_ - 1) / attr->padding_ * attr->padding_;
-      GELOGD("Padding size %ld by %d. final size = %zu.", size, attr->padding_, allocate_size);
-    }
     mem_type = attr->mem_type_;
   }
 
@@ -69,6 +62,17 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   } else if (mem_type == HOST_DDR) {
     buffer = malloc(allocate_size);
   } else {
+    void *try_reuse_addr = nullptr;
+    int padding = kDefaultPadding;
+    if (attr != nullptr) {
+      try_reuse_addr = attr->try_reuse_addr_;
+      if (attr->padding_ > 0) {
+        padding = attr->padding_;
+      }
+    }
+    // padding up to multiple of padding, and add extra padding
+    allocate_size = (size + 2 * padding - 1) / padding * padding;
+    GELOGD("Padding size %ld by %d. final size = %zu.", size, padding, allocate_size);
     buffer = MemManager::Instance()
                  .CachingInstance(RT_MEMORY_HBM)
                  .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);

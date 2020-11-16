@@ -404,11 +404,11 @@ Status ControlOpNodeExecutor::LoadTask(const HybridModel &model,
 
   unique_ptr<ControlOpNodeTask> node_task;
   auto node_type = node->GetType();
-  if (node_type == IF) {
+  if (node_type == IF || node_type == STATELESSIF) {
     node_task.reset(new(std::nothrow) IfOpNodeTask());
   } else if (node_type == CASE) {
     node_task.reset(new(std::nothrow) CaseOpNodeTask());
-  } else if (node_type == WHILE) {
+  } else if (node_type == WHILE || node_type == STATELESSWHILE) {
     node_task.reset(new(std::nothrow) WhileOpNodeTask());
   } else {
     GELOGE(PARAM_INVALID, "[%s] Unsupported type: %s", node->GetName().c_str(), node_type.c_str());

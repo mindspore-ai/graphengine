@@ -156,6 +156,13 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
 
 Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] Start");
+  if (IsNoOp(context)) {
+    GELOGD("[%s] Skipping execution for op with empty outputs", context.GetNodeName());
+    auto ret = context.TryExecuteCallback(done_callback);
+    RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] End");
+    return ret;
+  }
+
   auto op_desc = context.GetNodeItem().op_desc;
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("[%s] ExecuteAsync Start.", op_desc->GetName().c_str());
@@ -213,6 +220,19 @@ bool AiCoreNodeTask::IsSupportDynamicShape() {
   for (size_t i = 0; i < tasks_.size(); ++i) {
     if (!tasks_[i]->IsDynamicShapeSupported()) {
       GELOGD("[%s] Task does not support dynamic shape.", tasks_[i]->GetName().c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool AiCoreNodeTask::IsNoOp(TaskContext &task_context) {
+  for (int i = 0; i < task_context.NumOutputs(); ++i) {
+    const auto &tensor_desc = task_context.MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(tensor_desc);
+    const auto &shape = tensor_desc->MutableShape();
+    if (shape.IsScalar() || shape.GetShapeSize() > 0) {
       return false;
     }
   }

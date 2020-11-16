@@ -202,7 +202,7 @@ Status RdmaPoolAllocator::GetBaseAddr(uint64_t &base_addr, uint64_t &mem_size) {
     GELOGE(INTERNAL_ERROR, "Rdma base addr is nullptr.");
     return INTERNAL_ERROR;
   }
-  base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(rdma_base_addr_));
+  base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(rdma_base_addr_));
   mem_size = rdma_mem_size_;
   return SUCCESS;
 }

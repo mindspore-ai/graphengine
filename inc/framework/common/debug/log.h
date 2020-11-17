@@ -23,6 +23,7 @@
 #include "runtime/rt.h"
 #include "common/string_util.h"
 #include "common/util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge/ge_api_error_codes.h"
 

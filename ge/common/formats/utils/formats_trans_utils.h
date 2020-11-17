@@ -23,6 +23,7 @@
 #include <vector>
 #include "external/graph/types.h"
 #include "graph/ge_tensor.h"
+#include "register/register_format_transfer.h"
 
 namespace ge {
 namespace formats {

@@ -19,7 +19,6 @@
 #include <cstdint>
 
 #include "common/formats/utils/formats_definitions.h"
-#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -102,8 +101,8 @@ bool IsShapeEqual(const GeShape &src, const GeShape &dst) {
   return true;
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
-  if (!args.src_shape.empty() && args.src_shape != expect_shape) {
+bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
+  if (args.src_shape != expect_shape) {
     std::string error = "Failed to trans format from" +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ", invalid relationship between src shape " +
@@ -115,7 +114,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeSrcCorrect(const
   return true;
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
+bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
   if (!args.dst_shape.empty() && args.dst_shape != expect_shape) {
     std::string error = "Failed to trans format from " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +

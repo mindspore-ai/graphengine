@@ -138,8 +138,12 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
     GELOGE(GRAPH_PARAM_INVALID, "Check global options falied!");
     return GRAPH_PARAM_INVALID;
   }
+
   // print global option map
   ge::PrintOptionMap(global_options, "global option");
+
+  Impl builder;
+  builder.LoadOpsProto();
 
   std::shared_ptr<ge::GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
@@ -472,9 +476,6 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
 }
 
 graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
-  Impl builder;
-  builder.LoadOpsProto();
-
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
 

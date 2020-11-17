@@ -96,31 +96,5 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransFormatSupport(const T
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransDataTypeSupport(const CastArgs &args) {
   return DataTypeTransferExists(args);
 }
-
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
-  if (!args.src_shape.empty() && args.src_shape != expect_shape) {
-    std::string error = "Failed to trans format from" +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ", invalid relationship between src shape " +
-        FmtToStr(ShapeToString(args.src_shape)) + " and dst " +
-        FmtToStr(ShapeToString(args.dst_shape));
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
-    return false;
-  }
-  return true;
-}
-
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
-  if (!args.dst_shape.empty() && args.dst_shape != expect_shape) {
-    std::string error = "Failed to trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ", the dst shape" +
-        FmtToStr(ShapeToString(args.dst_shape)) + " is invalid, expect" +
-        FmtToStr(ShapeToString(expect_shape));
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
-    return false;
-  }
-  return true;
-}
 }  // namespace formats
 }  // namespace ge

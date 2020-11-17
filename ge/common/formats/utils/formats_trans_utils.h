@@ -61,6 +61,10 @@ bool IsShapeValid(const std::vector<int64_t> &shape);
 
 bool IsShapeEqual(const GeShape &src, const GeShape &dst);
 
+bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape);
+
+bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape);
+
 template <typename T>
 T Ceil(T n1, T n2) {
   if (n1 == 0) {

@@ -19,6 +19,7 @@
 #include <cstdint>
 
 #include "common/formats/utils/formats_definitions.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -30,8 +31,8 @@ int64_t GetCubeSizeByDataType(DataType data_type) {
   // Current cube does not support 4 bytes and longer data
   auto size = GetSizeByDataType(data_type);
   if (size <= 0) {
-    std::string error = "Failed to get cube size, the data type [" +
-        TypeUtils::DataTypeToSerialString(data_type) + "] is invalid";
+    std::string error = "Failed to get cube size, the data type " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(data_type)) + " is invalid";
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return -1;
   } else if (size == 1) {
@@ -101,6 +102,30 @@ bool IsShapeEqual(const GeShape &src, const GeShape &dst) {
   return true;
 }
 
-bool 
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
+  if (!args.src_shape.empty() && args.src_shape != expect_shape) {
+    std::string error = "Failed to trans format from" +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ", invalid relationship between src shape " +
+        FmtToStr(ShapeToString(args.src_shape)) + " and dst " +
+        FmtToStr(ShapeToString(args.dst_shape));
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
+    return false;
+  }
+  return true;
+}
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape) {
+  if (!args.dst_shape.empty() && args.dst_shape != expect_shape) {
+    std::string error = "Failed to trans format from " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ", the dst shape" +
+        FmtToStr(ShapeToString(args.dst_shape)) + " is invalid, expect" +
+        FmtToStr(ShapeToString(expect_shape));
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
+    return false;
+  }
+  return true;
+}
 }  // namespace formats
 }  // namespace ge

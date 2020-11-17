@@ -30,8 +30,10 @@ namespace ge {
 struct SingleOpTensorDesc {
   std::string name;
   std::vector<int64_t> dims;
+  std::vector<int64_t> ori_dims;
   std::vector<std::vector<int64_t>> dim_ranges;
   ge::Format format = ge::FORMAT_RESERVED;
+  ge::Format ori_format = ge::FORMAT_RESERVED;
   ge::DataType type = ge::DT_UNDEFINED;
   std::string dynamic_input_name;
 };

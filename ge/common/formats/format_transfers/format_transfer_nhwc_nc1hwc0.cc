@@ -54,7 +54,7 @@ Status CheckArgsForNhwcToNc1hwc0(const TransArgs &args) {
   if (args.src_format != FORMAT_NHWC || args.dst_format != FORMAT_NC1HWC0) {
     std::string error = "Dose not support trans format from " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ;
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
     GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }

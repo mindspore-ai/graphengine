@@ -124,6 +124,7 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
     size_t io_addr_num = args_.size();
     if (task->GetOpTaskType() == OP_TASK_AICPU) {
       GELOGD("Update aicpu_TF task args");
+      task->SetIoAddrsForDump(args_);
       auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task->GetIOAddr()));
       GE_CHECK_NOTNULL(dst_io_addr);
       auto rt_ret = rtMemcpyAsync(dst_io_addr,
@@ -168,11 +169,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
   for (auto &task : tasks_) {
     ret = task->LaunchKernel(stream_);
     if (ret != SUCCESS) {
-      return ret;
-    }
-    ret = task->OpenDump(args_, stream_);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Open dump failed");
       return ret;
     }
   }

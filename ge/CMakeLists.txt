@@ -329,6 +329,8 @@ set(TRAIN_SRC_LIST
     "client/ge_api.cc"
     "client/ge_prof.cc"
     "analyzer/analyzer.cc"
+    "ir_build/ge_ir_build.cc"
+    "ir_build/atc_ir_common.cc"
 )
 
 add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
@@ -845,6 +847,7 @@ target_include_directories(atc_stub_ge_compiler PRIVATE
 add_library(fwk_stub_ge_runner SHARED
     stub_ge_api.cc
     stub_ge_prof.cc
+    stub_ge_ir_build.cc
 )
 
 add_dependencies(fwk_stub_ge_runner ge_stub)

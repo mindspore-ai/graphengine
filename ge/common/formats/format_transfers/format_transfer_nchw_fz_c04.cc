@@ -280,7 +280,7 @@ Status FormatTransferNchwToFZC04::TransFormat(const TransArgs &args, TransResult
     return ret;
   }
 
-  if (!IsTransShapeCorrect(args_tmp, expect_shape)) {
+  if (!IsTransShapeDstCorrect(args_tmp, expect_shape)) {
     return PARAM_INVALID;
   }
 

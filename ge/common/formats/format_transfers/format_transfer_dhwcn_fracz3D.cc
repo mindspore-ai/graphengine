@@ -148,7 +148,7 @@ Status FormatTransferDhwcnFractalZ3D::TransFormat(const TransArgs &args, TransRe
   if (ret != SUCCESS) {
     return ret;
   }
-  if (!IsTransShapeCorrect(args, expect_shape)) {
+  if (!IsTransShapeDstCorrect(args, expect_shape)) {
     return PARAM_INVALID;
   }
 

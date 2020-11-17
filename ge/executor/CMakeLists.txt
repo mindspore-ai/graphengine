@@ -111,6 +111,6 @@ target_link_libraries(ge_executor PRIVATE
     json
     ascend_protobuf
     c_sec
-    -lrt
+    $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
     -ldl
 )

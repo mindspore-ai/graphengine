@@ -11,9 +11,13 @@ COMMON_LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../ \
     $(LOCAL_PATH)/../../ \
     $(TOPDIR)inc \
+    $(TOPDIR)metadef/inc \
+    $(TOPDIR)graphengine/inc \
     $(TOPDIR)inc/external \
-    $(TOPDIR)inc/framework \
-    $(TOPDIR)inc/framework/common \
+    $(TOPDIR)metadef/inc/external \
+    $(TOPDIR)graphengine/inc/external \
+    $(TOPDIR)graphengine/inc/framework \
+    $(TOPDIR)graphengine/inc/framework/common \
 	
 #compiler for host libengine
 include $(CLEAR_VARS)

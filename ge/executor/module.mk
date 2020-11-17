@@ -72,9 +72,13 @@ local_ge_executor_c_include :=             \
     proto/task.proto                       \
     proto/om.proto                         \
     $(TOPDIR)inc/external                  \
-    $(TOPDIR)inc/external/graph            \
-    $(TOPDIR)inc/framework                 \
+    $(TOPDIR)metadef/inc/external                  \
+    $(TOPDIR)graphengine/inc/external                  \
+    $(TOPDIR)metadef/inc/external/graph            \
+    $(TOPDIR)graphengine/inc/framework                 \
     $(TOPDIR)inc                           \
+    $(TOPDIR)metadef/inc                           \
+    $(TOPDIR)graphengine/inc                           \
     $(LOCAL_PATH)/../                      \
     $(TOPDIR)graphengine/ge                \
     $(TOPDIR)libc_sec/include              \

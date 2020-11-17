@@ -141,7 +141,7 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
   }
   if (args.src_data_size > static_cast<size_t>(SIZE_MAX / size)) {
     std::string error = "args.src_data_size" + FmtToStr(args.src_data_size) +
-        " or data type size" + FmtToStr(std::to_string(size)) + " is too big";
+        " or data type size" + FmtToStr(size) + " is too big";
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return PARAM_INVALID;
   }

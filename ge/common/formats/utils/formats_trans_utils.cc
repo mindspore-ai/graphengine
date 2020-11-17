@@ -59,7 +59,7 @@ int64_t GetItemNumByShape(const std::vector<int64_t> &shape) {
 
 bool CheckShapeValid(const std::vector<int64_t> &shape, const int64_t expect_dims) {
   if (expect_dims <= 0 || shape.size() != static_cast<size_t>(expect_dims)) {
-    std::string error = " Invalid shape, dims num " + FmtToStr(shape.size()) +
+    std::string error = "Invalid shape, dims num " + FmtToStr(shape.size()) +
         ", expect " + FmtToStr(expect_dims);
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return false;
@@ -74,7 +74,7 @@ bool IsShapeValid(const std::vector<int64_t> &shape) {
   int64_t num = 1;
   for (auto dim : shape) {
     if (dim < 0) {
-      std::string error = "Invalid  negative dims in the shape " +  FmtToStr(ShapeToString(shape));
+      std::string error = "Invalid negative dims in the shape " +  FmtToStr(ShapeToString(shape));
       GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
     }

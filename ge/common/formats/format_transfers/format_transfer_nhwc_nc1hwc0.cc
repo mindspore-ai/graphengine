@@ -22,6 +22,7 @@
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {

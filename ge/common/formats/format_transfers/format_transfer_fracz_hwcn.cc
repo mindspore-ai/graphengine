@@ -36,7 +36,7 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
   if (args.src_format != FORMAT_FRACTAL_Z || args.dst_format != FORMAT_HWCN) {
     std::string error = "Dose not support trans format from " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ;
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
     GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
@@ -63,7 +63,7 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
       src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
     std::string error = "Failed to check relationship between src shape" +
         FmtToStr(ShapeToString(src_shape)) + " and dst shape" +
-        FmtToStr(ShapeToString(dst_shape)) + ;
+        FmtToStr(ShapeToString(dst_shape));
     GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return PARAM_INVALID;
   } 

@@ -105,7 +105,7 @@ Status CheckShapeRelation(const TransArgs &args, ShapeVector &hw_shape) {
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return INTERNAL_ERROR;
   }
-  if (!IsTransShapeSrcCorrect(args, expect_shape)) {
+  if (!IsTransShapeSrcCorrect(args, expect_src_shape)) {
     return PARAM_INVALID;
   }
   return SUCCESS;

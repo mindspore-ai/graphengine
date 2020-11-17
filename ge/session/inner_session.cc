@@ -166,6 +166,24 @@ Status InnerSession::AddGraph(uint32_t graph_id, const Graph &graph,
   return SUCCESS;
 }
 
+Status InnerSession::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
+                                      const std::map<std::string, std::string> &options) {
+  std::lock_guard<std::mutex> lock(resource_mutex_);
+  if (!init_flag_) {
+    GELOGE(GE_SESS_INIT_FAILED, "[InnerSession:%lu] initialize failed.", session_id_);
+    return GE_SESS_INIT_FAILED;
+  }
+  UpdateThreadContext(options);
+  Status ret = graph_manager_.AddGraphWithCopy(graph_id, graph, options, domi::GetContext());
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[InnerSession:%lu] add graph %u failed.", session_id_, graph_id);
+    return ret;
+  }
+
+  GELOGI("[InnerSession:%lu] add graph success, graph_id=%u.", session_id_, graph_id);
+  return SUCCESS;
+}
+
 Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs) {
   GELOGI("[InnerSession:%lu] run graph on session, graph_id=%u.", session_id_, graph_id);
   if (mutex_.try_lock()) {

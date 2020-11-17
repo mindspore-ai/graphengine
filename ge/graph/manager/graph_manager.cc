@@ -354,6 +354,78 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   return SUCCESS;
 }
 
+Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
+                                      const std::map<std::string, std::string> &options,
+                                      const OmgContext &omg_context) {
+  if (HasGraphNode(graph_id)) {
+    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u.", graph_id);
+    return GE_GRAPH_GRAPH_ALREADY_EXIST;
+  }
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  if (compute_graph != nullptr) {
+    compute_graph->SetGraphID(graph_id);
+    bool graph_has_been_added = false;
+    if (AttrUtils::GetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, graph_has_been_added)
+        && graph_has_been_added) {
+      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST,
+             "[GraphManager] same graph object can not be added again, graph_id = %u.", graph_id);
+      return GE_GRAPH_GRAPH_ALREADY_EXIST;
+    }
+  } else {
+    GELOGE(FAILED, "compute graph is null");
+    return FAILED;
+  }
+  std::vector<NodePtr> input_nodes;
+  std::vector<NodePtr> output_nodes;
+  auto new_compute_graph = GraphUtils::CloneGraph(compute_graph, "", input_nodes, output_nodes);
+  std::string session_graph_id;
+  if (!AttrUtils::GetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id) ||
+      session_graph_id.empty()) {
+    session_graph_id = "-1_" + to_string(graph_id);
+    if (!AttrUtils::SetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
+      GELOGW("Set attribute of compute graph failed.");
+    }
+    for (auto &subgraph : new_compute_graph->GetAllSubgraphs()) {
+      (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
+    }
+    GELOGW("Get graph session_graph_id attr failed, set session id to default value: [0]");
+  }
+
+  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
+  if (graph_node == nullptr) {
+    GELOGE(FAILED, "GraphNode make shared failed");
+    return FAILED;
+  }
+  std::shared_ptr<Graph> graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
+  if (graph_ptr == nullptr) {
+    GELOGE(FAILED, "GraphPtr make shared failed");
+    return FAILED;
+  }
+
+  graph_node->SetGraph(graph_ptr);
+  graph_node->SetOptions(options);
+  AddGraphNode(graph_id, graph_node);
+
+  AddLocalOmgContext(graph_id, omg_context);
+  if (!options_.output_datatype.empty()) {
+    GetLocalOmgContext().output_type = options_.output_datatype;
+  }
+
+  CompilerStages &stages = GetCompilerStages(graph_id);
+  stages.preparer.SetOptions(options_);
+  Status status = stages.optimizer.SetOptions(options_);
+  if (status != SUCCESS) {
+    GELOGE(status, "Graph optimizer set options failed.");
+    return status;
+  }
+  stages.builder.SetOptions(options_);
+
+  var_acc_ctrl_.AddGraph(graph_id, new_compute_graph);
+
+  GELOGI("[GraphManager] add graph success, graph_id = %u.", graph_id);
+  return SUCCESS;
+}
+
 Status GraphManager::MergeSubGraph(ComputeGraphPtr &compute_graph, const ge::ComputeGraphPtr &original_compute_graph,
                                    GraphId root_graph_id) {
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();

@@ -170,6 +170,36 @@ Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const G
   return innerSession->AddGraph(graph_id, graph, options);
 }
 
+Status SessionManager::AddGraphWithCopy(SessionId session_id, uint32_t graph_id, const Graph &graph,
+                                        const std::map<std::string, std::string> &options) {
+  if (!init_flag_) {
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    return GE_SESSION_MANAGER_NOT_INIT;
+  }
+  SessionPtr innerSession = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
+    if (it == session_manager_map_.end()) {
+      return GE_SESSION_NOT_EXIST;
+    } else {
+      innerSession = it->second;
+    }
+    auto compute_graph = GraphUtils::GetComputeGraph(graph);
+    GE_CHECK_NOTNULL(compute_graph);
+    std::string session_graph_id = std::to_string(session_id) + "_" + std::to_string(graph_id);
+    if (!AttrUtils::SetStr(*compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
+      GELOGW("Set graph session_graph_id attr failed.");
+    } else {
+      GELOGD("Set graph session_graph_id attr to [%s]", session_graph_id.c_str());
+    }
+    for (auto graph : compute_graph->GetAllSubgraphs()) {
+      AttrUtils::SetStr(*graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
+    }
+  }
+  return innerSession->AddGraphWithCopy(graph_id, graph, options);
+}
+
 Status SessionManager::RunGraph(SessionId session_id, uint32_t graph_id, const std::vector<Tensor> &inputs,
                                 std::vector<Tensor> &outputs) {
   if (!init_flag_) {

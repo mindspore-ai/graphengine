@@ -17,12 +17,15 @@ LOCAL_SRC_FILES := \
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../ ./ \
     $(TOPDIR)inc \
+    $(TOPDIR)metadef/inc \
+    $(TOPDIR)graphengine/inc \
     $(TOPDIR)inc/external \
-    $(TOPDIR)inc/external/graph \
-    $(TOPDIR)inc/framework \
-    $(TOPDIR)inc/framework/domi \
+    $(TOPDIR)metadef/inc/external \
+    $(TOPDIR)graphengine/inc/external \
+    $(TOPDIR)metadef/inc/external/graph \
+    $(TOPDIR)graphengine/inc/framework \
     $(TOPDIR)libc_sec/include \
-    $(TOPDIR)inc/common/util \
+    $(TOPDIR)metadef/inc/common/util \
     $(TOPDIR)parser    \
     third_party/json/include \
     third_party/gflags/include \

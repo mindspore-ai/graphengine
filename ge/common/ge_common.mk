@@ -61,17 +61,18 @@ GE_COMMON_LOCAL_C_INCLUDES := \
     proto/tensorflow/types.proto \
     proto/tensorflow/resource_handle.proto \
     $(TOPDIR)inc \
+    $(TOPDIR)metadef/inc \
+    $(TOPDIR)graphengine/inc \
     $(TOPDIR)inc/external \
-    $(TOPDIR)inc/external/graph \
-    $(TOPDIR)inc/framework \
-    $(TOPDIR)inc/common/util \
+    $(TOPDIR)metadef/inc/external \
+    $(TOPDIR)graphengine/inc/external \
+    $(TOPDIR)metadef/inc/external/graph \
+    $(TOPDIR)graphengine/inc/framework \
+    $(TOPDIR)metadef/inc/common/util \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)third_party/json/include \
     $(TOPDIR)third_party/protobuf/include \
     $(TOPDIR)third_party/openssl/include/x86/include \
-    $(TOPDIR)framework/domi \
-    $(TOPDIR)framework/domi/common \
-    $(TOPDIR)framework/domi/common/op \
     $(TOPDIR)graphengine/ge   \
     $(TOPDIR)graphengine/ge/common   \
     $(TOPDIR)graphengine/ge/common/op   \

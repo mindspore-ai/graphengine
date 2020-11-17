@@ -313,17 +313,20 @@ RUNNER_LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../ \
     $(LOCAL_PATH)/../../ \
     $(TOPDIR)inc \
-    $(TOPDIR)inc/common \
+    $(TOPDIR)metadef/inc \
+    $(TOPDIR)graphengine/inc \
+    $(TOPDIR)metadef/inc/common \
     $(TOPDIR)inc/external \
-    $(TOPDIR)inc/external/graph \
-    $(TOPDIR)inc/external/ge \
-    $(TOPDIR)inc/framework \
-    $(TOPDIR)inc/framework/common \
-    $(TOPDIR)inc/graph \
+    $(TOPDIR)metadef/inc/external \
+    $(TOPDIR)graphengine/inc/external \
+    $(TOPDIR)metadef/inc/external/graph \
+    $(TOPDIR)graphengine/inc/external/ge \
+    $(TOPDIR)graphengine/inc/framework \
+    $(TOPDIR)graphengine/inc/framework/common \
+    $(TOPDIR)metadef/inc/graph \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
-    $(TOPDIR)framework/domi/analyzer \
     $(TOPDIR)graphengine/ge/analyzer \
     $(TOPDIR)toolchain/ide/ide-daemon/external \
     proto/fwk_adapter.proto \

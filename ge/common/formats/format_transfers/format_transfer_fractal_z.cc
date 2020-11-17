@@ -159,8 +159,9 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
             ret = memset_s(dst.get() + offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
           } else {
             if (protected_size < size) {
-              GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
-                     protected_size, size);
+              std::string error = "Failed to operate the dst memory, protected_size is[" + 
+                  std::to_string(protected_size) + "] and size is [" + std::to_string(size) + "]";
+              GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error.c_str());
               return INTERNAL_ERROR;
             }
             char *dst_data = reinterpret_cast<char *>(dst.get() + offset);
@@ -345,11 +346,7 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
   if (ret != SUCCESS) {
     return ret;
   }
-  if (!args.dst_shape.empty() && args.dst_shape != expect_shape) {
-    GELOGE(PARAM_INVALID, "Failed to trans format from %s to %s, the dst shape %s is invalid, expect %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.dst_shape).c_str(),
-           ShapeToString(expect_shape).c_str());
+  if (!IsTransShapeDstCorrect(args, expect_shape)) {
     return PARAM_INVALID;
   }
 

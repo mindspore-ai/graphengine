@@ -18,6 +18,7 @@
 #define INC_FRAMEWORK_COMMON_DEBUG_LOG_H_
 
 #include <string>
+#include <sstream>
 
 #include "runtime/rt.h"
 #include "common/string_util.h"
@@ -268,5 +269,13 @@
       return _status;                                                                    \
     }                                                                                    \
   } while (0)
+
+template <typename T>
+std::string FmtEgStr(const T &t) {
+  std::string fmt;
+  std::stringstream st;
+  st << "[" << t << "]";
+  return fmt;
+}
 
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_LOG_H_

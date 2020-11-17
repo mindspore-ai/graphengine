@@ -39,8 +39,9 @@ bool CheckShape(Format format, const ShapeVector &shape) {
     case FORMAT_NHWC:
       return CheckShapeValid(shape, kDimSize4D);
     default:
-      GELOGE(PARAM_INVALID, "Not support trans format between %s and FORMAT_FRACTAL_ZZ.",
-             TypeUtils::FormatToSerialString(format).c_str());
+      std::string error = "Trans format between[" + TypeUtils::FormatToSerialString(format) +
+          "] and FORMAT_FRACTAL_ZZ is not supported.";
+      GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
   }
 }
@@ -103,12 +104,7 @@ Status CheckShapeRelation(const TransArgs &args, ShapeVector &hw_shape) {
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return INTERNAL_ERROR;
   }
-  if (args.src_shape != expect_src_shape) {
-    GELOGE(PARAM_INVALID,
-           "Failed to trans format from %s to %s, invalid relationship between src shape %s and dst shape %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-           ShapeToString(args.dst_shape).c_str());
+  if (!IsTransShapeSrcCorrect(args, expect_shape)) {
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -289,11 +285,7 @@ Status FormatTransferFractalZz::TransFormat(const TransArgs &args, TransResult &
   if (ret != SUCCESS) {
     return ret;
   }
-  if (args.dst_shape != expect_shape) {
-    GELOGE(PARAM_INVALID, "Failed to trans format from %s to %s, the dst shape %s is invalid, expect %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.dst_shape).c_str(),
-           ShapeToString(expect_shape).c_str());
+  if (!IsTransShapeDstCorrect(args, expect_shape)) {
     return PARAM_INVALID;
   }
   return TransFormatFromNdToFracZz(args, result, hw_shape);

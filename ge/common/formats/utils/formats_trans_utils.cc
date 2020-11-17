@@ -29,8 +29,9 @@ int64_t GetCubeSizeByDataType(DataType data_type) {
   // Current cube does not support 4 bytes and longer data
   auto size = GetSizeByDataType(data_type);
   if (size <= 0) {
-    GELOGE(PARAM_INVALID, "Failed to get cube size, the data type %s is invalid",
-           TypeUtils::DataTypeToSerialString(data_type).c_str());
+    std::string error = "Failed to get cube size, the data type [" +
+        TypeUtils::DataTypeToSerialString(data_type) + "] is invalid";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return -1;
   } else if (size == 1) {
     return kCubeSize * 2;  // 32 bytes cube size
@@ -57,7 +58,10 @@ int64_t GetItemNumByShape(const std::vector<int64_t> &shape) {
 
 bool CheckShapeValid(const std::vector<int64_t> &shape, const int64_t expect_dims) {
   if (expect_dims <= 0 || shape.size() != static_cast<size_t>(expect_dims)) {
-    GELOGE(PARAM_INVALID, "Invalid shape, dims num %zu, expect %ld", shape.size(), expect_dims);
+    std::string error = " Invalid shape, dims num [" + std::to_string(shape.size()) +
+        "], expect [" + std::to_string(expect_dims) + "]";
+        TypeUtils::DataTypeToSerialString(data_type) + "] is invalid";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return false;
   }
   return IsShapeValid(shape);
@@ -70,11 +74,14 @@ bool IsShapeValid(const std::vector<int64_t> &shape) {
   int64_t num = 1;
   for (auto dim : shape) {
     if (dim < 0) {
-      GELOGE(PARAM_INVALID, "Invalid negative dim in the shape %s", ShapeToString(shape).c_str());
+      std::string error = "Invalid  negative dims in the shape [" +  ShapeToString(shape).c_str() + "]";
+      GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
     }
     if (dim != 0 && kShapeItemNumMAX / dim < num) {
-      GELOGE(PARAM_INVALID, "Shape overflow, the total count should be less than %ld!", kShapeItemNumMAX);
+      std::string error = "Shape overflow, the total count should be less than [" +
+          std::to_string(kShapeItemNumMAX) + "]";
+      GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
     }
     num *= dim;
@@ -94,5 +101,7 @@ bool IsShapeEqual(const GeShape &src, const GeShape &dst) {
   }
   return true;
 }
+
+bool 
 }  // namespace formats
 }  // namespace ge

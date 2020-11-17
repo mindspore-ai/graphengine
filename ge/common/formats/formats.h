@@ -44,6 +44,10 @@ Status TransDataType(const CastArgs &args, TransResult &result);
 bool IsTransFormatSupport(const TransArgs &args);
 
 bool IsTransDataTypeSupport(const CastArgs &args);
+
+bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape);
+
+bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape);
 }  // namespace formats
 }  // namespace ge
 #endif  // GE_COMMON_FORMATS_FORMATS_H_

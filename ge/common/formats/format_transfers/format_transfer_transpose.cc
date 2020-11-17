@@ -223,11 +223,7 @@ Status FormatTransferTranspose::TransFormat(const TransArgs &args, TransResult &
   if (ret != SUCCESS) {
     return ret;
   }
-  if (args.dst_shape != expected_shape) {
-    GELOGE(PARAM_INVALID, "Failed to trans format from %s to %s, invalid dst shape %s, expect %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.dst_shape).c_str(),
-           ShapeToString(expected_shape).c_str());
+  if (!IsTransShapeDstCorrect(args, expect_shape)) {
     return PARAM_INVALID;
   }
 

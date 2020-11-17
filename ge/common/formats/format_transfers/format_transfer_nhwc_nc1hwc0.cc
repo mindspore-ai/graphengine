@@ -51,9 +51,10 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
 
 Status CheckArgsForNhwcToNc1hwc0(const TransArgs &args) {
   if (args.src_format != FORMAT_NHWC || args.dst_format != FORMAT_NC1HWC0) {
-    GELOGE(UNSUPPORTED, "Does not support trans format from %s to %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Dose not support trans format from " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ;
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {

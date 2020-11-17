@@ -39,8 +39,8 @@ bool CheckShape(Format format, const ShapeVector &shape) {
     case FORMAT_NHWC:
       return CheckShapeValid(shape, kDimSize4D);
     default:
-      std::string error = "Trans format between[" + TypeUtils::FormatToSerialString(format) +
-          "] and FORMAT_FRACTAL_ZZ is not supported.";
+      std::string error = "Trans format between " +  FmtToStr(TypeUtils::FormatToSerialString(format)) +
+          " and FORMAT_FRACTAL_ZZ is not supported.";
       GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
   }

@@ -20,6 +20,7 @@
 
 #include "common/formats/utils/formats_definitions.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/type_utils.h"
 
@@ -58,9 +59,8 @@ int64_t GetItemNumByShape(const std::vector<int64_t> &shape) {
 
 bool CheckShapeValid(const std::vector<int64_t> &shape, const int64_t expect_dims) {
   if (expect_dims <= 0 || shape.size() != static_cast<size_t>(expect_dims)) {
-    std::string error = " Invalid shape, dims num [" + std::to_string(shape.size()) +
-        "], expect [" + std::to_string(expect_dims) + "]";
-        TypeUtils::DataTypeToSerialString(data_type) + "] is invalid";
+    std::string error = " Invalid shape, dims num " + FmtToStr(shape.size()) +
+        ", expect " + FmtToStr(expect_dims);
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return false;
   }
@@ -74,13 +74,12 @@ bool IsShapeValid(const std::vector<int64_t> &shape) {
   int64_t num = 1;
   for (auto dim : shape) {
     if (dim < 0) {
-      std::string error = "Invalid  negative dims in the shape [" +  ShapeToString(shape).c_str() + "]";
+      std::string error = "Invalid  negative dims in the shape " +  FmtToStr(ShapeToString(shape));
       GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
     }
     if (dim != 0 && kShapeItemNumMAX / dim < num) {
-      std::string error = "Shape overflow, the total count should be less than [" +
-          std::to_string(kShapeItemNumMAX) + "]";
+      std::string error = "Shape overflow, the total count should be less than " + FmtToStr(kShapeItemNumMAX);
       GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
     }

@@ -159,8 +159,8 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
             ret = memset_s(dst.get() + offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
           } else {
             if (protected_size < size) {
-              std::string error = "Failed to operate the dst memory, protected_size is[" + 
-                  std::to_string(protected_size) + "] and size is [" + std::to_string(size) + "]";
+              std::string error = "Failed to operate the dst memory, protected_size is " +
+                  FmtToStr(protected_size) + " and size is " + FmtToStr(size);
               GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error.c_str());
               return INTERNAL_ERROR;
             }

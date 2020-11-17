@@ -36,16 +36,14 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
   auto dst_shape = args.dst_shape;
   if (args.src_format != FORMAT_C1HWNCoC0 || args.dst_format != FORMAT_HWCN) {
     std::string error = "Dose not support trans format from " +
-        FmtEgStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtEgStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GELOGE(UNSUPPORTED, "Does not support trans format from %s to %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
-    std::string error = "Failed to  trans shape from NC1HWNCoC0 to HWCN, invalid data type[" +
-        TypeUtils::DataTypeToSerialString(args.src_data_type).c_str() + "]";
+    std::string error = "Failed to trans shape from NC1HWNCoC0 to HWCN, invalid data type" +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type));
     GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
@@ -62,8 +60,8 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
       src_shape.at(kC1hwncoc0H) != dst_shape.at(kHwcnH) || src_shape.at(kC1hwncoc0W) != dst_shape.at(kHwcnW) ||
       src_shape.at(kC1hwncoc0N) != dst_shape.at(kHwcnN) || src_shape.at(kC1hwncoc0Co) != cube_size ||
       src_shape.at(kC1hwncoc0C0) != cube_size) {
-    std::string error = "Failed to check relationship between src and dst shape, src shape[" +
-        ShapeToString(src_shape) + "], dst shape[" + ShapeToString(dst_shape) + "]";
+    std::string error = "Failed to check relationship between src and dst shape, src shape" +
+        FmtToStr(ShapeToString(src_shape)) + ", dst shape" + FmtToStr(ShapeToString(dst_shape));
     GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return PARAM_INVALID;
   }
@@ -74,10 +72,9 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size, int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    std::string error = "Failed to trans format from[" + TypeUtils::FormatToSerialString(args.src_format).c_str() +
-        "] to [" + TypeUtils::FormatToSerialString(args.dst_format) + "], can not alloc the memory for dst buf[" +
-        std::to_string(total_size) + "], shape[" + ShapeToString(args.dst_shape) + "]";
-    GE_ERRORLOG_AND_ERRORMSG(OUT_OF_MEMORY, error.c_str());
+    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+           TypeUtils::FormatToSerialString(args.src_format).c_str(),
+           TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
     return OUT_OF_MEMORY;
   }
 

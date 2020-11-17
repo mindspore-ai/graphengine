@@ -223,7 +223,7 @@ Status FormatTransferTranspose::TransFormat(const TransArgs &args, TransResult &
   if (ret != SUCCESS) {
     return ret;
   }
-  if (!IsTransShapeDstCorrect(args, expect_shape)) {
+  if (!IsTransShapeDstCorrect(args, expected_shape)) {
     return PARAM_INVALID;
   }
 

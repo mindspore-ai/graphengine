@@ -33,9 +33,10 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
   auto src_shape = args.src_shape;
   auto dst_shape = args.dst_shape;
   if (args.src_format != FORMAT_FRACTAL_Z || args.dst_format != FORMAT_NCHW) {
-    GELOGE(UNSUPPORTED, "Does not support trans format from %s to %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Dose not support trans format from " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ;
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {

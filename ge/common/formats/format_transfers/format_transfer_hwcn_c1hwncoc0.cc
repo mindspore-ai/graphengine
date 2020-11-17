@@ -50,9 +50,10 @@ Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<in
 
 Status CheckArgsForHwcnToC1hwncoc0(const TransArgs &args) {
   if (args.src_format != FORMAT_HWCN || args.dst_format != FORMAT_C1HWNCoC0) {
-    GELOGE(UNSUPPORTED, "Does not support trans format from %s to %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Dose not support trans format from " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format)) + ;
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {

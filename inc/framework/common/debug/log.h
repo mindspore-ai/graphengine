@@ -271,7 +271,7 @@
   } while (0)
 
 template <typename T>
-std::string FmtEgStr(const T &t) {
+std::string FmtToStr(const T &t) {
   std::string fmt;
   std::stringstream st;
   st << "[" << t << "]";

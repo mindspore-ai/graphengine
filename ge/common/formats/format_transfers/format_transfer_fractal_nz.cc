@@ -22,6 +22,7 @@
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
@@ -39,11 +40,9 @@ bool CheckShape(Format format, const ShapeVector &shape) {
     case FORMAT_NHWC:
       return CheckShapeValid(shape, kDimSize4D);
     default:
-      std::string error = "Trans format between[" + TypeUtils::FormatToSerialString(format) +
-      "] and FORMAT_FRACTAL_NZ is not supported.";
+      std::string error = "Trans format between " + FmtToStr(TypeUtils::FormatToSerialString(format)) +
+          " and FORMAT_FRACTAL_NZ is not supported.";
       GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
-      GELOGE(PARAM_INVALID, "Trans format between %s and FORMAT_FRACTAL_NZ is not supported.",
-             TypeUtils::FormatToSerialString(format).c_str());
       return false;
   }
 }

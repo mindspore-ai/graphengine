@@ -22,6 +22,7 @@
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
@@ -65,7 +66,7 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
         FmtToStr(ShapeToString(dst_shape)) + ;
     GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return PARAM_INVALID;
-  }
+  } 
 
   return SUCCESS;
 }

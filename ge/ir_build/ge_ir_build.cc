@@ -131,6 +131,16 @@ static void GetOpsProtoPath(string &opsproto_path) {
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
 }
 
+static void LoadOpsProto() {
+  string opsproto_path;
+  GetOpsProtoPath(opsproto_path);
+  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
+  OpsProtoManager *manager = OpsProtoManager::Instance();
+  map<string, string> option_tmp;
+  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
+  (void)manager->Initialize(option_tmp);
+}
+
 graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
   GELOGD("Enter aclgrphInitialize start!");
   // check global options
@@ -142,8 +152,7 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
   // print global option map
   ge::PrintOptionMap(global_options, "global option");
 
-  Impl builder;
-  builder.LoadOpsProto();
+  LoadOpsProto();
 
   std::shared_ptr<ge::GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
@@ -198,7 +207,7 @@ class Impl {
                                  bool is_dynamic_input);
   void SetRtSocVersion();
   void UpdateThreadContext();
-  void LoadOpsProto();s
+  void LoadOpsProto();
  public:
   ge::GeGenerator generator_;
   std::map<std::string, std::string> options_;
@@ -338,16 +347,6 @@ void Impl::SetRtSocVersion() {
 void Impl::UpdateThreadContext() {
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GetThreadLocalContext().SetGraphOption(options_);
-}
-
-void Impl::LoadOpsProto() {
-  string opsproto_path;
-  GetOpsProtoPath(opsproto_path);
-  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
-  OpsProtoManager *manager = OpsProtoManager::Instance();
-  map<string, string> option_tmp;
-  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
-  (void)manager->Initialize(option_tmp);
 }
 
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {

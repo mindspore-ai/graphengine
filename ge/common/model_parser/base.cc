@@ -39,12 +39,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
     return GE_EXEC_MODEL_PATH_INVALID;
   }
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(GetFileLength(model_path) == -1, return GE_EXEC_READ_MODEL_FILE_FAILED,
-                                 "File size not valid.");
+  if (GetFileLength(model_path) == -1) {
+    GELOGE(GE_EXEC_READ_MODEL_FILE_FAILED, "File size not valid, file: %s.", model_path);
+    return GE_EXEC_READ_MODEL_FILE_FAILED;
+  }
 
   std::ifstream fs(real_path.c_str(), std::ifstream::binary);
-
-  GE_CHK_BOOL_RET_STATUS(fs.is_open(), GE_EXEC_READ_MODEL_FILE_FAILED, "Open file failed! path:%s", model_path);
+  if (!fs.is_open()) {
+    GELOGE(GE_EXEC_READ_MODEL_FILE_FAILED, "Open file: %s failed, error: %s", model_path, strerror(errno));
+    return GE_EXEC_READ_MODEL_FILE_FAILED;
+  }
 
   // get length of file:
   (void)fs.seekg(0, std::ifstream::end);

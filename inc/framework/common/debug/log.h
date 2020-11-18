@@ -276,6 +276,7 @@ std::string FmtToStr(const T &t) {
   std::string fmt;
   std::stringstream st;
   st << "[" << t << "]";
+  fmt = st.str();
   return fmt;
 }
 

@@ -56,6 +56,7 @@ constexpr int kDumpJsonIndent = 2;
 constexpr int kShapeRangePairSize = 2;
 constexpr int kShapeRangeLow = 0;
 constexpr int kShapeRangeHigh = 1;
+constexpr int kMaxFileNameLen = 128;
 
 map<string, GeAttrValue::ValueType> kAttrTypeDict = {
     {"bool", GeAttrValue::VT_BOOL},

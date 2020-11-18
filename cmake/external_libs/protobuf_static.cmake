@@ -48,5 +48,8 @@ set_target_properties(ascend_protobuf_static_lib PROPERTIES
 add_library(ascend_protobuf_static INTERFACE)
 target_include_directories(ascend_protobuf_static INTERFACE ${PROTOBUF_STATIC_PKG_DIR}/include)
 target_link_libraries(ascend_protobuf_static INTERFACE ascend_protobuf_static_lib)
+if (ENABLE_D OR ENABLE_ACL)
+include_directories(${PROTOBUF_STATIC_PKG_DIR}/include)
+endif ()
 
 add_dependencies(ascend_protobuf_static protobuf_static_build)

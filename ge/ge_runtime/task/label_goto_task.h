@@ -14,38 +14,28 @@
  * limitations under the License.
  */
 
-#ifndef GE_GE_RUNTIME_TASK_HCCL_TASK_H_
-#define GE_GE_RUNTIME_TASK_HCCL_TASK_H_
+#ifndef GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
+#define GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
 
 #include <memory>
-#include <set>
-#include <vector>
 #include "ge_runtime/task/task.h"
 
 namespace ge {
 namespace model_runner {
-class HcclTask : public TaskRepeater<HcclTaskInfo> {
+class LabelGotoTask : public TaskRepeater<LabelGotoTaskInfo> {
  public:
-  HcclTask(const ModelContext &model_context, const std::shared_ptr<HcclTaskInfo> &task_info);
+  LabelGotoTask(const ModelContext &model_context, const std::shared_ptr<LabelGotoTaskInfo> &task_info);
 
-  ~HcclTask() override;
+  ~LabelGotoTask() override;
 
   bool Distribute() override;
 
  private:
-  std::shared_ptr<HcclTaskInfo> task_info_;
+  std::shared_ptr<LabelGotoTaskInfo> task_info_;
   void *stream_;
-  rtModel_t rt_model_handle_;
-  int32_t priority_;
-  std::vector<void *> slave_stream_list_;
-  std::function<bool(void *, void *)> hcom_bind_model_;
-  std::function<bool(void *)> hcom_unbind_model_;
-  std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task_;
-  static std::set<rtModel_t> rt_model_handle_list_;
+  void *label_;
 };
-
-std::set<rtModel_t> HcclTask::rt_model_handle_list_{};
 }  // namespace model_runner
 }  // namespace ge
 
-#endif  // GE_GE_RUNTIME_TASK_HCCL_TASK_H_
+#endif  // GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_

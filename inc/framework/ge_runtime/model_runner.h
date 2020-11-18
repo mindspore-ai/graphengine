@@ -52,11 +52,8 @@ class ModelRunner {
 
   bool RunModel(uint32_t model_id, const InputData &input_data, OutputData *output_data);
 
-  bool GetInputOutputDescInfo(uint32_t model_id,
-                              bool zero_copy,
-                              std::vector<InputOutputDescInfo> *input_desc,
-                              std::vector<InputOutputDescInfo> *output_desc,
-                              std::vector<uint32_t> *input_format,
+  bool GetInputOutputDescInfo(uint32_t model_id, bool zero_copy, std::vector<InputOutputDescInfo> *input_desc,
+                              std::vector<InputOutputDescInfo> *output_desc, std::vector<uint32_t> *input_format,
                               std::vector<uint32_t> *output_format);
 
  private:

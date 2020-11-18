@@ -56,6 +56,7 @@ constexpr int kDumpJsonIndent = 2;
 constexpr int kShapeRangePairSize = 2;
 constexpr int kShapeRangeLow = 0;
 constexpr int kShapeRangeHigh = 1;
+constexpr int kMaxFileNameLen = 128;
 
 map<string, GeAttrValue::ValueType> kAttrTypeDict = {
     {"bool", GeAttrValue::VT_BOOL},
@@ -129,7 +130,34 @@ map<string, Format> kFormatDict = {
     {"fractal_zn_lstm", FORMAT_FRACTAL_ZN_LSTM},
     {"fractal_z_g", FORMAT_FRACTAL_Z_G}
 };
+
+std::string GenerateFileName(const SingleOpDesc &single_op_desc, int index) {
+  std::stringstream file_name_ss;
+  file_name_ss << index;
+  file_name_ss << "_" << single_op_desc.op;
+  for (auto &desc : single_op_desc.input_desc) {
+    file_name_ss << "_" << desc.type << "_" << desc.format;
+    for (auto dim : desc.dims) {
+      file_name_ss << "_" << dim;
+    }
+  }
+
+  for (auto &desc : single_op_desc.output_desc) {
+    file_name_ss << "_" << desc.type << "_" << desc.format;
+    for (auto dim : desc.dims) {
+      file_name_ss << "_" << dim;
+    }
+  }
+
+  std::string file_name = file_name_ss.str();
+  if (file_name.length() > kMaxFileNameLen) {
+    GELOGI("Trim file name for it is too long, origin file name = %s", file_name.c_str());
+    file_name = file_name.substr(0, kMaxFileNameLen);
+  }
+  file_name += kFileSuffix;
+  return file_name;
 }
+}  // namespace
 
 template<typename T>
 void SetAttrValue(const Json &j, SingleOpAttr &attr) {
@@ -349,14 +377,7 @@ Status SingleOpParser::ConvertToBuildParam(int index,
   auto op_desc = CreateOpDesc(single_op_desc.op);
   GE_CHECK_NOTNULL(op_desc);
 
-  std::stringstream file_name;
-  file_name << index;
-  file_name << "_" << single_op_desc.op;
   for (auto &desc : single_op_desc.input_desc) {
-    file_name << "_" << desc.type << "_" << desc.format;
-    for (auto dim : desc.dims) {
-      file_name << "_" << dim;
-    }
     GeTensorDesc ge_tensor_desc(GeShape(desc.dims),
                                 desc.format,
                                 desc.type);
@@ -377,11 +398,6 @@ Status SingleOpParser::ConvertToBuildParam(int index,
   }
 
   for (auto &desc : single_op_desc.output_desc) {
-    file_name << "_" << desc.type << "_" << desc.format;
-    for (auto dim : desc.dims) {
-      file_name << "_" << dim;
-    }
-
     GeTensorDesc ge_tensor_desc(GeShape(desc.dims),
                                 desc.format,
                                 desc.type);
@@ -410,8 +426,7 @@ Status SingleOpParser::ConvertToBuildParam(int index,
     return PARAM_INVALID;
   }
 
-  file_name << kFileSuffix;
-  build_param.file_name = file_name.str();
+  build_param.file_name = GenerateFileName(single_op_desc, index);
   build_param.op_desc.reset(op_desc.release());
   return SUCCESS;
 }

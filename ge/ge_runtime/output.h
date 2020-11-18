@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 
 namespace ge {
 namespace model_runner {
+
 class Output {
  public:
   Output(const OpInfoPtr &op_info, const std::shared_ptr<DavinciModel> &model);
@@ -32,8 +33,7 @@ class Output {
 
   bool CopyRslt(OutputData *rslt, uint32_t data_begin, uint32_t &data_index, bool support_mem_share);
 
-  bool SetDataBuf(DataBuffer &data_buf, uint32_t data_begin, uint32_t &data_count, size_t i,
-                  bool support_mem_share);
+  bool SetDataBuf(DataBuffer &data_buf, uint32_t data_begin, uint32_t &data_count, size_t i, bool support_mem_share);
 
   // Copy assignment operator and copy constructor are deleted
   Output &operator=(const Output &output) = delete;

@@ -63,6 +63,7 @@ set(SRC_LIST
     "ge/tbe_plugin_manager.cc"
 )
 
+if (NOT ENABLE_D AND NOT ENABLE_ACL)
 ############ libge_common.so ############
 add_library(ge_common SHARED ${SRC_LIST} ${PROTO_HDRS})
 target_compile_definitions(ge_common PRIVATE
@@ -163,6 +164,57 @@ target_link_libraries(ge_common_static PRIVATE
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
     -ldl
 )
+
+else ()
+############ libge_common.so w/static protobuf ############
+add_library(ge_common SHARED ${SRC_LIST} ${PROTO_HDRS})
+target_compile_definitions(ge_common PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    HOST_VISIBILITY
+    FMK_SUPPORT_DUMP
+    OS_CENTOS
+    google=ascend_private
+)
+
+target_compile_options(ge_common PRIVATE
+    -fvisibility=hidden
+    -O2
+    -Werror
+)
+
+target_include_directories(ge_common PRIVATE
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/ge/common
+    ${GE_CODE_DIR}/ge/common/op
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_libraries(ge_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    ascend_protobuf_static
+    -Wl,--no-as-needed
+    graph
+    register
+    c_sec
+    error_manager
+    slog
+    mmpa
+    -Wl,--as-needed
+    json
+    -lrt
+    -ldl
+)
+endif ()
 
 ############ install ############
 set(INSTALL_BASE_DIR "")

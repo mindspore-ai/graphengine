@@ -115,7 +115,6 @@ bool HcclTask::Distribute() {
     rt_ret = rtModelBindStream(rt_model_handle_, stream, RT_HEAD_STREAM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      (void)rtStreamDestroy(stream);
       return false;
     }
 
@@ -129,8 +128,6 @@ bool HcclTask::Distribute() {
   ge_task.type = static_cast<uint16_t>(RT_MODEL_TASK_HCCL);
   ge_task.stream = stream_;
 
-  GETaskKernelHcclInfo kernel_hccl_info;
-  ge_task.kernelHcclInfo.emplace_back(kernel_hccl_info);
   ge_task.kernelHcclInfo[0].hccl_type = task_info_->hccl_type();
   ge_task.kernelHcclInfo[0].inputDataAddr = task_info_->input_data_addr();
   ge_task.kernelHcclInfo[0].outputDataAddr = task_info_->output_data_addr();

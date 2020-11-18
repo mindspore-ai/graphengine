@@ -1,10 +1,15 @@
-add_subdirectory(common)
-add_subdirectory(plugin/engine)
-add_subdirectory(graph/build/memory)
-add_subdirectory(ge_local_engine)
-add_subdirectory(host_cpu_engine)
-add_subdirectory(executor)
-add_subdirectory(offline)
+if (NOT ENABLE_D AND NOT ENABLE_ACL)
+    add_subdirectory(common)
+    add_subdirectory(plugin/engine)
+    add_subdirectory(graph/build/memory)
+    add_subdirectory(ge_local_engine)
+    add_subdirectory(host_cpu_engine)
+    add_subdirectory(executor)
+    add_subdirectory(offline)
+else()
+    add_subdirectory(common)
+    add_subdirectory(ge_runtime)
+endif ()
 
 set(PROTO_LIST
     "${METADEF_DIR}/proto/fusion_model.proto"
@@ -28,7 +33,6 @@ protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
 protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
 
-############ libge_runner.so ############
 set(TRAIN_SRC_LIST
     "common/formats/format_transfers/datatype_transfer.cc"
     "common/formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
@@ -333,72 +337,6 @@ set(TRAIN_SRC_LIST
     "ir_build/atc_ir_common.cc"
 )
 
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
-
-target_compile_definitions(ge_runner PRIVATE
-    PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    DAVINCI_SUPPORT_PROFILING
-    REUSE_MEMORY=1
-    FMK_SUPPORT_DUMP
-    DAVINCI_CLOUD
-    google=ascend_private
-)
-
-target_compile_options(ge_runner PRIVATE
-    -O2
-)
-
-target_include_directories(ge_runner PRIVATE
-    ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
-    ${GE_CODE_DIR}/inc
-    ${GE_CODE_DIR}/inc/external
-    ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${METADEF_DIR}
-    ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
-    #### yellow zone ####
-    ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/external
-    ${GE_CODE_DIR}/../inc/cce
-    ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
-    #### blue zone
-    ${ASCEND_DIR}/driver/include
-    ${ASCEND_DIR}/fwkacllib/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
-)
-
-target_link_libraries(ge_runner
-    $<BUILD_INTERFACE:intf_pub>
-    ge_memory
-    adump_server
-    msprofiler
-    -Wl,--no-as-needed
-    graph
-    ge_common
-    ascend_protobuf
-    register
-    c_sec
-    slog
-    mmpa
-    msprof
-    runtime
-    resource
-    error_manager
-    ascend_hal_stub
-    -Wl,--as-needed
-    json
-    -lrt
-    -ldl
-)
-
-############ libge_compiler.so ############
 set(INFER_SRC_LIST
     "graph/manager/trans_var_data_utils.cc"
     "omm/csa_interact.cc"
@@ -662,6 +600,74 @@ set(INFER_SRC_LIST
     "analyzer/analyzer.cc"
 )
 
+if (NOT ENABLE_D AND NOT ENABLE_ACL)
+############ libge_runner.so ############
+add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
+
+target_compile_definitions(ge_runner PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    DAVINCI_SUPPORT_PROFILING
+    REUSE_MEMORY=1
+    FMK_SUPPORT_DUMP
+    DAVINCI_CLOUD
+    google=ascend_private
+)
+
+target_compile_options(ge_runner PRIVATE
+    -O2
+)
+
+target_include_directories(ge_runner PRIVATE
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/ge/analyzer
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${GE_CODE_DIR}/inc/framework/common
+    ${METADEF_DIR}
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+    ${GE_CODE_DIR}/../inc/external
+    ${GE_CODE_DIR}/../inc/cce
+    ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    #### blue zone
+    ${ASCEND_DIR}/driver/include
+    ${ASCEND_DIR}/fwkacllib/include
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_libraries(ge_runner
+    $<BUILD_INTERFACE:intf_pub>
+    ge_memory
+    adump_server
+    msprofiler
+    -Wl,--no-as-needed
+    graph
+    ge_common
+    ascend_protobuf
+    register
+    c_sec
+    slog
+    mmpa
+    msprof
+    runtime
+    resource
+    error_manager
+    ascend_hal_stub
+    -Wl,--as-needed
+    json
+    -lrt
+    -ldl
+)
+
+############ libge_compiler.so ############
 add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS})
 
 target_compile_definitions(ge_compiler PRIVATE
@@ -919,3 +925,70 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/optimizer_priority.pbtxt OPTIONAL
     DESTINATION ${INSTALL_LIBRARY_DIR}
 )
+
+elseif (ENABLE_ACL)
+
+############ libge_compiler.so w/static protobuf ############
+add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS})
+
+target_compile_definitions(ge_compiler PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    REUSE_MEMORY=1
+    FMK_SUPPORT_DUMP
+    FMK_HOST_INFER
+    COMPILE_OMG_PACKAGE
+    google=ascend_private
+)
+
+target_compile_options(ge_compiler PRIVATE
+    -O2
+)
+
+target_include_directories(ge_compiler PRIVATE
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/ge/analyzer
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${GE_CODE_DIR}/inc/framework/common
+    ${METADEF_DIR}
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    ${ASCEND_DIR}/driver/include
+    ${ASCEND_DIR}/fwkacllib/include
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_libraries(ge_compiler
+    $<BUILD_INTERFACE:intf_pub>
+    ge_memory
+    -Wl,--no-as-needed
+    graph
+    ge_common
+    static_ascend_protobuf
+    register
+    c_sec
+    error_manager
+    slog
+    mmpa
+    runtime_compile
+    resource
+    -Wl,--as-needed
+    json
+    -lrt
+    -ldl
+)
+
+############ install libge_compiler for MindSpore############
+set(INSTALL_BASE_DIR "")
+set(INSTALL_LIBRARY_DIR lib)
+
+install(TARGETS ge_compiler OPTIONAL
+    LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
+)
+endif()

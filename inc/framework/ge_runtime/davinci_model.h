@@ -27,10 +27,10 @@ namespace ge {
 namespace model_runner {
 class DavinciModel {
  public:
-  DavinciModel(const std::vector<std::shared_ptr<TaskInfo>> &task_info_list, /*lint !e151*/
+  DavinciModel(const std::vector<std::shared_ptr<TaskInfo>> &task_info_list,
                const std::vector<std::shared_ptr<OpInfo>> &data_info_list,
-               const std::vector<std::shared_ptr<OpInfo>> &output_info_list, /*lint !e151*/
-               const std::vector<std::shared_ptr<OpInfo>> &constant_info_list, /*lint !e1049*/
+               const std::vector<std::shared_ptr<OpInfo>> &output_info_list,
+               const std::vector<std::shared_ptr<OpInfo>> &constant_info_list,
                const std::vector<model_runner::OpInfoPtr> &variable_info_list,
                const std::vector<uint32_t> &wait_active_stream_list,
                const std::vector<uint32_t> &force_copy_stream_list, uint64_t mem_size = 0, uint64_t weight_size = 0,
@@ -68,12 +68,12 @@ class DavinciModel {
   uint32_t GetBatchNum() const { return batch_num_; }
   uint32_t GetEventNum() const { return event_num_; }
 
-  const std::vector<uint32_t> &GetWaitActiveStreams() const { return wait_active_stream_list_; } /*lint !e1413*/
-  const std::vector<uint32_t> &GetForceCopyStreams() const { return force_copy_stream_list_; } /*lint !e1413*/
+  const std::vector<uint32_t> &GetWaitActiveStreams() const { return wait_active_stream_list_; }
+  const std::vector<uint32_t> &GetForceCopyStreams() const { return force_copy_stream_list_; }
 
   int32_t GetPriority() const { return priority_; }
 
-  const std::vector<std::shared_ptr<TaskInfo>> &GetTaskInfoList() const { return task_info_list_; } /*lint !e151*/
+  const std::vector<std::shared_ptr<TaskInfo>> &GetTaskInfoList() const { return task_info_list_; }
   const std::vector<std::shared_ptr<OpInfo>> &GetDataInfoList() const { return data_info_list_; }
   const std::vector<std::shared_ptr<OpInfo>> &GetOutputInfoList() const { return output_info_list_; }
   const std::vector<std::shared_ptr<OpInfo>> &GetConstantInfoList() const { return output_info_list_; }
@@ -81,7 +81,7 @@ class DavinciModel {
 
  private:
   std::vector<std::shared_ptr<TaskInfo>> task_info_list_;
-  std::vector<std::shared_ptr<OpInfo>> data_info_list_; /*lint !e151*/
+  std::vector<std::shared_ptr<OpInfo>> data_info_list_;
   std::vector<std::shared_ptr<OpInfo>> output_info_list_;
   std::vector<std::shared_ptr<OpInfo>> constant_info_list_;
   std::vector<model_runner::OpInfoPtr> variable_info_list_;

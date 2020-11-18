@@ -42,7 +42,7 @@ class Task {
 
 template <class T>
 class TaskRepeater : public Task {
-  static_assert(std::is_base_of<TaskInfo, T>(), "Wrong TaskInfo Type!"); /*lint !e30*/
+  static_assert(std::is_base_of<TaskInfo, T>(), "Wrong TaskInfo Type!");
 
  public:
   TaskRepeater(const ModelContext &model_context, std::shared_ptr<T> task_info) {}

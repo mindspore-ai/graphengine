@@ -161,12 +161,13 @@ class TbeTaskInfo : public TaskInfo {
 class AicpuTaskInfo : public TaskInfo {
  public:
   AicpuTaskInfo(const std::string &op_name, uint32_t stream_id, const string &so_name, const std::string &kernel_name,
-                const std::string &node_def, const std::vector<void *> &input_data_addrs,
+                const std::string &node_def, const std::string &ext_info, const std::vector<void *> &input_data_addrs,
                 const std::vector<void *> &output_data_addrs, bool dump_flag)
       : TaskInfo(op_name, stream_id, TaskInfoType::AICPU, dump_flag),
         so_name_(so_name),
         kernel_name_(kernel_name),
         node_def_(node_def),
+        ext_info_(ext_info),
         input_data_addrs_(input_data_addrs),
         output_data_addrs_(output_data_addrs) {}
   ~AicpuTaskInfo() override {}
@@ -176,11 +177,13 @@ class AicpuTaskInfo : public TaskInfo {
   const std::string &node_def() const { return node_def_; }
   const std::vector<void *> &input_data_addrs() const { return input_data_addrs_; }
   const std::vector<void *> &output_data_addrs() const { return output_data_addrs_; }
+  const std::string &ext_info() const { return ext_info_; }
 
  private:
   std::string so_name_;
   std::string kernel_name_;
   std::string node_def_;
+  std::string ext_info_;
   std::vector<void *> input_data_addrs_;
   std::vector<void *> output_data_addrs_;
 };
@@ -293,19 +296,19 @@ class HcclTaskInfo : public TaskInfo {
         hcom_distribute_task_(hcom_distribute_task) {}
   ~HcclTaskInfo() override {}
 
-  const std::string &hccl_type() const { return hccl_type_; } /*lint !e1413*/
+  const std::string &hccl_type() const { return hccl_type_; }
   void *input_data_addr() const { return input_data_addr_; }
   void *output_data_addr() const { return output_data_addr_; }
   void *workspace_addr() const { return workspace_addr_; }
   int64_t workspace_size() const { return workspace_size_; }
   int64_t hccl_stream_num() const { return hccl_stream_num_; }
-  const std::vector<uint8_t> &private_def() const { return private_def_; } /*lint !e1413*/
+  const std::vector<uint8_t> &private_def() const { return private_def_; }
   void *ops_kernel_store() const { return ops_kernel_store_; }
   int32_t count() const { return count_; }
   int64_t root_id() const { return root_id_; }
   int64_t op_type() const { return op_type_; }
   int64_t data_type() const { return data_type_; }
-  const std::string group() const { return group_; }
+  const std::string &group() const { return group_; }
   std::function<bool(void *, void *)> hcom_bind_model() const { return hcom_bind_model_; }
   std::function<bool(void *)> hcom_unbind_model() const { return hcom_unbind_model_; }
   std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task() const {

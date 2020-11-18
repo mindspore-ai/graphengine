@@ -22,6 +22,7 @@
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
@@ -33,9 +34,10 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
   auto src_shape = args.src_shape;
   auto dst_shape = args.dst_shape;
   if (args.src_format != FORMAT_FRACTAL_Z || args.dst_format != FORMAT_HWCN) {
-    GELOGE(UNSUPPORTED, "Does not support trans format from %s to %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Dose not support trans format from " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
@@ -59,10 +61,12 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
   int64_t n0 = Ceil(dst_shape.at(kHwcnN), static_cast<int64_t>(kNiSize));
   if (src_shape.at(kFracZHWC1) != dst_shape.at(kHwcnH) * dst_shape.at(kHwcnW) * c1 || src_shape.at(kFracZC0) != c0 ||
       src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
-    GELOGE(PARAM_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
-           ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
+    std::string error = "Failed to check relationship between src shape" +
+        FmtToStr(ShapeToString(src_shape)) + " and dst shape" +
+        FmtToStr(ShapeToString(dst_shape));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return PARAM_INVALID;
-  }
+  } 
 
   return SUCCESS;
 }

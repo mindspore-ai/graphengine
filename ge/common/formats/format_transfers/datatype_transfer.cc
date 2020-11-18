@@ -24,6 +24,7 @@
 #include "common/fp16_t.h"
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 #include "securec.h"
 
@@ -123,21 +124,25 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
   std::pair<DataType, DataType> trans_info(args.src_data_type, args.dst_data_type);
   auto iter = trans_mode_map.find(trans_info);
   if (iter == trans_mode_map.end()) {
-    GELOGE(PARAM_INVALID, "Trans data type from %s to %s is not supported.",
-           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           TypeUtils::DataTypeToSerialString(args.dst_data_type).c_str());
+    std::string error = "Failed to trans data from datatype " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type)) + " to " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type)) + " , it is not supported.";
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   auto trans_mode = iter->second;
 
   int size = GetSizeByDataType(args.dst_data_type);
   if (size <= 0) {
-    GELOGE(PARAM_INVALID, "Failed to calc size from data type %s",
-           TypeUtils::DataTypeToSerialString(args.dst_data_type).c_str());
+    std::string error = "Failed to calc size from data type" +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type)) + ", it is not supported.";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return PARAM_INVALID;
   }
   if (args.src_data_size > static_cast<size_t>(SIZE_MAX / size)) {
-    GELOGE(PARAM_INVALID, "args.src_data_size %zu or data type size %d too big.", args.src_data_size, size);
+    std::string error = "args.src_data_size" + FmtToStr(args.src_data_size) +
+        " or data type size" + FmtToStr(size) + " is too big";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return PARAM_INVALID;
   }
   size_t total_size = static_cast<size_t>(args.src_data_size * size);
@@ -154,9 +159,11 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
   }
 
   if (CastKernel(args, dst.get(), args.src_data_size, trans_mode) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to cast data from %s to %s, data size %zu",
-           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           TypeUtils::DataTypeToSerialString(args.dst_data_type).c_str(), args.src_data_size);
+    std::string error = "Failed to cast data from datatype " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type)) + " to " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type)) + ", data size is " +
+        FmtToStr(std::to_string(args.src_data_size));
+    GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error.c_str());
     return INTERNAL_ERROR;
   }
   result.data = dst;

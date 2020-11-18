@@ -18,10 +18,12 @@
 #define INC_FRAMEWORK_COMMON_DEBUG_LOG_H_
 
 #include <string>
+#include <sstream>
 
 #include "runtime/rt.h"
 #include "common/string_util.h"
 #include "common/util.h"
+#include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "ge/ge_api_error_codes.h"
 
@@ -268,5 +270,14 @@
       return _status;                                                                    \
     }                                                                                    \
   } while (0)
+
+template <typename T>
+std::string FmtToStr(const T &t) {
+  std::string fmt;
+  std::stringstream st;
+  st << "[" << t << "]";
+  fmt = st.str();
+  return fmt;
+}
 
 #endif  // INC_FRAMEWORK_COMMON_DEBUG_LOG_H_

@@ -22,6 +22,7 @@
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
@@ -35,14 +36,16 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
   auto src_shape = args.src_shape;
   auto dst_shape = args.dst_shape;
   if (args.src_format != FORMAT_C1HWNCoC0 || args.dst_format != FORMAT_HWCN) {
-    GELOGE(UNSUPPORTED, "Does not support trans format from %s to %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Dose not support trans format from " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
-    GELOGE(UNSUPPORTED, "Failed to trans shape from NC1HWNCoC0 to HWCN, invalid data type %s",
-           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+    std::string error = "Failed to trans shape from NC1HWNCoC0 to HWCN, invalid data type" +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
   if (!CheckShapeValid(src_shape, kC1hwncoc0DimsNum)) {
@@ -58,8 +61,9 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
       src_shape.at(kC1hwncoc0H) != dst_shape.at(kHwcnH) || src_shape.at(kC1hwncoc0W) != dst_shape.at(kHwcnW) ||
       src_shape.at(kC1hwncoc0N) != dst_shape.at(kHwcnN) || src_shape.at(kC1hwncoc0Co) != cube_size ||
       src_shape.at(kC1hwncoc0C0) != cube_size) {
-    GELOGE(PARAM_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
-           ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
+    std::string error = "Failed to check relationship between src and dst shape, src shape" +
+        FmtToStr(ShapeToString(src_shape)) + ", dst shape" + FmtToStr(ShapeToString(dst_shape));
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
     return PARAM_INVALID;
   }
 

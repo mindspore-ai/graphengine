@@ -280,11 +280,7 @@ Status FormatTransferNchwToFZC04::TransFormat(const TransArgs &args, TransResult
     return ret;
   }
 
-  if (!args_tmp.dst_shape.empty() && args_tmp.dst_shape != expect_shape) {
-    GELOGE(PARAM_INVALID, "Failed to trans format from %s to %s, the dst shape %s is invalid, expect %s",
-           TypeUtils::FormatToSerialString(args_tmp.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args_tmp.dst_format).c_str(), ShapeToString(args_tmp.dst_shape).c_str(),
-           ShapeToString(expect_shape).c_str());
+  if (!IsTransShapeDstCorrect(args_tmp, expect_shape)) {
     return PARAM_INVALID;
   }
 

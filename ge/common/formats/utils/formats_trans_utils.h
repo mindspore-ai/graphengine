@@ -23,6 +23,7 @@
 #include <vector>
 #include "external/graph/types.h"
 #include "graph/ge_tensor.h"
+#include "register/register_format_transfer.h"
 
 namespace ge {
 namespace formats {
@@ -60,6 +61,10 @@ bool CheckShapeValid(const std::vector<int64_t> &shape, const int64_t expect_dim
 bool IsShapeValid(const std::vector<int64_t> &shape);
 
 bool IsShapeEqual(const GeShape &src, const GeShape &dst);
+
+bool IsTransShapeSrcCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape);
+
+bool IsTransShapeDstCorrect(const TransArgs &args, std::vector<int64_t> &expect_shape);
 
 template <typename T>
 T Ceil(T n1, T n2) {

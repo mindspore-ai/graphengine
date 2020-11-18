@@ -26,6 +26,7 @@
 
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/type_utils.h"
 
@@ -34,9 +35,10 @@ namespace formats {
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArgs &args, TransResult &result) {
   auto transfer = BuildFormatTransfer(args);
   if (transfer == nullptr) {
-    GELOGE(UNSUPPORTED, "Failed to trans data from format %s to %s, unsupport now",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Failed to trans data from format " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
 
@@ -59,9 +61,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_form
   args.dst_format = dst_format;
   auto transfer = BuildFormatTransfer(args);
   if (transfer == nullptr) {
-    GELOGE(UNSUPPORTED, "Failed to trans data from format %s to %s, unsupport now",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    std::string error = "Failed to trans data from format " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
 
@@ -71,9 +74,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_form
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransDataType(const CastArgs &args, TransResult &result) {
   auto transfer = BuildDataTypeTransfer(args);
   if (transfer == nullptr) {
-    GELOGE(UNSUPPORTED, "Failed to trans data from datatype %s to %s, unsupport now",
-           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           TypeUtils::DataTypeToSerialString(args.dst_data_type).c_str());
+    std::string error = "Failed to trans data from datatype " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type)) + " to " +
+        FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type));
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return UNSUPPORTED;
   }
 

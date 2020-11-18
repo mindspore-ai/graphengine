@@ -148,11 +148,7 @@ Status FormatTransferDhwcnFractalZ3D::TransFormat(const TransArgs &args, TransRe
   if (ret != SUCCESS) {
     return ret;
   }
-  if (!args.dst_shape.empty() && args.dst_shape != expect_shape) {
-    GELOGE(PARAM_INVALID, "Failed to trans format from %s to %s, the dst shape %s is invalid, expect %s",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.dst_shape).c_str(),
-           ShapeToString(expect_shape).c_str());
+  if (!IsTransShapeDstCorrect(args, expect_shape)) {
     return PARAM_INVALID;
   }
 

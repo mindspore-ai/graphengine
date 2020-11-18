@@ -342,7 +342,9 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              OP_DEBUG_LEVEL,
                                                              DEBUG_DIR,
                                                              OP_COMPILER_CACHE_DIR,
-                                                             OP_COMPILER_CACHE_MODE};
+                                                             OP_COMPILER_CACHE_MODE,
+                                                             MDL_BANK_PATH_FLAG,
+                                                             OP_BANK_PATH_FLAG};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
@@ -357,9 +359,7 @@ const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
                                                             OUT_NODES,
                                                             COMPRESS_WEIGHT_CONF,
                                                             ENABLE_SCOPE_FUSION_PASSES,
-                                                            LOG_LEVEL,
-                                                            MDL_BANK_PATH_FLAG,
-                                                            OP_BANK_PATH_FLAG};
+                                                            LOG_LEVEL};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,

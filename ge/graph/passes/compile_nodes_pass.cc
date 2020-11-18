@@ -69,6 +69,10 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
         std::vector<NodePtr> node_vec{node};
         kernel_to_compile_nodes.insert(std::make_pair(kernel_lib_name, node_vec));
       }
+    } else {
+      GELOGE(GRAPH_FAILED, "Get node:%s, type:%s supported kernel failed.", node->GetName().c_str(),
+             node->GetType().c_str());
+      return GRAPH_FAILED;
     }
   }
   // compile node follow different kernel, currently only TBE kernel
@@ -108,6 +112,14 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   // begin accuracy supported check
   if (!CheckAccuracySupport(kernel_info, instance, op_desc)) {
     // if check accuracy support failed , try to go to aicpu engine
+    string aicpu_kernel_lib_name = kAICPUKernelLibName;
+    OpsKernelInfoStorePtr aicpu_kernel_info =
+      instance->OpsKernelManagerObj().GetOpsKernelInfoStore(aicpu_kernel_lib_name);
+    if (!CheckAccuracySupport(aicpu_kernel_info, instance, op_desc)) {
+      GELOGE(GRAPH_FAILED, "AICPU engine does not support node:%s, type:%s , get kernel lib failed.",
+             node->GetName().c_str(), op_desc->GetType().c_str());
+      return GRAPH_FAILED;
+    }
     kernel_lib_name = kAICPUKernelLibName;
   }
   return GRAPH_SUCCESS;

@@ -89,6 +89,8 @@ const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
 const int32_t kInvalidStream = -1;
+const uint32_t kEndOfSequence = 0x0704000a;
+const uint32_t kEndOfSequenceNew = 507005;
 
 inline bool IsDataOp(const std::string &node_type) {
   return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
@@ -2582,7 +2584,7 @@ void *DavinciModel::Run(DavinciModel *model) {
       GE_TIMESTAMP_START(rtStreamSynchronize);
       GELOGI("rtStreamSynchronize start.");
       rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-      if (rt_ret == RT_ERROR_END_OF_SEQUENCE) {
+      if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
         seq_end_flag = true;
       }
       GE_IF_BOOL_EXEC(

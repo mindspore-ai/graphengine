@@ -149,7 +149,7 @@ std::string GenerateFileName(const SingleOpDesc &single_op_desc, int index) {
     }
   }
 
-  std:string file_name = file_name_ss.str();
+  std::string file_name = file_name_ss.str();
   if (file_name.length() > kMaxFileNameLen) {
     GELOGI("Trim file name for it is too long, origin file name = %s", file_name.c_str());
     file_name = file_name.substr(0, kMaxFileNameLen);

@@ -17,6 +17,7 @@
 
 #include <vector>
 #include "common/auth/file_saver.h"
+#include "common/ge/tbe_plugin_manager.h"
 #include "external/register/register_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -162,6 +163,8 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
       GELOGE(ret, "GE initialize failed!");
       return GRAPH_FAILED;
     }
+    // for functional subgraph assign _parent_index.
+    TBEPluginManager::Instance().InitPreparation(global_options);
   }
   GELOGW("gelib has been initialized!");
   return GRAPH_SUCCESS;
@@ -169,6 +172,7 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
 
 void aclgrphBuildFinalize() {
   if (ge::GELib::GetInstance() != nullptr && ge::GELib::GetInstance()->InitFlag()) {
+    (void)TBEPluginManager::Instance().Finalize();
     (void)ge::GELib::GetInstance()->Finalize();
     return;
   }

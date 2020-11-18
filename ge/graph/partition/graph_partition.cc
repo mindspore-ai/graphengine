@@ -532,6 +532,7 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
   }
   const NodeEngineMap *node_engine_map = graph_info_.engine_placer_.GetNodeEngineMap();
   size_t temp_index = 0;
+  // travese nodes by topo order one by one
   for (const auto &node : compute_graph->GetDirectNode()) {
     std::string temp_stream;
     // node opdesc has been checked before
@@ -556,9 +557,22 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
     }
     new_cluster->nodes_.push_back(node);
     if (!HasNoInput(node)) {
+      auto node_id = node->GetOpDesc()->GetId();
       for (const auto &parent : node->GetInAllNodes()) {
-        new_cluster->in_clu_.insert(graph_info_.node_2_cluster_.at(parent)->index_);
-        graph_info_.node_2_cluster_.at(parent)->out_clu_.insert(temp_index);
+        auto parent_id = parent->GetOpDesc()->GetId();
+        if (parent_id < node_id) {
+          auto iter = graph_info_.node_2_cluster_.find(parent);
+          if (iter == graph_info_.node_2_cluster_.end()) {
+            GELOGE(FAILED,
+                   "[GraphPartitioner]: node[%s]id[%ld]'s parent_node[%s]id[%ld]"
+                   "should make cluster in advance",
+                   node->GetOpDesc()->GetName().c_str(), node_id,
+                   parent->GetOpDesc()->GetName().c_str(), parent_id);
+            return FAILED;
+          }
+          new_cluster->in_clu_.insert(iter->second->index_);
+          iter->second->out_clu_.insert(temp_index);
+        }
       }
     }
     graph_info_.node_2_cluster_[node] = new_cluster;
@@ -586,7 +600,7 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
       return FAILED;
     }
     auto &engine_name = graph_info_.partitions_.at(sub_graph);
-    GE_DUMP(sub_graph, sub_graph->GetName());
+    GE_DUMP(sub_graph, sub_graph->GetName()  + "_" + mode_2_str_[graph_info_.mode_]);
     if (!session_graph_id.empty()) {
       GE_IF_BOOL_EXEC(!AttrUtils::SetStr(sub_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
                       GELOGW("SetStr ATTR_NAME_SESSION_GRAPH_ID failed");)

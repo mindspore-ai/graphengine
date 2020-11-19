@@ -84,6 +84,7 @@ class GraphPrepare {
 
   Status GraphEquivalentTransformation();
   void TypeConversionOfConstant();
+  bool IsDynamicDims(const NodePtr &input_node);
 
   ge::ComputeGraphPtr compute_graph_;
   GraphManagerOptions options_;

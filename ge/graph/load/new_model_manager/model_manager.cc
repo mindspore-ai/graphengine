@@ -29,6 +29,8 @@
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
 #include "model/ge_root_model.h"
+#include "graph/common/local_context.h"
+#include "common/formats/utils/formats_trans_utils.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -405,6 +407,10 @@ Status ModelManager::Unload(uint32_t model_id) {
   }
   std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
   exception_infos_.clear();
+  for (auto addr : shape_data_addrs_[model_id]) {
+    delete[] addr;
+  }
+  shape_data_addrs_.erase(model_id);
   return SUCCESS;
 }
 
@@ -444,6 +450,34 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
   return SUCCESS;
 }
 
+Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_input_dims,
+                                       const vector<pair<string, vector<int64_t>>> &user_input_dims,
+                                       vector<int64_t> &cur_dynamic_dims) {
+  GELOGD(" Start get cur dynamic dims.");
+  if (user_real_input_dims.size() != user_input_dims.size()) {
+    GELOGE(INTERNAL_ERROR,
+           "The input count of user: %zu should be equal to the data count of graph: %zu",
+           user_real_input_dims.size(), user_input_dims.size());
+    return INTERNAL_ERROR;
+  }
+
+  for (size_t i = 0; i < user_input_dims.size(); ++i) {
+    if (user_real_input_dims[i].size() != user_input_dims[i].second.size()) {
+      GELOGE(INTERNAL_ERROR,
+             "The shape size: %zu of dynamic input: %s should be equal to the shape size of input shape: %zu.",
+             user_real_input_dims[i].size(), user_input_dims[i].first.c_str(), user_input_dims[i].second.size());
+      return INTERNAL_ERROR;
+    }
+    for (size_t j = 0; j < user_input_dims.at(i).second.size(); ++j) {
+      if (user_input_dims.at(i).second.at(j) < 0) {
+        cur_dynamic_dims.emplace_back(user_real_input_dims[i][j]);
+      }
+    }
+  }
+  GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims).c_str());
+  return SUCCESS;
+}
+
 ///
 /// @ingroup domi_ome
 /// @brief load Input and output TensorInfo for Model
@@ -461,12 +495,30 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
   input_data.timeout = 0;
   input_data.timestamp = 0;
   input_data.index = 0;
-
   for (size_t i = 0; i < inputs.size(); ++i) {
     DataBuffer data;
     data.data = inputs[i].data;
     data.length = inputs[i].length;
     input_data.blobs.push_back(data);
+  }
+  if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
+    std::vector<int64_t> cur_dynamic_dims;
+    if (!GetLocalOmgContext().user_real_input_dims.empty()) {
+      if (GetCurDynamicDims(GetLocalOmgContext().user_real_input_dims, GetLocalOmgContext().user_input_dims,
+                            cur_dynamic_dims) != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "[Train_Dynamic] Failed to Parse real_dynamic_dims.");
+        return INTERNAL_ERROR;
+      }
+      DataBuffer data;
+      data.data = new(std::nothrow) int64_t[cur_dynamic_dims.size()];
+      GE_CHECK_NOTNULL(data.data);
+      uint64_t length = static_cast<uint64_t>(cur_dynamic_dims.size() * sizeof(int64_t));
+      GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK, return INTERNAL_ERROR,
+                       "Failed to memcpy data.");
+      data.length = length;
+      input_data.blobs.push_back(data);
+      shape_data_addrs_[model_id].emplace_back(reinterpret_cast<int64_t *>(data.data));
+    }
   }
 
   OutputData output_data;

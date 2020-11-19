@@ -108,6 +108,10 @@
 #include "graph/types.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
+#include "ir_build/atc_ir_common.h"
+#include "graph/common/local_context.h"
+#include "graph/common/omg_util.h"
+#include "common/formats/utils/formats_trans_utils.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -121,6 +125,12 @@ const char *const kCheckPointGraph = "checkpoint_graph";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kOffOptimize = "off_optimize";
+const int32_t kDynamicDimsTypeIsGetNext = 0;
+const int32_t kDynamicDimsTypeIsData = 1;
+const int64_t kInvalidDynaimcDimsType = -1;
+const char *const kSubstrOfGetNextNosinkName = "IteratorGetNext";
+const char *const kShapeDataName = "ascend_mbatch_shape_data";
+const char *const kGetNextName = "IteratorV2";
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;
@@ -284,6 +294,42 @@ Status GraphManager::Finalize() {
   return unload_model_ret;
 }
 
+Status GraphManager::InitDynamicParams(ComputeGraphPtr &compute_graph) {
+  for (const auto &node : compute_graph->GetAllNodes()) {
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    GetLocalOmgContext().need_multi_batch = false;
+    std::string op_type;
+    auto ret = GetOriginalType(node, op_type);
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Failed to get node %s original type.", node->GetName().c_str());
+      return FAILED;
+    }
+    if ((op_desc->GetType() == DATA) || (op_type == kGetNextName)) {
+      GELOGI("Need to process multi batch for compute graph.");
+      GetLocalOmgContext().need_multi_batch = true;
+      break;
+    }
+  }
+  if (!options_.input_shape.empty() && !options_.dynamic_dims.empty()) {
+    if (!ge::ParseInputShape(options_.input_shape, GetLocalOmgContext().input_dims,
+                             GetLocalOmgContext().user_input_dims, true)) {
+      GELOGE(GRAPH_PARAM_INVALID, "Failed to parse input shape: %s.", options_.input_shape.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
+    GetLocalOmgContext().dynamic_dims = options_.dynamic_dims;
+  }
+  if (options_.dynamic_node_type == kDynamicDimsTypeIsGetNext) {
+    GetLocalOmgContext().dynamic_node_type = GETNEXT;
+  }
+  if (options_.dynamic_node_type == kDynamicDimsTypeIsData) {
+    GetLocalOmgContext().dynamic_node_type = DATA;
+  }
+  return SUCCESS;
+}
+
 Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
                               const std::map<std::string, std::string> &options,
                               const OmgContext &omg_context) {
@@ -303,6 +349,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
       return GE_GRAPH_GRAPH_ALREADY_EXIST;
     }
     (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
+    compute_graph_ = compute_graph;
   } else {
     GELOGE(FAILED, "compute graph is null");
     return FAILED;
@@ -320,15 +367,11 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   }
 
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
-  if (graph_node == nullptr) {
-    GELOGE(FAILED, "GraphNode make shared failed");
-    return FAILED;
-  }
+  GE_IF_BOOL_EXEC(graph_node == nullptr, GELOGE(FAILED, "GraphNode make shared failed");
+                  return FAILED);
   std::shared_ptr<Graph> graph_ptr = MakeShared<ge::Graph>(graph);
-  if (graph_ptr == nullptr) {
-    GELOGE(FAILED, "GraphPtr make shared failed");
-    return FAILED;
-  }
+  GE_IF_BOOL_EXEC(graph_ptr == nullptr, GELOGE(FAILED, "GraphPtr make shared failed");
+                  return FAILED);
 
   graph_node->SetGraph(graph_ptr);
   graph_node->SetOptions(options);
@@ -337,6 +380,10 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   AddLocalOmgContext(graph_id, omg_context);
   if (!options_.output_datatype.empty()) {
     GetLocalOmgContext().output_type = options_.output_datatype;
+  }
+  if (InitDynamicParams(compute_graph) != SUCCESS) {
+    GELOGE(GRAPH_PARAM_INVALID, "Failed to init params when online infer is dynamic.");
+    return GRAPH_PARAM_INVALID;
   }
 
   CompilerStages &stages = GetCompilerStages(graph_id);
@@ -1402,10 +1449,9 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
 
   // get encrypt mode
   ret = ParseOption(options, ENCRYPT_MODE, options_.encrypt_mode);
-  if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.encryptMode value invalid.");
-    return GE_GRAPH_OPTIONS_INVALID;
-  }
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.encryptMode value invalid.");
+                  return GE_GRAPH_OPTIONS_INVALID);
 
   // get ek file
   ParseOption(options, EK_FILE, options_.ek_file);
@@ -1443,33 +1489,29 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
 
   // get weight compress flag
   ret = ParseOption(options, COMPRESS_FLAG, options_.compress_flag);
-  if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.compressFlag value is invalid, must be 0 or 1.");
-    return GE_GRAPH_OPTIONS_INVALID;
-  }
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.compressFlag value is invalid, must be 0 or 1.");
+                  return GE_GRAPH_OPTIONS_INVALID);
 
   // ge.graphType.
   options_.run_graph_flag = true;
   ret = ParseOption(options, RUN_FLAG, options_.run_graph_flag);
-  if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid, must be 0 or 1.");
-    return GE_GRAPH_OPTIONS_INVALID;
-  }
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid, must be 0 or 1.");
+                  return GE_GRAPH_OPTIONS_INVALID);
 
   // ge.graphType
   ret = ParseTrainGraphFlag(options_.run_graph_flag, options_.train_graph_flag);
-  if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid");
-    return GE_GRAPH_OPTIONS_INVALID;
-  }
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid");
+                  return GE_GRAPH_OPTIONS_INVALID);
 
   // parse FmkOp
   options_.local_fmk_op_flag = false;
   ret = ParseOption(options, LOCAL_FMKOP_FLAG, options_.local_fmk_op_flag);
-  if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.localFmkopFlag value is invalid, must be 0 or 1.");
-    return GE_GRAPH_OPTIONS_INVALID;
-  }
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.localFmkopFlag value is invalid, must be 0 or 1.");
+                  return GE_GRAPH_OPTIONS_INVALID);
   options_.enable_print_op_pass = true;
   ret = ParseOption(options, ENABLE_PRINT_OP_PASS, options_.enable_print_op_pass);
 
@@ -1481,11 +1523,9 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   // parse hcom parallel
   options_.hcom_parallel = false;
   ret = ParseOption(options, HCOM_PARALLEL, options_.hcom_parallel);
-  if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.hcomParallel value is invalid, must be 0 or 1.");
-    return GE_GRAPH_OPTIONS_INVALID;
-  }
-
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.hcomParallel value is invalid, must be 0 or 1.");
+                  return GE_GRAPH_OPTIONS_INVALID);
   // net output node dataType
   ParseOption(options, OUTPUT_DATATYPE, options_.output_datatype);
 
@@ -1494,6 +1534,22 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   GELOGI("Set save original model flag %s", options_.save_original_model.c_str());
   // Original model file name
   ParseOption(options, ORIGINAL_MODEL_FILE, options_.original_model_file);
+
+  ParseOption(options, INPUT_SHAPE, options_.input_shape);
+  ParseOption(options, kDynamicDims, options_.dynamic_dims);
+  ParseOption(options, DYNAMIC_NODE_TYPE, options_.dynamic_node_type);
+  GELOGD("Dynamic dims params: input shape is %s, dynamic dims is %s, dynamic node type is %d.",
+         options_.input_shape.c_str(), options_.dynamic_dims.c_str(), options_.dynamic_node_type);
+  if ((!options_.input_shape.empty() && options_.dynamic_dims.empty()) ||
+      (options_.input_shape.empty() && !options_.dynamic_dims.empty())) {
+      GELOGE(GRAPH_PARAM_INVALID, "Should set input shape and dynamic dims at the same time");
+      return GRAPH_PARAM_INVALID;
+  }
+  if ((!options_.input_shape.empty() && options_.dynamic_node_type == kInvalidDynaimcDimsType) ||
+      (!options_.dynamic_dims.empty() && options_.dynamic_node_type == kInvalidDynaimcDimsType)) {
+    GELOGE(GRAPH_PARAM_INVALID, "Should set valid dynamic node type");
+    return GRAPH_PARAM_INVALID;
+  }
 
   // Set Build model and step
   ParseOption(options, BUILD_MODE, options_.build_mode);
@@ -2660,6 +2716,118 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
   }
 }
 
+Status GraphManager::DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_nodes,
+                                               vector<NodePtr> &getnext_nosink_nodes,
+                                               vector<NodePtr> &getnext_sink_nodes) {
+  GELOGD("Start distinguish getnext and data node.");
+  for (NodePtr &input_node : graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    OpDescPtr op_desc = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    if (op_desc->GetType() == DATA && op_desc->GetName() != kShapeDataName) {
+      if (op_desc->GetName().find(kSubstrOfGetNextNosinkName) == string::npos) {
+        data_nodes.emplace_back(input_node);
+      } else {
+        getnext_nosink_nodes.emplace_back(input_node);
+      }
+    }
+    std::string op_type;
+    auto ret = GetOriginalType(input_node, op_type);
+    if (ret != SUCCESS) {
+      GELOGE(FAILED, "Failed to get node %s original type.", input_node->GetName().c_str());
+      return FAILED;
+    }
+    if (op_type == kGetNextName) {
+      GELOGD("Name of getnext sink is %s.", op_desc->GetName().c_str());
+      getnext_sink_nodes.emplace_back(input_node);
+    }
+  }
+  GELOGI("data count is %zu, getnext nosink count is %zu, getnext sink count is %zu.", data_nodes.size(),
+         getnext_nosink_nodes.size(), getnext_sink_nodes.size());
+  return SUCCESS;
+}
+
+void GraphManager::ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor) {
+  GELOGD("Start parse input dims from data.");
+  for (size_t i = 0; i < input_tensor.size(); ++i) {
+    std::vector<int64_t> dynamic_dim;
+    for (size_t j = 0; j < input_tensor[i].dims.size(); ++j) {
+      dynamic_dim.emplace_back(input_tensor[i].dims[j]);
+    }
+    GELOGD("Input tensor dims is %s.", formats::JoinToString(dynamic_dim).c_str());
+    GetLocalOmgContext().user_real_input_dims.emplace_back(input_tensor[i].dims);
+  }
+}
+
+Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
+                                                           const std::vector<InputTensorInfo> &input_tensor) {
+  GELOGD("Start parse inputs dims when coexist data and getnext sink.");
+  for (size_t i = 0; i < dynamic_nodes.size(); ++i) {
+    auto op_desc = dynamic_nodes.at(i)->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    GeAttrValue::INT index = 0;
+    if (!(AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, index))) {
+      GELOGE(PARAM_INVALID, "Get index from attr failed");
+      return PARAM_INVALID;
+    }
+    if (static_cast<size_t>(index) > input_tensor.size()) {
+      GELOGE(PARAM_INVALID, "The count of input tensor should be equal to the count of data.");
+      return PARAM_INVALID;
+    }
+
+    GetLocalOmgContext().user_real_input_dims.emplace_back(input_tensor.at(index).dims);
+    GELOGI("Shape dims of %d data is %s.", index, formats::JoinToString(input_tensor.at(index).dims).c_str());
+  }
+  return SUCCESS;
+}
+
+Status GraphManager::ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor) {
+  GELOGI("Start parse input dims of %zu input tensor.", input_tensor.size());
+  GetLocalOmgContext().user_real_input_dims.clear();
+  if (!GetLocalOmgContext().dynamic_node_type.empty()) {
+    vector<NodePtr> data_nodes;
+    vector<NodePtr> getnext_nosink_nodes;
+    vector<NodePtr> getnext_sink_nodes;
+    if (DistinguishGetNextAndData(compute_graph_, data_nodes, getnext_nosink_nodes, getnext_sink_nodes) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Failed to distinguish getnext and data node.");
+      return PARAM_INVALID;
+    }
+    if (GetLocalOmgContext().dynamic_node_type == DATA) {
+      if (getnext_nosink_nodes.empty()) {
+        // just data or data+getnext_sink
+        ParseInputsDimsForData(input_tensor);
+      } else {
+        // data+getnext_nosink, but only need to get shape_dims of data
+        if (ParseInputsDimsForGetNexNosinkAndData(data_nodes, input_tensor) != SUCCESS) {
+          GELOGE(PARAM_INVALID, "Failed to parse dims from data, when data coexist with getnext nosink.");
+          return PARAM_INVALID;
+        }
+      }
+    } else {
+      if (getnext_nosink_nodes.empty()) {
+        // just getnext_sink or getnext_sink+data, need to get shape_dims from aicpu op
+        GELOGI("Need to get dims from aicpu op: GETDYNAMICDIMS.");
+        return SUCCESS;
+      } else {
+        if (data_nodes.empty()) {
+          // just getnext_nosink
+          ParseInputsDimsForData(input_tensor);
+        } else {
+          // getnext_nosink + data, but only need to get shape_dims of getnext_nosink
+          if (ParseInputsDimsForGetNexNosinkAndData(getnext_nosink_nodes, input_tensor) != SUCCESS) {
+            GELOGE(PARAM_INVALID, "Failed to parse dims from getnext nosink, when data coexist with getnext nosink");
+            return PARAM_INVALID;
+          }
+        }
+      }
+    }
+  }
+  GELOGI("Parse %zu inputs dims success.", GetLocalOmgContext().user_real_input_dims.size());
+  return SUCCESS;
+}
+
 void GraphManager::RunThread(GraphManager *graph_manager) {
   if (prctl(PR_SET_NAME, ("GE_Run")) != 0) {
     GELOGW("Set thread name failed.");
@@ -2680,6 +2848,11 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
 
     if (args.graph_node->graph_run_async_listener_ != nullptr) {
       args.graph_node->graph_run_async_listener_->SetCallback(args.callback);
+    }
+    // parse inputs.dims to vector<vector<uint64_t>> dynamic_dims
+    if (graph_manager->ParseInputsDims(args.input_tensor) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Parse input dims failed.");
+      return;
     }
 
     Status ret;

@@ -372,12 +372,12 @@ LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 LOCAL_STATIC_LIBRARIES := libge_memory \
                           libadump_server \
                           libmsprofiler \
+                          libmmpa \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libascend_protobuf \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     libge_common \

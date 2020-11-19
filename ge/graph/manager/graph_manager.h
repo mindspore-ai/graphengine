@@ -72,6 +72,7 @@ class GraphManager {
   ///
   Status AddGraph(const GraphId &graph_id, const Graph &graph, const std::map<std::string, std::string> &options,
                   const OmgContext &omg_context);
+  Status InitDynamicParams(ComputeGraphPtr &compute_graph);
 
   ///
   /// @ingroup ge_graph
@@ -215,6 +216,12 @@ class GraphManager {
   static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, GraphId root_graph_id,
                                                 const SubGraphInfoPtr &sub_graph_info_ptr, uint64_t session_id,
                                                 const GEThreadLocalContext &ge_context);
+  Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
+  Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_nodes,
+                                   vector<NodePtr> &getnext_nosink_nodes, vector<NodePtr> &getnext_sink_nodes);
+  void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);
+  Status ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
+                                               const std::vector<InputTensorInfo> &input_tensor);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, GeRootModelPtr &ge_root_model,
                 uint64_t session_id = INVALID_SESSION_ID);
 
@@ -370,7 +377,7 @@ class GraphManager {
   BlockingQueue<RunArgs> run_args_q_{};
   std::thread prerun_thread_;
   std::thread run_thread_;
-
+  ComputeGraphPtr compute_graph_;
   std::map<GraphId, GraphNodePtr> graph_map_;
   std::map<GraphId, ModelCacheHelperPtr> cache_helper_map_;
 

@@ -526,6 +526,9 @@ REGISTER_OPTYPE_DECLARE(HVDCALLBACKALLGATHER, "HorovodAllgather");
 REGISTER_OPTYPE_DECLARE(HVDCALLBACKBROADCAST, "HorovodBroadcast");
 REGISTER_OPTYPE_DECLARE(HVDWAIT, "HorovodWait");
 
+// aicpu op for online_infer dynamic_dims
+REGISTER_OPTYPE_DECLARE(GETDYNAMICDIMS, "GetDynamicDims");
+
 enum InputMode { INPUT = 0, CONST };
 
 // Definition of the processing status enum of the process module

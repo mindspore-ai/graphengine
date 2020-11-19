@@ -115,6 +115,10 @@ struct OmgContext {
   std::string dynamic_batch_size;
   std::string dynamic_image_size;
   std::string dynamic_dims;
+  std::string dynamic_node_type;
+  std::vector<std::vector<int64_t>> user_real_input_dims;
+  std::vector<int64_t> cur_dynamic_dims;
+  bool need_multi_batch = false;
 };
 }  // namespace ge
 

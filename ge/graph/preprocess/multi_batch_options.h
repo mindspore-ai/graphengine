@@ -28,6 +28,21 @@ namespace ge {
 namespace multibatch {
 ///
 /// @ingroup ge
+/// @brief Update Dynamic Param from Options.
+/// @param [in] ComputeGraphPtr &graph: the train graph
+/// @return SUCCESS: valid / PARAM_INVALID: invalid.
+///
+Status CheckSequenceOfOptions(ComputeGraphPtr &graph, std::vector<NodePtr> &data_nodes,
+                              std::vector<NodePtr> &getnext_nosink_nodes, std::vector<NodePtr> &getnext_sink_nodes);
+
+Status UpdateNameOfInputShape(ComputeGraphPtr &graph, const vector<NodePtr> &data_nodes,
+                              const vector<NodePtr> &getnext_nosink_nodes, const vector<NodePtr> &getnext_sink_nodes);
+
+Status DeleteIdentityInsertByAdapter(ComputeGraphPtr &graph);
+
+Status CheckNegativeCountOfOptions(const std::vector<std::vector<int64_t>> &shapes);
+///
+/// @ingroup ge
 /// @brief Init Dynamic Param from Options.
 /// @param [out] std::vector<std::vector<int64_t>> &shapes: Result for Params.
 /// @return true: Configed for Multi batch / false: Not configed for Multi batch.

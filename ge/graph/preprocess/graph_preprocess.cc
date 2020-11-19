@@ -130,6 +130,8 @@ const char *const kMbatchSwitchnName = "mbatch-switch-name";
 
 // the size of user defined output datatype or format string after split by ":".
 const size_t kUserDefinedElementCount = 2;
+const int kDataOutIndex = 0;
+const int64_t kInvalidDynaimcDimsType = -1;
 
 OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
   GeTensorPtr tensor = MakeShared<GeTensor>();
@@ -1160,6 +1162,9 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
         return FAILED;
       }
 
+      if (IsDynamicDims(input_node)) {
+        continue;
+      }
       GeTensorDesc desc(user_input[index].GetTensorDesc());
       auto format = desc.GetFormat();
       auto origin_format = desc.GetOriginFormat();
@@ -1221,10 +1226,7 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
 
       if (!options_.train_graph_flag) {
         Status ret = AdjustDataOpOutput(input_node);
-        if (ret != SUCCESS) {
-          GELOGE(ret, "AdjustDataOpOutput fail, ret:%u", ret);
-          return ret;
-        }
+        GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "AdjustDataOpOutput fail, ret:%u", ret); return ret);
       }
     }
   }
@@ -1570,6 +1572,22 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   return SUCCESS;
 }
 
+bool GraphPrepare::IsDynamicDims(const NodePtr &input_node) {
+  auto data_shape = NodeUtils::GetOutputDesc(*input_node, kDataOutIndex).GetShape();
+  const auto &dims = data_shape.GetDims();
+  bool all_is_positive = false;
+  if (std::all_of(dims.begin(), dims.end(), [](int64_t val) { return val >= 0; })) {
+    all_is_positive = true;
+  }
+  if (!all_is_positive && !options_.input_shape.empty() && !options_.dynamic_dims.empty() &&
+      options_.dynamic_node_type != kInvalidDynaimcDimsType) {
+    GELOGI("No need to check and update desc info, the dims of %s is %s.", input_node->GetName().c_str(),
+           formats::JoinToString(dims).c_str());
+    return true;
+  }
+  return false;
+}
+
 Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
   if (GetLocalOmgContext().is_dynamic_input) {
     return SUCCESS;
@@ -1594,6 +1612,9 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
         ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
         GELOGE(GE_GRAPH_INIT_FAILED, "user_input size:%zu, data op index:%ld.", user_input.size(), index);
         return GE_GRAPH_INIT_FAILED;
+      }
+      if (IsDynamicDims(input_node)) {
+        continue;
       }
       GeTensorDesc desc(user_input[index].GetTensorDesc());
 

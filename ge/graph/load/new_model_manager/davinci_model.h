@@ -47,6 +47,7 @@
 #include "mmpa/mmpa_api.h"
 #include "proto/task.pb.h"
 #include "task_info/task_info.h"
+#include "graph/common/local_context.h"
 
 namespace ge {
 // op debug need 2048 bits buffer
@@ -523,7 +524,6 @@ class DavinciModel {
   bool is_inner_p2p_mem_base_;
   // input data manager
   DataInputer *data_inputer_;
-
   int64_t load_begin_time_;
   int64_t load_end_time_;
   struct timeInfo time_info_;
@@ -842,6 +842,14 @@ class DavinciModel {
   void ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_info);
   void SetLabelForDynamic(const NodePtr &node);
 
+  void ParseDynamicOutShape(const std::vector<std::string> &str_info, std::vector<vector<int64_t>> &vec_info);
+  bool IsGetNextSinkDynamic(const OpDescPtr &op_desc);
+  void GetAllGearsInfo(const NodePtr &node);
+  Status GetGetDynamicDimsNodeInfo(const NodePtr &node);
+  Status GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr &node);
+  Status GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node);
+  Status GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc);
+
   bool is_model_has_inited_;
   uint32_t model_id_;
   uint32_t runtime_model_id_;
@@ -994,6 +1002,17 @@ class DavinciModel {
   void *op_debug_addr_ = nullptr;
   void *p2p_debug_addr_ = nullptr;
   bool is_new_model_desc_{false};
+  bool is_online_infer_dynamic_ = false;
+  bool is_getnext_sink_dynamic_ = false;
+  std::vector<int64_t> cur_dynamic_dims_;
+  void *netoutput_last_input_addr_ = nullptr;
+  int64_t netoutput_last_input_size_ = 0;
+  size_t shape_of_cur_dynamic_dims_ = 0;
+  // key: input_index: input is merge node; value: each gear info and each output size
+  std::map<size_t, std::map<vector<int64_t>, int64_t>> merge_nodes_gear_and_real_out_size_info_;
+  // key: input_index: input is merge node; value: each gear info and each output shape
+  std::map<size_t, std::map<vector<int64_t>, vector<int64_t>>> merge_nodes_gear_and_real_out_shape_info_;
+  std::vector<std::vector<int64_t>> all_gears_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

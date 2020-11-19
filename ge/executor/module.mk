@@ -63,6 +63,7 @@ local_ge_executor_src_files :=  \
     ../single_op/task/aicpu_kernel_task_builder.cc \
     ../hybrid/hybrid_davinci_model_stub.cc\
     ../hybrid/node_executor/aicpu/aicpu_ext_info.cc \
+    ../graph/common/local_context.cc \
 
 local_ge_executor_c_include :=             \
     proto/insert_op.proto                  \

@@ -62,6 +62,8 @@
 #include "runtime/rt_model.h"
 #include "runtime/stream.h"
 #include "securec.h"
+#include "graph/common/local_context.h"
+#include "common/formats/utils/formats_trans_utils.h"
 
 // create std::thread, catch exceptions using try/catch
 #define CREATE_STD_THREAD(thread_id, func, args)                                                  \
@@ -80,6 +82,7 @@ namespace {
 const uint32_t kDataIndex = 0;
 const uint32_t kOutputNum = 1;
 const uint32_t kTrueBranchStreamNum = 1;
+const uint32_t kGetDynamicDimsCount = 1;
 const uint32_t kThreadNum = 16;
 const uint32_t kAddrLen = sizeof(void *);
 const int kDecimal = 10;
@@ -88,6 +91,7 @@ const uint32_t kDataMemAlignSizeCompare = 64;
 const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
+const char *const kGetDynamicDimsName = "ascend_mbatch_get_dynamic_dims_node";
 const int32_t kInvalidStream = -1;
 const uint32_t kEndOfSequence = 0x0704000a;
 const uint32_t kEndOfSequenceNew = 507005;
@@ -895,7 +899,6 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     }
     GE_TIMESTAMP_ADD(InitTbeHandle);
   }
-
   AdjustDataOpList(data_by_index);
   GE_TIMESTAMP_CALLNUM_END(LoadTBEKernelBinToOpDesc, "GraphLoader::LoadTBEKernelBinToOpDesc.");
   GE_TIMESTAMP_CALLNUM_END(InitTbeHandle, "GraphLoader::InitTbeHandle.");
@@ -1051,6 +1054,15 @@ Status DavinciModel::InitInputZeroCopyNodes(const NodePtr &node) {
   return SUCCESS;
 }
 
+bool DavinciModel::IsGetNextSinkDynamic(const OpDescPtr &op_desc) {
+  bool getnext_sink_dynamic = false;
+  if (ge::AttrUtils::GetBool(op_desc, ATTR_GETNEXT_SINK_DYNMAIC, getnext_sink_dynamic) && getnext_sink_dynamic) {
+    GELOGI("ATTR_GETNEXT_SINK_DYNMAIC has been set and is true.");
+    return true;
+  }
+  return false;
+}
+
 /// @ingroup ge
 /// @brief NetOutput Op Initialize.
 /// @param [in] NodePtr: NetOutput Op.
@@ -1075,10 +1087,8 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
   const vector<int64_t> input_size_list = ModelUtils::GetInputSize(op_desc);
   const vector<void *> virtual_addr_list = ModelUtils::GetInputDataAddrs(runtime_param_, op_desc);
   const vector<int64_t> input_offset_list = op_desc->GetInputOffset();
-  if (input_offset_list.size() != virtual_addr_list.size()) {
-    GELOGE(PARAM_INVALID, "virtual_addr size should be equal to offset size.");
-    return PARAM_INVALID;
-  }
+  GE_IF_BOOL_EXEC(input_offset_list.size() != virtual_addr_list.size(),
+                  GELOGE(PARAM_INVALID, "virtual_addr size should be equal to offset size."); return PARAM_INVALID;);
   if (input_size_list.empty() && virtual_addr_list.empty()) {
     GELOGI("NetOutput[%s] is empty.", op_desc->GetName().c_str());
     return SUCCESS;
@@ -1092,13 +1102,17 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
   size_t num = new_output_data_info_.size();
   bool fusion_flag = false;
 
-  for (size_t idx = 0; idx < input_size_list.size(); ++idx) {
+  size_t input_count = input_size_list.size();
+  is_getnext_sink_dynamic_ = false;
+  if (IsGetNextSinkDynamic(op_desc)) {
+    input_count = input_size_list.size() - kGetDynamicDimsCount;
+    is_getnext_sink_dynamic_ = true;
+  }
+  for (size_t idx = 0; idx < input_count; ++idx) {
     ZeroCopyOffset zero_copy_offset;
     Status ret = zero_copy_offset.InitOutputDataInfo(input_size_list, virtual_addr_list, op_desc, idx, fusion_flag);
-    if (ret != SUCCESS) {
-      GELOGE(PARAM_INVALID, "InitDataInfo of input_info %s failed.", op_desc->GetName().c_str());
-      return PARAM_INVALID;
-    }
+    GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(PARAM_INVALID, "InitDataInfo of input_info %s failed.",
+                                           op_desc->GetName().c_str()); return PARAM_INVALID;);
     new_output_data_info_[num + idx] = zero_copy_offset;
     void *addr = virtual_addr_list.at(idx);
     int64_t input_offset = input_offset_list.at(idx);
@@ -1118,12 +1132,202 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
     GELOGI("SetOutputOutsideAddr success.");
   }
 
-  if (InitOutputZeroCopyNodes(node) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Output zero copy nodes init failed!");
-    return PARAM_INVALID;
+  GE_IF_BOOL_EXEC(InitOutputZeroCopyNodes(node) != SUCCESS,
+                  GELOGE(PARAM_INVALID, "Output zero copy nodes init failed!"); return PARAM_INVALID;);
+  GetAllGearsInfo(node);
+  if (is_getnext_sink_dynamic_) {
+    GE_IF_BOOL_EXEC(GetGetDynamicDimsNodeInfo(node) != SUCCESS,
+                    GELOGE(PARAM_INVALID, "Failed to get info of getdynamicdims node."); return PARAM_INVALID;);
   }
+  if (is_online_infer_dynamic_) {
+    GE_IF_BOOL_EXEC(GetGearAndRealOutSizeInfo(input_count, node) != SUCCESS,
+                    GELOGE(PARAM_INVALID, "Failed to get gear and real out size info."); return PARAM_INVALID;);
+    GE_IF_BOOL_EXEC(GetGearAndRealOutShapeInfo(input_count, op_desc) != SUCCESS,
+                    GELOGE(PARAM_INVALID, "Failed to get gear and real out shape info."); return PARAM_INVALID;);
+  }
+
   GELOGI("DavinciModel::InitNetoutput success.");
   return SUCCESS;
+}
+
+void DavinciModel::GetAllGearsInfo(const NodePtr &node) {
+  is_online_infer_dynamic_ = false;
+  all_gears_info_.clear();
+  std::string shapes;
+  (void) AttrUtils::GetStr(node->GetOpDesc(), ATTR_ALL_GEARS_INFO, shapes);
+  if (!shapes.empty()) {
+    is_online_infer_dynamic_ = true;
+    std::vector<std::string> shape_strs = ge::StringUtils::Split(shapes, ';');
+    for (const auto &shape_str : shape_strs) {
+      if (shape_str.empty()) {
+        continue;
+      }
+      std::vector<int64_t> gear_info;
+      std::vector<std::string> dims = ge::StringUtils::Split(shape_str, ',');
+      for (const auto &dim : dims) {
+        if (dim.empty()) {
+          continue;
+        }
+        gear_info.emplace_back(std::strtol(dim.c_str(), nullptr, kDecimal));
+      }
+      if (!gear_info.empty()) {
+        all_gears_info_.emplace_back(gear_info);
+        GELOGD("Init all gears info from %s, gaer info is %s.", node->GetName().c_str(),
+               formats::JoinToString(gear_info).c_str());
+      }
+    }
+  }
+}
+Status DavinciModel::GetGetDynamicDimsNodeInfo(const NodePtr &node) {
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  size_t input_count = node->GetAllInDataAnchors().size();
+  GELOGI("input_anchor count of %s is %zu.", node->GetName().c_str(), input_count);
+  size_t get_dynamic_dims_index = input_count - kGetDynamicDimsCount;
+  auto in_anchor = node->GetAllInDataAnchors().at(get_dynamic_dims_index);
+  auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
+  if (peer_out_anchor == nullptr) {
+    GELOGE(PARAM_INVALID, "Out anchor of getdynmaicdims node should not be nullptr.");
+    return PARAM_INVALID;
+  }
+  auto peer_node = peer_out_anchor->GetOwnerNode();
+  auto op_desc = peer_node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  if (op_desc->GetName() == kGetDynamicDimsName && op_desc->GetType() == GETDYNAMICDIMS) {
+    GELOGD("Start get info of %s.", op_desc->GetName().c_str());
+    auto input_addr = ModelUtils::GetInputDataAddrs(runtime_param_, node->GetOpDesc());
+    auto input_size = ModelUtils::GetInputSize(node->GetOpDesc());
+    if (input_addr.empty() || input_size.empty()) {
+      GELOGE(PARAM_INVALID, "Not set output of %s", op_desc->GetName().c_str());
+      return PARAM_INVALID;
+    }
+    auto input_desc = node->GetOpDesc()->GetInputDescPtr(get_dynamic_dims_index);
+    GE_CHECK_NOTNULL(input_desc);
+    if (input_desc->GetShape().GetDims().empty()) {
+      GELOGE(PARAM_INVALID, "Not set output desc shape of %s.", op_desc->GetName().c_str());
+      return PARAM_INVALID;
+    }
+    netoutput_last_input_addr_ = input_addr[get_dynamic_dims_index];
+    netoutput_last_input_size_ = input_size[get_dynamic_dims_index];
+    shape_of_cur_dynamic_dims_ = input_desc->GetShape().GetDims().at(0);
+    GELOGD("Shape of cur dynamic dims is %zu, size is %ld, addr is %p.", shape_of_cur_dynamic_dims_,
+           netoutput_last_input_size_, netoutput_last_input_addr_);
+  }
+  return SUCCESS;
+}
+
+Status DavinciModel::GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr &node) {
+  GELOGD("Start get gear and real output size info of %s, input count is %zu.", node->GetName().c_str(), input_count);
+  merge_nodes_gear_and_real_out_size_info_.clear();
+  for (size_t idx = 0; idx < input_count; ++idx) {
+    auto in_anchor = node->GetAllInDataAnchors().at(idx);
+    auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
+    if (peer_out_anchor == nullptr) {
+      continue;
+    }
+    auto peer_node = peer_out_anchor->GetOwnerNode();
+    auto op_desc = peer_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    if ((peer_node->GetType() == MERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
+      if (GetRealOutputSizeOfMerge(idx, peer_node) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Get real output size of %s failed.", peer_node->GetName().c_str());
+        return PARAM_INVALID;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+Status DavinciModel::GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node) {
+  GELOGD("Start get output size of %s, which is %zu input to netoutput.", merge_node->GetName().c_str(), input_index);
+  std::map<vector<int64_t>, int64_t> gear_and_real_out_size_info;
+  for (auto &in_anchor : merge_node->GetAllInDataAnchors()) {
+    auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
+    if (peer_out_anchor == nullptr) {
+      continue;
+    }
+    auto in_node = peer_out_anchor->GetOwnerNode();
+    GELOGD("Input node of merge is %s.", in_node->GetName().c_str());
+    auto op_desc = in_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    string batch_label;
+    if (AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
+      size_t batch_index = static_cast<size_t>(stoi(batch_label.substr(batch_label.rfind('_') + 1)));
+      GELOGD("Batch index of %s is %zu.", op_desc->GetName().c_str(), batch_index);
+      if (batch_index > all_gears_info_.size()) {
+        GELOGE(PARAM_INVALID, "The value of ATTR_NAME_BATCH_LABEL is invalid.");
+        return PARAM_INVALID;
+      }
+
+      const vector<int64_t> output_size_list = ModelUtils::GetOutputSize(op_desc);
+      int output_index = ge::AnchorUtils::GetIdx(peer_out_anchor);
+      auto tensor_desc = op_desc->GetOutputDescPtr(output_index);
+      GE_CHECK_NOTNULL(tensor_desc);
+      int64_t data_size = 0;
+      if (TensorUtils::GetTensorSizeInBytes(*tensor_desc, data_size) != GRAPH_SUCCESS) {
+        GELOGE(FAILED, "Get tensor size in bytes failed.");
+        return FAILED;
+      }
+      gear_and_real_out_size_info[all_gears_info_[batch_index]] = data_size;
+      GELOGD("Get real gear index is: %zu, gear info is %s, size is %ld, tensor size is %ld",
+             batch_index, formats::JoinToString(all_gears_info_[batch_index]).c_str(),
+             output_size_list[output_index], data_size);
+    }
+  }
+  merge_nodes_gear_and_real_out_size_info_[input_index] = gear_and_real_out_size_info;
+  return SUCCESS;
+}
+
+Status DavinciModel::GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc) {
+  GELOGD("Start to get dynamic output dims of %s.", op_desc->GetName().c_str());
+  merge_nodes_gear_and_real_out_shape_info_.clear();
+  std::vector<std::string> dynamic_output_shape_info;
+  if (!AttrUtils::GetListStr(op_desc, ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_shape_info)) {
+    GELOGD("Can not get dynamic output dims attr");
+    return SUCCESS;
+  }
+  GELOGI("Dynamic output shape info is %s", formats::JoinToString(dynamic_output_shape_info).c_str());
+  std::vector<vector<int64_t>> dynamic_output_shape;
+  ParseDynamicOutShape(dynamic_output_shape_info, dynamic_output_shape);
+  // idx: input_index to netoutput
+  for (size_t idx = 0; idx < input_count; ++idx) {
+    std::map<vector<int64_t>, vector<int64_t>> gear_and_real_out_shape_info;
+    for (auto &it : dynamic_output_shape) {
+      auto gear_index = static_cast<size_t>(it[0]);
+      if (gear_index > all_gears_info_.size()) {
+        GELOGE(PARAM_INVALID, "The value of cur index: %zu is invalid.", static_cast<size_t>(it[0]));
+        return PARAM_INVALID;
+      }
+
+      if (static_cast<size_t>(it[1]) == idx) {
+        vector<int64_t> output_shape;
+        for (size_t i = 2; i < it.size(); ++i) {
+          output_shape.emplace_back(it[i]);
+        }
+        gear_and_real_out_shape_info[all_gears_info_[gear_index]] = output_shape;
+        GELOGD("Get real gear index is: %zu, gear info is %s, output shape is %s.",
+               gear_index, formats::JoinToString(all_gears_info_[gear_index]).c_str(),
+               formats::JoinToString(output_shape).c_str());
+      }
+    }
+    merge_nodes_gear_and_real_out_shape_info_[idx] = gear_and_real_out_shape_info;
+  }
+  return SUCCESS;
+}
+
+void DavinciModel::ParseDynamicOutShape(const std::vector<std::string> &str_info,
+                                        std::vector<vector<int64_t>> &vec_info) {
+  for (size_t i = 0; i < str_info.size(); ++i) {
+    std::vector<int64_t> shape;
+    std::vector<std::string> dims = ge::StringUtils::Split(str_info[i], ',');
+    for (const auto &dim : dims) {
+      if (dim.empty()) {
+        continue;
+      }
+      shape.emplace_back(std::strtol(dim.c_str(), nullptr, kDecimal));
+    }
+    GELOGI("Shape from attr is %s.", formats::JoinToString(shape).c_str());
+    vec_info.emplace_back(shape);
+  }
 }
 
 ///
@@ -2324,6 +2528,7 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
   }
 
   std::vector<DataBuffer> &blobs = output_data.blobs;
+  size_t idx = 0;
   for (const auto &output : new_output_data_info_) {
     if (output.first >= blobs.size()) {
       GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld", blobs.size(),
@@ -2349,13 +2554,19 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
     } else if (buffer.length > mem_size) {
       GELOGW("Tensor data size=%lu, buffer size=%u", mem_size, buffer.length);
     }
-    uint64_t data_size = output.second.GetDataSize();
+    int64_t data_size = output.second.GetDataSize();
+
+    if (is_online_infer_dynamic_) {
+      auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[idx];
+      data_size = gear_and_real_out_size_info[cur_dynamic_dims_];
+    }
     uint64_t buffer_length = buffer.length;
     void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data));
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%lu] datasize[%u]",
+    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%ld] datasize[%u]",
            runtime_param_.graph_id, output.first, output.second.GetBasicAddr(), data_size, buffer_length);
     GE_CHK_RT_RET(rtMemcpy(buffer_addr, buffer_length, output.second.GetBasicAddr(), data_size, kind));
+    idx++;
   }
   return SUCCESS;
 }
@@ -2371,19 +2582,29 @@ Status DavinciModel::GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data
   std::vector<int64_t> out_buffer_size_vec;
   std::vector<std::vector<int64_t>> shape_info_vec;
   size_t input_num = op_desc->GetInputsSize();
+  if (is_getnext_sink_dynamic_) {
+    input_num = input_num - kGetDynamicDimsCount;
+  }
   for (size_t i = 0; i < input_num; ++i) {
     int64_t size = 0;
     auto input_desc = op_desc->GetInputDescPtr(i);
     GE_CHECK_NOTNULL(input_desc);
     auto ret = TensorUtils::GetTensorSizeInBytes(*input_desc, size);
-    if (ret != GRAPH_SUCCESS) {
-      GELOGE(ret, "Get size from TensorDesc failed, op:%s, input index:%zu", op_desc->GetName().c_str(), i);
-      return ret;
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                    GELOGE(ret, "Get size from TensorDesc failed, op:%s, input id:%zu", op_desc->GetName().c_str(), i);
+                    return ret);
+    std::vector<int64_t> output_shape = input_desc->GetShape().GetDims();
+    if (is_online_infer_dynamic_) {
+      auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[i];
+      size = gear_and_real_out_size_info[cur_dynamic_dims_];
+      auto gear_and_real_out_shape_info = merge_nodes_gear_and_real_out_shape_info_[i];
+      output_shape = gear_and_real_out_shape_info[cur_dynamic_dims_];
+      is_dynamic_ = true;
     }
+    GELOGI("Output size is %ld, output shape is %s.", size, formats::JoinToString(output_shape).c_str());
     out_buffer_size_vec.push_back(size);
-    shape_info_vec.push_back(input_desc->GetShape().GetDims());
+    shape_info_vec.push_back(output_shape);
   }
-
   GELOGI("Output blobs size:%zu, data index:%u, model id:%u", out_buffer_size_vec.size(), data_index, model_id_);
   for (size_t i = 0; i < out_buffer_size_vec.size(); ++i) {
     std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[out_buffer_size_vec[i]]);
@@ -2397,7 +2618,8 @@ Status DavinciModel::GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data
     output.data = std::move(data_buf);
     output.length = out_buffer_size_vec[i];
     outputs.emplace_back(std::move(output));
-    GELOGI("Output index:%zu, data_length:%lu.", i, output.length);
+    GELOGD("Output index:%zu, output dims is %s, data length:%lu.", i,
+           formats::JoinToString(output.dims).c_str(), output.length);
   }
   return SUCCESS;
 }
@@ -2446,8 +2668,18 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
   output_data->index = data_id;
   output_data->model_id = model_id_;
 
+  is_getnext_sink_dynamic_ = false;
   // copy output data from op to designated position
   for (auto &op_desc : output_op_list_) {
+    if (IsGetNextSinkDynamic(op_desc)) {
+      GELOGD("Reinit cur dynamic dims when getnext sink dynamic.");
+      is_getnext_sink_dynamic_ = true;
+      cur_dynamic_dims_.clear();
+      cur_dynamic_dims_.resize(shape_of_cur_dynamic_dims_);
+      GE_CHK_RT_RET(rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int64_t),
+                                netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST));
+    }
+    GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims_).c_str());
     if (GenOutputTensorInfo(op_desc, data_index, output_data, outputs) != SUCCESS) {
       return INTERNAL_ERROR;
     }
@@ -2520,12 +2752,20 @@ void *DavinciModel::Run(DavinciModel *model) {
       continue;
     }
     GELOGI("Getting the input data, model_id:%u", model_id);
-
     GE_IF_BOOL_EXEC(!model->RunFlag(), break);
 
     InputData current_data = data_wrapper->GetInput();
     GELOGI("Model thread Run begin, model id:%u, data index:%u.", model_id, current_data.index);
-
+    if (model->is_online_infer_dynamic_ && !model->is_getnext_sink_dynamic_) {
+      model->cur_dynamic_dims_.clear();
+      GE_IF_BOOL_EXEC(current_data.blobs.empty(), break);
+      auto shape_data_buffer_data = current_data.blobs.back().data;
+      auto shape_data_buffer_length = current_data.blobs.back().length;
+      model->cur_dynamic_dims_.assign(reinterpret_cast<int64_t *>(shape_data_buffer_data),
+                                      reinterpret_cast<int64_t *>(shape_data_buffer_data) +
+                                      shape_data_buffer_length / sizeof(int64_t));
+      GELOGD("Data: cur dynamic dims is %s", formats::JoinToString(model->cur_dynamic_dims_).c_str());
+    }
     GE_TIMESTAMP_START(Model_SyncVarData);
     ret = model->SyncVarData();
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(

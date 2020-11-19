@@ -174,6 +174,9 @@ const std::string HCOM_PARALLEL = "ge.hcomParallel";
 // configure whether to use dynamic batch size
 const char *const kDynamicBatchSize = "ge.dynamicBatchSize";
 
+const std::string INPUT_SHAPE = "ge.inputShape";
+
+const std::string DYNAMIC_NODE_TYPE = "ge.dynamicNodeType";
 // configure whether to use dynamic image size
 const char *const kDynamicImageSize = "ge.dynamicImageSize";
 

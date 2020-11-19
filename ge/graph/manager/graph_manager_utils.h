@@ -249,6 +249,9 @@ struct GraphManagerOptions {
   std::string save_original_model;
   std::string build_mode;
   std::string build_step;
+  std::string input_shape;
+  std::string dynamic_dims;
+  int32_t dynamic_node_type = -1;
   GraphManagerOptions()
       : stream_num(1),
         perf_level(domi::GEN_TASK_WITHOUT_FUSION),

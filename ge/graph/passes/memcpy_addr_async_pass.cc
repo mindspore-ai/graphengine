@@ -250,7 +250,7 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
     }
   }
 
-  NodePtr memcpy_addr_async_node = graph->AddNodeAfter(op_desc, out_data_anchor->GetOwnerNode());
+  NodePtr memcpy_addr_async_node = graph->AddNode(op_desc);
   GE_CHECK_NOTNULL_EXEC(memcpy_addr_async_node, return nullptr);
 
   return memcpy_addr_async_node;

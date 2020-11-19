@@ -115,6 +115,10 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
     string aicpu_kernel_lib_name = kAICPUKernelLibName;
     OpsKernelInfoStorePtr aicpu_kernel_info =
       instance->OpsKernelManagerObj().GetOpsKernelInfoStore(aicpu_kernel_lib_name);
+    if (aicpu_kernel_info == nullptr) {
+      GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get aicpu kernel info store failed.");
+      return ge::GE_GRAPH_PARAM_NULLPTR;
+    }
     if (!CheckAccuracySupport(aicpu_kernel_info, instance, op_desc)) {
       GELOGE(GRAPH_FAILED, "AICPU engine does not support node:%s, type:%s , get kernel lib failed.",
              node->GetName().c_str(), op_desc->GetType().c_str());

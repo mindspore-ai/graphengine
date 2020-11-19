@@ -53,16 +53,6 @@
     }                                                                                           \
   } while (0)
 
-#define AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(expr, _status, errormsg)                  \
-  do {                                                                                   \
-    bool b = (expr);                                                                     \
-    if (!b) {                                                                            \
-      GELOGE(_status, errormsg);                                                         \
-      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
-      return _status;                                                                    \
-    }                                                                                    \
-  } while (0)
-
 namespace {
 const int32_t DEFAULT_MATRIX_R0C0_YUV2RGB = 298;
 const int32_t DEFAULT_MATRIX_R0C1_YUV2RGB = 0;
@@ -317,9 +307,8 @@ NodePtr AippOp::FindDataByIndex(const ComputeGraphPtr &graph, int rank) {
     }
     return node;
   }
-  GELOGE(PARAM_INVALID, "Can not find the data node by index %d", rank);
-  string errormsg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
-  ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
+  string error_msg = "Can not find the data node by aipp parameter related_input_rank " + to_string(rank);
+  GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
   return nullptr;
 }
 Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr &target,
@@ -364,10 +353,10 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   }
 
   if (!edge_indexes.empty() && (*edge_indexes.rbegin() >= data_node->GetOutDataNodes().size())) {
-    GELOGE(PARAM_INVALID, "input_edge_idx %u should smaller than out edge size of target input %zu",
-           *edge_indexes.rbegin(), data_node->GetOutDataNodes().size());
-    string errormsg = "The aipp parameter input_edge_idx should be smaller than the target input's outnodes.";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg});
+    string error_msg = "The aipp parameter input_edge_idx[" + std::to_string(*edge_indexes.rbegin()) +
+                       "] should be smaller than the target input[" +
+                       std::to_string(data_node->GetOutDataNodes().size()) + "]'s outnodes.";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
   target = data_node;
@@ -442,8 +431,7 @@ Status AippOp::ConvertRelatedInputNameToRank() {
     string error_msg = "Top name " + related_input_name +
                        "convert rank failed, Please"
                        " ensure top name in aipp config is the top name of data node.";
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error_msg});
-    GELOGE(PARAM_INVALID, "Top name[%s] converts rank failed.", related_input_name.c_str());
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
 
@@ -539,87 +527,87 @@ Status AippOp::SetDefaultParams() {
 
 Status AippOp::ValidateParams() {
   GE_CHECK_NOTNULL(aipp_params_);
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->aipp_mode() != domi::AippOpParams::undefined, PARAM_INVALID,
-                                         "When insert AIPP op, aipp_mode must be configured as static or dynamic ");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->aipp_mode() != domi::AippOpParams::undefined, PARAM_INVALID,
+                          "When insert AIPP op, aipp_mode must be configured as static or dynamic ");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_0_size() <= 1, PARAM_INVALID,
-                                         "The parameter var_reci_chn_0 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_1_size() <= 1, PARAM_INVALID,
-                                         "The parameter var_reci_chn_1 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_2_size() <= 1, PARAM_INVALID,
-                                         "The parameter var_reci_chn_2 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->var_reci_chn_3_size() <= 1, PARAM_INVALID,
-                                         "The parameter var_reci_chn_3 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->var_reci_chn_0_size() <= 1, PARAM_INVALID,
+                          "The parameter var_reci_chn_0 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->var_reci_chn_1_size() <= 1, PARAM_INVALID,
+                          "The parameter var_reci_chn_1 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->var_reci_chn_2_size() <= 1, PARAM_INVALID,
+                          "The parameter var_reci_chn_2 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->var_reci_chn_3_size() <= 1, PARAM_INVALID,
+                          "The parameter var_reci_chn_3 can not be configed repeatedly");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r0c0_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r0c0 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r0c1_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r0c1 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r0c2_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r0c2 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r0c0_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r0c0 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r0c1_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r0c1 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r0c2_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r0c2 can not be configed repeatedly");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r1c0_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r1c0 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r1c1_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r1c1 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r1c2_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r1c2 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r1c0_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r1c0 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r1c1_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r1c1 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r1c2_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r1c2 can not be configed repeatedly");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r2c0_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r2c0 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r2c1_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r2c1 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->matrix_r2c2_size() <= 1, PARAM_INVALID,
-                                         "The parameter matrix_r2c2 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r2c0_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r2c0 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r2c1_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r2c1 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->matrix_r2c2_size() <= 1, PARAM_INVALID,
+                          "The parameter matrix_r2c2 can not be configed repeatedly");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->output_bias_0_size() <= 1, PARAM_INVALID,
-                                         "The parameter output_bias_0 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->output_bias_1_size() <= 1, PARAM_INVALID,
-                                         "The parameter output_bias_1 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->output_bias_2_size() <= 1, PARAM_INVALID,
-                                         "The parameter output_bias_2 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->output_bias_0_size() <= 1, PARAM_INVALID,
+                          "The parameter output_bias_0 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->output_bias_1_size() <= 1, PARAM_INVALID,
+                          "The parameter output_bias_1 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->output_bias_2_size() <= 1, PARAM_INVALID,
+                          "The parameter output_bias_2 can not be configed repeatedly");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_bias_0_size() <= 1, PARAM_INVALID,
-                                         "The parameter input_bias_0 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_bias_1_size() <= 1, PARAM_INVALID,
-                                         "The parameter input_bias_1 can not be configed repeatedly");
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_bias_2_size() <= 1, PARAM_INVALID,
-                                         "The parameter input_bias_2 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->input_bias_0_size() <= 1, PARAM_INVALID,
+                          "The parameter input_bias_0 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->input_bias_1_size() <= 1, PARAM_INVALID,
+                          "The parameter input_bias_1 can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->input_bias_2_size() <= 1, PARAM_INVALID,
+                          "The parameter input_bias_2 can not be configed repeatedly");
 
-  AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_edge_idx_size() <= 1, PARAM_INVALID,
-                                         "The parameter input_edge_idx can not be configed repeatedly");
+  GE_CHK_LOG_AND_ERRORMSG(aipp_params_->input_edge_idx_size() <= 1, PARAM_INVALID,
+                          "The parameter input_edge_idx can not be configed repeatedly");
 
   const domi::AippOpParams::AippMode aipp_mode = aipp_params_->aipp_mode();
   if (aipp_mode == domi::AippOpParams::dynamic) {
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(
+    GE_CHK_LOG_AND_ERRORMSG(
       aipp_params_->max_src_image_size() > 0, PARAM_INVALID,
       "For dynamic AIPP params, max_src_image_size must be set which number should be greater than 0");
   } else {
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->input_format() != domi::AippOpParams::UNDEFINED, PARAM_INVALID,
-                                           "Input format of AIPP conf is undefined");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->input_format() != domi::AippOpParams::UNDEFINED, PARAM_INVALID,
+                            "Input format of AIPP conf is undefined");
 
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->src_image_size_w() >= 0, PARAM_INVALID,
-                                           "Src_image_size_w must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->src_image_size_h() >= 0, PARAM_INVALID,
-                                           "Src_image_size_h must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->load_start_pos_w() >= 0, PARAM_INVALID,
-                                           "Load_start_pos_w must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->load_start_pos_h() >= 0, PARAM_INVALID,
-                                           "Load_start_pos_h must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->crop_size_w() >= 0, PARAM_INVALID,
-                                           "Crop_size_w must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->resize_output_w() >= 0, PARAM_INVALID,
-                                           "Resize_output_w must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->resize_output_h() >= 0, PARAM_INVALID,
-                                           "Resize_output_h must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->left_padding_size() >= 0, PARAM_INVALID,
-                                           "Left_padding_size must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->right_padding_size() >= 0, PARAM_INVALID,
-                                           "Right_padding_size must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->top_padding_size() >= 0, PARAM_INVALID,
-                                           "Top_padding_size must not be configed smaller than 0");
-    AIPP_RETURN_STATUS_AND_REPROT_ERRORMSG(aipp_params_->bottom_padding_size() >= 0, PARAM_INVALID,
-                                           "Bottom_padding_size must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->src_image_size_w() >= 0, PARAM_INVALID,
+                            "Src_image_size_w must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->src_image_size_h() >= 0, PARAM_INVALID,
+                            "Src_image_size_h must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->load_start_pos_w() >= 0, PARAM_INVALID,
+                            "Load_start_pos_w must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->load_start_pos_h() >= 0, PARAM_INVALID,
+                            "Load_start_pos_h must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->crop_size_w() >= 0, PARAM_INVALID,
+                            "Crop_size_w must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->resize_output_w() >= 0, PARAM_INVALID,
+                            "Resize_output_w must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->resize_output_h() >= 0, PARAM_INVALID,
+                            "Resize_output_h must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->left_padding_size() >= 0, PARAM_INVALID,
+                            "Left_padding_size must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->right_padding_size() >= 0, PARAM_INVALID,
+                            "Right_padding_size must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->top_padding_size() >= 0, PARAM_INVALID,
+                            "Top_padding_size must not be configed smaller than 0");
+    GE_CHK_LOG_AND_ERRORMSG(aipp_params_->bottom_padding_size() >= 0, PARAM_INVALID,
+                            "Bottom_padding_size must not be configed smaller than 0");
   }
 
   return SUCCESS;
@@ -792,17 +780,20 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
 
   int64_t batch_count = -1;
   if (GetDataDimN(data_node, ori_data_format, batch_count) != ge::SUCCESS) {
-    GELOGE(PARAM_INVALID, "Get data_node dims and transfer to nchw_dims failed!");
+    string error_msg = "Get data_node dims and transfer to nchw_dims failed!";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
   if (batch_count <= 0) {
-    GELOGE(PARAM_INVALID, "Batch count %ld is invalid", batch_count);
+    string error_msg = "Batch count[" + std::to_string(batch_count) + "] is invalid, it must positive.";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
 
   int64_t max_dynamic_aipp_size = CalcMaxSize(batch_count);
   if (max_dynamic_aipp_size < 0) {
-    GELOGE(PARAM_INVALID, "The dynamic aipp size is not positive.");
+    string error_msg = "The dynamic aipp size is not positive";
+    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
     return PARAM_INVALID;
   }
 

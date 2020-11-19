@@ -41,24 +41,25 @@ void FreeHbm(void *var) {
 }
 }  // namespace
 
-Status OpTask::OpenDump(const std::vector<uintptr_t> &io_addr, rtStream_t stream) {
+Status OpTask::OpenDump(rtStream_t stream) {
   if (DumpManager::GetInstance().GetDumpProperties().IsSingleOpNeedDump()) {
     GELOGI("Dump is open in single op,start to set dump info");
     std::vector<uint64_t> input_addrs;
     std::vector<uint64_t> output_adds;
     auto input_size = op_desc_->GetInputsSize();
     auto output_size = op_desc_->GetOutputsSize();
-    auto all_size = io_addr.size();
+    auto all_size = io_addrs_for_dump_.size();
     if (input_size + output_size != all_size) {
-      GELOGE(FAILED, "io_addr size is not equal input and output size");
+      GELOGE(FAILED, "io_addrs_for_dump_ size %zu is not equal input and output size %zu", all_size,
+             input_size + output_size);
       return FAILED;
     }
     for (size_t i = 0; i < input_size; i++) {
-      uint64_t input_addr = static_cast<uint64_t>(io_addr[i]);
+      uint64_t input_addr = io_addrs_for_dump_[i];
       input_addrs.emplace_back(input_addr);
     }
     for (size_t j = 0; j < output_size; j++) {
-      uint64_t output_addr = static_cast<uint64_t>(io_addr[input_size + j]);
+      uint64_t output_addr = io_addrs_for_dump_[input_size + j];
       output_adds.emplace_back(output_addr);
     }
     dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(), op_desc_, input_addrs, output_adds, stream);
@@ -125,6 +126,17 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
     return RT_FAILED;
   }
   GELOGI("[TASK_INFO] %s", this->stub_name_.c_str());
+
+  size_t input_size = op_desc_->GetInputsSize();
+  size_t output_size = op_desc_->GetOutputsSize();
+  uint64_t *io_addr = reinterpret_cast<uint64_t *>(args_.get());
+  std::vector<uint64_t> io_addrs(io_addr, io_addr + input_size + output_size);
+  SetIoAddrsForDump(io_addrs);
+  auto status = OpenDump(stream);
+  if (status != SUCCESS) {
+    GELOGE(status, "Open dump failed in the tbe single op %s", this->stub_name_.c_str());
+    return status;
+  }
 
   return SUCCESS;
 }
@@ -377,6 +389,12 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
     return RT_FAILED;
   }
   GELOGI("[TASK_INFO] is %s", this->task_info_.c_str());
+
+  auto status = OpenDump(stream);
+  if (status != SUCCESS) {
+    GELOGE(status, "Open dump failed in aicpu single op %s", this->op_type_.c_str());
+    return status;
+  }
 
   GELOGD("Done launch kernel successfully. task = %s", this->op_type_.c_str());
   return SUCCESS;
@@ -654,6 +672,17 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
     return RT_FAILED;
   }
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
+
+  size_t input_size = op_desc_->GetInputsSize();
+  size_t output_size = op_desc_->GetOutputsSize();
+  uint64_t *io_addr = reinterpret_cast<uint64_t *>(io_addr_);
+  std::vector<uint64_t> io_addrs(io_addr, io_addr + input_size + output_size);
+  SetIoAddrsForDump(io_addrs);
+  auto status = OpenDump(stream);
+  if (status != SUCCESS) {
+    GELOGE(status, "Open dump failed in the aicpucc single op %s", this->kernel_name_.c_str());
+    return status;
+  }
 
   return SUCCESS;
 }

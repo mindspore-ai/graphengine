@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MSPROF_ENGINE_PROF_ACL_API_H_
-#define MSPROF_ENGINE_PROF_ACL_API_H_
+#ifndef MSPROFILER_API_PROF_ACL_API_H_
+#define MSPROFILER_API_PROF_ACL_API_H_
 
 #define MSVP_MAX_DEV_NUM 64
 #define MSVP_PROF_API __attribute__((visibility("default")))
@@ -78,6 +78,9 @@ enum ProfErrorCode {
     PROF_ERROR_UNSUPPORTED,         // unsupported data type or ai core metrics
     PROF_ERROR_REPEAT_START,        // profiilng has already been started
     PROF_ERROR_NOT_STARTED,         // profiling has not been started
+    PROF_ERROR_REPEAT_SUBSCRIBE,    // same model id has already been subscribed
+    PROF_ERROR_MODEL_ID_INVALID,    // model id does not exist or has not been subscribed
+    PROF_ERROR_API_CONFLICT,        // prof ctrl api mode conflicts with subscribe mode
 };
 
 /**
@@ -107,7 +110,8 @@ enum ProfAicoreMetrics {
     PROF_AICORE_MEMORY = 3,
     PROF_AICORE_INTERNAL_MEMORY = 4,
     PROF_AICORE_STALL = 5,
-    PROF_AICORE_EVENT = 255
+    PROF_AICORE_METRICS_COUNT,
+    PROF_AICORE_NONE = 0xff,
 };
 
 /**
@@ -128,14 +132,6 @@ struct ProfConfig {
  * @return ProfErrorCode
  */
 MSVP_PROF_API int32_t ProfStartProfiling(const ProfConfig *profStartCfg);
-
-/**
- * @name  ProfStopConfig
- * @brief struct of ProfStop
- */
-struct ProfStopConfig {
-    uint64_t padding;
-};
 
 /**
  * @name  ProfStopProfiling
@@ -161,4 +157,231 @@ MSVP_PROF_API int32_t ProfFinalize();
  */
 MSVP_PROF_API int32_t ProfGetDataTypeConfig(uint32_t deviceId, uint64_t &dataTypeConfig);
 
-#endif  // MSPROF_ENGINE_PROF_ACL_API_H_
+namespace Msprofiler {
+namespace Api {
+/**
+ * @brief transfer profiling config in acl.json to sample config
+ * @param aclCfg       [IN]  profiling json string from acl.json as {"switch":"on", "result_path":"/home",...}
+ * @param sampleCfg    [OUT] json string for GE as {"startCfg":[{"deviceID":"all","jobID":"1234",...}]}
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfAclCfgToSampleCfg(const std::string &aclCfg, std::string &sampleCfg);
+
+/**
+ * @name  ProfInit
+ * @brief init profiling
+ * @param profInitCfg [IN] config of init profiling of json format
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfInit(const std::string &profInitCfg);
+
+/**
+ * @name  ProfStartProfiling
+ * @brief start profiling
+ * @param profStartCfg [IN] config to start profiling
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfStartProfiling(const ProfConfig *profStartCfg);
+
+/**
+ * @name  ProfStopProfiling
+ * @brief stop profiling
+ * @param profStopCfg [IN] config to stop profiling
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfStopProfiling(const ProfConfig *profStopCfg);
+
+/**
+ * @name  ProfFinalize
+ * @brief finalize profiling task
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfFinalize();
+
+/**
+ * @name  ProfGetDataTypeConfig
+ * @brief get dataTypeConfig started with of one device
+ * @param deviceId          [IN] deviceId to get dataTypeConfig
+ * @param dataTypeConfig    [OUT] result get
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfGetDataTypeConfig(uint32_t deviceId, uint64_t &dataTypeConfig);
+
+/**
+ * @name  WorkMode
+ * @brief profiling api work mode
+ */
+enum WorkMode {
+    WORK_MODE_OFF,          // profiling not at work
+    WORK_MODE_API_CTRL,     // profiling work on api ctrl mode, (ProfInit)
+    WORK_MODE_SUBSCRIBE,    // profiling work on subscribe mode
+};
+
+/**
+ * @name  ProfGetApiWorkMode
+ * @brief get profiling api work mode
+ * @return WorkMode
+ */
+MSVP_PROF_API WorkMode ProfGetApiWorkMode();
+
+/**
+ * @name  ProfSubscribeConfig
+ * @brief config of subscribe api
+ */
+struct ProfSubscribeConfig {
+    bool timeInfo;                      // subscribe op time
+    ProfAicoreMetrics aicoreMetrics;    // subscribe ai core metrics
+    void* fd;                           // pipe fd
+};
+
+/**
+ * @name  ProfGetDataTypeConfig
+ * @brief get DataTypeConfig of subscribe
+ * @param profSubscribeConfig [IN] config to subscribe data
+ * @return DataTypeConfig
+ */
+MSVP_PROF_API uint64_t ProfGetDataTypeConfig(const ProfSubscribeConfig *profSubscribeConfig);
+
+/**
+ * @name  ProfModelSubscribe
+ * @brief subscribe data of one model id
+ * @param modelId [IN] model id to subscribe data
+ * @param devId [IN] device id of model
+ * @param profSubscribeConfig [IN] config to subscribe data
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfModelSubscribe(uint32_t modelId, uint32_t devId,
+                                         const ProfSubscribeConfig *profSubscribeConfig);
+
+/**
+ * @name  ProfIsModelSubscribed
+ * @brief check if a model id is subscribed
+ * @param modeiId [IN] modei id to check
+ * @return true: subscribed, false: not
+ */
+MSVP_PROF_API bool ProfIsModelSubscribed(uint32_t modelId);
+
+/**
+ * @name  ProfModelUnSubscribe
+ * @brief unsubscribe a model id
+ * @param modeiId [IN] modei id to unsubscribe
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfModelUnSubscribe(uint32_t modelId);
+
+/**
+ * @name  ProfGetOpDescSize
+ * @brief get profiling data struct size
+ * @param opDescSize [OUT] bytes of profiling subscribe data struct
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfGetOpDescSize(uint32_t *opDescSize);
+
+/**
+ * @name  ProfGetOpNum
+ * @brief get how many op data there are in data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param opNum [OUT] number of op in data
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfGetOpNum(const void *data, uint32_t len, uint32_t *opNum);
+
+/**
+ * @name  ProfGetModelId
+ * @brief get model id of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return model id
+ */
+MSVP_PROF_API uint32_t ProfGetModelId(const void *data, uint32_t len, uint32_t index);
+
+/**
+ * @name  ProfGetOpType
+ * @brief get op type of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param opType [OUT] op type buffer
+ * @param opTypeLen [IN] buffer size of param opType
+ * @param index [IN] index of part(op)
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfGetOpType(const void *data, uint32_t len, char *opType, uint32_t opTypeLen, uint32_t index);
+
+/**
+ * @name  ProfGetOpName
+ * @brief get op name of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param opType [OUT] op name buffer
+ * @param opTypeLen [IN] buffer size of param opName
+ * @param index [IN] index of part(op)
+ * @return ProfErrorCode
+ */
+MSVP_PROF_API int32_t ProfGetOpName(const void *data, uint32_t len, char *opName, uint32_t opNameLen, uint32_t index);
+
+/**
+ * @name  ProfGetOpStart
+ * @brief get op start timestamp of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return op start timestamp (us)
+ */
+MSVP_PROF_API uint64_t ProfGetOpStart(const void *data, uint32_t len, uint32_t index);
+
+/**
+ * @name  ProfGetOpEnd
+ * @brief get op end timestamp of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return op end timestamp (us)
+ */
+MSVP_PROF_API uint64_t ProfGetOpEnd(const void *data, uint32_t len, uint32_t index);
+
+/**
+ * @name  ProfGetOpDuration
+ * @brief get op duration of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return op duration (us)
+ */
+MSVP_PROF_API uint64_t ProfGetOpDuration(const void *data, uint32_t len, uint32_t index);
+
+/**
+ * @name  ProfGetOpExecutionTime
+ * @brief get op execution time of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return op execution time (us)
+ */
+MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
+
+/**
+ * @name  ProfGetOpCubeOps
+ * @brief get op cube fops of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return op cube fops
+ */
+MSVP_PROF_API uint64_t ProfGetOpCubeOps(const void *data, uint32_t len, uint32_t index);
+
+/**
+ * @name  ProfGetOpVectorOps
+ * @brief get op vector fops of specific part of data
+ * @param data [IN] data read from pipe
+ * @param len [IN] data length
+ * @param index [IN] index of part(op)
+ * @return op vector fops
+ */
+MSVP_PROF_API uint64_t ProfGetOpVectorOps(const void *data, uint32_t len, uint32_t index);
+
+}   // namespace Api
+}   // namespace Msprofiler
+
+#endif  // MSPROFILER_API_PROF_ACL_API_H_

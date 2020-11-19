@@ -28,7 +28,7 @@ class LabelAllocator {
   explicit LabelAllocator(const ComputeGraphPtr &graph);
   ~LabelAllocator() = default;
 
-  Status AssignFunctionalLabels(uint32_t &label_index);
+  Status AssignFunctionalLabels();
 
  private:
   bool CollectFunctionalNode(ComputeGraphPtr &graph, std::set<NodePtr> &functional_nodes);

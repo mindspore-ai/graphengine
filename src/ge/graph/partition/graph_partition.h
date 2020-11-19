@@ -176,6 +176,8 @@ class GraphPartitioner {
   Graph2InputNodesSubGraphInfo graph_2_input_subgraph_;
   GraphPartitionInfo graph_info_;
   uint32_t partition_times_;  // times of call partition
+  std::map<Mode, std::string> mode_2_str_ = {
+    {kPartitioning, "Partitioning"}, {kSecondPartitioning, "SecondPartitioning"}, {kMerging, "Merging"}};
   friend class GraphManager;
 };
 }  // namespace ge

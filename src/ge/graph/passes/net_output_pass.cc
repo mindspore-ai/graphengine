@@ -103,6 +103,12 @@ Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph, std::vecto
       GELOGI("user set out node [%s] is found in user def targets, out node is prio!", ele.first->GetName().c_str());
       targets_.erase(iter);
     }
+
+    auto op_desc = ele.first->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    if (op_desc->HasAttr(ATTR_ATC_USER_DEFINE_OUTPUT_NODES)) {
+      is_user_define_ouput_nodes = true;
+    }
     output_nodes_info.push_back({ele.first, ele.second, -1});
   }
   GELOGI("Output node set by user or leaf node, size:%zu.", output_nodes_info.size());
@@ -414,7 +420,7 @@ Status NetOutputPass::ProcessWithNetoutput(const ge::ComputeGraphPtr &graph, con
 Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraphPtr &graph,
                                                           const ge::NodePtr &net_out_node) {
   GE_CHECK_NOTNULL(net_out_node);
-  if (!GetLocalOmgContext().user_out_nodes.empty()) {
+  if (!GetLocalOmgContext().user_out_nodes.empty() || is_user_define_ouput_nodes) {
     GELOGI("No need to add ctrl edge to netoutput because user out nodes have been set.");
     return SUCCESS;
   }

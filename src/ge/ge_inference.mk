@@ -287,11 +287,15 @@ COMMON_LOCAL_C_INCLUDES := \
     proto/tensorflow/versions.proto \
     $(LOCAL_PATH) ./ \
     $(TOPDIR)inc \
+    $(TOPDIR)metadef/inc \
+    $(TOPDIR)graphengine/inc \
     $(TOPDIR)inc/external \
-    $(TOPDIR)inc/external/graph \
-    $(TOPDIR)inc/framework \
-    $(TOPDIR)inc/framework/common \
-    $(TOPDIR)inc/common \
+    $(TOPDIR)metadef/inc/external \
+    $(TOPDIR)graphengine/inc/external \
+    $(TOPDIR)metadef/inc/external/graph \
+    $(TOPDIR)graphengine/inc/framework \
+    $(TOPDIR)graphengine/inc/framework/common \
+    $(TOPDIR)metadef/inc/common \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)ops/built-in/op_proto/inc \
@@ -301,7 +305,7 @@ COMMON_LOCAL_C_INCLUDES := \
     third_party/opencv/include \
 
 ANALYZER_LOCAL_INCLUDES := \
-    $(TOPDIR)framework/domi/analyzer \
+    $(TOPDIR)graphengine/ge/analyzer \
 
 NEW_OMG_HOST_SRC_FILES := \
     graph/preprocess/insert_op/util_insert_aipp_op.cc \
@@ -341,15 +345,18 @@ DEVICE_LOCAL_C_INCLUDES := \
     proto/tensorflow/versions.proto \
     $(LOCAL_PATH) ./ \
     $(TOPDIR)inc \
+    $(TOPDIR)metadef/inc \
+    $(TOPDIR)graphengine/inc \
     $(TOPDIR)libc_sec/include \
     $(TOPDIR)inc/external \
-    $(TOPDIR)inc/external/graph \
-    $(TOPDIR)inc/common/util \
-    $(TOPDIR)inc/framework \
-    $(TOPDIR)inc/framework/common \
+    $(TOPDIR)metadef/inc/external \
+    $(TOPDIR)graphengine/inc/external \
+    $(TOPDIR)metadef/inc/external/graph \
+    $(TOPDIR)metadef/inc/common/util \
+    $(TOPDIR)graphengine/inc/framework \
+    $(TOPDIR)graphengine/inc/framework/common \
     $(TOPDIR)inc/runtime \
     $(TOPDIR)ops/built-in/op_proto/inc \
-    $(TOPDIR)framework/domi \
     $(TOPDIR)graphengine/ge \
     $(TOPDIR)toolchain/ide/ide-daemon/external \
     third_party/json/include \

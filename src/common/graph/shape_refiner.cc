@@ -26,6 +26,7 @@
 
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
+#include "debug/ge_util.h"
 #include "external/graph/operator.h"
 #include "external/graph/operator_factory.h"
 #include "framework/common/debug/ge_log.h"
@@ -41,7 +42,6 @@ const uint32_t kWhileBodySubGraphIdx = 1;
 
 graphStatus ReverseBrushWhileBodySubGraph(const ConstNodePtr &node) {
   GELOGD("Enter reverse brush while body subgraph process!");
-
   auto sub_graph_body = NodeUtils::GetSubgraph(*node, kWhileBodySubGraphIdx);
   if (sub_graph_body == nullptr) {
     GELOGE(GRAPH_FAILED, "Get while body graph failed!");
@@ -661,10 +661,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
 
   if (!is_unknown_graph) {
     auto inference_context = CreateInferenceContext(context_map, node);
-    if (inference_context == nullptr) {
-      GELOGE(GRAPH_FAILED, "inference context is null");
-      return GRAPH_FAILED;
-    }
+    GE_CHECK_NOTNULL(inference_context);
     GELOGD("create context for node:%s, marks %zu", node->GetName().c_str(), inference_context->GetMarks().size());
     op.SetInferenceContext(inference_context);
   }
@@ -678,8 +675,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferSh
     auto op_desc = node->GetOpDesc();
     for (const auto &out_anchor : node->GetAllOutDataAnchors()) {
       auto output_tensor = op_desc->MutableOutputDesc(out_anchor->GetIdx());
-      ge::TensorUtils::SetRealDimCnt(*output_tensor, static_cast<uint32_t>(output_tensor->GetShape().GetDims().size()));
-      output_tensor->SetOriginShape(output_tensor->GetShape());
+      if (output_tensor->MutableShape().GetDims().empty()) {
+        output_tensor->SetOriginShape(output_tensor->GetShape());
+      }
+      ge::TensorUtils::SetRealDimCnt(*output_tensor,
+                                     static_cast<uint32_t>(output_tensor->GetOriginShape().GetDims().size()));
       output_tensor->SetOriginDataType(output_tensor->GetDataType());
 
       GELOGD("node name is %s, origin shape is %ld, origin format is %s, origin data type is %s",

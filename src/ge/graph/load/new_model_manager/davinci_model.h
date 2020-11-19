@@ -439,6 +439,8 @@ class DavinciModel {
 
   Status SinkTimeProfile(const InputData &current_data);
 
+  Status ReportProfilingData(bool check_device = true);
+
   void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
     data_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);
   }
@@ -828,7 +830,7 @@ class DavinciModel {
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
 
   // get desc info of graph for profiling
-  Status GetComputeGraphInfo(const ComputeGraphPtr &graph, vector<ComputeGraphDescInfo> &graph_desc_info);
+  Status GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_desc_info);
 
   void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
 
@@ -947,7 +949,6 @@ class DavinciModel {
   std::map<std::string, uint32_t> used_tbe_handle_map_;
 
   // for profiling task and graph info
-  std::map<uint32_t, std::string> op_name_map_;
   std::vector<TaskDescInfo> task_desc_info_;
 
   int64_t maxDumpOpNum_;

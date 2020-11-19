@@ -1425,7 +1425,10 @@ class GraphBuilderImpl {
     const string name = node->GetName();
     for (auto &name_idx : op_impl->op_desc_->GetSubgraphNameIndexes()) {
       const SubgraphBuilder &builder = op_impl->GetSubgraphBuilder(name_idx.first);
-      GE_CHK_BOOL_EXEC(builder != nullptr, return GRAPH_FAILED, "Node: %s, Get builder failed.", name.c_str());
+      if (builder == nullptr) {
+        GELOGW("Node: %s, Has no builder.", name.c_str());
+        continue;
+      }
 
       Graph graph = builder();  // Build subgraph from user define builder.
       const ComputeGraphPtr &subgraph = GraphUtils::GetComputeGraph(graph);

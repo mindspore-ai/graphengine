@@ -39,6 +39,10 @@ namespace {
 const std::string GE_PROFILING_MODULE = "Framework";
 }  // namespace
 namespace ge {
+struct DeviceSubsInfo {
+  uint64_t module;
+  uint32_t subscribe_count;
+};
 // register Plugin
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY PluginImpl : public Msprof::Engine::PluginIntf {
  public:
@@ -73,6 +77,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   ge::Status InitFromOptions(const Options &options);
   ge::Status InitFromAclCfg(const std::string &config);
   ge::Status StartProfiling(int32_t iter, int32_t device_id);
+  void UpdateSubscribeDeviceModuleMap(std::string prof_type, uint32_t device_id, uint64_t module);
+  ge::Status ProfModelSubscribe(uint64_t module, void *model);
+  ge::Status ProfModelUnsubscribe(void *model);
   ge::Status ProfInit(uint64_t module);
   ge::Status ProfFinalize();
   ge::Status ProfStartProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
@@ -84,13 +91,15 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   bool ProfilingModelLoadOn() const { return is_load_profiling_; }
   bool ProfilingModelExecuteOn() const;
   bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; }  // only used  by command pattern
+  bool IsAclApiMode() const { return is_acl_api_mode_; }
   int32_t GetOpTraceIterNum() const { return op_trace_iter_num_; }
-  void ReportProfilingData(const std::vector<TaskDescInfo> &task_desc_info,
-                           const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
+  void ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
+                           const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info, bool check_device);
   void Report(const int32_t &device_id, const string &data, Msprof::Engine::Reporter &reporter,
               Msprof::Engine::ReporterData &reporter_data);
-  void ProfilingTaskDescInfo(const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id);
-  void ProfilingGraphDescInfo(const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
+  void ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
+                             const int32_t &device_id);
+  void ProfilingGraphDescInfo(uint32_t model_id, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
                               const int32_t &device_id);
   void SetProfilingConfig(const string &profiling_cfg);
   vector<int32_t> GetProfilingDeviceId() const { return device_id_; }
@@ -121,7 +130,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   string system_trace_conf_;
   string task_trace_conf_;
   const ProfilingEngineImpl engine_;
-  map<int32_t, uint64_t> device_id_module_map_;  // key: device_id, value: profiling on module
+  map<int32_t, uint64_t> device_id_module_map_;    // key: device_id, value: profiling on module
+  map<uint32_t, DeviceSubsInfo> subs_dev_module_;  // key: device_id, value: profiling on module
+  uint32_t subscribe_count_;
   std::mutex mutex_;
 };
 }  // namespace ge

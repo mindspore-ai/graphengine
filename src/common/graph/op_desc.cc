@@ -27,6 +27,7 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/ge_ir_utils.h"
 #include "graph/utils/op_desc_utils.h"
+#include "graph/utils/transformer_utils.h"
 #include "proto/ge_ir.pb.h"
 
 using std::make_pair;
@@ -1301,9 +1302,22 @@ graphStatus OpDesc::CallInferFunc(Operator &op) {
       return GRAPH_PARAM_INVALID;
     }
   }
+  std::unique_ptr<NodeShapeTransUtils> transformer(new (std::nothrow) NodeShapeTransUtils(shared_from_this()));
+  if (transformer == nullptr) {
+    GELOGE(GRAPH_FAILED, "Memory alloc failed");
+    return GRAPH_FAILED;
+  }
+  if (!transformer->CatchFormatAndShape()) {
+    GELOGE(GRAPH_FAILED, "catch format and shape info failed!");
+    return GRAPH_FAILED;
+  }
   graphStatus graph_status = (graphStatus)infer_func_(op);
   if (graph_status != GRAPH_SUCCESS) {
     GELOGE(GRAPH_FAILED, "%s call infer func. ret: %u", GetName().c_str(), graph_status);
+    return GRAPH_FAILED;
+  }
+  if (!transformer->UpdateFormatAndShape()) {
+    GELOGE(GRAPH_FAILED, "catch format and shape info failed!");
     return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;

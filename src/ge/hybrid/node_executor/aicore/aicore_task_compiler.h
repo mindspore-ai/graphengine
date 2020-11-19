@@ -19,15 +19,17 @@
 
 #include <mutex>
 #include "opskernel_manager/ops_kernel_manager.h"
+#include "aicore_node_executor.h"
 
 namespace ge {
 namespace hybrid {
-class AiCoreTaskCompiler {
+class AiCoreTaskCompiler : public TaskCompiler {
  public:
-  explicit AiCoreTaskCompiler(OpsKernelInfoStorePtr aic_kernel_store);
+  AiCoreTaskCompiler() = default;
   ~AiCoreTaskCompiler() = default;
 
-  Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks);
+  Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) override;
+  Status Initialize() override;
 
  private:
   Status DoCompileOp(const NodePtr &node) const;

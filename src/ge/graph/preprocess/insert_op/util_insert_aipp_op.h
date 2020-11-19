@@ -68,7 +68,6 @@ class InsertNewOpUtil {
   void UpdateMultiBatchInputDims(const OpDescPtr &data_opdesc, Format &old_format);
   Status UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &switchns);
   Status UpdateDataBySwitchN(const NodePtr &switchn, const NodePtr &data);
-  Status AddFormatAgnosticAttrToSwitchn(const NodePtr &aipp_node);
   Status GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std::set<NodePtr>> &data_next_node_map);
   Status GetAllAipps(const NodePtr &data_node, const NodePtr &node, std::vector<NodePtr> &aipps);
   Status GetInputOutputInfo(NodePtr &data_node, NodePtr &aipp_node, std::string &input, std::string &output);

@@ -26,7 +26,7 @@
 namespace ge {
 LabelAllocator::LabelAllocator(const ComputeGraphPtr &graph) : compute_graph_(graph) {}
 
-Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
+Status LabelAllocator::AssignFunctionalLabels() {
   if (compute_graph_ == nullptr) {
     GELOGE(INTERNAL_ERROR, "ComputeGraph not set, Assign labels failed.");
     return INTERNAL_ERROR;
@@ -42,7 +42,7 @@ Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
   }
 
   // Add label for functional op.
-  label_index = 0;
+  uint32_t label_index = 0;
   for (auto node : functional_nodes) {
     LabelMakerPtr maker = LabelMakerFactory::Instance().Create(node->GetType(), compute_graph_, node);
     if (maker == nullptr) {
@@ -56,7 +56,8 @@ Status LabelAllocator::AssignFunctionalLabels(uint32_t &label_index) {
     }
   }
 
-  GELOGI("AssignFunctionalLabels success.");
+  (void)AttrUtils::SetInt(*compute_graph_, ATTR_MODEL_LABEL_NUM, label_index);
+  GELOGI("AssignFunctionalLabels success, Num: %u.", label_index);
   return SUCCESS;
 }
 
@@ -66,13 +67,29 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
     return false;
   }
 
-  NodePtr parent = graph->GetParentNode();
-  if (parent == nullptr) {
-    GELOGE(INTERNAL_ERROR, "ComputeGraph owner not set: %s.", graph->GetName().c_str());
+  if (graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip label allocator.", graph->GetName().c_str());
+    return true;
+  }
+
+  NodePtr func_node = graph->GetParentNode();
+  if (func_node == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Parent functional node not set: %s.", graph->GetName().c_str());
     return false;
   }
 
-  (void)functional_nodes.insert(parent);  // unique functional node.
+  ComputeGraphPtr owner_graph = func_node->GetOwnerComputeGraph();
+  if (owner_graph == nullptr) {
+    GELOGE(INTERNAL_ERROR, "ComputeGraph owner not set: %s.", func_node->GetName().c_str());
+    return false;
+  }
+
+  if (owner_graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip label allocator.", owner_graph->GetName().c_str());
+    return true;
+  }
+
+  (void)functional_nodes.insert(func_node);  // unique functional node.
   return true;
 }
 }  // namespace ge

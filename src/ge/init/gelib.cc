@@ -56,6 +56,7 @@ const int kDefaultDeviceIdForInfer = -1;
 const uint32_t kAicoreOverflow = (0x1 << 0);
 const uint32_t kAtomicOverflow = (0x1 << 1);
 const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
+const char *const kGlobalOptionFpCeilingModeDefault = "2";
 }  // namespace
 static std::shared_ptr<GELib> instancePtr_ = nullptr;
 
@@ -77,6 +78,11 @@ Status GELib::Initialize(const map<string, string> &options) {
     return ret;
   }
   instancePtr_->SetDefaultPrecisionMode(new_options);
+
+  if (new_options.find("ge.fpCeilingMode") == new_options.end()) {
+    new_options["ge.fpCeilingMode"] = kGlobalOptionFpCeilingModeDefault;
+  }
+
   GetMutableGlobalOptions().insert(new_options.begin(), new_options.end());
   GetThreadLocalContext().SetGlobalOption(GetMutableGlobalOptions());
   GE_TIMESTAMP_START(Init);

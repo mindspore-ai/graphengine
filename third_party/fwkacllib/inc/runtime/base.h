@@ -390,7 +390,7 @@ typedef void (*rtErrorCallback)(rtExceptionType);
 
 typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
 
-typedef void (*rtProfilingCallback)(uint32_t devId, bool isOpenDevice);
+typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 
 /**
  * @ingroup dvrt_base
@@ -420,7 +420,7 @@ RTS_API rtError_t rtSetProfDirEx(const char *profDir, const char *address, const
  * @ingroup profiling_base
  * @brief init profiler object.
  */
-RTS_API rtError_t rtProfilerInit(const char *profdir, const char *address, const char *job_ctx);
+RTS_API rtError_t rtProfilerInit(const char *profDir, const char *address, const char *jobCtx);
 
 /**
  * @ingroup profiling_base
@@ -477,10 +477,12 @@ RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
 /**
  * @ingroup dvrt_base
  * @brief register callback for deviceid
+ * @param [in] uniName unique register name, can't be null
+ * @param [in] callback Device state callback function
  * @param [out] NA
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtSetPoriflingCallback(rtProfilingCallback callback);
+RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCallback callback);
 
 /**
  * @ingroup dvrt_base
@@ -602,7 +604,7 @@ RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for input null ptr
  */
-RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskid, uint32_t *streamid);
+RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId);
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }

@@ -295,7 +295,7 @@ RTS_API rtError_t rtGetRunMode(rtRunMode *mode);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_DRV_ERR for can not get aicpu deploy
  */
-RTS_API rtError_t rtGetAicpuDeploy(rtAicpuDeployType_t *deplyType);
+RTS_API rtError_t rtGetAicpuDeploy(rtAicpuDeployType_t *deployType);
 
 /**
  * @ingroup dvrt_dev
@@ -309,7 +309,7 @@ RTS_API rtError_t rtSetSocVersion(const char *version);
  * @brief get chipType
  * @return RT_ERROR_NONE for ok
  */
-rtError_t rtGetSocVersion(char *version, const uint32_t maxLen);
+RTS_API rtError_t rtGetSocVersion(char *version, const uint32_t maxLen);
 
 /**
  * @ingroup dvrt_dev

@@ -189,13 +189,20 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
   }
   GE_CHECK_NOTNULL(tv);
   auto local_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(tv->MutableData()));
-  addr_infos.resize(dims.front());
-  for (auto idx = 0; idx < dims.front(); ++idx) {
+  auto row_num = dims.front();
+  addr_infos.resize(row_num);
+  auto device_len = tv->GetSize() / row_num;
+  if (device_len <= 0 || device_len > data[kVarTableIdxLen]) {
+    GELOGE(FAILED, "Local embedding length is out of range.");
+    return FAILED;
+  }
+
+  for (auto idx = 0; idx < row_num; ++idx) {
     FMK_INT64_MULCHECK(idx, kVarTableRowCnt);
     auto line_idx = idx * kVarTableRowCnt;
     addr_infos[idx] = {static_cast<uint32_t>(data[line_idx]), data[line_idx + kVarTableIdxAddr], local_addr,
-                       data[line_idx + kVarTableIdxLen]};
-    local_addr += data[line_idx + kVarTableIdxLen];
+                       device_len};
+    local_addr += device_len;
   }
 
   return SUCCESS;

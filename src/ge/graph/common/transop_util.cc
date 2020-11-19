@@ -80,4 +80,13 @@ bool TransOpUtil::CheckPrecisionLoss(const ge::NodePtr &src_node) {
   }
   return true;
 }
+
+std::string TransOpUtil::TransopMapToString() {
+  std::string buffer;
+  for (auto &key : Instance().transop_index_map_) {
+    buffer += key.first + " ";
+  }
+  return buffer;
+}
+
 }  // namespace ge

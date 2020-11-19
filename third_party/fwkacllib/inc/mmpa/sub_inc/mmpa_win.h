@@ -30,11 +30,6 @@ extern "C" {
 #define MMPA_MACINFO_DEFAULT_SIZE 18
 #define MMPA_CPUDESC_DEFAULT_SIZE 64
 
-MMPA_DLL_API extern char *optarg;
-MMPA_DLL_API extern int opterr;
-MMPA_DLL_API extern int optind;
-MMPA_DLL_API extern int optopt;
-
 #pragma section(".CRT$XCU", long, read)
 #pragma section(".CRT$XPU", long, read)
 

@@ -36,6 +36,8 @@ struct FusedSubgraph {
   ComputeGraphPtr graph;
 };
 
+bool IsControlOp(const std::string &op_type);
+
 // for caching static information across execution
 struct NodeItem {
   explicit NodeItem(NodePtr node);
@@ -79,6 +81,7 @@ struct NodeItem {
   const NodeExecutor *node_executor = nullptr;
   std::map<int, ge::NodePtr> ref_outputs;
   std::map<int, int> reuse_inputs;
+  std::map<int, int> reuse_outputs;
 
   std::vector<bool> is_input_shape_static;
   bool is_output_shape_static = true;

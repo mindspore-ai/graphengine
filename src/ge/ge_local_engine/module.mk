@@ -17,12 +17,15 @@ ops_kernel_builder_src_files := ops_kernel_store/ge_local_ops_kernel_builder.cc 
 local_lib_inc_path :=   proto/task.proto \
                         ${LOCAL_PATH} \
                         ${TOPDIR}inc \
+                        ${TOPDIR}metadef/inc \
+                        ${TOPDIR}graphengine/inc \
                         ${TOPDIR}inc/external \
-                        ${TOPDIR}inc/external/graph \
+                        ${TOPDIR}metadef/inc/external \
+                        ${TOPDIR}graphengine/inc/external \
+                        ${TOPDIR}metadef/inc/external/graph \
                         $(TOPDIR)libc_sec/include \
                         ${TOPDIR}third_party/protobuf/include \
-                        ${TOPDIR}inc/framework \
-                        $(TOPDIR)framework/domi \
+                        ${TOPDIR}graphengine/inc/framework \
                         $(TOPDIR)graphengine/ge \
 
 #compiler for host

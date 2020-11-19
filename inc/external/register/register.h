@@ -94,6 +94,7 @@ using FusionParseParamFunc =
   std::function<domi::Status(const std::vector<const google::protobuf::Message *>, ge::Operator &)>;
 using FusionParseParamByOpFunc = std::function<domi::Status(const std::vector<ge::Operator> &, ge::Operator &)>;
 using ParseSubgraphFunc = std::function<Status(const std::string &subgraph_name, const ge::Graph &graph)>;
+using ParseOpToGraphFunc = std::function<Status(const ge::Operator &, ge::Graph &)>;
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
  public:
@@ -125,6 +126,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
 
   OpRegistrationData &InputReorderVector(const vector<int> &input_order);
 
+  OpRegistrationData &ParseOpToGraphFn(const ParseOpToGraphFunc &parse_op_to_graph_fn);
+
   domi::ImplyType GetImplyType() const;
   std::string GetOmOptype() const;
   std::set<std::string> GetOriginOpTypeSet() const;
@@ -134,6 +137,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpRegistrationData {
   FusionParseParamFunc GetFusionParseParamFn() const;
   FusionParseParamByOpFunc GetFusionParseParamByOpFn() const;
   ParseSubgraphFunc GetParseSubgraphPostFn() const;
+  ParseOpToGraphFunc GetParseOpToGraphFn() const;
 
  private:
   std::shared_ptr<OpRegistrationDataImpl> impl_;

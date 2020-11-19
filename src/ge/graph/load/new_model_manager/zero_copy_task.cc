@@ -45,7 +45,7 @@ Status ZeroCopyTask::SetTaskArgsOffset(uintptr_t addr, size_t offset) {
   if (it == task_addr_offset_.end()) {
     task_addr_offset_[addr] = {offset};
   } else {
-    it->second.push_back(offset);
+    it->second.insert(offset);
   }
 
   GELOGI("[ZCPY] %s set task, virtual_addr: 0x%lx, args_addr: %p, size: %zu, offset: %zu", name_.c_str(), addr,

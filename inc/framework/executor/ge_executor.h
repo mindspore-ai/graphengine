@@ -270,6 +270,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
 
   static ge::Status ReleaseSingleOpResource(void *stream);
 
+  static ge::Status GetDeviceIdByModelId(uint32_t model_id, uint32_t &device_id);
+
   ge::Status GetBatchInfoSize(uint32_t model_id, size_t &shape_count);
   ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
   ge::Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,

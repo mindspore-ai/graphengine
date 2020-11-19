@@ -56,7 +56,8 @@ class OpTask {
   const vector<int64_t> &GetWorkspaceSizes() const;
   void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
   const OpDescPtr &GetOpdesc() const { return op_desc_; }
-  Status OpenDump(const std::vector<uintptr_t> &io_addr, rtStream_t stream);
+  Status OpenDump(rtStream_t stream);
+  void SetIoAddrsForDump(const vector<uint64_t> &io_addrs_for_dump) { io_addrs_for_dump_ = io_addrs_for_dump; }
   virtual Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &input_buffers,
                               std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &output_buffers,
                               rtStream_t stream) {
@@ -70,6 +71,7 @@ class OpTask {
   DumpProperties dump_properties_;
   DumpOp dump_op_;
   OpDescPtr op_desc_;
+  std::vector<uint64_t> io_addrs_for_dump_;
 };
 
 class TbeOpTask : public OpTask {
@@ -162,9 +164,11 @@ class AiCpuTask : public AiCpuBaseTask {
   friend class AiCpuTaskBuilder;
   void *workspace_addr_ = nullptr;
   std::string task_info_;
+  // device addr
   void *args_ = nullptr;
   size_t arg_size_ = 0;
   std::string op_type_;
+  // device addr
   void *io_addr_ = nullptr;
 
   bool dynamic_flag_ = false;

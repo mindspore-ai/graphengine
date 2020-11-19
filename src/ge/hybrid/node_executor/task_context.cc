@@ -200,14 +200,20 @@ Status TaskContext::AllocateOutput(int index, const GeTensorDesc &tensor_desc, T
     GE_CHECK_NOTNULL(ref_tensor);
     outputs_start_[index] = *ref_tensor;
   } else {
-    auto reuse_input = node_item_->reuse_inputs.find(index);
-    if (reuse_input != node_item_->reuse_inputs.end()) {
-      GELOGD("[%s] Output[%d] is referenced to input[%d]", GetNodeName(), index, reuse_input->second);
-      outputs_start_[index] = inputs_start_[reuse_input->second];
+    auto reuse_output_it = node_item_->reuse_outputs.find(index);
+    if (reuse_output_it != node_item_->reuse_outputs.end()) {
+      GELOGD("[%s] reuse output [%d] with output [%d]", GetNodeName(), index, reuse_output_it->second);
+      outputs_start_[index] = outputs_start_[reuse_output_it->second];
     } else {
-      GE_CHK_STATUS_RET_NOLOG(AllocateTensor(tensor_desc, outputs_start_[index], attr));
-      GELOGD("Allocating output successfully. node: %s. index = %d, size = %zu", node_item_->NodeName().c_str(), index,
-             outputs_start_[index].GetSize());
+      auto reuse_input = node_item_->reuse_inputs.find(index);
+      if (reuse_input != node_item_->reuse_inputs.end()) {
+        GELOGD("[%s] Output[%d] is referenced to input[%d]", GetNodeName(), index, reuse_input->second);
+        outputs_start_[index] = inputs_start_[reuse_input->second];
+      } else {
+        GE_CHK_STATUS_RET_NOLOG(AllocateTensor(tensor_desc, outputs_start_[index], attr));
+        GELOGD("Allocating output successfully. node: %s. index = %d, size = %zu", node_item_->NodeName().c_str(),
+               index, outputs_start_[index].GetSize());
+      }
     }
   }
 

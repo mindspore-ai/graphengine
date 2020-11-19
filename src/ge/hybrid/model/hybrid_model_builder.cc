@@ -249,7 +249,7 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
   }
 
   // cond or branch need to be prepared before the execution of IF or CASE
-  if (node_item.node_type == IF || node_item.node_type == CASE) {
+  if (node_item.node_type == IF || node_item.node_type == STATELESSIF || node_item.node_type == CASE) {
     const auto &in_anchor = ge_node->GetInDataAnchor(0);
     GE_CHECK_NOTNULL(in_anchor);
     const auto &peer_anchor = in_anchor->GetPeerOutAnchor();
@@ -653,6 +653,8 @@ Status HybridModelBuilder::LoadGraph() {
     } else {
       GE_CHK_STATUS_RET(IdentifyVariableOutputs(*parent_node_item), "[%s] Failed to identify ref outputs.",
                         parent_node_item->NodeName().c_str());
+      GE_CHK_STATUS_RET(IdentifySameInputs(*parent_node_item), "[%s] Failed to identify same outputs.",
+                        parent_node_item->NodeName().c_str());
 
       // if parent is function control op. need add a virtual partitioned call
       if (parent_node_item->IsControlOp()) {
@@ -858,7 +860,7 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
   auto parent_node = sub_graph.GetParentNode();
   GE_CHECK_NOTNULL(parent_node);
   auto op_type = parent_node->GetType();
-  if (op_type == IF || op_type == CASE || op_type == WHILE) {
+  if (IsControlOp(op_type)) {
     GELOGD("Set ge_model for control op subgraph: [%s], task_size = %d", sub_graph.GetName().c_str(),
            ge_model->GetModelTaskDefPtr()->task_size());
     subgraph_models_.emplace(sub_graph.GetName(), ge_model);
@@ -1084,6 +1086,43 @@ Status HybridModelBuilder::InitRuntimeParams() {
 
   var_manager_ = VarManager::Instance(runtime_param_.session_id);
   GE_CHECK_NOTNULL(var_manager_);
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::IdentifySameInputs(NodeItem &node_item) {
+  GELOGD("Start to parse same inputs on net output: %s", node_item.NodeName().c_str());
+  auto subgraph = NodeUtils::GetSubgraph(*node_item.node, kSubgraphIndex);
+  GE_CHECK_NOTNULL(subgraph);
+  auto net_output_node = subgraph->FindFirstNodeMatchType(NETOUTPUT);
+  if (net_output_node == nullptr) {
+    GELOGD("Subgraph [%s] does not have net output", subgraph->GetName().c_str());
+    return SUCCESS;
+  }
+
+  auto net_output_desc = net_output_node->GetOpDesc();
+  GE_CHECK_NOTNULL(net_output_desc);
+
+  std::map<std::string, int> connected_inputs;
+  for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
+    auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
+    if (out_data_anchor == nullptr) {
+      continue;
+    }
+    auto src_node = out_data_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+    auto op_desc = src_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+
+    std::string input_key = std::to_string(op_desc->GetId()) + "_" + std::to_string(out_data_anchor->GetIdx());
+    auto it = connected_inputs.find(input_key);
+    if (it == connected_inputs.end()) {
+      connected_inputs.emplace(input_key, in_data_anchor->GetIdx());
+    } else {
+      GELOGD("[%s] output [%d] reuse output [%d] input node = %s, idx = %d.", node_item.NodeName().c_str(),
+             in_data_anchor->GetIdx(), it->second, src_node->GetName().c_str(), out_data_anchor->GetIdx());
+      node_item.reuse_outputs.emplace(in_data_anchor->GetIdx(), it->second);
+    }
+  }
   return SUCCESS;
 }
 

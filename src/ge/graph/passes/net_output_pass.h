@@ -220,6 +220,7 @@ class NetOutputPass : public GraphPass {
   bool is_include_special_node_ = false;
   std::set<NodePtr> targets_;
   friend class ReUpdateNetOutputPass;
+  bool is_user_define_ouput_nodes = false;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_NET_OUTPUT_PASS_H_

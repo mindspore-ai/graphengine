@@ -46,6 +46,10 @@ COMMON_LOCAL_SRC_FILES := \
     option/ge_local_context.cc \
     ./runtime_inference_context.cc \
     ./utils/node_utils.cc \
+    ../third_party/transformer/src/axis_util.cpp \
+    ../third_party/transformer/src/transfer_shape_according_to_format.cpp \
+    ./utils/transformer_utils.cc \
+
 
 COMMON_LOCAL_C_INCLUDES := \
     proto/om.proto \
@@ -57,13 +61,19 @@ COMMON_LOCAL_C_INCLUDES := \
     proto/op_mapping_info.proto \
     proto/dump_task.proto \
     inc \
+    metadef/inc \
+    graphengine/inc \
     inc/external \
-    inc/external/graph \
-    inc/graph \
-    inc/common \
-    common \
-    common/graph \
+    metadef/inc/external \
+    graphengine/inc/external \
+    metadef/inc/external/graph \
+    metadef/inc/graph \
+    metadef/inc/common \
+    metadef \
+    metadef/graph \
     third_party/protobuf/include \
+    $(TOPDIR)metadef/third_party \
+    $(TOPDIR)metadef/third_party/transformer/inc \
     libc_sec/include \
     ops/built-in/op_proto/inc \
     cann/ops/built-in/op_proto/inc \

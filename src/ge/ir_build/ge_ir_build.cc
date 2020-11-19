@@ -18,6 +18,7 @@
 
 #include <vector>
 #include "common/auth/file_saver.h"
+#include "common/ge/tbe_plugin_manager.h"
 #include "external/register/register_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -36,6 +37,7 @@
 #include "ir_build/atc_ir_common.h"
 #include "model/ge_model.h"
 #include "graph/shape_refiner.h"
+#include "graph/opsproto_manager.h"
 
 using std::string;
 using namespace std;
@@ -106,6 +108,37 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
   return GRAPH_SUCCESS;
 }
 
+static void GetOpsProtoPath(string &opsproto_path) {
+  GELOGI("Start to get ops proto path schedule.");
+  const char *path_env = std::getenv("ASCEND_OPP_PATH");
+  if (path_env != nullptr) {
+    string path = path_env;
+    string file_path = RealPath(path.c_str());
+    if (file_path.empty()) {
+      GELOGE(FAILED, "File path %s is invalid.", path.c_str());
+      return;
+    }
+    opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
+    GELOGI("Get opsproto so path from env : %s", path.c_str());
+    return;
+  }
+  string path_base = PluginManager::GetPath();
+  GELOGI("path_base is %s", path_base.c_str());
+  path_base = path_base.substr(0, path_base.rfind('/'));
+  path_base = path_base.substr(0, path_base.rfind('/') + 1);
+  opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
+}
+
+static void LoadOpsProto() {
+  string opsproto_path;
+  GetOpsProtoPath(opsproto_path);
+  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
+  OpsProtoManager *manager = OpsProtoManager::Instance();
+  map<string, string> option_tmp;
+  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
+  (void)manager->Initialize(option_tmp);
+}
+
 graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
   GELOGD("Enter aclgrphInitialize start!");
   // check global options
@@ -113,8 +146,11 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
     GELOGE(GRAPH_PARAM_INVALID, "Check global options falied!");
     return GRAPH_PARAM_INVALID;
   }
+
   // print global option map
   ge::PrintOptionMap(global_options, "global option");
+
+  LoadOpsProto();
 
   std::shared_ptr<ge::GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
@@ -124,6 +160,8 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
       GELOGE(ret, "GE initialize failed!");
       return GRAPH_FAILED;
     }
+    // for functional subgraph assign _parent_index.
+    TBEPluginManager::Instance().InitPreparation(global_options);
   }
   GELOGW("gelib has been initialized!");
   return GRAPH_SUCCESS;
@@ -131,6 +169,7 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
 
 void aclgrphBuildFinalize() {
   if (ge::GELib::GetInstance() != nullptr && ge::GELib::GetInstance()->InitFlag()) {
+    (void)TBEPluginManager::Instance().Finalize();
     (void)ge::GELib::GetInstance()->Finalize();
     return;
   }
@@ -169,6 +208,7 @@ class Impl {
                                  bool is_dynamic_input);
   void SetRtSocVersion();
   void UpdateThreadContext();
+  void LoadOpsProto();
 
  public:
   ge::GeGenerator generator_;
@@ -437,6 +477,12 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
 graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
+
+  auto root_graph = compute_graph->GetParentGraph();
+  if (root_graph != nullptr) {
+    GELOGE(GRAPH_PARAM_INVALID, "Input param should not be subgraph");
+    return GRAPH_PARAM_INVALID;
+  }
 
   auto ret = compute_graph->InferOriginFormat();
   if (ret != GRAPH_SUCCESS) {

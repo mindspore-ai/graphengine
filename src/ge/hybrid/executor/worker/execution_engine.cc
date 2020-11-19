@@ -105,8 +105,10 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
     vector<uint8_t> host_buffer(static_cast<unsigned long>(tensor_size));
     GELOGD("[%s] To cache output[%d] to host, size = %zu", node_item.NodeName().c_str(), output_idx,
            output_tensor->GetSize());
-    GE_CHK_RT_RET(
-      rtMemcpy(host_buffer.data(), tensor_size, output_tensor->GetData(), tensor_size, RT_MEMCPY_DEVICE_TO_HOST));
+    if (tensor_size > 0) {
+      GE_CHK_RT_RET(
+        rtMemcpy(host_buffer.data(), tensor_size, output_tensor->GetData(), tensor_size, RT_MEMCPY_DEVICE_TO_HOST));
+    }
     tensor.SetData(std::move(host_buffer));
     string session_id = std::to_string(context_->GetSessionId());
     RuntimeInferenceContext *runtime_infer_ctx = nullptr;
@@ -234,7 +236,9 @@ Status NodeDoneCallback::ProfilingReport() {
     return profiling_ret;
   }
 
-  ProfilingManager::Instance().ReportProfilingData(task_desc_info, compute_graph_info);
+  auto &profiling_manager = ProfilingManager::Instance();
+  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info, compute_graph_info,
+                                        !profiling_manager.IsAclApiMode());
   return SUCCESS;
 }
 

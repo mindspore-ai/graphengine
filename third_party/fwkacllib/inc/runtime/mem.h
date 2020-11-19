@@ -473,7 +473,7 @@ RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-rtError_t rtIpcDestroyMemoryName(const char *name);
+RTS_API rtError_t rtIpcDestroyMemoryName(const char *name);
 
 /**
  * @ingroup dvrt_mem

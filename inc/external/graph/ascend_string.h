@@ -31,6 +31,18 @@ class AscendString {
 
   const char* GetString() const;
 
+  bool operator<(const AscendString& d) const;
+
+  bool operator>(const AscendString& d) const;
+
+  bool operator<=(const AscendString& d) const;
+
+  bool operator>=(const AscendString& d) const;
+
+  bool operator==(const AscendString& d) const;
+
+  bool operator!=(const AscendString& d) const;
+
  private:
   std::shared_ptr<std::string> name_;
 };

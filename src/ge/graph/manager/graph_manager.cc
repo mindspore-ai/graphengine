@@ -100,6 +100,8 @@
 #include "graph/passes/subgraph_const_migration_pass.h"
 #include "graph/passes/unused_args_clean_pass.h"
 #include "graph/passes/global_step_insert_pass.h"
+#include "graph/passes/memcpy_addr_async_pass.h"
+#include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "graph/utils/type_utils.h"
 #include "graph/graph_util.h"
@@ -131,6 +133,22 @@ bool IsTailingOptimization() {
   GELOGW("OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION not set, use BFSTopologicalSorting by default.");
   return false;
 }
+
+ge::Status CheckFpCeilingMode() {
+  static const std::unordered_set<std::string> kValidFpCeilingMode = {"0", "1", "2"};
+  string mode;
+  auto ret = ge::GetContext().GetOption("ge.fpCeilingMode", mode);
+  if (ret == ge::GRAPH_SUCCESS) {
+    if (kValidFpCeilingMode.count(mode) == 0) {
+      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "The fp_ceiling_mode %s is invalid, options are 0, 1, and 2.", mode.c_str());
+      return ge::GE_GRAPH_OPTIONS_INVALID;
+    }
+    GELOGI("The parameter fp_ceiling_mode is set to %s.", mode.c_str());
+    return ge::SUCCESS;
+  }
+  GELOGW("The parameter fp_ceiling_mode is not set.");
+  return ge::SUCCESS;
+}
 }  // namespace
 
 namespace ge {
@@ -159,6 +177,12 @@ Status GraphManager::Initialize(const std::map<string, string> &options) {
   Status ret = ParseOptions(options);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Initialize] parse options failed.");
+    return ret;
+  }
+
+  ret = CheckFpCeilingMode();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Initialize] Check fp-ceiling-mode options failed.");
     return ret;
   }
 
@@ -320,6 +344,78 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   stages.builder.SetOptions(options_);
 
   var_acc_ctrl_.AddGraph(graph_id, compute_graph);
+
+  GELOGI("[GraphManager] add graph success, graph_id = %u.", graph_id);
+  return SUCCESS;
+}
+
+Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
+                                      const std::map<std::string, std::string> &options,
+                                      const OmgContext &omg_context) {
+  if (HasGraphNode(graph_id)) {
+    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u.", graph_id);
+    return GE_GRAPH_GRAPH_ALREADY_EXIST;
+  }
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  if (compute_graph != nullptr) {
+    compute_graph->SetGraphID(graph_id);
+    bool graph_has_been_added = false;
+    if (AttrUtils::GetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, graph_has_been_added) &&
+        graph_has_been_added) {
+      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] same graph object can not be added again, graph_id = %u.",
+             graph_id);
+      return GE_GRAPH_GRAPH_ALREADY_EXIST;
+    }
+  } else {
+    GELOGE(FAILED, "compute graph is null");
+    return FAILED;
+  }
+  std::vector<NodePtr> input_nodes;
+  std::vector<NodePtr> output_nodes;
+  auto new_compute_graph = GraphUtils::CloneGraph(compute_graph, "", input_nodes, output_nodes);
+  std::string session_graph_id;
+  if (!AttrUtils::GetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id) ||
+      session_graph_id.empty()) {
+    session_graph_id = "-1_" + to_string(graph_id);
+    if (!AttrUtils::SetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
+      GELOGW("Set attribute of compute graph failed.");
+    }
+    for (auto &subgraph : new_compute_graph->GetAllSubgraphs()) {
+      (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
+    }
+    GELOGW("Get graph session_graph_id attr failed, set session id to default value: [0]");
+  }
+
+  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
+  if (graph_node == nullptr) {
+    GELOGE(FAILED, "GraphNode make shared failed");
+    return FAILED;
+  }
+  std::shared_ptr<Graph> graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
+  if (graph_ptr == nullptr) {
+    GELOGE(FAILED, "GraphPtr make shared failed");
+    return FAILED;
+  }
+
+  graph_node->SetGraph(graph_ptr);
+  graph_node->SetOptions(options);
+  AddGraphNode(graph_id, graph_node);
+
+  AddLocalOmgContext(graph_id, omg_context);
+  if (!options_.output_datatype.empty()) {
+    GetLocalOmgContext().output_type = options_.output_datatype;
+  }
+
+  CompilerStages &stages = GetCompilerStages(graph_id);
+  stages.preparer.SetOptions(options_);
+  Status status = stages.optimizer.SetOptions(options_);
+  if (status != SUCCESS) {
+    GELOGE(status, "Graph optimizer set options failed.");
+    return status;
+  }
+  stages.builder.SetOptions(options_);
+
+  var_acc_ctrl_.AddGraph(graph_id, new_compute_graph);
 
   GELOGI("[GraphManager] add graph success, graph_id = %u.", graph_id);
   return SUCCESS;
@@ -625,6 +721,13 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
                        GetCompilerStages(graph_node->GetGraphId()).optimizer.OptimizeGraphBeforeBuildForRts,
                        compute_graph);
+
+  Status ret = compute_graph->TopologicalSorting();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Graph topological sort failed, ret:%d.", ret);
+    return ret;
+  }
+
   GM_RUN_AND_DUMP_PERF("Build", Build, graph_node, compute_graph, ge_root_model, session_id);
   GELOGI("PreRun:PreRunAfterOptimizeSubGraph success.");
   return SUCCESS;
@@ -2170,6 +2273,18 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
     return ret;
   }
 
+  // Assign functional op labels.
+  GE_TIMESTAMP_START(AssignFunctionalLabels);
+  LabelAllocator label_allocator(compute_graph);
+  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(), "Assign label failed.");
+  GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
+
+  // Add memcpy addr asynchronous node.
+  GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
+  MemcpyAddrAsyncPass memcpy_addr;
+  GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph), "Add memcpy_addr_async node failed.");
+  GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
+
   // After while sub graph handle, mark all node rw type
   auto result = GetCompilerStages(compute_graph->GetGraphID()).optimizer.HandleMemoryRWConflict(compute_graph);
   if (result != SUCCESS) {
@@ -2180,11 +2295,6 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
 
   ChangeConstTypeWhenTraining(compute_graph);
 
-  ret = compute_graph->TopologicalSorting();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Graph topological sort failed, ret:%d.", ret);
-    return ret;
-  }
   GELOGI("End optimize after merge sub graph.");
   return SUCCESS;
 }

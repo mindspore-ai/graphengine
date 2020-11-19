@@ -96,7 +96,7 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
     return ExecutorType::GE_LOCAL;
   }
 
-  if (op_type == IF || op_type == CASE || op_type == WHILE) {
+  if (IsControlOp(op_type)) {
     return ExecutorType::CONTROL_OP;
   }
 

@@ -885,6 +885,15 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
           GELOGI("Unreusable block.");
           continue;
         }
+        std::string batch_label;
+        if (reusable_block->IsSameLabel(batch_label)) {
+          std::string op_label;
+          (void)ge::AttrUtils::GetStr(node_op_desc, ATTR_NAME_BATCH_LABEL, op_label);
+          if (batch_label != op_label) {
+            GELOGI("label diff, op name %s", node_op_desc->GetName().c_str());
+            continue;
+          }
+        }
 
         // A node can reuse blocks of the same stream and preorder streams
         if (CanReuseBySize(reusable_block_counts_, *reusable_block, block_size, real_size, continuous)) {

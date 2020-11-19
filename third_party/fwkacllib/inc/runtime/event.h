@@ -59,6 +59,16 @@ RTS_API rtError_t rtEventDestroy(rtEvent_t event);
 
 /**
  * @ingroup dvrt_event
+ * @brief get event id
+ * @param [in] event_ event to be get
+ * @param [in|out] event_id   event_id id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetEventID(rtEvent_t event, uint32_t *eventId);
+
+/**
+ * @ingroup dvrt_event
  * @brief event record
  * @param [int] event   event to record
  * @param [int] stream   stream handle
@@ -184,7 +194,7 @@ RTS_API rtError_t rtNameNotify(rtNotify_t notify, const char *name);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetNotifyID(rtNotify_t notify, uint32_t *notify_id);
+RTS_API rtError_t rtGetNotifyID(rtNotify_t notify, uint32_t *notifyId);
 
 /**
  * @ingroup dvrt_event

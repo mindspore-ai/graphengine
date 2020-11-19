@@ -25,6 +25,18 @@
 namespace ge {
 Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
+  if (graph->GetGraphUnknownFlag()) {
+    GELOGD("Graph[%s] is unknown graph, skip.", graph->GetName().c_str());
+    return SUCCESS;
+  }
+
+  int64_t value = 0;
+  rtError_t rt_ret = rtGetRtCapability(FEATURE_TYPE_MEMCPY, MEMCPY_INFO_SUPPORT_ZEROCOPY, &value);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "rtGetRtCapability failed, error=0x%x.", rt_ret);
+    return RT_FAILED;
+  }
+
   for (auto &node : graph->GetAllNodes()) {
     auto op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
@@ -193,9 +205,10 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
                                                        const OutDataAnchorPtr &out_data_anchor,
                                                        const NodePtr &out_of_user_data) {
   GELOGD("Start CreateMemcpyAddrAsyncNode.");
+  static uint32_t new_node_index = 0;
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "Op_desc of pre node is invalid.");
-  std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYADDRASYNC;
+  std::string node_name = pre_op_desc->GetName() + "_" + MEMCPYADDRASYNC + "_" + std::to_string(new_node_index++);
 
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name, MEMCPYADDRASYNC);
   GE_CHECK_NOTNULL_EXEC(op_desc, return nullptr);
@@ -210,9 +223,18 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
     return nullptr;
   }
 
-  int64_t stream_id = out_of_user_data->GetOpDesc()->GetStreamId();
-  op_desc->SetStreamId(stream_id);
-  GELOGI("SetStreamId: Node %s assign stream is %ld.", op_desc->GetName().c_str(), stream_id);
+  string stream_label;
+  if (AttrUtils::GetStr(out_of_user_data->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
+    (void)AttrUtils::SetStr(op_desc, ATTR_NAME_STREAM_LABEL, stream_label);
+    GELOGD("Node %s set stream label: %s", op_desc->GetName().c_str(), stream_label.c_str());
+  }
+
+  bool rts_label_node = false;
+  if (AttrUtils::GetBool(out_of_user_data->GetOpDesc(), ATTR_NAME_RTS_LABEL_NODE, rts_label_node)) {
+    (void)AttrUtils::SetBool(op_desc, ATTR_NAME_RTS_LABEL_NODE, rts_label_node);
+    GELOGD("Node %s set rts label node attribute", op_desc->GetName().c_str());
+  }
+
   bool labeled_input = false;
   (void)ge::AttrUtils::GetBool(out_of_user_data->GetOpDesc(), ATTR_NAME_NODE_CONNECT_INPUT, labeled_input);
   if (labeled_input) {

@@ -593,6 +593,8 @@ Status MultiBatchGraphCopyer::CheckCopyResult(const std::vector<NodePtr> &start_
     }
     auto dims = NodeUtils::GetOutputDesc(*node, kDataOutIndex).GetShape().GetDims();
     if (!IsAllDimsPositive(dims)) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E15004", {"opname", "shape"},
+                                                      {node->GetName(), formats::ShapeToString(dims)});
       GELOGE(INTERNAL_ERROR, "Failed to copy multi batch graph, the node %s still has unknown shape %s",
              node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       return INTERNAL_ERROR;
@@ -1023,6 +1025,13 @@ Status MultiBatchGraphCopyer::InsertIdentityAfterSwitchN() {
 }
 
 Status ProcessMultiBatch(ComputeGraphPtr &graph) {
+  const char *multi_batch_with_case = std::getenv("MULTI_BATCH_WITH_CASE");
+  if (multi_batch_with_case != nullptr) {
+    PassManager pass_manager;
+    GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
+    return pass_manager.Run(graph);
+  }
+
   std::vector<std::vector<int64_t>> shapes;
   if (!InitDynamicParams(shapes)) {
     GELOGD("There is no multi-batch options, no need to process multi-batch copy");

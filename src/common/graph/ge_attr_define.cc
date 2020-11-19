@@ -1078,6 +1078,9 @@ const std::string ATTR_NAME_DYNAMIC_INPUT_END = "_dynamic_input_index_end";
 const std::string ATTR_ATC_USER_DEFINE_DATATYPE = "_user_defined_data_type";
 const std::string ATTR_ATC_USER_DEFINE_FORMAT = "_user_defined_format";
 
+// atc user def dtype&format
+const std::string ATTR_ATC_USER_DEFINE_OUTPUT_NODES = "_user_defined_output_nodes";
+
 // for fusion op plugin
 const std::string ATTR_NAME_FUSIONOP_ORIGINAL_TYPE = "_fusionop_original_type";
 

@@ -30,4 +30,66 @@ const char* AscendString::GetString() const {
 
   return (*name_).c_str();
 }
+
+bool AscendString::operator<(const AscendString& d) const {
+  if (name_ == nullptr && d.name_ == nullptr) {
+    return false;
+  } else if (name_ == nullptr) {
+    return true;
+  } else if (d.name_ == nullptr) {
+    return false;
+  }
+  return (*name_ < *(d.name_));
+}
+
+bool AscendString::operator>(const AscendString& d) const {
+  if (name_ == nullptr && d.name_ == nullptr) {
+    return false;
+  } else if (name_ == nullptr) {
+    return false;
+  } else if (d.name_ == nullptr) {
+    return true;
+  }
+  return (*name_ > *(d.name_));
+}
+
+bool AscendString::operator==(const AscendString& d) const {
+  if (name_ == nullptr && d.name_ == nullptr) {
+    return true;
+  } else if (name_ == nullptr) {
+    return false;
+  } else if (d.name_ == nullptr) {
+    return false;
+  }
+  return (*name_ == *(d.name_));
+}
+
+bool AscendString::operator<=(const AscendString& d) const {
+  if (name_ == nullptr) {
+    return true;
+  } else if (d.name_ == nullptr) {
+    return false;
+  }
+  return (*name_ <= *(d.name_));
+}
+
+bool AscendString::operator>=(const AscendString& d) const {
+  if (d.name_ == nullptr) {
+    return true;
+  } else if (name_ == nullptr) {
+    return false;
+  }
+  return (*name_ >= *(d.name_));
+}
+
+bool AscendString::operator!=(const AscendString& d) const {
+  if (name_ == nullptr && d.name_ == nullptr) {
+    return false;
+  } else if (name_ == nullptr) {
+    return true;
+  } else if (d.name_ == nullptr) {
+    return true;
+  }
+  return (*name_ != *(d.name_));
+}
 }  // namespace ge

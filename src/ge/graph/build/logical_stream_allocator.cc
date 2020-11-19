@@ -348,7 +348,11 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
     auto compute_graph = subgraph->subgraph_info.GetSubGraph();
     for (NodePtr &node : compute_graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node->GetOpDesc());
-      if (IsEngineSkip(*subgraph) && node->GetInNodes().empty()) {
+      if (node->GetOpDesc()->HasAttr(ATTR_NAME_RTS_LABEL_NODE)) {
+        node->GetOpDesc()->SetStreamId(context.default_stream);
+        GELOGD("Node %s of type %s in subgraph %s is assigned parent stream %ld (engine: %s).", node->GetName().c_str(),
+               node->GetType().c_str(), subgraph->name.c_str(), context.default_stream, engine_name.c_str());
+      } else if (IsEngineSkip(*subgraph) && node->GetInNodes().empty()) {
         GELOGD("Node %s of type %s in subgraph %s doesn't need to assign a stream (engine: %s).",
                node->GetName().c_str(), node->GetType().c_str(), subgraph->name.c_str(), engine_name.c_str());
       } else {

@@ -18,13 +18,21 @@
 #define GE_HYBRID_KERNEL_AICORE_NODE_EXECUTOR_H_
 
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
-#include "hybrid/node_executor/aicore/aicore_task_compiler.h"
 #include "hybrid/node_executor/node_executor.h"
 #include <map>
 #include <mutex>
 
 namespace ge {
 namespace hybrid {
+
+class TaskCompiler {
+ public:
+  TaskCompiler() = default;
+  virtual ~TaskCompiler() = default;
+  virtual Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) = 0;
+  virtual Status Initialize() = 0;
+};
+
 class AiCoreNodeTaskRegistry {
  public:
   ~AiCoreNodeTaskRegistry() = default;
@@ -54,6 +62,7 @@ class AiCoreNodeTask : public NodeTask {
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
 
  private:
+  static bool IsNoOp(TaskContext &task_context);
   std::vector<std::unique_ptr<AiCoreOpTask>> tasks_;
 };
 
@@ -65,8 +74,31 @@ class AiCoreNodeExecutor : public NodeExecutor {
 
  private:
   static Status GenNodeKey(const NodePtr &node, std::string &node_key);
-  std::unique_ptr<AiCoreTaskCompiler> compiler_;
+  std::unique_ptr<TaskCompiler> compiler_;
+};
+
+using CreateFn = TaskCompiler *(*)();
+class TaskCompilerFactory {
+ public:
+  static TaskCompilerFactory &GetInstance();
+  void Register(CreateFn fn);
+  std::unique_ptr<TaskCompiler> GetTaskCompiler();
+
+ private:
+  CreateFn compiler_func_;
+};
+
+class CompilerFunctionRegistrar {
+ public:
+  CompilerFunctionRegistrar(CreateFn fn);
+  ~CompilerFunctionRegistrar() = default;
 };
 }  // namespace hybrid
 }  // namespace ge
+
+#define REGISTER_TASK_COMPILER(compiler)                                                              \
+  static ::ge::hybrid::CompilerFunctionRegistrar register_compiler_function __attribute__((unused)) = \
+    ::ge::hybrid::CompilerFunctionRegistrar(                                                          \
+      []() -> ::ge::hybrid::TaskCompiler * { return new (std::nothrow) compiler(); })
+
 #endif  // GE_HYBRID_KERNEL_AICORE_NODE_EXECUTOR_H_

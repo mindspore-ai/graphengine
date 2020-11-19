@@ -24,6 +24,9 @@ namespace ge {
 class DataPass : public GraphPass {
  public:
   Status Run(ge::ComputeGraphPtr graph);
+
+ private:
+  Status PostParseSubgraph(const ComputeGraphPtr &graph, const string &ir_name, const NodePtr &parent_node);
 };
 }  // namespace ge
 

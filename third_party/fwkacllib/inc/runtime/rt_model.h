@@ -438,7 +438,8 @@ RTS_API rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *addr, uint32_t *streamId, uint32_t *taskId);
+RTS_API rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *addr,
+                                  uint32_t *streamId, uint32_t *taskId);
 
 /*
  * @ingroup rt_model

@@ -68,8 +68,10 @@ struct MemRegisterAddr {
     u64 addr;
     u64 length;
 };
-
-const u32 HCCL_MAX_MEM_REGISTER_NUM = 8;   // The max number of memory register address.
+/*
+ * @brief The max number of memory register address for remote access.
+ */
+const u32 HCCL_MAX_MEM_REGISTER_NUM = 32;
 
 enum GradSplitForceMode {
     FORCE_NONE,     /**< no force */

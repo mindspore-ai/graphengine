@@ -266,7 +266,7 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
     std::vector<int64_t> atomic_output_index;
     (void) ge::AttrUtils::GetListInt(op_desc, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_index);
     bool is_all_output_peer_also_atomic = true;
-    for (auto &output_index : atomic_output_index) {
+    for (const auto &output_index : atomic_output_index) {
       if (!IsOutputIndexPeerInputAtomic(node, output_index)) {
         is_all_output_peer_also_atomic = false;
         break;
@@ -318,13 +318,13 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
   return false;
 }
 
-bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const ge::NodePtr &node, int64_t output_index) {
+bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const NodePtr &node, int64_t output_index) {
   auto out_data_anchor = node->GetAllOutDataAnchors().at(output_index);
   if (out_data_anchor == nullptr) {
     return false;
   }
 
-  for (auto input_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+  for (const auto input_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     auto output_node = input_anchor->GetOwnerNode();
     // just hccl may mark atomic from ops kernel now, and hccl's atomic if for all input
     // hccl's attr ATOMIC_ATTR_INPUT_INDEX mark on CalcOpRunningParam, can't be get here

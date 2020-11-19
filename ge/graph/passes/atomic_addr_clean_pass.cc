@@ -315,6 +315,7 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
       return true;
     }
   }
+  return false;
 }
 
 bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const ge::NodePtr &node, int64_t output_index) {

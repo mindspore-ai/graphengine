@@ -296,7 +296,7 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
   }
 
   OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
-  vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(op_desc->GetType());
+  vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(node->GetType());
   for (const auto &op_info : op_info_vec) {
     if (op_info.isAtomic) {
       // check peer input is DATA
@@ -305,12 +305,12 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
             in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
           auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
           if (peer_in_node->GetType() == DATA) {
-            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", op_desc->GetName().c_str(), op_info.engine.c_str());
+            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", node->GetName().c_str(), op_info.engine.c_str());
             return false;
           }
         }
       }
-      GELOGI("Recognized atomic op %s from %s engine.", op_desc->GetName().c_str(), op_info.engine.c_str());
+      GELOGI("Recognized atomic op %s from %s engine.", node->GetName().c_str(), op_info.engine.c_str());
       hcom_node_vec_.push_back(node);
       return true;
     }
@@ -318,7 +318,7 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
 }
 
 bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const ge::NodePtr &node, int64_t output_index) {
-  auto out_data_anchor = node->GetAllInDataAnchors().at(output_index);
+  auto out_data_anchor = node->GetAllOutDataAnchors().at(output_index);
   if (out_data_anchor == nullptr) {
     return false;
   }

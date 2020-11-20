@@ -123,7 +123,7 @@ Status EmptyKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
 #undef CASE
     default:
       GELOGW("invalid data type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
-      break;
+      NOT_CHANGED;
   }
 
   if (ret != SUCCESS) {

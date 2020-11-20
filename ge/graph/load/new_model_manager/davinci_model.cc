@@ -2805,7 +2805,7 @@ void *DavinciModel::Run(DavinciModel *model) {
         GELOGI("rtStreamSynchronize start.");
         rt_ret = rtStreamSynchronize(model->rt_model_stream_);
         if (rt_ret == RT_ERROR_MODEL_ABORT_NORMAL) {
-          GELOGW("rtStreamSynchronize get result : RT_ERROR_MODEL_ABORT_NORMAL, abort model normal");
+          GELOGI("Stream Synchronize get result to abort model normal");
         } else {
           GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
                           (void)model->ReturnResult(current_data.index, false, seq_end_flag, data_wrapper->GetOutput());
@@ -2833,7 +2833,7 @@ void *DavinciModel::Run(DavinciModel *model) {
         seq_end_flag = true;
       }
       if (rt_ret == RT_ERROR_MODEL_ABORT_NORMAL) {
-        GELOGW("rtStreamSynchronize get result : RT_ERROR_MODEL_ABORT_NORMAL, abort model normal");
+        GELOGI("Stream Synchronize get result to abort model normal");
       } else {
         GE_IF_BOOL_EXEC(
           rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);

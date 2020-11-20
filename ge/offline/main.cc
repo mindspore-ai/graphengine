@@ -91,7 +91,7 @@ DEFINE_string(om, "", "The model file to be converted to json.");
 DEFINE_string(json, "", "The output json file path&name which is converted from a model.");
 DEFINE_int32(mode, 0,
              "Optional; run mode, 0(default): model => framework model; 1: "
-             "framework model => json; 3: only pre-check; 5: pbtxt => json.");
+             "framework model => json; 3: only pre-check; 5: txt => json.");
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
 DEFINE_int32(encrypt_mode, -1, "Optional; the encrypt flag. 0: encrypt; -1(default): not encrypt");
@@ -222,7 +222,7 @@ class GFlagUtils {
         "[General]\n"
         "  --h/help            Show this help message\n"
         "  --mode              Run mode. 0(default): generate offline model; 1: convert model to JSON format "
-        "3: only pre-check; 5: convert pbtxt file to JSON format\n"
+        "3: only pre-check; 5: convert ge dump txt file to JSON format\n"
         "\n[Input]\n"
         "  --model             Model file\n"
         "  --weight            Weight file. Required when framework is Caffe\n"

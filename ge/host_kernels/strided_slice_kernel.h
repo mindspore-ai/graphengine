@@ -36,6 +36,9 @@ class StridedSliceKernel : public Kernel {
   static Status StrideCal(const int64_t x_dims_i, int64_t &begin_i, int64_t &end_i, int64_t &stride_i,
                    int64_t &dim_final) ;
   void ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_tensor, const size_t x_dims_num, vector<int64_t> &x_dims);
+  void ExpandStrideWithEllipsisMask(const size_t x_dims_num,
+                                    const vector<int64_t> &x_dims, vector<int64_t> &orig_begin_vec,
+                                    vector<int64_t> &orig_end_vec, vector<int64_t> &orig_stride_vec);
 
   void GetOutputDims(uint32_t dims_size, const std::vector<int64_t> &output_dims, vector<int64_t> &v_dims);
 

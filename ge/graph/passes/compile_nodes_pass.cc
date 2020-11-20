@@ -112,7 +112,7 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   // begin accuracy supported check
   if (!CheckAccuracySupport(kernel_info, instance, op_desc)) {
     // if check accuracy support failed , try to go to other engine.
-    GELOGW("Check Accuracy Supported return not support, node name is %s. Try to go to other engine.",
+    GELOGD("Check Accuracy Supported return not support, node name is %s. Try to go to other engine.",
            op_desc->GetName().c_str());
     string kernel_name_origin = kernel_lib_name;
     OpsKernelManager &ops_kernel_manager = instance->OpsKernelManagerObj();

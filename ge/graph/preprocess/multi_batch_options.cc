@@ -306,19 +306,21 @@ Status DeleteIdentityInsertByAdapter(ComputeGraphPtr &graph) {
 }
 
 Status CheckNegativeCountOfOptions(const std::vector<std::vector<int64_t>> &shapes) {
-  size_t negative_count = 0;
-  for (size_t i = 0; i < GetLocalOmgContext().user_input_dims.size(); ++i) {
-    for (size_t j = 0; j < GetLocalOmgContext().user_input_dims.at(i).second.size(); ++j) {
-      if (GetLocalOmgContext().user_input_dims.at(i).second.at(j) == kDynmaicDims) {
-        negative_count++;
+  if (!GetLocalOmgContext().dynamic_dims.empty()) {
+    size_t negative_count = 0;
+    for (size_t i = 0; i < GetLocalOmgContext().user_input_dims.size(); ++i) {
+      for (size_t j = 0; j < GetLocalOmgContext().user_input_dims.at(i).second.size(); ++j) {
+        if (GetLocalOmgContext().user_input_dims.at(i).second.at(j) == kDynmaicDims) {
+          negative_count++;
+        }
       }
     }
-  }
-  for (size_t i = 0; i < shapes.size(); ++i) {
-    if (shapes.at(i).size() != negative_count) {
-      GELOGE(PARAM_INVALID, "Each gear num of dynamic_dims is %zu should be equal to %zu.", shapes.at(i).size(),
-             negative_count);
-      return PARAM_INVALID;
+    for (size_t i = 0; i < shapes.size(); ++i) {
+      if (shapes.at(i).size() != negative_count) {
+        GELOGE(PARAM_INVALID, "Each gear num of dynamic_dims is %zu should be equal to %zu.", shapes.at(i).size(),
+               negative_count);
+        return PARAM_INVALID;
+      }
     }
   }
   return SUCCESS;

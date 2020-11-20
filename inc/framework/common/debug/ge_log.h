@@ -37,14 +37,6 @@ extern "C" {
 // trace status of log
 enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
 
-#define GELOGE(ERROR_CODE, ...) GE_LOG_ERROR(GE_MODULE_NAME, ERROR_CODE, __VA_ARGS__)
-#define GELOGW(...) GE_LOG_WARN(GE_MODULE_NAME, __VA_ARGS__)
-#define GELOGI(...) GE_LOG_INFO(GE_MODULE_NAME, __VA_ARGS__)
-#define GELOGD(...) GE_LOG_DEBUG(GE_MODULE_NAME, __VA_ARGS__)
-#define GEEVENT(...) GE_LOG_EVENT(GE_MODULE_NAME, __VA_ARGS__)
-#define GELOGO(...) GE_LOG_OPLOG(GE_MODULE_NAME, __VA_ARGS__)
-#define GELOGT(VALUE, ...) GE_LOG_TRACE(GE_MODULE_NAME, VALUE, __VA_ARGS__)
-
 class GeLog {
 public:
 #ifdef __GNUC__

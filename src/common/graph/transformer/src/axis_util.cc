@@ -105,8 +105,8 @@ bool AxisUtil::GetAxisValueByNCHW(const vector<int64_t> &originalDimVec, const u
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NCHW to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGE(GRAPH_FAILED,"[ERROR]Parameter is invalid!"),
-        return false);
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
+        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_NCHW_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_NCHW_DIM_C];
@@ -123,8 +123,8 @@ bool AxisUtil::GetAxisValueByNHWC(const vector<int64_t> &originalDimVec, const u
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NHWC to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"),
-        return false);
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
+        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_NHWC_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_NHWC_DIM_C];
@@ -139,8 +139,8 @@ bool AxisUtil::GetAxisValueByNC1HWC0(const vector<int64_t> &originalDimVec, cons
                                      vector<int64_t> &axisValue, vector<int64_t> &ndValue) {
   CHECK(axisValue.empty(), GELOGI("AxisValue is empty!"), return true);
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGE(GRAPH_FAILED,"[ERROR]Parameter is invalid!"),
-        return false);
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
+        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
 
   auto dimSize = originalDimVec.size();
   if (dimSize == DIM_DEFAULT_SIZE + 1) {
@@ -165,8 +165,8 @@ bool AxisUtil::GetAxisValueByHWCN(const vector<int64_t> &originalDimVec, const u
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NHWC to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"),
-        return false);
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
+        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_HWCN_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_HWCN_DIM_C];
@@ -183,8 +183,8 @@ bool AxisUtil::GetAxisValueByC1HWNCoC0(const vector<int64_t> &originalDimVec, co
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NHWC to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"),
-        return false);
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
+        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_C1HWNCoC0_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_C1HWNCoC0_DIM_C1] * c0;
@@ -194,5 +194,5 @@ bool AxisUtil::GetAxisValueByC1HWNCoC0(const vector<int64_t> &originalDimVec, co
   axisValue[AXIS_Co] = originalDimVec[AXIS_C1HWNCoC0_DIM_Co];
   return true;
 }
-} // namespace transformer
-} // namespace common
+}  // namespace transformer
+}  // namespace common

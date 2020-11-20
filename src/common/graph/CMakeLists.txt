@@ -42,7 +42,7 @@ file(GLOB SRC_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "detail/*.cc"
         "debug/*.cc"
         "option/*.cc"
-        "transformer/src/*cc"
+        "transformer/src/*.cc"
         )
 
 # include directories

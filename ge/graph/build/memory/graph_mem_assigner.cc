@@ -1145,10 +1145,8 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
     if ((peer_op_desc->GetType() == CONSTANTOP) || (peer_op_desc->GetType() == AIPP_DATA_TYPE) ||
         (peer_op_desc->GetType() == VARIABLE)) {
       std::string error = "Op" + FmtToStr(node->GetName()) + "'s peer out node" +
-          FmtToStr(peer_op_desc->GetName()) + "is invalid, only support CONSTANTOP/AIPP_DATA_TYPE/VARIABLE";
-      GELOGE(ge::FAILED,
-             "The current node is %s, and the peer out node is %s. Currently, this scenario is not supported",
-             node->GetName().c_str(), peer_op_desc->GetName().c_str());
+          FmtToStr(peer_op_desc->GetName()) + "is invalid, only support Constant/AippData/Variable";
+      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return false;
     }
   }
@@ -1168,8 +1166,9 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
   // Check atomic output
   vector<int64_t> output_list = op_desc->GetOutputOffset();
   if (atomic_output_index.size() > output_list.size()) {
-    std::string error = "Op" + FmtToStr(node->GetName) +
+    std::string error = "Op" + FmtToStr(node->GetName()) +
         "'s size of atomic_output_index is more than the size of output_list";
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return ge::FAILED;
   }
   auto output_list_size = static_cast<int64_t>(output_list.size());
@@ -1699,8 +1698,8 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
   }
   if (mem_type_list.empty()) {
     if (memory_offset_.find(memory_type) == memory_offset_.end()) {
-      std::string error = "Memory offset map does not have memory type" + FmtToStr(mem_type_tmp) +
-      + ", opname is" + FmtToStr(node.GetName()) + ", optype is " + FmtToStr(node.GetType());
+      std::string error = "Memory offset map does not have memory type" + FmtToStr(memory_type) +
+          + ", opname is" + FmtToStr(node->GetName()) + ", optype is " + FmtToStr(node->GetType());
       GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return FAILED;
     }
@@ -1711,7 +1710,7 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
     std::string error = "The size" + FmtToStr(mem_type_list.size()) +
         " of mem type list is not equal to the size of in data anchor" +
         FmtToStr(node->GetAllInDataAnchorsSize()) + ", opname is" +
-        FmtToStr(node.GetName()) + ", optype is "  + FmtToStr(node.GetType());
+        FmtToStr(node->GetName()) + ", optype is "  + FmtToStr(node.GetType());
     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }

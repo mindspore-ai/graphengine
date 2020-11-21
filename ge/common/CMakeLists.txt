@@ -78,6 +78,7 @@ target_compile_options(ge_common PRIVATE
     -fvisibility=hidden
     -O2
     -Werror
+    -Wno-deprecated-declarations
 )
 
 target_include_directories(ge_common PRIVATE
@@ -132,6 +133,7 @@ target_compile_options(ge_common_static PRIVATE
     -fvisibility=hidden
     -O2
     -Werror
+    -Wno-deprecated-declarations
 )
 
 target_include_directories(ge_common_static PRIVATE

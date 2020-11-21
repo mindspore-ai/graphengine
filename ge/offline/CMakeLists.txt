@@ -20,6 +20,7 @@ add_executable(atc ${SRC_LIST} ${PROTO_HDRS})
 target_compile_options(atc PRIVATE 
     -Werror
     -O2
+    -Wno-deprecated-declarations
 )
 
 target_compile_definitions(atc PRIVATE

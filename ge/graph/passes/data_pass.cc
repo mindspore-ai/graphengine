@@ -16,11 +16,8 @@
 
 #include "graph/passes/data_pass.h"
 
-#include <string>
-
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/graph_utils.h"
-#include "register/op_registry.h"
 
 namespace ge {
 namespace {

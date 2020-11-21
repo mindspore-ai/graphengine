@@ -1710,7 +1710,7 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
     std::string error = "The size" + FmtToStr(mem_type_list.size()) +
         " of mem type list is not equal to the size of in data anchor" +
         FmtToStr(node->GetAllInDataAnchorsSize()) + ", opname is" +
-        FmtToStr(node->GetName()) + ", optype is "  + FmtToStr(node.GetType());
+        FmtToStr(node->GetName()) + ", optype is "  + FmtToStr(node->GetType());
     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }

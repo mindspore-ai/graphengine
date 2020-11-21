@@ -5,7 +5,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := atc
 
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dgoogle=ascend_private
 
 LOCAL_SRC_FILES := \

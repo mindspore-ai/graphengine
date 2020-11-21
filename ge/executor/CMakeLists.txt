@@ -81,6 +81,7 @@ add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_HDRS})
 target_compile_options(ge_executor PRIVATE
     -Werror
     -O2
+    -Wno-deprecated-declarations
 )
 
 target_compile_definitions(ge_executor PRIVATE

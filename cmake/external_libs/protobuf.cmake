@@ -1,7 +1,14 @@
-if (NOT TARGET protobuf::protobuf)
-set(protobuf_USE_STATIC_LIBS ON)
-set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 -O2")
-set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
+if (NOT TARGET ge_protobuf::ascend_protobuf)
+if (AS_MS_COMP)
+    set(protobuf_USE_STATIC_LIBS OFF)
+    set(protobuf_CMAKE_OPTION -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_SHARED_LIBS=ON -DLIB_PREFIX=ascend_
+        -DCMAKE_C_FLAGS=\"-Dgoogle=ascend_private\" -DCMAKE_CXX_FLAGS=\"-Dgoogle=ascend_private\")
+else ()
+    set(protobuf_USE_STATIC_LIBS ON)
+    set(protobuf_CMAKE_OPTION -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF -DLIB_PREFIX=ascend_)
+endif ()
+set(ge_protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 -O2 -D_GLIBCXX_USE_CXX11_ABI=0")
+set(ge_protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 set(_ge_tmp_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 string(REPLACE " -Wall" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 string(REPLACE " -Werror" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -14,20 +21,20 @@ else()
     set(MD5 "3d9e32700639618a4d2d342c99d4507a")
 endif ()
 
-graphengine_add_pkg(protobuf
+graphengine_add_pkg(ge_protobuf
         VER 3.8.0
-        LIBS protobuf
+        LIBS ascend_protobuf
         EXE protoc
         URL ${REQ_URL}
         MD5 ${MD5}
         CMAKE_PATH ../cmake/
-        CMAKE_OPTION -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_BUILD_SHARED_LIBS=OFF)
+        CMAKE_OPTION ${protobuf_CMAKE_OPTION})
 set(CMAKE_CXX_FLAGS ${_ge_tmp_CMAKE_CXX_FLAGS})
 endif()
-add_library(graphengine::protobuf ALIAS protobuf::protobuf)
-set(PROTOBUF_LIBRARY protobuf::protobuf)
-include_directories(${protobuf_INC})
-include_directories(${protobuf_DIRPATH}/src)
+add_library(graphengine::protobuf ALIAS ge_protobuf::ascend_protobuf)
+set(PROTOBUF_LIBRARY ge_protobuf::ascend_protobuf)
+include_directories(${ge_protobuf_INC})
+include_directories(${ge_protobuf_DIRPATH}/src)
 
 function(ge_protobuf_generate comp c_var h_var)
     if(NOT ARGN)
@@ -51,8 +58,8 @@ function(ge_protobuf_generate comp c_var h_var)
                 "${CMAKE_BINARY_DIR}/proto/${comp}/proto/${file_name}.pb.h"
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/proto/${comp}/proto"
-                COMMAND protobuf::protoc -I${file_dir} --cpp_out=${CMAKE_BINARY_DIR}/proto/${comp}/proto ${abs_file}
-                DEPENDS protobuf::protoc ${abs_file}
+                COMMAND ge_protobuf::protoc -I${file_dir} --cpp_out=${CMAKE_BINARY_DIR}/proto/${comp}/proto ${abs_file}
+                DEPENDS ge_protobuf::protoc ${abs_file}
                 COMMENT "Running C++ protocol buffer compiler on ${file}" VERBATIM )
     endforeach()
 

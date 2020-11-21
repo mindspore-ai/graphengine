@@ -19,7 +19,9 @@
 
 #include <memory>
 #include <set>
+#include <map>
 #include <vector>
+#include <mutex>
 #include "ge_runtime/task/task.h"
 
 namespace ge {
@@ -33,18 +35,34 @@ class HcclTask : public TaskRepeater<HcclTaskInfo> {
   bool Distribute() override;
 
  private:
+  class StreamGuard;
+  bool SetSecondaryStream();
+  bool CreateStream(int64_t stream_num, int64_t master_stream_id);
+  bool CreateStream(rtModel_t model, rtStream_t *stream) const;
+  void SaveHcclSecondaryStream(int64_t master_stream_id, const std::shared_ptr<StreamGuard> &stream);
+
   std::shared_ptr<HcclTaskInfo> task_info_;
   void *stream_;
+  void *workspace_mem_;
   rtModel_t rt_model_handle_;
   int32_t priority_;
-  std::vector<void *> slave_stream_list_;
-  std::function<bool(void *, void *)> hcom_bind_model_;
-  std::function<bool(void *)> hcom_unbind_model_;
-  std::function<bool(std::shared_ptr<HcclTaskInfo>, void *)> hcom_distribute_task_;
-  static std::set<rtModel_t> rt_model_handle_list_;
+  std::vector<std::shared_ptr<StreamGuard>> secondary_stream_list_;
+
+  // map<key: model pointer, value: map<key: primary stream id, value: vector<secondary stream pointer>>>
+  static std::map<rtModel_t, std::map<uint32_t, std::vector<std::weak_ptr<StreamGuard>>>> model_stream_mapping_;
+  static std::mutex model_stream_mapping_mutex_;
 };
 
-std::set<rtModel_t> HcclTask::rt_model_handle_list_{};
+class HcclTask::StreamGuard {
+ public:
+  StreamGuard(rtModel_t model, rtStream_t stream) : model_(model), stream_(stream) {}
+  ~StreamGuard();
+  rtStream_t GetStream() const { return stream_; }
+
+ private:
+  rtModel_t model_;
+  rtStream_t stream_;
+};
 }  // namespace model_runner
 }  // namespace ge
 

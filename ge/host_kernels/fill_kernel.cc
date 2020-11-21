@@ -106,7 +106,7 @@ Status FillKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge
 #undef CASE
     default:
       GELOGW("invalid data type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
-      NOT_CHANGED;
+      return NOT_CHANGED;
   }
   if (ret != SUCCESS) {
     GELOGE(ret, "GenData failed, data_type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());

@@ -33,6 +33,8 @@ const std::vector<std::string> kHcclBuilderLibs = {
     "libhvd_opskernel_builder.so",
     "libhcom_gradtune_opskernel_builder.so"
 };
+
+const std::string kAicoreUtilsLib = "libaicore_utils_runtime.so";
 }  // namespace
 OpsKernelBuilderManager::~OpsKernelBuilderManager() {
   // it's OK to call Finalize multiply times
@@ -45,13 +47,11 @@ OpsKernelBuilderManager &OpsKernelBuilderManager::Instance() {
 }
 
 Status OpsKernelBuilderManager::Initialize(const map<std::string, std::string> &options, bool is_train) {
-  if (is_train) {
-    std::string lib_paths;
-    GE_CHK_STATUS_RET_NOLOG(GetLibPaths(options, lib_paths));
-    plugin_manager_.reset(new (std::nothrow)PluginManager());
-    GE_CHECK_NOTNULL(plugin_manager_);
-    GE_CHK_STATUS_RET(plugin_manager_->LoadSo(lib_paths), "Failed to load libs");
-  }
+  std::string lib_paths;
+  GE_CHK_STATUS_RET_NOLOG(GetLibPaths(options, lib_paths, is_train));
+  plugin_manager_.reset(new (std::nothrow)PluginManager());
+  GE_CHECK_NOTNULL(plugin_manager_);
+  GE_CHK_STATUS_RET(plugin_manager_->LoadSo(lib_paths), "Failed to load libs");
 
   auto &kernel_builders = OpsKernelBuilderRegistry::GetInstance().GetAll();
   GELOGI("Number of OpBuild = %zu", kernel_builders.size());
@@ -100,7 +100,8 @@ OpsKernelBuilderPtr OpsKernelBuilderManager::GetOpsKernelBuilder(const string &n
   return nullptr;
 }
 
-Status OpsKernelBuilderManager::GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths) {
+Status OpsKernelBuilderManager::GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths,
+                                            bool is_train) {
   GELOGD("Start to execute GetLibPaths");
   std::string path_base = PluginManager::GetPath();
   std::string so_path = "plugin/opskernel/";
@@ -108,6 +109,9 @@ Status OpsKernelBuilderManager::GetLibPaths(const std::map<std::string, std::str
   std::string all_lib_paths;
   for (const auto &lib_name : kBasicBuilderLibs) {
     all_lib_paths += (path + lib_name + ":");
+  }
+  if (!is_train) {
+    all_lib_paths += (path_base + kAicoreUtilsLib + ":");
   }
 
   auto iter = options.find(OPTION_EXEC_HCCL_FLAG);

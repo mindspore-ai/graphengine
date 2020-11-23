@@ -53,9 +53,9 @@ Status MappingSubgraphOutput(const ComputeGraphPtr &graph, const std::function<i
 
   const auto &op_desc = output_node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  for (auto index = 0; index < op_desc->GetInputsSize(); ++index) {
+  for (size_t index = 0; index < op_desc->GetInputsSize(); ++index) {
     int parent_index = output(index);
-    GELOGI("Generate subgraph output map for subgraph %s, index %d, parent index %d",
+    GELOGI("Generate subgraph output map for subgraph %s, index %zu, parent index %d",
            graph->GetName().c_str(), index, parent_index);
     if (parent_index == -1) {
       continue;

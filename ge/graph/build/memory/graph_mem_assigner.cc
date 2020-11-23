@@ -1145,7 +1145,7 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
     if ((peer_op_desc->GetType() == CONSTANTOP) || (peer_op_desc->GetType() == AIPP_DATA_TYPE) ||
         (peer_op_desc->GetType() == VARIABLE)) {
       std::string error = "Op" + FmtToStr(node->GetName()) + "'s peer out node" +
-          FmtToStr(peer_op_desc->GetName()) + "is invalid, only support Constant/AippData/Variable";
+          FmtToStr(peer_op_desc->GetName()) + " is invalid, only support Constant/AippData/Variable";
       GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return false;
     }
@@ -1181,7 +1181,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
   for (auto &output_index : atomic_output_index) {
     if (output_index >= output_list_size) {
       std::string error = "Op" + FmtToStr(node->GetName()) + "'s output index" + FmtToStr(output_index) +
-          " is more than the size" + FmtToStr(output_list_size) + "of output_list.";
+          " is more than the size" + FmtToStr(output_list_size) + " of output_list.";
       GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
       return ge::PARAM_INVALID;
     }
@@ -1709,7 +1709,7 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
   if (mem_type_list.size() != node->GetAllInDataAnchorsSize()) {
     std::string error = "The size" + FmtToStr(mem_type_list.size()) +
         " of mem type list is not equal to the size of in data anchor" +
-        FmtToStr(node->GetAllInDataAnchorsSize()) + ", opname is" +
+        FmtToStr(node->GetAllInDataAnchorsSize()) + ", opname is " +
         FmtToStr(node->GetName()) + ", optype is "  + FmtToStr(node->GetType());
     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;

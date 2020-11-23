@@ -61,9 +61,9 @@ Status RandomUniformKernel::Compute(TaskContext& context) {
       }
       break;
     default:
-      GELOGW("Supported DataType is DT_FLOAT16 / DT_FLOAT / DT_DOUBLE, but data_type=%s",
+      GELOGE("Supported DataType is DT_FLOAT16 / DT_FLOAT / DT_DOUBLE, but data_type=%s",
              TypeUtils::DataTypeToSerialString(data_type).c_str());
-      return NOT_CHANGED;
+      return UNSUPPORTED;
   }
 
   GELOGI("[%s] compute success.", node_->GetName().c_str());

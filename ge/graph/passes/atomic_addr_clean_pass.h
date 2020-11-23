@@ -72,7 +72,7 @@ class AtomicAddrCleanPass : public GraphPass {
    * @param node
    * @return
    */
-  bool IsAtomicOp(const NodePtr &node);
+  bool IsAtomicOp(const NodePtr &node, bool is_unknown_graph);
 
   /**
    * Handle atomic node in unknown graph

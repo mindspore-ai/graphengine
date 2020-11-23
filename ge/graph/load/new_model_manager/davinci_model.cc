@@ -95,6 +95,8 @@ const char *const kGetDynamicDimsName = "ascend_mbatch_get_dynamic_dims_node";
 const int32_t kInvalidStream = -1;
 const uint32_t kEndOfSequence = 0x0704000a;
 const uint32_t kEndOfSequenceNew = 507005;
+const int32_t kModelAbortNormal = 0x0704000e;
+const int32_t kModelAbortNormalNew = 507024;
 
 inline bool IsDataOp(const std::string &node_type) {
   return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
@@ -2804,7 +2806,7 @@ void *DavinciModel::Run(DavinciModel *model) {
 
         GELOGI("rtStreamSynchronize start.");
         rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-        if (rt_ret == RT_ERROR_MODEL_ABORT_NORMAL) {
+        if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
           GELOGI("The model with multiple datasets aborts normally.");
         } else {
           GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
@@ -2832,7 +2834,7 @@ void *DavinciModel::Run(DavinciModel *model) {
       if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
         seq_end_flag = true;
       }
-      if (rt_ret == RT_ERROR_MODEL_ABORT_NORMAL) {
+      if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
         GELOGI("The model with multiple datasets aborts normally.");
       } else {
         GE_IF_BOOL_EXEC(

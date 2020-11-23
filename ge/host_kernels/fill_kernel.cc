@@ -105,8 +105,8 @@ Status FillKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge
     CASE(DT_DOUBLE, double)
 #undef CASE
     default:
-      GELOGE(PARAM_INVALID, "invalid data type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
-      break;
+      GELOGW("invalid data type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
+      return NOT_CHANGED;
   }
   if (ret != SUCCESS) {
     GELOGE(ret, "GenData failed, data_type: %s", TypeUtils::DataTypeToSerialString(data_type).c_str());

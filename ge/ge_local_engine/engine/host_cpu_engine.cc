@@ -204,9 +204,9 @@ Status HostCpuEngine::PrepareOutputs(const ge::ConstOpDescPtr &op_desc,
       CREATE_OUTPUT_CASE(DT_FLOAT, float)
       CREATE_OUTPUT_CASE(DT_DOUBLE, double)
       default:
-        GELOGE(PARAM_INVALID, "data type %s not support.",
+        GELOGW("data type %s not support.",
                TypeUtils::DataTypeToSerialString(out_desc.GetDataType()).c_str());
-        return PARAM_INVALID;
+        return NOT_CHANGED;
     }
   }
 

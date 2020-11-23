@@ -66,6 +66,7 @@ void GetGeTensorDescFromDomiInfo(std::vector<ge::TensorDesc> &ge_descs,
     ge::Shape ge_shape(shape_dims);
     ge_desc.SetShape(ge_shape);
     ge_desc.SetSize(desc_item.size);
+    ge_desc.SetShapeRange(desc_item.shape_info.shape_ranges);
     ge_descs.emplace_back(ge_desc);
     ++idx;
   }

@@ -30,8 +30,8 @@ namespace ge {
     size_t arg_size = kernel_def_.args_size();
     auto rt_ret = rtMalloc(io_addr, arg_size, RT_MEMORY_HBM);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtMalloc failed, size = %zu, ret = %d", arg_size, rt_ret);
-      return RT_FAILED;
+      GELOGE(rt_ret, "rtMalloc failed, size = %zu, ret = %d", arg_size, rt_ret);
+      return rt_ret;
     }
 
     const void *src_addr = reinterpret_cast<const void *>(addresses.data());
@@ -39,8 +39,8 @@ namespace ge {
     rt_ret = rtMemcpy(*io_addr, arg_size, src_addr, src_len, RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       (void)rtFree(*io_addr);
-      GELOGE(RT_FAILED, "rtMemcpy addresses failed, ret = %d", rt_ret);
-      return RT_FAILED;
+      GELOGE(rt_ret, "rtMemcpy addresses failed, ret = %d", rt_ret);
+      return rt_ret;
     }
 
     return SUCCESS;
@@ -50,8 +50,8 @@ namespace ge {
     auto sec_ret = memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL),
                             kernel_def_.args().data(), kernel_def_.args().size());
     if (sec_ret != EOK) {
-      GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
-      return FAILED;
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "memcpy failed, ret: %d", sec_ret);
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
 
     auto io_addr_val = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(io_addr));
@@ -65,16 +65,16 @@ namespace ge {
     void *fwk_op_args = nullptr;
     auto rt_ret = rtMalloc(&fwk_op_args, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "malloc arg memory failed, ret = %d", rt_ret);
-      return RT_FAILED;
+      GELOGE(rt_ret, "malloc arg memory failed, ret = %d", rt_ret);
+      return rt_ret;
     }
 
     rt_ret = rtMemcpy(fwk_op_args, sizeof(STR_FWK_OP_KERNEL), &fwk_op_kernel,
                       sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       (void)rtFree(fwk_op_args);
-      GELOGE(RT_FAILED, "copy args failed, ret = %d", rt_ret);
-      return RT_FAILED;
+      GELOGE(rt_ret, "copy args failed, ret = %d", rt_ret);
+      return rt_ret;
     }
     *args = fwk_op_args;
     return SUCCESS;
@@ -83,9 +83,9 @@ namespace ge {
   Status AiCpuTaskBuilder::InitWorkspaceAndIO(void **io_addr, void **kernel_workspace,
                                               const SingleOpModelParam &param, bool dynamic_flag) {
     if (kernel_def_.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
-      GELOGE(PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
              sizeof(STR_FWK_OP_KERNEL), kernel_def_.args_size());
-      return PARAM_INVALID;
+      return ACL_ERROR_GE_PARAM_INVALID;
     }
     auto addresses = BuildTaskUtils::GetAddresses(op_desc_, param);
     auto ws_addr_vec = addresses.at(BuildTaskUtils::kAddressIndexWorkspace);
@@ -94,8 +94,8 @@ namespace ge {
       GE_CHK_RT_RET(rtMalloc(kernel_workspace, kernel_def_.task_info_size(), RT_MEMORY_HBM));
     } else {
       if (ws_addr_vec.empty()) {
-        GELOGE(PARAM_INVALID, "workspace Data Address is empty.");
-        return PARAM_INVALID;
+        GELOGE(ACL_ERROR_GE_PARAM_INVALID, "workspace Data Address is empty.");
+        return ACL_ERROR_GE_PARAM_INVALID;
       }
       *kernel_workspace = ws_addr_vec[0];
     }
@@ -143,8 +143,8 @@ namespace ge {
     GELOGI("Begin to CreateAicpuSession, session id: %lu", session_id);
     GE_CHECK_NOTNULL(ModelManager::GetInstance());
     GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
-      GELOGE(FAILED, "CreateAicpuSession error. session id: %lu", session_id);
-      return FAILED;)
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "CreateAicpuSession error. session id: %lu", session_id);
+      return ACL_ERROR_GE_INTERNAL_ERROR;)
     ret = SetKernelArgs(&task.args_, fwk_op_kernel);
     if (ret != SUCCESS) {
       return ret;

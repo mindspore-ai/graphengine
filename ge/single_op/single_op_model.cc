@@ -94,7 +94,7 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
     GELOGI("total memory: %lu, zero_copy_mem: %lu", model_params_.memory_size, model_params_.zero_copy_mem_size);
     model_params_.mem_base = res.MallocMemory(purpose, model_params_.memory_size - model_params_.zero_copy_mem_size);
     if (model_params_.mem_base == nullptr) {
-      return RT_FAILED;
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
   }
 
@@ -103,7 +103,7 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
     model_params_.weight_base = res.MallocWeight(purpose, model_params_.weight_size);
     if (model_params_.weight_base == nullptr) {
       // no need to free memory, for that was handled by StreamResources
-      return RT_FAILED;
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
 
     auto weight_buffer = model_helper_.GetGeModel()->GetWeight();
@@ -121,8 +121,9 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
 Status SingleOpModel::ParseInputNode(const OpDescPtr &op_desc) {
   vector<int64_t> offsets = op_desc->GetOutputOffset();
   if (offsets.size() != kDataOutputNum) {
-    GELOGE(PARAM_INVALID, "Data op should have only one output, but got %zu", op_desc->GetOutputOffset().size());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "Data op should have only one output, but got %zu", op_desc->GetOutputOffset().size());
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   auto output_desc = op_desc->GetOutputDescPtr(0);
@@ -158,8 +159,8 @@ Status SingleOpModel::LoadAllNodes() {
   Graph graph = ge_model->GetGraph();
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   if (compute_graph == nullptr) {
-    GELOGE(PARAM_INVALID, "[%s] compute_graph is null", model_name_.c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[%s] compute_graph is null", model_name_.c_str());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   auto nodes = compute_graph->GetDirectNode();
@@ -257,8 +258,8 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         }
         single_op.tasks_.emplace_back(task);
       } else {
-        GELOGE(UNSUPPORTED, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
-        return UNSUPPORTED;
+        GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
+        return ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID;
       }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
       GELOGD("Building AICPU_TF task");
@@ -282,7 +283,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
 
 void SingleOpModel::ParseArgTable(TbeOpTask *task, SingleOp &op) {
   if (task == nullptr) {
-    GELOGE(PARAM_INVALID, "tbe op task is nullptr");
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "tbe op task is nullptr");
     return;
   }
   // args: addr1, addr2, addr3 ...
@@ -305,14 +306,14 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTa
   const auto &context = kernel_def.context();
   auto iter = op_list_.find(context.op_index());
   if (iter == op_list_.end()) {
-    GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   auto *tbe_task = new (std::nothrow) TbeOpTask();
   if (tbe_task == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create tbe op task failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create tbe op task failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   auto builder = TbeTaskBuilder(model_name_, iter->second, kernel_def);
@@ -331,14 +332,14 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiC
                                         bool dynamic_flag, bool& depend_compute_flag, uint64_t session_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
-    GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   std::unique_ptr<AiCpuTask> aicpu_task(new (std::nothrow) AiCpuTask());
   if (aicpu_task == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create aicpu_TF op task failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create aicpu_TF op task failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
   auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, session_id);
@@ -356,13 +357,13 @@ Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTa
   const auto &context = kernel_def.context();
   auto iter = op_list_.find(context.op_index());
   if (iter == op_list_.end()) {
-    GELOGE(INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   std::unique_ptr<AiCpuCCTask> aicpucc_task(new (std::nothrow) AiCpuCCTask());
   if (aicpucc_task == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create aicpu_CC op task failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create aicpu_CC op task failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   auto builder = AiCpuCCTaskBuilder(iter->second->GetOpDesc(), kernel_def);
@@ -398,8 +399,9 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
     GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task));
     single_op.op_task_.reset(task);
   } else {
-    GELOGE(UNSUPPORTED, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
-    return UNSUPPORTED;
+    GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
+           "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
+    return ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID;
   }
   return SUCCESS;
 }
@@ -422,8 +424,8 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
       GE_CHK_STATUS_RET_NOLOG(BuildModelTaskKernel(task_def, single_op));
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
       if (single_op.op_task_ != nullptr) {
-        GELOGE(UNSUPPORTED, "Do not support dynamic op with multiple tasks.");
-        return UNSUPPORTED;
+        GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID, "Do not support dynamic op with multiple tasks.");
+        return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;
       }
       GELOGD("Building AICPU_TF task");
       AiCpuTask *aicpu_task = nullptr;
@@ -434,8 +436,8 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
                                                 depend_compute_flag, dynamic_singleop_sessionid));
       if (depend_compute_flag) {
         if (i >= tasks.size() - 1) {
-          GELOGE(FAILED, "The copy task of the fourth operator was not found.");
-          return FAILED;
+          GELOGE(ACL_ERROR_GE_PARAM_INVALID, "The copy task of the fourth operator was not found.");
+          return ACL_ERROR_GE_PARAM_INVALID;
         }
         ++i;
         const TaskDef &copy_task_def = tasks[i];

@@ -212,9 +212,9 @@ Status GraphLoader::CommandHandle(const Command &command) {
       return ret;
     }
   } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "Command handle failed, bad memory allocation occur !");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Command handle failed, bad memory allocation occur !");
 
-    return MEMALLOC_FAILED;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   } catch (...) {
     GELOGE(FAILED, "Command handle failed, some exceptions occur !");
 

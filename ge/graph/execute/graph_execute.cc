@@ -91,7 +91,7 @@ Status GraphExecutor::SetDynamicSize(uint32_t model_id, const std::vector<uint64
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->SetDynamicSize(model_id, batch_num, dynamic_type);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "SetDynamicSize failed");
+    GELOGE(ret, "SetDynamicSize failed");
     return ret;
   }
   return SUCCESS;

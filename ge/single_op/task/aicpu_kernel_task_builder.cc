@@ -25,20 +25,20 @@ AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::Ker
 Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
   size_t aicpu_arg_size = kernel_def_.args_size();
   if (aicpu_arg_size <= 0) {
-    GELOGE(RT_FAILED, "aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
-    return RT_FAILED;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   std::unique_ptr<uint8_t[]> aicpu_args;
   aicpu_args.reset(new(std::nothrow) uint8_t[aicpu_arg_size]());
   if (aicpu_args == nullptr) {
-    GELOGE(RT_FAILED, "malloc failed, size = %zu", aicpu_arg_size);
-    return RT_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "malloc failed, size = %zu", aicpu_arg_size);
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   auto err = memcpy_s(aicpu_args.get(), aicpu_arg_size, kernel_def_.args().data(), aicpu_arg_size);
   if (err != EOK) {
-    GELOGE(RT_FAILED, "memcpy_s args failed, size = %zu, err = %d", aicpu_arg_size, err);
-    return RT_FAILED;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "memcpy_s args failed, size = %zu, err = %d", aicpu_arg_size, err);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   task.SetIoAddr(aicpu_args.get() + sizeof(aicpu::AicpuParamHead));

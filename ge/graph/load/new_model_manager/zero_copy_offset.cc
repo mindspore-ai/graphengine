@@ -39,20 +39,18 @@ Status ZeroCopyOffset::InitInputDataInfo(int64_t output_size, void *virtual_addr
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset_);
   GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,
                    "basic_offset_size should be equal to relative_offset_size");
-  GELOGI("[ZCPY] zero_copy_basic_offset size is %zu", zero_copy_basic_offset_.size());
+  GELOGD("[ZCPY] zero_copy_basic_offset size is %zu", zero_copy_basic_offset_.size());
 
   int64_t virtual_addr_offset = op_desc->GetOutputOffset().at(kDataIndex);
-  GELOGI("virtual_addr_offset is %ld.", virtual_addr_offset);
   IsL2Fusion(zero_copy_basic_offset_, virtual_addr_offset, fusion_flag);
 
   uint32_t out_count = 0;
   data_size_ = output_size;
   if (!fusion_flag) {
-    GELOGI("[ZCPY] %s not set l2_fusion.", op_desc->GetName().c_str());
     out_count++;
     data_info_.emplace_back(output_size, virtual_addr);
     relative_offset_.emplace_back(0);
-    GELOGI("[ZCPY] %s size is %ld, virtual_addr is %p.", op_desc->GetName().c_str(), output_size, virtual_addr);
+    GELOGD("[ZCPY] %s size is %ld, virtual_addr is %p.", op_desc->GetName().c_str(), output_size, virtual_addr);
   } else {
     GELOGI("[ZCPY] set l2_fusion for %s.", op_desc->GetName().c_str());
     for (size_t index = 0; index < zero_copy_basic_offset_.size(); ++index) {
@@ -73,7 +71,6 @@ Status ZeroCopyOffset::InitInputDataInfo(int64_t output_size, void *virtual_addr
 Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list,
                                           const vector<void *> &virtual_addr_list, const OpDescPtr &op_desc,
                                           const size_t &idx, bool &fusion_flag) {
-  GELOGI("[ZCPY] Start to InitOutputDataInfo of %s.", op_desc->GetName().c_str());
   int64_t size = input_size_list[idx];
   auto tensor_desc = op_desc->GetInputDescPtr(idx);
   GE_CHECK_NOTNULL(tensor_desc);
@@ -82,7 +79,7 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
     return FAILED;
   }
 
-  GELOGI("Tensor data size: GetSize=%ld, GetTensorSizeInBytes=%ld", input_size_list[idx], size);
+  GELOGD("Tensor data size: GetSize=%ld, GetTensorSizeInBytes=%ld", input_size_list[idx], size);
 
   basic_addr_ = virtual_addr_list[idx];
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset_);
@@ -90,13 +87,11 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
   GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,
                    "basic_offset_size should be equal to relative_offset_size");
   int64_t virtual_addr_offset = op_desc->GetInputOffset().at(idx);
-  GELOGI("virtual_addr_offset is %ld.", virtual_addr_offset);
   IsL2Fusion(zero_copy_basic_offset_, virtual_addr_offset, fusion_flag);
 
   uint32_t in_count = 0;
   data_size_ = size;
   if (!fusion_flag) {
-    GELOGI("[ZCPY] %s not set l2-fusion.", op_desc->GetName().c_str());
     in_count++;
     data_info_.emplace_back(size, virtual_addr_list[idx]);
     // op_desc not set l2fusion when fusion_flag is false
@@ -132,10 +127,8 @@ void ZeroCopyOffset::IsL2Fusion(const vector<int64_t> &fusion_basic_addrs, const
 
 void ZeroCopyOffset::SetInputOutsideAddrs(const vector<int64_t> &output_offset_list, void *addr, const size_t &index,
                                           bool fusion_flag, std::set<const void *> &real_virtual_addrs) {
-  GELOGI("[ZCPY] Start to SetInputOutsideAddrs for virtual_addr %p.", addr);
   uint32_t out_count = 0;
   if (!fusion_flag) {
-    GELOGI("[ZCPY] not set l2-fusion for virtual_adr %p.", addr);
     out_count++;
     std::map<const void *, std::vector<void *>> addr_mapping;
     addr_mapping[addr] = {};
@@ -165,7 +158,6 @@ void ZeroCopyOffset::SetOutputOutsideAddrs(const int64_t &input_offset, const bo
   GELOGI("[ZCPY] Start to SetOutputOutsideAddrs for virtual_addr %p.", addr);
   uint32_t out_count = 0;
   if (!fusion_flag) {
-    GELOGI("[ZCPY] not set l2-fusion for virtual_addr %p.", addr);
     out_count++;
     std::map<const void *, std::vector<void *>> addr_mapping;
     addr_mapping[addr] = {};
@@ -199,7 +191,7 @@ bool ZeroCopyOffset::SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *ou
       GE_CHK_STATUS(zero_copy_task.SetTaskArgsOffset(addr_val, offset), "Input args invalid.");
       void *args_val = static_cast<uint8_t *>(args) + offset;
       args_addrs->second.push_back(args_val);
-      GELOGI("[ZCPY] set copy input: virtual_addr: 0x%lx, task_addr: %p, args: %p, offset: %zu.", addr_val, args_val,
+      GELOGD("[ZCPY] set copy input: virtual_addr: 0x%lx, task_addr: %p, args: %p, offset: %zu.", addr_val, args_val,
              args, offset);
       set_batch_label_flag = true;
     }

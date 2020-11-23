@@ -49,7 +49,7 @@ Status ZeroCopyTask::SetTaskArgsOffset(uintptr_t addr, size_t offset) {
     it->second.insert(offset);
   }
 
-  GELOGI("[ZCPY] %s set task, virtual_addr: 0x%lx, args_addr: %p, size: %zu, offset: %zu", name_.c_str(), addr,
+  GELOGD("[ZCPY] %s set task, virtual_addr: 0x%lx, args_addr: %p, size: %zu, offset: %zu", name_.c_str(), addr,
          args_addr_, args_size_, offset);
   return SUCCESS;
 }
@@ -167,7 +167,7 @@ Status ZeroCopyTask::DistributeParam(bool async_mode, rtStream_t stream) {
     return RT_ERROR_TO_GE_STATUS(rt_err);
   }
 
-  GELOGI("[ZCPY] %s refresh task args success, args_addr: %p, size: %zu, args_info_: %p, length: %zu", name_.c_str(),
+  GELOGD("[ZCPY] %s refresh task args success, args_addr: %p, size: %zu, args_info_: %p, length: %zu", name_.c_str(),
          args_addr_, args_size_, args_info_.data(), args_info_.size());
   return SUCCESS;
 }

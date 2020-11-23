@@ -337,9 +337,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       continue;
     }
 
-    GE_IF_BOOL_EXEC(non_const_index >= v_input_offset.size(),
-                    GELOGW("offsets=%zu, inputs=%zu, index=%zu.", v_input_offset.size(), inputs_size, non_const_index);
-                    break);
+    GE_IF_BOOL_EXEC(non_const_index >= v_input_offset.size(), break);
 
     int64_t input_offset = v_input_offset[non_const_index];
     non_const_index++;

@@ -102,7 +102,6 @@ void GraphBuilder::SetOptions(const ge::GraphManagerOptions &options) {
 }
 
 Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
-  GELOGI("Begin to calculate op running param.");
   GE_CHECK_NOTNULL(graph);
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
@@ -140,7 +139,6 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
 
   auto parent_node = graph->GetParentNode();
   if (parent_node == nullptr) {
-    GELOGI("Graph[%s] do not have parent node, no need update parent node output size.", graph->GetName().c_str());
     return SUCCESS;
   }
 
@@ -189,7 +187,6 @@ Status GraphBuilder::UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph
 
 Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                            GeRootModelPtr &ge_root_model_ptr, uint64_t session_id) {
-  GELOGI("Start to build model.");
   if (comp_graph == nullptr) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Graph build comp_graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
@@ -267,7 +264,7 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::v
   }
   GE_CHK_STATUS_RET(builder.SaveDataToModel(*model_ptr, *ge_model_ptr),
                     "Graph[%s] builder SaveDataToModel() return fail.", comp_graph->GetName().c_str());
-  GELOGI("Success to build graph[%s] model.", comp_graph->GetName().c_str());
+  GELOGD("Success to build graph[%s] model.", comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(BuildSubgraph, "GraphBuilder::Build");
   return SUCCESS;
 }
@@ -306,7 +303,7 @@ Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeMo
   }
   GE_CHK_STATUS_RET(builder.SaveDataToModel(*model_ptr, *ge_model_ptr),
                     "Graph[%s] builder SaveDataToModel() return fail.", comp_graph->GetName().c_str());
-  GELOGI("Success to build graph[%s] model.", comp_graph->GetName().c_str());
+  GELOGD("Success to build graph[%s] model.", comp_graph->GetName().c_str());
   return SUCCESS;
 }
 
@@ -542,7 +539,6 @@ Status GraphBuilder::CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc)
 }
 
 Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list) {
-  GELOGI("[SecondPartition] second partition.");
   GE_TIMESTAMP_START(GraphPartition2);
   auto ret = graph_partitioner_.Partition(comp_graph, GraphPartitioner::kSecondPartitioning);
   if (ret != SUCCESS) {

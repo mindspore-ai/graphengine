@@ -50,7 +50,7 @@ Status EnginePlacer::Check() const {
 Status EnginePlacer::Run() {
   std::lock_guard<std::mutex> lock(check_support_cost_mutex);
 
-  GELOGI("Engine placer starts.");
+  GELOGD("Engine placer starts.");
   if (Check() != SUCCESS) {
     return FAILED;
   }
@@ -101,7 +101,7 @@ Status EnginePlacer::Run() {
   for (auto &it : ge::GELib::GetInstance()->DNNEngineManagerObj().GetCheckSupportCost()) {
     GEEVENT("The time cost of %s::CheckSupported is [%lu] micro second.", it.first.c_str(), it.second);
   }
-  GELOGI("Engine placer ends.");
+  GELOGD("Engine placer ends.");
   return is_check_support_success ? SUCCESS : FAILED;
 }
 

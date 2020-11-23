@@ -340,7 +340,7 @@ void Impl::SetRtSocVersion() {
     if (rt_ret != RT_ERROR_NONE) {
       GELOGW("Set soc version %s failed. ret:0x%X", soc_version, rt_ret);
     }
-    GELOGI("Set soc version %s success.", soc_version);
+    GELOGD("Set soc version %s success.", soc_version);
   }
 }
 
@@ -359,25 +359,25 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
       (void)AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
-      GELOGI("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
+      GELOGD("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();
-      GELOGI("Data op name: %s", data_op_name.c_str());
+      GELOGD("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;
       auto iter = omg_context_.input_dims.find(data_op_name);
       if (iter != omg_context_.input_dims.end()) {
         data_shape = ge::GeShape(iter->second);
-        GELOGI("Data op get shape from Context.");
+        GELOGD("Data op get shape from Context.");
       } else {
         data_shape = tensor.GetShape();
-        GELOGI("Data op get shape from InputDesc in ge ir graph.");
+        GELOGD("Data op get shape from InputDesc in ge ir graph.");
       }
       // If user point input format, do work for all data ops; else do according to tensor_desc
       auto data_format = omg_context_.format != domi::DOMI_TENSOR_ND ?
         ge::TypeUtils::DomiFormatToFormat(omg_context_.format) : tensor.GetFormat();
       ge::DataType data_type = tensor.GetDataType();
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
-      GELOGI("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
+      GELOGD("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
       ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);

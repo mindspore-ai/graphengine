@@ -51,7 +51,7 @@ bool KernelStore::Build() {
     kernel_head.name_len = static_cast<uint32_t>(kernel->GetName().length());
     kernel_head.bin_len = static_cast<uint32_t>(kernel->GetBinDataSize());
 
-    GELOGI("get kernel bin name %s, addr %p, size %u",
+    GELOGD("get kernel bin name %s, addr %p, size %u",
            kernel->GetName().c_str(), kernel->GetBinData(), kernel->GetBinDataSize());
     mem_ret = memcpy_s(next_buffer, remain_len, &kernel_head, sizeof(kernel_head));
     GE_CHK_BOOL_EXEC_NOLOG(mem_ret == EOK, return false);
@@ -95,7 +95,7 @@ bool KernelStore::Load(const uint8_t *data, const size_t &len) {
     std::string name(next_buffer, kernel_head->name_len);
 
     next_buffer += kernel_head->name_len;
-    GELOGI("Load kernel from om:%s,%u,%u", name.c_str(), kernel_head->name_len, kernel_head->bin_len);
+    GELOGD("Load kernel from om:%s,%u,%u", name.c_str(), kernel_head->name_len, kernel_head->bin_len);
     std::vector<char> kernel_bin(next_buffer, next_buffer + kernel_head->bin_len);
     KernelBinPtr teb_kernel_ptr = ge::MakeShared<KernelBin>(name, std::move(kernel_bin));
     if (teb_kernel_ptr != nullptr) {

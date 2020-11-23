@@ -597,10 +597,10 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
     return status;
   }
 
-  GELOGI("Subgraphs of graph %s:", graph->GetName().c_str());
+  GELOGD("Subgraphs of graph %s:", graph->GetName().c_str());
   for (const auto &subgraph : subgraphs) {
     if (subgraph != nullptr) {
-      GELOGI("subgraph: %s", subgraph->name.c_str());
+      GELOGD("subgraph: %s", subgraph->name.c_str());
     }
   }
 
@@ -664,9 +664,9 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
 
     Status status = pass->Run(graph, subgraphs, context_);
     if (status == SUCCESS) {
-      GELOGI("Stream pass %s return SUCCESS.", pass->GetName().c_str());
+      GELOGD("Stream pass %s return SUCCESS.", pass->GetName().c_str());
     } else if (status == NOT_CHANGED) {
-      GELOGI("Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
+      GELOGD("Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
     } else {
       GELOGE(status, "Stream pass %s failed.", pass->GetName().c_str());
       return status;

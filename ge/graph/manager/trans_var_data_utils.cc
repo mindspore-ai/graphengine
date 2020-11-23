@@ -501,7 +501,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
 }
 
 Status TransVarDataUtils::CopyVarData(const ComputeGraphPtr &compute_graph, uint64_t session_id, uint32_t device_id) {
-  GELOGI("CopyVarData start: session_id:%lu.", session_id);
+  GELOGD("CopyVarData start: session_id:%lu.", session_id);
   if (compute_graph == nullptr) {
     GELOGE(FAILED, "compute_graph is nullptr");
     return FAILED;

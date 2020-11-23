@@ -642,7 +642,7 @@ ge::Status VarManager::SyncBroadCastData2Var(uint32_t graph_id, const std::strin
 bool VarManager::IsVarAddr(const int64_t &offset) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
+    GELOGD("VarManager has not been init.");
     return false;
   }
   return var_resource_->IsVarAddr(offset);

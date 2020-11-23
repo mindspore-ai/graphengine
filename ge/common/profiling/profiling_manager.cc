@@ -558,7 +558,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
     GELOGE(rt_ret, "runtime get logic_device_id failed, current logic_device_id:%d", logic_device_id);
     return;
   }
-  GELOGI("current logic_device_id:%d", logic_device_id);
+  GELOGD("current logic_device_id:%d", logic_device_id);
   if (check_device) {
     auto ret = std::find(device_id_.begin(), device_id_.end(), logic_device_id);
     if (ret == device_id_.end()) {
@@ -566,11 +566,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
       return;
     }
   }
-  GELOGI("start ProfilingTaskDescInfo.");
+  GELOGD("start ProfilingTaskDescInfo.");
   ProfilingTaskDescInfo(model_id, task_desc_info, logic_device_id);
-  GELOGI("start ProfilingGraphDescInfo.");
+  GELOGD("start ProfilingGraphDescInfo.");
   ProfilingGraphDescInfo(model_id, compute_graph_desc_info, logic_device_id);
-  GELOGI("Report profiling data for GE end.");
+  GELOGD("Report profiling data for GE end.");
 #endif
 }
 
@@ -859,7 +859,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   for (int32_t i = 0; i < device_num; i++) {
     device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
-  GELOGI("Runtime config param: 0x%llx, device num: %d.", module, device_num);
+  GELOGD("Runtime config param: 0x%llx, device num: %d.", module, device_num);
 
   rtError_t rt_ret = rtProfilerStart(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
@@ -878,7 +878,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     GELOGW("Prof start: load model module is invalid.");
   }
   UpdateDeviceIdModuleMap(kProfStart, module, device_list);
-  GELOGI("Prof start profiling success.");
+  GELOGD("Prof start profiling success.");
 #endif
   return SUCCESS;
 }
@@ -901,7 +901,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   for (int32_t i = 0; i < device_num; i++) {
     device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
-  GELOGI("Prof stop: runtime config param: 0x%llx, device num: %d", module, device_num);
+  GELOGD("Prof stop: runtime config param: 0x%llx, device num: %d", module, device_num);
   rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
@@ -921,7 +921,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     GELOGW("Prof stop: load model module is invalid.");
   }
   UpdateDeviceIdModuleMap(kProfStop, module, device_list);
-  GELOGI("Prof stop profiling success.");
+  GELOGD("Prof stop profiling success.");
 #endif
   return SUCCESS;
 }
@@ -963,14 +963,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "Runtime get logic_device_id failed, current logic_device_id:%d", logic_device_id);
   }
-  GELOGI("Current logic_device_id:%d", logic_device_id);
+  GELOGD("Current logic_device_id:%d", logic_device_id);
 
   bool execute_model_prof_on = false;
   auto iter = std::find(device_id_.begin(), device_id_.end(), logic_device_id);
   if (iter != device_id_.end()) {
     execute_model_prof_on = true;
   }
-  GELOGI("Flag is_execute_profiling: %d, execute_model_prof_on: %d", is_execute_profiling_, execute_model_prof_on);
+  GELOGD("Flag is_execute_profiling: %d, execute_model_prof_on: %d", is_execute_profiling_, execute_model_prof_on);
   return is_execute_profiling_ || execute_model_prof_on;
 }
 

@@ -326,7 +326,7 @@ Status CondRemovePass::GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, 
       return FAILED;
     }
   } else {
-    GELOGI("no need cond_pass for node %s.", node->GetName().c_str());
+    GELOGD("no need cond_pass for node %s.", node->GetName().c_str());
     return NOT_CHANGED;
   }
 

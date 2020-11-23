@@ -391,7 +391,7 @@ void OpsKernelManager::GetGraphOptimizerByEngine(const std::string &engine_name,
       continue;
     }
     if (attrs.engineName == engine_name) {
-      GELOGI("GetGraphOptimizerByEngine GraphOptimzer name: %s, engineName: %s", (it.first).c_str(),
+      GELOGD("GetGraphOptimizerByEngine GraphOptimzer name: %s, engineName: %s", (it.first).c_str(),
              attrs.engineName.c_str());
       graph_optimizer.push_back(it.second);
     }

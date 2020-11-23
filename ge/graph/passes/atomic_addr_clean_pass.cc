@@ -46,7 +46,7 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     }
   }
   if (atomic_node_vec.empty()) {
-    GELOGI("There is no atomic node. Ignore atomicAddrClean pass.");
+    GELOGD("There is no atomic node. Ignore atomicAddrClean pass.");
     return SUCCESS;
   }
 

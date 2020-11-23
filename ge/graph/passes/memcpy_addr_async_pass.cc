@@ -278,7 +278,7 @@ Status MemcpyAddrAsyncPass::InsertMemcpyAddrAsyncNode(const OutDataAnchorPtr &ou
 }
 
 Status MemcpyAddrAsyncPass::InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeGraphPtr &graph, const NodePtr &node) {
-  GELOGI("Start AddMemcpyAddrAsyncNode for %s.", node->GetName().c_str());
+  GELOGD("Start AddMemcpyAddrAsyncNode for %s.", node->GetName().c_str());
   for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
     auto in_node = NodeUtils::GetInDataNodeByIndex(*node, in_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(in_node);

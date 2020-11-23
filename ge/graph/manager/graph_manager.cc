@@ -363,7 +363,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
     for (auto &subgraph : compute_graph->GetAllSubgraphs()) {
       (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
     }
-    GELOGW("Get graph session_graph_id attr failed, set session id to default value: [0]");
+    GELOGD("Get graph session_graph_id attr failed, set session id to default value: [0]");
   }
 
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
@@ -396,8 +396,6 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   stages.builder.SetOptions(options_);
 
   var_acc_ctrl_.AddGraph(graph_id, compute_graph);
-
-  GELOGI("[GraphManager] add graph success, graph_id = %u.", graph_id);
   return SUCCESS;
 }
 
@@ -435,7 +433,7 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
     for (auto &subgraph : new_compute_graph->GetAllSubgraphs()) {
       (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
     }
-    GELOGW("Get graph session_graph_id attr failed, set session id to default value: [0]");
+    GELOGD("Get graph session_graph_id attr failed, set session id to default value: [0]");
   }
 
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
@@ -468,8 +466,6 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
   stages.builder.SetOptions(options_);
 
   var_acc_ctrl_.AddGraph(graph_id, new_compute_graph);
-
-  GELOGI("[GraphManager] add graph success, graph_id = %u.", graph_id);
   return SUCCESS;
 }
 
@@ -546,7 +542,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
   const auto &root_subgraph_list = sub_graph_map[compute_graph];
   std::string op_compile_strategy;
   (void)AttrUtils::GetStr(compute_graph, ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
-  GELOGI("OptimizeSubGraphWithMultiThreads Process op_compile_strategy:%s", op_compile_strategy.c_str());
+  GELOGD("OptimizeSubGraphWithMultiThreads Process op_compile_strategy:%s", op_compile_strategy.c_str());
   for (const auto &subgraph : root_subgraph_list) {
     if (!op_compile_strategy.empty()) {
       (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
@@ -576,7 +572,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
       vector_future.emplace_back(std::move(f));
     }
   }
-  GELOGI("All sub graph num is %zu", vector_future.size());
+  GELOGD("All sub graph num is %zu", vector_future.size());
   for (size_t i = 0; i < vector_future.size(); ++i) {
     Status ret_status = vector_future[i].get();
     if (ret_status != SUCCESS) {
@@ -700,7 +696,7 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
     /// Multiply optimize subgraph:
     /// 1. run lx buffer while build_mode is normal and buffer_optimize is empty or "off_optimize";
     /// 2. run lx fusion or buffer according build_mode and build_step in fe.
-    GELOGI("Directly optimize subgraph with build mode:%s, and step:%s, buffer_optimize:%s.",
+    GELOGD("Directly optimize subgraph with build mode:%s, and step:%s, buffer_optimize:%s.",
            options_.build_mode.c_str(),
            options_.build_step.c_str(),
            buffer_optimize.c_str());
@@ -747,7 +743,7 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
   GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
 
   GE_CHK_STATUS_RET(stages.optimizer.IdentifyReference(compute_graph), "Identify reference failed.");
-  GELOGI("PreRun:PreRunOptimizeOriginalGraph success.");
+  GELOGD("PreRun:PreRunOptimizeOriginalGraph success.");
   return SUCCESS;
 }
 
@@ -762,10 +758,10 @@ Status GraphManager::PreRunOptimizeSubGraph(const GraphNodePtr &graph_node,
   if (options_.build_mode == BUILD_MODE_TUNING && options_.build_step == BUILD_STEP_AFTER_UB_MATCH) {
     std::string tuning_path;
     (void) GetContext().GetOption(TUNING_PATH, tuning_path);
-    GELOGI("Dump path:%s.", tuning_path.c_str());
+    GELOGD("Dump path:%s.", tuning_path.c_str());
     GraphUtils::DumpGEGraph(compute_graph, "", true, tuning_path);
   }
-  GELOGI("PreRun:PreRunOptimizeSubGraph success.");
+  GELOGD("PreRun:PreRunOptimizeSubGraph success.");
   return SUCCESS;
 }
 
@@ -785,12 +781,12 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   }
 
   GM_RUN_AND_DUMP_PERF("Build", Build, graph_node, compute_graph, ge_root_model, session_id);
-  GELOGI("PreRun:PreRunAfterOptimizeSubGraph success.");
+  GELOGD("PreRun:PreRunAfterOptimizeSubGraph success.");
   return SUCCESS;
 }
 
 Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint64_t session_id, uint32_t graph_id) {
-  GELOGI("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id, graph_id,
+  GELOGD("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id, graph_id,
          static_cast<int>(mode), ge::GetContext().DeviceId());
 
   rtError_t rt_ret = rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId());
@@ -1251,7 +1247,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
 
 Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                                 GeRootModelPtr &ge_root_model, uint64_t session_id, bool async) {
-  GELOGI("[BuildGraph] start to build graph, graph_id=%u.", graph_id);
+  GELOGD("[BuildGraph] start to build graph, graph_id=%u.", graph_id);
   if (inputs.empty()) {
     GELOGW("[BuildGraph] BuildGraph warning: empty GeTensor inputs");
   }
@@ -1531,7 +1527,6 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
 
   // Set save_original_model flag (ge.save_original_model)
   ParseOption(options, SAVE_ORIGINAL_MODEL, options_.save_original_model);
-  GELOGI("Set save original model flag %s", options_.save_original_model.c_str());
   // Original model file name
   ParseOption(options, ORIGINAL_MODEL_FILE, options_.original_model_file);
 
@@ -2242,7 +2237,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
 }
 
 Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
-  GELOGI("Start optimize after merge sub graph.");
+  GELOGD("Start optimize after merge sub graph.");
 
   PassManager after_merge_passes;
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage2::AfterMergePasses::LinkGenMaskNodesPass",
@@ -2492,7 +2487,7 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
 
     ComputeGraphPtr compute_graph_tmp = sub_graph_info_ptr->GetSubGraph();
     const std::string &engine_name = sub_graph_info_ptr->GetEngineName();
-    GELOGI("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
+    GELOGD("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
            compute_graph_tmp != nullptr ? compute_graph_tmp->GetName().c_str() : "", engine_name.c_str(),
            pthread_self());
     GE_DUMP(compute_graph_tmp, "OptimizeSubGraphBefore");
@@ -2504,11 +2499,11 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
       GELOGE(ret, "SubGraph optimize Failed %s", engine_name.c_str());
       return ret;
     } else {
-      GELOGI("SubGraph optimize success %s", engine_name.c_str());
+      GELOGD("SubGraph optimize success %s", engine_name.c_str());
     }
     GE_DUMP(compute_graph_tmp, "OptimizeSubGraphAfter");
     sub_graph_info_ptr->SetSubGraph(compute_graph_tmp);
-    GELOGI("ProcessSubGraphWithMultiThreads end, graph name is %s, engine_name is %s, thread id is %lu",
+    GELOGD("ProcessSubGraphWithMultiThreads end, graph name is %s, engine_name is %s, thread id is %lu",
            compute_graph_tmp != nullptr ? compute_graph_tmp->GetName().c_str() : "", engine_name.c_str(),
            pthread_self());
   } else {

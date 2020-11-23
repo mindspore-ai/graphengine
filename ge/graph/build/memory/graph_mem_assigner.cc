@@ -20,6 +20,7 @@
 #include "common/math/math_util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/build/memory/block_mem_assigner.h"
@@ -148,8 +149,10 @@ ge::Status GraphMemoryAssigner::CalculateTensorRealSizeAndOutSize(const ge::Cons
   GeShape output_shape = output_desc->GetShape();
   std::vector<int64_t> output_dims = output_shape.GetDims();
   if (dim_index >= static_cast<int64_t>(output_dims.size())) {
-    GELOGE(FAILED, "Invaild value(%ld) of attr _reuse_input_on_dim_index, which is out of data range [0, %zu).",
-           dim_index, output_dims.size());
+    std::string error = "Invaild value" + FmtToStr(dim_index) +
+        " of attr _reuse_input_on_dim_index, which is out of data range [0,"
+        + std::to_string(output_dims.size()) + ")";
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
 
@@ -170,8 +173,9 @@ ge::Status GraphMemoryAssigner::CalculateTensorRealSizeAndOutSize(const ge::Cons
   }
 
   if (output_mem_size < 0) {
-    GELOGE(FAILED, "After calculating tensor memory size, output_mem_size = %ld, out of data range [0, %ld]",
-           output_mem_size, INT64_MAX);
+    std::string error = "After calculating tensor memory size, output_mem_size" + FmtToStr(output_mem_size) +
+        " is out of data range [0," + std::to_string(INT64_MAX) + "]";
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
 
@@ -196,7 +200,8 @@ Status GraphMemoryAssigner::GetMaxBatchLabel(const map<string, vector<NodePtr>> 
       } else if (mem_reuse_model == kVirtualOutputNodeMemoryReuse) {
         input_output_desc = op_desc->GetInputDescPtr(kVirtualNodeDataIndex);
       } else {
-        GELOGE(FAILED, "Invalid parameter memory reuse model, which is: %d.", mem_reuse_model);
+        std::string error = "Invalid parameter memory reuse model, which is " + FmtToStr(mem_reuse_model);
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
       GE_CHECK_NOTNULL(input_output_desc);
@@ -208,7 +213,8 @@ Status GraphMemoryAssigner::GetMaxBatchLabel(const map<string, vector<NodePtr>> 
       } else {
         vector<int64_t> current_shape_dims = input_output_desc->GetShape().GetDims();
         if (current_shape_dims.size() != max_shape_dims.size()) {
-          GELOGE(FAILED, "The shape size of several nodes between multiple batches does not match.");
+          std::string error = "The shape of several nodes between multiple batches does not match.";
+          GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
           return FAILED;
         }
         for (size_t j = 0; j < current_shape_dims.size(); ++j) {
@@ -216,7 +222,8 @@ Status GraphMemoryAssigner::GetMaxBatchLabel(const map<string, vector<NodePtr>> 
             continue;
           }
           if (max_batch_dim_find && max_batch_dim != j) {
-            GELOGE(FAILED, "The shape of several nodes between multiple batches does not match.");
+            std::string error = "The shape of several nodes between multiple batches does not match.";
+            GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
             return FAILED;
           }
           max_batch_dim_find = true;
@@ -296,7 +303,8 @@ Status GraphMemoryAssigner::AssignZeroCopyMemory(map<int64_t, size_t> &mem_offse
   zero_mem_copy_size = mem_offset[RT_MEMORY_HBM] - mem_offset_tmp;
   auto iter = memory_offset_.find(RT_MEMORY_HBM);
   if (iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[hbm].");
+    std::string error = "Memory offset does not have memory type[HBM]";
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
   iter->second.mem_offset_ = mem_offset[RT_MEMORY_HBM];
@@ -392,7 +400,8 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
   (void) ge::AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_CONTINUOUS_INPUT_ALLOC, continuous_input_alloc);
   auto iter = memory_offset_.find(memory_type);
   if (iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[%ld].", memory_type);
+    std::string error = "Memory offset does not have memory type" + FmtToStr(memory_type);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
@@ -410,21 +419,21 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     // conflict between the two, we can not support it.
     auto peer_output_size = peer_op_desc->GetOutputsSize();
     GE_IF_BOOL_EXEC(is_peer_output_continuous && (peer_output_size != 1),
-                    GELOGE(PARAM_INVALID,
-                           "Current node %s requires continuous input, while the previous node %s requires "
-                           "continuous output. There may be conflict between the two. This node is not supported now.",
-                           node->GetOpDesc()->GetName().c_str(), peer_op_desc->GetName().c_str());
-                        return PARAM_INVALID;);
+                    std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
+                        " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
+                        " requires continuous output. There may be conflict between the two. This node is not supported now.";
+                    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+                    return PARAM_INVALID;);
 
     bool is_peer_reference = false;
     // If GetBool fail, is_peer_reference is false.
     (void) AttrUtils::GetBool(peer_op_desc, ATTR_NAME_REFERENCE, is_peer_reference);
     GE_IF_BOOL_EXEC(is_peer_reference,
-                    GELOGE(PARAM_INVALID,
-                           "Current node %s requires continuous input, while the previous node %s requires "
-                           "reference. There may be conflict between the two. This node is not supported now.",
-                           node->GetOpDesc()->GetName().c_str(), peer_op_desc->GetName().c_str());
-                        return PARAM_INVALID;);
+                    std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
+                        " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
+                        " requires continuous output. There may be conflict between the two. This node is not supported now.";
+                    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+                    return PARAM_INVALID;);
 
     vector<int64_t> output_list = peer_op_desc->GetOutputOffset();
     std::vector<int64_t> offsets_for_fusion = {};
@@ -457,6 +466,8 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
 
       output_list.at(peer_out_data_anchor->GetIdx()) = iter->second.mem_offset_;
     } else {
+      std::string error = "index" + FmtToStr(peer_out_data_anchor->GetIdx()) + " is out of range.";
+      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       GELOGE(FAILED, "index : %d is out of range.", peer_out_data_anchor->GetIdx());
       return FAILED;
     }
@@ -469,8 +480,9 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
         auto offset_for_fusion = offsets_for_fusion[peer_out_data_anchor->GetIdx()];
         iter->second.mem_offset_ += offset_for_fusion;
       } else {
-        GELOGE(FAILED, "fusion: peer node %s index : %d is out of range.", peer_op_desc->GetName().c_str(),
-               peer_out_data_anchor->GetIdx());
+        std::string error = "fusion: peer node" + FmtToStr(peer_op_desc->GetName()) +
+            " index" + FmtToStr(peer_out_data_anchor->GetIdx()) + " is out of range.";
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
     } else {
@@ -614,14 +626,16 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousInputMemory() {
     if (attr_reuse && attr_continuous) {
       if (op_desc->GetOutputsSize() != kVirtualInputNodeOutputSize) {
         // When current virtual node has several outputs, can't directly determine which input is the tensor for reuse.
-        GELOGE(FAILED, "Only one output is supported, current virtual node %s has %zu inputs.", n->GetName().c_str(),
-               op_desc->GetOutputsSize());
+        std::string error = "Only one output is supported, current virtual node" + FmtToStr(n->GetName()) +
+            " has " + FmtToStr(op_desc->GetOutputsSize()) + " outputs.";
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
       GE_CHK_STATUS_RET(GetNodeMemoryType(n, memory_type, "input"), "Get node memory type failed.");
       auto iter = memory_offset_.find(memory_type);
       if (iter == memory_offset_.end()) {
-        GELOGE(FAILED, "Memory offset don't have memory type[%ld].", memory_type);
+        std::string error = "Memory offset does not have memory type" + FmtToStr(memory_type);
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
       GELOGD("Start to reassign memory for virtual input node, memory offset = %zu, memory type = %ld.",
@@ -756,14 +770,16 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousOutputMemory() {
       auto in_data_anchor_list = n->GetAllInDataAnchors();
       if (in_data_anchor_list.size() != kVirtualOutputNodeInputSize) {
         // When current virtual node has several inputs, can't directly determine which input is the tensor for reuse.
-        GELOGE(FAILED, "Only one input is supported, current virtual node %s has %zu inputs.", n->GetName().c_str(),
-               in_data_anchor_list.size());
+        std::string error = "Only one input is supported, current virtual node" + FmtToStr(n->GetName()) +
+            " has " + FmtToStr(in_data_anchor_list.size()) + " inputs.";
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
       GE_CHK_STATUS_RET(GetNodeMemoryType(n, memory_type, "output"), "Get node memory type failed.");
       auto iter = memory_offset_.find(memory_type);
       if (iter == memory_offset_.end()) {
-        GELOGE(FAILED, "Memory offset don't have memory type[%ld].", memory_type);
+        std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
       GELOGD("Start to reassign memory for virtual output node, memory offset = %zu, memory type = %ld.",
@@ -788,8 +804,9 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousOutputMemory() {
         string current_node_full_name = op_desc->GetName();
         size_t pos = current_node_full_name.find(kMbatchNodeNameFlag);
         if (pos == string::npos) {
-          GELOGE(FAILED, "Cannot find key string [%s] of multi-batch in name of virtual output node, node name: %s.",
-                 kMbatchNodeNameFlag, n->GetName().c_str());
+          std::string error = "Cannot find key string" + FmtToStr(kMbatchNodeNameFlag) +
+          " of multi-batch in name of virtual output node, the node name is " + FmtToStr(n->GetName());
+          GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
           return FAILED;
         }
         string fixed_name = current_node_full_name.substr(0, pos);
@@ -827,7 +844,8 @@ Status GraphMemoryAssigner::ReAssignVirtualNodesMemory(map<string, vector<NodePt
                       "Get node list memory type failed.");
     auto iter = memory_offset_.find(memory_type);
     if (iter == memory_offset_.end()) {
-      GELOGE(FAILED, "Memory offset don't have memory type[%ld].", memory_type);
+      std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return FAILED;
     }
     size_t max_batch_node_mem_offset = iter->second.mem_offset_;
@@ -845,7 +863,8 @@ Status GraphMemoryAssigner::ReAssignVirtualNodesMemory(map<string, vector<NodePt
         } else if (mem_reuse_model == kVirtualOutputNodeMemoryReuse) {
           status = ReAssignVirtualOutputNodeMemory(i_node, max_batch_node_mem_offset);
         } else {
-          GELOGE(FAILED, "Invalid parameter memory reuse model, which is: %d.", mem_reuse_model);
+          std::string error = "Invalid parameter memory reuse model, which is " + FmtToStr(mem_reuse_model);
+          GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
           return FAILED;
         }
 
@@ -874,7 +893,8 @@ Status GraphMemoryAssigner::ReAssignVirtualNodesMemory(map<string, vector<NodePt
       } else if (mem_reuse_model == kVirtualOutputNodeMemoryReuse) {
         status = ReAssignVirtualOutputNodeMemory(i_node, remaining_batch_node_mem_offset);
       } else {
-        GELOGE(FAILED, "Invalid parameter memory reuse model, which is: %d.", mem_reuse_model);
+        std::string error = "Invalid parameter memory reuse model, which is " + FmtToStr(mem_reuse_model);
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
 
@@ -899,7 +919,8 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
 
   auto mem_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[%ld].", RT_MEMORY_HBM);
+    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str()); 
     return FAILED;
   }
 
@@ -953,8 +974,9 @@ Status GraphMemoryAssigner::FilterAtomicNodesForMemoryAssign(map<NodePtr, vector
               // If GetBool fail, is_reference is false.
               (void) ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_REFERENCE, is_reference);
               if (is_reference) {
-                GELOGE(ge::PARAM_INVALID, "The node %s cannot have both atomic and is_reference attribute.",
-                       peer_in_node_desc->GetName().c_str());
+                std::string error = "Op" + FmtToStr(peer_in_node_desc->GetName()) +
+                    " cannot have both atomic and is_reference attribute.";
+                GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
                 return ge::PARAM_INVALID;
               }
 
@@ -1020,7 +1042,8 @@ Status GraphMemoryAssigner::AssignAtomicOutputAndWorkspaceMemory(const ge::NodeP
 Status GraphMemoryAssigner::AssignConnectNetOutputAtomicMemory(vector<NodePtr> &connect_netoutput_nodes) {
   auto iter = memory_offset_.find(RT_MEMORY_HBM);
   if (iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[%ld].", RT_MEMORY_HBM);
+    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
   for (auto &node : connect_netoutput_nodes) {
@@ -1121,9 +1144,9 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
     }
     if ((peer_op_desc->GetType() == CONSTANTOP) || (peer_op_desc->GetType() == AIPP_DATA_TYPE) ||
         (peer_op_desc->GetType() == VARIABLE)) {
-      GELOGE(ge::FAILED,
-             "The current node is %s, and the peer out node is %s. Currently, this scenario is not supported",
-             node->GetName().c_str(), peer_op_desc->GetName().c_str());
+      std::string error = "Op" + FmtToStr(node->GetName()) + "'s peer out node" +
+          FmtToStr(peer_op_desc->GetName()) + " is invalid, only support Constant/AippData/Variable";
+      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return false;
     }
   }
@@ -1143,19 +1166,23 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
   // Check atomic output
   vector<int64_t> output_list = op_desc->GetOutputOffset();
   if (atomic_output_index.size() > output_list.size()) {
-    GELOGE(ge::FAILED, "The size of atomic_output_index is more than the size of output_list");
+    std::string error = "Op" + FmtToStr(node->GetName()) +
+        "'s size of atomic_output_index is more than the size of output_list";
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return ge::FAILED;
   }
   auto output_list_size = static_cast<int64_t>(output_list.size());
   auto iter = memory_offset_.find(RT_MEMORY_HBM);
   if (iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[%ld].", RT_MEMORY_HBM);
+    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
   for (auto &output_index : atomic_output_index) {
     if (output_index >= output_list_size) {
-      GELOGE(ge::PARAM_INVALID, "The output index %ld is more than the size %ld of output_list.", output_index,
-             output_list_size);
+      std::string error = "Op" + FmtToStr(node->GetName()) + "'s output index" + FmtToStr(output_index) +
+          " is more than the size" + FmtToStr(output_list_size) + " of output_list.";
+      GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
       return ge::PARAM_INVALID;
     }
 
@@ -1199,7 +1226,9 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
 Status GraphMemoryAssigner::GetMemoryAssignmentStatus(const ge::NodePtr &node, int64_t output_index,
                                                       bool &is_mem_assigned) {
   if (static_cast<size_t>(output_index) >= node->GetAllOutDataAnchors().size()) {
-    GELOGE(ge::PARAM_INVALID, "Output index %ld is more than the size of node's AllOutDataAnchors.", output_index);
+    std::string error = "Op" + FmtToStr(node->GetName()) + "'s output index" + FmtToStr(output_index) +
+        " is more than the size of node's AllOutDataAnchors.";
+    GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
     return ge::PARAM_INVALID;
   }
   auto out_data_anchor = node->GetAllOutDataAnchors().at(output_index);
@@ -1226,15 +1255,17 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
   GELOGI("Begin to reassign normal atomic memory, node = %s.", op_desc->GetName().c_str());
   auto mem_type_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_type_iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[%ld].", RT_MEMORY_HBM);
+    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
   vector<int64_t> workspace_vector = op_desc->GetWorkspace();
 
   for (auto iter = workspace_info.begin(); iter != workspace_info.end(); ++iter) {
     if (op_desc->GetName() != iter->first) {
-      GELOGE(ge::PARAM_INVALID, "The node name %s and the node name %s in workspace info are inconsistent.",
-             op_desc->GetName().c_str(), iter->first.c_str());
+      std::string error = "The node name" + FmtToStr(op_desc->GetName()) +
+          " and the node name" + FmtToStr(iter->first) + " in workspace info are inconsistent.";
+      GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
       return ge::PARAM_INVALID;
     }
 
@@ -1246,8 +1277,9 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
       auto workspace_index = static_cast<uint64_t>(info_iter.first);
       auto workspace_size = info_iter.second;
       if (workspace_index >= workspace_vector.size()) {
-        GELOGE(ge::PARAM_INVALID, "The workspace index %lu is more than the size %zu of workspace vector.",
-               workspace_index, workspace_vector.size());
+        std::string error = "The workspace index" + FmtToStr(workspace_index) +
+            " is more than the size" + FmtToStr(workspace_vector.size()) + " of workspace vector.";
+        GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
         return ge::PARAM_INVALID;
       }
 
@@ -1273,7 +1305,8 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
   GELOGI("Begin to reassign fusion atomic memory, node = %s.", op_desc->GetName().c_str());
   auto mem_type_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_type_iter == memory_offset_.end()) {
-    GELOGE(FAILED, "Memory offset don't have memory type[%ld].", RT_MEMORY_HBM);
+    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
   map<string, map<int64_t, int64_t>> sub_node_workspace_offset;
@@ -1320,7 +1353,9 @@ Status GraphMemoryAssigner::CheckOffset() {
     vector<int64_t> input_list = node->GetOpDesc()->GetInputOffset();
     for (auto input : input_list) {
       if (input == ge::kInvalidOffset) {
-        GELOGE(FAILED, "Invalid offset in node: %s input: %ld.", node->GetName().c_str(), ge::kInvalidOffset);
+        std::string error = "Invalid input offset" + FmtToStr(ge::kInvalidOffset) +
+            + " in node" + FmtToStr(node->GetName());
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
     }
@@ -1329,7 +1364,9 @@ Status GraphMemoryAssigner::CheckOffset() {
     vector<int64_t> output_list = node->GetOpDesc()->GetOutputOffset();
     for (uint32_t i = 0; i < output_list.size(); ++i) {
       if (output_list[i] == ge::kInvalidOffset) {
-        GELOGE(FAILED, "Invalid offset in node: %s output: %ld.", node->GetName().c_str(), ge::kInvalidOffset);
+        std::string error = "Invalid output offset" + FmtToStr(ge::kInvalidOffset) +
+            + " in node" + FmtToStr(node->GetName());
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
       if (node->GetType() == IDENTITY || node->GetType() == READVARIABLEOP) {
@@ -1347,7 +1384,10 @@ Status GraphMemoryAssigner::CheckOffset() {
     vector<int64_t> workspace_list = node->GetOpDesc()->GetWorkspace();
     for (auto workspace : workspace_list) {
       if (workspace == ge::kInvalidOffset) {
-        GELOGE(FAILED, "Invalid offset in node: %s workspace: %ld.", node->GetName().c_str(), ge::kInvalidOffset);
+        std::string error = "Invalid workspace" + FmtToStr(ge::kInvalidOffset) +
+            + " in node" + FmtToStr(node->GetName());
+        GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+        GELOGE(FAILED, "Invalid workspace in node: %s workspace: %ld.", node->GetName().c_str(), ge::kInvalidOffset);
         return FAILED;
       }
     }
@@ -1410,8 +1450,10 @@ ge::Status GraphMemoryAssigner::UpdateConstArgsOffset(const NodePtr &node, vecto
   const auto &parent_desc = owner->GetParentNode()->GetOpDesc();
   const auto parent_inputs = parent_desc->GetInputOffset();
   if (parent_inputs.size() <= parent_index) {
-    GELOGE(FAILED, "Get Parent input offset failed, node: %s, input size: %zu, parent index: %u",
-           node->GetName().c_str(), parent_inputs.size(), parent_index);
+    std::string error = "Get Parent input offset failed, node is " + FmtToStr(node->GetName()) +
+        + ", input_size is " + FmtToStr(parent_inputs.size()) + ", parent index is " +
+        FmtToStr(parent_index);
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
 
@@ -1447,10 +1489,11 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         auto ori_input_offset_list_size = origin_input_list.size();
         auto mem_type_size = memory_type.size();
         if ((input_size != mem_type_size) || (input_size != ori_input_offset_list_size)) {
-          GELOGE(ge::FAILED,
-                 "fusion: node[%s] input_size[%zu] diff from memory_type_size[%zu]"
-                 " from ori_input_offset_list_size[%lu]",
-                 tmp_op_desc->GetName().c_str(), input_size, mem_type_size, ori_input_offset_list_size);
+            std::string error = "fusion: node" + FmtToStr(tmp_op_desc->GetName()) +
+                + " input_size" + FmtToStr(input_size) + " diff from memory_type_size" +
+                FmtToStr(mem_type_size) + " from ori_input_offset_list_size" +
+                FmtToStr(ori_input_offset_list_size);
+            GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
           return ge::FAILED;
         }
         // not hbm keep orignal inputoffest
@@ -1655,15 +1698,20 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
   }
   if (mem_type_list.empty()) {
     if (memory_offset_.find(memory_type) == memory_offset_.end()) {
-      GELOGE(FAILED, "Memory offset map does not have memory type[%ld].", memory_type);
+      std::string error = "Memory offset map does not have memory type" + FmtToStr(memory_type) +
+          + ", opname is " + FmtToStr(node->GetName()) + ", optype is " + FmtToStr(node->GetType());
+      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return FAILED;
     }
     return SUCCESS;
   }
 
   if (mem_type_list.size() != node->GetAllInDataAnchorsSize()) {
-    GELOGE(FAILED, "The size[%zu] of mem type list is not equal to the size of in data anchor[%u].",
-           mem_type_list.size(), node->GetAllInDataAnchorsSize());
+    std::string error = "The size" + FmtToStr(mem_type_list.size()) +
+        " of mem type list is not equal to the size of in data anchor" +
+        FmtToStr(node->GetAllInDataAnchorsSize()) + ", opname is " +
+        FmtToStr(node->GetName()) + ", optype is "  + FmtToStr(node->GetType());
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
 
@@ -1683,12 +1731,17 @@ bool GraphMemoryAssigner::CheckContinuousMemType(vector<int64_t> mem_type_list) 
   int64_t mem_type_tmp = mem_type_list[0];
   for (auto mem_type : mem_type_list) {
     if (mem_type != mem_type_tmp) {
+      std::string error = "The memory is continuous, but the type of the input memory is inconsistent. They are " +
+          FmtToStr(mem_type_tmp) + " and " + FmtToStr(mem_type);
+      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error});
       GELOGW("The memory is continuous, but the type of the input memory is inconsistent. They are [%ld] and [%ld].",
              mem_type_tmp, mem_type);
       return false;
     }
   }
   if (memory_offset_.find(mem_type_tmp) == memory_offset_.end()) {
+    std::string error = "Memory offset map does not have memory type" + FmtToStr(mem_type_tmp);
+    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error});
     GELOGW("Memory offset map does not have memory type[%ld].", mem_type_tmp);
     return false;
   }

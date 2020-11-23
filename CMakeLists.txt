@@ -129,6 +129,14 @@ if (ENABLE_OPEN_SRC)
     #add_subdirectory(metadef/graph)
     #add_subdirectory(metadef/register)
 elseif (ENABLE_D OR ENABLE_ACL)
+
+    set(ASCEND_MS_RUNTIME_PATH ${ASCEND_RUNTIME_DIR} ${ASCEND_ACL_DIR} ${ASCEND_ATC_DIR})
+    set(ASCEND_MS_DRIVER_PATH ${ASCEND_DRIVER_DIR} ${ASCEND_DRIVER_COMMON_DIR})
+    set(ATLAS_RUNTIME_DIR ${ASCEND_DIR}/ascend-toolkit/latest/fwkacllib/lib64)
+    set(ATLAS_ACL_DIR ${ASCEND_DIR}/ascend-toolkit/latest/acllib/lib64)
+    set(ATLAS_ATC_DIR ${ASCEND_DIR}/ascend-toolkit/latest/atc/lib64)
+    set(ATLAS_MS_RUNTIME_PATH ${ATLAS_RUNTIME_DIR} ${ATLAS_ACL_DIR} ${ATLAS_ATC_DIR})
+
     # compiling with MindSpore
     include(cmake/external_libs/protobuf_static.cmake)
     include(cmake/external_libs/protoc.cmake)
@@ -137,23 +145,15 @@ elseif (ENABLE_D OR ENABLE_ACL)
     include(cmake/FindModule.cmake)
     include(cmake/intf_pub_linux.cmake)
 
-    # common modules
-    find_module(slog libslog.so ${ASCEND_DRIVER_COMMON_DIR})
-    find_module(mmpa libmmpa.so ${ASCEND_DRIVER_COMMON_DIR})
+    # common libraries
+    find_module(slog libslog.so ${ASCEND_MS_DRIVER_PATH})
+    find_module(error_manager liberror_manager.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
 
     if (ENABLE_D)
         # training
-        find_module(runtime libruntime.so ${ASCEND_RUNTIME_DIR})
-        find_module(error_manager liberror_manager.so ${ASCEND_RUNTIME_DIR})
-        find_module(register libregister.so ${ASCEND_RUNTIME_DIR})
-        find_module(resource libresource.so ${ASCEND_RUNTIME_DIR})
-    elseif(ENABLE_ACL)
-        # inference
-        find_module(msprof libmsprof.so ${ASCEND_DRIVER_COMMON_DIR})
-        find_module(adump_server libadump_server.a ${ASCEND_ACL_DIR})
-        find_module(runtime_compile libruntime_compile.so ${ASCEND_ATC_DIR})
-        find_module(resource libresource.so ${ASCEND_ATC_DIR})
-        find_module(error_manager liberror_manager.so ${ASCEND_ATC_DIR})
+        find_module(mmpa libmmpa.so ${ASCEND_MS_DRIVER_PATH})
+        find_module(runtime libruntime.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
+        find_module(register libregister.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
     endif ()
 
     set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)

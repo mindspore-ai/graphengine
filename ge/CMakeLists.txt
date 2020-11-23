@@ -6,7 +6,7 @@ if (NOT ENABLE_D AND NOT ENABLE_ACL)
     add_subdirectory(host_cpu_engine)
     add_subdirectory(executor)
     add_subdirectory(offline)
-else()
+elseif (ENABLE_D)
     add_subdirectory(common)
     add_subdirectory(ge_runtime)
 endif ()
@@ -924,71 +924,5 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/engine_conf.json
     ${CMAKE_CURRENT_BINARY_DIR}/optimizer_priority.pbtxt OPTIONAL
     DESTINATION ${INSTALL_LIBRARY_DIR}
-)
-
-elseif (ENABLE_ACL)
-
-############ libge_compiler.so w/static protobuf ############
-add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS})
-
-target_compile_definitions(ge_compiler PRIVATE
-    PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    REUSE_MEMORY=1
-    FMK_SUPPORT_DUMP
-    FMK_HOST_INFER
-    COMPILE_OMG_PACKAGE
-    google=ascend_private
-)
-
-target_compile_options(ge_compiler PRIVATE
-    -O2
-)
-
-target_include_directories(ge_compiler PRIVATE
-    ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
-    ${GE_CODE_DIR}/inc
-    ${GE_CODE_DIR}/inc/external
-    ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${METADEF_DIR}
-    ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
-    ${ASCEND_DIR}/driver/include
-    ${ASCEND_DIR}/fwkacllib/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
-)
-
-target_link_libraries(ge_compiler
-    $<BUILD_INTERFACE:intf_pub>
-    ge_memory
-    -Wl,--no-as-needed
-    graph
-    ge_common
-    static_ascend_protobuf
-    register
-    c_sec
-    error_manager
-    slog
-    mmpa
-    runtime_compile
-    resource
-    -Wl,--as-needed
-    json
-    -lrt
-    -ldl
-)
-
-############ install libge_compiler for MindSpore############
-set(INSTALL_BASE_DIR "")
-set(INSTALL_LIBRARY_DIR lib)
-
-install(TARGETS ge_compiler OPTIONAL
-    LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
 )
 endif()

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -310,9 +310,6 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator DepthwiseConv2D.
 * @li Compatible with the Caffe operator DepthwiseConv2D.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(DepthwiseConv2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
@@ -585,103 +582,105 @@ REG_OP(Conv2DBackpropFilterD)
 /**
 *@brief Computes a 2D convolution given 4D "x" and "filter" tensors.
 *@par Inputs:
-*@li x: A 4D tensor of input images. With "NHWC" format, the shape is
-* [batch, in_height, in_width, in_channels].
-*@li filter: A 4D tensor of filters. Has the same type as "x". With "HWCN"
-* format, the shape is [filter_height, filter_width, in_channels,
-* out_channels].
-
-*@li bias: An optional 1D tensor. Shape is [out_channels].
-*@li offset_w: An optional 1D tensor for quantized convolution. Shape is
-* [out_channels]. Not supported.
+*@li x: A 4D tensor of input image. With the format "NHWC", the data is stored
+* in the order of: [batch, in_height, in_width, in_channels].
+*@li filter: A 4D tensor of learnable filters. Must have the same type as "x".
+* With the format "HWCN" , the data is stored in the order of: [filter_height,
+* filter_width, in_channels / groups, out_channels].
+*@li bias: An optional 1D tensor of additive biases to the filter outputs.
+* The data is stored in the order of: [out_channels].
+*@li offset_w: Reserved.
 *\n
 *\n
-* Note that there is a strict data type mapping between the input and output
-* tensors:
+* The following are the supported data types and data formats:
 *@verbatim
-    |Tensor    | x       | filter  | bias    | offset_w | y
-    -----------|---------|---------|---------|----------|--------
-    |Data Type | float16 | float16 | float16 | _        | float16
-    |          |---------|---------|---------|----------|--------
-    |          | float32 | float32 | float32 | _        | float32
-    |          |---------|---------|---------|----------|--------
-    |          | int8    | int8    | int32   | int8     | int32
-    -----------|---------|---------|---------|----------|--------
-    |Format    | NCHW    | NCHW    | ND      | ND       | NCHW
-    |          | NHWC    | HWCN    |         |          | NHWC
+    | Tensor    | x       | filter  | bias    | y
+    ------------|---------|---------|---------|--------
+    | Data Type | float16 | float16 | float16 | float16
+    |           |---------|---------|---------|--------
+    |           | float32 | float32 | float32 | float32
+    |           |---------|---------|---------|--------
+    |           | int8    | int8    | int32   | int32
+    ------------|---------|---------|---------|--------
+    | Format    | NCHW    | NCHW    | ND      | NCHW
+    |           | NHWC    | HWCN    |         | NHWC
 @endverbatim
-* Type float32 is allowed only in mixed precision (float32->float16) scenarios.
-* Mixed precision is enabled by default.
-* \n
+* For float32 type, the actual calculation on the chip is based on
+* float16. For int8, a dequant or requant operator must be followed.
+*\n
 *
 *@par Attributes:
-*@li strides: Required. A list of 4 integers. Specifying the strides of the
-* convolution along the height and width. The dimension order is determined
-* by the data format of "x". By default the N and C dimensions are set to 1.
-*@li pads: Required. A list of 4 integers. Specifying the top, bottom, left
-* and right padding.
-* @li dilations: Optional. A list of 4 integers. Specifying the dilation rate
-* to use for dilated convolution. Has the same dimension order and value as
-* "strides". Dilation > 1 is not supported for quantized convolution. Defaults
-* to [1, 1, 1, 1].
-* @li groups: Optional. An integer of type int32, for the number of blocked
-* connections from input channels to output channels. Input channels and output
-* channels must both be divisible by "groups". "x" in_channels must be equal to
-* "filter" in_channels * groups. Defaults to 1.
-* @li offset_x: Optional. An integer of type int32, for quantized convolution.
-* Defaults to 0.
-* @li data_format: Reserved and optional. A string from: "NHWC" and "NCHW".
-* Specifying the data format of the input and output images. Defaults to
-* "NHWC".
+*@li strides: Required. A list of 4 integers. The stride of the sliding window
+* for each dimension of input. The dimension order is determined by the data
+* format of "x". The N and C dimensions must be set to 1.
+*@li pads: Required. A list of 4 integers. The number of pixels to add to each
+* (top, bottom, left, right) side of the input.
+*@li dilations: Optional. A list of 4 integers. The dilation factor for each
+* dimension of input. The dimension order is determined by the data format of
+* "x". The N and C dimensions must be set to 1. The H and W dimensions must be
+* set to 1 for int8 type. Defaults to [1, 1, 1, 1].
+*@li groups: Optional. An integer of type int32. The number of blocked
+* connections from input channels to output channels. In_channels and
+* out_channels must both be divisible by "groups". Defaults to 1.
+*@li offset_x: Optional. An integer of type int32. The negative offset added
+* to the input image for int8 type. Ensure that the output is within the
+* effective range. Defaults to 0.
+*@li data_format: Reserved.
 *\n
 *\n
 * The following value range restrictions must be met:
 *@verbatim
-    |Name             | Field    | Scope
-    ------------------|----------|----------
-    |Input Image Size | H        | [1, 100000]
-    |                 | W        | [1, 4096]
-    ------------------|----------|----------
-    |Filter Size      | H        | [1, 255]
-    |                 | W        | [1, 255]
-    ------------------|----------|----------
-    |Stride           | H        | [1, 63]
-    |                 | W        | [1, 63]
-    ------------------|----------|----------
-    |Padding          | top      | [0, 255]
-    |                 | bottom   | [0, 255]
-    |                 | left     | [0, 255]
-    |                 | right    | [0, 255]
-    ------------------|----------|----------
-    |Dilation         | H        | [1, 255]
-    |                 | W        | [1, 255]
+    | Name             | Field    | Scope
+    -------------------|----------|--------------
+    | Input Image Size | H        | [1, 100000]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Filter Size      | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | Stride           | H        | [1, 63]
+    |                  | W        | [1, 63]
+    -------------------|----------|--------------
+    | Padding          | Top      | [0, 255]
+    |                  | Bottom   | [0, 255]
+    |                  | Left     | [0, 255]
+    |                  | Right    | [0, 255]
+    -------------------|----------|--------------
+    | Dilation         | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | Offset_x         |          | [-128, 127]
+
 @endverbatim
+*\n
 *
 *@par Outputs:
-*@li y: A 4D Tensor of output images. Has the same type and format as "x". With
-* "NHWC" format, the shape is [batch, out_height, out_width, out_channels].
+*@li y: A 4D Tensor of output feature map. Has the same type as "x". With the
+* format "NHWC", the data is stored in the order of: [batch, out_height,
+* out_width, out_channels].
 *\n
-*     out_height = (in_height + top_pad + bottom_pad -
-*                   dilation_h * (filter_height - 1) - 1)
+*     out_height = (in_height + pad_top + pad_bottom -
+*                   (dilation_h * (filter_height - 1) + 1))
 *                  / stride_h + 1
 *\n
-*     out_width = (in_width + left_pad + right_pad -
-*                   dilation_w * (filter_width - 1) - 1)
-*                   / stride_w + 1
+*     out_width = (in_width + pad_left + pad_right -
+*                  (dilation_w * (filter_width - 1) + 1))
+*                 / stride_w + 1
 *
 *@attention Constraints:
 *@li The following restrictions on the output must be met:
 *@verbatim
-    | Output           | Restrictions
-    -------------------|---------------------------
-    | W dimension == 1 | H*W(input) == H*W(filter)
-    | H dimension == 1 |
-    -------------------|---------------------------
-    | W dimension == 1 | Not supported
-    | H dimension != 1 |
+    | Output  | Restrictions
+    ----------|--------------------------------
+    | H == 1  | H * W(input) == H * W(filter)
+    | W == 1  |
+    ----------|--------------------------------
+    | H != 1  | W(input) == W(filter)
+    | W == 1  | Only for Ascend310 Hi3796V300CS
 @endverbatim
 * "H * W (input)" indicates the image size after padding and "H * W (filter)"
-* indicates the filter size after dilation.
+* indicates the filter size after dilation."W(input)" and W(filter) indicate
+* the same rule on the W dimension.
 *\n
 *
 *@par Quantization supported or not
@@ -770,113 +769,122 @@ REG_OP(Conv2DCompress)
     .OP_END_FACTORY_REG(Conv2DCompress)
 
 /**
-*@brief Computes a 2D convolution given 4D "x", "filter" and "offsets"
-* tensors.
+*@brief Computes a 2D deformable convolution given 4D "x", "filter" and
+* "offsets" tensors.
 *@par Inputs:
-* @li x: A 4D tensor of input images. With shape of
-* [batch, in_height, in_width, in_channels] when format is "NHWC".
-* @li filter: A 4D tensor of filters. Must have the same type as "x". With
-* shape of [filter_height, filter_width, in_channels, out_channels] when format
-*  is "HWCN".
-* @li offsets: A 4D tensor of offsets. With shape of
-* [batch, deformable_groups * filter_height * filter_width * 3, in_height,
-*  in_width] when format is "NCHW".
-* @li bias: An optional 1D tensor. Shape is [out_channels].
+*@li x: A 4D tensor of input image. With the format "NHWC", the data is stored
+* in the order of: [batch, in_height, in_width, in_channels].
+*@li filter: A 4D tensor of learnable filters. Must have the same type as "x".
+* With the format "HWCN" , the data is stored in the order of: [filter_height,
+* filter_width, in_channels / groups, out_channels].
+*@li offsets: A 4D tensor of x-y coordinates offset and mask. With the format
+* "NHWC", the data is stored in the order of: [batch, in_height, in_width,
+* deformable_groups * filter_height * filter_width * 3].
+*@li bias: An optional 1D tensor of additive biases to the filter outputs.
+* The data is stored in the order of: [out_channels].
+*\n
+*\n
+* The following are the supported data types and data formats:
+*@verbatim
+    | Tensor    | x       | filter  | offsets | bias     | y
+    ------------|---------|---------|---------|----------|--------
+    | Data Type | float16 | float16 | float16 | float16  | float16
+    |           |---------|---------|---------|----------|--------
+    |           | float32 | float32 | float32 | float32  | float32
+    ------------|---------|---------|---------|----------|--------
+    | Format    | NCHW    | NCHW    | NCHW    | ND       | NCHW
+    |           | NHWC    | HWCN    | NHWC    |          | NHWC
+@endverbatim
+* For float32 type, the actual convolution calculation part on the chip is
+* based on float16.
+*\n
 *
-* The input and output tensor attributes are listed as follows:
-* @verbatim
-    |Tensor    | x       | filter  | offsets | bias     | y
-    -----------|---------|---------|---------|----------|--------
-    |Data Type | float16 | float16 | float16 | float16  | float16
-    -----------|---------|---------|---------|----------|--------
-    |Format    | NCHW    | NCHW    | NCHW    | ND       | NCHW
-    |          | NHWC    | HWCN    |         |          | NHWC
-@endverbatim
-* It should be noted that the data types must correspond to each other, but
-* the format does not need to.
-
 *@par Attributes:
-* @li strides: Required. A list of 4 integers. Specifying the strides of the
-* convolution along the height and width. The dimension order is determined
-* by the data format of "x". By default the N and C dimensions are set to 1.
-* @li pads: Required. A list of 4 integers. Specifying the top, bottom, left
-* and right padding.
-* @li dilations: Optional. A list of 4 integers. Specifying the dilation rate
-* to use for dilated convolution. Has the same dimension order and value as
-* "strides".
-* @li groups: Optional. Number of blocked connections from input channels to
-* output channels. Input channels and output channels must both be divisible
-* by "groups".Type is int32.
-* @li data_format: Optional. An optional string from: "NHWC", "NCHW". Specifying the
-* data format of the input and output images. Type is string. Defaults to
-* "NHWC". Reserved.
-* @li deformable_groups: Optional. Cut the c chanel of input X into deformable_groups,
-* each share a different offsets. Input channels must be divisible by
-* "deformable_groups". Type is int32.
-
+*@li strides: Required. A list of 4 integers. The stride of the sliding window
+* for each dimension of input. The dimension order is interpreted according to
+* the data format of "x". The N and C dimensions must be set to 1.
+*@li pads: Required. A list of 4 integers. The number of pixels to add to each
+* (top, bottom, left, right) side of the input.
+*@li dilations: Optional. A list of 4 integers. The dilation factor for each
+* dimension of input. The dimension order is interpreted according to the data
+* format of "x". The N and C dimensions must be set to 1. Defaults to
+* [1, 1, 1, 1].
+*@li groups: Optional. An integer of type int32. The number of blocked
+* connections from input channels to output channels. In_channels and
+* out_channels must both be divisible by "groups". Defaults to 1.
+*@li data_format: Reserved.
+*@li deformable_groups: Optional. An integer of type int32. The number of
+* deformable group partitions. In_channels must be divisible by
+* "deformable_groups". Defaults to 1.
+*\n
+*\n
+* The following value range restrictions must be met:
+*@verbatim
+    | Name              | Field  | Scope
+    --------------------|--------|----------------------------
+    | Input Image Size  | H      | [1, 100000]
+    |                   | W      | [1, 4096]
+    --------------------|--------|----------------------------
+    | Filter Size       | H      | [1, 255]
+    |                   | W      | [1, 255]
+    --------------------|--------|----------------------------
+    | Stride            | H      | [1, 63]
+    |                   | W      | [1, 63]
+    --------------------|--------|----------------------------
+    | Padding           | Top    | [0, 255]
+    |                   | Bottom | [0, 255]
+    |                   | Left   | [0, 255]
+    |                   | Right  | [0, 255]
+    ------------ -------|--------|----------------------------
+    | Dilation          | H      | [1, 255]
+    |                   | W      | [1, 255]
+@endverbatim
+* "W(input)" indicate the image width after padding and W(filter) indicates the
+* filter width after dilation.
+*\n
+*
 *@par Outputs:
-* @li y: A 4D Tensor of output images. Must have the same type and format as
-* "x". With shape of [batch, out_channels, out_height, out_width] when format
-* is "NHWC".
-* @li output_height = (in_height + top_pad + botton_pad -
-* dilation_h * (filter_height - 1) -1) / stride_h + 1
-* @li output_width = (in_width + left_pad + right_pad -
-* dilation_w * (filter_width - 1) -1) / stride_w + 1
-
-*@attention
-* @li The parameter scope is listed as follows:
-* @verbatim
-    |Name             | Field        | Scope
-    ------------------|--------------|----------------------------------------
-    |Input Image Size | H dimension  | 1 <= in_height * filter_height <= 4096
-    |                 | W dimension  | 1 <= in_width * filter_width <=4096
-    ------------------|--------------|----------------------------------------
-    |Filter Size      | H dimension  | [1, 255]
-    |                 | W dimension  | [1, 255]
-    ------------------|--------------|----------------------------------------
-    |offsets Size     | C dimension  | offsets_c = deformable_groups *
-    |                 |              |  filter_width * filter_height * 3
-    |                 | H dimension  | the same as output H dimension
-    |                 | W dimension  | the same as output W dimension
-    ------------------|--------------|----------------------------------------
-    |Stride Size      | H dimension  | [1, 63]
-    |                 | W dimension  | [1, 63]
-    ------------------|--------------|----------------------------------------
-    |Padding Size     | top side     | [0, 255]
-    |                 | bottom side  | [0, 255]
-    |                 | left side    | [0, 255]
-    |                 | right side   | [0, 255]
-    ------------------|--------------|----------------------------------------
-    |Dilation Size    | H dimension  | [1, 255]
-    |                 | W dimension  | [1, 255]
+*@li y:  A 4D Tensor of output feature map. Has the same type as "x". With the
+* format "NHWC", the data is stored in the order of: [batch, out_height,
+* out_width, out_channels].
+*\n
+*     out_height = (in_height + pad_top + pad_bottom -
+*                   (dilation_h * (filter_height - 1) + 1))
+*                  / stride_h + 1
+*\n
+*     out_width = (in_width + pad_left + pad_right -
+*                  (dilation_w * (filter_width - 1) + 1))
+*                 / stride_w + 1
+*
+*@attention Constraints:
+*@li The following restrictions on the output must be met:
+*@verbatim
+    | Output  | Restrictions
+    ----------|--------------------------------
+    | H == 1  | H * W(input) == H * W(filter)
+    | W == 1  |
+    ----------|--------------------------------
+    | H != 1  | W(input) == W(filter)
+    | W == 1  | Only for Ascend310 Hi3796V300CS
 @endverbatim
-
-* @li There are restrictions for certain scenarios:
-* @verbatim
-    | Output           | Restrictions
-    -------------------|---------------------------
-    | W dimension == 1 | HxW(input) == HxW(filter)
-    | H dimension == 1 |
-    -------------------|---------------------------
-    | W dimension == 1 | Not supported
-    | H dimension != 1 |
-@endverbatim
-* As shown above, "HxW(input)" indicates the image size after padding and
-* "HxW(filter)" indicates the filter size after dilation.
-
+* "H * W(input)" indicates the image size after padding and "H * W(filter)"
+* indicates the filter size after dilation. "W(input)" and W(filter) indicate
+* the same rule on the W dimension.
+*
 *@par Quantization supported or not
-* Yes
-
+*@li No
+*
 *@par Third-party framework compatibility
-*@li Compatible with the TensorFlow operator "conv2d".
-*@li Compatible with the Caffe operator 2D "Convolution".
+*@li Compatible with the Mxnet operator "DeformableConvolution".
+*@li Compatible with the Paddlepaddle operator "deformable_conv".
+*@li Compatible with the Mmcv operator "deform_conv".
 */
 REG_OP(DeformableConv2D)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(filter, TensorType({DT_FLOAT16}))
-    .INPUT(offsets, TensorType({DT_FLOAT16}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -1395,14 +1403,13 @@ REG_OP(Conv2DTransposeD)
     .OP_END_FACTORY_REG(Conv2DTransposeD)
 
 /**
-*@brief In the deformable convolution operator, the original input FeatureMap is expanded to a ksize_y * H * ksize_x *W
-*FeatureMap by bilinear interpolation according to the offset offset.
+*@brief Computes the deformed convolution output with the expected input
 *@par Inputs:
  * Four inputs:
- * @li x: A Tensor of type float16
+ * @li x: A Tensor of type float16,float32
  * @li offsets: A Tensor of type float16,float32.Deformation offset parameter.
 *@par Required Attributes:
- * @li strides: A tuple/list of 2 integers.The stride of the sliding window for
+ * @li strides: A tuple/list of 4 integers.The stride of the sliding window for
  * height and width for H/W dimension.
  * @li pads: A tuple/list of 4 integers.Padding added to each dimension
  * of the input.
@@ -1410,20 +1417,20 @@ REG_OP(Conv2DTransposeD)
 *@par Attributes:
  * Three attributes:
  * @li dilations: A tuple/list of 4 integers, The dilation factor for each dimension
- * of input.  Defaults to [0, 0, 0, 0]
+ * of input.  Defaults to [1, 1, 1, 1]
  * @li data_format: An optional string from: "NCHW", "NHWC". Defaults to "NCHW". Specify the data format of the input x.
  * @li deformable_groups: Specify the c-axis grouping number of input x.
 *@par Outputs:
- * y: A Tensor. A Tensor of type float16.
+ * y: A Tensor. A Tensor of type float16, float32.
 */
 REG_OP(DeformableOffsets)
-    .INPUT(x, TensorType({DT_FLOAT16}))
-    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(offsets, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .REQUIRED_ATTR(ksize, ListInt)
-    .ATTR(dilations, ListInt, {0, 0, 0, 0})
+    .ATTR(dilations, ListInt, {1, 1, 1, 1})
     .ATTR(data_format, String, "NCHW")
     .ATTR(deformable_groups, Int, 1)
     .OP_END_FACTORY_REG(DeformableOffsets)

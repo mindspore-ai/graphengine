@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -495,51 +495,51 @@ REG_OP(NextAfter)
     .OP_END_FACTORY_REG(NextAfter)
 
 /**
- * *@brief Compute element-wise finiteness, return a boolean tensor.
- *
- * *@par Inputs:
- * *x:A Tensor.
- *
- * *@par Outputs:
- * *y:A Tensor. Has the same shape as x.
- *
- * *@par Third-party framework compatibility.
- * *Compatible with tensorflow IsFinite operator.
- * */
+ *@brief Compute element-wise finiteness, return a boolean tensor.
+
+ *@par Inputs:
+ *x:A Tensor.
+
+ *@par Outputs:
+ *y:A Tensor. Has the same shape as x.
+
+ *@par Third-party framework compatibility.
+ *Compatible with tensorflow IsFinite operator.
+ */
 REG_OP(IsFinite)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsFinite)
 
 /**
- * *@brief Compute element-wise infiniteness, return a boolean tensor.
- *
- * *@par Inputs:
- * *x:A Tensor.
- *
- * *@par Outputs:
- * *y:A Tensor. Has the same shape as x.
- *
- * *@par Third-party framework compatibility.
- * *Compatible with tensorflow IsInf operator.
- * */
+ *@brief Compute element-wise infiniteness, return a boolean tensor.
+
+ *@par Inputs:
+ *x:A Tensor.
+
+ *@par Outputs:
+ *y:A Tensor. Has the same shape as x.
+
+ *@par Third-party framework compatibility.
+ *Compatible with tensorflow IsInf operator.
+ */
 REG_OP(IsInf)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsInf)
 
 /**
- * *@brief Computes the complex absolute value of a tensor.
- *
- * *@par Inputs:
- * *x:A Tensor.
- *
- * *@par Outputs:
- * *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
- *
- * *@par Third-party framework compatibility.
- * *Compatible with tensorflow ComplexAbs operator.
- * */
+ *@brief Computes the complex absolute value of a tensor.
+
+ *@par Inputs:
+ *x:A Tensor.
+
+ *@par Outputs:
+ *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
+
+ *@par Third-party framework compatibility.
+ *Compatible with tensorflow ComplexAbs operator.
+ */
 REG_OP(ComplexAbs)
     .INPUT(x, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -547,34 +547,34 @@ REG_OP(ComplexAbs)
     .OP_END_FACTORY_REG(ComplexAbs)
 
 /**
- * *@brief Returns which elements of x are NaN.
- *
- * *@par Inputs:
- * *x:A Tensor.
- *
- * *@par Outputs:
- * *y:A Tensor. Has the same shape as x.
- *
- * *@par Third-party framework compatibility.
- * *Compatible with tensorflow IsNan operator.
- * */
+ *@brief Returns which elements of x are NaN.
+
+ *@par Inputs:
+ *x:A Tensor.
+
+ *@par Outputs:
+ *y:A Tensor. Has the same shape as x.
+
+ *@par Third-party framework compatibility.
+ *Compatible with tensorflow IsNan operator.
+ */
 REG_OP(IsNan)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(IsNan)
 
 /**
- * *@brief Returns the real part of a complex number.
- *
- * *@par Inputs:
- * *input:A Tensor.
- *
- * *@par Outputs:
- * *output:A Tensor. Has the same shape as input.
- *
- * *@par Third-party framework compatibility.
- * *Compatible with tensorflow Real operator.
- * */
+ *@brief Returns the real part of a complex number.
+
+ *@par Inputs:
+ *input:A Tensor.
+
+ *@par Outputs:
+ *output:A Tensor. Has the same shape as input.
+
+ *@par Third-party framework compatibility.
+ *Compatible with tensorflow Real operator.
+ */
 REG_OP(Real)
     .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -582,17 +582,17 @@ REG_OP(Real)
     .OP_END_FACTORY_REG(Real)
 
 /**
- * *@brief Returns the complex conjugate of a complex number.
- *
- * *@par Inputs:
- * *input:A Tensor.
- *
- * *@par Outputs:
- * *output:A Tensor. Has the same shape as input.
- *
- * *@par Third-party framework compatibility.
- * *Compatible with tensorflow output operator.
- * */
+ *@brief Returns the complex conjugate of a complex number.
+
+ *@par Inputs:
+ *input:A Tensor.
+
+ *@par Outputs:
+ *output:A Tensor. Has the same shape as input.
+
+ *@par Third-party framework compatibility.
+ *Compatible with tensorflow output operator.
+ */
 REG_OP(Conj)
     .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(output, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
@@ -692,6 +692,135 @@ REG_OP(IFMR)
   .REQUIRED_ATTR(search_step, Float)
   .REQUIRED_ATTR(with_offset, Bool)
   .OP_END_FACTORY_REG(IFMR)
+
+/**
+*@brief weights adaptive range quantization. \n
+
+*@par Inputs:
+*@li w:A Tensor of weights. \n
+*@li w_min:A Tensor of weights reduce_min. \n
+*@li w_max:A Tensor of weights reduce_max. \n
+
+*@par Attributes:
+*num_bits: the bits num used for quantize.
+*offset_flag: whether using offset. \n
+
+*@par Outputs:
+*y: fake quantized weights. \n
+
+*@par Third-party framework compatibility
+*Compatible with mindspore
+*/
+
+REG_OP(WtsARQ)
+  .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(w_min, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(w_max, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .ATTR(num_bits, Int, 8)
+  .ATTR(offset_flag, Bool, false)
+  .OP_END_FACTORY_REG(WtsARQ)
+
+/**
+*@brief The acts_ulq. \n
+
+*@par Inputs:
+*@li x:A Tensor of feature map
+*@li clamp _min:A Tensor of min clamp value of feature map.
+*@li clamp _max:A Tensor of max clamp value of feature map.
+
+*@par Attributes:
+*fixed_min: fix min to zero.
+*num_bits: quant bits. \n
+
+*@par Outputs:
+*y: output fake quant feature map.
+*clamp_min_mask: where x > clamp_min
+*clamp_min_mask: where x < clamp_max
+*x_clamped_loss: clamp loss. \n
+
+*@par Third-party framework compatibility
+*Compatible with mindspore
+*/
+
+REG_OP(ActsULQ)
+  .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_min, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_max, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(clamp_min_mask, TensorType({DT_BOOL}))
+  .OUTPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .OUTPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .ATTR(fixed_min, Bool, false)
+  .ATTR(num_bits, Int, 8)
+  .OP_END_FACTORY_REG(ActsULQ)
+
+/**
+*@brief The acts_ulq_input_grad. \n
+
+*@par Inputs:
+*@li y_grad: A Tensor of gradient
+*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'
+*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'
+
+*@par Outputs:
+*x_grapd: The gradient of inpust. \n
+
+*@par Third-party framework compatibility
+*Compatible with mindspore
+*/
+
+REG_OP(ActsULQInputGrad)
+  .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_min_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .OUTPUT(x_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OP_END_FACTORY_REG(ActsULQInputGrad)
+
+/**
+*@brief The act_ulq_clamp_max_grad. \n
+
+*@par Inputs:
+*@li y_grad: A Tensor of gradient
+*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed.
+*@li x_clamped_loss: A Tensor of gradient. \n
+
+*@par Outputs:
+*clamp_max_grad: The gradient of clamp max. \n
+
+*@par Third-party framework compatibility
+*Compatible with mindspore
+*/
+
+REG_OP(ActULQClampMaxGrad)
+  .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(clamp_max_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OP_END_FACTORY_REG(ActULQClampMaxGrad)
+
+/**
+*@brief The act_ulq_clamp_min_grad. \n
+
+*@par Inputs:
+*@li y_grad: A Tensor of gradient
+*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed.
+*@li x_clamped_loss: A Tensor of gradient. \n
+
+*@par Outputs:
+*clamp_min_grad: The gradient of clamp min. \n
+
+*@par Third-party framework compatibility
+*Compatible with mindspore
+*/
+
+REG_OP(ActULQClampMinGrad)
+  .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_min_mask, TensorType({DT_BOOL}))
+  .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(clamp_min_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OP_END_FACTORY_REG(ActULQClampMinGrad)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

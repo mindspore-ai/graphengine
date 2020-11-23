@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,7 +140,8 @@ support "NHWC/NCHW" to "NC1HWC0" and "NC1HWC0" to "NHWC/NCHW"
 
 *@par Attributes:
 *@li src_format: A string source data format, can be "NHWC", "NCHW", "FRACTAL_Zn" etc.
-*@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc . \n
+*@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc.
+*@li group: A required int32, default value is 1. \n
 
 *@par Outputs:
 *dst: A Tensor dtype of all types.
@@ -150,6 +151,7 @@ REG_OP(TransData)
     .OUTPUT(dst, TensorType::BasicType())
     .REQUIRED_ATTR(src_format, String)
     .REQUIRED_ATTR(dst_format, String)
+    .ATTR(group, Int, 1)
     .OP_END_FACTORY_REG(TransData)
 
 /**
@@ -529,7 +531,9 @@ REG_OP(Unpack)
 * with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *
 * (rates - 1), followed by subsampling them spatially by a factor of rates.
 * This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
-* @li padding: A required string. The type of padding algorithm to use . \n
+* @li padding: A required string. The type of padding algorithm to use,
+  support "SAME" or "VALID". \n
+* @li data_format: A required string. The format of input, only supported NHWC. \n
 
 * @par Outputs:
 * y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *
@@ -550,6 +554,7 @@ REG_OP(ExtractImagePatches)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(rates, ListInt)
     .REQUIRED_ATTR(padding, String)
+    .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(ExtractImagePatches)
 
 /**
@@ -564,7 +569,9 @@ REG_OP(ExtractImagePatches)
 * dimension of "x".
 * @li strides: A required list or tuple. How far the centers of two consecutive
 * patches are in "x". Must be: [1, stride_planes, stride_rows, stride_cols, 1].
-* @li padding: A required string. The type of padding algorithm to use . \n
+* @li padding: A required string. The type of padding algorithm to use ,
+* support "SAME" or "VALID" . \n
+* @li data_format: An optional string. The format of input, only supported NDHWC. \n
 
 * @par Outputs:
 * Output: A 5D Tensor with shape [batch, out_planes, out_rows, out_cols, ksize_planes *
@@ -583,6 +590,7 @@ REG_OP(ExtractVolumePatches)
     .REQUIRED_ATTR(ksizes, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
+    .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**

@@ -421,7 +421,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     GE_IF_BOOL_EXEC(is_peer_output_continuous && (peer_output_size != 1),
                     std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
                         " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
-                        " requires reference. There may be conflict between the two. This node is not supported now.";
+                        " requires continuous output. There may be conflict between the two. This node is not supported now.";
                     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
                     return PARAM_INVALID;);
 
@@ -431,7 +431,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     GE_IF_BOOL_EXEC(is_peer_reference,
                     std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
                         " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
-                        " requires reference. There may be conflict between the two. This node is not supported now.";
+                        " requires continuous output. There may be conflict between the two. This node is not supported now.";
                     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
                     return PARAM_INVALID;);
 
@@ -626,8 +626,8 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousInputMemory() {
     if (attr_reuse && attr_continuous) {
       if (op_desc->GetOutputsSize() != kVirtualInputNodeOutputSize) {
         // When current virtual node has several outputs, can't directly determine which input is the tensor for reuse.
-        std::string error = "Only one input is supported, current virtual node" + FmtToStr(n->GetName()) +
-            " has " + FmtToStr(op_desc->GetOutputsSize()) + " inputs.";
+        std::string error = "Only one output is supported, current virtual node" + FmtToStr(n->GetName()) +
+            " has " + FmtToStr(op_desc->GetOutputsSize()) + " outputs.";
         GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
@@ -805,7 +805,7 @@ Status GraphMemoryAssigner::ReAssignReuseAndNoPaddingContinuousOutputMemory() {
         size_t pos = current_node_full_name.find(kMbatchNodeNameFlag);
         if (pos == string::npos) {
           std::string error = "Cannot find key string" + FmtToStr(kMbatchNodeNameFlag) +
-          " of multi-batch in name of virtual output node, node name is " + FmtToStr(n->GetName());
+          " of multi-batch in name of virtual output node, the node name is " + FmtToStr(n->GetName());
           GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
           return FAILED;
         }
@@ -975,7 +975,7 @@ Status GraphMemoryAssigner::FilterAtomicNodesForMemoryAssign(map<NodePtr, vector
               (void) ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_REFERENCE, is_reference);
               if (is_reference) {
                 std::string error = "Op" + FmtToStr(peer_in_node_desc->GetName()) +
-                    "cannot have both atomic and is_reference attribute.";
+                    " cannot have both atomic and is_reference attribute.";
                 GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
                 return ge::PARAM_INVALID;
               }
@@ -1264,7 +1264,7 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
   for (auto iter = workspace_info.begin(); iter != workspace_info.end(); ++iter) {
     if (op_desc->GetName() != iter->first) {
       std::string error = "The node name" + FmtToStr(op_desc->GetName()) +
-            "and the node name" + FmtToStr(iter->first) + " in workspace info are inconsistent.";
+          " and the node name" + FmtToStr(iter->first) + " in workspace info are inconsistent.";
       GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
       return ge::PARAM_INVALID;
     }
@@ -1278,7 +1278,7 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
       auto workspace_size = info_iter.second;
       if (workspace_index >= workspace_vector.size()) {
         std::string error = "The workspace index" + FmtToStr(workspace_index) +
-            "is more than the size" + FmtToStr(workspace_vector.size()) + " of workspace vector.";
+            " is more than the size" + FmtToStr(workspace_vector.size()) + " of workspace vector.";
         GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
         return ge::PARAM_INVALID;
       }
@@ -1451,7 +1451,7 @@ ge::Status GraphMemoryAssigner::UpdateConstArgsOffset(const NodePtr &node, vecto
   const auto parent_inputs = parent_desc->GetInputOffset();
   if (parent_inputs.size() <= parent_index) {
     std::string error = "Get Parent input offset failed, node is " + FmtToStr(node->GetName()) +
-        + ", input_size is" + FmtToStr(parent_inputs.size()) + ", parent index is" +
+        + ", input_size is " + FmtToStr(parent_inputs.size()) + ", parent index is " +
         FmtToStr(parent_index);
     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
@@ -1699,7 +1699,7 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
   if (mem_type_list.empty()) {
     if (memory_offset_.find(memory_type) == memory_offset_.end()) {
       std::string error = "Memory offset map does not have memory type" + FmtToStr(memory_type) +
-          + ", opname is" + FmtToStr(node->GetName()) + ", optype is " + FmtToStr(node->GetType());
+          + ", opname is " + FmtToStr(node->GetName()) + ", optype is " + FmtToStr(node->GetType());
       GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return FAILED;
     }
@@ -1732,7 +1732,8 @@ bool GraphMemoryAssigner::CheckContinuousMemType(vector<int64_t> mem_type_list) 
   for (auto mem_type : mem_type_list) {
     if (mem_type != mem_type_tmp) {
       std::string error = "The memory is continuous, but the type of the input memory is inconsistent. They are " +
-          FmtToStr(mem_type_tmp) + "and " + FmtToStr(mem_type);
+          FmtToStr(mem_type_tmp) + " and " + FmtToStr(mem_type);
+      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error});
       GELOGW("The memory is continuous, but the type of the input memory is inconsistent. They are [%ld] and [%ld].",
              mem_type_tmp, mem_type);
       return false;

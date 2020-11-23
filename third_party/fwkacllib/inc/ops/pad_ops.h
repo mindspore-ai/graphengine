@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,6 +186,60 @@ REG_OP(PadD)
     .OP_END_FACTORY_REG(PadD)
 
 /**
+*@brief Pads a tensor . \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, uint32, uint64.
+* @li constant_values: A Tensor. Must have the same type as input.
+* @li paddings: A Tensor of type int32 or int64 . \n
+
+*@par Outputs:
+*y: A Tensor of the same type as "x" . \n
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Pad.
+*/
+REG_OP(PadV2)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(paddings, TensorType::IndexNumberType())
+    .INPUT(constant_values, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(PadV2)
+
+/**
+*@brief Pads a tensor . \n
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32 . \n
+*constant_values: A Tensor. Must have the same type as input.
+
+*@par Attributes:
+*paddings: An optional "vector<vector<int>>". Defaults to "{}".
+*     For each dimension D of input, paddings[D, 0] indicates how many
+*     values to add before the contents of tensor in that dimension,
+*     and paddings[D, 1] indicates how many values to add after the
+*     contents of tensor in that dimension . \n
+
+*@par Outputs:
+*y: A Tensor of the same type as "x" . \n
+
+*@par Third-party framework compatibility:
+* Compatible with TensorFlow operator Pad.
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
+*/
+REG_OP(PadV2D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(constant_values, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(paddings, ListListInt)
+    .OP_END_FACTORY_REG(PadV2D)
+
+/**
 *@brief Pads a tensor.
 
 *@par Inputs:
@@ -348,7 +402,6 @@ REG_OP(EmbeddingRankId)
     .ATTR(row_memory, Int, 320)
     .ATTR(mode, String, "mod")
     .OP_END_FACTORY_REG(EmbeddingRankId)
-
 
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_

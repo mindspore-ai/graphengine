@@ -3,10 +3,16 @@
   name   - find the library name
   path   - find the library path
 #]]
-function(find_module module name path)
+function(find_module module name)
     if (TARGET ${module})
         return()
     endif()
+
+    set(options)
+    set(oneValueArgs)
+    set(multiValueArgs)
+    cmake_parse_arguments(MODULE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    set(path ${MODULE_UNPARSED_ARGUMENTS})
     find_library(${module}_LIBRARY_DIR NAMES ${name} NAMES_PER_DIR PATHS ${path}
       PATH_SUFFIXES lib
     )

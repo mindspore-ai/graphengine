@@ -116,3 +116,69 @@ target_link_libraries(ge_executor PRIVATE
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
     -ldl
 )
+
+######## libge_executor.so ########
+add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS})
+
+target_compile_options(ge_executor_shared PRIVATE
+    -Werror
+    -O2
+    -Wno-deprecated-declarations
+)
+
+target_compile_definitions(ge_executor_shared PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    DAVINCI_SUPPORT_PROFILING
+    google=ascend_private
+)
+
+target_include_directories(ge_executor_shared PRIVATE
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${METADEF_DIR}/inc/external/graph
+    ${METADEF_DIR}/inc/graph
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../inc
+    ${GE_CODE_DIR}/../inc/cce   
+    #### blue zone ####
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc 
+)
+
+target_link_libraries(ge_executor_shared PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    msprofiler
+    -Wl,--no-as-needed
+    ge_common
+    runtime
+    slog 
+    mmpa
+    graph
+    register
+    msprof
+    error_manager
+    ascend_hal_stub
+    ascend_protobuf
+    c_sec
+    -Wl,--as-needed
+    json
+    $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
+    -ldl
+)
+
+set_target_properties(ge_executor_shared PROPERTIES
+    OUTPUT_NAME ge_executor
+)
+
+############ install ############
+set(INSTALL_BASE_DIR "")
+set(INSTALL_LIBRARY_DIR lib)
+
+install(TARGETS ge_executor_shared OPTIONAL
+    LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
+)

@@ -302,8 +302,10 @@ class GFlagUtils {
         "  --log                   Generate log with level. Support debug, info, warning, error, null\n"
         "  --dump_mode             The switch of dump json with shape, to be used with mode 1. "
         "0(default): disable; 1: enable.\n"
-        "  --debug_dir                Set the save path of operator compilation intermediate files. Default value: ./\n"
-        "  --op_compiler_cache_dir    Set the save path of operator compilation cache files. Default value: ./\n"
+        "  --debug_dir                Set the save path of operator compilation intermediate files.\n"
+        "Default value: ./kernel_meta\n"
+        "  --op_compiler_cache_dir    Set the save path of operator compilation cache files.\n"
+        "Default value: $HOME/atc_data/kernel_cache\n"
         "  --op_compiler_cache_mode   Set the operator compilation cache mode."
         "Options are disable(default), enable and force(force to refresh the cache)");
 

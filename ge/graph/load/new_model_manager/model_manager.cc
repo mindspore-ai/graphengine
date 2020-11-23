@@ -927,7 +927,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
 Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
                                          int32_t &dynamic_type) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetDynamicBatchInfo failed, Invalid model id %u!", model_id);
 
   return davinci_model->GetDynamicBatchInfo(batch_info, dynamic_type);
@@ -942,8 +942,8 @@ Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<st
 ///
 Status ModelManager::GetCombinedDynamicDims(const uint32_t model_id, vector<vector<int64_t>> &batch_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetCombinedDynamicDims Failed, Invalid Model ID %u!",
-                         model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetCombinedDynamicDims Failed, Invalid Model ID %u!", model_id);
 
   davinci_model->GetCombinedDynamicDims(batch_info);
   return SUCCESS;
@@ -959,7 +959,7 @@ Status ModelManager::GetCombinedDynamicDims(const uint32_t model_id, vector<vect
 Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
                                                 std::vector<std::string> &user_input_shape_order) {
   auto davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetUserDesignateShapeOrder Failed, Invalid Model ID %u!", model_id)
   davinci_model->GetUserDesignateShapeOrder(user_input_shape_order);
   return SUCCESS;
@@ -1000,7 +1000,8 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 ///
 Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetAIPPInfo failed, invalid model_id is %u.",
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetAIPPInfo failed, invalid model_id is %u.",
                          model_id);
 
   return davinci_model->GetAIPPInfo(index, aipp_info);
@@ -1008,7 +1009,8 @@ Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippCo
 
 Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetAIPPInfo failed, invalid model_id is %u.",
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetAIPPInfo failed, invalid model_id is %u.",
                          model_id);
 
   return davinci_model->GetAippType(index, type, aipp_index);
@@ -1035,7 +1037,8 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
-  GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0, GE_EXEC_MODEL_KEY_PATH_INVALID,
+  GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0,
+                         ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID,
                          "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
@@ -1054,8 +1057,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     try {
       davinci_model = std::make_shared<DavinciModel>(model.priority, listener);
     } catch (std::bad_alloc &) {
-      GELOGE(MEMALLOC_FAILED, "Make shared failed");
-      return MEMALLOC_FAILED;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed");
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     } catch (...) {
       GELOGE(INTERNAL_ERROR, "Make shared failed since other exception raise");
       return INTERNAL_ERROR;
@@ -1094,7 +1097,6 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "DavinciInit failed.");
 
     InsertModel(model_id, davinci_model);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(davinci_model == nullptr, ret = PARAM_INVALID; break, "Insert model failed");
 
     GELOGI("Parse model %u success.", model_id);
 
@@ -1122,7 +1124,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
                                     const std::vector<uint32_t> &input_queue_ids,
                                     const std::vector<uint32_t> &output_queue_ids) {
   GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0,
-                         GE_EXEC_MODEL_KEY_PATH_INVALID, "input key file path %s is not valid, %s",
+                         ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID, "input key file path %s is not valid, %s",
                          model_data.key.c_str(), strerror(errno));
 
   ModelHelper model_helper;
@@ -1134,8 +1136,8 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
 
   shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(model_data.priority, nullptr);
   if (davinci_model == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "create model failed.");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create model failed.");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   ret = davinci_model->Assign(model_helper.GetGeModel());
@@ -1390,13 +1392,13 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
 
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
   if (partition_table->num == 1) {
-    GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
-    return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
+    return ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }
   ModelPartition task_partition;
   if (om_file_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
-    GELOGE(GE_EXEC_LOAD_TASK_PARTITION_FAILED, "get task model partition failed.");
-    return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
+    GELOGE(ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED, "get task model partition failed.");
+    return ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED;
   }
 
   std::shared_ptr<domi::ModelTaskDef> model_task_def = MakeShared<domi::ModelTaskDef>();
@@ -1405,14 +1407,14 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
   }
   if (task_partition.size != 0) {
     if (!ReadProtoFromArray(task_partition.data, static_cast<int>(task_partition.size), model_task_def.get())) {
-      GELOGE(GE_EXEC_LOAD_TASK_PARTITION_FAILED, "ReadProtoFromArray failed.");
-      return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
+      GELOGE(ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED, "ReadProtoFromArray failed.");
+      return ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED;
     }
   }
 
   ModelPartition partition_weight;
   ret = om_file_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition_weight);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED,
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED,
                                  "Get weight partition failed. ret = %u", ret);
 
   mem_size = model_task_def->memory_size();
@@ -1431,7 +1433,8 @@ void ModelManager::GenModelId(uint32_t *id) {
 
 Status ModelManager::GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetOrigInputInfo failed, invalid model_id is %u.",
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetOrigInputInfo failed, invalid model_id is %u.",
                          model_id);
 
   return davinci_model->GetOrigInputInfo(index, orig_input_info);
@@ -1441,7 +1444,7 @@ Status ModelManager::GetAllAippInputOutputDims(uint32_t model_id, uint32_t index
                                                std::vector<InputOutputDims> &input_dims,
                                                std::vector<InputOutputDims> &output_dims) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetAllAippInputOutputDims failed, invalid model_id is %u.", model_id);
 
   return davinci_model->GetAllAippInputOutputDims(index, input_dims, output_dims);

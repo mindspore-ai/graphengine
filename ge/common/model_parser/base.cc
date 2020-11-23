@@ -36,18 +36,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
   std::string real_path = RealPath(model_path);
   if (real_path.empty()) {
     GELOGE(GE_EXEC_MODEL_PATH_INVALID, "Model file path '%s' is invalid", model_path);
-    return GE_EXEC_MODEL_PATH_INVALID;
+    return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   if (GetFileLength(model_path) == -1) {
-    GELOGE(GE_EXEC_READ_MODEL_FILE_FAILED, "File size not valid, file: %s.", model_path);
-    return GE_EXEC_READ_MODEL_FILE_FAILED;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "File size not valid, file: %s.", model_path);
+    return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   std::ifstream fs(real_path.c_str(), std::ifstream::binary);
   if (!fs.is_open()) {
-    GELOGE(GE_EXEC_READ_MODEL_FILE_FAILED, "Open file: %s failed, error: %s", model_path, strerror(errno));
-    return GE_EXEC_READ_MODEL_FILE_FAILED;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "Open file: %s failed, error: %s", model_path, strerror(errno));
+    return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   // get length of file:
@@ -60,8 +60,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
 
   char *data = new (std::nothrow) char[len];
   if (data == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Load model From file failed, bad memory allocation occur. (need:%u)", len);
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Load model From file failed, bad memory allocation occur. (need:%u)", len);
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   // read data as a block:
@@ -84,7 +84,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
   GE_CHECK_NOTNULL(model.model_data);
 
   // Model length too small
-  GE_CHK_BOOL_RET_STATUS(model.model_len >= sizeof(ModelFileHeader), GE_EXEC_MODEL_DATA_SIZE_INVALID,
+  GE_CHK_BOOL_RET_STATUS(model.model_len >= sizeof(ModelFileHeader), ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
                          "Invalid model. Model data size %u must be greater than or equal to %zu.", model.model_len,
                          sizeof(ModelFileHeader));
   // Get file header
@@ -92,7 +92,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
   // Determine whether the file length and magic number match
   GE_CHK_BOOL_RET_STATUS(
     file_header->length == model.model_len - sizeof(ModelFileHeader) && file_header->magic == MODEL_FILE_MAGIC_NUM,
-    GE_EXEC_MODEL_DATA_SIZE_INVALID,
+    ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
     "Invalid model. file_header->length[%u] + sizeof(ModelFileHeader)[%zu] != model->model_len[%u] || "
     "MODEL_FILE_MAGIC_NUM[%u] != file_header->magic[%u]",
     file_header->length, sizeof(ModelFileHeader), model.model_len, MODEL_FILE_MAGIC_NUM, file_header->magic);
@@ -102,15 +102,15 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
   // Get data address
   uint8_t *data = reinterpret_cast<uint8_t *>(model.model_data) + sizeof(ModelFileHeader);
   if (file_header->is_encrypt == ModelEncryptType::UNENCRYPTED) {  // Unencrypted model
-    GE_CHK_BOOL_RET_STATUS(model.key.empty(), GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION,
+    GE_CHK_BOOL_RET_STATUS(model.key.empty(), ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION,
                            "Invalid param. model is unencrypted, but key is not empty.");
 
     model_data = data;
     model_len = file_header->length;
     GELOGI("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
-    GELOGE(GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION, "Invalid model. ModelEncryptType not supported.");
-    res = GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION, "Invalid model. ModelEncryptType not supported.");
+    res = ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION;
   }
 
   return res;

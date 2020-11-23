@@ -1504,8 +1504,8 @@ Status DavinciModel::InitVariable(const OpDescPtr &op_desc) {
 Status DavinciModel::SetQueIds(const std::vector<uint32_t> &input_queue_ids,
                                const std::vector<uint32_t> &output_queue_ids) {
   if (input_queue_ids.empty() && output_queue_ids.empty()) {
-    GELOGE(GE_EXEC_MODEL_QUEUE_ID_INVALID, "Param is empty");
-    return GE_EXEC_MODEL_QUEUE_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Param is empty");
+    return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
 
   input_queue_ids_ = input_queue_ids;
@@ -1526,15 +1526,15 @@ Status DavinciModel::LoadWithQueue() {
   }
 
   if (input_queue_ids_.size() != new_input_data_info_.size()) {
-    GELOGE(GE_EXEC_MODEL_QUEUE_ID_INVALID, "Input queue ids not match model: input_queue=%zu input_data=%zu",
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Input queue ids not match model: input_queue=%zu input_data=%zu",
            input_queue_ids_.size(), new_input_data_info_.size());
-    return GE_EXEC_MODEL_QUEUE_ID_INVALID;
+    return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
 
   if (output_queue_ids_.size() != new_output_data_info_.size()) {
-    GELOGE(GE_EXEC_MODEL_QUEUE_ID_INVALID, "Output queue ids not match model: output_queue=%zu output_data=%zu",
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Output queue ids not match model: output_queue=%zu output_data=%zu",
            output_queue_ids_.size(), new_output_data_info_.size());
-    return GE_EXEC_MODEL_QUEUE_ID_INVALID;
+    return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
 
   GE_CHK_STATUS_RET(AddHeadStream(), "Add head stream failed.");
@@ -1877,7 +1877,7 @@ Status DavinciModel::GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info) {
   OpDescPtr data_op = data_op_list_[index];
   if (!data_op->HasAttr(ATTR_NAME_AIPP)) {
     GELOGW("GetAIPPInfo: there is not AIPP related with index %u.", index);
-    return GE_AIPP_NOT_EXIST;
+    return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
   std::unique_ptr<domi::AippOpParams> aipp_params(new (std::nothrow) domi::AippOpParams());
@@ -1916,8 +1916,9 @@ Status DavinciModel::GetAippType(uint32_t index, InputAippType &type, size_t &ai
   } else if (data_mode == "dynamic_aipp_conf") {
     type = DYNAMIC_AIPP_NODE;
   } else {
-    GELOGE(INTERNAL_ERROR, "The info of aipp releated info %s is invalid with index %u.", data_mode.c_str(), index);
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID,
+           "The info of aipp releated info %s is invalid with index %u.", data_mode.c_str(), index);
+    return ACL_ERROR_GE_AIPP_MODE_INVALID;
   }
 
   if (type == DATA_WITH_DYNAMIC_AIPP) {
@@ -1931,8 +1932,8 @@ Status DavinciModel::GetAippType(uint32_t index, InputAippType &type, size_t &ai
       }
     }
     if (aipp_index == 0xFFFFFFFF) {
-      GELOGE(INTERNAL_ERROR, "Can not find aipp data node from index %u", index);
-      return INTERNAL_ERROR;
+      GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "Can not find aipp data node from index %u", index);
+      return ACL_ERROR_GE_AIPP_NOT_EXIST;
     }
   }
   return SUCCESS;
@@ -4109,8 +4110,8 @@ Status DavinciModel::GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_inpu
   GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
   OpDescPtr data_op = data_op_list_[index];
   if (!data_op->HasAttr(ATTR_NAME_AIPP_INPUTS) || !data_op->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
-    GELOGE(GE_AIPP_NOT_EXIST, "GetOrigInputInfo: there is not AIPP related with index %u.", index);
-    return GE_AIPP_NOT_EXIST;
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "GetOrigInputInfo: there is not AIPP related with index %u.", index);
+    return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
   vector<std::string> inputs;
@@ -4153,8 +4154,8 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, std::vector<Input
   GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
   OpDescPtr data_op = data_op_list_[index];
   if (!data_op->HasAttr(ATTR_NAME_AIPP_INPUTS) || !data_op->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
-    GELOGE(GE_AIPP_NOT_EXIST, "GetAllAippInputOutputDims: there is not AIPP related with index %u.", index);
-    return GE_AIPP_NOT_EXIST;
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "GetAllAippInputOutputDims: there is not AIPP related with index %u.", index);
+    return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
   vector<std::string> inputs;

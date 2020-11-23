@@ -693,8 +693,8 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
                                        block_dim_, args_.get(), static_cast<uint32_t>(arg_size_),
                                        sm_desc, stream, dump_flag_);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
-    return RT_FAILED;
+    GELOGE(ret, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
+    return ret;
   }
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
 

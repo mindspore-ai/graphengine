@@ -268,18 +268,18 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
-    return GE_EXEC_MODEL_DATA_SIZE_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
+    return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
 
   if (is_assign_model_) {
-    GELOGE(GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
-    return GE_EXEC_LOAD_MODEL_REPEATED;
+    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
+    return ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED;
   }
 
   if (ReleaseLocalModelData() != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "ReleaseLocalModelData failed.");
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA, "ReleaseLocalModelData failed.");
+    return ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA;
   }
 
   Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
@@ -300,8 +300,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_addr_tmp_);
   if (partition_table->num == kOriginalOmPartitionNum) {
     model_addr_tmp_ = nullptr;
-    GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
-    return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
+    return ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }
   // Encrypt model need to del temp model/no encrypt model don't need to del model
   model_addr_tmp_ = nullptr;
@@ -321,23 +321,23 @@ Status ModelHelper::GenerateGeModel(OmFileLoadHelper &om_load_helper) {
   GE_CHECK_NOTNULL(model_);
   Status ret = LoadModelData(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
   }
   ret = LoadWeights(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
   }
   ret = LoadTask(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED;
   }
   ret = LoadTBEKernelStore(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
   }
   ret = LoadCustAICPUKernelStore(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
   }
   return SUCCESS;
 }

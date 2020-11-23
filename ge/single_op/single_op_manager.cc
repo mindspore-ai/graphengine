@@ -33,16 +33,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
                                                                                         SingleOp **single_op) {
   GELOGI("GetOpFromModel in. model name = %s", model_name.c_str());
   if (single_op == nullptr) {
-    GELOGE(PARAM_INVALID, "single op is null");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "single op is null");
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   uintptr_t resource_id = 0;
   GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
   StreamResource *res = GetResource(resource_id, stream);
   if (res == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "GetResource failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "GetResource failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   SingleOp *op = res->GetOperator(model_data.model_data);
@@ -109,8 +109,8 @@ Status SingleOpManager::GetDynamicOpFromModel(const string &model_name,
   GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
   StreamResource *res = GetResource(resource_id, stream);
   if (res == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "GetResource failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "GetResource failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   DynamicSingleOp *op = res->GetDynamicOperator(model_data.model_data);
@@ -140,8 +140,8 @@ Status SingleOpManager::GetResourceId(rtStream_t stream, uintptr_t &resource_id)
     rtContext_t rt_cur_ctx = nullptr;
     auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
     if (rt_err != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
-      return RT_FAILED;
+      GELOGE(rt_err, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
+      return rt_err;
     }
     // use current context as resource key instead
     GELOGI("use context as resource key instead when default stream");

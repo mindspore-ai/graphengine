@@ -169,7 +169,7 @@ build_graphengine()
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
-    TARGET=""
+    TARGET="ge_runner ge_local_engine host_cpu_engine ge_compiler atc_ge_local_engine atc_host_cpu_engine atc opensrc_ascendcl ${TARGET}"
   fi
   
   make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install

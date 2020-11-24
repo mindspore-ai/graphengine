@@ -1540,16 +1540,6 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   ParseOption(options, DYNAMIC_NODE_TYPE, options_.dynamic_node_type);
   GELOGD("Dynamic dims params: input shape is %s, dynamic dims is %s, dynamic node type is %d.",
          options_.input_shape.c_str(), options_.dynamic_dims.c_str(), options_.dynamic_node_type);
-  if ((!options_.input_shape.empty() && options_.dynamic_dims.empty()) ||
-      (options_.input_shape.empty() && !options_.dynamic_dims.empty())) {
-      GELOGE(GRAPH_PARAM_INVALID, "Should set input shape and dynamic dims at the same time");
-      return GRAPH_PARAM_INVALID;
-  }
-  if ((!options_.input_shape.empty() && options_.dynamic_node_type == kInvalidDynaimcDimsType) ||
-      (!options_.dynamic_dims.empty() && options_.dynamic_node_type == kInvalidDynaimcDimsType)) {
-    GELOGE(GRAPH_PARAM_INVALID, "Should set valid dynamic node type");
-    return GRAPH_PARAM_INVALID;
-  }
 
   // Set Build model and step
   ParseOption(options, BUILD_MODE, options_.build_mode);

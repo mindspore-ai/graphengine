@@ -117,6 +117,7 @@
 #include "graph/passes/variable_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
+#include "graph/passes/mark_agnostic_pass.h"
 
 
 namespace ge {
@@ -1700,6 +1701,7 @@ Status GraphPrepare::PrepareOptimize() {
   try {
     (void)original_graph_passes.AddPass("PrepareOptimize::ShapeOperateOpRemovePass", new ShapeOperateOpRemovePass);
     (void)original_graph_passes.AddPass("PrepareOptimize::ReplaceTransShapePass", new ReplaceTransShapePass);
+    (void)original_graph_passes.AddPass("PrepareOptimize::MarkAgnosticPass" , new MarkAgnosticPass);
   } catch (std::bad_alloc &e) {
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
     return INTERNAL_ERROR;

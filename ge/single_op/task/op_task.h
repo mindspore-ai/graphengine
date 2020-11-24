@@ -132,7 +132,7 @@ class AiCpuBaseTask : public OpTask {
   const UnknowShapeOpType GetUnknownType() const { return unknown_type_; }
 
  protected:
-  Status SetExtInfoAndType(const std::string &kernel_ext_info);
+  Status SetExtInfoAndType(const std::string &kernel_ext_info, uint64_t kernel_id);
 
   Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
                        std::vector<GeTensorDesc> &output_desc,

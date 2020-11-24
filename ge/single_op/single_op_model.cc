@@ -32,7 +32,7 @@
 #include "task/aicpu_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
 
-static std::atomic<std::uint64_t> aicpu_sessionid(0);
+static std::atomic<std::uint64_t> aicpu_kernel_id(0);
 
 using domi::TaskDef;
 using std::unique_ptr;
@@ -252,7 +252,9 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
       } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
         GELOGD("Building AICPU_CC task");
         OpTask *task = nullptr;
-        auto ret = BuildCpuKernelTask(task_def.kernel(), &task);
+        uint64_t singleop_kernel_id = aicpu_kernel_id++;
+        GELOGI("Build singleOp CCTask, kernel_id = %lu", singleop_kernel_id);
+        auto ret = BuildCpuKernelTask(task_def.kernel(), &task, singleop_kernel_id);
         if (ret != SUCCESS) {
           return ret;
         }
@@ -265,14 +267,13 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
       GELOGD("Building AICPU_TF task");
       AiCpuTask *aicpu_task = nullptr;
       bool depend_compute_flag = false;
-      uint64_t singleop_sessionid = aicpu_sessionid++;
-      GELOGI("Build singleOp, sessionId = %lu", singleop_sessionid);
-      auto ret = BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_sessionid);
+      uint64_t singleop_kernel_id = aicpu_kernel_id++;
+      GELOGI("Build singleOp TfTask, kernel_id = %lu", singleop_kernel_id);
+      auto ret = BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_kernel_id);
       if (ret != SUCCESS) {
         return ret;
       }
       single_op.tasks_.emplace_back(aicpu_task);
-      single_op.SetSessionID(singleop_sessionid);
     } else {
       // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
@@ -329,7 +330,7 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTa
 }
 
 Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t session_id) {
+                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "op desc not found. op index = %u", kernel_def.op_index());
@@ -342,7 +343,7 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiC
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, session_id);
+  auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, kernel_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "build aicpu_TF op task failed");
     return ret;
@@ -353,7 +354,7 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiC
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task) {
+Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task, uint64_t kernel_id) {
   const auto &context = kernel_def.context();
   auto iter = op_list_.find(context.op_index());
   if (iter == op_list_.end()) {
@@ -367,7 +368,7 @@ Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTa
   }
 
   auto builder = AiCpuCCTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpucc_task);
+  auto ret = builder.BuildTask(*aicpucc_task, kernel_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "build aicpu_CC op task failed");
     return ret;
@@ -396,7 +397,9 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
   } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
     GELOGD("Building AICPU_CC task");
     OpTask *task = nullptr;
-    GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task));
+    uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
+    GELOGI("Build dynamic singleOp CCTask, kernel_id = %lu", dynamic_singleop_kernel_id);
+    GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task, dynamic_singleop_kernel_id));
     single_op.op_task_.reset(task);
   } else {
     GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
@@ -430,10 +433,10 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
       GELOGD("Building AICPU_TF task");
       AiCpuTask *aicpu_task = nullptr;
       bool depend_compute_flag = false;
-      uint64_t dynamic_singleop_sessionid = aicpu_sessionid++;
-      GELOGI("Build dynamic singleOp, sessionId = %lu", dynamic_singleop_sessionid);
+      uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
+      GELOGI("Build dynamic singleOp TfTask, kernel_id = %lu", dynamic_singleop_kernel_id);
       GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true,
-                                                depend_compute_flag, dynamic_singleop_sessionid));
+                                                depend_compute_flag, dynamic_singleop_kernel_id));
       if (depend_compute_flag) {
         if (i >= tasks.size() - 1) {
           GELOGE(ACL_ERROR_GE_PARAM_INVALID, "The copy task of the fourth operator was not found.");
@@ -444,7 +447,6 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
         GE_CHK_STATUS_RET_NOLOG(aicpu_task->SetMemCopyTask(copy_task_def.kernel_ex()));
       }
       single_op.op_task_.reset(aicpu_task);
-      single_op.SetSessionID(dynamic_singleop_sessionid);
     } else {
       // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));

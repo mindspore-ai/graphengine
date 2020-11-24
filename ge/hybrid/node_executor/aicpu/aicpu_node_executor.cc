@@ -40,29 +40,36 @@ Status AicpuNodeTaskBase::AllocTensorBuffer(size_t size, std::unique_ptr<TensorB
   return SUCCESS;
 }
 
-Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info) {
-  if (node_item_->is_dynamic) {
-    // dynamic node must have ext info
-    GE_CHK_STATUS_RET(aicpu_ext_handle_.Parse(kernel_ext_info),
-                      "Node[%s] parse kernel ext info failed, kernel_ext_info_size=%zu.",
-                      node_name_.c_str(), kernel_ext_info.size());
+Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_t session_id) {
+  if (kernel_ext_info.empty()) {
+    if (node_item_->is_dynamic) {
+      // dynamic node must have ext info
+      GELOGE(PARAM_INVALID, "Node[%s] parse ext info failed as ext info is empty.", node_name_.c_str());
+      return PARAM_INVALID;
+    } else {
+      // if no ext info no need copy to device.
+      GELOGI("Node[%s] kernel_ext_info is empty, no need copy to device, is_dynamic=%s.",
+             node_name_.c_str(), node_item_->is_dynamic ? "true" : "false");
+      return SUCCESS;
+    }
   }
 
-  // if no ext info no need copy to device.
-  if (kernel_ext_info.empty()) {
-    GELOGI("Node[%s] kernel_ext_info is empty, no need copy to device, is_dynamic=%s.",
-           node_name_.c_str(), node_item_->is_dynamic ? "true" : "false");
-    return SUCCESS;
-  }
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.Parse(kernel_ext_info),
+                    "Node[%s] parse kernel ext info failed, kernel_ext_info_size=%zu.",
+                    node_name_.c_str(), kernel_ext_info.size());
+  GELOGD("To update aicpu_task ext_info session_info session_id to %lu", session_id);
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
+                    "UpdateSessionInfoSessionId failed.");
 
   // copy task args buf
-  GE_CHK_STATUS_RET(AllocTensorBuffer(kernel_ext_info.size(), ext_info_addr_dev_),
+  GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
                     "Node[%s] alloc kernel_ext_info buf failed, size=%zu",
-                    node_name_.c_str(), kernel_ext_info.size());
+                    node_name_.c_str(), aicpu_ext_handle_.GetExtInfoLen());
 
   // copy default ext info to device
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_->GetData(), ext_info_addr_dev_->GetSize(),
-                         kernel_ext_info.data(), kernel_ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE));
+                         aicpu_ext_handle_.GetExtInfo(), aicpu_ext_handle_.GetExtInfoLen(),
+                         RT_MEMCPY_HOST_TO_DEVICE));
 
   return SUCCESS;
 }
@@ -290,7 +297,8 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
                          node_name_.c_str(), kernel_ext_info.size(), kernel_ext_info_size);
 
   // init ext info
-  GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info), "Node[%s] init ext info failed.", node_name_.c_str());
+  uint64_t ext_session_id = model.GetSessionId();
+  GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info, ext_session_id), "Node[%s] init ext info failed.", node_name_.c_str());
   GE_CHK_STATUS_RET(InitForDependComputeTask(), "Node[%s] init for depend compute task failed.", node_name_.c_str());
 
   // build fwk_op_kernel.
@@ -679,7 +687,8 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
                          "Node[%s] task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
                          node_name.c_str(), kernel_ext_info.size(), kernel_ext_info_size);
 
-  GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info), "Node[%s] init ext info failed.", node_name.c_str());
+  uint64_t ext_session_id = model.GetSessionId();
+  GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info, ext_session_id), "Node[%s] init ext info failed.", node_name.c_str());
 
   if (ext_info_addr_dev_ == nullptr) {
     aicpu_param_head->extInfoLength = 0;

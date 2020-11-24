@@ -111,7 +111,7 @@ namespace ge {
   }
 
   Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam &param,
-                                     bool dynamic_flag, uint64_t session_id) {
+                                     bool dynamic_flag, uint64_t kernel_id) {
     GE_CHK_STATUS_RET_NOLOG(InitWorkspaceAndIO(&task.io_addr_, &task.workspace_addr_, param, dynamic_flag));
 
     STR_FWK_OP_KERNEL fwk_op_kernel = {0};
@@ -130,7 +130,7 @@ namespace ge {
     GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
                            "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
                            kernel_ext_info.size(), kernel_ext_info_size);
-    GE_CHK_STATUS_RET(task.SetExtInfoAndType(kernel_ext_info), "Init ext info failed.");
+    GE_CHK_STATUS_RET(task.SetExtInfoAndType(kernel_ext_info, kernel_id), "Init ext info failed.");
 
     if (task.ext_info_addr_dev_ != nullptr) {
       fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr =  reinterpret_cast<uintptr_t>(task.ext_info_addr_dev_);
@@ -138,13 +138,9 @@ namespace ge {
     }
     GE_CHK_STATUS_RET(task.InitForSummaryAndCopy(), "AiCpuTask init for summary and copy task failed.");
 
-    // Create session
-    fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID = session_id;
-    GELOGI("Begin to CreateAicpuSession, session id: %lu", session_id);
-    GE_CHECK_NOTNULL(ModelManager::GetInstance());
-    GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "CreateAicpuSession error. session id: %lu", session_id);
-      return ACL_ERROR_GE_INTERNAL_ERROR;)
+    fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID = ULLONG_MAX;
+    fwk_op_kernel.fwkKernelBase.fwk_kernel.kernelID = kernel_id;
+    fwk_op_kernel.fwkKernelBase.fwk_kernel.opType = aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_RUN_NO_SESS;
     ret = SetKernelArgs(&task.args_, fwk_op_kernel);
     if (ret != SUCCESS) {
       return ret;

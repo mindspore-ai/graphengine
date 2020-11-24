@@ -44,8 +44,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOp::~SingleOp() {
     delete task;
     task = nullptr;
   }
-  GELOGI("SingleOp destory sessionId = %lu", aicpu_session_id_);
-  ModelManager::GetInstance()->DestroyAicpuSession(aicpu_session_id_);
 }
 
 Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
@@ -180,17 +178,11 @@ void SingleOp::SetStream(rtStream_t stream) {
   stream_ = stream;
 }
 
-void SingleOp::SetSessionID(uint64_t session_id) {
-  aicpu_session_id_ = session_id;
-}
-
 DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex, rtStream_t stream)
     : resource_id_(resource_id), stream_mutex_(stream_mutex), stream_(stream) {
 }
 
 DynamicSingleOp::~DynamicSingleOp() {
-  GELOGI("DynamicSingleOp destory sessionId = %lu", aicpu_session_id_);
-  ModelManager::GetInstance()->DestroyAicpuSession(aicpu_session_id_);
 }
 
 Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
@@ -298,9 +290,5 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
            op_task_->GetOpTaskType());
     return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;
   }
-}
-
-void DynamicSingleOp::SetSessionID(uint64_t session_id) {
-  aicpu_session_id_ = session_id;
 }
 }  // namespace ge

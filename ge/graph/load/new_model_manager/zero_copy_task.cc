@@ -19,7 +19,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/load/new_model_manager/model_utils.h"
-#inlcude "common/ge_compiler_options.h"
+#include "common/ge_compiler_options.h"
 
 namespace ge {
 const char *const kDefaultBatchLable = "Batch_default";

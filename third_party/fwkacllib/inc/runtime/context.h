@@ -139,7 +139,7 @@ RTS_API rtError_t rtSetGroup(int32_t groupId);
  * @param [in] groupid count
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtGetGroupInfo(int32_t groupId, rtGroupInfo_t* groupInfo, uint32_t count);
+RTS_API rtError_t rtGetGroupInfo(int32_t groupId, rtGroupInfo_t *groupInfo, uint32_t count);
 
 /**
  * @ingroup

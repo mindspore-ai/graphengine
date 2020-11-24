@@ -73,7 +73,8 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   GELOGD("node[%s] is_n_batch_spilt %d", op_desc_->GetName().c_str(), is_n_batch_spilt_);
   (void)AttrUtils::GetInt(*op_desc_, ATTR_NAME_FUSION_GROUP_KEY, group_key_);
   has_group_key_ = (group_key_ != kInvalidGroupKey);
-  GELOGD("node[%s] has_group_key_ %ld, group key is [%ld]", op_desc_->GetName().c_str(), has_group_key_, group_key_);
+  GELOGD("node[%s] has_group_key_ %d, group key is [%ld]", op_desc_->GetName().c_str(), has_group_key_, group_key_);
+
   // fusion_op_info
   vector<std::string> original_op_names;
   bool result = AttrUtils::GetListStr(op_desc_, ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, original_op_names);
@@ -216,7 +217,7 @@ Status KernelTaskInfo::SuperKernelLaunch() {
   rtError_t rt_ret;
   auto &skt_kernel_list = skt_info_.kernel_list;
   auto &skt_arg_list = skt_info_.arg_list;
-  GELOGI("SuperKernelLaunch: Skt_kernel_list size[%d] skt_arg_list[%d]", skt_kernel_list.size(), skt_arg_list.size());
+  GELOGI("SuperKernelLaunch: Skt_kernel_list size[%zu] skt_arg_list[%zu]", skt_kernel_list.size(), skt_arg_list.size());
   if (skt_kernel_list.size() == kSKTSingleSize && skt_arg_list.size() == kSKTSingleSize) {
     rt_ret = rtKernelLaunchWithFlag(skt_info_.kernel_list[0], static_cast<uint32_t>(skt_info_.last_block_dim),
                                     skt_info_.arg_list[0], skt_info_.last_args_size,
@@ -367,8 +368,9 @@ Status KernelTaskInfo::Distribute() {
     GELOGI("Known node %s args addr %p, offset %u.", op_desc_->GetName().c_str(), args_, args_offset_);
   }
   rtError_t rt_ret = RT_ERROR_NONE;
-  char *skt_enable_env = getenv("SKT_ENABLE");
-  int64_t env_flag = (skt_enable_env != nullptr) ? strtol(skt_enable_env, nullptr, 10) : 0;
+  char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
+  int64_t env_flag = (res == EN_OK) ? strtol(skt_enable_env, nullptr, 10) : 0;
   bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
   if (kernel_type_ == cce::ccKernelType::AI_CPU || kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
     GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
@@ -747,15 +749,15 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
     }
   }
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[0])) =
-      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_descs));  // arg 0
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_descs));  // arg 0
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[1])) =
-      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_addrs));  // arg 1
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_addrs));  // arg 1
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[2])) =
-      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_descs));  // arg 2
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_descs));  // arg 2
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[3])) =
-      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_addrs));  // arg 3
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_addrs));  // arg 3
   *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[4])) =
-      reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.attr_handle));  // arg 4
+      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.attr_handle));  // arg 4
 
   rt_ret = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
@@ -913,7 +915,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
          op_desc_->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
 
   aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
-  aicpu_param_head->extInfoLength = reinterpret_cast<uintptr_t>(ext_info.size());
+  aicpu_param_head->extInfoLength = static_cast<uintptr_t>(ext_info.size());
 
   // malloc device memory for args
   rtError_t rt_ret = rtMalloc(static_cast<void **>(&args_), args_size_, RT_MEMORY_HBM);
@@ -1122,18 +1124,24 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
   }
 
   GELOGI("FileName:%s, Path:%s.", file_name.c_str(), canonicalPath.c_str());
-  auto handle = dlopen(canonicalPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  auto handle = mmDlopen(canonicalPath.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
+  const char *error = "";
   if (handle == nullptr) {
-    GELOGE(GE_PLGMGR_SO_NOT_EXIST, "Failed in dlopen %s! ", dlerror());
+    error = mmDlerror();
+    GE_IF_BOOL_EXEC(error == nullptr, error = "");
+    GELOGE(GE_PLGMGR_SO_NOT_EXIST, "Failed in dlopen %s! ", error);
     return FAILED;
   }
   cce::ccStatus_t cc_ret;
+  std::string update_kernel_args = "ccUpdateKernelArgs";
   auto cceUpdateKernelArgs = (cce::ccStatus_t(*)(cce::ccOpContext &, uint64_t, uint64_t, uint64_t, void *, uint64_t,
-                                                 void *))dlsym(handle, "ccUpdateKernelArgs");
+                                                 void *))mmDlsym(handle, const_cast<char *>(update_kernel_args.c_str()));
   if (cceUpdateKernelArgs == nullptr) {
     GELOGE(FAILED, "Failed to invoke function ccUpdateKernelArgs");
-    if (dlclose(handle) != 0) {
-      GELOGW("Failed to close handle %s", dlerror());
+    if (mmDlclose(handle) != 0) {
+      error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGW("Failed to close handle %s", error);
     }
     return FAILED;
   } else {
@@ -1146,8 +1154,10 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
                                    const_cast<char *>(kernel_def.args().data()), args_size_, sm_contrl);
     }
   }
-  if (dlclose(handle) != 0) {
-    GELOGW("Failed to close handle %s", dlerror());
+  if (mmDlclose(handle) != 0) {
+    error = mmDlerror();
+    GE_IF_BOOL_EXEC(error == nullptr, error = "");
+    GELOGW("Failed to close handle %s", error);
     return FAILED;
   }
   if (cc_ret != cce::CC_STATUS_SUCCESS) {
@@ -1188,7 +1198,7 @@ Status KernelTaskInfo::SetFlowtable(std::string &flowtable, const domi::KernelDe
 
     *(reinterpret_cast<uint64_t *>(
         args + (reinterpret_cast<uint16_t *>(const_cast<char *>(context.args_offset().data())))[0])) =
-        reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(flowtable_));
+        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(flowtable_));
   }
   return SUCCESS;
 }

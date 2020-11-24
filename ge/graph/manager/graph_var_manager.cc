@@ -92,13 +92,13 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   GELOGD("VarResource::SaveVarAddr, var_key = %s", var_key.c_str());
   if (var_addr_mgr_map_.count(var_key) == 0) {
     uint64_t logic_address = VarManager::Instance(session_id_)->GetVarMemLogicBase() +
-                             reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
+                             static_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
     GELOGI("SaveVarAddr node_name %s, tensor_desc format %s, type %s.", var_name.c_str(),
            TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str());
     VarAddrMgr var_addr_mgr;
-    var_addr_mgr.address = reinterpret_cast<uint8_t *>(reinterpret_cast<std::uintptr_t>(logic_address));
-    var_addr_mgr.offset = reinterpret_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
+    var_addr_mgr.address = reinterpret_cast<uint8_t *>(static_cast<std::uintptr_t>(logic_address));
+    var_addr_mgr.offset = static_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
     var_addr_mgr.tensor_desc = tensor_desc;
     var_addr_mgr.memory_type = memory_type;
     var_addr_mgr_map_[var_key] = var_addr_mgr;
@@ -510,7 +510,7 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   }
 
   result = var_resource_->SaveVarAddr(
-    var_name, tensor_desc, reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
+    var_name, tensor_desc, reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
   if (result != SUCCESS) {
     GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
     return ge::INTERNAL_ERROR;
@@ -527,7 +527,7 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   result = var_resource_->GetCurVarDesc(var_name, cur_tensor_desc);
   if (result != SUCCESS) {
     var_resource_->SetVarAddr(var_name, tensor_desc,
-                              reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
+                              reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
     return SUCCESS;
   }
 
@@ -542,7 +542,7 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
            ge::TypeUtils::FormatToSerialString(cur_tensor_desc.GetFormat()).c_str(),
            cur_tensor_desc.GetShape().GetDims().size());
     var_resource_->SetVarAddr(var_name, tensor_desc,
-                              reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(mem_offset)), memory_type);
+                              reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
   }
 
   return SUCCESS;

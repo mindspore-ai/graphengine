@@ -131,7 +131,7 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, std::map<const v
     for (const auto &virtual_args_addr : virtual_args_addrs) {
       for (size_t i = 0; i < virtual_args_addr.second.size(); ++i) {
         src_addrs.push_back(mbuf_list.at(index));
-        dst_addrs.push_back(reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(virtual_args_addr.second.at(i))));
+        dst_addrs.push_back(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(virtual_args_addr.second.at(i))));
       }
     }
     index++;

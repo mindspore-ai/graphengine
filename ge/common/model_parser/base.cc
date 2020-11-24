@@ -17,7 +17,6 @@
 #include "common/model_parser/base.h"
 #include "common/helper/model_helper.h"
 #include <securec.h>
-#include <sys/sysinfo.h>
 #include <fstream>
 #include <memory>
 #include <string>

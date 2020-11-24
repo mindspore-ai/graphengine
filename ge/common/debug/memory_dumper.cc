@@ -16,9 +16,6 @@
 
 #include "common/debug/memory_dumper.h"
 
-#include <fcntl.h>
-
-#include <unistd.h>
 #include <string>
 
 #include "framework/common/debug/log.h"
@@ -138,26 +135,26 @@ int MemoryDumper::OpenFile(const char *filename) {
   }
   // Get the absolute path
   string real_path;
-  char tmp_path[PATH_MAX] = {0};
+  char tmp_path[MMPA_MAX_PATH] = {0};
   GE_IF_BOOL_EXEC(
     -1 != path_split_pos, string prefix_path = std::string(filename).substr(0, path_split_pos);
     string last_path = std::string(filename).substr(path_split_pos, strlen(filename) - 1);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= PATH_MAX, return kInvalidFd, "Prefix path is too long!");
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(realpath(prefix_path.c_str(), tmp_path) == nullptr, return kInvalidFd,
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= MMPA_MAX_PATH, return kInvalidFd, "Prefix path is too long!");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mmRealPath(prefix_path.c_str(), tmp_path, MMPA_MAX_PATH) != EN_OK, return kInvalidFd,
                                    "Dir %s does not exit.", prefix_path.c_str());
     real_path = std::string(tmp_path) + last_path;)
   GE_IF_BOOL_EXEC(
     path_split_pos == -1 || path_split_pos == 0,
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(filename) >= PATH_MAX, return kInvalidFd, "Prefix path is too long!");
-    GE_IF_BOOL_EXEC(realpath(filename, tmp_path) == nullptr,
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(filename) >= MMPA_MAX_PATH, return kInvalidFd, "Prefix path is too long!");
+    GE_IF_BOOL_EXEC(mmRealPath(filename, tmp_path, MMPA_MAX_PATH) != EN_OK,
                     GELOGI("File %s does not exit, it will be created.", filename));
     real_path = std::string(tmp_path);)
 
   // Open file, only the current user can read and write, to avoid malicious application access
   // Using the O_EXCL, if the file already exists,return failed to avoid privilege escalation vulnerability.
-  mode_t mode = S_IRUSR | S_IWUSR;
+  mmMode_t mode = M_IRUSR | M_IWUSR;
 
-  int32_t fd = mmOpen2(real_path.c_str(), O_RDWR | O_CREAT | O_APPEND, mode);
+  int32_t fd = mmOpen2(real_path.c_str(), M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
     GELOGE(kInvalidFd, "open file failed. errno = %d, %s", fd, strerror(errno));
     return kInvalidFd;

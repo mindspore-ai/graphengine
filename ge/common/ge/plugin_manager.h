@@ -17,7 +17,6 @@
 #ifndef GE_COMMON_GE_PLUGIN_MANAGER_H_
 #define GE_COMMON_GE_PLUGIN_MANAGER_H_
 
-#include <dlfcn.h>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -30,6 +29,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "engine/dnnengine.h"
 #include "framework/common/debug/ge_log.h"
+#include "mmpa/mmpa_api.h"
 
 namespace ge {
 using SoToHandleMap = std::map<std::string, void *>;
@@ -57,7 +57,7 @@ class PluginManager {
   template <typename R, typename... Types>
   Status GetAllFunctions(const string &func_name, map<string, function<R(Types... args)>> &funcs) {
     for (const auto &handle : handles_) {
-      auto real_fn = (R(*)(Types...))dlsym(handle.second, func_name.c_str());
+      auto real_fn = (R(*)(Types...))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGW("Failed to get function %s in %s!", func_name.c_str(), handle.first.c_str());
         return GE_PLGMGR_FUNC_NOT_EXIST;
@@ -72,7 +72,7 @@ class PluginManager {
   Status InvokeAll(const string &func_name, Types... args) {
     for (const auto &handle : handles_) {
       // If the funcName is existed, signature of realFn can be casted to any type
-      auto real_fn = (void (*)(Types...))dlsym(handle.second, func_name.c_str());
+      auto real_fn = (void (*)(Types...))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
         return GE_PLGMGR_INVOKE_FAILED;
@@ -87,7 +87,7 @@ class PluginManager {
   Status InvokeAll(const string &func_name, T arg) {
     for (const auto &handle : handles_) {
       // If the funcName is existed, signature of realFn can be casted to any type
-      auto real_fn = (void (*)(T))dlsym(handle.second, func_name.c_str());
+      auto real_fn = (void (*)(T))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
         return GE_PLGMGR_INVOKE_FAILED;
@@ -112,7 +112,7 @@ class PluginManager {
   Status InvokeAll(const string &func_name, T1 arg) {
     for (const auto &handle : handles_) {
       // If the funcName is existed, signature of realFn can be casted to any type
-      auto real_fn = (T2(*)(T1))dlsym(handle.second, func_name.c_str());
+      auto real_fn = (T2(*)(T1))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
         return GE_PLGMGR_INVOKE_FAILED;
@@ -130,7 +130,7 @@ class PluginManager {
   Status InvokeAll(const string &func_name) {
     for (const auto &handle : handles_) {
       // If the funcName is existed, signature of realFn can be casted to any type
-      auto real_fn = (T(*)())dlsym(handle.second, func_name.c_str());
+      auto real_fn = (T(*)())mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
         return GE_PLGMGR_INVOKE_FAILED;

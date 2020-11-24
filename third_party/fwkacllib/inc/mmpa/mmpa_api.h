@@ -26,6 +26,12 @@
 #define _GNU_SOURCE
 #endif
 
+#ifdef FUNC_VISIBILITY
+#define MMPA_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define MMPA_FUNC_VISIBILITY
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
@@ -86,6 +92,13 @@
 
 
 #if(OS_TYPE == WIN) //lint !e553
+
+#ifdef FUNC_VISIBILITY
+#define MMPA_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define MMPA_FUNC_VISIBILITY
+#endif
+
 #include <winsock2.h>
 #include <winsock.h>
 #include "Windows.h"

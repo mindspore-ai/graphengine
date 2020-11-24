@@ -30,8 +30,10 @@ const uint8_t kPrefixIndex = 9;
 namespace ge {
 void OpTilingManager::ClearHandles() noexcept {
   for (const auto &handle : handles_) {
-    if (dlclose(handle.second) != 0) {
-      GELOGE(FAILED, "Failed to close handle of %s: %s", handle.first.c_str(), dlerror());
+    if (mmDlclose(handle.second) != 0) {
+      const char *error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGE(FAILED, "Failed to close handle of %s: %s", handle.first.c_str(), error);
     }
   }
   handles_.clear();
@@ -40,11 +42,12 @@ void OpTilingManager::ClearHandles() noexcept {
 OpTilingManager::~OpTilingManager() { ClearHandles(); }
 
 std::string OpTilingManager::GetPath() {
-  const char *opp_path_env = std::getenv(kEnvName);
+  char opp_path_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv(kEnvName, opp_path_env, MMPA_MAX_PATH);
   std::string opp_path = kDefaultPath;
-  if (opp_path_env != nullptr) {
-    char resolved_path[PATH_MAX];
-    if (realpath(opp_path_env, resolved_path) == NULL) {
+  if (res == EN_OK) {
+    char resolved_path[MMPA_MAX_PATH];
+    if (mmRealPath(opp_path_env, resolved_path, MMPA_MAX_PATH) != EN_OK) {
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E19024", {"env", "value", "situation"}, {"ASCEND_OPP_PATH", opp_path_env, "loading the tiling lib"});
       GELOGE(PARAM_INVALID, "Failed load tiling lib as env 'ASCEND_OPP_PATH'[%s] is invalid path.", opp_path_env);
@@ -66,16 +69,20 @@ void OpTilingManager::LoadSo() {
   std::string built_in_name = kDefaultBuiltInTilingPath.substr(kPrefixIndex);
   std::string custom_name = kDefaultCustomTilingPath.substr(kPrefixIndex);
 
-  void *handle_bi = dlopen(built_in_tiling_lib.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  void *handle_bi = mmDlopen(built_in_tiling_lib.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
   if (handle_bi == nullptr) {
-    GELOGW("Failed to dlopen %s!", dlerror());
+    const char *error = mmDlerror();
+    GE_IF_BOOL_EXEC(error == nullptr, error = "");
+    GELOGW("Failed to dlopen %s!", error);
   } else {
     handles_[built_in_name] = handle_bi;
   }
 
-  void *handle_ct = dlopen(custom_tiling_lib.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  void *handle_ct = mmDlopen(custom_tiling_lib.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
   if (handle_ct == nullptr) {
-    GELOGW("Failed to dlopen %s!", dlerror());
+    const char *error = mmDlerror();
+    GE_IF_BOOL_EXEC(error == nullptr, error = "");
+    GELOGW("Failed to dlopen %s!", error);
   } else {
     handles_[custom_name] = handle_ct;
   }

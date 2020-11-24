@@ -126,17 +126,17 @@ RTS_API rtError_t rtGetStreamId(rtStream_t stream, int32_t *streamId);
  * @return RT_ERROR_NONE for complete
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *MaxStrCount, uint32_t *MaxTaskCount);
+RTS_API rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *maxStrCount, uint32_t *maxTaskCount);
 
 /**
  * @ingroup dvrt_stream
  * @brief Name a stream
- * @param [in] stream_  stream to be named
+ * @param [in] stream  stream to be named
  * @param [in] name   identification name
  * @return RT_ERROR_NONE for complete
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNameStream(rtStream_t stream_, const char *name);
+RTS_API rtError_t rtNameStream(rtStream_t stream, const char *name);
 
 /**
  * @ingroup dvrt_stream
@@ -144,12 +144,12 @@ RTS_API rtError_t rtNameStream(rtStream_t stream_, const char *name);
  * @param [in] ptr  Determine the address where the value of the true and false branches is located
  * @param [in] condition switch condition
  * @param [in] value  switch value
- * @param [in] true_stream  Stream that needs to be activated when the value is non-zero
+ * @param [in] trueStream  Stream that needs to be activated when the value is non-zero
  * @param [in] stream input stream to init task
  * @return RT_ERROR_NONE for complete
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t value, rtStream_t true_stream,
+RTS_API rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t value, rtStream_t trueStream,
                                  rtStream_t stream);
 
 /**
@@ -162,18 +162,18 @@ RTS_API rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t val
  * @param [in] dataType   data type of target value
  * @return RT_ERROR_NONE for complete
  */
-RTS_API rtError_t rtStreamSwitchEx(void *ptr, rtCondition_t condition, void *value_ptr, rtStream_t true_stream,
+RTS_API rtError_t rtStreamSwitchEx(void *ptr, rtCondition_t condition, void *valuePtr, rtStream_t trueStream,
                                    rtStream_t stream, rtSwitchDataType_t dataType);
 
 /**
  * @ingroup dvrt_stream
  * @brief Active a stream
- * @param [in] active_stream stream to be activated
+ * @param [in] activeStream stream to be activated
  * @param [in] stream input stream to init task
  * @return RT_ERROR_NONE for complete
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtStreamActive(rtStream_t active_stream, rtStream_t stream);
+RTS_API rtError_t rtStreamActive(rtStream_t activeStream, rtStream_t stream);
 
 /**
  * @brief execute extensible stream case switch task

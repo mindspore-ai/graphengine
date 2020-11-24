@@ -475,7 +475,7 @@ RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-rtError_t rtIpcDestroyMemoryName(const char *name);
+RTS_API rtError_t rtIpcDestroyMemoryName(const char *name);
 
 /**
  * @ingroup dvrt_mem
@@ -503,13 +503,13 @@ RTS_API rtError_t rtIpcCloseMemory(const void *ptr);
  * @ingroup dvrt_mem
  * @brief HCCL Async memory cpy
  * @param [in] index sq index
- * @param [in] wqe_index moudle index
+ * @param [in] wqeIndex moudle index
  * @param [in] stream asynchronized task stream
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqe_index, rtStream_t stream);
+RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqeIndex, rtStream_t stream);
 
 /**
  * @ingroup dvrt_mem

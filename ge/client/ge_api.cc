@@ -177,7 +177,7 @@ Session::Session(const std::map<string, string> &options) {
   // check init status
   sessionId_ = 0;
   if (!g_ge_initialized) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED);
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized.");
     return;
   }
   // call Initialize

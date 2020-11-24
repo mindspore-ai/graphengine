@@ -105,6 +105,7 @@ target_include_directories(ge_common PRIVATE
 
 target_link_libraries(ge_common PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    static_mmpa
     -Wl,--no-as-needed
     graph
     ascend_protobuf
@@ -112,7 +113,6 @@ target_link_libraries(ge_common PRIVATE
     c_sec
     error_manager
     slog
-    mmpa
     -Wl,--as-needed
     json
     -lrt

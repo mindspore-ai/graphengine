@@ -34,8 +34,10 @@ class SuperKernelFactory {
   ~SuperKernelFactory() {
     if (handle_ != nullptr) {
       GELOGI("SKT: SKT LIB PATH release.");
-      if (dlclose(handle_) != 0) {
-        GELOGW("failed to close handle, message: %s", dlerror());
+      if (mmDlclose(handle_) != 0) {
+        const char *error = mmDlerror();
+        GE_IF_BOOL_EXEC(error == nullptr, error = "");
+        GELOGW("failed to close handle, message: %s", error);
       }
     }
   };

@@ -1019,8 +1019,8 @@ Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippTyp
 Status ModelManager::GenSessionId(uint64_t &session_id) {
   std::lock_guard<std::mutex> lock(session_id_create_mutex_);
 
-  struct timeval tv;
-  if (gettimeofday(&tv, nullptr) != 0) {
+  mmTimeval tv;
+  if (mmGetTimeOfDay(&tv, nullptr) != 0) {
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }
@@ -1037,8 +1037,8 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
-  GE_CHK_BOOL_RET_STATUS(model.key.empty() || access(model.key.c_str(), F_OK) == 0,
-                         ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID,
+  GE_CHK_BOOL_RET_STATUS(model.key.empty() || mmAccess2(model.key.c_str(), M_F_OK) == EN_OK,
+	                 ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID,
                          "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
@@ -1123,7 +1123,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_data,
                                     const std::vector<uint32_t> &input_queue_ids,
                                     const std::vector<uint32_t> &output_queue_ids) {
-  GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || access(model_data.key.c_str(), F_OK) == 0,
+  GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || mmAccess2(model_data.key.c_str(), M_F_OK) == EN_OK,
                          ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID, "input key file path %s is not valid, %s",
                          model_data.key.c_str(), strerror(errno));
 

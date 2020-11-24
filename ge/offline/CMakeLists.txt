@@ -69,7 +69,7 @@ target_link_libraries(atc PRIVATE
     json
     runtime_compile
     slog
-    mmpa
+    static_mmpa
     -lrt
     -ldl
 )

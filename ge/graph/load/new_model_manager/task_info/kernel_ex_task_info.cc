@@ -149,7 +149,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     return FAILED;
   }
 
-  uint64_t workspace_base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(workspace_data_addrs[0]));
+  uint64_t workspace_base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(workspace_data_addrs[0]));
   const vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
   const vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
   vector<void *> io_addrs;
@@ -287,7 +287,7 @@ Status KernelExTaskInfo::CopyTaskInfo(const domi::KernelExDef &kernel_def, const
   }
 
   if (workspace_data_sizes[0] < static_cast<int64_t>(kernel_def.task_info_size())) {
-    GELOGE(FAILED, "Node:%s workspace size is %zu, task info size is %zu.", op_desc->GetName().c_str(),
+    GELOGE(FAILED, "Node:%s workspace size is %ld, task info size is %d.", op_desc->GetName().c_str(),
            workspace_data_sizes[0], kernel_def.task_info_size());
     return FAILED;
   }

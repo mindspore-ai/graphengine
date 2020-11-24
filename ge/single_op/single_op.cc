@@ -59,7 +59,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_inputs; ++i) {
     // preventing from read out of bound
     size_t aligned_size = GetAlignedSize(inputs[i].length);
-    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%lu, input_sizes_:%lu",
+    GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%lu, input_sizes_:%zu",
            i, aligned_size, inputs[i].length, input_sizes_[i]);
     if (aligned_size < input_sizes_[i]) {
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Input size mismatch. index = %zu, model expect %zu,"
@@ -77,7 +77,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   for (size_t i = 0; i < num_outputs; ++i) {
     // preventing from write out of bound
     size_t aligned_size = GetAlignedSize(outputs[i].length);
-    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%lu, output_sizes_:%lu",
+    GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%lu, output_sizes_:%zu",
            i, aligned_size, outputs[i].length, output_sizes_[i]);
     if (aligned_size < output_sizes_[i]) {
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Output size mismatch. index = %zu, model expect %zu,"
@@ -143,7 +143,7 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       GE_CHECK_NOTNULL(task_io_addr);
       auto io_addr = reinterpret_cast<uint64_t *>(const_cast<uintptr_t *>(task_io_addr));
       for (size_t i = 0; i < io_addr_num; ++i) {
-        io_addr[i] = reinterpret_cast<uintptr_t>(args_[i]);
+        io_addr[i] = static_cast<uintptr_t>(args_[i]);
       }
     } else {
       GELOGW("Only TF_kernel aicpu and aicpu_CC are supported, but got %u", task->GetOpTaskType());

@@ -648,6 +648,7 @@ target_link_libraries(ge_runner
     ge_memory
     adump_server
     msprofiler
+    static_mmpa
     -Wl,--no-as-needed
     graph
     ge_common
@@ -655,7 +656,6 @@ target_link_libraries(ge_runner
     register
     c_sec
     slog
-    mmpa
     msprof
     runtime
     resource
@@ -712,6 +712,7 @@ target_include_directories(ge_compiler PRIVATE
 target_link_libraries(ge_compiler
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
+    static_mmpa
     -Wl,--no-as-needed
     graph
     ge_common
@@ -720,7 +721,6 @@ target_link_libraries(ge_compiler
     c_sec
     error_manager
     slog
-    mmpa
     runtime_compile
     resource
     -Wl,--as-needed
@@ -770,6 +770,7 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      ge_executor
                      ge_common_static
                      graph_static
+                     static_mmpa
                      ascend_protobuf_static
                      register_static
                      error_manager_static
@@ -779,11 +780,11 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--no-as-needed
                      c_sec
                      runtime
-                     mmpa
                      slog
                      msprof
                      ascend_hal_stub
                      -Wl,--as-needed
+                     -lrt
                      -ldl
                      json
 )

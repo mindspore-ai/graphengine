@@ -17,7 +17,6 @@
 #ifndef GE_GRAPH_MANAGER_UTIL_DEBUG_H_
 #define GE_GRAPH_MANAGER_UTIL_DEBUG_H_
 
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
@@ -25,7 +24,6 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
-#include <unistd.h>
 #include <algorithm>
 #include <fstream>
 #include <iosfwd>

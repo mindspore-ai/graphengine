@@ -25,13 +25,14 @@
 
 #include "common/dump/dump_properties.h"
 #include "graph/op_desc.h"
+#include "common/ge_compiler_options.h"
 
 namespace ge {
 // Configuration property management
-static const char *SYSMODE __attribute__((unused)) = "FMK_SYSMODE";
-static const char *USE_FUSION __attribute__((unused)) = "FMK_USE_FUSION";
-static const char *TIMESTAT_ENABLE __attribute__((unused)) = "DAVINCI_TIMESTAT_ENABLE";
-static const char *ANNDROID_DEBUG __attribute__((unused)) = "ANNDROID_DEBUG";
+static const char *SYSMODE GE_ATTRIBUTE_UNUSED = "FMK_SYSMODE";
+static const char *USE_FUSION GE_ATTRIBUTE_UNUSED = "FMK_USE_FUSION";
+static const char *TIMESTAT_ENABLE GE_ATTRIBUTE_UNUSED = "DAVINCI_TIMESTAT_ENABLE";
+static const char *ANNDROID_DEBUG GE_ATTRIBUTE_UNUSED = "ANNDROID_DEBUG";
 
 class PropertiesManager {
  public:

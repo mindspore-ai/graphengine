@@ -110,10 +110,11 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf \
     libc_sec \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES += libmmpa
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -152,10 +153,11 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf \
     libc_sec \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES += libmmpa
 
 ifeq ($(device_os),android)
 LOCAL_LDFLAGS += -ldl

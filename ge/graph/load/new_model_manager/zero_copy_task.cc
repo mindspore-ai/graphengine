@@ -19,6 +19,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "common/ge_compiler_options.h"
 
 namespace ge {
 const char *const kDefaultBatchLable = "Batch_default";
@@ -157,7 +158,7 @@ Status ZeroCopyTask::DistributeParam(bool async_mode, rtStream_t stream) {
     rt_err = rtMemcpyAsync(args_addr_, args_size_, args_info_.data(), args_info_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX,
                            stream);
   } else {
-    __builtin_prefetch(args_addr_);
+    GE_BUILTIN_PREFETCH(args_addr_);
     rt_err = rtMemcpy(args_addr_, args_size_, args_info_.data(), args_info_.size(), RT_MEMCPY_HOST_TO_DEVICE);
   }
 

@@ -1,0 +1,170 @@
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package domi;
+
+message ModelTaskDef {
+    string version = 1;
+
+    map<string, string> attr = 9; // Extended field
+    repeated TaskDef task = 10;
+
+    uint64 memory_size = 11;
+    uint32 stream_num = 12;
+    uint32 event_num = 13;
+    uint64 weight_size = 14;
+
+    repeated bytes op = 15; // input/output opdef in bytes
+
+    uint64 base_addr = 16;    // base addr
+    uint64 weight_addr = 17;  // weight addr
+    uint32 batch_num = 18;
+}
+
+
+message TaskDef {
+    uint32 id = 1;
+    uint32 type = 2;
+
+    uint32 stream_id = 10;
+    uint32 event_id = 11;
+
+    KernelDef kernel = 20;
+    KernelExDef kernel_ex = 21;
+    KernelHcclDef kernel_hccl = 25;
+    EventExDef event_ex = 26;
+    LogTimeStampDef log_timestamp = 28;
+
+    uint32 label_id = 30;
+
+    MemcpyAsyncDef memcpy_async = 31;
+    StreamSwitchDef stream_switch = 32;
+    StreamActiveDef stream_active = 33;
+    bytes private_def = 34;
+    uint64 ops_kernel_store_ptr = 35;      // adjustments to other fields in the future
+    StreamSwitchNDef stream_switch_n = 36;
+
+    LabelSetDef label_set = 37;
+    LabelGotoExDef label_goto_ex = 38;
+    LabelSwitchByIndexDef label_switch_by_index = 39;
+}
+
+message KernelDef {
+    KernelContext context = 1;
+
+    string stub_func = 10;
+    uint32 block_dim = 11;
+    uint32 args_size = 12;
+    bytes args = 13;
+    bytes sm_desc = 14;
+    bytes flowtable = 15;
+    string so_name = 16;
+    string kernel_name = 17;
+    bytes kernel_ext_info = 18;
+    uint32 kernel_ext_info_size = 19;
+}
+
+message KernelContext {
+    uint32 kernel_type = 1;
+    uint32 op_id = 2;                              // OP type in CCE
+    uint32 kernel_func_id = 3;
+    uint32 op_index = 4;                           // TE/Custom operator
+    bool is_flowtable = 5;                         // Identify whether args is a flowtable structure
+    bytes args_offset = 6;                         // args offset information
+    uint32 args_count = 7;                         // args count
+    repeated uint32 origin_op_index = 8;
+}
+
+
+message KernelExDef {
+    uint32 flags = 1;
+
+    uint32 op_index = 4;
+    uint32 args_size = 12;
+    bytes args = 13;
+    bytes task_info = 14;                 // serialized nodeDef, funcDef, inputoutput
+    uint32 task_info_size = 15;
+    bytes kernel_ext_info = 16;
+    uint32 kernel_ext_info_size = 17;
+}
+
+
+message KernelHcclDef {
+    uint32 op_index = 8;
+    string hccl_type = 9;
+}
+
+
+message EventExDef {
+    uint32 op_index = 1;
+    uint32 event_type = 2;
+}
+
+message LogTimeStampDef {
+    uint64 logid = 1;
+    bool notify = 2;
+    uint32 flat = 3;
+}
+
+message MemcpyAsyncDef {
+    uint64 dst = 1;
+    uint64 dst_max = 2;
+    uint64 src = 3;
+    uint64 count = 4;
+    uint32 kind = 5;
+    uint32 op_index = 6;
+}
+
+message StreamSwitchDef {
+    uint32 op_index = 1;
+    uint32 true_stream_id = 2;
+    int64 value = 3;
+    uint64 value_ptr = 4;
+    uint32 data_type = 5;
+}
+
+message StreamActiveDef {
+    uint32 op_index = 1;
+    uint32 active_stream_id = 2;
+}
+
+message StreamSwitchNDef {
+    uint32 op_index = 1;
+    uint32 size = 2;
+    repeated int64 target_value = 3;
+    repeated uint32 true_stream_id = 4;
+    uint32 element_size = 5;
+    uint32 data_type = 6;
+}
+
+message LabelSetDef {
+    uint32 op_index = 1;
+    uint32 label_id = 2;
+    uint32 model_id = 3;
+}
+
+message LabelGotoExDef {
+    uint32 op_index = 1;
+    uint32 label_id = 2;
+    uint32 model_id = 3;
+}
+
+message LabelSwitchByIndexDef {
+    uint32 op_index = 1;
+    uint32 label_max = 2;
+}

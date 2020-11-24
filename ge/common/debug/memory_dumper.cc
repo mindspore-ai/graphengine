@@ -154,7 +154,7 @@ int MemoryDumper::OpenFile(const char *filename) {
   // Using the O_EXCL, if the file already exists,return failed to avoid privilege escalation vulnerability.
   mmMode_t mode = M_IRUSR | M_IWUSR;
 
-  int32_t fd = mmOpen2(real_path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, mode);
+  int32_t fd = mmOpen2(real_path.c_str(), M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
     GELOGE(kInvalidFd, "open file failed. errno = %d, %s", fd, strerror(errno));
     return kInvalidFd;

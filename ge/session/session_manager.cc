@@ -173,7 +173,7 @@ Status SessionManager::AddGraph(SessionId session_id, uint32_t graph_id, const G
 Status SessionManager::AddGraphWithCopy(SessionId session_id, uint32_t graph_id, const Graph &graph,
                                         const std::map<std::string, std::string> &options) {
   if (!init_flag_) {
-    GELOGE(GE_SESSION_MANAGER_NOT_INIT);
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "Session manager is not initialized.");
     return GE_SESSION_MANAGER_NOT_INIT;
   }
   SessionPtr innerSession = nullptr;

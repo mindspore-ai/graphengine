@@ -307,7 +307,7 @@ Status SubgraphExecutor::LaunchTasks() {
 
 Status SubgraphExecutor::ScheduleTasks() {
   GELOGD("[%s] Start to schedule prepare workers.", graph_item_->GetName().c_str());
-  auto prepare_future = std::async([&]() -> Status {
+  auto prepare_future = std::async(std::launch::async, [&]() -> Status {
     GetContext().SetSessionId(context_->session_id);
     auto ret = PrepareNodes();
     ready_queue_.Push(nullptr);

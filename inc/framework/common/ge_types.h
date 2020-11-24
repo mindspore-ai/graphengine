@@ -28,16 +28,9 @@
 #include "external/ge/ge_api_types.h"
 
 namespace ge {
-enum RuntimeType {
-  HOST = 0,
-  DEVICE = 1
-};
+enum RuntimeType { HOST = 0, DEVICE = 1 };
 
-enum PerfLevel {
-  GEN_TASK_WITH_FUSION = -1,
-  GEN_TASK_WITHOUT_L2FUSION = 3,
-  GEN_TASK_WITHOUT_FUSION = 4
-};
+enum PerfLevel { GEN_TASK_WITH_FUSION = -1, GEN_TASK_WITHOUT_L2FUSION = 3, GEN_TASK_WITHOUT_FUSION = 4 };
 
 enum FrameworkType {
   CAFFE = 0,
@@ -55,12 +48,7 @@ enum OpEngineType {
   ENGINE_AIVECTOR = 4  // not support
 };
 
-enum InputAippType{
-  DATA_WITHOUT_AIPP = 0,
-  DATA_WITH_STATIC_AIPP,
-  DATA_WITH_DYNAMIC_AIPP,
-  DYNAMIC_AIPP_NODE
-};
+enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYNAMIC_AIPP, DYNAMIC_AIPP_NODE };
 
 const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
@@ -107,7 +95,7 @@ struct OutputData {
 struct Command {
   std::string cmd_type;                 // Command type
   std::vector<std::string> cmd_params;  // Command params
-  uint64_t module_index; // prof module
+  uint64_t module_index;                // prof module
 };
 
 // The definition of I/O shape description
@@ -117,6 +105,7 @@ struct ShapeDescription {
   int64_t height = 0;
   int64_t width = 0;
   std::vector<int64_t> dims;
+  std::vector<std::pair<int64_t, int64_t>> shape_ranges;
 };
 
 // Definition of input and output description information

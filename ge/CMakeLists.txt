@@ -385,7 +385,6 @@ target_link_libraries(ge_runner
     error_manager
     ascend_hal_stub
     -Wl,--as-needed
-    json
     -lrt
     -ldl
 )

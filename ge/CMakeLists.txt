@@ -1,4 +1,4 @@
-if (NOT ENABLE_D AND NOT ENABLE_ACL)
+if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
     add_subdirectory(common)
     add_subdirectory(plugin/engine)
     add_subdirectory(graph/build/memory)
@@ -600,7 +600,7 @@ set(INFER_SRC_LIST
     "analyzer/analyzer.cc"
 )
 
-if (NOT ENABLE_D AND NOT ENABLE_ACL)
+if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
 add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
 

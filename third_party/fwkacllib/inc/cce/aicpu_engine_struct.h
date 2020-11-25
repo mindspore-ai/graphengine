@@ -40,6 +40,12 @@ typedef struct {
   } fwkKernelBase;
 } __attribute__((packed)) STR_FWK_OP_KERNEL;
 
+struct SessionInfo {
+  uint64_t sessionId;
+  uint64_t kernelId;
+  bool sessFlag;
+} __attribute__((packed));
+
 #ifdef __cplusplus
 }
 #endif

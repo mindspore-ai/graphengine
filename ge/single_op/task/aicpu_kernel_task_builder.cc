@@ -46,7 +46,7 @@ Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
   return SUCCESS;
 }
 
-Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
+Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id) {
   auto ret = SetKernelArgs(task);
   if (ret != SUCCESS) {
     return ret;
@@ -76,7 +76,7 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task) {
                          "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
                          kernel_ext_info.size(), kernel_ext_info_size);
 
-  ret = task.SetExtInfoAndType(kernel_ext_info);
+  ret = task.SetExtInfoAndType(kernel_ext_info, kernel_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "Init ext info failed.");
     return ret;

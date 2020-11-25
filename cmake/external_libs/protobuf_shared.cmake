@@ -12,8 +12,9 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
 endif()
 
 if (ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
-    set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
+    #set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
+    set(REQ_URL "/home/t00456437/workspace/v3.8.0.tar.gz")
+    #set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
 else()
     set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz")
     set(MD5 "3d9e32700639618a4d2d342c99d4507a")
@@ -22,7 +23,7 @@ endif ()
 set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 -D_GLIBCXX_USE_CXX11_ABI=0 -O2 -Dgoogle=ascend_private")
 set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(protobuf_build
-                    URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
+                    URL ${REQ_URL}
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -Dprotobuf_WITH_ZLIB=OFF
                     -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}

@@ -13,8 +13,9 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
 endif()
 
 if (ENABLE_GITEE)
-    set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
-    set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
+    #set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
+    #set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
+    set(REQ_URL "/home/t00456437/workspace/v3.8.0.tar.gz")
 else()
     set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz")
     set(MD5 "3d9e32700639618a4d2d342c99d4507a")

@@ -85,7 +85,7 @@ ut::GraphBuilder BuildGraph1() {
   builder.AddDataEdge(var2, 0, conv1, 1);
   builder.AddDataEdge(conv1, 0, relu1, 0);
   builder.AddDataEdge(relu1, 0, netoutput1, 0);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   return builder;
 }
 
@@ -134,7 +134,7 @@ ut::GraphBuilder BuildGraph2() {
   builder.AddDataEdge(var6, 0, bn1, 4);
   builder.AddDataEdge(bn1, 0, relu1, 0);
   builder.AddDataEdge(relu1, 0, netoutput1, 0);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   return builder;
 }
 
@@ -189,7 +189,7 @@ ut::GraphBuilder BuildGraph3() {
   builder.AddDataEdge(relu1, 0, conv2, 0);
   builder.AddDataEdge(var3, 0, conv2, 1);
   builder.AddDataEdge(conv2, 0, netoutput1, 0);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   return builder;
 }
 
@@ -248,7 +248,7 @@ ut::GraphBuilder BuildGraph4() {
   builder.AddDataEdge(relu1, 0, conv2, 0);
   builder.AddDataEdge(var3, 0, conv2, 1);
   builder.AddDataEdge(conv2, 0, netoutput1, 0);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   return builder;
 }
 
@@ -305,7 +305,7 @@ ut::GraphBuilder BuilderGraph5() {
   builder.AddDataEdge(relug1, 0, bng1, 0);
   builder.AddDataEdge(bng1, 0, apply1, 0);
   builder.AddDataEdge(apply1, 0, netoutput1, 0);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   return builder;
 }
 
@@ -353,7 +353,7 @@ ut::GraphBuilder BuildGraph6() {
   builder.AddDataEdge(constant, 0, addn, 2);
   builder.AddDataEdge(addn, 0, netoutput, 0);
 
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
 
   return builder;
 }
@@ -397,7 +397,7 @@ ut::GraphBuilder BuildGraph7() {
   builder.AddDataEdge(constant, 0, addn, 2);
   builder.AddDataEdge(addn, 0, netoutput, 0);
 
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
 
   return builder;
 }
@@ -449,7 +449,7 @@ ut::GraphBuilder BuildGraph8() {
   builder.AddDataEdge(relu, 0, reshape, 0);
   builder.AddDataEdge(reshape, 0, conv, 1);
   builder.AddDataEdge(conv, 0, netoutput, 0);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   return builder;
 }
 }  // namespace
@@ -457,7 +457,7 @@ ut::GraphBuilder BuildGraph8() {
 TEST_F(UtestFormatRefiner, data_format) {
   auto builder = BuildGraph8();
   auto graph = builder.GetGraph();
-  FormatRefiner::SetInferOrigineFormatFlag(false);
+  //FormatRefiner::SetInferOrigineFormatFlag(false);
   graph->SaveDataFormat(FORMAT_NCHW);
   EXPECT_EQ(FormatRefiner::InferOrigineFormat(graph), GRAPH_SUCCESS);
   auto data2 = graph->FindNode("data2");
@@ -466,18 +466,18 @@ TEST_F(UtestFormatRefiner, data_format) {
   EXPECT_EQ(data2->GetOpDesc()->GetOutputDesc(0).GetOriginFormat(), FORMAT_NCHW);
   EXPECT_EQ(relu->GetOpDesc()->GetInputDesc(0).GetOriginFormat(), FORMAT_NCHW);
   EXPECT_EQ(relu->GetOpDesc()->GetOutputDesc(0).GetOriginFormat(), FORMAT_NCHW);
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
 }
 
 TEST_F(UtestFormatRefiner, constant_fail) {
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   auto builder = BuildGraph6();
   auto graph = builder.GetGraph();
   EXPECT_EQ(FormatRefiner::InferOrigineFormat(graph), GRAPH_FAILED);
 }
 
 TEST_F(UtestFormatRefiner, scalar_nodes_infer) {
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   auto builder = BuildGraph6();
   auto graph = builder.GetGraph();
   auto constant = graph->FindNode("constant");
@@ -650,7 +650,7 @@ TEST_F(UtestFormatRefiner, infer_origine_format_failed) {
 }
 
 TEST_F(UtestFormatRefiner, save_format) {
-  FormatRefiner::SetInferOrigineFormatFlag(true);
+  //FormatRefiner::SetInferOrigineFormatFlag(true);
   auto builder = BuildGraph6();
   auto graph = builder.GetGraph();
   graph->SaveDataFormat(FORMAT_NHWC);

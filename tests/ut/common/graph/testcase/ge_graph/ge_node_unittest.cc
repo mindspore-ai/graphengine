@@ -151,7 +151,7 @@ TEST_F(UtestGeNode, update_opdesc) {
 
   EXPECT_EQ(n1->UpdateOpDesc(desc_ptr2), GRAPH_SUCCESS);
 }
-
+/*
 TEST_F(UtestGeNode, add_link_from) {
   OpDescPtr desc_ptr = std::make_shared<OpDesc>("name", "type");
   EXPECT_EQ(desc_ptr->AddInputDesc("x", GeTensorDesc(GeShape({1, 16, 16, 16}), FORMAT_NCHW)), GRAPH_SUCCESS);
@@ -179,6 +179,7 @@ TEST_F(UtestGeNode, add_link_from) {
   NodePtr n8 = graph_ptr1->AddNode(desc_ptr1);
   EXPECT_EQ(n8->AddLinkFromForParse(n7), GRAPH_PARAM_INVALID);
 }
+*/
 
 TEST_F(UtestGeNode, add_link_from_fail) {
   OpDescPtr desc_ptr = std::make_shared<OpDesc>("name1", "type1");

@@ -19,5 +19,5 @@ project(slog_stub)
 file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "src/*.cc"
 )
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 add_library(slog_stub SHARED ${SRC_FILES})

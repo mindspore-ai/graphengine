@@ -13,33 +13,33 @@
 # limitations under the License.
 # ============================================================================
 
-cmake_minimum_required(VERSION 2.8)
+#cmake_minimum_required(VERSION 2.8)
 
 project(OMG_CCE)
 
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/cce)
-include_directories(${GE_SOURCE_DIR}/inc)
-include_directories(${GE_SOURCE_DIR}/inc/framework)
-include_directories(${GE_SOURCE_DIR}/inc/graph)
-include_directories(${GE_SOURCE_DIR}/inc/external)
-include_directories(${GE_SOURCE_DIR}/inc/external/graph)
-include_directories(${GE_SOURCE_DIR}/src/ge)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
+include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/inc/framework)
+include_directories(${GE_CODE_DIR}/metadef/inc/graph)
+include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
+include_directories(${GE_CODE_DIR}/ge)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
-file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "${GE_SOURCE_DIR}/src/proto/om.proto"
-        "${GE_SOURCE_DIR}/src/proto/task.proto"
+set(PROTO_LIST
+    "${GE_CODE_DIR}/metadef/proto/om.proto"
+    "${GE_CODE_DIR}/metadef/proto/task.proto"
 )
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
-file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-#        "${GE_SOURCE_DIR}/src/ge/common/util.cc"
-        "src/omg_stub.cc"
+set(SRCS
+#   "${GE_CODE_DIR}/src/ge/common/util.cc"
+    "src/omg_stub.cc"
 )
 
 add_library(omg_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(omg_stub protobuf::protobuf)
+target_link_libraries(omg_stub ascend_protobuf)

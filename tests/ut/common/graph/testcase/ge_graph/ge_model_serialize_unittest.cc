@@ -1060,7 +1060,7 @@ TEST(UtestGeModelSerialize, test_model_serialize_imp_invalid_param) {
   auto graph = std::make_shared<ComputeGraph>("test_graph");
   auto node = graph->AddNode(std::make_shared<OpDesc>());
   node->op_ = nullptr;
-  proto::ModelDef model_def;
+  ge::proto::ModelDef model_def;
   Model model;
   model.SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
   EXPECT_FALSE(imp.SerializeModel(model, &model_def));
@@ -1101,26 +1101,26 @@ TEST(UTEST_ge_model_unserialize, test_invalid_tensor) {
 
 TEST(UTEST_ge_model_unserialize, test_invalid_TensorDesc) {
   {  // valid
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.mutable_attr();
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto tensor_desc_attr = attr_def->mutable_td();
     tensor_desc_attr->set_layout("NCHW");
-    tensor_desc_attr->set_dtype(proto::DataType::DT_INT8);
+    tensor_desc_attr->set_dtype(ge::proto::DataType::DT_INT8);
 
     ModelSerializeImp imp;
     Model model;
     EXPECT_TRUE(imp.UnserializeModel(model, mode_def));
   }
   {  // invalid layout
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.mutable_attr();
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto tensor_desc_attr = attr_def->mutable_td();
     tensor_desc_attr->set_layout("InvalidLayout");
-    tensor_desc_attr->set_dtype(proto::DataType::DT_INT8);
+    tensor_desc_attr->set_dtype(ge::proto::DataType::DT_INT8);
 
     ModelSerializeImp imp;
     Model model;
@@ -1131,13 +1131,13 @@ TEST(UTEST_ge_model_unserialize, test_invalid_TensorDesc) {
     EXPECT_EQ(tensor_desc.GetDataType(), DT_INT8);
   }
   {  // invalid datatype
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.mutable_attr();
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto tensor_desc_attr = attr_def->mutable_td();  // tensor desc
     tensor_desc_attr->set_layout("NHWC");
-    tensor_desc_attr->set_dtype((proto::DataType)100);
+    tensor_desc_attr->set_dtype((ge::proto::DataType)100);
 
     ModelSerializeImp imp;
     Model model;
@@ -1148,13 +1148,13 @@ TEST(UTEST_ge_model_unserialize, test_invalid_TensorDesc) {
     EXPECT_EQ(tensor_desc.GetDataType(), DT_UNDEFINED);
   }
   {  // invalid datatype
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.mutable_attr();
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto tensor_desc_attr = attr_def->mutable_t()->mutable_desc();  // tensor
     tensor_desc_attr->set_layout("NHWC");
-    tensor_desc_attr->set_dtype((proto::DataType)100);
+    tensor_desc_attr->set_dtype((ge::proto::DataType)100);
 
     ModelSerializeImp imp;
     Model model;
@@ -1167,13 +1167,13 @@ TEST(UTEST_ge_model_unserialize, test_invalid_TensorDesc) {
     EXPECT_EQ(tensor_desc.GetDataType(), DT_UNDEFINED);
   }
   {  // invalid attrmap
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->mutable_attr();  // graph attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto tensor_desc_attr = attr_def->mutable_t()->mutable_desc();  // tensor
     tensor_desc_attr->set_layout("NCHW");
-    tensor_desc_attr->set_dtype(proto::DataType::DT_INT8);
+    tensor_desc_attr->set_dtype(ge::proto::DataType::DT_INT8);
     auto attrs1 = tensor_desc_attr->mutable_attr();
     auto attr1 = (*attrs1)["key2"];  // empty attr
 
@@ -1191,13 +1191,13 @@ TEST(UTEST_ge_model_unserialize, test_invalid_TensorDesc) {
     EXPECT_EQ(attr_value.GetValueType(), GeAttrValue::VT_NONE);
   }
   {  // invalid attrmap2
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto tensor_desc_attr = attr_def->mutable_t()->mutable_desc();  // tensor
     tensor_desc_attr->set_layout("NCHW");
-    tensor_desc_attr->set_dtype(proto::DataType::DT_INT8);
+    tensor_desc_attr->set_dtype(ge::proto::DataType::DT_INT8);
     auto attrs1 = tensor_desc_attr->mutable_attr();
     auto attr1 = (*attrs1)["key2"].mutable_list();  // empty list attr
 
@@ -1219,14 +1219,14 @@ TEST(UTEST_ge_model_unserialize, test_invalid_TensorDesc) {
 }
 TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
   {  // invalid graph
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto graph_attr = attr_def->mutable_g();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1245,15 +1245,15 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid list graph
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     attr_def->mutable_list()->set_val_type(ge::proto::AttrDef_ListValue_ListValueType_VT_LIST_GRAPH);
     auto graph_attr = attr_def->mutable_list()->add_g();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1273,14 +1273,14 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid named_attrs
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto graph_attr = attr_def->mutable_func();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1298,15 +1298,15 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid list named_attrs
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     attr_def->mutable_list()->set_val_type(ge::proto::AttrDef_ListValue_ListValueType_VT_LIST_NAMED_ATTRS);
     auto graph_attr = attr_def->mutable_list()->add_na();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1325,14 +1325,14 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid tensor_desc
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto graph_attr = attr_def->mutable_td();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1350,15 +1350,15 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid list tensor_desc
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     attr_def->mutable_list()->set_val_type(ge::proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR_DESC);
     auto graph_attr = attr_def->mutable_list()->add_td();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1377,14 +1377,14 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid tensor
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     auto graph_attr = attr_def->mutable_t()->mutable_desc();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1402,15 +1402,15 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid list tensor
-    proto::ModelDef mode_def;
+    ge::proto::ModelDef mode_def;
     auto attrs = mode_def.add_graph()->add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     attr_def->mutable_list()->set_val_type(ge::proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR);
     auto graph_attr = attr_def->mutable_list()->add_t()->mutable_desc();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1429,15 +1429,15 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
     EXPECT_EQ(tensor_desc1.GetDataType(), DT_INT8);
   }
   {  // invalid list tensor
-    proto::GraphDef graph_def;
+    ge::proto::GraphDef graph_def;
     auto attrs = graph_def.add_op()->mutable_attr();  // node attr
 
-    proto::AttrDef *attr_def = &(*attrs)["key1"];
+    ge::proto::AttrDef *attr_def = &(*attrs)["key1"];
     attr_def->mutable_list()->set_val_type(ge::proto::AttrDef_ListValue_ListValueType_VT_LIST_TENSOR);
     auto graph_attr = attr_def->mutable_list()->add_t()->mutable_desc();
     auto attrs_of_graph = graph_attr->mutable_attr();
     auto tensor_val = (*attrs_of_graph)["key2"].mutable_td();
-    tensor_val->set_dtype(proto::DT_INT8);
+    tensor_val->set_dtype(ge::proto::DT_INT8);
     tensor_val->set_layout("invalidLayout");
 
     ModelSerializeImp imp;
@@ -1462,7 +1462,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
 TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   // model invalid node input
   {
-    proto::ModelDef model_def;
+    ge::proto::ModelDef model_def;
     auto op_def = model_def.add_graph()->add_op();  // node attr
     op_def->add_input("invalidNodeName:0");
 
@@ -1475,7 +1475,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // model invalid node control input
   {
-    proto::ModelDef model_def;
+    ge::proto::ModelDef model_def;
     auto op_def = model_def.add_graph()->add_op();  // node attr
     op_def->add_input("invalidNodeName:-1");
 
@@ -1488,7 +1488,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // model invalid graph input
   {
-    proto::ModelDef model_def;
+    ge::proto::ModelDef model_def;
     model_def.add_graph()->add_input("invalidNodeName:0");
 
     Buffer buffer(model_def.ByteSizeLong());
@@ -1500,7 +1500,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // model invalid graph input
   {
-    proto::ModelDef model_def;
+    ge::proto::ModelDef model_def;
     model_def.add_graph()->add_output("invalidNodeName:0");
 
     Buffer buffer(model_def.ByteSizeLong());
@@ -1512,7 +1512,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // graph invalid node input
   {
-    proto::GraphDef graph_def;
+    ge::proto::GraphDef graph_def;
     auto op_def = graph_def.add_op();  // node attr
     op_def->add_input("invalidNodeName:0");
 
@@ -1525,7 +1525,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // graph invalid node control input
   {
-    proto::GraphDef graph_def;
+    ge::proto::GraphDef graph_def;
     auto op_def = graph_def.add_op();  // node attr
     op_def->add_input("invalidNodeName:-1");
 
@@ -1538,7 +1538,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // graph invalid graph input
   {
-    proto::GraphDef graph_def;
+    ge::proto::GraphDef graph_def;
     graph_def.add_input("invalidNodeName:0");
 
     Buffer buffer(graph_def.ByteSizeLong());
@@ -1550,7 +1550,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // graph invalid graph output
   {
-    proto::GraphDef graph_def;
+    ge::proto::GraphDef graph_def;
     graph_def.add_output("invalidNodeName:0");
 
     Buffer buffer(graph_def.ByteSizeLong());
@@ -1562,7 +1562,7 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // model invalid node input anchor
   {
-    proto::ModelDef model_def;
+    ge::proto::ModelDef model_def;
     auto graph_def = model_def.add_graph();
     auto node_def1 = graph_def->add_op();  // node attr
     node_def1->set_name("node1");

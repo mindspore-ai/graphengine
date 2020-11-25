@@ -17,30 +17,34 @@ project(ut_libgraph)
 
 set(CMAKE_CXX_STANDARD 11)
 
-file(GLOB_RECURSE PROTO_LIST RELATIVE ${CMAKE_CURRENT_LIST_DIR}
-        "${GE_SOURCE_DIR}/src/proto/om.proto"
-        "${GE_SOURCE_DIR}/src/proto/ge_ir.proto"
-        "${onnx_INC}/onnx/onnx.proto"
+set(PROTO_LIST
+    "${GE_CODE_DIR}/metadef/proto/om.proto"
+    "${GE_CODE_DIR}/metadef/proto/ge_ir.proto"
+    "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
 )
 
-ge_protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
 # include directories
 include_directories(${CMAKE_CURRENT_LIST_DIR})
-include_directories(${GE_SOURCE_DIR}/src)
-include_directories(${GE_SOURCE_DIR}/src/common)
-include_directories(${GE_SOURCE_DIR}/src/common/graph)
-include_directories(${GE_SOURCE_DIR}/inc)
-include_directories(${GE_SOURCE_DIR}/inc/external)
-include_directories(${GE_SOURCE_DIR}/inc/external/graph)
-include_directories(${GE_SOURCE_DIR}/inc/graph)
-include_directories(${GE_SOURCE_DIR}/inc/common)
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc/ops)
+include_directories(${GE_CODE_DIR})
+include_directories(${GE_CODE_DIR}/metadef)
+include_directories(${GE_CODE_DIR}/metadef/graph)
+include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
+include_directories(${GE_CODE_DIR}/metadef/inc)
+include_directories(${GE_CODE_DIR}/metadef/inc/graph)
+include_directories(${GE_CODE_DIR}/metadef/inc/common)
+include_directories(${GE_CODE_DIR}/metadef/third_party)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
+include_directories(${CMAKE_BINARY_DIR}/proto/ge/proto)
 
-file(GLOB_RECURSE UT_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+set(UT_FILES
     "testcase/ge_graph/ge_anchor_utils_unittest.cc"
     "testcase/ge_graph/ge_def_type_unittest.cc"
     "testcase/ge_graph/ge_graph_anchor_unittest.cc"
@@ -56,41 +60,59 @@ file(GLOB_RECURSE UT_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "testcase/ge_graph/ge_model_unittest.cc"
 )
 
-file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-    "${GE_SOURCE_DIR}/src/common/graph/option/ge_local_context.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/option/ge_context.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/anchor.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/ge_attr_value.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/attr_value.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/buffer.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/compute_graph.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/ge_attr_define.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/graph.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/model.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/model_serialize.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/node.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/op_desc.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/operator.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/operator_reg.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/operator_factory.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/operator_factory_impl.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/range_vistor.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/tensor.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/ge_tensor.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/shape_refiner.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/format_refiner.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/inference_context.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/detail/attributes_holder.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/anchor_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/graph_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/node_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/op_desc_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/type_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/ge_ir_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/utils/tensor_utils.cc"
-    "${GE_SOURCE_DIR}/src/common/ops/op_imp.cc"
-    "${GE_SOURCE_DIR}/src/common/graph/opsproto/opsproto_manager.cc"
+set(SRC_FILES
+    #"${GE_CODE_DIR}/metadef/graph/option/ge_local_context.cc"
+    #"${GE_CODE_DIR}/metadef/graph/option/ge_context.cc"
+    #"${GE_CODE_DIR}/metadef/graph/anchor.cc"
+    #"${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
+    #"${GE_CODE_DIR}/metadef/graph/attr_value.cc"
+    #"${GE_CODE_DIR}/metadef/graph/buffer.cc"
+    #"${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
+    #"${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
+    #"${GE_CODE_DIR}/metadef/graph/graph.cc"
+    #"${GE_CODE_DIR}/metadef/graph/gnode.cc"
+    #"${GE_CODE_DIR}/metadef/graph/ascend_string.cc"
+    #"${GE_CODE_DIR}/metadef/graph/model.cc"
+    #"${GE_CODE_DIR}/metadef/graph/model_serialize.cc"
+    #"${GE_CODE_DIR}/metadef/graph/node.cc"
+    #"${GE_CODE_DIR}/metadef/graph/op_desc.cc"
+    #"${GE_CODE_DIR}/metadef/graph/operator.cc"
+    #"${GE_CODE_DIR}/metadef/graph/operator_reg.cc"
+    #"${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
+    #"${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
+    #"${GE_CODE_DIR}/metadef/graph/range_vistor.cc"
+    #"${GE_CODE_DIR}/metadef/graph/tensor.cc"
+    #"${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
+    #"${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
+    #"${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
+    #"${GE_CODE_DIR}/metadef/graph/inference_context.cc"
+    #"${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/node_utils.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/ge_ir_utils.cc"
+    #"${GE_CODE_DIR}/metadef/graph/utils/tensor_utils.cc"
+    "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
+    #"${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
 )
 
+#add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(ut_libgraph graphengine::gtest graphengine::gtest_main slog_stub protobuf::protobuf graphengine::securec rt dl)
+
+target_compile_definitions(ut_libgraph PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ut_libgraph 
+    $<BUILD_INTERFACE:intf_pub>
+    graph
+    gtest
+    gtest_main
+    slog_stub
+    ascend_protobuf
+    c_sec
+    -lrt
+    -ldl
+)

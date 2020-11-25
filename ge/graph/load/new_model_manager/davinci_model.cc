@@ -964,9 +964,10 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
   const vector<int64_t> output_size_list = ModelUtils::GetOutputSize(op_desc);
   const vector<void *> virtual_addr_list = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
   const vector<int64_t> output_offset_list = op_desc->GetOutputOffset();
-  if (output_offset_list.size() != virtual_addr_list.size()) {
-    GELOGE(PARAM_INVALID, "virtual_addr size:%zu should be equal to offset size:%zu.", virtual_addr_list.size(),
-           output_offset_list.size());
+  if (output_size_list.empty() || virtual_addr_list.empty() || (output_size_list.size() != virtual_addr_list.size()) ||
+      (output_offset_list.size() != virtual_addr_list.size())) {
+    GELOGE(PARAM_INVALID, "Data[%s] init failed: output size is %zu, virtual_addr size is %zu, offset size is %zu.",
+           op_desc->GetName().c_str(), output_size_list.size(), virtual_addr_list.size(), output_offset_list.size());
     return PARAM_INVALID;
   }
   auto data_index = data_op_index;
@@ -975,7 +976,9 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
   }
   bool fusion_flag = false;
   ZeroCopyOffset zero_copy_offset;
-  Status ret = zero_copy_offset.InitInputDataInfo(output_size_list, virtual_addr_list, op_desc, fusion_flag);
+  int64_t data_size = output_size_list[kDataIndex];
+  void *virtual_addr = virtual_addr_list[kDataIndex];
+  Status ret = zero_copy_offset.InitInputDataInfo(data_size, virtual_addr, op_desc, fusion_flag);
   if (ret != SUCCESS) {
     GELOGE(PARAM_INVALID, "InitDataInfo of input_info %s failed.", op_desc->GetName().c_str());
     return PARAM_INVALID;

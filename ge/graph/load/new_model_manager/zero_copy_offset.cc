@@ -30,18 +30,11 @@ ZeroCopyOffset::ZeroCopyOffset() {}
 
 ZeroCopyOffset::~ZeroCopyOffset() {}
 
-Status ZeroCopyOffset::InitInputDataInfo(const vector<int64_t> &output_size_list,
-                                         const vector<void *> &virtual_addr_list, const OpDescPtr &op_desc,
+Status ZeroCopyOffset::InitInputDataInfo(int64_t output_size, void *virtual_addr, const OpDescPtr &op_desc,
                                          bool &fusion_flag) {
   GELOGI("[ZCPY] Start to InitInputDataInfo of %s, total_data_size is %ld, virtual_addr is %p",
-         op_desc->GetName().c_str(), output_size_list[kDataIndex], virtual_addr_list[kDataIndex]);
-  if (output_size_list.empty() || virtual_addr_list.empty() || (output_size_list.size() != virtual_addr_list.size())) {
-    GELOGE(PARAM_INVALID, "Data[%s] init failed: Output size is %zu, Output addr is %zu", op_desc->GetName().c_str(),
-           output_size_list.size(), virtual_addr_list.size());
-    return PARAM_INVALID;
-  }
-
-  basic_addr_ = virtual_addr_list[kDataIndex];
+         op_desc->GetName().c_str(), output_size, virtual_addr);
+  basic_addr_ = virtual_addr;
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset_);
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset_);
   GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,
@@ -53,26 +46,23 @@ Status ZeroCopyOffset::InitInputDataInfo(const vector<int64_t> &output_size_list
   IsL2Fusion(zero_copy_basic_offset_, virtual_addr_offset, fusion_flag);
 
   uint32_t out_count = 0;
-  data_size_ = output_size_list[kDataIndex];
+  data_size_ = output_size;
   if (!fusion_flag) {
     GELOGI("[ZCPY] %s not set l2_fusion.", op_desc->GetName().c_str());
     out_count++;
-    data_info_.emplace_back(output_size_list[kDataIndex], virtual_addr_list[kDataIndex]);
+    data_info_.emplace_back(output_size, virtual_addr);
     relative_offset_.emplace_back(0);
-    GELOGI("[ZCPY] %s size is %ld, virtual_addr is %p.", op_desc->GetName().c_str(), output_size_list[kDataIndex],
-           virtual_addr_list[kDataIndex]);
+    GELOGI("[ZCPY] %s size is %ld, virtual_addr is %p.", op_desc->GetName().c_str(), output_size, virtual_addr);
   } else {
     GELOGI("[ZCPY] set l2_fusion for %s.", op_desc->GetName().c_str());
     for (size_t index = 0; index < zero_copy_basic_offset_.size(); ++index) {
       if (zero_copy_basic_offset_.at(index) == virtual_addr_offset) {
         out_count++;
-        uint64_t out_offset =
-            reinterpret_cast<uint64_t>(virtual_addr_list[kDataIndex]) + zero_copy_relative_offset_.at(index);
-        int64_t real_data_size = ModelUtils::GetOutputSize(op_desc).at(kDataIndex);
-        data_info_.emplace_back(real_data_size, reinterpret_cast<void *>(static_cast<uintptr_t>(out_offset)));
+        uint64_t out_offset = reinterpret_cast<uint64_t>(virtual_addr) + zero_copy_relative_offset_.at(index);
+        data_info_.emplace_back(output_size, reinterpret_cast<void *>(static_cast<uintptr_t>(out_offset)));
         relative_offset_.emplace_back(zero_copy_relative_offset_.at(index));
         GELOGI("[ZCPY] virtual_addr: %p has been l2-fusion to %lu, need copy data_size is %ld.", basic_addr_,
-               out_offset, real_data_size);
+               out_offset, output_size);
       }
     }
   }

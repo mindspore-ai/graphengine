@@ -210,7 +210,7 @@ target_link_libraries(ge_common PRIVATE
     c_sec
     error_manager
     slog
-    mmpa
+    static_mmpa
     -Wl,--as-needed
     json
     -lrt

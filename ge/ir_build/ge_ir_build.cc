@@ -164,6 +164,13 @@ graphStatus aclgrphBuildInitializeImpl(std::map<std::string, std::string> &globa
     }
   }
   GELOGW("gelib has been initialized!");
+
+  std::string path_base = ge::GELib::GetPath();
+  int ret = ErrorManager::GetInstance().Init(path_base);
+  if (ret != 0) {
+    DOMI_LOGE("ErrorManager init fail !");
+    return GRAPH_FAILED;
+  }
   return GRAPH_SUCCESS;
 }
 

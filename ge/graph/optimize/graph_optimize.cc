@@ -77,7 +77,8 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   }
 }
 
-Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std::string &engine_name) {
+Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const ComputeGraphPtr &parent_graph,
+                                       const std::string &engine_name) {
   if (compute_graph == nullptr) {
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeSubGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
@@ -106,6 +107,10 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
       for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
         Status ret = (*iter)->OptimizeFusedGraphAfterGraphSlice(*(compute_graph));
         if (ret != SUCCESS) {
+          auto root_graph = ge::GraphUtils::FindRootGraph(parent_graph);
+          if (root_graph != nullptr) {
+            ErrorManager.GetInstance().SaveMstuneCompileFailedMsg(root_graph->GetName());
+          }
           GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphAfterGraphSlice]: graph optimize failed, ret:%d", ret);
           return ret;
         }

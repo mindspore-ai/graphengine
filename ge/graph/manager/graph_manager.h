@@ -218,7 +218,8 @@ class GraphManager {
   std::shared_ptr<GraphModelListener> GetModelListener() const { return graph_run_listener_; }
 
   static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, GraphId root_graph_id,
-                                                const SubGraphInfoPtr &sub_graph_info_ptr, uint64_t session_id,
+                                                const SubGraphInfoPtr &sub_graph_info_ptr,
+                                                const ComputeGraphPtr &compute_graph, uint64_t session_id,
                                                 const GEThreadLocalContext &ge_context);
   Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
   Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_nodes,

@@ -364,8 +364,8 @@ static const char *const OPTYPELIST_FOR_IMPLMODE = ge::OPTYPELIST_FOR_IMPLMODE.c
 static const char *const DEBUG_DIR = ge::DEBUG_DIR;
 static const char *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
 static const char *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
-static const char *const MDL_BANK_PATH_FLAG = ge::MDL_BANK_PATH_FLAG.c_str();
-static const char *const OP_BANK_PATH_FLAG = ge::OP_BANK_PATH_FLAG.c_str();
+static const char *const MDL_BANK_PATH = ge::MDL_BANK_PATH_FLAG.c_str();
+static const char *const OP_BANK_PATH = ge::OP_BANK_PATH_FLAG.c_str();
 static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 
 // for interface: aclgrphBuildModel
@@ -387,8 +387,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              DEBUG_DIR,
                                                              OP_COMPILER_CACHE_DIR,
                                                              OP_COMPILER_CACHE_MODE,
-                                                             MDL_BANK_PATH_FLAG,
-                                                             OP_BANK_PATH_FLAG};
+                                                             MDL_BANK_PATH,
+                                                             OP_BANK_PATH};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,

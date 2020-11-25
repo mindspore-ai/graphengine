@@ -20,7 +20,6 @@
 #include <map>
 #include <string>
 #include "ge_error_codes.h"
-#include "graph/ascend_string.h"
 
 namespace ge {
 #ifdef __GNUC__
@@ -61,13 +60,6 @@ class StatusFactory {
       return "";
     }
     return iter_find->second;
-  }
-
-  void GetErrDesc(uint32_t err, AscendString &err_desc) {
-    auto iter_find = err_desc_.find(err);
-    if (iter_find != err_desc_.end()) {
-      err_desc = AscendString((iter_find->second).c_str());
-    }
   }
 
  protected:

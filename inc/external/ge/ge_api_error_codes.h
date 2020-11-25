@@ -20,15 +20,8 @@
 #include <map>
 #include <string>
 #include "ge_error_codes.h"
-#include "graph/ascend_string.h"
 
 namespace ge {
-#ifdef __GNUC__
-#define ATTRIBUTED_DEPRECATED(replacement) __attribute__((deprecated("Please use " #replacement " instead.")))
-#else
-#define ATTRIBUTED_DEPRECATED(replacement) __declspec(deprecated("Please use " #replacement " instead."))
-#endif
-
 class StatusFactory {
  public:
   static StatusFactory *Instance() {
@@ -44,30 +37,12 @@ class StatusFactory {
     err_desc_[err] = desc;
   }
 
-  void RegisterErrorNo(uint32_t err, const char *desc) {
-    if (desc == nullptr) {
-      return;
-    }
-    std::string error_desc = desc;
-    if (err_desc_.find(err) != err_desc_.end()) {
-      return;
-    }
-    err_desc_[err] = error_desc;
-  }
-
   std::string GetErrDesc(uint32_t err) {
     auto iter_find = err_desc_.find(err);
     if (iter_find == err_desc_.end()) {
       return "";
     }
     return iter_find->second;
-  }
-
-  void GetErrDesc(uint32_t err, AscendString &err_desc) {
-    auto iter_find = err_desc_.find(err);
-    if (iter_find != err_desc_.end()) {
-      err_desc = AscendString((iter_find->second).c_str());
-    }
   }
 
  protected:
@@ -81,7 +56,6 @@ class StatusFactory {
 class ErrorNoRegisterar {
  public:
   ErrorNoRegisterar(uint32_t err, const std::string &desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
-  ErrorNoRegisterar(uint32_t err, const char *desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
   ~ErrorNoRegisterar() {}
 };
 

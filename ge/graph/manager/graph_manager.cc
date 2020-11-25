@@ -1870,30 +1870,12 @@ Status GraphManager::RegisterCallBackFunc(
   return SUCCESS;
 }
 
-Status GraphManager::RegisterCallBackFunc(
-  const std::string &key,
-  const std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)> &callback) {
-  std::lock_guard<std::mutex> lock(member_mutex_);
-  GELOGI("[GraphManager] RegisterCallBackFunc, key=%s.", key.c_str());
-  callback_map_[key] = callback;
-  return SUCCESS;
-}
-
 Status GraphManager::PushSummaryData2ME(const GraphId &graph_id,
                                         const std::map<std::string, ge::Tensor> &summary_data) {
   std::lock_guard<std::mutex> lock(member_mutex_);
   GELOGI("[GraphManager] PushSummaryData2ME, dataSize=%zu.", summary_data.size());
   auto itr = me_callback_map_.find(kSummary);
   if (itr == me_callback_map_.end()) {
-    auto iter = callback_map_.find(kSummary);
-    if (iter != callback_map_.end()) {
-      std::map<AscendString, ge::Tensor> tmp_summary_data;
-      for (auto &data : summary_data) {
-        AscendString tmp(data.first.c_str());
-        tmp_summary_data[tmp] = data.second;
-      }
-      return iter->second(graph_id, tmp_summary_data);
-    }
     GELOGE(FAILED, "[GraphManager] PushSummaryData2ME failed, not found summary callback.");
     return FAILED;
   }
@@ -1905,15 +1887,6 @@ Status GraphManager::PushSaveData2ME(const GraphId &graph_id, const std::map<std
   GELOGI("[GraphManager] PushSaveData2ME, dataSize=%zu.", save_data.size());
   auto itr = me_callback_map_.find(kSave);
   if (itr == me_callback_map_.end()) {
-    auto iter = callback_map_.find(kSave);
-    if (iter != callback_map_.end()) {
-      std::map<AscendString, ge::Tensor> tmp_save_data;
-      for (auto &data : save_data) {
-        AscendString tmp(data.first.c_str());
-        tmp_save_data[tmp] = data.second;
-      }
-      return iter->second(graph_id, tmp_save_data);
-    }
     GELOGE(FAILED, "[GraphManager] PushSaveData2ME failed, not found checkpoint callback.");
     return FAILED;
   }

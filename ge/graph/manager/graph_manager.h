@@ -163,10 +163,6 @@ class GraphManager {
       const std::string &key,
       const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
-  Status RegisterCallBackFunc(
-          const std::string &key,
-          const std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)> &callback);
-
   const bool GetTrainFlag() const { return options_.train_graph_flag; }
 
   bool IsGraphNeedRebuild(uint32_t graph_id);
@@ -393,8 +389,6 @@ class GraphManager {
 
   // summary and checkpoint callback function list for ME, key is summary or checkpoint
   std::map<std::string, std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)>> me_callback_map_;
-
-  std::map<std::string, std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)>> callback_map_;
 
   bool init_flag_;
 

@@ -62,10 +62,6 @@ class InnerSession {
       const std::string &key,
       const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
 
-  Status RegisterCallBackFunc(
-    const std::string &key,
-    const std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)> &callback);
-
   const GraphManager &getGraphManagerObj() const;
 
   bool IsGraphNeedRebuild(uint32_t graph_id);

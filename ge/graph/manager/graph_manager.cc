@@ -2866,13 +2866,15 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
     if (args.graph_node->graph_run_async_listener_ != nullptr) {
       args.graph_node->graph_run_async_listener_->SetCallback(args.callback);
     }
+    Status ret;
     // parse inputs.dims to vector<vector<uint64_t>> dynamic_dims
-    if (graph_manager->ParseInputsDims(args.input_tensor) != SUCCESS) {
-      GELOGE(PARAM_INVALID, "Parse input dims failed.");
+    ret = graph_manager->ParseInputsDims(args.input_tensor);
+    if (ret != SUCCESS) {
+      ReturnError(graph_manager, args.callback, ret, "ParseInputsDims failed, thread exit.");
+      args.graph_node->Unlock();
       return;
     }
 
-    Status ret;
     if (!args.graph_node->GetLoadFlag()) {
       ret = graph_manager->LoadGraphAsync(args.ge_root_model, args.graph_node);
       if (ret != SUCCESS || args.ge_root_model == nullptr) {
@@ -2897,12 +2899,12 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
     ret = graph_manager->graph_executor_.ExecuteGraphAsync(args.graph_id, args.graph_node->GetGeRootModel(),
                                                            args.input_tensor);
     args.graph_node->SetRunFlag(false);
-    args.graph_node->Unlock();
     if (ret != SUCCESS) {
-      GELOGE(ret, "[GraphManager] Run graph async failed, graph_id=%u.", args.graph_id);
-      StopQueue(graph_manager);
+      ReturnError(graph_manager, args.callback, ret, "ExecuteGraphAsync failed, thread exit.");
+      args.graph_node->Unlock();
       return;
     }
+    args.graph_node->Unlock();
     GELOGI("[GraphManager] Run graph async success, graph_id=%u.", args.graph_id);
   }
 }

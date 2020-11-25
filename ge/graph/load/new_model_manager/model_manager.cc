@@ -407,10 +407,6 @@ Status ModelManager::Unload(uint32_t model_id) {
   }
   std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
   exception_infos_.clear();
-  for (auto addr : shape_data_addrs_[model_id]) {
-    delete[] addr;
-  }
-  shape_data_addrs_.erase(model_id);
   return SUCCESS;
 }
 
@@ -475,6 +471,19 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
     }
   }
   GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims).c_str());
+  bool cur_dynamic_dims_valid = false;
+  std::vector<std::string> shape_strs = ge::StringUtils::Split(GetLocalOmgContext().dynamic_dims, ';');
+  for (auto dynamic_dim : shape_strs) {
+    if (dynamic_dim == formats::JoinToString(cur_dynamic_dims)) {
+      cur_dynamic_dims_valid = true;
+      break;
+    }
+  }
+  if (!cur_dynamic_dims_valid) {
+    GELOGE(INTERNAL_ERROR, "Cur dynamic dims is %s, not exist in options.",
+           formats::JoinToString(cur_dynamic_dims).c_str());
+    return INTERNAL_ERROR;
+  }
   return SUCCESS;
 }
 
@@ -517,7 +526,6 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
                        "Failed to memcpy data.");
       data.length = length;
       input_data.blobs.push_back(data);
-      shape_data_addrs_[model_id].emplace_back(reinterpret_cast<int64_t *>(data.data));
     }
   }
 

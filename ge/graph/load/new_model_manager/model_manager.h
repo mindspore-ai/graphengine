@@ -363,7 +363,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::map<uintptr_t, std::map<std::string, CustAICPUKernelPtr>> cust_aicpu_so_;
 
   static DumpProperties dump_properties_;
-  std::map<uint32_t, std::vector<int64_t *>> shape_data_addrs_;
 };
 }  // namespace ge
 

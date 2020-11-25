@@ -84,8 +84,10 @@ Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_n
     if (op_desc->GetType() == DATA && op_desc->GetName() != kShapeDataName) {
       if (op_desc->GetName().find(kSubstrOfGetNextNosinkName) == string::npos) {
         data_nodes.emplace_back(input_node);
+        GELOGD("Name of data node is %s.", op_desc->GetName().c_str());
       } else {
         getnext_nosink_nodes.emplace_back(input_node);
+        GELOGD("Name of getnext nosink is %s.", op_desc->GetName().c_str());
       }
     }
     if (IsGetNextType(input_node)) {
@@ -111,6 +113,8 @@ Status CheckSequenceOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_n
     GE_CHECK_NOTNULL(data_node->GetOpDesc());
     auto output_shape = data_node->GetOpDesc()->GetOutputDesc(0).GetShape().GetDims();
     auto dynamic_dims = GetLocalOmgContext().user_input_dims.at(i).second;
+    GELOGD("The %zu data node is %s, node shape is %s, dynamic dim is %s.", i, data_node->GetName().c_str(),
+           formats::JoinToString(output_shape).c_str(), formats::JoinToString(dynamic_dims).c_str());
     if (output_shape.empty() && dynamic_dims.size() == 1 && dynamic_dims.at(0) == 0) {
       GELOGI("No need to check sequence for constant.");
       continue;
@@ -151,6 +155,8 @@ Status CheckSequenceOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &get
   for (size_t i = 0; i < data_count; ++i) {
     auto output_shape = data_node->GetOpDesc()->GetOutputDesc(i).GetShape().GetDims();
     auto dynamic_dims = GetLocalOmgContext().user_input_dims.at(i).second;
+    GELOGD("The %zu getnext node is %s, node shape is %s, dynamic dim is %s.", i, data_node->GetName().c_str(),
+           formats::JoinToString(output_shape).c_str(), formats::JoinToString(dynamic_dims).c_str());
     if (output_shape.empty() && dynamic_dims.size() == 1 && dynamic_dims.at(0) == 0) {
       GELOGI("No need to check sequence for constant.");
       continue;

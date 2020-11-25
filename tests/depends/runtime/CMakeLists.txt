@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 
-cmake_minimum_required(VERSION 2.8)
+#cmake_minimum_required(VERSION 2.8)
 
 project(STUB_MMPA)
 
@@ -21,7 +21,12 @@ file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "src/runtime_stub.cc"
         )
 
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
-include_directories(${GE_SOURCE_DIR}/inc/framework)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_CODE_DIR}/inc/framework)
 
 add_library(runtime_stub SHARED ${SRCS})
+
+target_link_libraries(runtime_stub PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    c_sec
+)

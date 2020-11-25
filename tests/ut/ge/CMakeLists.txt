@@ -23,7 +23,14 @@ set(PROTO_LIST
         "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
         "${GE_CODE_DIR}/metadef/proto/fwk_adapter.proto"
         "${GE_CODE_DIR}/metadef/proto/op_mapping_info.proto"
+        "${GE_CODE_DIR}/metadef/proto/optimizer_priority.proto"
         "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
+        "${GE_CODE_DIR}/metadef/proto/tensorflow/attr_value.proto"
+        "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor.proto"
+        "${GE_CODE_DIR}/metadef/proto/tensorflow/resource_handle.proto"
+        "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor_shape.proto"
+        "${GE_CODE_DIR}/metadef/proto/tensorflow/types.proto"
+        "${GE_CODE_DIR}/metadef/proto/tensorflow/node_def.proto"
         "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
         )
 
@@ -33,17 +40,22 @@ protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 include_directories(${GE_CODE_DIR})
 include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/ge)
 include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc/external)
+include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
 include_directories(${GE_CODE_DIR}/metadef/inc/graph)
 include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/common)
+include_directories(${GE_CODE_DIR}/metadef/third_party)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain)
 include_directories(${GE_CODE_DIR}/tests/ut/ge)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
@@ -501,32 +513,126 @@ list(APPEND COMMON_SHARED_LIBRARIES
 # build common
 add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
+target_compile_definitions(ge_ut_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_ut_common PRIVATE
+    c_sec
+    ascend_protobuf
+    json
+)
+
 # build common format
 add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(ge_ut_common_format PRIVATE
+    google=ascend_private
+)
 
 # build graph prepare common
 add_library(ge_prepare_common STATIC ${GRAPH_PREPARE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
+target_compile_definitions(ge_prepare_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_prepare_common PRIVATE
+    c_sec
+    ascend_protobuf
+    json
+)
+
 # build graph optimize common
 add_library(ge_optimize_common STATIC ${GRAPH_OPTIMIZE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(ge_optimize_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_optimize_common PRIVATE
+    ascend_protobuf
+    c_sec
+    json
+)
 
 # build graph partition common
 add_library(ge_partition_common STATIC ${GRAPH_PARTITION_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
+target_compile_definitions(ge_partition_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_partition_common PRIVATE
+    ascend_protobuf
+    c_sec
+    json
+)
+
 # build build graph load common
 add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(ge_load_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_load_common PRIVATE
+    c_sec
+    ascend_protobuf
+    json
+)
 
 # build graph execute common
 add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
+target_compile_definitions(ge_execute_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_execute_common PRIVATE
+    c_sec
+    json
+    ascend_protobuf
+)
+
 # build graph build common
 add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(ge_build_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_build_common PRIVATE
+    c_sec
+    ascend_protobuf
+    json
+)
 
 # build graph pass common
 add_library(ge_pass_common STATIC ${GRAPH_PASS_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
+target_compile_definitions(ge_pass_common PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_pass_common PRIVATE
+    ascend_protobuf
+    c_sec
+    json
+)
+
 # build single_op common
 add_library(ge_single_op STATIC ${SINGLE_OP_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(ge_single_op PRIVATE
+    google=ascend_private
+)
+
+target_link_libraries(ge_single_op PRIVATE
+    ascend_protobuf
+    json
+    c_sec
+)
 
 # ut binary
 
@@ -536,12 +642,17 @@ add_executable(ut_libge_multiparts_utest
     ${COMMON_FORMAT_SRC_FILES}
     ${MULTI_PARTS_TEST_FILES}
 )
+
+target_compile_definitions(ut_libge_multiparts_utest PRIVATE
+    google=ascend_private
+)
+
 target_link_libraries(ut_libge_multiparts_utest
         ge_build_common ge_load_common ge_build_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common
     ge_prepare_common ge_single_op ge_ut_common
-        gtest gtest_main ascend_protobuf -lrt -ldl
+        gtest gtest_main ascend_protobuf -lrt -ldl 
 )
-target_link_libraries(ut_libge_multiparts_utest  ${COMMON_SHARED_LIBRARIES} ascend_protobuf)
+target_link_libraries(ut_libge_multiparts_utest  ${COMMON_SHARED_LIBRARIES} ascend_protobuf json)
 
 # libge_others_utest
 add_executable(ut_libge_others_utest

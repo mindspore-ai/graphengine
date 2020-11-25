@@ -23,8 +23,10 @@ include_directories(${GE_CODE_DIR}/inc)
 include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
 include_directories(${GE_CODE_DIR}/metadef)
+include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
@@ -66,7 +68,19 @@ set(SRCS
     "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
 )
 add_library(cce_ge_stub SHARED src/cce_stub.cc ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(cce_ge_stub ascend_protobuf)
+target_link_libraries(cce_ge_stub
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    ascend_protobuf
+    -Wl,--as-needed
+    c_sec
+)
 
 add_library(cce_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(cce_stub ascend_protobuf)
+target_link_libraries(cce_stub PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    ascend_protobuf
+    -Wl,--as-needed
+    c_sec
+)

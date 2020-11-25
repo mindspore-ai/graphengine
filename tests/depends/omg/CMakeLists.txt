@@ -22,9 +22,11 @@ set(CMAKE_CXX_STANDARD 11)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
 include_directories(${GE_CODE_DIR}/ge)
 include_directories(${CMAKE_BINARY_DIR})
@@ -42,4 +44,11 @@ set(SRCS
 )
 
 add_library(omg_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(omg_stub ascend_protobuf)
+target_link_libraries(omg_stub PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    ascend_protobuf
+    -Wl,--as-needed
+    c_sec
+    json
+)

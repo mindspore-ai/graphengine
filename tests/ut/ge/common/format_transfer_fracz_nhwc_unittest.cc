@@ -18,8 +18,11 @@
 
 #include "common/formats/format_transfers/format_transfer_fracz_nhwc.h"
 
-#include "common/formats/format_transfers/format_transfer.h"
+//#include "common/formats/format_transfers/format_transfer.h"
 #include "common/fp16_t.h"
+
+#include "register/register_format_transfer.h"
+#include "framework/common/ge_inner_error_codes.h"
 
 namespace ge {
 namespace formats {

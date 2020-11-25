@@ -13,12 +13,16 @@
 # limitations under the License.
 # ============================================================================
 
-cmake_minimum_required(VERSION 2.8)
+#cmake_minimum_required(VERSION 2.8)
 project(profiler_stub)
 
 file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "src/profiler_stub.cc"
 )
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 
 add_library(profiler_stub SHARED ${SRC_FILES})
+
+target_link_libraries(profiler_stub PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+)

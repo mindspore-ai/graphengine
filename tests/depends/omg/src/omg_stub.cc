@@ -643,7 +643,7 @@ Status GetInputOutputDescInfo(uint32_t model_id, vector<InputOutputDescInfo> &in
 }
 
 Status DataInput(const InputData *input_data, OutputData *output_data) { return SUCCESS; }
-
+/*
 class ModelManager {
  public:
   static std::shared_ptr<ModelManager> GetInstance();
@@ -740,6 +740,8 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
                                   OutputData &output_data) {
   return SUCCESS;
 }
+
+*/
 
 }  // namespace ge
 

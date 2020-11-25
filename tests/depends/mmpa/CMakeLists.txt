@@ -21,10 +21,18 @@ file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "src/mmpa_stub.cc"
 )
 
-include_directories(${GE_SOURCE_DIR}/third_party/fwkacllib/inc)
-include_directories(${GE_SOURCE_DIR}/inc)
-include_directories(${GE_SOURCE_DIR}/inc/framework)
-include_directories(${GE_SOURCE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
+include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc)
+include_directories(${GE_CODE_DIR}/inc/framework)
+include_directories(${GE_CODE_DIR}/metadef/inc/external)
 
 add_library(mmpa_stub SHARED ${SRCS})
-target_link_libraries(mmpa_stub ascend_protobuf)
+target_link_libraries(mmpa_stub PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    -Wl,--no-as-needed
+    ascend_protobuf
+    -Wl,--as-needed
+    c_sec
+)

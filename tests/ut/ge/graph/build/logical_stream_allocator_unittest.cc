@@ -858,7 +858,7 @@ TEST_F(UtestLogicalStreamAllocator, test_all_reduce_parallel_pass) {
   std::map<std::string, int> max_parallel_num;
   LogicalStreamPass::Context context;
   context.next_stream = 5;
-  context.hcom_parallel = true;
+  context.enable_hcom_parallel = true;
   vector<LogicalStreamPass::SubgraphPtr> subgraphs;
   LogicalStreamPassPtr allreduce_pass = std::make_shared<AllReduceParallelPass>();
   ret = allreduce_pass->Run(graph, subgraphs, context);

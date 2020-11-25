@@ -158,6 +158,13 @@ elseif (ENABLE_D OR ENABLE_ACL)
 
     set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)
     add_subdirectory(metadef)
+elseif(ENABLE_MS_TESTCASE)
+    include(cmake/external_libs/protobuf_static.cmake)
+    include(cmake/external_libs/securec.cmake)
+    include(cmake/intf_pub_linux.cmake)
+
+    set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)
+    add_subdirectory(metadef)
 else()
     set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/../metadef)
     set(PARSER_DIR ${CMAKE_CURRENT_LIST_DIR}/../parser)

@@ -1571,14 +1571,15 @@ void GetDynamicShapeByMerge(const ComputeGraphPtr &graph, const NodePtr &node,
 // Connect NetOutput directly
 void GetDirectOutputShape(const ComputeGraphPtr &graph, const NodePtr &node,
                           const set<size_t> &dynamic_output_index, vector<string> &dynamic_output_dims) {
+  if (!GetLocalOmgContext().dynamic_node_type.empty()) {
+    GELOGD("No need to get directly shape info of %s when train.", node->GetName().c_str());
+    return;
+  }
   GELOGD("Try get directly shape info, Graph: %s, Node: %s", graph->GetName().c_str(), node->GetName().c_str());
   const auto &netoutput_desc = node->GetOpDesc();
   const auto &inputnode_to_netoutput = node->GetInAllNodes();
   for (size_t i = 0; i < inputnode_to_netoutput.size(); ++i) {
     if (dynamic_output_index.count(i) > 0) {
-      continue;
-    }
-    if (inputnode_to_netoutput.at(i)->GetType() == GETDYNAMICDIMS) {
       continue;
     }
 

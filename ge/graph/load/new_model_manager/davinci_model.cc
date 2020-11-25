@@ -2556,8 +2556,10 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
     int64_t data_size = output.second.GetDataSize();
 
     if (is_online_infer_dynamic_) {
-      auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[idx];
-      data_size = gear_and_real_out_size_info[cur_dynamic_dims_];
+      if (merge_nodes_gear_and_real_out_size_info_.find(idx) != merge_nodes_gear_and_real_out_size_info_.end()) {
+        auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[idx];
+        data_size = gear_and_real_out_size_info[cur_dynamic_dims_];
+      }
     }
     uint64_t buffer_length = buffer.length;
     void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data));
@@ -2594,11 +2596,13 @@ Status DavinciModel::GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data
                     return ret);
     std::vector<int64_t> output_shape = input_desc->GetShape().GetDims();
     if (is_online_infer_dynamic_) {
-      auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[i];
-      size = gear_and_real_out_size_info[cur_dynamic_dims_];
-      auto gear_and_real_out_shape_info = merge_nodes_gear_and_real_out_shape_info_[i];
-      output_shape = gear_and_real_out_shape_info[cur_dynamic_dims_];
-      is_dynamic_ = true;
+      if (merge_nodes_gear_and_real_out_size_info_.find(i) != merge_nodes_gear_and_real_out_size_info_.end()) {
+        auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[i];
+        size = gear_and_real_out_size_info[cur_dynamic_dims_];
+        auto gear_and_real_out_shape_info = merge_nodes_gear_and_real_out_shape_info_[i];
+        output_shape = gear_and_real_out_shape_info[cur_dynamic_dims_];
+        is_dynamic_ = true;
+      }
     }
     GELOGI("Output size is %ld, output shape is %s.", size, formats::JoinToString(output_shape).c_str());
     out_buffer_size_vec.push_back(size);
@@ -2755,16 +2759,6 @@ void *DavinciModel::Run(DavinciModel *model) {
 
     InputData current_data = data_wrapper->GetInput();
     GELOGI("Model thread Run begin, model id:%u, data index:%u.", model_id, current_data.index);
-    if (model->is_online_infer_dynamic_ && !model->is_getnext_sink_dynamic_) {
-      model->cur_dynamic_dims_.clear();
-      GE_IF_BOOL_EXEC(current_data.blobs.empty(), break);
-      auto shape_data_buffer_data = current_data.blobs.back().data;
-      auto shape_data_buffer_length = current_data.blobs.back().length;
-      model->cur_dynamic_dims_.assign(reinterpret_cast<int64_t *>(shape_data_buffer_data),
-                                      reinterpret_cast<int64_t *>(shape_data_buffer_data) +
-                                      shape_data_buffer_length / sizeof(int64_t));
-      GELOGD("Data: cur dynamic dims is %s", formats::JoinToString(model->cur_dynamic_dims_).c_str());
-    }
     GE_TIMESTAMP_START(Model_SyncVarData);
     ret = model->SyncVarData();
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
@@ -2781,6 +2775,18 @@ void *DavinciModel::Run(DavinciModel *model) {
         ret != SUCCESS, (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
         CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
         continue, "Copy input data to model failed.");  // [No need to check value]
+    if (model->is_online_infer_dynamic_ && !model->is_getnext_sink_dynamic_) {
+      model->cur_dynamic_dims_.clear();
+      GE_IF_BOOL_EXEC(current_data.blobs.empty(), break);
+      auto shape_data_buffer_data = current_data.blobs.back().data;
+      auto shape_data_buffer_length = current_data.blobs.back().length;
+      model->cur_dynamic_dims_.assign(reinterpret_cast<int64_t *>(shape_data_buffer_data),
+                                      reinterpret_cast<int64_t *>(shape_data_buffer_data) +
+                                      shape_data_buffer_length / sizeof(int64_t));
+      GELOGD("Data: cur dynamic dims is %s", formats::JoinToString(model->cur_dynamic_dims_).c_str());
+      delete[] (int64_t *)current_data.blobs.back().data;
+      current_data.blobs.pop_back();
+    }
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_PRE_PROC_END));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_START));
     if (ProfilingManager::Instance().ProfilingOpTraceOn()) {

@@ -71,7 +71,7 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 #compiler for libge_local_opskernel_builder.so
 include $(CLEAR_VARS)
 LOCAL_MODULE := libge_local_opskernel_builder
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -O2
 LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
@@ -91,7 +91,7 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 #compiler for device libge_local_opskernel_builder.so
 include $(CLEAR_VARS)
 LOCAL_MODULE := libge_local_opskernel_builder
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -O2
 LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 

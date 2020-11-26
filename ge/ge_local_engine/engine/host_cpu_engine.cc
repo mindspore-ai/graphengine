@@ -221,7 +221,7 @@ Status HostCpuEngine::RunInternal(const ge::OpDescPtr &op_desc,
   Operator op = ge::OpDescUtils::CreateOperatorFromOpDesc(op_desc);
   auto ret = op_kernel.Compute(op, named_inputs, named_outputs);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Failed to compute host cpu op. node = %s, ret = %u", op_desc->GetName().c_str(), ret);
+    GELOGW("Failed to compute host cpu op. node = %s", op_desc->GetName().c_str());
     return FAILED;
   }
   op.BreakConnect();

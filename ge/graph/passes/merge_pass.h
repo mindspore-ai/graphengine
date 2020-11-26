@@ -29,7 +29,7 @@ class MergePass : public BaseNodePass {
   Status ChangeIndexToConstant(NodePtr &node, int &value_index);
   Status CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &op_desc);
   bool IsMergeInputNeedOptimized(NodePtr &node) const;
-  static Status OptimizeEmptyTensorInput(const NodePtr &node) const;
+  static Status OptimizeEmptyTensorInput(const NodePtr &node);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_MERGE_PASS_H_

@@ -213,7 +213,7 @@ bool MergePass::IsMergeInputNeedOptimized(NodePtr &node) const {
   return true;
 }
 
-Status MergePass::OptimizeEmptyTensorInput(const NodePtr &node) const {
+Status MergePass::OptimizeEmptyTensorInput(const NodePtr &node) {
   for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
     const auto &peer_data_anchor = in_data_anchor->GetPeerOutAnchor();
     if (peer_data_anchor == nullptr) {

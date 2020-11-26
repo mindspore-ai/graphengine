@@ -63,7 +63,7 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 #compiler for host ops kernel builder
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_opskernel_builder
-LOCAL_CFLAGS += -Werror -O2
+LOCAL_CFLAGS += -Werror
 LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 
@@ -83,7 +83,7 @@ include ${BUILD_HOST_SHARED_LIBRARY}
 #compiler for device ops kernel builder
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_opskernel_builder
-LOCAL_CFLAGS += -Werror -O2
+LOCAL_CFLAGS += -Werror
 LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
 LOCAL_LDFLAGS :=
 

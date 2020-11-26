@@ -21,6 +21,13 @@ set(ASCEND_ATC_DIR ${ASCEND_DIR}/atc/lib64)
 set(ASCEND_ACL_DIR ${ASCEND_DIR}/acllib/lib64)
 set(STATIC_ACL_LIB ${ASCEND_ACL_DIR})
 
+set(ASCEND_MS_RUNTIME_PATH ${ASCEND_RUNTIME_DIR} ${ASCEND_ACL_DIR} ${ASCEND_ATC_DIR})
+set(ASCEND_MS_DRIVER_PATH ${ASCEND_DRIVER_DIR} ${ASCEND_DRIVER_COMMON_DIR})
+set(ATLAS_RUNTIME_DIR ${ASCEND_DIR}/ascend-toolkit/latest/fwkacllib/lib64)
+set(ATLAS_ACL_DIR ${ASCEND_DIR}/ascend-toolkit/latest/acllib/lib64)
+set(ATLAS_ATC_DIR ${ASCEND_DIR}/ascend-toolkit/latest/atc/lib64)
+set(ATLAS_MS_RUNTIME_PATH ${ATLAS_RUNTIME_DIR} ${ATLAS_ACL_DIR} ${ATLAS_ATC_DIR})
+
 option(ENABLE_OPEN_SRC "Enable graphengine compile in opensource." FALSE)
 
 if (ENABLE_OPEN_SRC)
@@ -129,14 +136,6 @@ if (ENABLE_OPEN_SRC)
     #add_subdirectory(metadef/graph)
     #add_subdirectory(metadef/register)
 elseif (ENABLE_D OR ENABLE_ACL)
-
-    set(ASCEND_MS_RUNTIME_PATH ${ASCEND_RUNTIME_DIR} ${ASCEND_ACL_DIR} ${ASCEND_ATC_DIR})
-    set(ASCEND_MS_DRIVER_PATH ${ASCEND_DRIVER_DIR} ${ASCEND_DRIVER_COMMON_DIR})
-    set(ATLAS_RUNTIME_DIR ${ASCEND_DIR}/ascend-toolkit/latest/fwkacllib/lib64)
-    set(ATLAS_ACL_DIR ${ASCEND_DIR}/ascend-toolkit/latest/acllib/lib64)
-    set(ATLAS_ATC_DIR ${ASCEND_DIR}/ascend-toolkit/latest/atc/lib64)
-    set(ATLAS_MS_RUNTIME_PATH ${ATLAS_RUNTIME_DIR} ${ATLAS_ACL_DIR} ${ATLAS_ATC_DIR})
-
     # compiling with MindSpore
     include(cmake/external_libs/protobuf_static.cmake)
     include(cmake/external_libs/protoc.cmake)
@@ -158,10 +157,17 @@ elseif (ENABLE_D OR ENABLE_ACL)
 
     set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)
     add_subdirectory(metadef)
-elseif(ENABLE_MS_TESTCASE)
+elseif(ENABLE_MS_TESTCASES)
     include(cmake/external_libs/protobuf_static.cmake)
+    include(cmake/external_libs/protoc.cmake)
     include(cmake/external_libs/securec.cmake)
+    include(cmake/FindModule.cmake)
     include(cmake/intf_pub_linux.cmake)
+
+    # common libraries
+    find_module(slog libslog.so ${ASCEND_MS_DRIVER_PATH})
+    find_module(error_manager liberror_manager.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
+    find_module(static_mmpa libmmpa.a ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
 
     set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)
     add_subdirectory(metadef)

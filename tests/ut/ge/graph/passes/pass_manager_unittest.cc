@@ -72,7 +72,7 @@ ComputeGraphPtr CreatePadGraph() {
 
 TEST_F(UtestGraphPassesPassManagerPass, all_pass_success) {
   PassManager manager;
-  manager.AddPass(new SuccessGraphPass);
+  manager.AddPass("", new SuccessGraphPass);
   EXPECT_EQ(manager.GraphPasses().size(), 1);
 
   ComputeGraphPtr graph = CreatePadGraph();
@@ -83,7 +83,7 @@ TEST_F(UtestGraphPassesPassManagerPass, all_pass_success) {
 TEST_F(UtestGraphPassesPassManagerPass, graph_pass_success) {
   ComputeGraphPtr graph = CreatePadGraph();
   SuccessGraphPass pass;
-  vector<GraphPass *> passes = {&pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
 }
@@ -91,7 +91,7 @@ TEST_F(UtestGraphPassesPassManagerPass, graph_pass_success) {
 TEST_F(UtestGraphPassesPassManagerPass, graph_pass_not_changed) {
   ComputeGraphPtr graph = CreatePadGraph();
   NotChangedGraphPass pass;
-  vector<GraphPass *> passes = {&pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(NOT_CHANGED, status);
 }
@@ -99,7 +99,7 @@ TEST_F(UtestGraphPassesPassManagerPass, graph_pass_not_changed) {
 TEST_F(UtestGraphPassesPassManagerPass, graph_pass_error) {
   ComputeGraphPtr graph = CreatePadGraph();
   ErrorGraphPass pass;
-  vector<GraphPass *> passes = {&pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(FAILED, status);
 }

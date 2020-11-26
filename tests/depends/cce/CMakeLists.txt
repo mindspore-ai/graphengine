@@ -68,6 +68,11 @@ set(SRCS
     "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
 )
 add_library(cce_ge_stub SHARED src/cce_stub.cc ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(cce_ge_stub PRIVATE
+    google=ascend_private
+)
+
 target_link_libraries(cce_ge_stub
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
@@ -77,6 +82,11 @@ target_link_libraries(cce_ge_stub
 )
 
 add_library(cce_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_definitions(cce_stub PRIVATE
+    google=ascend_private
+)
+
 target_link_libraries(cce_stub PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed

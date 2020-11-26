@@ -49,7 +49,7 @@ class UtestTestPass : public BaseNodePass {
       for (const auto &node_name : iter->second) {
         auto del_node = node->GetOwnerComputeGraph()->FindNode(node_name);
         GraphUtils::IsolateNode(del_node, {0});
-        AddNodeDeleted(del_node.get());
+        AddNodeDeleted(del_node);
       }
     }
     iter = names_to_add_repass_.find(node->GetName());

@@ -21,6 +21,7 @@ set(PROTO_LIST
         "${GE_CODE_DIR}/metadef/proto/om.proto"
         "${GE_CODE_DIR}/metadef/proto/ge_ir.proto"
         "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
+        "${GE_CODE_DIR}/metadef/proto/insert_op.proto"
         "${GE_CODE_DIR}/metadef/proto/fwk_adapter.proto"
         "${GE_CODE_DIR}/metadef/proto/op_mapping_info.proto"
         "${GE_CODE_DIR}/metadef/proto/optimizer_priority.proto"
@@ -42,6 +43,7 @@ include_directories(${GE_CODE_DIR})
 include_directories(${GE_CODE_DIR}/inc)
 include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/ge)
+include_directories(${GE_CODE_DIR}/ge/inc)
 include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
@@ -86,18 +88,24 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/buffer.cc"
     "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
     "${GE_CODE_DIR}/metadef/graph/graph.cc"
+    "${GE_CODE_DIR}/metadef/graph/gnode.cc"
+    "${GE_CODE_DIR}/metadef/graph/ascend_string.cc"
     "${GE_CODE_DIR}/metadef/graph/inference_context.cc"
     "${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
     "${GE_CODE_DIR}/metadef/graph/model.cc"
     "${GE_CODE_DIR}/metadef/graph/model_serialize.cc"
     "${GE_CODE_DIR}/metadef/graph/node.cc"
+    "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
     "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cpp"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cpp"
     "${GE_CODE_DIR}/metadef/graph/operator.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
     #"${GE_CODE_DIR}/metadef/graph/operator_reg.cc"
     #"${GE_CODE_DIR}/metadef/graph/range_vistor.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
+    "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
     "${GE_CODE_DIR}/metadef/graph/tensor.cc"
     "${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
@@ -107,6 +115,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/tensor_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/transformer_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/debug/graph_debug.cc"
     "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
     "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
@@ -115,6 +124,7 @@ set(COMMON_SRC_FILES
     #"${GE_CODE_DIR}/tests/depends/cce/src/op_kernel_registry.cpp"
     "${GE_CODE_DIR}/metadef/register/auto_mapping_util.cpp"
     "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"
+    "${GE_CODE_DIR}/metadef/register/register_format_transfer.cc"
     "${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
 )
 
@@ -245,6 +255,7 @@ set(GRAPH_BUILD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/model_parser/base.cc"
     "${GE_CODE_DIR}/ge/graph/build/run_context.cc"
+    "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
     #"${GE_CODE_DIR}/ge/graph/build/optimize_stream_graph.cc"
 )
 
@@ -509,6 +520,7 @@ list(APPEND COMMON_SHARED_LIBRARIES
     profiler_stub
     mmpa_stub
     hccl_stub
+    error_manager_stub
 )
 # build common
 add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
@@ -518,6 +530,7 @@ target_compile_definitions(ge_ut_common PRIVATE
 )
 
 target_link_libraries(ge_ut_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     c_sec
     ascend_protobuf
     json
@@ -538,6 +551,7 @@ target_compile_definitions(ge_prepare_common PRIVATE
 )
 
 target_link_libraries(ge_prepare_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     c_sec
     ascend_protobuf
     json
@@ -551,6 +565,7 @@ target_compile_definitions(ge_optimize_common PRIVATE
 )
 
 target_link_libraries(ge_optimize_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
     c_sec
     json
@@ -564,6 +579,7 @@ target_compile_definitions(ge_partition_common PRIVATE
 )
 
 target_link_libraries(ge_partition_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
     c_sec
     json
@@ -577,6 +593,7 @@ target_compile_definitions(ge_load_common PRIVATE
 )
 
 target_link_libraries(ge_load_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     c_sec
     ascend_protobuf
     json
@@ -590,6 +607,7 @@ target_compile_definitions(ge_execute_common PRIVATE
 )
 
 target_link_libraries(ge_execute_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     c_sec
     json
     ascend_protobuf
@@ -603,6 +621,7 @@ target_compile_definitions(ge_build_common PRIVATE
 )
 
 target_link_libraries(ge_build_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     c_sec
     ascend_protobuf
     json
@@ -616,6 +635,7 @@ target_compile_definitions(ge_pass_common PRIVATE
 )
 
 target_link_libraries(ge_pass_common PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
     c_sec
     json
@@ -629,6 +649,7 @@ target_compile_definitions(ge_single_op PRIVATE
 )
 
 target_link_libraries(ge_single_op PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
     json
     c_sec
@@ -648,11 +669,9 @@ target_compile_definitions(ut_libge_multiparts_utest PRIVATE
 )
 
 target_link_libraries(ut_libge_multiparts_utest
-        ge_build_common ge_load_common ge_build_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common
-    ge_prepare_common ge_single_op ge_ut_common
-        gtest gtest_main ascend_protobuf -lrt -ldl 
+    $<BUILD_INTERFACE:intf_pub>
+    ge_build_common ge_load_common ge_build_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl 
 )
-target_link_libraries(ut_libge_multiparts_utest  ${COMMON_SHARED_LIBRARIES} ascend_protobuf json)
 
 # libge_others_utest
 add_executable(ut_libge_others_utest
@@ -663,10 +682,9 @@ add_executable(ut_libge_others_utest
     ${OTHERS_TEST_FILES}
 )
 target_link_libraries(ut_libge_others_utest
-        ge_execute_common ge_load_common ge_pass_common ge_ut_common
-        gtest gtest_main ascend_protobuf -lrt -ldl
+    $<BUILD_INTERFACE:intf_pub>
+    ge_execute_common ge_load_common ge_pass_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} -lrt -ldl
 )
-target_link_libraries(ut_libge_others_utest  ${COMMON_SHARED_LIBRARIES} ascend_protobuf)
 
 # libge_kernel_utest
 add_executable(ut_libge_kernel_utest
@@ -676,10 +694,9 @@ add_executable(ut_libge_kernel_utest
         ${KERNEL_SRC_FILES}
 )
 target_link_libraries(ut_libge_kernel_utest
-        ge_pass_common ge_ut_common  ge_load_common
-        gtest gtest_main ascend_protobuf -lrt -ldl
+    $<BUILD_INTERFACE:intf_pub>
+    ge_pass_common ge_ut_common ge_load_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} -lrt -ldl
 )
-target_link_libraries(ut_libge_kernel_utest  ${COMMON_SHARED_LIBRARIES} ascend_protobuf)
 
 # libge_distinct_load_utest
 add_executable(ut_libge_distinct_load_utest
@@ -689,7 +706,9 @@ add_executable(ut_libge_distinct_load_utest
         ${SINGLE_OP_TEST_FILES}
         ${PROFILING_MNG_TEST_FILES}
 )
-target_link_libraries(ut_libge_distinct_load_utest ${COMMON_SHARED_LIBRARIES}
+target_link_libraries(ut_libge_distinct_load_utest 
+	${COMMON_SHARED_LIBRARIES}
+	$<BUILD_INTERFACE:intf_pub>
         ge_execute_common ge_ut_common  ge_ut_common_format  ge_pass_common ge_load_common
         ge_single_op   ge_prepare_common
         ge_optimize_common  ge_build_common ge_partition_common

@@ -67,7 +67,7 @@ TEST_F(UtestGraphPassesPrunePass, no_net_out_put_node) {
 
   uint64_t size_ori = graph->GetDirectNode().size();
   PrunePass prune_pass;
-  vector<GraphPass *> passes = {&prune_pass};
+  std::vector<std::pair<string, GraphPass*>> passes = { {"prune_pass", &prune_pass} };
   Status status = PassManager::Run(graph, passes);
 
   EXPECT_EQ(ge::SUCCESS, status);
@@ -109,7 +109,7 @@ TEST_F(UtestGraphPassesPrunePass, has_net_out_put_node_with_only_one_path) {
 
   uint64_t size_ori = graph->GetDirectNode().size();
   PrunePass prune_pass;
-  vector<GraphPass *> passes = {&prune_pass};
+  std::vector<std::pair<string, GraphPass*>> passes = { {"prune_pass", &prune_pass} };
   Status status = PassManager::Run(graph, passes);
 
   uint64_t size = graph->GetDirectNode().size();
@@ -250,7 +250,7 @@ TEST_F(UtestGraphPassesPrunePass, has_net_out_put_node_with_multi_path) {
   uint64_t size_ori = graph->GetDirectNode().size();
 
   PrunePass prune_pass;
-  vector<GraphPass *> passes = {&prune_pass};
+  std::vector<std::pair<string, GraphPass*>> passes = { {"prune_pass", &prune_pass} };
   Status status = PassManager::Run(graph, passes);
 
   uint64_t size_after_proc = graph->GetDirectNode().size();
@@ -323,7 +323,7 @@ TEST_F(UtestGraphPassesPrunePass, multi_net_out_put_node_with_circle_net) {
   uint64_t size_ori = graph->GetDirectNode().size();
 
   PrunePass prune_pass;
-  vector<GraphPass *> passes = {&prune_pass};
+  std::vector<std::pair<string, GraphPass*>> passes = { {"prune_pass", &prune_pass} };
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(ge::SUCCESS, status);
   uint64_t size_after_proc = graph->GetDirectNode().size();
@@ -464,7 +464,7 @@ TEST_F(UtestGraphPassesPrunePass, has_net_out_put_node_with_two_isolate_data_nod
 
   uint64_t size_ori = graph->GetDirectNode().size();
   PrunePass prune_pass;
-  vector<GraphPass *> passes = {&prune_pass};
+  std::vector<std::pair<string, GraphPass*>> passes = { {"prune_pass", &prune_pass} };
   Status status = PassManager::Run(graph, passes);
 
   uint64_t size = graph->GetDirectNode().size();

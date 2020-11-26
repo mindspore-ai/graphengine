@@ -189,18 +189,20 @@ class UtestLogicalStreamAllocator : public testing::Test {
   bool ExpectStreamEq(SubGraphInfoPtr subgraph, int64_t expect) { return GetStream(subgraph) == expect; }
 
   bool ExpectStreamNe(SubGraphInfoPtr subgraph, int64_t expect) { return GetStream(subgraph) != expect; }
-  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, vector<EngineConfPtr> &confs,
+  Status AssignLogicalStreams(Graph2SubGraphInfoList &subgraph_map, vector<EngineConfPtr> &confs,
                               std::map<std::string, int> &max_parallel_num, ComputeGraphPtr &whole_graph) {
     SchedulerConf scheduler_conf;
     if (confs.empty()) {
-      for (const auto &subgraph : subgraphs) {
-        EngineConfPtr conf = make_shared<EngineConf>();
-        conf->id = subgraph->GetEngineName();
-        if (conf->id == "ge_local") {
-          conf->skip_assign_stream = true;
-          conf->attach = true;
-        }
-        scheduler_conf.cal_engines[conf->id] = conf;
+      for (const auto &subgraph_pair : subgraph_map) {
+	for (const auto &sub_graph : subgraph_pair.second) {
+          EngineConfPtr conf = make_shared<EngineConf>();
+          conf->id = sub_graph->GetEngineName();
+          if (conf->id == "ge_local") {
+            conf->skip_assign_stream = true;
+            conf->attach = true;
+          }
+          scheduler_conf.cal_engines[conf->id] = conf;
+	}
       }
     } else {
       for (auto &conf : confs) {
@@ -217,11 +219,21 @@ class UtestLogicalStreamAllocator : public testing::Test {
     scheduler_confs["scheduler"] = scheduler_conf;
     LogicalStreamAllocator allocator(scheduler_confs, max_parallel_num);
     int64_t stream_num = 0;
-    return allocator.Assign(whole_graph, subgraphs, stream_num);
+    return allocator.Assign(whole_graph, subgraph_map, stream_num);
   }
 
-  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, std::map<std::string, int> &max_parallel_num,
-                              vector<EngineConfPtr> &confs) {
+  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs,
+		             vector<EngineConfPtr> &confs,
+			     std::map<std::string, int> &max_parallel_num,
+			     ComputeGraphPtr &whole_graph) {
+    Graph2SubGraphInfoList subgraph_map;
+    subgraph_map[whole_graph] = subgraphs;
+    return AssignLogicalStreams(subgraph_map, confs, max_parallel_num, whole_graph);
+  }
+
+  Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs,
+		              vector<EngineConfPtr>& confs,
+		              std::map<std::string, int> &max_parallel_num) {
     ComputeGraphPtr whole_graph = make_shared<ComputeGraph>("whole_graph");
     return AssignLogicalStreams(subgraphs, confs, max_parallel_num, whole_graph);
   }
@@ -229,12 +241,12 @@ class UtestLogicalStreamAllocator : public testing::Test {
   Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs,
                               vector<EngineConfPtr> confs = vector<EngineConfPtr>()) {
     std::map<std::string, int> max_parallel_num;
-    return AssignLogicalStreams(subgraphs, max_parallel_num, confs);
+    return AssignLogicalStreams(subgraphs, confs, max_parallel_num);
   }
 
   Status AssignLogicalStreams(vector<SubGraphInfoPtr> subgraphs, std::map<std::string, int> &max_parallel_num) {
     vector<EngineConfPtr> confs;
-    return AssignLogicalStreams(subgraphs, max_parallel_num, confs);
+    return AssignLogicalStreams(subgraphs, confs, max_parallel_num);
   }
 
   /// typical case
@@ -295,7 +307,7 @@ class UtestLogicalStreamAllocator : public testing::Test {
 
     Status status = AssignLogicalStreams({const1, const2, get_next, genmask1, genmask2, domask, subgraph4, subgraph5,
                                           subgraph6, allreduce1, allreduce2, apply1, apply2},
-                                         max_parallel_num, confs);
+                                          confs, max_parallel_num);
     EXPECT_EQ(status, ge::SUCCESS);
 
     EXPECT_EQ(GetStream(get_next), 0);
@@ -652,7 +664,7 @@ TEST_F(UtestLogicalStreamAllocator, test_independent) {
   vector<EngineConfPtr> confs = {conf1, conf2};
 
   Status status =
-      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, max_parallel_num, confs);
+      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, confs, max_parallel_num);
   EXPECT_EQ(status, ge::SUCCESS);
   EXPECT_EQ(GetStream(subgraph1), 0);
   EXPECT_EQ(GetStream(subgraph2), 0);
@@ -695,7 +707,7 @@ TEST_F(UtestLogicalStreamAllocator, test_independent_switch_label) {
   vector<EngineConfPtr> confs = {conf1, conf2, conf3};
 
   Status status =
-      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5}, max_parallel_num, confs);
+      AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4, subgraph5},confs, max_parallel_num);
   EXPECT_EQ(status, ge::SUCCESS);
   EXPECT_EQ(GetStream(subgraph1), 4);
   EXPECT_EQ(GetStream(subgraph2), 0);

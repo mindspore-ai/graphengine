@@ -177,7 +177,10 @@ class MockBlockMemAssigner : public BlockMemAssigner {
 TEST_F(UtestMemoryAssignerTest, Mock_block_mem_assigner_failed) {
   ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
   make_graph(graph);
-  MockBlockMemAssigner mock_assigner(graph);
+  std::map<std::string, std::string> anchor_to_symbol;
+  std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors;
+  EXPECT_EQ(GraphUtils::GetRefMapping(graph, symbol_to_anchors, anchor_to_symbol), GRAPH_SUCCESS);
 
+  MockBlockMemAssigner mock_assigner(graph, anchor_to_symbol, symbol_to_anchors);
   EXPECT_EQ(mock_assigner.Assign(), FAILED);
 }

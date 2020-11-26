@@ -15,45 +15,20 @@
 
 #cmake_minimum_required(VERSION 2.8)
 
-project(OMG_CCE)
+project(STUB_ERROR_MANAGER)
 
-set(CMAKE_CXX_STANDARD 11)
+file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "src/error_manager_stub.cc"
+)
 
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
-include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/inc/framework)
-include_directories(${GE_CODE_DIR}/metadef/inc/graph)
-include_directories(${GE_CODE_DIR}/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc/external)
-include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
-include_directories(${GE_CODE_DIR}/ge)
-include_directories(${CMAKE_BINARY_DIR})
-include_directories(${CMAKE_BINARY_DIR}/proto/ge)
-set(PROTO_LIST
-    "${GE_CODE_DIR}/metadef/proto/om.proto"
-    "${GE_CODE_DIR}/metadef/proto/task.proto"
-)
 
-protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-
-set(SRCS
-#   "${GE_CODE_DIR}/src/ge/common/util.cc"
-    "src/omg_stub.cc"
-)
-
-add_library(omg_stub SHARED ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-
-target_compile_definitions(omg_stub PRIVATE
-    google=ascend_private
-)
-
-target_link_libraries(omg_stub PRIVATE
+add_library(error_manager_stub SHARED ${SRCS})
+target_link_libraries(error_manager_stub PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    -Wl,--no-as-needed
-    ascend_protobuf
-    -Wl,--as-needed
-    c_sec
-    json
 )

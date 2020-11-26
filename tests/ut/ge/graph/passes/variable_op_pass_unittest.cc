@@ -39,7 +39,6 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph_builder_utils.h"
 #include "cce/dnn_struct_base.hpp"
-#include "common/formats/format_transfers/format_transfer.h"
 #include "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.h"
 #include "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.h"
 #include "common/formats/format_transfers/datatype_transfer.h"

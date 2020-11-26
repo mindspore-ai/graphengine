@@ -286,7 +286,7 @@ Status GraphLoader::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asyn
     return ret;
   }
 
-  GELOGI("Execute model success, model_id:%u.", model_id);
+  GELOGD("Execute model success, model_id:%u.", model_id);
   return SUCCESS;
 }
 

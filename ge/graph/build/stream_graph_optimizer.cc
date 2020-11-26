@@ -30,7 +30,7 @@ StreamGraphOptimizer::~StreamGraphOptimizer() {}
 
 void StreamGraphOptimizer::RefreshNodeId(const ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map) {
   size_t node_size = comp_graph->GetAllNodesSize();
-  GELOGI("Refresh placeholder and end nodeId start from node num: %zu", node_size);
+  GELOGD("Refresh placeholder and end nodeId start from node num: %zu", node_size);
   for (const auto &subgraph_pair : subgraph_map) {
     for (const auto &subgraph_info : subgraph_pair.second) {
       ComputeGraphPtr subgraph = subgraph_info->GetSubGraph();
@@ -74,8 +74,6 @@ bool StreamGraphOptimizer::IsSameStreamId(const ComputeGraphPtr &comp_graph) {
 Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &comp_graph,
                                                       Graph2SubGraphInfoList &subgraph_map,
                                                       struct RunContext &run_context) {
-  GELOGI("Optimize streamed subgraph start.");
-
   RefreshNodeId(comp_graph, subgraph_map);
 
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
@@ -86,7 +84,7 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
       ComputeGraphPtr subgraph = subgraph_info->GetSubGraph();
       GE_CHECK_NOTNULL(subgraph);
 
-      GELOGI("Optimize subgraph %s", subgraph->GetName().c_str());
+      GELOGD("Optimize subgraph %s", subgraph->GetName().c_str());
 
       std::string engine_name = subgraph_info->GetEngineName();
 
@@ -128,7 +126,7 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
               subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size(), ret);
             return ret;
           }
-          GELOGI(
+          GELOGD(
             "[optimizeStreamedSubGraph]: optimize streamed subgraph success, subgraph: %s, engine_name: %s, graph "
             "Optimizer num: %zu!",
             subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size());
@@ -137,7 +135,7 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
     }
   }
 
-  GELOGI("Optimize streamed subgraph success.");
+  GELOGD("Optimize streamed subgraph success.");
   return SUCCESS;
 }
 }  // namespace ge

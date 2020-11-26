@@ -223,7 +223,7 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
     GELOGE(GE_GRAPH_UNSUPPORTED, "Cannot call merging in partition mode");
     return FAILED;
   }
-  GELOGI("Graph merge starts.");
+  GELOGD("Graph merge starts.");
   // check input param
   for (const auto &it : sub_graph_list) {
     if (it == nullptr) {
@@ -261,7 +261,7 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
     return FAILED;
   }
   GE_TIMESTAMP_END(MergeSubGraphEnginePlacerRun, "GraphPartitioner::MergeGraphEnginePlacerRun");
-  GELOGI("Graph merge ends.");
+  GELOGD("Graph merge ends.");
   return SUCCESS;
 }
 
@@ -581,7 +581,7 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
            new_cluster->engine_name_.c_str(), new_cluster->index_, new_cluster->stream_label_.c_str());
     temp_index++;
   }
-  GELOGI("Initialize ends.");
+  GELOGD("Initialize ends.");
   return SUCCESS;
 }
 
@@ -754,11 +754,11 @@ void ge::GraphPartitioner::MarkClusters() {
       }
     }
   }
-  GELOGI("MarkClusters ends.");
+  GELOGD("MarkClusters ends.");
 }
 
 Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
-  GELOGI("SplitSubGraphs starts.");
+  GELOGD("SplitSubGraphs starts.");
   if (compute_graph == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
@@ -823,7 +823,7 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
       }
     }
   }
-  GELOGI("SplitSubGraphs ends.");
+  GELOGD("SplitSubGraphs ends.");
   return SUCCESS;
 }
 

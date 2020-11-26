@@ -455,12 +455,11 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
     GetNodeWorkSpaceSize(n, temp);
     all_memory_size.insert(all_memory_size.end(), temp.begin(), temp.end());
   }
-  GELOGI("The last atomic_addr_clean node id: %ld", atomic_addr_clean_id_);
   for (const auto &pair : symbol_size_) {
     all_memory_size.emplace_back(pair.second);
   }
   sort(all_memory_size.begin(), all_memory_size.end());
-  GELOGI("All memory size: %s", ToString(all_memory_size).c_str());
+  GELOGD("All memory size: %s", ToString(all_memory_size).c_str());
 
   for (auto iter = all_memory_size.begin(); iter != all_memory_size.end();) {
     if (*iter == 0) {
@@ -495,7 +494,7 @@ size_t GetBlockSize(size_t size, const vector<int64_t> &ranges) {
 
 bool IsDirectOutputNode(const NodePtr &node, int idx) {
   if ((node != nullptr) && (node->GetOpDesc() != nullptr) && (node->GetOpDesc()->GetType() == NETOUTPUT)) {
-    GELOGI("This is netoutput node, the input node mem can not be reused");
+    GELOGD("This is netoutput node, the input node mem can not be reused");
     return true;
   }
   return false;
@@ -1219,7 +1218,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   int64_t stream_id = op_desc->GetStreamId();
   vector<int64_t> memorys_type;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, memorys_type);
-  GELOGI("Assign memory node[%s], output size[%zu], output memory type size[%zu]", op_desc->GetName().c_str(),
+  GELOGD("Assign memory node[%s], output size[%zu], output memory type size[%zu]", op_desc->GetName().c_str(),
          op_desc->GetOutputsSize(), memorys_type.size());
   if (has_mem_type_attr && (memorys_type.size() != op_desc->GetOutputsSize())) {
     GELOGE(INTERNAL_ERROR, "fusion: node[%s], output memory size err[outputsize:%zu, memorysize:%zu]",
@@ -1311,7 +1310,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
 ///
 void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
   (void)ge::GetContext().GetOption(OPTION_EXEC_DISABLE_REUSED_MEMORY, ge_disable_reuse_mem_env_);
-  GEEVENT("Reuse memory %s", ge_disable_reuse_mem_env_ == "1" ? "close" : "open");
+  GELOGD("Reuse memory %s", ge_disable_reuse_mem_env_ == "1" ? "close" : "open");
   string op_no_reuse_mem_str;
   const char *op_no_reuse_mem = std::getenv(OP_NO_REUSE_MEM);
   GE_IF_BOOL_EXEC(op_no_reuse_mem != nullptr, op_no_reuse_mem_str = string(op_no_reuse_mem);
@@ -1337,7 +1336,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
     vector<bool> workspace_reuse_flag;
     GE_IF_BOOL_EXEC(!ge::AttrUtils::GetListBool(node_op_desc, kAttrNameWorkspaceReuseFlag, workspace_reuse_flag),
                     GELOGD("OP %s get workspace_reuse_flag attr failed", node_op_desc->GetName().c_str()));
-    GELOGI("Assign memory node[%s], size [temp:%zu, memory type size:%zu]", node_op_desc->GetName().c_str(),
+    GELOGD("Assign memory node[%s], size [temp:%zu, memory type size:%zu]", node_op_desc->GetName().c_str(),
            temp.size(), tvm_workspace_memory_type.size());
 
     if (has_tvm_workspace_mem_type_attr && (temp.size() != tvm_workspace_memory_type.size())) {
@@ -1628,7 +1627,7 @@ void BlockMemAssigner::ResizeMemoryBlocks() {
       memory_block->SetTailOffset(p2p_mem_offset_ - 1);
     }
   }
-  GELOGI("mem_offset_ exclude zero_copy_memory is %zu, p2p_mem_offset_ exclude zero_copy_memory is %zu.",
+  GELOGD("mem_offset_ exclude zero_copy_memory is %zu, p2p_mem_offset_ exclude zero_copy_memory is %zu.",
          mem_offset_, p2p_mem_offset_);
 }
 

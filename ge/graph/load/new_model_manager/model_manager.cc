@@ -202,7 +202,6 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
 }
 
 ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
-  GELOGI("Destroy aicpu session for infer, model id is %u.", model_id);
   std::lock_guard<std::mutex> lock(map_mutex_);
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
@@ -210,7 +209,6 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
     return GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
-  GELOGI("Destroy aicpu session for infer, session id is %lu.", session_id);
   DestroyAicpuSession(session_id);
   return SUCCESS;
 }
@@ -1213,7 +1211,7 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
 
   Status status = davinci_model->NnExecute(stream, async_mode, input_data, output_data);
   if (status == SUCCESS) {
-    GELOGI("Execute model %u success.", model_id);
+    GELOGD("Execute model %u success.", model_id);
   }
 
   return status;
@@ -1270,7 +1268,6 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
 }
 
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
-  GELOGI("LaunchCustAucpuSo in, kernel name %s", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   if (cust_aicpu_so_.size() == 0) return SUCCESS;
   // get current context

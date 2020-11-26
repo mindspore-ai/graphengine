@@ -117,7 +117,7 @@ Status GraphMemoryAssigner::AssignMemory() {
     return ge::FAILED;
   }
   int64_t var_size_assign = ge::VarManager::Instance(session_id)->GetVarMemSize(RT_MEMORY_HBM) - var_size_before_assign;
-  GELOGI("GraphMemoryAssigner::AssignMemory variable size = %ld", var_size_assign);
+  GELOGD("GraphMemoryAssigner::AssignMemory variable size = %ld", var_size_assign);
 
   mem_assigner_ = std::move(mem_assigner);
 
@@ -296,7 +296,6 @@ Status GraphMemoryAssigner::AssignZeroCopyMemory(map<int64_t, size_t> &mem_offse
     mem_offset[RT_MEMORY_HBM] += memory_block->Size();
     memory_block->SetTailOffset(mem_offset[RT_MEMORY_HBM] - 1);
   }
-  GELOGI("mem_offset_ include zero_copy_memory is %zu.", mem_offset[RT_MEMORY_HBM]);
 
   // set offset for zero copy nodes
   priority_assigner->SetOpMemOffset(true);
@@ -309,14 +308,13 @@ Status GraphMemoryAssigner::AssignZeroCopyMemory(map<int64_t, size_t> &mem_offse
   }
   iter->second.mem_offset_ = mem_offset[RT_MEMORY_HBM];
 
-  GELOGI("max_mem_offset:%zu, mem_offset:%zu, zero_mem_copy_size:%zu.", mem_offset[RT_MEMORY_HBM], mem_offset_tmp,
+  GELOGD("max_mem_offset:%zu, mem_offset:%zu, zero_mem_copy_size:%zu.", mem_offset[RT_MEMORY_HBM], mem_offset_tmp,
          zero_mem_copy_size);
 
   return SUCCESS;
 }
 
 Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
-  GELOGI("Begin to reassign continuous memory");
   Status ret;
   for (auto &node : compute_graph_->GetAllNodes()) {
     // Get the continuous input type of the node, default is false
@@ -387,7 +385,7 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
     }
   }
   for (auto pair : memory_offset_) {
-    GELOGI("After reassign continuous memory, memory type = %ld, memoffset = %zu.", pair.first,
+    GELOGD("After reassign continuous memory, memory type = %ld, memoffset = %zu.", pair.first,
            pair.second.mem_offset_);
   }
   return ge::SUCCESS;
@@ -834,7 +832,6 @@ Status GraphMemoryAssigner::ReAssignVirtualNodesMemory(map<string, vector<NodePt
   string max_batch_label;
   GE_CHK_STATUS_RET(GetMaxBatchLabel(mem_reuse_nodes_map, mem_reuse_model, max_batch_label),
                     "Get max batch label failed.");
-  GELOGI("The batch label of max batch virtual nodes is %s.", max_batch_label.c_str());
   PrintMemoryOffset();
   vector<size_t> nodes_mem_offset_list;
   for (auto &i_map : mem_reuse_nodes_map) {
@@ -1507,7 +1504,7 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         GE_CHK_STATUS(TensorUtils::GetDataOffset(tensor_desc, input_offset));
       }
 
-      GELOGI("%s node[%s] input[%d] is set from node[%s] out index[%lu] offset[%ld]",
+      GELOGD("%s node[%s] input[%d] is set from node[%s] out index[%lu] offset[%ld]",
              has_mem_type_attr == true ? "Fusion" : "",
              tmp_op_desc->GetName().c_str(),
              valid_input_index,

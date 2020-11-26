@@ -189,7 +189,6 @@ void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     const auto &src_node = peer_out_anchor->GetOwnerNode();
     if (!NodeUtils::GetConstOpType(src_node, const_type)) {
-      GELOGI("Node %s:%zu, sorce node: %s Not Const", n->GetName().c_str(), index, src_node->GetName().c_str());
       continue;
     }
 
@@ -232,7 +231,6 @@ Status ModelBuilder::AdjustConstWeightSize(const ge::NodePtr &node, size_t &mem_
 
 Status ModelBuilder::SetInputOutputDesc() {
   Status ret;
-  GELOGI("Start to SetInputOutputDesc.");
 
   for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
@@ -245,7 +243,6 @@ Status ModelBuilder::SetInputOutputDesc() {
     // final graph.
     if ((GetLocalOmgContext().format == domi::DOMI_TENSOR_ND) && (!node_op_desc->HasAttr("_is_single_op")) &&
         ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
-      GELOGI("The node [%s] format should be set ND.", node_op_desc->GetName().c_str());
       auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
       auto outputDescsPtr = node_op_desc->GetAllOutputsDescPtr();
       ge::Format format = ge::FORMAT_ND;
@@ -290,7 +287,7 @@ void ModelBuilder::AddNodeInputProperty() {
     vector<int64_t> src_index_list;
     for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
       auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, GELOGW("peer_out_anchor is nullptr!"); continue);
+      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
       GE_IF_BOOL_EXEC(node_op_desc->HasAttr(MERGE_PRENODE_FLAG), continue);
 
       ge::NodePtr src_node = peer_out_anchor->GetOwnerNode();
@@ -347,7 +344,6 @@ void ModelBuilder::AddNodeInputProperty() {
 }
 
 Status ModelBuilder::AdjustInputTensorFlag() {
-  GELOGI("Start to AdjustInputTensorFlag.");
   for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     if ((n->GetType() == DATA_TYPE) || (n->GetType() == AIPP_DATA_TYPE)) {
       GELOGD("Data node: %s.", n->GetName().c_str());
@@ -441,7 +437,6 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
                    return FAILED);
   const DumpProperties &dump_properties = PropertiesManager::Instance().GetDumpProperties(session_id_);
   bool is_op_debug = dump_properties.IsOpDebugOpen();
-  GELOGI("Get op debug:%d", is_op_debug);
   if (is_op_debug) {
     if (!ge::AttrUtils::SetBool(&model, ATTR_OP_DEBUG_FLAG, is_op_debug)) {
       GELOGE(FAILED, "SetBool of ATTR_OP_DEBUG_FLAG failed.");
@@ -608,7 +603,6 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     }
     tbe_name_set.insert(tbe_kernel->GetName());
     tbe_kernel_store_.AddTBEKernel(tbe_kernel);
-    GELOGI("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
   }
 
   for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
@@ -678,7 +672,6 @@ Status ModelBuilder::PreBuildModel() {
     GELOGE(FAILED, "Graph_ is not valid.");
     return FAILED;
   }
-  GELOGI("BuildModel begin.");
 
   GE_CHK_STATUS_RET(SetInputOutputDesc(), "SetInputOutputDesc Failed!");
 

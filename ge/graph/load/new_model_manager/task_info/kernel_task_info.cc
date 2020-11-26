@@ -178,7 +178,7 @@ void KernelTaskInfo::UpdateTaskId() {
     }
     task_id_ = task_id;
     stream_id_ = stream_id;
-    GELOGI("UpdateTaskId:UpdateTaskId [%u], stream id [%u]:", task_id, stream_id);
+    GELOGD("UpdateTaskId:UpdateTaskId [%u], stream id [%u]:", task_id, stream_id);
   }
 }
 
@@ -382,7 +382,7 @@ Status KernelTaskInfo::Distribute() {
     call_save_dump_ = true;
   } else {
     /* default: not skt launch */
-    GELOGI(
+    GELOGD(
         "KernelTaskInfo Distribute Start, sktenable:%d taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
         "stubfunc:%p blockdim:%u stream:%p",
         call_skt, task_id_, skt_id_, skt_info_.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
@@ -409,7 +409,7 @@ Status KernelTaskInfo::Distribute() {
   }
   // set for task_id_
   UpdateTaskId();
-  GELOGI(
+  GELOGD(
       "KernelTaskInfo Distribute Success. sktenable:%d taskid:%d sktid:%d stubfunc_name:%s stubfunc:%p "
       "blockdim:%d stream:%p",
       call_skt, task_id_, skt_id_, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);

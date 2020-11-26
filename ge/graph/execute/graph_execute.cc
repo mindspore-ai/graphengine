@@ -115,7 +115,7 @@ Status GraphExecutor::FreeInOutBuffer() {
     malloc_flag_ = false;
     return SUCCESS;
   } else {
-    GELOGI("[GraphManager] not malloc buffer.");
+    GELOGD("[GraphManager] not malloc buffer.");
     return SUCCESS;
   }
 }

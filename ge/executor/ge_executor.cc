@@ -588,7 +588,7 @@ Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
 }
 
 Status GeExecutor::UnloadModel(uint32_t model_id) {
-  GELOGI("unload model %u begin.", model_id);
+  GELOGD("unload model %u begin.", model_id);
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -630,7 +630,6 @@ Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData
 // Get input and output descriptor
 Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                     std::vector<ge::TensorDesc> &output_desc, bool new_model_desc) {
-  GELOGI("get model desc info begin.");
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -665,7 +664,6 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
   GetGeTensorDescFromDomiInfo(input_desc, input_desc_infos, input_formats);
   GetGeTensorDescFromDomiInfo(output_desc, output_desc_infos, output_formats);
 
-  GELOGI("get model desc info end.");
   return ge::SUCCESS;
 }
 
@@ -679,7 +677,6 @@ Status GeExecutor::GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDes
 ///
 Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
                                        int32_t &dynamic_type) {
-  GELOGI("Begin to get dynamic batch info.");
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -690,8 +687,6 @@ Status GeExecutor::GetDynamicBatchInfo(uint32_t model_id, std::vector<std::vecto
     GELOGE(ret, "GetDynamicBatchInfo failed.");
     return ret;
   }
-
-  GELOGI("Get dynamic batch info succ.");
   return SUCCESS;
 }
 
@@ -727,7 +722,6 @@ Status GeExecutor::GetCombinedDynamicDims(uint32_t model_id, vector<vector<int64
 /// @return execute result
 ///
 Status GeExecutor::GetUserDesignateShapeOrder(uint32_t model_id, vector<string> &user_designate_shape_order) {
-  GELOGI("Begin to get user designate shape info.");
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -739,7 +733,6 @@ Status GeExecutor::GetUserDesignateShapeOrder(uint32_t model_id, vector<string> 
     return ret;
   }
 
-  GELOGI("Get user designate shape order succ.");
   return SUCCESS;
 }
 
@@ -782,7 +775,6 @@ Status GeExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType 
 }
 
 Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dynamic_output_shape_info) {
-  GELOGI("Begin to get dynamic batch output shape info");
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "not inited yet!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -792,8 +784,6 @@ Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dyn
     GELOGE(ret, "Get dynamic batch output shape info failed.");
     return ret;
   }
-
-  GELOGI("Get dynamic batch output shape info succ.");
   return SUCCESS;
 }
 
@@ -835,8 +825,6 @@ Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge
 }
 
 Status GeExecutor::CommandHandle(const Command &command) {
-  GELOGI("command handle begin.");
-
   Status ret = GraphLoader::CommandHandle(command);
   if (ret != SUCCESS) {
     GELOGE(ACL_ERROR_GE_COMMAND_HANDLE, "CommandHandle: Command Handle failed.");
@@ -904,7 +892,6 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
 */
 Status GeExecutor::LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr, size_t mem_size,
                                      void *weight_ptr, size_t weight_size) {
-  GELOGI("Load model from data begin.");
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "not inited yet!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -945,7 +932,6 @@ Status GeExecutor::LoadModelWithQ(uint32_t &model_id, const ModelData &model_dat
 */
 Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModelData &run_input_data,
                              ge::RunModelData &run_output_data, bool async_mode) {
-  GELOGI("Execute model begin.");
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;

@@ -106,7 +106,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
 
     model_data = data;
     model_len = file_header->length;
-    GELOGI("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
+    GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION, "Invalid model. ModelEncryptType not supported.");
     res = ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION;

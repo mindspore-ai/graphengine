@@ -111,7 +111,7 @@ Status GeLocalOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
              TypeUtils::DataTypeToSerialString(data_type).c_str(), output_mem_size);
       return FAILED;
     }
-    GELOGI(
+    GELOGD(
         "Calc op[%s:%s] out[%zu] mem size is %ld,"
         " format=%s, data_type=%s.",
         node_name.c_str(), node_type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
@@ -174,7 +174,7 @@ Status GeLocalOpsKernelBuilder::GenerateTask(const Node &node, RunContext &conte
     GELOGE(ret, "Node:%s(%s) op run failed.", name.c_str(), type.c_str());
     return ret;
   }
-  GELOGI("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());
+  GELOGD("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());
   return ret;
 }
 }  // namespace ge_local

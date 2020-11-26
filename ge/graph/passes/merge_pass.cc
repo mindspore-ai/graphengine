@@ -231,6 +231,9 @@ Status MergePass::OptimizeEmptyTensorInput(const NodePtr &node) {
                node->GetName().c_str(), in_data_anchor->GetIdx());
         return FAILED;
       }
+      GELOGD("Remove data edge %s:%d->%s:%d",
+             op_desc->GetName().c_str(), peer_data_anchor->GetIdx(),
+             node->GetName().c_str(), in_data_anchor->GetIdx());
     }
   }
   return SUCCESS;

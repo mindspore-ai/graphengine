@@ -33,10 +33,12 @@ namespace ge {
 Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   GELOGD("AtomicAddrCleanPass begin.");
+  bool is_unknown_graph = graph->GetGraphUnknownFlag();
+
   // 1.Recoginze atomic and loop mark
   vector<NodePtr> atomic_node_vec;
   for (NodePtr &node : graph->GetDirectNode()) {
-    if (IsAtomicOp(node)) {
+    if (IsAtomicOp(node, is_unknown_graph)) {
       atomic_node_vec.push_back(node);
     }
     if (!is_loop_graph_ && node->GetType() == LOOPCOND) {
@@ -50,7 +52,6 @@ Status AtomicAddrCleanPass::Run(ComputeGraphPtr graph) {
     return SUCCESS;
   }
 
-  bool is_unknown_graph = graph->GetGraphUnknownFlag();
   if (is_unknown_graph) {
     GELOGD("Graph[%s] is unknown graph. It will call fe interface to compile op.", graph->GetName().c_str());
     GE_CHK_STATUS_RET(CompileUnknownGraphOp(atomic_node_vec));
@@ -242,39 +243,17 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
   return SUCCESS;
 }
 
-bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
+bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node, bool is_unknown_graph) {
   GE_IF_BOOL_EXEC(node == nullptr, GELOGE(FAILED, "node is null."); return false);
   OpDescPtr op_desc = node->GetOpDesc();
   if (op_desc == nullptr) {
     return false;
   }
-  // 1.Check if isAtomic attrs exist for HCOM
-  std::shared_ptr<GELib> instance_ptr = GELib::GetInstance();
-  if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
-    GELOGW("GELib not initialized");
-    return false;
+
+  if (CheckAtomicFromOpsKernel(node)) {
+    return true;
   }
 
-  OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
-  vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(op_desc->GetType());
-  for (const auto &op_info : op_info_vec) {
-    if (op_info.isAtomic) {
-      GELOGI("Recognized atomic op %s from DNN_HCCL engine.", op_desc->GetName().c_str());
-      // check peer input is DATA
-      for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
-        if (in_data_anchor->GetPeerOutAnchor() != nullptr &&
-            in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
-          auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
-          if (peer_in_node->GetType() == DATA) {
-            GELOGI("Recognized atomic op %s from DNN_HCCL engine and input is DATA.", op_desc->GetName().c_str());
-            return false;
-          }
-        }
-      }
-      hcom_node_vec_.push_back(node);
-      return true;
-    }
-  }
   // 2.Check atomic attr in node
   std::map<string, std::map<int, int>> node_workspace_offset;
   bool has_atomic_input = op_desc->HasAttr(ATOMIC_ATTR_INPUT_INDEX);
@@ -284,13 +263,81 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
     return false;
   }
 
+  if (!is_unknown_graph) {
+    if (!has_atomic_input && has_atomic_output && node_workspace_offset.empty()) {
+      std::vector<int64_t> atomic_output_index;
+      (void) ge::AttrUtils::GetListInt(op_desc, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_index);
+      bool is_all_output_peer_also_atomic = true;
+      for (const auto &output_index : atomic_output_index) {
+        if (!IsOutputIndexPeerInputAtomic(node, output_index)) {
+          is_all_output_peer_also_atomic = false;
+          break;
+        }
+      }
+      if (is_all_output_peer_also_atomic) {
+        GELOGI("all out peer node input atomic, skip this out atomic process, node name: %s", node->GetName().c_str());
+        return false;
+      }
+    }
+  }
+
   graphStatus ret = op_desc->SetAttr(ATOMIC_ATTR_IS_ATOMIC_NODE, GeAttrValue::CreateFrom<GeAttrValue::BOOL>(true));
   if (ret != GRAPH_SUCCESS) {
     GELOGW("set attr ATOMIC_ATTR_IS_ATOMIC_NODE fail.");
   }
-  GELOGD("Recognized atomic op %s from FE engine.", op_desc->GetName().c_str());
+  GELOGD("Recognized atomic op %s from attr.", op_desc->GetName().c_str());
   return true;
 }
+
+// just hccl may mark atomic from ops kernel now, and hccl's atomic if for all input
+bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
+  // 1.Check if isAtomic attrs exist for HCOM
+  std::shared_ptr<GELib> instance_ptr = GELib::GetInstance();
+  if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
+    GELOGW("GELib not initialized, atomic from ops kernel judge false, node_name: %s", node->GetName().c_str());
+    return false;
+  }
+
+  OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
+  vector<OpInfo> op_info_vec = ops_kernel_manager.GetOpsKernelInfo(node->GetType());
+  for (const auto &op_info : op_info_vec) {
+    if (op_info.isAtomic) {
+      // check peer input is DATA
+      for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
+        if (in_data_anchor->GetPeerOutAnchor() != nullptr &&
+            in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
+          auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
+          if (peer_in_node->GetType() == DATA) {
+            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", node->GetName().c_str(), op_info.engine.c_str());
+            return false;
+          }
+        }
+      }
+      GELOGI("Recognized atomic op %s from %s engine.", node->GetName().c_str(), op_info.engine.c_str());
+      hcom_node_vec_.push_back(node);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const NodePtr &node, int64_t output_index) {
+  auto out_data_anchor = node->GetAllOutDataAnchors().at(output_index);
+  if (out_data_anchor == nullptr) {
+    return false;
+  }
+
+  for (const auto input_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+    auto output_node = input_anchor->GetOwnerNode();
+    // just hccl may mark atomic from ops kernel now, and hccl's atomic if for all input
+    // hccl's attr ATOMIC_ATTR_INPUT_INDEX mark on CalcOpRunningParam, can't be get here
+    if (CheckAtomicFromOpsKernel(output_node)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ///
 /// @brief Clear Status, used for subgraph pass
 /// @return SUCCESS
@@ -298,6 +345,7 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
 Status AtomicAddrCleanPass::ClearStatus() {
   hcom_node_vec_.clear();
   return SUCCESS;
+
 }
 
 Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_node_vec) {

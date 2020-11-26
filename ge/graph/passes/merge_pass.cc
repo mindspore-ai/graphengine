@@ -34,7 +34,7 @@ using domi::SUCCESS;
 namespace ge {
 const int kValueIndexOutputIndex = 1;
 
-bool IsEmptyTensor(const GeShape &shpae) {
+bool IsEmptyTensor(const GeShape &shape) {
   const auto &dims = shape.GetDims();
   return std::any_of(dims.begin(), dims.end(), [](int64_t dim) { return dim == 0; });
 }

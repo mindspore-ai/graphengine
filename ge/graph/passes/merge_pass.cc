@@ -219,12 +219,18 @@ Status MergePass::OptimizeEmptyTensorInput(const NodePtr &node) {
     if (peer_data_anchor == nullptr) {
       continue;
     }
-    const auto &op_desc = peer_data_anchor->GetOwnerNode()->GetOpDesc();
-    if (op_desc == nullptr) {
+    if ((peer_data_anchor->GetOwnerNode() == nullptr) ||
+        (peer_data_anchor->GetOwnerNode()->GetOpDesc() == nullptr)) {
       continue;
     }
+    const auto &op_desc = peer_data_anchor->GetOwnerNode()->GetOpDesc();
     if (IsEmptyTensor(op_desc->GetOutputDesc(peer_data_anchor->GetIdx()).GetShape())) {
-      return GraphUtils::RemoveEdge(peer_data_anchor, in_data_anchor) == GRAPH_SUCCESS ? SUCCESS : FAILED;
+      if (GraphUtils::RemoveEdge(peer_data_anchor, in_data_anchor) != GRAPH_SUCCESS) {
+        GELOGE(FAILED, "Remove data edge %s:%d->%s:%d failed.",
+               op_desc->GetName().c_str(), peer_data_anchor->GetIdx(),
+               node->GetName().c_str(), in_data_anchor->GetIdx());
+        return FAILED;
+      }
     }
   }
   return SUCCESS;

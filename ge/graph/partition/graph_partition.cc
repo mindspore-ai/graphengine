@@ -382,11 +382,18 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
                   GELOGW("SetInt anchorIndex failed");)
   GE_IF_BOOL_EXEC(!pld_op_desc->SetExtAttr("parentNode", src_node),
                   GELOGW("SetPldExtAttr parentNode failed");)
-
-  OpDescPtr src_node_op_desc = src_node->GetOpDesc();
-  GE_CHECK_NOTNULL(src_node_op_desc);
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, ATTR_NAME_PLD_FRONT_NODE_ENGINE_NAME,
-                  src_node_op_desc->GetOpEngineName()), GELOGW("SetStr frontNodeEngineName failed");)
+                  src_node_opdesc->GetOpEngineName()), GELOGW("SetStr frontNodeEngineName failed");)
+  std::string l2_info_attr;
+  if (AttrUtils::GetStr(src_node_opdesc, "_task_L2FusionInfo", l2_info_attr)) {
+      GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "_task_L2FusionInfo", l2_info_attr),
+                  GELOGW("SetStr l2_info_attr failed");)
+  }
+  int64_t anchor_index_for_lxfusion;
+  if (AttrUtils::GetInt(src_node_opdesc, "_data_anchor_index_for_lxfusion", anchor_index_for_lxfusion)) {
+    GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "_data_anchor_index_for_lxfusion", anchor_index_for_lxfusion),
+                  GELOGW("SetInt anchor_index_for_lxfusion failed");)
+  }
   // do not care over flow
   graph_info_.num_of_pld_end_++;
   // replace output_desc of pld with input node's output desc

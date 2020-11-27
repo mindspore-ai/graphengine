@@ -181,7 +181,7 @@ Status BypassSwitchOut(const NodePtr &switch_node, int out_index) {
 
     auto head_node = node_and_anchor.first;
     auto head_node_type = NodeUtils::GetNodeType(*head_node);
-    if (head_node_type == MERGE || head_node_type == REFMERGE) {
+    if (head_node_type == MEMCPYASYNC) {
       // if the switch connect to the merge directly, insert memcpy before merge
       auto memcpy_node = AddMemcpyBeforeNode(head_node, head_anchor->GetIdx());
       GE_CHECK_NOTNULL(memcpy_node);

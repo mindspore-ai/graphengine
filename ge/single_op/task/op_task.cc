@@ -401,7 +401,7 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
     GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->op_type_.c_str());
     return RT_FAILED;
   }
-  GELOGI("[TASK_INFO] is %s", this->task_info_.c_str());
+  GELOGI("[TASK_INFO] %s/%s", std::to_string(kernel_id_).c_str(), op_type_.c_str());
 
   auto status = OpenDump(stream);
   if (status != SUCCESS) {

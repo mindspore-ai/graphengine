@@ -207,6 +207,7 @@ class AiCpuTask : public AiCpuBaseTask {
   void *copy_input_dst_dev_;
 
   vector<void *> out_shape_hbm_;
+  uint64_t kernel_id_ = 0;
 };
 
 class AiCpuCCTask : public AiCpuBaseTask {

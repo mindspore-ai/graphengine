@@ -151,7 +151,7 @@ class OmeTestOpUtils {
     ge::Model::Load((uint8_t *)data.model_data, data.model_len, *model_);
 
     GeModelPtr ge_model;
-    ModelHelper::TransModelToGeModel(model_, ge_model);
+    TransModelToGeModel(model_, ge_model);
     davinciModel.Assign(ge_model);
 
     if (data.model_data != nullptr) {
@@ -178,7 +178,7 @@ class OmeTestOpUtils {
     model->SetGraph(graph);
 
     GeModelPtr ge_model;
-    ModelHelper::TransModelToGeModel(model, ge_model);
+    TransModelToGeModel(model, ge_model);
 
     davinciModel.Assign(ge_model);
   }

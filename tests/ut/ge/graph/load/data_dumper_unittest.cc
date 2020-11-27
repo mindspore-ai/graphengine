@@ -40,20 +40,22 @@ std::vector<void *> stub_get_output_addrs(const RuntimeParam &model_param, Const
 }
 
 TEST_F(UtestDataDumper, LoadDumpInfo_no_output_addrs_fail) {
-  DataDumper data_dumper;
+  RuntimeParam rts_param;
+  DataDumper data_dumper(rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
-  data_dumper.SetMemory(std::move(RuntimeParam{}));
   std::shared_ptr<OpDesc> op_desc_1(new OpDesc());
   op_desc_1->AddOutputDesc("test", GeTensorDesc());
   data_dumper.SaveDumpTask(0, op_desc_1, 0);
-
+  string dump_mode = "output";
+  data_dumper.dump_properties_.SetDumpMode(dump_mode);
   Status ret = data_dumper.LoadDumpInfo();
-  EXPECT_EQ(ret, PARAM_INVALID);
+  EXPECT_EQ(ret, SUCCESS);
 }
 
 TEST_F(UtestDataDumper, UnloadDumpInfo_success) {
-  DataDumper data_dumper;
+  RuntimeParam rts_param
+  DataDumper data_dumper(rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
 

@@ -31,7 +31,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/broadcast_gradient_args_kernel.h"
+#include "host_kernels/broadcast_gradient_args_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

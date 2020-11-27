@@ -106,7 +106,9 @@ TEST_F(UtestGraphPassesUnusedAndIsolatedOpRemovePass, transpose_and_conv) {
 
   ge::UnusedOpRemovePass unused_pass(TENSORFLOW);
   ge::IsolatedOpRemovePass isolate_pass;
-  vector<GraphPass *> passes = {&unused_pass, &isolate_pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
+  passes.emplace_back("", &isolate_pass);
+  passes.emplace_back("", &unused_pass);
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
   NodePtr found_node0 = graph->FindNode("transpose1");
@@ -132,9 +134,11 @@ TEST_F(UtestGraphPassesUnusedAndIsolatedOpRemovePass, transpose_and_conv3) {
   NodePtr conv2_node = AddNode(graph, "conv2", CONVOLUTION);
   GraphUtils::AddEdge(conv_node->GetOutDataAnchor(0), conv2_node->GetInDataAnchor(0));
 
-  ge::UnusedOpRemovePass unused_pass(FMK_TYPE_T);
+  ge::UnusedOpRemovePass unused_pass(TENSORFLOW);
   ge::IsolatedOpRemovePass isolate_pass;
-  vector<GraphPass *> passes = {&unused_pass, &isolate_pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
+  passes.emplace_back("", &isolate_pass);
+  passes.emplace_back("", &unused_pass);
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
   NodePtr found_node0 = graph->FindNode("transpose1");
@@ -155,9 +159,11 @@ TEST_F(UtestGraphPassesUnusedAndIsolatedOpRemovePass, cast_and_cast) {
   GraphUtils::AddEdge(conv3_node->GetOutDataAnchor(0), transpose_node->GetInDataAnchor(0));
   GraphUtils::AddEdge(transpose_node->GetOutDataAnchor(0), transpose_node_1->GetInDataAnchor(0));
 
-  ge::UnusedOpRemovePass unused_pass(FMK_TYPE_T);
+  ge::UnusedOpRemovePass unused_pass(TENSORFLOW);
   ge::IsolatedOpRemovePass isolate_pass;
-  vector<GraphPass *> passes = {&unused_pass, &isolate_pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
+  passes.emplace_back("", &isolate_pass);
+  passes.emplace_back("", &unused_pass);
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
 }
@@ -175,9 +181,11 @@ TEST_F(UtestGraphPassesUnusedAndIsolatedOpRemovePass, remove_parent_node) {
   GraphUtils::AddEdge(conv3_node->GetOutDataAnchor(0), transpose_node->GetInDataAnchor(0));
   GraphUtils::AddEdge(transpose_node->GetOutDataAnchor(0), transpose_node_1->GetInDataAnchor(0));
 
-  ge::UnusedOpRemovePass unused_pass(FMK_TYPE_T);
+  ge::UnusedOpRemovePass unused_pass(TENSORFLOW);
   ge::IsolatedOpRemovePass isolate_pass;
-  vector<GraphPass *> passes = {&unused_pass, &isolate_pass};
+  std::vector<std::pair<string, GraphPass*>> passes;
+  passes.emplace_back("", &isolate_pass);
+  passes.emplace_back("", &unused_pass);
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
 }

@@ -38,6 +38,8 @@ void DlogWithKVInner(int module_id, int level, KeyValue *pst_kv_array, int kv_nu
   dav_log(module_id, fmt);
 }
 
+int dlog_setlevel(int module_id, int level, int enable_event) { return DLOG_DEBUG; }
+
 int dlog_getlevel(int module_id, int *enable_event) { return DLOG_DEBUG; }
 
 int CheckLogLevel(int moduleId, int logLevel)

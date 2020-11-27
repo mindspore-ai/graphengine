@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/squeeze_kernel.h"
+#include "host_kernels/squeeze_kernel.h"
 
 #include "../graph_builder_utils.h"
 #include "common/debug/log.h"

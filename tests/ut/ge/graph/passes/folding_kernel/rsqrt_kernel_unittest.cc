@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/rsqrt_kernel.h"
+#include "host_kernels/rsqrt_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

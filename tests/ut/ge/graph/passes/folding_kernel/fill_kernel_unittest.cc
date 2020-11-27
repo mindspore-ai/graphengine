@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/fill_kernel.h"
+#include "host_kernels/fill_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/fp16_t.h"

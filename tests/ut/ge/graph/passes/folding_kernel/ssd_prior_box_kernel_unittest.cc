@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/ssd_prior_box_kernel.h"
+#include "host_kernels/ssd_prior_box_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

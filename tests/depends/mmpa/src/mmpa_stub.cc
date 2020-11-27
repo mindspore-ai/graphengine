@@ -247,3 +247,28 @@ INT32 mmGetEnv(const CHAR *name, CHAR *value, UINT32 len)
 {
   return 0;
 }
+
+INT32 mmDlclose(VOID *handle)
+{
+  return 0;
+}
+
+CHAR *mmDlerror()
+{
+  return "";
+}
+
+INT32 mmDladdr(VOID *addr, mmDlInfo *info)
+{
+  return 0;
+}
+
+VOID *mmDlopen(const CHAR *fileName, INT32 mode)
+{
+  return NULL;
+}
+
+VOID *mmDlsym(VOID *handle, const CHAR *funcName)
+{
+  return NULL;
+}

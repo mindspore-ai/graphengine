@@ -20,7 +20,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/mul_kernel.h"
+#include "host_kernels/mul_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

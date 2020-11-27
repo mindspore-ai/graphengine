@@ -27,7 +27,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/operator.h"
 #include "graph/passes/constant_folding_pass.h"
-#include "graph/passes/folding_kernel/broadcast_args_kernel.h"
+#include "host_kernels/broadcast_args_kernel.h"
 #include "inc/kernel_factory.h"
 #include "shape_refiner.h"
 

@@ -42,7 +42,7 @@ include(GNUInstallDirs)
 add_library(ascend_protobuf_static_lib STATIC IMPORTED)
 
 set_target_properties(ascend_protobuf_static_lib PROPERTIES
-                      IMPORTED_LOCATION ${PROTOBUF_STATIC_PKG_DIR}/lib64/libascend_protobuf.a
+                      IMPORTED_LOCATION ${PROTOBUF_STATIC_PKG_DIR}/${CMAKE_INSTALL_LIBDIR}/libascend_protobuf.a
 )
 
 add_library(ascend_protobuf_static INTERFACE)

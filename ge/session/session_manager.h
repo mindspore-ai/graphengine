@@ -158,6 +158,9 @@ class SessionManager {
   Status RegisterCallBackFunc(
       SessionId session_id, const std::string &key,
       const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback);
+  Status RegisterCallBackFunc(
+    SessionId session_id, const std::string &key,
+    const std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)> &callback);
 
   bool IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id);
 

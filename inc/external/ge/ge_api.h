@@ -29,15 +29,25 @@
 namespace ge {
 typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<std::string, ge::Tensor> &params_list);
 
+namespace session {
+typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<AscendString, ge::Tensor> &params_list);
+}
+
 // Initialize GE
+ATTRIBUTED_DEPRECATED(Status GEInitialize(const std::map<AscendString, AscendString> &))
 Status GEInitialize(const std::map<std::string, std::string> &options);
+
+Status GEInitialize(const std::map<AscendString, AscendString> &options);
 
 // Finalize GE, release all resources
 Status GEFinalize();
 
 class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
  public:
+  ATTRIBUTED_DEPRECATED(Session(const std::map<AscendString, AscendString> &))
   explicit Session(const std::map<std::string, std::string> &options);
+
+  explicit Session(const std::map<AscendString, AscendString> &options);
 
   ~Session();
 
@@ -57,7 +67,18 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
   /// @param [in] options graph options
   /// @return Status result of function
   ///
+  ATTRIBUTED_DEPRECATED(Status AddGraph(uint32_t, const Graph &, const std::map<AscendString, AscendString> &))
   Status AddGraph(uint32_t graphId, const Graph &graph, const std::map<std::string, std::string> &options);
+
+  ///
+  /// @ingroup client
+  /// @brief add a graph with a specific graphId and graphOptions
+  /// @param [in] graphId graph id
+  /// @param [in] graph the graph
+  /// @param [in] options graph options
+  /// @return Status result of function
+  ///
+  Status AddGraph(uint32_t graphId, const Graph &graph, const std::map<AscendString, AscendString> &options);
 
   ///
   /// @ingroup client
@@ -124,7 +145,17 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
   /// @param [out] var_values: variable values
   /// @return Status result of function
   ///
+  ATTRIBUTED_DEPRECATED(Status GetVariables(const std::vector<std::string> &, std::vector<Tensor> &))
   Status GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values);
+
+  ///
+  /// @ingroup ge_graph
+  /// @brief get variables in the session with specific session id
+  /// @param [in] var_names: variable names
+  /// @param [out] var_values: variable values
+  /// @return Status result of function
+  ///
+  Status GetVariables(const std::vector<AscendString> &var_names, std::vector<Tensor> &var_values);
 
   ///
   /// @ingroup ge_graph
@@ -135,7 +166,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
   ///                       Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
+  ATTRIBUTED_DEPRECATED(Status RegisterCallBackFunc(const char *, const session::pCallBackFunc &))
   Status RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback);
+
+  Status RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback);
 
   bool IsGraphNeedRebuild(uint32_t graphId);
 

@@ -109,7 +109,7 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const Com
         if (ret != SUCCESS) {
           auto root_graph = ge::GraphUtils::FindRootGraph(parent_graph);
           if (root_graph != nullptr) {
-            ErrorManager.GetInstance().SaveMstuneCompileFailedMsg(root_graph->GetName());
+            ErrorManager::GetInstance().SaveMstuneCompileFailedMsg(root_graph->GetName());
           }
           GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphAfterGraphSlice]: graph optimize failed, ret:%d", ret);
           return ret;

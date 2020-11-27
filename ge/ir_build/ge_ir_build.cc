@@ -141,7 +141,7 @@ static void LoadOpsProto() {
   (void)manager->Initialize(option_tmp);
 }
 
-graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
+graphStatus aclgrphBuildInitializeImpl(std::map<std::string, std::string> &global_options) {
   GELOGD("Enter aclgrphInitialize start!");
   // check global options
   if (CheckGlobalOptions(global_options) != GRAPH_SUCCESS) {
@@ -165,6 +165,24 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
   }
   GELOGW("gelib has been initialized!");
   return GRAPH_SUCCESS;
+}
+
+graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
+  return aclgrphBuildInitializeImpl(global_options);
+}
+
+graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_options) {
+  std::map<std::string, std::string> tmp_global_options;
+  for (auto &option : global_options) {
+    if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
+      GELOGE(GRAPH_FAILED, "AclgrphBuildInitialize option is nullptr.");
+      return GRAPH_FAILED;
+    }
+    std::string key = option.first.GetString();
+    std::string val = option.second.GetString();
+    tmp_global_options[key] = val;
+  }
+  return aclgrphBuildInitializeImpl(tmp_global_options);
 }
 
 void aclgrphBuildFinalize() {
@@ -453,6 +471,24 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string
   return builder.BuildModel(graph, build_options, model);
 }
 
+graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
+                              ModelBufferData &model) {
+  GELOGD("Enter aclmdlBuildModel process!");
+  std::map<std::string, std::string> tmp_build_options;
+  for (auto &option : build_options) {
+    if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
+      GELOGE(GRAPH_FAILED, "AclgrphBuildInitialize option is nullptr.");
+      return GRAPH_FAILED;
+    }
+    std::string key = option.first.GetString();
+    std::string val = option.second.GetString();
+    tmp_build_options[key] = val;
+  }
+
+  Impl builder;
+  return builder.BuildModel(graph, tmp_build_options, model);
+}
+
 graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model) {
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
@@ -460,6 +496,21 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
     return GRAPH_PARAM_INVALID;
   }
   return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
+                               static_cast<uint32_t>(model.length));
+}
+
+graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model) {
+  GELOGD("Enter aclmdlSaveModel process!");
+  if (model.data.get() == nullptr || model.length == 0) {
+    GELOGE(GRAPH_PARAM_INVALID, "Input model is illegal");
+    return GRAPH_PARAM_INVALID;
+  }
+  if (output_file == nullptr) {
+    GELOGE(GRAPH_PARAM_INVALID, "Output file is nullptr.");
+    return GRAPH_PARAM_INVALID;
+  }
+  std::string str_output_file = output_file;
+  return FileSaver::SaveToFile((str_output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 

@@ -38,10 +38,9 @@ class UtestSingleOpManager : public testing::Test {
 };
 
 TEST_F(UtestSingleOpManager, test_get_resource) {
-  uintptr_t resource_id = 0x1;
+  rtStream_t stream = (rtStream_t)0x01;
   auto &instance = SingleOpManager::GetInstance();
-  ASSERT_EQ(instance.TryGetResource(resource_id), nullptr);
-  ASSERT_NE(instance.GetResource(resource_id), nullptr);
+  ASSERT_NE(instance.GetResource(0x01, stream), nullptr);
 }
 
 TEST_F(UtestSingleOpManager, test_get_op_from_model) {
@@ -56,7 +55,7 @@ TEST_F(UtestSingleOpManager, test_get_op_from_model) {
   model_data.model_len = model_str.size();
 
   ASSERT_EQ(instance.GetOpFromModel("model", model_data, stream, &single_op), FAILED);
-  ASSERT_EQ(instance.GetResource(resource_id)->GetOperator(model_data.model_data), nullptr);
+  ASSERT_EQ(instance.GetResource(resource_id, stream)->GetOperator(model_data.model_data), nullptr);
 }
 
 TEST_F(UtestSingleOpManager, test_relesase_resource) {
@@ -64,7 +63,7 @@ TEST_F(UtestSingleOpManager, test_relesase_resource) {
   auto &instance = SingleOpManager::GetInstance();
 
   ASSERT_EQ(instance.ReleaseResource(stream), SUCCESS);
-  instance.GetResource(0x99);
+  instance.GetResource(0x99, stream);
   ASSERT_EQ(instance.ReleaseResource(stream), SUCCESS);
 }
 

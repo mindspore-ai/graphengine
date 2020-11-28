@@ -221,8 +221,9 @@ rtError_t rtCpuKernelLaunch(const void *so_name, const void *kernel_name, uint32
   return RT_ERROR_NONE;
 }
 
-rtError_t rtModelGetTaskId(void *handle, uint32_t *task_id) {
+rtError_t rtModelGetTaskId(void *handle, uint32_t *task_id, uint32_t *stream_id) {
   *task_id = 0;
+  *stream_id = 0;
   return RT_ERROR_NONE;
 }
 rtError_t rtEndGraph(rtModel_t model, rtStream_t stream) { return RT_ERROR_NONE; }
@@ -377,4 +378,9 @@ rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, in
 rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *maxStrCount, uint32_t *maxTaskCount)
 {
   return RT_ERROR_NONE;
+}
+
+rtError_t rtModelExit(rtModel_t model, rtStream_t stream)
+{
+ return RT_ERROR_NONE;
 }

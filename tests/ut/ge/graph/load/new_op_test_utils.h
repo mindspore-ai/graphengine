@@ -134,6 +134,55 @@ class OmeTestOpUtils {
     }
   }
 
+  static Status TransModelToGeModel(const ModelPtr &model, GeModelPtr &ge_model) {
+    if (model == nullptr) {
+      GELOGE(FAILED, "Model is null");
+      return FAILED;
+    }
+    ge_model = ge::MakeShared<ge::GeModel>();
+    GE_CHECK_NOTNULL(ge_model);
+    ge_model->SetGraph(model->GetGraph());
+    ge_model->SetName(model->GetName());
+    ge_model->SetVersion(model->GetVersion());
+    ge_model->SetPlatformVersion(model->GetPlatformVersion());
+    ge_model->SetAttr(model->MutableAttrMap());
+
+    auto compute_graph = ge::GraphUtils::GetComputeGraph(model->GetGraph());
+    ge::Buffer weight;
+    (void)ge::AttrUtils::GetZeroCopyBytes(compute_graph, ge::ATTR_NAME_WEIGHTS_DATA, weight);
+    ge_model->SetWeight(weight);
+    if (model->HasAttr(MODEL_ATTR_TASKS)) {
+       ge::Buffer task_buffer;
+       GE_CHK_BOOL_RET_STATUS(ge::AttrUtils::GetZeroCopyBytes(model, MODEL_ATTR_TASKS, task_buffer), FAILED,
+		              "Get bytes failed.");
+       std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
+       GE_CHECK_NOTNULL(task);
+       GE_IF_BOOL_EXEC(task_buffer.GetData() == nullptr, GELOGE(FAILED, "Get data fail"); return FAILED);
+       GE_IF_BOOL_EXEC(task_buffer.GetSize() == 0, GELOGE(FAILED, "Get size fail"); return FAILED);
+       GE_CHK_BOOL_EXEC(ReadProtoFromArray(task_buffer.GetData(), static_cast<int>(task_buffer.GetSize()), task.get()),
+		        return INTERNAL_ERROR, "ReadProtoFromArray failed.");
+       ge_model->SetModelTaskDef(task);
+    }
+
+    TBEKernelStore kernel_store;
+    if (compute_graph != nullptr && compute_graph->GetDirectNodesSize() != 0) {
+      for (const ge::NodePtr &n : compute_graph->GetDirectNode()) {
+        auto node_op_desc = n->GetOpDesc();
+	GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
+	TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+	GE_IF_BOOL_EXEC(tbe_kernel == nullptr, continue);
+	kernel_store.AddTBEKernel(tbe_kernel);
+	GELOGI("Add tbe kernel bin %s", tbe_kernel->GetName().c_str());
+      }
+    }
+    if (!kernel_store.Build()) {
+      GELOGE(FAILED, "TBE Kernels store build failed!");
+      return FAILED;
+    }
+    ge_model->SetTBEKernelStore(kernel_store);
+    return SUCCESS;
+  }
+
   static void LoadStandardModelDataLocal(ge::ModelData &data) {
     static const std::string STANDARD_MODEL_DATA_PATH =
         "llt/framework/domi/ut/ome/test/data/standard_partition_model.txt";

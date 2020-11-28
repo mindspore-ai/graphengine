@@ -301,8 +301,13 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
+    "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
+    "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
     "${GE_CODE_DIR}/metadef/register/ops_kernel_builder_registry.cc"
+    "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
     "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
+    "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -537,6 +542,8 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/single_op/single_op_model.cc"
     "${GE_CODE_DIR}/ge/single_op/stream_resource.cc"
     "${GE_CODE_DIR}/ge/single_op/single_op_manager.cc"
+    "${GE_CODE_DIR}/ge/single_op/task/aicpu_task_builder.cc"
+    "${GE_CODE_DIR}/ge/single_op/task/aicpu_kernel_task_builder.cc"
 )
 
 # test files
@@ -547,15 +554,15 @@ set(COMMON_TEST_FILES
 
 set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/data_dumper_unittest.cc"
-    "graph/load/new_model_manager_data_inputer_unittest.cc"
-    "graph/load/new_model_manager_davinci_model_unittest.cc"
-    "graph/load/new_model_manager_model_manager_unittest.cc"
-    "graph/load/new_model_manager_task_build_unittest.cc"
+    #"graph/load/new_model_manager_data_inputer_unittest.cc"
+    #"graph/load/new_model_manager_davinci_model_unittest.cc"
+    #"graph/load/new_model_manager_model_manager_unittest.cc"
+    #"graph/load/new_model_manager_task_build_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
-    "graph/load/output_net_output_unittest.cc"
+    #"graph/load/output_net_output_unittest.cc"
     "graph/load/tbe_handle_store_unittest.cc"
-    "graph/graph_load_unittest.cc"
+    #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
 )
 
@@ -880,11 +887,16 @@ add_executable(ut_libge_distinct_load_utest
         ${SINGLE_OP_TEST_FILES}
         ${PROFILING_MNG_TEST_FILES}
 )
+
+target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
+    google=ascend_private
+)
+
 target_link_libraries(ut_libge_distinct_load_utest 
 	${COMMON_SHARED_LIBRARIES}
 	$<BUILD_INTERFACE:intf_pub>
-        ge_execute_common ge_ut_common  ge_ut_common_format  ge_pass_common ge_load_common
+        ge_execute_common ge_ut_common_format ge_pass_common ge_load_common
         ge_single_op   ge_prepare_common
-        ge_optimize_common  ge_build_common ge_partition_common
+        ge_optimize_common  ge_build_common ge_partition_common ge_ut_common
         gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread
 )

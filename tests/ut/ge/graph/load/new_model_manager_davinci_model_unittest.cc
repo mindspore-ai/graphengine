@@ -37,7 +37,6 @@
 #include "graph/load/new_model_manager/task_info/stream_switch_task_info.h"
 #include "graph/load/new_model_manager/task_info/profiler_trace_task_info.h"
 #include "graph/load/new_model_manager/task_info/memcpy_async_task_info.h"
-#include "graph/load/new_model_manager/task_info/label_goto_task_info.h"
 #include "graph/load/new_model_manager/task_info/label_set_task_info.h"
 #include "graph/load/new_model_manager/task_info/kernel_ex_task_info.h"
 #include "graph/load/new_model_manager/task_info/kernel_task_info.h"

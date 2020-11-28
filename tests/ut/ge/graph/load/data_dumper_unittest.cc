@@ -46,7 +46,7 @@ TEST_F(UtestDataDumper, LoadDumpInfo_no_output_addrs_fail) {
   data_dumper.SetModelId(2333);
   std::shared_ptr<OpDesc> op_desc_1(new OpDesc());
   op_desc_1->AddOutputDesc("test", GeTensorDesc());
-  data_dumper.SaveDumpTask(0, op_desc_1, 0);
+  data_dumper.SaveDumpTask(0, 0, op_desc_1, 0);
   string dump_mode = "output";
   data_dumper.dump_properties_.SetDumpMode(dump_mode);
   Status ret = data_dumper.LoadDumpInfo();
@@ -54,7 +54,7 @@ TEST_F(UtestDataDumper, LoadDumpInfo_no_output_addrs_fail) {
 }
 
 TEST_F(UtestDataDumper, UnloadDumpInfo_success) {
-  RuntimeParam rts_param
+  RuntimeParam rts_param;
   DataDumper data_dumper(rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);

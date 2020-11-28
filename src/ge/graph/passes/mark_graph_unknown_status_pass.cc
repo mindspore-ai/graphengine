@@ -19,6 +19,10 @@
 #include "graph/debug/ge_attr_define.h"
 
 namespace ge {
+namespace {
+const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
+}
+
 Status MarkGraphUnknownStatusPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   bool is_unknown_shape = false;
@@ -34,6 +38,11 @@ Status MarkGraphUnknownStatusPass::Run(ComputeGraphPtr graph) {
       is_unknown_shape = true;
       break;
     }
+  }
+
+  for (const auto &node : graph->GetDirectNode()) {
+    GELOGD("Set OwnerGraphIsUnknown attr to node[%s]", node->GetName().c_str());
+    (void)AttrUtils::SetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);
   }
   graph->SetGraphUnknownFlag(is_unknown_shape);
   GELOGD("mark graph [%s] unknown status success! value is %d", graph->GetName().c_str(), is_unknown_shape);

@@ -44,7 +44,10 @@ struct ModelBufferData {
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
+ATTRIBUTED_DEPRECATED(graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &))
 graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options);
+
+graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_options);
 
 /**
  * @ingroup AscendCL
@@ -63,7 +66,12 @@ void aclgrphBuildFinalize();
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
+ATTRIBUTED_DEPRECATED(graphStatus aclgrphBuildModel(const ge::Graph &, const std::map<AscendString, AscendString> &,
+                                                    ModelBufferData &))
 graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string, std::string> &build_options,
+                              ModelBufferData &model);
+
+graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
                               ModelBufferData &model);
 
 /**
@@ -75,7 +83,10 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
+ATTRIBUTED_DEPRECATED(graphStatus aclgrphSaveModel(const char *, const ModelBufferData &))
 graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model);
+
+graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model);
 
 /**
  * @ingroup AscendCL
@@ -110,5 +121,5 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph);
  * @retval OtherValues Failure
  */
 graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
-};  // namespace ge
-#endif
+};      // namespace ge
+#endif  // INC_EXTERNAL_GE_IR_BUILD_H_

@@ -17,6 +17,7 @@
 #include "graph/utils/ge_ir_utils.h"
 #include <utility>
 #include "framework/common/debug/ge_log.h"
+#include "mmpa/mmpa_api.h"
 
 namespace {
 const char *const kControlAnchorIndex = ":-1";
@@ -25,8 +26,10 @@ const char *const kPrefixForInputDesc = "input_desc_attr_";
 const char *const kPrefixForOutputDesc = "output_desc_attr_";
 const char *const kDumpGEGraph = "DUMP_GE_GRAPH";
 const int8_t kMaxRecursionDepth = 10;
-const char *const kDumpGeGraph = std::getenv(kDumpGEGraph);
-const int64_t kDumpLevel = (kDumpGeGraph != nullptr) ? std::strtol(kDumpGeGraph, nullptr, 10) : ge::OnnxUtils::NO_DUMP;
+char kDumpGeGraph[MMPA_MAX_PATH] = {0x00};
+const int64_t kDumpLevel = (mmGetEnv(kDumpGEGraph, kDumpGeGraph, MMPA_MAX_PATH) == EN_OK)
+                             ? std::strtol(kDumpGeGraph, nullptr, 10)
+                             : ge::OnnxUtils::NO_DUMP;
 const int64_t kInputPrefixLength = 5;
 const int64_t kOutputPrefixLength = 6;
 using AttrDefPair = ::google::protobuf::MapPair<std::string, ge::proto::AttrDef>;
@@ -41,6 +44,12 @@ static const std::map<ge::DataType, onnx::TensorProto_DataType> kGeDataTypeToOnn
   {DT_UINT8, onnx::TensorProto_DataType_UINT8},   {DT_INT16, onnx::TensorProto_DataType_INT16},
   {DT_UINT16, onnx::TensorProto_DataType_UINT16}, {DT_FLOAT16, onnx::TensorProto_DataType_FLOAT16},
   {DT_DOUBLE, onnx::TensorProto_DataType_DOUBLE}, {DT_BOOL, onnx::TensorProto_DataType_BOOL},
+};
+
+struct AttrNameComp {
+  inline bool operator()(const onnx::AttributeProto &lsh, const onnx::AttributeProto &rsh) {
+    return lsh.name() < rsh.name();
+  }
 };
 
 onnx::TensorProto_DataType OnnxUtils::EncodeDataType(DataType data_type) {
@@ -547,6 +556,9 @@ bool OnnxUtils::EncodeNodeDesc(const NodePtr &node, onnx::NodeProto *node_proto)
   }
   // 3.Encode ge::Node members to AttributeProto
   AddAttrProtoFromNodeMembers(node, node_proto);
+
+  // 4. Sort node attributes by name.
+  std::sort(node_proto->mutable_attribute()->begin(), node_proto->mutable_attribute()->end(), AttrNameComp());
   return true;
 }
 

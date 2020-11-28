@@ -25,6 +25,7 @@
 
 #include "./ge_error_codes.h"
 #include "./types.h"
+#include "ascend_string.h"
 
 namespace ge {
 class ShapeImpl;
@@ -81,8 +82,13 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY TensorDesc {
   DataType GetDataType() const;
   void SetDataType(DataType dt);
 
+  ATTRIBUTED_DEPRECATED(graphStatus GetName(AscendString &))
   std::string GetName() const;
+  graphStatus GetName(AscendString &name);
+
+  ATTRIBUTED_DEPRECATED(void SetName(const char *))
   void SetName(const std::string &name);
+  void SetName(const char *name);
 
   // Attr acess
   void SetSize(int64_t size);
@@ -115,8 +121,12 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Tensor {
   graphStatus SetData(std::vector<uint8_t> &&data);
   graphStatus SetData(const std::vector<uint8_t> &data);
   graphStatus SetData(const uint8_t *data, size_t size);
+  ATTRIBUTED_DEPRECATED(graphStatus SetData(const char *data))
   graphStatus SetData(const std::string &data);
+  graphStatus SetData(const char *data);
+  ATTRIBUTED_DEPRECATED(graphStatus SetData(const std::vector<AscendString> &))
   graphStatus SetData(const std::vector<std::string> &data);
+  graphStatus SetData(const std::vector<AscendString> &datas);
   graphStatus IsValid();
 
   Tensor Clone() const;

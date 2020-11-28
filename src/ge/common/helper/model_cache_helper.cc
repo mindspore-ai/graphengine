@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <fcntl.h>
-#include <unistd.h>
 #include <climits>
 #include <cstdio>
 #include <fstream>
@@ -448,12 +446,12 @@ Status ModelCacheHelper::SaveJsonToFile(const string &file_name, const Json &jso
   }
   const string path = cache_path_ + file_name;
   const int FILE_AUTHORITY = 0600;
-  int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, FILE_AUTHORITY);
+  int fd = mmOpen2(path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, FILE_AUTHORITY);
   if (fd < 0) {
     GELOGW("Fail to open the file: %s.", path.c_str());
     return INTERNAL_ERROR;
   }
-  if (close(fd) != 0) {
+  if (mmClose(fd) != 0) {
     GELOGW("Fail to close the file: %s.", path.c_str());
     return INTERNAL_ERROR;
   }

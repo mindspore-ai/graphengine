@@ -155,8 +155,8 @@ Status StreamResource::BuildOperator(const string &model_name, const ModelData &
 
   auto new_op = std::unique_ptr<SingleOp>(new (std::nothrow) SingleOp(&stream_mu_, stream_));
   if (new_op == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "new SingleOp failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "new SingleOp failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   GELOGI("To build operator: %s", model_name.c_str());

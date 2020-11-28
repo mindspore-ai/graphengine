@@ -42,8 +42,7 @@ class ZeroCopyOffset {
   ZeroCopyOffset();
   ~ZeroCopyOffset();
 
-  Status InitInputDataInfo(const vector<int64_t> &output_size_list, const vector<void *> &virtual_addr_list,
-                           const OpDescPtr &op_desc, bool &fusion_flag);
+  Status InitInputDataInfo(int64_t output_size, void *virtual_addr, const OpDescPtr &op_desc, bool &fusion_flag);
   void SetInputOutsideAddrs(const vector<int64_t> &output_offset_list, void *addr, const size_t &index,
                             bool fusion_flag, std::set<const void *> &real_virtual_addrs);
 

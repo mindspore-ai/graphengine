@@ -80,6 +80,26 @@ LOCAL_C_INCLUDES := $(local_lib_inc_path)
 
 include ${BUILD_HOST_SHARED_LIBRARY}
 
+#compiler for device ops kernel builder
+include $(CLEAR_VARS)
+LOCAL_MODULE := libhost_cpu_opskernel_builder
+LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -std=c++11 -Dgoogle=ascend_private
+LOCAL_LDFLAGS :=
+
+LOCAL_STATIC_LIBRARIES :=
+LOCAL_SHARED_LIBRARIES :=   libascend_protobuf \
+                            libc_sec \
+                            libslog \
+                            libgraph \
+                            libregister \
+
+LOCAL_SRC_FILES := ops_kernel_store/host_cpu_ops_kernel_builder.cc
+
+LOCAL_C_INCLUDES := $(local_lib_inc_path)
+
+include ${BUILD_SHARED_LIBRARY}
+
 #compiler for host static lib
 include $(CLEAR_VARS)
 LOCAL_MODULE := libhost_cpu_opskernel_builder

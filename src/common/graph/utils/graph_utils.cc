@@ -20,10 +20,8 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -43,6 +41,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "mmpa/mmpa_api.h"
 
 using google::protobuf::io::FileOutputStream;
 
@@ -68,6 +67,7 @@ const char *const kDumpStrPartition = "partition";
 const char *const kDumpStrOptimizeSubgraph = "OptimizeSubGraph";
 const char *const kDumpStrSubgraphFunc = "sub_graph";
 const char *const kDumpStrAicpu = "Aicpu";
+const int32_t kNameMax = 255;
 };  // namespace
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus GraphUtils::AddEdge(const OutDataAnchorPtr &src,
@@ -538,9 +538,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::RecordOriginalNa
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::MatchDumpStr(const std::string &suffix) {
-  char *dump_level = std::getenv(kDumpGraphLevel);
-  int64_t dump_graph_level =
-    (dump_level != nullptr) ? std::strtol(dump_level, nullptr, kBaseOfIntegerValue) : kDumpLevel2;
+  char dump_level[MMPA_MAX_PATH] = {0x00};
+  INT32 res = mmGetEnv(kDumpGraphLevel, dump_level, MMPA_MAX_PATH);
+  int64_t dump_graph_level = (res == EN_OK) ? std::strtol(dump_level, nullptr, kBaseOfIntegerValue) : kDumpLevel2;
 
   if (dump_graph_level == kDumpLevel1) {
     return false;
@@ -565,8 +565,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraph(cons
                                                                             bool is_always_dump,
                                                                             const std::string &user_graph_name) {
 #ifdef FMK_SUPPORT_DUMP
-  char *dump_ge_graph = std::getenv(kDumpGeGraph);
-  GE_IF_BOOL_EXEC(dump_ge_graph == nullptr && !is_always_dump, return;);
+  char dump_ge_graph[MMPA_MAX_PATH] = {0x00};
+  INT32 res = mmGetEnv(kDumpGeGraph, dump_ge_graph, MMPA_MAX_PATH);
+  GE_IF_BOOL_EXEC(res != EN_OK && !is_always_dump, return;);
 
   // dump the graph according to different graph level
   if (GraphUtils::MatchDumpStr(suffix)) {
@@ -615,9 +616,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraph(cons
       GELOGE(GRAPH_FAILED, "parse from string failed.");
       return;
     }
-    char real_path[PATH_MAX] = {0x00};
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(proto_file.c_str()) >= PATH_MAX, return, "file path is too longer!");
-    GE_IF_BOOL_EXEC(realpath(proto_file.c_str(), real_path) == nullptr,
+    char real_path[MMPA_MAX_PATH] = {0x00};
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(proto_file.c_str()) >= MMPA_MAX_PATH, return, "file path is too longer!");
+    GE_IF_BOOL_EXEC(mmRealPath(proto_file.c_str(), real_path, MMPA_MAX_PATH) != EN_OK,
                     GELOGI("file %s does not exist, it will be created.", proto_file.c_str()));
 
     GraphUtils::WriteProtoToTextFile(ge_proto, real_path);
@@ -730,7 +731,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
   const google::protobuf::Message &proto, const char *real_path) {
 #ifdef FMK_SUPPORT_DUMP
   const int FILE_AUTHORITY = 0600;
-  int fd = open(real_path, O_WRONLY | O_CREAT | O_TRUNC, FILE_AUTHORITY);
+  int fd = mmOpen2(real_path, M_WRONLY | M_CREAT | O_TRUNC, FILE_AUTHORITY);
   if (fd < 0) {
     GELOGE(GRAPH_FAILED, "fail to open the file: %s, %s", real_path, strerror(errno));
     return;
@@ -738,7 +739,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
   google::protobuf::io::FileOutputStream *output = new (std::nothrow) FileOutputStream(fd);
   if (output == nullptr) {
     GELOGE(GRAPH_FAILED, "Output is nullptr");
-    if (close(fd) != 0) {
+    if (mmClose(fd) != 0) {
       GELOGE(GRAPH_FAILED, "Close fileoutputstream failed");
     }
     return;
@@ -748,12 +749,12 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
     GELOGE(GRAPH_FAILED, "Fail to write the file: %s", real_path);
     delete output;
     output = nullptr;
-    GE_CHK_BOOL_EXEC(close(fd) == 0, return, "Close fileoutputstream failed");
+    GE_CHK_BOOL_EXEC(mmClose(fd) == 0, return, "Close fileoutputstream failed");
     return;
   }
   delete output;
   output = nullptr;
-  GE_CHK_BOOL_EXEC(close(fd) == 0, return, "Close fileoutputstream failed");
+  GE_CHK_BOOL_EXEC(mmClose(fd) == 0, return, "Close fileoutputstream failed");
 
   FILE *file = fopen(real_path, "rb");
   if (file == nullptr) {
@@ -770,7 +771,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::WriteProtoToText
     }
     if (max_dump_file_size != 0 && fileSize != -1 && fileSize > max_dump_file_size) {
       GELOGW("dump graph file size > maxDumpFileSize, maxDumpFileSize=%ld.", max_dump_file_size);
-      GE_IF_BOOL_EXEC(std::remove(real_path) != 0, GELOGW("remove %s failed", real_path));
+      GE_IF_BOOL_EXEC(remove(real_path) != 0, GELOGW("remove %s failed", real_path));
       GE_CHK_BOOL_EXEC(fclose(file) == 0, return, "Fclose %s failed", real_path);
       return;
     }
@@ -804,9 +805,10 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool GraphUtils::ReadProtoFromTex
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraphToOnnx(const ge::ComputeGraph &compute_graph,
                                                                                   const std::string &suffix) {
 #ifdef FMK_SUPPORT_DUMP
-  char *dump_ge_graph = std::getenv(kDumpGeGraph);
+  char dump_ge_graph[MMPA_MAX_PATH] = {0x00};
+  INT32 res = mmGetEnv(kDumpGeGraph, dump_ge_graph, MMPA_MAX_PATH);
   int64_t dump_ge_graph_level =
-    (dump_ge_graph != nullptr) ? std::strtol(dump_ge_graph, nullptr, kBaseOfIntegerValue) : OnnxUtils::NO_DUMP;
+    (res == EN_OK) ? std::strtol(dump_ge_graph, nullptr, kBaseOfIntegerValue) : OnnxUtils::NO_DUMP;
   if ((dump_ge_graph_level == OnnxUtils::NO_DUMP) || (dump_ge_graph_level >= OnnxUtils::DUMP_LEVEL_END)) {
     GELOGD("Skip DumpGEGraphToOnnx with dump_ge_graph_level %ld.", dump_ge_graph_level);
     return;
@@ -853,24 +855,26 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void GraphUtils::DumpGEGraphToOnn
   stream_file_name << "_graph_" << compute_graph.GetGraphID();
   stream_file_name << "_" << suffix << ".pbtxt";
   std::string proto_file = stream_file_name.str();
-  if ((proto_file.length()) >= NAME_MAX) {
+  if ((proto_file.length()) >= kNameMax) {
     GELOGE(GRAPH_FAILED, "File name is too longer!");
     return;
   }
-  std::unique_ptr<char[]> real_path(new (std::nothrow) char[PATH_MAX]{0});
+  std::unique_ptr<char[]> real_path(new (std::nothrow) char[MMPA_MAX_PATH]{0});
   if (real_path == nullptr) {
     GELOGE(GRAPH_FAILED, "New real_path failed.");
     return;
   }
   /// Returning nullptr means 3 case as follows:
-  /// a.path is PATH_MAX chars or more
+  /// a.path is MMPA_MAX_PATH chars or more
   /// b.the file does not exist
   /// c.the path has no permissions
   /// Distinguish between last the two cases in the function WriteProtoToTextFile call open()
-  if (realpath(proto_file.c_str(), real_path.get()) == nullptr) {
+  if (mmRealPath(proto_file.c_str(), real_path.get(), MMPA_MAX_PATH) != EN_OK) {
     // For case a
-    if (errno == ENAMETOOLONG) {
-      GELOGE(GRAPH_FAILED, "Call realpath failed: path is PATH_MAX chars or more.");
+    int err_num = errno;
+    // linux: ENAMETOOLONG windows: ERANGE
+    if (err_num == ENAMETOOLONG || err_num == ERANGE) {
+      GELOGE(GRAPH_FAILED, "Call realpath failed: path is MMPA_MAX_PATH chars or more.");
       return;
     }
   }

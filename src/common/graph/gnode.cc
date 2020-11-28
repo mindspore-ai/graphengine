@@ -89,7 +89,7 @@ GNodePtr NodeAdapter::Node2GNodePtr(const ge::NodePtr &node) {
 
 GNode::GNode() { impl_ = ComGraphMakeShared<NodeImpl>(); }
 
-graphStatus GNode::GetType(ge::AscendString &type) const {
+graphStatus GNode::GetType(AscendString &type) const {
   if (impl_ == nullptr) {
     GELOGE(GRAPH_FAILED, "GetType: node impl is nullptr.");
     return GRAPH_FAILED;
@@ -107,7 +107,7 @@ graphStatus GNode::GetType(ge::AscendString &type) const {
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::GetName(ge::AscendString &name) const {
+graphStatus GNode::GetName(AscendString &name) const {
   if (impl_ == nullptr) {
     GELOGE(GRAPH_FAILED, "GetName: node impl is nullptr.");
     return GRAPH_FAILED;
@@ -295,7 +295,7 @@ graphStatus GNode::GetInputConstData(const int32_t index, Tensor &data) const {
   return GRAPH_NODE_WITHOUT_CONST_INPUT;
 }
 
-graphStatus GNode::GetInputIndexByName(const ge::AscendString &name, int32_t &index) {
+graphStatus GNode::GetInputIndexByName(const AscendString &name, int32_t &index) {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "GetInputIndexByName: ascend string error.");
@@ -325,7 +325,7 @@ graphStatus GNode::GetInputIndexByName(const ge::AscendString &name, int32_t &in
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::GetOutputIndexByName(const ge::AscendString &name, int32_t &index) {
+graphStatus GNode::GetOutputIndexByName(const AscendString &name, int32_t &index) {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "GetOutputIndexByName: ascend string error.");
@@ -528,7 +528,7 @@ graphStatus GNode::UpdateOutputDesc(const int32_t index, const TensorDesc &tenso
 }
 
 #define NODE_ATTR_GET_IMP(ArgType)                                                       \
-  graphStatus GNode::GetAttr(const ge::AscendString &name, ArgType &attr_value) const {  \
+  graphStatus GNode::GetAttr(const AscendString &name, ArgType &attr_value) const {      \
     const char *ascend_name = name.GetString();                                          \
     if (ascend_name == nullptr) {                                                        \
       GELOGE(GRAPH_PARAM_INVALID, "GetAttr: ascend string error.");                      \
@@ -556,29 +556,29 @@ graphStatus GNode::UpdateOutputDesc(const int32_t index, const TensorDesc &tenso
     return GRAPH_SUCCESS;                                                                \
   }
 
-#define NODE_ATTR_SET_IMP(ArgType)                                                      \
-  graphStatus GNode::SetAttr(const ge::AscendString &name, ArgType &attr_value) const { \
-    const char *ascend_name = name.GetString();                                         \
-    if (ascend_name == nullptr) {                                                       \
-      GELOGE(GRAPH_PARAM_INVALID, "SetAttr: ascend string error.");                     \
-      return GRAPH_PARAM_INVALID;                                                       \
-    }                                                                                   \
-                                                                                        \
-    if (impl_ == nullptr) {                                                             \
-      GELOGE(GRAPH_FAILED, "SetAttr: node impl is nullptr.");                           \
-      return GRAPH_FAILED;                                                              \
-    }                                                                                   \
-                                                                                        \
-    std::shared_ptr<Node> node_ptr = impl_->node_ptr_.lock();                           \
-    if (node_ptr == nullptr) {                                                          \
-      GELOGE(GRAPH_FAILED, "SetAttr: the shared ptr is not valid.");                    \
-      return GRAPH_FAILED;                                                              \
-    }                                                                                   \
-                                                                                        \
-    std::string node_name = ascend_name;                                                \
-    Operator op = OpDescUtils::CreateOperatorFromNode(node_ptr);                        \
-    (void)op.SetAttr(node_name, attr_value);                                            \
-    return GRAPH_SUCCESS;                                                               \
+#define NODE_ATTR_SET_IMP(ArgType)                                                  \
+  graphStatus GNode::SetAttr(const AscendString &name, ArgType &attr_value) const { \
+    const char *ascend_name = name.GetString();                                     \
+    if (ascend_name == nullptr) {                                                   \
+      GELOGE(GRAPH_PARAM_INVALID, "SetAttr: ascend string error.");                 \
+      return GRAPH_PARAM_INVALID;                                                   \
+    }                                                                               \
+                                                                                    \
+    if (impl_ == nullptr) {                                                         \
+      GELOGE(GRAPH_FAILED, "SetAttr: node impl is nullptr.");                       \
+      return GRAPH_FAILED;                                                          \
+    }                                                                               \
+                                                                                    \
+    std::shared_ptr<Node> node_ptr = impl_->node_ptr_.lock();                       \
+    if (node_ptr == nullptr) {                                                      \
+      GELOGE(GRAPH_FAILED, "SetAttr: the shared ptr is not valid.");                \
+      return GRAPH_FAILED;                                                          \
+    }                                                                               \
+                                                                                    \
+    std::string node_name = ascend_name;                                            \
+    Operator op = OpDescUtils::CreateOperatorFromNode(node_ptr);                    \
+    (void)op.SetAttr(node_name, attr_value);                                        \
+    return GRAPH_SUCCESS;                                                           \
   }
 
 NODE_ATTR_GET_IMP(int64_t)
@@ -616,7 +616,7 @@ NODE_ATTR_SET_IMP(std::vector<std::vector<int64_t>>)
 NODE_ATTR_SET_IMP(std::vector<ge::DataType>)
 NODE_ATTR_SET_IMP(ge::DataType)
 
-graphStatus GNode::SetAttr(const ge::AscendString &name, AttrValue &attr_value) const {
+graphStatus GNode::SetAttr(const AscendString &name, AttrValue &attr_value) const {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "SetAttr: ascend string error.");
@@ -640,7 +640,7 @@ graphStatus GNode::SetAttr(const ge::AscendString &name, AttrValue &attr_value) 
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::SetAttr(const ge::AscendString &name, ge::AscendString &attr_value) const {
+graphStatus GNode::SetAttr(const AscendString &name, AscendString &attr_value) const {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "SetAttr: name ascend string error.");
@@ -671,7 +671,7 @@ graphStatus GNode::SetAttr(const ge::AscendString &name, ge::AscendString &attr_
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::SetAttr(const ge::AscendString &name, std::vector<ge::AscendString> &attr_values) const {
+graphStatus GNode::SetAttr(const AscendString &name, std::vector<AscendString> &attr_values) const {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "SetAttr: name ascend string error.");
@@ -710,7 +710,7 @@ graphStatus GNode::SetAttr(const ge::AscendString &name, std::vector<ge::AscendS
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::GetAttr(const ge::AscendString &name, ge::AscendString &attr_value) const {
+graphStatus GNode::GetAttr(const AscendString &name, AscendString &attr_value) const {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "GetAttr: name ascend string error.");
@@ -736,13 +736,13 @@ graphStatus GNode::GetAttr(const ge::AscendString &name, ge::AscendString &attr_
     return GRAPH_FAILED;
   }
 
-  ge::AscendString attr_value_get(op_name.c_str());
+  AscendString attr_value_get(op_name.c_str());
   attr_value = attr_value_get;
 
   return GRAPH_SUCCESS;
 }
 
-graphStatus GNode::GetAttr(const ge::AscendString &name, std::vector<ge::AscendString> &attr_values) const {
+graphStatus GNode::GetAttr(const AscendString &name, std::vector<AscendString> &attr_values) const {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "GetAttr: name ascend string error.");
@@ -776,7 +776,7 @@ graphStatus GNode::GetAttr(const ge::AscendString &name, std::vector<ge::AscendS
   return GRAPH_SUCCESS;
 }
 
-bool GNode::HasAttr(const ge::AscendString &name) {
+bool GNode::HasAttr(const AscendString &name) {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "HasAttr: ascend string error.");

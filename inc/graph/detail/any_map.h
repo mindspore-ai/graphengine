@@ -22,6 +22,8 @@
 #include <string>
 #include <utility>
 
+#include "graph/compiler_options.h"
+
 namespace ge {
 using std::shared_ptr;
 using std::string;
@@ -30,7 +32,7 @@ class TypeID {
  public:
   template <class T>
   static TypeID Of() {
-    return TypeID(__PRETTY_FUNCTION__);
+    return TypeID(METADEF_FUNCTION_IDENTIFIER);
   }
 
   ~TypeID() = default;

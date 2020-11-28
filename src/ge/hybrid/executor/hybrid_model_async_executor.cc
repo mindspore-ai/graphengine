@@ -52,7 +52,7 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
 
   run_flag_ = true;
   listener_ = listener;
-  future_ = std::async([&]() -> Status {
+  future_ = std::async(std::launch::async, [&]() -> Status {
     GetContext().SetSessionId(executor_->GetContext()->session_id);
     return RunInternal();
   });
@@ -66,7 +66,11 @@ Status HybridModelAsyncExecutor::Stop() {
   std::lock_guard<std::mutex> lk(mu_);
   run_flag_ = false;
   data_inputer_->Stop();
-  auto ret = future_.get();
+
+  Status ret = SUCCESS;
+  if (future_.valid()) {
+    ret = future_.get();
+  }
 
   if (stream_ != nullptr) {
     GE_CHK_RT(rtStreamDestroy(stream_));

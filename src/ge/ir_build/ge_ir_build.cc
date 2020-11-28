@@ -18,7 +18,6 @@
 
 #include <vector>
 #include "common/auth/file_saver.h"
-#include "common/ge/tbe_plugin_manager.h"
 #include "external/register/register_types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -139,7 +138,7 @@ static void LoadOpsProto() {
   (void)manager->Initialize(option_tmp);
 }
 
-graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
+graphStatus aclgrphBuildInitializeImpl(std::map<std::string, std::string> &global_options) {
   GELOGD("Enter aclgrphInitialize start!");
   // check global options
   if (CheckGlobalOptions(global_options) != GRAPH_SUCCESS) {
@@ -160,16 +159,31 @@ graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_opt
       GELOGE(ret, "GE initialize failed!");
       return GRAPH_FAILED;
     }
-    // for functional subgraph assign _parent_index.
-    TBEPluginManager::Instance().InitPreparation(global_options);
   }
   GELOGW("gelib has been initialized!");
   return GRAPH_SUCCESS;
 }
 
+graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
+  return aclgrphBuildInitializeImpl(global_options);
+}
+
+graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_options) {
+  std::map<std::string, std::string> tmp_global_options;
+  for (auto &option : global_options) {
+    if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
+      GELOGE(GRAPH_FAILED, "AclgrphBuildInitialize option is nullptr.");
+      return GRAPH_FAILED;
+    }
+    std::string key = option.first.GetString();
+    std::string val = option.second.GetString();
+    tmp_global_options[key] = val;
+  }
+  return aclgrphBuildInitializeImpl(tmp_global_options);
+}
+
 void aclgrphBuildFinalize() {
   if (ge::GELib::GetInstance() != nullptr && ge::GELib::GetInstance()->InitFlag()) {
-    (void)TBEPluginManager::Instance().Finalize();
     (void)ge::GELib::GetInstance()->Finalize();
     return;
   }
@@ -339,7 +353,7 @@ void Impl::SetRtSocVersion() {
     if (rt_ret != RT_ERROR_NONE) {
       GELOGW("Set soc version %s failed. ret:0x%X", soc_version, rt_ret);
     }
-    GELOGI("Set soc version %s success.", soc_version);
+    GELOGD("Set soc version %s success.", soc_version);
   }
 }
 
@@ -358,18 +372,18 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
       (void)AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
-      GELOGI("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
+      GELOGD("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();
-      GELOGI("Data op name: %s", data_op_name.c_str());
+      GELOGD("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;
       auto iter = omg_context_.input_dims.find(data_op_name);
       if (iter != omg_context_.input_dims.end()) {
         data_shape = ge::GeShape(iter->second);
-        GELOGI("Data op get shape from Context.");
+        GELOGD("Data op get shape from Context.");
       } else {
         data_shape = tensor.GetShape();
-        GELOGI("Data op get shape from InputDesc in ge ir graph.");
+        GELOGD("Data op get shape from InputDesc in ge ir graph.");
       }
       // If user point input format, do work for all data ops; else do according to tensor_desc
       auto data_format = omg_context_.format != domi::DOMI_TENSOR_ND
@@ -377,7 +391,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
                            : tensor.GetFormat();
       ge::DataType data_type = tensor.GetDataType();
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
-      GELOGI("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
+      GELOGD("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
       ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);
@@ -453,6 +467,24 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string
   return builder.BuildModel(graph, build_options, model);
 }
 
+graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
+                              ModelBufferData &model) {
+  GELOGD("Enter aclmdlBuildModel process!");
+  std::map<std::string, std::string> tmp_build_options;
+  for (auto &option : build_options) {
+    if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
+      GELOGE(GRAPH_FAILED, "AclgrphBuildInitialize option is nullptr.");
+      return GRAPH_FAILED;
+    }
+    std::string key = option.first.GetString();
+    std::string val = option.second.GetString();
+    tmp_build_options[key] = val;
+  }
+
+  Impl builder;
+  return builder.BuildModel(graph, tmp_build_options, model);
+}
+
 graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model) {
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
@@ -460,6 +492,21 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
     return GRAPH_PARAM_INVALID;
   }
   return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
+                               static_cast<uint32_t>(model.length));
+}
+
+graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model) {
+  GELOGD("Enter aclmdlSaveModel process!");
+  if (model.data.get() == nullptr || model.length == 0) {
+    GELOGE(GRAPH_PARAM_INVALID, "Input model is illegal");
+    return GRAPH_PARAM_INVALID;
+  }
+  if (output_file == nullptr) {
+    GELOGE(GRAPH_PARAM_INVALID, "Output file is nullptr.");
+    return GRAPH_PARAM_INVALID;
+  }
+  std::string str_output_file = output_file;
+  return FileSaver::SaveToFile((str_output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 

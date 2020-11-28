@@ -21,7 +21,7 @@
 #include <mutex>
 #include <queue>
 #include <set>
-#include "./array_ops.h"
+#include "array_ops.h"
 #include "debug/ge_log.h"
 #include "debug/ge_op_types.h"
 #include "debug/ge_util.h"
@@ -233,6 +233,77 @@ class OperatorImpl : public std::enable_shared_from_this<OperatorImpl> {
     }
     out_handler = out->second;
     return GRAPH_SUCCESS;
+  }
+
+  graphStatus GetInputConstData(const string &dst_name, Tensor &data) {
+    auto node_ptr = GetNode();
+    if (node_ptr != nullptr) {
+      // For inner compute graph
+      auto op_desc = node_ptr->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto index = op_desc->GetInputIndexByName(dst_name);
+      auto in_data_anchor = node_ptr->GetInDataAnchor(index);
+      GE_CHECK_NOTNULL(in_data_anchor);
+      auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
+      GE_CHECK_NOTNULL(out_data_anchor);
+      auto peer_node = out_data_anchor->GetOwnerNode();
+      GE_CHECK_NOTNULL(peer_node);
+      auto peer_op_desc = peer_node->GetOpDesc();
+      GE_CHECK_NOTNULL(peer_op_desc);
+      auto peer_op_type = peer_op_desc->GetType();
+      if (peer_op_type == CONSTANTOP || peer_op_type == CONSTANT) {
+        auto const_op_impl = ComGraphMakeShared<OperatorImpl>(peer_node);
+        GE_CHECK_NOTNULL(const_op_impl);
+        Operator const_op(std::move(const_op_impl));
+        return const_op.GetAttr(ATTR_NAME_WEIGHTS, data);
+      } else if (peer_op_type == DATA) {
+        auto parent_node = NodeUtils::GetParentInput(peer_node);
+        while ((parent_node != nullptr) && (parent_node->GetType() == DATA)) {
+          parent_node = NodeUtils::GetParentInput(parent_node);
+        }
+        if ((parent_node != nullptr) &&
+            ((parent_node->GetType() == CONSTANT) || (parent_node->GetType() == CONSTANTOP))) {
+          auto const_op_impl = ComGraphMakeShared<OperatorImpl>(parent_node);
+          GE_CHECK_NOTNULL(const_op_impl);
+          Operator const_op(std::move(const_op_impl));
+          return const_op.GetAttr(ATTR_NAME_WEIGHTS, data);
+        }
+      }
+      // Try get from runtime inference context
+      auto session_id = std::to_string(GetContext().SessionId());
+      RuntimeInferenceContext *runtime_infer_ctx = nullptr;
+      if (RuntimeInferenceContext::GetContext(session_id, &runtime_infer_ctx) == GRAPH_SUCCESS) {
+        GELOGD("To get constant from runtime inference context. session_id = %s", session_id.c_str());
+        auto ret = runtime_infer_ctx->GetTensor(peer_node->GetOpDesc()->GetId(), out_data_anchor->GetIdx(), data);
+        if (ret == GRAPH_SUCCESS) {
+          return GRAPH_SUCCESS;
+        }
+      }
+    } else {
+      // For outer graph
+      return GetInputConstDataOut(dst_name, data);
+    }
+    auto op_name = GetName();
+    GELOGW("node[%s]'s input[%s]'s peer node is not const", op_name.c_str(), dst_name.c_str());
+    return GRAPH_FAILED;
+  }
+
+  graphStatus GetInputConstDataOut(const string &dst_name, Tensor &data) {
+    ge::OpIO out_handle("", 0, nullptr);
+    if (GetInputImpl(dst_name, out_handle) != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "%s get input impl failed", dst_name.c_str());
+      return GRAPH_FAILED;
+    }
+    if (out_handle.GetOwner() != nullptr && out_handle.GetOwner()->GetOpDescImpl() != nullptr) {
+      Operator const_op(out_handle.GetOwner());
+      const auto &op_desc_impl_type = out_handle.GetOwner()->GetOpDescImpl()->GetType();
+      if (op_desc_impl_type == CONSTANTOP) {
+        return const_op.GetAttr(op::Constant::name_attr_value(), data);
+      } else if (op_desc_impl_type == CONSTANT) {
+        return const_op.GetAttr(op::Const::name_attr_value(), data);
+      }
+    }
+    return GRAPH_FAILED;
   }
 
   bool InputIsSet(const string &name) {
@@ -493,6 +564,21 @@ Operator::Operator(const std::string &type) {
   OperatorKeeper::GetInstance().CheckInOperator(operator_impl_);
 }
 
+Operator::Operator(const char *type) {
+  if (type != nullptr) {
+    std::string op_type = type;
+    static uint32_t index = 0;
+    string name = op_type + "_" + std::to_string(index++);
+    operator_impl_ = ComGraphMakeShared<OperatorImpl>(name, op_type);
+    if (operator_impl_ == nullptr) {
+      GELOGW("OperatorImpl make shared failed");
+    }
+    OperatorKeeper::GetInstance().CheckInOperator(operator_impl_);
+  } else {
+    GELOGW("Operator type is nullptr.");
+  }
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Operator OpDescUtils::CreateOperatorFromOpDesc(OpDescPtr op_desc) {
   shared_ptr<OperatorImpl> operator_impl_ptr;
   operator_impl_ptr = ComGraphMakeShared<OperatorImpl>(op_desc);
@@ -517,6 +603,36 @@ GE_FUNC_HOST_VISIBILITY Operator::Operator(const string &name, const string &typ
   OperatorKeeper::GetInstance().CheckInOperator(operator_impl_);
 }
 
+GE_FUNC_HOST_VISIBILITY Operator::Operator(const AscendString &name, const AscendString &type) {
+  if ((name.GetString() != nullptr) && (type.GetString() != nullptr)) {
+    string op_name = name.GetString();
+    string op_type = type.GetString();
+    operator_impl_ = ComGraphMakeShared<OperatorImpl>(op_name, op_type);
+    if (operator_impl_ == nullptr) {
+      GELOGE(GRAPH_FAILED, "OperatorImpl make shared failed");
+      return;
+    }
+    OperatorKeeper::GetInstance().CheckInOperator(operator_impl_);
+  } else {
+    GELOGW("Operator input parameter is nullptr.");
+  }
+}
+
+GE_FUNC_HOST_VISIBILITY Operator::Operator(const char *name, const char *type) {
+  if ((name != nullptr) && (type != nullptr)) {
+    string op_name = name;
+    string op_type = type;
+    operator_impl_ = ComGraphMakeShared<OperatorImpl>(op_name, op_type);
+    if (operator_impl_ == nullptr) {
+      GELOGE(GRAPH_FAILED, "OperatorImpl make shared failed");
+      return;
+    }
+    OperatorKeeper::GetInstance().CheckInOperator(operator_impl_);
+  } else {
+    GELOGW("Operator input parameter is nullptr.");
+  }
+}
+
 Operator::Operator(ge::OperatorImplPtr &&op_impl) { operator_impl_ = std::move(op_impl); }
 
 bool Operator::IsEmpty() const {
@@ -533,10 +649,27 @@ string Operator::GetName() const {
   return "";
 }
 
+graphStatus Operator::GetName(AscendString &name) const {
+  if (operator_impl_ != nullptr) {
+    string op_name = operator_impl_->GetName();
+    name = op_name.c_str();
+  }
+  return GRAPH_SUCCESS;
+}
+
 GE_FUNC_HOST_VISIBILITY Operator &Operator::SetInput(const string &dst_name, const ge::Operator &src_oprt) {
   // Describe the connection relationship between operators, no create action
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "operator impl is nullptr.");
   operator_impl_->SetInputImpl(dst_name, src_oprt);
+  return *this;
+}
+
+GE_FUNC_HOST_VISIBILITY Operator &Operator::SetInput(const char *dst_name, const ge::Operator &src_oprt) {
+  GE_CHK_BOOL_EXEC(dst_name != nullptr, return *this, "Operator dst name is nullptr.");
+  // Describe the connection relationship between operators, no create action
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "Operator impl is nullptr.");
+  std::string dst_op_name = dst_name;
+  operator_impl_->SetInputImpl(dst_op_name, src_oprt);
   return *this;
 }
 
@@ -553,9 +686,29 @@ Operator &Operator::SetInput(const std::string &dst_name, const ge::Operator &sr
   return *this;
 }
 
+Operator &Operator::SetInput(const char *dst_name, const ge::Operator &src_oprt, const char *name) {
+  GE_CHK_BOOL_EXEC(dst_name != nullptr, return *this, "Dst name is nullptr.");
+  GE_CHK_BOOL_EXEC(name != nullptr, return *this, "Name is nullptr.");
+  std::string op_name = name;
+  std::string dst_op_name = dst_name;
+  auto out_handler = src_oprt.GetOutput(op_name);
+  GE_CHK_BOOL_EXEC(out_handler != nullptr, return *this, "Out_handler is nullptr.");
+  (void)SetInput(dst_op_name, out_handler);
+  return *this;
+}
+
 Operator &Operator::SetInput(const std::string &dst_name, const ge::Operator &src_oprt, uint32_t index) {
   auto out_handler = src_oprt.GetOutput(index);
   GE_CHK_BOOL_EXEC(out_handler != nullptr, return *this, "out_handler is nullptr.");
+  (void)SetInput(dst_name, out_handler);
+  return *this;
+}
+
+Operator &Operator::SetInput(const char *dst_name, const ge::Operator &src_oprt, uint32_t index) {
+  GE_CHK_BOOL_EXEC(dst_name != nullptr, return *this, "Dst name is nullptr.");
+  auto out_handler = src_oprt.GetOutput(index);
+  GE_CHK_BOOL_EXEC(out_handler != nullptr, return *this, "out_handler is nullptr.");
+  std::string op_dst_name = dst_name;
   (void)SetInput(dst_name, out_handler);
   return *this;
 }
@@ -571,74 +724,31 @@ Operator &Operator::AddControlInput(const Operator &src_oprt) {
 
 graphStatus Operator::GetInputConstData(const string &dst_name, Tensor &data) const {
   GE_CHECK_NOTNULL(operator_impl_);
-  auto node_ptr = operator_impl_->GetNode();
-  if (node_ptr != nullptr) {
-    // For inner compute graph
-    auto op_desc = node_ptr->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    auto index = op_desc->GetInputIndexByName(dst_name);
-    auto in_data_anchor = node_ptr->GetInDataAnchor(index);
-    GE_CHECK_NOTNULL(in_data_anchor);
-    auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(out_data_anchor);
-    auto peer_node = out_data_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(peer_node);
-    auto peer_op_desc = peer_node->GetOpDesc();
-    GE_CHECK_NOTNULL(peer_op_desc);
-    auto peer_op_type = peer_op_desc->GetType();
-    if (peer_op_type == CONSTANTOP || peer_op_type == CONSTANT) {
-      auto const_op_impl = ComGraphMakeShared<OperatorImpl>(peer_node);
-      GE_CHECK_NOTNULL(const_op_impl);
-      Operator const_op(std::move(const_op_impl));
-      return const_op.GetAttr(ATTR_NAME_WEIGHTS, data);
-    } else if (peer_op_type == DATA) {
-      auto parent_node = NodeUtils::GetParentInput(peer_node);
-      while ((parent_node != nullptr) && (parent_node->GetType() == DATA)) {
-        parent_node = NodeUtils::GetParentInput(parent_node);
-      }
-      if ((parent_node != nullptr) &&
-          ((parent_node->GetType() == CONSTANT) || (parent_node->GetType() == CONSTANTOP))) {
-        auto const_op_impl = ComGraphMakeShared<OperatorImpl>(parent_node);
-        GE_CHECK_NOTNULL(const_op_impl);
-        Operator const_op(std::move(const_op_impl));
-        return const_op.GetAttr(ATTR_NAME_WEIGHTS, data);
-      }
-    }
-    // Try get from runtime inference context
-    auto session_id = std::to_string(GetContext().SessionId());
-    RuntimeInferenceContext *runtime_infer_ctx = nullptr;
-    if (RuntimeInferenceContext::GetContext(session_id, &runtime_infer_ctx) == GRAPH_SUCCESS) {
-      GELOGD("To get constant from runtime inference context. session_id = %s", session_id.c_str());
-      auto ret = runtime_infer_ctx->GetTensor(peer_node->GetOpDesc()->GetId(), out_data_anchor->GetIdx(), data);
-      if (ret == GRAPH_SUCCESS) {
-        return GRAPH_SUCCESS;
-      }
-    }
-  } else {
-    // For outer graph
-    return GetInputConstDataOut(dst_name, data);
-  }
-  auto op_name = operator_impl_->GetName();
-  GELOGW("node[%s]'s input[%s]'s peer node is not const", op_name.c_str(), dst_name.c_str());
-  return GRAPH_FAILED;
-}
-graphStatus Operator::GetInputConstDataOut(const string &dst_name, Tensor &data) const {
-  ge::OpIO out_handle("", 0, nullptr);
-  GE_CHECK_NOTNULL(operator_impl_);
-  if (operator_impl_->GetInputImpl(dst_name, out_handle) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "%s get input impl failed", dst_name.c_str());
+  if (operator_impl_->GetInputConstData(dst_name, data) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "%s get input const data failed", dst_name.c_str());
     return GRAPH_FAILED;
   }
-  if (out_handle.GetOwner() != nullptr && out_handle.GetOwner()->GetOpDescImpl() != nullptr) {
-    Operator const_op(out_handle.GetOwner());
-    const auto &op_desc_impl_type = out_handle.GetOwner()->GetOpDescImpl()->GetType();
-    if (op_desc_impl_type == CONSTANTOP) {
-      return const_op.GetAttr(op::Constant::name_attr_value(), data);
-    } else if (op_desc_impl_type == CONSTANT) {
-      return const_op.GetAttr(op::Const::name_attr_value(), data);
-    }
+  return GRAPH_SUCCESS;
+}
+
+graphStatus Operator::GetInputConstData(const char *dst_name, Tensor &data) const {
+  GE_CHECK_NOTNULL(dst_name);
+  GE_CHECK_NOTNULL(operator_impl_);
+  std::string op_dst_name = dst_name;
+  if (operator_impl_->GetInputConstData(op_dst_name, data) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "%s get input const data failed", op_dst_name.c_str());
+    return GRAPH_FAILED;
   }
-  return GRAPH_FAILED;
+  return GRAPH_SUCCESS;
+}
+
+graphStatus Operator::GetInputConstDataOut(const string &dst_name, Tensor &data) const {
+  GE_CHECK_NOTNULL(operator_impl_);
+  if (operator_impl_->GetInputConstDataOut(dst_name, data) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "%s get input const data out failed", dst_name.c_str());
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
 }
 
 std::shared_ptr<const Node> Operator::GetNode() const {
@@ -651,6 +761,13 @@ TensorDesc Operator::GetInputDesc(const std::string &name) const {
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(name));
 }
 
+TensorDesc Operator::GetInputDesc(const char *name, uint32_t len) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return TensorDesc(), "Operator name is nullptr.");
+  std::string op_name = name;
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "Operator impl is nullptr.");
+  return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(op_name));
+}
+
 void Operator::SetInferenceContext(const InferenceContextPtr &inference_context) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   operator_impl_->SetInferenceContext(inference_context);
@@ -660,6 +777,7 @@ InferenceContextPtr Operator::GetInferenceContext() const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return nullptr, "operator impl is nullptr.");
   return operator_impl_->GetInferenceContext();
 }
+
 TensorDesc Operator::GetInputDesc(uint32_t index) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "operator impl is nullptr.");
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(index));
@@ -672,9 +790,25 @@ graphStatus Operator::TryGetInputDesc(const string &name, TensorDesc &tensor_des
   return check ? GRAPH_SUCCESS : GRAPH_FAILED;
 }
 
+graphStatus Operator::TryGetInputDesc(const char *name, TensorDesc &tensor_desc) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return GRAPH_FAILED, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  std::string op_name = name;
+  auto check = operator_impl_->InputIsSet(op_name);
+  if (check) tensor_desc = TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(op_name));
+  return check ? GRAPH_SUCCESS : GRAPH_FAILED;
+}
+
 graphStatus Operator::UpdateInputDesc(const std::string &name, const ge::TensorDesc &tensor_desc) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "operator impl is nullptr.");
   return operator_impl_->UpdateInputDesc(name, TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
+}
+
+graphStatus Operator::UpdateInputDesc(const char *name, const ge::TensorDesc &tensor_desc) {
+  GE_CHK_BOOL_EXEC(name != nullptr, return GRAPH_FAILED, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  std::string op_name = name;
+  return operator_impl_->UpdateInputDesc(op_name, TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
 }
 
 OutHandler Operator::GetOutput(const string &name) const {
@@ -692,6 +826,13 @@ TensorDesc Operator::GetOutputDesc(const std::string &name) const {
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetOutputDesc(name));
 }
 
+TensorDesc Operator::GetOutputDesc(const char *name, uint32_t len) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return TensorDesc(), "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "Operator impl is nullptr.");
+  std::string op_name = name;
+  return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetOutputDesc(op_name));
+}
+
 TensorDesc Operator::GetOutputDesc(uint32_t index) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "operator impl is nullptr.");
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetOutputDesc(index));
@@ -702,9 +843,23 @@ graphStatus Operator::UpdateOutputDesc(const std::string &name, const ge::Tensor
   return operator_impl_->UpdateOutputDesc(name, TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
 }
 
+graphStatus Operator::UpdateOutputDesc(const char *name, const ge::TensorDesc &tensor_desc) {
+  GE_CHK_BOOL_EXEC(name != nullptr, return GRAPH_FAILED, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  std::string op_name = name;
+  return operator_impl_->UpdateOutputDesc(op_name, TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
+}
+
 TensorDesc Operator::GetDynamicInputDesc(const string &name, uint32_t index) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "operator impl is nullptr.");
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(name + std::to_string(index)));
+}
+
+TensorDesc Operator::GetDynamicInputDesc(const char *name, uint32_t index) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return TensorDesc(), "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "Operator impl is nullptr.");
+  std::string op_name = name;
+  return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetInputDesc(op_name + std::to_string(index)));
 }
 
 graphStatus Operator::UpdateDynamicInputDesc(const string &name, uint32_t index, const TensorDesc &tensor_desc) {
@@ -713,14 +868,36 @@ graphStatus Operator::UpdateDynamicInputDesc(const string &name, uint32_t index,
                                          TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
 }
 
+graphStatus Operator::UpdateDynamicInputDesc(const char *name, uint32_t index, const TensorDesc &tensor_desc) {
+  GE_CHK_BOOL_EXEC(name != nullptr, return GRAPH_FAILED, "Operator name is nullptr.");
+  std::string op_name = name;
+  return operator_impl_->UpdateInputDesc(op_name + std::to_string(index),
+                                         TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
+}
+
 TensorDesc Operator::GetDynamicOutputDesc(const string &name, uint32_t index) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "operator impl is nullptr.");
   return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetOutputDesc(name + std::to_string(index)));
 }
 
+TensorDesc Operator::GetDynamicOutputDesc(const char *name, uint32_t index) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return TensorDesc(), "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return TensorDesc(), "Operator impl is nullptr.");
+  std::string op_name = name;
+  return TensorAdapter::GeTensorDesc2TensorDesc(operator_impl_->GetOutputDesc(op_name + std::to_string(index)));
+}
+
 graphStatus Operator::UpdateDynamicOutputDesc(const string &name, uint32_t index, const TensorDesc &tensor_desc) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "operator impl is nullptr.");
   return operator_impl_->UpdateOutputDesc(name + std::to_string(index),
+                                          TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
+}
+
+graphStatus Operator::UpdateDynamicOutputDesc(const char *name, uint32_t index, const TensorDesc &tensor_desc) {
+  GE_CHK_BOOL_EXEC(name != nullptr, return GRAPH_FAILED, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  std::string op_name = name;
+  return operator_impl_->UpdateOutputDesc(op_name + std::to_string(index),
                                           TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc));
 }
 
@@ -803,6 +980,28 @@ const std::map<std::string, std::string> Operator::GetAllAttrNamesAndTypes() con
   return attr_types;
 }
 
+graphStatus Operator::GetAllAttrNamesAndTypes(std::map<AscendString, AscendString> &attr_name_types) const {
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return GRAPH_FAILED, "GetOpDescImpl is nullptr.");
+  std::map<string, GeAttrValue> attr_map = operator_impl_->GetOpDescImpl()->GetAllAttrs();
+
+  map<string, GeAttrValue>::iterator iter;
+  for (iter = attr_map.begin(); iter != attr_map.end(); ++iter) {
+    string name = iter->first;
+    GeAttrValue attr_value = iter->second;
+
+    GeAttrValue::ValueType type = attr_value.GetValueType();
+
+    auto iter2 = kAttrTypesMap.find(type);
+    if (iter2 != kAttrTypesMap.end()) {
+      AscendString temp(name.c_str());
+      attr_name_types[temp] = AscendString(iter2->second.c_str());
+    }
+  }
+
+  return GRAPH_SUCCESS;
+}
+
 void Operator::InputRegister(const string &name) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
@@ -868,6 +1067,17 @@ int Operator::GetDynamicInputNum(const string &name) const {
   return num;
 }
 
+int Operator::GetDynamicInputNum(const char *name) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return 0, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return 0, "Operator impl is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return 0, "GetOpDescImpl is nullptr.");
+  string op_name = name;
+  int num = 0;
+  GE_CHK_BOOL_EXEC(AttrUtils::GetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_INPUT_TD_NUM(op_name), num), return num,
+                   "Get %s int failed", op_name.c_str());
+  return num;
+}
+
 void Operator::DynamicOutputRegister(const string &name, const unsigned int num, bool is_push_back) {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return, "operator impl is nullptr.");
   GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return, "GetOpDescImpl is nullptr.");
@@ -882,6 +1092,17 @@ int Operator::GetDynamicOutputNum(const string &name) const {
   int num = 0;
   GE_CHK_BOOL_EXEC(AttrUtils::GetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_OUTPUT_TD_NUM(name), num), return num,
                    "Get %s int failed", name.c_str());
+  return num;
+}
+
+int Operator::GetDynamicOutputNum(const char *name) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return 0, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return 0, "Operator impl is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_->GetOpDescImpl() != nullptr, return 0, "GetOpDescImpl is nullptr.");
+  std::string op_name = name;
+  int num = 0;
+  GE_CHK_BOOL_EXEC(AttrUtils::GetInt(operator_impl_->GetOpDescImpl(), DYNAMIC_OUTPUT_TD_NUM(op_name), num), return num,
+                   "Get %s int failed", op_name.c_str());
   return num;
 }
 
@@ -920,6 +1141,13 @@ string Operator::GetOpType() const {
   return OperatorImpl::GetOpDesc(*this)->GetType();
 }
 
+graphStatus Operator::GetOpType(AscendString &type) const {
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  std::string op_type = OperatorImpl::GetOpDesc(*this)->GetType();
+  type = op_type.c_str();
+  return GRAPH_SUCCESS;
+}
+
 Operator &Operator::SetInput(const std::string &dst_name, uint32_t dst_index, const ge::Operator &src_oprt) {
   string dynamic_dst_name = DYNAMIN_INPUT_NAME(dst_name, dst_index);
   return SetInput(dynamic_dst_name, src_oprt);
@@ -933,29 +1161,60 @@ Operator &Operator::SetInput(const std::string &dst_name, uint32_t dst_index, co
 
 OperatorImplPtr Operator::GetOperatorImplPtr() const { return operator_impl_; }
 
-#define OP_ATTR_SET_IMP(ArgType, AttrUtilsFun)                                              \
-  Operator &Operator::SetAttr(const string &name, ArgType attr_value) {                     \
-    if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {          \
-      GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());             \
-      return *this;                                                                         \
-    }                                                                                       \
-    if (!AttrUtils::Set##AttrUtilsFun(operator_impl_->GetOpDescImpl(), name, attr_value)) { \
-      GELOGW("set attr name %s failed.", name.c_str());                                     \
-    }                                                                                       \
-    return *this;                                                                           \
+#define OP_ATTR_SET_IMP(ArgType, AttrUtilsFun)                                                 \
+  Operator &Operator::SetAttr(const string &name, ArgType attr_value) {                        \
+    if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {             \
+      GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());                \
+      return *this;                                                                            \
+    }                                                                                          \
+    if (!AttrUtils::Set##AttrUtilsFun(operator_impl_->GetOpDescImpl(), name, attr_value)) {    \
+      GELOGW("set attr name %s failed.", name.c_str());                                        \
+    }                                                                                          \
+    return *this;                                                                              \
+  }                                                                                            \
+  Operator &Operator::SetAttr(const char *name, ArgType attr_value) {                          \
+    if (name == nullptr) {                                                                     \
+      GELOGE(GRAPH_FAILED, "operator attr name is nullptr.");                                  \
+      return *this;                                                                            \
+    }                                                                                          \
+    std::string op_name = name;                                                                \
+    if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {             \
+      GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", op_name.c_str());             \
+      return *this;                                                                            \
+    }                                                                                          \
+    if (!AttrUtils::Set##AttrUtilsFun(operator_impl_->GetOpDescImpl(), op_name, attr_value)) { \
+      GELOGW("set attr name %s failed.", op_name.c_str());                                     \
+    }                                                                                          \
+    return *this;                                                                              \
   }
 
-#define OP_ATTR_GET_IMP(ArgType, AttrUtilsFun)                                              \
-  graphStatus Operator::GetAttr(const string &name, ArgType attr_value) const {             \
-    if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {          \
-      GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());             \
-      return GRAPH_FAILED;                                                                  \
-    }                                                                                       \
-    if (!AttrUtils::Get##AttrUtilsFun(operator_impl_->GetOpDescImpl(), name, attr_value)) { \
-      GELOGW("get attr name %s failed.", name.c_str());                                     \
-      return GRAPH_FAILED;                                                                  \
-    }                                                                                       \
-    return GRAPH_SUCCESS;                                                                   \
+#define OP_ATTR_GET_IMP(ArgType, AttrUtilsFun)                                                 \
+  graphStatus Operator::GetAttr(const string &name, ArgType attr_value) const {                \
+    if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {             \
+      GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());                \
+      return GRAPH_FAILED;                                                                     \
+    }                                                                                          \
+    if (!AttrUtils::Get##AttrUtilsFun(operator_impl_->GetOpDescImpl(), name, attr_value)) {    \
+      GELOGW("get attr name %s failed.", name.c_str());                                        \
+      return GRAPH_FAILED;                                                                     \
+    }                                                                                          \
+    return GRAPH_SUCCESS;                                                                      \
+  }                                                                                            \
+  graphStatus Operator::GetAttr(const char *name, ArgType attr_value) const {                  \
+    if (name == nullptr) {                                                                     \
+      GELOGE(GRAPH_FAILED, "operator attr name is nullptr.");                                  \
+      return GRAPH_FAILED;                                                                     \
+    }                                                                                          \
+    if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {             \
+      GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name);                        \
+      return GRAPH_FAILED;                                                                     \
+    }                                                                                          \
+    std::string op_name = name;                                                                \
+    if (!AttrUtils::Get##AttrUtilsFun(operator_impl_->GetOpDescImpl(), op_name, attr_value)) { \
+      GELOGW("get attr name %s failed.", op_name.c_str());                                     \
+      return GRAPH_FAILED;                                                                     \
+    }                                                                                          \
+    return GRAPH_SUCCESS;                                                                      \
   }
 
 void Operator::BreakConnect() const {
@@ -1005,11 +1264,6 @@ OP_ATTR_GET_IMP(bool &, Bool)
 OP_ATTR_SET_IMP(const vector<bool> &, ListBool)
 OP_ATTR_GET_IMP(vector<bool> &, ListBool)
 
-OP_ATTR_SET_IMP(const string &, Str)
-OP_ATTR_GET_IMP(string &, Str)
-OP_ATTR_SET_IMP(const vector<string> &, ListStr)
-OP_ATTR_GET_IMP(vector<string> &, ListStr)
-
 OP_ATTR_SET_IMP(const GeAttrValue::NAMED_ATTRS &, NamedAttrs)
 OP_ATTR_GET_IMP(GeAttrValue::NAMED_ATTRS &, NamedAttrs)
 OP_ATTR_SET_IMP(const vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
@@ -1031,6 +1285,151 @@ OP_ATTR_REG_IMP(const vector<GeAttrValue::NAMED_ATTRS> &, ListNamedAttrs)
 #undef OP_ATTR_GET_IMP
 #undef OP_ATTR_REG_IMP
 
+Operator &Operator::SetAttr(const string &name, const string &attr_value) {
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name.c_str());
+    return *this;
+  }
+  if (!AttrUtils::SetStr(operator_impl_->GetOpDescImpl(), name, attr_value)) {
+    GELOGW("Set attr name %s failed.", name.c_str());
+  }
+  return *this;
+}
+
+graphStatus Operator::GetAttr(const string &name, string &attr_value) const {
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name.c_str());
+    return GRAPH_FAILED;
+  }
+  if (!AttrUtils::GetStr(operator_impl_->GetOpDescImpl(), name, attr_value)) {
+    GELOGW("Get attr name %s failed.", name.c_str());
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
+Operator &Operator::SetAttr(const string &name, const std::vector<string> &attr_value) {
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name.c_str());
+    return *this;
+  }
+  if (!AttrUtils::SetListStr(operator_impl_->GetOpDescImpl(), name, attr_value)) {
+    GELOGW("Set attr name %s failed.", name.c_str());
+  }
+  return *this;
+}
+
+graphStatus Operator::GetAttr(const string &name, std::vector<string> &attr_value) const {
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name.c_str());
+    return GRAPH_FAILED;
+  }
+  if (!AttrUtils::GetListStr(operator_impl_->GetOpDescImpl(), name, attr_value)) {
+    GELOGW("Get attr name %s failed.", name.c_str());
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
+Operator &Operator::SetAttr(const char *name, const char *attr_value) {
+  if (name == nullptr || attr_value == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator input parameters is nullptr.");
+    return *this;
+  }
+
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  std::string op_attr_value = attr_value;
+  if (!AttrUtils::SetStr(operator_impl_->GetOpDescImpl(), op_name, op_attr_value)) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
+  }
+  return *this;
+}
+
+Operator &Operator::SetAttr(const char *name, const AscendString &attr_value) {
+  if (name == nullptr || attr_value.GetString() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator input parameters is nullptr.");
+    return *this;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  std::string op_attr_value = attr_value.GetString();
+  if (!AttrUtils::SetStr(operator_impl_->GetOpDescImpl(), op_name, op_attr_value)) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
+  }
+  return *this;
+}
+
+graphStatus Operator::GetAttr(const char *name, AscendString &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator input parameters is nullptr.");
+    return GRAPH_FAILED;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  std::string op_attr_value;
+  if (!AttrUtils::GetStr(operator_impl_->GetOpDescImpl(), op_name, op_attr_value)) {
+    GELOGW("Get attr name %s failed.", op_name.c_str());
+    return GRAPH_FAILED;
+  }
+  attr_value = AscendString(op_attr_value.c_str());
+  return GRAPH_SUCCESS;
+}
+
+Operator &Operator::SetAttr(const char *name, const std::vector<AscendString> &attr_values) {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return *this;
+  }
+  std::vector<std::string> op_attr_values;
+  for (auto &attr_value : attr_values) {
+    if (attr_value.GetString() == nullptr) {
+      GELOGE(GRAPH_FAILED, "Operator ascend string name is nullptr.");
+      return *this;
+    }
+    op_attr_values.emplace_back(attr_value.GetString());
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  if (!AttrUtils::SetListStr(operator_impl_->GetOpDescImpl(), op_name, op_attr_values)) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
+  }
+  return *this;
+}
+
+graphStatus Operator::GetAttr(const char *name, std::vector<AscendString> &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  std::vector<std::string> op_attr_values;
+  if (!AttrUtils::GetListStr(operator_impl_->GetOpDescImpl(), op_name, op_attr_values)) {
+    GELOGW("Get attr name %s failed.", op_name.c_str());
+    return GRAPH_FAILED;
+  }
+  for (auto &op_attr_value : op_attr_values) {
+    attr_value.emplace_back(AscendString(op_attr_value.c_str()));
+  }
+  return GRAPH_SUCCESS;
+}
+
 Operator &Operator::SetAttr(const string &name, const Tensor &attr_value) {
   if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
@@ -1039,6 +1438,23 @@ Operator &Operator::SetAttr(const string &name, const Tensor &attr_value) {
   GeTensor tensor = TensorAdapter::AsGeTensor(attr_value);
   if (!AttrUtils::SetTensor(operator_impl_->GetOpDescImpl(), name, tensor)) {
     GELOGW("set attr name %s failed.", name.c_str());
+  }
+  return *this;
+}
+
+Operator &Operator::SetAttr(const char *name, const Tensor &attr_value) {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return *this;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  GeTensor tensor = TensorAdapter::AsGeTensor(attr_value);
+  if (!AttrUtils::SetTensor(operator_impl_->GetOpDescImpl(), op_name, tensor)) {
+    GELOGW("set attr name %s failed.", op_name.c_str());
   }
   return *this;
 }
@@ -1059,6 +1475,27 @@ Operator &Operator::SetAttr(const string &name, const vector<Tensor> &attr_value
   return *this;
 }
 
+Operator &Operator::SetAttr(const char *name, const vector<Tensor> &attr_value) {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return *this;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  vector<GeTensor> val_list;
+  for (const auto &item : attr_value) {
+    auto tensor = TensorAdapter::AsGeTensor(item);
+    val_list.push_back(tensor);
+  }
+  if (!AttrUtils::SetListTensor(operator_impl_->GetOpDescImpl(), op_name, val_list)) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
+  }
+  return *this;
+}
+
 graphStatus Operator::GetAttr(const string &name, Tensor &attr_value) const {
   if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
@@ -1067,6 +1504,25 @@ graphStatus Operator::GetAttr(const string &name, Tensor &attr_value) const {
   ConstGeTensorPtr tensor;
   if (!AttrUtils::GetTensor(operator_impl_->GetOpDescImpl(), name, tensor)) {
     GELOGW("get attr name %s failed.", name.c_str());
+    return GRAPH_FAILED;
+  }
+  attr_value = TensorAdapter::GeTensor2Tensor(tensor);
+  return GRAPH_SUCCESS;
+}
+
+graphStatus Operator::GetAttr(const char *name, Tensor &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  ConstGeTensorPtr tensor;
+  if (!AttrUtils::GetTensor(operator_impl_->GetOpDescImpl(), op_name, tensor)) {
+    GELOGW("get attr name %s failed.", op_name.c_str());
     return GRAPH_FAILED;
   }
   attr_value = TensorAdapter::GeTensor2Tensor(tensor);
@@ -1090,6 +1546,28 @@ graphStatus Operator::GetAttr(const string &name, vector<Tensor> &attr_value) co
   return GRAPH_SUCCESS;
 }
 
+graphStatus Operator::GetAttr(const char *name, vector<Tensor> &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  attr_value.clear();
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  vector<ConstGeTensorPtr> val_list;
+  if (!AttrUtils::GetListTensor(operator_impl_->GetOpDescImpl(), op_name, val_list)) {
+    GELOGW("get attr name %s failed.", op_name.c_str());
+    return GRAPH_FAILED;
+  }
+  for (auto &tensor : val_list) {
+    attr_value.push_back(TensorAdapter::GeTensor2Tensor(tensor));
+  }
+  return GRAPH_SUCCESS;
+}
+
 Operator &Operator::SetAttr(const string &name, const OpBytes &attr_value) {
   if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
@@ -1098,6 +1576,23 @@ Operator &Operator::SetAttr(const string &name, const OpBytes &attr_value) {
   if (!AttrUtils::SetZeroCopyBytes(operator_impl_->GetOpDescImpl(), name,
                                    Buffer::CopyFrom(attr_value.data(), attr_value.size()))) {
     GELOGW("set attr name %s failed.", name.c_str());
+  }
+  return *this;
+}
+
+Operator &Operator::SetAttr(const char *name, const OpBytes &attr_value) {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return *this;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  if (!AttrUtils::SetZeroCopyBytes(operator_impl_->GetOpDescImpl(), op_name,
+                                   Buffer::CopyFrom(attr_value.data(), attr_value.size()))) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
   }
   return *this;
 }
@@ -1121,15 +1616,54 @@ graphStatus Operator::GetAttr(const string &name, OpBytes &attr_value) const {
   return GRAPH_SUCCESS;
 }
 
+graphStatus Operator::GetAttr(const char *name, OpBytes &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  Buffer buffer;
+  if (!AttrUtils::GetZeroCopyBytes(operator_impl_->GetOpDescImpl(), op_name, buffer)) {
+    GELOGW("Get attr name %s failed.", op_name.c_str());
+    return GRAPH_FAILED;
+  }
+  attr_value.clear();
+  if (buffer.data() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Buffer data is null.");
+    return GRAPH_FAILED;
+  }
+  attr_value.assign(buffer.data(), buffer.data() + buffer.size());
+  return GRAPH_SUCCESS;
+}
+
 Operator &Operator::SetAttr(const string &name, ge::AttrValue &&attrValue) {
-  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "operator impl is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "Operator impl is nullptr.");
   (void)operator_impl_->SetAttr(name, std::move(attrValue.impl->geAttrValue_));
+  return *this;
+}
+
+Operator &Operator::SetAttr(const char *name, ge::AttrValue &&attrValue) {
+  GE_CHK_BOOL_EXEC(name != nullptr, return *this, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return *this, "Operator impl is nullptr.");
+  std::string op_name = name;
+  (void)operator_impl_->SetAttr(op_name, std::move(attrValue.impl->geAttrValue_));
   return *this;
 }
 
 graphStatus Operator::GetAttr(const string &name, ge::AttrValue &attrValue) const {
   GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "operator impl is nullptr.");
   return operator_impl_->GetAttr(name, attrValue.impl->geAttrValue_);
+}
+
+graphStatus Operator::GetAttr(const char *name, ge::AttrValue &attrValue) const {
+  GE_CHK_BOOL_EXEC(name != nullptr, return GRAPH_FAILED, "Operator name is nullptr.");
+  GE_CHK_BOOL_EXEC(operator_impl_ != nullptr, return GRAPH_FAILED, "Operator impl is nullptr.");
+  std::string op_name = name;
+  return operator_impl_->GetAttr(op_name, attrValue.impl->geAttrValue_);
 }
 
 Operator &Operator::SetAttr(const string &name, const std::vector<ge::DataType> &attr_value) {
@@ -1139,6 +1673,22 @@ Operator &Operator::SetAttr(const string &name, const std::vector<ge::DataType> 
   }
   if (!AttrUtils::SetListDataType(operator_impl_->GetOpDescImpl(), name, attr_value)) {
     GELOGW("set attr name %s failed.", name.c_str());
+  }
+  return *this;
+}
+
+Operator &Operator::SetAttr(const char *name, const std::vector<ge::DataType> &attr_value) {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return *this;
+  }
+  if (operator_impl_ == nullptr || !operator_impl_->GetOpDescImpl()) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  if (!AttrUtils::SetListDataType(operator_impl_->GetOpDescImpl(), op_name, attr_value)) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
   }
   return *this;
 }
@@ -1156,6 +1706,24 @@ graphStatus Operator::GetAttr(const string &name, std::vector<ge::DataType> &att
   return GRAPH_SUCCESS;
 }
 
+graphStatus Operator::GetAttr(const char *name, std::vector<ge::DataType> &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  attr_value.clear();
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  if (!AttrUtils::GetListDataType(operator_impl_->GetOpDescImpl(), op_name, attr_value)) {
+    GELOGW("Get attr name %s failed.", op_name.c_str());
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
 Operator &Operator::SetAttr(const string &name, const ge::DataType &attr_value) {
   if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
@@ -1167,6 +1735,22 @@ Operator &Operator::SetAttr(const string &name, const ge::DataType &attr_value) 
   return *this;
 }
 
+Operator &Operator::SetAttr(const char *name, const ge::DataType &attr_value) {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return *this;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return *this;
+  }
+  std::string op_name = name;
+  if (!AttrUtils::SetDataType(operator_impl_->GetOpDescImpl(), op_name, attr_value)) {
+    GELOGW("Set attr name %s failed.", op_name.c_str());
+  }
+  return *this;
+}
+
 graphStatus Operator::GetAttr(const string &name, ge::DataType &attr_value) const {
   if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr, name %s.", name.c_str());
@@ -1174,6 +1758,23 @@ graphStatus Operator::GetAttr(const string &name, ge::DataType &attr_value) cons
   }
   if (!AttrUtils::GetDataType(operator_impl_->GetOpDescImpl(), name, attr_value)) {
     GELOGW("get attr name %s failed.", name.c_str());
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
+graphStatus Operator::GetAttr(const char *name, ge::DataType &attr_value) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  if (operator_impl_ == nullptr || operator_impl_->GetOpDescImpl() == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr, name %s.", name);
+    return GRAPH_FAILED;
+  }
+  std::string op_name = name;
+  if (!AttrUtils::GetDataType(operator_impl_->GetOpDescImpl(), op_name, attr_value)) {
+    GELOGW("Get attr name %s failed.", op_name.c_str());
     return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;
@@ -1261,6 +1862,14 @@ void Operator::SetSubgraphBuilder(const std::string &ir_name, uint32_t index, co
 
 std::vector<std::string> Operator::GetSubgraphNames() const { return operator_impl_->GetSubgraphNames(); }
 
+graphStatus Operator::GetSubgraphNames(std::vector<AscendString> &names) const {
+  std::vector<std::string> subgraph_names = operator_impl_->GetSubgraphNames();
+  for (auto &subgraph_name : subgraph_names) {
+    names.emplace_back(subgraph_name.c_str());
+  }
+  return GRAPH_SUCCESS;
+}
+
 SubgraphBuilder Operator::GetDynamicSubgraphBuilder(const string &ir_name, uint32_t index) const {
   if (operator_impl_ == nullptr) {
     GELOGE(GRAPH_FAILED, "operator impl is nullptr.");
@@ -1269,11 +1878,32 @@ SubgraphBuilder Operator::GetDynamicSubgraphBuilder(const string &ir_name, uint3
   return operator_impl_->GetSubgraphBuilder(ir_name, index);
 }
 
+SubgraphBuilder Operator::GetDynamicSubgraphBuilder(const char *ir_name, uint32_t index) const {
+  if (operator_impl_ == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator impl is nullptr.");
+    return nullptr;
+  }
+  if (ir_name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return nullptr;
+  }
+  std::string op_ir_name = ir_name;
+  return operator_impl_->GetSubgraphBuilder(op_ir_name, index);
+}
+
 SubgraphBuilder Operator::GetSubgraphBuilder(const string &ir_name) const {
   return GetDynamicSubgraphBuilder(ir_name, 0);
 }
 
-Graph Operator::GetSubgraph(const string &name) const {
+SubgraphBuilder Operator::GetSubgraphBuilder(const char *ir_name) const {
+  std::string graph_ir_name;
+  if (ir_name != nullptr) {
+    graph_ir_name = ir_name;
+  }
+  return GetDynamicSubgraphBuilder(graph_ir_name, 0);
+}
+
+Graph Operator::GetSubgraphImpl(const string &name) const {
   if (operator_impl_ == nullptr) {
     GE_LOGE("Failed to get subgraph %s, the operator impl is null", name.c_str());
     return Graph("");
@@ -1314,8 +1944,28 @@ Graph Operator::GetSubgraph(const string &name) const {
   return GraphUtils::CreateGraphFromComputeGraph(subgraph);
 }
 
+Graph Operator::GetSubgraph(const string &name) const { return GetSubgraphImpl(name); }
+
+Graph Operator::GetSubgraph(const char *name) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Get subgraph failed, name is nullptr.");
+    return Graph("");
+  }
+  std::string op_name = name;
+  return GetSubgraphImpl(op_name);
+}
+
 Graph Operator::GetDynamicSubgraph(const string &name, uint32_t index) const {
   return GetSubgraph(name + std::to_string(index));
+}
+
+Graph Operator::GetDynamicSubgraph(const char *name, uint32_t index) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "Operator name is nullptr.");
+    return Graph("");
+  }
+  std::string op_name = name;
+  return GetSubgraph(op_name + std::to_string(index));
 }
 
 size_t Operator::GetSubgraphNamesCount() const {

@@ -212,9 +212,9 @@ Status GraphLoader::CommandHandle(const Command &command) {
       return ret;
     }
   } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "Command handle failed, bad memory allocation occur !");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Command handle failed, bad memory allocation occur !");
 
-    return MEMALLOC_FAILED;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   } catch (...) {
     GELOGE(FAILED, "Command handle failed, some exceptions occur !");
 
@@ -285,7 +285,7 @@ Status GraphLoader::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asyn
     return ret;
   }
 
-  GELOGI("Execute model success, model_id:%u.", model_id);
+  GELOGD("Execute model success, model_id:%u.", model_id);
   return SUCCESS;
 }
 

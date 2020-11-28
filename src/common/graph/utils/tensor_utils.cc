@@ -23,6 +23,7 @@
 #include "graph/ge_tensor.h"
 #include "graph/types.h"
 #include "graph/utils/type_utils.h"
+#include "mmpa/mmpa_api.h"
 
 namespace ge {
 namespace {
@@ -181,8 +182,9 @@ static graphStatus CalcElementCntOfNc1hwc0(const std::vector<int64_t> &dims, Dat
 ///
 static graphStatus CalcElementCntOfFractalZ(const std::vector<int64_t> &dims, DataType data_type,
                                             int64_t &element_cnt) {
-  static char *parser_priority = std::getenv("PARSER_PRIORITY");
-  if (parser_priority != nullptr && string(parser_priority) == "cce") {
+  static char parser_priority[MMPA_MAX_PATH] = {0x00};
+  INT32 res = mmGetEnv("PARSER_PRIORITY", parser_priority, MMPA_MAX_PATH);
+  if (res == EN_OK && string(parser_priority) == "cce") {
     if (dims.size() != kDimSize4d) {
       GELOGE(GRAPH_FAILED, "CalcElementCntOfFractalZ failed as dims.size=%zu is not %u.", dims.size(), kDimSize4d);
       return GRAPH_FAILED;

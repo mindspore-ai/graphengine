@@ -97,7 +97,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
 
   ge::Buffer model_buffer;
   (void)model_tmp->Save(model_buffer);
-  GELOGI("MODEL_DEF size is %zu", model_buffer.GetSize());
+  GELOGD("MODEL_DEF size is %zu", model_buffer.GetSize());
   if (model_buffer.GetSize() > 0) {
     if (SaveModelPartition(om_file_save_helper, ModelPartitionType::MODEL_DEF, model_buffer.GetData(),
                            model_buffer.GetSize()) != SUCCESS) {
@@ -106,7 +106,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
     }
   }
   auto ge_model_weight = ge_model->GetWeight();
-  GELOGI("WEIGHTS_DATA size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
+  GELOGD("WEIGHTS_DATA size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
   // weight is not necessary
   if (ge_model_weight.GetSize() > 0) {
     GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::WEIGHTS_DATA,
@@ -115,7 +115,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   }
 
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
-  GELOGI("TBE_KERNELS size is %zu", tbe_kernel_store.DataSize());
+  GELOGD("TBE_KERNELS size is %zu", tbe_kernel_store.DataSize());
   if (tbe_kernel_store.DataSize() > 0) {
     GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::TBE_KERNELS, tbe_kernel_store.Data(),
                                          tbe_kernel_store.DataSize()),
@@ -126,7 +126,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   (void)tbe_kernel_store.Load(tbe_kernel_store.Data(), tbe_kernel_store.DataSize());
 
   CustAICPUKernelStore cust_aicpu_kernel_store = ge_model->GetCustAICPUKernelStore();
-  GELOGI("cust aicpu kernels size is %zu", cust_aicpu_kernel_store.DataSize());
+  GELOGD("cust aicpu kernels size is %zu", cust_aicpu_kernel_store.DataSize());
   if (cust_aicpu_kernel_store.DataSize() > 0) {
     GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper, ModelPartitionType::CUST_AICPU_KERNELS,
                                          cust_aicpu_kernel_store.Data(), cust_aicpu_kernel_store.DataSize()),
@@ -150,8 +150,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   }
   (void)model_task_def->SerializePartialToArray(task_buffer.GetData(), static_cast<int>(partition_task_size));
 
-  GELOGI("TASK_INFO op_size:%d, stream_num:%u", model_task_def->op().size(), model_task_def->stream_num());
-  GELOGI("TASK_INFO size is %zu", partition_task_size);
+  GELOGD("TASK_INFO op_size:%d, stream_num:%u", model_task_def->op().size(), model_task_def->stream_num());
+  GELOGD("TASK_INFO size is %zu", partition_task_size);
 
   if (SaveModelPartition(om_file_save_helper, ModelPartitionType::TASK_INFO, task_buffer.GetData(),
                          partition_task_size) != SUCCESS) {
@@ -163,7 +163,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   model_header.platform_type = ge_model->GetPlatformType();
   model_header.om_ir_version = ge_model->GetVersion();
   std::string platform_version = ge_model->GetPlatformVersion();
-  GELOGI("Platform version save: %s", platform_version.c_str());
 
   errno_t err;
   err = memcpy_s(model_header.platform_version, PLATFORM_VERSION_LEN, platform_version.c_str(),
@@ -173,7 +172,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
     return MEMALLOC_FAILED;
   }
   string version = reinterpret_cast<char *>(model_header.platform_version);
-  GELOGI("Platform version save: %s", version.c_str());
+  GELOGD("Platform version save: %s", version.c_str());
 
   size_t name_size = ge_model->GetName().size();
   name_size = name_size > (MODEL_NAME_LENGTH - 1) ? (MODEL_NAME_LENGTH - 1) : name_size;
@@ -183,7 +182,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
     return MEMALLOC_FAILED;
   }
   string model_name = reinterpret_cast<char *>(model_header.name);
-  GELOGI("Model name save:%s", model_name.c_str());
+  GELOGD("Model name save:%s", model_name.c_str());
 
   Status ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
@@ -263,18 +262,18 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
-    return GE_EXEC_MODEL_DATA_SIZE_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
+    return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
 
   if (is_assign_model_) {
-    GELOGE(GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
-    return GE_EXEC_LOAD_MODEL_REPEATED;
+    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
+    return ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED;
   }
 
   if (ReleaseLocalModelData() != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "ReleaseLocalModelData failed.");
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA, "ReleaseLocalModelData failed.");
+    return ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA;
   }
 
   Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
@@ -295,8 +294,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_addr_tmp_);
   if (partition_table->num == kOriginalOmPartitionNum) {
     model_addr_tmp_ = nullptr;
-    GELOGE(GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
-    return GE_EXEC_MODEL_PARTITION_NUM_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
+    return ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID;
   }
   // Encrypt model need to del temp model/no encrypt model don't need to del model
   model_addr_tmp_ = nullptr;
@@ -316,23 +315,23 @@ Status ModelHelper::GenerateGeModel(OmFileLoadHelper &om_load_helper) {
   GE_CHECK_NOTNULL(model_);
   Status ret = LoadModelData(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
   }
   ret = LoadWeights(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
   }
   ret = LoadTask(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED;
   }
   ret = LoadTBEKernelStore(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
   }
   ret = LoadCustAICPUKernelStore(om_load_helper);
   if (ret != SUCCESS) {
-    return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+    return ACL_ERROR_GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
   }
   return SUCCESS;
 }
@@ -341,7 +340,7 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper) {
   ModelPartition partition_model_def;
   // no need to check value, DATA->NetOutput
   om_load_helper.GetModelPartition(ModelPartitionType::MODEL_DEF, partition_model_def);
-  GELOGI("Model_def partition addr:%p,size:%u", partition_model_def.data, partition_model_def.size);
+  GELOGD("Model_def partition addr:%p,size:%u", partition_model_def.data, partition_model_def.size);
 
   ge::Model model;
   if (ge::Model::Load(partition_model_def.data, partition_model_def.size, model) != SUCCESS) {
@@ -371,7 +370,7 @@ Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper) {
   ge::Buffer weight = ge::Buffer::CopyFrom(partition.data, partition.size);
   model_->SetWeight(weight);
 
-  GELOGI("GetWeight size:%u", partition.size);
+  GELOGD("GetWeight size:%u", partition.size);
   return SUCCESS;
 }
 
@@ -388,7 +387,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
       GELOGE(INTERNAL_ERROR, "ReadProtoFromArray failed.");
       return INTERNAL_ERROR;
     }
-    GELOGI("TASK_INFO op_size:%zu, stream_num:%u", task->op().size(), task->stream_num());
+    GELOGD("TASK_INFO op_size:%d, stream_num:%u", task->op().size(), task->stream_num());
   }
   model_->SetModelTaskDef(task);
   return SUCCESS;
@@ -399,9 +398,9 @@ Status ModelHelper::LoadTBEKernelStore(OmFileLoadHelper &om_load_helper) {
   ModelPartition partition_kernel_def;
   TBEKernelStore kernel_store;
   if (om_load_helper.GetModelPartition(ModelPartitionType::TBE_KERNELS, partition_kernel_def) == SUCCESS) {
-    GELOGI("Kernels partition size:%u", partition_kernel_def.size);
+    GELOGD("Kernels partition size:%u", partition_kernel_def.size);
     if (kernel_store.Load(partition_kernel_def.data, partition_kernel_def.size)) {
-      GELOGI("Load tbe kernels success");
+      GELOGD("Load tbe kernels success");
     } else {
       GELOGW("Load tbe kernels failed");
     }
@@ -415,11 +414,9 @@ Status ModelHelper::LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper) {
   ModelPartition partition_kernel_def;
   CustAICPUKernelStore kernel_store;
   if (om_load_helper.GetModelPartition(ModelPartitionType::CUST_AICPU_KERNELS, partition_kernel_def) == SUCCESS) {
-    GELOGI("Kernels partition size:%u", partition_kernel_def.size);
+    GELOGD("Kernels partition size:%u", partition_kernel_def.size);
     if (kernel_store.Load(partition_kernel_def.data, partition_kernel_def.size)) {
       GELOGI("Load cust aicpu kernels success");
-    } else {
-      GELOGW("Load cust aicpu kernels failed");
     }
   }
   model_->SetCustAICPUKernelStore(kernel_store);

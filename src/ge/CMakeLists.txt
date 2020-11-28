@@ -220,6 +220,11 @@ if (NOT ENABLE_ACL)
         DAVINCI_SUPPORT_PROFILING
         REUSE_MEMORY=1
         DAVINCI_CLOUD)
+    target_compile_options(ge_runner PRIVATE
+            -Werror
+            -Wno-deprecated-declarations
+            -Wno-unused-function
+            -Wno-maybe-uninitialized)
     target_link_libraries(ge_runner
         graph
         ge_common
@@ -374,6 +379,11 @@ target_compile_definitions(ge_compiler PRIVATE
         FMK_SUPPORT_DUMP
         COMPILE_OMG_PACKAGE
         REUSE_MEMORY=1)
+target_compile_options(ge_compiler PRIVATE
+        -Werror
+        -Wno-deprecated-declarations
+        -Wno-unused-function
+        -Wno-maybe-uninitialized)
 target_link_libraries(ge_compiler
         graph
         ge_common

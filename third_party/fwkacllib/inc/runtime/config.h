@@ -185,6 +185,14 @@ RTS_API rtError_t rtSetPlatformType(rtPlatformType_t platformType);
  */
 RTS_API rtError_t rtMemGetL2Info(rtStream_t stream, void **ptr, uint32_t *size);
 
+/**
+ * @ingroup
+ * @brief get runtime version. The version is returned as (1000 major + 10 minor). For example, RUNTIME 9.2 would be represented by 9020.
+ * @param [out] runtimeVersion
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetRuntimeVersion(uint32_t *runtimeVersion);
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif

@@ -53,16 +53,16 @@ struct GraphExecutionContext {
   mutable std::mutex mu;
 };
 
-#define RECORD_PROFILING_EVENT(context, evt_type, fmt, category, node_name, ...)                          \
-  do {                                                                                                    \
-    if ((context != nullptr) && (context)->profiler != nullptr) {                                         \
-      if (node_name != nullptr) {                                                                         \
-        context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GetTid(), node_name, category, \
-                                       ##__VA_ARGS__);                                                    \
-      } else {                                                                                            \
-        context->profiler->RecordEvent(evt_type, "tid:%lu [%s] " fmt, GetTid(), category, ##__VA_ARGS__); \
-      }                                                                                                   \
-    }                                                                                                     \
+#define RECORD_PROFILING_EVENT(context, evt_type, fmt, category, node_name, ...)                                 \
+  do {                                                                                                           \
+    if ((context != nullptr) && (context)->profiler != nullptr) {                                                \
+      if (node_name != nullptr) {                                                                                \
+        context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GeLog::GetTid(), node_name, category, \
+                                       ##__VA_ARGS__);                                                           \
+      } else {                                                                                                   \
+        context->profiler->RecordEvent(evt_type, "tid:%lu [%s] " fmt, GeLog::GetTid(), category, ##__VA_ARGS__); \
+      }                                                                                                          \
+    }                                                                                                            \
   } while (0)
 
 #define RECORD_MODEL_EXECUTION_EVENT(context, fmt, ...) \

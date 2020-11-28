@@ -242,8 +242,8 @@ Status FloorDivKernel::ComputeByDataType(DataType data_type, const std::vector<C
       ret = DataCal<int64_t>(input, output_ptr);
       break;
     default:
-      GELOGI("FloorDivKernel does not support Data type:%s", TypeUtils::DataTypeToSerialString(data_type).c_str());
-      return PARAM_INVALID;
+      GELOGW("FloorDivKernel does not support Data type:%s", TypeUtils::DataTypeToSerialString(data_type).c_str());
+      return NOT_CHANGED;
   }
   return ret;
 }

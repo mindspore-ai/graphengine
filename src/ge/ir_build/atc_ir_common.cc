@@ -505,7 +505,7 @@ void PrintOptionMap(std::map<std::string, std::string> &options, std::string tip
   for (auto iter = options.begin(); iter != options.end(); iter++) {
     std::string key = iter->first;
     std::string option_name = iter->second;
-    GELOGI("%s set successfully, option_key=%s, option_value=%s", tips.c_str(), key.c_str(), option_name.c_str());
+    GELOGD("%s set successfully, option_key=%s, option_value=%s", tips.c_str(), key.c_str(), option_name.c_str());
   }
 }
 

@@ -77,7 +77,7 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
   auto range_number = static_cast<size_t>(
     ceil(log(all_memory_size.back() / static_cast<double>(all_memory_size.front())) / log(kLogBase)));
   range_number = (range_number == 0) ? 1 : range_number;
-  GELOGI("Range number: %zu", range_number);
+  GELOGD("Range number: %zu", range_number);
 
   vector<vector<int64_t>> ranges(range_number);
   GE_CHK_BOOL_EXEC((range_number != 0), return PARAM_INVALID, "range_number can't be 0.");
@@ -115,7 +115,7 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
       range_ceils.push_back(range.back());
     }
   }
-  GELOGI("Range ceils: %s", ToString(range_ceils).c_str());
+  GELOGD("Range ceils: %s", ToString(range_ceils).c_str());
 
   return SUCCESS;
 }

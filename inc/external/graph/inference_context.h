@@ -23,6 +23,7 @@
 
 #include "./tensor.h"
 #include "./types.h"
+#include "ascend_string.h"
 
 namespace ge {
 class InferenceContext;
@@ -63,8 +64,13 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY InferenceContext {
   void SetOutputHandleShapesAndTypes(const std::vector<std::vector<ShapeAndType>> &shapes_and_types);
   void SetOutputHandleShapesAndTypes(std::vector<std::vector<ShapeAndType>> &&shapes_and_types);
 
+  ATTRIBUTED_DEPRECATED(void SetMarks(const std::vector<AscendString> &))
   void SetMarks(const std::vector<std::string> &marks);
+  void SetMarks(const std::vector<AscendString> &marks);
+
+  ATTRIBUTED_DEPRECATED(void GetMarks(std::vector<AscendString> &) const)
   const std::vector<std::string> &GetMarks() const;
+  void GetMarks(std::vector<AscendString> &marks) const;
 
   static std::unique_ptr<InferenceContext> Create();
 

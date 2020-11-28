@@ -241,6 +241,9 @@ TaskCompilerFactory &TaskCompilerFactory::GetInstance() {
 void TaskCompilerFactory::Register(CreateFn fn) { compiler_func_ = fn; }
 
 std::unique_ptr<TaskCompiler> TaskCompilerFactory::GetTaskCompiler() {
+  if (compiler_func_ == nullptr) {
+    return nullptr;
+  }
   auto compiler_instance = std::unique_ptr<TaskCompiler>(compiler_func_());
   return compiler_instance;
 }

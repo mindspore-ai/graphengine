@@ -159,7 +159,6 @@ void DataDumper::SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_
 }
 
 void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
-  GELOGI("Start to save data %s message", node->GetName().c_str());
   if (node != nullptr) {
     auto input_op_desc = node->GetOpDesc();
     if (input_op_desc == nullptr) {
@@ -180,7 +179,6 @@ void DataDumper::SaveDumpInput(const std::shared_ptr<Node> &node) {
           {op_desc->GetName(), {input_op_desc, dst_in_data_anchor->GetIdx(), out_data_anchor->GetIdx()}});
       }
     }
-    GELOGI("Save data message successfully");
   }
 }
 
@@ -218,7 +216,7 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
       GELOGW("Get input size failed");
       return;
     }
-    GELOGI("Save dump op info, the input size is %ld", input_size);
+    GELOGD("Save dump op info, the input size is %ld", input_size);
     op_desc_info.input_size.emplace_back(input_size);
   }
   for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
@@ -234,7 +232,7 @@ void DataDumper::SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr
       GELOGW("Get input size failed");
       return;
     }
-    GELOGI("Save dump op info, the output size is %ld", output_size);
+    GELOGD("Save dump op info, the output size is %ld", output_size);
     op_desc_info.output_size.emplace_back(output_size);
   }
   op_desc_info.input_addrs = ModelUtils::GetInputDataAddrs(model_param, op);
@@ -301,22 +299,16 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   if (step_id != 0) {
     GELOGI("step_id exists.");
     op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
-  } else {
-    GELOGI("step_id is null.");
   }
 
   if (loop_per_iter != 0) {
     GELOGI("loop_per_iter exists.");
     op_mapping_info.set_iterations_per_loop_addr(static_cast<uint64_t>(loop_per_iter));
-  } else {
-    GELOGI("loop_per_iter is null.");
   }
 
   if (loop_cond != 0) {
     GELOGI("loop_cond exists.");
     op_mapping_info.set_loop_cond_addr(static_cast<uint64_t>(loop_cond));
-  } else {
-    GELOGI("loop_cond is null.");
   }
 }
 
@@ -672,7 +664,7 @@ Status DataDumper::LoadDumpInfo() {
   PrintCheckLog(dump_list_key);
 
   if (op_list_.empty()) {
-    GELOGW("op_list_ is empty");
+    GELOGD("op_list_ is empty");
   }
 
   aicpu::dump::OpMappingInfo op_mapping_info;
@@ -684,8 +676,6 @@ Status DataDumper::LoadDumpInfo() {
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(dump_properties_.GetDumpStep());
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGI("Dump step is %s and dump path is %s dump model is %s in load dump info",
-         dump_properties_.GetDumpStep().c_str(), dump_path.c_str(), dump_list_key.c_str());
   auto ret = BuildTaskInfo(op_mapping_info);
   if (ret != SUCCESS) {
     GELOGE(ret, "Build task info failed");
@@ -812,7 +802,6 @@ void DataDumper::SetOpDebugIdToAicpu(uint32_t task_id, uint32_t stream_id, void 
 
 Status DataDumper::UnloadDumpInfo() {
   if (!load_flag_) {
-    GELOGI("No need to UnloadDumpInfo.");
     load_flag_ = false;
     return SUCCESS;
   }
@@ -838,7 +827,6 @@ Status DataDumper::UnloadDumpInfo() {
 void DataDumper::PrintCheckLog(string &dump_list_key) {
   std::set<std::string> model_list = dump_properties_.GetAllDumpModel();
   if (model_list.empty()) {
-    GELOGI("No model need dump.");
     return;
   }
 

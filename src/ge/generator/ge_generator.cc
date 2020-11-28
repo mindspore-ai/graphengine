@@ -200,7 +200,6 @@ static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, cons
 }
 
 static void GetOpsProtoPath(string &opsproto_path) {
-  GELOGI("Start to get ops proto path schedule.");
   const char *path_env = std::getenv("ASCEND_OPP_PATH");
   if (path_env != nullptr) {
     string path = path_env;
@@ -381,7 +380,6 @@ bool GeGenerator::Impl::ParseVersion(const std::string &line, std::string &versi
   }
 
   version = temp.substr(pos + flag.size());
-  GELOGI("Version=%s", version.c_str());
 
   return true;
 }
@@ -423,7 +421,6 @@ bool GeGenerator::Impl::SetAtcVersionInfo(AttrHolder &obj) {
   path_base = path_base.substr(0, path_base.rfind('/') + 1);
 
   std::string version_path = path_base + "version.info";
-  GELOGI("version_path is %s", version_path.c_str());
   std::string version;
   if (!GetVersionFromPath(version_path, version)) {
     GELOGW("Get atc version information failed!");
@@ -434,7 +431,6 @@ bool GeGenerator::Impl::SetAtcVersionInfo(AttrHolder &obj) {
     GELOGW("Ge model set atc version failed!");
     return false;
   }
-  GELOGI("Ge model set atc version information success.");
   return true;
 }
 
@@ -447,7 +443,6 @@ bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
   }
   std::string version_path = path_env;
   version_path += "/version.info";
-  GELOGI("version_path is %s", version_path.c_str());
   std::string version;
   if (!GetVersionFromPath(version_path, version)) {
     GELOGW("Get opp version information failed!");
@@ -458,7 +453,6 @@ bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
     GELOGW("Ge model set opp version failed!");
     return false;
   }
-  GELOGI("Ge Model set opp version information success.");
   return true;
 }
 
@@ -467,7 +461,7 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   rtContext_t ctx = nullptr;
   auto rt = rtCtxGetCurrent(&ctx);
   if (rt != RT_ERROR_NONE) {
-    GELOGW("Current ctx is null.");
+    GELOGD("Current ctx is null.");
     ctx = nullptr;
   }
 
@@ -520,7 +514,6 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     (void)rtCtxSetCurrent(ctx);
   }
 
-  GELOGI("GenerateOfflineModel success.");
   return SUCCESS;
 }
 
@@ -708,7 +701,6 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
     return GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED;
   }
 
-  GELOGI("Model inputs size is %zu", inputs.size());
   graph_manager_.SetOptionsRunGraphFlag(false);
 
   static std::atomic<uint64_t> atomic_session_id(0);

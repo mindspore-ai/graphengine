@@ -330,12 +330,12 @@ RTS_API rtError_t rtGetPairDevicesInfo(uint32_t devId, uint32_t otherDevId, int3
                     FEATURE_TYPE_MEMCPY = 0,
                     FEATURE_TYPE_RSV,
                } rtFeatureType_t;
- * @param [in] infoType   info type
+ * @param [in] featureInfo  info type
                typedef enum tagMemcpyInfo {
                     MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
                     MEMCPY_INFO _RSV,
                } rtMemcpyInfo_t;
- * @param [out] value   the capability info
+ * @param [out] value  the capability info RT_CAPABILITY_SUPPORT or RT_CAPABILITY_NOT_SUPPORT
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, int64_t *value);

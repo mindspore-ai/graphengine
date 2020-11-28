@@ -36,7 +36,7 @@ const char *const kAICPUKernelLibName = "aicpu_tf_kernel";
 namespace ge {
 graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
   GE_TIMESTAMP_START(CompileNodesPass);
-  GELOGI("[CompileNodesPass]: optimize begin.");
+  GELOGD("[CompileNodesPass]: optimize begin.");
   if (graph == nullptr) {
     return GRAPH_SUCCESS;
   }
@@ -70,6 +70,10 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
         std::vector<NodePtr> node_vec{node};
         kernel_to_compile_nodes.insert(std::make_pair(kernel_lib_name, node_vec));
       }
+    } else {
+      GELOGE(GRAPH_FAILED, "Get node:%s, type:%s supported kernel failed.", node->GetName().c_str(),
+             node->GetType().c_str());
+      return GRAPH_FAILED;
     }
   }
   // compile node follow different kernel, currently only TBE kernel
@@ -78,7 +82,7 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
     GELOGE(result, "Compile op failed.");
     return result;
   }
-  GELOGI("[CompileNodesPass]: Optimize success.");
+  GELOGD("[CompileNodesPass]: Optimize success.");
   GE_TIMESTAMP_EVENT_END(CompileNodesPass, "OptimizeStage2::ControlAttrOptimize::CompileNodesPass");
   return GRAPH_SUCCESS;
 }
@@ -108,8 +112,28 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   }
   // begin accuracy supported check
   if (!CheckAccuracySupport(kernel_info, instance, op_desc)) {
-    // if check accuracy support failed , try to go to aicpu engine
-    kernel_lib_name = kAICPUKernelLibName;
+    // if check accuracy support failed , try to go to other engine.
+    GELOGD("Check Accuracy Supported return not support, node name is %s. Try to go to other engine.",
+           op_desc->GetName().c_str());
+    string kernel_name_origin = kernel_lib_name;
+    OpsKernelManager &ops_kernel_manager = instance->OpsKernelManagerObj();
+    auto kernel_map = ops_kernel_manager.GetAllOpsKernelInfoStores();
+    for (auto it = kernel_map.begin(); it != kernel_map.end(); ++it) {
+      string tmp_kernel_name = it->first;
+      if (tmp_kernel_name == kernel_name_origin) {
+        continue;
+      }
+      OpsKernelInfoStorePtr tmp_kernel_info = it->second;
+      if (CheckAccuracySupport(tmp_kernel_info, instance, op_desc)) {
+        kernel_lib_name = tmp_kernel_name;
+        GELOGD("Find kernel lib %s support node:%s, type:%s , get kernel lib success.", tmp_kernel_name.c_str(),
+               node->GetName().c_str(), op_desc->GetType().c_str());
+        return GRAPH_SUCCESS;
+      }
+    }
+    GELOGE(GRAPH_FAILED, "Cannot find kernel lib support node:%s, type:%s , get kernel lib failed.",
+           node->GetName().c_str(), op_desc->GetType().c_str());
+    return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;
 }
@@ -123,8 +147,6 @@ bool CompileNodesPass::CheckAccuracySupport(const OpsKernelInfoStorePtr &kernel_
   }
   string reason;
   if (!(kernel_info->CheckAccuracySupported(*ge_desc, reason, true))) {
-    GELOGW("Check Accuracy Supported return not support, node name is %s, reason: %s. Try to go to AICPU engine.",
-           op_desc->GetName().c_str(), reason.c_str());
     return false;
   }
   return true;

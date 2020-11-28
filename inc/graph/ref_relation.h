@@ -55,7 +55,7 @@ struct RefCell {
 
 struct RefCellHash {
   size_t operator()(const RefCell &c) const {
-    unsigned long number = reinterpret_cast<unsigned long>(reinterpret_cast<uintptr_t>(c.node.get()));
+    unsigned long number = static_cast<unsigned long>(reinterpret_cast<uintptr_t>(c.node.get()));
     string tmp = c.node_name + std::to_string(c.in_out) + std::to_string(c.in_out_idx) + std::to_string(number);
     return std::hash<string>()(tmp);
   }

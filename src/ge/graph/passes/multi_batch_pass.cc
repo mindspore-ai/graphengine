@@ -36,7 +36,7 @@ Status MultiBatchPass::Run(ComputeGraphPtr graph) {
   OutDataAnchorPtr pred_value = nullptr;
   Status ret = FindPredValue(graph, pred_value);
   if (ret == NOT_CHANGED) {
-    GELOGI("SwitchN node not exist, graph not changed.");
+    GELOGD("SwitchN node not exist, graph not changed.");
     return SUCCESS;
   }
   if (ret != SUCCESS) {
@@ -160,7 +160,7 @@ Status MultiBatchPass::FindPredValue(const ComputeGraphPtr &graph, OutDataAnchor
   }
 
   if (switch_n_nodes_.empty()) {
-    GELOGI("SwitchN node not exist.");
+    GELOGD("SwitchN node not exist.");
     return NOT_CHANGED;
   }
 

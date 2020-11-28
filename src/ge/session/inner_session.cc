@@ -253,6 +253,24 @@ Status InnerSession::RegisterCallBackFunc(
   return SUCCESS;
 }
 
+Status InnerSession::RegisterCallBackFunc(
+  const std::string &key, const std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)> &callback) {
+  std::lock_guard<std::mutex> lock(resource_mutex_);
+  if (!init_flag_) {
+    GELOGE(GE_SESS_INIT_FAILED, "[InnerSession:%lu] initialize failed.", session_id_);
+    return GE_SESS_INIT_FAILED;
+  }
+  UpdateThreadContext(std::map<std::string, std::string>{});
+  Status ret = graph_manager_.RegisterCallBackFunc(key, callback);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[InnerSession:%lu] register %s callback function failed.", session_id_, key.c_str());
+    return ret;
+  }
+
+  GELOGI("[InnerSession:%lu] register %s callback function success.", session_id_, key.c_str());
+  return SUCCESS;
+}
+
 Status InnerSession::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs) {
   UpdateThreadContext(graph_id);
   GELOGI("[InnerSession:%lu] build graph on session, graph_id=%u.", session_id_, graph_id);

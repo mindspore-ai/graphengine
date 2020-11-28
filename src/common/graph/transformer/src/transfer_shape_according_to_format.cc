@@ -30,6 +30,7 @@ ShapeTransferAccordingToFormat::ShapeTransferAccordingToFormat(void) {
     {ge::FORMAT_NCHW, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetNCHWShapeByAxisValue)},
     {ge::FORMAT_NHWC, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetNHWCShapeByAxisValue)},
     {ge::FORMAT_NC1HWC0, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetNC1HWC0ShapeByAxisValue)},
+    {ge::FORMAT_NDC1HWC0, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetNDC1HWC0ShapeByAxisValue)},
     {ge::FORMAT_FRACTAL_Z, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetFzShapeByAxisValue)},
     {ge::FORMAT_HWCN, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetHWCNShapeByAxisValue)},
     {ge::FORMAT_C1HWNCoC0, std::make_shared<GetNewShapeByAxisValueAndFormat>(GetC1HWNCoC0ShapeByAxisValue)},
@@ -40,6 +41,19 @@ ShapeTransferAccordingToFormat::ShapeTransferAccordingToFormat(void) {
     {ge::DT_INT16, SHAPE_NUMBER_16},   {ge::DT_INT32, SHAPE_NUMBER_16},  {ge::DT_INT64, SHAPE_NUMBER_16},
     {ge::DT_UINT8, SHAPE_NUMBER_16},   {ge::DT_UINT16, SHAPE_NUMBER_32}, {ge::DT_UINT32, SHAPE_NUMBER_16},
     {ge::DT_UINT64, SHAPE_NUMBER_16},  {ge::DT_BOOL, SHAPE_NUMBER_16}};
+}
+
+bool ShapeTransferAccordingToFormat::GetNDC1HWC0ShapeByAxisValue(vector<int64_t>& new_shape, const int64_t& impl_type,
+                                                                 const std::vector<int64_t>& axis_value,
+                                                                 const vector<int64_t>& nd_value) {
+  CHECK(axis_value.empty(), GELOGD("AxisValue is empty!"), return true);
+  new_shape.push_back(axis_value[AXIS_N]);
+  new_shape.push_back(axis_value[AXIS_D]);
+  new_shape.push_back(axis_value[AXIS_C1]);
+  new_shape.push_back(axis_value[AXIS_H]);
+  new_shape.push_back(axis_value[AXIS_W]);
+  new_shape.push_back(axis_value[AXIS_C0]);
+  return true;
 }
 
 bool ShapeTransferAccordingToFormat::GetNCHWShapeByAxisValue(vector<int64_t>& newShape, const int64_t& implType,

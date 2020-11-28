@@ -1102,4 +1102,11 @@ const std::string ATTR_ZERO_COPY_RELATIVE_OFFSET = "_zero_copy_relative_offset";
 
 // The processing mode of INF and NAN during floating-point number calculation.
 const std::string ATTR_FP_CEILING_MODE = "_fp_ceiling_mode";
+// count of data from getnext_sink
+const std::string ATTR_GETNEXT_SINK_DATA_COUNT = "N";
+const std::string ATTR_GETNEXT_SINK_SHAPE_INFO = "shape_info";
+
+// getnext_sink marked on NetOutput
+const std::string ATTR_GETNEXT_SINK_DYNMAIC = "getnext_sink_dynamic";
+const std::string ATTR_ALL_GEARS_INFO = "all_gears_info";
 }  // namespace ge

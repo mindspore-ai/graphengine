@@ -55,8 +55,7 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
 
     for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
       auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-      GE_IF_BOOL_EXEC(
-        peer_out_anchor == nullptr, GELOGW("peer_out_anchor is nullptr! node: %s", node->GetName().c_str()); continue);
+      GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
 
       ge::NodePtr src_node = peer_out_anchor->GetOwnerNode();
       src_index_list = node_op_desc->GetSrcIndex();
@@ -239,11 +238,11 @@ Status GraphOptimize::OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_gr
   }
 
   auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
-  GELOGI("optimize by opskernel in graph optimize before build phase. num of graph_optimizer is %zu.",
+  GELOGD("optimize by opskernel in graph optimize before build phase. num of graph_optimizer is %zu.",
          graph_optimizer.size());
   Status ret = SUCCESS;
   string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
-  GELOGI("[OptimizeGraphBeforeBuildForRts]: engine type will exclude: %s, core_type_: %s", exclude_core_Type.c_str(),
+  GELOGD("[OptimizeGraphBeforeBuildForRts]: engine type will exclude: %s, core_type_: %s", exclude_core_Type.c_str(),
          core_type_.c_str());
   if (graph_optimizer.size() != 0) {
     for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {

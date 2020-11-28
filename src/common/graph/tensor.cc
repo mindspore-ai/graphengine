@@ -89,6 +89,65 @@ class TensorImpl {
   TensorImpl(TensorDesc &&tensor_desc, std::vector<uint8_t> &&data)
       : ge_tensor(TensorAdapter::TensorDesc2GeTensorDesc(tensor_desc), std::move(data)) {}
 
+  graphStatus SetData(const std::string &data) {
+    if (!data.empty()) {
+      /// Extra 8 bytes store pointer of string
+      /// Extra 1 byte store '\0'
+      size_t total_size = data.size() + EXTRA_STORE_POINTER_FOR_STRING_AND_END_SYMBOL;
+      std::unique_ptr<char[]> buff(new (std::nothrow) char[total_size]());
+      if (buff == nullptr) {
+        GELOGE(GRAPH_FAILED, "allocate string raw data buff failed");
+        return GRAPH_FAILED;
+      }
+      uint64_t *p = reinterpret_cast<uint64_t *>(buff.get());
+      // Front 8 bytes store pointer of string
+      char *raw_data = buff.get() + EXTRA_STORE_POINTER_FOR_STRING;
+      p[0] = reinterpret_cast<uintptr_t>(raw_data);
+      int32_t memcpy_ret =
+        memcpy_s(raw_data, total_size - EXTRA_STORE_POINTER_FOR_STRING, data.c_str(), data.size() + 1);
+      GE_CHK_BOOL_RET_STATUS(memcpy_ret == EOK, GRAPH_FAILED, "copy data failed");
+      (void)ge_tensor.SetData(reinterpret_cast<const uint8_t *>(buff.get()), total_size);
+      return GRAPH_SUCCESS;
+    }
+    return GRAPH_FAILED;
+  }
+
+  graphStatus SetData(const std::vector<std::string> &data) {
+    if (data.empty()) {
+      GELOGE(GRAPH_FAILED, "there is no data, please check the input variable");
+      return GRAPH_FAILED;
+    }
+    size_t total_size = 0;
+    for (auto str : data) {
+      /// Extra 8 bytes store pointer of each string
+      /// Extra 1 byte store '\0'
+      total_size += (str.size() + EXTRA_STORE_POINTER_FOR_STRING_AND_END_SYMBOL);
+    }
+    std::unique_ptr<char[]> buff(new (std::nothrow) char[total_size]);
+    if (buff == nullptr) {
+      GELOGE(GRAPH_FAILED, "allocate string raw data buff failed");
+      return GRAPH_FAILED;
+    }
+    uint64_t *p = reinterpret_cast<uint64_t *>(buff.get());
+    // Front some bytes store pointer of each string
+    char *raw_data = buff.get() + data.size() * sizeof(uint64_t);
+    uint64_t ptr_size = data.size() * sizeof(uint64_t);
+    for (size_t i = 0; i < data.size(); ++i) {
+      p[i] = reinterpret_cast<uintptr_t>(raw_data);
+      if (total_size < ptr_size) {
+        GELOGE(GRAPH_FAILED, "Subtraction invalid, total_size: %zu, ptr_size: %lu", total_size, ptr_size);
+        return GRAPH_FAILED;
+      }
+      int32_t memcpy_ret = memcpy_s(raw_data, total_size - ptr_size, data[i].c_str(), data[i].size() + 1);
+      GE_CHK_BOOL_RET_STATUS(memcpy_ret == EOK, GRAPH_FAILED, "copy data failed");
+      raw_data += (data[i].size() + 1);
+      ptr_size += (data[i].size() + 1);
+    }
+
+    (void)ge_tensor.SetData(reinterpret_cast<const uint8_t *>(buff.get()), total_size);
+    return GRAPH_SUCCESS;
+  }
+
   GeTensor ge_tensor;
 };
 
@@ -356,6 +415,20 @@ void TensorDesc::SetName(const std::string &name) {
   }
 }
 
+graphStatus TensorDesc::GetName(AscendString &name) {
+  if (impl != nullptr) {
+    name = AscendString(impl->name_.c_str());
+    return GRAPH_SUCCESS;
+  }
+  return GRAPH_FAILED;
+}
+
+void TensorDesc::SetName(const char *name) {
+  if (impl != nullptr && name != nullptr) {
+    impl->name_ = name;
+  }
+}
+
 Tensor::Tensor() { impl = ComGraphMakeShared<TensorImpl>(); }
 
 Tensor::Tensor(const TensorDesc &tensor_desc) { impl = ComGraphMakeShared<TensorImpl>(tensor_desc); }
@@ -489,60 +562,53 @@ graphStatus Tensor::SetData(const uint8_t *data, size_t size) {
 }
 
 graphStatus Tensor::SetData(const std::string &data) {
-  if (impl != nullptr && (!data.empty())) {
-    /// Extra 8 bytes store pointer of string
-    /// Extra 1 byte store '\0'
-    size_t total_size = data.size() + EXTRA_STORE_POINTER_FOR_STRING_AND_END_SYMBOL;
-    std::unique_ptr<char[]> buff(new (std::nothrow) char[total_size]());
-    if (buff == nullptr) {
-      GELOGE(GRAPH_FAILED, "allocate string raw data buff failed");
+  if (impl != nullptr) {
+    if (impl->SetData(data) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Tensor set data failed.");
       return GRAPH_FAILED;
     }
-    uint64_t *p = reinterpret_cast<uint64_t *>(buff.get());
-    // Front 8 bytes store pointer of string
-    char *raw_data = buff.get() + EXTRA_STORE_POINTER_FOR_STRING;
-    p[0] = reinterpret_cast<uintptr_t>(raw_data);
-    int32_t memcpy_ret = memcpy_s(raw_data, total_size - EXTRA_STORE_POINTER_FOR_STRING, data.c_str(), data.size() + 1);
-    GE_CHK_BOOL_RET_STATUS(memcpy_ret == EOK, GRAPH_FAILED, "copy data failed");
-    (void)impl->ge_tensor.SetData(reinterpret_cast<const uint8_t *>(buff.get()), total_size);
     return GRAPH_SUCCESS;
   }
   return GRAPH_FAILED;
 }
+
 graphStatus Tensor::SetData(const std::vector<std::string> &data) {
   if (impl != nullptr) {
-    if (data.empty()) {
-      GELOGE(GRAPH_FAILED, "there is no data, please check the input variable");
+    if (impl->SetData(data) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Tensor set vector data failed.");
       return GRAPH_FAILED;
     }
-    size_t total_size = 0;
-    for (auto str : data) {
-      /// Extra 8 bytes store pointer of each string
-      /// Extra 1 byte store '\0'
-      total_size += (str.size() + EXTRA_STORE_POINTER_FOR_STRING_AND_END_SYMBOL);
-    }
-    std::unique_ptr<char[]> buff(new (std::nothrow) char[total_size]);
-    if (buff == nullptr) {
-      GELOGE(GRAPH_FAILED, "allocate string raw data buff failed");
+    return GRAPH_SUCCESS;
+  }
+  return GRAPH_FAILED;
+}
+
+graphStatus Tensor::SetData(const char *data) {
+  if (impl != nullptr && data != nullptr) {
+    std::string tensor_data = data;
+    if (impl->SetData(tensor_data) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Tensor set data failed.");
       return GRAPH_FAILED;
     }
-    uint64_t *p = reinterpret_cast<uint64_t *>(buff.get());
-    // Front some bytes store pointer of each string
-    char *raw_data = buff.get() + data.size() * sizeof(uint64_t);
-    uint64_t ptr_size = data.size() * sizeof(uint64_t);
-    for (size_t i = 0; i < data.size(); ++i) {
-      p[i] = reinterpret_cast<uintptr_t>(raw_data);
-      if (total_size < ptr_size) {
-        GELOGE(GRAPH_FAILED, "Subtraction invalid, total_size: %zu, ptr_size: %lu", total_size, ptr_size);
+    return GRAPH_SUCCESS;
+  }
+  return GRAPH_FAILED;
+}
+
+graphStatus Tensor::SetData(const std::vector<AscendString> &datas) {
+  if (impl != nullptr) {
+    std::vector<std::string> tensor_data;
+    for (auto &data : datas) {
+      if (data.GetString() == nullptr) {
+        GELOGE(GRAPH_FAILED, "Data is nullptr.");
         return GRAPH_FAILED;
       }
-      int32_t memcpy_ret = memcpy_s(raw_data, total_size - ptr_size, data[i].c_str(), data[i].size() + 1);
-      GE_CHK_BOOL_RET_STATUS(memcpy_ret == EOK, GRAPH_FAILED, "copy data failed");
-      raw_data += (data[i].size() + 1);
-      ptr_size += (data[i].size() + 1);
+      tensor_data.emplace_back(data.GetString());
     }
-
-    (void)impl->ge_tensor.SetData(reinterpret_cast<const uint8_t *>(buff.get()), total_size);
+    if (impl->SetData(tensor_data) != GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "Tensor set vector data failed.");
+      return GRAPH_FAILED;
+    }
     return GRAPH_SUCCESS;
   }
   return GRAPH_FAILED;

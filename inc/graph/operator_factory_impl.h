@@ -43,6 +43,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OperatorFactoryImpl {
 
   static graphStatus RegisterOperatorCreator(const std::string &operator_type, OpCreator const &op_creator);
 
+  static graphStatus RegisterOperatorCreator(const std::string &operator_type, OpCreatorV2 const &op_creator);
+
   static graphStatus RegisterInferShapeFunc(const std::string &operator_type, InferShapeFunc const infer_shape_func);
 
   static graphStatus RegisterInferFormatFunc(const std::string &operator_type, InferFormatFunc const infer_format_func);
@@ -53,6 +55,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OperatorFactoryImpl {
                                                 InferDataSliceFunc const infer_data_slice_func);
 
   static shared_ptr<std::map<string, OpCreator>> operator_creators_;
+  static shared_ptr<std::map<string, OpCreatorV2>> operator_creators_v2_;
   static shared_ptr<std::map<string, InferShapeFunc>> operator_infershape_funcs_;
   static shared_ptr<std::map<string, InferFormatFunc>> operator_inferformat_funcs_;
   static shared_ptr<std::map<string, VerifyFunc>> operator_verify_funcs_;

@@ -140,7 +140,8 @@ bool HcclTask::SetSecondaryStream() {
 
   std::map<uint32_t, std::vector<std::weak_ptr<StreamGuard>>> &master_secondary_stream_map =
     model_stream_mapping_.at(rt_model_handle_);
-  if (auto iter = master_secondary_stream_map.find(master_stream_id); iter != master_secondary_stream_map.end()) {
+  auto iter = master_secondary_stream_map.find(master_stream_id);
+  if (iter != master_secondary_stream_map.end()) {
     std::vector<std::weak_ptr<StreamGuard>> &secondary_stream_vec = iter->second;
     auto lock_weak_ptr = [&secondary_stream_vec, this](int64_t index) -> bool {
       auto stream = secondary_stream_vec[index].lock();

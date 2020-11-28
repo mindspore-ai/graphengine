@@ -1139,6 +1139,13 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string ATTR_ZER
 
 // The processing mode of INF and NAN during floating-point number calculation.
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string ATTR_FP_CEILING_MODE;
+// count of data from getnext_sink
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string ATTR_GETNEXT_SINK_DATA_COUNT;
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string ATTR_GETNEXT_SINK_SHAPE_INFO;
+
+// getnext_sink marked on NetOutput
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string ATTR_GETNEXT_SINK_DYNMAIC;
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY extern const std::string ATTR_ALL_GEARS_INFO;
 }  // namespace ge
 
 #endif  // INC_GRAPH_DEBUG_GE_ATTR_DEFINE_H_

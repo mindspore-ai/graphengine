@@ -105,6 +105,7 @@ struct ShapeDescription {
   int64_t height = 0;
   int64_t width = 0;
   std::vector<int64_t> dims;
+  std::vector<std::pair<int64_t, int64_t>> shape_ranges;
 };
 
 // Definition of input and output description information

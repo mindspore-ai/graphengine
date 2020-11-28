@@ -65,7 +65,47 @@ const char *const OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION = "ge.exec.isTailingOp
 // Option key: memory init
 const char *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";
 const char *const VARIABLE_MEMORY_MAX_SIZE = "ge.variableMemoryMaxSize";
-
+namespace configure_option {
+const char *const STREAM_NUM = "ge.streamNum";
+const char *const HEAD_STREAM = "ge.headStream";
+const char *const PERF_LEVEL = "ge.perfLevel";
+const char *const ENCRYPT_MODE = "ge.encryptMode";
+const char *const EK_FILE = "ge.ekFile";
+const char *const CERT_FILE = "ge.certFile";
+const char *const HW_KEY_FILE = "ge.hwKeyFile";
+const char *const PRIVATE_KEY_FILE = "ge.privateKeyFile";
+const char *const FRAMEWORK_TYPE = "ge.frameworkType";
+const char *const CALIBRATION_CONF_FILE = "ge.calibrationConfFile";
+const char *const INSERT_OP_FILE = "ge.insertOpFile";
+const char *const OUTPUT_NODE_NAME = "ge.outputNodeName";
+const char *const COMPRESS_FLAG = "ge.compressFlag";
+const char *const PRECISION_MODE = "ge.exec.precision_mode";
+const char *const SINGLE_OP_FLAG = "ge.exec.single_op";
+const char *const TRAIN_FLAG = "ge.trainFlag";
+const char *const RUN_FLAG = "ge.runFlag";
+const char *const LOCAL_FMKOP_FLAG = "ge.enabledLocalFmkop";
+const char *const TBE_PLUGIN_PATH_FLAG = "ge.TBE_plugin_path";
+const char *const DDK_VERSION_FLAG = "ge.DDK_version";
+const char *const GE_FE_FLAG = "ge.feFlag";
+const char *const STREAM_MAX_PARALLEL_NUM = "ge.streamMaxParallelNum";
+const char *const OUTPUT_DATATYPE = "ge.outputDatatype";
+const char *const OP_SELECT_IMPL_MODE = "ge.opSelectImplmode";
+const char *const OPTYPELIST_FOR_IMPLMODE = "ge.optypelistForImplmode";
+const char *const HCOM_PARALLEL = "ge.hcomParallel";
+const char *const AUTO_TUNE_MODE = "ge.autoTuneMode";
+const char *const SOC_VERSION = "ge.socVersion";
+const char *const CORE_TYPE = "ge.engineType";
+const char *const AICORE_NUM = "ge.aicoreNum";
+const char *const L1_FUSION = "ge.l1Fusion";
+const char *const BUFFER_OPTIMIZE = "ge.bufferOptimize";
+const char *const ENABLE_SMALL_CHANNEL = "ge.enableSmallChannel";
+const char *const ENABLE_COMPRESS_WEIGHT = "ge.enableCompressWeight";
+const char *const FUSION_SWITCH_FILE = "ge.fusionSwitchFile";
+const char *const SAVE_ORIGINAL_MODEL = "ge.saveOriginalModel";
+const char *const ORIGINAL_MODEL_FILE = "ge.originalModelFile";
+const char *const INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
+const char *const OP_DEBUG_LEVEL = "ge.opDebugLevel";
+}  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
 const std::string STREAM_NUM = "ge.streamNum";
@@ -174,6 +214,9 @@ const std::string HCOM_PARALLEL = "ge.hcomParallel";
 // configure whether to use dynamic batch size
 const char *const kDynamicBatchSize = "ge.dynamicBatchSize";
 
+const std::string INPUT_SHAPE = "ge.inputShape";
+
+const std::string DYNAMIC_NODE_TYPE = "ge.dynamicNodeType";
 // configure whether to use dynamic image size
 const char *const kDynamicImageSize = "ge.dynamicImageSize";
 
@@ -323,6 +366,7 @@ static const char *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
 static const char *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
 static const char *const MDL_BANK_PATH_FLAG = ge::MDL_BANK_PATH_FLAG.c_str();
 static const char *const OP_BANK_PATH_FLAG = ge::OP_BANK_PATH_FLAG.c_str();
+static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 
 // for interface: aclgrphBuildModel
 const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
@@ -342,7 +386,9 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              OP_DEBUG_LEVEL,
                                                              DEBUG_DIR,
                                                              OP_COMPILER_CACHE_DIR,
-                                                             OP_COMPILER_CACHE_MODE};
+                                                             OP_COMPILER_CACHE_MODE,
+                                                             MDL_BANK_PATH_FLAG,
+                                                             OP_BANK_PATH_FLAG};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
@@ -357,9 +403,7 @@ const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
                                                             OUT_NODES,
                                                             COMPRESS_WEIGHT_CONF,
                                                             ENABLE_SCOPE_FUSION_PASSES,
-                                                            LOG_LEVEL,
-                                                            MDL_BANK_PATH_FLAG,
-                                                            OP_BANK_PATH_FLAG};
+                                                            LOG_LEVEL};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,

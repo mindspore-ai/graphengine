@@ -337,9 +337,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       continue;
     }
 
-    GE_IF_BOOL_EXEC(non_const_index >= v_input_offset.size(),
-                    GELOGW("offsets=%zu, inputs=%zu, index=%zu.", v_input_offset.size(), inputs_size, non_const_index);
-                    break);
+    GE_IF_BOOL_EXEC(non_const_index >= v_input_offset.size(), break);
 
     int64_t input_offset = v_input_offset[non_const_index];
     non_const_index++;
@@ -356,7 +354,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     // feature maps
     void *mem_addr = nullptr;
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {  // fusion
-      mem_addr = reinterpret_cast<uint8_t *>(reinterpret_cast<intptr_t>(input_offset));
+      mem_addr = reinterpret_cast<uint8_t *>(static_cast<intptr_t>(input_offset));
       v_input_data_addr.push_back(mem_addr);
     } else if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_TS_4G) {
       int64_t tensor_size = 0;
@@ -424,7 +422,7 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
     // feature maps
     void *mem_addr = nullptr;
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {  // fusion
-      mem_addr = reinterpret_cast<uint8_t *>(reinterpret_cast<intptr_t>(v_output_offset[i]));
+      mem_addr = reinterpret_cast<uint8_t *>(static_cast<intptr_t>(v_output_offset[i]));
       v_output_data_addr.push_back(mem_addr);
     } else if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_TS_4G) {
       const GeTensorDescPtr tensor_desc = op_desc->MutableOutputDesc(i);
@@ -500,7 +498,7 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
       continue;
     }
     if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_L1) {
-      v_workspace_data_addr.push_back(reinterpret_cast<uint8_t *>(reinterpret_cast<intptr_t>(v_workspace_offset[i])));
+      v_workspace_data_addr.push_back(reinterpret_cast<uint8_t *>(static_cast<intptr_t>(v_workspace_offset[i])));
       GELOGI("[IMAS]GetWorkspaceDataAddrs graph_%u type[L1] name[%s], mem_addr[workspace index %zu]:0x%lx",
              model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i]);
     } else if (v_workspace_bytes[i] == 0) {

@@ -26,6 +26,7 @@ using OpsKernelBuilderPtr = std::shared_ptr<OpsKernelBuilder>;
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpsKernelBuilderRegistry {
  public:
+  ~OpsKernelBuilderRegistry();
   static OpsKernelBuilderRegistry &GetInstance();
 
   void Register(const std::string &lib_name, const OpsKernelBuilderPtr &instance);
@@ -37,6 +38,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpsKernelBuilderRegistry 
   const std::map<std::string, OpsKernelBuilderPtr> &GetAll() const;
 
  private:
+  OpsKernelBuilderRegistry() = default;
   std::map<std::string, OpsKernelBuilderPtr> kernel_builders_;
 };
 

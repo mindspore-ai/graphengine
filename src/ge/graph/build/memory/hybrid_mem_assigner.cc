@@ -62,9 +62,9 @@ Status HybridMemAssigner::Assign() {
 
   std::unique_ptr<BlockMemAssigner> priority_assigner;
 
-  GELOGI("Binary-block memory size:%zu, max-block memory size:%zu", bin_mem_size, max_mem_size);
+  GELOGD("Binary-block memory size:%zu, max-block memory size:%zu", bin_mem_size, max_mem_size);
   if (bin_mem_size <= max_mem_size) {
-    GELOGI("Use binary-block memory assigner method");
+    GELOGD("Use binary-block memory assigner method");
     priority_assigner = std::move(binary_assigner);
   } else {
     GELOGI("Use max-block memory assigner method");

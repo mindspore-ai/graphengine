@@ -387,12 +387,12 @@ LOCAL_SRC_FILES += $(BUILER_SRC_FILES)
 LOCAL_SRC_FILES += $(ANALYZER_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libmmpa \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libascend_protobuf \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     libge_common \
@@ -451,12 +451,12 @@ LOCAL_C_INCLUDES := $(DEVICE_LOCAL_C_INCLUDES)
 LOCAL_C_INCLUDES += $(ANALYZER_LOCAL_INCLUDES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
+                          libmmpa \
 
 LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libascend_protobuf \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     libresource \

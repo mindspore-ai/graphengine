@@ -17,6 +17,8 @@
 #ifndef INC_GRAPH_ANCHOR_H_
 #define INC_GRAPH_ANCHOR_H_
 
+#include "graph/compiler_options.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -128,7 +130,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Anchor : public std::enable
   template <class T>
   static Anchor::TYPE TypeOf() {
     static_assert(std::is_base_of<Anchor, T>::value, "T must be a Anchor!");
-    return __PRETTY_FUNCTION__;
+    return METADEF_FUNCTION_IDENTIFIER;
   }
 
  public:

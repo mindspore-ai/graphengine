@@ -44,9 +44,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GNode {
 
   ~GNode() = default;
 
-  graphStatus GetType(ge::AscendString &type) const;
+  graphStatus GetType(AscendString &type) const;
 
-  graphStatus GetName(ge::AscendString &name) const;
+  graphStatus GetName(AscendString &name) const;
 
   std::pair<GNodePtr, int32_t> GetInDataNodesAndPortIndexs(const int32_t index) const;
 
@@ -58,9 +58,9 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GNode {
 
   graphStatus GetInputConstData(const int32_t index, Tensor &data) const;
 
-  graphStatus GetInputIndexByName(const ge::AscendString &name, int32_t &index);
+  graphStatus GetInputIndexByName(const AscendString &name, int32_t &index);
 
-  graphStatus GetOutputIndexByName(const ge::AscendString &name, int32_t &index);
+  graphStatus GetOutputIndexByName(const AscendString &name, int32_t &index);
 
   size_t GetInputsSize() const;
 
@@ -74,47 +74,47 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GNode {
 
   graphStatus UpdateOutputDesc(const int32_t index, const TensorDesc &tensor_desc);
 
-  graphStatus GetAttr(const ge::AscendString &name, int64_t &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, int32_t &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, uint32_t &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, float &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, ge::AscendString &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, bool &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, Tensor &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<int64_t> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<int32_t> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<uint32_t> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<float> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<ge::AscendString> &attr_values) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<bool> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<Tensor> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, OpBytes &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<std::vector<int64_t>> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, std::vector<ge::DataType> &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, ge::DataType &attr_value) const;
-  graphStatus GetAttr(const ge::AscendString &name, AttrValue &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, int64_t &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, int32_t &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, uint32_t &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, float &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, AscendString &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, bool &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, Tensor &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<int64_t> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<int32_t> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<uint32_t> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<float> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<AscendString> &attr_values) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<bool> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<Tensor> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, OpBytes &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<std::vector<int64_t>> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, std::vector<ge::DataType> &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, ge::DataType &attr_value) const;
+  graphStatus GetAttr(const AscendString &name, AttrValue &attr_value) const;
 
-  graphStatus SetAttr(const ge::AscendString &name, int64_t &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, int32_t &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, uint32_t &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, float &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, ge::AscendString &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, bool &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, Tensor &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<int64_t> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<int32_t> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<uint32_t> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<float> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<ge::AscendString> &attr_values) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<bool> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<Tensor> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, OpBytes &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<std::vector<int64_t>> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, std::vector<ge::DataType> &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, ge::DataType &attr_value) const;
-  graphStatus SetAttr(const ge::AscendString &name, AttrValue &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, int64_t &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, int32_t &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, uint32_t &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, float &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, AscendString &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, bool &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, Tensor &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<int64_t> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<int32_t> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<uint32_t> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<float> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<AscendString> &attr_values) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<bool> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<Tensor> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, OpBytes &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<std::vector<int64_t>> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, std::vector<ge::DataType> &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, ge::DataType &attr_value) const;
+  graphStatus SetAttr(const AscendString &name, AttrValue &attr_value) const;
 
-  bool HasAttr(const ge::AscendString &name);
+  bool HasAttr(const AscendString &name);
 
   graphStatus GetSubgraph(uint32_t index, GraphPtr &graph) const;
 

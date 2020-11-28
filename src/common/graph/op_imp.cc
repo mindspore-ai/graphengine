@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <functional>
+#include <algorithm>
 #include <vector>
 #include "debug/ge_log.h"
 #include "debug/ge_util.h"

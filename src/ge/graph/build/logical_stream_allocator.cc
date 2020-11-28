@@ -363,13 +363,10 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
     }
   }
 
-  // Update stream id for nodes belong to skipped engine subgraph
-  GE_CHK_STATUS_RET(UpdateForSkippedEngine(graph, subgraphs));
-
   return SUCCESS;
 }
 
-int64_t NodeStreamUpdatePass::GetSingleInoutStream(const NodePtr &node) const {
+int64_t UpdateForSkippedEnginePass::GetSingleInoutStream(const NodePtr &node) const {
   set<int64_t> stream_ids;
 
   for (const auto &in_node : node->GetInAllNodes()) {
@@ -398,8 +395,7 @@ int64_t NodeStreamUpdatePass::GetSingleInoutStream(const NodePtr &node) const {
   return kInvalidStream;
 }
 
-Status NodeStreamUpdatePass::UpdateForSkippedEngine(const ComputeGraphPtr &graph,
-                                                    const vector<SubgraphPtr> &subgraphs) {
+Status UpdateForSkippedEnginePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &subgraphs, Context &context) {
   set<OpDescPtr> ops_without_label;
 
   // Check if subgraph is engine skipped and without stream label or not
@@ -441,7 +437,7 @@ Status NodeStreamUpdatePass::UpdateForSkippedEngine(const ComputeGraphPtr &graph
   return SUCCESS;
 }
 
-bool NodeStreamUpdatePass::AreAllPredStreamsInvalid(const NodePtr &node) const {
+bool UpdateForSkippedEnginePass::AreAllPredStreamsInvalid(const NodePtr &node) const {
   for (const auto &pre_node : node->GetInAllNodes()) {
     auto pre_node_desc = pre_node->GetOpDesc();
     if (pre_node_desc != nullptr) {
@@ -599,10 +595,10 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
     return status;
   }
 
-  GELOGI("Subgraphs of graph %s:", graph->GetName().c_str());
+  GELOGD("Subgraphs of graph %s:", graph->GetName().c_str());
   for (const auto &subgraph : subgraphs) {
     if (subgraph != nullptr) {
-      GELOGI("subgraph: %s", subgraph->name.c_str());
+      GELOGD("subgraph: %s", subgraph->name.c_str());
     }
   }
 
@@ -651,12 +647,14 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
   if (context_.enable_single_stream) {
     passes.emplace_back(MakeShared<SingleStreamPass>());
     passes.emplace_back(MakeShared<NodeStreamUpdatePass>());
+    passes.emplace_back(MakeShared<UpdateForSkippedEnginePass>());
   } else {
     passes.emplace_back(MakeShared<AssignByLabelPass>());
     passes.emplace_back(MakeShared<IndependentStreamPass>());
     passes.emplace_back(MakeShared<AssignByDependencyPass>());
     passes.emplace_back(MakeShared<NodeStreamUpdatePass>());
     passes.emplace_back(MakeShared<AllReduceParallelPass>());
+    passes.emplace_back(MakeShared<UpdateForSkippedEnginePass>());
   }
 
   for (auto &pass : passes) {
@@ -664,9 +662,9 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
 
     Status status = pass->Run(graph, subgraphs, context_);
     if (status == SUCCESS) {
-      GELOGI("Stream pass %s return SUCCESS.", pass->GetName().c_str());
+      GELOGD("Stream pass %s return SUCCESS.", pass->GetName().c_str());
     } else if (status == NOT_CHANGED) {
-      GELOGI("Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
+      GELOGD("Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
     } else {
       GELOGE(status, "Stream pass %s failed.", pass->GetName().c_str());
       return status;

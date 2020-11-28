@@ -37,6 +37,16 @@ const uint32_t kSubgraphIndex = 0U;
 const uint32_t kVarOutputIndex = 0U;
 const uint32_t kAlignment = 32;
 const int kBytes = 8;
+const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
+
+bool IsGraphUnknown(ComputeGraph &graph) {
+  for (const auto &node : graph.GetDirectNode()) {
+    bool is_unknown_shape = false;
+    (void)AttrUtils::GetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);
+    return is_unknown_shape;
+  }
+  return false;
+}
 
 int64_t CalcVarSizeInBytes(const GeTensorDesc &desc) {
   int64_t var_size = 0;
@@ -525,7 +535,7 @@ Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGrap
 
     auto subgraph = NodeUtils::GetSubgraph(*node, kSubgraphIndex);
     GE_CHECK_NOTNULL(subgraph);
-    bool is_unknown_shape = subgraph->GetGraphUnknownFlag();
+    bool is_unknown_shape = IsGraphUnknown(*subgraph);
     if (!is_unknown_shape) {
       merged_graph->AddNode(node);
       GELOGD("[%s] Known shape partitioned call added to merged graph.", op_desc->GetName().c_str());
@@ -567,7 +577,7 @@ Status HybridModelBuilder::UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph
     if (sub_op_type == PARTITIONEDCALL) {
       auto sub_sub_graph = NodeUtils::GetSubgraph(*sub_node, kSubgraphIndex);
       GE_CHECK_NOTNULL(sub_sub_graph);
-      if (sub_sub_graph->GetGraphUnknownFlag()) {
+      if (IsGraphUnknown(*sub_sub_graph)) {
         GE_CHK_STATUS_RET(UnfoldSubgraph(root_graph, parent_graph, *sub_sub_graph), "[%s] Failed to merge subgraph",
                           sub_sub_graph->GetName().c_str());
         continue;
@@ -647,7 +657,7 @@ Status HybridModelBuilder::LoadGraph() {
       continue;
     }
 
-    if (sub_graph->GetGraphUnknownFlag()) {
+    if (IsGraphUnknown(*sub_graph)) {
       GE_CHK_STATUS_RET(LoadDynamicSubgraph(*sub_graph, false), "Failed to load subgraph: [%s]",
                         sub_graph->GetName().c_str());
     } else {
@@ -885,7 +895,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
       continue;
     }
 
-    bool is_unknown_shape = sub_graph->GetGraphUnknownFlag();
+    bool is_unknown_shape = IsGraphUnknown(*sub_graph);
     if (!is_unknown_shape) {
       GE_CHK_STATUS_RET_NOLOG(LoadGeModel(*sub_graph, ge_model));
       continue;

@@ -619,7 +619,7 @@ OpDescPtr OpDescUtils::CreateConstOp(const GeTensorPtr &tensor_ptr) {
   const_opdesc->SetType(CONSTANT);
 
   thread_local int64_t const_count = 0;
-  const_opdesc->SetName("dynamic_const_" + std::to_string(GetTid()) + "_" + std::to_string(const_count));
+  const_opdesc->SetName("dynamic_const_" + std::to_string(GeLog::GetTid()) + "_" + std::to_string(const_count));
   GELOGI("add const op: %s", const_opdesc->GetName().c_str());
   ++const_count;
 

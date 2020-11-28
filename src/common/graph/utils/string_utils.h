@@ -18,6 +18,7 @@
 #define COMMON_GRAPH_UTILS_STRING_UTILS_H_
 
 #include <algorithm>
+#include <cctype>
 #include <functional>
 #include <sstream>
 #include <string>

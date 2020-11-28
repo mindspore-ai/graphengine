@@ -60,7 +60,8 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   {
     std::lock_guard<std::mutex> lk(mu_);
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
-    GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndType(node_item.node), "Invoke InferShapeAndType failed.");
+    GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndTypeForRunning(node_item.node, true),
+                      "Invoke InferShapeAndType failed.");
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] End");
   }
   // Check again to make sure shape is valid after shape inference

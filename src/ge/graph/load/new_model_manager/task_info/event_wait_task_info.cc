@@ -32,15 +32,13 @@ Status EventWaitTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davi
     return ret;
   }
 
-  if (task_def.event_id() >= davinci_model->EventNum()) {
-    GELOGE(INTERNAL_ERROR, "event_list_ size = %u cur =%u!", davinci_model->EventNum(), task_def.event_id());
+  const auto &eventList = davinci_model->GetEventList();
+  if (task_def.event_id() >= eventList.size()) {
+    GELOGE(INTERNAL_ERROR, "event list size:%zu, cur:%u!", eventList.size(), task_def.event_id());
     return INTERNAL_ERROR;
   }
 
-  if (!davinci_model->GetEventList().empty()) {
-    event_ = davinci_model->GetEventList()[task_def.event_id()];
-  }
-
+  event_ = eventList[task_def.event_id()];
   event_type_ = task_def.event_ex().event_type();
 
   return SUCCESS;

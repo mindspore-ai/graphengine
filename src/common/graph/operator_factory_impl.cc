@@ -20,18 +20,27 @@
 
 namespace ge {
 shared_ptr<std::map<string, OpCreator>> OperatorFactoryImpl::operator_creators_;
+shared_ptr<std::map<string, OpCreatorV2>> OperatorFactoryImpl::operator_creators_v2_;
 shared_ptr<std::map<string, InferShapeFunc>> OperatorFactoryImpl::operator_infershape_funcs_;
 shared_ptr<std::map<string, InferFormatFunc>> OperatorFactoryImpl::operator_inferformat_funcs_;
 shared_ptr<std::map<string, VerifyFunc>> OperatorFactoryImpl::operator_verify_funcs_;
 shared_ptr<std::map<string, InferDataSliceFunc>> OperatorFactoryImpl::operator_infer_data_slice_funcs_;
 
 Operator OperatorFactoryImpl::CreateOperator(const std::string &operator_name, const std::string &operator_type) {
+  if (operator_creators_v2_ != nullptr) {
+    auto it_v2 = operator_creators_v2_->find(operator_type);
+    if (it_v2 != operator_creators_v2_->end()) {
+      return it_v2->second(operator_name.c_str());
+    } else {
+      GELOGW("No OpProto of [%s] registered by AscendString.", operator_type.c_str());
+    }
+  }
   if (operator_creators_ == nullptr) {
     return Operator();
   }
   auto it = operator_creators_->find(operator_type);
   if (it == operator_creators_->end()) {
-    GELOGW("no OpProto of [%s] registered", operator_type.c_str());
+    GELOGW("no OpProto of [%s] registered by string.", operator_type.c_str());
     return Operator();
   }
   return it->second(operator_name);
@@ -39,6 +48,15 @@ Operator OperatorFactoryImpl::CreateOperator(const std::string &operator_name, c
 
 graphStatus OperatorFactoryImpl::GetOpsTypeList(std::vector<std::string> &all_ops) {
   all_ops.clear();
+  if (operator_creators_v2_ != nullptr) {
+    for (auto it_v2 = operator_creators_v2_->begin(); it_v2 != operator_creators_v2_->end(); ++it_v2) {
+      all_ops.emplace_back(it_v2->first);
+    }
+    return GRAPH_SUCCESS;
+  } else {
+    GELOGW("Ops not registered by AscendString.");
+  }
+
   if (operator_creators_ != nullptr) {
     for (auto it = operator_creators_->begin(); it != operator_creators_->end(); ++it) {
       all_ops.emplace_back(it->first);
@@ -51,6 +69,13 @@ graphStatus OperatorFactoryImpl::GetOpsTypeList(std::vector<std::string> &all_op
 }
 
 bool OperatorFactoryImpl::IsExistOp(const string &operator_type) {
+  if (operator_creators_v2_ != nullptr) {
+    auto it_v2 = operator_creators_v2_->find(operator_type);
+    if (it_v2 != operator_creators_v2_->end()) {
+      return true;
+    }
+  }
+
   if (operator_creators_ == nullptr) {
     return false;
   }
@@ -115,6 +140,18 @@ graphStatus OperatorFactoryImpl::RegisterOperatorCreator(const string &operator_
     return GRAPH_FAILED;
   }
   (void)operator_creators_->emplace(operator_type, op_creator);
+  return GRAPH_SUCCESS;
+}
+
+graphStatus OperatorFactoryImpl::RegisterOperatorCreator(const string &operator_type, OpCreatorV2 const &op_creator) {
+  if (operator_creators_v2_ == nullptr) {
+    operator_creators_v2_.reset(new (std::nothrow) std::map<string, OpCreatorV2>());
+  }
+  auto it = operator_creators_v2_->find(operator_type);
+  if (it != operator_creators_v2_->end()) {
+    return GRAPH_FAILED;
+  }
+  (void)operator_creators_v2_->emplace(operator_type, op_creator);
   return GRAPH_SUCCESS;
 }
 

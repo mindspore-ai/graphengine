@@ -68,7 +68,7 @@ TaskGenerator::TaskGenerator(uint8_t *var_mem_base, uint64_t var_mem_size) {
 TaskGenerator::~TaskGenerator() {}
 
 Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t session_id, RunContext &run_context) {
-  GELOGI("Begin to Get TaskInfo. session_id=%lu", session_id);
+  GELOGD("Begin to Get TaskInfo. session_id=%lu", session_id);
   // Check params
   if (graph == nullptr) {
     GELOGE(PARAM_INVALID, "GetTaskInfo param graph is null. session_id=%lu", session_id);
@@ -120,7 +120,7 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
     return ret;
   }
 
-  GELOGI("Get TaskInfo success. session_id=%lu", session_id);
+  GELOGD("Get TaskInfo success. session_id=%lu", session_id);
   return SUCCESS;
 }
 
@@ -232,7 +232,7 @@ Status TaskGenerator::SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion
       }
     }
   }
-  GELOGI("Fusion: get fusion group numbers [%zu].", fusion_nodes.size());
+  GELOGD("Fusion: get fusion group numbers [%zu].", fusion_nodes.size());
   return SUCCESS;
 }
 
@@ -573,7 +573,7 @@ Status TaskGenerator::MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_
       continuous_op_lists.back().emplace_back(op_desc);
     }
   }
-  GELOGI("Number of continuous node lists is %zu.", continuous_op_lists.size());
+  GELOGD("Number of continuous node lists is %zu.", continuous_op_lists.size());
 
   for (const auto &continuous_ops : continuous_op_lists) {
     map<string, std::pair<OpDescPtr, OpDescPtr>> first_and_last_ops;
@@ -841,13 +841,12 @@ Status TaskGenerator::GetFpBpIndex(const ComputeGraphPtr &graph, ProfilingPoint 
 
 Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                                              vector<uint32_t> &all_reduce_nodes) const {
-  GELOGI("Start FindProfilingTaskIndex.");
   GE_CHECK_NOTNULL(graph);
   const char *profiling_mode = std::getenv(kProfilingMode);
   bool is_profiling = (profiling_mode != nullptr) || ProfilingManager::Instance().ProfilingOn() ||
                       ProfilingManager::Instance().ProfilingTrainingTraceOn();
   if (!is_profiling) {
-    GELOGW("Profiling is not open.");
+    GELOGD("Profiling is not open.");
     return SUCCESS;
   }
 

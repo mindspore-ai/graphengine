@@ -33,7 +33,7 @@ Status LabelAllocator::AssignFunctionalLabels() {
   }
 
   // Add label task for sub graph.
-  GELOGI("AssignFunctionalLabels start: %s.", compute_graph_->GetName().c_str());
+  GELOGD("AssignFunctionalLabels start: %s.", compute_graph_->GetName().c_str());
   std::set<NodePtr> functional_nodes;
   for (auto graph : compute_graph_->GetAllSubgraphs()) {
     if (!CollectFunctionalNode(graph, functional_nodes)) {

@@ -52,9 +52,11 @@ void CsaInteract::Init(int32_t dev_index, int64_t job_id) {
   if (!is_init_) {
     dev_index_ = dev_index;
     job_id_ = job_id;
-    char *file_dir_env = std::getenv(FMK_STATUS_FILE_DIR_ENV);
+
+    char file_dir_env[MMPA_MAX_PATH] = {0x00};
+    INT32 res = mmGetEnv(FMK_STATUS_FILE_DIR_ENV, file_dir_env, MMPA_MAX_PATH);
     string csa_path_prefix;
-    if (file_dir_env != nullptr) {
+    if (res == EN_OK) {
       csa_path_prefix = file_dir_env;
     }
     if (!csa_path_prefix.empty()) {
@@ -186,21 +188,21 @@ Status CsaInteract::WriteHcomDetection(const std::string &content) {
 ///
 Status CsaInteract::WriteFile(const std::string &file_name, const std::string &content) {
   // if file path is not exist, then make path
-  INT32 flags = O_WRONLY | O_TRUNC | O_CREAT;
-  int32_t fd = mmOpen2(file_name.c_str(), flags, M_IRUSR | M_IWUSR | S_IRGRP);
+  INT32 flags = M_WRONLY | O_TRUNC | M_CREAT;
+  int32_t fd = mmOpen2(file_name.c_str(), flags, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD);
   if (fd == EN_ERROR) {
     if (MakePath(file_name) != SUCCESS) {
       GELOGE(INTERNAL_ERROR, "csainteract create file path fail, errno is %d", errno);
       return INTERNAL_ERROR;
     }
-    fd = mmOpen2(file_name.c_str(), flags, M_IRUSR | M_IWUSR | S_IRGRP);
+    fd = mmOpen2(file_name.c_str(), flags, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD);
     if (fd == EN_ERROR) {
       GELOGE(INTERNAL_ERROR, "open file fail, errno is %d", errno);
       return INTERNAL_ERROR;
     }
   }
 
-  ssize_t ret = write(fd, content.c_str(), content.length());
+  mmSsize_t ret = mmWrite(fd, (void *)content.c_str(), content.length());
   if (ret == EN_ERROR) {
     GELOGE(INTERNAL_ERROR, "write file fail, errno is %d", errno);
     ret = mmClose(fd);
@@ -239,7 +241,7 @@ Status CsaInteract::MakePath(const std::string &file_name) {
   while (found != std::string::npos) {
     std::string pre_path = file_path.substr(0, found + 1);
     if (mmAccess(pre_path.c_str()) != EN_OK) {
-      if (mmMkdir(pre_path.c_str(), S_IRWXU) != EN_OK) {
+      if (mmMkdir(pre_path.c_str(), M_IRWXU) != EN_OK) {
         GELOGE(INTERNAL_ERROR, "csainteract mkdir fail, errno is %d", errno);
         return INTERNAL_ERROR;
       }

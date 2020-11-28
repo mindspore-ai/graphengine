@@ -32,7 +32,8 @@ Debug::~Debug() = default;
 
 void Debug::DumpProto(const Message &proto, const char *file) {
   std::string file_path = RealPath(file);
-  int fd = open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  int fd =
+    mmOpen2(file_path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD | M_UMASK_OTHREAD);
   if (fd == -1) {
     GELOGW("Write %s failed", file_path.c_str());
     return;
@@ -40,7 +41,7 @@ void Debug::DumpProto(const Message &proto, const char *file) {
   auto output = ge::MakeShared<FileOutputStream>(fd);
   if (output == nullptr) {
     GELOGW("create output failed.");
-    if (close(fd) != 0) {
+    if (mmClose(fd) != 0) {
       GELOGW("close fd failed.");
     }
     return;
@@ -49,7 +50,7 @@ void Debug::DumpProto(const Message &proto, const char *file) {
   if (!ret) {
     GELOGW("dump proto failed.");
   }
-  if (close(fd) != 0) {
+  if (mmClose(fd) != 0) {
     GELOGW("close fd failed.");
   }
 }

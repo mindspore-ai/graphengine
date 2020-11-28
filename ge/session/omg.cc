@@ -95,8 +95,8 @@ static void ParseAtcParms(const std::map<std::string, std::string> &atc_params, 
   }
 }
 
-static Status CheckInputShapeNode(const ComputeGraphPtr &graph, const bool is_dynamic_input) {
-  if (!is_dynamic_input) {
+static Status CheckInputShapeNode(const ComputeGraphPtr &graph, const bool is_dynamic_input, RunMode run_mode) {
+  if (!is_dynamic_input && run_mode != MODEL_TO_JSON) {
     for (auto node : graph->GetDirectNode()) {
       if (node->GetType() == DATA) {
         auto data_op_desc = node->GetOpDesc();
@@ -793,7 +793,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_RETURN_IF_ERROR(CheckInputFp16Nodes(compute_graph, input_fp16_nodes, is_input_adjust_hw_layout));
 
-  GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph, is_dynamic_input));
+  GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph, is_dynamic_input, run_mode));
 
   std::string compress_weight_conf;
   ParseAtcParms(atc_params, "compress_weight_conf", compress_weight_conf);
@@ -999,7 +999,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType 
   ErrorManager::GetInstance().ATCReportErrMessage(
       "E10001", {"parameter", "value", "reason"},
       {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow) 5(Onnx)"});
-  GELOGE(PARAM_INVALID, "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow) " 
+  GELOGE(PARAM_INVALID, "Input parameter[--framework] is mandatory and it's value must be: 0(Caffe) 3(TensorFlow) "
          "or 5(Onnx).");
   return PARAM_INVALID;
 }

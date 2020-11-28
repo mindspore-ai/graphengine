@@ -2335,11 +2335,12 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::AfterMergePasses::"
                                                            "EndOfSequenceAddControlPass",
                                                            new (std::nothrow) EndOfSequenceAddControlPass))
-  // SubgraphPass solves memory_assign_conflicts by insert MemcpyAsync node, which depends on multi attrs and
-  // graph-structure. So try not to add new pass after SubgraphPass.
+  // 'SubgraphPass' solves memory_assign_conflicts by insert MemcpyAsync node, which depends on multi attrs and
+  // graph-structure. Passes after 'SubgraphPass' MUST NOT remove MemcpyAsync/Identity nodes in subgraphs.
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::SubgraphPass",
                                                            new (std::nothrow) SubgraphPass))
-  // AttachStreamLabelPass modifies attr without changing structure of compute_graph
+  // 'AttachStreamLabelPass' modifies attr without changing structure of compute_graph
+  // All passes after 'AttachStreamLabelPass' MUST mark stream_label on new nodes by self.
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::AttachStreamLabelPass",
                                                            new (std::nothrow) AttachStreamLabelPass))
 

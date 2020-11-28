@@ -115,7 +115,7 @@ target_link_libraries(ge_common PRIVATE
     slog
     -Wl,--as-needed
     json
-    -lrt
+    $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
     -ldl
 )
 

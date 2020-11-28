@@ -82,8 +82,9 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_common
 
-LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2 -Dgoogle=ascend_private
+
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 else
@@ -109,10 +110,11 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf \
     libc_sec \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES += libmmpa
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -123,8 +125,9 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_common
 
-LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2  -Dgoogle=ascend_private
+
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 else
@@ -150,10 +153,11 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf \
     libc_sec \
     libslog \
-    libmmpa \
     libgraph \
     libregister \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES += libmmpa
 
 ifeq ($(device_os),android)
 LOCAL_LDFLAGS += -ldl
@@ -169,8 +173,9 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_common
 
-LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2  -Dgoogle=ascend_private
+
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 endif
@@ -211,8 +216,9 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_common
 
-LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP
+LOCAL_CFLAGS += -Werror -DFMK_SUPPORT_DUMP -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2  -Dgoogle=ascend_private
+
 ifeq ($(DEBUG), 1)
     LOCAL_CFLAGS += -g -O0
 endif

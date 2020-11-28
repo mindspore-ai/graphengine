@@ -44,7 +44,7 @@ class AicpuNodeTaskBase : public NodeTask {
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
 
  protected:
-  virtual Status InitExtInfo(const std::string &kernel_ext_info);
+  virtual Status InitExtInfo(const std::string &kernel_ext_info, int64_t session_id);
 
   virtual Status UpdateExtInfo();
 

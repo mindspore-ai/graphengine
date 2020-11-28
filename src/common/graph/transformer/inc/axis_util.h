@@ -63,6 +63,30 @@ const int32_t AXIS_C1HWNCoC0_DIM_N = 3;
 const int32_t AXIS_C1HWNCoC0_DIM_Co = 4;
 const int32_t AXIS_C1HWNCoC0_DIM_C0 = 5;
 
+const int32_t NDHWC_DIM_N = 0;
+const int32_t NDHWC_DIM_D = 1;
+const int32_t NDHWC_DIM_H = 2;
+const int32_t NDHWC_DIM_W = 3;
+const int32_t NDHWC_DIM_C = 4;
+
+const int32_t NCDHW_DIM_N = 0;
+const int32_t NCDHW_DIM_C = 1;
+const int32_t NCDHW_DIM_D = 2;
+const int32_t NCDHW_DIM_H = 3;
+const int32_t NCDHW_DIM_W = 4;
+
+const int32_t DHWCN_DIM_D = 0;
+const int32_t DHWCN_DIM_H = 1;
+const int32_t DHWCN_DIM_W = 2;
+const int32_t DHWCN_DIM_C = 3;
+const int32_t DHWCN_DIM_N = 4;
+
+const int32_t DHWNC_DIM_D = 0;
+const int32_t DHWNC_DIM_H = 1;
+const int32_t DHWNC_DIM_W = 2;
+const int32_t DHWNC_DIM_N = 3;
+const int32_t DHWNC_DIM_C = 4;
+
 #define CHECK_NOTNULL(val)                                                  \
   do {                                                                      \
     if ((val) == nullptr) {                                                 \
@@ -134,6 +158,17 @@ class AxisUtil {
   static bool GetAxisValueByC1HWNCoC0(const std::vector<int64_t>& originalDimVec, const uint32_t& c0,
                                       std::vector<int64_t>& axisValue, std::vector<int64_t>& ndValue);
 
+  static bool GetAxisValueByNDHWC(const std::vector<int64_t>& original_dim_vec, const uint32_t& c0,
+                                  std::vector<int64_t>& axis_value, std::vector<int64_t>& nd_value);
+
+  static bool GetAxisValueByNCDHW(const std::vector<int64_t>& original_dim_vec, const uint32_t& c0,
+                                  std::vector<int64_t>& axis_value, std::vector<int64_t>& nd_value);
+
+  static bool GetAxisValueByDHWCN(const std::vector<int64_t>& original_dim_vec, const uint32_t& c0,
+                                  std::vector<int64_t>& axis_value, std::vector<int64_t>& nd_value);
+
+  static bool GetAxisValueByDHWNC(const std::vector<int64_t>& original_dim_vec, const uint32_t& c0,
+                                  std::vector<int64_t>& axis_value, std::vector<int64_t>& nd_value);
   /* map of GetAxisValueInfoByFormat, get axis value by different original
    * formats. */
   std::map<ge::Format, GetAxisValueInfoByFormatPtr> getAxisValueFuncMap;

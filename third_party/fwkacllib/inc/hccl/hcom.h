@@ -96,7 +96,22 @@ extern HcclResult hcom_all_gather(const char *tag, void *inputPtr, void *outputP
  */
 extern HcclResult hcom_all_reduce(const char *tag, void *inputPtr, void *outputPtr, u64 count,
                                   HcclDataType dataType, HcclReduceOp op, const char *group, rtStream_t stream);
-
+/**
+ * @brief reduce operator.
+ *
+ * @param tag A string identifying the tag of the operator.
+ * @param inputPtr A pointer identifying the input data address of the operator.
+ * @param outputPtr A pointer identifying the output data address of the operator.
+ * @param count An integer(u64) identifying the number of the output data.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
+ * @param root An integer(u32) identifying the the root rank in the operator.
+ * @param group A string identifying the group name of ranks participating in the operator.
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult 
+ */
+extern HcclResult hcom_reduce(const char *tag, void *inputPtr, void *outputPtr, u64 count, HcclDataType dataType,
+                       HcclReduceOp op, u32 root, const char *group, rtStream_t stream);
 /**
  * @brief Broadcast operator.
  *

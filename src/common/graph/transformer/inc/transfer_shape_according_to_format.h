@@ -89,6 +89,9 @@ class ShapeTransferAccordingToFormat {
   bool GetShapeAccordingToFormat(ShapeAndFormat &inputAndOutputInfo, int64_t *c = nullptr);
 
   /* ----------Below is the function of getting new shape---------------------- */
+  static bool GetNDC1HWC0ShapeByAxisValue(vector<int64_t> &new_shape, const int64_t &impl_type,
+                                          const std::vector<int64_t> &axis_value, const vector<int64_t> &nd_value);
+
   static bool GetNCHWShapeByAxisValue(vector<int64_t> &newShape, const int64_t &implType,
                                       const vector<int64_t> &axisValue, const vector<int64_t> &ndValue);
 

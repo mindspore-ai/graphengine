@@ -245,7 +245,7 @@ AiCpuBaseTask::~AiCpuBaseTask() {
   }
 }
 
-Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info) {
+Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint64_t kernel_id) {
   if (kernel_ext_info.empty()) {
     GELOGI("Kernel_ext_info is empty, no need copy to device.");
     return SUCCESS;
@@ -266,9 +266,11 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info) {
     return ret;
   }
 
-  GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, kernel_ext_info.size(), RT_MEMORY_HBM));
-  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, kernel_ext_info.size(), kernel_ext_info.data(), kernel_ext_info.size(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateSessionInfo(ULLONG_MAX, kernel_id, false), "UpdateSessionInfo failed.");
+
+  GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), RT_MEMORY_HBM));
+  GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), aicpu_ext_handle_->GetExtInfo(),
+                         aicpu_ext_handle_->GetExtInfoLen(), RT_MEMCPY_HOST_TO_DEVICE));
   return SUCCESS;
 }
 
@@ -668,8 +670,8 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
                                        static_cast<const void *>(kernel_name_.data()), block_dim_, args_.get(),
                                        static_cast<uint32_t>(arg_size_), sm_desc, stream, dump_flag_);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
-    return RT_FAILED;
+    GELOGE(ret, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
+    return ret;
   }
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
 

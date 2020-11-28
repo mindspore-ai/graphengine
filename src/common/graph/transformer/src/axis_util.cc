@@ -32,7 +32,11 @@ AxisUtil::AxisUtil() {
                          {FORMAT_NC1HWC0, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByNC1HWC0)},
                          {FORMAT_HWCN, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByHWCN)},
                          {FORMAT_ND, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByND)},
-                         {FORMAT_C1HWNCoC0, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByC1HWNCoC0)}};
+                         {FORMAT_C1HWNCoC0, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByC1HWNCoC0)},
+                         {FORMAT_NDHWC, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByNDHWC)},
+                         {FORMAT_NCDHW, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByNCDHW)},
+                         {FORMAT_DHWCN, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByDHWCN)},
+                         {FORMAT_DHWNC, std::make_shared<GetAxisValueInfoByFormat>(GetAxisValueByDHWNC)}};
 }
 
 int64_t DivisionCeiling(int64_t dividend, int64_t divisor) {
@@ -105,8 +109,9 @@ bool AxisUtil::GetAxisValueByNCHW(const vector<int64_t> &originalDimVec, const u
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NCHW to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
-        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
+  // TODO: temporarily modified to warning level.If modified normally, it needs complementary dimension for origin shape
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGW("[WARNING]Parameter is invalid!"),
+        return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_NCHW_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_NCHW_DIM_C];
@@ -123,8 +128,9 @@ bool AxisUtil::GetAxisValueByNHWC(const vector<int64_t> &originalDimVec, const u
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NHWC to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
-        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
+  // TODO: temporarily modified to warning level.If modified normally, it needs complementary dimension for origin shape
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGW("[WARNING]Parameter is invalid!"),
+        return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_NHWC_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_NHWC_DIM_C];
@@ -165,8 +171,10 @@ bool AxisUtil::GetAxisValueByHWCN(const vector<int64_t> &originalDimVec, const u
   CHECK(originalDimVec.empty(), GELOGI("Original dim vector is empty!"), return true);
   /* C0 Must be set for case ND or 2D-NHWC to NZ */
   axisValue[AXIS_C0] = c0;
-  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true,
-        GELOGE(GRAPH_FAILED, "[ERROR]Parameter is invalid!"), return false);
+  // TODO: temporarily modified to warning level. If modified normally, it needs complementary dimension for origin
+  // shape
+  CHECK(CheckParams(originalDimVec, c0, axisValue, ndValue) != true, GELOGW("[WARNING]Parameter is invalid!"),
+        return false);
 
   axisValue[AXIS_N] = originalDimVec[AXIS_HWCN_DIM_N];
   axisValue[AXIS_C] = originalDimVec[AXIS_HWCN_DIM_C];
@@ -192,6 +200,90 @@ bool AxisUtil::GetAxisValueByC1HWNCoC0(const vector<int64_t> &originalDimVec, co
   axisValue[AXIS_W] = originalDimVec[AXIS_C1HWNCoC0_DIM_W];
   axisValue[AXIS_C1] = originalDimVec[AXIS_C1HWNCoC0_DIM_C1];
   axisValue[AXIS_Co] = originalDimVec[AXIS_C1HWNCoC0_DIM_Co];
+  return true;
+}
+
+bool AxisUtil::GetAxisValueByNDHWC(const std::vector<int64_t> &original_dim_vec, const uint32_t &c0,
+                                   std::vector<int64_t> &axis_value, std::vector<int64_t> &nd_value) {
+  CHECK(axis_value.empty(), GELOGI("AxisValue is empty!"), return true);
+  CHECK(original_dim_vec.empty(), GELOGI("Original dim vector is empty!"), return true);
+
+  axis_value[AXIS_C0] = c0;
+  nd_value = original_dim_vec;
+
+  axis_value[AXIS_N] = original_dim_vec[NDHWC_DIM_N];
+  int64_t axis_c_val = original_dim_vec[NDHWC_DIM_C];
+
+  axis_value[AXIS_C] = axis_c_val;
+  axis_value[AXIS_H] = original_dim_vec[NDHWC_DIM_H];
+  axis_value[AXIS_W] = original_dim_vec[NDHWC_DIM_W];
+  axis_value[AXIS_C1] = DivisionCeiling(axis_c_val, c0);
+  axis_value[AXIS_C0] = c0;
+  axis_value[AXIS_Co] = c0;
+  axis_value[AXIS_D] = original_dim_vec[NDHWC_DIM_D];
+  return true;
+}
+
+bool AxisUtil::GetAxisValueByNCDHW(const std::vector<int64_t> &original_dim_vec, const uint32_t &c0,
+                                   std::vector<int64_t> &axis_value, std::vector<int64_t> &nd_value) {
+  CHECK(axis_value.empty(), GELOGI("AxisValue is empty!"), return true);
+  CHECK(original_dim_vec.empty(), GELOGI("Original dim vector is empty!"), return true);
+
+  axis_value[AXIS_C0] = c0;
+  nd_value = original_dim_vec;
+
+  axis_value[AXIS_N] = original_dim_vec[NCDHW_DIM_N];
+  int64_t axis_c_val = original_dim_vec[NCDHW_DIM_C];
+
+  axis_value[AXIS_C] = axis_c_val;
+  axis_value[AXIS_H] = original_dim_vec[NCDHW_DIM_H];
+  axis_value[AXIS_W] = original_dim_vec[NCDHW_DIM_W];
+  axis_value[AXIS_C1] = DivisionCeiling(axis_c_val, c0);
+  axis_value[AXIS_C0] = c0;
+  axis_value[AXIS_Co] = c0;
+  axis_value[AXIS_D] = original_dim_vec[NCDHW_DIM_D];
+  return true;
+}
+
+bool AxisUtil::GetAxisValueByDHWCN(const std::vector<int64_t> &original_dim_vec, const uint32_t &c0,
+                                   std::vector<int64_t> &axis_value, std::vector<int64_t> &nd_value) {
+  CHECK(axis_value.empty(), GELOGI("AxisValue is empty!"), return true);
+  CHECK(original_dim_vec.empty(), GELOGI("Original dim vector is empty!"), return true);
+
+  axis_value[AXIS_C0] = c0;
+  nd_value = original_dim_vec;
+
+  axis_value[AXIS_N] = original_dim_vec[DHWCN_DIM_N];
+  int64_t axis_c_val = original_dim_vec[DHWCN_DIM_C];
+
+  axis_value[AXIS_C] = axis_c_val;
+  axis_value[AXIS_H] = original_dim_vec[DHWCN_DIM_H];
+  axis_value[AXIS_W] = original_dim_vec[DHWCN_DIM_W];
+  axis_value[AXIS_C1] = DivisionCeiling(axis_c_val, c0);
+  axis_value[AXIS_C0] = c0;
+  axis_value[AXIS_Co] = c0;
+  axis_value[AXIS_D] = original_dim_vec[DHWCN_DIM_D];
+  return true;
+}
+
+bool AxisUtil::GetAxisValueByDHWNC(const std::vector<int64_t> &original_dim_vec, const uint32_t &c0,
+                                   std::vector<int64_t> &axis_value, std::vector<int64_t> &nd_value) {
+  CHECK(axis_value.empty(), GELOGI("AxisValue is empty!"), return true);
+  CHECK(original_dim_vec.empty(), GELOGI("Original dim vector is empty!"), return true);
+
+  axis_value[AXIS_C0] = c0;
+  nd_value = original_dim_vec;
+
+  axis_value[AXIS_N] = original_dim_vec[DHWNC_DIM_N];
+  int64_t axis_c_val = original_dim_vec[DHWNC_DIM_C];
+
+  axis_value[AXIS_C] = axis_c_val;
+  axis_value[AXIS_H] = original_dim_vec[DHWNC_DIM_H];
+  axis_value[AXIS_W] = original_dim_vec[DHWNC_DIM_W];
+  axis_value[AXIS_C1] = DivisionCeiling(axis_c_val, c0);
+  axis_value[AXIS_C0] = c0;
+  axis_value[AXIS_Co] = c0;
+  axis_value[AXIS_D] = original_dim_vec[DHWNC_DIM_D];
   return true;
 }
 }  // namespace transformer

@@ -729,7 +729,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ComputeGraph::InsertE
 graphStatus ComputeGraph::DFSTopologicalSorting(std::vector<NodePtr> &node_vec,
                                                 std::map<NodePtr, uint32_t> &map_in_edge_num,
                                                 std::vector<NodePtr> &stack, bool reverse) {
-  GELOGI("Runing_Dfs_Sort: %s", name_.c_str());
+  GELOGD("Runing_Dfs_Sort: %s", name_.c_str());
   // Record the number of non data nodes but no input nodes
   GE_CHK_BOOL_EXEC(SortNodes(stack, map_in_edge_num) == GRAPH_SUCCESS, return GRAPH_FAILED, "sort nodes failed");
   std::vector<NodePtr> out_nodes;
@@ -1031,7 +1031,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool ComputeGraph::IsValid() cons
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ComputeGraph::Dump() const {
   GELOGI("graph name = %s.", GetName().c_str());
   for (const auto &node : GetAllNodes()) {
-    GELOGI("node name = %s.", node->GetName().c_str());
+    GELOGD("node name = %s.", node->GetName().c_str());
     for (const auto &anchor : node->GetAllOutDataAnchors()) {
       for (const auto &peer_in_anchor : anchor->GetPeerInDataAnchors()) {
         GE_IF_BOOL_EXEC(peer_in_anchor != nullptr && peer_in_anchor->GetOwnerNode() != nullptr,

@@ -17,7 +17,6 @@
 #ifndef GE_COMMON_GE_TBE_PLUGIN_MANAGER_H_
 #define GE_COMMON_GE_TBE_PLUGIN_MANAGER_H_
 
-#include <dlfcn.h>
 #include <functional>
 #include <iostream>
 #include <map>

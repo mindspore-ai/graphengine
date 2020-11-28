@@ -22,10 +22,10 @@
 
 namespace ge {
 bool NodeShapeTransUtils::CatchFormatAndShape() {
-  inputs_ = op_desc_->GetAllInputName();
-  outputs_ = op_desc_->GetAllOutputName();
+  auto inputs = op_desc_->MutableAllInputName();
+  auto outputs = op_desc_->MutableAllOutputName();
 
-  for (auto &ele : inputs_) {
+  for (auto &ele : inputs) {
     auto tensor_desc_input = op_desc_->MutableInputDesc(ele.first);
     if (tensor_desc_input == nullptr) {
       continue;
@@ -45,7 +45,7 @@ bool NodeShapeTransUtils::CatchFormatAndShape() {
     tensor_desc_input->SetShape(tensor_desc_input->GetOriginShape());
   }
 
-  for (auto &ele : outputs_) {
+  for (auto &ele : outputs) {
     auto tensor_desc_output = op_desc_->MutableOutputDesc(ele.first);
     if (tensor_desc_output == nullptr) {
       continue;
@@ -72,7 +72,10 @@ bool NodeShapeTransUtils::CatchFormatAndShape() {
 }
 
 bool NodeShapeTransUtils::UpdateFormatAndShape() {
-  for (auto &ele : inputs_) {
+  auto inputs = op_desc_->MutableAllInputName();
+  auto outputs = op_desc_->MutableAllOutputName();
+
+  for (auto &ele : inputs) {
     auto tensor_desc_input = op_desc_->MutableInputDesc(ele.first);
     if (tensor_desc_input == nullptr) {
       continue;
@@ -107,7 +110,7 @@ bool NodeShapeTransUtils::UpdateFormatAndShape() {
     tensor_desc_input->SetShape(GeShape(out_dims));
   }
 
-  for (auto &ele : outputs_) {
+  for (auto &ele : outputs) {
     auto tensor_desc_output = op_desc_->MutableOutputDesc(ele.first);
     if (tensor_desc_output == nullptr) {
       continue;

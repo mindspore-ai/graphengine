@@ -35,4 +35,14 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrValue::AttrValue() { impl = C
 ATTR_VALUE_SET_GET_IMP(AttrValue::STR)
 ATTR_VALUE_SET_GET_IMP(AttrValue::INT)
 ATTR_VALUE_SET_GET_IMP(AttrValue::FLOAT)
+
+graphStatus AttrValue::GetValue(AscendString &val) {
+  std::string val_get;
+  auto status = GetValue(val_get);
+  if (status != GRAPH_SUCCESS) {
+    return status;
+  }
+  val = AscendString(val_get.c_str());
+  return GRAPH_SUCCESS;
+}
 }  // namespace ge

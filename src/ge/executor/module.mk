@@ -63,6 +63,7 @@ local_ge_executor_src_files :=  \
     ../single_op/task/aicpu_kernel_task_builder.cc \
     ../hybrid/hybrid_davinci_model_stub.cc\
     ../hybrid/node_executor/aicpu/aicpu_ext_info.cc \
+    ../graph/common/local_context.cc \
 
 local_ge_executor_c_include :=             \
     proto/insert_op.proto                  \
@@ -104,7 +105,7 @@ local_ge_executor_ldflags := -lrt -ldl     \
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -O2 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 
 LOCAL_SRC_FILES := $(local_ge_executor_src_files)
@@ -130,7 +131,7 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
@@ -166,7 +167,7 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0
@@ -199,7 +200,7 @@ include $(BUILD_HOST_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := libge_executor
-LOCAL_CFLAGS += -Werror
+LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DDAVINCI_SUPPORT_PROFILING -Dgoogle=ascend_private
 ifeq ($(DEBUG), 1)
 LOCAL_CFLAGS += -g -O0

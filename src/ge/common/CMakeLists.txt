@@ -90,6 +90,9 @@ target_compile_definitions(ge_common PUBLIC
         PROTOBUF_INLINE_NOT_IN_HEADERS=0
         HOST_VISIBILITY
         OS_CENTOS)
+target_compile_options(ge_common PRIVATE
+        -Werror
+        -Wno-deprecated-declarations)
 target_link_libraries(ge_common
         graph
         ${PROTOBUF_LIBRARY}

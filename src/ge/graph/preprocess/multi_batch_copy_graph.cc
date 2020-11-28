@@ -40,6 +40,7 @@
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
 #include "graph/common/local_context.h"
+#include "graph/common/omg_util.h"
 
 using std::set;
 using std::string;
@@ -49,14 +50,22 @@ namespace ge {
 namespace multibatch {
 namespace {
 const char *const kMbatchSwitchnName = "mbatch-switch-name";
+const char *const kGetNextName = "IteratorV2";
 const int kSwitchNDataIndex = 0;
 const int kSwitchNPredIndex = 1;
 const int kDataOutIndex = 0;
 const int kDataInIndex = 0;
 const int kMergeDataOutIndex = 0;
 const int kStaticOutput = -1;
+const int kDivisionConst = 2;
 
 inline bool IsDataLikeType(const std::string &node_type) { return (node_type == DATA) || (node_type == AIPP); }
+
+inline bool IsGetNextType(const NodePtr &node) {
+  std::string original_type;
+  GE_IF_BOOL_EXEC(GetOriginalType(node, original_type) != SUCCESS, GELOGW("Get original type failed"); return false);
+  return (original_type == kGetNextName);
+}
 
 NodePtr InsertMergeNodeToGraph(const std::string &name, size_t input_num, const ComputeGraphPtr &graph) {
   OpDescPtr desc = MakeShared<OpDesc>();
@@ -179,29 +188,6 @@ bool IsOnlyOutputToAipp(const NodePtr &node) {
   }
   return true;
 }
-
-Status CheckDataShape(const std::vector<NodePtr> &nodes) {
-  size_t unknown_shape_count = 0;
-  for (const auto &node : nodes) {
-    if (node->GetType() != DATA) {
-      continue;
-    }
-    for (auto dim : NodeUtils::GetOutputDesc(*node, kDataOutIndex).GetShape().GetDims()) {
-      if (dim < 0) {
-        unknown_shape_count++;
-        break;
-      }
-    }
-  }
-  if (unknown_shape_count == 0) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10040");
-    GELOGE(PARAM_INVALID,
-           "Need unknow shape data when user set --dynamic_batch_size, --dynamic_image_size or --dynamic_dims");
-    return PARAM_INVALID;
-  }
-
-  return SUCCESS;
-}
 }  // namespace
 
 Status MultiBatchGraphCopyer::CopyGraph() {
@@ -257,15 +243,55 @@ Status MultiBatchGraphCopyer::Init() {
     if (IsDataLikeType(node->GetType())) {
       origin_data_nodes_.emplace_back(node);
     }
+    if (!GetLocalOmgContext().dynamic_node_type.empty() && IsGetNextType(node)) {
+      origin_data_nodes_.emplace_back(node);
+    }
   }
   return SUCCESS;
 }
 
-Status MultiBatchGraphCopyer::LabelStatus() {
+void MultiBatchGraphCopyer::LabelStatusForData(const NodePtr &data) {
+  auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
+  GELOGI("Label status for %s, shape_dims is %s.", data->GetName().c_str(),
+         formats::JoinToString(data_shape.GetDims()).c_str());
+  if (!IsAllDimsPositive(data_shape.GetDims())) {
+    origin_nodes_status_[data.get()] = kNodeInBatchBranch;
+  }
+}
+
+void MultiBatchGraphCopyer::LabelStatusForGetNextSink(const NodePtr &data) {
+  auto op_desc = data->GetOpDesc();
+  GELOGI("Out count of %s is %zu.", data->GetName().c_str(), op_desc->GetOutputsSize());
+  size_t data_count = op_desc->GetOutputsSize() / kDivisionConst;
+  for (size_t i = 0; i < data_count; ++i) {
+    GeTensorDesc output_desc = op_desc->GetOutputDesc(i);
+    GELOGD("The %zu data shape from getnext sink is %s.", i,
+           formats::JoinToString(output_desc.GetShape().GetDims()).c_str());
+    const auto &out_data_anchor = data->GetOutDataAnchor(i);
+    if (out_data_anchor == nullptr) {
+      continue;
+    }
+    size_t reference_times = out_data_anchor->GetPeerInDataAnchors().size();
+    GELOGD("The %zu data has %zu referenced times.", i, reference_times);
+    getnext_sink_dynamic_out_mapping_.emplace_back(std::make_pair(i, reference_times));
+    if (!IsAllDimsPositive(output_desc.GetShape().GetDims())) {
+      getnext_sink_dynamic_dims_ = true;
+    }
+  }
+
+  if (getnext_sink_dynamic_dims_) {
+    origin_nodes_status_[data.get()] = kNodeInBatchBranch;
+  }
+}
+
+Status MultiBatchGraphCopyer::LabelInBatchBranchStatus() {
+  GELOGD("Start label in batch branch status.");
   for (const auto &data : origin_data_nodes_) {
-    auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
-    if (!IsAllDimsPositive(data_shape.GetDims())) {
-      origin_nodes_status_[data.get()] = kNodeInBatchBranch;
+    auto op_desc = data->GetOpDesc();
+    GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(PARAM_INVALID, "Op desc is nullptr."); return PARAM_INVALID);
+    LabelStatusForData(data);
+    if (!GetLocalOmgContext().dynamic_node_type.empty()) {
+      LabelStatusForGetNextSink(data);
     }
   }
   bool changed = true;
@@ -288,6 +314,14 @@ Status MultiBatchGraphCopyer::LabelStatus() {
       }
     }
   }
+  return SUCCESS;
+}
+
+Status MultiBatchGraphCopyer::LabelStatus() {
+  if (LabelInBatchBranchStatus() != SUCCESS) {
+    GELOGE(PARAM_INVALID, "Failed to label no in batch branch");
+    return PARAM_INVALID;
+  }
 
   for (const auto &node : origin_all_nodes_) {
     if (!(node->GetOpDesc()->GetSubgraphInstanceNames().empty())) {
@@ -298,13 +332,24 @@ Status MultiBatchGraphCopyer::LabelStatus() {
       origin_nodes_status_[node.get()] = kNodeOutBatchBranch;
       continue;
     }
-    if (IsDataLikeType(node->GetType())) {
-      if (IsOnlyOutputToAipp(node)) {
-        origin_nodes_status_[node.get()] = kNodeOutBatchBranch;
-      } else {
-        origin_nodes_status_[node.get()] = kNodeStartNode;
+    if (GetLocalOmgContext().dynamic_node_type.empty()) {
+      if (IsDataLikeType(node->GetType())) {
+        if (IsOnlyOutputToAipp(node)) {
+          origin_nodes_status_[node.get()] = kNodeOutBatchBranch;
+        } else {
+          origin_nodes_status_[node.get()] = kNodeStartNode;
+        }
+        continue;
       }
-      continue;
+    } else {
+      if (IsDataLikeType(node->GetType())) {
+        origin_nodes_status_[node.get()] = kNodeStartNode;
+        continue;
+      }
+      if (IsGetNextType(node)) {
+        origin_nodes_status_[node.get()] = kNodeStartNode;
+        continue;
+      }
     }
     if (origin_nodes_status_.find(node.get()) == origin_nodes_status_.end()) {
       origin_nodes_status_[node.get()] = kNodeOutBatchBranch;
@@ -317,49 +362,52 @@ Status MultiBatchGraphCopyer::CheckAndParseDynamicData() {
   size_t unknown_shape_count = 0;
   auto data_name_and_shape = GetLocalOmgContext().user_input_dims;
   GELOGD("raw data_name_and_shape size: %zu", data_name_and_shape.size());
-  for (const auto &node : origin_all_nodes_) {
-    auto data_desc = NodeUtils::GetOutputDesc(*node, kDataOutIndex);
-    auto data_shape = data_desc.GetShape();
-    auto data_format = data_desc.GetFormat() == Format::FORMAT_NCHW
-                         ? "NCHW"
-                         : data_desc.GetFormat() == Format::FORMAT_NHWC ? "NHWC" : "Others";
-
-    auto data_name = node->GetName();
-    auto branch_status = GetNodeStatus(node);
-    if (branch_status != kNodeStartNode) {
-      continue;
-    }
-    if (IsAllDimsPositive(data_shape.GetDims())) {
-      continue;
-    }
-    ++unknown_shape_count;
-    auto iter = find(data_name_order_.begin(), data_name_order_.end(), data_name);
-    if (iter == data_name_order_.end()) {
-      if (dynamic_type_ == DynamicType::kDynamicBatch) {
-        auto ret = CheckDynamicBatchShape(data_shape.GetDims(), data_name);
-        if (!ret) {
-          return PARAM_INVALID;
-        }
-      } else if (dynamic_type_ == DynamicType::kDynamicImageSize) {
-        auto ret = CheckDynamicImageSizeShape(data_shape.GetDims(), data_name, data_format);
-        if (!ret) {
-          return PARAM_INVALID;
-        }
-      } else if (dynamic_type_ == DynamicType::kDynamicDims) {
-        ErrorManager::GetInstance().ATCReportErrMessage(
-          "E10001", {"parameter", "reason"}, {"--input_shape", "all dynamic data must be set in --input_shape"});
-        GELOGE(INTERNAL_ERROR, "data: %s shape:%s must be set int --input_shape", node->GetName().c_str(),
-               data_shape.ToString().c_str());
-        return INTERNAL_ERROR;
+  if (!getnext_sink_dynamic_dims_) {
+    for (const auto &node : origin_all_nodes_) {
+      auto data_desc = NodeUtils::GetOutputDesc(*node, kDataOutIndex);
+      auto data_shape = data_desc.GetShape();
+      auto data_format = data_desc.GetFormat() == Format::FORMAT_NCHW
+                           ? "NCHW"
+                           : data_desc.GetFormat() == Format::FORMAT_NHWC ? "NHWC" : "Others";
+      auto data_name = node->GetName();
+      auto branch_status = GetNodeStatus(node);
+      if (branch_status != kNodeStartNode) {
+        continue;
       }
-      data_name_and_shape.emplace_back(data_name, data_shape.GetDims());
+      GELOGI("CheckAndParseDynamicData shape_dims is %s.", formats::JoinToString(data_shape.GetDims()).c_str());
+      if (IsAllDimsPositive(data_shape.GetDims())) {
+        continue;
+      }
+
+      std::vector<int64_t> data_shape_dims = data_shape.GetDims();
+      ++unknown_shape_count;
+      auto iter = find(data_name_order_.begin(), data_name_order_.end(), data_name);
+      if (iter == data_name_order_.end()) {
+        if (dynamic_type_ == DynamicType::kDynamicBatch) {
+          auto ret = CheckDynamicBatchShape(data_shape_dims, data_name);
+          GE_IF_BOOL_EXEC(ret == false,
+                          GELOGE(PARAM_INVALID, "Failed to check dynamic batch shape of %s.", data_name.c_str());
+                          return PARAM_INVALID);
+        } else if (dynamic_type_ == DynamicType::kDynamicImageSize) {
+          auto ret = CheckDynamicImageSizeShape(data_shape_dims, data_name, data_format);
+          GE_IF_BOOL_EXEC(ret == false,
+                          GELOGE(PARAM_INVALID, "Failed to check dynamic image size shape of %s.", data_name.c_str());
+                          return PARAM_INVALID);
+        } else if (dynamic_type_ == DynamicType::kDynamicDims) {
+          ErrorManager::GetInstance().ATCReportErrMessage(
+            "E10001", {"parameter", "reason"}, {"--input_shape", "all dynamic data must be set in --input_shape"});
+          GELOGE(INTERNAL_ERROR, "data: %s shape:%s must be set int --input_shape", node->GetName().c_str(),
+                 data_shape.ToString().c_str());
+          return INTERNAL_ERROR;
+        }
+        GELOGI("Data shape of %s is %s", data_name.c_str(), formats::JoinToString(data_shape_dims).c_str());
+        data_name_and_shape.emplace_back(data_name, data_shape_dims);
+      }
     }
   }
   auto ret = ParserDataToDynmaicInfo(shapes_, data_name_and_shape, data_to_dynamic_info_);
-  if (ret != SUCCESS) {
-    return ret;
-  }
-  if (unknown_shape_count == 0) {
+  GE_CHK_STATUS_RET(ret, "Failed to parse data to dynamic info.");
+  if (!getnext_sink_dynamic_dims_ && unknown_shape_count == 0) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10040");
     GELOGE(PARAM_INVALID,
            "Need unknow shape data when user set --dynamic_batch_size, --dynamic_image_size or --dynamic_dims");
@@ -369,13 +417,17 @@ Status MultiBatchGraphCopyer::CheckAndParseDynamicData() {
 }
 
 Status MultiBatchGraphCopyer::CreateNewNodes() {
-  shape_data_ = InsertShapeDataNode();
-  if (shape_data_ == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Failed to create the shape data node for muti-batch");
-    return INTERNAL_ERROR;
+  if (!getnext_sink_dynamic_dims_) {
+    shape_data_ = InsertShapeDataNode();
+  } else {
+    shape_data_ = InsertGetDynamicDimsNode();
   }
+  GE_IF_BOOL_EXEC(shape_data_ == nullptr, GELOGE(INTERNAL_ERROR, "Failed to create the shape node for multi batch");
+                  return INTERNAL_ERROR);
+  GE_CHECK_NOTNULL(shape_data_->GetOpDesc());
 
   for (const auto &node : origin_all_nodes_) {
+    GE_CHECK_NOTNULL(node->GetOpDesc());
     auto node_type = node->GetType();
     Status ret = INTERNAL_ERROR;
     auto branch_status = GetNodeStatus(node);
@@ -383,10 +435,7 @@ Status MultiBatchGraphCopyer::CreateNewNodes() {
     switch (branch_status) {
       case kNodeStartNode:
         GELOGD("Name: %s, type: %s, status: kNodeStartNode.", node->GetName().c_str(), node->GetType().c_str());
-        ret = InsertSwitchNForData(node);
-        if (ret == SUCCESS) {
-          ret = UpdateMaxShapeToData(node);
-        }
+        ret = InsertSwitchNAndUpdateMaxShape(node);
         break;
       case kNodeInBatchBranch:
         GELOGD("Name: %s, type: %s, status: kNodeInBatchBranch.", node->GetName().c_str(), node->GetType().c_str());
@@ -395,6 +444,9 @@ Status MultiBatchGraphCopyer::CreateNewNodes() {
       case kNodeOutBatchBranch:
         GELOGD("Name: %s, type: %s, status: kNodeOutBatchBranch.", node->GetName().c_str(), node->GetType().c_str());
         ret = InsertMergeForEdgeNode(node);
+        if (ret == SUCCESS) {
+          ret = LinkGetDynamicDimsToNetOutput(node);
+        }
         break;
       case kNodeNotSupportNode:
         GELOGD("Name: %s, type: %s, status: kNodeNotSupportNode.", node->GetName().c_str(), node->GetType().c_str());
@@ -441,7 +493,58 @@ NodePtr MultiBatchGraphCopyer::InsertMergeNode(const NodePtr &node, int index) {
   GELOGI("Create merge node %s for node %s index %d", merge_node_name.c_str(), node->GetName().c_str(), index);
   return merge_node;
 }
+
+NodePtr MultiBatchGraphCopyer::FindSwitchnNodeForDataEdge(const OutDataAnchorPtr &data_out_anchor,
+                                                          const NodePtr &origin_node) {
+  auto data_node = data_out_anchor->GetOwnerNode();
+  GELOGD("Start find switchn node insert between %s and %s", data_node->GetName().c_str(),
+         origin_node->GetName().c_str());
+  NodePtr switchn = nullptr;
+  if (!getnext_sink_dynamic_dims_ && data_nodes_to_switchn_.count(data_node.get()) > 0) {
+    switchn = data_nodes_to_switchn_[data_node.get()];
+    return switchn;
+  }
+  bool is_getnext_sink_data = false;
+  for (size_t i = 0; i < getnext_nodes_to_switchn_.size(); ++i) {
+    for (size_t j = 0; j < getnext_nodes_to_switchn_.at(i).size(); ++j) {
+      if (getnext_nodes_to_switchn_.at(i).at(j).first == data_node.get()) {
+        is_getnext_sink_data = true;
+        break;
+      }
+    }
+  }
+  // get output_idx of origin_node(getnext)
+  if (is_getnext_sink_data) {
+    auto output_idx = data_out_anchor->GetIdx();
+    size_t referenced_index = 0;
+    GELOGI("The output idx %zu has %zu referenced nums.", output_idx, data_out_anchor->GetPeerInDataAnchors().size());
+    for (const auto &peer_in_anchor : data_out_anchor->GetPeerInDataAnchors()) {
+      if (peer_in_anchor->GetOwnerNode()->GetOpDesc() == nullptr) {
+        GELOGE(INTERNAL_ERROR, "Op desc should not be nullptr.");
+        return nullptr;
+      }
+      if (getnext_nodes_to_switchn_.at(output_idx).empty()) {
+        GELOGI("Output idx %zu of %s is static output.", output_idx, data_node->GetName().c_str());
+        return nullptr;
+      }
+      if (output_idx >= static_cast<int>(getnext_nodes_to_switchn_.size()) ||
+          referenced_index >= getnext_nodes_to_switchn_.at(output_idx).size()) {
+        GELOGE(INTERNAL_ERROR, "Output idx is %zu, referenced index is %zu", output_idx, referenced_index);
+        return nullptr;
+      }
+      if (peer_in_anchor->GetOwnerNode()->GetOpDesc()->GetName() == origin_node->GetName()) {
+        switchn = getnext_nodes_to_switchn_.at(output_idx).at(referenced_index).second;
+        GELOGI("Name of switchn is %s.", switchn->GetName().c_str());
+        return switchn;
+      }
+      referenced_index++;
+    }
+  }
+  return switchn;
+}
+
 Status MultiBatchGraphCopyer::CopyInDataEdges(const NodePtr &origin_node, int batch_num, const NodePtr &copyed_node) {
+  GELOGI("Start copy data edges for %s and %s.", origin_node->GetName().c_str(), copyed_node->GetName().c_str());
   for (auto &in_anchor : origin_node->GetAllInDataAnchors()) {
     auto origin_src_anchor = in_anchor->GetPeerOutAnchor();
     if (origin_src_anchor == nullptr) {
@@ -451,16 +554,15 @@ Status MultiBatchGraphCopyer::CopyInDataEdges(const NodePtr &origin_node, int ba
     auto origin_src_node = origin_src_anchor->GetOwnerNode();
     auto dst_anchor = copyed_node->GetInDataAnchor(in_anchor->GetIdx());
     GE_CHECK_NOTNULL(dst_anchor);
-    auto switchn_iter = data_nodes_to_switchn_.find(origin_src_node.get());
-    if (switchn_iter != data_nodes_to_switchn_.end()) {
-      auto ret = GraphUtils::AddEdge(switchn_iter->second->GetOutDataAnchor(batch_num), dst_anchor);
+    auto switchn = FindSwitchnNodeForDataEdge(origin_src_anchor, origin_node);
+    if (switchn != nullptr) {
+      auto ret = GraphUtils::AddEdge(switchn->GetOutDataAnchor(batch_num), dst_anchor);
       if (ret != GRAPH_SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Failed to add data edge between %s(%d) to %s(%d), error-code %u",
-               switchn_iter->second->GetName().c_str(), batch_num, copyed_node->GetName().c_str(), in_anchor->GetIdx(),
-               ret);
+               switchn->GetName().c_str(), batch_num, copyed_node->GetName().c_str(), in_anchor->GetIdx(), ret);
         return INTERNAL_ERROR;
       }
-      GELOGD("Add data edge from %s(%d) to %s(%d)", switchn_iter->second->GetName().c_str(), batch_num,
+      GELOGD("Add data edge from %s(%d) to %s(%d)", switchn->GetName().c_str(), batch_num,
              copyed_node->GetName().c_str(), in_anchor->GetIdx());
       continue;
     }
@@ -491,7 +593,9 @@ Status MultiBatchGraphCopyer::CopyInDataEdges(const NodePtr &origin_node, int ba
   }
   return SUCCESS;
 }
+
 Status MultiBatchGraphCopyer::CopyInControlEdges(const NodePtr &node, int batch_num, const NodePtr &copyed_node) {
+  GELOGI("Start copy control edge for %s and %s.", node->GetName().c_str(), copyed_node->GetName().c_str());
   for (auto &origin_src_node : node->GetInControlNodes()) {
     auto switchn_iter = data_nodes_to_switchn_.find(origin_src_node.get());
     if (switchn_iter != data_nodes_to_switchn_.end()) {
@@ -531,6 +635,7 @@ Status MultiBatchGraphCopyer::CopyInControlEdges(const NodePtr &node, int batch_
   }
   return SUCCESS;
 }
+
 NodePtr MultiBatchGraphCopyer::InsertShapeDataNode() {
   auto desc = MakeShared<OpDesc>();
   if (desc == nullptr) {
@@ -544,11 +649,8 @@ NodePtr MultiBatchGraphCopyer::InsertShapeDataNode() {
   }
   desc->SetName(node_name);
   desc->SetType(DATA);
-
-  GeTensorDesc tensor_desc;
-  tensor_desc.SetFormat(FORMAT_ND);
-  tensor_desc.SetShape(GeShape({static_cast<int64_t>(shapes_.at(0).size())}));
-  tensor_desc.SetDataType(DT_INT64);
+  // input and output of DATA is gear_info
+  GeTensorDesc tensor_desc(GeShape({static_cast<int64_t>(shapes_.at(0).size())}), FORMAT_ND, DT_INT64);
   auto ret = desc->AddInputDesc(tensor_desc);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
@@ -578,6 +680,66 @@ NodePtr MultiBatchGraphCopyer::InsertShapeDataNode() {
 
   return data_node;
 }
+
+NodePtr MultiBatchGraphCopyer::InsertGetDynamicDimsNode() {
+  GELOGD("Start insert getdynamicdims node to get shape info.");
+  auto desc = MakeShared<OpDesc>();
+  if (desc == nullptr) {
+    GELOGE(OUT_OF_MEMORY, "Failed to create shape data node, out of memory");
+    return nullptr;
+  }
+  string node_name = "ascend_mbatch_get_dynamic_dims_node";
+
+  // Only flush subgraph name
+  if (graph_->GetParentGraph() != nullptr) {
+    node_name = graph_->GetName() + "_" + node_name;
+  }
+
+  desc->SetName(node_name);
+  desc->SetType(GETDYNAMICDIMS);
+
+  // input of GetDynamicDims is shape_of_each_data, output is gear_info
+  for (size_t i = 0; i < GetLocalOmgContext().user_input_dims.size(); ++i) {
+    size_t input_shape_dims = GetLocalOmgContext().user_input_dims.at(i).second.size();
+    if (input_shape_dims == 1 && GetLocalOmgContext().user_input_dims.at(i).second.at(0) == 0) {
+      GeTensorDesc tensor_desc;
+      tensor_desc.SetFormat(FORMAT_ND);
+      tensor_desc.SetDataType(DT_INT64);
+      auto ret = desc->AddInputDesc(tensor_desc);
+      GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
+                      return nullptr);
+      continue;
+    }
+    GeTensorDesc tensor_desc(GeShape({static_cast<int64_t>(input_shape_dims)}), FORMAT_ND, DT_INT64);
+    auto ret = desc->AddInputDesc(tensor_desc);
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
+                    return nullptr);
+  }
+
+  GeTensorDesc tensor_desc(GeShape({static_cast<int64_t>(shapes_.at(0).size())}), FORMAT_ND, DT_INT64);
+  auto ret = desc->AddOutputDesc(tensor_desc);
+  GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add output desc for created data");
+                  return nullptr);
+
+  if (!AttrUtils::SetBool(desc, ATTR_INSERT_BY_MBATCH, true)) {
+    GELOGE(INTERNAL_ERROR, "Failed to add attr for created data");
+    return nullptr;
+  }
+
+  auto data_node = graph_->AddNode(desc);
+  if (data_node == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Failed to add shape data node to graph");
+    return nullptr;
+  }
+  ret = GraphUtils::AppendInputNode(graph_, data_node);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Failed to append data node %s as input to graph", data_node->GetName().c_str());
+    return nullptr;
+  }
+
+  return data_node;
+}
+
 Status MultiBatchGraphCopyer::CheckArguments() {
   if (graph_ == nullptr) {
     GELOGE(PARAM_INVALID, "Failed to copy graph, the graph is null");
@@ -586,6 +748,7 @@ Status MultiBatchGraphCopyer::CheckArguments() {
 
   return CheckDynamicParams(shapes_);
 }
+
 Status MultiBatchGraphCopyer::CheckCopyResult(const std::vector<NodePtr> &start_nodes) {
   for (auto &node : start_nodes) {
     if (IsOnlyOutputToAipp(node)) {
@@ -602,12 +765,24 @@ Status MultiBatchGraphCopyer::CheckCopyResult(const std::vector<NodePtr> &start_
   }
   return SUCCESS;
 }
+
 bool MultiBatchGraphCopyer::IsInBatchBranch(const NodePtr &node) {
-  return (nodes_to_batch_nodes_.count(node.get()) > 0) || (data_nodes_to_switchn_.count(node.get()) > 0);
+  if (!getnext_sink_dynamic_dims_) {
+    return (nodes_to_batch_nodes_.count(node.get()) > 0) || (data_nodes_to_switchn_.count(node.get()) > 0);
+  } else {
+    for (size_t i = 0; i < getnext_nodes_to_switchn_.size(); ++i) {
+      for (size_t j = 0; j < getnext_nodes_to_switchn_.at(i).size(); ++j) {
+        if (getnext_nodes_to_switchn_.at(i).at(j).first == node.get()) {
+          return true;
+        }
+      }
+    }
+    return nodes_to_batch_nodes_.count(node.get()) > 0;
+  }
 }
-Status MultiBatchGraphCopyer::LinkDataToMerge(const NodePtr &data, const NodePtr &merge) {
+
+Status MultiBatchGraphCopyer::LinkDataToMerge(const NodePtr &data, const NodePtr &merge, const NodePtr &switchn) {
   // The caller should make sure that the there is a SwitchN node in the map
-  auto &switchn = data_nodes_to_switchn_[data.get()];
   GELOGI("Link edge between data %s to merge %s throw switchn %s", data->GetName().c_str(), merge->GetName().c_str(),
          switchn->GetName().c_str());
   for (size_t i = 0; i < shapes_.size(); ++i) {
@@ -619,6 +794,7 @@ Status MultiBatchGraphCopyer::LinkDataToMerge(const NodePtr &data, const NodePtr
   }
   return SUCCESS;
 }
+
 Status MultiBatchGraphCopyer::LinkNodeToMerge(const NodePtr &node, int out_index, const NodePtr &merge) {
   auto &copyed_nodes = nodes_to_batch_nodes_[node.get()];
   if (copyed_nodes.size() != shapes_.size()) {
@@ -659,12 +835,84 @@ Status MultiBatchGraphCopyer::LinkNodeToMerge(const NodePtr &node, int out_index
   }
   return SUCCESS;
 }
-Status MultiBatchGraphCopyer::UpdateMaxShapeToData(const NodePtr &data) {
-  auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
-  auto data_name = data->GetName();
-  if (IsAllDimsPositive(data_shape.GetDims())) {
-    return SUCCESS;
+
+Status MultiBatchGraphCopyer::InsertSwitchNAndUpdateMaxShape(const NodePtr &node) {
+  std::vector<std::pair<Node *, NodePtr>> dynamic_out_to_switchn;
+  if (!getnext_sink_dynamic_dims_) {
+    if (InsertSwitchNForData(node, kDataOutIndex, kDataOutIndex, dynamic_out_to_switchn) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Failed to insert switchn for %s.", node->GetName().c_str());
+      return PARAM_INVALID;
+    }
+    if (UpdateMaxShapeToData(node, kDataOutIndex) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "Failed to update max shape of %s.", node->GetName().c_str());
+      return PARAM_INVALID;
+    }
+  } else {
+    if (!IsGetNextType(node)) {
+      GELOGI("No need to insert switchn and update max shape for %s when get sink dynamic.", node->GetName().c_str());
+      return SUCCESS;
+    }
+    for (size_t i = 0; i < getnext_sink_dynamic_out_mapping_.size(); ++i) {
+      dynamic_out_to_switchn.clear();
+      for (size_t j = 0; j < getnext_sink_dynamic_out_mapping_.at(i).second; ++j) {
+        GELOGI("The %zu data_index has %zu referenced nums.", getnext_sink_dynamic_out_mapping_.at(i).first,
+               getnext_sink_dynamic_out_mapping_.at(i).second);
+        if (InsertSwitchNForData(node, getnext_sink_dynamic_out_mapping_.at(i).first, j, dynamic_out_to_switchn) !=
+            SUCCESS) {
+          GELOGE(PARAM_INVALID, "Failed to insert switchn for %s of %zu out anchor when referenced index is %zu",
+                 node->GetName().c_str(), getnext_sink_dynamic_out_mapping_.at(i).first, j);
+          return PARAM_INVALID;
+        }
+      }
+      getnext_nodes_to_switchn_.emplace_back(dynamic_out_to_switchn);
+    }
+
+    for (size_t i = 0; i < getnext_sink_dynamic_out_mapping_.size(); ++i) {
+      if (UpdateMaxShapeToData(node, i) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Failed to update max shape of %zu out anchor", node->GetName().c_str(), i);
+        return PARAM_INVALID;
+      }
+    }
   }
+  return SUCCESS;
+}
+
+Status MultiBatchGraphCopyer::UpdateShapeOfShapeNode(const NodePtr &node, size_t out_anchor_index) {
+  auto data_shape = NodeUtils::GetOutputDesc(*node, out_anchor_index).GetShape();
+  size_t shape_index = out_anchor_index + (node->GetAllOutDataAnchors().size() / kDivisionConst);
+  GeTensorDesc output_desc = node->GetOpDesc()->GetOutputDesc(shape_index);
+  std::vector<int64_t> output_dims = {static_cast<int64_t>(data_shape.GetDims().size())};
+  GeShape output_shape(output_dims);
+  output_desc.SetShape(output_shape);
+  if (node->GetOpDesc()->UpdateOutputDesc(shape_index, output_desc) != SUCCESS) {
+    GELOGE(FAILED, "Update output desc fail.");
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status MultiBatchGraphCopyer::UpdateMaxShapeToData(const NodePtr &node, size_t out_anchor_index) {
+  GELOGD("Start update max shape of %s, %zu output.", node->GetName().c_str(), out_anchor_index);
+  auto data_shape = NodeUtils::GetOutputDesc(*node, out_anchor_index).GetShape();
+  string data_name = node->GetName();
+  if (getnext_sink_dynamic_dims_) {
+    data_name.append("_").append(std::to_string(out_anchor_index));
+  }
+  GELOGD("Update max shape of %s, shape dims is %s.", data_name.c_str(),
+         formats::JoinToString(data_shape.GetDims()).c_str());
+  if (!getnext_sink_dynamic_dims_) {
+    if (IsAllDimsPositive(data_shape.GetDims())) {
+      GELOGD("No need to do anything for static data.");
+      return SUCCESS;
+    }
+  } else {
+    if (IsAllDimsPositive(data_shape.GetDims())) {
+      // need to update shape of Shape_node
+      GE_CHK_STATUS_RET(UpdateShapeOfShapeNode(node, out_anchor_index), "Failed to update shape of shape node");
+      return SUCCESS;
+    }
+  }
+
   size_t max_shape_index = 0;
   int64_t max_size = 0;
   for (size_t i = 0; i < shapes_.size(); ++i) {
@@ -684,53 +932,70 @@ Status MultiBatchGraphCopyer::UpdateMaxShapeToData(const NodePtr &data) {
   }
   // must not be error, the calc result has been checked in function InsertSwitchNForData
   (void)CalcShape(data_to_dynamic_info_.at(data_name).at(max_shape_index), data_shape);
-  auto ret = NodeUtils::UpdateOutputShape(*data, kDataOutIndex, data_shape);
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to update output shape for data %s", data->GetName().c_str());
-    return INTERNAL_ERROR;
+  auto ret = NodeUtils::UpdateOutputShape(*node, out_anchor_index, data_shape);
+  GE_CHK_STATUS_RET(ret, "Failed to update output shape for data %s", node->GetName().c_str());
+  // getnext_sink not has input
+  if (!getnext_sink_dynamic_dims_) {
+    ret = NodeUtils::UpdateInputShape(*node, kDataInIndex, data_shape);
+    GE_CHK_STATUS_RET(ret, "Failed to update input shape for data %s", node->GetName().c_str());
+  } else {
+    // need to update shape of Shape_node when getnext_sink_dynamic
+    GE_CHK_STATUS_RET(UpdateShapeOfShapeNode(node, out_anchor_index), "Failed to update shape of shape node");
   }
-  ret = NodeUtils::UpdateInputShape(*data, kDataInIndex, data_shape);
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to update input shape for data %s", data->GetName().c_str());
-    return INTERNAL_ERROR;
-  }
-  GELOGI("Update the data %s input/output shape to the max %s", data->GetName().c_str(),
+  GELOGI("Update the data %s input/output shape to the max %s", node->GetName().c_str(),
          formats::ShapeToString(data_shape).c_str());
   return SUCCESS;
 }
-Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
-  auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
-  auto data_name = data->GetName();
-  (void)AttrUtils::SetListInt(data->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
+
+Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &node, const size_t &out_anchor_index,
+                                                   const size_t &peer_in_anchor_index,
+                                                   std::vector<std::pair<Node *, NodePtr>> &dynamic_out_to_switchn) {
+  auto data_shape = NodeUtils::GetOutputDesc(*node, out_anchor_index).GetShape();
+  string data_name = node->GetName();
+  if (getnext_sink_dynamic_dims_) {
+    data_name.append("_").append(std::to_string(out_anchor_index));
+  }
+  (void)AttrUtils::SetListInt(node->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
+  GELOGI("Insert switchn node of %s, shape dims is %s.", data_name.c_str(),
+         formats::JoinToString(data_shape.GetDims()).c_str());
   if (IsAllDimsPositive(data_shape.GetDims())) {
-    GELOGI("The shape of data %s are positive(%s), skip the multi batch process", data->GetName().c_str(),
+    GELOGI("The shape of data %s are positive(%s), skip the multi batch process", node->GetName().c_str(),
            data_shape.ToString().c_str());
     return SUCCESS;
   }
 
   auto switchn_desc = MakeShared<OpDesc>();
-  if (switchn_desc == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to create switchn for data %s", data->GetName().c_str());
-    return OUT_OF_MEMORY;
+  GE_IF_BOOL_EXEC(switchn_desc == nullptr,
+                  GELOGE(OUT_OF_MEMORY, "Failed to create switchn for data %s", node->GetName().c_str());
+                  return OUT_OF_MEMORY);
+  string switchn_name = node->GetName() + "_ascend_mbatch_switchn";
+  if (getnext_sink_dynamic_dims_) {
+    switchn_name.append("_")
+      .append(std::to_string(out_anchor_index))
+      .append("_")
+      .append(std::to_string(peer_in_anchor_index));
   }
-  switchn_desc->SetName(data->GetName() + "_ascend_mbatch_switchn");
+  GELOGI("name of switchn is %s.", switchn_name.c_str());
+  switchn_desc->SetName(switchn_name);
   switchn_desc->SetType(SWITCHN);
 
-  GeTensorDesc tensor(NodeUtils::GetOutputDesc(*data, kDataOutIndex));
-  if (switchn_desc->AddInputDesc("data", tensor) != GRAPH_SUCCESS) {  // data
-    return OUT_OF_MEMORY;
-  }
+  GeTensorDesc tensor(NodeUtils::GetOutputDesc(*node, out_anchor_index));
+  GE_IF_BOOL_EXEC(switchn_desc->AddInputDesc("data", tensor) != GRAPH_SUCCESS,
+                  GELOGE(OUT_OF_MEMORY, "Failed to add input tensor desc for %s", switchn_desc->GetName().c_str());
+                  return OUT_OF_MEMORY);
   GeTensorDesc pred_tensor;
-  if (switchn_desc->AddInputDesc("pred_value", pred_tensor) != GRAPH_SUCCESS) {  // pred
-    return OUT_OF_MEMORY;
-  }
+  GE_IF_BOOL_EXEC(switchn_desc->AddInputDesc("pred_value", pred_tensor) != GRAPH_SUCCESS,
+                  GELOGE(OUT_OF_MEMORY, "Failed to add input pred tensor desc for %s", switchn_desc->GetName().c_str());
+                  return OUT_OF_MEMORY);
   std::vector<std::string> input_dims_str;
   for (size_t i = 0; i < shapes_.size(); ++i) {
+    GELOGI("Start clac shape for data %s, batch shape is %s.", data_name.c_str(),
+           formats::JoinToString(data_to_dynamic_info_.at(data_name).at(i)).c_str());
     auto shape = data_shape;
     auto ret = CalcShape(data_to_dynamic_info_.at(data_name).at(i), shape);
     if (ret != SUCCESS) {
       GELOGE(ret, "Failed to calculate the batched shape for data node %s, the shapes may not match",
-             data->GetName().c_str());
+             node->GetName().c_str());
       return ret;
     }
     tensor.SetShape(shape);
@@ -738,7 +1003,7 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
     int64_t tensor_size = 0;
     (void)TensorUtils::GetTensorSizeInBytes(tensor, tensor_size);
     input_str = TypeUtils::FormatToSerialString(tensor.GetFormat()) + ":" +
-                TypeUtils::DataTypeToSerialString(tensor.GetDataType()) + ":" + data->GetName() + ":" +
+                TypeUtils::DataTypeToSerialString(tensor.GetDataType()) + ":" + node->GetName() + ":" +
                 std::to_string(tensor_size) + ":" + std::to_string(tensor.GetShape().GetDimNum()) + ":" +
                 formats::JoinToString(tensor.GetShape().GetDims());
     input_dims_str.emplace_back(input_str);
@@ -751,9 +1016,9 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
       GELOGE(GRAPH_FAILED, "Opdesc AddOutputDesc failed");
       return GRAPH_FAILED;
     }
-    GELOGD("The SwitchN %s output index %zu, shape %s", switchn_desc->GetName().c_str(), i, shape.ToString().c_str());
+    GELOGD("The switchn %s output index %zu, shape %s", switchn_desc->GetName().c_str(), i, shape.ToString().c_str());
   }
-  (void)AttrUtils::SetListStr(data->GetOpDesc(), "_all_origin_gears_inputs", input_dims_str);
+  (void)AttrUtils::SetListStr(node->GetOpDesc(), "_all_origin_gears_inputs", input_dims_str);
   if (!AttrUtils::SetListStr(switchn_desc, ATTR_USER_DESIGNEATE_SHAPE_ORDER, data_name_order_)) {
     GELOGE(INTERNAL_ERROR, "Failed to add user designate shape order attr on switchn node %s",
            switchn_desc->GetName().c_str());
@@ -763,8 +1028,8 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
     GELOGE(INTERNAL_ERROR, "Failed to add insert attr on switchn node %s", switchn_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
-  if (!AttrUtils::SetStr(data->GetOpDesc(), kMbatchSwitchnName, switchn_desc->GetName())) {
-    GELOGE(INTERNAL_ERROR, "Failed to add switchn attr on data node %s", data->GetName().c_str());
+  if (!AttrUtils::SetStr(node->GetOpDesc(), kMbatchSwitchnName, switchn_desc->GetName())) {
+    GELOGE(INTERNAL_ERROR, "Failed to add switchn attr on data node %s", node->GetName().c_str());
     return INTERNAL_ERROR;
   }
   if (StampDynamicType(switchn_desc) != SUCCESS) {
@@ -773,13 +1038,18 @@ Status MultiBatchGraphCopyer::InsertSwitchNForData(const NodePtr &data) {
   }
 
   auto switchn = graph_->AddNode(switchn_desc);
-  if (switchn == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to create switchn %s from desc", switchn_desc->GetName().c_str());
-    return OUT_OF_MEMORY;
+  GE_IF_BOOL_EXEC(switchn == nullptr,
+                  GELOGE(OUT_OF_MEMORY, "Failed to create switchn %s from desc", switchn_desc->GetName().c_str());
+                  return OUT_OF_MEMORY);
+  if (!getnext_sink_dynamic_dims_) {
+    data_nodes_to_switchn_[node.get()] = switchn;
+  } else {
+    dynamic_out_to_switchn.emplace_back(std::make_pair(node.get(), switchn));
+    GELOGD("Insert %s for %s.", switchn->GetName().c_str(), node->GetName().c_str());
   }
-  data_nodes_to_switchn_[data.get()] = switchn;
   return SUCCESS;
 }
+
 Status MultiBatchGraphCopyer::InsertMergeForEdgeNode(const NodePtr &node) {
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     auto src_out_anchor = in_data_anchor->GetPeerOutAnchor();
@@ -809,6 +1079,35 @@ Status MultiBatchGraphCopyer::InsertMergeForEdgeNode(const NodePtr &node) {
 
   return SUCCESS;
 }
+
+Status MultiBatchGraphCopyer::LinkGetDynamicDimsToNetOutput(const NodePtr &node) {
+  if (node->GetType() == NETOUTPUT) {
+    if (!GetLocalOmgContext().dynamic_node_type.empty()) {
+      if (!AttrUtils::SetStr(node->GetOpDesc(), ATTR_ALL_GEARS_INFO, GetLocalOmgContext().dynamic_dims)) {
+        GELOGE(INTERNAL_ERROR, "Failed to set all gears info attr on netoutput %s.", node->GetName().c_str());
+        return INTERNAL_ERROR;
+      }
+    }
+    if (getnext_sink_dynamic_dims_) {
+      size_t input_index = node->GetAllInDataAnchors().size();
+      if (NodeUtils::AppendInputAnchor(node, input_index + 1) != GRAPH_SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "Append input anchor of %s of %zu failed.", node->GetName().c_str(), input_index);
+        return INTERNAL_ERROR;
+      }
+      auto ret =
+        ge::GraphUtils::AddEdge(shape_data_->GetOutDataAnchor(kDataOutIndex), node->GetInDataAnchor(input_index));
+      GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link netoutput %s to getdynamicdims %s",
+                                                   node->GetName().c_str(), shape_data_->GetName().c_str());
+                      return INTERNAL_ERROR);
+      if (!AttrUtils::SetBool(node->GetOpDesc(), ATTR_GETNEXT_SINK_DYNMAIC, true)) {
+        GELOGE(INTERNAL_ERROR, "Failed to set getnext sink dynamic attr on netoutput %s.", node->GetName().c_str());
+        return INTERNAL_ERROR;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 Status MultiBatchGraphCopyer::CopyNodeInBatchBranch(const NodePtr &node) {
   auto &copyed_nodes = nodes_to_batch_nodes_[node.get()];
   for (size_t i = 0; i < shapes_.size(); ++i) {
@@ -823,20 +1122,81 @@ Status MultiBatchGraphCopyer::CopyNodeInBatchBranch(const NodePtr &node) {
   }
   return SUCCESS;
 }
+
+Status MultiBatchGraphCopyer::AddAttrForGetDynamicDims(const NodePtr &node) {
+  GELOGD("Add attr for :%s, type is %s:", shape_data_->GetName().c_str(), shape_data_->GetType().c_str());
+  size_t data_count = node->GetAllOutDataAnchors().size() / kDivisionConst;
+  if (!AttrUtils::SetInt(shape_data_->GetOpDesc(), ATTR_GETNEXT_SINK_DATA_COUNT, data_count)) {
+    GELOGE(INTERNAL_ERROR, "set ATTR_GETNEXT_SINK_DATA_COUNT failed");
+    return INTERNAL_ERROR;
+  }
+  vector<int64_t> shape_info;
+  for (size_t i = 0; i < GetLocalOmgContext().user_input_dims.size(); ++i) {
+    if (GetLocalOmgContext().user_input_dims.at(i).second.size() == 1 &&
+        GetLocalOmgContext().user_input_dims.at(i).second.at(0) == 0) {
+      shape_info.emplace_back(0);
+      continue;
+    }
+    shape_info.emplace_back(GetLocalOmgContext().user_input_dims.at(i).second.size());
+    for (size_t j = 0; j < GetLocalOmgContext().user_input_dims.at(i).second.size(); ++j) {
+      shape_info.emplace_back(GetLocalOmgContext().user_input_dims.at(i).second.at(j));
+    }
+  }
+  if (!AttrUtils::SetListInt(shape_data_->GetOpDesc(), ATTR_GETNEXT_SINK_SHAPE_INFO, shape_info)) {
+    GELOGE(INTERNAL_ERROR, "set ATTR_GETNEXT_SINK_SHAPE_INFO failed");
+    return INTERNAL_ERROR;
+  }
+  return SUCCESS;
+}
+
+Status MultiBatchGraphCopyer::AddLinkForGetDynamicDims(const NodePtr &node) {
+  GELOGD("Start relink out anchor from shape node to getdynamicdims, and delete link between shape node and identity.");
+  size_t input_index = 0;
+  GELOGD("Out count of %s is %zu.", node->GetName().c_str(), node->GetAllOutDataAnchors().size());
+  size_t data_count = node->GetAllOutDataAnchors().size() / kDivisionConst;
+  for (size_t out_index = data_count; out_index < node->GetAllOutDataAnchors().size(); ++out_index, ++input_index) {
+    GELOGI("Start add %s of %zu out_anchor to %s of %zu in_anchor.", node->GetName().c_str(), out_index,
+           shape_data_->GetName().c_str(), input_index);
+    auto out_data_anchor = node->GetOutDataAnchor(out_index);
+    auto ret = GraphUtils::AddEdge(out_data_anchor, shape_data_->GetInDataAnchor(input_index));
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link getnext %s to getdynamicdims %s",
+                                                 node->GetName().c_str(), shape_data_->GetName().c_str());
+                    return INTERNAL_ERROR);
+  }
+  return SUCCESS;
+}
+
 Status MultiBatchGraphCopyer::LinkEdges() {
   Status ret;
   for (const auto &node : origin_all_nodes_) {
-    if (data_nodes_to_switchn_.count(node.get()) > 0) {
-      ret = LinkDataToSwitchN(node);
-      if (ret != SUCCESS) {
-        return ret;
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    if (!getnext_sink_dynamic_dims_) {
+      if (data_nodes_to_switchn_.count(node.get()) > 0) {
+        auto switchn = data_nodes_to_switchn_[node.get()];
+        GE_IF_BOOL_EXEC(switchn == nullptr,
+                        GELOGE(PARAM_INVALID, "Switchn should not be nullptr for %s.", node->GetName().c_str());
+                        return OUT_OF_MEMORY);
+        ret = LinkDataToSwitchN(node, switchn, kDataOutIndex);
+        GE_CHK_STATUS_RET(ret, "Link data to switchn failed.");
+      }
+    } else {
+      if (IsGetNextType(node)) {
+        GELOGD("Start add attr and link edge for %s.", node->GetName().c_str());
+        GE_CHK_STATUS_RET(AddAttrForGetDynamicDims(node), "Failed to add attr for %s.", node->GetName().c_str());
+        GE_CHK_STATUS_RET(AddLinkForGetDynamicDims(node), "Failed to add link for %s.", node->GetName().c_str());
+      }
+      for (size_t i = 0; i < getnext_nodes_to_switchn_.size(); ++i) {
+        for (size_t j = 0; j < getnext_nodes_to_switchn_.at(i).size(); ++j) {
+          if (getnext_nodes_to_switchn_.at(i).at(j).first == node.get()) {
+            auto switchn = getnext_nodes_to_switchn_.at(i).at(j).second;
+            GE_CHK_STATUS_RET(LinkDataToSwitchN(node, switchn, i), "Link %s to %s failed.", node->GetName().c_str(),
+                              switchn->GetName().c_str());
+          }
+        }
       }
     }
     if (nodes_to_merge_nodes_.count(node.get()) > 0) {
-      ret = LinkToMerge(node);
-      if (ret != SUCCESS) {
-        return ret;
-      }
+      GE_CHK_STATUS_RET(LinkToMerge(node), "Link %s to merge failed.", node->GetName().c_str());
     }
     if (nodes_to_batch_nodes_.count(node.get()) > 0) {
       ret = LinkToNodeInBranch(node);
@@ -849,20 +1209,21 @@ Status MultiBatchGraphCopyer::LinkEdges() {
   }
   return SUCCESS;
 }
-Status MultiBatchGraphCopyer::LinkDataToSwitchN(const NodePtr &data) {
-  auto switchn = data_nodes_to_switchn_[data.get()];
+
+Status MultiBatchGraphCopyer::LinkDataToSwitchN(const NodePtr &data, const NodePtr &switchn, const int &out_index) {
   auto ret =
     GraphUtils::AddEdge(shape_data_->GetOutDataAnchor(kDataOutIndex), switchn->GetInDataAnchor(kSwitchNPredIndex));
   GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link shape data %s to switchn %s",
                                                shape_data_->GetName().c_str(), switchn->GetName().c_str());
                   return INTERNAL_ERROR);
 
-  ret = GraphUtils::AddEdge(data->GetOutDataAnchor(kDataOutIndex), switchn->GetInDataAnchor(kSwitchNDataIndex));
+  ret = GraphUtils::AddEdge(data->GetOutDataAnchor(out_index), switchn->GetInDataAnchor(kSwitchNDataIndex));
   GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link data %s to switchn %s",
                                                data->GetName().c_str(), switchn->GetName().c_str());
                   return INTERNAL_ERROR);
   return SUCCESS;
 }
+
 Status MultiBatchGraphCopyer::LinkToMerge(const NodePtr &node) {
   auto &merge_nodes = nodes_to_merge_nodes_[node.get()];
   for (size_t i = 0; i < merge_nodes.size(); ++i) {
@@ -877,10 +1238,27 @@ Status MultiBatchGraphCopyer::LinkToMerge(const NodePtr &node) {
       }
       continue;
     }
-    if (data_nodes_to_switchn_.count(node.get()) > 0) {
-      auto ret = LinkDataToMerge(node, merge_node);
-      if (ret != SUCCESS) {
-        return ret;
+
+    if (!getnext_sink_dynamic_dims_) {
+      if (data_nodes_to_switchn_.count(node.get()) > 0) {
+        auto &switchn = data_nodes_to_switchn_[node.get()];
+        auto ret = LinkDataToMerge(node, merge_node, switchn);
+        if (ret != SUCCESS) {
+          return ret;
+        }
+        continue;
+      }
+    } else {
+      for (size_t j = 0; j < getnext_nodes_to_switchn_.size(); ++j) {
+        for (size_t k = 0; k < getnext_nodes_to_switchn_.at(j).size(); ++k) {
+          if (getnext_nodes_to_switchn_.at(j).at(k).first == node.get()) {
+            auto &switchn = getnext_nodes_to_switchn_.at(j).at(k).second;
+            auto ret = LinkDataToMerge(node, merge_node, switchn);
+            if (ret != SUCCESS) {
+              return ret;
+            }
+          }
+        }
       }
       continue;
     }
@@ -890,7 +1268,9 @@ Status MultiBatchGraphCopyer::LinkToMerge(const NodePtr &node) {
   }
   return SUCCESS;
 }
+
 Status MultiBatchGraphCopyer::LinkToNodeInBranch(const NodePtr &node) {
+  GELOGI("Start LinkToNodeInBranch for %s.", node->GetName().c_str());
   auto &branch_nodes = nodes_to_batch_nodes_[node.get()];
   for (size_t i = 0; i < branch_nodes.size(); ++i) {
     auto ret = CopyInDataEdges(node, i, branch_nodes[i]);
@@ -904,6 +1284,7 @@ Status MultiBatchGraphCopyer::LinkToNodeInBranch(const NodePtr &node) {
   }
   return SUCCESS;
 }
+
 Status MultiBatchGraphCopyer::LinkToNodeOutBranch(const NodePtr &node) {
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     auto src_out_anchor = in_data_anchor->GetPeerOutAnchor();
@@ -1031,18 +1412,41 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
     GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
     return pass_manager.Run(graph);
   }
+  if (!GetLocalOmgContext().need_multi_batch) {
+    GELOGI("No need to process_multi for no_train graph.");
+    return SUCCESS;
+  }
+  std::vector<NodePtr> data_nodes;
+  std::vector<NodePtr> getnext_nosink_nodes;
+  std::vector<NodePtr> getnext_sink_nodes;
+  if (CheckSequenceOfOptions(graph, data_nodes, getnext_nosink_nodes, getnext_sink_nodes) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "[Train_Dynamic] CheckSequenceOfOptions failed.");
+    return PARAM_INVALID;
+  }
+  if (UpdateNameOfInputShape(graph, data_nodes, getnext_nosink_nodes, getnext_sink_nodes) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "[Train_Dynamic] UpdateNameForInputShapeOfOption failed.");
+    return PARAM_INVALID;
+  }
+  if (DeleteIdentityInsertByAdapter(graph) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "DeleteIdentityInsertByAdapter failed.");
+    return PARAM_INVALID;
+  }
 
   std::vector<std::vector<int64_t>> shapes;
   if (!InitDynamicParams(shapes)) {
     GELOGD("There is no multi-batch options, no need to process multi-batch copy");
     return SUCCESS;
   }
+  if (CheckNegativeCountOfOptions(shapes) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "Input_shape and dynamic_dims should set correct params.");
+    return PARAM_INVALID;
+  }
+
   DynamicType dynamic_type = DynamicType::kDynamicUnknown;
   if (!GetLocalOmgContext().dynamic_batch_size.empty()) {
     dynamic_type = DynamicType::kDynamicBatch;
   } else if (!GetLocalOmgContext().dynamic_image_size.empty()) {
     dynamic_type = DynamicType::kDynamicImageSize;
-    ;
   } else if (!GetLocalOmgContext().dynamic_dims.empty()) {
     dynamic_type = DynamicType::kDynamicDims;
   }
@@ -1142,9 +1546,11 @@ void GetDynamicShapeByMerge(const ComputeGraphPtr &graph, const NodePtr &node, s
   GELOGD("Try get dynamic shape info, Graph: %s, Node: %s", graph->GetName().c_str(), node->GetName().c_str());
   const auto &netoutput_desc = node->GetOpDesc();
   const auto &inputnode_to_netoutput = node->GetInAllNodes();
+  GELOGI("Train_Dynamic Find the merge node size is %zu.", inputnode_to_netoutput.size());
   for (size_t i = 0; i < inputnode_to_netoutput.size(); ++i) {
     bool insert_by_mbatch = false;
     (void)AttrUtils::GetBool(inputnode_to_netoutput.at(i)->GetOpDesc(), ATTR_INSERT_BY_MBATCH, insert_by_mbatch);
+    GELOGI("Train_Dynamic type is %s", inputnode_to_netoutput.at(i)->GetType().c_str());
     if (inputnode_to_netoutput.at(i)->GetType() == MERGE && insert_by_mbatch) {
       GELOGI("Find the merge node %s with mbatch attr and the index is %zu",
              inputnode_to_netoutput.at(i)->GetName().c_str(), i);
@@ -1164,6 +1570,10 @@ void GetDynamicShapeByMerge(const ComputeGraphPtr &graph, const NodePtr &node, s
 // Connect NetOutput directly
 void GetDirectOutputShape(const ComputeGraphPtr &graph, const NodePtr &node, const set<size_t> &dynamic_output_index,
                           vector<string> &dynamic_output_dims) {
+  if (!GetLocalOmgContext().dynamic_node_type.empty()) {
+    GELOGD("No need to get directly shape info of %s when train.", node->GetName().c_str());
+    return;
+  }
   GELOGD("Try get directly shape info, Graph: %s, Node: %s", graph->GetName().c_str(), node->GetName().c_str());
   const auto &netoutput_desc = node->GetOpDesc();
   const auto &inputnode_to_netoutput = node->GetInAllNodes();

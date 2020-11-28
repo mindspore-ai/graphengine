@@ -54,144 +54,167 @@ class OpReg {
   OpReg &INFER_SHAPE_AND_TYPE() { return *this; }
 };
 
-#define REG_OP(x)                                                    \
-  namespace op {                                                     \
-  class x : public Operator {                                        \
-    typedef x _THIS_TYPE;                                            \
-                                                                     \
-   public:                                                           \
-    explicit x(const string &name) : Operator(name, #x) { __##x(); } \
-    x() : Operator(#x) { __##x(); }                                  \
-                                                                     \
-   private:                                                          \
-    void __##x() {                                                   \
+#define REG_OP(x)                                                          \
+  namespace op {                                                           \
+  class x : public Operator {                                              \
+    typedef x _THIS_TYPE;                                                  \
+                                                                           \
+   public:                                                                 \
+    ATTRIBUTED_DEPRECATED(x(const AscendString &))                         \
+    explicit x(const string &name) : Operator(name, #x) { __##x(); }       \
+    explicit x(const char *name) : Operator(name, #x) { __##x(); }         \
+    explicit x(const AscendString &name) : Operator(name, #x) { __##x(); } \
+    x() : Operator(#x) { __##x(); }                                        \
+                                                                           \
+   private:                                                                \
+    void __##x() {                                                         \
       OpReg()
 
-#define ATTR(x, Type, ...)                                                  \
-  N();                                                                      \
-  __attr_##x();                                                             \
-  }                                                                         \
-                                                                            \
- public:                                                                    \
-  static const string name_attr_##x() { return #x; }                        \
-  Op##Type get_attr_##x() const {                                           \
-    Op##Type ret = __VA_ARGS__;                                             \
-    if (Operator::GetAttr(#x, ret) == GRAPH_FAILED) {                       \
-      return ret;                                                           \
-    }                                                                       \
-    return ret;                                                             \
-  }                                                                         \
-  _THIS_TYPE &set_attr_##x(const Op##Type &v) {                             \
-    Operator::SetAttr(#x, v);                                               \
-    return *this;                                                           \
-  }                                                                         \
-  _THIS_TYPE &set_attr_##x(const function<Op##Type()> &v) { return *this; } \
-                                                                            \
- private:                                                                   \
-  void __attr_##x() {                                                       \
-    Operator::AttrRegister(#x, Op##Type(__VA_ARGS__));                      \
-    string attr_name(#x);                                                   \
+#define ATTR(x, Type, ...)                                                         \
+  N();                                                                             \
+  __attr_##x();                                                                    \
+  }                                                                                \
+                                                                                   \
+ public:                                                                           \
+  ATTRIBUTED_DEPRECATED(static const void name_attr_##x(AscendString &))           \
+  static const string name_attr_##x() { return #x; }                               \
+  static const void name_attr_##x(AscendString &attr) { attr = AscendString(#x); } \
+  Op##Type get_attr_##x() const {                                                  \
+    Op##Type ret = __VA_ARGS__;                                                    \
+    if (Operator::GetAttr(#x, ret) == GRAPH_FAILED) {                              \
+      return ret;                                                                  \
+    }                                                                              \
+    return ret;                                                                    \
+  }                                                                                \
+  _THIS_TYPE &set_attr_##x(const Op##Type &v) {                                    \
+    Operator::SetAttr(#x, v);                                                      \
+    return *this;                                                                  \
+  }                                                                                \
+  _THIS_TYPE &set_attr_##x(const function<Op##Type()> &v) { return *this; }        \
+                                                                                   \
+ private:                                                                          \
+  void __attr_##x() {                                                              \
+    Operator::AttrRegister(#x, Op##Type(__VA_ARGS__));                             \
+    string attr_name(#x);                                                          \
     (void)OpReg()
 
-#define REQUIRED_ATTR(x, Type)                                              \
-  N();                                                                      \
-  __required_attr_##x();                                                    \
-  }                                                                         \
-                                                                            \
- public:                                                                    \
-  static const string name_attr_##x() { return #x; }                        \
-  Op##Type get_attr_##x() const {                                           \
-    Op##Type ret;                                                           \
-    if (Operator::GetAttr(#x, ret) == GRAPH_FAILED) {                       \
-      return ret;                                                           \
-    }                                                                       \
-    return ret;                                                             \
-  }                                                                         \
-  _THIS_TYPE &set_attr_##x(const Op##Type &v) {                             \
-    Operator::SetAttr(#x, v);                                               \
-    return *this;                                                           \
-  }                                                                         \
-  _THIS_TYPE &set_attr_##x(const function<Op##Type()> &v) { return *this; } \
-                                                                            \
- private:                                                                   \
-  void __required_attr_##x() {                                              \
-    Operator::RequiredAttrRegister(#x);                                     \
-    string attr_name(#x);                                                   \
+#define REQUIRED_ATTR(x, Type)                                                               \
+  N();                                                                                       \
+  __required_attr_##x();                                                                     \
+  }                                                                                          \
+                                                                                             \
+ public:                                                                                     \
+  ATTRIBUTED_DEPRECATED(static const void name_attr_##x(AscendString &))                     \
+  static const string name_attr_##x() { return #x; }                                         \
+  static const void name_attr_##x(AscendString &attr_name) { attr_name = AscendString(#x); } \
+  Op##Type get_attr_##x() const {                                                            \
+    Op##Type ret;                                                                            \
+    if (Operator::GetAttr(#x, ret) == GRAPH_FAILED) {                                        \
+      return ret;                                                                            \
+    }                                                                                        \
+    return ret;                                                                              \
+  }                                                                                          \
+  _THIS_TYPE &set_attr_##x(const Op##Type &v) {                                              \
+    Operator::SetAttr(#x, v);                                                                \
+    return *this;                                                                            \
+  }                                                                                          \
+  _THIS_TYPE &set_attr_##x(const function<Op##Type()> &v) { return *this; }                  \
+                                                                                             \
+ private:                                                                                    \
+  void __required_attr_##x() {                                                               \
+    Operator::RequiredAttrRegister(#x);                                                      \
+    string attr_name(#x);                                                                    \
     (void)OpReg()
 
-#define INPUT(x, t)                                                            \
-  N();                                                                         \
-  __input_##x();                                                               \
-  }                                                                            \
-                                                                               \
- public:                                                                       \
-  static const string name_in_##x() { return #x; }                             \
-  _THIS_TYPE &set_input_##x(Operator &v, const string &srcName) {              \
-    Operator::SetInput(#x, v, srcName);                                        \
-    return *this;                                                              \
-  }                                                                            \
-  _THIS_TYPE &set_input_##x(Operator &v, uint32_t index) {                     \
-    Operator::SetInput(#x, v, index);                                          \
-    return *this;                                                              \
-  }                                                                            \
-  _THIS_TYPE &set_input_##x(Operator &v) {                                     \
-    Operator::SetInput(#x, v);                                                 \
-    return *this;                                                              \
-  }                                                                            \
-  TensorDesc get_input_desc_##x() const { return Operator::GetInputDesc(#x); } \
-  graphStatus update_input_desc_##x(const TensorDesc &tensorDesc) {            \
-    return Operator::UpdateInputDesc(#x, tensorDesc);                          \
-  }                                                                            \
-                                                                               \
- private:                                                                      \
-  void __input_##x() {                                                         \
-    Operator::InputRegister(#x);                                               \
+#define INPUT(x, t)                                                               \
+  N();                                                                            \
+  __input_##x();                                                                  \
+  }                                                                               \
+                                                                                  \
+ public:                                                                          \
+  ATTRIBUTED_DEPRECATED(static const void name_in_##x(AscendString &))            \
+  static const string name_in_##x() { return #x; }                                \
+  static const void name_in_##x(AscendString &name) { name = AscendString(#x); }  \
+  ATTRIBUTED_DEPRECATED(_THIS_TYPE &set_input_##x(Operator &, const char *))      \
+  _THIS_TYPE &set_input_##x(Operator &v, const string &srcName) {                 \
+    Operator::SetInput(#x, v, srcName);                                           \
+    return *this;                                                                 \
+  }                                                                               \
+  _THIS_TYPE &set_input_##x(Operator &v, const char *srcName) {                   \
+    Operator::SetInput(#x, v, srcName);                                           \
+    return *this;                                                                 \
+  }                                                                               \
+  _THIS_TYPE &set_input_##x(Operator &v, uint32_t index) {                        \
+    Operator::SetInput(#x, v, index);                                             \
+    return *this;                                                                 \
+  }                                                                               \
+  _THIS_TYPE &set_input_##x(Operator &v) {                                        \
+    Operator::SetInput(#x, v);                                                    \
+    return *this;                                                                 \
+  }                                                                               \
+  TensorDesc get_input_desc_##x() const { return Operator::GetInputDesc(#x, 0); } \
+  graphStatus update_input_desc_##x(const TensorDesc &tensorDesc) {               \
+    return Operator::UpdateInputDesc(#x, tensorDesc);                             \
+  }                                                                               \
+                                                                                  \
+ private:                                                                         \
+  void __input_##x() {                                                            \
+    Operator::InputRegister(#x);                                                  \
     (void)OpReg()
 
-#define OPTIONAL_INPUT(x, t)                                                   \
-  N();                                                                         \
-  __optional_input_##x();                                                      \
-  }                                                                            \
-                                                                               \
- public:                                                                       \
-  static const string name_in_##x() { return #x; }                             \
-  _THIS_TYPE &set_input_##x(Operator &v) {                                     \
-    Operator::SetInput(#x, v);                                                 \
-    return *this;                                                              \
-  }                                                                            \
-  _THIS_TYPE &set_input_##x(Operator &v, const string &srcName) {              \
-    Operator::SetInput(#x, v, srcName);                                        \
-    return *this;                                                              \
-  }                                                                            \
-  _THIS_TYPE &set_input_##x(Operator &v, uint32_t index) {                     \
-    Operator::SetInput(#x, v, index);                                          \
-    return *this;                                                              \
-  }                                                                            \
-  TensorDesc get_input_desc_##x() const { return Operator::GetInputDesc(#x); } \
-  graphStatus update_input_desc_##x(const TensorDesc &tensorDesc) {            \
-    return Operator::UpdateInputDesc(#x, tensorDesc);                          \
-  }                                                                            \
-                                                                               \
- private:                                                                      \
-  void __optional_input_##x() {                                                \
-    Operator::OptionalInputRegister(#x);                                       \
+#define OPTIONAL_INPUT(x, t)                                                      \
+  N();                                                                            \
+  __optional_input_##x();                                                         \
+  }                                                                               \
+                                                                                  \
+ public:                                                                          \
+  ATTRIBUTED_DEPRECATED(static const void name_in_##x(AscendString &))            \
+  static const string name_in_##x() { return #x; }                                \
+  static const void name_in_##x(AscendString &name) { name = AscendString(#x); }  \
+  _THIS_TYPE &set_input_##x(Operator &v) {                                        \
+    Operator::SetInput(#x, v);                                                    \
+    return *this;                                                                 \
+  }                                                                               \
+  ATTRIBUTED_DEPRECATED(_THIS_TYPE &set_input_##x(Operator &, const char *))      \
+  _THIS_TYPE &set_input_##x(Operator &v, const string &srcName) {                 \
+    Operator::SetInput(#x, v, srcName);                                           \
+    return *this;                                                                 \
+  }                                                                               \
+  _THIS_TYPE &set_input_##x(Operator &v, const char *srcName) {                   \
+    Operator::SetInput(#x, v, srcName);                                           \
+    return *this;                                                                 \
+  }                                                                               \
+  _THIS_TYPE &set_input_##x(Operator &v, uint32_t index) {                        \
+    Operator::SetInput(#x, v, index);                                             \
+    return *this;                                                                 \
+  }                                                                               \
+  TensorDesc get_input_desc_##x() const { return Operator::GetInputDesc(#x, 0); } \
+  graphStatus update_input_desc_##x(const TensorDesc &tensorDesc) {               \
+    return Operator::UpdateInputDesc(#x, tensorDesc);                             \
+  }                                                                               \
+                                                                                  \
+ private:                                                                         \
+  void __optional_input_##x() {                                                   \
+    Operator::OptionalInputRegister(#x);                                          \
     (void)OpReg()
 
-#define OUTPUT(x, t)                                                             \
-  N();                                                                           \
-  __out_##x();                                                                   \
-  }                                                                              \
-                                                                                 \
- public:                                                                         \
-  static const string name_out_##x() { return #x; }                              \
-  TensorDesc get_output_desc_##x() const { return Operator::GetOutputDesc(#x); } \
-  graphStatus update_output_desc_##x(const TensorDesc &tensorDesc) {             \
-    return Operator::UpdateOutputDesc(#x, tensorDesc);                           \
-  }                                                                              \
-                                                                                 \
- private:                                                                        \
-  void __out_##x() {                                                             \
-    Operator::OutputRegister(#x);                                                \
+#define OUTPUT(x, t)                                                                \
+  N();                                                                              \
+  __out_##x();                                                                      \
+  }                                                                                 \
+                                                                                    \
+ public:                                                                            \
+  ATTRIBUTED_DEPRECATED(static const void name_out_##x(AscendString &))             \
+  static const string name_out_##x() { return #x; }                                 \
+  static const void name_out_##x(AscendString &name) { name = AscendString(#x); }   \
+  TensorDesc get_output_desc_##x() const { return Operator::GetOutputDesc(#x, 0); } \
+  graphStatus update_output_desc_##x(const TensorDesc &tensorDesc) {                \
+    return Operator::UpdateOutputDesc(#x, tensorDesc);                              \
+  }                                                                                 \
+                                                                                    \
+ private:                                                                           \
+  void __out_##x() {                                                                \
+    Operator::OutputRegister(#x);                                                   \
     (void)OpReg()
 
 #define DYNAMIC_INPUT(x, t)                                                                                        \
@@ -216,7 +239,12 @@ class OpReg {
     Operator::SetInput(#x, dstIndex, v);                                                                           \
     return *this;                                                                                                  \
   }                                                                                                                \
+  ATTRIBUTED_DEPRECATED(_THIS_TYPE &set_dynamic_input_##x(uint32_t, Operator &, const char *))                     \
   _THIS_TYPE &set_dynamic_input_##x(uint32_t dstIndex, Operator &v, const string &srcName) {                       \
+    Operator::SetInput(#x, dstIndex, v, srcName);                                                                  \
+    return *this;                                                                                                  \
+  }                                                                                                                \
+  _THIS_TYPE &set_dynamic_input_##x(uint32_t dstIndex, Operator &v, const char *srcName) {                         \
     Operator::SetInput(#x, dstIndex, v, srcName);                                                                  \
     return *this;                                                                                                  \
   }                                                                                                                \
@@ -252,7 +280,9 @@ class OpReg {
   }                                                                                             \
                                                                                                 \
  public:                                                                                        \
+  ATTRIBUTED_DEPRECATED(static const void name_graph_##x(AscendString &))                       \
   static const string name_graph_##x() { return #x; }                                           \
+  static const void name_graph_##x(AscendString &name) { name = AscendString(#x); }             \
   SubgraphBuilder get_subgraph_builder_##x() const { return Operator::GetSubgraphBuilder(#x); } \
   _THIS_TYPE &set_subgraph_builder_##x(const SubgraphBuilder &v) {                              \
     Operator::SetSubgraphBuilder(#x, 0, v);                                                     \
@@ -272,7 +302,9 @@ class OpReg {
   }                                                                                                        \
                                                                                                            \
  public:                                                                                                   \
+  ATTRIBUTED_DEPRECATED(static const void name_graph_##x(AscendString &))                                  \
   static const string name_graph_##x() { return #x; }                                                      \
+  static const void name_graph_##x(AscendString &name) { name = AscendString(#x); }                        \
   _THIS_TYPE &create_dynamic_subgraph_##x(uint32_t num) {                                                  \
     Operator::SubgraphCountRegister(#x, num);                                                              \
     return *this;                                                                                          \
@@ -292,15 +324,15 @@ class OpReg {
     (void)OpReg()
 
 #define PASTE(g_register, y) g_register##y
-#define __OP_END_IMPL__(x, y)                                                                                     \
-  N();                                                                                                            \
-  }                                                                                                               \
-  static_assert(                                                                                                  \
-    std::is_same<x, _THIS_TYPE>::value,                                                                           \
-    "The class name entered into the OP_END_FACTORY_REG needs to be the same as the operator name you define.");  \
-  }                                                                                                               \
-  ;                                                                                                               \
-  static const OperatorCreatorRegister PASTE(g_register, y)(#x, [](const std::string &name) { return x(name); }); \
+#define __OP_END_IMPL__(x, y)                                                                                      \
+  N();                                                                                                             \
+  }                                                                                                                \
+  static_assert(                                                                                                   \
+    std::is_same<x, _THIS_TYPE>::value,                                                                            \
+    "The class name entered into the OP_END_FACTORY_REG needs to be the same as the operator name you define.");   \
+  }                                                                                                                \
+  ;                                                                                                                \
+  static const OperatorCreatorRegister PASTE(g_register, y)(#x, [](const AscendString &name) { return x(name); }); \
   }
 #define OP_END_FACTORY_REG(x) __OP_END_IMPL__(x, __COUNTER__)
 
@@ -347,30 +379,30 @@ class OpReg {
 
 // Common shape inferencer
 
-#define ELMTWISE_INFER_SHAPEANDTYPE(in_name, out_name)            \
-  [](Operator op) -> graphStatus {                                \
-    auto x_shape = op.GetInputDesc(in_name).GetShape().GetDims(); \
-    auto x_type = op.GetInputDesc(in_name).GetDataType();         \
-    TensorDesc op_output_desc = op.GetOutputDesc(out_name);       \
-    op_output_desc.SetShape(ge::Shape(x_shape));                  \
-    op_output_desc.SetOriginShape(ge::Shape(x_shape));            \
-    op_output_desc.SetDataType(x_type);                           \
-    return op.UpdateOutputDesc(out_name, op_output_desc);         \
+#define ELMTWISE_INFER_SHAPEANDTYPE(in_name, out_name)               \
+  [](Operator op) -> graphStatus {                                   \
+    auto x_shape = op.GetInputDesc(in_name, 0).GetShape().GetDims(); \
+    auto x_type = op.GetInputDesc(in_name, 0).GetDataType();         \
+    TensorDesc op_output_desc = op.GetOutputDesc(out_name, 0);       \
+    op_output_desc.SetShape(ge::Shape(x_shape));                     \
+    op_output_desc.SetOriginShape(ge::Shape(x_shape));               \
+    op_output_desc.SetDataType(x_type);                              \
+    return op.UpdateOutputDesc(out_name, op_output_desc);            \
   }
 
 graphStatus BroadCastInfer(const function<vector<int64_t>()> &get_in1_shape,
                            const function<vector<int64_t>()> &get_in2_shape,
                            const function<void(const vector<int64_t> &y_shape)> &set_out_shape);
 
-#define BROADCAST_INFER(in1_name, in2_name, out_name)                                       \
-  [](Operator op) -> graphStatus {                                                          \
-    return BroadCastInfer([&]() { return op.GetInputDesc(in1_name).GetShape().GetDims(); }, \
-                          [&]() { return op.GetInputDesc(in2_name).GetShape().GetDims(); }, \
-                          [&](const vector<int64_t> &y_shape) {                             \
-                            TensorDesc op_output_desc = op.GetOutputDesc(out_name);         \
-                            op_output_desc.SetShape(ge::Shape(y_shape));                    \
-                            (void)op.UpdateOutputDesc(out_name, op_output_desc);            \
-                          });                                                               \
+#define BROADCAST_INFER(in1_name, in2_name, out_name)                                          \
+  [](Operator op) -> graphStatus {                                                             \
+    return BroadCastInfer([&]() { return op.GetInputDesc(in1_name, 0).GetShape().GetDims(); }, \
+                          [&]() { return op.GetInputDesc(in2_name, 0).GetShape().GetDims(); }, \
+                          [&](const vector<int64_t> &y_shape) {                                \
+                            TensorDesc op_output_desc = op.GetOutputDesc(out_name, 0);         \
+                            op_output_desc.SetShape(ge::Shape(y_shape));                       \
+                            (void)op.UpdateOutputDesc(out_name, op_output_desc);               \
+                          });                                                                  \
   }
 }  // namespace ge
 #endif  // INC_EXTERNAL_GRAPH_OPERATOR_REG_H_

@@ -17,6 +17,7 @@
 #ifndef INC_FRAMEWORK_COMMON_STRING_UTIL_H_
 #define INC_FRAMEWORK_COMMON_STRING_UTIL_H_
 
+#include <cctype>
 #include <securec.h>
 
 #include <algorithm>

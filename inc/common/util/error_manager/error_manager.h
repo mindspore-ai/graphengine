@@ -67,6 +67,28 @@ class ErrorManager {
   void ATCReportErrMessage(std::string error_code, const std::vector<std::string> &key = {},
                            const std::vector<std::string> &value = {});
 
+  ///
+  /// @brief report graph compile failed message such as error code and op_name in mstune case
+  /// @param [in] msg: failed message map, key is error code, value is op_name
+  /// @return int 0(success) -1(fail)
+  ///
+  int ReportMstuneCompileFailedMsg(const std::map<std::string, std::string> &msg);
+
+  ///
+  /// @brief save graph compile failed message from thread local map to global map
+  /// @param [in] graph_name: graph name
+  ///
+  void SaveMstuneCompileFailedMsg(const std::string &graph_name);
+
+  ///
+  /// @brief get graph compile failed message in mstune case
+  /// @param [in] graph_name: graph name
+  /// @param [out] msg_map: failed message map, key is error code, value is op_name list
+  /// @return int 0(success) -1(fail)
+  ///
+  int GetMstuneCompileFailedMsg(const std::string &graph_name,
+                                std::map<std::string, std::vector<std::string>> &msg_map);
+
  private:
   struct ErrorInfo {
     std::string error_id;
@@ -91,6 +113,7 @@ class ErrorManager {
   std::map<std::string, ErrorInfo> error_map_;
   std::vector<std::string> error_messages_;
   std::vector<std::string> warning_messages_;
+  std::map<std::string, std::map<std::string, std::vector<std::string>>> compile_failed_msg_map_;
 };
 
 #endif  // ERROR_MANAGER_H_

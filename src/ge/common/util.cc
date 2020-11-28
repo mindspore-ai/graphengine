@@ -16,11 +16,12 @@
 
 #include "framework/common/util.h"
 
-#include <fcntl.h>
 #include <sys/stat.h>
-
+#ifdef __GNUC__
 #include <regex.h>
-#include <unistd.h>
+#else
+#include <regex>
+#endif
 #include <algorithm>
 #include <climits>
 #include <cstdlib>
@@ -207,18 +208,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::string &directory_path) {
   GE_CHK_BOOL_EXEC(!directory_path.empty(), return -1, "directory path is empty.");
   auto dir_path_len = directory_path.length();
-  if (dir_path_len >= PATH_MAX) {
+  if (dir_path_len >= MMPA_MAX_PATH) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"},
-                                                    {directory_path, std::to_string(PATH_MAX)});
-    GELOGW("Path[%s] len is too long, it must be less than %d", directory_path.c_str(), PATH_MAX);
+                                                    {directory_path, std::to_string(MMPA_MAX_PATH)});
+    GELOGW("Path[%s] len is too long, it must be less than %d", directory_path.c_str(), MMPA_MAX_PATH);
     return -1;
   }
-  char tmp_dir_path[PATH_MAX] = {0};
+  char tmp_dir_path[MMPA_MAX_PATH] = {0};
   for (size_t i = 0; i < dir_path_len; i++) {
     tmp_dir_path[i] = directory_path[i];
     if ((tmp_dir_path[i] == '\\') || (tmp_dir_path[i] == '/')) {
-      if (access(tmp_dir_path, F_OK) != 0) {
-        int32_t ret = mmMkdir(tmp_dir_path, S_IRUSR | S_IWUSR | S_IXUSR);  // 700
+      if (mmAccess2(tmp_dir_path, M_F_OK) != EN_OK) {
+        int32_t ret = mmMkdir(tmp_dir_path, M_IRUSR | M_IWUSR | M_IXUSR);  // 700
         if (ret != 0) {
           if (errno != EEXIST) {
             ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {directory_path});
@@ -229,7 +230,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
       }
     }
   }
-  int32_t ret = mmMkdir(const_cast<char *>(directory_path.c_str()), S_IRUSR | S_IWUSR | S_IXUSR);  // 700
+  int32_t ret = mmMkdir(const_cast<char *>(directory_path.c_str()), M_IRUSR | M_IWUSR | M_IXUSR);  // 700
   if (ret != 0) {
     if (errno != EEXIST) {
       ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {directory_path});
@@ -304,9 +305,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const cha
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() {
-  struct timeval tv {};
-  int ret = gettimeofday(&tv, nullptr);
-  GE_LOGE_IF(ret != 0, "Func gettimeofday may failed: ret=%d", ret);
+  mmTimeval tv{};
+  int ret = mmGetTimeOfDay(&tv, nullptr);
+  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed: ret=%d", ret);
   auto total_use_time = tv.tv_usec + tv.tv_sec * 1000000;  // 1000000: seconds to microseconds
   return static_cast<uint64_t>(total_use_time);
 }
@@ -346,16 +347,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInt64MulOverflow(int6
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char *path) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path == nullptr, return "", "path pointer is NULL.");
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    strlen(path) >= PATH_MAX,
-    ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"}, {path, std::to_string(PATH_MAX)});
-    return "", "Path[%s] len is too long, it must be less than %d", path, PATH_MAX);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(path) >= MMPA_MAX_PATH,
+                                 ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"},
+                                                                                 {path, std::to_string(MMPA_MAX_PATH)});
+                                 return "", "Path[%s] len is too long, it must be less than %d", path, MMPA_MAX_PATH);
 
   // Nullptr is returned when the path does not exist or there is no permission
   // Return absolute path when path is accessible
   std::string res;
-  char resolved_path[PATH_MAX] = {0};
-  if (realpath(path, resolved_path) != nullptr) {
+  char resolved_path[MMPA_MAX_PATH] = {0};
+  if (mmRealPath(path, resolved_path, MMPA_MAX_PATH) == EN_OK) {
     res = resolved_path;
   }
 
@@ -382,7 +383,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   // A regular matching expression to verify the validity of the input file path
   // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
   // File name section: Support upper and lower case letters, numbers, underscores chinese and dots(.)
+#ifdef __GNUC__
   std::string mode = "^[\u4e00-\u9fa5A-Za-z0-9./_-]+$";
+#else
+  std::string mode = "^[a-zA-Z]:([\\\\/][^\\s\\\\/:*?<>\"|][^\\\\/:*?<>\"|]*)*([/\\\\][^\\s\\\\/:*?<>\"|])?$";
+#endif
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     !ValidateStr(real_path, mode),
@@ -391,7 +396,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
     return false, "Invalid value for %s[%s], %s.", atc_param.c_str(), real_path.c_str(), kPathValidReason);
 
   // The absolute path points to a file that is not readable
-  if (access(real_path.c_str(), R_OK) != 0) {
+  if (mmAccess2(real_path.c_str(), M_R_OK) != EN_OK) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19003", {"file", "errmsg"}, {file_path.c_str(), strerror(errno)});
     GELOGW("Read file[%s] failed, errmsg[%s]", file_path.c_str(), strerror(errno));
     return false;
@@ -409,15 +414,20 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
     return false;
   }
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
-    strlen(file_path.c_str()) >= PATH_MAX, ErrorManager::GetInstance().ATCReportErrMessage(
-                                             "E19002", {"filepath", "size"}, {file_path, std::to_string(PATH_MAX)});
-    return "", "Path[%s] len is too long, it must be less than %d", file_path.c_str(), PATH_MAX);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(file_path.c_str()) >= MMPA_MAX_PATH,
+                                 ErrorManager::GetInstance().ATCReportErrMessage(
+                                   "E19002", {"filepath", "size"}, {file_path, std::to_string(MMPA_MAX_PATH)});
+                                 return "", "Path[%s] len is too long, it must be less than %d", file_path.c_str(),
+                                        MMPA_MAX_PATH);
 
   // A regular matching expression to verify the validity of the input file path
   // Path section: Support upper and lower case letters, numbers dots(.) chinese and underscores
   // File name section: Support upper and lower case letters, numbers, underscores chinese and dots(.)
+#ifdef __GNUC__
   std::string mode = "^[\u4e00-\u9fa5A-Za-z0-9./_-]+$";
+#else
+  std::string mode = "^[a-zA-Z]:([\\\\/][^\\s\\\\/:*?<>\"|][^\\\\/:*?<>\"|]*)*([/\\\\][^\\s\\\\/:*?<>\"|])?$";
+#endif
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     !ValidateStr(file_path, mode),
@@ -429,7 +439,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
   // Can get absolute path (file exists)
   if (!real_path.empty()) {
     // File is not readable or writable
-    if (access(real_path.c_str(), W_OK | F_OK) != 0) {
+    if (mmAccess2(real_path.c_str(), M_W_OK | M_F_OK) != EN_OK) {
       ErrorManager::GetInstance().ATCReportErrMessage("E19004", {"file", "errmsg"}, {real_path, strerror(errno)});
       GELOGW("Write file[%s] failed, errmsg[%s]", real_path.c_str(), strerror(errno));
       return false;
@@ -460,6 +470,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const
 }
 
 FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::string &mode) {
+#ifdef __GNUC__
   char ebuff[kMaxBuffSize];
   regex_t reg;
   int cflags = REG_EXTENDED | REG_NOSUB;
@@ -481,6 +492,23 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
 
   regfree(&reg);
   return true;
+#else
+  std::wstring wstr(str.begin(), str.end());
+  std::wstring wmode(mode.begin(), mode.end());
+  std::wsmatch match;
+  bool res = false;
+
+  try {
+    std::wregex reg(wmode, std::regex::icase);
+    // Matching string part
+    res = regex_match(wstr, match, reg);
+    res = regex_search(str, std::regex("[`!@#$%^&*()|{}';',<>?]"));
+  } catch (std::exception &ex) {
+    GELOGW("The directory %s is invalid, error: %s.", str.c_str(), ex.what());
+    return false;
+  }
+  return !(res) && (str.size() == match.str().size());
+#endif
 }
 
 FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {

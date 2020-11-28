@@ -16,8 +16,6 @@
 
 #include "common/ge/tbe_plugin_manager.h"
 
-#include <dirent.h>
-#include <unistd.h>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -50,9 +48,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY TBEPluginManager &TBEPluginMana
 Status TBEPluginManager::ClearHandles_() {
   Status ret = SUCCESS;
   for (const auto &handle : handles_vec_) {
-    if (dlclose(handle) != 0) {
+    if (mmDlclose(handle) != 0) {
       ret = FAILED;
-      GELOGW("Failed to close handle: %s", dlerror());
+      const char *error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGW("Failed to close handle: %s", error);
     }
   }
   handles_vec_.clear();
@@ -65,18 +65,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status TBEPluginManager::Finali
 }
 
 string TBEPluginManager::GetPath() {
-  Dl_info dl_info;
-  if (dladdr(reinterpret_cast<void *>(&TBEPluginManager::GetPath), &dl_info) == 0) {
+  mmDlInfo dl_info;
+  if (mmDladdr(reinterpret_cast<void *>(&TBEPluginManager::GetPath), &dl_info) != EN_OK) {
     GELOGW("Failed to read so path!");
     return string();
   } else {
     string so_path = dl_info.dli_fname;
-    char path[PATH_MAX] = {0};
-    if (so_path.length() >= PATH_MAX) {
+    char path[MMPA_MAX_PATH] = {0};
+    if (so_path.length() >= MMPA_MAX_PATH) {
       GELOGW("File path is too long!");
       return string();
     }
-    if (realpath(so_path.c_str(), path) == nullptr) {
+    if (mmRealPath(so_path.c_str(), path, MMPA_MAX_PATH) != EN_OK) {
       GELOGW("Failed to get realpath of %s", so_path.c_str());
       return string();
     }
@@ -108,20 +108,21 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
     GELOGW("RealPath is empty.");
     return;
   }
-  struct stat stat_buf;
-  if ((stat(real_path.c_str(), &stat_buf) != 0) || (!S_ISDIR(stat_buf.st_mode))) {
+  INT32 is_dir = mmIsDir(real_path.c_str());
+  // Lib plugin path not exist
+  if (is_dir != EN_OK) {
     GELOGW("%s is not a dir.", real_path.c_str());
     return;
   }
-  struct dirent *dent(0);
-  DIR *dir = opendir(real_path.c_str());
-  // Plugin path does not exist
-  if (dir == nullptr) {
-    GELOGW("Open directory %s failed.", real_path.c_str());
+
+  mmDirent **entries = nullptr;
+  auto ret = mmScandir(real_path.c_str(), &entries, nullptr, nullptr);
+  if (ret < EN_OK) {
+    GELOGW("scan dir failed. path = %s, ret = %d", real_path.c_str(), ret);
     return;
   }
-
-  while ((dent = readdir(dir)) != nullptr) {
+  for (int i = 0; i < ret; ++i) {
+    mmDirent *dent = entries[i];
     if (strcmp(dent->d_name, ".") == 0 || strcmp(dent->d_name, "..") == 0) continue;
     string name = dent->d_name;
     string full_name = real_path + "/" + name;
@@ -136,7 +137,7 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
       FindParserSo(full_name, file_list, caffe_parser_path);
     }
   }
-  closedir(dir);
+  mmScandirFree(entries, ret);
 }
 
 void TBEPluginManager::GetPluginSoFileList(const string &path, vector<string> &file_list, string &caffe_parser_path) {
@@ -159,8 +160,9 @@ void TBEPluginManager::GetCustomOpPath(std::string &customop_path) {
   fmk_type = ge::TypeUtils::FmkTypeToSerialString(type);
   GELOGI("Framework type is %s.", fmk_type.c_str());
 
-  const char *path_env = std::getenv("ASCEND_OPP_PATH");
-  if (path_env != nullptr) {
+  char path_env[MMPA_MAX_PATH] = {0x00};
+  INT32 res = mmGetEnv("ASCEND_OPP_PATH", path_env, MMPA_MAX_PATH);
+  if (res == EN_OK) {
     std::string path = path_env;
     customop_path = (path + "/framework/custom" + "/:") + (path + "/framework/built-in/" + fmk_type);
     GELOGI("Get custom so path from env : %s", path_env);
@@ -210,9 +212,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void TBEPluginManager::LoadPlug
   for (auto elem : file_list) {
     StringUtils::Trim(elem);
 
-    void *handle = dlopen(elem.c_str(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+    void *handle = mmDlopen(elem.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL | MMPA_RTLD_NODELETE);
     if (handle == nullptr) {
-      GELOGW("dlopen failed, plugin name:%s. Message(%s).", elem.c_str(), dlerror());
+      const char *error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGW("dlopen failed, plugin name:%s. Message(%s).", elem.c_str(), error);
     } else if (find(handles_vec_.begin(), handles_vec_.end(), handle) == handles_vec_.end()) {
       // Close dl when the program exist, not close here
       GELOGI("Plugin load %s success.", elem.c_str());

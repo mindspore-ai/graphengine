@@ -67,12 +67,15 @@ include_directories(${GE_SOURCE_DIR}/build)
 ######### libgraph.so #############
 add_library(graph SHARED ${SRC_LIST} ${PROTO_SRCS} ${PROTO_ONNX_SRCS})
 target_compile_definitions(graph PRIVATE
-        DAVINCI_CLOUD
-        Werror)
+        DAVINCI_CLOUD)
+target_compile_options(graph PRIVATE
+        -Werror
+        -Wno-deprecated-declarations)
 target_link_libraries(graph PRIVATE
         ${PROTOBUF_LIBRARY}
         ${c_sec}
         ${slog}
         ${error_manager}
+        ${mmpa}
         rt
         dl)

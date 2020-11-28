@@ -359,9 +359,8 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
       return FAILED;
     }
     GE_CHK_STATUS_RET(SetStreamLabel(active_node, switch_node->GetName()), "set stream label failed");
-    GE_IF_BOOL_EXEC(!AttrUtils::SetBool(active_node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, true),
-                    DOMI_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed");
-                    return FAILED);
+    GE_CHK_STATUS_RET(SetSwitchBranchNodeLabel(active_node, switch_node->GetName()),
+                      "set switch branch node label failed");
 
     string model_exit_name = switch_node->GetName() + "_ModelExit";
     GE_CHK_STATUS_RET(SetActiveLabelList(active_node, {model_exit_name}), "set active label list failed");

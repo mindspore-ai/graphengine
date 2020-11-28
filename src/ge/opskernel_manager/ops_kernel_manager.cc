@@ -85,7 +85,7 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     initialize_ = options;
     Status rst0 = plugin_manager_.InvokeAll<map<string, string> &, Status>(kInitialize, initialize_);
     if (rst0 == FAILED) {
-      GELOGE(GE_OPS_GET_NO_VALID_SO);
+      GELOGE(GE_OPS_GET_NO_VALID_SO, "There is invalid so about OpsKernelInfoStore.");
       return GE_OPS_GET_NO_VALID_SO;
     }
     Status rst1 =
@@ -391,7 +391,7 @@ void OpsKernelManager::GetGraphOptimizerByEngine(const std::string &engine_name,
       continue;
     }
     if (attrs.engineName == engine_name) {
-      GELOGI("GetGraphOptimizerByEngine GraphOptimzer name: %s, engineName: %s", (it.first).c_str(),
+      GELOGD("GetGraphOptimizerByEngine GraphOptimzer name: %s, engineName: %s", (it.first).c_str(),
              attrs.engineName.c_str());
       graph_optimizer.push_back(it.second);
     }

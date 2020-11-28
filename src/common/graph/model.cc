@@ -15,14 +15,12 @@
  */
 
 #include "graph/model.h"
-#include <fcntl.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -31,9 +29,10 @@
 #include "debug/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/model_serialize.h"
-#include "proto/ge_ir.pb.h"
+#include "mmpa/mmpa_api.h"
 #include "utils/attr_utils.h"
 #include "utils/ge_ir_utils.h"
+#include "proto/ge_ir.pb.h"
 
 using google::protobuf::io::FileInputStream;
 using google::protobuf::io::FileOutputStream;
@@ -106,14 +105,15 @@ graphStatus Model::SaveToFile(const string &file_name) const {
     if (!ge_proto.ParseFromString(str)) {
       return GRAPH_FAILED;
     }
-    char real_path[PATH_MAX] = {0x00};
-    if (strlen(file_name.c_str()) >= PATH_MAX) {
+    char real_path[MMPA_MAX_PATH] = {0x00};
+    if (strlen(file_name.c_str()) >= MMPA_MAX_PATH) {
       return GRAPH_FAILED;
     }
-    if (realpath(file_name.c_str(), real_path) == nullptr) {
+    INT32 result = mmRealPath(file_name.c_str(), real_path, MMPA_MAX_PATH);
+    if (result != EN_OK) {
       GELOGI("file %s does not exit, it will be created.", file_name.c_str());
     }
-    int fd = open(real_path, O_WRONLY | O_CREAT | O_TRUNC, ACCESS_PERMISSION_BITS);
+    int fd = mmOpen2(real_path, M_WRONLY | M_CREAT | O_TRUNC, ACCESS_PERMISSION_BITS);
     if (fd < 0) {
       GELOGE(GRAPH_FAILED, "open file failed, file path [%s], %s ", real_path, strerror(errno));
       return GRAPH_FAILED;
@@ -148,15 +148,16 @@ graphStatus Model::Load(ge::proto::ModelDef &model_def) {
 bool Model::IsValid() const { return graph_.IsValid(); }
 
 graphStatus Model::LoadFromFile(const string &file_name) {
-  char real_path[PATH_MAX] = {0x00};
-  if (strlen(file_name.c_str()) >= PATH_MAX) {
+  char real_path[MMPA_MAX_PATH] = {0x00};
+  if (strlen(file_name.c_str()) >= MMPA_MAX_PATH) {
     return GRAPH_FAILED;
   }
-  if (realpath(file_name.c_str(), real_path) == nullptr) {
+  INT32 result = mmRealPath(file_name.c_str(), real_path, MMPA_MAX_PATH);
+  if (result != EN_OK) {
     GELOGE(GRAPH_FAILED, "file %s does not exit, can not load.", file_name.c_str());
     return GRAPH_FAILED;
   }
-  int fd = open(real_path, O_RDONLY);
+  int fd = mmOpen(real_path, M_RDONLY);
   if (fd < 0) {
     GELOGE(GRAPH_FAILED, "open file failed, %s", strerror(errno));
     return GRAPH_FAILED;
@@ -166,13 +167,13 @@ graphStatus Model::LoadFromFile(const string &file_name) {
   bool ret = model_def.ParseFromFileDescriptor(fd);
   if (!ret) {
     GELOGE(GRAPH_FAILED, "ParseFromFileDescriptor failed");
-    if (close(fd) != 0) {
+    if (mmClose(fd) != 0) {
       GELOGE(GRAPH_FAILED, "close file descriptor fail.");
       return GRAPH_FAILED;
     }
     return GRAPH_FAILED;
   }
-  if (close(fd) != 0) {
+  if (mmClose(fd) != 0) {
     GELOGE(GRAPH_FAILED, "close file descriptor fail.");
     return GRAPH_FAILED;
   }

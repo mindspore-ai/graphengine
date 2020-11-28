@@ -41,8 +41,6 @@ class NodeShapeTransUtils {
   std::map<std::string, Format> map_format_out_;
   std::map<std::string, Format> map_ori_format_out_;
   std::map<std::string, DataType> map_dtype_out_;
-  std::map<std::string, uint32_t> inputs_;
-  std::map<std::string, uint32_t> outputs_;
 
   OpDescPtr op_desc_;
 };

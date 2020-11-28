@@ -370,7 +370,7 @@ Status TransVarDataUtils::SyncVarData2BroadCast(const string &var_name, const ge
   GE_MAKE_GUARD_RTMEM(src_host_addr);
   GE_CHK_STATUS_RET(SyncTensorToHost(var_name, src_tensor_desc, &src_host_addr, src_addr_size, session_id));
 
-  GELOGI("src_addr_size: %u, dst_addr_size: %u", src_addr_size, dst_addr_size);
+  GELOGI("src_addr_size: %ld, dst_addr_size: %ld", src_addr_size, dst_addr_size);
   GE_CHK_BOOL_RET_STATUS(src_addr_size == dst_addr_size, FAILED, "var data size is not equal broadcast ");
 
   GE_CHK_RT_RET(rtMemcpy(dst_addr, dst_addr_size, src_host_addr, src_addr_size, RT_MEMCPY_HOST_TO_DEVICE));
@@ -398,8 +398,7 @@ Status TransVarDataUtils::SyncTensorToHost(const string &var_name, const ge::GeT
   uint8_t *src_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, src_tensor_desc, &src_addr));
   uint8_t *mem_addr =
-    src_addr -
-    static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemLogicBase())) +
+    src_addr - static_cast<int64_t>(static_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemLogicBase())) +
     static_cast<int64_t>(
       reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
   GE_CHK_RT_RET(rtMallocHost(reinterpret_cast<void **>(host_addr), src_tensor_size));
@@ -415,8 +414,7 @@ Status TransVarDataUtils::SyncTensorToDevice(const string &var_name, const uint8
   uint8_t *dst_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, dst_tensor_desc, &dst_addr));
   uint8_t *mem_addr =
-    dst_addr -
-    static_cast<int64_t>(reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemLogicBase())) +
+    dst_addr - static_cast<int64_t>(static_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemLogicBase())) +
     static_cast<int64_t>(
       reinterpret_cast<uintptr_t>(VarManager::Instance(session_id)->GetVarMemoryBase(RT_MEMORY_HBM)));
   GE_CHK_RT_RET(rtMemcpy(mem_addr, addr_size, host_addr, addr_size, RT_MEMCPY_HOST_TO_DEVICE));
@@ -494,7 +492,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
 }
 
 Status TransVarDataUtils::CopyVarData(const ComputeGraphPtr &compute_graph, uint64_t session_id, uint32_t device_id) {
-  GELOGI("CopyVarData start: session_id:%lu.", session_id);
+  GELOGD("CopyVarData start: session_id:%lu.", session_id);
   if (compute_graph == nullptr) {
     GELOGE(FAILED, "compute_graph is nullptr");
     return FAILED;

@@ -16,9 +16,7 @@
 
 #include "common/auth/file_saver.h"
 
-#include <fcntl.h>
 #include <securec.h>
-#include <unistd.h>
 #include <cstdlib>
 #include <fstream>
 #include <vector>
@@ -39,12 +37,12 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
     return FAILED;
   }
 
-  char real_path[PATH_MAX] = {0};
-  GE_IF_BOOL_EXEC(realpath(file_path.c_str(), real_path) == nullptr,
+  char real_path[MMPA_MAX_PATH] = {0};
+  GE_IF_BOOL_EXEC(mmRealPath(file_path.c_str(), real_path, MMPA_MAX_PATH) != EN_OK,
                   GELOGI("File %s is not exist, it will be created.", file_path.c_str()));
   // Open file
-  mode_t mode = S_IRUSR | S_IWUSR;
-  fd = mmOpen2(real_path, O_RDWR | O_CREAT | O_TRUNC, mode);
+  mmMode_t mode = M_IRUSR | M_IWUSR;
+  fd = mmOpen2(real_path, M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_INVALID_PARAM || fd == EN_ERROR) {
     // -1: Failed to open file; - 2: Illegal parameter
     GELOGE(FAILED, "Open file failed. mmpa_errno = %d, %s", fd, strerror(errno));
@@ -193,7 +191,7 @@ Status FileSaver::SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::CheckPath(const std::string &file_path) {
   // Determine file path length
-  if (file_path.size() >= PATH_MAX) {
+  if (file_path.size() >= MMPA_MAX_PATH) {
     GELOGE(FAILED, "Path is too long:%zu", file_path.size());
     return FAILED;
   }

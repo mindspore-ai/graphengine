@@ -67,11 +67,10 @@ StreamAllocator::StreamAllocator(ComputeGraphPtr whole_graph, const Graph2SubGra
   }
 
   enable_single_stream_ = (single_stream_str == kTrueStr) ? true : false;
-  GELOGI("Enable single stream: %s.", enable_single_stream_ ? kTrueStr : kFalseStr);
+  GELOGD("Enable single stream: %s.", enable_single_stream_ ? kTrueStr : kFalseStr);
 }
 
 Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &max_parallel_num, bool hcom_parallel) {
-  GELOGI("Assign logical streams start.");
   GE_CHECK_NOTNULL(whole_graph_);
   GE_DUMP(whole_graph_, "BeforeAssignedLogicalStreams");
 
@@ -92,15 +91,12 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
     return status;
   }
   GE_DUMP(whole_graph_, "AfterAssignedLogicalStreams");
-  GELOGI("Assign logical streams success.");
-
   return SUCCESS;
 }
 
 // After allocating the logical stream in the graph, refresh the stream in the
 // graph and insert the synchronization node.
 Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_num) {
-  GELOGI("RefreshRealStream start.");
   GE_CHECK_NOTNULL(whole_graph_);
   GE_DUMP(whole_graph_, "BeforeRefreshRealStream");
 
@@ -174,8 +170,7 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
     GELOGI("None of nodes need to assign stream, stream num is 0, it will cause error, so change it to 1");
     stream_num_ = 1;
   }
-  GELOGI("stream num: %ld, event num: %u.", stream_num_, event_num_);
-  GELOGI("RefreshRealStream successfully.");
+  GELOGD("stream num: %ld, event num: %u.", stream_num_, event_num_);
 
   stream_num = stream_num_;
   event_num = static_cast<int64_t>(event_num_);
@@ -1241,7 +1236,7 @@ void StreamAllocator::DumpEvents() {
 
   for (const auto &one_pair : after_refresh_stream_nodes) {
     int64_t stream_id = one_pair.first;
-    GELOGI("After RefreshRealStream: stream %ld.", stream_id);
+    GELOGD("After RefreshRealStream: stream %ld.", stream_id);
 
     for (const auto &node : one_pair.second) {
       string send_event_str;
@@ -1273,7 +1268,7 @@ Status StreamAllocator::GetMaxStreamAndTask(bool huge_stream, uint32_t &max_stre
     GELOGE(FAILED, "Get max stream and task count by rts failed.");
     return FAILED;
   }
-  GELOGI("Allowed max stream count: %u, max task count per stream: %u.", max_stream_count, max_task_count);
+  GELOGD("Allowed max stream count: %u, max task count per stream: %u.", max_stream_count, max_task_count);
 
   return SUCCESS;
 }

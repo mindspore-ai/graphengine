@@ -31,6 +31,7 @@
 #include "external/graph/operator_factory.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
+#include "graph/operator_factory_impl.h"
 #include "utils/node_utils.h"
 #include "utils/op_desc_utils.h"
 #include "utils/tensor_utils.h"
@@ -76,7 +77,6 @@ graphStatus UpdataOutputForMultiBatcch(const ConstNodePtr &node,
     int64_t max_size = 0;
     size_t max_shape_index = 0;
     auto &ref_out_tensor = ref_out_tensors[i].at(0);
-    const auto &ref_out_tensor_shape = ref_out_tensor.MutableShape();
     for (size_t j = 0; j < ref_out_tensors[i].size(); ++j) {
       auto &tensor = ref_out_tensors[i].at(j);
       if (ref_out_tensor.GetDataType() != tensor.GetDataType()) {
@@ -85,12 +85,6 @@ graphStatus UpdataOutputForMultiBatcch(const ConstNodePtr &node,
       }
 
       auto shape = tensor.MutableShape();
-      if (shape.GetDims().size() != ref_out_tensor_shape.GetDims().size()) {
-        GELOGE(GRAPH_FAILED, "node is %s, i : %d, shape size: %lu, ref_out_tensor_shape size: %lu",
-               node->GetName().c_str(), i, shape.GetShapeSize(), ref_out_tensor_shape.GetShapeSize());
-        return GRAPH_FAILED;
-      }
-
       int64_t size = 1;
       for (auto dim : shape.GetDims()) {
         if (INT64_MAX / dim < size) {
@@ -510,63 +504,6 @@ void ShapeRefiner::PrintInOutTensorShape(const ge::NodePtr &node, const std::str
   GELOGD("Shape dump [%s], Node name: [%s]. %s", phase.c_str(), node->GetName().c_str(), str.c_str());
 }
 
-graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &op) {
-  return InferShapeAndType(node, op, true);
-}
-graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &op, bool before_subgraph) {
-  auto op_desc = node->GetOpDesc();
-  const auto &op_type = op_desc->GetType();
-
-  graphStatus ret;
-  if (before_subgraph) {
-    ret = UpdateSubGraphDataNodes(node);
-    if (ret != GRAPH_SUCCESS) {
-      return ret;
-    }
-  }
-  // Get infer func and execute
-  ret = op_desc->CallInferFunc(op);
-  if (ret == GRAPH_PARAM_INVALID) {
-    // Op ir no infer func, try to get infer func from operator factory
-    auto node_op = ge::OperatorFactory::CreateOperator("node_op", op_desc->GetType());
-    if (node_op.IsEmpty()) {
-      GELOGW("get op from OperatorFactory fail. opType: %s", op_type.c_str());
-      return ret;
-    }
-
-    GELOGD("get op from OperatorFactory success. opType: %s", op_type.c_str());
-    auto temp_op_desc = ge::OpDescUtils::GetOpDescFromOperator(node_op);
-    node_op.BreakConnect();
-    if (temp_op_desc == nullptr) {
-      GELOGE(GRAPH_FAILED, "temp op desc is null");
-      return GRAPH_FAILED;
-    }
-    if (!op_desc->UpdateInputName(temp_op_desc->GetAllInputName())) {
-      GELOGW("InferShapeAndType UpdateInputName failed");
-      for (const auto &out_desc : op_desc->GetAllOutputsDescPtr()) {
-        if (out_desc != nullptr && out_desc->GetShape().GetDims().empty()) {
-          break;
-        }
-        return GRAPH_SUCCESS;
-      }
-    }
-    if (!op_desc->UpdateOutputName(temp_op_desc->GetAllOutputName())) {
-      GELOGW("InferShapeAndType UpdateOutputName failed");
-    }
-    op_desc->AddInferFunc(temp_op_desc->GetInferFunc());
-    ret = op_desc->CallInferFunc(op);
-    GELOGI("op CallInferFunc second. ret: %u", ret);
-  }
-  if (ret != GRAPH_SUCCESS) {
-    return ret;
-  }
-
-  if (!before_subgraph) {
-    return UpdateParentNodeOutTensor(node);
-  }
-  return GRAPH_SUCCESS;
-}
-
 InferenceContextPtr CreateInferenceContext(const std::unordered_map<NodePtr, InferenceContextPtr> &context_map,
                                            const NodePtr &node) {
   if (node == nullptr) {
@@ -633,9 +570,122 @@ thread_local std::unordered_map<NodePtr, InferenceContextPtr> context_map;
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void ShapeRefiner::ClearContextMap() { context_map.clear(); }
 
+graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &op) {
+  return InferShapeAndType(node, op, true);
+}
+
+graphStatus ShapeRefiner::InferShapeAndType(const ConstNodePtr &node, Operator &op, bool before_subgraph) {
+  auto op_desc = node->GetOpDesc();
+  const auto &op_type = op_desc->GetType();
+
+  graphStatus ret;
+  if (before_subgraph) {
+    ret = UpdateSubGraphDataNodes(node);
+    if (ret != GRAPH_SUCCESS) {
+      return ret;
+    }
+  }
+  // Get infer func and execute
+  ret = op_desc->CallInferFunc(op);
+  if (ret == GRAPH_PARAM_INVALID) {
+    // Op ir no infer func, try to get infer func from operator factory
+    auto node_op = ge::OperatorFactory::CreateOperator("node_op", op_desc->GetType());
+    if (node_op.IsEmpty()) {
+      GELOGW("get op from OperatorFactory fail. opType: %s", op_type.c_str());
+      return ret;
+    }
+
+    GELOGD("get op from OperatorFactory success. opType: %s", op_type.c_str());
+    auto temp_op_desc = ge::OpDescUtils::GetOpDescFromOperator(node_op);
+    node_op.BreakConnect();
+    if (temp_op_desc == nullptr) {
+      GELOGE(GRAPH_FAILED, "temp op desc is null");
+      return GRAPH_FAILED;
+    }
+    if (!op_desc->UpdateInputName(temp_op_desc->GetAllInputName())) {
+      GELOGW("InferShapeAndType UpdateInputName failed");
+      for (const auto &out_desc : op_desc->GetAllOutputsDescPtr()) {
+        if (out_desc != nullptr && out_desc->GetShape().GetDims().empty()) {
+          break;
+        }
+        return GRAPH_SUCCESS;
+      }
+    }
+    if (!op_desc->UpdateOutputName(temp_op_desc->GetAllOutputName())) {
+      GELOGW("InferShapeAndType UpdateOutputName failed");
+    }
+    op_desc->AddInferFunc(temp_op_desc->GetInferFunc());
+    ret = op_desc->CallInferFunc(op);
+    GELOGI("op CallInferFunc second. ret: %u", ret);
+  }
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
+
+  if (!before_subgraph) {
+    return UpdateParentNodeOutTensor(node);
+  }
+  return GRAPH_SUCCESS;
+}
+
+graphStatus ShapeRefiner::InferShapeAndTypeForRunning(const ConstNodePtr &node, Operator &op, bool before_subgraph) {
+  auto op_desc = node->GetOpDesc();
+  const auto &op_type = op_desc->GetType();
+
+  graphStatus ret;
+  if (before_subgraph) {
+    ret = UpdateSubGraphDataNodes(node);
+    if (ret != GRAPH_SUCCESS) {
+      return ret;
+    }
+  }
+  // Get infer func and execute
+  ret = op_desc->CallInferFunc(op);
+  if (ret == GRAPH_PARAM_INVALID) {
+    GELOGD("NodeUtils::GetNodeType return value is: [%s]", NodeUtils::GetNodeType(*node).c_str());
+    auto origin_type = NodeUtils::GetNodeType(*node);
+    auto infer_func = ge::OperatorFactoryImpl::GetInferShapeFunc(origin_type);
+    if (infer_func == nullptr) {
+      GELOGE(GRAPH_FAILED, "Failed to Get InferFunc.type is %s", origin_type.c_str());
+      return GRAPH_FAILED;
+    }
+    op_desc->AddInferFunc(infer_func);
+    ret = op_desc->CallInferFunc(op);
+    GELOGI("op CallInferFunc second. ret: %u", ret);
+  }
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
+
+  if (!before_subgraph) {
+    return UpdateParentNodeOutTensor(node);
+  }
+  return GRAPH_SUCCESS;
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferShapeAndType(const NodePtr &node) {
   return InferShapeAndType(node, true);
 }
+
+GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus
+ShapeRefiner::InferShapeAndTypeForRunning(const NodePtr &node, bool before_subgraph) {
+  GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "node is null."); return GRAPH_FAILED);
+  auto opdesc = node->GetOpDesc();
+  GE_IF_BOOL_EXEC(opdesc == nullptr, GELOGE(GRAPH_FAILED, "op_desc is null."); return GRAPH_FAILED);
+
+  PrintInOutTensorShape(node, "before_infershape when running");
+  Operator op = OpDescUtils::CreateOperatorFromNode(node);
+
+  graphStatus status = InferShapeAndTypeForRunning(node, op, before_subgraph);
+  if (status == GRAPH_PARAM_INVALID || status == GRAPH_SUCCESS) {
+    PrintInOutTensorShape(node, "after_infershape when running");
+    return GRAPH_SUCCESS;
+  } else {
+    GELOGE(GRAPH_FAILED, "%s call infer function failed.", node->GetName().c_str());
+    return GRAPH_FAILED;
+  }
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus ShapeRefiner::InferShapeAndType(const NodePtr &node,
                                                                                            bool before_subgraph) {
   GE_IF_BOOL_EXEC(node == nullptr, GELOGE(GRAPH_FAILED, "node is null."); return GRAPH_FAILED);

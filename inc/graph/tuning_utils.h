@@ -71,7 +71,7 @@ const std::set<std::string> build_step_options = {BUILD_STEP_BEFORE_UB_MATCH, BU
 
 using SubgraphCreateOutNode = std::unordered_map<ComputeGraphPtr, NodePtr>;
 using NodetoNodeMap = std::unordered_map<NodePtr, NodePtr>;
-using NodeSet = std::set<NodePtr>;
+using NodeVec = std::vector<NodePtr>;
 using NodeNametoNodeNameMap = std::unordered_map<std::string, std::string>;
 using NodetoNodeNameMap = std::unordered_map<NodePtr, std::string>;
 class TuningUtils {
@@ -119,8 +119,8 @@ class TuningUtils {
   static NodeNametoNodeNameMap data_2_netoutput_;
   static NodetoNodeNameMap data_node_2_netoutput_;
   static NodetoNodeMap data_node_2_netoutput_node_;
-  static NodeSet netoutput_nodes_;
-  static NodeSet merged_graph_nodes_;
+  static NodeVec netoutput_nodes_;
+  static NodeVec merged_graph_nodes_;
   static std::mutex mutex_;
   // for debug
   static std::string PrintCheckLog();

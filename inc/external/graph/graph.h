@@ -36,7 +36,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
   friend class GraphUtils;
 
  public:
+  ATTRIBUTED_DEPRECATED(Graph(const char *))
   explicit Graph(const std::string &name);
+
+  explicit Graph(const char *name);
 
   Graph() = default;
 
@@ -48,7 +51,10 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   Graph &SetOutputs(const std::vector<std::pair<Operator, std::vector<size_t>>> &output_indexs);
 
+  ATTRIBUTED_DEPRECATED(Graph &SetOutputs(const std::vector < std::pair < ge::Operator, AscendString) &)
   Graph &SetOutputs(const std::vector<std::pair<ge::Operator, std::string>> &outputs);
+
+  Graph &SetOutputs(const std::vector<std::pair<ge::Operator, AscendString>> &outputs);
 
   Graph &SetTargets(const std::vector<Operator> &targets);
 
@@ -56,17 +62,35 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus AddOp(const ge::Operator &op);
 
+  ATTRIBUTED_DEPRECATED(graphStatus FindOpByName(const char *, ge::Operator &))
   graphStatus FindOpByName(const std::string &name, ge::Operator &op) const;
 
+  graphStatus FindOpByName(const char *name, ge::Operator &op) const;
+
+  ATTRIBUTED_DEPRECATED(graphStatus FindOpByType(const char *, std::vector<ge::Operator> &))
   graphStatus FindOpByType(const std::string &type, std::vector<ge::Operator> &ops) const;
 
+  graphStatus FindOpByType(const char *type, std::vector<ge::Operator> &ops) const;
+
+  ATTRIBUTED_DEPRECATED(graphStatus GetAllOpName(std::vector<AscendString> &) const)
   graphStatus GetAllOpName(std::vector<std::string> &op_name) const;
 
+  graphStatus GetAllOpName(std::vector<AscendString> &names) const;
+
+  ATTRIBUTED_DEPRECATED(graphStatus SaveToFile(const char *file_name) const)
   graphStatus SaveToFile(const std::string &file_name) const;
 
+  graphStatus SaveToFile(const char *file_name) const;
+
+  ATTRIBUTED_DEPRECATED(graphStatus LoadFromFile(const char *))
   graphStatus LoadFromFile(const std::string &file_name);
 
+  graphStatus LoadFromFile(const char *file_name);
+
+  ATTRIBUTED_DEPRECATED(graphStatus GetName(AscendString &) const)
   const std::string &GetName() const;
+
+  graphStatus GetName(AscendString &name) const;
 
   ///
   /// Set is need train iteration.
@@ -90,7 +114,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph {
 
   graphStatus AddControlEdge(GNode &src_node, GNode &dst_node);
 
-  static GraphPtr ConstructFromInputs(const std::vector<Operator> &inputs, const ge::AscendString &name);
+  static GraphPtr ConstructFromInputs(const std::vector<Operator> &inputs, const AscendString &name);
 
  private:
   GraphImplPtr impl_{nullptr};

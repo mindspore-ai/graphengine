@@ -147,15 +147,20 @@ class NodeStreamUpdatePass : public LogicalStreamPass {
  public:
   STREAM_PASS_DEFAULT_FUNC(NodeStreamUpdatePass);
   Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+};
 
- private:
+// Update the stream of subgraphs to nodes.
+class UpdateForSkippedEnginePass : public LogicalStreamPass {
+ public:
+  STREAM_PASS_DEFAULT_FUNC(UpdateForSkippedEnginePass);
   /// Optimize for case like:
   ///  NodeA(stream1) -> Const(stream2) -> NodeB(stream1)
   /// To case:
   ///  NodeA(stream1) -> Const(stream1) -> NodeB(stream1)
   /// Which could reduce event number (Const could be other type which belong to skipped engine subgraph)
-  Status UpdateForSkippedEngine(const ComputeGraphPtr &graph, const std::vector<SubgraphPtr> &subgraphs);
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 
+ private:
   int64_t GetSingleInoutStream(const NodePtr &node) const;
   // Judge if all predecessors' streams of node are kInvalidStream
   bool AreAllPredStreamsInvalid(const NodePtr &node) const;

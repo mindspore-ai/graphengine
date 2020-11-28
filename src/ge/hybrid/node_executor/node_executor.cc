@@ -18,6 +18,7 @@
 #include "framework/common/debug/log.h"
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
+#include "graph/utils/tensor_utils.h"
 #include "hybrid/model/hybrid_model.h"
 #include "graph/debug/ge_attr_define.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
@@ -32,6 +33,7 @@ const char *const kEngineNameAiCpuTf = "aicpu_tf_kernel";
 const char *const kEngineNameHccl = "ops_kernel_info_hccl";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
 const char *const kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
+const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 }  // namespace
 Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
@@ -79,16 +81,17 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
   auto op_type = node.GetType();
   if (op_type == PARTITIONEDCALL) {
     const auto &subgraph = NodeUtils::GetSubgraph(node, 0);
-    if (subgraph != nullptr && subgraph->GetGraphUnknownFlag()) {
-      GELOGD("node %s was marked as unknown shape in node_executor.", node.GetName().c_str());
-      return ExecutorType::DYNAMIC_SUBGRAPH;
+    if (subgraph != nullptr) {
+      for (const auto &node : subgraph->GetDirectNode()) {
+        bool is_unknown_shape = false;
+        (void)AttrUtils::GetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);
+        if (is_unknown_shape) {
+          return ExecutorType::DYNAMIC_SUBGRAPH;
+        } else {
+          return ExecutorType::COMPILED_SUBGRAPH;
+        }
+      }
     }
-    bool is_dynamic = false;
-    (void)NodeUtils::GetNodeUnknownShapeStatus(node, is_dynamic);
-    if (is_dynamic) {
-      return ExecutorType::DYNAMIC_SUBGRAPH;
-    }
-    return ExecutorType::COMPILED_SUBGRAPH;
   }
 
   // rts kernel store is assigned to NetOutput

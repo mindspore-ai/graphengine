@@ -308,6 +308,18 @@ Graph::Graph(const std::string &name) {
   }
 }
 
+Graph::Graph(const char *name) {
+  if (name != nullptr) {
+    std::string graph_name = name;
+    impl_ = ComGraphMakeShared<GraphImpl>(graph_name);
+    if (impl_ == nullptr) {
+      GELOGW("GraphImpl make shared failed, impl_ is nullptr.");
+    }
+  } else {
+    GELOGW("Graph name is nullptr.");
+  }
+}
+
 graphStatus Graph::AddOp(const ge::Operator &op) {
   GE_CHK_BOOL_EXEC(impl_ != nullptr, return GRAPH_FAILED, "AddOp failed: graph can not be used, impl is nullptr.");
   return impl_->AddOp(op);
@@ -319,6 +331,22 @@ graphStatus Graph::GetAllOpName(std::vector<std::string> &op_name) const {
   return impl_->GetAllOpName(op_name);
 }
 
+graphStatus Graph::GetAllOpName(std::vector<AscendString> &names) const {
+  GE_CHK_BOOL_EXEC(impl_ != nullptr, return GRAPH_FAILED,
+                   "GetAllOpName failed: graph can not be used, impl is nullptr.");
+  std::vector<std::string> op_names;
+  if (impl_->GetAllOpName(op_names) != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Get all op name failed.");
+    return GRAPH_FAILED;
+  }
+
+  for (auto &op_name : op_names) {
+    names.emplace_back(op_name.c_str());
+  }
+
+  return GRAPH_SUCCESS;
+}
+
 graphStatus Graph::FindOpByName(const std::string &name, Operator &op) const {
   Operator op_find_op_def("NULL");
   op = op_find_op_def;
@@ -327,9 +355,32 @@ graphStatus Graph::FindOpByName(const std::string &name, Operator &op) const {
   return impl_->FindOpByName(name, op);
 }
 
+graphStatus Graph::FindOpByName(const char *name, Operator &op) const {
+  if (name == nullptr) {
+    GELOGE(GRAPH_FAILED, "FindOpByName: name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  Operator op_find_op_def("NULL");
+  op = op_find_op_def;
+  GE_CHK_BOOL_EXEC(impl_ != nullptr, return GRAPH_FAILED,
+                   "FindOpByName failed: graph can not be used, impl is nullptr.");
+  std::string op_name = name;
+  return impl_->FindOpByName(op_name, op);
+}
+
 graphStatus Graph::FindOpByType(const string &type, std::vector<ge::Operator> &ops) const {
   GE_CHECK_NOTNULL(impl_);
   return impl_->FindOpByType(type, ops);
+}
+
+graphStatus Graph::FindOpByType(const char *type, std::vector<ge::Operator> &ops) const {
+  if (type == nullptr) {
+    GELOGE(GRAPH_FAILED, "FindOpByType: name is nullptr.");
+    return GRAPH_FAILED;
+  }
+  GE_CHECK_NOTNULL(impl_);
+  std::string op_type = type;
+  return impl_->FindOpByType(op_type, ops);
 }
 
 Graph &Graph::SetInputs(const vector<ge::Operator> &inputs) {
@@ -360,6 +411,23 @@ Graph &Graph::SetOutputs(const std::vector<std::pair<Operator, std::vector<size_
 Graph &Graph::SetOutputs(const std::vector<pair<Operator, string>> &outputs) {
   GE_CHK_BOOL_EXEC(impl_ != nullptr, return *this, "SetOutputs failed: graph can not be used, impl is nullptr.")
   (void)impl_->SetOutputs(outputs);
+  return *this;
+}
+
+Graph &Graph::SetOutputs(const std::vector<std::pair<ge::Operator, AscendString>> &outputs) {
+  GE_CHK_BOOL_EXEC(impl_ != nullptr, return *this, "SetOutputs failed: graph can not be used, impl is nullptr.")
+  vector<std::pair<ge::Operator, std::string>> graph_outputs;
+  for (auto &item : outputs) {
+    const char *name = item.second.GetString();
+    if (name != nullptr) {
+      string output_name = name;
+      graph_outputs.emplace_back((std::pair<ge::Operator, std::string>(item.first, name)));
+    } else {
+      GELOGW("Output name is nullptr.");
+    }
+  }
+
+  (void)impl_->SetOutputs(graph_outputs);
   return *this;
 }
 
@@ -604,7 +672,7 @@ graphStatus Graph::AddControlEdge(GNode &src_node, GNode &dst_node) {
   return SUCCESS;
 }
 
-GraphPtr Graph::ConstructFromInputs(const std::vector<Operator> &inputs, const ge::AscendString &name) {
+GraphPtr Graph::ConstructFromInputs(const std::vector<Operator> &inputs, const AscendString &name) {
   const char *ascend_name = name.GetString();
   if (ascend_name == nullptr) {
     GELOGE(GRAPH_PARAM_INVALID, "ConstructFromInputs: ascend string error.");
@@ -644,6 +712,18 @@ graphStatus Graph::SaveToFile(const string &file_name) const {
   return model.SaveToFile(file_name);
 }
 
+graphStatus Graph::SaveToFile(const char *file_name) const {
+  if (file_name == nullptr) {
+    GELOGE(GRAPH_FAILED, "SaveToFile: file name is nullptr.");
+    return GRAPH_FAILED;
+  }
+
+  Model model = Model();
+  model.SetGraph(*this);
+  std::string file = file_name;
+  return model.SaveToFile(file);
+}
+
 graphStatus Graph::LoadFromFile(const string &file_name) {
   Model model = Model();
   graphStatus ret = model.LoadFromFile(file_name);
@@ -654,7 +734,33 @@ graphStatus Graph::LoadFromFile(const string &file_name) {
   return GRAPH_SUCCESS;
 }
 
+graphStatus Graph::LoadFromFile(const char *file_name) {
+  if (file_name == nullptr) {
+    GELOGE(GRAPH_FAILED, "SaveToFile: file name is nullptr.");
+    return GRAPH_FAILED;
+  }
+
+  Model model = Model();
+  std::string file = file_name;
+  graphStatus ret = model.LoadFromFile(file);
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
+  *this = model.GetGraph();
+  return GRAPH_SUCCESS;
+}
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY const std::string &Graph::GetName() const { return impl_->GetName(); }
+
+graphStatus Graph::GetName(AscendString &name) const {
+  if (impl_ == nullptr) {
+    GELOGE(GRAPH_FAILED, "GetName: impl is nullptr.");
+    return GRAPH_FAILED;
+  }
+  std::string graph_name = impl_->GetName();
+  name = AscendString(graph_name.c_str());
+  return GRAPH_SUCCESS;
+}
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Graph
 GraphUtils::CreateGraphFromComputeGraph(const ge::ComputeGraphPtr compute_graph) {

@@ -57,6 +57,9 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
       case aicpu::FWKAdapter::FWK_ADPT_EXT_OUTPUT_SHAPE:
         GE_CHK_STATUS_RET(ParseExtOutputShape(aicpu_ext_info), "Parse ext output shape failed.");
         break;
+      case aicpu::FWKAdapter::FWK_ADPT_EXT_SESSION_INFO:
+        GE_CHK_STATUS_RET(ParseExtSessionInfo(aicpu_ext_info), "Parse ext session info failed.");
+        break;
       default:
         GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoType,
                aicpu_ext_info->infoLen);
@@ -120,6 +123,39 @@ Status AicpuExtInfoHandler::ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info) {
     output_shape_and_type_.emplace_back(&output[index]);
   }
   GELOGI("Node[%s] parse ext output shape success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info) {
+  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(AicpuSessionInfo), PARAM_INVALID,
+                         "Node[%s] parse ext session info failed as infoLen must be %zu but %u.", node_name_.c_str(),
+                         sizeof(SessionInfo), aicpu_ext_info->infoLen);
+
+  session_info_ = reinterpret_cast<AicpuSessionInfo *>(aicpu_ext_info->infoMsg);
+  GELOGI("Node[%s] parse session info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::UpdateSessionInfo(uint64_t session_id, uint64_t kernel_id, bool sess_flag) {
+  if (session_info_ == nullptr) {
+    GELOGD("There is no session info in ext_info, no need update.");
+    return SUCCESS;
+  }
+
+  session_info_->sessionId = session_id;
+  session_info_->kernelId = kernel_id;
+  session_info_->sessFlag = sess_flag;
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::UpdateSessionInfoSessionId(uint64_t session_id) {
+  if (session_info_ == nullptr) {
+    GELOGD("There is no session info in ext_info, no need update.");
+    return SUCCESS;
+  }
+
+  session_info_->sessionId = session_id;
+  session_info_->sessFlag = true;
   return SUCCESS;
 }
 

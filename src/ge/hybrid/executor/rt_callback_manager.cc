@@ -48,7 +48,8 @@ Status CallbackManager::RegisterCallback(rtCallback_t callback, void *user_data)
 Status CallbackManager::Init() {
   rtContext_t ctx = nullptr;
   GE_CHK_RT_RET(rtCtxGetCurrent(&ctx));
-  ret_future_ = std::async([&](rtContext_t context) -> Status { return CallbackProcess(context); }, ctx);
+  ret_future_ = std::async(
+    std::launch::async, [&](rtContext_t context) -> Status { return CallbackProcess(context); }, ctx);
   if (!ret_future_.valid()) {
     GELOGE(INTERNAL_ERROR, "Failed to init callback manager.");
     return INTERNAL_ERROR;

@@ -16,9 +16,7 @@
 
 #include "common/model_saver.h"
 
-#include <fcntl.h>
 #include <securec.h>
-#include <unistd.h>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -51,14 +49,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
     return FAILED;
   }
 
-  char real_path[PATH_MAX] = {0};
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(file_path) >= PATH_MAX, return FAILED, "file path is too long!");
-  GE_IF_BOOL_EXEC(realpath(file_path, real_path) == nullptr,
+  char real_path[MMPA_MAX_PATH] = {0};
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(file_path) >= MMPA_MAX_PATH, return FAILED, "file path is too long!");
+  GE_IF_BOOL_EXEC(mmRealPath(file_path, real_path, MMPA_MAX_PATH) != EN_OK,
                   GELOGI("File %s does not exit, it will be created.", file_path));
 
   // Open file
-  mode_t mode = S_IRUSR | S_IWUSR;
-  int32_t fd = mmOpen2(real_path, O_RDWR | O_CREAT | O_TRUNC, mode);
+  mmMode_t mode = M_IRUSR | M_IWUSR;
+  int32_t fd = mmOpen2(real_path, M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {file_path, strerror(errno)});
     GELOGE(FAILED, "Open file[%s] failed. %s", file_path, strerror(errno));
@@ -71,7 +69,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19004", {"file", "errmsg"}, {file_path, strerror(errno)});
     // Need to both print the error info of mmWrite and mmClose, so return ret after mmClose
-    GELOGE(FAILED, "Write to file failed. errno = %d, %s", mmpa_ret, strerror(errno));
+    GELOGE(FAILED, "Write to file failed. errno = %ld, %s", mmpa_ret, strerror(errno));
     ret = FAILED;
   }
   // Close file

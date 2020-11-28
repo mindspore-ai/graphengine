@@ -118,19 +118,19 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
 
   // data overflow check totally
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(h_o, w_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", h_o, w_o);
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", h_o, w_o);
                   return INTERNAL_ERROR);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(n_o, c_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", n_o, c_o);
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", n_o, c_o);
                   return INTERNAL_ERROR);
   auto t1 = h_o * w_o;
   auto t2 = n_o * c_o;
-  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", t1, t2);
+  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
                   return INTERNAL_ERROR);
 
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", total_ele_cnt, size);
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
                   return INTERNAL_ERROR);
   int64_t dst_size = total_ele_cnt * size;
   if (dst_size == 0) {
@@ -205,20 +205,20 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
 
   // data overflow check
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(h_o, w_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", h_o, w_o);
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", h_o, w_o);
                   return INTERNAL_ERROR);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(n_o, c_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", n_o, c_o);
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", n_o, c_o);
                   return INTERNAL_ERROR);
   auto t1 = h_o * w_o;
   auto t2 = n_o * c_o;
-  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", t1, t2);
+  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
                   return INTERNAL_ERROR);
 
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
   int size = GetSizeByDataType(args.src_data_type);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%lld], B[%lld]", total_ele_cnt, size);
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
                   return INTERNAL_ERROR);
 
   int64_t dst_size = total_ele_cnt * size;

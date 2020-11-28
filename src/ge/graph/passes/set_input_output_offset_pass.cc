@@ -128,7 +128,7 @@ Status SetInputOutputOffsetPass::SetInputOffsetForHcom(const ge::NodePtr &node, 
 }
 
 Status SetInputOutputOffsetPass::SetInputOffset(const NodePtr &node, const vector<int> &connect_input) {
-  GELOGI("Start to SetInputOffset for %s.", node->GetName().c_str());
+  GELOGD("Start to SetInputOffset for %s.", node->GetName().c_str());
   std::vector<int64_t> memory_type;
   auto op_desc = node->GetOpDesc();
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, memory_type);
@@ -241,7 +241,7 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForHcom(const NodePtr &node, con
 }
 
 Status SetInputOutputOffsetPass::SetOutputOffset(const NodePtr &node, const vector<int> &connect_output) {
-  GELOGI("Start SetOutputOffset of %s.", node->GetName().c_str());
+  GELOGD("Start SetOutputOffset of %s.", node->GetName().c_str());
   bool attr_no_task = false;
   bool get_attr_no_task = ge::AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_NOTASK, attr_no_task);
   if (get_attr_no_task && attr_no_task) {

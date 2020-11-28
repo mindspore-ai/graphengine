@@ -54,14 +54,25 @@ class ScopePassManager;
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY Scope {
  public:
   Scope();
+  ATTRIBUTED_DEPRECATED(Status Init(const char *, const char *, Scope *))
   Status Init(const std::string &name, const std::string &sub_type = "", Scope *father_scope = nullptr);
+  Status Init(const char *name, const char *sub_type, Scope *father_scope = nullptr);
   ~Scope();
-
+  ATTRIBUTED_DEPRECATED(Status Name(AscendString &) const)
   const std::string &Name() const;
+  Status Name(AscendString &name) const;
+  ATTRIBUTED_DEPRECATED(Status SubType(AscendString &) const)
   const std::string &SubType() const;
+  Status SubType(AscendString &sub_type) const;
+  ATTRIBUTED_DEPRECATED(Status AllNodesMap(std::unordered_map<AscendString, ge::OperatorPtr> &) const)
   const std::unordered_map<std::string, ge::OperatorPtr> &AllNodesMap() const;
+  Status AllNodesMap(std::unordered_map<AscendString, ge::OperatorPtr> &node_map) const;
+  ATTRIBUTED_DEPRECATED(Scope *GetSubScope(const char *scope_name) const)
   Scope *GetSubScope(const std::string &scope_name) const;
+  Scope *GetSubScope(const char *scope_name) const;
+  ATTRIBUTED_DEPRECATED(Status LastName(AscendString &) const)
   const std::string LastName() const;
+  Status LastName(AscendString &name) const;
   const std::vector<Scope *> &GetAllSubScopes() const;
   const Scope *GetFatherScope() const;
 
@@ -80,45 +91,85 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY FusionScopesResult {
   FusionScopesResult();
   Status Init();
   ~FusionScopesResult();
+  ATTRIBUTED_DEPRECATED(void SetName(const char *))
   void SetName(const std::string &name);
+  void SetName(const char *name);
+  ATTRIBUTED_DEPRECATED(void SetType(const char *))
   void SetType(const std::string &type);
+  void SetType(const char *type);
+  ATTRIBUTED_DEPRECATED(void SetDescription(const char *))
   void SetDescription(const std::string &description);
+  void SetDescription(const char *description);
+  ATTRIBUTED_DEPRECATED(const Status Name(AscendString &) const)
   const std::string &Name() const;
+  const Status Name(AscendString &name) const;
   const std::vector<ge::OperatorPtr> &Nodes() const;
+  ATTRIBUTED_DEPRECATED(void InsertInputs(const char *, const std::vector<int32_t> &))
   void InsertInputs(const std::string &inner_op_name, const std::vector<int32_t> &index_map);
+  void InsertInputs(const char *inner_op_name, const std::vector<int32_t> &index_map);
+  ATTRIBUTED_DEPRECATED(void InsertOutputs(const char *, const std::vector<int32_t> &))
   void InsertOutputs(const std::string &inner_op_name, const std::vector<int32_t> &index_map);
+  void InsertOutputs(const char *inner_op_name, const std::vector<int32_t> &index_map);
 
   class InnerNodeInfo {
    public:
+    ATTRIBUTED_DEPRECATED(InnerNodeInfo(const char *))
     explicit InnerNodeInfo(const std::string &fusion_node_name);
+    explicit InnerNodeInfo(const char *fusion_node_name);
+    ATTRIBUTED_DEPRECATED(InnerNodeInfo(const char *, const char *, const char *))
     InnerNodeInfo(const std::string &fusion_node_name, const std::string &name, const std::string &type);
+    InnerNodeInfo(const char *fusion_node_name, const char *name, const char *type);
     InnerNodeInfo(InnerNodeInfo &&other) noexcept;
     InnerNodeInfo &operator=(InnerNodeInfo &&other) noexcept;
     InnerNodeInfo(const InnerNodeInfo &) = delete;
     InnerNodeInfo &operator=(const InnerNodeInfo &) = delete;
     ~InnerNodeInfo();
+    ATTRIBUTED_DEPRECATED(InnerNodeInfo &SetName(const char *))
     InnerNodeInfo &SetName(const std::string &name);
+    InnerNodeInfo &SetName(const char *name);
+    ATTRIBUTED_DEPRECATED(InnerNodeInfo &SetType(const char *))
     InnerNodeInfo &SetType(const std::string &type);
+    InnerNodeInfo &SetType(const char *type);
+    ATTRIBUTED_DEPRECATED(InnerNodeInfo &InsertInput(const char *, int32_t))
     InnerNodeInfo &InsertInput(const std::string &input_node, int32_t peer_out_idx);
+    InnerNodeInfo &InsertInput(const char *input_node, int32_t peer_out_idx);
+    ATTRIBUTED_DEPRECATED(InnerNodeInfo &InsertOutput(const char *, int32_t))
     InnerNodeInfo &InsertOutput(const std::string &output_node, int32_t peer_in_idx);
+    InnerNodeInfo &InsertOutput(const char *output_node, int32_t peer_in_idx);
     ge::graphStatus BuildInnerNode();
+    ATTRIBUTED_DEPRECATED(ge::graphStatus SetInputFormat(const char *, const char *))
     ge::graphStatus SetInputFormat(const std::string &input_name, const std::string &format);
+    ge::graphStatus SetInputFormat(const char *input_name, const char *format);
+    ATTRIBUTED_DEPRECATED(ge::graphStatus SetOutputFormat(const char *, const char *))
     ge::graphStatus SetOutputFormat(const std::string &output_name, const std::string &format);
+    ge::graphStatus SetOutputFormat(const char *output_name, const char *format);
+    ATTRIBUTED_DEPRECATED(ge::graphStatus SetDynamicInputFormat(const char *, uint32_t index, const char *))
     ge::graphStatus SetDynamicInputFormat(const std::string &input_name, uint32_t index, const std::string &format);
+    ge::graphStatus SetDynamicInputFormat(const char *input_name, uint32_t index, const char *format);
+    ATTRIBUTED_DEPRECATED(ge::graphStatus SetDynamicOutputFormat(const char *, uint32_t, const char *))
     ge::graphStatus SetDynamicOutputFormat(const std::string &output_name, uint32_t index, const std::string &format);
+    ge::graphStatus SetDynamicOutputFormat(const char *output_name, uint32_t index, const char *format);
     ge::Operator *MutableOperator();
-
+    ATTRIBUTED_DEPRECATED(ge::graphStatus GetName(AscendString &) const)
     std::string GetName() const;
+    ge::graphStatus GetName(AscendString &name) const;
+    ATTRIBUTED_DEPRECATED(ge::graphStatus GetType(AscendString &) const)
     std::string GetType() const;
+    ge::graphStatus GetType(AscendString &type) const;
+    ATTRIBUTED_DEPRECATED(ge::graphStatus GetInputs(std::vector<std::pair<AscendString, int32_t>> &) const)
     std::vector<std::pair<std::string, int32_t>> GetInputs() const;
+    ge::graphStatus GetInputs(std::vector<std::pair<AscendString, int32_t>> &inputs) const;
+    ATTRIBUTED_DEPRECATED(ge::graphStatus GetOutputs(std::vector<std::pair<AscendString, int32_t>> &) const)
     std::vector<std::pair<std::string, int32_t>> GetOutputs() const;
+    ge::graphStatus GetOutputs(std::vector<std::pair<AscendString, int32_t>> &outputs) const;
 
    private:
     class InnerNodeInfoImpl;
     std::unique_ptr<InnerNodeInfoImpl> impl_;
   };
-
+  ATTRIBUTED_DEPRECATED(InnerNodeInfo *AddInnerNode(const char *, const char *))
   InnerNodeInfo *AddInnerNode(const std::string &name, const std::string &type);
+  InnerNodeInfo *AddInnerNode(const char *name, const char *type);
   InnerNodeInfo *MutableRecentInnerNode();
   InnerNodeInfo *MutableInnerNode(uint32_t index);
   ge::graphStatus CheckInnerNodesInfo();
@@ -157,7 +208,9 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeGraph {
   ~ScopeGraph();
 
   const ScopeTree *GetScopeTree() const;
+  ATTRIBUTED_DEPRECATED(Status GetNodesMap(std::unordered_map<AscendString, ge::OperatorPtr> &) const)
   const std::unordered_map<std::string, ge::OperatorPtr> &GetNodesMap() const;
+  Status GetNodesMap(std::unordered_map<AscendString, ge::OperatorPtr> &nodes_map) const;
 
  private:
   class ScopeGraphImpl;
@@ -176,7 +229,9 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeAttrValue {
 
   void SetIntValue(int64_t value);
   void SetFloatValue(float value);
+  ATTRIBUTED_DEPRECATED(void SetStringValue(const char *))
   void SetStringValue(std::string value);
+  void SetStringValue(const char *value);
   void SetBoolValue(bool value);
 
  private:
@@ -193,7 +248,9 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeBaseFeature {
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY NodeOpTypeFeature : ScopeBaseFeature {
  public:
+  ATTRIBUTED_DEPRECATED(NodeOpTypeFeature(const char *, int, int))
   NodeOpTypeFeature(std::string nodeType, int num, int step = 0);
+  NodeOpTypeFeature(const char *node_type, int num, int step = 0);
   NodeOpTypeFeature(NodeOpTypeFeature const &feature);
   NodeOpTypeFeature &operator=(NodeOpTypeFeature const &feature);
   ~NodeOpTypeFeature();
@@ -206,7 +263,9 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY NodeOpTypeFeature : ScopeBa
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY NodeAttrFeature : ScopeBaseFeature {
  public:
+  ATTRIBUTED_DEPRECATED(NodeAttrFeature(const char *, const char *, ge::DataType, ScopeAttrValue &))
   NodeAttrFeature(std::string nodeType, std::string attr_name, ge::DataType datatype, ScopeAttrValue &attr_value);
+  NodeAttrFeature(const char *node_type, const char *attr_name, ge::DataType datatype, ScopeAttrValue &attr_value);
   NodeAttrFeature(NodeAttrFeature const &feature);
   NodeAttrFeature &operator=(NodeAttrFeature const &feature);
   ~NodeAttrFeature();
@@ -219,8 +278,10 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY NodeAttrFeature : ScopeBase
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeFeature : ScopeBaseFeature {
  public:
+  ATTRIBUTED_DEPRECATED(ScopeFeature(const char *, int32_t, const char *, const char *, int))
   ScopeFeature(std::string sub_type, int32_t num, std::string suffix = "", std::string sub_scope_mask = "",
                int step = 0);
+  ScopeFeature(const char *sub_type, int32_t num, const char *suffix, const char *sub_scope_mask, int step = 0);
   ScopeFeature(ScopeFeature const &feature);
   ScopeFeature &operator=(ScopeFeature const &feature);
   ~ScopeFeature();
@@ -235,8 +296,9 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopePattern {
  public:
   ScopePattern();
   ~ScopePattern();
-
+  ATTRIBUTED_DEPRECATED(ScopePattern &SetSubType(const char *))
   ScopePattern &SetSubType(const std::string &sub_type);
+  ScopePattern &SetSubType(const char *sub_type);
   ScopePattern &AddNodeOpTypeFeature(NodeOpTypeFeature feature);
   ScopePattern &AddNodeAttrFeature(NodeAttrFeature feature);
   ScopePattern &AddScopeFeature(ScopeFeature feature);
@@ -296,7 +358,10 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeFusionPassRegistry {
     return instance;
   }
 
+  ATTRIBUTED_DEPRECATED(void RegisterScopeFusionPass(const char *, CreateFn, bool))
   void RegisterScopeFusionPass(const std::string &pass_name, CreateFn create_fn, bool is_general);
+
+  void RegisterScopeFusionPass(const char *pass_name, CreateFn create_fn, bool is_general);
 
  private:
   ScopeFusionPassRegistry();
@@ -307,7 +372,9 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeFusionPassRegistry {
 
 class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY ScopeUtil {
  public:
+  ATTRIBUTED_DEPRECATED(static AscendString StringReplaceAll(const char *, const char *, const char *))
   static std::string StringReplaceAll(std::string str, const std::string &old_value, const std::string &new_value);
+  static AscendString StringReplaceAll(const char *str, const char *old_value, const char *new_value);
   static void FreeScopePatterns(ScopeFusionPatterns &patterns);
   static void FreeOneBatchPattern(std::vector<ScopePattern *> &one_batch_pattern);
 };

@@ -16,9 +16,7 @@
 
 #include "common/ge/plugin_manager.h"
 
-#include <dirent.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -38,8 +36,10 @@ const char *const kExt = ".so";            // supported extension of shared obje
 namespace ge {
 void PluginManager::ClearHandles_() noexcept {
   for (const auto &handle : handles_) {
-    if (dlclose(handle.second) != 0) {
-      GELOGW("Failed to close handle of %s: %s", handle.first.c_str(), dlerror());
+    if (mmDlclose(handle.second) != 0) {
+      const char *error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGW("Failed to close handle of %s: %s", handle.first.c_str(), error);
     }
   }
   handles_.clear();
@@ -48,18 +48,18 @@ void PluginManager::ClearHandles_() noexcept {
 PluginManager::~PluginManager() { ClearHandles_(); }
 
 string PluginManager::GetPath() {
-  Dl_info dl_info;
-  if (dladdr(reinterpret_cast<void *>(&PluginManager::GetPath), &dl_info) == 0) {
+  mmDlInfo dl_info;
+  if (mmDladdr(reinterpret_cast<void *>(&PluginManager::GetPath), &dl_info) != EN_OK) {
     GELOGW("Failed to read the shared library file path!");
     return string();
   } else {
     std::string so_path = dl_info.dli_fname;
-    char path[PATH_MAX] = {0};
-    if (so_path.length() >= PATH_MAX) {
+    char path[MMPA_MAX_PATH] = {0};
+    if (so_path.length() >= MMPA_MAX_PATH) {
       GELOGW("The shared library file path is too long!");
       return string();
     }
-    if (realpath(so_path.c_str(), path) == nullptr) {
+    if (mmRealPath(so_path.c_str(), path, MMPA_MAX_PATH) != EN_OK) {
       GELOGW("Failed to get realpath of %s", so_path.c_str());
       return string();
     }
@@ -93,7 +93,7 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
   std::vector<std::string> path_vec;
   SplitPath(path, path_vec);
   for (const auto &single_path : path_vec) {
-    GE_IF_BOOL_EXEC(single_path.length() >= PATH_MAX,
+    GE_IF_BOOL_EXEC(single_path.length() >= MMPA_MAX_PATH,
                     GELOGE(GE_PLGMGR_PATH_INVALID, "The shared library file path is too long!");
                     continue);
     // load break when number of loaded so reach maximum
@@ -121,16 +121,18 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     GELOGI("dlopen the shared library path name: %s.", file_path_dlopen.c_str());
 
     // load continue when dlopen is failed
-    auto handle = dlopen(file_path_dlopen.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    auto handle = mmDlopen(file_path_dlopen.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
     if (handle == nullptr) {
-      GELOGE(GE_PLGMGR_PATH_INVALID, "Failed to dlopen %s!", dlerror());
+      const char *error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGE(GE_PLGMGR_PATH_INVALID, "Failed to dlopen %s!", error);
       continue;
     }
 
     // load continue when so is invalid
     bool is_valid = true;
     for (const auto &func_name : func_check_list) {
-      auto real_fn = (void (*)())dlsym(handle, func_name.c_str());
+      auto real_fn = (void (*)())mmDlsym(handle, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGE(GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not existed!", func_name.c_str(),
                func_name.c_str());
@@ -139,7 +141,7 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(dlclose(handle), "Failed to dlclose.");
+      GE_LOGE_IF(mmDlclose(handle), "Failed to dlclose.");
       continue;
     }
 
@@ -199,22 +201,29 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
   so_list_.clear();
   ClearHandles_();
 
-  char canonical_path[PATH_MAX] = {0};
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path.length() >= PATH_MAX, GELOGW("File path is too long!");
+  char canonical_path[MMPA_MAX_PATH] = {0};
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path.length() >= MMPA_MAX_PATH, GELOGW("File path is too long!");
                                  return FAILED, "File path is too long!");
-  if (realpath(path.c_str(), canonical_path) == nullptr) {
+  if (mmRealPath(path.c_str(), canonical_path, MMPA_MAX_PATH) != EN_OK) {
     GELOGW("Failed to get realpath of %s", path.c_str());
     return SUCCESS;
   }
 
-  DIR *dir = opendir(canonical_path);
-  if (dir == nullptr) {
+  INT32 is_dir = mmIsDir(canonical_path);
+  // Lib plugin path not exist
+  if (is_dir != EN_OK) {
     GELOGW("Invalid path for load: %s", path.c_str());
     return SUCCESS;
   }
 
-  struct dirent *entry = nullptr;
-  while ((entry = readdir(dir)) != nullptr) {
+  mmDirent **entries = nullptr;
+  auto ret = mmScandir(canonical_path, &entries, nullptr, nullptr);
+  if (ret < EN_OK) {
+    GELOGW("scan dir failed. path = %s, ret = %d", canonical_path, ret);
+    return FAILED;
+  }
+  for (int i = 0; i < ret; ++i) {
+    mmDirent *entry = entries[i];
     // read fileName and fileType
     std::string file_name = entry->d_name;
     unsigned char file_type = entry->d_type;
@@ -254,9 +263,11 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
     GELOGI("Dlopen so path name: %s. ", file_path_dlopen.c_str());
 
     // load continue when dlopen is failed
-    auto handle = dlopen(file_path_dlopen.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    auto handle = mmDlopen(file_path_dlopen.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
     if (handle == nullptr) {
-      GELOGW("Failed in dlopen %s!", dlerror());
+      const char *error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGW("Failed in dlopen %s!", error);
       continue;
     }
 
@@ -265,7 +276,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
     // load continue when so is invalid
     bool is_valid = true;
     for (const auto &func_name : func_check_list) {
-      auto real_fn = (void (*)())dlsym(handle, func_name.c_str());
+      auto real_fn = (void (*)())mmDlsym(handle, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
         GELOGW("The %s is skipped since function %s is not existed!", file_name.c_str(), func_name.c_str());
         is_valid = false;
@@ -273,7 +284,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(dlclose(handle), "Failed to dlclose.");
+      GE_LOGE_IF(mmDlclose(handle), "Failed to dlclose.");
       continue;
     }
 
@@ -283,7 +294,7 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
     handles_[string(file_name)] = handle;
     num_of_loaded_so++;
   }
-  closedir(dir);
+  mmScandirFree(entries, ret);
   if (num_of_loaded_so == 0) {
     GELOGW("No loadable shared library found in the path: %s", path.c_str());
     return SUCCESS;

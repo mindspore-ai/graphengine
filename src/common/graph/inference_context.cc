@@ -108,5 +108,22 @@ void InferenceContext::SetOutputHandleShapesAndTypes(std::vector<std::vector<Sha
 
 void InferenceContext::SetMarks(const std::vector<std::string> &marks) { inference_context_impl_->marks_ = marks; }
 
+void InferenceContext::SetMarks(const std::vector<AscendString> &marks) {
+  std::vector<std::string> impl_marks;
+  for (const auto &mark : marks) {
+    if (mark.GetString() != nullptr) {
+      impl_marks.emplace_back(mark.GetString());
+    }
+  }
+  inference_context_impl_->marks_ = impl_marks;
+}
+
 const std::vector<std::string> &InferenceContext::GetMarks() const { return inference_context_impl_->marks_; }
+
+void InferenceContext::GetMarks(std::vector<AscendString> &marks) const {
+  std::vector<std::string> str_marks = inference_context_impl_->marks_;
+  for (auto &str_mark : str_marks) {
+    marks.emplace_back(str_mark.c_str());
+  }
+}
 }  // namespace ge

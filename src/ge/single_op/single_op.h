@@ -37,7 +37,6 @@ class SingleOp {
 
   Status ExecuteAsync(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   void SetStream(rtStream_t stream);
-  void SetSessionID(uint64_t session_id);
 
  private:
   Status ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
@@ -52,7 +51,6 @@ class SingleOp {
   std::vector<void *> output_addr_list_;
   std::vector<size_t> output_sizes_;
   std::vector<uintptr_t> args_;
-  uint64_t aicpu_session_id_ = 0;
 
   std::vector<OpTask *> tasks_;
   std::vector<std::vector<uintptr_t *>> arg_table_;
@@ -64,7 +62,6 @@ class DynamicSingleOp {
   ~DynamicSingleOp();
   Status ExecuteAsync(const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &inputs,
                       std::vector<GeTensorDesc> &output_desc, std::vector<DataBuffer> &outputs);
-  void SetSessionID(uint64_t session_id);
 
  private:
   friend class SingleOpModel;
@@ -82,7 +79,6 @@ class DynamicSingleOp {
   rtStream_t stream_ = nullptr;
   size_t num_inputs_ = 0;
   size_t num_outputs_ = 0;
-  uint64_t aicpu_session_id_ = 0;
 };
 }  // namespace ge
 #endif  // GE_SINGLE_OP_SINGLE_OP_H_

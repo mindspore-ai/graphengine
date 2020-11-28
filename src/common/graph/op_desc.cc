@@ -66,6 +66,8 @@ const std::string ATTR_NAME_IS_INPUT_CONST = "is_input_const";
 
 const std::string ATTR_NAME_OP_INFER_DEPENDS = "_op_infer_depends";
 
+const std::string ATTR_NAME_OP_KERNEL_LIB_NAME = "_ge_attr_op_kernel_lib_name";
+
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY OpDesc::OpDesc() {
   op_def_.InitDefault();
   if (op_def_.GetProtoMsg() != nullptr) {
@@ -522,10 +524,19 @@ GE_FUNC_HOST_VISIBILITY OpDesc::Vistor<string> OpDesc::GetAllInputNames() const 
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::SetOpKernelLibName(const std::string &name) {
   op_kernel_lib_name_ = name;
+  auto ret = AttrUtils::SetStr(this, ATTR_NAME_OP_KERNEL_LIB_NAME, name);
+  if (ret != true) {
+    GELOGE(GRAPH_FAILED, "set op kernel lib name failed.");
+  }
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY std::string OpDesc::GetOpKernelLibName() const {
-  return op_kernel_lib_name_;
+  if (!op_kernel_lib_name_.empty()) {
+    return op_kernel_lib_name_;
+  }
+  string op_kernel_lib_name;
+  (void)AttrUtils::GetStr(this, ATTR_NAME_OP_KERNEL_LIB_NAME, op_kernel_lib_name);
+  return op_kernel_lib_name;
 }
 
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY void OpDesc::SetOpEngineName(const std::string &name) {
@@ -764,6 +775,10 @@ bool OpDesc::IsOptionalInput(uint32_t index) const { return IsOptionalInput(GetI
 std::map<string, uint32_t> OpDesc::GetAllInputName() const { return input_name_idx_; }
 
 std::map<string, uint32_t> OpDesc::GetAllOutputName() { return output_name_idx_; }
+
+std::map<string, uint32_t> &OpDesc::MutableAllInputName() { return input_name_idx_; }
+
+std::map<string, uint32_t> &OpDesc::MutableAllOutputName() { return output_name_idx_; }
 
 bool OpDesc::UpdateInputName(std::map<string, uint32_t> input_name_idx) {
   bool ret = true;

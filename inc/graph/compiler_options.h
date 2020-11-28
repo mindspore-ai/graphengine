@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef __CCE_RUNTIME_RT_H__
-#define __CCE_RUNTIME_RT_H__
+#ifndef INC_GRAPH_COMPILER_OPTIONS_H_
+#define INC_GRAPH_COMPILER_OPTIONS_H_
 
-#include "base.h"
-#include "config.h"
-#include "context.h"
-#include "dev.h"
-#include "dvfsprofile.h"
-#include "event.h"
-#include "kernel.h"
-#include "mem.h"
-#include "rt_model.h"
-#include "stream.h"
+namespace ge {
+#ifdef __GNUC__
+#define METADEF_ATTRIBUTE_UNUSED __attribute__((unused))
+#define METADEF_FUNCTION_IDENTIFIER __PRETTY_FUNCTION__
+#define METADEF_BUILTIN_PREFETCH(args_addr) __builtin_prefetch(args_addr)
+#else
+#define METADEF_ATTRIBUTE_UNUSED
+#define METADEF_FUNCTION_IDENTIFIER __FUNCSIG__
+#define METADEF_BUILTIN_PREFETCH(args_addr)
+#endif
+}  // namespace ge
 
-#endif  // __CCE_RUNTIME_RT_H__
+#endif  // INC_GRAPH_COMPILER_OPTIONS_H_

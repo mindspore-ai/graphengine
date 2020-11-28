@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "./ge_error_codes.h"
+#include "ascend_string.h"
 
 using std::make_shared;
 using std::map;
@@ -59,6 +60,8 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY AttrValue {
   static T CreateFrom(DT &&val) {
     return val;
   }
+
+  graphStatus GetValue(AscendString &val);
 
   std::shared_ptr<AttrValueImpl> impl;
 

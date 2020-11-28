@@ -19,6 +19,7 @@
 
 #include "external/ge/ge_api_error_codes.h"
 #include "cce/fwk_adpt_struct.h"
+#include "cce/aicpu_engine_struct.h"
 #include "graph/op_desc.h"
 #include "graph/ge_tensor.h"
 
@@ -26,6 +27,7 @@ namespace ge {
 namespace hybrid {
 using AicpuShapeAndType = aicpu::FWKAdapter::ShapeAndType;
 using AicpuExtInfo = aicpu::FWKAdapter::ExtInfo;
+using AicpuSessionInfo = SessionInfo;
 
 class AicpuExtInfoHandler {
  public:
@@ -43,12 +45,17 @@ class AicpuExtInfoHandler {
 
   Status UpdateOutputShapeAndType(uint32_t output_index, const GeTensorDesc &output_desc);
 
+  Status UpdateSessionInfo(uint64_t session_id, uint64_t kernel_id, bool sess_flag);
+
+  Status UpdateSessionInfoSessionId(uint64_t session_id);
+
   Status GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type);
 
  private:
   Status ParseExtShapeType(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtInputShape(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info);
+  Status ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info);
 
   static Status UpdateShapeAndType(const GeShape &shape, DataType data_type, AicpuShapeAndType *shape_and_type);
 
@@ -59,6 +66,7 @@ class AicpuExtInfoHandler {
   const uint32_t input_num_;
   const uint32_t output_num_;
   UnknowShapeOpType unknown_type_;
+  AicpuSessionInfo *session_info_ = nullptr;
 
   std::unique_ptr<uint8_t[]> ext_info_;
   size_t ext_info_len_ = 0;

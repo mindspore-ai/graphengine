@@ -200,9 +200,8 @@ Status HostCpuEngine::PrepareOutputs(const ge::ConstOpDescPtr &op_desc, vector<G
       CREATE_OUTPUT_CASE(DT_FLOAT, float)
       CREATE_OUTPUT_CASE(DT_DOUBLE, double)
       default:
-        GELOGE(PARAM_INVALID, "data type %s not support.",
-               TypeUtils::DataTypeToSerialString(out_desc.GetDataType()).c_str());
-        return PARAM_INVALID;
+        GELOGW("data type %s not support.", TypeUtils::DataTypeToSerialString(out_desc.GetDataType()).c_str());
+        return NOT_CHANGED;
     }
   }
 
@@ -216,7 +215,7 @@ Status HostCpuEngine::RunInternal(const ge::OpDescPtr &op_desc, HostCpuOp &op_ke
   Operator op = ge::OpDescUtils::CreateOperatorFromOpDesc(op_desc);
   auto ret = op_kernel.Compute(op, named_inputs, named_outputs);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Failed to compute host cpu op. node = %s, ret = %u", op_desc->GetName().c_str(), ret);
+    GELOGW("Failed to compute host cpu op. node = %s", op_desc->GetName().c_str());
     return FAILED;
   }
   op.BreakConnect();

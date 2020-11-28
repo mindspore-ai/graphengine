@@ -225,7 +225,7 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
     GELOGE(GE_GRAPH_UNSUPPORTED, "Cannot call merging in partition mode");
     return FAILED;
   }
-  GELOGI("Graph merge starts.");
+  GELOGD("Graph merge starts.");
   // check input param
   for (const auto &it : sub_graph_list) {
     if (it == nullptr) {
@@ -263,7 +263,7 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
     return FAILED;
   }
   GE_TIMESTAMP_END(MergeSubGraphEnginePlacerRun, "GraphPartitioner::MergeGraphEnginePlacerRun");
-  GELOGI("Graph merge ends.");
+  GELOGD("Graph merge ends.");
   return SUCCESS;
 }
 
@@ -383,12 +383,19 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "anchorIndex", AnchorUtils::GetIdx(out_anchor)),
                   GELOGW("SetInt anchorIndex failed");)
   GE_IF_BOOL_EXEC(!pld_op_desc->SetExtAttr("parentNode", src_node), GELOGW("SetPldExtAttr parentNode failed");)
-
-  OpDescPtr src_node_op_desc = src_node->GetOpDesc();
-  GE_CHECK_NOTNULL(src_node_op_desc);
   GE_IF_BOOL_EXEC(
-    !AttrUtils::SetStr(pld_op_desc, ATTR_NAME_PLD_FRONT_NODE_ENGINE_NAME, src_node_op_desc->GetOpEngineName()),
+    !AttrUtils::SetStr(pld_op_desc, ATTR_NAME_PLD_FRONT_NODE_ENGINE_NAME, src_node_opdesc->GetOpEngineName()),
     GELOGW("SetStr frontNodeEngineName failed");)
+  std::string l2_info_attr;
+  if (AttrUtils::GetStr(src_node_opdesc, "_task_L2FusionInfo", l2_info_attr)) {
+    GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "_task_L2FusionInfo", l2_info_attr),
+                    GELOGW("SetStr l2_info_attr failed");)
+  }
+  int64_t anchor_index_for_lxfusion;
+  if (AttrUtils::GetInt(src_node_opdesc, "_data_anchor_index_for_lxfusion", anchor_index_for_lxfusion)) {
+    GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "_data_anchor_index_for_lxfusion", anchor_index_for_lxfusion),
+                    GELOGW("SetInt anchor_index_for_lxfusion failed");)
+  }
   // do not care over flow
   graph_info_.num_of_pld_end_++;
   // replace output_desc of pld with input node's output desc
@@ -582,7 +589,7 @@ Status ge::GraphPartitioner::Initialize(ge::ComputeGraphPtr compute_graph) {
            new_cluster->engine_name_.c_str(), new_cluster->index_, new_cluster->stream_label_.c_str());
     temp_index++;
   }
-  GELOGI("Initialize ends.");
+  GELOGD("Initialize ends.");
   return SUCCESS;
 }
 
@@ -753,11 +760,11 @@ void ge::GraphPartitioner::MarkClusters() {
       }
     }
   }
-  GELOGI("MarkClusters ends.");
+  GELOGD("MarkClusters ends.");
 }
 
 Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
-  GELOGI("SplitSubGraphs starts.");
+  GELOGD("SplitSubGraphs starts.");
   if (compute_graph == nullptr) {
     GELOGE(FAILED, "parameter ptr is null.");
     return FAILED;
@@ -822,7 +829,7 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
       }
     }
   }
-  GELOGI("SplitSubGraphs ends.");
+  GELOGD("SplitSubGraphs ends.");
   return SUCCESS;
 }
 

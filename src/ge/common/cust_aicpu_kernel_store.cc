@@ -23,7 +23,7 @@ CustAICPUKernelStore::CustAICPUKernelStore() {}
 void CustAICPUKernelStore::AddCustAICPUKernel(const CustAICPUKernelPtr &kernel) { AddKernel(kernel); }
 
 void CustAICPUKernelStore::LoadCustAICPUKernelBinToOpDesc(const std::shared_ptr<ge::OpDesc> &op_desc) const {
-  GELOGI("LoadCustAICPUKernelBinToOpDesc in");
+  GELOGD("LoadCustAICPUKernelBinToOpDesc in");
   if (op_desc != nullptr) {
     auto kernel_bin = FindKernel(op_desc->GetName());
     if (kernel_bin != nullptr) {
@@ -32,6 +32,6 @@ void CustAICPUKernelStore::LoadCustAICPUKernelBinToOpDesc(const std::shared_ptr<
       GELOGI("Load cust aicpu kernel:%s, %zu", kernel_bin->GetName().c_str(), kernel_bin->GetBinDataSize());
     }
   }
-  GELOGI("LoadCustAICPUKernelBinToOpDesc success");
+  GELOGD("LoadCustAICPUKernelBinToOpDesc success");
 }
 }  // namespace ge

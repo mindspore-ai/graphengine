@@ -83,7 +83,7 @@ COMMON_LOCAL_C_INCLUDES := \
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2 -Dgoogle=ascend_private
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2 -Dgoogle=ascend_private -Wno-deprecated-declarations
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
@@ -94,6 +94,9 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf   \
     libslog       \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES := \
+    libmmpa       \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -106,7 +109,7 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := stub/libgraph
 
-LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2 -Wno-deprecated-declarations
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
@@ -132,7 +135,7 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := fwk_stub/libgraph
 
-LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2
+LOCAL_CFLAGS += -DFMK_SUPPORT_DUMP -O2 -Wno-deprecated-declarations
 LOCAL_CPPFLAGS += -fexceptions
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
@@ -159,7 +162,7 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libgraph
 
-LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private
+LOCAL_CFLAGS += -O2 -Dgoogle=ascend_private -Wno-deprecated-declarations
 
 LOCAL_C_INCLUDES := $(COMMON_LOCAL_C_INCLUDES)
 LOCAL_SRC_FILES  := $(COMMON_LOCAL_SRC_FILES)
@@ -169,6 +172,9 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf   \
     libslog       \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES := \
+    libmmpa       \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -255,6 +261,9 @@ LOCAL_SHARED_LIBRARIES := \
     libascend_protobuf   \
     libslog       \
     liberror_manager \
+
+LOCAL_STATIC_LIBRARIES := \
+    libmmpa       \
 
 LOCAL_LDFLAGS := -lrt -ldl
 

@@ -34,8 +34,8 @@ const std::set<std::string> kExeTypes = {DATA, NETOUTPUT};
 NodeNametoNodeNameMap TuningUtils::data_2_netoutput_;
 NodetoNodeNameMap TuningUtils::data_node_2_netoutput_;
 NodetoNodeMap TuningUtils::data_node_2_netoutput_node_;
-NodeSet TuningUtils::netoutput_nodes_;
-NodeSet TuningUtils::merged_graph_nodes_;
+NodeVec TuningUtils::netoutput_nodes_;
+NodeVec TuningUtils::merged_graph_nodes_;
 SubgraphCreateOutNode TuningUtils::create_output_;
 std::mutex TuningUtils::mutex_;
 
@@ -592,12 +592,12 @@ graphStatus TuningUtils::MergeSubGraph(ComputeGraphPtr &subgraph) {
         (AttrUtils::GetListStr(op_desc, alias_name_attr, out_alias_name)) && (!out_alias_name.empty());
       if (has_valid_str) {
         std::lock_guard<std::mutex> lock(mutex_);
-        netoutput_nodes_.insert(node);
+        netoutput_nodes_.emplace_back(node);
       }
     }
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      merged_graph_nodes_.emplace(node);
+      merged_graph_nodes_.emplace_back(node);
     }
     GELOGD("TUU:subgraph %s add node %s success", subgraph->GetName().c_str(), node->GetName().c_str());
   }
@@ -627,13 +627,7 @@ graphStatus TuningUtils::RemoveDataNetoutputEdge(ComputeGraphPtr &graph) {
       return FAILED;
     }
     // 3. relink
-    if (GraphUtils::RemoveEdge(src_out_anchor, net_output_in_anchor) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "TUU:remove edge from %s(%d) to %s(%d) failed. node_name:(data:%s;netoutput:%s), graph_name:%s",
-             GetNodeNameByAnchor(src_out_anchor.get()).c_str(), src_out_anchor->GetIdx(),
-             GetNodeNameByAnchor(net_output_in_anchor.get()).c_str(), net_output_in_anchor->GetIdx(),
-             data_node->GetName().c_str(), netoutput_node->GetName().c_str(), graph->GetName().c_str());
-      return FAILED;
-    }
+    // unlink netoutput_node with it's input in stage 4
     GE_CHECK_NOTNULL(data_out_anchor);
     for (const auto &peer_in_anchor : data_out_anchor->GetPeerAnchors()) {
       if (GraphUtils::RemoveEdge(data_out_anchor, peer_in_anchor) != GRAPH_SUCCESS) {

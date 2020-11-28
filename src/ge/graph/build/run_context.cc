@@ -141,7 +141,7 @@ void RunContextUtil::DestroyRtModelResources() noexcept {
 
 Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &graph, Buffer &buffer,
                                         const uint64_t session_id) {
-  GELOGI("Begin to Create RunContext, session_id = %lu", session_id);
+  GELOGD("Begin to Create RunContext, session_id = %lu", session_id);
   // check params
   if (graph == nullptr) {
     GELOGE(PARAM_INVALID, "CreateRunContext param graph is null. session_id=%lu", session_id);
@@ -153,21 +153,21 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
     GELOGE(INTERNAL_ERROR, "Get stream_num attr from model_def failed. session_id=%lu", session_id);
     return INTERNAL_ERROR;
   }
-  GELOGI("Stream_num = %u", stream_num);
+  GELOGD("Stream_num = %u", stream_num);
 
   uint32_t event_num = 0;
   if (!AttrUtils::GetInt(&model, ATTR_MODEL_EVENT_NUM, event_num)) {
     GELOGE(INTERNAL_ERROR, "Get event_num attr from model failed. session_id=%lu", session_id);
     return INTERNAL_ERROR;
   }
-  GELOGI("Event_num = %u", event_num);
+  GELOGD("Event_num = %u", event_num);
 
   uint32_t label_num = 0;
   if (!AttrUtils::GetInt(&model, ATTR_MODEL_LABEL_NUM, label_num)) {
     GELOGE(INTERNAL_ERROR, "Get label_num attr from model failed. session_id=%lu", session_id);
     return INTERNAL_ERROR;
   }
-  GELOGI("Label_num = %u", label_num);
+  GELOGD("Label_num = %u", label_num);
 
   Status ret = CreateRtModelResources(stream_num, event_num, label_num);
   if (ret != SUCCESS) {
@@ -199,11 +199,11 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
 
 void RunContextUtil::PrintMemInfo() {
   for (auto iter : mem_type_to_data_mem_base_) {
-    GELOGI("CreateRunContext: memory type = %ld, data memory base = %p", iter.first, iter.second);
+    GELOGD("CreateRunContext: memory type = %ld, data memory base = %p", iter.first, iter.second);
   }
 
   for (auto iter : mem_type_to_data_mem_size_) {
-    GELOGI("CreateRunContext: memory type = %ld, data memory size = %lu", iter.first, iter.second);
+    GELOGD("CreateRunContext: memory type = %ld, data memory size = %lu", iter.first, iter.second);
   }
 }
 

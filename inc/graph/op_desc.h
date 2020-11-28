@@ -164,6 +164,10 @@ class OpDesc : public std::enable_shared_from_this<OpDesc>, public AttrHolder {
 
   std::map<string, uint32_t> GetAllOutputName();
 
+  std::map<string, uint32_t> &MutableAllInputName();
+
+  std::map<string, uint32_t> &MutableAllOutputName();
+
   bool UpdateInputName(std::map<string, uint32_t> inputNameIdx);
 
   bool UpdateOutputName(std::map<string, uint32_t> outputNameIdx);

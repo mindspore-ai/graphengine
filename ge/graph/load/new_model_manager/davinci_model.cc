@@ -2991,19 +2991,19 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
   return SUCCESS;
 }
 
-Status DavinciModel::UpdateKnownZeroCopyAddr() {
-  for (size_t i = 0; i < total_io_addrs_.size(); ++i) {
-    auto it_in = knonw_input_data_info_.find(total_io_addrs_[i]);
+Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs) {
+  for (size_t i = 0; i < total_io_addrs.size(); ++i) {
+    auto it_in = knonw_input_data_info_.find(total_io_addrs[i]);
     if (it_in != knonw_input_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
-             knonw_input_data_info_.at(total_io_addrs_[i]));
-      total_io_addrs_[i] = knonw_input_data_info_.at(total_io_addrs_[i]);
+      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %zu,v addr %p,p addr %p .", i, total_io_addrs[i],
+             knonw_input_data_info_.at(total_io_addrs[i]));
+      total_io_addrs[i] = knonw_input_data_info_.at(total_io_addrs[i]);
     }
-    auto it_out = knonw_output_data_info_.find(total_io_addrs_[i]);
+    auto it_out = knonw_output_data_info_.find(total_io_addrs[i]);
     if (it_out != knonw_output_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
-             knonw_output_data_info_.at(total_io_addrs_[i]));
-      total_io_addrs_[i] = knonw_output_data_info_.at(total_io_addrs_[i]);
+      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %zu,v addr %p,p addr %p .", i, total_io_addrs[i],
+             knonw_output_data_info_.at(total_io_addrs[i]));
+      total_io_addrs[i] = knonw_output_data_info_.at(total_io_addrs[i]);
     }
   }
   GELOGI("DavinciModel::UpdateKnownZeroCopyAddr success.");
@@ -3032,7 +3032,7 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
   } else {
     total_io_addrs_ = orig_total_io_addrs_;
   }
-  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
+  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(total_io_addrs_), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
 
   if (total_args_size_ == 0) {
     GELOGW("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, pass rtMemcpy.", args_, total_args_size_);
@@ -3099,7 +3099,14 @@ Status DavinciModel::MallocKnownArgs() {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-
+  // malloc dynamic and static hybrid memory
+  if (total_hybrid_args_size_ != 0) {
+    rt_ret = rtMalloc(&hybrid_addrs_, total_hybrid_args_size_, RT_MEMORY_HBM);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+  }
   // malloc fixed addr memory, eg: rts op
   if (total_fixed_addr_size_ != 0) {
     GELOGI("Begin to allocate fixed addr.");

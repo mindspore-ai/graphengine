@@ -476,6 +476,14 @@ class DavinciModel {
   void SetTotalIOAddrs(vector<void *> &io_addrs) {
     total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
   }
+  void SetHybridArgsSize(uint32_t args_size) { total_hybrid_args_size_ += args_size; }
+  uint32_t GetHybridArgsSize() {
+    return total_hybrid_args_size_;
+  }
+  void *GetCurrentHybridArgsAddr(uint32_t offset) {
+    void *cur_args = static_cast<char *>(hybrid_addrs_) + offset;
+    return cur_args;
+  }
   void SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size);
   int64_t GetFixedAddrsSize(string tensor_name);
   void *GetCurrentFixedAddr(int64_t offset) const {
@@ -494,7 +502,7 @@ class DavinciModel {
   Status MallocKnownArgs();
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
-  Status UpdateKnownZeroCopyAddr();
+  Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs);
   void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
@@ -977,6 +985,8 @@ class DavinciModel {
   void *args_ = nullptr;
   void *args_host_ = nullptr;
   void *fixed_addrs_ = nullptr;
+  void *hybrid_addrs_ = nullptr;
+  uint32_t total_hybrid_args_size_ = 0;
   int64_t total_fixed_addr_size_ = 0;
   std::map<const void *, void *> knonw_input_data_info_;
   std::map<const void *, void *> knonw_output_data_info_;

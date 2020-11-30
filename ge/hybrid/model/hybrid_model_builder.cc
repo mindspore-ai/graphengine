@@ -39,15 +39,6 @@ const uint32_t kAlignment = 32;
 const int kBytes = 8;
 const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 
-bool IsGraphUnknown(ComputeGraph &graph) {
-  for (const auto &node : graph.GetDirectNode()) {
-    bool is_unknown_shape = false;
-    (void)AttrUtils::GetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);
-    return is_unknown_shape;
-  }
-  return false;
-}
-
 int64_t CalcVarSizeInBytes(const GeTensorDesc &desc) {
   int64_t var_size = 0;
   auto data_type = desc.GetDataType();
@@ -111,6 +102,7 @@ Status HybridModelBuilder::Build() {
   hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   GE_CHK_STATUS_RET(InitRuntimeParams(), "[%s] Failed to InitRuntimeParams", GetGraphName());
+  GE_CHK_STATUS_RET(RecoverGraphUnknownFlag(), "[%s] Failed to RecoverGraphUnknownFlag", GetGraphName());
   GE_CHK_STATUS_RET(IndexSpecialNodes(), "[%s] Failed to index nodes", GetGraphName());
   GE_CHK_STATUS_RET(IndexTaskDefs(), "[%s] Failed to index task defs", GetGraphName());
   GE_CHK_STATUS_RET(LoadGraph(), "[%s] Failed to load graph", GetGraphName());
@@ -566,7 +558,7 @@ Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGrap
 
     auto subgraph = NodeUtils::GetSubgraph(*node, kSubgraphIndex);
     GE_CHECK_NOTNULL(subgraph);
-    bool is_unknown_shape = IsGraphUnknown(*subgraph);
+    bool is_unknown_shape = subgraph->GetGraphUnknownFlag();
     if (!is_unknown_shape) {
       merged_graph->AddNode(node);
       GELOGD("[%s] Known shape partitioned call added to merged graph.", op_desc->GetName().c_str());
@@ -613,7 +605,7 @@ Status HybridModelBuilder::UnfoldSubgraph(ComputeGraph &root_graph,
     if (sub_op_type == PARTITIONEDCALL) {
       auto sub_sub_graph = NodeUtils::GetSubgraph(*sub_node, kSubgraphIndex);
       GE_CHECK_NOTNULL(sub_sub_graph);
-      if (IsGraphUnknown(*sub_sub_graph)) {
+      if (sub_sub_graph->GetGraphUnknownFlag()) {
         GE_CHK_STATUS_RET(UnfoldSubgraph(root_graph, parent_graph, *sub_sub_graph),
                           "[%s] Failed to merge subgraph",
                           sub_sub_graph->GetName().c_str());
@@ -703,7 +695,7 @@ Status HybridModelBuilder::LoadGraph() {
       continue;
     }
 
-    if (IsGraphUnknown(*sub_graph)) {
+    if (sub_graph->GetGraphUnknownFlag()) {
       GE_CHK_STATUS_RET(LoadDynamicSubgraph(*sub_graph, false),
                         "Failed to load subgraph: [%s]",
                         sub_graph->GetName().c_str());
@@ -957,7 +949,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
       continue;
     }
 
-    bool is_unknown_shape = IsGraphUnknown(*sub_graph);
+    bool is_unknown_shape = sub_graph->GetGraphUnknownFlag();
     if (!is_unknown_shape) {
       GE_CHK_STATUS_RET_NOLOG(LoadGeModel(*sub_graph, ge_model));
       continue;
@@ -1208,7 +1200,7 @@ Status HybridModelBuilder::IdentifySameInputs(NodeItem &node_item) {
              in_data_anchor->GetIdx(),
              it->second,
              src_node->GetName().c_str(),
-             out_data_anchor->GetIdx());      
+             out_data_anchor->GetIdx());
       node_item.reuse_outputs.emplace(in_data_anchor->GetIdx(), it->second);
     }
   }
@@ -1418,6 +1410,20 @@ Status HybridModelBuilder::LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem
   graph_item->SetName(graph.GetName());
   GELOGD("Done loading known shape subgraph: [%s]", graph_item->GetName().c_str());
   hybrid_model_.subgraph_items_.emplace(graph.GetName(), std::move(graph_item));
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::RecoverGraphUnknownFlag() {
+  const auto &root_graph = ge_root_model_->GetRootGraph();
+  for (auto &sub_graph : root_graph->GetAllSubgraphs()) {
+    GE_CHECK_NOTNULL(sub_graph);
+    for (const auto &node : sub_graph->GetDirectNode()) {
+      bool is_unknown_shape = false;
+      (void)AttrUtils::GetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);
+      sub_graph->SetGraphUnknownFlag(is_unknown_shape);
+      break;
+    }
+  }
   return SUCCESS;
 }
 

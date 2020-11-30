@@ -77,6 +77,7 @@ class HybridModelBuilder {
   Status LoadDynamicSubgraph(ComputeGraph &graph, bool is_root_graph);
   Status ParseVarOutputs(NodeItem &node_item);
   Status LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem *parent_node_item);
+  Status RecoverGraphUnknownFlag();
 
   const char* GetGraphName() const {
     return hybrid_model_.model_name_.c_str();

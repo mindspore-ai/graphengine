@@ -150,9 +150,10 @@ namespace ge {
     task.op_type_ = op_desc_->GetName();
     task.task_info_ = kernel_def_.task_info();
     task.dynamic_flag_ = dynamic_flag;
+    task.kernel_id_ = kernel_id;
 
     auto debug_info = BuildTaskUtils::GetTaskInfo(op_desc_);
-    GELOGI("[TASK_INFO] %s %s", task.task_info_.c_str(), debug_info.c_str());
+    GELOGI("[TASK_INFO] %s/%s %s", std::to_string(kernel_id).c_str(), task.op_type_.c_str(), debug_info.c_str());
     return SUCCESS;
   }
 }  // namespace ge

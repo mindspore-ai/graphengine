@@ -557,14 +557,14 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
   if (!inputs.empty() && (inputs.size() != op_desc->GetAllInputsSize())) {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "inputs size" + FmtToStr(inputs.size()),
-        "tensor size is " + FmtToStr(inputs.size())});
+        "tensor size is " + FmtToStr(op_desc->GetAllInputsSize())});
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetAllInputsSize());
     return PARAM_INVALID;
   }
   if (!outputs.empty() && (outputs.size() != op_desc->GetOutputsSize())) {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "outputs size" + FmtToStr(outputs.size()),
-        "tensor size is " + FmtToStr(inputs.size())});
+        "tensor size is " + FmtToStr(op_desc->GetOutputsSize())});
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Outputs size: %zu", outputs.size(), op_desc->GetOutputsSize());
     return PARAM_INVALID;
   }

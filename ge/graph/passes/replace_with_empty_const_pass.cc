@@ -74,7 +74,7 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   GELOGD("ReplaceWithEmptyConstPass end.");
   return SUCCESS;
 }
-Status GetOutputsOfCurrNode(const NodePtr &node_to_replace, vector<GeTensorPtr> &outputs) {
+Status ReplaceWithEmptyConstPass::GetOutputsOfCurrNode(const NodePtr &node_to_replace, vector<GeTensorPtr> &outputs) {
   for (const auto &out_anchor : node_to_replace->GetAllOutDataAnchors()) {
     GE_CHECK_NOTNULL(node_to_replace->GetOpDesc());
     auto out_desc = node_to_replace->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx());

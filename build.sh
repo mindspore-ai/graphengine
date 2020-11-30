@@ -59,7 +59,7 @@ checkopts()
   ENABLE_GE_ST="off"
   ENABLE_GE_COV="off"
   GE_ONLY="on"
-  PLATFORM="inference"
+  PLATFORM=""
   PRODUCT="normal"
   ENABLE_GITEE="off"
   # Process the options
@@ -166,6 +166,9 @@ build_graphengine()
   elif [ "x${PLATFORM}" = "xinference" ]
   then
     TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
+  elif [ "X$ENABLE_GE_UT" = "Xon" ]
+  then
+    TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target

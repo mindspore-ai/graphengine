@@ -121,7 +121,7 @@ if (ENABLE_OPEN_SRC)
 	    message(STATUS "PLATFORM param is invalid, should be train or inference, you choose nothing!")
         endif()
 
-	if (ENABLE_GE_COV OR ENABLE_GE_UT OR ENABLE_GE_ST)
+	if (ENABLE_GE_COV OR ENABLE_GE_UT)
             add_subdirectory(tests)
         endif()
 

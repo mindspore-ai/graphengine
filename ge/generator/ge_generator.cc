@@ -76,6 +76,10 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
     op_engine_name = iter->second;
     GELOGI("CheckEngineType: engine type: %d", static_cast<int>(engine_type));
   } else {
+    ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
+        {op_desc->GetName(), op_desc->GetType(), "engine type",
+        "it only support kEngineNameDefault/kAIcoreEngine/kVectorEngine"});
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     GELOGE(FAILED, "CheckEngineType: engine type: %d not support", static_cast<int>(engine_type));
     return FAILED;
   }
@@ -94,6 +98,8 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
   OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
   std::vector<OpInfo> op_infos = ops_kernel_manager.GetOpsKernelInfo(op_desc->GetType());
   if (op_infos.empty()) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
+        {op_desc->GetName(), op_desc->GetType(), "optype", "it can not find"});
     GELOGE(FAILED, "CheckEngineType: Can not get op info by op type %s", op_desc->GetType().c_str());
     return FAILED;
   }
@@ -105,7 +111,9 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
     }
   }
   if (kernel_name.empty()) {
-    GELOGE(FAILED, "CheckEngineType:Can not find ops kernel,engine name: %s.", op_engine_name.c_str());
+    ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
+        {op_desc->GetName(), op_desc->GetType(), "engine name" + FmtToStr(op_engine_name), "it can not find"});
+    GELOGE(FAILED, "CheckEngineType:Can not find ops kernel, engine name: %s.", op_engine_name.c_str());
     return FAILED;
   }
   auto &kernel_map = ops_kernel_manager.GetAllOpsKernelInfoStores();
@@ -119,11 +127,15 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
              op_engine_name.c_str(), op_desc->GetName().c_str());
       return SUCCESS;
     } else {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+        "E13002", {"optype", "opskernel", "reason"}, {op_desc->GetType(), kernel_name, unsupported_reason});
       GELOGE(FAILED, "CheckEngineType: check support failed, Op type %s of ops kernel %s is unsupported, reason:%s",
              op_desc->GetType().c_str(), kernel_name.c_str(), unsupported_reason.c_str());
       return FAILED;
     }
   } else {
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E13003", {"opname", "optype"}, {op_desc->GetName(), op_desc->GetType()});
     GELOGE(FAILED,
            "CheckEngineType:Can not find any supported ops kernel info store by kernel_name %s,"
            "op type is %s, op name is %s",
@@ -543,10 +555,16 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
                                      const vector<GeTensor> &outputs) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
   if (!inputs.empty() && (inputs.size() != op_desc->GetAllInputsSize())) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
+        {op_desc->GetName(), op_desc->GetType(), "inputs size" + FmtToStr(inputs.size()),
+        "tensor size is " + FmtToStr(inputs.size())});
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetAllInputsSize());
     return PARAM_INVALID;
   }
   if (!outputs.empty() && (outputs.size() != op_desc->GetOutputsSize())) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
+        {op_desc->GetName(), op_desc->GetType(), "outputs size" + FmtToStr(outputs.size()),
+        "tensor size is " + FmtToStr(inputs.size())});
     GELOGE(PARAM_INVALID, "Tensor size: %zu, Outputs size: %zu", outputs.size(), op_desc->GetOutputsSize());
     return PARAM_INVALID;
   }

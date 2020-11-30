@@ -19,6 +19,7 @@
 #include "framework/common/string_util.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
+#include "graph/utils/type_utils.h"
 
 using std::pair;
 using std::string;
@@ -106,6 +107,10 @@ bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>>
 
 bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
                                           const std::string input_format, std::string &dynamic_image_size) {
+  if (!input_format.empty() && !ge::TypeUtils::IsFormatValid(input_format.c_str())) {
+    GELOGE(ge::PARAM_INVALID, "user input format [%s] is not found!", input_format.c_str());
+    return false;
+  }
   int32_t size = 0;
   for (auto iter = shape_map.begin(); iter != shape_map.end(); ++iter) {
     vector<int64_t> shape = iter->second;

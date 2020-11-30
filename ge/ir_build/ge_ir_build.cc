@@ -542,7 +542,13 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
     return GRAPH_PARAM_INVALID;
   }
 
-  auto ret = compute_graph->InferOriginFormat();
+  auto ret = compute_graph->TopologicalSorting();
+  if(ret != GRAPH_SUCCESS) {
+    GELOGE(ret, "Acl topo logical sort failed.");
+    return ret;
+  }
+
+  ret = compute_graph->InferOriginFormat();
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "Acl InferOriginFormat failed.");
     return ret;

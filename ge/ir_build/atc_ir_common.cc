@@ -418,7 +418,7 @@ Status CheckCompressWeightParamValid(const std::string enable_compress_weight, c
   }
 
   if ((enable_compress_weight == "true") && (!compress_weight_conf.empty())) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10009", {"parameter0", "parameter1"},
+    ErrorManager::GetInstance().ATCReportErrMessage("E10047", {"parameter0", "parameter1"},
                                                     {"enable_compress_weight", "compress_weight_conf"});
     GELOGE(ge::PARAM_INVALID, "enable_compress_weight and compress_weight_conf can not both exist!!");
     return ge::PARAM_INVALID;

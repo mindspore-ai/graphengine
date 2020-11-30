@@ -25,6 +25,7 @@
 #include "common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "ge/ge_api.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
@@ -79,7 +80,6 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "engine type",
         "it only support kEngineNameDefault/kAIcoreEngine/kVectorEngine"});
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     GELOGE(FAILED, "CheckEngineType: engine type: %d not support", static_cast<int>(engine_type));
     return FAILED;
   }

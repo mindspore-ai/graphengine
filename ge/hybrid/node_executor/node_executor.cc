@@ -82,17 +82,15 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
   auto op_type = node.GetType();
   if (op_type == PARTITIONEDCALL) {
     const auto &subgraph = NodeUtils::GetSubgraph(node, 0);
-    if (subgraph != nullptr) {
-      for (const auto &node : subgraph->GetDirectNode()) {
-        bool is_unknown_shape = false;
-        (void)AttrUtils::GetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);
-        if (is_unknown_shape) {
-          return ExecutorType::DYNAMIC_SUBGRAPH;
-        } else {
-          return ExecutorType::COMPILED_SUBGRAPH;
-        }
-      }
+    if (subgraph != nullptr && subgraph->GetGraphUnknownFlag()) {
+      return ExecutorType::DYNAMIC_SUBGRAPH;
     }
+    bool is_dynamic = false;
+    (void)NodeUtils::GetNodeUnknownShapeStatus(node, is_dynamic);
+    if (is_dynamic) {
+      return ExecutorType::DYNAMIC_SUBGRAPH;
+    }
+    return ExecutorType::COMPILED_SUBGRAPH;
   }
 
   // rts kernel store is assigned to NetOutput

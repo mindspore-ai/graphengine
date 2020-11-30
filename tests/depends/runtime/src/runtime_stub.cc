@@ -221,8 +221,9 @@ rtError_t rtCpuKernelLaunch(const void *so_name, const void *kernel_name, uint32
   return RT_ERROR_NONE;
 }
 
-rtError_t rtModelGetTaskId(void *handle, uint32_t *task_id) {
+rtError_t rtModelGetTaskId(void *handle, uint32_t *task_id, uint32_t *stream_id) {
   *task_id = 0;
+  *stream_id = 0;
   return RT_ERROR_NONE;
 }
 rtError_t rtEndGraph(rtModel_t model, rtStream_t stream) { return RT_ERROR_NONE; }
@@ -306,4 +307,80 @@ rtError_t rtModelGetId(rtModel_t model, uint32_t *modelId)
 rtError_t rtModelBindQueue(rtModel_t model, uint32_t queueId, rtModelQueueFlag_t flag)
 {
   return RT_ERROR_NONE;
+}
+
+rtError_t rtSetSocVersion(const char *version)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtGetSocVersion(char *version, const uint32_t maxLen)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
+		                   rtMallocHostSharedMemoryOut *out)
+{
+  out->ptr = new uint8_t[in->size];
+  out->devPtr = new uint8_t[in->size];
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtFreeHostSharedMemory(rtFreeHostSharedMemoryIn *in)
+{
+  delete[] (uint8_t*)in->ptr;
+  delete[] (uint8_t*)in->devPtr;
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtGetAicpuDeploy(rtAicpuDeployType_t *deplyType)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *addr, uint32_t *streamId, uint32_t *taskId)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtDebugUnRegister(rtModel_t model)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtDumpAddrSet(rtModel_t model, void *addr, uint32_t dumpSize, uint32_t flag)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtSetCtxINFMode(bool mode)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream)
+{
+  *label = new uint32_t;
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, int64_t *value)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *maxStrCount, uint32_t *maxTaskCount)
+{
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtModelExit(rtModel_t model, rtStream_t stream)
+{
+ return RT_ERROR_NONE;
 }

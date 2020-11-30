@@ -97,7 +97,9 @@ TEST_F(UtestSingleOpModel, test_set_inputs_and_outputs) {
   model.output_offset_list_.push_back(0);
   model.output_sizes_.push_back(16);
 
-  SingleOp single_op;
+  std::mutex stream_mu_;
+  rtStream_t stream_ = nullptr;
+  SingleOp single_op(&stream_mu_, stream_);
 
   ASSERT_EQ(model.SetInputsAndOutputs(single_op), SUCCESS);
 }
@@ -111,25 +113,29 @@ TEST_F(UtestSingleOpModel, test_build_kernel_task) {
   model.output_offset_list_.push_back(0);
   model.output_sizes_.push_back(16);
 
+  auto graph = make_shared<ComputeGraph>("graph");
   auto op_desc = make_shared<OpDesc>("AddN", "AddN");
   vector<int64_t> shape{16, 16};
   GeShape ge_shape(shape);
   GeTensorDesc desc(ge_shape);
   op_desc->AddInputDesc(desc);
   op_desc->AddOutputDesc(desc);
+  auto node = graph->AddNode(op_desc);
+  std::mutex stream_mu_;
+  rtStream_t stream_ = nullptr;
+  SingleOp single_op(&stream_mu_, stream_);
 
-  SingleOp single_op;
   domi::KernelDef kernel_def;
-  kernel_def.mutable_context()->set_kernel_type(cce::ccKernelType::CCE_AI_CORE);
-  OpTask *task = nullptr;
-  ASSERT_EQ(model.BuildKernelTask(kernel_def, single_op, &task), UNSUPPORTED);
+  kernel_def.mutable_context()->set_kernel_type(cce::ccKernelType::TE);
+  TbeOpTask *task = nullptr;
+  ASSERT_EQ(model.BuildKernelTask(kernel_def, &task), UNSUPPORTED);
 
   kernel_def.mutable_context()->set_kernel_type(cce::ccKernelType::TE);
-  ASSERT_EQ(model.BuildKernelTask(kernel_def, single_op, &task), INTERNAL_ERROR);
+  ASSERT_EQ(model.BuildKernelTask(kernel_def, &task), INTERNAL_ERROR);
 
-  model.op_list_[0] = op_desc;
+  model.op_list_[0] = node;
 
-  ASSERT_EQ(model.BuildKernelTask(kernel_def, single_op, &task), PARAM_INVALID);
+  ASSERT_EQ(model.BuildKernelTask(kernel_def, &task), PARAM_INVALID);
   ASSERT_EQ(task, nullptr);
   delete task;
 }
@@ -145,18 +151,22 @@ TEST_F(UtestSingleOpModel, test_parse_arg_table) {
   SingleOpModel op_model("model", model_data_str.c_str(), model_data_str.size());
 
   TbeOpTask task;
-  SingleOp op;
+  OpDescPtr op_desc;
+  std::mutex stream_mu_;
+  rtStream_t stream_ = nullptr;
+  SingleOp op(&stream_mu_, stream_);
   op.arg_table_.resize(2);
 
-  auto *args = new uintptr_t[2];
-  args[0] = 0x100000;
-  args[1] = 0x200000;
-  task.SetKernelArgs(args, 16, 1);
+  auto args = std::unique_ptr<uint8_t[]>(new uint8_t[sizeof(uintptr_t) * 2]);
+  auto *arg_base = (uintptr_t*)args.get();
+  arg_base[0] = 0x100000;
+  arg_base[1] = 0x200000;
+  task.SetKernelArgs(std::move(args), 16, 1, op_desc);
 
   op_model.model_params_.addr_mapping_[0x100000] = 1;
   op_model.ParseArgTable(&task, op);
 
   ASSERT_EQ(op.arg_table_[0].size(), 0);
   ASSERT_EQ(op.arg_table_[1].size(), 1);
-  ASSERT_EQ(op.arg_table_[1].front(), &args[0]);
+  ASSERT_EQ(op.arg_table_[1].front(), &arg_base[0]);
 }

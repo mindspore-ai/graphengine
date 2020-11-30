@@ -19,7 +19,6 @@
 #include "omg/omg_inner_types.h"
 #define protected public
 #define private public
-#include "graph/passes/switch_op_pass.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
@@ -27,7 +26,6 @@
 #include "common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/graph.h"
-#include "graph/passes/control_op_attr_pass.h"
 #include "inc/pass_manager.h"
 #undef protected
 #undef private

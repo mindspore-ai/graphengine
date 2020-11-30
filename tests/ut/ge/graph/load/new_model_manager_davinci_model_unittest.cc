@@ -25,7 +25,6 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/model_serialize.h"
 #include "graph/load/new_model_manager/davinci_model.h"
-#include "graph/load/new_model_manager/model_output.h"
 #include "common/properties_manager.h"
 #include "common/op/ge_op_utils.h"
 #include <cce/taskdown_api.h>
@@ -38,7 +37,6 @@
 #include "graph/load/new_model_manager/task_info/stream_switch_task_info.h"
 #include "graph/load/new_model_manager/task_info/profiler_trace_task_info.h"
 #include "graph/load/new_model_manager/task_info/memcpy_async_task_info.h"
-#include "graph/load/new_model_manager/task_info/label_goto_task_info.h"
 #include "graph/load/new_model_manager/task_info/label_set_task_info.h"
 #include "graph/load/new_model_manager/task_info/kernel_ex_task_info.h"
 #include "graph/load/new_model_manager/task_info/kernel_task_info.h"

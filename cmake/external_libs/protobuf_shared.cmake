@@ -22,7 +22,7 @@ endif ()
 set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fstack-protector-all -D_FORTIFY_SOURCE=2 -D_GLIBCXX_USE_CXX11_ABI=0 -O2 -Dgoogle=ascend_private")
 set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(protobuf_build
-                    URL https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz
+                    URL ${REQ_URL}
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -Dprotobuf_WITH_ZLIB=OFF
                     -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}

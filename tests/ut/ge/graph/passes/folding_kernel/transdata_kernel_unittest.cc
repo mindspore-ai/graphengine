@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#include "graph/passes/folding_kernel/transdata_kernel.h"
+#include "host_kernels/transdata_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
@@ -26,7 +26,7 @@
 #include "common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/passes/dimension_compute_pass.h"
-#include "graph/passes/folding_kernel/kernel_utils.h"
+#include "host_kernels/kernel_utils.h"
 #include "graph/types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"

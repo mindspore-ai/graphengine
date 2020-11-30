@@ -14,17 +14,21 @@
 # ============================================================================
 
 #cmake_minimum_required(VERSION 2.8)
-project(hccl_stub)
 
-file(GLOB_RECURSE SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "src/hccl_stub.cc"
+project(STUB_ERROR_MANAGER)
+
+file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "src/error_manager_stub.cc"
 )
 
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/inc)
+include_directories(${GE_CODE_DIR}/inc/external)
+include_directories(${GE_CODE_DIR}/metadef/inc)
+include_directories(${GE_CODE_DIR}/inc/framework)
+include_directories(${GE_CODE_DIR}/metadef/inc/external)
 
-add_library(hccl_stub SHARED ${SRC_FILES})
-
-target_link_libraries(hccl_stub PRIVATE
+add_library(error_manager_stub SHARED ${SRCS})
+target_link_libraries(error_manager_stub PRIVATE
     $<BUILD_INTERFACE:intf_pub>
 )

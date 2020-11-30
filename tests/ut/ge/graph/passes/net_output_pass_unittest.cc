@@ -155,7 +155,7 @@ TEST_F(UtestGraphPassesNetOutputPass, add_ctrl_edge_for_netout_from_leaf_success
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{relu3, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -200,7 +200,7 @@ TEST_F(UtestGraphPassesNetOutputPass, only_target_node_success) {
   std::vector<ge::NodePtr> target_nodes = {mul1, mul2};
   compute_graph->SetGraphTargetNodesInfo(target_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -256,7 +256,7 @@ TEST_F(UtestGraphPassesNetOutputPass, targets_with_retval_success) {
   }
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -300,7 +300,7 @@ TEST_F(UtestGraphPassesNetOutputPass, output_node_and_target_node_no_duplicate_s
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{relu3, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -348,7 +348,7 @@ TEST_F(UtestGraphPassesNetOutputPass, output_node_and_target_node_duplicate_succ
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{mul1, 0}, {mul2, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -398,7 +398,7 @@ TEST_F(UtestGraphPassesNetOutputPass, net_output_node_and_target_node_success) {
   compute_graph->SetGraphTargetNodesInfo(target_nodes);
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -462,7 +462,7 @@ TEST_F(UtestGraphPassesNetOutputPass, net_output_node_and_output_nodes_and_targe
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{mul1, 0}, {mul2, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -518,7 +518,7 @@ TEST_F(UtestGraphPassesNetOutputPass, net_output_node_and_output_nodes_and_targe
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{mul1, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -582,7 +582,7 @@ TEST_F(UtestGraphPassesNetOutputPass, net_output_node_and_output_nodes_and_targe
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{mul1, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   // check contain netoutput
@@ -626,7 +626,7 @@ TEST_F(UtestGraphPassesNetOutputPass, no_output_no_target_no_retval_success) {
   std::vector<std::pair<ge::NodePtr, int32_t>> output_nodes = {{mul1, 0}, {mul2, 0}};
   compute_graph->SetGraphOutNodesInfo(output_nodes);
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
 }
@@ -641,7 +641,7 @@ TEST_F(UtestGraphPassesNetOutputPass, user_out_node_success) {
   compute_graph->SetGraphOutNodesInfo(output_nodes);
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   NodePtr net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
@@ -687,7 +687,7 @@ TEST_F(UtestGraphPassesNetOutputPass, retval_node_for_out_success) {
   }
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   NodePtr net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
@@ -737,7 +737,7 @@ TEST_F(UtestGraphPassesNetOutputPass, check_order_and_const_flag_success) {
   GraphUtils::AddEdge(mul2->GetOutDataAnchor(0), retval_node2->GetInDataAnchor(0));
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
   NodePtr net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
@@ -775,7 +775,7 @@ TEST_F(UtestGraphPassesNetOutputPass, out_node_check_fail) {
   compute_graph->SetGraphOutNodesInfo(output_nodes_invalid_name);
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::INTERNAL_ERROR);
   NodePtr net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
@@ -817,7 +817,7 @@ TEST_F(UtestGraphPassesNetOutputPass, retval_node_check_fail) {
   }
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::INTERNAL_ERROR);
   NodePtr net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
@@ -832,7 +832,7 @@ TEST_F(UtestGraphPassesNetOutputPass, out_node_update_desc_check_fail) {
   EXPECT_NE(netout_node, nullptr);
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::INTERNAL_ERROR);
 }
@@ -852,7 +852,7 @@ TEST_F(UtestGraphPassesNetOutputPass, out_node_remove_check_fail) {
   EXPECT_EQ(mul1, nullptr);
 
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) NetOutputPass);
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
 }

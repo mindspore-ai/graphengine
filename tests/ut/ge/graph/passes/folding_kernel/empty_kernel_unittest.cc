@@ -31,7 +31,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/empty_kernel.h"
+#include "host_kernels/empty_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

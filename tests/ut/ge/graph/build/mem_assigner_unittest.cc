@@ -152,7 +152,7 @@ TEST_F(UtestMemoryAssignerTest, MemoryBlock_Resize_RealSizeList_is_empty) {
   ge::OpDescPtr op_def_a = createOpWithWsSize("A", 6000);
   ge::NodePtr node_a = graph->AddNode(op_def_a);
   MemoryBlock* memory_block = new MemoryBlock(0);
-  memory_block->Init(1, kOutput, node_a, 0);
+  memory_block->Init(1, kOutput, node_a, 0, 1);
   memory_block->real_size_list_.clear();
   memory_block->Resize();
 
@@ -165,7 +165,7 @@ namespace ge {
 
 class MockBlockMemAssigner : public BlockMemAssigner {
  public:
-  explicit MockBlockMemAssigner(ge::ComputeGraphPtr compute_graph) : BlockMemAssigner(compute_graph){};
+  explicit MockBlockMemAssigner(ge::ComputeGraphPtr compute_graph, const std::map<std::string, std::string> &anchor_to_symbol, const std::map<std::string, std::list<NodeIndexIO>> &symbol_to_anchors) : BlockMemAssigner(compute_graph, anchor_to_symbol, symbol_to_anchors) {};
 
   virtual ~MockBlockMemAssigner(){};
 
@@ -177,7 +177,10 @@ class MockBlockMemAssigner : public BlockMemAssigner {
 TEST_F(UtestMemoryAssignerTest, Mock_block_mem_assigner_failed) {
   ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
   make_graph(graph);
-  MockBlockMemAssigner mock_assigner(graph);
+  std::map<std::string, std::string> anchor_to_symbol;
+  std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors;
+  EXPECT_EQ(GraphUtils::GetRefMapping(graph, symbol_to_anchors, anchor_to_symbol), GRAPH_SUCCESS);
 
+  MockBlockMemAssigner mock_assigner(graph, anchor_to_symbol, symbol_to_anchors);
   EXPECT_EQ(mock_assigner.Assign(), FAILED);
 }

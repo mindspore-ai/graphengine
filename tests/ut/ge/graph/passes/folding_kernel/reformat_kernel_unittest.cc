@@ -16,12 +16,12 @@
 
 #include <gtest/gtest.h>
 
-#include "graph/passes/folding_kernel/reformat_kernel.h"
+#include "host_kernels/reformat_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
-#include "graph/passes/folding_kernel/kernel_utils.h"
+#include "host_kernels/kernel_utils.h"
 #include "graph/types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"

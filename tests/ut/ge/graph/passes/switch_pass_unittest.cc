@@ -19,7 +19,6 @@
 #include <string>
 
 #define private public
-#include "graph/passes/switch_pass.h"
 
 #include "common/ge_inner_error_codes.h"
 #include "inc/pass_manager.h"

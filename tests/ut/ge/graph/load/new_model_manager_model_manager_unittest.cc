@@ -113,7 +113,7 @@ class DModelListener : public ge::ModelListener {
   uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode) { return 0; }
 };
 
-shared_ptr<ge::ModelListener> UTEST_CALL_BACK_FUN(new DModelListener());
+shared_ptr<ModelListener> UTEST_CALL_BACK_FUN(new DModelListener());
 
 TEST_F(UtestModelManagerModelManager, case_load_incorrect_param) {
   ModelManager mm;
@@ -164,7 +164,7 @@ TEST_F(UtestModelManagerModelManager, case_load_model_encypt_type_unsupported) {
   delete[](uint8_t *) data.model_data;
 }
 
-shared_ptr<ge::ModelListener> LabelCallBack(new DModelListener());
+shared_ptr<ModelListener> LabelCallBack(new DModelListener());
 
 // test HandleCommand
 TEST_F(UtestModelManagerModelManager, command_success1) {
@@ -306,6 +306,8 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_fail) {
   EXPECT_EQ(ge::PARAM_INVALID, manager.GetInputOutputDescInfo(2, input_shape, output_shape));
 }
 
+
+/*
 // test GetInputOutputDescInfo fail
 TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_zero_copy_fail) {
   ModelManager manager;
@@ -314,6 +316,7 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_zero_copy_fail)
   vector<InputOutputDescInfo> output_shape;
   EXPECT_EQ(ge::PARAM_INVALID, manager.GetInputOutputDescInfoForZeroCopy(2, input_shape, output_shape));
 }
+*/
 
 // test Stop
 TEST_F(UtestModelManagerModelManager, stop_fail) {
@@ -324,7 +327,7 @@ TEST_F(UtestModelManagerModelManager, stop_fail) {
 
 // build input_data
 TEST_F(UtestModelManagerModelManager, check_data_len_success) {
-  shared_ptr<ge::ModelListener> g_label_call_back(new DModelListener());
+  shared_ptr<ModelListener> g_label_call_back(new DModelListener());
   DavinciModel model(0, g_label_call_back);
   ModelManager model_manager;
   ge::InputData input_data;

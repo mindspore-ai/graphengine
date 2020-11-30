@@ -38,7 +38,7 @@ class UtestGraphPassesFlowCtrlPass : public testing::Test {
     EXPECT_EQ(SUCCESS, ge::VarManager::Instance(0)->Init(session_version, session_id, device_id, job_id));
   }
 
-  void TearDown() { VarManagerPool::Instance().Destroy(); }
+  void TearDown() { VarManagerPool::Instance().Destory(); }
 
  public:
   /// Set up a graph with the following network structure

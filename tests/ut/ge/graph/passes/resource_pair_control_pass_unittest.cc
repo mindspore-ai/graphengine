@@ -68,7 +68,7 @@ TEST_F(UtestResourcePairControlPass, resource_pair_control) {
   EXPECT_EQ(stackpop0->GetInControlNodes().size(), 0);
 
   ResourcePairAddControlPass add_pass;
-  vector<GraphPass*> passes = {&add_pass};
+  std::vector<std::pair<string, GraphPass*>> passes = { {"", &add_pass} };
   EXPECT_EQ(PassManager::Run(graph, passes), SUCCESS);
 
   auto stackpush1 = graph->FindNode("stackpush1");
@@ -80,7 +80,7 @@ TEST_F(UtestResourcePairControlPass, resource_pair_control) {
   EXPECT_EQ(stackpop1->GetInControlNodes().at(0)->GetName(), "stackpush1");
 
   ResourcePairRemoveControlPass remove_pass;
-  passes = {&remove_pass};
+  passes = { {"", &remove_pass} };
   EXPECT_EQ(PassManager::Run(graph, passes), SUCCESS);
 
   auto stackpush2 = graph->FindNode("stackpush1");

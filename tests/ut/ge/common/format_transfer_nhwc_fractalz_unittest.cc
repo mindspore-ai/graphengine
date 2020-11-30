@@ -18,7 +18,10 @@
 
 #include "common/formats/format_transfers/format_transfer_fractal_z.h"
 
-#include "common/formats/format_transfers/format_transfer.h"
+//#include "common/formats/format_transfers/format_transfer.h"
+
+#include "register/register_format_transfer.h"
+#include "framework/common/ge_inner_error_codes.h"
 
 namespace ge {
 namespace formats {

@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/folding_kernel/shape_n_kernel.h"
+#include "host_kernels/shape_n_kernel.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

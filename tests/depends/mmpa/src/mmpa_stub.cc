@@ -217,3 +217,58 @@ INT32 mmScandir(const CHAR *path, mmDirent ***entryList, mmFilter filterFunc,  m
 VOID mmScandirFree(mmDirent **entryList, INT32 count)
 {
 }
+
+INT32 mmAccess2(const CHAR *pathName, INT32 mode)
+{
+  return 0;
+}
+
+INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone)
+{
+  return 0;
+}
+
+INT32 mmRealPath(const CHAR *path, CHAR *realPath, INT32 realPathLen)
+{
+  return 0;
+}
+
+INT32 mmGetErrorCode()
+{
+  return 0;
+}
+
+INT32 mmIsDir(const CHAR *fileName)
+{
+  return 0;
+}
+
+INT32 mmGetEnv(const CHAR *name, CHAR *value, UINT32 len)
+{
+  return 0;
+}
+
+INT32 mmDlclose(VOID *handle)
+{
+  return 0;
+}
+
+CHAR *mmDlerror()
+{
+  return "";
+}
+
+INT32 mmDladdr(VOID *addr, mmDlInfo *info)
+{
+  return 0;
+}
+
+VOID *mmDlopen(const CHAR *fileName, INT32 mode)
+{
+  return NULL;
+}
+
+VOID *mmDlsym(VOID *handle, const CHAR *funcName)
+{
+  return NULL;
+}

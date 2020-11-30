@@ -18,7 +18,7 @@
 
 #include "common/formats/format_transfers/datatype_transfer.h"
 
-#include "common/formats/format_transfers/format_transfer.h"
+//#include "common/formats/format_transfers/format_transfer.h"
 #include "common/formats/formats.h"
 #include "common/fp16_t.h"
 

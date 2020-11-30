@@ -70,7 +70,7 @@ ge::ComputeGraphPtr CreateSaveGraph() {
 TEST_F(UtestGraphPassesSavePass, cover_run_success) {
   ge::ComputeGraphPtr compute_graph = CreateSaveGraph();
   ge::PassManager pass_managers;
-  pass_managers.AddPass(new (std::nothrow) SavePass);
+  pass_managers.AddPass("", new (std::nothrow) SavePass);
   Status status = pass_managers.Run(compute_graph);
   EXPECT_EQ(status, ge::SUCCESS);
 }

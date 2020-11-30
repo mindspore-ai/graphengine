@@ -25,7 +25,7 @@ class ReplaceWithEmptyConstPass : public FoldingPass {
   Status Run(NodePtr &node) override;
 
  private:
-  Status GetOutputsOfCurrNode(const NodePtr &node_to_repalce, vector<GeTensorPtr> &outputs);
+  Status GetOutputsOfCurrNode(const NodePtr &node_to_replace, vector<GeTensorPtr> &outputs);
   bool IsEmptyTenor(const GeShape &shape) const;
 };
 }  // namespace ge

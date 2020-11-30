@@ -74,9 +74,10 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   GELOGD("ReplaceWithEmptyConstPass end.");
   return SUCCESS;
 }
-Status GetOutputsOfCurrNode(const NodePtr &node_to_repalce, vector<GeTensorPtr> &outputs) {
+Status GetOutputsOfCurrNode(const NodePtr &node_to_replace, vector<GeTensorPtr> &outputs) {
   for (const auto &out_anchor : node_to_replace->GetAllOutDataAnchors()) {
-    auto out_desc = op_desc->GetOutputDesc(out_anchor->GetIdx());
+    GE_CHECK_NOTNULL(node_to_replace->GetOpDesc());
+    auto out_desc = node_to_replace->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx());
     GeTensorPtr empty_tensor = MakeShared<ge::GeTensor>(out_desc);
     GE_CHECK_NOTNULL(empty_tensor);
     outputs.emplace_back(empty_tensor);

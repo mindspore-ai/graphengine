@@ -2484,14 +2484,14 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
       GELOGE(RT_FAILED, "[GraphManager:] rtSetDevice failed, modelId=%u, graphId=%u.", model_id, graph_id);
       continue;
     }
-    result = GraphLoader::UnloadModel(model_id);
-    if (result != SUCCESS) {
-      GELOGW("[GraphManager:] unload model failed, modelId=%u, graphId=%u.", model_id, graph_id);
-    }
     result = GraphLoader::DestroyAicpuKernel(session_id, model_id);
     if (result != SUCCESS) {
       GELOGW("[GraphManager:] destroy aicpu kernel failed when dynamic memory, modelId=%u, graphId=%u.", model_id,
              graph_id);
+    }
+    result = GraphLoader::UnloadModel(model_id);
+    if (result != SUCCESS) {
+      GELOGW("[GraphManager:] unload model failed, modelId=%u, graphId=%u.", model_id, graph_id);
     }
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {

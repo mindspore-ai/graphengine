@@ -49,6 +49,7 @@ class UtestGraphPassesFoldingKernelPermuteKernel : public testing::Test {
   void TearDown() {}
 };
 
+/*
 TEST_F(UtestGraphPassesFoldingKernelPermuteKernel, ComputeNchwToNhwc) {
   const std::string ATTR_ORDER = "order";
   const std::string ATTR_PERM = "perm";
@@ -74,6 +75,7 @@ TEST_F(UtestGraphPassesFoldingKernelPermuteKernel, ComputeNchwToNhwc) {
 
   EXPECT_EQ(ge::SUCCESS, status);
 }
+
 
 TEST_F(UtestGraphPassesFoldingKernelPermuteKernel, ComputeTransaxises) {
   const std::string ATTR_ORDER = "order";
@@ -234,3 +236,4 @@ TEST_F(UtestGraphPassesFoldingKernelPermuteKernel, ComputeParamInvalid3) {
   ge::Status status = kernel->Compute(op_desc_ptr, input2, outputs);
   EXPECT_EQ(ge::PARAM_INVALID, status);
 }
+*/

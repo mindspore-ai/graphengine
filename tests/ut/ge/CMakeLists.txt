@@ -104,8 +104,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/operator.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
-    #"${GE_CODE_DIR}/metadef/graph/operator_reg.cc"
-    #"${GE_CODE_DIR}/metadef/graph/range_vistor.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
     "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
     "${GE_CODE_DIR}/metadef/graph/tensor.cc"
@@ -123,7 +121,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
     "${GE_CODE_DIR}/metadef/register/register.cpp"
     "${GE_CODE_DIR}/metadef/register/op_kernel_registry.cpp"
-    #"${GE_CODE_DIR}/tests/depends/cce/src/op_kernel_registry.cpp"
     "${GE_CODE_DIR}/metadef/register/auto_mapping_util.cpp"
     "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"
     "${GE_CODE_DIR}/metadef/register/register_format_transfer.cc"
@@ -308,6 +305,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
     "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
     "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
+    "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -655,7 +653,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/format_transfer_nchw_fractalz_unittest.cc"
     "common/format_transfer_hwcn_fractalz_unittest.cc"
     "common/format_transfer_nhwc_fractalz_unittest.cc"
-    "common/format_transfer_fractal_nz_unittest.cc"
+    #"common/format_transfer_fractal_nz_unittest.cc"
     "common/format_transfer_fractal_zz_unittest.cc"
     "common/format_transfer_nhwc_5d_unittest.cc"
     "common/format_transfer_5d_nchw_unittest.cc"
@@ -851,7 +849,7 @@ target_compile_definitions(ut_libge_multiparts_utest PRIVATE
 
 target_link_libraries(ut_libge_multiparts_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl 
+    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl 
 )
 
 # libge_others_utest
@@ -864,7 +862,7 @@ add_executable(ut_libge_others_utest
 )
 target_link_libraries(ut_libge_others_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
+    ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
 )
 
 # libge_kernel_utest
@@ -876,7 +874,7 @@ add_executable(ut_libge_kernel_utest
 )
 target_link_libraries(ut_libge_kernel_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_pass_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
+    ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
 )
 
 # libge_distinct_load_utest
@@ -895,7 +893,7 @@ target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
 target_link_libraries(ut_libge_distinct_load_utest 
 	${COMMON_SHARED_LIBRARIES}
 	$<BUILD_INTERFACE:intf_pub>
-        ge_execute_common ge_ut_common_format ge_pass_common ge_load_common
+        ge_execute_common ge_ut_common_format ge_load_common
         ge_single_op   ge_prepare_common
         ge_optimize_common  ge_build_common ge_partition_common ge_ut_common
         gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread

@@ -202,25 +202,25 @@ echo "---------------- GraphEngine output generated ----------------"
 #     cp ${BUILD_PATH}/graphengine/tests/st/st_resnet50_train ${OUTPUT_PATH}
 # fi
 
-# if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
-#     cp ${BUILD_PATH}/graphengine/tests/ut/common/graph/ut_libgraph ${OUTPUT_PATH}
-#     cp ${BUILD_PATH}/graphengine/tests/ut/ge/ut_libge_multiparts_utest ${OUTPUT_PATH}
-#     cp ${BUILD_PATH}/graphengine/tests/ut/ge/ut_libge_distinct_load_utest ${OUTPUT_PATH}
-#     cp ${BUILD_PATH}/graphengine/tests/ut/ge/ut_libge_others_utest ${OUTPUT_PATH}
-#     cp ${BUILD_PATH}/graphengine/tests/ut/ge/ut_libge_kernel_utest ${OUTPUT_PATH}
+if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
+    cp ${BUILD_PATH}/tests/ut/common/graph/ut_libgraph ${OUTPUT_PATH}
+    cp ${BUILD_PATH}/tests/ut/ge/ut_libge_multiparts_utest ${OUTPUT_PATH}
+    cp ${BUILD_PATH}/tests/ut/ge/ut_libge_distinct_load_utest ${OUTPUT_PATH}
+    cp ${BUILD_PATH}/tests/ut/ge/ut_libge_others_utest ${OUTPUT_PATH}
+    cp ${BUILD_PATH}/tests/ut/ge/ut_libge_kernel_utest ${OUTPUT_PATH}
 
 #     if [[ "X${ENABLE_GE_UT_ONLY_COMPILE}" != "Xon" ]]; then
 #         export LD_LIBRARY_PATH=${D_LINK_PATH}/x86_64/:${BUILD_PATH}../third_party/prebuild/x86_64/:${BUILD_PATH}/graphengine/:/usr/local/HiAI/driver/lib64:/usr/local/HiAI/runtime/lib64:${LD_LIBRARY_PATH}
 #         echo ${LD_LIBRARY_PATH}
-#         ${OUTPUT_PATH}/ut_libgraph &&
-#         ${OUTPUT_PATH}/ut_libge_multiparts_utest &&
-#         ${OUTPUT_PATH}/ut_libge_distinct_load_utest &&
-#         ${OUTPUT_PATH}/ut_libge_others_utest &&
-#         ${OUTPUT_PATH}/ut_libge_kernel_utest
-#         if [[ "$?" -ne 0 ]]; then
-#             echo "!!! UT FAILED, PLEASE CHECK YOUR CHANGES !!!"
-#             exit 1;
-#         fi
+    ${OUTPUT_PATH}/ut_libgraph &&
+    ${OUTPUT_PATH}/ut_libge_multiparts_utest &&
+    ${OUTPUT_PATH}/ut_libge_distinct_load_utest &&
+    ${OUTPUT_PATH}/ut_libge_others_utest &&
+    ${OUTPUT_PATH}/ut_libge_kernel_utest
+    if [[ "$?" -ne 0 ]]; then
+        echo "!!! UT FAILED, PLEASE CHECK YOUR CHANGES !!!"
+        exit 1;
+    fi
 #     fi
 
 #     if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
@@ -230,7 +230,7 @@ echo "---------------- GraphEngine output generated ----------------"
 #         mkdir ${BASEPATH}/cov
 #         gcovr -r ./ --exclude 'third_party' --exclude 'build' --exclude 'tests' --exclude 'prebuild' --exclude 'inc' --print-summary --html --html-details -d -o cov/index.html
 #     fi
-# fi
+fi
 
 # generate output package in tar form, including ut/st libraries/executables
 generate_package()

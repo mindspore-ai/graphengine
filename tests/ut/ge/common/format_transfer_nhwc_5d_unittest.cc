@@ -694,6 +694,7 @@ TEST_F(UtestFormatTransferNhwc5d, invalid_src_shape1) {
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
+/*
 TEST_F(UtestFormatTransferNhwc5d, invalid_src_shape2) {
   uint16_t data[1 * 4 * 4 * 1] = {0};
   TransArgs args{
@@ -706,6 +707,7 @@ TEST_F(UtestFormatTransferNhwc5d, invalid_src_shape2) {
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
   EXPECT_EQ(status, PARAM_INVALID);
 }
+*/
 
 TEST_F(UtestFormatTransferNhwc5d, invalid_src_format) {
   uint16_t data[1 * 4 * 4 * 1] = {0};

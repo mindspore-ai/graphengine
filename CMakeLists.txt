@@ -13,6 +13,12 @@ if(DEFINED ENV{ASCEND_CUSTOM_PATH})
 else()
     set(ASCEND_DIR /usr/local/Ascend)
 endif()
+
+if(DEFINED ENV{D_PKG_SERVER})
+    set(GE_PB_PKG $ENV{D_PKG_SERVER})
+    message("Download packages from PKG server")
+endif()
+
 set(ASCEND_DRIVER_DIR ${ASCEND_DIR}/driver/lib64)
 set(ASCEND_DRIVER_COMMON_DIR ${ASCEND_DIR}/driver/lib64/common)
 set(ASCEND_DRIVER_SHARE_DIR ${ASCEND_DIR}/driver/lib64/share)

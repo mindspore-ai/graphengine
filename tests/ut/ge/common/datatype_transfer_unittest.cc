@@ -368,6 +368,7 @@ TEST_F(UtestDataTypeTransfer, invalid_src_data_type) {
   EXPECT_EQ(transfer.TransDataType(args, result), UNSUPPORTED);
 }
 
+/*
 TEST_F(UtestDataTypeTransfer, src_shape_empry) {
   uint8_t data[1 * 4 * 4 * 1] = {0};
 
@@ -377,6 +378,7 @@ TEST_F(UtestDataTypeTransfer, src_shape_empry) {
   TransResult result;
   EXPECT_EQ(transfer.TransDataType(args, result), PARAM_INVALID);
 }
+*/
 
 TEST_F(UtestDataTypeTransfer, unsupprot_trans) {
   bool data[1 * 4 * 4 * 1] = {0};

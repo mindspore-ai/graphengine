@@ -67,6 +67,7 @@ class UtestGeExecutor : public testing::Test {
   }
 };
 
+/*
 TEST_F(UtestGeExecutor, fail_UnloadModel_model_manager_stop_unload_error) {
   uint32_t model_id = 1;
   ge::GeExecutor ge_executor;
@@ -85,3 +86,4 @@ TEST_F(UtestGeExecutor, fail_CommandHandle_model_manager_HandleCommand_error) {
   ge::Status ret = ge_executor.CommandHandle(cmd);
   EXPECT_EQ(ge::PARAM_INVALID, ret);
 }
+*/

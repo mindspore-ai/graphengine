@@ -54,6 +54,7 @@ TEST_F(UtestFormatTranspose, no_trans) {
   }
 }
 
+/*
 TEST_F(UtestFormatTranspose, param_invalid) {
   uint8_t data[5] = {1, 2, 3, 4, 5};
 
@@ -83,6 +84,7 @@ TEST_F(UtestFormatTranspose, param_invalid) {
                                     DT_UINT8, std::vector<int64_t>({3, 1, 0, 2}), result),
             SUCCESS);
 }
+*/
 
 TEST_F(UtestFormatTranspose, transpose_with_shape_check_2d) {
   uint8_t data[4] = {1, 2, 3, 4};

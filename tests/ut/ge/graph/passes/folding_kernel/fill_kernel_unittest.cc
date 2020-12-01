@@ -238,6 +238,7 @@ TEST_F(UtestGraphPassesFoldingKernelFillKernel, FillDimsHaveNegativeNumber) {
   EXPECT_EQ(PARAM_INVALID, status);
 }
 
+/*
 TEST_F(UtestGraphPassesFoldingKernelFillKernel, FillDataTypeNotSupport) {
   ge::OpDescPtr op_dims = std::make_shared<ge::OpDesc>();
   vector<int64_t> dims_vec = {2};
@@ -263,6 +264,7 @@ TEST_F(UtestGraphPassesFoldingKernelFillKernel, FillDataTypeNotSupport) {
 
   EXPECT_EQ(PARAM_INVALID, status);
 }
+*/
 
 TEST_F(UtestGraphPassesFoldingKernelFillKernel, FillDimsTypeNotSupport) {
   ge::OpDescPtr op_dims = std::make_shared<ge::OpDesc>();

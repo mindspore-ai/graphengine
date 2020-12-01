@@ -48,7 +48,7 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
       return PARAM_INVALID;
     } else {
       // if no ext info no need copy to device.
-      GELOGI("Node[%s] kernel_ext_info is empty, no need copy to device, is_dynamic=%s.",
+      GELOGD("Node[%s] kernel_ext_info is empty, no need copy to device, is_dynamic=%s.",
              node_name_.c_str(), node_item_->is_dynamic ? "true" : "false");
       return SUCCESS;
     }
@@ -76,7 +76,7 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
 
 Status AicpuNodeTaskBase::UpdateOutputShapeFromExtInfo() {
   if (node_item_->num_outputs == 0) {
-    GELOGI("Task [%s] output_num is 0, no need update output shape.", node_name_.c_str());
+    GELOGD("Task [%s] output_num is 0, no need update output shape.", node_name_.c_str());
     return SUCCESS;
   }
   // copy to host buf
@@ -91,7 +91,7 @@ Status AicpuNodeTaskBase::UpdateOutputShapeFromExtInfo() {
     // not support update data type now, just for param
     DataType data_type;
     aicpu_ext_handle_.GetOutputShapeAndType(i, shape, data_type);
-    auto output_desc = node_item_->op_desc->MutableOutputDesc(i);
+    auto output_desc = node_item_->MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_desc);
     GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, i, output_desc),
                       "Update node %s [%d]th output shape failed.",
@@ -104,7 +104,7 @@ Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new,
                                                   int32_t output_index, GeTensorDescPtr &output_desc) {
   auto shape_old = output_desc->GetShape();
   output_desc->SetShape(shape_new);
-  GELOGI("Update node[%s] out[%d] shape from %s to %s.", node_name_.c_str(), output_index,
+  GELOGD("Update node[%s] out[%d] shape from %s to %s.", node_name_.c_str(), output_index,
          shape_old.ToString().c_str(), shape_new.ToString().c_str());
 
   auto origin_shape_old = output_desc->GetOriginShape();
@@ -123,7 +123,7 @@ Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new,
                     node_name_.c_str(), output_index, origin_format, format, shape_new.ToString().c_str());
   auto origin_shape_new = GeShape(origin_dims_new);
   output_desc->SetOriginShape(origin_shape_new);
-  GELOGI("Node[%s] out[%d] originFormat[%d] is not same as format[%d], need update from %s ro %s.",
+  GELOGD("Node[%s] out[%d] originFormat[%d] is not same as format[%d], need update from %s ro %s.",
          node_name_.c_str(), output_index, origin_format, format,
          origin_shape_old.ToString().c_str(), origin_shape_new.ToString().c_str());
   return SUCCESS;
@@ -132,12 +132,12 @@ Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new,
 Status AicpuNodeTaskBase::UpdateExtInfo() {
   GELOGI("Node[%s] update ext info begin, unknown_type=%d.", node_name_.c_str(), unknown_type_);
   if (node_item_->num_inputs == 0 && node_item_->num_outputs == 0) {
-    GELOGI("Node[%s] has no input and output, no need update ext info.", node_name_.c_str());
+    GELOGD("Node[%s] has no input and output, no need update ext info.", node_name_.c_str());
     return SUCCESS;
   }
 
   for (auto i = 0; i < node_item_->num_inputs; ++i) {
-    auto input_desc = node_item_->op_desc->MutableInputDesc(i);
+    auto input_desc = node_item_->MutableInputDesc(i);
     GE_CHECK_NOTNULL(input_desc);
     GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateInputShapeAndType(i, *input_desc),
                       "Node[%s] input[%d] update input shape failed.",
@@ -146,7 +146,7 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
 
   if (unknown_type_ != DEPEND_COMPUTE) {
     for (auto j = 0; j < node_item_->num_outputs; ++j) {
-      auto output_desc = node_item_->op_desc->MutableOutputDesc(j);
+      auto output_desc = node_item_->MutableOutputDesc(j);
       GE_CHECK_NOTNULL(output_desc);
 
       GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateOutputShapeAndType(j, *output_desc),
@@ -162,15 +162,15 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
                          aicpu_ext_handle_.GetExtInfoLen(),
                          RT_MEMCPY_HOST_TO_DEVICE));
 
-  GELOGI("Node[%s] update ext info end.", node_name_.c_str());
+  GELOGD("Node[%s] update ext info end.", node_name_.c_str());
   return SUCCESS;
 }
 
 Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
-  GELOGI("Node[%s] update args begin. is_dynamic=%s, unknown_type=%d",
+  GELOGD("Node[%s] update args begin. is_dynamic=%s, unknown_type=%d",
          node_name_.c_str(), node_item_->is_dynamic ? "true" : "false", unknown_type_);
   if (node_item_->num_inputs == 0 && node_item_->num_outputs == 0) {
-    GELOGI("Node[%s] has no input and output, no need update args.", node_name_.c_str());
+    GELOGD("Node[%s] has no input and output, no need update args.", node_name_.c_str());
     return SUCCESS;
   }
 
@@ -179,41 +179,41 @@ Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
     // dynamic node need update ext info.
     GE_CHK_STATUS_RET(UpdateExtInfo(), "Node[%s] update ext info failed.", node_name_.c_str());
   }
-  GELOGI("Node[%s] update args end.", node_name_.c_str());
+  GELOGD("Node[%s] update args end.", node_name_.c_str());
   return SUCCESS;
 }
 
 Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AicpuNodeTaskBaseExecuteAsync] Start");
-  GELOGI("Node[%s] execute async start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  GELOGD("Node[%s] execute async start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
 
   GE_CHK_STATUS_RET(LaunchTask(context));
 
   auto callback = [=, &context]() {
-    GELOGI("Node[%s] callback start.", node_name_.c_str());
+    GELOGD("Node[%s] callback start.", node_name_.c_str());
     RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[TaskCallback] Start");
     Status callback_ret = TaskCallback(context);
     RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[TaskCallback] End");
 
-    GELOGI("Node[%s] task callBack ret = %u.", node_name_.c_str(), callback_ret);
+    GELOGD("Node[%s] task callBack ret = %u.", node_name_.c_str(), callback_ret);
     if (done_callback != nullptr) {
       context.SetStatus(callback_ret);
       done_callback();
     }
 
-    GELOGI("Node[%s] callback end.", node_name_.c_str());
+    GELOGD("Node[%s] callback end.", node_name_.c_str());
   };
 
   GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(callback));
 
-  GELOGI("Node[%s] execute async end.", node_name_.c_str());
+  GELOGD("Node[%s] execute async end.", node_name_.c_str());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AicpuNodeTaskBaseExecuteAsync] End");
   return SUCCESS;
 }
 
 Status AicpuTfNodeTask::InitForDependComputeTask() {
   if ((unknown_type_ != DEPEND_COMPUTE) || (node_item_->num_outputs == 0)) {
-    GELOGI("Node[%s] type[%s] unknown_type is %d, output num is %d.",
+    GELOGD("Node[%s] type[%s] unknown_type is %d, output num is %d.",
            node_name_.c_str(), node_item_->node_type.c_str(), unknown_type_, node_item_->num_outputs);
     return SUCCESS;
   }
@@ -438,7 +438,7 @@ Status AicpuTfNodeTask::PrepareCopyInputs(const TaskContext &context,
 
   for (auto i = 0; i < node_item_->num_outputs; ++i) {
     const auto &summary = output_summary_host_[i];
-    GELOGI("Node[%s] out[%d] summary, shape data=0x%lx, shape data size=%lu, raw data=0x%lx, raw data size=%lu.",
+    GELOGD("Node[%s] out[%d] summary, shape data=0x%lx, shape data size=%lu, raw data=0x%lx, raw data size=%lu.",
            node_name_.c_str(), i,
            summary.shape_data_ptr, summary.shape_data_size,
            summary.raw_data_ptr, summary.raw_data_size);
@@ -499,7 +499,7 @@ Status AicpuTfNodeTask::UpdateShapeByHbmBuffer(TaskContext &context,
                          node_name_.c_str(), node_item_->num_outputs, out_shape_hbm.size());
   for (auto i = 0; i < node_item_->num_outputs; ++i) {
     const auto &result_summary = output_summary_host_[i];
-    auto output_desc = node_item_->op_desc->MutableOutputDesc(i);
+    auto output_desc = node_item_->MutableOutputDesc(i);
     std::vector<int64_t> shape_dims;
     if (result_summary.shape_data_size > 0) {
       const auto &shape_hbm = out_shape_hbm[i];
@@ -507,7 +507,7 @@ Status AicpuTfNodeTask::UpdateShapeByHbmBuffer(TaskContext &context,
                              "Node[%s] [%d]th output shape data size is %lu is not divided by int64_t.",
                              node_name_.c_str(), i, result_summary.shape_data_size);
       uint32_t dim_num = result_summary.shape_data_size / sizeof(int64_t);
-      GELOGI("Node[%s] [%d]th output dim num=%u.", node_name_.c_str(), i, dim_num);
+      GELOGD("Node[%s] [%d]th output dim num=%u.", node_name_.c_str(), i, dim_num);
       std::unique_ptr<int64_t[]> shape_addr(new(std::nothrow) int64_t[dim_num]());
       GE_CHECK_NOTNULL(shape_addr);
       GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size,
@@ -525,7 +525,7 @@ Status AicpuTfNodeTask::UpdateShapeByHbmBuffer(TaskContext &context,
 }
 
 Status AicpuTfNodeTask::UpdateShapeAndDataByResultSummary(TaskContext &context) {
-  GELOGI("Node[%s] update shape and data by result summary begin.", node_name_.c_str());
+  GELOGD("Node[%s] update shape and data by result summary begin.", node_name_.c_str());
 
   std::vector<std::unique_ptr<TensorBuffer>> out_shape_hbm;
   GE_CHK_STATUS_RET(ReadResultSummaryAndPrepareMemory(context, out_shape_hbm),
@@ -545,7 +545,7 @@ Status AicpuTfNodeTask::UpdateShapeAndDataByResultSummary(TaskContext &context) 
                     "Node[%s] update shape by hbm buffer failed.",
                     node_name_.c_str());
 
-  GELOGI("Node[%s] update shape and data by result summary end.", node_name_.c_str());
+  GELOGD("Node[%s] update shape and data by result summary end.", node_name_.c_str());
   return SUCCESS;
 }
 
@@ -574,7 +574,7 @@ Status AicpuTfNodeTask::UpdateIoAddr(TaskContext &context) {
     }
   } else {
     // unknown type 4 use result summary update ioaddr.
-    GELOGI("Node[%s] is depend compute node, use result summary as out addr.", node_name_.c_str());
+    GELOGD("Node[%s] is depend compute node, use result summary as out addr.", node_name_.c_str());
     GE_CHK_BOOL_RET_STATUS(output_summary_.size() == static_cast<std::size_t>(node_item_->num_outputs),
                            INTERNAL_ERROR,
                            "Node[%s] has %d output but %zu output summary.",
@@ -599,17 +599,17 @@ Status AicpuTfNodeTask::UpdateIoAddr(TaskContext &context) {
 }
 
 Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
-  GELOGI("Node[%s] launch task start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  GELOGD("Node[%s] launch task start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
   uint32_t flag = RT_KERNEL_DEFAULT;
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] Start");
   GE_CHK_RT_RET(rtKernelLaunchEx(kernel_buf_->GetData(), kernel_buf_->GetSize(), flag, context.GetStream()));
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] End");
-  GELOGI("Node[%s] launch end.", node_name_.c_str());
+  GELOGD("Node[%s] launch end.", node_name_.c_str());
   return SUCCESS;
 }
 
 Status AicpuTfNodeTask::TaskCallback(TaskContext &context) {
-  GELOGI("Node[%s] task callback start. is_dynamic=%s, unknown_type=%d.",
+  GELOGD("Node[%s] task callback start. is_dynamic=%s, unknown_type=%d.",
          node_name_.c_str(), node_item_->is_dynamic ? "true" : "false", unknown_type_);
   Status callback_ret = SUCCESS;
   if (node_item_->is_dynamic) {
@@ -621,13 +621,13 @@ Status AicpuTfNodeTask::TaskCallback(TaskContext &context) {
       callback_ret = UpdateShapeAndDataByResultSummary(context);
     }
   }
-  GELOGI("Node[%s] task callback end.", node_name_.c_str());
+  GELOGD("Node[%s] task callback end.", node_name_.c_str());
   return callback_ret;
 }
 
 Status AicpuNodeTask::Init(const HybridModel &model) {
   auto node_name = node_name_;
-  GELOGI("Node[%s] init start.", node_name.c_str());
+  GELOGD("Node[%s] init start.", node_name.c_str());
 
   GE_CHK_BOOL_RET_STATUS(unknown_type_ != DEPEND_COMPUTE, FAILED,
                          "Node[%s] unknown type[%d] is depend compute, it's not supported now.",
@@ -640,13 +640,12 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
   args_size_ = kernel_def.args_size();
 
   const std::string &so_name = kernel_def.so_name();
-  const OpDescPtr op_desc = MakeShared<OpDesc>(*(node_item_->op_desc));
+  const OpDescPtr op_desc = node_item_->GetOpDesc();
   const auto &context = kernel_def.context();
   auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
   if (kernel_type == cce::ccKernelType::CUST_AI_CPU) {
     GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name), "load cust aicpu so failed.");
     GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
-
   }
 
   GE_CHK_BOOL_RET_STATUS(args.size() == args_size_, FAILED,
@@ -698,7 +697,7 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
     aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_addr_dev_->GetData());
   }
 
-  GELOGI("Node[%s] init end.", node_name.c_str());
+  GELOGD("Node[%s] init end.", node_name.c_str());
   return SUCCESS;
 }
 
@@ -733,14 +732,14 @@ Status AicpuNodeTask::UpdateIoAddr(TaskContext &context) {
 }
 
 Status AicpuNodeTask::LaunchTask(TaskContext &context) {
-  GELOGI("Node[%s] launch task start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
+  GELOGD("Node[%s] launch task start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
   const auto &so_name = task_def_.kernel().so_name();
   const auto &kernel_name = task_def_.kernel().kernel_name();
   const auto &kcontext = task_def_.kernel().context();
   auto kernel_type = static_cast<cce::ccKernelType>(kcontext.kernel_type());
   uint32_t flag = RT_KERNEL_DEFAULT;
   if (kernel_type == cce::ccKernelType::CUST_AI_CPU) {
-    flag |= RT_KERNEL_CUSTOM_AICPU;
+    flag |= static_cast<uint32_t>(RT_KERNEL_CUSTOM_AICPU);
   }
   auto rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name.c_str()),
                                           reinterpret_cast<const void *>(kernel_name.c_str()),
@@ -748,12 +747,12 @@ Status AicpuNodeTask::LaunchTask(TaskContext &context) {
                                           args_.get(), args_size_,
                                           nullptr, context.GetStream(), flag);
   GE_CHK_RT_RET(rt_ret);
-  GELOGI("Node[%s] launch task end.", node_name_.c_str());
+  GELOGD("Node[%s] launch task end.", node_name_.c_str());
   return SUCCESS;
 }
 
 Status AicpuNodeTask::TaskCallback(TaskContext &context) {
-  GELOGI("Node[%s] task callback start, is_dynamic = %s, unknown_type=%d.",
+  GELOGD("Node[%s] task callback start, is_dynamic = %s, unknown_type=%d.",
          node_name_.c_str(), node_item_->is_dynamic ? "true" : "false", unknown_type_);
   Status callback_ret = SUCCESS;
 
@@ -762,10 +761,10 @@ Status AicpuNodeTask::TaskCallback(TaskContext &context) {
     // check result
     callback_ret = UpdateOutputShapeFromExtInfo();
   } else {
-    GELOGI("Node[%s] unknown shape type is %d no need update output shape.",
+    GELOGD("Node[%s] unknown shape type is %d no need update output shape.",
            node_name_.c_str(), unknown_type_);
   }
-  GELOGI("Node[%s] task callback end.", node_name_.c_str());
+  GELOGD("Node[%s] task callback end.", node_name_.c_str());
   return callback_ret;
 }
 
@@ -781,7 +780,7 @@ Status AiCpuNodeExecutor::LoadTask(const HybridModel &model,
                                    const NodePtr &node,
                                    std::shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
-  GELOGI("Node[%s] load task start.", node->GetName().c_str());
+  GELOGD("Node[%s] load task start.", node->GetName().c_str());
   auto node_item = model.GetNodeItem(node);
   GE_CHECK_NOTNULL(node_item);
   auto task_defs = model.GetTaskDefs(node);
@@ -815,7 +814,7 @@ Status AiCpuNodeExecutor::LoadTask(const HybridModel &model,
   GE_CHK_STATUS_RET(aicpu_task->Init(model), "Node[%s] task init failed.", node->GetName().c_str());
 
   task = std::move(aicpu_task);
-  GELOGI("Node[%s] load task end.", node->GetName().c_str());
+  GELOGD("Node[%s] load task end.", node->GetName().c_str());
   return SUCCESS;
 }
 }  // namespace hybrid

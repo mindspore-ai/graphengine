@@ -37,7 +37,10 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
   ext_info_.reset(new(std::nothrow)uint8_t[ext_info_len_]);
   GE_CHECK_NOTNULL(ext_info_);
 
-  (void) memcpy_s(ext_info_.get(), ext_info_len_, ext_info.c_str(), ext_info.size());
+  if (memcpy_s(ext_info_.get(), ext_info_len_, ext_info.c_str(), ext_info.size()) != EOK) {
+    GELOGE(FAILED, "[%s] Failed to coy ext info", node_name_.c_str());
+    return FAILED;
+  }
 
   input_shape_and_type_.clear();
   output_shape_and_type_.clear();
@@ -94,7 +97,7 @@ Status AicpuExtInfoHandler::ParseExtInputShape(AicpuExtInfo *aicpu_ext_info) {
   auto need_len = input_num_ * sizeof(AicpuShapeAndType);
   GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == need_len, PARAM_INVALID,
                          "Node[%s] parse ext input shape failed as infoLen must be "
-                         "input_num[%zu]*sizeof(ShapeAndType)[%zu] but %u.",
+                         "input_num[%u]*sizeof(ShapeAndType)[%zu] but %u.",
                          node_name_.c_str(), input_num_, sizeof(AicpuShapeAndType), aicpu_ext_info->infoLen);
 
   auto input = reinterpret_cast<AicpuShapeAndType *>(aicpu_ext_info->infoMsg);
@@ -115,7 +118,7 @@ Status AicpuExtInfoHandler::ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info) {
   auto need_len = output_num_ * sizeof(AicpuShapeAndType);
   GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == need_len, PARAM_INVALID,
                          "Node[%s] parse ext output shape failed as infoLen must be "
-                         "output_num[%zu]*sizeof(ShapeAndType)[%zu] but %u.",
+                         "output_num[%u]*sizeof(ShapeAndType)[%zu] but %u.",
                          node_name_.c_str(), output_num_, sizeof(AicpuShapeAndType), aicpu_ext_info->infoLen);
 
   auto output = reinterpret_cast<AicpuShapeAndType *>(aicpu_ext_info->infoMsg);

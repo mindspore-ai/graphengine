@@ -36,13 +36,13 @@ Status LogInputs(const NodeItem &node_item, const TaskContext &task_context) {
   for (auto i = 0; i < task_context.NumInputs(); ++i) {
     const auto &input_tensor = task_context.GetInput(i);
     GE_CHECK_NOTNULL(input_tensor);
-    const auto &tensor_desc = node_item.op_desc->MutableInputDesc(i);
+    const auto &tensor_desc = task_context.GetInputDesc(i);
     GE_CHECK_NOTNULL(tensor_desc);
     GELOGD("[%s] Print task args. input[%d] = %s, shape = [%s]",
            node_item.NodeName().c_str(),
            i,
            input_tensor->DebugString().c_str(),
-           tensor_desc->MutableShape().ToString().c_str());
+           tensor_desc->GetShape().ToString().c_str());
   }
 
   return SUCCESS;
@@ -52,7 +52,7 @@ Status LogOutputs(const NodeItem &node_item, const TaskContext &task_context) {
   for (auto i = 0; i < task_context.NumOutputs(); ++i) {
     const auto &output_tensor = task_context.GetOutput(i);
     GE_CHECK_NOTNULL(output_tensor);
-    const auto &tensor_desc = node_item.op_desc->MutableOutputDesc(i);
+    const auto &tensor_desc = node_item.MutableOutputDesc(i);
     GE_CHECK_NOTNULL(tensor_desc);
     GELOGD("[%s] Print task args. output[%d] = %s, shape = [%s]",
            node_item.NodeName().c_str(),
@@ -97,7 +97,7 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
     GE_CHECK_NOTNULL(output_tensor);
 
     Tensor tensor;
-    auto ge_tensor_desc = node_item.op_desc->MutableOutputDesc(output_idx);
+    auto ge_tensor_desc = node_item.MutableOutputDesc(output_idx);
     GE_CHECK_NOTNULL(ge_tensor_desc);
     tensor.SetTensorDesc(TensorAdapter::GeTensorDesc2TensorDesc(*ge_tensor_desc));
 
@@ -107,7 +107,7 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
 
     if (output_tensor->GetSize() < static_cast<size_t>(tensor_size)) {
       GELOGE(INTERNAL_ERROR,
-             "[%s] Tensor size is not enough. output index = %d, required size = %zu, tensor = %s",
+             "[%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s",
              node_item.NodeName().c_str(),
              output_idx,
              tensor_size,
@@ -453,7 +453,7 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
       continue;
     }
 
-    const auto &tensor_desc = node_state.GetOpDesc()->MutableInputDesc(i);
+    const auto &tensor_desc = task_context.MutableInputDesc(i);
     GE_CHECK_NOTNULL(tensor_desc);
     if (tensor_desc->GetDataType() == DT_STRING) {
       GELOGD("[%s] Skipping DT_STRING input, index = %d", task_context.GetNodeName(), i);

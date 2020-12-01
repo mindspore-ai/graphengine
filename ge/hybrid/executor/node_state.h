@@ -45,16 +45,16 @@ class ShapeFuture {
 struct ShapeInferenceState {
   explicit ShapeInferenceState(const NodeItem &node_item);
 
-  void UpdateInputShape(uint32_t idx, const GeShape &ori_shape, const GeShape &shape);
+  Status UpdateInputShape(int idx, const GeShape &ori_shape, const GeShape &shape);
 
-  void UpdateInputShapeFuture(uint32_t idx, ShapeFuture &&future);
+  void UpdateInputShapeFuture(int idx, ShapeFuture &&future);
 
   Status AwaitShapesReady(const GraphExecutionContext &context);
 
   const NodeItem &node_item;
 
  private:
-  std::vector<std::pair<uint32_t, ShapeFuture>> shape_futures;
+  std::vector<std::pair<int, ShapeFuture>> shape_futures;
   int num_pending_shapes_ = 0;
   std::condition_variable ready_cv_;
   std::mutex mu_;

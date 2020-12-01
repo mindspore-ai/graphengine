@@ -16,6 +16,7 @@
 
 #include "hybrid/node_executor/node_executor.h"
 #include "framework/common/debug/log.h"
+#include "common/math/math_util.h"
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 #include "graph/utils/tensor_utils.h"
@@ -138,8 +139,9 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
     GELOGD("[%s] Skipping CalcOpRunningParam for PartitionedCall.", node.GetName().c_str());
     return SUCCESS;
   }
-  for (size_t i = 0; i < node.GetOpDesc()->GetOutputsSize(); ++i) {
+  for (size_t i = 0; i < op_desc->GetOutputsSize(); ++i) {
     GeTensorDescPtr output_tensor = op_desc->MutableOutputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(output_tensor);
     TensorUtils::SetSize(*(output_tensor.get()), 0);
   }
 
@@ -155,6 +157,10 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
       int64_t output_mem_size = 0;
       GE_CHK_STATUS_RET(TensorUtils::CalcTensorMemSize(output_shape, format, data_type, output_mem_size),
                         "hccl calc tensor mem size failed.");
+      GE_CHK_STATUS_RET(CheckInt64AddOverflow(output_mem_size, MEMORY_ALIGN_RATIO * MEMORY_ALIGN_SIZE - 1),
+                        "[%s] Invalid output mem size: %ld",
+                        node.GetName().c_str(),
+                        output_mem_size);
       output_mem_size = ((output_mem_size +
                           MEMORY_ALIGN_RATIO * MEMORY_ALIGN_SIZE - 1) / MEMORY_ALIGN_SIZE) * MEMORY_ALIGN_SIZE;
       TensorUtils::SetSize(output_tensor, output_mem_size);

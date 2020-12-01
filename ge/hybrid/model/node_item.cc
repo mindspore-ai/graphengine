@@ -26,9 +26,9 @@
 namespace ge {
 namespace hybrid {
 namespace {
-const char * const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
-const char * const kNodeTypeRetVal = "_RetVal";
-std::set<std::string> kControlOpTypes {
+const char *const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
+const char *const kNodeTypeRetVal = "_RetVal";
+std::set<std::string> kControlOpTypes{
     IF, STATELESSIF, CASE, WHILE, STATELESSWHILE
 };
 
@@ -54,7 +54,7 @@ Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgr
   return SUCCESS;
 }
 
-Status ParseOutputMapping(OpDescPtr op_desc, FusedSubgraph &fused_subgraph) {
+Status ParseOutputMapping(const OpDescPtr &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
     GELOGE(FAILED,
@@ -74,7 +74,7 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
   }
 
   GELOGI("[%s] Start to parse fused subgraph.", node_item.node_name.c_str());
-  auto fused_subgraph = std::unique_ptr<FusedSubgraph>(new (std::nothrow)FusedSubgraph());
+  auto fused_subgraph = std::unique_ptr<FusedSubgraph>(new(std::nothrow)FusedSubgraph());
   GE_CHECK_NOTNULL(fused_subgraph);
 
   ComputeGraphPtr fused_graph;
@@ -110,19 +110,39 @@ bool IsControlOp(const std::string &op_type) {
   return kControlOpTypes.count(op_type) > 0;
 }
 
-NodeItem::NodeItem(NodePtr node): node(std::move(node)) {
+NodeItem::NodeItem(NodePtr node) : node(std::move(node)) {
   this->op_desc = this->node->GetOpDesc().get();
-  this->node_id = this->op_desc->GetId();
-  this->num_inputs = this->op_desc->GetInputsSize();
-  this->num_outputs = this->op_desc->GetOutputsSize();
   this->node_name = this->node->GetName();
   this->node_type = this->node->GetType();
 }
 
+Status NodeItem::Create(const NodePtr &node, std::unique_ptr<NodeItem> &node_item) {
+  GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  std::unique_ptr<NodeItem> instance(new(std::nothrow)NodeItem(node));
+  GE_CHECK_NOTNULL(instance);
+  GE_CHK_STATUS_RET(instance->Init(), "Failed to init NodeItem [%s] .", node->GetName().c_str());
+  node_item = std::move(instance);
+  return SUCCESS;
+}
+
 Status NodeItem::Init() {
-  int32_t unknown_shape_type_val = 0;
-  (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
-  shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+  GE_CHECK_LE(op_desc->GetInputsSize(), INT32_MAX);
+  GE_CHECK_LE(op_desc->GetOutputsSize(), INT32_MAX);
+  num_inputs = static_cast<int>(op_desc->GetInputsSize());
+  num_outputs = static_cast<int>(op_desc->GetOutputsSize());
+
+  if (op_desc->GetAllInputsSize() != op_desc->GetInputsSize()) {
+    has_optional_inputs = true;
+    for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+      const auto &input_desc = op_desc->MutableInputDesc(i);
+      if (input_desc == nullptr) {
+        GELOGD("[%s] Input[%zu] is optional and invalid", NodeName().c_str(), i);
+      } else {
+        input_desc_indices_.emplace_back(static_cast<uint32_t>(i));
+      }
+    }
+  }
 
   (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
   GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
@@ -132,16 +152,15 @@ Status NodeItem::Init() {
                       node->GetName().c_str());
   }
 
-  GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   if (is_dynamic) {
     for (int i = 0; i < num_inputs; ++i) {
-      const auto &input_desc = op_desc->MutableInputDesc(i);
+      const auto &input_desc = MutableInputDesc(i);
       GE_CHECK_NOTNULL(input_desc);
       if (input_desc->MutableShape().IsUnknownShape()) {
-        is_input_shape_static.push_back(false);
+        is_input_shape_static_.push_back(false);
       } else {
         num_static_input_shapes++;
-        is_input_shape_static.push_back(true);
+        is_input_shape_static_.push_back(true);
         GELOGD("[%s] The shape of input[%d] is static. shape = [%s]",
                NodeName().c_str(), i, input_desc->MutableShape().ToString().c_str());
       }
@@ -155,6 +174,16 @@ Status NodeItem::Init() {
         break;
       }
     }
+
+    if (IsControlOp() || node_type == PARTITIONEDCALL) {
+      shape_inference_type = DEPEND_COMPUTE;
+    } else {
+      int32_t unknown_shape_type_val = 0;
+      (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+      shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+    }
+
+    GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   }
 
   return SUCCESS;
@@ -186,7 +215,7 @@ std::string NodeItem::DebugString() const {
   for (auto &items : outputs) {
     ss << ", output[" << index++ << "]: ";
     for (auto &item : items) {
-      ss << "(" << item.second->NodeName() << ":" <<item.first << "), ";
+      ss << "(" << item.second->NodeName() << ":" << item.first << "), ";
     }
   }
 
@@ -196,13 +225,60 @@ std::string NodeItem::DebugString() const {
 void NodeItem::SetToDynamic() {
   num_static_input_shapes = 0;
   is_dynamic = true;
-  for (size_t i = 0; i < is_input_shape_static.size(); ++i) {
-    is_input_shape_static[i] = false;
+  for (size_t i = 0; i < is_input_shape_static_.size(); ++i) {
+    is_input_shape_static_[i] = false;
   }
   if (kernel_task != nullptr && !kernel_task->IsSupportDynamicShape()) {
     GELOGD("[%s] Dynamic shape is not supported, clear node task.", node_name.c_str());
     kernel_task = nullptr;
   }
+}
+
+GeTensorDescPtr NodeItem::MutableInputDesc(int index) const {
+  if (!has_optional_inputs) {
+    return op_desc->MutableInputDesc(static_cast<uint32_t>(index));
+  }
+
+  if (index < 0 || index >= num_inputs) {
+    GELOGE(PARAM_INVALID,
+           "[%s] Invalid input index, num inputs = %d, index = %d",
+           node_name.c_str(),
+           num_inputs,
+           index);
+    return nullptr;
+  }
+
+  return op_desc->MutableInputDesc(input_desc_indices_[index]);
+}
+
+Status NodeItem::GetCanonicalInputIndex(uint32_t index, int &canonical_index) const {
+  if (!has_optional_inputs) {
+    canonical_index = index;
+    return SUCCESS;
+  }
+
+  auto iter = std::find(input_desc_indices_.begin(), input_desc_indices_.end(), index);
+  if (iter == input_desc_indices_.end()) {
+    GELOGE(INTERNAL_ERROR, "[%s] Invalid input index: %u", node_name.c_str(), index);
+    return INTERNAL_ERROR;
+  }
+
+  canonical_index = static_cast<int>(iter - input_desc_indices_.begin());
+  GELOGD("[%s] Canonicalize input index from [%u] to [%d]", node_name.c_str(), index, canonical_index);
+  return SUCCESS;
+}
+
+bool NodeItem::IsInputShapeStatic(int index) const {
+  if (!is_dynamic) {
+    return true;
+  }
+
+  if (static_cast<size_t>(index) >= is_input_shape_static_.size()) {
+    GELOGE(PARAM_INVALID, "Input index(%d) out of range: [0, %zu)", index, is_input_shape_static_.size());
+    return false;
+  }
+
+  return is_input_shape_static_[index];
 }
 }  // namespace hybrid
 }  // namespace ge

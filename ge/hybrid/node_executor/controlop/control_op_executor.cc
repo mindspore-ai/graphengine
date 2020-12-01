@@ -119,6 +119,7 @@ Status IfOpNodeTask::Init(const NodePtr &node, const HybridModel &model) {
 
 Status IfOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::function<void()> &done_callback) const {
   auto cond_tensor_desc = task_context.MutableInputDesc(kIfCondIndex);
+  GE_CHECK_NOTNULL(cond_tensor_desc);
   auto data_type = cond_tensor_desc->GetDataType();
   const auto &shape = cond_tensor_desc->MutableShape();
   bool cond_val = false;
@@ -362,14 +363,16 @@ Status WhileOpNodeTask::MoveOutputs2Inputs(TaskContext &task_context) {
     *input_tensor = *output_tensor;
     output_tensor->Destroy();
 
+    auto input_tensor_desc = task_context.MutableInputDesc(i);
+    GE_CHECK_NOTNULL(input_tensor_desc);
     auto output_tensor_desc = task_context.MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_tensor_desc);
     GELOGD("[%s] To update input shape[%d] by output shape. from [%s] to [%s]",
            task_context.GetNodeName(),
            i,
-           task_context.MutableInputDesc(i)->GetShape().ToString().c_str(),
+           input_tensor_desc->GetShape().ToString().c_str(),
            output_tensor_desc->GetShape().ToString().c_str());
-    *task_context.MutableInputDesc(i) = *output_tensor_desc;
+    *input_tensor_desc = *output_tensor_desc;
   }
 
   return SUCCESS;

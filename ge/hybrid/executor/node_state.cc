@@ -35,39 +35,43 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
          this->num_pending_shapes_);
 }
 
-void ShapeInferenceState::UpdateInputShape(uint32_t idx,
-                                           const GeShape &ori_shape,
-                                           const GeShape &shape) {
-  if (!node_item.is_dynamic || node_item.is_input_shape_static[idx]) {
-    GELOGD("[%s] Trying to update static shape, idx = %u. old shape = [%s], new shape = [%s]",
+Status ShapeInferenceState::UpdateInputShape(int idx,
+                                             const GeShape &ori_shape,
+                                             const GeShape &shape) {
+  if (node_item.IsInputShapeStatic(idx)) {
+    GELOGD("[%s] Trying to update static shape, idx = %d. old shape = [%s], new shape = [%s]",
            node_item.NodeName().c_str(),
            idx,
-           node_item.op_desc->MutableInputDesc(idx)->GetShape().ToString().c_str(),
+           node_item.MutableInputDesc(idx)->GetShape().ToString().c_str(),
            shape.ToString().c_str());
-    return;
+    return SUCCESS;
   }
 
-  GELOGD("[%s] Update input shape [%u] with Shape: [%s] and OriginalShape: [%s]",
+  GELOGD("[%s] Update input shape [%d] with Shape: [%s] and OriginalShape: [%s]",
          node_item.NodeName().c_str(),
          idx,
          shape.ToString().c_str(),
          ori_shape.ToString().c_str());
 
   std::lock_guard<std::mutex> lk(mu_);
-  node_item.op_desc->MutableInputDesc(idx)->SetShape(shape);
-  node_item.op_desc->MutableInputDesc(idx)->SetOriginShape(ori_shape);
+  auto tensor_desc = node_item.MutableInputDesc(idx);
+  GE_CHECK_NOTNULL(tensor_desc);
+  tensor_desc->SetShape(shape);
+  tensor_desc->SetOriginShape(ori_shape);
   if (--num_pending_shapes_ == 0) {
     ready_cv_.notify_all();
   }
+
+  return SUCCESS;
 }
 
-void ShapeInferenceState::UpdateInputShapeFuture(uint32_t idx, ShapeFuture &&future) {
-  if (!node_item.is_dynamic || node_item.is_input_shape_static[idx]) {
-    GELOGD("[%s] Trying to update constant shape, idx = %u", node_item.NodeName().c_str(), idx);
+void ShapeInferenceState::UpdateInputShapeFuture(int idx, ShapeFuture &&future) {
+  if (node_item.IsInputShapeStatic(idx)) {
+    GELOGD("[%s] Trying to update constant shape, idx = %d", node_item.NodeName().c_str(), idx);
     return;
   }
 
-  GELOGD("[%s] Update input shape [%u] with ShapeFuture.", node_item.NodeName().c_str(), idx);
+  GELOGD("[%s] Update input shape [%d] with ShapeFuture.", node_item.NodeName().c_str(), idx);
   std::lock_guard<std::mutex> lk(mu_);
   shape_futures.emplace_back(idx, std::move(future));
   if (--num_pending_shapes_ == 0) {
@@ -120,8 +124,10 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
            idx,
            shape.ToString().c_str(),
            ori_shape.ToString().c_str());
-    node_item.op_desc->MutableInputDesc(idx)->SetShape(std::move(shape));
-    node_item.op_desc->MutableInputDesc(idx)->SetOriginShape(ori_shape);
+    auto input_desc = node_item.MutableInputDesc(idx);
+    GE_CHECK_NOTNULL(input_desc);
+    input_desc->SetShape(std::move(shape));
+    input_desc->SetOriginShape(ori_shape);
   }
 
   return SUCCESS;
@@ -140,7 +146,7 @@ NodeState::NodeState(const NodeItem &node_item, SubgraphContext *subgraph_contex
 
 Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
   for (auto &src_node : node_item_->dependents_for_execution) {
-    GELOGI("[%s] Start to wait for data dependent node: [%s]",
+    GELOGD("[%s] Start to wait for data dependent node: [%s]",
            node_item_->NodeName().c_str(),
            src_node->GetName().c_str());
     RECORD_EXECUTION_EVENT(&context,
@@ -156,7 +162,7 @@ Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
                            node_item_->NodeName().c_str(),
                            "[AwaitNodeDone] [%s] End",
                            src_node->GetName().c_str());
-    GELOGI("[%s] Done waiting node.", src_node->GetName().c_str());
+    GELOGD("[%s] Done waiting node.", src_node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -173,7 +179,7 @@ Status NodeState::WaitForPrepareDone() {
 }
 
 Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {
-  GELOGI("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
+  GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
   if (!subgraph_context_->Await(src_node_)) {
     GELOGE(INTERNAL_ERROR, "cancelled");
     return INTERNAL_ERROR;
@@ -181,7 +187,7 @@ Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {
 
   shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->MutableShape();
   ori_shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->GetOriginShape();
-  GELOGI("Get shape from %s:%u. shape = [%s]", src_node_->GetName().c_str(), src_index_, shape.ToString().c_str());
+  GELOGD("Get shape from %s:%u. shape = [%s]", src_node_->GetName().c_str(), src_index_, shape.ToString().c_str());
   return SUCCESS;
 }
 }  // namespace hybrid

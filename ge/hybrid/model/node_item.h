@@ -40,10 +40,8 @@ bool IsControlOp(const std::string &op_type);
 
 // for caching static information across execution
 struct NodeItem {
-  explicit NodeItem(NodePtr node);
   ~NodeItem() = default;
-
-  Status Init();
+  static Status Create(const NodePtr &node, std::unique_ptr<NodeItem> &node_item);
 
   const std::string &NodeName() const {
     return node_name;
@@ -53,6 +51,20 @@ struct NodeItem {
     return node_type;
   }
 
+  OpDescPtr GetOpDesc() const {
+    return node->GetOpDesc();
+  }
+
+  bool IsInputShapeStatic(int index) const;
+
+  GeTensorDescPtr MutableOutputDesc(int index) const {
+    return op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+  }
+
+  GeTensorDescPtr MutableInputDesc(int index) const;
+
+  Status GetCanonicalInputIndex(uint32_t index, int &canonical_index) const;
+
   bool IsControlOp() const;
 
   void SetToDynamic();
@@ -61,14 +73,15 @@ struct NodeItem {
 
   NodePtr node;
   OpDesc *op_desc;
-  int node_id;
-  int num_inputs;
-  int num_outputs;
-
+  int node_id = -1;
+  int num_inputs = 0;
+  int num_outputs = 0;
   int input_start = -1;
   int output_start = -1;
   bool is_dynamic = false;
   bool has_observer = false;
+  bool has_optional_inputs = false;
+  bool is_output_shape_static = true;
   UnknowShapeOpType shape_inference_type = DEPEND_IN_SHAPE;
   std::string node_name;
   std::string node_type;
@@ -76,9 +89,8 @@ struct NodeItem {
   std::vector<ge::NodePtr> dependents_for_execution;
   std::set<int> to_const_output_id_list;
 
-  vector<NodeItem *> inputs;
   // src_output_id, dst_anchor_id, dst_node
-  vector<vector<pair<uint32_t, NodeItem *>>> outputs;
+  vector<vector<pair<int, NodeItem *>>> outputs;
 
   std::shared_ptr<NodeTask> kernel_task;
   std::unique_ptr<FusedSubgraph> fused_subgraph;
@@ -86,10 +98,14 @@ struct NodeItem {
   std::map<int, ge::NodePtr> ref_outputs;
   std::map<int, int> reuse_inputs;
   std::map<int, int> reuse_outputs;
-
-  std::vector<bool> is_input_shape_static;
-  bool is_output_shape_static = true;
   int num_static_input_shapes = 0;
+
+ private:
+  explicit NodeItem(NodePtr node);
+  Status Init();
+
+  std::vector<bool> is_input_shape_static_;
+  std::vector<uint32_t> input_desc_indices_;
 };
 }  // namespace hybrid
 }  // namespace ge

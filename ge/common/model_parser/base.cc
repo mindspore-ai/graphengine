@@ -101,15 +101,15 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
   // Get data address
   uint8_t *data = reinterpret_cast<uint8_t *>(model.model_data) + sizeof(ModelFileHeader);
   if (file_header->is_encrypt == ModelEncryptType::UNENCRYPTED) {  // Unencrypted model
-    GE_CHK_BOOL_RET_STATUS(model.key.empty(), ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION,
+    GE_CHK_BOOL_RET_STATUS(model.key.empty(), ACL_ERROR_GE_PARAM_INVALID,
                            "Invalid param. model is unencrypted, but key is not empty.");
 
     model_data = data;
     model_len = file_header->length;
     GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION, "Invalid model. ModelEncryptType not supported.");
-    res = ACL_ERROR_GE_EXEC_MODEL_NOT_SUPPORT_ENCRYPTION;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Invalid model. ModelEncryptType not supported.");
+    res = ACL_ERROR_GE_PARAM_INVALID;
   }
 
   return res;

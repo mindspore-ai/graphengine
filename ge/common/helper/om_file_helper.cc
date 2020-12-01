@@ -119,8 +119,8 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
   // Original model partition include graph-info
   if ((partition_table->num != PARTITION_SIZE) && (partition_table->num != (PARTITION_SIZE - 1)) &&
       (partition_table->num != (PARTITION_SIZE - kOptionalNum)) && (partition_table->num != 1)) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID, "Invalid partition_table->num:%u", partition_table->num);
-    return ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Invalid partition_table->num:%u", partition_table->num);
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   size_t mem_offset = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);
   GELOGD("ModelPartitionTable num :%u, ModelFileHeader length :%zu, ModelPartitionTable length :%zu",

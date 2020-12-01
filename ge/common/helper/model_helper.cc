@@ -140,8 +140,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
 
   std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
   if (model_task_def == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Create model task def ptr failed");
-    return FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create model task def ptr failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   size_t partition_task_size = model_task_def->ByteSizeLong();
   GE_IF_BOOL_EXEC(partition_task_size == 0 || partition_task_size > INT_MAX,
@@ -150,8 +150,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
 
   ge::Buffer task_buffer(partition_task_size);
   if (task_buffer.GetSize() == 0) {
-    GELOGE(MEMALLOC_FAILED, "Alloc model task def buffer failed");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc model task def buffer failed");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   (void)model_task_def->SerializePartialToArray(task_buffer.GetData(), static_cast<int>(partition_task_size));
 
@@ -173,8 +173,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   err = memcpy_s(model_header.platform_version, PLATFORM_VERSION_LEN, platform_version.c_str(),
                  platform_version.size() + 1);
   if (err != EOK) {
-    GELOGE(MEMALLOC_FAILED, "ModelHelper SaveModel failed while allocating memory for platform_version.");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelHelper SaveModel failed while allocating memory for platform_version.");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   string version = reinterpret_cast<char *>(model_header.platform_version);
   GELOGD("Platform version save: %s", version.c_str());
@@ -183,8 +183,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   name_size = name_size > (MODEL_NAME_LENGTH - 1) ? (MODEL_NAME_LENGTH - 1) : name_size;
   err = memcpy_s(model_header.name, MODEL_NAME_LENGTH, ge_model->GetName().c_str(), name_size);
   if (err != EOK) {
-    GELOGE(MEMALLOC_FAILED, "ModelHelper SaveModel failed while allocating memory for name");
-    return MEMALLOC_FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelHelper SaveModel failed while allocating memory for name");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   string model_name = reinterpret_cast<char *>(model_header.name);
   GELOGD("Model name save:%s", model_name.c_str());
@@ -299,8 +299,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_addr_tmp_);
   if (partition_table->num == kOriginalOmPartitionNum) {
     model_addr_tmp_ = nullptr;
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
-    return ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "om model is error,please use executable om model");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   // Encrypt model need to del temp model/no encrypt model don't need to del model
   model_addr_tmp_ = nullptr;

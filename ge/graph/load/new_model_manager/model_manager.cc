@@ -1044,7 +1044,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   GE_CHK_BOOL_RET_STATUS(model.key.empty() || mmAccess2(model.key.c_str(), M_F_OK) == EN_OK,
-	                 ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID,
+	                 ACL_ERROR_GE_PARAM_INVALID,
                          "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
@@ -1130,7 +1130,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
                                     const std::vector<uint32_t> &input_queue_ids,
                                     const std::vector<uint32_t> &output_queue_ids) {
   GE_CHK_BOOL_RET_STATUS(model_data.key.empty() || mmAccess2(model_data.key.c_str(), M_F_OK) == EN_OK,
-                         ACL_ERROR_GE_EXEC_MODEL_KEY_PATH_INVALID, "input key file path %s is not valid, %s",
+                         ACL_ERROR_GE_PARAM_INVALID, "input key file path %s is not valid, %s",
                          model_data.key.c_str(), strerror(errno));
 
   ModelHelper model_helper;
@@ -1397,8 +1397,8 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
 
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
   if (partition_table->num == 1) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID, "om model is error,please use executable om model");
-    return ACL_ERROR_GE_EXEC_MODEL_PARTITION_NUM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "om model is error,please use executable om model");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   ModelPartition task_partition;
   if (om_file_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {

@@ -43,7 +43,7 @@ Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
     if (node_type == REFMERGE || node_type == REFSWITCH) {
       GELOGD("Mark format agnostic for regmerge and refswitch node %s", node->GetName().c_str());
       AttrUtils::SetInt(node->GetOpDesc(), "_format_agnostic", 1);
-      AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_output", std::vector<int64_t>({1}));
+      AttrUtils::SetListInt(node->GetOpDesc(), "_format_agnostic_except_input", std::vector<int64_t>({1}));
       continue;
     }
     if (node_type == MERGE) {

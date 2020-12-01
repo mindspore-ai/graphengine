@@ -52,7 +52,7 @@ Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> 
 }
 
 Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &listener) {
-  GELOGD("HybridModelExecutor::Start IN, listener = %p", listener.get());
+  GELOGD("HybridModelExecutor::Start IN, has listener = %d", listener != nullptr);
   std::lock_guard<std::mutex> lk(mu_);
   GE_CHK_BOOL_RET_STATUS(!run_flag_, INTERNAL_ERROR, "Model already started.");
 
@@ -219,11 +219,11 @@ Status HybridModelAsyncExecutor::CopyInputData(const InputData &current_data) {
     auto mem_size = static_cast<uint32_t>(data_size);
     GE_CHK_BOOL_RET_STATUS(mem_size >= data_buf.length,
                            PARAM_INVALID,
-                           "input data size(%u) does not match model required size(%u), ret failed.",
+                           "input data size(%lu) does not match model required size(%u), ret failed.",
                            data_buf.length,
                            mem_size);
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%u] datasize[%u]",
+    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%u] datasize[%lu]",
            model_->root_runtime_param_.graph_id, input_index, input_tensor.GetData(), mem_size, data_buf.length);
     GE_CHK_RT_RET(rtMemcpy(input_tensor.MutableData(),
                            mem_size,
@@ -241,7 +241,7 @@ Status HybridModelAsyncExecutor::InitInputTensors() {
   int input_index = 0;
   for (const auto &input_node : model_->GetRootGraphItem()->GetInputNodes()) {
     GELOGD("Init input[%u], node = %s", input_index, input_node->NodeName().c_str());
-    auto output_desc = input_node->op_desc->GetOutputDescPtr(kDataOutputIndex);
+    auto output_desc = input_node->MutableOutputDesc(kDataOutputIndex);
     GE_CHECK_NOTNULL(output_desc);
     int64_t tensor_size = 0;
     GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetSize(*output_desc, tensor_size),

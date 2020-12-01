@@ -47,7 +47,9 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
 
   std::vector<ConstGeTensorPtr> inputs;
   for (int32_t i = 0; i < context.NumInputs(); ++i) {
-    const auto &input_desc = op_desc->GetInputDesc(i);
+    auto input_desc_ptr = context.GetInputDesc(i);
+    GE_CHECK_NOTNULL(input_desc_ptr);
+    const auto &input_desc = *input_desc_ptr;
     GE_CHECK_NOTNULL(context.GetInput(i));
     auto in_tensor = MakeShared<GeTensor>(input_desc,
                                           reinterpret_cast<const uint8_t *>(context.GetInput(i)->GetData()),
@@ -56,8 +58,7 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     in_tensor->MutableTensorDesc().SetDataType(input_desc.GetDataType());
     in_tensor->MutableTensorDesc().SetShape(input_desc.GetShape());
     inputs.emplace_back(in_tensor);
-    GELOGI("node:%s allocate input %zu, addr=%p, size=%lld", op_desc->GetName().c_str(), i,
-           reinterpret_cast<const uint8_t *>(in_tensor->GetData().data()), in_tensor->GetData().size());
+    GELOGI("node:%s allocate input %d, size=%zu", op_desc->GetName().c_str(), i, in_tensor->GetData().size());
   }
 
   std::vector<GeTensorPtr> outputs;
@@ -78,8 +79,7 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     out_tensor->MutableTensorDesc().SetDataType(output_desc.GetDataType());
     out_tensor->MutableTensorDesc().SetShape(output_desc.GetShape());
     outputs.emplace_back(out_tensor);
-    GELOGI("node:%s allocate output %d, addr=%p, size=%zu", op_desc->GetName().c_str(), i,
-           reinterpret_cast<const uint8_t *>(out_tensor->GetData().data()), out_tensor->GetData().size());
+    GELOGI("node:%s allocate output %d, size=%zu", op_desc->GetName().c_str(), i, out_tensor->GetData().size());
   }
 
   return HostCpuEngine::GetInstance().Run(node_, inputs, outputs);

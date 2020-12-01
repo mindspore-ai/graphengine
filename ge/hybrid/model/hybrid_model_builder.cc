@@ -19,14 +19,12 @@
 #include "common/math/math_util.h"
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
-#include "graph/utils/node_utils.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/utils/type_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/node_executor/node_executor.h"
 
@@ -44,20 +42,14 @@ int64_t CalcVarSizeInBytes(const GeTensorDesc &desc) {
   auto data_type = desc.GetDataType();
   if (data_type == DT_STRING) {
     (void) TensorUtils::GetSize(desc, var_size);
-  } else {
-    var_size = GetSizeByDataType(data_type);
-    if (var_size <= 0) {
-      GELOGW("Failed to calc var data size from data type %s", TypeUtils::DataTypeToSerialString(data_type).c_str());
-      return -1;
-    }
-    auto shape = desc.GetShape();
-    auto dim_num = shape.GetDimNum();
-    for (size_t dim_index = 0; dim_index < dim_num; ++dim_index) {
-      var_size *= shape.GetDim(dim_index);
-    }
-    // padding up to multiple of kAlignment, and add extra kAlignment
-    var_size = (var_size + kAlignment * 2 - 1) / kAlignment * kAlignment;
+    return var_size;
   }
+
+  if (TensorUtils::GetTensorMemorySizeInBytes(desc, var_size) != GRAPH_SUCCESS) {
+    GELOGW("Failed to calc var data size");
+    return -1;
+  }
+
   return var_size;
 }
 
@@ -150,7 +142,12 @@ Status HybridModelBuilder::BuildNodeItem(const NodePtr &node, NodeItem &node_ite
       GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
                         "[%s] Failed to get or create node item.",
                         dst_node->GetName().c_str());
-      node_item.outputs[i].emplace_back(dst_in_anchor->GetIdx(), dst_node_item);
+      int canonical_index;
+      GE_CHK_STATUS_RET(dst_node_item->GetCanonicalInputIndex(dst_in_anchor->GetIdx(), canonical_index),
+                        "[%s] Failed to canonical input index",
+                        dst_node->GetName().c_str());
+
+      node_item.outputs[i].emplace_back(canonical_index, dst_node_item);
     }
   }
 
@@ -171,7 +168,8 @@ Status HybridModelBuilder::ResolveRefIo(NodeItem &node_item) {
   for (auto &output : outputs) {
     for (auto &input : inputs) {
       if (input.first == output.first) {
-        auto input_idx = static_cast<int>(input.second);
+        int input_idx;
+        GE_CHK_STATUS_RET_NOLOG(node_item.GetCanonicalInputIndex(input.second, input_idx));
         auto output_idx = static_cast<int>(output.second);
         node_item.reuse_inputs[output_idx] = input_idx;
         GELOGD("[%s] Output[%d] reuse input[%d]", node_item.NodeName().c_str(), output_idx, input_idx);
@@ -190,10 +188,8 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
     return SUCCESS;
   }
 
-  auto new_node = std::unique_ptr<NodeItem>(new(std::nothrow) NodeItem(node));
-  GE_CHECK_NOTNULL(new_node);
-  GE_CHECK_NOTNULL(new_node->op_desc);
-  GE_CHK_STATUS_RET(new_node->Init(), "Failed to init NodeItem [%s] .", node->GetName().c_str());
+  std::unique_ptr<NodeItem> new_node;
+  GE_CHK_STATUS_RET(NodeItem::Create(node, new_node), "Failed to create node item");
   GE_CHK_STATUS_RET_NOLOG(NodeExecutorManager::GetInstance().GetExecutor(*node, &new_node->node_executor));
 
   // we do not need L2 Buffer
@@ -201,10 +197,6 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
   const char *const kIsLastNode = "is_last_node";
   (void) AttrUtils::SetBool(new_node->op_desc, kIsFirstNode, false);
   (void) AttrUtils::SetBool(new_node->op_desc, kIsLastNode, false);
-
-  if (new_node->is_dynamic && (new_node->IsControlOp() || new_node->NodeType() == PARTITIONEDCALL)) {
-    new_node->shape_inference_type = DEPEND_COMPUTE;
-  }
 
   new_node->node_id = node_index;
   new_node->op_desc->SetId(node_index);
@@ -446,7 +438,6 @@ Status HybridModelBuilder::MergeInputNodes(ComputeGraph &graph) {
     if (src_out_anchor == nullptr || src_out_anchor->GetOwnerNode() == nullptr) {
       continue;
     }
-    auto src_node = wrapped_node_in_anchor->GetPeerOutAnchor()->GetOwnerNode();
     wrapped_node_in_anchor->UnlinkAll();
 
     // link src to outputs of DataNode
@@ -454,6 +445,7 @@ Status HybridModelBuilder::MergeInputNodes(ComputeGraph &graph) {
       GE_CHECK_NOTNULL(out_data_anchor);
       for (auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
         auto dst_node = peer_in_data_anchor->GetOwnerNode();
+        GE_CHECK_NOTNULL(dst_node);
         root_nodes.emplace(dst_node);
         GE_CHK_STATUS_RET_NOLOG(DoUnlinkDataAnchors(out_data_anchor, peer_in_data_anchor));
         GE_CHK_STATUS_RET_NOLOG(DoLinkDataAnchors(src_out_anchor, peer_in_data_anchor));
@@ -496,6 +488,7 @@ Status HybridModelBuilder::MergeNetOutputNode(ComputeGraph &graph) {
   for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
     auto src_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_CHECK_NOTNULL(src_out_anchor);
+    GE_CHECK_NOTNULL(src_out_anchor->GetOwnerNode());
     GE_CHK_STATUS_RET_NOLOG(DoUnlinkDataAnchors(src_out_anchor, in_data_anchor));
 
     auto index = in_data_anchor->GetIdx();
@@ -519,6 +512,7 @@ Status HybridModelBuilder::MergeNetOutputNode(ComputeGraph &graph) {
         continue;
       }
 
+      GE_CHECK_NOTNULL(dst_in_anchor->GetOwnerNode());
       GE_CHK_STATUS_RET_NOLOG(DoUnlinkDataAnchors(parent_out_anchor, dst_in_anchor));
       GE_CHK_STATUS_RET_NOLOG(DoLinkDataAnchors(src_out_anchor, dst_in_anchor));
     }
@@ -628,8 +622,7 @@ Status HybridModelBuilder::UnfoldSubgraph(ComputeGraph &root_graph,
 Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item,
                                               const NodeItem &node_item,
                                               bool is_root_graph) {
-  auto output_size = node_item.op_desc->GetAllInputsSize();
-  GE_CHECK_LE(output_size, UINT32_MAX);
+  auto output_size = node_item.num_inputs;
   graph_item.output_edges_.resize(output_size);
 
   for (auto &in_data_anchor : node_item.node->GetAllInDataAnchors()) {
@@ -640,14 +633,16 @@ Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item,
 
     auto src_node_item = GetNodeItem(src_node);
     GE_CHECK_NOTNULL(src_node_item);
+    auto output_idx = in_data_anchor->GetIdx();
     auto output_offset = src_node_item->output_start + peer_out_anchor->GetIdx();
     GELOGI("Output[%d], node = %s, output_index = %d, output_offset = %d ",
-           in_data_anchor->GetIdx(),
+           output_idx,
            src_node_item->NodeName().c_str(),
            peer_out_anchor->GetIdx(),
            output_offset);
 
-    graph_item.output_edges_[in_data_anchor->GetIdx()] = {src_node_item, peer_out_anchor->GetIdx()};
+    GE_CHECK_LE(output_idx, output_size - 1);
+    graph_item.output_edges_[output_idx] = {src_node_item, peer_out_anchor->GetIdx()};
   }
 
   if (!is_root_graph) {
@@ -820,6 +815,10 @@ Status HybridModelBuilder::InitConstantOps() {
     const NodePtr &var_node = it.second;
     auto op_desc = var_node->GetOpDesc();
     auto v_weights = ModelUtils::GetWeights(op_desc);
+    if (v_weights.empty()) {
+      GELOGE(INTERNAL_ERROR, "[%s] Constant no not have value", var_node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
     auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
 
     std::unique_ptr<TensorValue> var_tensor;
@@ -884,6 +883,7 @@ Status HybridModelBuilder::InitVariableTensors() {
     GELOGD("Host variable [%s] malloc success.", it.first.c_str());
 
     std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_address, tensor_size));
+    GE_CHECK_NOTNULL(tensor);
     hybrid_model_.variable_tensors_.emplace(it.first, std::move(tensor));
   }
 
@@ -931,7 +931,7 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
     GELOGD("Set ge_model for subgraph: [%s], task_size = %d",
            sub_graph.GetName().c_str(),
            ge_model->GetModelTaskDefPtr()->task_size());
-    hybrid_model_.known_shape_sub_models_.emplace(sub_graph.GetParentNode(), ge_model);
+    hybrid_model_.known_shape_sub_models_.emplace(parent_node, ge_model);
   }
 
   return SUCCESS;
@@ -1098,7 +1098,7 @@ Status HybridModelBuilder::GetPeerNodeAcrossSubGraphs(const NodePtr &data_node,
   GE_CHECK_NOTNULL(net_output_desc);
 
   auto out_index = static_cast<uint32_t>(src_wrapped_node_out_anchor->GetIdx());
-  GELOGD("src graph = %s, src parent output index = %d", src_graph->GetName().c_str(), out_index);
+  GELOGD("src graph = %s, src parent output index = %u", src_graph->GetName().c_str(), out_index);
 
   // link src to outputs of DataNode
   auto input_size = net_output_desc->GetAllInputsSize();
@@ -1237,7 +1237,8 @@ Status HybridModelBuilder::IdentifyVariableOutputs(NodeItem &node_item) {
     uint32_t parent_index = 0;
     GE_CHK_STATUS_RET_NOLOG(GetParentNodeOutputIndex(*net_output_desc, in_data_anchor->GetIdx(), parent_index));
     GELOGD("Got parent output index = %u", parent_index);
-    node_item.ref_outputs.emplace(parent_index, src_node);
+    GE_CHECK_LE(parent_index, INT32_MAX);
+    node_item.ref_outputs.emplace(static_cast<int>(parent_index), src_node);
   }
 
   // Data nodes marked with REF_VAR_SRC_VAR_NAME

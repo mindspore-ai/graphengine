@@ -31,14 +31,12 @@ REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::COMPILED_SUBGR
 
 Status KnownNodeTask::   ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeTaskExecuteAsync] Start");
-  GELOGI("[%s] KnownNodeTask::ExecuteAsync in.", context.GetNodeName());
-  if (davinci_model_->GetTaskList().size() == 0) {
-    GELOGW("KnownNodeExecutor::ExecuteAsync davinci moel has no taskinfo.");
+  GELOGD("[%s] KnownNodeTask::ExecuteAsync in.", context.GetNodeName());
+  if (davinci_model_->GetTaskList().empty()) {
+    GELOGW("KnownNodeExecutor::ExecuteAsync davinci model has no taskinfo.");
 
     // todo if data is connected to netoutput, forward address ? copy data?
     if (context.NumInputs() == context.NumOutputs()){
-      GELOGW("[%s] KnownNodeExecutor::ExecuteAsync davinci moel has no taskinfo.",
-             context.GetNodeName());
       for (int i = 0; i < context.NumInputs(); ++i) {
         auto tensor = context.MutableInput(i);
         GE_CHECK_NOTNULL(tensor);
@@ -54,24 +52,22 @@ Status KnownNodeTask::   ExecuteAsync(TaskContext &context, std::function<void()
   }
 
   rtError_t rt_ret;
-  GELOGI("rtModelExecute start.");
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodertModelExecute] Start");
   rt_ret = rtModelExecute(davinci_model_->GetRtModelHandle(), context.GetStream(), 0);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                   GELOGE(rt_ret, "rtModelExecute error, ret: hybrid_model_executorOx%X", rt_ret); return FAILED;);
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodertModelExecute] End");
-  GELOGI("rtModelExecute end");
 
   GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(done_callback));
-  GELOGI("[%s] KnownNodeTask::ExecuteAsync success.", context.GetNodeName());
+  GELOGD("[%s] KnownNodeTask::ExecuteAsync success.", context.GetNodeName());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeTaskExecuteAsync] End");
   return SUCCESS;
 }
 
 Status KnownNodeTask::UpdateArgs(TaskContext &context) {
-  GELOGI("[%s] KnownNodeExecutor::UpdateArgs in.", context.GetNodeName());
-  if (davinci_model_->GetTaskList().size() == 0) {
-    GELOGW("KnownNodeExecutor::UpdateArgs davinci moel has no taskinfo.");
+  GELOGD("[%s] KnownNodeExecutor::UpdateArgs in.", context.GetNodeName());
+  if (davinci_model_->GetTaskList().empty()) {
+    GELOGW("KnownNodeExecutor::UpdateArgs davinci model has no taskinfo.");
     return SUCCESS;
   }
 
@@ -91,7 +87,7 @@ Status KnownNodeTask::UpdateArgs(TaskContext &context) {
 
   GE_CHK_STATUS_RET(davinci_model_->UpdateKnownNodeArgs(inputs, outputs),
                     "known node task update known node args failed.");
-  GELOGI("[%s] KnownNodeExecutor::UpdateArgs success, task_size = %d:", context.GetNodeName(),
+  GELOGD("[%s] KnownNodeExecutor::UpdateArgs success, task_size = %zu", context.GetNodeName(),
          davinci_model_->GetTaskList().size());
   return SUCCESS;
 }
@@ -123,7 +119,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
     davinci_model_->SetKnownNodeAddrNotChanged(addr_not_changed);
     // update mem base
     davinci_model_->UpdateMemBase(static_cast<uint8_t *>(buffer));
-    GELOGI("KnownNodeTask::Init mem base is %p, size %u.",
+    GELOGI("KnownNodeTask::Init mem base is %p, size %lu.",
            davinci_model_->GetRuntimeParam().mem_base, davinci_model_->GetRuntimeParam().mem_size);
   }
   if (!load_flag_) {
@@ -138,7 +134,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
 }
 
 Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
-  GELOGI("[%s] KnownNodeExecutor::PrepareTask in.", context.GetNodeName());
+  GELOGD("[%s] KnownNodeExecutor::PrepareTask in.", context.GetNodeName());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeExecutorPrepareTask] Start");
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeExecutorTaskInit] Start");
   GE_CHK_STATUS_RET(task.Init(context), "known node init davinci model failed.");
@@ -148,7 +144,7 @@ Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) cons
   GE_CHK_STATUS_RET(task.UpdateArgs(context), "known node task update args failed.");
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeExecutorUpdateArgs] End");
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeExecutorPrepareTask] End");
-  GELOGI("[%s] KnownNodeExecutor::PrepareTask success.", context.GetNodeName());
+  GELOGD("[%s] KnownNodeExecutor::PrepareTask success.", context.GetNodeName());
   return SUCCESS;
 }
 
@@ -167,7 +163,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   davinci_model->SetKnownNode(true);
   // set model id as root node's node id
   davinci_model->SetId(node->GetOpDesc()->GetId());
-  GELOGD("KnownNodeExecutor::LoadTask node id %u.", node->GetOpDesc()->GetId());
+  GELOGD("KnownNodeExecutor::LoadTask node id %ld.", node->GetOpDesc()->GetId());
 
   GE_CHK_STATUS_RET(davinci_model->Assign(ge_model), "KnownNodeExecutor::LoadTask davincimodel assign failed.");
 

@@ -46,10 +46,10 @@ class TaskContext {
   const NodeItem &GetNodeItem() const;
   const char *GetNodeName() const;
   TensorValue *MutableInput(int index);
-  ConstGeTensorDescPtr GetInputDesc(int index);
-  ConstGeTensorDescPtr GetOutputDesc(int index);
-  GeTensorDescPtr MutableInputDesc(int index);
-  GeTensorDescPtr MutableOutputDesc(int index);
+  ConstGeTensorDescPtr GetInputDesc(int index) const;
+  ConstGeTensorDescPtr GetOutputDesc(int index) const;
+  GeTensorDescPtr MutableInputDesc(int index) const;
+  GeTensorDescPtr MutableOutputDesc(int index) const;
   void ReleaseInput(int index);
   const TensorValue *GetInput(int index) const;
   const TensorValue *GetOutput(int index) const;

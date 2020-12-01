@@ -67,14 +67,16 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   }
 
   const NodeItem &node_item = context.GetNodeItem();
-  const OpDescPtr op_desc = MakeShared<OpDesc>(*(node_item.op_desc));
+  const OpDescPtr op_desc = node_item.GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
 
   HcomOpertion op_info;
   op_info.hcclType = op_desc->GetType();
   op_info.inputPtr = inputs.empty() ? nullptr : inputs[0];
   op_info.outputPtr = outputs.empty() ? nullptr : outputs[0];
-  ge::DataType src_data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+  auto input_desc = node_item.MutableInputDesc(0);
+  GE_CHECK_NOTNULL(input_desc);
+  ge::DataType src_data_type = input_desc->GetDataType();
   auto iter = kConstOpHcclDataType.find(static_cast<int64_t>(src_data_type));
   if (iter == kConstOpHcclDataType.end()) {
     GELOGE(PARAM_INVALID, "kConstOpHcclDataType find failed.");
@@ -128,8 +130,9 @@ Status RdmaNodeTask::UpdateArgs(TaskContext &context) { return SUCCESS; }
 Status RdmaNodeTask::Init(TaskContext &context) {
   GELOGI("[%s] RdmaNodeTask::Init in.", context.GetNodeName());
   const NodeItem &node_item = context.GetNodeItem();
-  GE_CHECK_NOTNULL(node_item.op_desc);
-  auto remote_idx = node_item.op_desc->GetInputIndexByName("remote");
+  auto op_desc = node_item.GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  auto remote_idx = op_desc->GetInputIndexByName("remote");
   auto in_data_anchor = node_item.node->GetInDataAnchor(remote_idx);
   GE_CHECK_NOTNULL(in_data_anchor);
   auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
@@ -141,7 +144,7 @@ Status RdmaNodeTask::Init(TaskContext &context) {
   if (node_item.node->GetType() == HCOMREMOTEREAD) {
     local_index_ = 0;
   } else {
-    local_index_ = node_item.op_desc->GetInputIndexByName("local");
+    local_index_ = op_desc->GetInputIndexByName("local");
   }
   return SUCCESS;
 }

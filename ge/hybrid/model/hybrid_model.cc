@@ -44,7 +44,7 @@ Status HybridModel::Init() {
 TensorValue* HybridModel::GetVariable(const string &name) const {
   auto it = variable_tensors_.find(name);
   if (it == variable_tensors_.end()) {
-    GELOGI("Failed to get variable tensor. var name = [%s]", name.c_str());
+    GELOGD("Failed to get variable tensor. var name = [%s]", name.c_str());
     return nullptr;
   }
 
@@ -61,7 +61,7 @@ NodePtr HybridModel::GetVariableNode(const string &name) const {
   if (host_find != host_variable_nodes_.end()) {
     return host_find->second;
   }
-  GELOGI("Failed to get variable node by name = [%s]", name.c_str());
+  GELOGD("Failed to get variable node by name = [%s]", name.c_str());
   return nullptr;
 }
 

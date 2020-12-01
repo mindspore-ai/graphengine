@@ -157,9 +157,7 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     return ret;
   }
 
-  auto op_desc = context.GetNodeItem().op_desc;
-  GE_CHECK_NOTNULL(op_desc);
-  GELOGI("[%s] ExecuteAsync Start.", op_desc->GetName().c_str());
+  GELOGI("[%s] ExecuteAsync Start.", context.GetNodeName());
   for (auto it = tasks_.begin(); it != tasks_.end(); ++it) {
     // AtomicAddrClean has 2 tasks
     if (tasks_.size() == 2 && it == tasks_.begin() && !(*(tasks_.rbegin()))->GetClearAtomic()) {
@@ -177,15 +175,13 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeRegisterCallback] End");
   }
 
-  GELOGD("[%s] ExecuteAsync End.", op_desc->GetName().c_str());
+  GELOGD("[%s] ExecuteAsync End.", context.GetNodeName());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] End");
   return SUCCESS;
 }
 
 Status AiCoreNodeTask::UpdateArgs(TaskContext &context) {
-  auto op_desc = context.GetNodeItem().op_desc;
-  GE_CHECK_NOTNULL(op_desc);
-  GELOGI("[%s] AiCoreNodeTask UpdateArgs Start.", op_desc->GetName().c_str());
+  GELOGI("[%s] AiCoreNodeTask UpdateArgs Start.", context.GetNodeName());
   for (auto it = tasks_.rbegin(); it != tasks_.rend(); ++it) {
     GE_CHK_STATUS_RET_NOLOG((*it)->UpdateArgs(context));
     // AtomicAddrClean has 2 tasks
@@ -193,7 +189,7 @@ Status AiCoreNodeTask::UpdateArgs(TaskContext &context) {
       break;
     }
   }
-  GELOGI("[%s] AiCoreNodeTask UpdateArgs End.", op_desc->GetName().c_str());
+  GELOGI("[%s] AiCoreNodeTask UpdateArgs End.", context.GetNodeName());
   return SUCCESS;
 }
 

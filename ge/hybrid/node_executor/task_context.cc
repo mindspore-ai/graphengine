@@ -253,7 +253,7 @@ Status TaskContext::AllocateOutput(int index,
 
 Status TaskContext::AllocateOutputs(AllocationAttr *attr) {
   for (int i = 0; i < node_item_->num_outputs; ++i) {
-    const auto &output_desc = node_item_->op_desc->MutableOutputDesc(i);
+    const auto &output_desc = node_item_->MutableOutputDesc(i);
     GE_CHECK_NOTNULL(output_desc);
     uint32_t mem_type = 0;
     (void)AttrUtils::GetInt(output_desc, ATTR_OUTPUT_MEMORY_TYPE, mem_type);
@@ -349,7 +349,7 @@ Status TaskContext::PropagateOutputs() {
       auto dst_input_idx = dst_input_index_and_node.first;
       auto dst_node_item = dst_input_index_and_node.second;
       auto input_offset = dst_node_item->input_start + dst_input_idx;
-      GELOGI(
+      GELOGD(
           "Propagate output of node %s, output index = %d, dst node = %s, "
           "dst_input_index = %d, dst_input_offset = %d.",
           node_item_->NodeName().c_str(),
@@ -394,20 +394,20 @@ void TaskContext::ReleaseInput(int index) {
   }
 }
 
-ConstGeTensorDescPtr TaskContext::GetOutputDesc(int index) {
-  return node_item_->op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+ConstGeTensorDescPtr TaskContext::GetOutputDesc(int index) const {
+  return node_item_->MutableOutputDesc(static_cast<uint32_t>(index));
 }
 
-ConstGeTensorDescPtr TaskContext::GetInputDesc(int index) {
-  return node_item_->op_desc->MutableInputDesc(static_cast<uint32_t>(index));
+ConstGeTensorDescPtr TaskContext::GetInputDesc(int index) const {
+  return node_item_->MutableInputDesc(index);
 }
 
-GeTensorDescPtr TaskContext::MutableInputDesc(int index) {
-  return node_item_->op_desc->MutableInputDesc(static_cast<uint32_t>(index));
+GeTensorDescPtr TaskContext::MutableInputDesc(int index) const {
+  return node_item_->MutableInputDesc(index);
 }
 
-GeTensorDescPtr TaskContext::MutableOutputDesc(int index) {
-  return node_item_->op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+GeTensorDescPtr TaskContext::MutableOutputDesc(int index) const {
+  return node_item_->MutableOutputDesc(static_cast<uint32_t>(index));
 }
 
 bool TaskContext::IsForceInferShape() const {

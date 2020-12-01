@@ -23,6 +23,8 @@
 
 namespace ge {
 namespace hybrid {
+size_t kMaxHbmMemorySize = 1024UL * 1024UL * 1024UL * 1024UL; // 1024G
+
 std::map<uint32_t, std::unique_ptr<NpuMemoryAllocator>> NpuMemoryAllocator::allocators_;
 std::mutex NpuMemoryAllocator::mu_;
 
@@ -62,6 +64,10 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   } else if (mem_type == HOST_DDR) {
     buffer = malloc(allocate_size);
   } else {
+    if (allocate_size > kMaxHbmMemorySize) {
+      GELOGE(PARAM_INVALID, "Invalid HBM memory size: %zu", allocate_size);
+      return nullptr;
+    }
     void *try_reuse_addr = nullptr;
     int padding = kDefaultPadding;
     if (attr != nullptr) {

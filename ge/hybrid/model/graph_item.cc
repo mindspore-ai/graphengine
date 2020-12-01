@@ -40,11 +40,11 @@ Status GraphItem::GetOutputDescList(vector<ConstGeTensorDescPtr> &output_desc_li
   }
 
   if (is_dynamic_) {
-    for (auto &tensor_desc : output_node_->op_desc->GetAllInputsDescPtr()) {
+    for (auto &tensor_desc : output_node_->GetOpDesc()->GetAllInputsDescPtr()) {
       output_desc_list.emplace_back(tensor_desc);
     }
   } else {
-    for (auto &tensor_desc : output_node_->op_desc->GetAllOutputsDescPtr()) {
+    for (auto &tensor_desc : output_node_->GetOpDesc()->GetAllOutputsDescPtr()) {
       output_desc_list.emplace_back(tensor_desc);
     }
   }

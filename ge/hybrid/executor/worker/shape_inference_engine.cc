@@ -142,12 +142,15 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
              dst_input_index_and_node.first);
 
       // in case type 3 and 4, shape will be valid after computing is done
+      auto &infer_state = dst_node_state->GetShapeInferenceState();
       if (shape_is_future) {
         ShapeFuture future(node_item.node, i, subgraph_context_);
-        dst_node_state->GetShapeInferenceState().UpdateInputShapeFuture(dst_input_index_and_node.first,
-                                                                        std::move(future));
+        infer_state.UpdateInputShapeFuture(dst_input_index_and_node.first,
+                                           std::move(future));
       } else {
-        dst_node_state->GetShapeInferenceState().UpdateInputShape(dst_input_index_and_node.first, ori_shape, shape);
+        GE_CHK_STATUS_RET_NOLOG(infer_state.UpdateInputShape(dst_input_index_and_node.first,
+                                                             ori_shape,
+                                                             shape));
       }
     }
   }
@@ -159,7 +162,7 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
 Status ShapeInferenceEngine::InferShapeForSubgraph(const NodeItem &node_item, const FusedSubgraph &fused_subgraph) {
   GELOGD("[%s] Start to infer shape by fused subgraph", node_item.NodeName().c_str());
   for (auto &it : fused_subgraph.input_mapping) {
-    auto parent_tensor_desc = node_item.op_desc->MutableInputDesc(it.first);
+    auto parent_tensor_desc = node_item.MutableInputDesc(it.first);
     GE_CHECK_NOTNULL(parent_tensor_desc);
     GELOGD("Start to update shape by input[%u]", it.first);
     GELOGD("Update shape to [%s]", parent_tensor_desc->GetShape().ToString().c_str());

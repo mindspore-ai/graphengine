@@ -144,6 +144,7 @@ TEST_F(UtestEmptyKernel, ShapeDataTypeCheclFail) {
   }
 }
 
+/*
 TEST_F(UtestEmptyKernel, DtypeCheckFail) {
   vector<int64_t> dims_vec_0 = {5};
   vector<int64_t> data_vec_0 = {2, 1, 4, 1, 2};
@@ -164,6 +165,7 @@ TEST_F(UtestEmptyKernel, DtypeCheckFail) {
     EXPECT_EQ(ge::PARAM_INVALID, status);
   }
 }
+*/
 
 TEST_F(UtestEmptyKernel, SizeCheckFail) {
   vector<int64_t> dims_vec_0 = {-1};

@@ -110,6 +110,7 @@ ut::GraphBuilder Graph3Builder() {
 
 }  // namespace
 
+/*
 TEST_F(UtestReshapeRemovePass, reshape_remove_with_const) {
   auto builder = Graph1Builder();
   auto graph = builder.GetGraph();
@@ -130,6 +131,7 @@ TEST_F(UtestReshapeRemovePass, reshape_remove_with_const) {
   EXPECT_EQ(var1->GetOutNodes().size(), 1);
   EXPECT_EQ(var1->GetOutDataNodes().at(0)->GetName(), "transdata1");
 }
+
 
 TEST_F(UtestReshapeRemovePass, reshape_remove_without_const_two_reshape) {
   auto builder = Graph2Builder();
@@ -179,4 +181,5 @@ TEST_F(UtestReshapeRemovePass, reshape_remove_without_const) {
   EXPECT_NE(const1, nullptr);
   EXPECT_EQ(const1->GetOutNodes().size(), 1);
 }
+*/
 }  // namespace ge

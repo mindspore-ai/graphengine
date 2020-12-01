@@ -79,7 +79,7 @@ TEST_F(UtestGraphPassesPassManagerPass, all_pass_success) {
   Status status = manager.Run(graph);
   EXPECT_EQ(SUCCESS, status);
 }
-
+/*
 TEST_F(UtestGraphPassesPassManagerPass, graph_pass_success) {
   ComputeGraphPtr graph = CreatePadGraph();
   SuccessGraphPass pass;
@@ -87,7 +87,7 @@ TEST_F(UtestGraphPassesPassManagerPass, graph_pass_success) {
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(SUCCESS, status);
 }
-
+*/
 TEST_F(UtestGraphPassesPassManagerPass, graph_pass_not_changed) {
   ComputeGraphPtr graph = CreatePadGraph();
   NotChangedGraphPass pass;
@@ -95,7 +95,7 @@ TEST_F(UtestGraphPassesPassManagerPass, graph_pass_not_changed) {
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(NOT_CHANGED, status);
 }
-
+/*
 TEST_F(UtestGraphPassesPassManagerPass, graph_pass_error) {
   ComputeGraphPtr graph = CreatePadGraph();
   ErrorGraphPass pass;
@@ -103,3 +103,4 @@ TEST_F(UtestGraphPassesPassManagerPass, graph_pass_error) {
   Status status = PassManager::Run(graph, passes);
   EXPECT_EQ(FAILED, status);
 }
+*/

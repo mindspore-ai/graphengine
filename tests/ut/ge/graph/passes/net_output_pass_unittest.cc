@@ -765,6 +765,7 @@ TEST_F(UtestGraphPassesNetOutputPass, check_order_and_const_flag_success) {
   EXPECT_EQ(retval_node2, nullptr);
 }
 
+/*
 TEST_F(UtestGraphPassesNetOutputPass, out_node_check_fail) {
   ge::ComputeGraphPtr compute_graph = build_graph();
 
@@ -789,6 +790,7 @@ TEST_F(UtestGraphPassesNetOutputPass, out_node_check_fail) {
   net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
   EXPECT_EQ(net_out_node, nullptr);
 }
+*/
 
 TEST_F(UtestGraphPassesNetOutputPass, retval_node_check_fail) {
   ge::ComputeGraphPtr compute_graph = build_graph();

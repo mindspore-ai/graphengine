@@ -453,7 +453,7 @@ ut::GraphBuilder BuildGraph8() {
   return builder;
 }
 }  // namespace
-
+/*
 TEST_F(UtestFormatRefiner, data_format) {
   auto builder = BuildGraph8();
   auto graph = builder.GetGraph();
@@ -468,7 +468,7 @@ TEST_F(UtestFormatRefiner, data_format) {
   EXPECT_EQ(relu->GetOpDesc()->GetOutputDesc(0).GetOriginFormat(), FORMAT_NCHW);
   //FormatRefiner::SetInferOrigineFormatFlag(true);
 }
-
+*/
 TEST_F(UtestFormatRefiner, constant_fail) {
   //FormatRefiner::SetInferOrigineFormatFlag(true);
   auto builder = BuildGraph6();

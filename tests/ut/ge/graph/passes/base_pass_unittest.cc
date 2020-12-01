@@ -414,7 +414,7 @@ TEST_F(UTESTGraphPassesBasePass, re_pass_and_del) {
   EXPECT_EQ(ge_pass.Run(names_to_pass), SUCCESS);
   EXPECT_EQ(test_pass.GetIterNodes().size(), 7);
 }
-
+/*
 TEST_F(UTESTGraphPassesBasePass, dead_loop) {
   NamesToPass names_to_pass;
   auto test_pass = UtestTestPass(true);
@@ -428,7 +428,7 @@ TEST_F(UTESTGraphPassesBasePass, dead_loop) {
   EXPECT_EQ(ge_pass.Run(names_to_pass), SUCCESS);
   EXPECT_EQ(test_pass.GetRunTimes(), 1007);
 }
-
+*/
 TEST_F(UTESTGraphPassesBasePass, while_loop) {
   NamesToPass names_to_pass;
   auto test_pass = UtestTestPass(true);

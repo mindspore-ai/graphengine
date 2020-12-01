@@ -42,7 +42,7 @@ TEST_F(UtestSingleOpManager, test_get_resource) {
   auto &instance = SingleOpManager::GetInstance();
   ASSERT_NE(instance.GetResource(0x01, stream), nullptr);
 }
-
+/*
 TEST_F(UtestSingleOpManager, test_get_op_from_model) {
   auto stream = (rtStream_t)0x1;
   uintptr_t resource_id = 0x1;
@@ -57,7 +57,7 @@ TEST_F(UtestSingleOpManager, test_get_op_from_model) {
   ASSERT_EQ(instance.GetOpFromModel("model", model_data, stream, &single_op), FAILED);
   ASSERT_EQ(instance.GetResource(resource_id, stream)->GetOperator(model_data.model_data), nullptr);
 }
-
+*/
 TEST_F(UtestSingleOpManager, test_relesase_resource) {
   auto stream = (rtStream_t)0x99;
   auto &instance = SingleOpManager::GetInstance();
@@ -67,6 +67,7 @@ TEST_F(UtestSingleOpManager, test_relesase_resource) {
   ASSERT_EQ(instance.ReleaseResource(stream), SUCCESS);
 }
 
+/*
 TEST_F(UtestSingleOpManager, test_get_op_from_model_with_null_stream) {
   void *stream = nullptr;
 
@@ -92,3 +93,4 @@ TEST_F(UtestSingleOpManager, get_resource_failed) {
 
   ASSERT_EQ(instance.GetOpFromModel("model", model_data, stream, &single_op), FAILED);
 }
+*/

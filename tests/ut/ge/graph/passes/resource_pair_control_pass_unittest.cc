@@ -54,7 +54,7 @@ ut::GraphBuilder Graph1Builder() {
   return builder;
 }
 }
-
+/*
 TEST_F(UtestResourcePairControlPass, resource_pair_control) {
   auto builder = Graph1Builder();
   auto graph = builder.GetGraph();
@@ -91,4 +91,5 @@ TEST_F(UtestResourcePairControlPass, resource_pair_control) {
   EXPECT_EQ(stackpop2->GetInNodes().size(), 1);
   EXPECT_EQ(stackpop2->GetInControlNodes().size(), 0);
 }
+*/
 }

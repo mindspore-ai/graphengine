@@ -377,7 +377,9 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
   }
 
   auto var_manager = VarManager::Instance(session_id);
-  auto *get_mem_base = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(var_manager->GetVarMemMaxSize()));
+  // since var_mem_logic_base_ = graph_mem_max_size_ + kGraphMemoryBuffer in graph_var_manager.cc,
+  // get_mem_base should not bigger than kGraphMemoryBuffer
+  auto *get_mem_base = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(kGraphMemoryBuffer>>1));
   uint8_t *get_weight_mem_base = get_mem_base;
   if (weight_size > 0) {
     get_weight_mem_base = get_mem_base + memory_size + p2p_memory_size;

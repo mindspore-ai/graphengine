@@ -871,8 +871,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
                       !node_op_desc->HasAttr(kOpNoReuseMem) && reuse_mem_flag && is_op_reuse_mem;
     auto stream_id = node_op_desc->GetStreamId();
     if (is_reuse_memory && !continuous && !reusable_blocks_[memory_type].empty()) {
-      for (auto it = reusable_blocks_[memory_type][stream_id].begin();
-           it != reusable_blocks_[memory_type][stream_id].end(); ++it) {
+      for (auto it = reusable_blocks_[memory_type][stream_id].rbegin();
+           it != reusable_blocks_[memory_type][stream_id].rend(); ++it) {
         MemoryBlock *reusable_block = *it;
         if (!IsPostReuse(reusable_block)) {
           reusable_block->reuse_mem_ = false;
@@ -901,7 +901,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
           reusable_block->continuous_block_ = continuous;
           reusable_block->ref_count_++;
           ReduceReusableBlockCount(*reusable_block, reusable_block_counts_);
-          reusable_blocks_[memory_type][stream_id].erase(it);
+          reusable_blocks_[memory_type][stream_id].erase((++it).base());
           return reusable_block;
         }
       }

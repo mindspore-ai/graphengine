@@ -234,7 +234,7 @@ InputRWType GetSingleNodeInputRWTypeByIndex(const Node &node, uint32_t index) {
     return InputRWType::kInvalidRWType;
   }
   if (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HCOMALLGATHER
-      || op_desc->GetType() == HCOMREDUCESCATTER || op_desc->GetType() == HCOMREDUCE) {
+      || op_desc->GetType() == HCOMREDUCESCATTER) {
     return InputRWType::kScopeWriteable;
   }
   // check if it is ref input

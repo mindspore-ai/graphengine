@@ -2109,7 +2109,12 @@ void DavinciModel::CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputD
   }
 
   int64_t tensor_size = 0;
-  (void)TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size);  // no need to check value
+  if (AttrUtils::GetInt(op_desc->GetInputDescPtr(index), ATTR_NAME_SPECIAL_OUTPUT_SIZE, tensor_size)
+     && (tensor_size > 0)) {
+    GELOGI("netoutput[%s] [%d]th input has special size [%ld]", op_desc->GetName().c_str(), index, tensor_size);
+  } else {
+    (void)TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size);  // no need to check value
+  }
   output.size = static_cast<uint64_t>(tensor_size);
   output.data_type = op_desc->GetInputDescPtr(index)->GetDataType();
 }

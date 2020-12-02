@@ -240,6 +240,8 @@ class GeGenerator::Impl {
 
   Status SaveModel(const string &file_name_prefix, GeModelPtr &models, ModelBufferData &model);
 
+  Status SaveRootModel(const string &file_name_prefix, GeRootModelPtr &model, ModelBufferData &model_buff);
+
   Status SaveParams(GeModelPtr &ge_model, const string &type, const map<string, GeAttrValue> &attrs,
                     const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
 
@@ -505,19 +507,7 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
 
   GE_CHECK_NOTNULL(ge_root_model);
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
-  ModelHelper model_helper;
-  string model_name = "";
-  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(), model_name);
-  if (name_ret != SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
-    GELOGE(FAILED, "Get model_name failed. Param --output is invalid");
-    return PARAM_INVALID;
-  }
-  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
-  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
-  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model can not be null");
-  ge_model->SetName(model_name);
-  ret = impl_->SaveModel(file_name_prefix, ge_model, model);
+  ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");
     if (impl_->graph_manager_.Finalize() != SUCCESS) {
@@ -705,6 +695,44 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &
   ModelHelper model_helper;
   model_helper.SetSaveMode(is_offline_);
   Status ret = model_helper.SaveToOmModel(model, save_param_, file_name_prefix, model_buff);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Save to om model failed");
+    return ret;
+  }
+  return SUCCESS;
+}
+
+Status GeGenerator::Impl::SaveRootModel(const string &file_name_prefix, GeRootModelPtr &ge_root_model,
+                                        ModelBufferData &model_buff) {
+  bool is_unknown_shape = false;
+  auto ret = ge_root_model->CheckIsUnknownShape(is_unknown_shape);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Check root model is unkonwn shape failed");
+    return FAILED;
+  }
+  GELOGD("begin save root model, cur model is unkonwn shape model ? : %d", is_unknown_shape);
+  GE_CHK_BOOL_EXEC(!ge_root_model->GetSubgraphInstanceNameToModel().empty(), return FAILED,
+                   "ge root model has no sub model")
+  GeModelPtr model_root = nullptr;
+  if (is_unknown_shape) {
+    model_root = make_shared<GeModel>();
+    model_root->SetGraph(GraphUtils::CreateGraphFromComputeGraph(ge_root_model->GetRootGraph()));
+    ge_root_model->SetSubgraphInstanceNameToModel(ge_root_model->GetRootGraph()->GetName(), model_root);
+    model_root->SetName(ge_root_model->GetRootGraph()->GetName());
+  } else {
+    model_root = ge_root_model->GetSubgraphInstanceNameToModel().begin()->second;
+  }
+  // set atc version
+  if (!SetAtcVersionInfo(*(model_root.get()))) {
+    GELOGW("SetPackageVersionInfo of atc failed!");
+  }
+  // set opp version
+  if (!SetOppVersionInfo(*(model_root.get()))) {
+    GELOGW("SetPackageVersionInfo of ops failed!");
+  }
+  ModelHelper model_helper;
+  model_helper.SetSaveMode(is_offline_);
+  ret = model_helper.SaveToOmRootModel(ge_root_model, save_param_, file_name_prefix, model_buff, is_unknown_shape);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save to om model failed");
     return ret;

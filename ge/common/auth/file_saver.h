@@ -74,6 +74,10 @@ class FileSaver {
                            ModelPartitionTable &model_partition_table,
                            const std::vector<ModelPartition> &partition_datas);
 
+  static Status SaveToFile(const string &file_path, ModelFileHeader &file_header,
+                        vector<ModelPartitionTable *> &model_partition_tables,
+                        const vector<vector<ModelPartition>> &all_partition_datas);
+
   static Status SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
                                             ModelPartitionTable &model_partition_table,
                                             const std::vector<ModelPartition> &partitionDatas,
@@ -108,6 +112,9 @@ class FileSaver {
   static Status SaveWithFileHeader(const std::string &file_path, const ModelFileHeader &file_header,
                                    ModelPartitionTable &model_partition_table,
                                    const std::vector<ModelPartition> &partition_datas);
+  static Status SaveWithFileHeader(const std::string &file_path, const ModelFileHeader &file_header,
+                                       vector<ModelPartitionTable *> &model_partition_tables,
+                                       const vector<vector<ModelPartition>> &all_partition_datas);
 };
 }  // namespace ge
 #endif  // GE_COMMON_AUTH_FILE_SAVER_H_

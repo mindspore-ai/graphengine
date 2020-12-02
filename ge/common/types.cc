@@ -801,7 +801,7 @@ const uint32_t XRGB_CHN_NUM = 4;
 ///
 const bool DEFAULT_GLOBAL_POOLING = false;
 
-const uint32_t MODEL_VERSION = 0x10000000; ///< Model version 1.0///
+const uint32_t MODEL_VERSION = 0x20000000; ///< Model version 2.0///
 
 // Eltwise's input size
 const int ELTWISE_MIN_INPUT_SIZE = 2;

@@ -20,12 +20,29 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/node.h"
 #include "register/op_tiling_registry.h"
+#include <nlohmann/json.hpp>
 
 namespace optiling {
+
+#define REGISTER_OP_TILING_FUNC(optype, opfunc) REGISTER_OP_TILING_FUNC_UNIQ_HELPER(optype, opfunc, __COUNTER__)
+#define REGISTER_OP_TILING_FUNC_UNIQ_HELPER(optype, opfunc, counter) \
+  REGISTER_OP_TILING_FUNC_UNIQ(optype, opfunc, counter)
+#define REGISTER_OP_TILING_FUNC_UNIQ(optype, opfunc, counter) \
+  static OpTilingInterf g_##optype##TilingInterf##counter(#optype, opfunc)
+
+using OpTilingFuncOld =
+  std::function<bool(const std::string &, const TeOpParas &, const nlohmann::json &, OpRunInfo &)>;
+
+class FMK_FUNC_HOST_VISIBILITY OpTilingInterf {
+ public:
+  OpTilingInterf(std::string op_type, OpTilingFuncOld func);
+  ~OpTilingInterf() = default;
+  static std::string OpTilingUuid;
+};
 
 extern "C" ge::graphStatus OpParaCalculate(const ge::Node &node, OpRunInfo &run_info);
 extern "C" ge::graphStatus OpAtomicCalculate(const ge::Node &node, OpRunInfo &run_info);
 
-}
+}  // namespace optiling
 
-#endif // INC_REGISTER_OP_TILING_H_
+#endif  // INC_REGISTER_OP_TILING_H_

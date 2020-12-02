@@ -315,9 +315,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() 
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t GetCurrentSecondTimestap() {
-  struct timeval tv {};
-  int ret = gettimeofday(&tv, nullptr);
-  GE_LOGE_IF(ret != 0, "Func gettimeofday may failed: ret=%d", ret);
+  mmTimeval tv {};
+  int ret = mmGetTimeOfDay(&tv, nullptr);
+  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed: ret=%d", ret);
   auto total_use_time = tv.tv_sec;  // seconds
   return static_cast<uint32_t>(total_use_time);
 }

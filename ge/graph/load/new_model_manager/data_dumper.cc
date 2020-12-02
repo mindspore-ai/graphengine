@@ -16,7 +16,6 @@
 
 #include "graph/load/new_model_manager/data_dumper.h"
 
-#include <sys/time.h>
 #include <cstdlib>
 #include <ctime>
 #include <map>
@@ -76,8 +75,8 @@ static bool IsTensorDescWithSkipDumpAddrType(bool has_mem_type_attr, vector<int6
 
 static uint64_t GetNowTime() {
   uint64_t ret = 0;
-  struct timeval tv;
-  if (gettimeofday(&tv, NULL) == 0) {
+  mmTimeval tv;
+  if (mmGetTimeOfDay(&tv, nullptr) == 0) {
     ret = tv.tv_sec * 1000000ULL + tv.tv_usec;
   }
 

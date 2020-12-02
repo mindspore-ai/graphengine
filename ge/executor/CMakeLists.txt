@@ -79,15 +79,17 @@ set(SRC_LIST
 add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_executor PRIVATE
-    -Werror
-    -O2
-    -Wno-deprecated-declarations
+    $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
 )
 
 target_compile_definitions(ge_executor PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     DAVINCI_SUPPORT_PROFILING
     google=ascend_private
+    $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
+    $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
 )
 
 target_include_directories(ge_executor PRIVATE

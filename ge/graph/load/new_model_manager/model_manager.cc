@@ -1325,9 +1325,9 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
                        so_name.size(), RT_MEMCPY_HOST_TO_DEVICE));
 
     CustAicpuSoBuf cust_aicpu_so_buf;
-    cust_aicpu_so_buf.kernelSoBuf = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
+    cust_aicpu_so_buf.kernelSoBuf = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_aicpu_data));
     cust_aicpu_so_buf.kernelSoBufLen = aicpu_data_length;
-    cust_aicpu_so_buf.kernelSoName = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
+    cust_aicpu_so_buf.kernelSoName = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_so_name));
     cust_aicpu_so_buf.kernelSoNameLen = so_name.size();
     v_cust_so.push_back(cust_aicpu_so_buf);
   }
@@ -1346,7 +1346,7 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
 
   BatchLoadOpFromBufArgs batch_cust_so;
   batch_cust_so.soNum = v_cust_so.size();
-  batch_cust_so.args = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(args));
+  batch_cust_so.args = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args));
 
   void *batch_args = nullptr;
   uint32_t batch_args_size = sizeof(BatchLoadOpFromBufArgs);
@@ -1501,7 +1501,7 @@ Status ModelManager::EnableExceptionDump(const std::map<string, string> &options
   if (iter != options.end()) {
     GELOGI("Find option enable_exeception_dump is %s", iter->second.c_str());
     if (iter->second == "1") {
-      rtError_t rt_ret = rtSetTaskFailCallback(ExceptionCallback);
+      rtError_t rt_ret = rtSetTaskFailCallback(reinterpret_cast<rtTaskFailCallback>(ExceptionCallback));
       if (rt_ret != RT_ERROR_NONE) {
         GELOGE(RT_FAILED, "rtSetTaskFailCallback failed");
         return RT_ERROR_TO_GE_STATUS(rt_ret);

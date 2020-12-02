@@ -308,16 +308,16 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   const std::vector<rtExceptionInfo> &GetExceptionInfos() { return exception_infos_; }
 
-  void AddExceptionInfo(const rtExceptionInfo &exception_info) { exception_infos_.emplace_back(exception_info); }
+  void AddExceptionInfo(const rtExceptionInfo &rt_exception_info) { exception_infos_.emplace_back(rt_exception_info); }
 
-  static void ExceptionCallback(rtExceptionInfo *exception_info) {
+  static void ExceptionCallback(rtExceptionInfo *rt_exception_info) {
     std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
     auto instance = ModelManager::GetInstance();
     if (instance == nullptr) {
       GELOGE(FAILED, "Instance is nullptr");
       return;
     }
-    instance->AddExceptionInfo(*exception_info);
+    instance->AddExceptionInfo(*rt_exception_info);
   }
 
  private:

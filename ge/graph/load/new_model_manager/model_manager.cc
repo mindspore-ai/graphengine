@@ -37,7 +37,8 @@ thread_local uint32_t device_count = 0;
 namespace {
 const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
-const int kProfStartCmdParaSize = 2;
+const std::size_t kProfCmdParaMaxSize = 1000;
+const std::size_t kProfStartCmdParaSize = 2;
 const std::string kCmdTypeProfile = "profile";
 const std::string kCmdTypeDump = "dump";
 const std::string kCmdTypeProfiling = "profiling";
@@ -750,6 +751,11 @@ Status ModelManager::HandleProfStartCommand(const Command &command) {
     GELOGE(PARAM_INVALID, "When the cmd_type is 'profile start', the size of cmd_params must larger than 2.");
     return PARAM_INVALID;
   }
+  if (command.cmd_params.size() > kProfCmdParaMaxSize) {
+    GELOGE(PARAM_INVALID, "Command para size[%zu] larger than max[1000].", command.cmd_params.size());
+    return PARAM_INVALID;
+  }
+
   std::map<std::string, std::string> cmd_params_map;
   uint32_t step = 2;
   for (uint32_t i = 0; i < command.cmd_params.size(); i += step) {
@@ -771,6 +777,11 @@ Status ModelManager::HandleProfStopCommand(const Command &command) {
     GELOGE(PARAM_INVALID, "When the cmd_type is 'profile stop', the size of cmd_params must larger than 2.");
     return PARAM_INVALID;
   }
+  if (command.cmd_params.size() > kProfCmdParaMaxSize) {
+    GELOGE(PARAM_INVALID, "Command para size[%zu] larger than max[1000].", command.cmd_params.size());
+    return PARAM_INVALID;
+  }
+
   std::map<std::string, std::string> cmd_params_map;
   uint32_t step = 2;
   for (uint32_t i = 0; i < command.cmd_params.size(); i += step) {

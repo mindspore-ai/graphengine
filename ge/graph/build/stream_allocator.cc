@@ -49,7 +49,7 @@ inline bool HasContinuousStreamLabel(const ge::OpDescPtr &op_desc, std::string &
 }
 
 bool IsHcclOp(const string &op_type) {
-  const set<string> hccl_op_types({ge::HCOMBROADCAST, ge::HCOMALLGATHER, ge::HCOMALLREDUCE, ge::HCOMREDUCESCATTER});
+  const set<string> hccl_op_types({ge::HCOMBROADCAST, ge::HCOMALLGATHER, ge::HCOMALLREDUCE, ge::HCOMREDUCESCATTER, ge::HCOMREDUCE});
   return hccl_op_types.find(op_type) != hccl_op_types.end();
 }
 }  // namespace

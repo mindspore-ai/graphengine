@@ -85,7 +85,7 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   op_info.dataType = iter->second;
   HcclReduceOp op_type = HCCL_REDUCE_SUM;
   if (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HCOMREDUCESCATTER ||
-      op_desc->GetType() == HVDCALLBACKALLREDUCE) {
+      op_desc->GetType() == HVDCALLBACKALLREDUCE || op_desc->GetType() == HCOMREDUCE) {
     GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclOperationType(op_desc, op_type), "GetHcclOperationType failed");
     op_info.opType = op_type;
   }

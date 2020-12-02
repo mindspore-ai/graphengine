@@ -21,15 +21,11 @@
 #include <vector>
 
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
-
-using domi::PARAM_INVALID;
-using domi::SUCCESS;
 
 namespace ge {
 const int kValueIndexOutputIndex = 1;
@@ -47,13 +43,12 @@ Status MergePass::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  auto out_data_anchors = node->GetAllOutDataAnchors();
-  if (out_data_anchors.empty()) {
+  if (node->GetAllOutDataAnchors().empty()) {
     GELOGE(PARAM_INVALID, "[%s] Merge node output anchor is empty", node->GetName().c_str());
     return PARAM_INVALID;
   }
 
-  auto in_data_nodes = node->GetInDataNodes();
+  const auto &in_data_nodes = node->GetInDataNodes();
   switch (in_data_nodes.size()) {
     case 0: {
       /// Case A: input_count = 0, the output of merge node is inactive as well

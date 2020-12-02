@@ -27,6 +27,7 @@ StreamActiveTask::StreamActiveTask(const ModelContext &model_context,
       active_stream_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
+    return;
   }
   auto stream_list = model_context.stream_list();
   uint32_t stream_id = task_info->stream_id();
@@ -34,6 +35,7 @@ StreamActiveTask::StreamActiveTask(const ModelContext &model_context,
   GELOGI("Stream list size:%zu, stream id:%u, active stream id:%u", stream_list.size(), stream_id, active_stream_id);
   if (stream_id >= stream_list.size() || active_stream_id >= stream_list.size()) {
     GELOGW("Stream id invalid");
+    return;
   }
   stream_ = stream_list[stream_id];
   active_stream_ = stream_list[active_stream_id];

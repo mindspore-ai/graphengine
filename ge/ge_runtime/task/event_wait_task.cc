@@ -26,6 +26,7 @@ EventWaitTask::EventWaitTask(const ModelContext &model_context, const std::share
       event_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
+    return;
   }
   auto stream_list = model_context.stream_list();
   auto event_list = model_context.event_list();
@@ -34,6 +35,7 @@ EventWaitTask::EventWaitTask(const ModelContext &model_context, const std::share
   if (stream_id >= stream_list.size() || event_id >= event_list.size()) {
     GELOGW("stream_list size:%zu, stream_id:%u, event_list size:%zu, event_id:%u", stream_list.size(), stream_id,
            event_list.size(), event_id);
+    return;
   }
   stream_ = stream_list[stream_id];
   event_ = event_list[event_id];

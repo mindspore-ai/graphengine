@@ -27,6 +27,7 @@ StreamSwitchTask::StreamSwitchTask(const ModelContext &model_context,
       stream_list_() {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
+    return;
   }
 
   stream_list_ = model_context.stream_list();

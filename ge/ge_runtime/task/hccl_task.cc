@@ -36,6 +36,7 @@ HcclTask::HcclTask(const ModelContext &model_context, const std::shared_ptr<Hccl
       secondary_stream_list_() {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
+    return;
   }
 
   priority_ = model_context.priority();

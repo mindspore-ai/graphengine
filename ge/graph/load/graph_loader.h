@@ -65,7 +65,8 @@ class GraphLoader {
                                const std::vector<uint32_t> &output_queue_ids);
 
   static Status ExecuteModel(uint32_t model_id, rtStream_t stream, bool async_mode, const InputData &input_data,
-                             OutputData &output_data);
+                             const std::vector<GeTensorDesc> &input_desc, OutputData &output_data,
+                             std::vector<GeTensorDesc> &output_desc);
 
   static Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
 

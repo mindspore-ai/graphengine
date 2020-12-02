@@ -35,6 +35,11 @@ class HybridModelAsyncExecutor {
 
   Status Init();
 
+  Status Execute(const std::vector<DataBuffer> &inputs,
+                 const std::vector<GeTensorDesc> &input_desc,
+                 std::vector<DataBuffer> &outputs,
+                 std::vector<GeTensorDesc> &output_desc);
+
   Status Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
 
   Status Start(const std::shared_ptr<ModelListener> &listener);

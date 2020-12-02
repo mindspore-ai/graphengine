@@ -118,7 +118,8 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       load_end_time_(0),
       time_info_(),
       dataInputTid(0),
-      is_model_has_inited_(false),
+      is_weight_mem_has_inited_(false),
+      is_feature_map_mem_has_inited_(false),
       model_id_(0),
       runtime_model_id_(0),
       version_(0),
@@ -264,59 +265,24 @@ void DavinciModel::Shrink() {
   ge_model_.reset();  // delete object.
 }
 
-Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
-  if (is_model_has_inited_) {
-    GELOGE(FAILED, "call InitModelMem more than once .");
+Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size) {
+  if (is_weight_mem_has_inited_) {
+    GELOGE(FAILED, "call InitWeightMem more than once.");
     return FAILED;
   }
-  is_model_has_inited_ = true;
+  is_weight_mem_has_inited_ = true;
 
-  std::size_t data_size = TotalMemSize();
-  std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
   const Buffer &weights = ge_model_->GetWeight();
   std::size_t weights_size = weights.GetSize();
   GE_CHECK_LE(weights_size, ALLOC_MEMORY_MAX_SIZE);
-
-  if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
-    GELOGE(FAILED, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
-    return FAILED;
-  }
 
   if ((weight_ptr != nullptr) && (weight_size < weights_size)) {
     GELOGE(FAILED, "Invalid mem param: weight_size=%zu totalsize=%zu.", weight_size, weights_size);
     return FAILED;
   }
 
-  mem_base_ = static_cast<uint8_t *>(dev_ptr);
-  p2p_mem_base_ = static_cast<uint8_t *>(dev_ptr);
   weights_mem_base_ = static_cast<uint8_t *>(dev_ptr);
-  is_inner_mem_base_ = false;
   is_inner_weight_base_ = false;
-
-  if (TotalMemSize() && mem_base_ == nullptr) {
-    mem_base_ = MallocFeatureMapMem(data_size);
-    if (mem_base_ == nullptr) {
-      GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
-      return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
-    }
-    GEEVENT("[IMAS]InitModelMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-            mem_base_, data_size);
-    weights_mem_base_ = mem_base_;
-
-    is_inner_mem_base_ = true;
-    is_inner_weight_base_ = true;
-  }
-
-  if (p2p_data_size != 0) {
-    p2p_mem_base_ = MallocP2PMem(p2p_data_size);
-    if (p2p_mem_base_ == nullptr) {
-      GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
-      return GE_EXEC_ALLOC_P2P_MEM_FAILED;
-    }
-    GELOGI("InitModelMem graph_%u MallocMemory type[P] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-           p2p_mem_base_, p2p_data_size);
-    is_inner_p2p_mem_base_ = true;
-  }
 
   if (weights_size != 0) {
     weights_mem_base_ = static_cast<uint8_t *>(weight_ptr);
@@ -329,9 +295,61 @@ Status DavinciModel::InitModelMem(void *dev_ptr, size_t mem_size, void *weight_p
       }
       is_inner_weight_base_ = true;
     }
-    GELOGI("[IMAS]InitModelMem graph_%u MallocMemory type[W] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+    GELOGI("[IMAS]InitWeightMem graph_%u MallocMemory type[W] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
            weights_mem_base_, weights_size);
     GE_CHK_RT_RET(rtMemcpy(weights_mem_base_, weights_size, weights.GetData(), weights_size, RT_MEMCPY_HOST_TO_DEVICE));
+    GELOGI("copy weights data to device");
+  }
+
+  runtime_param_.weight_base = weights_mem_base_;
+  return SUCCESS;
+}
+
+
+Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
+  if (is_feature_map_mem_has_inited_) {
+    GELOGE(FAILED, "call InitFeatureMapMem more than once .");
+    return FAILED;
+  }
+  is_feature_map_mem_has_inited_ = true;
+
+  std::size_t data_size = TotalMemSize();
+  std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
+
+  if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
+    GELOGE(FAILED, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
+    return FAILED;
+  }
+
+  mem_base_ = static_cast<uint8_t *>(dev_ptr);
+  p2p_mem_base_ = static_cast<uint8_t *>(dev_ptr);
+  is_inner_mem_base_ = false;
+
+  if (TotalMemSize() && mem_base_ == nullptr) {
+    mem_base_ = MallocFeatureMapMem(data_size);
+    if (mem_base_ == nullptr) {
+      GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
+      return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
+    }
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+            mem_base_, data_size);
+
+    if (!is_inner_weight_base_) {
+      weights_mem_base_ = mem_base_;
+      is_inner_weight_base_ = true;
+    }
+    is_inner_mem_base_ = true;
+  }
+
+  if (p2p_data_size != 0) {
+    p2p_mem_base_ = MallocP2PMem(p2p_data_size);
+    if (p2p_mem_base_ == nullptr) {
+      GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
+      return GE_EXEC_ALLOC_P2P_MEM_FAILED;
+    }
+    GELOGI("InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
+           p2p_mem_base_, p2p_data_size);
+    is_inner_p2p_mem_base_ = true;
   }
 
   GE_CHK_STATUS_RET(InitVariableMem(), "Init variable memory failed.");
@@ -643,8 +661,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
   GE_TIMESTAMP_START(InitModelMem);
   GELOGD("Known node is %d", known_node_);
+  GE_CHK_STATUS_RET_NOLOG(InitWeightMem(dev_ptr, weight_ptr, weight_size));
   if (!known_node_) {
-    GE_CHK_STATUS_RET_NOLOG(InitModelMem(dev_ptr, mem_size, weight_ptr, weight_size));
+    GE_CHK_STATUS_RET_NOLOG(InitFeatureMapAndP2PMem(dev_ptr, mem_size));
     data_inputer_ = new (std::nothrow) DataInputer();
     GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, MEMALLOC_FAILED, "data_inputer_ is nullptr.");
   }
@@ -1141,6 +1160,7 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
     GE_IF_BOOL_EXEC(GetGearAndRealOutShapeInfo(input_count, op_desc) != SUCCESS,
                     GELOGE(PARAM_INVALID, "Failed to get gear and real out shape info."); return PARAM_INVALID;);
   }
+
   return SUCCESS;
 }
 

@@ -222,8 +222,6 @@ class GraphManager {
                                                 const ComputeGraphPtr &compute_graph, uint64_t session_id,
                                                 const GEThreadLocalContext &ge_context);
   Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
-  Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_nodes,
-                                   vector<NodePtr> &getnext_nosink_nodes, vector<NodePtr> &getnext_sink_nodes);
   void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);
   Status ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
                                                const std::vector<InputTensorInfo> &input_tensor);

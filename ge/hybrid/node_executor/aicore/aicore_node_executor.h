@@ -89,7 +89,7 @@ class TaskCompilerFactory {
 
 class CompilerFunctionRegistrar {
  public:
-  CompilerFunctionRegistrar(CreateFn fn);
+  explicit CompilerFunctionRegistrar(CreateFn fn);
   ~CompilerFunctionRegistrar() = default;
 };
 }  // namespace hybrid

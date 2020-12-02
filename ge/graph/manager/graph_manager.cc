@@ -2688,9 +2688,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     }
 
     // it will not execute graph preprocess, optimize, parition, build if the graph has built successful.
-
     GELOGI("Start for run graph async.");
-
     GeRootModelPtr ge_root_model = nullptr;
     if (graph_manager->IsGraphNeedBuild(graph_node)) {
       if (graph_node->GetBuildFlag()) {

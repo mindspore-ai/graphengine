@@ -424,7 +424,7 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
 }
 
 Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
-  // set input_desc.size = src_node.output_desc.size
+  // Set the size of input_desc to 'src_node.output_desc.size'
   if (node_ptr->GetType() == DATA) {
     bool is_unknown_shape = false;
     GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node_ptr, is_unknown_shape),
@@ -447,7 +447,7 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
     GE_IF_BOOL_EXEC(src_op == nullptr, continue);
     auto node_op_desc = node_ptr->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
-    // set dst_node.input_desc = src_node.output_desc
+    // Set the input_desc of dst_node to 'src_node.output_desc'
     auto output_desc = src_op->GetOutputDescPtr(peer_out_anchor->GetIdx());
     int64_t size = 0;
     GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_desc, size) != SUCCESS, GELOGI("Get size failed!"));

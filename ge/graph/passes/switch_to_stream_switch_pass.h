@@ -42,9 +42,9 @@ namespace ge {
   +-----------+                +-----------+
   |   Const   |                | VariableV2|
   +-----------+                +-----------+
-*/
 
-/* Switch branch op optimize, Switches in same case merge to one StreamSwitch, update following nodes' input
+
+  Switch branch op optimize, Switches in same case merge to one StreamSwitch, update following nodes' input
 
                                             +-----------+
                                           / |   task2   | \

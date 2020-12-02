@@ -38,7 +38,6 @@ namespace ge {
  *   \  /
  *    B
  */
-
 Status CtrlEdgeTransferPass::Run(ge::ComputeGraphPtr graph) {
   GELOGD("CtrlEdgeTransferPass start running");
   GE_CHECK_NOTNULL(graph);

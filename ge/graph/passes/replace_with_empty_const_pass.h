@@ -17,18 +17,16 @@
 #ifndef GE_GRAPH_PASSES_REPLACE_WITH_EMPTY_CONST_PASS_H_
 #define GE_GRAPH_PASSES_REPLACE_WITH_EMPTY_CONST_PASS_H_
 
-#include "graph/passes/base_pass.h"
+#include "graph/passes/folding_pass.h"
 
 namespace ge {
-class ReplaceWithEmptyConstPass : public BaseNodePass {
+class ReplaceWithEmptyConstPass : public FoldingPass {
  public:
   Status Run(NodePtr &node) override;
 
  private:
-  Status ReplaceWithEmptyConst(NodePtr &node_to_replace);
-  Status InsertEmptyConst(const GeTensorDesc &out_desc, NodePtr &const_node, ComputeGraphPtr &graph);
+  Status GetOutputsOfCurrNode(const NodePtr &node_to_replace, vector<GeTensorPtr> &outputs);
   bool IsEmptyTenor(const GeShape &shape) const;
-  std::string GetDimStr(const GeShape &shape);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_REPLACE_WITH_EMPTY_CONST_PASS_H_

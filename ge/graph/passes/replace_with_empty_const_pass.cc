@@ -57,81 +57,30 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   if (is_all_output_empty) {
     GELOGI("Node %s has empty tensor output. It will be replaced by empty const.", node->GetName().c_str());
     // Replace op which all output is empty with empty const
-    Status ret = ReplaceWithEmptyConst(node);
+    vector<GeTensorPtr> outputs;
+    Status ret = GetOutputsOfCurrNode(node, outputs);
     if (ret != SUCCESS) {
       // If replace failed, it should not break whole process, so still return success
-      GELOGW("Failed to repalce node %s with empty const.", node->GetName().c_str());
+      GELOGW("Failed to get outputs of node %s.", node->GetName().c_str());
+    }
+    else {
+      ret = Folding(node, outputs);
+      if (ret != SUCCESS) {
+        // If replace failed, it should not break whole process, so still return success
+        GELOGW("Failed to repalce node %s with empty const.", node->GetName().c_str());
+      }
     }
   }
   GELOGD("ReplaceWithEmptyConstPass end.");
   return SUCCESS;
 }
-
-Status ReplaceWithEmptyConstPass::ReplaceWithEmptyConst(NodePtr &node_to_replace) {
-  std::map<string, vector<int>> shape_out_idx_map;
-  auto op_desc = node_to_replace->GetOpDesc();
-  // Collect out_idx follow different out shape
+Status ReplaceWithEmptyConstPass::GetOutputsOfCurrNode(const NodePtr &node_to_replace, vector<GeTensorPtr> &outputs) {
   for (const auto &out_anchor : node_to_replace->GetAllOutDataAnchors()) {
-    auto out_desc = op_desc->GetOutputDesc(out_anchor->GetIdx());
-    shape_out_idx_map[GetDimStr(out_desc.GetShape())].emplace_back(out_anchor->GetIdx());
-  }
-
-  for (const auto &shape_2_out_idx : shape_out_idx_map) {
-    // Create empty const
-    // The out_desc in one group should be same shape, so here only get first out_desc. its valid index.
-    auto out_desc = op_desc->GetOutputDesc(shape_2_out_idx.second[0]);
-    NodePtr const_node;
-    auto graph = node_to_replace->GetOwnerComputeGraph();
-    Status ret = InsertEmptyConst(out_desc, const_node, graph);
-    if (ret != SUCCESS) {
-      GELOGE(FAILED, "Failed insert const node.");
-      return FAILED;
-    }
-
-    // Repalce data anchors
-    for (const auto &anchor_idx: shape_2_out_idx.second) {
-      if (GraphUtils::ReplaceNodeDataAnchors(const_node, node_to_replace, {}, {anchor_idx}) != GRAPH_SUCCESS) {
-        GELOGE(FAILED, "[%s] ReplaceNodeAnchors failed.", node_to_replace->GetName().c_str());
-        return FAILED;
-      }
-    }
-
-    // Copy in control edge
-    if (GraphUtils::CopyInCtrlEdges(node_to_replace, const_node) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "CopyInCtrlEdges from %s to %s failed.", node_to_replace->GetName().c_str(),
-             const_node->GetName().c_str());
-      return FAILED;
-    }
-    // Copy out control edge
-    if (GraphUtils::CopyOutCtrlEdges(node_to_replace, const_node) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "CopyOutCtrlEdges from %s to %s failed.", node_to_replace->GetName().c_str(),
-             const_node->GetName().c_str());
-      return FAILED;
-    }
-    AddRePassNodesWithInOut(const_node);
-    GELOGI("Node %s has been replaced by empty const %s.", node_to_replace->GetName().c_str(),
-           const_node->GetName().c_str());
-  }
-  IsolateAndDeleteNode(node_to_replace, {});
-  return SUCCESS;
-}
-Status ReplaceWithEmptyConstPass::InsertEmptyConst(const GeTensorDesc &out_desc, NodePtr &const_node,
-                                                   ComputeGraphPtr &graph) {
-  GeTensorPtr empty_tensor = MakeShared<ge::GeTensor>(out_desc);
-  if (empty_tensor == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed create empty tensor.");
-    return OUT_OF_MEMORY;
-  }
-  auto const_desc = OpDescUtils::CreateConstOp(empty_tensor);
-  if (const_desc == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to get const desc from tensor");
-    return OUT_OF_MEMORY;
-  }
-
-  const_node = graph->AddNode(const_desc);
-  if (const_node == nullptr) {
-    GELOGE(FAILED, "Failed insert const node.");
-    return FAILED;
+    GE_CHECK_NOTNULL(node_to_replace->GetOpDesc());
+    auto out_desc = node_to_replace->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx());
+    GeTensorPtr empty_tensor = MakeShared<ge::GeTensor>(out_desc);
+    GE_CHECK_NOTNULL(empty_tensor);
+    outputs.emplace_back(empty_tensor);
   }
   return SUCCESS;
 }
@@ -143,13 +92,5 @@ bool ReplaceWithEmptyConstPass::IsEmptyTenor(const GeShape &shape) const {
     }
   }
   return false;
-}
-
-string ReplaceWithEmptyConstPass::GetDimStr(const GeShape &shape) {
-  std::stringstream dim_str;
-  for (auto dim : shape.GetDims()) {
-    dim_str << dim << '-';
-  }
-  return dim_str.str();
 }
 }  // namespace ge

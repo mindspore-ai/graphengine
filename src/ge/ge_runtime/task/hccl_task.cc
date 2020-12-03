@@ -54,7 +54,7 @@ HcclTask::HcclTask(const ModelContext &model_context, const std::shared_ptr<Hccl
 HcclTask::~HcclTask() {
   if (workspace_mem_ != nullptr) {
     rtError_t rt_ret = rtFree(workspace_mem_);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "rtFree workspace_mem_ failed! ret: 0x%X.", rt_ret);
     }
     workspace_mem_ = nullptr;
@@ -79,7 +79,7 @@ bool HcclTask::Distribute() {
 
   if (task_info_->workspace_size() > 0) {
     rtError_t rt_ret = rtMalloc(&workspace_mem_, task_info_->workspace_size(), RT_MEMORYINFO_HBM);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -229,13 +229,13 @@ bool HcclTask::CreateStream(rtModel_t model, rtStream_t *stream) const {
   }
 
   rtError_t rt_ret = rtStreamCreateWithFlags(stream, priority_, RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
   // Create secondary stream, inactive by default, activated by hccl
   rt_ret = rtModelBindStream(model, *stream, RT_MODEL_WAIT_ACTIVE_STREAM);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
@@ -253,13 +253,13 @@ void HcclTask::SaveHcclSecondaryStream(int64_t master_stream_id, const std::shar
 
 HcclTask::StreamGuard::~StreamGuard() {
   rtError_t rt_ret = rtModelUnbindStream(model_, stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Unbind stream from model failed!");
     return;
   }
 
   rt_ret = rtStreamDestroy(stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Destroy stream failed!");
     return;
   }

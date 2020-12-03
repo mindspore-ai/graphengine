@@ -42,7 +42,7 @@ bool MemcpyAsyncTask::Distribute() {
   GELOGI("dst_max:%lu, count:%lu, kind:%u.", task_info_->dst_max(), task_info_->count(), task_info_->kind());
   rtError_t rt_ret = rtMemcpyAsync(task_info_->dst(), task_info_->dst_max(), task_info_->src(), task_info_->count(),
                                    static_cast<rtMemcpyKind_t>(task_info_->kind()), stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }

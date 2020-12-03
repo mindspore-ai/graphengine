@@ -790,22 +790,24 @@ Status AippOp::AddAttrToAippData(const OpDescPtr &aipp_data_op_desc) {
 }
 
 Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp_size) {
-  static int index = 0;
   std::vector<int64_t> input_shape_dim(1, max_dynamic_aipp_size);
   GeShape input_shape(input_shape_dim);
   // construct input tensor
   GeTensorDesc input_tensor(input_shape, FORMAT_ND, DT_UINT8);
   TensorUtils::SetReuseInput(input_tensor, false);
   TensorUtils::SetSize(input_tensor, max_dynamic_aipp_size);
-
+  GE_CHECK_NOTNULL(aipp_node);
   const ComputeGraphPtr &graph = aipp_node->GetOwnerComputeGraph();
   string node_name;
-  if (index == 0) {
+  // First aippdata name should be definite.
+  if (graph->FindFirstNodeMatchType(AIPPDATA) == nullptr) {
+    GELOGI("Current graph has no aippdata node, so the name of it must be definite.");
     node_name = kDynamicAippData;
   } else {
-    node_name = string(kDynamicAippData) + "_" + to_string(index);
+    node_name = string(kDynamicAippData) + "_" + aipp_node->GetName();
   }
-  ++index;
+  GELOGI("Current add aippdata node name is %s", node_name.c_str());
+
   // new add aipp_data ops for dynamic aipp param input
   OpDescPtr op_desc_ptr_data = MakeShared<OpDesc>(node_name, AIPPDATA);
   GE_CHECK_NOTNULL(op_desc_ptr_data);

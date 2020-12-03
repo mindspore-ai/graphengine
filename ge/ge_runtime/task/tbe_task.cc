@@ -28,6 +28,7 @@ TbeTask::TbeTask(const ModelContext &model_context, const std::shared_ptr<TbeTas
       args_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
+    return;
   }
 
   auto stream_list = model_context.stream_list();

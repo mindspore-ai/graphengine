@@ -24,6 +24,7 @@ MemcpyAsyncTask::MemcpyAsyncTask(const ModelContext &model_context,
     : TaskRepeater<MemcpyAsyncTaskInfo>(model_context, task_info), task_info_(task_info), stream_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
+    return;
   }
   auto stream_list = model_context.stream_list();
   uint32_t stream_id = task_info->stream_id();
@@ -31,6 +32,7 @@ MemcpyAsyncTask::MemcpyAsyncTask(const ModelContext &model_context,
   GELOGI("Stream list size:%zu, stream id:%u.", stream_list.size(), stream_id);
   if (stream_id >= stream_list.size()) {
     GELOGW("Stream id invalid");
+    return;
   }
   stream_ = stream_list[stream_id];
 }

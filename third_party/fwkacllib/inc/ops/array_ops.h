@@ -889,13 +889,28 @@ REG_OP(ReadVariableOp)
     .ATTR(dtype, Int, DT_INT32)
     .OP_END_FACTORY_REG(ReadVariableOp)
 
+/**
+*@brief Mark outputs of one sub graph which partitioned by engine type.
+
+*@par Inputs:
+*x: A tensor. \n
+
+*@par Outputs:
+*y: A tensor. \n
+
+*@par Attributes:
+*@li peerIndex: The index of the corresponding 'placeholder' node it's connected to.
+*@li parentOpType: Op type of original node.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(End)
     .INPUT(x, TensorType::ALL())
     .OUTPUT(y, TensorType::ALL())
-    .ATTR(peerIndex, Int, 0) // the index of the corresponding 'placeholder' node it's connected to
-    .ATTR(parentOpType, String, "") // op type of original node
+    .ATTR(peerIndex, Int, 0)
+    .ATTR(parentOpType, String, "")
     .OP_END_FACTORY_REG(End)
-
 
 /**
 *@brief Operations for writing summary data, for use in analysis and visualization.

@@ -45,7 +45,7 @@ bool StreamActiveTask::Distribute() {
   GELOGI("Distribute start");
   GELOGI("Stream %u active %u.", task_info_->stream_id(), task_info_->active_stream_id());
   rtError_t rt_ret = rtStreamActive(active_stream_, stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }

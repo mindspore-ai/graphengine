@@ -46,13 +46,13 @@ bool EventWaitTask::Distribute() {
          task_info_->stream_id(), task_info_->event_id());
 
   rtError_t rt_ret = rtStreamWaitEvent(stream_, event_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api rtStreamWaitEvent failed, ret: 0x%X", rt_ret);
     return false;
   }
 
   rt_ret = rtEventReset(event_, stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api rtEventReset failed, ret: 0x%X", rt_ret);
     return false;
   }

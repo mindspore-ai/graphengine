@@ -45,8 +45,8 @@ CceTask::CceTask(const ModelContext &model_context, const std::shared_ptr<CceTas
 CceTask::~CceTask() {
   FreeRtMem(&args_);
   FreeRtMem(&flowtable_);
-  rtError_t ret = (sm_desc_ != nullptr) ? rtMemFreeManaged(sm_desc_) : RT_ERROR_NONE;
-  if (ret != RT_ERROR_NONE) {
+  rtError_t ret = (sm_desc_ != nullptr) ? rtMemFreeManaged(sm_desc_) : ACL_RT_SUCCESS;
+  if (ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", ret);
   }
   sm_desc_ = nullptr;
@@ -57,7 +57,7 @@ void CceTask::FreeRtMem(void **ptr) noexcept {
     return;
   }
   rtError_t ret = rtFree(*ptr);
-  if (ret != RT_ERROR_NONE) {
+  if (ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", ret);
   }
 
@@ -77,7 +77,7 @@ bool CceTask::Distribute() {
   }
 
   rtError_t rt_ret = rtGetFunctionByName(const_cast<char *>(task_info_->stub_func().c_str()), &stub_func_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "rtGetFunctionByName failed, ret: 0x%X", rt_ret);
     stub_func_ = nullptr;
     return false;
@@ -87,7 +87,7 @@ bool CceTask::Distribute() {
   // Flowtable
   if (is_flowtable_) {
     rt_ret = rtMalloc(&flowtable_, task_info_->flow_table().size(), RT_MEMORY_HBM);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -95,7 +95,7 @@ bool CceTask::Distribute() {
 
     rt_ret = rtMemcpy(flowtable_, task_info_->flow_table().size(), task_info_->flow_table().data(),
                       task_info_->flow_table().size(), RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -115,7 +115,7 @@ bool CceTask::Distribute() {
 
   // Args
   rt_ret = rtMalloc(&args_, task_info_->args_size(), RT_MEMORY_HBM);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
@@ -123,7 +123,7 @@ bool CceTask::Distribute() {
 
   rt_ret = rtMemcpy(args_, task_info_->args_size(), task_info_->args().data(), task_info_->args_size(),
                     RT_MEMCPY_HOST_TO_DEVICE);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
@@ -131,14 +131,14 @@ bool CceTask::Distribute() {
   // L2 sm_desc
   if (!task_info_->sm_desc().empty()) {
     rt_ret = rtMemAllocManaged(&sm_desc_, task_info_->sm_desc().size(), RT_MEMORY_SPM);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return false;
     }
 
     rt_ret = rtMemcpy(sm_desc_, task_info_->sm_desc().size(), task_info_->sm_desc().data(),
                       task_info_->sm_desc().size(), RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -147,7 +147,7 @@ bool CceTask::Distribute() {
   // Kernel launch
   rt_ret = rtKernelLaunch(stub_func_, task_info_->block_dim(), args_, task_info_->args_size(),
                           static_cast<rtSmDesc_t *>(sm_desc_), stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }

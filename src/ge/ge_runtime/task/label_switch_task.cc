@@ -45,7 +45,7 @@ LabelSwitchTask::LabelSwitchTask(const ModelContext &model_context,
 LabelSwitchTask::~LabelSwitchTask() {
   if (label_info_ != nullptr) {
     rtError_t rt_ret = rtFree(label_info_);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "rtFree fwkOpBuf failed! ret: 0x%X.", rt_ret);
     }
     label_info_ = nullptr;
@@ -74,19 +74,19 @@ bool LabelSwitchTask::Distribute() {
 
   uint32_t label_info_size = sizeof(rtLabelDevInfo) * task_info_->label_size();
   rtError_t rt_ret = rtMalloc(&label_info_, label_info_size, RT_MEMORY_HBM);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
 
   rt_ret = rtLabelListCpy(label_list.data(), label_list.size(), label_info_, label_info_size);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
 
   rt_ret = rtLabelSwitchByIndex(task_info_->cond(), label_list.size(), label_info_, stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }

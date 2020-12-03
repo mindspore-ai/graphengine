@@ -39,7 +39,7 @@ bool ProfilerTask::Distribute() {
   GELOGI("ProfilerTask Distribute start.");
   GELOGI("logid = %lu, notify = %d, flat = %u.", task_info_->log_id(), task_info_->notify(), task_info_->flat());
   rtError_t rt_ret = rtProfilerTrace(task_info_->log_id(), task_info_->notify(), task_info_->flat(), stream_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }

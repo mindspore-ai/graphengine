@@ -44,7 +44,7 @@ TbeTask::TbeTask(const ModelContext &model_context, const std::shared_ptr<TbeTas
 TbeTask::~TbeTask() {
   if (args_ != nullptr) {
     rtError_t rt_ret = rtFree(args_);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "rtFree fwkOpBuf failed! ret: 0x%X.", rt_ret);
     }
     args_ = nullptr;
@@ -64,7 +64,7 @@ bool TbeTask::Distribute() {
   }
 
   rtError_t rt_ret = rtGetFunctionByName(const_cast<char *>(task_info_->stub_func().c_str()), &stub_func_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "rtGetFunctionByName failed, ret: %d", static_cast<int32_t>(rt_ret));
     stub_func_ = nullptr;
     return false;
@@ -82,7 +82,7 @@ bool TbeTask::Distribute() {
   auto args_size = static_cast<uint32_t>(tensor_device_addrs.size() * sizeof(void *));
 
   rt_ret = rtMalloc(&args_, args_size, RT_MEMORY_HBM);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "rtMalloc failed, ret: %d", static_cast<int32_t>(rt_ret));
     return false;
   }
@@ -90,7 +90,7 @@ bool TbeTask::Distribute() {
 
   rt_ret = rtMemcpy(args_, args_size, reinterpret_cast<void *>(tensor_device_addrs.data()), args_size,
                     RT_MEMCPY_HOST_TO_DEVICE);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "rtMemcpy fail, ret 0x%X.", rt_ret);
     return false;
   }
@@ -98,7 +98,7 @@ bool TbeTask::Distribute() {
   GELOGI("DistributeTbeTask start.");
   auto dump_flag = task_info_->dump_flag() ? RT_KERNEL_DUMPFLAG : RT_KERNEL_DEFAULT;
   rt_ret = rtKernelLaunchWithFlag(stub_func_, task_info_->block_dim(), args_, args_size, nullptr, stream_, dump_flag);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api rtKernelLaunch failed, ret: 0x%X", rt_ret);
     return false;
   }

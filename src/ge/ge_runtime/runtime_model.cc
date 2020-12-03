@@ -78,7 +78,7 @@ bool RuntimeModel::InitStream(std::shared_ptr<DavinciModel> &davinci_model) {
                       : (RT_STREAM_PERSISTENT);
 
     rtError_t rt_ret = rtStreamCreateWithFlags(&stream, davinci_model->GetPriority(), flag);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api rtStreamCreate failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -91,7 +91,7 @@ bool RuntimeModel::InitStream(std::shared_ptr<DavinciModel> &davinci_model) {
     flag = (wait_active_streams.find(i) != wait_active_streams.end()) ? (static_cast<uint32_t>(RT_INVALID_FLAG))
                                                                       : (static_cast<uint32_t>(RT_HEAD_STREAM));
     rt_ret = rtModelBindStream(rt_model_handle_, stream, flag);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api rtModelBindStream failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -106,7 +106,7 @@ bool RuntimeModel::InitEvent(uint32_t event_num) {
   for (uint32_t i = 0; i < event_num; ++i) {
     rtEvent_t rt_event;
     rtError_t rt_ret = rtEventCreate(&rt_event);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api rtEventCreate failed, i; %u; ret: 0x%X", i, rt_ret);
       return false;
     }
@@ -136,7 +136,7 @@ bool RuntimeModel::InitLabel(std::shared_ptr<DavinciModel> &davinci_model) {
 
     rtLabel_t rt_label = nullptr;
     rtError_t rt_ret = rtLabelCreateEx(&rt_label, stream_list_[label_set_task_info->stream_id()]);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api rtLabelCreate failed, ret: 0x%X", rt_ret);
       return false;
     }
@@ -153,14 +153,14 @@ bool RuntimeModel::InitResource(std::shared_ptr<DavinciModel> &davinci_model) {
     return false;
   }
   rtError_t rt_ret = rtModelCreate(&rt_model_handle_, 0);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api rtModelCreate failed, ret: 0x%X", rt_ret);
     return false;
   }
 
   // Create rtStream for rt_model_handle_
   rt_ret = rtStreamCreate(&rt_model_stream_, davinci_model->GetPriority());
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api rtStreamCreate failed, ret: 0x%X", rt_ret);
     return false;
   }
@@ -214,7 +214,7 @@ bool RuntimeModel::LoadTask() {
     uint32_t task_id = 0;
     uint32_t stream_id = 0;
     rtError_t rt_ret = rtModelGetTaskId(rt_model_handle_, &task_id, &stream_id);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X.", rt_ret);
       return false;
     }
@@ -242,7 +242,7 @@ bool RuntimeModel::LoadComplete() {
   uint32_t task_id = 0;
   uint32_t stream_id = 0;
   auto rt_ret = rtModelGetTaskId(rt_model_handle_, &task_id, &stream_id);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rtModelGetTaskId failed, ret:0x%X", rt_ret);
     return RT_FAILED;
   }
@@ -250,7 +250,7 @@ bool RuntimeModel::LoadComplete() {
   stream_id_list_.push_back(stream_id);
 
   rt_ret = rtModelLoadComplete(rt_model_handle_);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api rtModelLoadComplete failed, ret: 0x%X.", rt_ret);
     return false;
   }
@@ -298,7 +298,7 @@ bool RuntimeModel::DistributeTask() {
 bool RuntimeModel::Run() {
   GELOGI("Davinci task run start");
   rtError_t ret = rtModelExecute(rt_model_handle_, rt_model_stream_, 0);
-  if (ret != RT_ERROR_NONE) {
+  if (ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Model execute failed, ret = 0x%X", ret);
     return false;
   }
@@ -306,8 +306,8 @@ bool RuntimeModel::Run() {
   GELOGI("Run rtModelExecute success, ret = 0x%X", ret);
 
   ret = rtStreamSynchronize(rt_model_stream_);
-  if (ret != RT_ERROR_NONE) {
-    if (ret == RT_ERROR_END_OF_SEQUENCE) {
+  if (ret != ACL_RT_SUCCESS) {
+    if (ret == ACL_ERROR_RT_END_OF_SEQUENCE) {
       GELOGI("Model stream RT_ERROR_END_OF_SEQUENCE signal received, ret = 0x%X", ret);
       return true;
     }
@@ -321,7 +321,7 @@ bool RuntimeModel::Run() {
 
 void RuntimeModel::RtModelUnbindStream() noexcept {
   for (size_t i = 0; i < stream_list_.size(); i++) {
-    if (rtModelUnbindStream(rt_model_handle_, stream_list_[i]) != RT_ERROR_NONE) {
+    if (rtModelUnbindStream(rt_model_handle_, stream_list_[i]) != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Unbind stream from model failed! Index: %zu", i);
       return;
     }
@@ -329,13 +329,13 @@ void RuntimeModel::RtModelUnbindStream() noexcept {
 }
 
 void RuntimeModel::RtStreamDestory() noexcept {
-  if (rtStreamDestroy(rt_model_stream_) != RT_ERROR_NONE) {
+  if (rtStreamDestroy(rt_model_stream_) != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Destroy stream for rt_model failed!");
     return;
   }
 
   for (size_t i = 0; i < stream_list_.size(); i++) {
-    if (rtStreamDestroy(stream_list_[i]) != RT_ERROR_NONE) {
+    if (rtStreamDestroy(stream_list_[i]) != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Destroy stream failed! Index: %zu", i);
       return;
     }
@@ -347,7 +347,7 @@ void RuntimeModel::RtLabelDestory() noexcept {
     if (label_list_[i] == nullptr) {
       continue;
     }
-    if (rtLabelDestroy(label_list_[i]) != RT_ERROR_NONE) {
+    if (rtLabelDestroy(label_list_[i]) != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Destroy label failed! Index: %zu.", i);
       return;
     }
@@ -356,7 +356,7 @@ void RuntimeModel::RtLabelDestory() noexcept {
 
 void RuntimeModel::RtModelDestory() noexcept {
   rtError_t ret = rtModelDestroy(rt_model_handle_);
-  if (ret != RT_ERROR_NONE) {
+  if (ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", ret);
     return;
   }
@@ -364,7 +364,7 @@ void RuntimeModel::RtModelDestory() noexcept {
 
 void RuntimeModel::RtEventDestory() noexcept {
   for (size_t i = 0; i < event_list_.size(); i++) {
-    if (rtEventDestroy(event_list_[i]) != RT_ERROR_NONE) {
+    if (rtEventDestroy(event_list_[i]) != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Destroy event failed! Index: %zu", i);
       return;
     }
@@ -436,7 +436,7 @@ bool RuntimeModel::CopyHostData(const std::vector<DataBuffer> &data, const std::
   void *data_out_addr = reinterpret_cast<void *>(outputs[0]);
 
   rtError_t rt_ret = rtMemcpy(data_out_addr, copy_size, host_data_addr, copy_size, RT_MEMCPY_HOST_TO_DEVICE);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
@@ -504,7 +504,7 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
 
     rtError_t rt_ret = rtMemcpy(reinterpret_cast<void *>(constant->output_addrs[0]), constant->output_tensors[0].size,
                                 constant->weight_data.data(), constant->weight_data.size(), RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "rtGetFunctionByName failed, ret: 0x%X", rt_ret);
       return false;
     }

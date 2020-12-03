@@ -70,14 +70,14 @@ bool AicpuTask::Distribute() {
     aicpu_param_head.extInfoAddr = 0;
   } else {
     rtError_t flag = rtMalloc(&ext_info_, ext_size, RT_MEMORY_HBM);
-    if (flag != RT_ERROR_NONE) {
+    if (flag != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api(rtMalloc) failed, ret: 0x%X.", flag);
       return false;
     }
 
     flag = rtMemcpy(ext_info_, ext_size, const_cast<void *>(reinterpret_cast<const void *>(ext_info.data())), ext_size,
                     RT_MEMCPY_HOST_TO_DEVICE);
-    if (flag != RT_ERROR_NONE) {
+    if (flag != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api(rtMemCpy) failed, ret: 0x%X.", flag);
       return false;
     }
@@ -89,7 +89,7 @@ bool AicpuTask::Distribute() {
 
   // Malloc device memory for args
   rtError_t rt_ret = rtMalloc(&args_, args_size, RT_MEMORY_HBM);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api(rtMalloc) failed, ret: 0x%X.", rt_ret);
     return false;
   }
@@ -97,7 +97,7 @@ bool AicpuTask::Distribute() {
   // Memcpy AicpuParamHead
   rt_ret = rtMemcpy(args_, sizeof(aicpu::AicpuParamHead), reinterpret_cast<void *>(&aicpu_param_head),
                     sizeof(aicpu::AicpuParamHead), RT_MEMCPY_HOST_TO_DEVICE);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X.", rt_ret);
     return false;
   }
@@ -106,7 +106,7 @@ bool AicpuTask::Distribute() {
   if (io_addrs_num != 0) {
     rt_ret = rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(args_) + io_addr_offset), io_addrs_size,
                       reinterpret_cast<void *>(io_addrs.data()), io_addrs_size, RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
+    if (rt_ret != ACL_RT_SUCCESS) {
       GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X.", rt_ret);
       return false;
     }
@@ -117,7 +117,7 @@ bool AicpuTask::Distribute() {
   rt_ret =
     rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(args_) + node_def_len_offset), sizeof(uint32_t),
              reinterpret_cast<const void *>(&size), sizeof(uint32_t), RT_MEMCPY_HOST_TO_DEVICE);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X.", rt_ret);
     return false;
   }
@@ -126,7 +126,7 @@ bool AicpuTask::Distribute() {
   rt_ret = rtMemcpy(reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(args_) + node_def_addr_offset),
                     task_info_->node_def().size(), reinterpret_cast<const void *>(task_info_->node_def().data()),
                     task_info_->node_def().size(), RT_MEMCPY_HOST_TO_DEVICE);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X.", rt_ret);
     return false;
   }
@@ -140,7 +140,7 @@ bool AicpuTask::Distribute() {
   rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(task_info_->so_name().data()),
                                      reinterpret_cast<const void *>(task_info_->kernel_name().data()), 1, args_,
                                      args_size, nullptr, stream_, dump_flag);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
@@ -155,7 +155,7 @@ void AicpuTask::ReleaseRtMem(void **ptr) noexcept {
   }
 
   rtError_t rt_ret = rtFree(*ptr);
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != ACL_RT_SUCCESS) {
     GELOGE(RT_FAILED, "ReleaseRtMem failed, ret: 0x%X", rt_ret);
     return;
   }

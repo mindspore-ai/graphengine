@@ -25,6 +25,7 @@ using SoToHandleMap = std::map<std::string, void *>;
 class OpTilingManager {
  public:
   OpTilingManager() = default;
+  static OpTilingManager &GetInstance();
   ~OpTilingManager();
   void LoadSo();
 

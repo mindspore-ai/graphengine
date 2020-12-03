@@ -88,4 +88,8 @@ void OpTilingManager::LoadSo() {
   }
 }
 
+OpTilingManager &OpTilingManager::GetInstance() {
+  static OpTilingManager instance;
+  return instance;
+}
 }  // namespace ge

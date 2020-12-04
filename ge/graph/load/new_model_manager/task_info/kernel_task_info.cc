@@ -1189,7 +1189,7 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
     GELOGW("Failed to close handle %s", error);
     return FAILED;
   }
-  if (cc_ret != cce::CC_STATUS_SUCCESS) {
+  if (cc_ret != CC_STATUS_SUCCESS) {
     GELOGE(CCE_FAILED, "Call cce api failed, ret: 0x%X", cc_ret);
     return CCE_FAILED;
   }

@@ -252,7 +252,6 @@ Status VariableOpPass::RenewTransRoadDesc(const NodePtr &var, VarTransRoad &fusi
   // case 2: suppose input format of transdata not equal with out format
   // and input format not equal with var
   // so we make input format equal with var
-
   for (auto &cur_trans : fusion_road) {
     if (cur_trans.input.GetFormat() == cur_trans.output.GetFormat()) {
       cur_trans.output.SetFormat(prev_node_info.output.GetFormat());

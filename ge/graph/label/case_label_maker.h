@@ -86,7 +86,6 @@
                                                                 |    Node    |
                                                                 +------------+
 *******************************************************************************/
-
 namespace ge {
 class CaseOpLabelMaker : public LabelMaker {
  public:

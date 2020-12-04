@@ -70,7 +70,6 @@
                                                                 |    Node    |
                                                                 +------------+
 *******************************************************************************/
-
 namespace ge {
 class WhileOpLabelMaker : public LabelMaker {
  public:

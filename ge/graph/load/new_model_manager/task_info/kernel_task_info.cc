@@ -1161,9 +1161,9 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
     GELOGE(GE_PLGMGR_SO_NOT_EXIST, "Failed in dlopen %s! ", error);
     return FAILED;
   }
-  cce::ccStatus_t cc_ret;
+  ccStatus_t cc_ret;
   std::string update_kernel_args = "ccUpdateKernelArgs";
-  auto cceUpdateKernelArgs = (cce::ccStatus_t(*)(ccOpContext &, uint64_t, uint64_t, uint64_t, void *, uint64_t,
+  auto cceUpdateKernelArgs = (ccStatus_t(*)(ccOpContext &, uint64_t, uint64_t, uint64_t, void *, uint64_t,
                                                  void *))mmDlsym(handle, const_cast<char *>(update_kernel_args.c_str()));
   if (cceUpdateKernelArgs == nullptr) {
     GELOGE(FAILED, "Failed to invoke function ccUpdateKernelArgs");

@@ -308,7 +308,7 @@ void StridedSliceKernel::ExpandStrideWithEllipsisMask(const size_t x_dims_num,
         if (orig_begin_vec.size() < x_dims_num) {
           for (size_t j = 1; j < (x_dims_num - orig_begin_vec.size() + 1); ++j) {
             orig_begin_vec.insert((orig_begin_vec.begin() + ellipsis_dim + j), 0);
-            orig_end_vec.insert((orig_end_vec.begin() + ellipsis_dim + j), x_dims.at(ellipsis_dim +j));
+            orig_end_vec.insert((orig_end_vec.begin() + ellipsis_dim + j), x_dims.at(ellipsis_dim + j));
             orig_stride_vec.insert((orig_stride_vec.begin() + ellipsis_dim + j), 1);
           }
         }

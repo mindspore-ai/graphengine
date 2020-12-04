@@ -44,11 +44,11 @@ Status BitcastPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
   ge::DataType dst_data_type;
-  if (CheckDstDataType(op_desc, dst_data_type) != SUCCESS) {
+  if (CheckDstDataCheckOutputShapeType(op_desc, dst_data_type) != SUCCESS) {
     return PARAM_INVALID;
   }
 
-  if (CheckOutputShape(op_desc, dst_data_type) != SUCCESS) {
+  if ((op_desc, dst_data_type) != SUCCESS) {
     return PARAM_INVALID;
   }
 

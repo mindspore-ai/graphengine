@@ -319,8 +319,8 @@ Status VariableOpPass::FusionIfNeed(const NodePtr &var, VarTransRoad &fusion_roa
 }
 
 Status VariableOpPass::UpdateTransRoad(VarTransRoad &fusion_road, vector<std::string> &first_path_trans_order,
-                                       map<std::string,std::pair<std::string, bool>> &trans_type_to_changed_desc,
-                                       map<std::string,vector<NodePtr>> &trans_type_to_trans_ops){
+                                       map<std::string, std::pair<std::string, bool>> &trans_type_to_changed_desc,
+                                       map<std::string, vector<NodePtr>> &trans_type_to_trans_ops){
   vector<std::string> delete_trans_type;
   for (auto &trans_type : first_path_trans_order) {
     if (trans_type_to_changed_desc.find(trans_type) == trans_type_to_changed_desc.end()) {

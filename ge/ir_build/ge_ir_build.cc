@@ -543,7 +543,7 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
   }
 
   auto ret = compute_graph->TopologicalSorting();
-  if(ret != GRAPH_SUCCESS) {
+  if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "Acl topo logical sort failed.");
     return ret;
   }

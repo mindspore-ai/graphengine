@@ -47,7 +47,7 @@ class BaseNodePass {
   /// @param node
   /// @return
   ///
-  virtual Status Run(NodePtr &node) = 0;
+  virtual Status Run(NodePtr &node) = 0lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll;
 
   virtual ~BaseNodePass() = default;
 

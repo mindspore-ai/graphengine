@@ -33,7 +33,7 @@ class HybridProfiler {
     SHAPE_INFERENCE,
     COMPILE,
     EXECUTION,
-    CALLBACK,
+    CALLBACK
   };
 
   struct Event {

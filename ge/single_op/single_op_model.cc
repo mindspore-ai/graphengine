@@ -237,8 +237,8 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
     if (task_type == RT_MODEL_TASK_KERNEL) {
       const domi::KernelDef &kernel_def = task_def.kernel();
       const auto &context = kernel_def.context();
-      auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-      if (kernel_type == cce::ccKernelType::TE) {
+      auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
+      if (kernel_type == ccKernelType::TE) {
         GELOGD("Building TBE task");
         TbeOpTask *tbe_task = nullptr;
         auto ret = BuildKernelTask(task_def.kernel(), &tbe_task);
@@ -249,7 +249,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
         ParseArgTable(tbe_task, single_op);
         single_op.tasks_.emplace_back(tbe_task);
-      } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
+      } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
         GELOGD("Building AICPU_CC task");
         OpTask *task = nullptr;
         uint64_t singleop_kernel_id = aicpu_kernel_id++;
@@ -388,13 +388,13 @@ Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
 Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingleOp &single_op) {
   const domi::KernelDef &kernel_def = task_def.kernel();
   const auto &context = kernel_def.context();
-  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-  if (kernel_type == cce::ccKernelType::TE) {
+  auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
+  if (kernel_type == ccKernelType::TE) {
     GELOGD("Building TBE task");
     TbeOpTask *tbe_task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &tbe_task));
     single_op.op_task_.reset(tbe_task);
-  } else if (kernel_type == cce::ccKernelType::AI_CPU || kernel_type == cce::ccKernelType::CUST_AI_CPU) {
+  } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
     GELOGD("Building AICPU_CC task");
     OpTask *task = nullptr;
     uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;

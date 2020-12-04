@@ -16,7 +16,6 @@
 
 #include "graph/load/new_model_manager/davinci_model.h"
 
-#include <cce/dnn.h>
 #include <graph/utils/node_utils.h>
 #include <algorithm>
 #include <map>

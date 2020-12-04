@@ -66,7 +66,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   // get opcontext stored in model
   const domi::KernelContext &context = kernel_def.context();
   // get kernel_type
-  kernel_type_ = static_cast<cce::ccKernelType>(context.kernel_type());
+  kernel_type_ = static_cast<ccKernelType>(context.kernel_type());
   // get opdesc
   op_desc_ = davinci_model_->GetOpByIndex(context.op_index());
   GE_CHECK_NOTNULL(op_desc_);
@@ -88,13 +88,13 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
   // get bin_file_key
   const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
-  if (kernel_type_ == cce::ccKernelType::CCE_AI_CORE) {
+  if (kernel_type_ == ccKernelType::CCE_AI_CORE) {
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(const_cast<char *>(kernel_def.stub_func().c_str()), &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. stub_func: %s",
                                                     kernel_def.stub_func().c_str());
                     return RT_ERROR_TO_GE_STATUS(rt_ret););
-  } else if (kernel_type_ == cce::ccKernelType::TE) {
+  } else if (kernel_type_ == ccKernelType::TE) {
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
@@ -111,7 +111,7 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     ctx_.opIndex2[i] = context.origin_op_index(i);
   }
   ctx_.opCount = context.origin_op_index_size();
-  if (kernel_type_ == cce::ccKernelType::TE) {
+  if (kernel_type_ == ccKernelType::TE) {
     ctx_.opIndex = context.op_index();
     uint16_t *args_offset_tmp = reinterpret_cast<uint16_t *>(const_cast<char *>(context.args_offset().data()));
     if (context.args_offset().size() / sizeof(uint16_t) < 1) {
@@ -120,9 +120,9 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
     }
 
     ret = InitTVMTask(args_offset_tmp[0], kernel_def);
-  } else if (kernel_type_ == cce::ccKernelType::CUSTOMIZED) {
+  } else if (kernel_type_ == ccKernelType::CUSTOMIZED) {
     ret = InitAICPUCustomTask(context.op_index(), kernel_def);
-  } else if (kernel_type_ == cce::ccKernelType::AI_CPU || kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+  } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
     ret = InitAicpuTask(context.op_index(), kernel_def);
   } else {
     if (kernel_def.args().empty() || args_size_ == 0) {
@@ -373,7 +373,7 @@ Status KernelTaskInfo::Distribute() {
   INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
   int64_t env_flag = (res == EN_OK) ? strtol(skt_enable_env, nullptr, 10) : 0;
   bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
-  if (kernel_type_ == cce::ccKernelType::AI_CPU || kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+  if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
     GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
     // blockDim is reserved parameter, set to 1
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
@@ -874,7 +874,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return INTERNAL_ERROR;
   }
 
-  if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+  if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
     GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_), "launch cust aicpu so failed");
   }
 
@@ -946,7 +946,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     GELOGI("Op debug is open in aicpu task info");
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
   }
-  if (kernel_type_ == cce::ccKernelType::CUST_AI_CPU) {
+  if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
     dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }
 
@@ -1076,7 +1076,7 @@ Status KernelTaskInfo::StoreInputOutputTensor(const std::vector<void *> &input_d
 
 Status KernelTaskInfo::SetContext(const domi::KernelDef &kernel_def) {
   const domi::KernelContext &context = kernel_def.context();
-  ctx_.kernelType = static_cast<cce::ccKernelType>(context.kernel_type());
+  ctx_.kernelType = static_cast<ccKernelType>(context.kernel_type());
   ctx_.opId = context.op_id();
   ctx_.kernelFuncId = context.kernel_func_id();
   ctx_.isFlowtable = context.is_flowtable();
@@ -1161,9 +1161,9 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
     GELOGE(GE_PLGMGR_SO_NOT_EXIST, "Failed in dlopen %s! ", error);
     return FAILED;
   }
-  cce::ccStatus_t cc_ret;
+  ccStatus_t cc_ret;
   std::string update_kernel_args = "ccUpdateKernelArgs";
-  auto cceUpdateKernelArgs = (cce::ccStatus_t(*)(cce::ccOpContext &, uint64_t, uint64_t, uint64_t, void *, uint64_t,
+  auto cceUpdateKernelArgs = (ccStatus_t(*)(ccOpContext &, uint64_t, uint64_t, uint64_t, void *, uint64_t,
                                                  void *))mmDlsym(handle, const_cast<char *>(update_kernel_args.c_str()));
   if (cceUpdateKernelArgs == nullptr) {
     GELOGE(FAILED, "Failed to invoke function ccUpdateKernelArgs");
@@ -1189,7 +1189,7 @@ Status KernelTaskInfo::CceUpdateKernelArgs(const domi::KernelContext &context, u
     GELOGW("Failed to close handle %s", error);
     return FAILED;
   }
-  if (cc_ret != cce::CC_STATUS_SUCCESS) {
+  if (cc_ret != CC_STATUS_SUCCESS) {
     GELOGE(CCE_FAILED, "Call cce api failed, ret: 0x%X", cc_ret);
     return CCE_FAILED;
   }

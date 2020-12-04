@@ -42,6 +42,7 @@ class SingleOp {
   Status ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   Status UpdateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   Status GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
+  Status ProfilingTaskInfo(OpTask *op_task);
 
   friend class SingleOpModel;
   std::mutex *stream_mutex_;
@@ -79,6 +80,7 @@ class DynamicSingleOp {
                         const vector<void *> &inputs,
                         vector<GeTensorDesc> &output_desc,
                         vector<void *> &outputs);
+  Status ProfilingTaskInfo(std::unique_ptr<OpTask> &op_task);
 
   std::unique_ptr<OpTask> op_task_;
   uintptr_t resource_id_ = 0;

@@ -48,7 +48,7 @@ Status BitcastPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
 
-  if ((op_desc, dst_data_type) != SUCCESS) {
+  if (CheckOutputShape(op_desc, dst_data_type) != SUCCESS) {
     return PARAM_INVALID;
   }
 

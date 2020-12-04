@@ -148,13 +148,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @param [in] stream   model stream
   /// @param [in] async_mode  is asynchronize mode.
   /// @param [in] input_data  model input data
-  /// @param [in] input_desc  description of model input data
   /// @param [out] output_data  model output data
-  /// @param [out] output_desc  description of model output data
   ///
   ge::Status ExecuteModel(uint32_t model_id, rtStream_t stream, bool async_mode, const InputData &input_data,
-                          const std::vector<GeTensorDesc> &input_desc, OutputData &output_data,
-                          std::vector<GeTensorDesc> &output_desc);
+                          OutputData &output_data);
 
   ge::Status SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
 

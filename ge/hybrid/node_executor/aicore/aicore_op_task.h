@@ -62,7 +62,6 @@ class AiCoreOpTask {
   static Status ValidateTaskDef(const domi::TaskDef &task_def);
   Status InitWithTaskDef(const OpDesc &node, const domi::TaskDef &task_def);
   Status InitTilingInfo(const OpDesc &op_desc);
-  Status RegisterTbeHandle(const OpDesc &op_desc);
 
   std::string stub_name_;
   void *stub_func_ = nullptr;

@@ -37,12 +37,6 @@ class HybridDavinciModel {
 
   Status Init();
 
-  Status Execute(const std::vector<DataBuffer> &inputs,
-                 const std::vector<GeTensorDesc> &input_desc,
-                 std::vector<DataBuffer> &outputs,
-                 std::vector<GeTensorDesc> &output_desc,
-                 rtStream_t stream);
-
   Status Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
 
   Status ModelRunStart();
@@ -56,21 +50,6 @@ class HybridDavinciModel {
   void SetModelId(uint32_t model_id);
 
   void SetDeviceId(uint32_t device_id);
-
-  uint64_t GetSessionId();
-
-  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type);
-
-  void GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order);
-
-  void GetModelAttr(std::vector<std::string> &dynamic_output_shape_info);
-
-  Status GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
-                                vector<InputOutputDescInfo> &output_desc,
-                                std::vector<uint32_t> &input_formats,
-                                std::vector<uint32_t> &output_formats);
-
-  void SetModelDescVersion(bool is_new_model_desc);
 
  private:
   HybridDavinciModel() = default;

@@ -274,16 +274,13 @@ Status GraphLoader::LoadModelWithQ(uint32_t &model_id, const ModelData &model_da
 /// @param [in] stream   stream to execute model on
 /// @param [in] async_mode  is asynchronize mode.
 /// @param [in] input_data  model input data
-/// @param [in] input_desc  description of model input data
 /// @param [out] output_data  model output data
-/// @param [out] output_desc  description of model output data
 ///
 Status GraphLoader::ExecuteModel(uint32_t model_id, rtStream_t stream, bool async_mode, const InputData &input_data,
-                                 const std::vector<GeTensorDesc> &input_desc, OutputData &output_data,
-                                 std::vector<GeTensorDesc> &output_desc) {
+                                 OutputData &output_data) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->ExecuteModel(model_id, stream, async_mode, input_data, input_desc, output_data, output_desc);
+  Status ret = model_manager->ExecuteModel(model_id, stream, async_mode, input_data, output_data);
   if (ret != SUCCESS) {
     GELOGE(ret, "Execute model failed, model_id:%u.", model_id);
     return ret;

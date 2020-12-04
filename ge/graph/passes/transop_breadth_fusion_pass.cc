@@ -63,7 +63,7 @@ std::string TransOpBreadthFusionPass::GetNodeId(const int anchor_index, const No
   GE_IF_BOOL_EXEC(node == nullptr || node->GetOpDesc() == nullptr, GELOGE(FAILED, "node is null"); return "");
   if (node->GetType() == CAST) {
     trans_data_type = true;
-  } else if (node->GetType() == TRANSPOSE || node->GetType() == TRANSPOSED || node->GetType() == EXPANDDIMS) {
+  } else if (node->GetType() == TRANSPOSE || node->GetType() == TRANSPOSED) {
     trans_format = true;
     trans_shape = true;
   } else if (node->GetType() == TRANSDATA) {

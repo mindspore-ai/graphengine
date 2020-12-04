@@ -39,8 +39,6 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
-#include "graph/opsproto_manager.h"
-#include "ge_local_engine/engine/host_cpu_engine.h"
 
 using std::string;
 using std::vector;
@@ -223,33 +221,6 @@ class ModelListenerAdapter : public ModelListener {
   std::shared_ptr<ge::ModelListener> listener;
 };
 
-static void InitOpsProtoManger() {
-  string opsproto_path;
-  const char *path_env = std::getenv("ASCEND_OPP_PATH");
-  if (path_env != nullptr) {
-    string path = path_env;
-    string file_path = RealPath(path.c_str());
-    if (file_path.empty()) {
-      GELOGE(FAILED, "File path %s is invalid.", path.c_str());
-      return;
-    }
-    opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
-    GELOGI("Get opsproto so path from env : %s", path.c_str());
-  } else {
-    string path_base = PluginManager::GetPath();
-    GELOGI("path_base is %s", path_base.c_str());
-    path_base = path_base.substr(0, path_base.rfind('/'));
-    path_base = path_base.substr(0, path_base.rfind('/') + 1);
-    opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
-  }
-
-  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
-  OpsProtoManager *manager = OpsProtoManager::Instance();
-  map<string, string> option_tmp;
-  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
-  (void)manager->Initialize(option_tmp);
-}
-
 GeExecutor::GeExecutor() {}
 
 Status GeExecutor::Initialize() {
@@ -258,16 +229,6 @@ Status GeExecutor::Initialize() {
     GELOGW("Already initialized, no need to be initialized again.");
     return ge::SUCCESS;
   }
-
-  OpTilingManager::GetInstance().LoadSo();
-
-  Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
-  if (initHostCpuEngineStatus != SUCCESS) {
-    GELOGE(initHostCpuEngineStatus, "Failed to initialize HostCpuEngine");
-    return initHostCpuEngineStatus;
-  }
-
-  InitOpsProtoManger();
 
   std::vector<rtMemType_t> mem_type(1, RT_MEMORY_HBM);
   mem_type.push_back(RT_MEMORY_P2P_DDR);
@@ -638,16 +599,10 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = ModelManager::GetInstance()->GetHybridModel(model_id);
-  if (hybrid_davinci_model != nullptr) {
-    uint64_t session_id = hybrid_davinci_model->GetSessionId();
+  std::shared_ptr<DavinciModel> davinci_model = ModelManager::GetInstance()->GetModel(model_id);
+  if (davinci_model != nullptr) {
+    uint64_t session_id = davinci_model->GetSessionId();
     VarManagerPool::Instance().RemoveVarManager(session_id);
-  } else {
-    std::shared_ptr<DavinciModel> davinci_model = ModelManager::GetInstance()->GetModel(model_id);
-    if (davinci_model != nullptr) {
-      uint64_t session_id = davinci_model->GetSessionId();
-      VarManagerPool::Instance().RemoveVarManager(session_id);
-    }
   }
   ret = GraphLoader::UnloadModel(model_id);
   if (ret != SUCCESS) {
@@ -977,26 +932,6 @@ Status GeExecutor::LoadModelWithQ(uint32_t &model_id, const ModelData &model_dat
 */
 Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModelData &run_input_data,
                              ge::RunModelData &run_output_data, bool async_mode) {
-  std::vector<GeTensorDesc> input_desc = {};
-  std::vector<GeTensorDesc> output_desc = {};
-  return ExecModel(model_id, stream, run_input_data, input_desc, run_output_data, output_desc, async_mode);
-}
-
-/**
-* @ingroup ge
-* @brief Synchronous execution of offline model(Do not create thread)
-* @param [in] uint32_t model_id: Model ID to execute
-              void* stream: stream to execute
-              const domi::InputData *input_data: Model input data
-              const std::vector<GeTensorDesc> &input_desc: Description of model input data
-              bool async_mode: is asynchronize mode
-* @param [out] domi::OutputData *output_data: Model output data
-* @param [out] std::vector<GeTensorDesc> &output_desc: Description of model output data
-* @return SUCCESS handle successfully / others handle failed
-*/
-Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModelData &run_input_data,
-                             const std::vector<GeTensorDesc> &input_desc, ge::RunModelData &run_output_data,
-                             std::vector<GeTensorDesc> &output_desc, bool async_mode) {
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
@@ -1021,7 +956,7 @@ Status GeExecutor::ExecModel(uint32_t model_id, void *stream, const ge::RunModel
     }
   }
 
-  return GraphLoader::ExecuteModel(model_id, stream, async_mode, input_data, input_desc, output_data, output_desc);
+  return GraphLoader::ExecuteModel(model_id, stream, async_mode, input_data, output_data);
 }
 
 /**

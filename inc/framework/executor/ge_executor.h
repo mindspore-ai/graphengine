@@ -236,22 +236,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
 
   ///
   /// @ingroup ge
-  /// @brief Synchronous execution of offline model(Do not create thread)
-  /// @param [in] uint32_t model_id: Model ID to execute
-  /// @param [in] void* stream: stream to execute
-  /// @param [in] bool async_mode: is asynchronize mode.
-  /// @param [in] const domi::InputData *input_data: Model input data
-  /// @param [in] const std::vector<GeTensorDesc> &input_desc: description of model input data
-  /// @param [out] domi::OutputData *output_data: Model output data
-  /// @param [out] std::vector<GeTensorDesc> &output_desc: description of model output data
-  /// @return SUCCESS handle successfully / others handle failed
-  ///
-  ge::Status ExecModel(uint32_t model_id, void *stream, const ge::RunModelData &run_input_data,
-                       const std::vector<GeTensorDesc> &input_desc, ge::RunModelData &run_output_data,
-                       std::vector<GeTensorDesc> &output_desc, bool async_mode = false);
-
-  ///
-  /// @ingroup ge
   /// @brief Get weight memory size from model file
   /// @param [in] const std::string &path: Offline model file path
   /// @param [out] size_t &mem_size Execution memory size

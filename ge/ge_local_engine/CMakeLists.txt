@@ -195,7 +195,7 @@ set_target_properties(atc_ge_local_opskernel_builder PROPERTIES
 )
 
 ############ libge_local_opskernel_builder.a ############
-add_library(ge_local_opskernel_builder_static STATIC ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+add_library(ge_local_opskernel_builder_static SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_local_opskernel_builder_static PRIVATE
     -Werror

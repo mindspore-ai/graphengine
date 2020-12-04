@@ -8,7 +8,7 @@ set(SRC_LIST
     "engine/host_cpu_engine.cc"
     "ops_kernel_store/host_cpu_ops_kernel_info.cc"
     "ops_kernel_store/op/op_factory.cc"
-    "ops_kernel_store/op/host_op.cc"
+    "ops_kernel_store/op/host_op.cc" 
 )
 
 set(CPU_OPS_KERNEL_LIST
@@ -98,7 +98,7 @@ target_link_libraries(atc_host_cpu_engine PRIVATE
 
 set_target_properties(atc_host_cpu_engine PROPERTIES
     OUTPUT_NAME host_cpu_engine
-    LIBRARY_OUTPUT_DIRECTORY atclib
+    LIBRARY_OUTPUT_DIRECTORY atclib 
 )
 
 ############ libhost_cpu_opskernel_builder.so ############
@@ -185,7 +185,7 @@ set_target_properties(atc_host_cpu_opskernel_builder PROPERTIES
 )
 
 ############ libhost_cpu_opskernel_builder.a ############
-add_library(host_cpu_opskernel_builder_static STATIC ${CPU_OPS_KERNEL_LIST})
+add_library(host_cpu_opskernel_builder_static SHARED ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(host_cpu_opskernel_builder_static PRIVATE
     -Werror

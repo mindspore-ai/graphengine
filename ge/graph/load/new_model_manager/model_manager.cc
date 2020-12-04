@@ -31,7 +31,6 @@
 #include "model/ge_root_model.h"
 #include "graph/common/local_context.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "hybrid/hybrid_davinci_model.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -205,13 +204,6 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
 
 ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
-  auto hybrid_davinci_model = hybrid_model_map_.find(model_id);
-  if (hybrid_davinci_model != hybrid_model_map_.end()) {
-    uint64_t session_id = hybrid_davinci_model->second->GetSessionId();
-    DestroyAicpuSession(session_id);
-    return SUCCESS;
-  }
-
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
     GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
@@ -933,12 +925,6 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
                                             vector<InputOutputDescInfo> &output_desc,
                                             std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats,
                                             bool new_model_desc) {
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
-  if (hybrid_davinci_model != nullptr) {
-    hybrid_davinci_model->SetModelDescVersion(new_model_desc);
-    return hybrid_davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
-  }
-
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
@@ -957,11 +943,6 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
 ///
 Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
                                          int32_t &dynamic_type) {
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
-  if (hybrid_davinci_model != nullptr) {
-    return hybrid_davinci_model->GetDynamicBatchInfo(batch_info, dynamic_type);
-  }
-
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetDynamicBatchInfo failed, Invalid model id %u!", model_id);
@@ -994,12 +975,6 @@ Status ModelManager::GetCombinedDynamicDims(const uint32_t model_id, vector<vect
 ///
 Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
                                                 std::vector<std::string> &user_input_shape_order) {
-  auto hybrid_davinci_model = GetHybridModel(model_id);
-  if (hybrid_davinci_model != nullptr) {
-    hybrid_davinci_model->GetUserDesignateShapeOrder(user_input_shape_order);
-    return SUCCESS;
-  }
-
   auto davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetUserDesignateShapeOrder Failed, Invalid Model ID %u!", model_id)
@@ -1015,12 +990,6 @@ Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &
 }
 
 Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
-  if (hybrid_davinci_model != nullptr) {
-    hybrid_davinci_model->GetModelAttr(dynamic_output_shape_info);
-    return SUCCESS;
-  }
-
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHECK_NOTNULL(davinci_model);
   davinci_model->GetModelAttr(dynamic_output_shape_info);
@@ -1232,25 +1201,10 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
 /// @param [in] stream   model stream
 /// @param [in] async_mode  is asynchronize mode.
 /// @param [in] input_data  input data
-/// @param [in] input_desc  description of input data
 /// @param [out] output_data  output data
-/// @param [out] output_desc  description of output data
 ///
 Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool async_mode, const InputData &input_data,
-                                  const std::vector<GeTensorDesc> &input_desc, OutputData &output_data,
-                                  std::vector<GeTensorDesc> &output_desc) {
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
-  if (hybrid_davinci_model != nullptr) {
-    auto inputs = input_data.blobs;
-    auto outputs = output_data.blobs;
-
-    Status status = hybrid_davinci_model->Execute(inputs, input_desc, outputs, output_desc, stream);
-    if (status == SUCCESS) {
-      GELOGI("Execute model %u success.", model_id);
-    }
-    return status;
-  }
-
+                                  OutputData &output_data) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u.", model_id);
 

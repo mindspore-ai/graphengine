@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "host_cpu_engine.h"
-#include <dlfcn.h>
 #include "graph/common/omg_util.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_adapter.h"

@@ -793,7 +793,7 @@ Status HybridModelBuilder::HandleDtString(const GeTensor &tensor, void *var_addr
                            "Shape size is invalid");
     auto offset = static_cast<uint64_t>(elem_num * kBytes);
     auto hbm_raw_data_base_addr =
-        reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
+        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
     for (int64_t i = elem_num - 1; i >= 0; --i) {
       buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
     }

@@ -369,6 +369,7 @@ static const char *const OP_BANK_PATH = ge::OP_BANK_PATH_FLAG.c_str();
 static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 
 // for interface: aclgrphBuildModel
+#ifdef __GNUC__
 const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              INPUT_SHAPE,
                                                              OP_NAME_MAP,
@@ -424,6 +425,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               DEBUG_DIR,
                                               OP_COMPILER_CACHE_DIR,
                                               OP_COMPILER_CACHE_MODE};
+#endif
 }  // namespace ir_option
 }  // namespace ge
 

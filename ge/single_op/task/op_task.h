@@ -58,6 +58,8 @@ class OpTask {
   virtual const void *GetIOAddr() const = 0;
   const vector<int64_t> &GetWorkspaceSizes() const;
   void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
+  void SetModelArgs(std::string model_name, uint32_t model_id);
+  Status GetProfilingArgs(std::string &model_name, std::string &op_name, uint32_t &model_id, uint32_t &block_dim);
   const OpDescPtr &GetOpdesc() const {return op_desc_;}
   Status OpenDump(rtStream_t stream);
   void SetIoAddrsForDump(const vector<uint64_t> &io_addrs_for_dump) {
@@ -77,6 +79,9 @@ class OpTask {
   DumpProperties dump_properties_;
   DumpOp dump_op_;
   OpDescPtr op_desc_;
+  std::string model_name_;
+  uint32_t model_id_ = 0;
+  uint32_t block_dim_ = 1;
   std::vector<uint64_t> io_addrs_for_dump_;
 };
 
@@ -115,7 +120,6 @@ class TbeOpTask : public OpTask {
   const void *stub_func_ = nullptr;
   std::unique_ptr<uint8_t[]> args_;
   size_t arg_size_ = 0;
-  uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   std::string stub_name_;
 
@@ -239,7 +243,6 @@ private:
   std::string kernel_name_;
   std::unique_ptr<uint8_t[]> args_;
   size_t arg_size_ = 0;
-  uint32_t block_dim_ = 1;
   void *sm_desc_ = nullptr;
   void *io_addr_ = nullptr;
   bool is_custom_ = false;

@@ -77,6 +77,7 @@ class SingleOpModel {
   void ParseArgTable(TbeOpTask *task, SingleOp &op);
 
   std::string model_name_;
+  uint32_t model_id_ = 0;
   const void *ori_model_data_;
   uint32_t ori_model_size_;
 

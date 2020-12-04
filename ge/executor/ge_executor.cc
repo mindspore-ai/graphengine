@@ -283,7 +283,7 @@ Status GeExecutor::Initialize() {
   // Start profiling
   Options profiling_options;
   profiling_options.device_id = 0;
-  profiling_options.job_id = "";
+  profiling_options.job_id = "1";
   ProfilingManager::Instance().Init(profiling_options);
 
   isInit_ = true;

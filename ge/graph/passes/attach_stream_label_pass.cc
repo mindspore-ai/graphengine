@@ -24,11 +24,7 @@ Status AttachStreamLabelPass::Run(ComputeGraphPtr graph) {
 
   FindNodes(graph);
   for (const auto &node : need_label_nodes_) {
-    OpDescPtr op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    if (!op_desc->HasAttr(ATTR_NAME_STREAM_LABEL)) {
-      GE_CHK_STATUS_RET(UpdateCondBranch(node), "Update cond branch failed, start node:%s.", node->GetName().c_str());
-    }
+    GE_CHK_STATUS_RET(UpdateCondBranch(node), "Update cond branch failed, start node:%s.", node->GetName().c_str());
   }
   GE_CHK_STATUS_RET(UpdateEnterNode(), "UpdateEnterNode failed.");
 
@@ -55,13 +51,15 @@ Status AttachStreamLabelPass::ClearStatus() {
 ///
 void AttachStreamLabelPass::FindNodes(const ComputeGraphPtr &graph) {
   for (const NodePtr &node : graph->GetDirectNode()) {
-    const std::string &type = node->GetType();
-    if (type == STREAMSWITCH) {
+    const auto &op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    const std::string &type = op_desc->GetType();
+    if ((type == STREAMSWITCH) && op_desc->HasAttr(ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG)) {
       stream_switch_nodes_.emplace_back(node);
-    } else if (type == STREAMMERGE) {
-      if ((node->GetOpDesc() != nullptr) && !node->GetOpDesc()->HasAttr(ATTR_NAME_NEXT_ITERATION)) {
-        need_label_nodes_.emplace_back(node);
-      }
+    } else if ((type == STREAMMERGE) && !op_desc->HasAttr(ATTR_NAME_NEXT_ITERATION)) {
+      need_label_nodes_.emplace_back(node);
     } else if ((type == ENTER) || (type == REFENTER)) {
       enter_nodes_.emplace_back(node);
     }
@@ -83,21 +81,21 @@ void AttachStreamLabelPass::FindNodes(const ComputeGraphPtr &graph) {
 ///
 Status AttachStreamLabelPass::UpdateCondBranch(const NodePtr &node) {
   std::string stream_label;
+  if (AttachFlag(node, stream_label) != SUCCESS) {
+    GELOGE(FAILED, "Attach flag for node %s failed.", node->GetName().c_str());
+    return FAILED;
+  }
+
   std::unordered_set<NodePtr> branch_nodes;
   std::unordered_set<NodePtr> visited;
   std::stack<NodePtr> nodes;
   nodes.push(node);
-
   static const std::set<std::string> end_type_set = {STREAMSWITCH, STREAMMERGE, MERGE};
   while (!nodes.empty()) {
     NodePtr cur_node = nodes.top();
     nodes.pop();
     if (visited.count(cur_node) > 0) {
       continue;
-    }
-    if (AttachFlag(cur_node, stream_label) != SUCCESS) {
-      GELOGE(FAILED, "Attach flag for node %s failed.", cur_node->GetName().c_str());
-      return FAILED;
     }
 
     const std::string &type = cur_node->GetType();
@@ -113,10 +111,6 @@ Status AttachStreamLabelPass::UpdateCondBranch(const NodePtr &node) {
       }
     }
     visited.insert(cur_node);
-  }
-
-  if (node->GetType() == STREAMSWITCH) {
-    GE_CHK_STATUS_RET(SetActiveLabelList(node, {stream_label}), "set active_label_list failed.");
   }
 
   for (const NodePtr &tmp_node : branch_nodes) {
@@ -148,10 +142,9 @@ Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &strea
     GE_CHK_BOOL_EXEC(AttrUtils::GetBool(op_desc, ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG, value), return FAILED,
                      "StreamSwitch get attr TRUE_BRANCH_STREAM failed.");
     stream_label += (value ? "_t" : "_f");
+    GE_CHK_STATUS_RET(SetActiveLabelList(node, {stream_label}), "set active_label_list failed.");
   } else if (type == STREAMMERGE) {
     stream_label = node->GetName();
-    GE_CHK_STATUS_RET(SetStreamLabel(node, stream_label), "Set stream label failed.");
-  } else if ((type == EXIT) || (type == REFEXIT)) {
     GE_CHK_STATUS_RET(SetStreamLabel(node, stream_label), "Set stream label failed.");
   }
 
@@ -166,12 +159,13 @@ Status AttachStreamLabelPass::UpdateEnterNode() {
   std::unordered_map<NodePtr, std::vector<NodePtr>> enter_active_map;
   for (const auto &enter_node : enter_nodes_) {
     for (const auto &out_ctrl_node : enter_node->GetOutControlNodes()) {
-      if (out_ctrl_node->GetType() == STREAMACTIVE) {
-        if (enter_active_map.find(out_ctrl_node) == enter_active_map.end()) {
-          enter_active_map[out_ctrl_node] = {enter_node};
-        } else {
-          enter_active_map[out_ctrl_node].emplace_back(enter_node);
-        }
+      if (out_ctrl_node->GetType() != STREAMACTIVE) {
+        continue;
+      }
+      if (enter_active_map.find(out_ctrl_node) == enter_active_map.end()) {
+        enter_active_map[out_ctrl_node] = {enter_node};
+      } else {
+        enter_active_map[out_ctrl_node].emplace_back(enter_node);
       }
     }
   }
@@ -226,9 +220,8 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
   std::string stream_label;
   GE_CHECK_NOTNULL(active_node);
   (void)AttrUtils::GetStr(active_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label);
-
   if (stream_label.empty()) {
-    GELOGW("stream_label of enter_active & enter_nodes is empty.");
+    GELOGD("stream_label of enter_active %s is empty.", active_node->GetName().c_str());
     return SUCCESS;
   }
 
@@ -238,7 +231,6 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
       GE_CHK_STATUS_RET(SetStreamLabel(enter_node, stream_label), "Set stream label failed.");
     }
   }
-  GE_CHK_STATUS_RET(SetStreamLabel(active_node, stream_label), "Set stream label failed.");
   return SUCCESS;
 }
 

@@ -137,7 +137,7 @@ Status ForPass::BuildForInfo(const ComputeGraphPtr &root_graph, const NodePtr &n
   for_info.ctrl_inputs = std::move(ctrl_inputs);
   for_info.ctrl_outputs = std::move(ctrl_outputs);
 
-  GELOGI("Build for_info for node %s succ.", node->GetName().c_str());
+  GELOGI("Build for_info for node %s success.", node->GetName().c_str());
   return SUCCESS;
 }
 
@@ -159,13 +159,7 @@ OutDataAnchorPtr ForPass::FindInputWithIndex(const NodePtr &node, uint32_t index
     return nullptr;
   }
 
-  OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-  if (peer_out_anchor == nullptr) {
-    GELOGE(FAILED, "FindInputWithIndex %s:%u failed: peer_out_anchor is NULL.", node->GetName().c_str(), index);
-    return nullptr;
-  }
-
-  return peer_out_anchor;
+  return in_data_anchor->GetPeerOutAnchor();
 }
 
 ///
@@ -186,20 +180,13 @@ Status ForPass::FindInputsAndOutputs(const NodePtr &node, std::vector<OutDataAnc
   uint32_t input_data_num = node->GetAllInDataAnchorsSize();
   for (uint32_t index = FOR_DATA_INPUT; index < input_data_num; index++) {
     InDataAnchorPtr in_data_anchor = node->GetInDataAnchor(index);
-    if (in_data_anchor == nullptr) {
-      GELOGE(FAILED, "FindInputWithIndex %s:%u failed: in_data_anchor is NULL.", node->GetName().c_str(), index);
-      return FAILED;
-    }
-    GE_IF_BOOL_EXEC(in_data_anchor->GetPeerOutAnchor() == nullptr,
-                    GELOGW("Get null input by index %d from node %s ",
-                           in_data_anchor->GetIdx(), node->GetName().c_str());
-                    continue);
+    GE_CHECK_NOTNULL(in_data_anchor);
     data_inputs.emplace_back(in_data_anchor->GetPeerOutAnchor());
   }
 
-  for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
+  for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     std::vector<ge::InDataAnchorPtr> peer_in_data_anchors;
-    for (auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+    for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
       peer_in_data_anchors.emplace_back(peer_in_data_anchor);
     }
     data_outputs.emplace_back(peer_in_data_anchors);
@@ -207,13 +194,13 @@ Status ForPass::FindInputsAndOutputs(const NodePtr &node, std::vector<OutDataAnc
 
   InControlAnchorPtr in_ctrl_anchor = node->GetInControlAnchor();
   GE_CHECK_NOTNULL(in_ctrl_anchor);
-  for (auto &peer_out_ctrl_anchor : in_ctrl_anchor->GetPeerOutControlAnchors()) {
+  for (const auto &peer_out_ctrl_anchor : in_ctrl_anchor->GetPeerOutControlAnchors()) {
     ctrl_inputs.emplace_back(peer_out_ctrl_anchor);
   }
 
   OutControlAnchorPtr out_ctrl_anchor = node->GetOutControlAnchor();
   GE_CHECK_NOTNULL(out_ctrl_anchor);
-  for (auto &peer_in_ctrl_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
+  for (const auto &peer_in_ctrl_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
     ctrl_outputs.emplace_back(peer_in_ctrl_anchor);
   }
 

@@ -27,7 +27,7 @@ class HybridModel;
 
 class KnownNodeTask : public NodeTask {
  public:
-  KnownNodeTask(std::shared_ptr<DavinciModel> davinci_model)
+  explicit KnownNodeTask(std::shared_ptr<DavinciModel> davinci_model)
       : davinci_model_(davinci_model)
     {}
 

@@ -164,7 +164,7 @@ Status ShapeInferenceEngine::InferShapeForSubgraph(const NodeItem &node_item, co
   for (auto &it : fused_subgraph.input_mapping) {
     auto parent_tensor_desc = node_item.MutableInputDesc(it.first);
     GE_CHECK_NOTNULL(parent_tensor_desc);
-    GELOGD("Start to update shape by input[%u]", it.first);
+    GELOGD("Start to update shape by input[%d]", it.first);
     GELOGD("Update shape to [%s]", parent_tensor_desc->GetShape().ToString().c_str());
     GELOGD("Update original shape to [%s]", parent_tensor_desc->GetOriginShape().ToString().c_str());
     for (auto &tensor_desc : it.second) {
@@ -183,12 +183,12 @@ Status ShapeInferenceEngine::InferShapeForSubgraph(const NodeItem &node_item, co
   }
 
   for (auto &it : fused_subgraph.output_mapping) {
-    uint32_t parent_output_idx = it.first;
+    int parent_output_idx = it.first;
     const auto &op_desc = it.second;
     GELOGD("Update parent output[%d] by [%s]", parent_output_idx, op_desc->GetName().c_str());
     auto input_desc = op_desc->MutableInputDesc(0);
     GE_CHECK_NOTNULL(input_desc);
-    auto parent_output_tensor_desc = node_item.op_desc->MutableOutputDesc(parent_output_idx);
+    auto parent_output_tensor_desc = node_item.MutableOutputDesc(parent_output_idx);
     GE_CHECK_NOTNULL(parent_output_tensor_desc);
     GELOGD("Update shape to [%s]", input_desc->GetShape().ToString().c_str());
     GELOGD("Update original shape to [%s]", input_desc->GetOriginShape().ToString().c_str());

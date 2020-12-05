@@ -25,7 +25,7 @@ namespace ge {
 namespace hybrid {
 namespace {
 const int kMaxEvents = 10000;
-const int kEventDescMax = 256;
+const int kEventDescMax = 512;
 const int kMaxEventTypes = 8;
 const int kIndent = 8;
 }

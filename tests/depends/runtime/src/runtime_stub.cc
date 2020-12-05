@@ -325,7 +325,7 @@ rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback)
 }
 
 rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
-		                   rtMallocHostSharedMemoryOut *out)
+		                               rtMallocHostSharedMemoryOut *out)
 {
   out->ptr = new uint8_t[in->size];
   out->devPtr = new uint8_t[in->size];

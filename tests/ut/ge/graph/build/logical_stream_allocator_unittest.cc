@@ -306,8 +306,8 @@ class UtestLogicalStreamAllocator : public testing::Test {
     max_parallel_num["aicpu"] = parallel_num;
 
     Status status = AssignLogicalStreams({const1, const2, get_next, genmask1, genmask2, domask, subgraph4, subgraph5,
-                                          subgraph6, allreduce1, allreduce2, apply1, apply2},
-                                          confs, max_parallel_num);
+                                         subgraph6, allreduce1, allreduce2, apply1, apply2},
+                                         confs, max_parallel_num);
     EXPECT_EQ(status, ge::SUCCESS);
 
     EXPECT_EQ(GetStream(get_next), 0);

@@ -23,6 +23,7 @@
 namespace ge {
 class GeRootModel {
  public:
+  GeRootModel() = default;
   explicit GeRootModel(ComputeGraphPtr &root_graph) : root_graph_(root_graph), model_id_(INVALID_MODEL_ID) {};
   ~GeRootModel() = default;
 
@@ -35,11 +36,11 @@ class GeRootModel {
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
   uint32_t GetModelId() const { return model_id_; }
   Status CheckIsUnknownShape(bool &is_dynamic_shape);
-
+  void SetRootGraph(ComputeGraphPtr graph) { root_graph_ = graph; }
  private:
-  ComputeGraphPtr root_graph_;
+  ComputeGraphPtr root_graph_ = nullptr;
   std::map<std::string, GeModelPtr> subgraph_instance_name_to_model_;
-  uint32_t model_id_;
+  uint32_t model_id_ = 0;
 };
 }  // namespace ge
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;

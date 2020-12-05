@@ -157,6 +157,7 @@ Status SingleOpModel::LoadAllNodes() {
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
   Graph graph = ge_model->GetGraph();
+  model_id_ = ge_model->GetModelId();
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   if (compute_graph == nullptr) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[%s] compute_graph is null", model_name_.c_str());
@@ -248,6 +249,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
 
         single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
         ParseArgTable(tbe_task, single_op);
+        tbe_task->SetModelArgs(model_name_, model_id_);
         single_op.tasks_.emplace_back(tbe_task);
       } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
         GELOGD("Building AICPU_CC task");
@@ -258,6 +260,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         if (ret != SUCCESS) {
           return ret;
         }
+        task->SetModelArgs(model_name_, model_id_);
         single_op.tasks_.emplace_back(task);
       } else {
         GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
@@ -273,6 +276,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
       if (ret != SUCCESS) {
         return ret;
       }
+      aicpu_task->SetModelArgs(model_name_, model_id_);
       single_op.tasks_.emplace_back(aicpu_task);
     } else {
       // skip
@@ -393,6 +397,7 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
     GELOGD("Building TBE task");
     TbeOpTask *tbe_task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &tbe_task));
+    tbe_task->SetModelArgs(model_name_, model_id_);
     single_op.op_task_.reset(tbe_task);
   } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
     GELOGD("Building AICPU_CC task");
@@ -400,6 +405,7 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
     uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
     GELOGI("Build dynamic singleOp CCTask, kernel_id = %lu", dynamic_singleop_kernel_id);
     GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task, dynamic_singleop_kernel_id));
+    task->SetModelArgs(model_name_, model_id_);
     single_op.op_task_.reset(task);
   } else {
     GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
@@ -446,6 +452,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
         const TaskDef &copy_task_def = tasks[i];
         GE_CHK_STATUS_RET_NOLOG(aicpu_task->SetMemCopyTask(copy_task_def.kernel_ex()));
       }
+      aicpu_task->SetModelArgs(model_name_, model_id_);
       single_op.op_task_.reset(aicpu_task);
     } else {
       // skip

@@ -17,6 +17,7 @@
 #include "single_op/single_op.h"
 
 #include "common/fmk_types.h"
+#include "common/ge_types.h"
 #include "common/math/math_util.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
@@ -33,6 +34,45 @@ const size_t kDataMemAlignSize = 32;
 size_t GetAlignedSize(size_t size) {
   size_t aligned_size = (size + 2 * kDataMemAlignSize - 1) / kDataMemAlignSize * kDataMemAlignSize;
   return aligned_size;
+}
+
+Status ProfilingTaskInfo(OpTask *op_task) {
+  if (!ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+    return SUCCESS;
+  }
+
+  string model_name;
+  string op_name;
+  uint32_t model_id;
+  uint32_t block_dim;
+  if (op_task->GetProfilingArgs(model_name, op_name, model_id, block_dim) != SUCCESS) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Get profiling data of task failed");
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+  GELOGD("ProfilingReport of op[%s] model[%s] start.", op_name.c_str(), model_name.c_str());
+  std::vector<TaskDescInfo> task_desc_info;
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  if (rtGetTaskIdAndStreamID(&task_id, &stream_id) != RT_ERROR_NONE) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Get task_id and stream_id failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+
+  TaskDescInfo tmp_task_desc_info;
+  tmp_task_desc_info.model_name = model_name;
+  tmp_task_desc_info.op_name = op_name;
+  tmp_task_desc_info.block_dim = block_dim;
+  tmp_task_desc_info.task_id = task_id;
+  tmp_task_desc_info.stream_id = stream_id;
+  GELOGD("GetTaskDescInfo of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
+  task_desc_info.emplace_back(tmp_task_desc_info);
+
+  std::vector<ComputeGraphDescInfo> compute_graph_info;
+
+  auto &profiling_manager = ProfilingManager::Instance();
+  profiling_manager.ReportProfilingData(model_id, task_desc_info, compute_graph_info,
+                                        !profiling_manager.IsAclApiMode());
+  return SUCCESS;
 }
 }  // namespace
 
@@ -169,6 +209,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     if (ret != SUCCESS) {
       return ret;
     }
+    GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(task));
   }
 
   return ret;
@@ -281,9 +322,17 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   }
 
   if (op_task_->GetOpTaskType() == OP_TASK_TBE) {
-    return ExecuteTbeTask(input_desc, inputs, output_desc, outputs);
+    auto ret = ExecuteTbeTask(input_desc, inputs, output_desc, outputs);
+    if (ret == SUCCESS) {
+      GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get()));
+    }
+    return ret;
   } else if (op_task_->GetOpTaskType() == OP_TASK_AICPU || op_task_->GetOpTaskType() == OP_TASK_AICPUCC) {
-    return op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_);
+    auto aicpu_ret = op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_);
+    if (aicpu_ret == SUCCESS) {
+      GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get()));
+    }
+    return aicpu_ret;
   } else {
     GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID,
            "Only TBE_Task, AI_CPU_Task and AI_CPUCC_Task are supported, but got %u",

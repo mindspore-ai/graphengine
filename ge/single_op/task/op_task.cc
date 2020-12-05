@@ -93,6 +93,21 @@ const vector<int64_t> &OpTask::GetWorkspaceSizes() const { return workspace_size
 
 void OpTask::SetWorkspaceSizes(const vector<int64_t> &workspace_sizes) { workspace_sizes_ = workspace_sizes; }
 
+void OpTask::SetModelArgs(std::string model_name, uint32_t model_id) {
+  model_name_ = model_name;
+  model_id_ = model_id;
+}
+
+Status OpTask::GetProfilingArgs(std::string &model_name, std::string &op_name, uint32_t &model_id,
+                                uint32_t &block_dim) {
+  model_name = model_name_;
+  model_id = model_id_;
+  block_dim = block_dim_;
+  GE_CHECK_NOTNULL(op_desc_);
+  op_name = op_desc_->GetName();
+  return SUCCESS;
+}
+
 TbeOpTask::~TbeOpTask() {
   if (sm_desc_ != nullptr) {
     (void)rtMemFreeManaged(sm_desc_);

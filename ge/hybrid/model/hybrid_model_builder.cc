@@ -313,9 +313,9 @@ Status HybridModelBuilder::ParseDependentForFusedSubgraph(NodeItem &node_item) {
     uint32_t parent_index = 0;
     if (!AttrUtils::GetInt(*op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
       GELOGE(INTERNAL_ERROR,
-            "[%s] Failed to get attr [%s]",
-            op_desc->GetName().c_str(),
-            ATTR_NAME_PARENT_NODE_INDEX.c_str());
+             "[%s] Failed to get attr [%s]",
+             op_desc->GetName().c_str(),
+             ATTR_NAME_PARENT_NODE_INDEX.c_str());
       return INTERNAL_ERROR;
     }
 

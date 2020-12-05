@@ -134,7 +134,7 @@ Status GEInitialize(const std::map<string, string> &options) {
 
 Status GEInitialize(const std::map<AscendString, AscendString> &options) {
   std::map<std::string, std::string> str_options;
-  for (auto & option : options) {
+  for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
       GELOGE(FAILED, "GEInitialize options is nullptr.");
       return FAILED;

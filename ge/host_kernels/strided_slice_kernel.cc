@@ -284,8 +284,10 @@ void StridedSliceKernel::ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_ten
 }
 
 void StridedSliceKernel::ExpandStrideWithEllipsisMask(const size_t x_dims_num, 
-                                    const vector<int64_t> &x_dims, vector<int64_t> &orig_begin_vec,
-                                    vector<int64_t> &orig_end_vec, vector<int64_t> &orig_stride_vec) {
+                                                      const vector<int64_t> &x_dims, 
+                                                      vector<int64_t> &orig_begin_vec,
+                                                      vector<int64_t> &orig_end_vec, 
+                                                      vector<int64_t> &orig_stride_vec) {
   
   if (attr_value_map_.at(STRIDE_SLICE_ATTR_ELLIPSIS_MASK) != 0) {
     auto end_mask = attr_value_map_.at(STRIDE_SLICE_ATTR_END_MASK);

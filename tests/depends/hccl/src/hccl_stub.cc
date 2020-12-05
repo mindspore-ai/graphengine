@@ -19,26 +19,26 @@
 #include "hccl/hcom.h"
 
 HcclResult hcom_all_gather(const char *tag, void *input_count_ptr, void *output_ptr, u64 input_count,
-                             HcclDataType data_type, const char *group, rtStream_t stream) {
+                           HcclDataType data_type, const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 HcclResult hcom_broadcast(const char *tag, void *ptr, u64 count, HcclDataType data_type, u32 root,
-                            const char *group, rtStream_t stream) {
+                          const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 HcclResult hcom_all_reduce(const char *tag, void *input_ptr, void *output_ptr, u64 count, HcclDataType data_type,
-                             HcclReduceOp op, const char *group, rtStream_t stream) {
+                           HcclReduceOp op, const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 HcclResult hcom_get_split_strategy(const char *group, const struct model_feature *feature, u32 max_segment_num,
-                                     u32 *segment_num, u32 *segment_idx) {
+                                   u32 *segment_num, u32 *segment_idx) {
   return HCCL_SUCCESS;
 }
 
 HcclResult hcom_reduce_scatter(const char *tag, void *input_ptr, void *output_ptr, u64 count,
-                                 HcclDataType data_type, HcclReduceOp op, const char *group, rtStream_t stream) {
+                               HcclDataType data_type, HcclReduceOp op, const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }

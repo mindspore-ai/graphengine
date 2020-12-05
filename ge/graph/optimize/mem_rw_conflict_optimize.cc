@@ -643,7 +643,7 @@ Status HandleAllreduceDuplicateInput(ComputeGraphPtr &compute_graph) {
          auto ret = GraphUtils::InsertNodeBetweenDataAnchors(pre_out_anchor, in_data_anchor, identity_node);
          GE_CHK_STATUS_RET(ret, "Fail to insert identity.");
          GELOGI("InsertNode %s between %s and %s successfully.", identity_node->GetName().c_str(),
-               pre_node->GetName().c_str(), node->GetName().c_str());
+                pre_node->GetName().c_str(), node->GetName().c_str());
        }
      }
    }

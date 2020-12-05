@@ -154,7 +154,7 @@ class OmeTestOpUtils {
     if (model->HasAttr(MODEL_ATTR_TASKS)) {
        ge::Buffer task_buffer;
        GE_CHK_BOOL_RET_STATUS(ge::AttrUtils::GetZeroCopyBytes(model, MODEL_ATTR_TASKS, task_buffer), FAILED,
-		              "Get bytes failed.");
+		                          "Get bytes failed.");
        std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
        GE_CHECK_NOTNULL(task);
        GE_IF_BOOL_EXEC(task_buffer.GetData() == nullptr, GELOGE(FAILED, "Get data fail"); return FAILED);

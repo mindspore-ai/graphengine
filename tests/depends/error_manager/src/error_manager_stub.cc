@@ -58,7 +58,7 @@
   /// @param [in] value: vector parameter value
   ///
   void ErrorManager::ATCReportErrMessage(std::string error_code, const std::vector<std::string> &key,
-                           const std::vector<std::string> &value) { 
+                                         const std::vector<std::string> &value) { 
   }
 
   ///

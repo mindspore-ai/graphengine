@@ -724,7 +724,7 @@ Status AicpuNodeTask::UpdateIoAddr(TaskContext &context) {
   auto io_addr = args_.get() + sizeof(aicpu::AicpuParamHead);
   // if has input and output, need copy to ioaddr
   int cpy_ret = memcpy_s(io_addr, args_size_ - sizeof(aicpu::AicpuParamHead),
-                             &io_addrs[0], sizeof(uint64_t) * io_addrs.size());
+                         &io_addrs[0], sizeof(uint64_t) * io_addrs.size());
   GE_CHK_BOOL_RET_STATUS(cpy_ret == 0, INTERNAL_ERROR,
                          "Node[%s] memcpy io addr to AicpuParamHead failed, ret=%d, args_size=%u, io nums=%zu.",
                          node_name_.c_str(), cpy_ret, args_size_, io_addrs.size());

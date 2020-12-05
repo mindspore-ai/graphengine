@@ -45,8 +45,8 @@ class VariableOpPass : public GraphPass {
 
  private:
   Status UpdateTransRoad(VarTransRoad &fusion_road, vector<string> &trans_road_order,
-                         map<string,pair<string, bool>> &trans_type_to_changed_desc,
-                         map<string,vector<NodePtr>> &trans_type_to_trans_ops);
+                         map<string, pair<string, bool>> &trans_type_to_changed_desc,
+                         map<string, vector<NodePtr>> &trans_type_to_trans_ops);
 
   Status DealFusion(const ge::NodePtr &var_node, VarTransRoad &fusion_road,
                     map<string, pair<string, bool>> trans_type_to_changed_desc,

@@ -38,7 +38,7 @@ void StreamGraphOptimizer::RefreshNodeId(const ComputeGraphPtr &comp_graph, Grap
         continue;
       }
       for (ge::NodePtr &node : subgraph->GetDirectNode()) {
-        GE_CHECK_NOTNULL_EXEC(node->GetOpDesc(), return );
+        GE_CHECK_NOTNULL_EXEC(node->GetOpDesc(), return);
         if ((node->GetType() == END) || (node->GetType() == PLACEHOLDER)) {
           node->GetOpDesc()->SetId(static_cast<int64_t>(node_size));
           node_size++;

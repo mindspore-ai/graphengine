@@ -470,7 +470,7 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
     }
   }
   if (max_index >= switchn->GetOpDesc()->GetOutputsSize()) {
-    string error_msg = "No max size found from switchn node[" + switchn->GetName()+ "]";
+    string error_msg = "No max size found from switchn node[" + switchn->GetName() + "]";
     GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error_msg.c_str());
     return INTERNAL_ERROR;
   }

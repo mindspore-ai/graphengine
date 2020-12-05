@@ -408,7 +408,7 @@ Status AippOp::ConvertRelatedInputNameToRank() {
   GE_CHECK_NOTNULL(aipp_params_);
 
   string related_input_name = aipp_params_->related_input_name();
-  if(related_input_name.empty()) {
+  if (related_input_name.empty()) {
     return SUCCESS;
   }
 

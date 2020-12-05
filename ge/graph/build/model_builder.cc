@@ -282,7 +282,7 @@ Status ModelBuilder::SetInputOutputDesc() {
 void ModelBuilder::AddNodeInputProperty() {
   for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
     vector<string> src_name_list;
     vector<int64_t> src_index_list;
     for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
@@ -309,10 +309,10 @@ void ModelBuilder::AddNodeInputProperty() {
 
   for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
     GE_IF_BOOL_EXEC(node_op_desc->GetType() == NETOUTPUT, continue);
     auto out_control_anchor = node->GetOutControlAnchor();
-    GE_IF_BOOL_EXEC(out_control_anchor == nullptr, GELOGW("out_control_anchor is nullptr"); return );
+    GE_IF_BOOL_EXEC(out_control_anchor == nullptr, GELOGW("out_control_anchor is nullptr"); return);
     vector<string> dst_name_list;
     vector<int64_t> dst_index_list;
     string dst_name_temp;
@@ -330,7 +330,7 @@ void ModelBuilder::AddNodeInputProperty() {
       dst_name_temp = "";
       int64_t dst_index = kWrongIndex;  // assign an impossible value to dst_index.
       for (const auto &in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-        GE_IF_BOOL_EXEC(in_data_anchor == nullptr, GELOGW("in_data_anchor is nullptr"); return );
+        GE_IF_BOOL_EXEC(in_data_anchor == nullptr, GELOGW("in_data_anchor is nullptr"); return);
         ge::NodePtr dst_node = in_data_anchor->GetOwnerNode();
         dst_name_temp = dst_name_temp.empty() ? dst_node->GetName() : dst_name_temp + ":" + dst_node->GetName();
         dst_index = in_data_anchor->GetIdx();

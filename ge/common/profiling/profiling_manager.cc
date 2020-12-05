@@ -217,7 +217,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   char profiling_mode_temp[MMPA_MAX_PATH] = { 0x00 };
   char prof_options_temp[MMPA_MAX_PATH] = { 0x00 };
   (void)mmGetEnv("PROFILING_MODE", profiling_mode_temp, MMPA_MAX_PATH);
-  (void)mmGetEnv("PROFILING_OPTIONS", prof_options_temp, MMPA_MAX_PATH );
+  (void)mmGetEnv("PROFILING_OPTIONS", prof_options_temp, MMPA_MAX_PATH);
   const char *profiling_mode = profiling_mode_temp;
   const char *prof_options = prof_options_temp;
   if ((profiling_mode == nullptr) || (strcmp("true", profiling_mode) != 0) || (prof_options == nullptr)) {

@@ -30,8 +30,8 @@ class NodeTask;
 class NodeExecutor;
 
 struct FusedSubgraph {
-  std::map<uint32_t, std::vector<GeTensorDescPtr>> input_mapping;
-  std::map<uint32_t, OpDescPtr> output_mapping;
+  std::map<int, std::vector<GeTensorDescPtr>> input_mapping;
+  std::map<int, OpDescPtr> output_mapping;
   std::vector<NodePtr> nodes;
   ComputeGraphPtr graph;
 };

@@ -286,7 +286,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status DestroyAicpuSessionForInfer(uint32_t model_id);
 
-  ge::Status LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name);
+  ge::Status LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name, bool &loaded);
 
   ge::Status LaunchCustAicpuSo();
 

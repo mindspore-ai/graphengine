@@ -62,8 +62,12 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id) {
   if (kernel_type == ccKernelType::CUST_AI_CPU) {
     task.is_custom_ = true;
     task.dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc_, so_name), "launch cust aicpu so failed");
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "launch cust aicpu so failed.");
+    bool loaded = false;
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc_, so_name, loaded),
+            "launch cust aicpu so failed");
+    if (!loaded) {
+      GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "launch cust aicpu so failed.");
+    }
   }
 
   task.num_inputs_ = op_desc_->GetInputsSize();

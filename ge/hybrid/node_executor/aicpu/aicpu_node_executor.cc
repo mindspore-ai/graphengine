@@ -644,8 +644,12 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
   const auto &context = kernel_def.context();
   auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
   if (kernel_type == ccKernelType::CUST_AI_CPU) {
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name), "load cust aicpu so failed.");
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+    bool loaded = false;
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name, loaded),
+            "load cust aicpu so failed.");
+    if (!loaded) {
+      GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+    }
   }
 
   GE_CHK_BOOL_RET_STATUS(args.size() == args_size_, FAILED,

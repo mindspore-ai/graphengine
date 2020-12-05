@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -249,6 +249,7 @@ typedef VOID (*mmPf)(VOID);
 #define M_CREAT _O_CREAT
 #define M_BINARY _O_BINARY
 #define M_TRUNC _O_TRUNC
+#define M_APPEND _O_APPEND
 
 #define M_IREAD _S_IREAD
 #define M_IRUSR _S_IREAD

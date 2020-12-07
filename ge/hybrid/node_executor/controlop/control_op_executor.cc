@@ -405,7 +405,7 @@ Status ControlOpNodeExecutor::LoadTask(const HybridModel &model,
   auto node_item = model.GetNodeItem(node);
   GE_CHECK_NOTNULL(node_item);
 
-  unique_ptr<ControlOpNodeTask> node_task;
+  std::unique_ptr<ControlOpNodeTask> node_task;
   auto node_type = node->GetType();
   if (node_type == IF || node_type == STATELESSIF) {
     node_task.reset(new(std::nothrow) IfOpNodeTask());

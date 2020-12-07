@@ -19,8 +19,6 @@
 
 #include "runtime/rt.h"
 
-using namespace std;
-
 namespace ge {
 
 #define CC_FUSION_OP_MAX 32

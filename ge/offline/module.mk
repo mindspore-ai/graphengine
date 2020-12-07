@@ -149,8 +149,8 @@ LOCAL_SHARED_LIBRARIES := \
     libgraph \
     libregister \
     liberror_manager \
-    libge_compiler \
-    libruntime_compile \
+    libge_runner \
+    libruntime \
     libparser_common \
     liberror_manager \
 

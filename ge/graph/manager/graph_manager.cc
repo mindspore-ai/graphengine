@@ -651,62 +651,13 @@ Status GraphManager::ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_
 Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph, GraphPartitioner &partitioner) {
   GE_CHECK_NOTNULL(compute_graph);
   auto sub_graph_map = partitioner.GetSubGraphMap();
-  std::string buffer_optimize;
-  graphStatus graph_status = ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
-  bool need_lx_fusion = (graph_status == GRAPH_SUCCESS) && (buffer_optimize != kOffOptimize);
-  if (options_.build_mode.empty() && need_lx_fusion) {
-    GELOGI("Enter normal mode with buffer_optimize:%s.", buffer_optimize.c_str());
-    /// 1. Copy subgraph for buffer optimize while lx fusion failed.
-    /// 2. Set graph with attr "lx_fusion" for fusion optimize.
-    std::unordered_map<std::string, ComputeGraphPtr> copy_graphs;
-    GE_TIMESTAMP_START(CopySubGraphAndMarkFusion);
-    Status ret = CopySubGraphAndMarkFusion(compute_graph, sub_graph_map, copy_graphs);
-    GE_TIMESTAMP_EVENT_END(CopySubGraphAndMarkFusion, "SetSubgraph:CopySubGraphAndMarkFusion");
-    if (ret != SUCCESS) {
-      GELOGE(ret, "CopySubGraphAndMarkFusion failed.");
-      return ret;
-    }
-
-    // Multiply optimize subgraph with lx fusion
-    ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Multiply optimize subgraph with lx fusion failed.");
-      return ret;
-    }
-
-    // Check whether all subgraph lx fusion success
-    GE_TIMESTAMP_START(CheckAllFusionOptimizeSuccess);
-    if (CheckAllFusionOptimizeSuccess(compute_graph, sub_graph_map)) {
-      GE_TIMESTAMP_EVENT_END(CheckAllFusionOptimizeSuccess, "SetSubgraph:CheckAllFusionOptimizeSuccess");
-      return SUCCESS;
-    }
-
-    // Replace subgraph with original graph for lx buffer
-    ret = ReplaceSubgraphWithOriGraph(compute_graph, sub_graph_map, copy_graphs);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Replace subgraph with original graph failed.");
-      return ret;
-    }
-
-    // Multiply optimize subgraph with lx buffer
-    ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Multiply optimize subgraph with lx buffer failed.");
-      return ret;
-    }
-  } else {
-    /// Multiply optimize subgraph:
-    /// 1. run lx buffer while build_mode is normal and buffer_optimize is empty or "off_optimize";
-    /// 2. run lx fusion or buffer according build_mode and build_step in fe.
-    GELOGD("Directly optimize subgraph with build mode:%s, and step:%s, buffer_optimize:%s.",
-           options_.build_mode.c_str(),
-           options_.build_step.c_str(),
-           buffer_optimize.c_str());
-    Status ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "Multiply optimize subgraph with lx buffer");
-      return ret;
-    }
+  GELOGD("Directly optimize subgraph with build mode:%s, and step:%s.",
+         options_.build_mode.c_str(),
+         options_.build_step.c_str());
+  Status ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Multiply optimize subgraph failed");
+    return ret;
   }
   return SUCCESS;
 }

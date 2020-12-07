@@ -891,7 +891,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
       if (status != ge::GRAPH_SUCCESS) {
         GELOGE(ge::FAILED, "Om file init failed.");
         if (model.model_data != nullptr) {
-          delete[](char *) model.model_data;
+          delete[] reinterpret_cast<char *>(model.model_data);
           model.model_data = nullptr;
         }
         return status;
@@ -902,7 +902,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
       if (status != ge::GRAPH_SUCCESS) {
         GELOGE(ge::FAILED, "Get model part failed.");
         if (model.model_data != nullptr) {
-          delete[](char *) model.model_data;
+          delete[] reinterpret_cast<char *>(model.model_data);
           model.model_data = nullptr;
         }
         return status;
@@ -928,7 +928,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
     }
 
     if (model.model_data != nullptr) {
-      delete[](char *) model.model_data;
+      delete[] reinterpret_cast<char *>(model.model_data);
       model.model_data = nullptr;
     }
     return ret;

@@ -151,6 +151,7 @@ class DynamicShapePartitioner {
   Status IsUnknownShapeGraph(ge::ComputeGraphPtr graph, bool &is_unknow);
   Status IsUnknownShapeNode(ge::NodePtr node, bool &is_unknow);
   bool IsUnknownShapeTensor(const ge::GeTensorDesc &tensor);
+  Status CtrlEdgeTransfer();
   ge::ComputeGraphPtr root_graph_;                                        // The original graph to partition
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // Record nodes and the cluster it belongs to
   // topological sorted clusters, this field will change with the splitting.

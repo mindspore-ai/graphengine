@@ -584,7 +584,8 @@ class DavinciModel {
 
   Status SyncVarData();
 
-  Status InitModelMem(void *dev_ptr, size_t memsize, void *weight_ptr, size_t weightsize);
+  Status InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size);
+  Status InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size);
 
   void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
 
@@ -850,7 +851,9 @@ class DavinciModel {
   Status GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node);
   Status GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc);
 
-  bool is_model_has_inited_;
+  bool is_weight_mem_has_inited_;
+  bool is_feature_map_mem_has_inited_;
+
   uint32_t model_id_;
   uint32_t runtime_model_id_;
   string name_;

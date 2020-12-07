@@ -83,6 +83,30 @@ class HybridModel {
 
   const string &GetModelName() const;
 
+  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type);
+
+  void GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order);
+
+  void GetModelAttr(std::vector<std::string> &dynamic_output_shape_info);
+
+  Status GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
+                                vector<InputOutputDescInfo> &output_desc,
+                                std::vector<uint32_t> &input_formats,
+                                std::vector<uint32_t> &outputFormats);
+
+  Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats);
+
+  void CreateOutput(ConstGeTensorDescPtr &output_desc, InputOutputDescInfo &output, uint32_t &format_result);
+
+  Status GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats);
+
+  void CreateInputDimsInfo(const OpDescPtr &op_desc, InputOutputDescInfo &input);
+
+  void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
+
+  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
+                                      InputOutputDescInfo &input);
+
  private:
   friend class HybridModelBuilder;
   friend class HybridModelAsyncExecutor;
@@ -100,6 +124,8 @@ class HybridModel {
   std::unique_ptr<GraphItem> root_graph_item_;
   std::map<std::string, std::unique_ptr<GraphItem>> subgraph_items_;
   std::map<NodePtr, std::unique_ptr<NodeItem>> node_items_;
+
+  bool is_new_model_desc_ = false;    // support aipp
 
   // runtime fields
   uint32_t device_id_ = 0;

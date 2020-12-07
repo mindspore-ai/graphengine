@@ -21,12 +21,18 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/utils/type_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/model/hybrid_model_builder.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "common/op/ge_op_utils.h"
 
 namespace ge {
 namespace hybrid {
+namespace {
+const int64_t kMemSizeUnknownShape = -1; // Unknown shape mem size
+}
+
 HybridModel::HybridModel(GeRootModelPtr ge_model) : ge_root_model_(std::move(ge_model)) {
 }
 
@@ -128,7 +134,187 @@ const GraphItem *HybridModel::GetSubgraphItem(const ComputeGraphPtr &subgraph) c
 }
 
 const string &HybridModel::GetModelName() const {
-    return model_name_;
+  return model_name_;
+}
+
+Status HybridModel::GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
+  // dynamic shape do not need dynamic batch
+  batch_info = {};
+  dynamic_type = -1;
+  return SUCCESS;
+}
+
+void HybridModel::GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order) {
+  // dynamic shape do not need dynamic batch
+  user_input_shape_order = {};
+}
+
+void HybridModel::GetModelAttr(std::vector<std::string> &dynamic_output_shape_info) {
+  dynamic_output_shape_info = {};
+}
+
+Status HybridModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
+                                           vector<InputOutputDescInfo> &output_desc,
+                                           std::vector<uint32_t> &input_formats,
+                                           std::vector<uint32_t> &output_formats) {
+  auto node_item_list = root_graph_item_->GetInputNodes();
+  if (node_item_list.empty()) {
+    GELOGE(FAILED, "node item list is empty!");
+    return FAILED;
+  }
+
+  GE_CHECK_NOTNULL(node_item_list[0]->node);
+  GE_CHECK_NOTNULL(node_item_list[0]->node->GetOpDesc());
+  if (node_item_list[0]->node->GetOpDesc()->GetInputsSize() != 1) {
+    GELOGE(FAILED, "input size of op is not 1!");
+    return FAILED;
+  }
+
+  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed");
+  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, output_formats), "get ouput desc info failed");
+
+  return SUCCESS;
+}
+
+void HybridModel::SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t,int64_t>> &shape_ranges,
+                                                 InputOutputDescInfo &input) {
+  for (auto model_input_dim : model_input_dims) {
+    input.shape_info.dims.push_back(model_input_dim);
+  }
+  input.shape_info.shape_ranges = shape_ranges;
+  return;
+}
+
+void HybridModel::CreateInputDimsInfo(const OpDescPtr &op_desc, InputOutputDescInfo &input) {
+  std::vector<std::pair<int64_t,int64_t>> shape_ranges;
+  if (is_new_model_desc_ && op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
+    // When static aipp is set, need to get the model input dims which processed by aipp
+    vector<int64_t> model_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
+    SetInputDimsAndShapeRangesInfo(model_input_dims, shape_ranges, input);
+    return;
+  }
+  // judge if this data is linked dynamic aipp first, multiply batch has been considered
+  if (op_desc->HasAttr("_dynamic_aipp_input_dims")) {
+    vector<int64_t> dynamic_aipp_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, "_dynamic_aipp_input_dims", dynamic_aipp_input_dims);
+    SetInputDimsAndShapeRangesInfo(dynamic_aipp_input_dims, shape_ranges, input);
+    return;
+  } else {
+    vector<int64_t> input_dims = op_desc->GetInputDescPtr(0)->GetShape().GetDims();
+    op_desc->GetInputDescPtr(0)->GetShapeRange(shape_ranges);
+    SetInputDimsAndShapeRangesInfo(input_dims, shape_ranges, input);
+    return;
+  }
+}
+
+Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats) {
+  auto node_item_list = root_graph_item_->GetInputNodes();
+  for (auto &node_item : node_item_list) {
+    InputOutputDescInfo input;
+
+    GE_CHECK_NOTNULL(node_item->node);
+    auto op_desc = node_item->node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
+
+    Format format = op_desc->GetInputDescPtr(0)->GetFormat();
+    input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+    input.name = op_desc->GetName();
+
+    int64_t input_size = 0;
+    GE_CHK_STATUS_RET(TensorUtils::GetSize(*op_desc->GetInputDescPtr(0), input_size), "get input size failed.");
+
+    // support dynamic shape
+    if (input_size < 0) {
+      GELOGD("dynamic shape scene, input size is unknown. "
+             "format=%d, data_type=%d, input_size=%ld",
+             format, input.data_type, input_size);
+      input_size = kMemSizeUnknownShape;   // -1
+    }
+
+    // not support dynamic shape input for now, so input_size here will be not less than zero.
+    input.size = input_size;
+
+    CreateInputDimsInfo(op_desc, input);
+
+    formats.push_back(format);
+    input_desc.push_back(input);
+  }
+  is_new_model_desc_ = false;
+  return SUCCESS;
+}
+
+void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc, InputOutputDescInfo &output_desc_info, uint32_t &format_result) {
+  GE_IF_BOOL_EXEC(output_desc == nullptr, GELOGE(FAILED, "output desc ptr is nullptr"); return );
+  Format format = output_desc->GetFormat();
+  GeShape shape = output_desc->GetShape();
+  std::vector<std::pair<int64_t,int64_t>> shape_ranges;
+  output_desc->GetShapeRange(shape_ranges);
+  DataType data_type = output_desc->GetDataType();
+  format_result = format;
+  if (format == FORMAT_FRACTAL_Z) {  // FraczToHWCK
+    int64_t k = shape.GetDim(0);                                           // 0: first dim
+    int64_t c = shape.GetDim(1);                                           // 1: second dim
+    int64_t h = shape.GetDim(2);                                           // 2: third dim
+    int64_t w = shape.GetDim(3);                                           // 3: forth dim
+    output_desc_info.shape_info.dims.push_back(h);
+    output_desc_info.shape_info.dims.push_back(w);
+    output_desc_info.shape_info.dims.push_back(c);
+    output_desc_info.shape_info.dims.push_back(k);
+    if (shape_ranges.size() == 4) {                   // 4 dims
+      output_desc_info.shape_info.shape_ranges.push_back(shape_ranges[2]);  // h:2
+      output_desc_info.shape_info.shape_ranges.push_back(shape_ranges[3]);  // w:3
+      output_desc_info.shape_info.shape_ranges.push_back(shape_ranges[1]);  // c:1
+      output_desc_info.shape_info.shape_ranges.push_back(shape_ranges[0]);  // k:0
+    }
+    format_result = FORMAT_HWCN;
+  } else {
+    for (size_t j = 0; j < shape.GetDimNum(); j++) {
+      output_desc_info.shape_info.dims.push_back(shape.GetDim(j));
+    }
+    output_desc_info.shape_info.shape_ranges = shape_ranges;
+  }
+  int64_t tensor_size = 0;
+  (void)TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size);
+  output_desc_info.size = static_cast<uint64_t>(tensor_size);
+  output_desc_info.data_type = output_desc->GetDataType();
+}
+
+Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats) {
+  std::vector<ConstGeTensorDescPtr> output_desc_list;
+  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list), "get output desc info failed");  // output_desc_list contains vaild input desc
+
+  vector<std::string> out_node_names;
+  (void)ge::AttrUtils::GetListStr(ge_root_model_->GetRootGraph(), ATTR_MODEL_OUT_NODES_NAME, out_node_names);
+
+  GE_CHECK_NOTNULL(root_graph_item_->GetOutputNode());
+  auto op_desc = root_graph_item_->GetOutputNode()->op_desc;
+  GE_CHECK_NOTNULL(op_desc);
+
+  auto out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
+  GE_CHK_BOOL_RET_STATUS(out_size == output_desc_list.size(), FAILED, "output size[%u] not match output_desc_list size[%zu]", out_size, output_desc_list.size());
+
+  for (uint32_t index = 0; index < out_size; ++index) {
+    string output_name;
+    std::vector<std::string> src_name = op_desc->GetSrcName();
+    std::vector<int64_t> src_index = op_desc->GetSrcIndex();
+    if (out_size == out_node_names.size()) {
+      bool contains_colon = out_node_names[index].find(":") != std::string::npos;
+      output_name = contains_colon ? out_node_names[index] : out_node_names[index] + ":" + std::to_string(src_index[index]);
+    } else {
+      output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" + std::to_string(src_index[index]);
+    }
+
+    InputOutputDescInfo output_desc_info;
+    output_desc_info.name = output_name;
+
+    uint32_t format_result;
+    CreateOutput(output_desc_list[index], output_desc_info, format_result);
+    output_desc.push_back(output_desc_info);
+    formats.push_back(format_result);
+  }
+  return SUCCESS;
 }
 }  // namespace hybrid
 }  // namespace ge

@@ -61,9 +61,91 @@ local_ge_executor_src_files :=  \
     ../single_op/task/tbe_task_builder.cc \
     ../single_op/task/aicpu_task_builder.cc \
     ../single_op/task/aicpu_kernel_task_builder.cc \
-    ../hybrid/hybrid_davinci_model_stub.cc\
     ../hybrid/node_executor/aicpu/aicpu_ext_info.cc \
     ../graph/common/local_context.cc \
+    ../hybrid/common/tensor_value.cc                                        \
+    ../hybrid/common/npu_memory_allocator.cc                                \
+    ../hybrid/executor/rt_callback_manager.cc                               \
+    ../hybrid/executor/node_state.cc                                        \
+    ../hybrid/executor/node_done_manager.cc                                 \
+    ../hybrid/executor/hybrid_profiler.cc                                   \
+    ../hybrid/executor/hybrid_model_executor.cc                             \
+    ../hybrid/executor/hybrid_model_async_executor.cc                       \
+    ../hybrid/executor/hybrid_execution_context.cc                          \
+    ../hybrid/executor/subgraph_context.cc                                  \
+    ../hybrid/executor/subgraph_executor.cc                                 \
+    ../hybrid/executor/worker/task_compile_engine.cc                        \
+    ../hybrid/executor/worker/shape_inference_engine.cc                     \
+    ../hybrid/executor/worker/execution_engine.cc                           \
+    ../hybrid/model/hybrid_model.cc                                         \
+    ../hybrid/model/hybrid_model_builder.cc                                 \
+    ../hybrid/model/node_item.cc                                            \
+    ../hybrid/model/graph_item.cc                                           \
+    ../hybrid/node_executor/aicore/aicore_node_executor.cc                  \
+    ../hybrid/node_executor/aicore/aicore_op_task.cc                        \
+    ../hybrid/node_executor/aicore/aicore_task_builder.cc                   \
+    ../hybrid/node_executor/aicpu/aicpu_node_executor.cc                    \
+    ../hybrid/node_executor/compiledsubgraph/known_node_executor.cc         \
+    ../hybrid/node_executor/ge_local/ge_local_node_executor.cc              \
+    ../hybrid/node_executor/host_cpu/host_cpu_node_executor.cc              \
+    ../hybrid/node_executor/host_cpu/kernel_factory.cc                      \
+    ../hybrid/node_executor/host_cpu/kernel/no_op_kernel.cc                 \
+    ../hybrid/node_executor/host_cpu/kernel/variable_kernel.cc              \
+    ../hybrid/node_executor/host_cpu/kernel/assign_kernel.cc                \
+    ../hybrid/node_executor/host_cpu/kernel/random_uniform_kernel.cc        \
+    ../hybrid/node_executor/controlop/control_op_executor.cc                \
+    ../hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc \
+    ../hybrid/node_executor/rts/rts_node_executor.cc                        \
+    ../hybrid/node_executor/node_executor.cc                                \
+    ../hybrid/node_executor/task_context.cc                                 \
+    ../hybrid/hybrid_davinci_model.cc                                       \
+    ../ge_local_engine/engine/host_cpu_engine.cc \
+    ../graph/common/omg_util.cc \
+    ../graph/manager/host_mem_manager.cc \
+    ../graph/build/memory/var_mem_assign_util.cc \
+    ../host_kernels/transpose_kernel.cc \
+    ../host_kernels/add_kernel.cc \
+    ../host_kernels/broadcast_args_kernel.cc \
+    ../host_kernels/broadcast_gradient_args_kernel.cc \
+    ../host_kernels/cast_kernel.cc \
+    ../host_kernels/concat_offset_kernel.cc \
+    ../host_kernels/concat_v2_kernel.cc \
+    ../host_kernels/dynamic_stitch_kernel.cc \
+    ../host_kernels/identity_kernel.cc \
+    ../host_kernels/empty_kernel.cc \
+    ../host_kernels/expanddims_kernel.cc \
+    ../host_kernels/fill_kernel.cc \
+    ../host_kernels/floordiv_kernel.cc \
+    ../host_kernels/floormod_kernel.cc \
+    ../host_kernels/gather_v2_kernel.cc  \
+    ../host_kernels/greater_kernel.cc \
+    ../host_kernels/kernel_utils.cc \
+    ../host_kernels/maximum_kernel.cc \
+    ../host_kernels/mul_kernel.cc \
+    ../host_kernels/pack_kernel.cc \
+    ../host_kernels/permute_kernel.cc \
+    ../host_kernels/range_kernel.cc \
+    ../host_kernels/rank_kernel.cc \
+    ../host_kernels/reduce_prod_kernel.cc \
+    ../host_kernels/reshape_kernel.cc \
+    ../host_kernels/rsqrt_kernel.cc \
+    ../host_kernels/shape_kernel.cc \
+    ../host_kernels/shape_n_kernel.cc \
+    ../host_kernels/size_kernel.cc \
+    ../host_kernels/slice_d_kernel.cc \
+    ../host_kernels/slice_kernel.cc \
+    ../host_kernels/squeeze_kernel.cc \
+    ../host_kernels/unsqueeze_kernel.cc \
+    ../host_kernels/ssd_prior_box_kernel.cc \
+    ../host_kernels/strided_slice_kernel.cc \
+    ../host_kernels/sub_kernel.cc \
+    ../host_kernels/transdata_kernel.cc \
+    ../host_kernels/unpack_kernel.cc \
+    ../graph/passes/pass_utils.cc \
+    ../graph/common/bcast.cc \
+    ../common/fp16_t.cc \
+    ../common/formats/format_transfers/format_transfer_transpose.cc \
+    ../common/formats/utils/formats_trans_utils.cc \
 
 local_ge_executor_c_include :=             \
     proto/insert_op.proto                  \

@@ -41,7 +41,6 @@ class PartitionedCallNodeTask : public NodeTask {
 
   const GraphItem *graph_item_;
   std::unique_ptr<SubgraphExecutor> subgraph_executor_;
-  GraphExecutionContext *context_ = nullptr;
 };
 
 class PartitionedCallNodeExecutor : public NodeExecutor {

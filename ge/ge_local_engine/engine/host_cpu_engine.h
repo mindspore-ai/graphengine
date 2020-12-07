@@ -20,7 +20,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "graph/operator.h"
-#include "register/register.h"
+#include "external/../register/register.h"
 
 namespace ge {
 class HostCpuEngine {

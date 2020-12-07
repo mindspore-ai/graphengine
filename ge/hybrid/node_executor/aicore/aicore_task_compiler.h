@@ -26,7 +26,7 @@ namespace hybrid {
 class AiCoreTaskCompiler : public TaskCompiler {
  public:
   AiCoreTaskCompiler() = default;
-  ~AiCoreTaskCompiler() = default;
+  ~AiCoreTaskCompiler() override = default;
 
   Status CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) override;
   Status Initialize() override;

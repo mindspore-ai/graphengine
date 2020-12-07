@@ -30,6 +30,7 @@
 #include "model/ge_model.h"
 #include "graph/ge_context.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
+#include "graph/utils/op_desc_utils.h"
 
 using domi::BuildMode;
 
@@ -311,6 +312,53 @@ Status GraphBuilder::BuildForHostCpuGraph(ComputeGraphPtr &comp_graph, GeModelPt
   return BuildForUnknownShapeGraph(comp_graph, ge_model_ptr, session_id);
 }
 
+static Status InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
+                               const std::vector<InDataAnchorPtr> &in_anchors, const std::string &name) {
+  GE_CHECK_NOTNULL(out_anchor);
+  NodePtr in_node = out_anchor->GetOwnerNode();
+  GE_CHECK_NOTNULL(in_node);
+  OpDescBuilder op_desc_builder(name, MEMCPYADDRASYNC);
+  OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(0))
+                                     .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
+                                     .Build();
+  (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
+  if (GraphUtils::InsertNodeAfter(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
+    GELOGE(FAILED, "Insert IDENTITY node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+static Status GenerateTaskForConstant(const std::shared_ptr<ComputeGraph> &graph) {
+  for (auto &node : graph->GetDirectNode()) {
+    // CONSTANT not generate task, so insert IDENTITY between CONSTANT and NETOUTPUT
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    auto op_type = op_desc->GetType();
+    if (op_type == NETOUTPUT) {
+      for (InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
+        const OutDataAnchorPtr &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+        GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+        NodePtr in_node = peer_out_anchor->GetOwnerNode();
+        GE_CHECK_NOTNULL(in_node);
+
+        std::string in_node_op_type = in_node->GetType();
+        if (in_node_op_type == CONSTANT) {
+          GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
+          std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
+          if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
+            GELOGE(FAILED, "Insert memcpy between %s and %s failed.", in_node->GetName().c_str(), node->GetName().c_str());
+            return FAILED;
+          }
+        }
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                                                std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                                                GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
@@ -332,6 +380,9 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
     if (sub_graph->GetParentGraph() != comp_graph && !sub_graph->GetParentGraph()->GetGraphUnknownFlag()) {
       continue;
     }
+
+    GE_CHK_STATUS_RET(GenerateTaskForConstant(sub_graph), "Generate task For constant node in subgraph failed.");
+
     if (sub_graph->GetGraphUnknownFlag()) {
       // unknown shape build flow
       GE_CHK_STATUS_RET(BuildForUnknownShapeGraph(sub_graph, ge_model_ptr, session_id),

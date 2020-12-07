@@ -26,6 +26,7 @@
 #include <vector>
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
@@ -72,7 +73,7 @@ Status DynamicShapePartitioner::Partition() {
   }
   REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, true),
           "Failed set dynamic shape partitioned flag on root graph %s.", root_graph_->GetName().c_str());
-
+  REQUIRE_SUCCESS(CtrlEdgeTransfer(), "Failed do ctrl edge transfer!");
   DumpGraph("_Before_DSP");
   auto status = PartitionImpl();
   GELOGD("%s.", DebugString().c_str());
@@ -84,6 +85,50 @@ Status DynamicShapePartitioner::Partition() {
   GELOGD("Finish dynamic shape partition graph %s.", root_graph_->GetName().c_str());
   ClearResource();
   return status;
+}
+
+Status DynamicShapePartitioner::CtrlEdgeTransfer() {
+  GELOGD("Do ctrl edge transfer start!");
+  GE_CHECK_NOTNULL(root_graph_);
+
+  bool is_dynamic_shape = false;
+  (void)AttrUtils::GetBool(root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
+  if (!is_dynamic_shape) {
+    return SUCCESS;
+  }
+  for (auto &subgraph : root_graph_->GetAllSubgraphs()) {
+    for (ge::NodePtr &n : subgraph->GetDirectNode()) {
+      auto op_desc = n->GetOpDesc();
+      if (op_desc == nullptr) {
+        continue;
+      }
+      auto op_type = op_desc->GetType();
+      if (op_type == CONSTANT || op_type == CONSTANTOP) {
+        if (n->GetInAllNodes().empty()) {
+          GELOGD("[CtrlEdgeTransferPass] node [%s] in nodes is empty", n->GetName().c_str());
+          continue;
+        }
+
+        GELOGD("start to tranfer ctrl edge for const node [%s]", n->GetName().c_str());
+
+        for (auto &in_control_node : n->GetInControlNodes()) {
+          GE_CHECK_NOTNULL(in_control_node);
+          GE_CHK_STATUS_RET(ge::GraphUtils::RemoveEdge(in_control_node->GetOutControlAnchor(),
+                                                       n->GetInControlAnchor()), "remove edge failed");
+          for (auto &out_node : n->GetOutNodes()) {
+            if (out_node == nullptr) {
+              continue;
+            }
+            GE_CHK_STATUS_RET(ge::GraphUtils::AddEdge(in_control_node->GetOutControlAnchor(),
+                                                      out_node->GetInControlAnchor()), "add edge failed.");
+          }
+        }
+      }
+    }
+  }
+
+  GELOGD("Do ctrl edge transfer end!");
+  return SUCCESS;
 }
 
 Status DynamicShapePartitioner::PartitionImpl() {

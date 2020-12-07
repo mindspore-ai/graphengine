@@ -957,7 +957,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
 
     // index task defs
     GELOGD("To index tasks for subgraph: %s", name.c_str());
-    unordered_map<int64_t, NodePtr> node_map;
+    std::unordered_map<int64_t, NodePtr> node_map;
     for (const auto &node : sub_graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node);
       GE_CHECK_NOTNULL(node->GetOpDesc());

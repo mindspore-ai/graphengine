@@ -2801,7 +2801,7 @@ void *DavinciModel::Run(DavinciModel *model) {
                                       reinterpret_cast<int64_t *>(shape_data_buffer_data) +
                                       shape_data_buffer_length / sizeof(int64_t));
       GELOGD("Data: cur dynamic dims is %s", formats::JoinToString(model->cur_dynamic_dims_).c_str());
-      delete[] (int64_t *)current_data.blobs.back().data;
+      delete[] reinterpret_cast<int64_t *>(current_data.blobs.back().data);
       current_data.blobs.pop_back();
     }
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_PRE_PROC_END));
